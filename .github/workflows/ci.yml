@@ -117,7 +117,7 @@ jobs:
         run: |
           mkdir -p temp/test
           set -o pipefail
-          npm test 2>&1 | tee temp/test/test-output.txt
+          npm --silent test 2>&1 | tee temp/test/test-output.txt
 
       - name: Hand off test report
         if: always()
@@ -159,7 +159,7 @@ jobs:
         run: |
           mkdir -p temp/test
           set -o pipefail
-          npm run coverage 2>&1 | tee temp/test/coverage-output.txt
+          npm --silent run coverage 2>&1 | tee temp/test/coverage-output.txt
 
       - name: Hand off coverage report
         if: always()
@@ -296,7 +296,11 @@ jobs:
             echo
             echo '```text'
             if [[ -f temp/test/coverage-output.txt ]]; then
-              cat temp/test/coverage-output.txt
+              if grep -q "Coverage summary" temp/test/coverage-output.txt; then
+                awk '/Coverage summary/{show=1} show' temp/test/coverage-output.txt
+              else
+                cat temp/test/coverage-output.txt
+              fi
             else
               echo "No coverage output was produced."
             fi

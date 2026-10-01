@@ -1,6 +1,6 @@
 export default {
   format: [
-    "progress",
+    "pretty",
     "json:temp/test/cucumber-test.json"
   ],
   import: [
