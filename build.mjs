@@ -125,62 +125,60 @@ const intermediateOutputs = Object.entries(result.metafile.outputs)
   .sort(([a], [b]) => a.localeCompare(b));
 
 const processDiagram = [
-  "requirementDiagram",
+  "classDiagram",
   "  direction TB",
   "",
-  "  element source {",
-  '    type: "TypeScript and Svelte source"',
+  "  class ValidateTypeScript {",
+  "    <<build step>>",
+  "    +Input: source TypeScript",
+  "    +Action: tsc --noEmit",
+  "    +Output: validated TypeScript",
   "  }",
   "",
-  "  requirement validate {",
-  '    id: "1"',
-  '    text: "TypeScript validation"',
-  "    risk: Low",
-  "    verifymethod: Analysis",
+  "  class CompileSvelte {",
+  "    <<build step>>",
+  `    +Input: ${svelteInputs.size} Svelte component(s)`,
+  "    +Action: compile for browser",
+  "    +Output: JavaScript and CSS",
   "  }",
   "",
-  "  requirement compile {",
-  '    id: "2"',
-  '    text: "Svelte compilation"',
-  "    risk: Low",
-  "    verifymethod: Analysis",
+  "  class BundleApplication {",
+  "    <<build step>>",
+  "    +Input: application modules",
+  "    +Action: resolve and bundle imports",
+  "    +Output: browser ESM bundle",
   "  }",
   "",
-  "  requirement bundle {",
-  '    id: "3"',
-  '    text: "esbuild bundling"',
-  "    risk: Low",
-  "    verifymethod: Analysis",
+  "  class OptimizeBundle {",
+  "    <<build step>>",
+  "    +Input: browser bundle and assets",
+  "    +Action: minify and inline assets",
+  "    +Output: optimized JavaScript and CSS",
   "  }",
   "",
-  "  requirement minify {",
-  '    id: "4"',
-  '    text: "Minification and asset inlining"',
-  "    risk: Low",
-  "    verifymethod: Analysis",
+  "  class AssembleHtml {",
+  "    <<build step>>",
+  "    +Input: source/index.html and optimized bundle",
+  "    +Action: inject JavaScript and CSS",
+  "    +Output: self-contained HTML",
   "  }",
   "",
-  "  requirement assemble {",
-  '    id: "5"',
-  '    text: "HTML assembly"',
-  "    risk: Low",
-  "    verifymethod: Analysis",
+  "  class DistributionFile {",
+  "    <<artifact>>",
+  "    +Path: dist/index.html",
+  `    +Raw size: ${formatBytes(finalBytes)}`,
+  `    +Gzip size: ${formatBytes(finalGzipBytes)}`,
   "  }",
   "",
-  "  element output {",
-  '    type: "dist/index.html"',
-  "  }",
-  "",
-  "  source - satisfies -> validate",
-  "  validate - derives -> compile",
-  "  compile - derives -> bundle",
-  "  bundle - derives -> minify",
-  "  minify - derives -> assemble",
-  "  output - satisfies -> assemble"
+  '  ValidateTypeScript --> CompileSvelte : validated source',
+  '  CompileSvelte --> BundleApplication : compiled modules',
+  '  BundleApplication --> OptimizeBundle : bundled application',
+  '  OptimizeBundle --> AssembleHtml : optimized bundle',
+  '  AssembleHtml --> DistributionFile : writes'
 ].join("\n");
 
 const fileDiagram = [
-  "requirementDiagram",
+  "classDiagram",
   "  direction TB"
 ];
 
@@ -188,16 +186,21 @@ localInputs.forEach(([path, metadata], index) =>
 {
   fileDiagram.push(
     "",
-    `  element src${index} {`,
-    `    type: "${path} (${formatBytes(metadata.bytes)})"`,
+    `  class Input${index} {`,
+    "    <<input>>",
+    `    +Path: ${path}`,
+    `    +Size: ${formatBytes(metadata.bytes)}`,
     "  }"
   );
 });
 
 fileDiagram.push(
   "",
-  "  element template {",
-  `    type: "${templatePath} (${formatBytes(templateBytes)})"`,
+  "  class HtmlTemplate {",
+  "    <<input>>",
+  `    +Path: ${templatePath}`,
+  `    +Size: ${formatBytes(templateBytes)}`,
+  "    +Role: HTML template",
   "  }"
 );
 
@@ -205,19 +208,23 @@ intermediateOutputs.forEach(([path, metadata], index) =>
 {
   fileDiagram.push(
     "",
-    `  requirement intermediate${index} {`,
-    `    id: "bundle-${index + 1}"`,
-    `    text: "${path} (${formatBytes(metadata.bytes)})"`,
-    "    risk: Low",
-    "    verifymethod: Analysis",
+    `  class Bundle${index} {`,
+    "    <<intermediate>>",
+    `    +Path: ${path}`,
+    `    +Size: ${formatBytes(metadata.bytes)}`,
+    "    +Role: esbuild output",
     "  }"
   );
 });
 
 fileDiagram.push(
   "",
-  "  element final {",
-  `    type: "${outputPath} (raw ${formatBytes(finalBytes)}, gzip ${formatBytes(finalGzipBytes)})"`,
+  "  class FinalOutput {",
+  "    <<output>>",
+  `    +Path: ${outputPath}`,
+  `    +Raw size: ${formatBytes(finalBytes)}`,
+  `    +Gzip size: ${formatBytes(finalGzipBytes)}`,
+  "    +Role: deployable file",
   "  }"
 );
 
@@ -225,22 +232,22 @@ localInputs.forEach(([,], index) =>
 {
   if (intermediateOutputs.length === 0)
   {
-    fileDiagram.push(`  src${index} - satisfies -> final`);
+    fileDiagram.push(`  Input${index} --> FinalOutput : contributes to`);
   }
   else
   {
     intermediateOutputs.forEach(([,], outputIndex) =>
     {
-      fileDiagram.push(`  src${index} - satisfies -> intermediate${outputIndex}`);
+      fileDiagram.push(`  Input${index} --> Bundle${outputIndex} : bundled into`);
     });
   }
 });
 
-fileDiagram.push("  template - satisfies -> final");
+fileDiagram.push("  HtmlTemplate --> FinalOutput : template for");
 
 intermediateOutputs.forEach(([,], index) =>
 {
-  fileDiagram.push(`  final - satisfies -> intermediate${index}`);
+  fileDiagram.push(`  Bundle${index} --> FinalOutput : injected into`);
 });
 
 const report = [
