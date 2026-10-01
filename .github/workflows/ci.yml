@@ -63,6 +63,103 @@ jobs:
       - name: Type Check
         run: npx --no-install tsc --project tsconfig.json --noEmit
 
+  source-test:
+    name: Source Test
+    needs: type-check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Source Test
+        run: |
+          mkdir -p tmp/test/coverage/v8
+          set -o pipefail
+          npm --silent run test:source:coverage 2>&1 | tee tmp/test/source-test-output.txt
+
+      - name: Hand off source test data
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            tmp/test/source-test-output.txt
+            tmp/test/coverage/v8
+          key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
+
+  coverage:
+    name: Coverage
+    needs: source-test
+    permissions:
+      actions: read
+      contents: read
+      code-quality: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Restore source coverage data
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            tmp/test/source-test-output.txt
+            tmp/test/coverage/v8
+          key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Coverage
+        run: |
+          mkdir -p tmp/test
+          set -o pipefail
+          npm --silent run coverage 2>&1 | tee tmp/test/coverage-output.txt
+
+      - name: Upload coverage to GitHub
+        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+        uses: actions/upload-code-coverage@v1
+        with:
+          file: tmp/test/coverage/cobertura-coverage.xml
+          language: TypeScript
+          label: code-coverage/c8
+          fail-on-error: false
+
+      - name: Hand off coverage report
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            tmp/test/coverage
+            tmp/test/coverage-output.txt
+          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+
   bundle:
     name: Bundle
     needs: coverage
@@ -96,7 +193,7 @@ jobs:
           if-no-files-found: error
 
   test:
-    name: Test
+    name: Acceptance Test
     needs: bundle
     runs-on: ubuntu-latest
 
@@ -123,7 +220,7 @@ jobs:
           name: bundle
           path: dist
 
-      - name: Test
+      - name: Acceptance Test
         run: |
           mkdir -p tmp/test
           set -o pipefail
@@ -138,57 +235,6 @@ jobs:
             tmp/test/cucumber-test.json
             tmp/test/test-output.txt
           key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
-
-  coverage:
-    name: Coverage
-    needs: type-check
-    permissions:
-      actions: read
-      contents: read
-      code-quality: write
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-
-      - name: Restore dependencies
-        uses: actions/cache/restore@v6
-        with:
-          path: node_modules
-          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
-
-      - name: Coverage
-        run: |
-          mkdir -p tmp/test
-          set -o pipefail
-          npm --silent run coverage 2>&1 | tee tmp/test/coverage-output.txt
-
-      - name: Upload coverage to GitHub
-        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
-        uses: actions/upload-code-coverage@v1
-        with:
-          file: tmp/test/coverage/cobertura-coverage.xml
-          language: TypeScript
-          label: code-coverage/c8
-          fail-on-error: false
-
-      - name: Hand off coverage report
-        if: always()
-        continue-on-error: true
-        uses: actions/cache/save@v6
-        with:
-          path: |
-            tmp/test/coverage
-            tmp/test/coverage-output.txt
-          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
 
   coverage-badge:
     name: Coverage Badge
@@ -262,6 +308,7 @@ jobs:
   test-report:
     name: Test Report
     needs:
+      - source-test
       - coverage
       - test
     if: always()
@@ -272,8 +319,8 @@ jobs:
       - name: Restore source test output
         uses: actions/cache/restore@v6
         with:
-          path: tmp/test/coverage-output.txt
-          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tmp/test/source-test-output.txt
+          key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Restore acceptance test report
         uses: actions/cache/restore@v6
@@ -289,9 +336,8 @@ jobs:
           {
             echo '```text'
 
-            if [[ -f tmp/test/coverage-output.txt ]]; then
-              awk '/Coverage summary/{exit} {print}' tmp/test/coverage-output.txt |
-                sed -E 's/[[:space:]]+# .*:[0-9]+$//'
+            if [[ -f tmp/test/source-test-output.txt ]]; then
+              sed -E 's/[[:space:]]+# .*:[0-9]+$//' tmp/test/source-test-output.txt
               echo
             else
               echo "No source test output was produced."
