@@ -30,6 +30,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Hand off build report
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: temp/build
+          key: build-report-${{ github.run_id }}-${{ github.run_attempt }}
+
       - name: Upload build
         uses: actions/upload-artifact@v7
         with:
@@ -79,37 +87,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download build
-        if: needs.build.result == 'success'
-        uses: actions/download-artifact@v8
+      - name: Restore build report
+        uses: actions/cache/restore@v6
         with:
-          name: build
-          path: dist
+          path: temp/build
+          key: build-report-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Publish build summary
         if: always()
         run: |
-          echo "## Build Report" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Check | Result |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Build | \`${{ needs.build.result }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          if [ "${{ needs.build.result }}" = "success" ]; then
-            echo "| TypeScript | Passed |" >> "$GITHUB_STEP_SUMMARY"
-            echo "| Bundle | Passed |" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "### Output" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "| File | Raw | Gzip |" >> "$GITHUB_STEP_SUMMARY"
-            echo "| --- | ---: | ---: |" >> "$GITHUB_STEP_SUMMARY"
-            while IFS= read -r file; do
-              raw=$(du -h "$file" | cut -f1)
-              gzip_size=$(gzip -c "$file" | wc -c | numfmt --to=iec)
-              echo "| \`$file\` | $raw | $gzip_size |" >> "$GITHUB_STEP_SUMMARY"
-            done < <(find dist -type f | sort)
+          if [ -f temp/build/build-report.md ]; then
+            cat temp/build/build-report.md >> "$GITHUB_STEP_SUMMARY"
           else
+            echo "# Build Report" >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "> Build failed, so no deployable output artifact was produced." >> "$GITHUB_STEP_SUMMARY"
+            echo "> Build metadata was not produced because the build did not complete." >> "$GITHUB_STEP_SUMMARY"
           fi
 
   coverage:
