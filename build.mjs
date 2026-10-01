@@ -135,10 +135,11 @@ const buildDiagram = [
   "---",
   "",
   "flowchart TB",
-  '    subgraph Inputs["Inputs"]'
+  '    subgraph BuildReport["Build"]',
+  '        subgraph InputBoundary["Inputs"]'
 ];
 
-const sourceNodeIds = [];
+const typeScriptNodeIds = [];
 const svelteNodeIds = [];
 const otherNodeIds = [];
 
@@ -147,11 +148,11 @@ localInputs.forEach(([path, metadata], index) =>
   const id = `Source${index}`;
   const label = `${path}<br>${formatBytes(metadata.bytes)}`;
 
-  buildDiagram.push(`        ${id}["${label}"]:::artifact`);
+  buildDiagram.push(`            ${id}["${label}"]:::artifact`);
 
   if (path.endsWith(".ts"))
   {
-    sourceNodeIds.push(id);
+    typeScriptNodeIds.push(id);
   }
   else if (path.endsWith(".svelte"))
   {
@@ -164,24 +165,36 @@ localInputs.forEach(([path, metadata], index) =>
 });
 
 buildDiagram.push(
-  `        HtmlTemplate["${templatePath}<br>${formatBytes(templateBytes)}"]:::artifact`,
-  "    end",
+  `            HtmlTemplate["${templatePath}<br>${formatBytes(templateBytes)}"]:::artifact`,
+  "        end",
   "",
-  '    subgraph Build["Build"]',
-  '        ValidateTypeScript["Validate TypeScript<br>tsc --project tsconfig.json --noEmit"]:::operation',
-  '        CompileSvelte["Compile Svelte<br>Svelte compiler API"]:::operation',
-  '        BundleApplication["Bundle Application<br>esbuild"]:::operation',
-  '        OptimizeBundle["Optimize Bundle<br>minify + asset data URLs"]:::operation',
-  '        AssembleHtml["Assemble HTML<br>inject JavaScript + CSS"]:::operation',
-  "    end",
+  '        subgraph ProcessBoundary["Process"]',
+  '            subgraph ValidateBoundary["Validate"]',
+  '                ValidateTypeScript["tsc --project tsconfig.json --noEmit"]:::operation',
+  "            end",
   "",
-  '    subgraph Output["Output"]',
-  `        FinalOutput["${outputPath}<br>raw ${formatBytes(finalBytes)} · gzip ${formatBytes(finalGzipBytes)}"]:::output`,
+  '            subgraph CompileBoundary["Compile"]',
+  '                CompileSvelte["Svelte compiler API"]:::operation',
+  "            end",
+  "",
+  '            subgraph BundleBoundary["Bundle"]',
+  '                BundleApplication["esbuild"]:::operation',
+  '                OptimizeBundle["minify + asset data URLs"]:::operation',
+  "            end",
+  "",
+  '            subgraph AssembleBoundary["Assemble"]',
+  '                AssembleHtml["inject JavaScript + CSS"]:::operation',
+  "            end",
+  "        end",
+  "",
+  '        subgraph OutputBoundary["Output"]',
+  `            FinalOutput["${outputPath}<br>raw ${formatBytes(finalBytes)} · gzip ${formatBytes(finalGzipBytes)}"]:::output`,
+  "        end",
   "    end",
   ""
 );
 
-sourceNodeIds.forEach(id =>
+typeScriptNodeIds.forEach(id =>
 {
   buildDiagram.push(`    ${id} --> ValidateTypeScript`);
 });
@@ -204,12 +217,16 @@ buildDiagram.push(
   "    HtmlTemplate --> AssembleHtml",
   "    AssembleHtml --> FinalOutput",
   "",
-  "    classDef group fill:#282828,stroke:#282828,color:#7C6F64,stroke-width:8px",
+  "    classDef nsDepth_1 fill:#1D2021,stroke:#1D2021,color:#7C6F64,stroke-width:16px",
+  "    classDef nsDepth_2 fill:#282828,stroke:#282828,color:#7C6F64,stroke-width:12px",
+  "    classDef nsDepth_3 fill:#3C3836,stroke:#3C3836,color:#7C6F64,stroke-width:8px",
   "    classDef artifact fill:#504945,stroke:#504945,color:#EBDBB2,stroke-width:4px",
-  "    classDef operation fill:#3C3836,stroke:#665C54,color:#EBDBB2,stroke-width:4px",
+  "    classDef operation fill:#665C54,stroke:#665C54,color:#1D2021,stroke-width:4px",
   "    classDef output fill:#1D2021,stroke:#D65D0E,color:#EBDBB2,stroke-width:4px",
   "",
-  "    class Inputs,Build,Output group"
+  "    class BuildReport nsDepth_1",
+  "    class InputBoundary,ProcessBoundary,OutputBoundary nsDepth_2",
+  "    class ValidateBoundary,CompileBoundary,BundleBoundary,AssembleBoundary nsDepth_3"
 );
 
 const report = [
