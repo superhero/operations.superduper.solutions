@@ -7,7 +7,7 @@
     "build": "tsc --project tsconfig.json --noEmit && node build.mjs",
     "test": "cucumber-js",
     "coverage": "npm run build && npm run coverage:collect -- npm run test:run",
-    "coverage:collect": "c8 --all --src=dist --include=dist/**/*.js --reporter=json --reporter=text-summary --reports-dir=temp/test/coverage --temp-directory=temp/test/coverage/v8",
+    "coverage:collect": "c8 --all --src=source --include=source/**/*.ts --extension=.ts --reporter=json --reporter=text-summary --reports-dir=temp/test/coverage --temp-directory=temp/test/coverage/v8",
     "test:run": "cucumber-js --config cucumber.config.mjs"
   },
   "devDependencies": {
