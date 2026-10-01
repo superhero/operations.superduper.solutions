@@ -134,13 +134,13 @@ const intermediateRows = Object.entries(result.metafile.outputs)
     `| ⚙️ \`${path}\` | ${formatBytes(metadata.bytes)} |`);
 
 const stageRows = [
-  "| 1 | ✅ TypeScript validation | `tsc --noEmit` validates the TypeScript source before bundling. |",
-  `| 2 | 🧩 Svelte compilation | Compiles ${svelteInputs.size} Svelte component(s) to browser JavaScript and collects generated CSS. |`,
-  "| 3 | 📦 Bundle | esbuild follows imports from `source/index.ts` and combines reachable modules into a browser ESM bundle. |",
-  "| 4 | ✂️ Minify | esbuild minifies the generated JavaScript bundle. |",
-  "| 5 | 🖼️ Inline assets | SVG, PNG, JPG, JPEG, GIF, WebP, WOFF and WOFF2 assets are embedded as data URLs when imported. |",
-  "| 6 | 🧬 Assemble HTML | Bundled JavaScript and generated CSS are injected into `source/index.html`. |",
-  "| 7 | 🎯 Final output | Writes one self-contained deployable file: `dist/index.html`. |"
+  "| 1 | TypeScript validation | `tsc --noEmit` validates the TypeScript source before bundling. |",
+  `| 2 | Svelte compilation | Compiles ${svelteInputs.size} Svelte component(s) to browser JavaScript and collects generated CSS. |`,
+  "| 3 | Bundle | esbuild follows imports from `source/index.ts` and combines reachable modules into a browser ESM bundle. |",
+  "| 4 | Minify | esbuild minifies the generated JavaScript bundle. |",
+  "| 5 | Inline assets | SVG, PNG, JPG, JPEG, GIF, WebP, WOFF and WOFF2 assets are embedded as data URLs when imported. |",
+  "| 6 | Assemble HTML | Bundled JavaScript and generated CSS are injected into `source/index.html`. |",
+  "| 7 | Final output | Writes one self-contained deployable file: `dist/index.html`. |"
 ];
 
 const report = [
