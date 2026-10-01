@@ -179,50 +179,68 @@ const processDiagram = [
   "  output - satisfies -> assemble"
 ].join("\n");
 
-const fileDiagram = ["flowchart LR"];
+const fileDiagram = [
+  "requirementDiagram",
+  "  direction LR"
+];
 
 localInputs.forEach(([path, metadata], index) =>
 {
   fileDiagram.push(
-    `  src${index}["${path}<br/>${formatBytes(metadata.bytes)}"]`
+    "",
+    `  element src${index} {`,
+    `    type: "${path} (${formatBytes(metadata.bytes)})"`,
+    "  }"
   );
 });
 
 fileDiagram.push(
-  `  template["${templatePath}<br/>${formatBytes(templateBytes)}"]`
+  "",
+  "  element template {",
+  `    type: "${templatePath} (${formatBytes(templateBytes)})"`,
+  "  }"
 );
 
 intermediateOutputs.forEach(([path, metadata], index) =>
 {
   fileDiagram.push(
-    `  intermediate${index}["${path}<br/>${formatBytes(metadata.bytes)}"]`
+    "",
+    `  requirement intermediate${index} {`,
+    `    id: "bundle-${index + 1}"`,
+    `    text: "${path} (${formatBytes(metadata.bytes)})"`,
+    "    risk: Low",
+    "    verifymethod: Analysis",
+    "  }"
   );
 });
 
 fileDiagram.push(
-  `  final["${outputPath}<br/>raw ${formatBytes(finalBytes)}<br/>gzip ${formatBytes(finalGzipBytes)}"]`
+  "",
+  "  element final {",
+  `    type: "${outputPath} (raw ${formatBytes(finalBytes)}, gzip ${formatBytes(finalGzipBytes)})"`,
+  "  }"
 );
 
 localInputs.forEach(([,], index) =>
 {
   if (intermediateOutputs.length === 0)
   {
-    fileDiagram.push(`  src${index} --> final`);
+    fileDiagram.push(`  src${index} - satisfies -> final`);
   }
   else
   {
     intermediateOutputs.forEach(([,], outputIndex) =>
     {
-      fileDiagram.push(`  src${index} --> intermediate${outputIndex}`);
+      fileDiagram.push(`  src${index} - satisfies -> intermediate${outputIndex}`);
     });
   }
 });
 
-fileDiagram.push("  template --> final");
+fileDiagram.push("  template - satisfies -> final");
 
 intermediateOutputs.forEach(([,], index) =>
 {
-  fileDiagram.push(`  intermediate${index} --> final`);
+  fileDiagram.push(`  final - satisfies -> intermediate${index}`);
 });
 
 const report = [
