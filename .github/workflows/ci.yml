@@ -37,27 +37,6 @@ jobs:
           path: dist
           if-no-files-found: error
 
-  build-report:
-    name: Build Report
-    needs: build
-    if: always()
-    continue-on-error: true
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Download build
-        uses: actions/download-artifact@v8
-        with:
-          name: build
-          path: dist
-
-      - name: Publish build summary
-        run: |
-          echo "## Build Report" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Files: $(find dist -type f | wc -l)" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Size: $(du -sh dist | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
-
   test:
     name: Test
     needs: build
@@ -92,26 +71,26 @@ jobs:
           path: temp/test/cucumber-test.json
           key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
 
-  test-report:
-    name: Test Report
+  build-report:
+    name: Build Report
     needs: test
     if: always()
     continue-on-error: true
     runs-on: ubuntu-latest
 
     steps:
-      - name: Restore test report
-        uses: actions/cache/restore@v4
+      - name: Download build
+        uses: actions/download-artifact@v8
         with:
-          path: temp/test/cucumber-test.json
-          key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
+          name: build
+          path: dist
 
-      - name: Publish test report
-        uses: actions/upload-artifact@v7
-        with:
-          name: test-report
-          path: temp/test/cucumber-test.json
-          if-no-files-found: warn
+      - name: Publish build summary
+        run: |
+          echo "## Build Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Files: $(find dist -type f | wc -l)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Size: $(du -sh dist | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
 
   coverage:
     name: Coverage
@@ -147,25 +126,25 @@ jobs:
           path: temp/test/coverage
           key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
 
-  coverage-report:
-    name: Coverage Report
+  test-report:
+    name: Test Report
     needs: coverage
     if: always()
     continue-on-error: true
     runs-on: ubuntu-latest
 
     steps:
-      - name: Restore coverage report
+      - name: Restore test report
         uses: actions/cache/restore@v4
         with:
-          path: temp/test/coverage
-          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: temp/test/cucumber-test.json
+          key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Publish coverage report
+      - name: Publish test report
         uses: actions/upload-artifact@v7
         with:
-          name: coverage
-          path: temp/test/coverage
+          name: test-report
+          path: temp/test/cucumber-test.json
           if-no-files-found: warn
 
   deploy:
@@ -197,3 +176,24 @@ jobs:
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=operations-superduper-solutions
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  coverage-report:
+    name: Coverage Report
+    needs: deploy
+    if: always()
+    continue-on-error: true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Restore coverage report
+        uses: actions/cache/restore@v4
+        with:
+          path: temp/test/coverage
+          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Publish coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: temp/test/coverage
+          if-no-files-found: warn
