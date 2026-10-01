@@ -125,15 +125,23 @@ const intermediateOutputs = Object.entries(result.metafile.outputs)
   .sort(([a], [b]) => a.localeCompare(b));
 
 const processDiagram = [
-  "flowchart LR",
-  '  validate["TypeScript validation<br/>tsc --noEmit"]',
-  `  svelte["Svelte compilation<br/>${svelteInputs.size} component(s)"]`,
-  '  bundle["esbuild bundle<br/>browser ESM"]',
-  '  minify["Minification"]',
-  '  inline["Asset inlining"]',
-  '  assemble["HTML assembly<br/>inject JavaScript and CSS"]',
-  '  output["dist/index.html"]',
-  "  validate --> svelte --> bundle --> minify --> inline --> assemble --> output"
+  "stateDiagram-v2",
+  "  direction LR",
+  "  [*] --> TypeScript",
+  '  TypeScript: TypeScript validation\\ntsc --noEmit',
+  `  Svelte: Svelte compilation\\n${svelteInputs.size} component(s)`,
+  "  Bundle: esbuild bundle\\nbrowser ESM",
+  "  Minify: Minification",
+  "  Inline: Asset inlining",
+  "  Assemble: HTML assembly\\ninject JavaScript and CSS",
+  "  Output: dist/index.html",
+  "  TypeScript --> Svelte",
+  "  Svelte --> Bundle",
+  "  Bundle --> Minify",
+  "  Minify --> Inline",
+  "  Inline --> Assemble",
+  "  Assemble --> Output",
+  "  Output --> [*]"
 ].join("\n");
 
 const fileDiagram = ["flowchart LR"];
