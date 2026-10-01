@@ -30,14 +30,6 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Hand off build report
-        if: always()
-        continue-on-error: true
-        uses: actions/cache/save@v6
-        with:
-          path: temp/build
-          key: build-report-${{ github.run_id }}-${{ github.run_attempt }}
-
       - name: Upload build
         uses: actions/upload-artifact@v7
         with:
@@ -78,31 +70,6 @@ jobs:
         with:
           path: temp/test/cucumber-test.json
           key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
-
-  build-report:
-    name: Build Report
-    needs: build
-    if: always()
-    continue-on-error: true
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Restore build report
-        uses: actions/cache/restore@v6
-        with:
-          path: temp/build
-          key: build-report-${{ github.run_id }}-${{ github.run_attempt }}
-
-      - name: Publish build summary
-        if: always()
-        run: |
-          if [ -f temp/build/build-report.md ]; then
-            cat temp/build/build-report.md >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "# Build Report" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "> Build metadata was not produced because the build did not complete." >> "$GITHUB_STEP_SUMMARY"
-          fi
 
   coverage:
     name: Coverage
