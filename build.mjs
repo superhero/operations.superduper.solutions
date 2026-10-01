@@ -1,8 +1,39 @@
+import { dirname } from "node:path";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { build } from "esbuild";
+import { compile } from "svelte/compiler";
 
 await rm("dist", { recursive: true, force: true });
 await mkdir("dist", { recursive: true });
+
+const svelteCss = [];
+
+const sveltePlugin = {
+  name: "svelte",
+  setup(buildContext)
+  {
+    buildContext.onLoad({ filter: /\.svelte$/ }, async ({ path }) =>
+    {
+      const source = await readFile(path, "utf8");
+      const compiled = compile(source, {
+        filename: path,
+        generate: "client",
+        dev: false
+      });
+
+      if (compiled.css?.code)
+      {
+        svelteCss.push(compiled.css.code);
+      }
+
+      return {
+        contents: compiled.js.code,
+        loader: "js",
+        resolveDir: dirname(path)
+      };
+    });
+  }
+};
 
 const result = await build({
   entryPoints: ["source/index.ts"],
@@ -12,6 +43,7 @@ const result = await build({
   platform: "browser",
   target: "es2024",
   write: false,
+  plugins: [sveltePlugin],
   loader: {
     ".svg": "dataurl",
     ".png": "dataurl",
@@ -25,7 +57,7 @@ const result = await build({
 });
 
 let javascript = "";
-let css = "";
+let css = svelteCss.join("");
 
 for (const output of result.outputFiles)
 {
