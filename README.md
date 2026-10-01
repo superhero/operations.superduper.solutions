@@ -1,4 +1,4 @@
-# operations.superduper.solutions
+# [operations.superduper.solutions](https://operations.superduper.solutions)
 
 A browser-based platform for composing OpenAPI operations into reusable workflows.
 
