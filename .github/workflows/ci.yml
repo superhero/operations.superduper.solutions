@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   actions: read
   contents: read
-  deployments: write
 
 jobs:
   installation:
@@ -19,6 +21,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -42,6 +46,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -57,14 +63,113 @@ jobs:
       - name: Type Check
         run: npx --no-install tsc --project tsconfig.json --noEmit
 
-  bundle:
-    name: Bundle
+  source-test:
+    name: Source Test
     needs: type-check
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Source Test
+        run: |
+          mkdir -p tmp/test/coverage/v8
+          set -o pipefail
+          npm --silent run test:source:coverage 2>&1 | tee tmp/test/source-test-output.txt
+
+      - name: Hand off source test data
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            tmp/test/source-test-output.txt
+            tmp/test/coverage/v8
+          key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
+
+  coverage:
+    name: Coverage
+    needs: source-test
+    permissions:
+      actions: read
+      contents: read
+      code-quality: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Restore source coverage data
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            tmp/test/source-test-output.txt
+            tmp/test/coverage/v8
+          key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Coverage
+        run: |
+          mkdir -p tmp/test
+          set -o pipefail
+          npm --silent run coverage 2>&1 | tee tmp/test/coverage-output.txt
+
+      - name: Upload coverage to GitHub
+        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+        uses: actions/upload-code-coverage@v1
+        with:
+          file: tmp/test/coverage/cobertura-coverage.xml
+          language: TypeScript
+          label: code-coverage/c8
+          fail-on-error: false
+
+      - name: Hand off coverage report
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            tmp/test/coverage
+            tmp/test/coverage-output.txt
+          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+  bundle:
+    name: Bundle
+    needs: coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -88,13 +193,15 @@ jobs:
           if-no-files-found: error
 
   test:
-    name: Test
+    name: Acceptance Test
     needs: bundle
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -113,7 +220,7 @@ jobs:
           name: bundle
           path: dist
 
-      - name: Test
+      - name: Acceptance Test
         run: |
           mkdir -p tmp/test
           set -o pipefail
@@ -129,51 +236,93 @@ jobs:
             tmp/test/test-output.txt
           key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
 
-  coverage:
-    name: Coverage
-    needs: test
+  coverage-badge:
+    name: Coverage Badge
+    needs: coverage
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      actions: read
+      contents: write
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-
-      - name: Restore dependencies
+      - name: Restore coverage report
         uses: actions/cache/restore@v6
         with:
-          path: node_modules
-          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
-
-      - name: Coverage
-        run: |
-          mkdir -p tmp/test
-          set -o pipefail
-          npm --silent run coverage 2>&1 | tee tmp/test/coverage-output.txt
-
-      - name: Hand off coverage report
-        if: always()
-        continue-on-error: true
-        uses: actions/cache/save@v6
-        with:
-          path: |
-            tmp/test/coverage
-            tmp/test/coverage-output.txt
+          path: tmp/test/coverage-output.txt
           key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Update coverage badge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          coverage="$(
+            grep -E 'Statements[[:space:]]*:' tmp/test/coverage-output.txt |
+            tail -1 |
+            sed -E 's/.*:[[:space:]]*([0-9]+(\.[0-9]+)?)%.*/\1/'
+          )"
+
+          if [[ -z "$coverage" ]]; then
+            echo "::error::Could not determine statement coverage."
+            exit 1
+          fi
+
+          if awk "BEGIN { exit !($coverage >= 90) }"; then
+            color="brightgreen"
+          elif awk "BEGIN { exit !($coverage >= 80) }"; then
+            color="green"
+          elif awk "BEGIN { exit !($coverage >= 70) }"; then
+            color="yellowgreen"
+          elif awk "BEGIN { exit !($coverage >= 60) }"; then
+            color="yellow"
+          elif awk "BEGIN { exit !($coverage >= 50) }"; then
+            color="orange"
+          else
+            color="red"
+          fi
+
+          badge="$(
+            jq -n \
+              --arg message "${coverage}%" \
+              --arg color "$color" \
+              '{schemaVersion: 1, label: "coverage", message: $message, color: $color}'
+          )"
+
+          content="$(printf '%s\n' "$badge" | base64 -w 0)"
+          sha="$(
+            gh api \
+              "repos/${GITHUB_REPOSITORY}/contents/coverage.json?ref=dev" \
+              --jq '.sha'
+          )"
+
+          gh api \
+            --method PUT \
+            "repos/${GITHUB_REPOSITORY}/contents/coverage.json" \
+            -f message="chore: update coverage badge" \
+            -f content="$content" \
+            -f branch="dev" \
+            -f sha="$sha" \
+            >/dev/null
+
 
   test-report:
     name: Test Report
-    needs: test
+    needs:
+      - source-test
+      - coverage
+      - test
     if: always()
     continue-on-error: true
     runs-on: ubuntu-latest
 
     steps:
-      - name: Restore test report
+      - name: Restore source test output
+        uses: actions/cache/restore@v6
+        with:
+          path: tmp/test/source-test-output.txt
+          key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Restore acceptance test report
         uses: actions/cache/restore@v6
         with:
           path: |
@@ -186,11 +335,21 @@ jobs:
         run: |
           {
             echo '```text'
+
+            if [[ -f tmp/test/source-test-output.txt ]]; then
+              sed -E 's/[[:space:]]+# .*:[0-9]+$//' tmp/test/source-test-output.txt
+              echo
+            else
+              echo "No source test output was produced."
+              echo
+            fi
+
             if [[ -f tmp/test/test-output.txt ]]; then
               sed -E 's/[[:space:]]+# .*:[0-9]+$//' tmp/test/test-output.txt
             else
-              echo "No test output was produced."
+              echo "No acceptance test output was produced."
             fi
+
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -203,7 +362,12 @@ jobs:
 
   deploy:
     name: Deploy
-    needs: coverage
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      actions: read
+      contents: read
+      deployments: write
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
@@ -304,10 +468,86 @@ jobs:
             echo "### Commits"
 
             if [[ -n "$previous_sha" ]] && git cat-file -e "${previous_sha}^{commit}" 2>/dev/null; then
-              git log --reverse --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" "${previous_sha}..${GITHUB_SHA}"
+              mapfile -t deployed_commits < <(
+                git rev-list --reverse "${previous_sha}..${GITHUB_SHA}"
+              )
             else
-              git log -1 --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" "${GITHUB_SHA}"
+              deployed_commits=("${GITHUB_SHA}")
             fi
+
+            for squash_sha in "${deployed_commits[@]}"; do
+              pr_number="$(
+                gh api \
+                  -H "Accept: application/vnd.github+json" \
+                  "repos/${GITHUB_REPOSITORY}/commits/${squash_sha}/pulls" |
+                jq -r \
+                  --arg sha "$squash_sha" \
+                  '[.[] | select(.merged_at != null and .merge_commit_sha == $sha)][0].number // empty'
+              )"
+
+              if [[ -z "$pr_number" ]]; then
+                git log -1 \
+                  --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" \
+                  "$squash_sha"
+                continue
+              fi
+
+              base_sha="$(
+                gh api \
+                  "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" \
+                  --jq '.base.sha'
+              )"
+
+              pr_commits="$(
+                gh api \
+                  --paginate \
+                  "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}/commits?per_page=100" |
+                jq -s 'add'
+              )"
+
+              sync_index="$(
+                printf '%s' "$pr_commits" |
+                jq \
+                  --arg base "$base_sha" \
+                  '[
+                    to_entries[]
+                    | select(
+                        (.value.parents | length) > 1
+                        and any(.value.parents[]; .sha == $base)
+                      )
+                    | .key
+                  ] | max // -1'
+              )"
+
+              expanded="$(
+                printf '%s' "$pr_commits" |
+                jq -r \
+                  --argjson start "$sync_index" \
+                  --arg repo "$GITHUB_REPOSITORY" \
+                  '
+                    to_entries[]
+                    | select(.key > $start)
+                    | .value
+                    | (.commit.message | split("\n")[0]) as $message
+                    | select($message != "Merge main into dev")
+                    | "- [\(.sha[0:7])](https://github.com/\($repo)/commit/\(.sha)) \($message)"
+                  '
+              )"
+
+              if [[ -n "$expanded" ]]; then
+                printf '%s\n' "$expanded"
+                echo
+                echo "---"
+                echo
+                git log -1 \
+                  --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" \
+                  "$squash_sha"
+              else
+                git log -1 \
+                  --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" \
+                  "$squash_sha"
+              fi
+            done
           } >> "$GITHUB_STEP_SUMMARY"
 
   coverage-report:
