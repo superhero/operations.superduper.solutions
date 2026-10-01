@@ -142,7 +142,7 @@ jobs:
           npm --silent run coverage 2>&1 | tee tmp/test/coverage-output.txt
 
       - name: Upload coverage to GitHub
-        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+        if: vars.GITHUB_CODE_QUALITY_ENABLED == 'true' && (github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))
         uses: actions/upload-code-coverage@v1
         with:
           file: tmp/test/coverage/cobertura-coverage.xml
