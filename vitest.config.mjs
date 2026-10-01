@@ -5,6 +5,11 @@ export default defineConfig({
   plugins: [
     svelte()
   ],
+  resolve: {
+    conditions: [
+      "browser"
+    ]
+  },
   test: {
     environment: "jsdom",
     include: [
