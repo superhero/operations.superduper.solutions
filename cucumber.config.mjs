@@ -4,7 +4,7 @@ export default {
     "json:temp/test/cucumber-test.json"
   ],
   import: [
-    "src/**/*.test.mjs"
+    "source/**/*.test.mjs"
   ],
   paths: [
     "source/**/*.feature"
