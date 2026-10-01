@@ -11,8 +11,8 @@ permissions:
   deployments: write
 
 jobs:
-  dependencies:
-    name: Dependencies
+  installation:
+    name: Installation
     runs-on: ubuntu-latest
 
     steps:
@@ -35,7 +35,7 @@ jobs:
 
   type-check:
     name: Type Check
-    needs: dependencies
+    needs: installation
     runs-on: ubuntu-latest
 
     steps:
