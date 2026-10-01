@@ -1,11 +1,5 @@
 import { mount } from "svelte";
 import App from "./App.svelte";
+import { startApplication } from "./bootstrap.ts";
 
-const target = document.querySelector<HTMLElement>("#app");
-
-if (!target)
-{
-  throw new Error("Missing #app element");
-}
-
-mount(App, { target });
+startApplication(document, App, mount);

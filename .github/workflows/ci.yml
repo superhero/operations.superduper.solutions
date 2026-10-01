@@ -59,7 +59,7 @@ jobs:
 
   bundle:
     name: Bundle
-    needs: type-check
+    needs: coverage
     runs-on: ubuntu-latest
 
     steps:
@@ -131,7 +131,7 @@ jobs:
 
   coverage:
     name: Coverage
-    needs: test
+    needs: type-check
     permissions:
       actions: read
       contents: write
@@ -222,13 +222,21 @@ jobs:
 
   test-report:
     name: Test Report
-    needs: test
+    needs:
+      - coverage
+      - test
     if: always()
     continue-on-error: true
     runs-on: ubuntu-latest
 
     steps:
-      - name: Restore test report
+      - name: Restore source test output
+        uses: actions/cache/restore@v6
+        with:
+          path: tmp/test/coverage-output.txt
+          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Restore acceptance test report
         uses: actions/cache/restore@v6
         with:
           path: |
@@ -241,11 +249,22 @@ jobs:
         run: |
           {
             echo '```text'
+
+            if [[ -f tmp/test/coverage-output.txt ]]; then
+              awk '/Coverage summary/{exit} {print}' tmp/test/coverage-output.txt |
+                sed -E 's/[[:space:]]+# .*:[0-9]+$//'
+              echo
+            else
+              echo "No source test output was produced."
+              echo
+            fi
+
             if [[ -f tmp/test/test-output.txt ]]; then
               sed -E 's/[[:space:]]+# .*:[0-9]+$//' tmp/test/test-output.txt
             else
-              echo "No test output was produced."
+              echo "No acceptance test output was produced."
             fi
+
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -258,7 +277,7 @@ jobs:
 
   deploy:
     name: Deploy
-    needs: coverage
+    needs: test
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
