@@ -132,6 +132,9 @@ jobs:
   coverage:
     name: Coverage
     needs: test
+    permissions:
+      actions: read
+      contents: write
     runs-on: ubuntu-latest
 
     steps:
@@ -154,6 +157,58 @@ jobs:
           mkdir -p tmp/test
           set -o pipefail
           npm --silent run coverage 2>&1 | tee tmp/test/coverage-output.txt
+
+      - name: Update coverage badge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          coverage="$(
+            grep -E 'Statements[[:space:]]*:' tmp/test/coverage-output.txt |
+            tail -1 |
+            sed -E 's/.*:[[:space:]]*([0-9]+(\.[0-9]+)?)%.*/\1/'
+          )"
+
+          if [[ -z "$coverage" ]]; then
+            echo "::error::Could not determine statement coverage."
+            exit 1
+          fi
+
+          if awk "BEGIN { exit !($coverage >= 90) }"; then
+            color="brightgreen"
+          elif awk "BEGIN { exit !($coverage >= 80) }"; then
+            color="green"
+          elif awk "BEGIN { exit !($coverage >= 70) }"; then
+            color="yellowgreen"
+          elif awk "BEGIN { exit !($coverage >= 60) }"; then
+            color="yellow"
+          elif awk "BEGIN { exit !($coverage >= 50) }"; then
+            color="orange"
+          else
+            color="red"
+          fi
+
+          badge="$(
+            jq -n \
+              --arg message "${coverage}%" \
+              --arg color "$color" \
+              '{schemaVersion: 1, label: "coverage", message: $message, color: $color}'
+          )"
+
+          content="$(printf '%s\n' "$badge" | base64 -w 0)"
+          sha="$(
+            gh api \
+              "repos/${GITHUB_REPOSITORY}/contents/coverage.json?ref=badges" \
+              --jq '.sha'
+          )"
+
+          gh api \
+            --method PUT \
+            "repos/${GITHUB_REPOSITORY}/contents/coverage.json" \
+            -f message="chore: update coverage badge" \
+            -f content="$content" \
+            -f branch="badges" \
+            -f sha="$sha" \
+            >/dev/null
 
       - name: Hand off coverage report
         if: always()
