@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run clean && tsc --project tsconfig.json && node --eval \"import('node:fs').then(({copyFileSync}) => copyFileSync('source/index.html', 'dist/index.html'))\"",
+    "build": "npm run clean && tsc --project tsconfig.json && node build.mjs",
     "test": "cucumber-js",
     "clean": "node --eval \"import('node:fs').then(({rmSync}) => rmSync('dist', { recursive: true, force: true }))\"",
     "coverage": "npm run build && npm run coverage:collect -- npm run test:run",
@@ -16,7 +16,8 @@
     "c8": "12.0.0",
     "multiple-cucumber-html-reporter": "4.3.0",
     "type-fest": "5.10.0",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "esbuild": "0.28.2"
   },
   "engines": {
     "node": "26.7.0",
