@@ -114,14 +114,19 @@ jobs:
           path: dist
 
       - name: Test
-        run: npm test
+        run: |
+          mkdir -p temp/test
+          set -o pipefail
+          npm test 2>&1 | tee temp/test/test-output.txt
 
       - name: Hand off test report
         if: always()
         continue-on-error: true
         uses: actions/cache/save@v6
         with:
-          path: temp/test/cucumber-test.json
+          path: |
+            temp/test/cucumber-test.json
+            temp/test/test-output.txt
           key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
 
   coverage:
@@ -151,14 +156,19 @@ jobs:
           path: dist
 
       - name: Coverage
-        run: npm run coverage
+        run: |
+          mkdir -p temp/test
+          set -o pipefail
+          npm run coverage 2>&1 | tee temp/test/coverage-output.txt
 
       - name: Hand off coverage report
         if: always()
         continue-on-error: true
         uses: actions/cache/save@v6
         with:
-          path: temp/test/coverage
+          path: |
+            temp/test/coverage
+            temp/test/coverage-output.txt
           key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
 
   test-report:
@@ -172,8 +182,25 @@ jobs:
       - name: Restore test report
         uses: actions/cache/restore@v6
         with:
-          path: temp/test/cucumber-test.json
+          path: |
+            temp/test/cucumber-test.json
+            temp/test/test-output.txt
           key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Test summary
+        if: always()
+        run: |
+          {
+            echo "## Test"
+            echo
+            echo '```text'
+            if [[ -f temp/test/test-output.txt ]]; then
+              cat temp/test/test-output.txt
+            else
+              echo "No test output was produced."
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish test report
         uses: actions/upload-artifact@v7
@@ -256,8 +283,25 @@ jobs:
       - name: Restore coverage report
         uses: actions/cache/restore@v6
         with:
-          path: temp/test/coverage
+          path: |
+            temp/test/coverage
+            temp/test/coverage-output.txt
           key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          {
+            echo "## Coverage"
+            echo
+            echo '```text'
+            if [[ -f temp/test/coverage-output.txt ]]; then
+              cat temp/test/coverage-output.txt
+            else
+              echo "No coverage output was produced."
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish coverage report
         uses: actions/upload-artifact@v7
