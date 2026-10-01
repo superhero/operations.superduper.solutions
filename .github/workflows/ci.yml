@@ -195,7 +195,7 @@ jobs:
             echo
             echo '```text'
             if [[ -f temp/test/test-output.txt ]]; then
-              cat temp/test/test-output.txt
+              sed -E 's/[[:space:]]+# .*:[0-9]+$//' temp/test/test-output.txt
             else
               echo "No test output was produced."
             fi
