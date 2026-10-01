@@ -135,7 +135,7 @@ const buildDiagram = [
   "---",
   "",
   "flowchart TB",
-  '    subgraph Inputs["_Inputs_"]'
+  '    subgraph Inputs["Inputs"]'
 ];
 
 const sourceNodeIds = [];
@@ -167,16 +167,16 @@ buildDiagram.push(
   `        HtmlTemplate["${templatePath}<br>${formatBytes(templateBytes)}"]:::artifact`,
   "    end",
   "",
-  '    subgraph Build["_Build_"]',
-  '        ValidateTypeScript["**Validate TypeScript**<br>tsc --project tsconfig.json --noEmit"]:::operation',
-  '        CompileSvelte["**Compile Svelte**<br>Svelte compiler API"]:::operation',
-  '        BundleApplication["**Bundle Application**<br>esbuild"]:::operation',
-  '        OptimizeBundle["**Optimize Bundle**<br>minify + asset data URLs"]:::operation',
-  '        AssembleHtml["**Assemble HTML**<br>inject JavaScript + CSS"]:::operation',
+  '    subgraph Build["Build"]',
+  '        ValidateTypeScript["Validate TypeScript<br>tsc --project tsconfig.json --noEmit"]:::operation',
+  '        CompileSvelte["Compile Svelte<br>Svelte compiler API"]:::operation',
+  '        BundleApplication["Bundle Application<br>esbuild"]:::operation',
+  '        OptimizeBundle["Optimize Bundle<br>minify + asset data URLs"]:::operation',
+  '        AssembleHtml["Assemble HTML<br>inject JavaScript + CSS"]:::operation',
   "    end",
   "",
-  '    subgraph Output["_Output_"]',
-  `        FinalOutput["**${outputPath}**<br>raw ${formatBytes(finalBytes)} · gzip ${formatBytes(finalGzipBytes)}"]:::output`,
+  '    subgraph Output["Output"]',
+  `        FinalOutput["${outputPath}<br>raw ${formatBytes(finalBytes)} · gzip ${formatBytes(finalGzipBytes)}"]:::output`,
   "    end",
   ""
 );
