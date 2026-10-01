@@ -118,6 +118,7 @@ const finalGzipBytes = gzipSync(html).byteLength;
 const templateBytes = Buffer.byteLength(template);
 
 const inputRows = Object.entries(result.metafile.inputs)
+  .filter(([path]) => !path.includes("node_modules/"))
   .sort(([a], [b]) => a.localeCompare(b))
   .map(([path, metadata]) =>
   {
