@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run clean && tsc --project tsconfig.json",
+    "build": "npm run clean && tsc --project tsconfig.json && node --eval \"import('node:fs').then(({copyFileSync}) => copyFileSync('source/index.html', 'dist/index.html'))\"",
     "test": "cucumber-js",
     "clean": "node --eval \"import('node:fs').then(({rmSync}) => rmSync('dist', { recursive: true, force: true }))\""
   },
