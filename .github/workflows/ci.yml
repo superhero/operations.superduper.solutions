@@ -378,10 +378,80 @@ jobs:
             echo "### Commits"
 
             if [[ -n "$previous_sha" ]] && git cat-file -e "${previous_sha}^{commit}" 2>/dev/null; then
-              git log --reverse --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" "${previous_sha}..${GITHUB_SHA}"
+              mapfile -t deployed_commits < <(
+                git rev-list --reverse "${previous_sha}..${GITHUB_SHA}"
+              )
             else
-              git log -1 --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" "${GITHUB_SHA}"
+              deployed_commits=("${GITHUB_SHA}")
             fi
+
+            for squash_sha in "${deployed_commits[@]}"; do
+              pr_number="$(
+                gh api \
+                  -H "Accept: application/vnd.github+json" \
+                  "repos/${GITHUB_REPOSITORY}/commits/${squash_sha}/pulls" |
+                jq -r \
+                  --arg sha "$squash_sha" \
+                  '[.[] | select(.merged_at != null and .merge_commit_sha == $sha)][0].number // empty'
+              )"
+
+              if [[ -z "$pr_number" ]]; then
+                git log -1 \
+                  --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" \
+                  "$squash_sha"
+                continue
+              fi
+
+              base_sha="$(
+                gh api \
+                  "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" \
+                  --jq '.base.sha'
+              )"
+
+              pr_commits="$(
+                gh api \
+                  --paginate \
+                  "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}/commits?per_page=100" |
+                jq -s 'add'
+              )"
+
+              sync_index="$(
+                printf '%s' "$pr_commits" |
+                jq \
+                  --arg base "$base_sha" \
+                  '[
+                    to_entries[]
+                    | select(
+                        (.value.parents | length) > 1
+                        and any(.value.parents[]; .sha == $base)
+                      )
+                    | .key
+                  ] | max // -1'
+              )"
+
+              expanded="$(
+                printf '%s' "$pr_commits" |
+                jq -r \
+                  --argjson start "$sync_index" \
+                  --arg repo "$GITHUB_REPOSITORY" \
+                  '
+                    to_entries[]
+                    | select(.key > $start)
+                    | .value
+                    | (.commit.message | split("\n")[0]) as $message
+                    | select($message != "Merge main into dev")
+                    | "- [\(.sha[0:7])](https://github.com/\($repo)/commit/\(.sha)) \($message)"
+                  '
+              )"
+
+              if [[ -n "$expanded" ]]; then
+                printf '%s\n' "$expanded"
+              else
+                git log -1 \
+                  --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" \
+                  "$squash_sha"
+              fi
+            done
           } >> "$GITHUB_STEP_SUMMARY"
 
   coverage-report:
