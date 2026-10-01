@@ -32,6 +32,9 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Coverage
+        run: npm run coverage
+
       - name: Upload CI artifacts
         if: always()
         uses: actions/upload-artifact@v7
@@ -41,3 +44,4 @@ jobs:
           path: |
             dist/index.html
             temp/test/cucumber-test.json
+            temp/test/coverage
