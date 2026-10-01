@@ -126,7 +126,7 @@ const intermediateOutputs = Object.entries(result.metafile.outputs)
 
 const processDiagram = [
   "requirementDiagram",
-  "  direction LR",
+  "  direction TB",
   "",
   "  element source {",
   '    type: "TypeScript and Svelte source"',
@@ -181,7 +181,7 @@ const processDiagram = [
 
 const fileDiagram = [
   "requirementDiagram",
-  "  direction LR"
+  "  direction TB"
 ];
 
 localInputs.forEach(([path, metadata], index) =>
