@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   deployments: write
 
@@ -190,6 +191,11 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
       - name: Download bundle
         uses: actions/download-artifact@v8
         with:
@@ -210,6 +216,32 @@ jobs:
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=operations-superduper-solutions
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deployment summary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          previous_sha="$(
+            gh api \
+              --method GET \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs" \
+              -f branch="${GITHUB_REF_NAME}" \
+              -f status=success \
+              -f per_page=1 \
+              --jq '.workflow_runs[0].head_sha // empty'
+          )"
+
+          {
+            echo "## Deployment"
+            echo
+            echo "### Commits"
+
+            if [[ -n "$previous_sha" ]] && git cat-file -e "${previous_sha}^{commit}" 2>/dev/null; then
+              git log --reverse --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" "${previous_sha}..${GITHUB_SHA}"
+            else
+              git log -1 --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" "${GITHUB_SHA}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
   coverage-report:
     name: Coverage Report
