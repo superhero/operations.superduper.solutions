@@ -4,9 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run clean && tsc --project tsconfig.json && node build.mjs",
+    "build": "tsc --project tsconfig.json --noEmit && node build.mjs",
     "test": "cucumber-js",
-    "clean": "node --eval \"import('node:fs').then(({rmSync}) => rmSync('dist', { recursive: true, force: true }))\"",
     "coverage": "npm run build && npm run coverage:collect -- npm run test:run",
     "coverage:collect": "c8 --all --src=dist --include=dist/**/*.js --reporter=json --reporter=text-summary --reports-dir=temp/test/coverage --temp-directory=temp/test/coverage/v8",
     "test:run": "cucumber-js --config cucumber.config.mjs"
