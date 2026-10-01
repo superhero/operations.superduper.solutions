@@ -1,8 +1,11 @@
-const app = document.querySelector<HTMLElement>("#app");
+import { mount } from "svelte";
+import App from "./App.svelte";
 
-if (!app)
+const target = document.querySelector<HTMLElement>("#app");
+
+if (!target)
 {
   throw new Error("Missing #app element");
 }
 
-app.textContent = "operations.superduper.solutions";
+mount(App, { target });
