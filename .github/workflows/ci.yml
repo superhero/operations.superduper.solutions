@@ -80,17 +80,37 @@ jobs:
 
     steps:
       - name: Download build
+        if: needs.build.result == 'success'
         uses: actions/download-artifact@v8
         with:
           name: build
           path: dist
 
       - name: Publish build summary
+        if: always()
         run: |
           echo "## Build Report" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Files: $(find dist -type f | wc -l)" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Size: $(du -sh dist | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Check | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| --- | --- |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Build | \`${{ needs.build.result }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ needs.build.result }}" = "success" ]; then
+            echo "| TypeScript | Passed |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Bundle | Passed |" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "### Output" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "| File | Raw | Gzip |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| --- | ---: | ---: |" >> "$GITHUB_STEP_SUMMARY"
+            while IFS= read -r file; do
+              raw=$(du -h "$file" | cut -f1)
+              gzip_size=$(gzip -c "$file" | wc -c | numfmt --to=iec)
+              echo "| \`$file\` | $raw | $gzip_size |" >> "$GITHUB_STEP_SUMMARY"
+            done < <(find dist -type f | sort)
+          else
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "> Build failed, so no deployable output artifact was produced." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   coverage:
     name: Coverage
