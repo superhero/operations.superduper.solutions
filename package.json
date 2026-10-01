@@ -4,10 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run clean && npm run pre && tsc --project tsconfig.json",
+    "build": "npm run clean && tsc --project tsconfig.json",
     "test": "cucumber-js",
-    "clean": "node --eval \"import('node:fs').then(({rmSync}) => rmSync('dist', { recursive: true, force: true }))\"",
-    "pre": "node --eval \"process.exit(0)\""
+    "clean": "node --eval \"import('node:fs').then(({rmSync}) => rmSync('dist', { recursive: true, force: true }))\""
   },
   "devDependencies": {
     "@cucumber/cucumber": "13.2.1",
