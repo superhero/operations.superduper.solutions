@@ -117,58 +117,83 @@ const finalBytes = Buffer.byteLength(html);
 const finalGzipBytes = gzipSync(html).byteLength;
 const templateBytes = Buffer.byteLength(template);
 
-const inputRows = Object.entries(result.metafile.inputs)
+const localInputs = Object.entries(result.metafile.inputs)
   .filter(([path]) => !path.includes("node_modules/"))
-  .sort(([a], [b]) => a.localeCompare(b))
-  .map(([path, metadata]) =>
+  .sort(([a], [b]) => a.localeCompare(b));
+
+const intermediateOutputs = Object.entries(result.metafile.outputs)
+  .sort(([a], [b]) => a.localeCompare(b));
+
+const processDiagram = [
+  "flowchart LR",
+  '  validate["TypeScript validation<br/>tsc --noEmit"]',
+  `  svelte["Svelte compilation<br/>${svelteInputs.size} component(s)"]`,
+  '  bundle["esbuild bundle<br/>browser ESM"]',
+  '  minify["Minification"]',
+  '  inline["Asset inlining"]',
+  '  assemble["HTML assembly<br/>inject JavaScript and CSS"]',
+  '  output["dist/index.html"]',
+  "  validate --> svelte --> bundle --> minify --> inline --> assemble --> output"
+].join("\n");
+
+const fileDiagram = ["flowchart LR"];
+
+localInputs.forEach(([path, metadata], index) =>
+{
+  fileDiagram.push(
+    `  src${index}["${path}<br/>${formatBytes(metadata.bytes)}"]`
+  );
+});
+
+fileDiagram.push(
+  `  template["${templatePath}<br/>${formatBytes(templateBytes)}"]`
+);
+
+intermediateOutputs.forEach(([path, metadata], index) =>
+{
+  fileDiagram.push(
+    `  intermediate${index}["${path}<br/>${formatBytes(metadata.bytes)}"]`
+  );
+});
+
+fileDiagram.push(
+  `  final["${outputPath}<br/>raw ${formatBytes(finalBytes)}<br/>gzip ${formatBytes(finalGzipBytes)}"]`
+);
+
+localInputs.forEach(([,], index) =>
+{
+  if (intermediateOutputs.length === 0)
   {
-    const kind = svelteInputs.has(path) ? "🧩" : "📄";
-    return `| ${kind} \`${path}\` | ${formatBytes(metadata.bytes)} |`;
-  });
+    fileDiagram.push(`  src${index} --> final`);
+  }
+  else
+  {
+    intermediateOutputs.forEach(([,], outputIndex) =>
+    {
+      fileDiagram.push(`  src${index} --> intermediate${outputIndex}`);
+    });
+  }
+});
 
-inputRows.unshift(`| 🧱 \`${templatePath}\` | ${formatBytes(templateBytes)} |`);
+fileDiagram.push("  template --> final");
 
-const intermediateRows = Object.entries(result.metafile.outputs)
-  .sort(([a], [b]) => a.localeCompare(b))
-  .map(([path, metadata]) =>
-    `| ⚙️ \`${path}\` | ${formatBytes(metadata.bytes)} |`);
-
-const stageRows = [
-  "| 1 | TypeScript validation | `tsc --noEmit` validates the TypeScript source before bundling. |",
-  `| 2 | Svelte compilation | Compiles ${svelteInputs.size} Svelte component(s) to browser JavaScript and collects generated CSS. |`,
-  "| 3 | Bundle | esbuild follows imports from `source/index.ts` and combines reachable modules into a browser ESM bundle. |",
-  "| 4 | Minify | esbuild minifies the generated JavaScript bundle. |",
-  "| 5 | Inline assets | SVG, PNG, JPG, JPEG, GIF, WebP, WOFF and WOFF2 assets are embedded as data URLs when imported. |",
-  "| 6 | Assemble HTML | Bundled JavaScript and generated CSS are injected into `source/index.html`. |",
-  "| 7 | Final output | Writes one self-contained deployable file: `dist/index.html`. |"
-];
+intermediateOutputs.forEach(([,], index) =>
+{
+  fileDiagram.push(`  intermediate${index} --> final`);
+});
 
 const report = [
-  "# Build Report",
+  "## Build process",
   "",
-  "## Transformation",
+  "```mermaid",
+  processDiagram,
+  "```",
   "",
-  "| Stage | Operation | What happened |",
-  "| ---: | --- | --- |",
-  ...stageRows,
+  "## Build files",
   "",
-  "## Inputs",
-  "",
-  "| Source | Size |",
-  "| --- | ---: |",
-  ...inputRows,
-  "",
-  "## esbuild intermediate output",
-  "",
-  "| Bundle output | Size |",
-  "| --- | ---: |",
-  ...intermediateRows,
-  "",
-  "## Final output",
-  "",
-  "| Distribution file | Raw | Gzip |",
-  "| --- | ---: | ---: |",
-  `| 📦 \`${outputPath}\` | ${formatBytes(finalBytes)} | ${formatBytes(finalGzipBytes)} |`,
+  "```mermaid",
+  ...fileDiagram,
+  "```",
   ""
 ].join("\n");
 
