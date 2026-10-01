@@ -178,6 +178,7 @@ jobs:
           file: tmp/test/coverage/cobertura-coverage.xml
           language: TypeScript
           label: code-coverage/c8
+          fail-on-error: false
 
       - name: Hand off coverage report
         if: always()
