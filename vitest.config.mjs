@@ -11,6 +11,17 @@ export default defineConfig({
     ]
   },
   test: {
+    reporters: [
+      "default",
+      [
+        "github-actions",
+        {
+          jobSummary: {
+            enabled: false
+          }
+        }
+      ]
+    ],
     environment: "jsdom",
     include: [
       "src/**/*.spec.mjs"
