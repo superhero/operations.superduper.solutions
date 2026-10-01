@@ -1,4 +1,11 @@
-export function startApplication(documentRef, component, mountComponent)
+export function startApplication<TComponent, TResult>(
+  documentRef: Document,
+  component: TComponent,
+  mountComponent: (
+    component: TComponent,
+    options: { target: Element }
+  ) => TResult
+): TResult
 {
   const target = documentRef.querySelector("#app");
 
