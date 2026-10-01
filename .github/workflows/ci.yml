@@ -51,12 +51,12 @@ jobs:
           name: build
           path: dist
 
-      - name: Publish build report
-        uses: actions/upload-artifact@v7
-        with:
-          name: build-report
-          path: dist
-          if-no-files-found: warn
+      - name: Publish build summary
+        run: |
+          echo "## Build Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Files: $(find dist -type f | wc -l)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Size: $(du -sh dist | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
 
   test:
     name: Test
@@ -87,12 +87,10 @@ jobs:
       - name: Hand off test report
         if: always()
         continue-on-error: true
-        uses: actions/upload-artifact@v7
+        uses: actions/cache/save@v4
         with:
-          name: test-report-data
           path: temp/test/cucumber-test.json
-          if-no-files-found: warn
-          retention-days: 1
+          key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
 
   test-report:
     name: Test Report
@@ -102,11 +100,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download test report data
-        uses: actions/download-artifact@v8
+      - name: Restore test report
+        uses: actions/cache/restore@v4
         with:
-          name: test-report-data
-          path: temp/test
+          path: temp/test/cucumber-test.json
+          key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Publish test report
         uses: actions/upload-artifact@v7
@@ -144,12 +142,10 @@ jobs:
       - name: Hand off coverage report
         if: always()
         continue-on-error: true
-        uses: actions/upload-artifact@v7
+        uses: actions/cache/save@v4
         with:
-          name: coverage-report-data
           path: temp/test/coverage
-          if-no-files-found: warn
-          retention-days: 1
+          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
 
   coverage-report:
     name: Coverage Report
@@ -159,11 +155,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download coverage report data
-        uses: actions/download-artifact@v8
+      - name: Restore coverage report
+        uses: actions/cache/restore@v4
         with:
-          name: coverage-report-data
           path: temp/test/coverage
+          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Publish coverage report
         uses: actions/upload-artifact@v7
