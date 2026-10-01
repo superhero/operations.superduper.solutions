@@ -26,7 +26,7 @@ Then("the production page contains the smoke-test text", function ()
 
 Then("the production page contains inline JavaScript", function ()
 {
-  assert.match(html, /<script type="module">.+<\/script>/s);
+  assert.match(html, /<script\b(?=[^>]*\btype=["\']module["\'])[^>]*>.+<\/script>/s);
 });
 
 Then("the production page has no external JavaScript source", function ()
@@ -36,7 +36,7 @@ Then("the production page has no external JavaScript source", function ()
 
 Then("the production page contains inline CSS", function ()
 {
-  assert.match(html, /<style>.+<\/style>/s);
+  assert.match(html, /<style\b[^>]*>.+<\/style>/s);
 });
 
 Then("the production page has no external stylesheet", function ()
