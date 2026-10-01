@@ -115,9 +115,9 @@ jobs:
 
       - name: Test
         run: |
-          mkdir -p temp/test
+          mkdir -p tmp/test
           set -o pipefail
-          npm --silent test 2>&1 | tee temp/test/test-output.txt
+          npm --silent test 2>&1 | tee tmp/test/test-output.txt
 
       - name: Hand off test report
         if: always()
@@ -125,8 +125,8 @@ jobs:
         uses: actions/cache/save@v6
         with:
           path: |
-            temp/test/cucumber-test.json
-            temp/test/test-output.txt
+            tmp/test/cucumber-test.json
+            tmp/test/test-output.txt
           key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
 
   coverage:
@@ -149,17 +149,11 @@ jobs:
           path: node_modules
           key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Download bundle
-        uses: actions/download-artifact@v8
-        with:
-          name: bundle
-          path: dist
-
       - name: Coverage
         run: |
-          mkdir -p temp/test
+          mkdir -p tmp/test
           set -o pipefail
-          npm --silent run coverage 2>&1 | tee temp/test/coverage-output.txt
+          npm --silent run coverage 2>&1 | tee tmp/test/coverage-output.txt
 
       - name: Hand off coverage report
         if: always()
@@ -167,8 +161,8 @@ jobs:
         uses: actions/cache/save@v6
         with:
           path: |
-            temp/test/coverage
-            temp/test/coverage-output.txt
+            tmp/test/coverage
+            tmp/test/coverage-output.txt
           key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
 
   test-report:
@@ -183,8 +177,8 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: |
-            temp/test/cucumber-test.json
-            temp/test/test-output.txt
+            tmp/test/cucumber-test.json
+            tmp/test/test-output.txt
           key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Test summary
@@ -192,8 +186,8 @@ jobs:
         run: |
           {
             echo '```text'
-            if [[ -f temp/test/test-output.txt ]]; then
-              sed -E 's/[[:space:]]+# .*:[0-9]+$//' temp/test/test-output.txt
+            if [[ -f tmp/test/test-output.txt ]]; then
+              sed -E 's/[[:space:]]+# .*:[0-9]+$//' tmp/test/test-output.txt
             else
               echo "No test output was produced."
             fi
@@ -204,7 +198,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-report
-          path: temp/test/cucumber-test.json
+          path: tmp/test/cucumber-test.json
           if-no-files-found: warn
 
   deploy:
@@ -305,9 +299,7 @@ jobs:
           )"
 
           {
-            echo "| Name | Result |"
-            echo "| --- | --- |"
-            echo "| **Preview URL** | ${DEPLOYMENT_URL} |"
+            echo "**Preview URL:** ${DEPLOYMENT_URL}"
             echo
             echo "### Commits"
 
@@ -332,8 +324,8 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: |
-            temp/test/coverage
-            temp/test/coverage-output.txt
+            tmp/test/coverage
+            tmp/test/coverage-output.txt
           key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Coverage summary
@@ -341,11 +333,11 @@ jobs:
         run: |
           {
             echo '```text'
-            if [[ -f temp/test/coverage-output.txt ]]; then
-              if grep -q "Coverage summary" temp/test/coverage-output.txt; then
-                awk '/Coverage summary/{show=1} show' temp/test/coverage-output.txt
+            if [[ -f tmp/test/coverage-output.txt ]]; then
+              if grep -q "Coverage summary" tmp/test/coverage-output.txt; then
+                awk '/Coverage summary/{show=1} show' tmp/test/coverage-output.txt
               else
-                cat temp/test/coverage-output.txt
+                cat tmp/test/coverage-output.txt
               fi
             else
               echo "No coverage output was produced."
@@ -357,5 +349,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: coverage
-          path: temp/test/coverage
+          path: tmp/test/coverage
           if-no-files-found: warn
