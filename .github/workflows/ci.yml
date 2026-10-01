@@ -11,8 +11,8 @@ permissions:
   deployments: write
 
 jobs:
-  type-check:
-    name: Type Check
+  dependencies:
+    name: Dependencies
     runs-on: ubuntu-latest
 
     steps:
@@ -26,6 +26,32 @@ jobs:
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+
+      - name: Hand off dependencies
+        uses: actions/cache/save@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+  type-check:
+    name: Type Check
+    needs: dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Type Check
         run: npx --no-install tsc --project tsconfig.json --noEmit
@@ -44,8 +70,11 @@ jobs:
         with:
           node-version-file: .node-version
 
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Bundle
         run: npx --no-install vite build
@@ -71,8 +100,11 @@ jobs:
         with:
           node-version-file: .node-version
 
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Download bundle
         uses: actions/download-artifact@v8
@@ -105,8 +137,11 @@ jobs:
         with:
           node-version-file: .node-version
 
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Download bundle
         uses: actions/download-artifact@v8
