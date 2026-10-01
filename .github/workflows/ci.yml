@@ -191,8 +191,6 @@ jobs:
         if: always()
         run: |
           {
-            echo "## Test"
-            echo
             echo '```text'
             if [[ -f temp/test/test-output.txt ]]; then
               sed -E 's/[[:space:]]+# .*:[0-9]+$//' temp/test/test-output.txt
@@ -236,17 +234,65 @@ jobs:
           exit 1
 
       - name: Deploy to Cloudflare Pages
+        id: cloudflare
         if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=operations-superduper-solutions
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Record GitHub deployment
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
+          PAGES_DEPLOYMENT_ID: ${{ steps.cloudflare.outputs.pages-deployment-id }}
+          PAGES_ENVIRONMENT: ${{ steps.cloudflare.outputs.pages-environment }}
+        run: |
+          environment="${PAGES_ENVIRONMENT:-production}"
+
+          deployment_id="$(
+            jq -n \
+              --arg ref "$GITHUB_SHA" \
+              --arg environment "$environment" \
+              '{
+                ref: $ref,
+                auto_merge: false,
+                required_contexts: [],
+                environment: $environment,
+                production_environment: true,
+                description: "Cloudflare Pages"
+              }' |
+            gh api \
+              --method POST \
+              "repos/${GITHUB_REPOSITORY}/deployments" \
+              --input - \
+              --jq '.id'
+          )"
+
+          jq -n \
+            --arg environment "$environment" \
+            --arg environment_url "$DEPLOYMENT_URL" \
+            --arg log_url "https://dash.cloudflare.com/${CLOUDFLARE_ACCOUNT_ID}/pages/view/operations-superduper-solutions/${PAGES_DEPLOYMENT_ID}" \
+            '{
+              state: "success",
+              environment: $environment,
+              environment_url: $environment_url,
+              log_url: $log_url,
+              description: "Cloudflare Pages",
+              auto_inactive: false
+            }' |
+          gh api \
+            --method POST \
+            "repos/${GITHUB_REPOSITORY}/deployments/${deployment_id}/statuses" \
+            --input - \
+            >/dev/null
 
       - name: Deployment summary
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
         run: |
           previous_sha="$(
             gh api \
@@ -260,6 +306,11 @@ jobs:
 
           {
             echo "## Deployment"
+            echo
+            echo "| Name | Result |"
+            echo "| --- | --- |"
+            echo "| **Last commit** | \`${GITHUB_SHA:0:8}\` |"
+            echo "| **Preview URL** | ${DEPLOYMENT_URL} |"
             echo
             echo "### Commits"
 
@@ -292,8 +343,6 @@ jobs:
         if: always()
         run: |
           {
-            echo "## Coverage"
-            echo
             echo '```text'
             if [[ -f temp/test/coverage-output.txt ]]; then
               if grep -q "Coverage summary" temp/test/coverage-output.txt; then
