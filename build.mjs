@@ -136,7 +136,9 @@ const buildDiagram = [
   "",
   "flowchart TB",
   '    subgraph BuildReport["Build"]',
-  '        subgraph InputBoundary["Inputs"]'
+  "        direction TB",
+  '        subgraph InputBoundary["Inputs"]',
+  "            direction TB"
 ];
 
 const typeScriptNodeIds = [];
@@ -169,7 +171,9 @@ buildDiagram.push(
   "        end",
   "",
   '        subgraph BuildBoundary["Build Process"]',
+  "            direction TB",
   '            subgraph SourceProcessing["Source Processing"]',
+  "                direction TB",
   '                subgraph Validation["Validation"]',
   '                    ValidateTypeScript["Validate TypeScript<br>tsc --project tsconfig.json --noEmit"]:::operationDark',
   "                end",
@@ -180,7 +184,9 @@ buildDiagram.push(
   "            end",
   "",
   '            subgraph Transformation["Transformation"]',
+  "                direction TB",
   '                subgraph Bundling["Bundling"]',
+  "                    direction TB",
   '                    BundleApplication["Bundle Application<br>esbuild"]:::operationLight',
   '                    OptimizeBundle["Optimize Bundle<br>minify + asset data URLs"]:::operationLight',
   "                end",
