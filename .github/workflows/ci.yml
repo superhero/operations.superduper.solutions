@@ -104,6 +104,8 @@ jobs:
   coverage:
     name: Coverage
     needs: source-test
+    outputs:
+      statements: ${{ steps.coverage.outputs.statements }}
     permissions:
       actions: read
       contents: read
@@ -135,10 +137,15 @@ jobs:
           key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Coverage
+        id: coverage
         run: |
           mkdir -p tmp/test
           set -o pipefail
           npm --silent run coverage 2>&1 | tee tmp/test/coverage-output.txt
+
+          value="$(grep -E 'Statements[[:space:]]*:' tmp/test/coverage-output.txt | tail -1 | sed -E 's/.*:[[:space:]]*([0-9]+(\.[0-9]+)?)%.*/\1/')"
+          test -n "$value"
+          echo "statements=$value" >> "$GITHUB_OUTPUT"
 
       - name: Hand off coverage report
         if: always()
@@ -236,21 +243,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Restore coverage report
-        uses: actions/cache/restore@v6
-        with:
-          path: tmp/test/coverage-output.txt
-          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
-
       - name: Update coverage badge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          coverage="$(
-            grep -E 'Statements[[:space:]]*:' tmp/test/coverage-output.txt |
-            tail -1 |
-            sed -E 's/.*:[[:space:]]*([0-9]+(\.[0-9]+)?)%.*/\1/'
-          )"
+          coverage="${{ needs.coverage.outputs.statements }}"
 
           if [[ -z "$coverage" ]]; then
             echo "::error::Could not determine statement coverage."
