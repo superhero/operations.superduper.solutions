@@ -149,12 +149,6 @@ jobs:
           path: node_modules
           key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Download bundle
-        uses: actions/download-artifact@v8
-        with:
-          name: bundle
-          path: dist
-
       - name: Coverage
         run: |
           mkdir -p tmp/test
