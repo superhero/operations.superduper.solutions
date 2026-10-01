@@ -37,6 +37,27 @@ jobs:
           path: dist
           if-no-files-found: error
 
+  build-report:
+    name: Build Report
+    needs: build
+    if: always()
+    continue-on-error: true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build
+        uses: actions/download-artifact@v8
+        with:
+          name: build
+          path: dist
+
+      - name: Publish build report
+        uses: actions/upload-artifact@v7
+        with:
+          name: build-report
+          path: dist
+          if-no-files-found: warn
+
   test:
     name: Test
     needs: build
