@@ -305,9 +305,7 @@ jobs:
           )"
 
           {
-            echo "| Name | Result |"
-            echo "| --- | --- |"
-            echo "| **Preview URL** | ${DEPLOYMENT_URL} |"
+            echo "**Preview URL:** ${DEPLOYMENT_URL}"
             echo
             echo "### Commits"
 
