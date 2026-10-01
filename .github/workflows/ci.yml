@@ -305,8 +305,6 @@ jobs:
           )"
 
           {
-            echo "## Deployment"
-            echo
             echo "| Name | Result |"
             echo "| --- | --- |"
             echo "| **Last commit** | \`${GITHUB_SHA:0:8}\` |"
