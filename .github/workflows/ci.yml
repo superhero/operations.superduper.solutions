@@ -178,7 +178,9 @@ jobs:
 
   coverage-report:
     name: Coverage Report
-    needs: coverage
+    needs:
+      - coverage
+      - test-report
     if: always()
     continue-on-error: true
     runs-on: ubuntu-latest
