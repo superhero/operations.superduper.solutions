@@ -66,14 +66,14 @@ jobs:
       - name: Hand off test report
         if: always()
         continue-on-error: true
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: temp/test/cucumber-test.json
           key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
 
   build-report:
     name: Build Report
-    needs: test
+    needs: build
     if: always()
     continue-on-error: true
     runs-on: ubuntu-latest
@@ -121,21 +121,21 @@ jobs:
       - name: Hand off coverage report
         if: always()
         continue-on-error: true
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: temp/test/coverage
           key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
 
   test-report:
     name: Test Report
-    needs: coverage
+    needs: test
     if: always()
     continue-on-error: true
     runs-on: ubuntu-latest
 
     steps:
       - name: Restore test report
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: temp/test/cucumber-test.json
           key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
@@ -179,14 +179,14 @@ jobs:
 
   coverage-report:
     name: Coverage Report
-    needs: deploy
+    needs: coverage
     if: always()
     continue-on-error: true
     runs-on: ubuntu-latest
 
     steps:
       - name: Restore coverage report
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: temp/test/coverage
           key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
