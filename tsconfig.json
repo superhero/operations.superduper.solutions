@@ -21,10 +21,7 @@
     "erasableSyntaxOnly": true,
     "rewriteRelativeImportExtensions": true,
     "declaration": true,
-    "inlineSources": true,
-    "types": [
-      "node"
-    ]
+    "inlineSources": true
   },
   "include": [
     "source/**/*.ts",
