@@ -1,5 +1,8 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { build } from "esbuild";
+
+await rm("dist", { recursive: true, force: true });
+await mkdir("dist", { recursive: true });
 
 const result = await build({
   entryPoints: ["source/index.ts"],
@@ -9,7 +12,6 @@ const result = await build({
   platform: "browser",
   target: "es2024",
   write: false,
-  outdir: "dist",
   loader: {
     ".svg": "dataurl",
     ".png": "dataurl",
