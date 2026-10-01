@@ -4,9 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "test": "cucumber-js"
   },
   "devDependencies": {
+    "@cucumber/cucumber": "^13.2.1",
+    "@types/node": "^24.19.0",
+    "type-fest": "^5.10.0",
     "typescript": "^5.9.3"
   }
 }
