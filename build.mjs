@@ -43,6 +43,7 @@ const result = await build({
   platform: "browser",
   target: "es2024",
   write: false,
+  outdir: "dist",
   plugins: [sveltePlugin],
   loader: {
     ".svg": "dataurl",
