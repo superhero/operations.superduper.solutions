@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   actions: read
   contents: read
-  deployments: write
 
 jobs:
   installation:
@@ -19,6 +21,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -134,7 +138,8 @@ jobs:
     needs: type-check
     permissions:
       actions: read
-      contents: write
+      contents: read
+      code-quality: write
     runs-on: ubuntu-latest
 
     steps:
@@ -157,6 +162,40 @@ jobs:
           mkdir -p tmp/test
           set -o pipefail
           npm --silent run coverage 2>&1 | tee tmp/test/coverage-output.txt
+
+      - name: Upload coverage to GitHub
+        if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+        uses: actions/upload-code-coverage@v1
+        with:
+          file: tmp/test/coverage/cobertura-coverage.xml
+          language: TypeScript
+          label: code-coverage/c8
+
+      - name: Hand off coverage report
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            tmp/test/coverage
+            tmp/test/coverage-output.txt
+          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+  coverage-badge:
+    name: Coverage Badge
+    needs: coverage
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      actions: read
+      contents: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Restore coverage report
+        uses: actions/cache/restore@v6
+        with:
+          path: tmp/test/coverage-output.txt
+          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Update coverage badge
         env:
@@ -210,15 +249,6 @@ jobs:
             -f sha="$sha" \
             >/dev/null
 
-      - name: Hand off coverage report
-        if: always()
-        continue-on-error: true
-        uses: actions/cache/save@v6
-        with:
-          path: |
-            tmp/test/coverage
-            tmp/test/coverage-output.txt
-          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
 
   test-report:
     name: Test Report
@@ -278,6 +308,11 @@ jobs:
   deploy:
     name: Deploy
     needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      actions: read
+      contents: read
+      deployments: write
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}

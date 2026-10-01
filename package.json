@@ -7,7 +7,7 @@
     "test": "npm run test:acceptance",
     "test:source": "cucumber-js --profile source",
     "test:acceptance": "node --eval \"import('node:fs').then(({mkdirSync}) => mkdirSync('tmp/test', { recursive: true }))\" && cucumber-js --profile acceptance",
-    "coverage": "c8 --all --src=src --include=src/**/*.ts --exclude=src/index.ts --exclude=src/**/*.d.ts --extension=.ts --reporter=json --reporter=text-summary --reports-dir=tmp/test/coverage --temp-directory=tmp/test/coverage/v8 npm --silent run test:source"
+    "coverage": "c8 --all --src=src --include=src/**/*.ts --exclude=src/index.ts --exclude=src/**/*.d.ts --extension=.ts --reporter=html --reporter=cobertura --reporter=json --reporter=text-summary --reports-dir=tmp/test/coverage --temp-directory=tmp/test/coverage/v8 npm --silent run test:source"
   },
   "devDependencies": {
     "@cucumber/cucumber": "13.2.1",
