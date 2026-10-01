@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  build-and-test:
-    name: Build and test
+  build:
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
@@ -29,19 +29,77 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Upload build
+        uses: actions/upload-artifact@v7
+        with:
+          name: build
+          path: dist
+          if-no-files-found: error
+
+  test:
+    name: Test
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Download build
+        uses: actions/download-artifact@v8
+        with:
+          name: build
+          path: dist
+
       - name: Test
         run: npm test
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report
+          path: temp/test/cucumber-test.json
+          if-no-files-found: warn
+
+  coverage:
+    name: Coverage
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Download build
+        uses: actions/download-artifact@v8
+        with:
+          name: build
+          path: dist
 
       - name: Coverage
         run: npm run coverage
 
-      - name: Upload CI artifacts
+      - name: Upload coverage
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: ci-output
+          name: coverage
+          path: temp/test/coverage
           if-no-files-found: warn
-          path: |
-            dist/index.html
-            temp/test/cucumber-test.json
-            temp/test/coverage
