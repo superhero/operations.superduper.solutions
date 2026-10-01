@@ -124,131 +124,99 @@ const localInputs = Object.entries(result.metafile.inputs)
 const intermediateOutputs = Object.entries(result.metafile.outputs)
   .sort(([a], [b]) => a.localeCompare(b));
 
-const processDiagram = [
-  "classDiagram",
-  "  direction TB",
+const buildDiagram = [
+  "---",
+  "config:",
+  "    look: classic",
+  "    theme: base",
+  "    themeVariables:",
+  '        fontFamily: "monospace"',
+  '        lineColor: "#D65D0E"',
+  "---",
   "",
-  "  class ValidateTypeScript {",
-  "    tsc --project tsconfig.json --noEmit",
-  "  }",
-  "",
-  "  class CompileSvelte {",
-  "    Svelte compiler API",
-  "  }",
-  '  note for CompileSvelte "compile(source, { generate: \'client\', dev: false })"',
-  "",
-  "  class BundleApplication {",
-  "    esbuild build API",
-  "  }",
-  '  note for BundleApplication "build({ bundle: true, format: \'esm\', target: \'es2024\' })"',
-  "",
-  "  class MinifyAndInline {",
-  "    minify: true",
-  "    loaders: assets -> dataurl",
-  "  }",
-  "",
-  "  class AssembleHtml {",
-  "    inject bundled JavaScript into source/index.html",
-  "    inject generated CSS into source/index.html",
-  "  }",
-  "",
-  "  class DistributionFile {",
-  "    dist/index.html",
-  `    raw ${formatBytes(finalBytes)}`,
-  `    gzip ${formatBytes(finalGzipBytes)}`,
-  "  }",
-  "",
-  "  ValidateTypeScript --> CompileSvelte",
-  "  CompileSvelte --> BundleApplication",
-  "  BundleApplication --> MinifyAndInline",
-  "  MinifyAndInline --> AssembleHtml",
-  "  AssembleHtml --> DistributionFile"
-].join("\n");
-
-const fileDiagram = [
-  "classDiagram",
-  "  direction TB"
+  "flowchart TB",
+  '    subgraph Inputs["_Inputs_"]'
 ];
+
+const sourceNodeIds = [];
+const svelteNodeIds = [];
+const otherNodeIds = [];
 
 localInputs.forEach(([path, metadata], index) =>
 {
-  fileDiagram.push(
-    "",
-    `  class Input${index} {`,
-    "    <<input>>",
-    `    +Path: ${path}`,
-    `    +Size: ${formatBytes(metadata.bytes)}`,
-    "  }"
-  );
-});
+  const id = `Source${index}`;
+  const label = `${path}<br>${formatBytes(metadata.bytes)}`;
 
-fileDiagram.push(
-  "",
-  "  class HtmlTemplate {",
-  "    <<input>>",
-  `    +Path: ${templatePath}`,
-  `    +Size: ${formatBytes(templateBytes)}`,
-  "    +Role: HTML template",
-  "  }"
-);
+  buildDiagram.push(`        ${id}["${label}"]:::artifact`);
 
-intermediateOutputs.forEach(([path, metadata], index) =>
-{
-  fileDiagram.push(
-    "",
-    `  class Bundle${index} {`,
-    "    <<intermediate>>",
-    `    +Path: ${path}`,
-    `    +Size: ${formatBytes(metadata.bytes)}`,
-    "    +Role: esbuild output",
-    "  }"
-  );
-});
-
-fileDiagram.push(
-  "",
-  "  class FinalOutput {",
-  "    <<output>>",
-  `    +Path: ${outputPath}`,
-  `    +Raw size: ${formatBytes(finalBytes)}`,
-  `    +Gzip size: ${formatBytes(finalGzipBytes)}`,
-  "    +Role: deployable file",
-  "  }"
-);
-
-localInputs.forEach(([,], index) =>
-{
-  if (intermediateOutputs.length === 0)
+  if (path.endsWith(".ts"))
   {
-    fileDiagram.push(`  Input${index} --> FinalOutput : contributes to`);
+    sourceNodeIds.push(id);
+  }
+  else if (path.endsWith(".svelte"))
+  {
+    svelteNodeIds.push(id);
   }
   else
   {
-    intermediateOutputs.forEach(([,], outputIndex) =>
-    {
-      fileDiagram.push(`  Input${index} --> Bundle${outputIndex} : bundled into`);
-    });
+    otherNodeIds.push(id);
   }
 });
 
-fileDiagram.push("  HtmlTemplate --> FinalOutput : template for");
+buildDiagram.push(
+  `        HtmlTemplate["${templatePath}<br>${formatBytes(templateBytes)}"]:::artifact`,
+  "    end",
+  "",
+  '    subgraph Build["_Build_"]',
+  '        ValidateTypeScript["**Validate TypeScript**<br>tsc --project tsconfig.json --noEmit"]:::operation',
+  '        CompileSvelte["**Compile Svelte**<br>Svelte compiler API"]:::operation',
+  '        BundleApplication["**Bundle Application**<br>esbuild"]:::operation',
+  '        OptimizeBundle["**Optimize Bundle**<br>minify + asset data URLs"]:::operation',
+  '        AssembleHtml["**Assemble HTML**<br>inject JavaScript + CSS"]:::operation',
+  "    end",
+  "",
+  '    subgraph Output["_Output_"]',
+  `        FinalOutput["**${outputPath}**<br>raw ${formatBytes(finalBytes)} · gzip ${formatBytes(finalGzipBytes)}"]:::output`,
+  "    end",
+  ""
+);
 
-intermediateOutputs.forEach(([,], index) =>
+sourceNodeIds.forEach(id =>
 {
-  fileDiagram.push(`  Bundle${index} --> FinalOutput : injected into`);
+  buildDiagram.push(`    ${id} --> ValidateTypeScript`);
 });
 
+svelteNodeIds.forEach(id =>
+{
+  buildDiagram.push(`    ${id} --> CompileSvelte`);
+});
+
+otherNodeIds.forEach(id =>
+{
+  buildDiagram.push(`    ${id} --> BundleApplication`);
+});
+
+buildDiagram.push(
+  "    ValidateTypeScript --> BundleApplication",
+  "    CompileSvelte --> BundleApplication",
+  "    BundleApplication --> OptimizeBundle",
+  "    OptimizeBundle --> AssembleHtml",
+  "    HtmlTemplate --> AssembleHtml",
+  "    AssembleHtml --> FinalOutput",
+  "",
+  "    classDef group fill:#282828,stroke:#282828,color:#7C6F64,stroke-width:8px",
+  "    classDef artifact fill:#504945,stroke:#504945,color:#EBDBB2,stroke-width:4px",
+  "    classDef operation fill:#3C3836,stroke:#665C54,color:#EBDBB2,stroke-width:4px",
+  "    classDef output fill:#1D2021,stroke:#D65D0E,color:#EBDBB2,stroke-width:4px",
+  "",
+  "    class Inputs,Build,Output group"
+);
+
 const report = [
-  "## Build process",
+  "## Build",
   "",
   "```mermaid",
-  processDiagram,
-  "```",
-  "",
-  "## Build files",
-  "",
-  "```mermaid",
-  ...fileDiagram,
+  ...buildDiagram,
   "```",
   ""
 ].join("\n");
