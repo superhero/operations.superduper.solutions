@@ -11,8 +11,8 @@ permissions:
   deployments: write
 
 jobs:
-  build:
-    name: Build
+  bundle:
+    name: Bundle
     runs-on: ubuntu-latest
 
     steps:
@@ -27,19 +27,19 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Build
+      - name: Bundle
         run: npx --no-install vite build
 
       - name: Upload build
         uses: actions/upload-artifact@v7
         with:
-          name: build
+          name: bundle
           path: dist
           if-no-files-found: error
 
   test:
     name: Test
-    needs: build
+    needs: bundle
     runs-on: ubuntu-latest
 
     steps:
@@ -57,7 +57,7 @@ jobs:
       - name: Download build
         uses: actions/download-artifact@v8
         with:
-          name: build
+          name: bundle
           path: dist
 
       - name: Test
@@ -91,7 +91,7 @@ jobs:
       - name: Download build
         uses: actions/download-artifact@v8
         with:
-          name: build
+          name: bundle
           path: dist
 
       - name: Coverage
@@ -138,7 +138,7 @@ jobs:
       - name: Download build
         uses: actions/download-artifact@v8
         with:
-          name: build
+          name: bundle
           path: dist
 
       - name: Check deployment credentials
