@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   deployments: write
 
@@ -113,14 +114,19 @@ jobs:
           path: dist
 
       - name: Test
-        run: npm test
+        run: |
+          mkdir -p temp/test
+          set -o pipefail
+          npm test 2>&1 | tee temp/test/test-output.txt
 
       - name: Hand off test report
         if: always()
         continue-on-error: true
         uses: actions/cache/save@v6
         with:
-          path: temp/test/cucumber-test.json
+          path: |
+            temp/test/cucumber-test.json
+            temp/test/test-output.txt
           key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
 
   coverage:
@@ -150,14 +156,19 @@ jobs:
           path: dist
 
       - name: Coverage
-        run: npm run coverage
+        run: |
+          mkdir -p temp/test
+          set -o pipefail
+          npm run coverage 2>&1 | tee temp/test/coverage-output.txt
 
       - name: Hand off coverage report
         if: always()
         continue-on-error: true
         uses: actions/cache/save@v6
         with:
-          path: temp/test/coverage
+          path: |
+            temp/test/coverage
+            temp/test/coverage-output.txt
           key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
 
   test-report:
@@ -171,8 +182,25 @@ jobs:
       - name: Restore test report
         uses: actions/cache/restore@v6
         with:
-          path: temp/test/cucumber-test.json
+          path: |
+            temp/test/cucumber-test.json
+            temp/test/test-output.txt
           key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Test summary
+        if: always()
+        run: |
+          {
+            echo "## Test"
+            echo
+            echo '```text'
+            if [[ -f temp/test/test-output.txt ]]; then
+              cat temp/test/test-output.txt
+            else
+              echo "No test output was produced."
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish test report
         uses: actions/upload-artifact@v7
@@ -190,6 +218,11 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
       - name: Download bundle
         uses: actions/download-artifact@v8
         with:
@@ -211,6 +244,32 @@ jobs:
           command: pages deploy dist --project-name=operations-superduper-solutions
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Deployment summary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          previous_sha="$(
+            gh api \
+              --method GET \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs" \
+              -f branch="${GITHUB_REF_NAME}" \
+              -f status=success \
+              -f per_page=1 \
+              --jq '.workflow_runs[0].head_sha // empty'
+          )"
+
+          {
+            echo "## Deployment"
+            echo
+            echo "### Commits"
+
+            if [[ -n "$previous_sha" ]] && git cat-file -e "${previous_sha}^{commit}" 2>/dev/null; then
+              git log --reverse --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" "${previous_sha}..${GITHUB_SHA}"
+            else
+              git log -1 --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" "${GITHUB_SHA}"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
   coverage-report:
     name: Coverage Report
     needs:
@@ -224,8 +283,25 @@ jobs:
       - name: Restore coverage report
         uses: actions/cache/restore@v6
         with:
-          path: temp/test/coverage
+          path: |
+            temp/test/coverage
+            temp/test/coverage-output.txt
           key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          {
+            echo "## Coverage"
+            echo
+            echo '```text'
+            if [[ -f temp/test/coverage-output.txt ]]; then
+              cat temp/test/coverage-output.txt
+            else
+              echo "No coverage output was produced."
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish coverage report
         uses: actions/upload-artifact@v7
