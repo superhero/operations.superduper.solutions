@@ -63,8 +63,31 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Upload test report
+      - name: Hand off test report
         if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report-data
+          path: temp/test/cucumber-test.json
+          if-no-files-found: warn
+          retention-days: 1
+
+  test-report:
+    name: Test Report
+    needs: test
+    if: always()
+    continue-on-error: true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download test report data
+        uses: actions/download-artifact@v8
+        with:
+          name: test-report-data
+          path: temp/test
+
+      - name: Publish test report
         uses: actions/upload-artifact@v7
         with:
           name: test-report
@@ -97,8 +120,31 @@ jobs:
       - name: Coverage
         run: npm run coverage
 
-      - name: Upload coverage
+      - name: Hand off coverage report
         if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report-data
+          path: temp/test/coverage
+          if-no-files-found: warn
+          retention-days: 1
+
+  coverage-report:
+    name: Coverage Report
+    needs: coverage
+    if: always()
+    continue-on-error: true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download coverage report data
+        uses: actions/download-artifact@v8
+        with:
+          name: coverage-report-data
+          path: temp/test/coverage
+
+      - name: Publish coverage report
         uses: actions/upload-artifact@v7
         with:
           name: coverage
