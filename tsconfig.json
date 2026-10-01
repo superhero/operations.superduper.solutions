@@ -8,7 +8,7 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "rootDir": "src",
+    "rootDir": "source",
     "outDir": "dist",
     "strict": true,
     "noEmitOnError": true,
