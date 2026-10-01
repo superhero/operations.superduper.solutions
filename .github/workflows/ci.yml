@@ -446,6 +446,12 @@ jobs:
 
               if [[ -n "$expanded" ]]; then
                 printf '%s\n' "$expanded"
+                echo
+                echo "---"
+                echo
+                git log -1 \
+                  --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" \
+                  "$squash_sha"
               else
                 git log -1 \
                   --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" \
