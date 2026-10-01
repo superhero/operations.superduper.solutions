@@ -8,7 +8,7 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "rootDir": "source",
+    "rootDir": "src",
     "outDir": "dist",
     "strict": true,
     "noEmitOnError": true,
@@ -24,7 +24,7 @@
     "inlineSources": true
   },
   "include": [
-    "source/**/*.ts",
-    "source/**/*.json"
+    "src/**/*.ts",
+    "src/**/*.json"
   ]
 }

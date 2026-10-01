@@ -1,12 +1,12 @@
 export default {
   format: [
     "pretty",
-    "json:temp/test/cucumber-test.json"
+    "json:tmp/test/cucumber-test.json"
   ],
   import: [
-    "source/**/*.test.mjs"
+    "src/**/*.test.mjs"
   ],
   paths: [
-    "source/**/*.feature"
+    "src/**/*.feature"
   ]
 };
