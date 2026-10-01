@@ -197,7 +197,7 @@ jobs:
           content="$(printf '%s\n' "$badge" | base64 -w 0)"
           sha="$(
             gh api \
-              "repos/${GITHUB_REPOSITORY}/contents/coverage.json?ref=badges" \
+              "repos/${GITHUB_REPOSITORY}/contents/coverage.json?ref=dev" \
               --jq '.sha'
           )"
 
@@ -206,7 +206,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/contents/coverage.json" \
             -f message="chore: update coverage badge" \
             -f content="$content" \
-            -f branch="badges" \
+            -f branch="dev" \
             -f sha="$sha" \
             >/dev/null
 
