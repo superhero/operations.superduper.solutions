@@ -307,7 +307,6 @@ jobs:
           {
             echo "| Name | Result |"
             echo "| --- | --- |"
-            echo "| **Last commit** | \`${GITHUB_SHA:0:8}\` |"
             echo "| **Preview URL** | ${DEPLOYMENT_URL} |"
             echo
             echo "### Commits"
