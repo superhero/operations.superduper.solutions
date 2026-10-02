@@ -4,7 +4,7 @@ Thank you for contributing to `operations.superduper.solutions`.
 
 ## Architectural decision records
 
-- [Simplify — KISS and YAGNI](doc/ADR/simplify.md)
+- [Simplify](doc/ADR/simplify.md)
 - [Colors](doc/ADR/colors.md)
 - [Security](doc/ADR/security.md)
 
