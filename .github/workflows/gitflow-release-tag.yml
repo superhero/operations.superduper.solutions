@@ -1,0 +1,79 @@
+name: Gitflow release tag
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Create release tag
+    if: >-
+      github.event.pull_request.merged == true &&
+      (
+        startsWith(github.event.pull_request.head.ref, 'release/') ||
+        startsWith(github.event.pull_request.head.ref, 'hotfix/')
+      )
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+
+      - name: Create annotated SemVer tag
+        shell: bash
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          set -euo pipefail
+
+          case "$HEAD_BRANCH" in
+            release/*)
+              kind="release"
+              version="${HEAD_BRANCH#release/}"
+              ;;
+            hotfix/*)
+              kind="hotfix"
+              version="${HEAD_BRANCH#hotfix/}"
+              ;;
+            *)
+              echo "::error::Unsupported source branch '$HEAD_BRANCH'."
+              exit 1
+              ;;
+          esac
+
+          semver_re='^[0-9]+\.[0-9]+\.[0-9]+$'
+          [[ "$version" =~ $semver_re ]] || {
+            echo "::error::$kind version '$version' must be unprefixed SemVer MAJOR.MINOR.PATCH."
+            exit 1
+          }
+
+          git fetch --quiet --tags --force
+
+          if git rev-parse -q --verify "refs/tags/$version" >/dev/null; then
+            existing="$(git rev-parse "refs/tags/$version^{}")"
+            if [[ "$existing" == "$MERGE_SHA" ]]; then
+              echo "Tag '$version' already points to this merge commit; nothing to do."
+              exit 0
+            fi
+
+            echo "::error::Tag '$version' already exists on a different commit."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "$version" "$MERGE_SHA" -m "$kind $version"
+          git push origin "refs/tags/$version"
+
+          echo "Created annotated tag '$version' on $MERGE_SHA."
