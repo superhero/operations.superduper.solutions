@@ -22,7 +22,6 @@
     "rewriteRelativeImportExtensions": true,
     "declaration": true,
     "inlineSources": true,
-    "baseUrl": ".",
     "paths": {
       "$lib": [
         "./src/lib"
