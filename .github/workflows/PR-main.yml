@@ -1,14 +1,12 @@
 name: PR-main
 run-name: >-
-  ${{ github.event_name == 'pull_request' && format('PR-main #{0}: {1}', github.event.pull_request.number, github.event.pull_request.title) || (github.event_name == 'push' && format('Main push: {0}', github.event.head_commit.message)) || format('Main manual checks: {0}', github.ref_name) }}
+  ${{ github.event_name == 'pull_request' && format('PR-main #{0} ({1}): {2}', github.event.pull_request.number, github.event.action, github.event.pull_request.title) || format('Main manual checks: {0}', github.ref_name) }}
 
 on:
   pull_request:
     branches:
       - main
-  push:
-    branches:
-      - main
+    types: [opened, synchronize, reopened, closed]
   workflow_dispatch:
 
 permissions:
@@ -16,10 +14,10 @@ permissions:
   contents: read
 
 jobs:
-  # Validate and build before merging. The push run promotes this bundle without rebuilding.
+  # Validate and build before merging. The merged-PR run promotes this bundle without rebuilding.
   topology:
     name: Gitflow topology
-    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    if: (github.event_name == 'pull_request' && github.event.action != 'closed') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
 
     steps:
@@ -141,7 +139,7 @@ jobs:
 
   installation:
     name: Installation
-    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    if: (github.event_name == 'pull_request' && github.event.action != 'closed') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
 
     steps:
@@ -166,7 +164,7 @@ jobs:
 
   type-check:
     name: Type Check
-    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    if: (github.event_name == 'pull_request' && github.event.action != 'closed') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     needs: installation
     runs-on: ubuntu-latest
 
@@ -192,7 +190,7 @@ jobs:
 
   source-test:
     name: Source Test
-    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    if: (github.event_name == 'pull_request' && github.event.action != 'closed') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     needs: type-check
     runs-on: ubuntu-latest
 
@@ -231,7 +229,7 @@ jobs:
 
   coverage:
     name: Coverage
-    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    if: (github.event_name == 'pull_request' && github.event.action != 'closed') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     needs: source-test
     outputs:
       statements: ${{ steps.coverage.outputs.statements }}
@@ -288,7 +286,7 @@ jobs:
 
   bundle:
     name: Bundle
-    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    if: (github.event_name == 'pull_request' && github.event.action != 'closed') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     needs: coverage
     runs-on: ubuntu-latest
 
@@ -321,7 +319,7 @@ jobs:
 
   test:
     name: Acceptance Test
-    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    if: (github.event_name == 'pull_request' && github.event.action != 'closed') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     needs: bundle
     runs-on: ubuntu-latest
 
@@ -370,7 +368,7 @@ jobs:
       - source-test
       - coverage
       - test
-    if: always() && (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
+    if: always() && ((github.event_name == 'pull_request' && github.event.action != 'closed') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
     continue-on-error: true
     runs-on: ubuntu-latest
 
@@ -424,7 +422,7 @@ jobs:
     needs:
       - coverage
       - test-report
-    if: always() && (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
+    if: always() && ((github.event_name == 'pull_request' && github.event.action != 'closed') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
     continue-on-error: true
     runs-on: ubuntu-latest
 
@@ -461,10 +459,10 @@ jobs:
           path: tmp/test/coverage
           if-no-files-found: warn
 
-  # Release work runs only after a push to main; it does not depend on skipped validation jobs.
+  # Release work runs only after a PR is merged into main; it does not repeat validation.
   context:
     name: Resolve release context
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
     permissions:
       contents: read
       pull-requests: read
@@ -483,27 +481,30 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
-          MERGE_SHA: ${{ github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
         run: |
           set -euo pipefail
 
           pr="$(
-            gh api "repos/$REPOSITORY/commits/$MERGE_SHA/pulls" |
-              jq -c '[
-                .[] |
+            gh api "repos/$REPOSITORY/pulls/$PR_NUMBER" |
+              jq -c --arg repo "$REPOSITORY" --arg sha "$MERGE_SHA" '
                 select(
+                  .merged == true and
+                  .merge_commit_sha == $sha and
                   .base.ref == "main" and
+                  .base.repo.full_name == $repo and
+                  .head.repo.full_name == $repo and
                   (
                     (.head.ref | startswith("release/")) or
                     (.head.ref | startswith("hotfix/"))
                   )
-                )
-              ][0] // empty'
+                )'
           )"
 
           if [[ -z "$pr" ]]; then
             echo "applicable=false" >> "$GITHUB_OUTPUT"
-            echo "No merged release/* or hotfix/* PR is associated with $MERGE_SHA; post-release work is not applicable."
+            echo "PR #$PR_NUMBER is not a merged same-repository release/* or hotfix/* PR for $MERGE_SHA; post-release work is not applicable."
             exit 0
           fi
 
@@ -609,20 +610,35 @@ jobs:
         run: |
           set -euo pipefail
 
-          run_id="$(
+          candidates="$(
             gh run list \
               --repo "$REPOSITORY" \
-              --workflow main.yml \
+              --workflow PR-main.yml \
               --event pull_request \
               --commit "$HEAD_SHA" \
               --status success \
               --limit 20 \
               --json databaseId \
-              --jq '.[0].databaseId // empty'
+              --jq '.[].databaseId'
           )"
 
+          # A successful merged-PR run has no bundle. Skip it when rerunning a release.
+          run_id=""
+          while IFS= read -r candidate; do
+            [[ -n "$candidate" ]] || continue
+            artifact_id="$(
+              gh api --method GET "repos/$REPOSITORY/actions/runs/$candidate/artifacts" \
+                -f name=bundle \
+                --jq '.artifacts[] | select(.expired == false) | .id'
+            )"
+            if [[ -n "$artifact_id" ]]; then
+              run_id="$candidate"
+              break
+            fi
+          done <<<"$candidates"
+
           [[ -n "$run_id" ]] || {
-            echo "::error::No successful release CI run found for PR #$PR_NUMBER at $HEAD_SHA."
+            echo "::error::No successful release CI run with an unexpired bundle found for PR #$PR_NUMBER at $HEAD_SHA."
             exit 1
           }
 
@@ -831,10 +847,10 @@ jobs:
           MERGE_SHA: ${{ steps.sync.outputs.merge_sha }}
         run: |
           set -euo pipefail
-          # Explicit dispatch is needed because GITHUB_TOKEN suppresses push workflows.
+          # Explicit dispatch is needed because GITHUB_TOKEN suppresses automatic PR workflows.
           # Check the resulting develop commit, not the pre-merge main commit.
           jq -n --arg sha "$MERGE_SHA" '{ref: "develop", inputs: {commit_sha: $sha}}' |
-            gh api --method POST "repos/$REPOSITORY/actions/workflows/develop.yml/dispatches" --input -
+            gh api --method POST "repos/$REPOSITORY/actions/workflows/PR-develop.yml/dispatches" --input -
 
       - name: Synchronization summary
         if: always()
