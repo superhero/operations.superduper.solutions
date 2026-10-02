@@ -89,7 +89,7 @@ jobs:
         run: |
           mkdir -p tmp/test/coverage/v8
           set -o pipefail
-          npm --silent run coverage:source 2>&1 | tee tmp/test/source-test-output.txt
+          npm --silent run test:source:coverage 2>&1 | tee tmp/test/source-test-output.txt
 
       - name: Hand off source test data
         if: always()
@@ -141,7 +141,7 @@ jobs:
         run: |
           mkdir -p tmp/test
           set -o pipefail
-          npm --silent run coverage 2>&1 | tee tmp/test/coverage-output.txt
+          npx --no-install c8 report --all --src=src --include=src/**/*.ts --exclude=src/index.ts --exclude=src/**/*.d.ts --extension=.ts --reporter=html --reporter=json --reporter=text-summary --reports-dir=tmp/test/coverage --temp-directory=tmp/test/coverage/v8 --check-coverage --statements 100 --branches 100 --functions 100 --lines 100 2>&1 | tee tmp/test/coverage-output.txt
 
           value="$(grep -E 'Statements[[:space:]]*:' tmp/test/coverage-output.txt | tail -1 | sed -E 's/.*:[[:space:]]*([0-9]+(\.[0-9]+)?)%.*/\1/')"
           test -n "$value"
