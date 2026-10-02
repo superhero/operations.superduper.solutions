@@ -6,6 +6,7 @@ Thank you for contributing to `operations.superduper.solutions`.
 
 - [Simplify — KISS and YAGNI](doc/ADR/simplify.md)
 - [Colors](doc/ADR/colors.md)
+- [Security](doc/ADR/security.md)
 
 ## Contribution license
 
@@ -34,7 +35,3 @@ The project uses `AGPL-3.0-only`, not `AGPL-3.0-or-later`.
 ## Modified versions
 
 Follow `LICENSE-ADDITIONAL-TERMS` when modifying or redistributing the software.
-
-## Security
-
-Do not commit secrets or credentials. Use environment variables or an appropriate secrets-management mechanism for runtime secrets.
