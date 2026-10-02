@@ -1,0 +1,324 @@
+name: Post-release
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+jobs:
+  tag:
+    name: Create release tag
+    if: >-
+      github.event.pull_request.merged == true &&
+      (
+        startsWith(github.event.pull_request.head.ref, 'release/') ||
+        startsWith(github.event.pull_request.head.ref, 'hotfix/')
+      )
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+
+      - name: Create annotated SemVer tag
+        shell: bash
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          set -euo pipefail
+
+          case "$HEAD_BRANCH" in
+            release/*)
+              kind="release"
+              version="${HEAD_BRANCH#release/}"
+              ;;
+            hotfix/*)
+              kind="hotfix"
+              version="${HEAD_BRANCH#hotfix/}"
+              ;;
+            *)
+              echo "::error::Unsupported source branch '$HEAD_BRANCH'."
+              exit 1
+              ;;
+          esac
+
+          semver_re='^[0-9]+\.[0-9]+\.[0-9]+$'
+          [[ "$version" =~ $semver_re ]] || {
+            echo "::error::$kind version '$version' must be unprefixed SemVer MAJOR.MINOR.PATCH."
+            exit 1
+          }
+
+          git fetch --quiet --tags --force
+
+          if git rev-parse -q --verify "refs/tags/$version" >/dev/null; then
+            existing="$(git rev-parse "refs/tags/$version^{}")"
+            if [[ "$existing" == "$MERGE_SHA" ]]; then
+              echo "Tag '$version' already points to this merge commit; nothing to do."
+              exit 0
+            fi
+
+            echo "::error::Tag '$version' already exists on a different commit."
+            exit 1
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git tag -a "$version" "$MERGE_SHA" -m "$kind $version"
+          git push origin "refs/tags/$version"
+
+  deploy:
+    name: Deploy validated bundle
+    if: >-
+      github.event.pull_request.merged == true &&
+      (
+        startsWith(github.event.pull_request.head.ref, 'release/') ||
+        startsWith(github.event.pull_request.head.ref, 'hotfix/')
+      )
+    permissions:
+      actions: read
+      contents: read
+      deployments: write
+      pull-requests: read
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+    steps:
+      - name: Resolve validated CI run
+        id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+
+          run_id="$(
+            gh run list \
+              --repo "$REPOSITORY" \
+              --workflow ci.yml \
+              --event pull_request \
+              --commit "$HEAD_SHA" \
+              --status success \
+              --limit 20 \
+              --json databaseId \
+              --jq '.[0].databaseId // empty'
+          )"
+
+          [[ -n "$run_id" ]] || {
+            echo "::error::No successful release CI run found for PR #$PR_NUMBER at $HEAD_SHA."
+            exit 1
+          }
+
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
+
+      - name: Download validated bundle
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ steps.release.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          gh run download "$RUN_ID" \
+            --repo "$REPOSITORY" \
+            --name bundle \
+            --dir dist
+
+      - name: Check deployment credentials
+        if: env.CLOUDFLARE_API_TOKEN == '' || env.CLOUDFLARE_ACCOUNT_ID == ''
+        run: |
+          echo "::error::Cloudflare deployment credentials are not configured in GitHub Actions."
+          exit 1
+
+      - name: Deploy validated bundle to Cloudflare Pages
+        id: cloudflare
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=operations-superduper-solutions
+
+      - name: Record GitHub deployment
+        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
+          PAGES_DEPLOYMENT_ID: ${{ steps.cloudflare.outputs.pages-deployment-id }}
+          PAGES_ENVIRONMENT: ${{ steps.cloudflare.outputs.pages-environment }}
+        run: |
+          set -euo pipefail
+
+          environment="${PAGES_ENVIRONMENT:-production}"
+
+          deployment_id="$(
+            jq -n \
+              --arg ref "$MERGE_SHA" \
+              --arg environment "$environment" \
+              '{
+                ref: $ref,
+                auto_merge: false,
+                required_contexts: [],
+                environment: $environment,
+                production_environment: true,
+                description: "Cloudflare Pages"
+              }' |
+            gh api \
+              --method POST \
+              "repos/${GITHUB_REPOSITORY}/deployments" \
+              --input - \
+              --jq '.id'
+          )"
+
+          jq -n \
+            --arg environment "$environment" \
+            --arg environment_url "$DEPLOYMENT_URL" \
+            --arg log_url "https://dash.cloudflare.com/${CLOUDFLARE_ACCOUNT_ID}/pages/view/operations-superduper-solutions/${PAGES_DEPLOYMENT_ID}" \
+            '{
+              state: "success",
+              environment: $environment,
+              environment_url: $environment_url,
+              log_url: $log_url,
+              description: "Cloudflare Pages",
+              auto_inactive: false
+            }' |
+          gh api \
+            --method POST \
+            "repos/${GITHUB_REPOSITORY}/deployments/${deployment_id}/statuses" \
+            --input - \
+            >/dev/null
+
+      - name: Deployment summary
+        env:
+          DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
+          SOURCE_RUN_ID: ${{ steps.release.outputs.run_id }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          {
+            echo "**Preview URL:** $DEPLOYMENT_URL"
+            echo
+            echo "**Promoted artifact:** CI run #$SOURCE_RUN_ID"
+            echo
+            echo "**Source:** PR #$PR_NUMBER ($SOURCE_BRANCH @ ${SOURCE_SHA:0:7})"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  backmerge:
+    name: Open main to develop back-merge
+    if: >-
+      github.event.pull_request.merged == true &&
+      (
+        startsWith(github.event.pull_request.head.ref, 'release/') ||
+        startsWith(github.event.pull_request.head.ref, 'hotfix/')
+      )
+    permissions:
+      contents: read
+      pull-requests: write
+      statuses: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GITHUB_APP_CLIENT_ID || vars.GH_APP_CLIENT_ID }}
+          app-id: ${{ vars.GH_APP_ID || vars.GITHUB_APP_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY || secrets.GH_APP_PRIVATE_KEY }}
+          permission-contents: read
+          permission-pull-requests: write
+          permission-statuses: write
+
+      - name: Check whether develop already contains main
+        id: sync
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          main_sha="$(gh api "repos/$REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          develop_sha="$(gh api "repos/$REPOSITORY/git/ref/heads/develop" --jq '.object.sha')"
+
+          comparison="$(gh api "repos/$REPOSITORY/compare/$main_sha...$develop_sha")"
+          behind_by="$(jq -r '.behind_by' <<<"$comparison")"
+
+          if [[ "$behind_by" == "0" ]]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            echo "develop already contains main; no back-merge PR is needed."
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create or reuse main to develop PR
+        if: steps.sync.outputs.needed == 'true'
+        id: pr
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          pr_number="$(
+            gh pr list \
+              --repo "$REPOSITORY" \
+              --state open \
+              --base develop \
+              --head main \
+              --json number \
+              --jq '.[0].number // empty'
+          )"
+
+          if [[ -z "$pr_number" ]]; then
+            pr_url="$(
+              gh pr create \
+                --repo "$REPOSITORY" \
+                --base develop \
+                --head main \
+                --title "Back-merge main into develop" \
+                --body "Automatic AVH/Gitflow synchronization after release or hotfix completion."
+            )"
+            pr_number="${pr_url##*/}"
+          fi
+
+          head_sha="$(
+            gh api "repos/$REPOSITORY/pulls/$pr_number" --jq '.head.sha'
+          )"
+
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Satisfy topology status for known-valid automatic path
+        if: steps.sync.outputs.needed == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+
+          gh api \
+            --method POST \
+            "repos/$REPOSITORY/statuses/$HEAD_SHA" \
+            -f state=success \
+            -f context="Gitflow topology" \
+            -f description="Known-valid automatic main → develop AVH back-merge"
