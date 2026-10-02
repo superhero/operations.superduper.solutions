@@ -24,11 +24,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GITHUB_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY }}
+          permission-contents: read
+          permission-pull-requests: write
+          permission-statuses: write
+
       - name: Check whether develop already contains main
         id: sync
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
@@ -54,18 +64,29 @@ jobs:
         id: pr
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
 
           pr_number="$(
-            gh pr list               --repo "$REPOSITORY"               --state open               --base develop               --head main               --json number               --jq '.[0].number // empty'
+            gh pr list \
+              --repo "$REPOSITORY" \
+              --state open \
+              --base develop \
+              --head main \
+              --json number \
+              --jq '.[0].number // empty'
           )"
 
           if [[ -z "$pr_number" ]]; then
             pr_url="$(
-              gh pr create                 --repo "$REPOSITORY"                 --base develop                 --head main                 --title "Back-merge main into develop"                 --body "Automatic AVH/Gitflow synchronization after release or hotfix completion."
+              gh pr create \
+                --repo "$REPOSITORY" \
+                --base develop \
+                --head main \
+                --title "Back-merge main into develop" \
+                --body "Automatic AVH/Gitflow synchronization after release or hotfix completion."
             )"
             pr_number="${pr_url##*/}"
             echo "Created back-merge PR #$pr_number."
@@ -84,10 +105,15 @@ jobs:
         if: steps.sync.outputs.needed == 'true'
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           REPOSITORY: ${{ github.repository }}
           HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
         run: |
           set -euo pipefail
 
-          gh api             --method POST             "repos/$REPOSITORY/statuses/$HEAD_SHA"             -f state=success             -f context="Gitflow topology"             -f description="Known-valid automatic main → develop AVH back-merge"
+          gh api \
+            --method POST \
+            "repos/$REPOSITORY/statuses/$HEAD_SHA" \
+            -f state=success \
+            -f context="Gitflow topology" \
+            -f description="Known-valid automatic main → develop AVH back-merge"
