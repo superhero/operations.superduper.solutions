@@ -36,7 +36,7 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Type Check
-        run: npx --no-install tsc --project tsconfig.json --noEmit
+        run: npm --silent run typecheck
 
       - name: Test
         run: npm --silent run test:source
