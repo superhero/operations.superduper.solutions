@@ -102,6 +102,8 @@ jobs:
             other_releases=0
             for branch in "${active_releases[@]:-}"; do
               [[ -z "$branch" || "$branch" == "$head" ]] && continue
+              branch_version="${branch#release/}"
+              git rev-parse -q --verify "refs/tags/$branch_version" >/dev/null && continue
               other_releases=$((other_releases + 1))
             done
             (( other_releases == 0 )) ||
@@ -116,6 +118,8 @@ jobs:
             other_hotfixes=0
             for branch in "${active_hotfixes[@]:-}"; do
               [[ -z "$branch" || "$branch" == "$head" ]] && continue
+              branch_version="${branch#hotfix/}"
+              git rev-parse -q --verify "refs/tags/$branch_version" >/dev/null && continue
               other_hotfixes=$((other_hotfixes + 1))
             done
             (( other_hotfixes == 0 )) ||
