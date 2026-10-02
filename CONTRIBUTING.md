@@ -34,6 +34,3 @@ Do not replace another author's copyright notice with your own.
 
 The project uses `AGPL-3.0-only`, not `AGPL-3.0-or-later`.
 
-### Additional terms
-
-Follow `LICENSE-ADDITIONAL-TERMS` when modifying or redistributing the software.
