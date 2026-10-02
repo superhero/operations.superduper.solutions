@@ -19,24 +19,20 @@ Then("the production page contains the application title", function ()
   assert.match(html, /operations\.superduper\.solutions/);
 });
 
-Then("the production page contains the OpenAPI source stage", function ()
+Then("the production page contains the workflow canvas", function ()
 {
-  assert.match(html, /OpenAPI source/);
+  assert.match(html, /Workflow canvas/);
 });
 
-Then("the production page contains the operation stage", function ()
+Then("the production page contains the add-node action", function ()
 {
-  assert.match(html, />Operation</);
+  assert.match(html, /Add node/);
 });
 
-Then("the production page contains the request stage", function ()
+Then("the production page contains the initial nodes", function ()
 {
-  assert.match(html, />Request</);
-});
-
-Then("the production page contains the result stage", function ()
-{
-  assert.match(html, />Result</);
+  assert.match(html, /Node 1/);
+  assert.match(html, /Node 2/);
 });
 
 Then("the production page contains inline JavaScript", function ()
