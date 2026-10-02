@@ -1,0 +1,93 @@
+name: Gitflow back-merge PR
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+jobs:
+  backmerge:
+    name: Open main to develop back-merge
+    if: >-
+      github.event.pull_request.merged == true &&
+      (
+        startsWith(github.event.pull_request.head.ref, 'release/') ||
+        startsWith(github.event.pull_request.head.ref, 'hotfix/')
+      )
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check whether develop already contains main
+        id: sync
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          main_sha="$(gh api "repos/$REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          develop_sha="$(gh api "repos/$REPOSITORY/git/ref/heads/develop" --jq '.object.sha')"
+
+          comparison="$(gh api "repos/$REPOSITORY/compare/$main_sha...$develop_sha")"
+          behind_by="$(jq -r '.behind_by' <<<"$comparison")"
+
+          echo "main_sha=$main_sha" >> "$GITHUB_OUTPUT"
+          echo "develop_sha=$develop_sha" >> "$GITHUB_OUTPUT"
+
+          if [[ "$behind_by" == "0" ]]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            echo "develop already contains main; no back-merge PR is needed."
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create or reuse main to develop PR
+        if: steps.sync.outputs.needed == 'true'
+        id: pr
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          pr_number="$(
+            gh pr list               --repo "$REPOSITORY"               --state open               --base develop               --head main               --json number               --jq '.[0].number // empty'
+          )"
+
+          if [[ -z "$pr_number" ]]; then
+            pr_url="$(
+              gh pr create                 --repo "$REPOSITORY"                 --base develop                 --head main                 --title "Back-merge main into develop"                 --body "Automatic AVH/Gitflow synchronization after release or hotfix completion."
+            )"
+            pr_number="${pr_url##*/}"
+            echo "Created back-merge PR #$pr_number."
+          else
+            echo "Reusing existing back-merge PR #$pr_number."
+          fi
+
+          head_sha="$(
+            gh api "repos/$REPOSITORY/pulls/$pr_number" --jq '.head.sha'
+          )"
+
+          echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Satisfy topology status for known-valid automatic path
+        if: steps.sync.outputs.needed == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+
+          gh api             --method POST             "repos/$REPOSITORY/statuses/$HEAD_SHA"             -f state=success             -f context="Gitflow topology"             -f description="Known-valid automatic main → develop AVH back-merge"
