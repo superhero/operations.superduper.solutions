@@ -21,7 +21,16 @@
     "erasableSyntaxOnly": true,
     "rewriteRelativeImportExtensions": true,
     "declaration": true,
-    "inlineSources": true
+    "inlineSources": true,
+    "baseUrl": ".",
+    "paths": {
+      "$lib": [
+        "./src/lib"
+      ],
+      "$lib/*": [
+        "./src/lib/*"
+      ]
+    }
   },
   "include": [
     "src/**/*.ts",
