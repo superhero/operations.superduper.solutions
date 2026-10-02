@@ -30,7 +30,7 @@ jobs:
           node-version-file: .node-version
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Hand off dependencies
         uses: actions/cache/save@v6
@@ -87,6 +87,7 @@ jobs:
 
       - name: Source Test
         run: |
+          mkdir -p tmp/test
           set -o pipefail
           npm --silent run test:source:coverage 2>&1 | tee tmp/test/source-test-output.txt
 
