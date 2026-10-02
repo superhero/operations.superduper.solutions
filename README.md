@@ -6,16 +6,9 @@
 
 A browser-based platform for composing OpenAPI operations into reusable workflows.
 
-## Current development milestone
+## Development status
 
-The current prototype is limited to the workflow diagram interaction itself:
-
-- add nodes;
-- edit node names;
-- move nodes;
-- connect nodes with directed edges.
-
-OpenAPI integration, execution, plugins, persistence, and other workflow behavior are later milestones and are intentionally outside the current development scope.
+This project is under active development and is currently in a pre-release state.
 
 ## License
 
