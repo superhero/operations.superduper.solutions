@@ -1,4 +1,6 @@
-name: develop CI
+name: Develop PR
+run-name: >-
+  ${{ github.event_name == 'pull_request' && format('Develop PR #{0}: {1}', github.event.pull_request.number, github.event.pull_request.title) || format('Develop health check: {0}', inputs.commit_sha || github.sha) }}
 
 on:
   # Validate proposed development changes before merging, not on the resulting push.
