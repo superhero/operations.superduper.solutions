@@ -367,15 +367,20 @@ jobs:
           set -euo pipefail
 
           # All PR checks include this running Post-release job on main.
-          # Watch only the develop.yml run for this PR and exact head instead.
+          # develop.yml targets develop; match its PR event and exact main head.
+          # Do not rely on the run's pull_requests array, which can be empty.
           run_id=""
           for attempt in {1..12}; do
             run_id="$(
-              gh api "repos/$REPOSITORY/actions/workflows/develop.yml/runs?event=pull_request&head_sha=$HEAD_SHA&per_page=100" |
-                jq -r --argjson pr "$PR_NUMBER" '[
-                  .workflow_runs[] |
-                  select(any(.pull_requests[]?; .number == $pr))
-                ] | sort_by(.run_number) | last | .id // empty'
+              gh run list \
+                --repo "$REPOSITORY" \
+                --workflow develop.yml \
+                --event pull_request \
+                --branch main \
+                --commit "$HEAD_SHA" \
+                --limit 1 \
+                --json databaseId \
+                --jq '.[0].databaseId // empty'
             )"
             [[ -n "$run_id" ]] && break
             sleep 5
