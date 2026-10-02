@@ -1,4 +1,7 @@
 <script lang="ts">
+  import MenuIcon from "@lucide/svelte/icons/menu";
+  import { Button } from "$lib/components/ui/button/index.js";
+
   let {
     open,
     onclick
@@ -8,55 +11,32 @@
   } = $props();
 </script>
 
-<button
+<Button
   class="menu-button"
-  type="button"
+  variant="ghost"
+  size="icon"
   aria-label={open ? "Close navigation" : "Open navigation"}
   aria-expanded={open}
   aria-controls="side-navigation"
   {onclick}
 >
-  <span></span>
-  <span></span>
-  <span></span>
-</button>
+  <MenuIcon aria-hidden="true" />
+</Button>
 
 <style>
-  .menu-button {
-    display: grid;
+  :global(.menu-button) {
     width: 2.5rem;
     height: 2.5rem;
-    padding: 0.65rem;
-    border: 0;
-    border-radius: 0.55rem;
     background: transparent;
-    cursor: pointer;
-    place-content: center;
-    gap: 0.24rem;
+    color: var(--color-foreground);
   }
 
-  .menu-button:hover {
+  :global(.menu-button:hover) {
     background: color-mix(
       in srgb,
       var(--color-surface) 30%,
       transparent
     );
-  }
-
-  .menu-button:focus-visible {
-    outline: 3px solid color-mix(
-      in srgb,
-      var(--color-foreground) 65%,
-      transparent
-    );
-    outline-offset: 2px;
-  }
-
-  span {
-    display: block;
-    width: 1.15rem;
-    height: 0.12rem;
-    border-radius: 999px;
-    background: var(--color-foreground);
+    color: var(--color-foreground);
   }
 </style>

@@ -1,0 +1,57 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: #023047;
+  --color-surface: #219ebc;
+  --color-foreground: #8ecae6;
+  --color-accent: #ffb703;
+  --color-emphasis: #fb8500;
+
+  --color-primary: var(--color-accent);
+  --color-primary-foreground: var(--color-background);
+  --color-secondary: var(--color-surface);
+  --color-secondary-foreground: var(--color-background);
+  --color-muted: color-mix(in srgb, var(--color-surface) 30%, var(--color-background));
+  --color-muted-foreground: var(--color-foreground);
+  --color-destructive: var(--color-emphasis);
+  --color-border: color-mix(in srgb, var(--color-surface) 56%, var(--color-background));
+  --color-input: var(--color-border);
+  --color-ring: var(--color-foreground);
+
+  --radius-sm: 0.35rem;
+  --radius-md: 0.55rem;
+  --radius-lg: 0.65rem;
+}
+
+:root {
+  --app-header-height: 3.5rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+}
+
+button,
+input {
+  font: inherit;
+}
