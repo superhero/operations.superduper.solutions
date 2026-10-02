@@ -278,7 +278,7 @@ jobs:
           content="$(printf '%s\n' "$badge" | base64 -w 0)"
           sha="$(
             gh api \
-              "repos/${GITHUB_REPOSITORY}/contents/coverage.json?ref=dev" \
+              "repos/${GITHUB_REPOSITORY}/contents/coverage.json?ref=develop" \
               --jq '.sha'
           )"
 
@@ -287,7 +287,7 @@ jobs:
             "repos/${GITHUB_REPOSITORY}/contents/coverage.json" \
             -f message="chore: update coverage badge" \
             -f content="$content" \
-            -f branch="dev" \
+            -f branch="develop" \
             -f sha="$sha" \
             >/dev/null
 
@@ -516,7 +516,7 @@ jobs:
                     | select(.key > $start)
                     | .value
                     | (.commit.message | split("\n")[0]) as $message
-                    | select($message != "Merge main into dev")
+                    | select($message != "Merge main into develop")
                     | "- [\(.sha[0:7])](https://github.com/\($repo)/commit/\(.sha)) \($message)"
                   '
               )"
