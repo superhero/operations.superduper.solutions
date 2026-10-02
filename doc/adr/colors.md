@@ -1,24 +1,15 @@
 # Colors
 
-The interface uses five semantic color tokens. Components must reference these
-tokens instead of introducing literal colors of their own:
+The interface uses five semantic color tokens:
 
-```css
---color-background: #023047;
---color-surface: #219ebc;
---color-foreground: #8ecae6;
---color-accent: #ffb703;
---color-emphasis: #fb8500;
-```
+- `--color-background`: application canvas and base background;
+- `--color-surface`: panels, controls, and secondary UI;
+- `--color-foreground`: text and structural foreground elements;
+- `--color-accent`: interactive elements, selections, and primary actions;
+- `--color-emphasis`: stronger highlights and attention states.
 
-Their roles are:
+Themes define the values of these tokens. Components must use the semantic
+tokens rather than hard-coded palette values.
 
-- `background`: application canvas and darkest base;
-- `surface`: panels, controls, and secondary UI areas;
-- `foreground`: primary text and light structural elements;
-- `accent`: interactive elements, selections, and primary actions;
-- `emphasis`: stronger highlights and attention states.
-
-A different theme should remap these same five semantic tokens rather than
-renaming them. Derived shades should use these variables, for example with
-`color-mix()`, instead of adding unrelated palette constants.
+Derived shades should use the same variables, for example with
+`color-mix()`, instead of introducing additional palette constants.
