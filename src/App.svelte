@@ -110,6 +110,7 @@
       {nodeTypes}
       {defaultEdgeOptions}
       {onconnect}
+      proOptions={{ hideAttribution: true }}
       fitView
       minZoom={0.25}
       maxZoom={2}
