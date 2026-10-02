@@ -87,7 +87,6 @@ jobs:
 
       - name: Source Test
         run: |
-          mkdir -p tmp/test/coverage/v8
           set -o pipefail
           npm --silent run test:source:coverage 2>&1 | tee tmp/test/source-test-output.txt
 
