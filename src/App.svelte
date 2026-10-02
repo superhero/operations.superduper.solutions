@@ -13,6 +13,8 @@
   import "@xyflow/svelte/dist/style.css";
 
   import FlowNode from "./FlowNode.svelte";
+  import Header from "./components/Header.svelte";
+  import SideNavigation from "./components/SideNavigation.svelte";
 
   type FlowNodeType = Node<{ name: string }, "flowNode">;
 
@@ -27,6 +29,7 @@
   };
 
   let nextNodeId = 3;
+  let navigationOpen = $state(false);
 
   let nodes = $state.raw<FlowNodeType[]>([
     {
@@ -74,6 +77,16 @@
   {
     edges = addEdge(connection, edges);
   }
+
+  function toggleNavigation()
+  {
+    navigationOpen = !navigationOpen;
+  }
+
+  function closeNavigation()
+  {
+    navigationOpen = false;
+  }
 </script>
 
 <svelte:head>
@@ -84,20 +97,13 @@
   />
 </svelte:head>
 
+<Header {navigationOpen} onMenu={toggleNavigation} />
+<SideNavigation open={navigationOpen} onClose={closeNavigation} />
+
 <main class="app">
-  <header>
-    <div>
-      <p class="eyebrow">operations.superduper.solutions</p>
-      <h1>Workflow canvas</h1>
-      <p class="subtitle">
-        Add nodes, name them, move them around, and connect them.
-      </p>
-    </div>
-
-    <button onclick={addNode}>Add node</button>
-  </header>
-
   <section class="canvas" aria-label="Workflow canvas">
+    <button class="add-node-button" onclick={addNode}>Add node</button>
+
     <SvelteFlow
       bind:nodes
       bind:edges
@@ -125,6 +131,7 @@
     --color-foreground: #8ecae6;
     --color-accent: #ffb703;
     --color-emphasis: #fb8500;
+    --app-header-height: 3.5rem;
   }
 
   :global(*) {
@@ -154,59 +161,24 @@
   }
 
   .app {
-    display: grid;
-    grid-template-rows: auto 1fr;
     width: 100%;
     height: 100%;
-    min-height: 100vh;
+    padding-top: var(--app-header-height);
     background: var(--color-background);
   }
 
-  header {
-    display: flex;
-    gap: 1.5rem;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid color-mix(
-      in srgb,
-      var(--color-surface) 56%,
-      var(--color-background)
-    );
-    background: color-mix(
-      in srgb,
-      var(--color-background) 86%,
-      var(--color-surface)
-    );
+  .canvas {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
   }
 
-  .eyebrow {
-    margin: 0 0 0.2rem;
-    color: var(--color-accent);
-    font-size: 0.68rem;
-    font-weight: 800;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  h1 {
-    margin: 0;
-    color: var(--color-foreground);
-    font-size: 1.25rem;
-    line-height: 1.2;
-  }
-
-  .subtitle {
-    margin: 0.3rem 0 0;
-    color: color-mix(
-      in srgb,
-      var(--color-foreground) 72%,
-      var(--color-surface)
-    );
-    font-size: 0.82rem;
-  }
-
-  button {
+  .add-node-button {
+    position: absolute;
+    z-index: 10;
+    top: 1rem;
+    right: 1rem;
     min-height: 2.6rem;
     padding: 0 1rem;
     border: 0;
@@ -218,21 +190,17 @@
     white-space: nowrap;
   }
 
-  button:hover {
+  .add-node-button:hover {
     background: var(--color-emphasis);
   }
 
-  button:focus-visible {
+  .add-node-button:focus-visible {
     outline: 3px solid color-mix(
       in srgb,
       var(--color-foreground) 65%,
       transparent
     );
     outline-offset: 2px;
-  }
-
-  .canvas {
-    min-height: 0;
   }
 
   :global(.svelte-flow) {
@@ -258,17 +226,5 @@
 
   :global(.svelte-flow__connection-path) {
     stroke: var(--color-accent);
-  }
-
-  @media (max-width: 36rem) {
-    header {
-      align-items: stretch;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    button {
-      width: 100%;
-    }
   }
 </style>
