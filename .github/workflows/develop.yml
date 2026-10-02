@@ -4,10 +4,18 @@ on:
   push:
     branches:
       - develop
-  pull_request:
+  # PRs need topology validation only. Never execute PR code in this event.
+  # GITHUB_TOKEN-created back-merges are handled entirely by post-release.yml.
+  pull_request_target:
     branches:
       - develop
+    types: [opened, synchronize, reopened, edited, ready_for_review]
   workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Exact develop commit to check (defaults to the workflow commit)
+        required: false
+        type: string
 
 concurrency:
   group: development-ci-${{ github.event.pull_request.number || github.ref }}
@@ -18,18 +26,23 @@ permissions:
 
 jobs:
   topology:
-    name: Gitflow topology
+    name: Validate pull-request topology
+    if: github.event_name == 'pull_request_target'
+    permissions:
+      contents: read
+      statuses: write
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out repository
-        if: github.event_name == 'pull_request'
+      - name: Check out trusted base commit
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.event.pull_request.base.sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Validate Gitflow topology and version rules
-        if: github.event_name == 'pull_request'
+        id: validate
         shell: bash
         env:
           HEAD_BRANCH: ${{ github.head_ref }}
@@ -133,19 +146,34 @@ jobs:
 
           echo "Gitflow topology is valid."
 
-      - name: Gitflow topology not applicable
-        if: github.event_name != 'pull_request'
-        run: echo "No pull-request topology to validate for ${{ github.event_name }}."
+      - name: Publish topology result on the PR head
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          VALIDATION_OUTCOME: ${{ steps.validate.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          state=failure
+          [[ "$VALIDATION_OUTCOME" != "success" ]] || state=success
+          gh api --method POST "repos/$REPOSITORY/statuses/$HEAD_SHA" \
+            -f "state=$state" -f context="Gitflow topology" \
+            -f description="Pull-request topology and version rules" \
+            -f "target_url=$RUN_URL" >/dev/null
 
   type-check:
     name: Type Check
+    if: github.ref == 'refs/heads/develop' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ inputs.commit_sha || github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -161,13 +189,14 @@ jobs:
 
   test:
     name: Test
+    if: github.ref == 'refs/heads/develop' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ inputs.commit_sha || github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -183,13 +212,14 @@ jobs:
 
   build:
     name: Build
+    if: github.ref == 'refs/heads/develop' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ inputs.commit_sha || github.sha }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
