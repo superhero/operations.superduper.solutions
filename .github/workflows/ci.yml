@@ -233,65 +233,6 @@ jobs:
             tmp/test/test-output.txt
           key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
 
-  coverage-badge:
-    name: Coverage Badge
-    needs: coverage
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    permissions:
-      actions: read
-      contents: write
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Update coverage badge
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          coverage="${{ needs.coverage.outputs.statements }}"
-
-          if [[ -z "$coverage" ]]; then
-            echo "::error::Could not determine statement coverage."
-            exit 1
-          fi
-
-          if awk "BEGIN { exit !($coverage >= 90) }"; then
-            color="brightgreen"
-          elif awk "BEGIN { exit !($coverage >= 80) }"; then
-            color="green"
-          elif awk "BEGIN { exit !($coverage >= 70) }"; then
-            color="yellowgreen"
-          elif awk "BEGIN { exit !($coverage >= 60) }"; then
-            color="yellow"
-          elif awk "BEGIN { exit !($coverage >= 50) }"; then
-            color="orange"
-          else
-            color="red"
-          fi
-
-          badge="$(
-            jq -n \
-              --arg message "${coverage}%" \
-              --arg color "$color" \
-              '{schemaVersion: 1, label: "coverage", message: $message, color: $color}'
-          )"
-
-          content="$(printf '%s\n' "$badge" | base64 -w 0)"
-          sha="$(
-            gh api \
-              "repos/${GITHUB_REPOSITORY}/contents/coverage.json?ref=develop" \
-              --jq '.sha'
-          )"
-
-          gh api \
-            --method PUT \
-            "repos/${GITHUB_REPOSITORY}/contents/coverage.json" \
-            -f message="chore: update coverage badge" \
-            -f content="$content" \
-            -f branch="develop" \
-            -f sha="$sha" \
-            >/dev/null
-
-
   test-report:
     name: Test Report
     needs:
