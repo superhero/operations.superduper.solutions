@@ -8,7 +8,9 @@ Thank you for contributing to `operations.superduper.solutions`.
 - [Colors](doc/ADR/colors.md)
 - [Security](doc/ADR/security.md)
 
-## Contribution license
+## Licensing
+
+### Contribution license
 
 By submitting a contribution, you agree that it is licensed under **GNU AGPLv3 only** (`AGPL-3.0-only`) together with `LICENSE-ADDITIONAL-TERMS`.
 
@@ -16,7 +18,7 @@ You retain the copyright in your contribution unless you separately assign it in
 
 By contributing, you represent that you have the right to submit the contribution under these terms.
 
-## Source-file license notices
+### Source-file license notices
 
 Preserve existing copyright, license, attribution, and Section 7 notices.
 
@@ -32,6 +34,6 @@ Do not replace another author's copyright notice with your own.
 
 The project uses `AGPL-3.0-only`, not `AGPL-3.0-or-later`.
 
-## Modified versions
+### Additional terms
 
 Follow `LICENSE-ADDITIONAL-TERMS` when modifying or redistributing the software.
