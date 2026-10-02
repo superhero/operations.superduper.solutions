@@ -1,16 +1,468 @@
-name: Post-release
+name: main CI
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
 
 jobs:
+  # Validate and build before merging. The push run promotes this bundle without rebuilding.
+  topology:
+    name: Gitflow topology
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Validate Gitflow topology and version rules
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          HEAD_BRANCH: ${{ github.head_ref }}
+          BASE_BRANCH: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+
+          head="$HEAD_BRANCH"
+          base="$BASE_BRANCH"
+
+          fail() {
+            echo "::error::$1"
+            exit 1
+          }
+
+          echo "Validating PR topology: $head -> $base"
+
+          case "$base" in
+            main)
+              case "$head" in
+                release/*|hotfix/*) ;;
+                *) fail "Invalid Gitflow topology: only release/* or hotfix/* may merge into main." ;;
+              esac
+              ;;
+            *)
+              fail "CI only validates pull requests targeting 'main', got '$base'."
+              ;;
+          esac
+
+          semver_re='^[0-9]+\.[0-9]+\.[0-9]+$'
+
+          version=""
+          kind=""
+          case "$head" in
+            release/*)
+              kind="release"
+              version="${head#release/}"
+              ;;
+            hotfix/*)
+              kind="hotfix"
+              version="${head#hotfix/}"
+              ;;
+          esac
+
+          [[ -n "$version" ]] ||
+            fail "Expected release/* or hotfix/* source branch."
+
+          [[ "$version" =~ $semver_re ]] ||
+            fail "$kind branch version '$version' must be unprefixed SemVer MAJOR.MINOR.PATCH."
+
+          if git rev-parse -q --verify "refs/tags/$version" >/dev/null; then
+            fail "Version tag '$version' already exists."
+          fi
+
+          if [[ "$kind" == "release" ]]; then
+            mapfile -t active_releases < <(
+              git ls-remote --heads origin 'refs/heads/release/*' |
+                awk '{sub("refs/heads/","",$2); print $2}'
+            )
+            other_releases=0
+            for branch in "${active_releases[@]:-}"; do
+              [[ -z "$branch" || "$branch" == "$head" ]] && continue
+              branch_version="${branch#release/}"
+              git rev-parse -q --verify "refs/tags/$branch_version" >/dev/null && continue
+              other_releases=$((other_releases + 1))
+            done
+            (( other_releases == 0 )) ||
+              fail "AVH default permits only one active release/* branch at a time."
+          fi
+
+          if [[ "$kind" == "hotfix" ]]; then
+            mapfile -t active_hotfixes < <(
+              git ls-remote --heads origin 'refs/heads/hotfix/*' |
+                awk '{sub("refs/heads/","",$2); print $2}'
+            )
+            other_hotfixes=0
+            for branch in "${active_hotfixes[@]:-}"; do
+              [[ -z "$branch" || "$branch" == "$head" ]] && continue
+              branch_version="${branch#hotfix/}"
+              git rev-parse -q --verify "refs/tags/$branch_version" >/dev/null && continue
+              other_hotfixes=$((other_hotfixes + 1))
+            done
+            (( other_hotfixes == 0 )) ||
+              fail "AVH default permits only one active hotfix/* branch at a time."
+
+            git fetch --quiet origin "$base" --tags --force || true
+
+            latest_tag="$(
+              git tag --merged "origin/$base" 2>/dev/null |
+                grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' |
+                sort -V |
+                tail -n 1 || true
+            )"
+
+            if [[ -n "$latest_tag" ]]; then
+              IFS=. read -r major minor patch <<< "$latest_tag"
+              expected="$major.$minor.$((patch + 1))"
+              [[ "$version" == "$expected" ]] ||
+                fail "Hotfix '$version' must be the next patch after '$latest_tag': expected '$expected'."
+            fi
+          fi
+
+          echo "Gitflow topology is valid."
+
+      - name: Gitflow topology not applicable
+        if: github.event_name != 'pull_request'
+        run: echo "No pull-request topology to validate for ${{ github.event_name }}."
+
+  installation:
+    name: Installation
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Hand off dependencies
+        uses: actions/cache/save@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+  type-check:
+    name: Type Check
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    needs: installation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Type Check
+        run: npm --silent run typecheck
+
+  source-test:
+    name: Source Test
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    needs: type-check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Source Test
+        run: |
+          mkdir -p tmp/test
+          set -o pipefail
+          npm --silent run test:source:coverage 2>&1 | tee tmp/test/source-test-output.txt
+
+      - name: Hand off source test data
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            tmp/test/source-test-output.txt
+            tmp/test/coverage/v8
+          key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
+
+  coverage:
+    name: Coverage
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    needs: source-test
+    outputs:
+      statements: ${{ steps.coverage.outputs.statements }}
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Restore source coverage data
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            tmp/test/source-test-output.txt
+            tmp/test/coverage/v8
+          key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Coverage
+        id: coverage
+        run: |
+          mkdir -p tmp/test
+          set -o pipefail
+          npm --silent run coverage 2>&1 | tee tmp/test/coverage-output.txt
+
+          value="$(grep -E 'Statements[[:space:]]*:' tmp/test/coverage-output.txt | tail -1 | sed -E 's/.*:[[:space:]]*([0-9]+(\.[0-9]+)?)%.*/\1/')"
+          test -n "$value"
+          echo "statements=$value" >> "$GITHUB_OUTPUT"
+
+      - name: Hand off coverage report
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            tmp/test/coverage
+            tmp/test/coverage-output.txt
+          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+  bundle:
+    name: Bundle
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    needs: coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Bundle
+        run: npm --silent run build
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle
+          path: dist
+          if-no-files-found: error
+
+  test:
+    name: Acceptance Test
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    needs: bundle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Download bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: bundle
+          path: dist
+
+      - name: Acceptance Test
+        run: |
+          mkdir -p tmp/test
+          set -o pipefail
+          npm --silent run test:acceptance 2>&1 | tee tmp/test/test-output.txt
+
+      - name: Hand off test report
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            tmp/test/cucumber-test.json
+            tmp/test/test-output.txt
+          key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+  test-report:
+    name: Test Report
+    needs:
+      - source-test
+      - coverage
+      - test
+    if: always() && (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
+    continue-on-error: true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Restore source test output
+        uses: actions/cache/restore@v6
+        with:
+          path: tmp/test/source-test-output.txt
+          key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Restore acceptance test report
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            tmp/test/cucumber-test.json
+            tmp/test/test-output.txt
+          key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Test summary
+        if: always()
+        run: |
+          {
+            echo '```text'
+
+            if [[ -f tmp/test/source-test-output.txt ]]; then
+              sed -E 's/[[:space:]]+# .*:[0-9]+$//' tmp/test/source-test-output.txt
+              echo
+            else
+              echo "No source test output was produced."
+              echo
+            fi
+
+            if [[ -f tmp/test/test-output.txt ]]; then
+              sed -E 's/[[:space:]]+# .*:[0-9]+$//' tmp/test/test-output.txt
+            else
+              echo "No acceptance test output was produced."
+            fi
+
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish test report
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report
+          path: tmp/test/cucumber-test.json
+          if-no-files-found: warn
+
+  coverage-report:
+    name: Coverage Report
+    needs:
+      - coverage
+      - test-report
+    if: always() && (github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'))
+    continue-on-error: true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Restore coverage report
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            tmp/test/coverage
+            tmp/test/coverage-output.txt
+          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          {
+            echo '```text'
+            if [[ -f tmp/test/coverage-output.txt ]]; then
+              if grep -q "Coverage summary" tmp/test/coverage-output.txt; then
+                awk '/Coverage summary/{show=1} show' tmp/test/coverage-output.txt
+              else
+                cat tmp/test/coverage-output.txt
+              fi
+            else
+              echo "No coverage output was produced."
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: tmp/test/coverage
+          if-no-files-found: warn
+
+  # Release work runs only after a push to main; it does not depend on skipped validation jobs.
   context:
     name: Resolve release context
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       pull-requests: read
@@ -158,7 +610,7 @@ jobs:
           run_id="$(
             gh run list \
               --repo "$REPOSITORY" \
-              --workflow ci.yml \
+              --workflow main.yml \
               --event pull_request \
               --commit "$HEAD_SHA" \
               --status success \

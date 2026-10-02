@@ -1,11 +1,11 @@
-name: Development CI
+name: develop CI
 
 on:
   push:
     branches:
       - develop
   # PRs need topology validation only. Never execute PR code in this event.
-  # GITHUB_TOKEN-created back-merges are handled entirely by post-release.yml.
+  # GITHUB_TOKEN-created back-merges are handled entirely by main.yml.
   pull_request_target:
     branches:
       - develop
@@ -26,7 +26,7 @@ permissions:
 
 jobs:
   topology:
-    name: Validate pull-request topology
+    name: Validate PR direction
     if: github.event_name == 'pull_request_target'
     permissions:
       contents: read
