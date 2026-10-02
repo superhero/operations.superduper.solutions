@@ -4,13 +4,12 @@ Feature: Production build
     Given the production build has completed
     Then the dist directory contains only "index.html"
 
-  Scenario: Production page exposes the basic OpenAPI workflow
+  Scenario: Production page exposes the workflow diagram editor
     Given the production build has completed
     Then the production page contains the application title
-    And the production page contains the OpenAPI source stage
-    And the production page contains the operation stage
-    And the production page contains the request stage
-    And the production page contains the result stage
+    And the production page contains the workflow canvas
+    And the production page contains the add-node action
+    And the production page contains the initial nodes
 
   Scenario: JavaScript is embedded in the production page
     Given the production build has completed

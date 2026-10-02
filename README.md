@@ -5,6 +5,17 @@
 
 A browser-based platform for composing OpenAPI operations into reusable workflows.
 
+## Current development milestone
+
+The current prototype is limited to the workflow diagram interaction itself:
+
+- add nodes;
+- edit node names;
+- move nodes;
+- connect nodes with directed edges.
+
+OpenAPI integration, execution, plugins, persistence, and other workflow behavior are later milestones and are intentionally outside the current development scope.
+
 ## License
 
 Licensed under the **GNU Affero General Public License, version 3 only** (`AGPL-3.0-only`).

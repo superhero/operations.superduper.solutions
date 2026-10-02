@@ -1,349 +1,78 @@
 <script lang="ts">
-  type Parameter = {
-    name: string;
-    in: "path" | "query" | "header";
-    required?: boolean;
-    description?: string;
+  import {
+    Background,
+    BackgroundVariant,
+    Controls,
+    MarkerType,
+    SvelteFlow,
+    addEdge,
+    type Connection,
+    type Edge,
+    type Node
+  } from "@xyflow/svelte";
+  import "@xyflow/svelte/dist/style.css";
+
+  import FlowNode from "./FlowNode.svelte";
+
+  type FlowNodeType = Node<{ name: string }, "flowNode">;
+
+  const nodeTypes = {
+    flowNode: FlowNode
   };
 
-  type Operation = {
-    key: string;
-    method: string;
-    path: string;
-    summary: string;
-    parameters: Parameter[];
-    requestBody: boolean;
-    servers?: Array<{ url: string }>;
+  const defaultEdgeOptions = {
+    markerEnd: {
+      type: MarkerType.ArrowClosed
+    }
   };
 
-  type OpenApiDocument = {
-    openapi?: string;
-    info?: { title?: string };
-    servers?: Array<{ url: string }>;
-    paths?: Record<string, Record<string, unknown>>;
-  };
+  let nextNodeId = 3;
 
-  const httpMethods = new Set([
-    "get",
-    "put",
-    "post",
-    "delete",
-    "options",
-    "head",
-    "patch",
-    "trace"
+  let nodes = $state.raw<FlowNodeType[]>([
+    {
+      id: "node-1",
+      type: "flowNode",
+      position: { x: 80, y: 100 },
+      data: { name: "Node 1" }
+    },
+    {
+      id: "node-2",
+      type: "flowNode",
+      position: { x: 380, y: 220 },
+      data: { name: "Node 2" }
+    }
   ]);
 
-  let sourceUrl = "https://petstore3.swagger.io/api/v3/openapi.json";
-  let documentRef: OpenApiDocument | undefined;
-  let operations: Operation[] = [];
-  let selectedKey = "";
-  let parameterValues: Record<string, string> = {};
-  let requestBody = "";
-  let sourceError = "";
-  let runError = "";
-  let responseStatus = "";
-  let responseBody = "";
-  let loading = false;
-  let running = false;
+  let edges = $state.raw<Edge[]>([]);
 
-  $: selectedOperation = operations.find((operation) => operation.key === selectedKey);
-
-  function asRecord(value: unknown): Record<string, unknown> | undefined
+  function addNode()
   {
-    return value !== null && typeof value === "object"
-      ? value as Record<string, unknown>
-      : undefined;
-  }
+    const id = "node-" + nextNodeId;
+    const index = nextNodeId - 1;
+    const column = index % 4;
+    const row = Math.floor(index / 4);
 
-  function parameterList(value: unknown): Parameter[]
-  {
-    if (!Array.isArray(value))
-    {
-      return [];
-    }
-
-    return value.flatMap((candidate) =>
-    {
-      const parameter = asRecord(candidate);
-
-      if (
-        !parameter
-        || typeof parameter.name !== "string"
-        || (parameter.in !== "path" && parameter.in !== "query" && parameter.in !== "header")
-      )
+    nodes = [
+      ...nodes,
       {
-        return [];
-      }
-
-      return [{
-        name: parameter.name,
-        in: parameter.in,
-        required: parameter.required === true,
-        description: typeof parameter.description === "string"
-          ? parameter.description
-          : undefined
-      }];
-    });
-  }
-
-  function extractOperations(specification: OpenApiDocument): Operation[]
-  {
-    const result: Operation[] = [];
-
-    for (const [path, pathValue] of Object.entries(specification.paths ?? {}))
-    {
-      const pathItem = asRecord(pathValue);
-
-      if (!pathItem)
-      {
-        continue;
-      }
-
-      const sharedParameters = parameterList(pathItem.parameters);
-
-      for (const [method, operationValue] of Object.entries(pathItem))
-      {
-        if (!httpMethods.has(method.toLowerCase()))
-        {
-          continue;
+        id,
+        type: "flowNode",
+        position: {
+          x: 80 + column * 260,
+          y: 80 + row * 160
+        },
+        data: {
+          name: "Node " + nextNodeId
         }
-
-        const operation = asRecord(operationValue);
-
-        if (!operation)
-        {
-          continue;
-        }
-
-        const operationServers = Array.isArray(operation.servers)
-          ? operation.servers.flatMap((server) =>
-          {
-            const serverRecord = asRecord(server);
-            return serverRecord && typeof serverRecord.url === "string"
-              ? [{ url: serverRecord.url }]
-              : [];
-          })
-          : undefined;
-
-        result.push({
-          key: method.toUpperCase() + " " + path,
-          method: method.toUpperCase(),
-          path,
-          summary: typeof operation.summary === "string" && operation.summary.length > 0
-            ? operation.summary
-            : method.toUpperCase() + " " + path,
-          parameters: [
-            ...sharedParameters,
-            ...parameterList(operation.parameters)
-          ],
-          requestBody: operation.requestBody !== undefined,
-          servers: operationServers
-        });
       }
-    }
+    ];
 
-    return result;
+    nextNodeId += 1;
   }
 
-  function resetExecution()
+  function onconnect(connection: Connection)
   {
-    parameterValues = {};
-    requestBody = "";
-    runError = "";
-    responseStatus = "";
-    responseBody = "";
-  }
-
-  function selectOperation()
-  {
-    resetExecution();
-  }
-
-  function parameterKey(parameter: Parameter): string
-  {
-    return parameter.in + ":" + parameter.name;
-  }
-
-  function setParameter(parameter: Parameter, value: string)
-  {
-    parameterValues = {
-      ...parameterValues,
-      [parameterKey(parameter)]: value
-    };
-  }
-
-  function selectedServer(): string
-  {
-    const operationServer = selectedOperation?.servers?.[0]?.url;
-    const documentServer = documentRef?.servers?.[0]?.url;
-
-    if (operationServer)
-    {
-      return operationServer;
-    }
-
-    if (documentServer)
-    {
-      return documentServer;
-    }
-
-    return new URL(".", sourceUrl).href.replace(/\/$/, "");
-  }
-
-  function requestUrl(operation: Operation): string
-  {
-    let path = operation.path;
-
-    for (const parameter of operation.parameters.filter((item) => item.in === "path"))
-    {
-      const value = parameterValues[parameterKey(parameter)] ?? "";
-
-      if (parameter.required && value.length === 0)
-      {
-        throw new Error('Missing required path parameter "' + parameter.name + '"');
-      }
-
-      path = path.replaceAll(
-        "{" + parameter.name + "}",
-        encodeURIComponent(value)
-      );
-    }
-
-    const base = selectedServer().replace(/\/$/, "");
-    const url = new URL(base + (path.startsWith("/") ? path : "/" + path));
-
-    for (const parameter of operation.parameters.filter((item) => item.in === "query"))
-    {
-      const value = parameterValues[parameterKey(parameter)] ?? "";
-
-      if (value.length > 0)
-      {
-        url.searchParams.append(parameter.name, value);
-      }
-    }
-
-    return url.toString();
-  }
-
-  function requestHeaders(operation: Operation): Headers
-  {
-    const headers = new Headers();
-
-    for (const parameter of operation.parameters.filter((item) => item.in === "header"))
-    {
-      const value = parameterValues[parameterKey(parameter)] ?? "";
-
-      if (value.length > 0)
-      {
-        headers.set(parameter.name, value);
-      }
-    }
-
-    if (operation.requestBody && requestBody.trim().length > 0)
-    {
-      headers.set("content-type", "application/json");
-    }
-
-    return headers;
-  }
-
-  async function loadSource()
-  {
-    loading = true;
-    sourceError = "";
-    operations = [];
-    selectedKey = "";
-    resetExecution();
-
-    try
-    {
-      const response = await fetch(sourceUrl, {
-        headers: {
-          accept: "application/json, application/yaml, text/yaml, */*"
-        }
-      });
-
-      if (!response.ok)
-      {
-        throw new Error("OpenAPI source returned HTTP " + response.status);
-      }
-
-      const specification = await response.json() as OpenApiDocument;
-
-      if (!specification.paths)
-      {
-        throw new Error("The document does not contain OpenAPI paths");
-      }
-
-      const discoveredOperations = extractOperations(specification);
-
-      if (discoveredOperations.length === 0)
-      {
-        throw new Error("The document contains no executable operations");
-      }
-
-      documentRef = specification;
-      operations = discoveredOperations;
-      selectedKey = discoveredOperations[0]?.key ?? "";
-    }
-    catch (error)
-    {
-      sourceError = error instanceof Error ? error.message : String(error);
-      documentRef = undefined;
-    }
-    finally
-    {
-      loading = false;
-    }
-  }
-
-  async function runOperation()
-  {
-    if (!selectedOperation)
-    {
-      return;
-    }
-
-    running = true;
-    runError = "";
-    responseStatus = "";
-    responseBody = "";
-
-    try
-    {
-      const headers = requestHeaders(selectedOperation);
-      const body = selectedOperation.requestBody && requestBody.trim().length > 0
-        ? requestBody
-        : undefined;
-
-      const response = await fetch(requestUrl(selectedOperation), {
-        method: selectedOperation.method,
-        headers,
-        body
-      });
-
-      responseStatus = response.status + " " + response.statusText;
-
-      const text = await response.text();
-
-      try
-      {
-        responseBody = JSON.stringify(JSON.parse(text), null, 2);
-      }
-      catch
-      {
-        responseBody = text;
-      }
-    }
-    catch (error)
-    {
-      runError = error instanceof Error ? error.message : String(error);
-    }
-    finally
-    {
-      running = false;
-    }
+    edges = addEdge(connection, edges);
   }
 </script>
 
@@ -351,178 +80,42 @@
   <title>operations.superduper.solutions</title>
   <meta
     name="description"
-    content="Explore and execute OpenAPI operations in the browser."
+    content="A browser-based workflow diagram editor."
   />
 </svelte:head>
 
 <main class="app">
-  <header class="hero">
-    <p class="eyebrow">operations.superduper.solutions</p>
-    <h1>Build a workflow from an OpenAPI operation.</h1>
-    <p class="lead">
-      Load a specification, choose an operation, provide its inputs, and execute it directly from this page.
-    </p>
+  <header>
+    <div>
+      <p class="eyebrow">operations.superduper.solutions</p>
+      <h1>Workflow canvas</h1>
+      <p class="subtitle">
+        Add nodes, name them, move them around, and connect them.
+      </p>
+    </div>
+
+    <button onclick={addNode}>Add node</button>
   </header>
 
-  <section class="stage">
-    <div class="stage-heading">
-      <span class="step">1</span>
-      <div>
-        <h2>OpenAPI source</h2>
-        <p>Start with a publicly reachable OpenAPI 3 document.</p>
-      </div>
-    </div>
-
-    <div class="source-row">
-      <label class="field grow">
-        <span>Specification URL</span>
-        <input
-          bind:value={sourceUrl}
-          type="url"
-          autocomplete="off"
-          spellcheck="false"
-        />
-      </label>
-
-      <button class="primary" onclick={loadSource} disabled={loading || sourceUrl.length === 0}>
-        {loading ? "Loading…" : "Load"}
-      </button>
-    </div>
-
-    {#if sourceError}
-      <p class="error" role="alert">{sourceError}</p>
-    {/if}
-
-    {#if documentRef}
-      <p class="success">
-        Loaded {documentRef.info?.title ?? "OpenAPI document"} · {operations.length} operations
-      </p>
-    {/if}
+  <section class="canvas" aria-label="Workflow canvas">
+    <SvelteFlow
+      bind:nodes
+      bind:edges
+      {nodeTypes}
+      {defaultEdgeOptions}
+      {onconnect}
+      fitView
+      minZoom={0.25}
+      maxZoom={2}
+    >
+      <Background
+        variant={BackgroundVariant.Dots}
+        gap={24}
+        size={1.2}
+      />
+      <Controls />
+    </SvelteFlow>
   </section>
-
-  <section class:disabled={operations.length === 0} class="stage">
-    <div class="stage-heading">
-      <span class="step">2</span>
-      <div>
-        <h2>Operation</h2>
-        <p>Choose the API call that becomes the first workflow step.</p>
-      </div>
-    </div>
-
-    <label class="field">
-      <span>Operation</span>
-      <select
-        bind:value={selectedKey}
-        onchange={selectOperation}
-        disabled={operations.length === 0}
-      >
-        {#if operations.length === 0}
-          <option value="">Load a source first</option>
-        {:else}
-          {#each operations as operation}
-            <option value={operation.key}>
-              {operation.method} · {operation.summary}
-            </option>
-          {/each}
-        {/if}
-      </select>
-    </label>
-
-    {#if selectedOperation}
-      <div class="operation-card">
-        <span class="method">{selectedOperation.method}</span>
-        <code>{selectedOperation.path}</code>
-      </div>
-    {/if}
-  </section>
-
-  <section class:disabled={!selectedOperation} class="stage">
-    <div class="stage-heading">
-      <span class="step">3</span>
-      <div>
-        <h2>Request</h2>
-        <p>Configure the selected operation and execute it.</p>
-      </div>
-    </div>
-
-    {#if selectedOperation}
-      {#if selectedOperation.parameters.length > 0}
-        <div class="parameters">
-          {#each selectedOperation.parameters as parameter (parameterKey(parameter))}
-            <label class="field">
-              <span>
-                {parameter.name}
-                <small>{parameter.in}{parameter.required ? " · required" : ""}</small>
-              </span>
-              <input
-                value={parameterValues[parameterKey(parameter)] ?? ""}
-                oninput={(event) => setParameter(parameter, event.currentTarget.value)}
-                required={parameter.required}
-                autocomplete="off"
-              />
-              {#if parameter.description}
-                <small class="hint">{parameter.description}</small>
-              {/if}
-            </label>
-          {/each}
-        </div>
-      {:else}
-        <p class="muted">This operation declares no parameters.</p>
-      {/if}
-
-      {#if selectedOperation.requestBody}
-        <label class="field">
-          <span>JSON request body</span>
-          <textarea
-            bind:value={requestBody}
-            rows="8"
-            spellcheck="false"
-            placeholder={'{"example": "value"}'}
-          ></textarea>
-        </label>
-      {/if}
-
-      <div class="run-row">
-        <div>
-          <span class="label">Target</span>
-          <code class="target">{selectedServer()}{selectedOperation.path}</code>
-        </div>
-        <button class="primary" onclick={runOperation} disabled={running}>
-          {running ? "Running…" : "Run operation"}
-        </button>
-      </div>
-
-      {#if runError}
-        <p class="error" role="alert">{runError}</p>
-      {/if}
-    {:else}
-      <p class="muted">Select an operation before configuring a request.</p>
-    {/if}
-  </section>
-
-  <section class:disabled={!responseStatus && !runError} class="stage result-stage">
-    <div class="stage-heading">
-      <span class="step">4</span>
-      <div>
-        <h2>Result</h2>
-        <p>The response from the current workflow step appears here.</p>
-      </div>
-    </div>
-
-    {#if responseStatus}
-      <div class="response-heading">
-        <span class="label">HTTP response</span>
-        <strong>{responseStatus}</strong>
-      </div>
-      <pre>{responseBody || "(empty response body)"}</pre>
-    {:else}
-      <p class="muted">Run the operation to inspect its response.</p>
-    {/if}
-  </section>
-
-  <footer>
-    Runs entirely in the browser. APIs and OpenAPI documents must permit browser access.
-  </footer>
 </main>
 
 <style>
@@ -538,15 +131,17 @@
     box-sizing: border-box;
   }
 
-  :global(body) {
+  :global(html),
+  :global(body),
+  :global(#app) {
+    width: 100%;
+    height: 100%;
     margin: 0;
-    background:
-      radial-gradient(
-        circle at top left,
-        color-mix(in srgb, var(--color-surface) 24%, transparent),
-        transparent 28rem
-      ),
-      var(--color-background);
+  }
+
+  :global(body) {
+    overflow: hidden;
+    background: var(--color-background);
     color: var(--color-foreground);
     font-family:
       Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -554,163 +149,68 @@
   }
 
   :global(button),
-  :global(input),
-  :global(select),
-  :global(textarea) {
+  :global(input) {
     font: inherit;
   }
 
   .app {
-    width: min(72rem, calc(100% - 2rem));
-    margin: 0 auto;
-    padding: 4rem 0 2rem;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    width: 100%;
+    height: 100%;
+    min-height: 100vh;
+    background: var(--color-background);
   }
 
-  .hero {
-    max-width: 48rem;
-    margin-bottom: 2.5rem;
+  header {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid color-mix(
+      in srgb,
+      var(--color-surface) 56%,
+      var(--color-background)
+    );
+    background: color-mix(
+      in srgb,
+      var(--color-background) 86%,
+      var(--color-surface)
+    );
   }
 
   .eyebrow {
-    margin: 0 0 0.75rem;
+    margin: 0 0 0.2rem;
     color: var(--color-accent);
-    font-size: 0.78rem;
+    font-size: 0.68rem;
     font-weight: 800;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
   }
 
   h1 {
     margin: 0;
     color: var(--color-foreground);
-    font-size: clamp(2.2rem, 7vw, 4.6rem);
-    line-height: 0.98;
-    letter-spacing: -0.055em;
+    font-size: 1.25rem;
+    line-height: 1.2;
   }
 
-  .lead {
-    margin: 1.25rem 0 0;
-    color: color-mix(in srgb, var(--color-foreground) 78%, var(--color-surface));
-    font-size: 1.08rem;
-    line-height: 1.65;
+  .subtitle {
+    margin: 0.3rem 0 0;
+    color: color-mix(
+      in srgb,
+      var(--color-foreground) 72%,
+      var(--color-surface)
+    );
+    font-size: 0.82rem;
   }
 
-  .stage {
-    margin: 1rem 0;
-    padding: 1.4rem;
-    border: 1px solid color-mix(in srgb, var(--color-foreground) 34%, var(--color-background));
-    border-radius: 1.1rem;
-    background: color-mix(in srgb, var(--color-background) 76%, var(--color-surface));
-    box-shadow:
-      0 0.4rem 1.4rem
-      color-mix(in srgb, var(--color-background) 76%, transparent);
-  }
-
-  .stage.disabled {
-    opacity: 0.62;
-  }
-
-  .stage-heading {
-    display: flex;
-    gap: 0.9rem;
-    align-items: flex-start;
-    margin-bottom: 1.2rem;
-  }
-
-  .stage-heading h2 {
-    margin: 0;
-    color: var(--color-foreground);
-    font-size: 1.05rem;
-  }
-
-  .stage-heading p {
-    margin: 0.25rem 0 0;
-    color: color-mix(in srgb, var(--color-foreground) 72%, var(--color-surface));
-    font-size: 0.92rem;
-  }
-
-  .step {
-    display: grid;
-    flex: 0 0 auto;
-    width: 2rem;
-    height: 2rem;
-    place-items: center;
-    border-radius: 999px;
-    background: var(--color-accent);
-    color: var(--color-background);
-    font-size: 0.84rem;
-    font-weight: 800;
-  }
-
-  .source-row,
-  .run-row {
-    display: flex;
-    gap: 0.8rem;
-    align-items: end;
-  }
-
-  .run-row {
-    justify-content: space-between;
-    margin-top: 1rem;
-  }
-
-  .grow {
-    flex: 1;
-  }
-
-  .field {
-    display: grid;
-    gap: 0.45rem;
-    margin: 0.8rem 0;
-    color: var(--color-foreground);
-    font-size: 0.88rem;
-    font-weight: 700;
-  }
-
-  .field > span {
-    display: flex;
-    gap: 0.45rem;
-    align-items: baseline;
-  }
-
-  input,
-  select,
-  textarea {
-    width: 100%;
-    border: 1px solid color-mix(in srgb, var(--color-foreground) 46%, var(--color-surface));
-    border-radius: 0.7rem;
-    background: color-mix(in srgb, var(--color-background) 64%, var(--color-surface));
-    color: var(--color-foreground);
-    outline: none;
-  }
-
-  input,
-  select {
-    min-height: 2.8rem;
-    padding: 0 0.8rem;
-  }
-
-  textarea {
-    padding: 0.8rem;
-    resize: vertical;
-    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-    line-height: 1.5;
-  }
-
-  input:focus,
-  select:focus,
-  textarea:focus {
-    border-color: var(--color-accent);
-    box-shadow:
-      0 0 0 3px
-      color-mix(in srgb, var(--color-accent) 28%, transparent);
-  }
-
-  .primary {
-    min-height: 2.8rem;
+  button {
+    min-height: 2.6rem;
     padding: 0 1rem;
     border: 0;
-    border-radius: 0.7rem;
+    border-radius: 0.65rem;
     background: var(--color-accent);
     color: var(--color-background);
     cursor: pointer;
@@ -718,142 +218,56 @@
     white-space: nowrap;
   }
 
-  .primary:hover:not(:disabled) {
+  button:hover {
     background: var(--color-emphasis);
   }
 
-  .primary:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
+  button:focus-visible {
+    outline: 3px solid color-mix(
+      in srgb,
+      var(--color-foreground) 65%,
+      transparent
+    );
+    outline-offset: 2px;
   }
 
-  .operation-card {
-    display: flex;
-    gap: 0.7rem;
-    align-items: center;
-    margin-top: 1rem;
-    padding: 0.85rem 1rem;
-    border: 1px solid color-mix(in srgb, var(--color-surface) 52%, var(--color-foreground));
-    border-radius: 0.75rem;
-    background: color-mix(in srgb, var(--color-background) 56%, var(--color-surface));
+  .canvas {
+    min-height: 0;
   }
 
-  .method {
-    color: var(--color-accent);
-    font-size: 0.78rem;
-    font-weight: 900;
+  :global(.svelte-flow) {
+    --xy-edge-stroke-default: var(--color-accent);
+    --xy-edge-stroke-selected-default: var(--color-emphasis);
+    --xy-connectionline-stroke-default: var(--color-accent);
+    --xy-background-pattern-dots-color-default:
+      color-mix(in srgb, var(--color-surface) 68%, var(--color-background));
+    --xy-controls-button-background-color-default:
+      color-mix(in srgb, var(--color-background) 66%, var(--color-surface));
+    --xy-controls-button-background-color-hover-default:
+      color-mix(in srgb, var(--color-background) 48%, var(--color-surface));
+    --xy-controls-button-color-default: var(--color-foreground);
+    --xy-controls-button-color-hover-default: var(--color-accent);
+    --xy-controls-button-border-color-default:
+      color-mix(in srgb, var(--color-surface) 58%, var(--color-background));
+    background: var(--color-background);
   }
 
-  code,
-  pre {
-    font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  :global(.svelte-flow__edge.selected .svelte-flow__edge-path) {
+    stroke: var(--color-emphasis);
   }
 
-  code {
-    overflow-wrap: anywhere;
+  :global(.svelte-flow__connection-path) {
+    stroke: var(--color-accent);
   }
 
-  .parameters {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-    gap: 0 1rem;
-  }
-
-  small,
-  .hint,
-  .muted,
-  .label {
-    color: color-mix(in srgb, var(--color-foreground) 70%, var(--color-surface));
-  }
-
-  small {
-    font-weight: 500;
-  }
-
-  .muted {
-    margin: 0;
-  }
-
-  .label {
-    display: block;
-    margin-bottom: 0.35rem;
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .target {
-    display: block;
-    max-width: 44rem;
-    color: var(--color-foreground);
-    font-size: 0.83rem;
-  }
-
-  .success,
-  .error {
-    margin: 0.8rem 0 0;
-    padding: 0.75rem 0.9rem;
-    border-radius: 0.7rem;
-    color: var(--color-background);
-    font-size: 0.88rem;
-    font-weight: 700;
-  }
-
-  .success {
-    background: var(--color-accent);
-  }
-
-  .error {
-    background: var(--color-emphasis);
-  }
-
-  .response-heading {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    align-items: center;
-    margin-bottom: 0.7rem;
-  }
-
-  .response-heading .label {
-    margin: 0;
-  }
-
-  pre {
-    max-height: 30rem;
-    margin: 0;
-    padding: 1rem;
-    overflow: auto;
-    border: 1px solid color-mix(in srgb, var(--color-surface) 48%, var(--color-background));
-    border-radius: 0.8rem;
-    background: color-mix(in srgb, var(--color-background) 86%, var(--color-surface));
-    color: var(--color-foreground);
-    font-size: 0.82rem;
-    line-height: 1.55;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  footer {
-    padding: 1rem 0 0;
-    color: color-mix(in srgb, var(--color-foreground) 58%, var(--color-surface));
-    font-size: 0.78rem;
-    text-align: center;
-  }
-
-  @media (max-width: 42rem) {
-    .app {
-      padding-top: 2rem;
-    }
-
-    .source-row,
-    .run-row {
+  @media (max-width: 36rem) {
+    header {
       align-items: stretch;
       flex-direction: column;
+      gap: 0.75rem;
     }
 
-    .run-row .primary {
+    button {
       width: 100%;
     }
   }
