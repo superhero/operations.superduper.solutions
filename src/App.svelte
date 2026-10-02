@@ -526,6 +526,14 @@
 </main>
 
 <style>
+  :global(:root) {
+    --color-background: #023047;
+    --color-surface: #219ebc;
+    --color-foreground: #8ecae6;
+    --color-accent: #ffb703;
+    --color-emphasis: #fb8500;
+  }
+
   :global(*) {
     box-sizing: border-box;
   }
@@ -533,9 +541,13 @@
   :global(body) {
     margin: 0;
     background:
-      radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 26rem),
-      #f6f7f9;
-    color: #172033;
+      radial-gradient(
+        circle at top left,
+        color-mix(in srgb, var(--color-surface) 24%, transparent),
+        transparent 28rem
+      ),
+      var(--color-background);
+    color: var(--color-foreground);
     font-family:
       Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
       sans-serif;
@@ -561,7 +573,7 @@
 
   .eyebrow {
     margin: 0 0 0.75rem;
-    color: #315fd5;
+    color: var(--color-accent);
     font-size: 0.78rem;
     font-weight: 800;
     letter-spacing: 0.12em;
@@ -570,6 +582,7 @@
 
   h1 {
     margin: 0;
+    color: var(--color-foreground);
     font-size: clamp(2.2rem, 7vw, 4.6rem);
     line-height: 0.98;
     letter-spacing: -0.055em;
@@ -577,7 +590,7 @@
 
   .lead {
     margin: 1.25rem 0 0;
-    color: #59657a;
+    color: color-mix(in srgb, var(--color-foreground) 78%, var(--color-surface));
     font-size: 1.08rem;
     line-height: 1.65;
   }
@@ -585,10 +598,12 @@
   .stage {
     margin: 1rem 0;
     padding: 1.4rem;
-    border: 1px solid #dce1e8;
+    border: 1px solid color-mix(in srgb, var(--color-foreground) 34%, var(--color-background));
     border-radius: 1.1rem;
-    background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 0.4rem 1.4rem rgba(20, 32, 54, 0.045);
+    background: color-mix(in srgb, var(--color-background) 76%, var(--color-surface));
+    box-shadow:
+      0 0.4rem 1.4rem
+      color-mix(in srgb, var(--color-background) 76%, transparent);
   }
 
   .stage.disabled {
@@ -604,12 +619,13 @@
 
   .stage-heading h2 {
     margin: 0;
+    color: var(--color-foreground);
     font-size: 1.05rem;
   }
 
   .stage-heading p {
     margin: 0.25rem 0 0;
-    color: #738095;
+    color: color-mix(in srgb, var(--color-foreground) 72%, var(--color-surface));
     font-size: 0.92rem;
   }
 
@@ -620,8 +636,8 @@
     height: 2rem;
     place-items: center;
     border-radius: 999px;
-    background: #172033;
-    color: white;
+    background: var(--color-accent);
+    color: var(--color-background);
     font-size: 0.84rem;
     font-weight: 800;
   }
@@ -646,7 +662,7 @@
     display: grid;
     gap: 0.45rem;
     margin: 0.8rem 0;
-    color: #3a465a;
+    color: var(--color-foreground);
     font-size: 0.88rem;
     font-weight: 700;
   }
@@ -661,10 +677,10 @@
   select,
   textarea {
     width: 100%;
-    border: 1px solid #cfd6e1;
+    border: 1px solid color-mix(in srgb, var(--color-foreground) 46%, var(--color-surface));
     border-radius: 0.7rem;
-    background: white;
-    color: #172033;
+    background: color-mix(in srgb, var(--color-background) 64%, var(--color-surface));
+    color: var(--color-foreground);
     outline: none;
   }
 
@@ -684,8 +700,10 @@
   input:focus,
   select:focus,
   textarea:focus {
-    border-color: #315fd5;
-    box-shadow: 0 0 0 3px rgba(49, 95, 213, 0.12);
+    border-color: var(--color-accent);
+    box-shadow:
+      0 0 0 3px
+      color-mix(in srgb, var(--color-accent) 28%, transparent);
   }
 
   .primary {
@@ -693,15 +711,15 @@
     padding: 0 1rem;
     border: 0;
     border-radius: 0.7rem;
-    background: #315fd5;
-    color: white;
+    background: var(--color-accent);
+    color: var(--color-background);
     cursor: pointer;
     font-weight: 800;
     white-space: nowrap;
   }
 
   .primary:hover:not(:disabled) {
-    background: #244cba;
+    background: var(--color-emphasis);
   }
 
   .primary:disabled {
@@ -715,12 +733,13 @@
     align-items: center;
     margin-top: 1rem;
     padding: 0.85rem 1rem;
+    border: 1px solid color-mix(in srgb, var(--color-surface) 52%, var(--color-foreground));
     border-radius: 0.75rem;
-    background: #f3f6fb;
+    background: color-mix(in srgb, var(--color-background) 56%, var(--color-surface));
   }
 
   .method {
-    color: #315fd5;
+    color: var(--color-accent);
     font-size: 0.78rem;
     font-weight: 900;
   }
@@ -740,14 +759,15 @@
     gap: 0 1rem;
   }
 
-  small {
-    color: #7c8799;
-    font-weight: 500;
+  small,
+  .hint,
+  .muted,
+  .label {
+    color: color-mix(in srgb, var(--color-foreground) 70%, var(--color-surface));
   }
 
-  .hint,
-  .muted {
-    color: #7c8799;
+  small {
+    font-weight: 500;
   }
 
   .muted {
@@ -757,7 +777,6 @@
   .label {
     display: block;
     margin-bottom: 0.35rem;
-    color: #7c8799;
     font-size: 0.72rem;
     font-weight: 800;
     letter-spacing: 0.08em;
@@ -767,7 +786,7 @@
   .target {
     display: block;
     max-width: 44rem;
-    color: #39465a;
+    color: var(--color-foreground);
     font-size: 0.83rem;
   }
 
@@ -776,17 +795,17 @@
     margin: 0.8rem 0 0;
     padding: 0.75rem 0.9rem;
     border-radius: 0.7rem;
+    color: var(--color-background);
     font-size: 0.88rem;
+    font-weight: 700;
   }
 
   .success {
-    background: #edf8f2;
-    color: #246344;
+    background: var(--color-accent);
   }
 
   .error {
-    background: #fff0f0;
-    color: #9a3030;
+    background: var(--color-emphasis);
   }
 
   .response-heading {
@@ -806,9 +825,10 @@
     margin: 0;
     padding: 1rem;
     overflow: auto;
+    border: 1px solid color-mix(in srgb, var(--color-surface) 48%, var(--color-background));
     border-radius: 0.8rem;
-    background: #121a28;
-    color: #dfe8f7;
+    background: color-mix(in srgb, var(--color-background) 86%, var(--color-surface));
+    color: var(--color-foreground);
     font-size: 0.82rem;
     line-height: 1.55;
     white-space: pre-wrap;
@@ -817,7 +837,7 @@
 
   footer {
     padding: 1rem 0 0;
-    color: #8b95a5;
+    color: color-mix(in srgb, var(--color-foreground) 58%, var(--color-surface));
     font-size: 0.78rem;
     text-align: center;
   }
