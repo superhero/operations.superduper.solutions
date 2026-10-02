@@ -12,6 +12,7 @@
   } from "@xyflow/svelte";
   import "@xyflow/svelte/dist/style.css";
 
+  import { Button } from "$lib/components/ui/button/index.js";
   import FlowNode from "./FlowNode.svelte";
   import Header from "./components/Header.svelte";
   import SideNavigation from "./components/SideNavigation.svelte";
@@ -82,11 +83,6 @@
   {
     navigationOpen = !navigationOpen;
   }
-
-  function closeNavigation()
-  {
-    navigationOpen = false;
-  }
 </script>
 
 <svelte:head>
@@ -98,11 +94,17 @@
 </svelte:head>
 
 <Header {navigationOpen} onMenu={toggleNavigation} />
-<SideNavigation open={navigationOpen} onClose={closeNavigation} />
+<SideNavigation bind:open={navigationOpen} />
 
 <main class="app">
   <section class="canvas" aria-label="Workflow canvas">
-    <button class="add-node-button" onclick={addNode}>Add node</button>
+    <Button
+      class="add-node-button"
+      size="lg"
+      onclick={addNode}
+    >
+      Add node
+    </Button>
 
     <SvelteFlow
       bind:nodes
@@ -126,41 +128,6 @@
 </main>
 
 <style>
-  :global(:root) {
-    --color-background: #023047;
-    --color-surface: #219ebc;
-    --color-foreground: #8ecae6;
-    --color-accent: #ffb703;
-    --color-emphasis: #fb8500;
-    --app-header-height: 3.5rem;
-  }
-
-  :global(*) {
-    box-sizing: border-box;
-  }
-
-  :global(html),
-  :global(body),
-  :global(#app) {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-  }
-
-  :global(body) {
-    overflow: hidden;
-    background: var(--color-background);
-    color: var(--color-foreground);
-    font-family:
-      Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-      sans-serif;
-  }
-
-  :global(button),
-  :global(input) {
-    font: inherit;
-  }
-
   .app {
     width: 100%;
     height: 100%;
@@ -175,33 +142,18 @@
     min-height: 0;
   }
 
-  .add-node-button {
+  :global(.add-node-button) {
     position: absolute;
     z-index: 10;
     top: 1rem;
     right: 1rem;
-    min-height: 2.6rem;
-    padding: 0 1rem;
-    border: 0;
-    border-radius: 0.65rem;
     background: var(--color-accent);
     color: var(--color-background);
-    cursor: pointer;
     font-weight: 800;
-    white-space: nowrap;
   }
 
-  .add-node-button:hover {
+  :global(.add-node-button:hover) {
     background: var(--color-emphasis);
-  }
-
-  .add-node-button:focus-visible {
-    outline: 3px solid color-mix(
-      in srgb,
-      var(--color-foreground) 65%,
-      transparent
-    );
-    outline-offset: 2px;
   }
 
   :global(.svelte-flow) {
