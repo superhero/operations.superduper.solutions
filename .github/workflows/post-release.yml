@@ -274,6 +274,7 @@ jobs:
     needs: context
     if: needs.context.outputs.applicable == 'true'
     permissions:
+      actions: read
       checks: read
       contents: write
       pull-requests: write
@@ -288,7 +289,8 @@ jobs:
           client-id: ${{ vars.GITHUB_APP_CLIENT_ID || vars.GH_APP_CLIENT_ID }}
           app-id: ${{ vars.GH_APP_ID || vars.GITHUB_APP_ID }}
           private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY || secrets.GH_APP_PRIVATE_KEY }}
-          permission-contents: write
+          # The App opens the PR to trigger CI; the workflow token performs the merge.
+          permission-contents: read
           permission-pull-requests: write
 
       - name: Check whether develop already contains main
@@ -352,7 +354,7 @@ jobs:
           echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
           echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
 
-      - name: Wait for back-merge checks
+      - name: Wait for back-merge Development CI
         if: steps.sync.outputs.needed == 'true'
         timeout-minutes: 15
         shell: bash
@@ -360,9 +362,37 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
         run: |
           set -euo pipefail
-          gh pr checks "$PR_NUMBER" --repo "$REPOSITORY" --watch --interval 10
+
+          # All PR checks include this running Post-release job on main.
+          # Watch only the develop.yml run for this PR and exact head instead.
+          run_id=""
+          for attempt in {1..12}; do
+            run_id="$(
+              gh api "repos/$REPOSITORY/actions/workflows/develop.yml/runs?event=pull_request&head_sha=$HEAD_SHA&per_page=100" |
+                jq -r --argjson pr "$PR_NUMBER" '[
+                  .workflow_runs[] |
+                  select(any(.pull_requests[]?; .number == $pr))
+                ] | sort_by(.run_number) | last | .id // empty'
+            )"
+            [[ -n "$run_id" ]] && break
+            sleep 5
+          done
+
+          [[ -n "$run_id" ]] || {
+            echo "::error::No Development CI run appeared for back-merge PR #$PR_NUMBER at $HEAD_SHA."
+            exit 1
+          }
+
+          gh run watch "$run_id" --repo "$REPOSITORY" --exit-status --interval 10
+
+          conclusion="$(gh run view "$run_id" --repo "$REPOSITORY" --json conclusion --jq '.conclusion')"
+          [[ "$conclusion" == "success" ]] || {
+            echo "::error::Development CI run #$run_id ended with '$conclusion'; refusing to merge."
+            exit 1
+          }
 
       - name: Merge main into develop
         if: steps.sync.outputs.needed == 'true'
