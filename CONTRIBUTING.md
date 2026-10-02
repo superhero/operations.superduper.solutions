@@ -7,6 +7,7 @@ Thank you for contributing to `operations.superduper.solutions`.
 - [Simplify](doc/adr/simplify.md)
 - [Colors](doc/adr/colors.md)
 - [Security](doc/adr/security.md)
+- [Gitflow](doc/adr/gitflow.md)
 
 ## Licensing
 
