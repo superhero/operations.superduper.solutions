@@ -1,27 +1,23 @@
 {
   "compilerOptions": {
     "target": "ES2024",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "lib": [
-      "ES2022",
+      "ES2024",
       "DOM",
       "DOM.Iterable"
     ],
-    "rootDir": "src",
-    "outDir": "dist",
     "strict": true,
-    "noEmitOnError": true,
-    "sourceMap": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "noEmit": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
     "verbatimModuleSyntax": true,
     "erasableSyntaxOnly": true,
-    "rewriteRelativeImportExtensions": true,
-    "declaration": true,
-    "inlineSources": true,
     "paths": {
       "$lib": [
         "./src/lib"
@@ -33,6 +29,8 @@
   },
   "include": [
     "src/**/*.ts",
+    "src/**/*.svelte",
+    "src/**/*.d.ts",
     "src/**/*.json"
   ]
 }

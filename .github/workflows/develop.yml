@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   check:
-    name: Type Check & Test
+    name: Type Check, Test & Build
     runs-on: ubuntu-latest
 
     steps:
@@ -31,12 +31,16 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
+          cache: npm
 
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Type Check
         run: npm --silent run typecheck
 
       - name: Test
         run: npm --silent run test:source
+
+      - name: Build
+        run: npm --silent run build
