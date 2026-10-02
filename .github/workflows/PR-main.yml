@@ -759,12 +759,29 @@ jobs:
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
     steps:
+      - name: Create GitHub App token for back-merge PRs
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GITHUB_APP_CLIENT_ID || vars.GH_APP_CLIENT_ID }}
+          app-id: ${{ vars.GH_APP_ID || vars.GITHUB_APP_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY || secrets.GH_APP_PRIVATE_KEY }}
+          # Preserve the installed App's permissions; only PR creation needs its identity.
+          permission-contents: read
+          permission-pull-requests: write
+
       - name: Synchronize main into develop without a CI gate
         id: sync
         shell: bash
+        env:
+          PR_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
           echo "merged=false" >> "$GITHUB_OUTPUT"
+          [[ -n "$PR_TOKEN" ]] || {
+            echo "::error::A GitHub App token is required to create back-merge PRs; refusing to fall back to GITHUB_TOKEN."
+            exit 1
+          }
 
           main_sha="$(gh api "repos/$REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
           develop_sha="$(gh api "repos/$REPOSITORY/git/ref/heads/develop" --jq '.object.sha')"
@@ -783,7 +800,8 @@ jobs:
             exit 0
           fi
 
-          # Use the workflow token, not the App token: no automatic PR CI or push CI.
+          # The App creates the PR so its workflows do not require GITHUB_TOKEN approval.
+          # The workflow token retains responsibility for status updates and the merge.
           pr_number="$(
             gh api --method GET "repos/$REPOSITORY/pulls" \
               -f state=open -f base=develop -f "head=${REPOSITORY%%/*}:main" \
@@ -791,7 +809,7 @@ jobs:
           )"
           if [[ -z "$pr_number" ]]; then
             pr_number="$(
-              gh api --method POST "repos/$REPOSITORY/pulls" \
+              GH_TOKEN="$PR_TOKEN" gh api --method POST "repos/$REPOSITORY/pulls" \
                 -f base=develop -f head=main \
                 -f title="Back-merge main into develop" \
                 -f body="Automatic Gitflow synchronization. Development checks run after the merge and do not gate synchronization." \
@@ -820,11 +838,22 @@ jobs:
             -f description="Validated same-repository main -> develop synchronization" \
             -f "target_url=$RUN_URL" >/dev/null
 
-          # GitHub still enforces branch rules and rejects conflicts or a changed head.
-          result="$(
-            gh api --method PUT "repos/$REPOSITORY/pulls/$pr_number/merge" \
-              -f merge_method=merge -f "sha=$main_sha"
-          )"
+          # The App-triggered topology job can briefly leave branch rules pending.
+          # Retry only HTTP 405; never bypass protection, conflicts, or a changed head.
+          merge_error="$RUNNER_TEMP/backmerge-error.log"
+          for attempt in {1..30}; do
+            if result="$(
+              gh api --method PUT "repos/$REPOSITORY/pulls/$pr_number/merge" \
+                -f merge_method=merge -f "sha=$main_sha" 2>"$merge_error"
+            )"; then
+              break
+            fi
+            if ! grep -q 'HTTP 405' "$merge_error" || [[ "$attempt" == "30" ]]; then
+              cat "$merge_error" >&2
+              exit 1
+            fi
+            sleep 2
+          done
           jq -e '.merged == true' <<<"$result" >/dev/null || {
             echo "::error::GitHub did not merge the synchronization PR."
             exit 1
@@ -847,7 +876,7 @@ jobs:
           MERGE_SHA: ${{ steps.sync.outputs.merge_sha }}
         run: |
           set -euo pipefail
-          # Explicit dispatch is needed because GITHUB_TOKEN suppresses automatic PR workflows.
+          # The App-created PR runs topology only; dispatch the non-gating health checks.
           # Check the resulting develop commit, not the pre-merge main commit.
           jq -n --arg sha "$MERGE_SHA" '{ref: "develop", inputs: {commit_sha: $sha}}' |
             gh api --method POST "repos/$REPOSITORY/actions/workflows/PR-develop.yml/dispatches" --input -
