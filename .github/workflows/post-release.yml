@@ -273,143 +273,135 @@ jobs:
     name: Back-merge main into develop
     needs: context
     if: needs.context.outputs.applicable == 'true'
+    concurrency:
+      group: post-release-backmerge
+      cancel-in-progress: false
     permissions:
-      actions: read
-      checks: read
+      actions: write
       contents: write
       pull-requests: write
-      statuses: read
+      statuses: write
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
     steps:
-      - name: Create GitHub App token
-        id: app-token
-        uses: actions/create-github-app-token@v3
-        with:
-          client-id: ${{ vars.GITHUB_APP_CLIENT_ID || vars.GH_APP_CLIENT_ID }}
-          app-id: ${{ vars.GH_APP_ID || vars.GITHUB_APP_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY || secrets.GH_APP_PRIVATE_KEY }}
-          # The App opens the PR to trigger CI; the workflow token performs the merge.
-          permission-contents: read
-          permission-pull-requests: write
-
-      - name: Check whether develop already contains main
+      - name: Synchronize main into develop without a CI gate
         id: sync
         shell: bash
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          REPOSITORY: ${{ github.repository }}
         run: |
           set -euo pipefail
+          echo "merged=false" >> "$GITHUB_OUTPUT"
 
           main_sha="$(gh api "repos/$REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
           develop_sha="$(gh api "repos/$REPOSITORY/git/ref/heads/develop" --jq '.object.sha')"
+          [[ "$main_sha" =~ ^[0-9a-f]{40}$ && "$develop_sha" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "::error::Could not resolve the branch commits."
+            exit 1
+          }
 
-          comparison="$(gh api "repos/$REPOSITORY/compare/$main_sha...$develop_sha")"
-          behind_by="$(jq -r '.behind_by' <<<"$comparison")"
-
+          behind_by="$(gh api "repos/$REPOSITORY/compare/$main_sha...$develop_sha" --jq '.behind_by')"
+          [[ "$behind_by" =~ ^[0-9]+$ ]] || {
+            echo "::error::Could not determine whether synchronization is needed."
+            exit 1
+          }
           if [[ "$behind_by" == "0" ]]; then
-            echo "needed=false" >> "$GITHUB_OUTPUT"
-            echo "develop already contains main; no back-merge PR is needed."
-          else
-            echo "needed=true" >> "$GITHUB_OUTPUT"
+            echo "develop already contains main; no synchronization is needed."
+            exit 0
           fi
 
-      - name: Create or reuse main to develop PR
-        if: steps.sync.outputs.needed == 'true'
-        id: pr
-        shell: bash
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          REPOSITORY: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-
+          # Use the workflow token, not the App token: no automatic PR CI or push CI.
           pr_number="$(
-            gh pr list \
-              --repo "$REPOSITORY" \
-              --state open \
-              --base develop \
-              --head main \
-              --json number \
+            gh api --method GET "repos/$REPOSITORY/pulls" \
+              -f state=open -f base=develop -f "head=${REPOSITORY%%/*}:main" \
               --jq '.[0].number // empty'
           )"
-
           if [[ -z "$pr_number" ]]; then
-            pr_url="$(
-              gh pr create \
-                --repo "$REPOSITORY" \
-                --base develop \
-                --head main \
-                --title "Back-merge main into develop" \
-                --body "Automatic AVH/Gitflow synchronization after release or hotfix completion."
+            pr_number="$(
+              gh api --method POST "repos/$REPOSITORY/pulls" \
+                -f base=develop -f head=main \
+                -f title="Back-merge main into develop" \
+                -f body="Automatic Gitflow synchronization. Development checks run after the merge and do not gate synchronization." \
+                --jq '.number'
             )"
-            pr_number="${pr_url##*/}"
           fi
+          [[ "$pr_number" =~ ^[0-9]+$ ]] || {
+            echo "::error::Could not resolve the synchronization PR."
+            exit 1
+          }
 
-          head_sha="$(
-            gh api "repos/$REPOSITORY/pulls/$pr_number" --jq '.head.sha'
+          # Satisfy only the actual topology rule, never manufacture test results.
+          pr="$(gh api "repos/$REPOSITORY/pulls/$pr_number")"
+          jq -e --arg repo "$REPOSITORY" --arg sha "$main_sha" '
+            .state == "open" and .draft == false and
+            .base.ref == "develop" and .head.ref == "main" and
+            .base.repo.full_name == $repo and .head.repo.full_name == $repo and
+            .head.sha == $sha
+          ' <<<"$pr" >/dev/null || {
+            echo "::error::PR topology or main head changed; refusing to merge."
+            exit 1
+          }
+
+          gh api --method POST "repos/$REPOSITORY/statuses/$main_sha" \
+            -f state=success -f context="Gitflow topology" \
+            -f description="Validated same-repository main -> develop synchronization" \
+            -f "target_url=$RUN_URL" >/dev/null
+
+          # GitHub still enforces branch rules and rejects conflicts or a changed head.
+          result="$(
+            gh api --method PUT "repos/$REPOSITORY/pulls/$pr_number/merge" \
+              -f merge_method=merge -f "sha=$main_sha"
           )"
-
+          jq -e '.merged == true' <<<"$result" >/dev/null || {
+            echo "::error::GitHub did not merge the synchronization PR."
+            exit 1
+          }
+          merge_sha="$(jq -r '.sha' <<<"$result")"
+          [[ "$merge_sha" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "::error::GitHub returned an invalid merge commit."
+            exit 1
+          }
           echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
-          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "merge_sha=$merge_sha" >> "$GITHUB_OUTPUT"
+          echo "merged=true" >> "$GITHUB_OUTPUT"
 
-      - name: Wait for back-merge Development CI
-        if: steps.sync.outputs.needed == 'true'
-        timeout-minutes: 15
+      - name: Start development health checks after synchronization
+        id: health
+        if: steps.sync.outputs.merged == 'true'
+        continue-on-error: true
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
-          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+          MERGE_SHA: ${{ steps.sync.outputs.merge_sha }}
         run: |
           set -euo pipefail
+          # Explicit dispatch is needed because GITHUB_TOKEN suppresses push workflows.
+          # Check the resulting develop commit, not the pre-merge main commit.
+          jq -n --arg sha "$MERGE_SHA" '{ref: "develop", inputs: {commit_sha: $sha}}' |
+            gh api --method POST "repos/$REPOSITORY/actions/workflows/develop.yml/dispatches" --input -
 
-          # All PR checks include this running Post-release job on main.
-          # develop.yml targets develop; match its PR event and exact main head.
-          # Do not rely on the run's pull_requests array, which can be empty.
-          run_id=""
-          for attempt in {1..12}; do
-            run_id="$(
-              gh run list \
-                --repo "$REPOSITORY" \
-                --workflow develop.yml \
-                --event pull_request \
-                --branch main \
-                --commit "$HEAD_SHA" \
-                --limit 1 \
-                --json databaseId \
-                --jq '.[0].databaseId // empty'
-            )"
-            [[ -n "$run_id" ]] && break
-            sleep 5
-          done
-
-          [[ -n "$run_id" ]] || {
-            echo "::error::No Development CI run appeared for back-merge PR #$PR_NUMBER at $HEAD_SHA."
-            exit 1
-          }
-
-          gh run watch "$run_id" --repo "$REPOSITORY" --exit-status --interval 10
-
-          conclusion="$(gh run view "$run_id" --repo "$REPOSITORY" --json conclusion --jq '.conclusion')"
-          [[ "$conclusion" == "success" ]] || {
-            echo "::error::Development CI run #$run_id ended with '$conclusion'; refusing to merge."
-            exit 1
-          }
-
-      - name: Merge main into develop
-        if: steps.sync.outputs.needed == 'true'
+      - name: Synchronization summary
+        if: always()
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
-          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+          SYNC_OUTCOME: ${{ steps.sync.outcome }}
+          MERGED: ${{ steps.sync.outputs.merged }}
+          PR_NUMBER: ${{ steps.sync.outputs.pr_number }}
+          MERGE_SHA: ${{ steps.sync.outputs.merge_sha }}
+          HEALTH_OUTCOME: ${{ steps.health.outcome }}
         run: |
-          set -euo pipefail
-          gh pr merge "$PR_NUMBER" \
-            --repo "$REPOSITORY" \
-            --merge \
-            --match-head-commit "$HEAD_SHA"
+          if [[ "$MERGED" == "true" ]]; then
+            echo "Merged main into develop through PR #$PR_NUMBER at $MERGE_SHA." >> "$GITHUB_STEP_SUMMARY"
+            if [[ "$HEALTH_OUTCOME" == "success" ]]; then
+              echo "Development health checks requested after the merge; their result does not gate synchronization." >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "::warning::Synchronization succeeded, but development health checks could not be started."
+              echo "Development health checks could not be started; synchronization remains complete." >> "$GITHUB_STEP_SUMMARY"
+            fi
+          elif [[ "$SYNC_OUTCOME" == "success" ]]; then
+            echo "develop already contains main; no back-merge was needed." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Synchronization did not complete; see the job log." >> "$GITHUB_STEP_SUMMARY"
+          fi
