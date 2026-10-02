@@ -1,121 +1,81 @@
 <script lang="ts">
-  import { fly } from "svelte/transition";
+  import * as Sheet from "$lib/components/ui/sheet/index.js";
 
   let {
-    open,
-    onClose
+    open = $bindable(false)
   }: {
     open: boolean;
-    onClose: () => void;
   } = $props();
 </script>
 
-{#if open}
-  <button
-    class="backdrop"
-    type="button"
-    aria-label="Close navigation"
-    onclick={onClose}
-  ></button>
-
-  <aside
+<Sheet.Root bind:open>
+  <Sheet.Content
     id="side-navigation"
     class="navigation"
+    side="left"
     aria-label="Navigation"
-    transition:fly={{ x: -24, duration: 160 }}
   >
-    <div class="navigation-header">
-      <strong>Navigation</strong>
-      <button
-        class="close-button"
-        type="button"
-        aria-label="Close navigation"
-        onclick={onClose}
-      >
-        <span aria-hidden="true">&times;</span>
-      </button>
-    </div>
-  </aside>
-{/if}
+    <Sheet.Header class="navigation-header">
+      <Sheet.Title class="navigation-title">Navigation</Sheet.Title>
+    </Sheet.Header>
+  </Sheet.Content>
+</Sheet.Root>
 
 <style>
-  .backdrop {
-    position: fixed;
-    z-index: 39;
-    inset: var(--app-header-height) 0 0;
-    border: 0;
+  :global([data-slot="sheet-overlay"]) {
+    top: var(--app-header-height);
     background: color-mix(
       in srgb,
       var(--color-background) 48%,
       transparent
     );
-    cursor: default;
   }
 
-  .navigation {
-    position: fixed;
-    z-index: 40;
-    top: var(--app-header-height);
-    bottom: 0;
-    left: 0;
-    width: min(20rem, 86vw);
-    border-right: 1px solid color-mix(
+  :global(.navigation) {
+    top: var(--app-header-height) !important;
+    bottom: 0 !important;
+    width: min(20rem, 86vw) !important;
+    height: auto !important;
+    max-width: none !important;
+    gap: 0 !important;
+    border-color: color-mix(
       in srgb,
       var(--color-surface) 56%,
       var(--color-background)
-    );
+    ) !important;
     background: color-mix(
       in srgb,
       var(--color-background) 92%,
       var(--color-surface)
-    );
+    ) !important;
+    color: var(--color-foreground);
     box-shadow: 0.8rem 0 2rem
-      color-mix(in srgb, var(--color-background) 55%, transparent);
+      color-mix(in srgb, var(--color-background) 55%, transparent) !important;
   }
 
-  .navigation-header {
-    display: flex;
+  :global(.navigation-header) {
     min-height: 3.5rem;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
     padding: 0.5rem 0.75rem 0.5rem 1rem;
   }
 
-  strong {
+  :global(.navigation-title) {
     color: var(--color-foreground);
     font-size: 0.9rem;
   }
 
-  .close-button {
-    display: grid;
+  :global(.navigation > button) {
     width: 2.5rem;
     height: 2.5rem;
-    padding: 0;
-    border: 0;
     border-radius: 0.55rem;
-    background: transparent;
     color: var(--color-foreground);
-    cursor: pointer;
-    font-size: 1.75rem;
-    line-height: 1;
-    place-items: center;
+    opacity: 1;
   }
 
-  .close-button:hover {
+  :global(.navigation > button:hover) {
     background: color-mix(
       in srgb,
       var(--color-surface) 30%,
       transparent
     );
-  }
-
-  .close-button:focus-visible {
-    outline: 3px solid color-mix(
-      in srgb,
-      var(--color-foreground) 65%,
-      transparent
-    );
-    outline-offset: 2px;
   }
 </style>
