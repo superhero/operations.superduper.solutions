@@ -4,9 +4,9 @@ Thank you for contributing to `operations.superduper.solutions`.
 
 ## Architectural decision records
 
-- [Simplify](doc/ADR/simplify.md)
-- [Colors](doc/ADR/colors.md)
-- [Security](doc/ADR/security.md)
+- [Simplify](doc/adr/simplify.md)
+- [Colors](doc/adr/colors.md)
+- [Security](doc/adr/security.md)
 
 ## Licensing
 
