@@ -1,21 +1,74 @@
 name: Post-release
 
 on:
-  pull_request:
+  push:
     branches:
       - main
-    types:
-      - closed
+
+permissions:
+  contents: read
 
 jobs:
+  context:
+    name: Resolve release context
+    permissions:
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    outputs:
+      applicable: ${{ steps.release.outputs.applicable }}
+      pr_number: ${{ steps.release.outputs.pr_number }}
+      head_ref: ${{ steps.release.outputs.head_ref }}
+      head_sha: ${{ steps.release.outputs.head_sha }}
+      merge_sha: ${{ steps.release.outputs.merge_sha }}
+
+    steps:
+      - name: Resolve merged release or hotfix PR
+        id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          MERGE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          pr="$(
+            gh api "repos/$REPOSITORY/commits/$MERGE_SHA/pulls" |
+              jq -c '[
+                .[] |
+                select(
+                  .base.ref == "main" and
+                  (
+                    (.head.ref | startswith("release/")) or
+                    (.head.ref | startswith("hotfix/"))
+                  )
+                )
+              ][0] // empty'
+          )"
+
+          if [[ -z "$pr" ]]; then
+            echo "applicable=false" >> "$GITHUB_OUTPUT"
+            echo "No merged release/* or hotfix/* PR is associated with $MERGE_SHA; post-release work is not applicable."
+            exit 0
+          fi
+
+          pr_number="$(jq -r '.number' <<<"$pr")"
+          head_ref="$(jq -r '.head.ref' <<<"$pr")"
+          head_sha="$(jq -r '.head.sha' <<<"$pr")"
+
+          echo "applicable=true" >> "$GITHUB_OUTPUT"
+          echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
+          echo "head_ref=$head_ref" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "merge_sha=$MERGE_SHA" >> "$GITHUB_OUTPUT"
+
+          echo "Resolved PR #$pr_number ($head_ref @ ${head_sha:0:7}) merged as ${MERGE_SHA:0:7}."
+
   tag:
     name: Create release tag
-    if: >-
-      github.event.pull_request.merged == true &&
-      (
-        startsWith(github.event.pull_request.head.ref, 'release/') ||
-        startsWith(github.event.pull_request.head.ref, 'hotfix/')
-      )
+    needs: context
+    if: needs.context.outputs.applicable == 'true'
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -24,14 +77,14 @@ jobs:
       - name: Check out merge commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ needs.context.outputs.merge_sha }}
           fetch-depth: 0
 
       - name: Create annotated SemVer tag
         shell: bash
         env:
-          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
-          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          HEAD_BRANCH: ${{ needs.context.outputs.head_ref }}
+          MERGE_SHA: ${{ needs.context.outputs.merge_sha }}
         run: |
           set -euo pipefail
 
@@ -77,12 +130,8 @@ jobs:
 
   deploy:
     name: Deploy validated bundle
-    if: >-
-      github.event.pull_request.merged == true &&
-      (
-        startsWith(github.event.pull_request.head.ref, 'release/') ||
-        startsWith(github.event.pull_request.head.ref, 'hotfix/')
-      )
+    needs: context
+    if: needs.context.outputs.applicable == 'true'
     permissions:
       actions: read
       contents: read
@@ -100,9 +149,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ needs.context.outputs.pr_number }}
+          HEAD_SHA: ${{ needs.context.outputs.head_sha }}
+          HEAD_REF: ${{ needs.context.outputs.head_ref }}
         run: |
           set -euo pipefail
 
@@ -158,7 +207,7 @@ jobs:
         if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          MERGE_SHA: ${{ needs.context.outputs.merge_sha }}
           DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
           PAGES_DEPLOYMENT_ID: ${{ steps.cloudflare.outputs.pages-deployment-id }}
           PAGES_ENVIRONMENT: ${{ steps.cloudflare.outputs.pages-environment }}
@@ -208,9 +257,9 @@ jobs:
         env:
           DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
           SOURCE_RUN_ID: ${{ steps.release.outputs.run_id }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
-          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ needs.context.outputs.pr_number }}
+          SOURCE_BRANCH: ${{ needs.context.outputs.head_ref }}
+          SOURCE_SHA: ${{ needs.context.outputs.head_sha }}
         run: |
           {
             echo "**Preview URL:** $DEPLOYMENT_URL"
@@ -221,17 +270,13 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
   backmerge:
-    name: Open main to develop back-merge
-    if: >-
-      github.event.pull_request.merged == true &&
-      (
-        startsWith(github.event.pull_request.head.ref, 'release/') ||
-        startsWith(github.event.pull_request.head.ref, 'hotfix/')
-      )
+    name: Back-merge main into develop
+    needs: context
+    if: needs.context.outputs.applicable == 'true'
     permissions:
-      contents: read
+      checks: read
+      contents: write
       pull-requests: write
-      statuses: write
     runs-on: ubuntu-latest
 
     steps:
@@ -242,9 +287,8 @@ jobs:
           client-id: ${{ vars.GITHUB_APP_CLIENT_ID || vars.GH_APP_CLIENT_ID }}
           app-id: ${{ vars.GH_APP_ID || vars.GITHUB_APP_ID }}
           private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY || secrets.GH_APP_PRIVATE_KEY }}
-          permission-contents: read
+          permission-contents: write
           permission-pull-requests: write
-          permission-statuses: write
 
       - name: Check whether develop already contains main
         id: sync
@@ -306,19 +350,29 @@ jobs:
 
           echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
 
-      - name: Satisfy topology status for known-valid automatic path
+      - name: Wait for back-merge checks
+        if: steps.sync.outputs.needed == 'true'
+        timeout-minutes: 15
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+        run: |
+          set -euo pipefail
+          gh pr checks "$PR_NUMBER" --repo "$REPOSITORY" --watch --interval 10
+
+      - name: Merge main into develop
         if: steps.sync.outputs.needed == 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
           HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
         run: |
           set -euo pipefail
-
-          gh api \
-            --method POST \
-            "repos/$REPOSITORY/statuses/$HEAD_SHA" \
-            -f state=success \
-            -f context="Gitflow topology" \
-            -f description="Known-valid automatic main → develop AVH back-merge"
+          gh pr merge "$PR_NUMBER" \
+            --repo "$REPOSITORY" \
+            --merge \
+            --match-head-commit "$HEAD_SHA"
