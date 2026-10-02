@@ -19,9 +19,24 @@ Then("the production page contains the application title", function ()
   assert.match(html, /operations\.superduper\.solutions/);
 });
 
-Then("the production page contains the smoke-test text", function ()
+Then("the production page contains the OpenAPI source stage", function ()
 {
-  assert.match(html, /CI\/CD smoke test application/);
+  assert.match(html, /OpenAPI source/);
+});
+
+Then("the production page contains the operation stage", function ()
+{
+  assert.match(html, />Operation</);
+});
+
+Then("the production page contains the request stage", function ()
+{
+  assert.match(html, />Request</);
+});
+
+Then("the production page contains the result stage", function ()
+{
+  assert.match(html, />Result</);
 });
 
 Then("the production page contains inline JavaScript", function ()
