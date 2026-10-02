@@ -5,7 +5,7 @@ Thank you for contributing to `operations.superduper.solutions`.
 ## Architectural decision records
 
 - [Simplify](doc/adr/simplify.md)
-- [Colors](doc/adr/colors.md)
+- [UI](doc/adr/ui.md)
 - [Security](doc/adr/security.md)
 - [Gitflow](doc/adr/gitflow.md)
 
@@ -34,4 +34,3 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 Do not replace another author's copyright notice with your own.
 
 The project uses `AGPL-3.0-only`, not `AGPL-3.0-or-later`.
-
