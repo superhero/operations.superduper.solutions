@@ -1,20 +1,14 @@
 # [operations.superduper.solutions](https://operations.superduper.solutions)
 
-[![CI](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fdevelop%2Fcoverage.json)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci.yml)
+[![Main CI](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci.yml?query=branch%3Amain)
+[![Develop CI](https://github.com/superhero/operations.superduper.solutions/actions/workflows/develop.yml/badge.svg?branch=develop)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/develop.yml?query=branch%3Adevelop)
+![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fdevelop%2Fcoverage.json)
 
 A browser-based platform for composing OpenAPI operations into reusable workflows.
 
-## Current development milestone
+## Development status
 
-The current prototype is limited to the workflow diagram interaction itself:
-
-- add nodes;
-- edit node names;
-- move nodes;
-- connect nodes with directed edges.
-
-OpenAPI integration, execution, plugins, persistence, and other workflow behavior are later milestones and are intentionally outside the current development scope.
+This project is under active development and is currently in a pre-release state.
 
 ## License
 

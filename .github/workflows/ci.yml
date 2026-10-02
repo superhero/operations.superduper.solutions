@@ -61,7 +61,7 @@ jobs:
           key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Type Check
-        run: npx --no-install tsc --project tsconfig.json --noEmit
+        run: npm --silent run typecheck
 
   source-test:
     name: Source Test
@@ -87,7 +87,6 @@ jobs:
 
       - name: Source Test
         run: |
-          mkdir -p tmp/test/coverage/v8
           set -o pipefail
           npm --silent run test:source:coverage 2>&1 | tee tmp/test/source-test-output.txt
 
@@ -180,7 +179,7 @@ jobs:
           key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Bundle
-        run: npx --no-install vite build
+        run: npm --silent run build
 
       - name: Upload bundle
         uses: actions/upload-artifact@v7
@@ -221,7 +220,7 @@ jobs:
         run: |
           mkdir -p tmp/test
           set -o pipefail
-          npm --silent test 2>&1 | tee tmp/test/test-output.txt
+          npm --silent run test:acceptance 2>&1 | tee tmp/test/test-output.txt
 
       - name: Hand off test report
         if: always()
@@ -521,18 +520,12 @@ jobs:
                   '
               )"
 
+              git log -1 \
+                --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" \
+                "$squash_sha"
+
               if [[ -n "$expanded" ]]; then
-                printf '%s\n' "$expanded"
-                echo
-                echo "---"
-                echo
-                git log -1 \
-                  --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" \
-                  "$squash_sha"
-              else
-                git log -1 \
-                  --format="- [%h](https://github.com/${GITHUB_REPOSITORY}/commit/%H) %s" \
-                  "$squash_sha"
+                printf '%s\n' "$expanded" | sed 's/^/  /'
               fi
             done
           } >> "$GITHUB_STEP_SUMMARY"
