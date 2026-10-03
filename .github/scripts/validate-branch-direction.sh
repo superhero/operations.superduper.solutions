@@ -10,12 +10,13 @@ usage='Usage: validate-branch-direction.sh <head-branch> <base-branch> <expected
 head_branch="$1"
 base_branch="$2"
 expected_base_pattern="$3"
-shift 3
 
 [[ "$base_branch" == $expected_base_pattern ]] || {
   echo "::error::Target branch '$base_branch' does not match '$expected_base_pattern'."
   exit 1
 }
+
+shift 3
 
 for pattern in "$@"; do
   if [[ "$head_branch" == $pattern ]]; then
