@@ -3,6 +3,7 @@ name: dependency-status
 on:
   push:
     branches:
+      - main
       - develop
     paths:
       - package.json
@@ -11,6 +12,10 @@ on:
   schedule:
     - cron: '0 6 * * *'
   workflow_dispatch:
+
+concurrency:
+  group: status-json-${{ github.ref_name }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -55,7 +60,7 @@ jobs:
             color="orange"
           fi
 
-          mkdir -p tmp/badges
+          mkdir -p tmp/status/dependencies
 
           jq -n \
             --arg message "$message" \
@@ -65,11 +70,67 @@ jobs:
               label: "Dependencies",
               message: $message,
               color: $color
-            }' > tmp/badges/dependencies.json
+            }' > tmp/status/dependencies.json
 
-      - name: Publish dependency status
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
-          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy tmp/badges --project-name=operations-superduper-badges --branch=develop
+          while IFS= read -r package; do
+            current="$(jq -r --arg package "$package" '.devDependencies[$package]' package.json)"
+            latest="$(npm view "$package" version)"
+            label="$package"
+            slug="$(printf '%s' "${package#@}" | sed 's|/|--|g')"
+
+            if [[ "$current" == "$latest" ]]; then
+              package_color="blue"
+            else
+              package_color="orange"
+            fi
+
+            jq -n \
+              --arg label "$label" \
+              --arg current "$current" \
+              --arg color "$package_color" \
+              '{
+                schemaVersion: 1,
+                label: $label,
+                message: $current,
+                color: $color
+              }' > "tmp/status/dependencies/$slug.json"
+          done < <(jq -r '.devDependencies | keys[]' package.json)
+
+
+      - name: Publish dependency status to R2
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_API_TOKEN || secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+
+          [[ -n "$CLOUDFLARE_API_TOKEN" && -n "$CLOUDFLARE_ACCOUNT_ID" ]] || {
+            echo "::error::Cloudflare R2 credentials are not configured in GitHub Actions." >&2
+            exit 1
+          }
+
+          case "$GITHUB_REF_NAME" in
+            main) prefix="" ;;
+            develop) prefix="develop/" ;;
+            *)
+              echo "::error::Unsupported status branch: $GITHUB_REF_NAME" >&2
+              exit 1
+              ;;
+          esac
+
+          while IFS= read -r -d '' file; do
+            key="${file#tmp/status/}"
+            object_key="${prefix}${key}"
+
+            response="$(
+              curl --fail-with-body --silent --show-error \
+                --request PUT \
+                --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                --header "Content-Type: application/json" \
+                --data-binary @"$file" \
+                "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/operations-status/objects/$object_key"
+            )"
+
+            jq -e '.success == true' <<<"$response" >/dev/null
+          done < <(find tmp/status -type f -name '*.json' -print0)
