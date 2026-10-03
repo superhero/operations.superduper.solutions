@@ -39,13 +39,6 @@ Runs the source and acceptance tests defined with Cucumber feature files and ste
 </details>
 
 <details>
-<summary><a href="https://www.npmjs.com/package/jsdom"><code>jsdom</code></a> <img src="https://img.shields.io/npm/v/jsdom" alt="jsdom npm version"></summary>
-
-Provides the DOM environment used by source tests without a browser.
-
-</details>
-
-<details>
 <summary><a href="https://www.npmjs.com/package/@lucide/svelte"><code>@lucide/svelte</code></a> <img src="https://img.shields.io/npm/v/%40lucide%2Fsvelte" alt="@lucide/svelte npm version"></summary>
 
 Provides Svelte icon components used by the menu and sheet UI.
