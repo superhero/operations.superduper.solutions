@@ -111,11 +111,7 @@ jobs:
               ;;
           esac
 
-          semver_re='^[0-9]+\.[0-9]+\.[0-9]+$'
-          [[ "$version" =~ $semver_re ]] || {
-            echo "::error::$kind version '$version' must be unprefixed SemVer MAJOR.MINOR.PATCH."
-            exit 1
-          }
+          bash .github/scripts/validate-semver.sh "$version"
 
           git fetch --quiet --tags --force
 
