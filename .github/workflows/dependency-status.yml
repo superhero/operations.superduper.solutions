@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - feature/dev-dependencies-only
     paths:
       - package.json
       - package-lock.json
@@ -74,7 +75,7 @@ jobs:
             slug="$(printf '%s' "$label" | sed 's|/|--|g')"
 
             if [[ "$current" == "$latest" ]]; then
-              package_color="brightgreen"
+              package_color="blue"
             else
               package_color="orange"
             fi
@@ -82,12 +83,11 @@ jobs:
             jq -n \
               --arg label "$label" \
               --arg current "$current" \
-              --arg latest "$latest" \
               --arg color "$package_color" \
               '{
                 schemaVersion: 1,
                 label: $label,
-                message: ($current + " → " + $latest),
+                message: $current,
                 color: $color
               }' > "tmp/badges/dependencies/$slug.json"
           done < <(jq -r '.devDependencies | keys[]' package.json)
