@@ -7,6 +7,10 @@
 
 A browser-based platform for composing OpenAPI operations into reusable workflows.
 
+## Development status
+
+This project is under active development and is currently in a pre-release state.
+
 ## Dependencies
 
 <a href="https://www.npmjs.com/package/bits-ui"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fbits-ui.json%3Fv%3D3&cacheSeconds=300" alt="bits-ui version status"></a>
@@ -116,6 +120,3 @@ Bundles the production build into a single self-contained `dist/index.html` file
 Provides the workflow canvas, nodes, edges, handles, background, and controls.
 
 
-## Development status
-
-This project is under active development and is currently in a pre-release state.
