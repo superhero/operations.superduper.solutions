@@ -15,21 +15,12 @@ permissions:
   contents: read
 
 jobs:
-  topology:
-    # Keep the existing required check name; GitHub reports this job's actual result.
-    name: Gitflow topology
+  branch-direction:
+    name: Branch Direction
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out trusted base commit
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.base.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Validate PR direction
-        id: validate
+      - name: Validate branch direction
         shell: bash
         env:
           HEAD_BRANCH: ${{ github.head_ref }}
@@ -37,101 +28,195 @@ jobs:
         run: |
           set -euo pipefail
 
-          head="$HEAD_BRANCH"
-          base="$BASE_BRANCH"
-
-          fail() {
-            echo "::error::$1"
-            exit 1
-          }
-
-          echo "Validating PR topology: $head -> $base"
-
-          case "$base" in
+          case "$BASE_BRANCH" in
             develop)
-              case "$head" in
+              case "$HEAD_BRANCH" in
                 feature/*|bugfix/*|release/*|hotfix/*|main) ;;
-                *) fail "Invalid Gitflow topology: '$head' may not merge into 'develop'." ;;
+                *)
+                  echo "::error::Invalid Gitflow direction: '$HEAD_BRANCH' may not merge into 'develop'."
+                  exit 1
+                  ;;
               esac
               ;;
             *)
-              fail "Development CI only validates pull requests targeting 'develop', got '$base'."
+              echo "::error::PR-develop only validates pull requests targeting 'develop', got '$BASE_BRANCH'."
+              exit 1
               ;;
           esac
 
+          echo "Branch direction is valid: $HEAD_BRANCH -> $BASE_BRANCH"
+
+  release-validation:
+    name: Release Validation
+    if: startsWith(github.head_ref, 'release/')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      HEAD_BRANCH: ${{ github.head_ref }}
+
+    steps:
+      - name: Validate release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version="${HEAD_BRANCH#release/}"
           semver_re='^[0-9]+\.[0-9]+\.[0-9]+$'
 
-          version=""
-          kind=""
-          case "$head" in
-            release/*)
-              kind="release"
-              version="${head#release/}"
-              ;;
-            hotfix/*)
-              kind="hotfix"
-              version="${head#hotfix/}"
-              ;;
-          esac
+          [[ "$version" =~ $semver_re ]] || {
+            echo "::error::Release version '$version' must be unprefixed SemVer MAJOR.MINOR.PATCH."
+            exit 1
+          }
 
-          if [[ -n "$version" ]]; then
-            [[ "$version" =~ $semver_re ]] ||
-              fail "$kind branch version '$version' must be unprefixed SemVer MAJOR.MINOR.PATCH."
+          if gh api "repos/$REPOSITORY/git/ref/tags/$version" >/dev/null 2>&1; then
+            echo "::error::Version tag '$version' already exists."
+            exit 1
+          fi
 
-            if git rev-parse -q --verify "refs/tags/$version" >/dev/null; then
-              fail "Version tag '$version' already exists."
+          mapfile -t active_releases < <(
+            gh api --paginate "repos/$REPOSITORY/git/matching-refs/heads/release/" \
+              --jq '.[].ref | sub("^refs/heads/"; "")'
+          )
+
+          other_releases=0
+          for branch in "${active_releases[@]:-}"; do
+            [[ -z "$branch" || "$branch" == "$HEAD_BRANCH" ]] && continue
+
+            branch_version="${branch#release/}"
+            if gh api "repos/$REPOSITORY/git/ref/tags/$branch_version" >/dev/null 2>&1; then
+              continue
             fi
+
+            other_releases=$((other_releases + 1))
+          done
+
+          (( other_releases == 0 )) || {
+            echo "::error::AVH default permits only one active release/* branch at a time."
+            exit 1
+          }
+
+          echo "Release validation passed for $HEAD_BRANCH."
+
+  hotfix-validation:
+    name: Hotfix Validation
+    if: startsWith(github.head_ref, 'hotfix/')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      HEAD_BRANCH: ${{ github.head_ref }}
+      BASE_BRANCH: ${{ github.base_ref }}
+
+    steps:
+      - name: Validate hotfix
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version="${HEAD_BRANCH#hotfix/}"
+          semver_re='^[0-9]+\.[0-9]+\.[0-9]+$'
+
+          [[ "$version" =~ $semver_re ]] || {
+            echo "::error::Hotfix version '$version' must be unprefixed SemVer MAJOR.MINOR.PATCH."
+            exit 1
+          }
+
+          if gh api "repos/$REPOSITORY/git/ref/tags/$version" >/dev/null 2>&1; then
+            echo "::error::Version tag '$version' already exists."
+            exit 1
           fi
 
-          if [[ "$kind" == "release" ]]; then
-            mapfile -t active_releases < <(
-              git ls-remote --heads origin 'refs/heads/release/*' |
-                awk '{sub("refs/heads/","",$2); print $2}'
-            )
-            other_releases=0
-            for branch in "${active_releases[@]:-}"; do
-              [[ -z "$branch" || "$branch" == "$head" ]] && continue
-              branch_version="${branch#release/}"
-              git rev-parse -q --verify "refs/tags/$branch_version" >/dev/null && continue
-              other_releases=$((other_releases + 1))
-            done
-            (( other_releases == 0 )) ||
-              fail "AVH default permits only one active release/* branch at a time."
-          fi
+          mapfile -t active_hotfixes < <(
+            gh api --paginate "repos/$REPOSITORY/git/matching-refs/heads/hotfix/" \
+              --jq '.[].ref | sub("^refs/heads/"; "")'
+          )
 
-          if [[ "$kind" == "hotfix" ]]; then
-            mapfile -t active_hotfixes < <(
-              git ls-remote --heads origin 'refs/heads/hotfix/*' |
-                awk '{sub("refs/heads/","",$2); print $2}'
-            )
-            other_hotfixes=0
-            for branch in "${active_hotfixes[@]:-}"; do
-              [[ -z "$branch" || "$branch" == "$head" ]] && continue
-              branch_version="${branch#hotfix/}"
-              git rev-parse -q --verify "refs/tags/$branch_version" >/dev/null && continue
-              other_hotfixes=$((other_hotfixes + 1))
-            done
-            (( other_hotfixes == 0 )) ||
-              fail "AVH default permits only one active hotfix/* branch at a time."
+          other_hotfixes=0
+          for branch in "${active_hotfixes[@]:-}"; do
+            [[ -z "$branch" || "$branch" == "$HEAD_BRANCH" ]] && continue
 
-            git fetch --quiet origin "$base" --tags --force || true
+            branch_version="${branch#hotfix/}"
+            if gh api "repos/$REPOSITORY/git/ref/tags/$branch_version" >/dev/null 2>&1; then
+              continue
+            fi
 
-            latest_tag="$(
-              git tag --merged "origin/$base" 2>/dev/null |
-                grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' |
-                sort -V |
-                tail -n 1 || true
+            other_hotfixes=$((other_hotfixes + 1))
+          done
+
+          (( other_hotfixes == 0 )) || {
+            echo "::error::AVH default permits only one active hotfix/* branch at a time."
+            exit 1
+          }
+
+          mapfile -t semver_tags < <(
+            gh api --paginate "repos/$REPOSITORY/tags?per_page=100" --jq '.[].name' |
+              grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' |
+              sort -Vr
+          )
+
+          latest_tag=""
+          for tag in "${semver_tags[@]:-}"; do
+            [[ -z "$tag" ]] && continue
+
+            behind_by="$(
+              gh api "repos/$REPOSITORY/compare/$tag...$BASE_BRANCH" --jq '.behind_by'
             )"
 
-            if [[ -n "$latest_tag" ]]; then
-              IFS=. read -r major minor patch <<< "$latest_tag"
-              expected="$major.$minor.$((patch + 1))"
-              [[ "$version" == "$expected" ]] ||
-                fail "Hotfix '$version' must be the next patch after '$latest_tag': expected '$expected'."
+            if [[ "$behind_by" == "0" ]]; then
+              latest_tag="$tag"
+              break
             fi
+          done
+
+          if [[ -n "$latest_tag" ]]; then
+            IFS=. read -r major minor patch <<< "$latest_tag"
+            expected="$major.$minor.$((patch + 1))"
+
+            [[ "$version" == "$expected" ]] || {
+              echo "::error::Hotfix '$version' must be the next patch after '$latest_tag': expected '$expected'."
+              exit 1
+            }
           fi
 
-          echo "Gitflow topology is valid."
+          echo "Hotfix validation passed for $HEAD_BRANCH."
+
+  gitflow-status:
+    # Compatibility status required by the existing repository ruleset.
+    name: Gitflow topology
+    needs:
+      - branch-direction
+      - release-validation
+      - hotfix-validation
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Confirm Gitflow validation
+        shell: bash
+        env:
+          BRANCH_DIRECTION: ${{ needs.branch-direction.result }}
+          RELEASE_VALIDATION: ${{ needs.release-validation.result }}
+          HOTFIX_VALIDATION: ${{ needs.hotfix-validation.result }}
+        run: |
+          set -euo pipefail
+
+          [[ "$BRANCH_DIRECTION" == "success" ]] || {
+            echo "::error::Branch Direction did not pass."
+            exit 1
+          }
+
+          [[ "$RELEASE_VALIDATION" == "success" || "$RELEASE_VALIDATION" == "skipped" ]] || {
+            echo "::error::Release Validation did not pass."
+            exit 1
+          }
+
+          [[ "$HOTFIX_VALIDATION" == "success" || "$HOTFIX_VALIDATION" == "skipped" ]] || {
+            echo "::error::Hotfix Validation did not pass."
+            exit 1
+          }
+
+          echo "Gitflow validation passed."
 
   installation:
     name: Installation
