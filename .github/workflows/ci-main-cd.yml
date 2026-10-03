@@ -214,20 +214,6 @@ jobs:
             --name coverage-status \
             --dir tmp/badges
 
-      - name: Download validated coverage report
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-          SOURCE_RUN_ID: ${{ needs.deploy-release.outputs.source_run_id }}
-        run: |
-          set -euo pipefail
-          mkdir -p tmp/coverage
-          gh run download "$SOURCE_RUN_ID" \
-            --repo "$REPOSITORY" \
-            --name coverage \
-            --dir tmp/coverage
-
       - name: Publish coverage status to R2
         shell: bash
         env:
@@ -252,35 +238,6 @@ jobs:
 
           jq -e '.success == true' <<<"$response" >/dev/null
 
-      - name: Publish coverage report to R2
-        shell: bash
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_API_TOKEN || secrets.CLOUDFLARE_PAGES_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set -euo pipefail
-
-          [[ -n "$CLOUDFLARE_API_TOKEN" && -n "$CLOUDFLARE_ACCOUNT_ID" ]] || {
-            echo "::error::Cloudflare R2 credentials are not configured in GitHub Actions." >&2
-            exit 1
-          }
-
-          while IFS= read -r -d '' file; do
-            relative="${file#tmp/coverage/}"
-            object_key="coverage/${relative}"
-            content_type="$(file --brief --mime-type "$file")"
-
-            response="$(
-              curl --fail-with-body --silent --show-error \
-                --request PUT \
-                --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-                --header "Content-Type: $content_type" \
-                --data-binary @"$file" \
-                "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/operations-status/objects/$object_key"
-            )"
-
-            jq -e '.success == true' <<<"$response" >/dev/null
-          done < <(find tmp/coverage -type f -print0)
 
   backmerge-develop:
     name: Backmerge Develop
