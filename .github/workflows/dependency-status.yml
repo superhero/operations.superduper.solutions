@@ -3,7 +3,7 @@ name: dependency-status
 on:
   push:
     branches:
-      - develop
+      - main
     paths:
       - package.json
       - package-lock.json
