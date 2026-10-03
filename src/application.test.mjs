@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { Given, Then, When } from "@cucumber/cucumber";
-import { JSDOM } from "jsdom";
 import { startApplication } from "./bootstrap.ts";
 
 const component = {};
@@ -10,15 +9,16 @@ let mountedComponent;
 let mountedTarget;
 let startupError;
 
-function mountComponent(componentToMount, { target })
+function reset(target)
 {
-  mountedComponent = componentToMount;
-  mountedTarget = target;
-}
+  documentRef = {
+    querySelector(selector)
+    {
+      assert.equal(selector, "#app");
+      return target;
+    }
+  };
 
-function reset(html)
-{
-  documentRef = new JSDOM(html).window.document;
   mountedComponent = undefined;
   mountedTarget = undefined;
   startupError = undefined;
@@ -26,12 +26,12 @@ function reset(html)
 
 Given("a document with an application mount target", function ()
 {
-  reset('<div id="app"></div>');
+  reset({});
 });
 
 Given("a document without an application mount target", function ()
 {
-  reset("<main></main>");
+  reset(null);
 });
 
 When("the application starts", function ()
@@ -45,6 +45,12 @@ When("the application starts", function ()
     startupError = error;
   }
 });
+
+function mountComponent(componentToMount, { target })
+{
+  mountedComponent = componentToMount;
+  mountedTarget = target;
+}
 
 Then("the application is mounted into the target", function ()
 {
