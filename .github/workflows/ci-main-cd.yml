@@ -1,4 +1,4 @@
-name: release-on-main
+name: ci-main-cd
 run-name: "#${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
 
 on:
@@ -86,7 +86,7 @@ jobs:
           run_id="$(
             gh run list \
               --repo "$REPOSITORY" \
-              --workflow pr-on-main.yml \
+              --workflow ci-main.yml \
               --event pull_request \
               --commit "$HEAD_SHA" \
               --status success \

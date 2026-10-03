@@ -1,10 +1,10 @@
-name: pr-on-support
+name: ci-release
 run-name: "#${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
 
 on:
   pull_request:
     branches:
-      - 'support/**'
+      - 'release/**'
     types:
       - opened
       - synchronize
@@ -13,7 +13,7 @@ on:
       - ready_for_review
 
 concurrency:
-  group: support-ci-${{ github.event.pull_request.number }}
+  group: release-ci-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:
@@ -40,7 +40,7 @@ jobs:
           bash .github/scripts/validate-branch-direction.sh \
             "$HEAD_BRANCH" \
             "$BASE_BRANCH" \
-            'support/*' \
+            'release/*' \
             'hotfix/*'
 
   validate-hotfix:
