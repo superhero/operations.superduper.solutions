@@ -5,13 +5,13 @@ on:
   # Validate proposed development changes before merging, not on the resulting push.
   pull_request:
     branches:
-    - develop
+      - develop
     types:
-    - opened
-    - synchronize
-    - reopened
-    - edited
-    - ready_for_review
+      - opened
+      - synchronize
+      - reopened
+      - edited
+      - ready_for_review
 
 concurrency:
   group: development-ci-${{ github.event.pull_request.number }}
