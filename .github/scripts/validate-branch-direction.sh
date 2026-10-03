@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-head_branch="${1:?Usage: validate-branch-direction.sh <head-branch> <base-branch> <expected-base> <allowed-head-pattern>...}"
-base_branch="${2:?Usage: validate-branch-direction.sh <head-branch> <base-branch> <expected-base> <allowed-head-pattern>...}"
-expected_base="${3:?Usage: validate-branch-direction.sh <head-branch> <base-branch> <expected-base> <allowed-head-pattern>...}"
+head_branch="${1:?Usage: validate-branch-direction.sh <head-branch> <base-branch> <expected-base-pattern> <allowed-head-pattern>...}"
+base_branch="${2:?Usage: validate-branch-direction.sh <head-branch> <base-branch> <expected-base-pattern> <allowed-head-pattern>...}"
+expected_base_pattern="${3:?Usage: validate-branch-direction.sh <head-branch> <base-branch> <expected-base-pattern> <allowed-head-pattern>...}"
 shift 3
 
-[[ "$base_branch" == "$expected_base" ]] || {
-  echo "::error::Expected target branch '$expected_base', got '$base_branch'."
+[[ "$base_branch" == $expected_base_pattern ]] || {
+  echo "::error::Target branch '$base_branch' does not match '$expected_base_pattern'."
   exit 1
 }
 
