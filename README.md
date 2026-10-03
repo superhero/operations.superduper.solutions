@@ -3,7 +3,7 @@
 [![Main Release Gate](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-main.yml?branch=main&label=Main%20Release%20Gate)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-main.yml?query=branch%3Amain)
 [![Develop Integration Gate](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-develop.yml?branch=develop&label=Develop%20Integration%20Gate)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-develop.yml?query=branch%3Adevelop)
 [![Production Deployment](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-main-cd.yml?branch=main&label=Production%20Deployment)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-main-cd.yml?query=branch%3Amain)
-![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fdevelop%2Fcoverage.json)
+![Test Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fdevelop%2Fcoverage.json&label=Test%20Coverage)
 
 A browser-based platform for composing OpenAPI operations into reusable workflows.
 
