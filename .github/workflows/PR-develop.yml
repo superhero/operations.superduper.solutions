@@ -15,8 +15,8 @@ permissions:
   contents: read
 
 jobs:
-  branch-direction:
-    name: Branch Direction
+  validate-branch-direction:
+    name: Validate Branch Direction
     runs-on: ubuntu-latest
 
     steps:
