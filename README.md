@@ -7,7 +7,7 @@
 
 A browser-based platform for composing OpenAPI operations into reusable workflows.
 
-## [![Dependencies](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies.json)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/dependency-status.yml)
+## Dependencies
 
 <a href="https://www.npmjs.com/package/bits-ui"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fbits-ui.json%3Fv%3D3&cacheSeconds=300" alt="bits-ui version status"></a>
 
