@@ -215,7 +215,8 @@ jobs:
       - build
     if: >-
       ${{
-        github.event.pull_request.head.repo.full_name == github.repository
+        always()
+        && github.event.pull_request.head.repo.full_name == github.repository
         && !github.event.pull_request.draft
         && needs.validate-branch-direction.result == 'success'
         && (needs.validate-release.result == 'success' || needs.validate-release.result == 'skipped')
