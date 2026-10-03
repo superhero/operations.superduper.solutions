@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - develop
     paths:
       - package.json
       - package-lock.json
@@ -96,4 +97,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy tmp/badges --project-name=operations-superduper-badges --branch=main
+          command: pages deploy tmp/badges --project-name=operations-superduper-badges --branch=${{ github.ref_name }}
