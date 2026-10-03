@@ -96,31 +96,41 @@ jobs:
               }' > "tmp/badges/dependencies/$slug.json"
           done < <(jq -r '.devDependencies | keys[]' package.json)
 
-      - name: Preserve coverage status
+
+      - name: Publish dependency status to R2
         shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_API_TOKEN || secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
 
-          if [[ "$GITHUB_REF_NAME" == "main" ]]; then
-            base_url="https://operations-superduper-badges.pages.dev"
-          else
-            base_url="https://${GITHUB_REF_NAME}.operations-superduper-badges.pages.dev"
-          fi
+          [[ -n "$CLOUDFLARE_API_TOKEN" && -n "$CLOUDFLARE_ACCOUNT_ID" ]] || {
+            echo "::error::Cloudflare R2 credentials are not configured in GitHub Actions." >&2
+            exit 1
+          }
 
-          if ! curl -fsSL "$base_url/coverage.json" -o tmp/badges/coverage.json; then
-            rm -f tmp/badges/coverage.json
+          case "$GITHUB_REF_NAME" in
+            main) prefix="" ;;
+            develop) prefix="develop/" ;;
+            *)
+              echo "::error::Unsupported badge branch: $GITHUB_REF_NAME" >&2
+              exit 1
+              ;;
+          esac
 
-            if [[ "$GITHUB_REF_NAME" != "main" ]]; then
-              curl -fsSL \
-                "https://operations-superduper-badges.pages.dev/coverage.json" \
-                -o tmp/badges/coverage.json \
-                || rm -f tmp/badges/coverage.json
-            fi
-          fi
+          while IFS= read -r -d '' file; do
+            key="${file#tmp/badges/}"
+            object_key="${prefix}${key}"
 
-      - name: Publish dependency status
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
-          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy tmp/badges --project-name=operations-superduper-badges --branch=${{ github.ref_name }}
+            response="$(
+              curl --fail-with-body --silent --show-error \
+                --request PUT \
+                --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                --header "Content-Type: application/json" \
+                --data-binary @"$file" \
+                "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/operations-badges/objects/$object_key"
+            )"
+
+            jq -e '.success == true' <<<"$response" >/dev/null
+          done < <(find tmp/badges -type f -name '*.json' -print0)
