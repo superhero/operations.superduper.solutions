@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - feature/dev-dependencies-only
     paths:
       - package.json
       - package-lock.json
