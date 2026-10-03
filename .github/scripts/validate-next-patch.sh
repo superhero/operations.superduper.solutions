@@ -21,9 +21,7 @@ latest_tag=""
 for tag in "${semver_tags[@]:-}"; do
   [[ -z "$tag" ]] && continue
 
-  behind_by="$(
-    gh api "repos/$repository/compare/$tag...$base_branch" --jq '.behind_by'
-  )"
+  behind_by="$(gh api "repos/$repository/compare/$tag...$base_branch" --jq '.behind_by')"
 
   if [[ "$behind_by" == "0" ]]; then
     latest_tag="$tag"
