@@ -5,6 +5,9 @@
 [![Production Deployment](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-main-cd.yml?label=Production%20Deployment)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-main-cd.yml)
 ![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fdevelop%2Fcoverage.json)
 [![Dependencies](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fbadges%2Fdependencies.json)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/dependency-status.yml)
+[![Node.js](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fmain%2Fpackage.json&query=%24.engines.node&label=Node.js&logo=node.js)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fmain%2Fpackage.json&query=%24.devDependencies.typescript&label=TypeScript&logo=typescript)](https://www.typescriptlang.org/)
+[![Svelte](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fmain%2Fpackage.json&query=%24.devDependencies.svelte&label=Svelte&logo=svelte)](https://svelte.dev/)
 
 A browser-based platform for composing OpenAPI operations into reusable workflows.
 
