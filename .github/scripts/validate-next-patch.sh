@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repository="${1:?Usage: validate-next-patch.sh <repository> <base-branch> <version>}"
-base_branch="${2:?Usage: validate-next-patch.sh <repository> <base-branch> <version>}"
-version="${3:?Usage: validate-next-patch.sh <repository> <base-branch> <version>}"
+usage='Usage: validate-next-patch.sh <repository> <base-branch> <version>'
+
+[[ -n "${1:-}" ]] || { printf '%s\n<repository> is missing\n' "$usage" >&2; exit 1; }
+[[ -n "${2:-}" ]] || { printf '%s\n<base-branch> is missing\n' "$usage" >&2; exit 1; }
+[[ -n "${3:-}" ]] || { printf '%s\n<version> is missing\n' "$usage" >&2; exit 1; }
+
+repository="$1"
+base_branch="$2"
+version="$3"
 
 mapfile -t semver_tags < <(
   gh api --paginate "repos/$repository/tags?per_page=100" --jq '.[].name' |
@@ -34,8 +40,8 @@ IFS=. read -r major minor patch <<< "$latest_tag"
 expected="$major.$minor.$((patch + 1))"
 
 [[ "$version" == "$expected" ]] || {
-  echo "::error::Version '$version' must be the next patch after '$latest_tag': expected '$expected'."
+  echo "::error::Version '$version' must be the next patch after '$latest_tag': expected '$expected'." >&2
   exit 1
 }
 
-echo "Next patch is valid: $latest_tag -> $version"
+echo "Next patch is valid: $latest_tag → $version"
