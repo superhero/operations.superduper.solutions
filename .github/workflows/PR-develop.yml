@@ -98,8 +98,8 @@ jobs:
 
           echo "Release validation passed for $HEAD_BRANCH."
 
-  hotfix-validation:
-    name: Hotfix Validation
+  validate-hotfix:
+    name: Validate Hotfix
     if: startsWith(github.head_ref, 'hotfix/')
     runs-on: ubuntu-latest
     env:
