@@ -234,6 +234,16 @@ jobs:
           test -n "$value"
           echo "statements=$value" >> "$GITHUB_OUTPUT"
 
+          mkdir -p tmp/status
+          jq -n \
+            --arg message "${value}%" \
+            '{
+              schemaVersion: 1,
+              label: "Test Coverage",
+              message: $message,
+              color: "brightgreen"
+            }' > tmp/status/coverage.json
+
       - name: Hand off coverage report
         if: always()
         continue-on-error: true
@@ -243,6 +253,13 @@ jobs:
             tmp/test/coverage
             tmp/test/coverage-output.txt
           key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Hand off coverage status
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-status
+          path: tmp/status/coverage.json
+          if-no-files-found: error
 
   bundle:
     name: Bundle

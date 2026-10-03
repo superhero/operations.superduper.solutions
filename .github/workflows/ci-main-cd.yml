@@ -62,6 +62,8 @@ jobs:
   deploy-release:
     name: Deploy Release
     needs: create-release-tag
+    outputs:
+      source_run_id: ${{ steps.release.outputs.run_id }}
     permissions:
       actions: read
       contents: read
@@ -186,6 +188,56 @@ jobs:
             echo
             echo "**Source:** PR #$PR_NUMBER ($SOURCE_BRANCH @ ${SOURCE_SHA:0:7})"
           } >> "$GITHUB_STEP_SUMMARY"
+
+
+
+  publish-coverage-status:
+    name: Publish Coverage Status
+    needs: deploy-release
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download validated coverage status
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_RUN_ID: ${{ needs.deploy-release.outputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p tmp/status
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$REPOSITORY" \
+            --name coverage-status \
+            --dir tmp/status
+
+      - name: Publish coverage status to R2
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_API_TOKEN || secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+
+          [[ -n "$CLOUDFLARE_API_TOKEN" && -n "$CLOUDFLARE_ACCOUNT_ID" ]] || {
+            echo "::error::Cloudflare R2 credentials are not configured in GitHub Actions." >&2
+            exit 1
+          }
+
+          response="$(
+            curl --fail-with-body --silent --show-error \
+              --request PUT \
+              --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              --header "Content-Type: application/json" \
+              --data-binary @tmp/status/coverage.json \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/operations-status/objects/coverage.json"
+          )"
+
+          jq -e '.success == true' <<<"$response" >/dev/null
+
 
   backmerge-develop:
     name: Backmerge Develop
