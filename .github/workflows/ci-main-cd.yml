@@ -208,11 +208,11 @@ jobs:
           SOURCE_RUN_ID: ${{ needs.deploy-release.outputs.source_run_id }}
         run: |
           set -euo pipefail
-          mkdir -p tmp/badges
+          mkdir -p tmp/status
           gh run download "$SOURCE_RUN_ID" \
             --repo "$REPOSITORY" \
             --name coverage-status \
-            --dir tmp/badges
+            --dir tmp/status
 
       - name: Publish coverage status to R2
         shell: bash
@@ -232,7 +232,7 @@ jobs:
               --request PUT \
               --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
               --header "Content-Type: application/json" \
-              --data-binary @tmp/badges/coverage.json \
+              --data-binary @tmp/status/coverage.json \
               "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/operations-status/objects/coverage.json"
           )"
 
