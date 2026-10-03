@@ -1,14 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repository="${1:?Usage: validate-single-active-branch.sh <repository> <kind> <current-branch>}"
-kind="${2:?Usage: validate-single-active-branch.sh <repository> <kind> <current-branch>}"
-current_branch="${3:?Usage: validate-single-active-branch.sh <repository> <kind> <current-branch>}"
+usage='Usage: validate-single-active-branch.sh <repository> <kind> <current-branch>'
+
+[[ -n "${1:-}" ]] || { printf '%s\n<repository> is missing\n' "$usage" >&2; exit 1; }
+[[ -n "${2:-}" ]] || { printf '%s\n<kind> is missing\n' "$usage" >&2; exit 1; }
+[[ -n "${3:-}" ]] || { printf '%s\n<current-branch> is missing\n' "$usage" >&2; exit 1; }
+
+repository="$1"
+kind="$2"
+current_branch="$3"
 
 case "$kind" in
   release|hotfix) ;;
   *)
-    echo "::error::Unsupported branch kind '$kind'."
+    echo "::error::Unsupported branch kind '$kind'." >&2
     exit 1
     ;;
 esac
@@ -26,7 +32,7 @@ for branch in "${branches[@]:-}"; do
     continue
   fi
 
-  echo "::error::Only one active $kind/* branch is permitted; '$branch' is already active."
+  echo "::error::Only one active $kind/* branch is permitted; '$branch' is already active." >&2
   exit 1
 done
 
