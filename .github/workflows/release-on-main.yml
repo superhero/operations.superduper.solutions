@@ -106,7 +106,7 @@ jobs:
               version="${HEAD_BRANCH#hotfix/}"
               ;;
             *)
-              echo "::error::Unsupported source branch '$HEAD_BRANCH'."
+              echo "::error::Unsupported source branch '$HEAD_BRANCH'." >&2
               exit 1
               ;;
           esac
@@ -122,7 +122,7 @@ jobs:
               exit 0
             fi
 
-            echo "::error::Tag '$version' already exists on a different commit."
+            echo "::error::Tag '$version' already exists on a different commit." >&2
             exit 1
           fi
 
@@ -187,7 +187,7 @@ jobs:
           done <<<"$candidates"
 
           [[ -n "$run_id" ]] || {
-            echo "::error::No successful release CI run with an unexpired bundle found for PR #$PR_NUMBER at $HEAD_SHA."
+            echo "::error::No successful release CI run with an unexpired bundle found for PR #$PR_NUMBER at $HEAD_SHA." >&2
             exit 1
           }
 
@@ -210,7 +210,7 @@ jobs:
       - name: Check deployment credentials
         if: env.CLOUDFLARE_API_TOKEN == '' || env.CLOUDFLARE_ACCOUNT_ID == ''
         run: |
-          echo "::error::Cloudflare deployment credentials are not configured in GitHub Actions."
+          echo "::error::Cloudflare deployment credentials are not configured in GitHub Actions." >&2
           exit 1
 
       - name: Deploy validated bundle to Cloudflare Pages
@@ -325,20 +325,20 @@ jobs:
           set -euo pipefail
           echo "merged=false" >> "$GITHUB_OUTPUT"
           [[ -n "$PR_TOKEN" ]] || {
-            echo "::error::A GitHub App token is required to create back-merge PRs; refusing to fall back to GITHUB_TOKEN."
+            echo "::error::A GitHub App token is required to create back-merge PRs; refusing to fall back to GITHUB_TOKEN." >&2
             exit 1
           }
 
           main_sha="$(gh api "repos/$REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
           develop_sha="$(gh api "repos/$REPOSITORY/git/ref/heads/develop" --jq '.object.sha')"
           [[ "$main_sha" =~ ^[0-9a-f]{40}$ && "$develop_sha" =~ ^[0-9a-f]{40}$ ]] || {
-            echo "::error::Could not resolve the branch commits."
+            echo "::error::Could not resolve the branch commits." >&2
             exit 1
           }
 
           behind_by="$(gh api "repos/$REPOSITORY/compare/$main_sha...$develop_sha" --jq '.behind_by')"
           [[ "$behind_by" =~ ^[0-9]+$ ]] || {
-            echo "::error::Could not determine whether synchronization is needed."
+            echo "::error::Could not determine whether synchronization is needed." >&2
             exit 1
           }
           if [[ "$behind_by" == "0" ]]; then
@@ -363,7 +363,7 @@ jobs:
             )"
           fi
           [[ "$pr_number" =~ ^[0-9]+$ ]] || {
-            echo "::error::Could not resolve the synchronization PR."
+            echo "::error::Could not resolve the synchronization PR." >&2
             exit 1
           }
 
@@ -374,7 +374,7 @@ jobs:
             .base.repo.full_name == $repo and .head.repo.full_name == $repo and
             .head.sha == $sha
           ' <<<"$pr" >/dev/null || {
-            echo "::error::PR topology or main head changed; refusing to merge."
+            echo "::error::PR topology or main head changed; refusing to merge." >&2
             exit 1
           }
 
@@ -394,12 +394,12 @@ jobs:
             sleep 2
           done
           jq -e '.merged == true' <<<"$result" >/dev/null || {
-            echo "::error::GitHub did not merge the synchronization PR."
+            echo "::error::GitHub did not merge the synchronization PR." >&2
             exit 1
           }
           merge_sha="$(jq -r '.sha' <<<"$result")"
           [[ "$merge_sha" =~ ^[0-9a-f]{40}$ ]] || {
-            echo "::error::GitHub returned an invalid merge commit."
+            echo "::error::GitHub returned an invalid merge commit." >&2
             exit 1
           }
           echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
