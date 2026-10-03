@@ -1,6 +1,5 @@
 name: PR-develop
-run-name: >-
-  ${{ github.event_name == 'pull_request' && format('PR-develop #{0}: {1}', github.event.pull_request.number, github.event.pull_request.title) || format('Develop health check: {0}', inputs.commit_sha || github.sha) }}
+run-name: PR-develop #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}
 
 on:
   # Validate proposed development changes before merging, not on the resulting push.
@@ -8,16 +7,8 @@ on:
     branches:
       - develop
     types: [opened, synchronize, reopened, edited, ready_for_review]
-  # Retain explicit, non-gating health checks after automated back-merges.
-  workflow_dispatch:
-    inputs:
-      commit_sha:
-        description: Exact develop commit to check (defaults to the workflow commit)
-        required: false
-        type: string
-
 concurrency:
-  group: development-ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  group: development-ci-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:
@@ -27,7 +18,6 @@ jobs:
   topology:
     # Keep the existing required check name; GitHub reports this job's actual result.
     name: Gitflow topology
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
 
     steps:
@@ -145,18 +135,13 @@ jobs:
 
   type-check:
     name: Type Check
-    if: >-
-      (github.event_name == 'pull_request' &&
-       !(github.event.pull_request.head.ref == 'main' &&
-         github.event.pull_request.head.repo.full_name == github.repository)) ||
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.commit_sha || github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Set up Node.js
@@ -173,18 +158,13 @@ jobs:
 
   test:
     name: Test
-    if: >-
-      (github.event_name == 'pull_request' &&
-       !(github.event.pull_request.head.ref == 'main' &&
-         github.event.pull_request.head.repo.full_name == github.repository)) ||
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.commit_sha || github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Set up Node.js
@@ -201,18 +181,13 @@ jobs:
 
   build:
     name: Build
-    if: >-
-      (github.event_name == 'pull_request' &&
-       !(github.event.pull_request.head.ref == 'main' &&
-         github.event.pull_request.head.repo.full_name == github.repository)) ||
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.commit_sha || github.sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Set up Node.js
