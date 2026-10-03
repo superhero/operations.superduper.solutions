@@ -3,9 +3,12 @@ set -euo pipefail
 
 usage='Usage: validate-branch-direction.sh <head-branch> <base-branch> <expected-base-pattern> <allowed-head-pattern>...'
 
-head_branch="${1:?$usage}"
-base_branch="${2:?$usage}"
-expected_base_pattern="${3:?$usage}"
+head_branch="${1:?${usage}
+[head-branch] is missing}"
+base_branch="${2:?${usage}
+[base-branch] is missing}"
+expected_base_pattern="${3:?${usage}
+[expected-base-pattern] is missing}"
 shift 3
 
 [[ "$base_branch" == $expected_base_pattern ]] || {
