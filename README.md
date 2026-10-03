@@ -5,11 +5,32 @@
 [![Production Deployment](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-main-cd.yml?label=Production%20Deployment)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-main-cd.yml)
 ![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fdevelop%2Fcoverage.json)
 [![Dependencies](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies.json)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/dependency-status.yml)
-[![Node.js](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fmain%2Fpackage.json&query=%24.engines.node&label=Node.js&logo=node.js)](https://nodejs.org/)
-[![TypeScript](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fmain%2Fpackage.json&query=%24.devDependencies.typescript&label=TypeScript&logo=typescript)](https://www.typescriptlang.org/)
-[![Svelte](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fmain%2Fpackage.json&query=%24.devDependencies.svelte&label=Svelte&logo=svelte)](https://svelte.dev/)
 
 A browser-based platform for composing OpenAPI operations into reusable workflows.
+
+## Dependencies
+
+| Dependency | Description |
+| --- | --- |
+| [![bits-ui](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fbits-ui.json)](https://www.npmjs.com/package/bits-ui) | Provides accessible headless UI primitives used by the generated sheet components. |
+| [![c8](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fc8.json)](https://www.npmjs.com/package/c8) | Collects V8 code coverage and enforces the repository's 100% coverage thresholds. |
+| [![cn](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fcn.json)](https://www.npmjs.com/package/cn) | Provides the `cn` class-name utility, re-exported from `src/lib/utils.ts`, for composing Tailwind CSS classes in UI components and resolving conflicting utility classes. |
+| [![cucumber/cucumber](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fcucumber--cucumber.json)](https://www.npmjs.com/package/@cucumber/cucumber) | Runs the source and acceptance tests defined with Cucumber feature files and step definitions. |
+| [![jsdom](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fjsdom.json)](https://www.npmjs.com/package/jsdom) | Provides the DOM environment used by source tests without a browser. |
+| [![lucide/svelte](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Flucide--svelte.json)](https://www.npmjs.com/package/@lucide/svelte) | Provides Svelte icon components used by the menu and sheet UI. |
+| [![multiple-cucumber-html-reporter](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fmultiple-cucumber-html-reporter.json)](https://www.npmjs.com/package/multiple-cucumber-html-reporter) | Generates interactive HTML reports from Cucumber test runs for reviewing features, scenarios, and failures. |
+| [![svelte](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fsvelte.json)](https://www.npmjs.com/package/svelte) | Application UI framework used for the app, components, and reactive state. |
+| [![svelte-check](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fsvelte-check.json)](https://www.npmjs.com/package/svelte-check) | Runs Svelte-aware TypeScript and component diagnostics in CI. |
+| [![sveltejs/vite-plugin-svelte](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fsveltejs--vite-plugin-svelte.json)](https://www.npmjs.com/package/@sveltejs/vite-plugin-svelte) | Integrates Svelte compilation into the Vite build. |
+| [![tailwind-merge](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Ftailwind-merge.json)](https://www.npmjs.com/package/tailwind-merge) | Required by `tailwind-variants` in shadcn-svelte-generated UI components to merge Tailwind CSS classes and resolve conflicting utility classes. |
+| [![tailwind-variants](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Ftailwind-variants.json)](https://www.npmjs.com/package/tailwind-variants) | Used by shadcn-svelte-generated UI components to define typed Tailwind CSS style variants. |
+| [![tailwindcss](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Ftailwindcss.json)](https://www.npmjs.com/package/tailwindcss) | Provides the utility CSS system and project theme used by the application. |
+| [![tailwindcss/vite](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Ftailwindcss--vite.json)](https://www.npmjs.com/package/@tailwindcss/vite) | Integrates Tailwind CSS processing into the Vite build. |
+| [![tw-animate-css](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Ftw-animate-css.json)](https://www.npmjs.com/package/tw-animate-css) | Provides Tailwind-compatible animation utilities imported by the application stylesheet. |
+| [![typescript](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Ftypescript.json)](https://www.npmjs.com/package/typescript) | Provides the TypeScript compiler and type system used by Svelte and project source files. |
+| [![vite](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fvite.json)](https://www.npmjs.com/package/vite) | Builds the browser application and produces the production `dist` output. |
+| [![vite-plugin-singlefile](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fvite-plugin-singlefile.json)](https://www.npmjs.com/package/vite-plugin-singlefile) | Bundles the production build into a single self-contained `dist/index.html` file. |
+| [![xyflow/svelte](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fxyflow--svelte.json)](https://www.npmjs.com/package/@xyflow/svelte) | Provides the workflow canvas, nodes, edges, handles, background, and controls. |
 
 ## Development status
 
