@@ -1,5 +1,5 @@
 name: PR-develop
-run-name: PR-develop #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}
+run-name: "PR-develop #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
 
 on:
   # Validate proposed development changes before merging, not on the resulting push.
