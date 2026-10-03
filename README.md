@@ -39,7 +39,7 @@ Runs the source and acceptance tests defined with Cucumber feature files and ste
 
 <a href="https://www.npmjs.com/package/@lucide/svelte"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Flucide--svelte.json%3Fv%3D3&cacheSeconds=300" alt="@lucide/svelte version status"></a>
 
-Provides Svelte icon components used by the UI components.
+Provides icons used by the application's Svelte UI components.
 
 ---
 
