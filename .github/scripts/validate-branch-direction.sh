@@ -20,7 +20,7 @@ shift 3
 
 for pattern in "$@"; do
   if [[ "$head_branch" == $pattern ]]; then
-    echo "Branch direction is valid: $head_branch -> $base_branch"
+    echo "Branch direction is valid: $head_branch → $base_branch"
     exit 0
   fi
 done
