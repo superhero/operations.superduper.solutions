@@ -7,7 +7,7 @@
 
 A browser-based platform for composing OpenAPI operations into reusable workflows.
 
-### Development status
+## Development status
 
 This project is under active development and is currently in a pre-release state.
 
