@@ -55,7 +55,7 @@ jobs:
             color="orange"
           fi
 
-          mkdir -p tmp/badges
+          mkdir -p tmp/badges/dependencies
 
           jq -n \
             --arg message "$message" \
@@ -66,6 +66,30 @@ jobs:
               message: $message,
               color: $color
             }' > tmp/badges/dependencies.json
+
+          while IFS= read -r package; do
+            current="$(jq -r --arg package "$package" '.devDependencies[$package]' package.json)"
+            latest="$(npm view "$package" version)"
+            label="$package"
+            slug="$(printf '%s' "${package#@}" | sed 's|/|--|g')"
+
+            if [[ "$current" == "$latest" ]]; then
+              package_color="blue"
+            else
+              package_color="orange"
+            fi
+
+            jq -n \
+              --arg label "$label" \
+              --arg current "$current" \
+              --arg color "$package_color" \
+              '{
+                schemaVersion: 1,
+                label: $label,
+                message: $current,
+                color: $color
+              }' > "tmp/badges/dependencies/$slug.json"
+          done < <(jq -r '.devDependencies | keys[]' package.json)
 
       - name: Publish dependency status
         uses: cloudflare/wrangler-action@v4
