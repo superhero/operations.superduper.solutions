@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - develop
+      - feature/dev-dependencies-only
     paths:
       - package.json
       - package-lock.json
@@ -70,8 +71,8 @@ jobs:
           while IFS= read -r package; do
             current="$(jq -r --arg package "$package" '.devDependencies[$package]' package.json)"
             latest="$(npm view "$package" version)"
-            label="${package#@}"
-            slug="$(printf '%s' "$label" | sed 's|/|--|g')"
+            label="$package"
+            slug="$(printf '%s' "${package#@}" | sed 's|/|--|g')"
 
             if [[ "$current" == "$latest" ]]; then
               package_color="blue"
