@@ -8,9 +8,9 @@
 
 A browser-based platform for composing OpenAPI operations into reusable workflows.
 
-## Versions
+## Dependencies
 
-| Dependency | Version |
+| Package | Version |
 | --- | --- |
 | [`bits-ui`](https://www.npmjs.com/package/bits-ui) | [![bits-ui](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fmain%2Fpackage.json&query=%24.devDependencies%5B%22bits-ui%22%5D&label=Version)](https://www.npmjs.com/package/bits-ui) |
 | [`c8`](https://www.npmjs.com/package/c8) | [![c8](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fmain%2Fpackage.json&query=%24.devDependencies%5B%22c8%22%5D&label=Version)](https://www.npmjs.com/package/c8) |
