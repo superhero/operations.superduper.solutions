@@ -94,7 +94,6 @@ jobs:
           bash .github/scripts/validate-single-active-branch.sh "$REPOSITORY" hotfix "$HEAD_BRANCH"
           bash .github/scripts/validate-next-patch.sh "$REPOSITORY" "$BASE_BRANCH" "$version"
 
-
   installation:
     name: Installation
     runs-on: ubuntu-latest
