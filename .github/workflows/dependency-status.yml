@@ -13,6 +13,10 @@ on:
     - cron: '0 6 * * *'
   workflow_dispatch:
 
+concurrency:
+  group: status-badges-${{ github.ref_name }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
@@ -91,6 +95,28 @@ jobs:
                 color: $color
               }' > "tmp/badges/dependencies/$slug.json"
           done < <(jq -r '.devDependencies | keys[]' package.json)
+
+      - name: Preserve coverage status
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "$GITHUB_REF_NAME" == "main" ]]; then
+            base_url="https://operations-superduper-badges.pages.dev"
+          else
+            base_url="https://${GITHUB_REF_NAME}.operations-superduper-badges.pages.dev"
+          fi
+
+          if ! curl -fsSL "$base_url/coverage.json" -o tmp/badges/coverage.json; then
+            rm -f tmp/badges/coverage.json
+
+            if [[ "$GITHUB_REF_NAME" != "main" ]]; then
+              curl -fsSL \
+                "https://operations-superduper-badges.pages.dev/coverage.json" \
+                -o tmp/badges/coverage.json \
+                || rm -f tmp/badges/coverage.json
+            fi
+          fi
 
       - name: Publish dependency status
         uses: cloudflare/wrangler-action@v4
