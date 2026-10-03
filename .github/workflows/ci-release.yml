@@ -77,7 +77,8 @@ jobs:
       - validate-hotfix
     if: >-
       ${{
-        github.event.pull_request.head.repo.full_name == github.repository
+        always()
+        && github.event.pull_request.head.repo.full_name == github.repository
         && !github.event.pull_request.draft
         && needs.validate-branch-direction.result == 'success'
         && (needs.validate-hotfix.result == 'success' || needs.validate-hotfix.result == 'skipped')
