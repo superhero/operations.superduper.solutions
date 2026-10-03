@@ -233,7 +233,7 @@ jobs:
               --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
               --header "Content-Type: application/json" \
               --data-binary @tmp/badges/coverage.json \
-              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/operations-badges/objects/coverage.json"
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/operations-status/objects/coverage.json"
           )"
 
           jq -e '.success == true' <<<"$response" >/dev/null
