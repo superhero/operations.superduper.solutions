@@ -1,0 +1,418 @@
+name: pr-on-main
+run-name: "#${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+      - ready_for_review
+
+concurrency:
+  group: main-ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  validate-branch-direction:
+    name: Validate Branch Direction
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Validating
+        shell: bash
+        env:
+          HEAD_BRANCH: ${{ github.head_ref }}
+          BASE_BRANCH: ${{ github.base_ref }}
+        run: |
+          bash .github/scripts/validate-branch-direction.sh \
+            "$HEAD_BRANCH" \
+            "$BASE_BRANCH" \
+            main \
+            'release/*' \
+            'hotfix/*'
+
+  validate-release:
+    name: Validate Release
+    if: startsWith(github.head_ref, 'release/')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      HEAD_BRANCH: ${{ github.head_ref }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Validating
+        shell: bash
+        run: |
+          version="${HEAD_BRANCH#release/}"
+
+          bash .github/scripts/validate-semver.sh "$version"
+          bash .github/scripts/validate-tag-available.sh "$REPOSITORY" "$version"
+          bash .github/scripts/validate-single-active-branch.sh "$REPOSITORY" release "$HEAD_BRANCH"
+
+  validate-hotfix:
+    name: Validate Hotfix
+    if: startsWith(github.head_ref, 'hotfix/')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      HEAD_BRANCH: ${{ github.head_ref }}
+      BASE_BRANCH: ${{ github.base_ref }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Validating
+        shell: bash
+        run: |
+          version="${HEAD_BRANCH#hotfix/}"
+
+          bash .github/scripts/validate-semver.sh "$version"
+          bash .github/scripts/validate-tag-available.sh "$REPOSITORY" "$version"
+          bash .github/scripts/validate-single-active-branch.sh "$REPOSITORY" hotfix "$HEAD_BRANCH"
+          bash .github/scripts/validate-next-patch.sh "$REPOSITORY" "$BASE_BRANCH" "$version"
+
+  installation:
+    name: Installation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Hand off dependencies
+        uses: actions/cache/save@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+  type-check:
+    name: Type Check
+    needs: installation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Type Check
+        run: npm --silent run typecheck
+
+  source-test:
+    name: Source Test
+    needs: installation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Source Test
+        run: |
+          mkdir -p tmp/test
+          set -o pipefail
+          npm --silent run test:source:coverage 2>&1 | tee tmp/test/source-test-output.txt
+
+      - name: Hand off source test data
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            tmp/test/source-test-output.txt
+            tmp/test/coverage/v8
+          key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
+
+  coverage:
+    name: Coverage
+    needs: source-test
+    outputs:
+      statements: ${{ steps.coverage.outputs.statements }}
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Restore source coverage data
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            tmp/test/source-test-output.txt
+            tmp/test/coverage/v8
+          key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Coverage
+        id: coverage
+        run: |
+          mkdir -p tmp/test
+          set -o pipefail
+          npm --silent run coverage 2>&1 | tee tmp/test/coverage-output.txt
+
+          value="$(grep -E 'Statements[[:space:]]*:' tmp/test/coverage-output.txt | tail -1 | sed -E 's/.*:[[:space:]]*([0-9]+(\.[0-9]+)?)%.*/\1/')"
+          test -n "$value"
+          echo "statements=$value" >> "$GITHUB_OUTPUT"
+
+      - name: Hand off coverage report
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            tmp/test/coverage
+            tmp/test/coverage-output.txt
+          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+  bundle:
+    name: Bundle
+    needs:
+      - type-check
+      - coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Bundle
+        run: npm --silent run build
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle
+          path: dist
+          if-no-files-found: error
+
+  acceptance-test:
+    name: Acceptance Test
+    needs: bundle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Download bundle
+        uses: actions/download-artifact@v8
+        with:
+          name: bundle
+          path: dist
+
+      - name: Acceptance Test
+        run: |
+          mkdir -p tmp/test
+          set -o pipefail
+          npm --silent run test:acceptance 2>&1 | tee tmp/test/test-output.txt
+
+      - name: Hand off test report
+        if: always()
+        continue-on-error: true
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            tmp/test/cucumber-test.json
+            tmp/test/test-output.txt
+          key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+  test-report:
+    name: Test Report
+    needs:
+      - source-test
+      - coverage
+      - acceptance-test
+    if: always()
+    continue-on-error: true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Restore source test output
+        uses: actions/cache/restore@v6
+        with:
+          path: tmp/test/source-test-output.txt
+          key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Restore acceptance test report
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            tmp/test/cucumber-test.json
+            tmp/test/test-output.txt
+          key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Test summary
+        if: always()
+        run: |
+          {
+            echo '```text'
+
+            if [[ -f tmp/test/source-test-output.txt ]]; then
+              sed -E 's/[[:space:]]+# .*:[0-9]+$//' tmp/test/source-test-output.txt
+              echo
+            else
+              echo "No source test output was produced."
+              echo
+            fi
+
+            if [[ -f tmp/test/test-output.txt ]]; then
+              sed -E 's/[[:space:]]+# .*:[0-9]+$//' tmp/test/test-output.txt
+            else
+              echo "No acceptance test output was produced."
+            fi
+
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish test report
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report
+          path: tmp/test/cucumber-test.json
+          if-no-files-found: warn
+
+  coverage-report:
+    name: Coverage Report
+    needs:
+      - coverage
+      - test-report
+    if: always()
+    continue-on-error: true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Restore coverage report
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            tmp/test/coverage
+            tmp/test/coverage-output.txt
+          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          {
+            echo '```text'
+            if [[ -f tmp/test/coverage-output.txt ]]; then
+              if grep -q "Coverage summary" tmp/test/coverage-output.txt; then
+                awk '/Coverage summary/{show=1} show' tmp/test/coverage-output.txt
+              else
+                cat tmp/test/coverage-output.txt
+              fi
+            else
+              echo "No coverage output was produced."
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: tmp/test/coverage
+          if-no-files-found: warn
+
