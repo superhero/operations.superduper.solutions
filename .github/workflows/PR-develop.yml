@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Validate branch direction
+      - name: Validating
         shell: bash
         env:
           HEAD_BRANCH: ${{ github.head_ref }}
@@ -46,8 +46,8 @@ jobs:
 
           echo "Branch direction is valid: $HEAD_BRANCH -> $BASE_BRANCH"
 
-  release-validation:
-    name: Release Validation
+  validate-release:
+    name: Validate Release
     if: startsWith(github.head_ref, 'release/')
     runs-on: ubuntu-latest
     env:
@@ -56,7 +56,7 @@ jobs:
       HEAD_BRANCH: ${{ github.head_ref }}
 
     steps:
-      - name: Validate release
+      - name: Validating
         shell: bash
         run: |
           set -euo pipefail
