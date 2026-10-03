@@ -20,31 +20,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
       - name: Validating
         shell: bash
         env:
           HEAD_BRANCH: ${{ github.head_ref }}
           BASE_BRANCH: ${{ github.base_ref }}
         run: |
-          set -euo pipefail
-
-          case "$BASE_BRANCH" in
-            develop)
-              case "$HEAD_BRANCH" in
-                feature/*|bugfix/*|release/*|hotfix/*|main) ;;
-                *)
-                  echo "::error::Invalid Gitflow direction: '$HEAD_BRANCH' may not merge into 'develop'."
-                  exit 1
-                  ;;
-              esac
-              ;;
-            *)
-              echo "::error::PR-develop only validates pull requests targeting 'develop', got '$BASE_BRANCH'."
-              exit 1
-              ;;
-          esac
-
-          echo "Branch direction is valid: $HEAD_BRANCH -> $BASE_BRANCH"
+          bash .github/scripts/validate-branch-direction.sh \
+            "$HEAD_BRANCH" \
+            "$BASE_BRANCH" \
+            develop \
+            'feature/*' \
+            'bugfix/*' \
+            'release/*' \
+            'hotfix/*' \
+            main
 
   validate-release:
     name: Validate Release
@@ -56,47 +52,20 @@ jobs:
       HEAD_BRANCH: ${{ github.head_ref }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
       - name: Validating
         shell: bash
         run: |
-          set -euo pipefail
-
           version="${HEAD_BRANCH#release/}"
-          semver_re='^[0-9]+\.[0-9]+\.[0-9]+$'
 
-          [[ "$version" =~ $semver_re ]] || {
-            echo "::error::Release version '$version' must be unprefixed SemVer MAJOR.MINOR.PATCH."
-            exit 1
-          }
-
-          if gh api "repos/$REPOSITORY/git/ref/tags/$version" >/dev/null 2>&1; then
-            echo "::error::Version tag '$version' already exists."
-            exit 1
-          fi
-
-          mapfile -t active_releases < <(
-            gh api --paginate "repos/$REPOSITORY/git/matching-refs/heads/release/" \
-              --jq '.[].ref | sub("^refs/heads/"; "")'
-          )
-
-          other_releases=0
-          for branch in "${active_releases[@]:-}"; do
-            [[ -z "$branch" || "$branch" == "$HEAD_BRANCH" ]] && continue
-
-            branch_version="${branch#release/}"
-            if gh api "repos/$REPOSITORY/git/ref/tags/$branch_version" >/dev/null 2>&1; then
-              continue
-            fi
-
-            other_releases=$((other_releases + 1))
-          done
-
-          (( other_releases == 0 )) || {
-            echo "::error::AVH default permits only one active release/* branch at a time."
-            exit 1
-          }
-
-          echo "Release validation passed for $HEAD_BRANCH."
+          bash .github/scripts/validate-semver.sh "$version"
+          bash .github/scripts/validate-tag-available.sh "$REPOSITORY" "$version"
+          bash .github/scripts/validate-single-active-branch.sh "$REPOSITORY" release "$HEAD_BRANCH"
 
   validate-hotfix:
     name: Validate Hotfix
@@ -109,77 +78,21 @@ jobs:
       BASE_BRANCH: ${{ github.base_ref }}
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
       - name: Validating
         shell: bash
         run: |
-          set -euo pipefail
-
           version="${HEAD_BRANCH#hotfix/}"
-          semver_re='^[0-9]+\.[0-9]+\.[0-9]+$'
 
-          [[ "$version" =~ $semver_re ]] || {
-            echo "::error::Hotfix version '$version' must be unprefixed SemVer MAJOR.MINOR.PATCH."
-            exit 1
-          }
-
-          if gh api "repos/$REPOSITORY/git/ref/tags/$version" >/dev/null 2>&1; then
-            echo "::error::Version tag '$version' already exists."
-            exit 1
-          fi
-
-          mapfile -t active_hotfixes < <(
-            gh api --paginate "repos/$REPOSITORY/git/matching-refs/heads/hotfix/" \
-              --jq '.[].ref | sub("^refs/heads/"; "")'
-          )
-
-          other_hotfixes=0
-          for branch in "${active_hotfixes[@]:-}"; do
-            [[ -z "$branch" || "$branch" == "$HEAD_BRANCH" ]] && continue
-
-            branch_version="${branch#hotfix/}"
-            if gh api "repos/$REPOSITORY/git/ref/tags/$branch_version" >/dev/null 2>&1; then
-              continue
-            fi
-
-            other_hotfixes=$((other_hotfixes + 1))
-          done
-
-          (( other_hotfixes == 0 )) || {
-            echo "::error::AVH default permits only one active hotfix/* branch at a time."
-            exit 1
-          }
-
-          mapfile -t semver_tags < <(
-            gh api --paginate "repos/$REPOSITORY/tags?per_page=100" --jq '.[].name' |
-              grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' |
-              sort -Vr
-          )
-
-          latest_tag=""
-          for tag in "${semver_tags[@]:-}"; do
-            [[ -z "$tag" ]] && continue
-
-            behind_by="$(
-              gh api "repos/$REPOSITORY/compare/$tag...$BASE_BRANCH" --jq '.behind_by'
-            )"
-
-            if [[ "$behind_by" == "0" ]]; then
-              latest_tag="$tag"
-              break
-            fi
-          done
-
-          if [[ -n "$latest_tag" ]]; then
-            IFS=. read -r major minor patch <<< "$latest_tag"
-            expected="$major.$minor.$((patch + 1))"
-
-            [[ "$version" == "$expected" ]] || {
-              echo "::error::Hotfix '$version' must be the next patch after '$latest_tag': expected '$expected'."
-              exit 1
-            }
-          fi
-
-          echo "Hotfix validation passed for $HEAD_BRANCH."
+          bash .github/scripts/validate-semver.sh "$version"
+          bash .github/scripts/validate-tag-available.sh "$REPOSITORY" "$version"
+          bash .github/scripts/validate-single-active-branch.sh "$REPOSITORY" hotfix "$HEAD_BRANCH"
+          bash .github/scripts/validate-next-patch.sh "$REPOSITORY" "$BASE_BRANCH" "$version"
 
 
   installation:
