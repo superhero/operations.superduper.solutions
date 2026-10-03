@@ -22,31 +22,31 @@ Provides accessible headless UI primitives used by the generated sheet component
 
 <a href="https://www.npmjs.com/package/c8"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fc8.json%3Fv%3D3&cacheSeconds=300" alt="c8 version status"></a>
 
-Collects V8 code coverage and enforces the repository's 100% coverage thresholds.
+Collects `V8` code coverage and enforces the repository's 100% coverage thresholds.
 
 ---
 
 <a href="https://www.npmjs.com/package/cn"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fcn.json%3Fv%3D3&cacheSeconds=300" alt="cn version status"></a>
 
-Provides the `cn` class-name utility, re-exported from `src/lib/utils.ts`, for composing Tailwind CSS classes in UI components and resolving conflicting utility classes.
+Provides the `cn` class-name utility, re-exported from `src/lib/utils.ts`, for composing `Tailwind CSS` classes in UI components and resolving conflicting utility classes.
 
 ---
 
 <a href="https://www.npmjs.com/package/@cucumber/cucumber"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fcucumber--cucumber.json%3Fv%3D3&cacheSeconds=300" alt="@cucumber/cucumber version status"></a>
 
-Runs the source and acceptance tests defined with Cucumber feature files and step definitions.
+Runs the source and acceptance tests defined with `Gherkin` feature files and `Cucumber` step definitions.
 
 ---
 
 <a href="https://www.npmjs.com/package/@lucide/svelte"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Flucide--svelte.json%3Fv%3D3&cacheSeconds=300" alt="@lucide/svelte version status"></a>
 
-Provides icons used by the application's Svelte UI components.
+Provides icons used by the application's `Svelte` UI components.
 
 ---
 
 <a href="https://www.npmjs.com/package/multiple-cucumber-html-reporter"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fmultiple-cucumber-html-reporter.json%3Fv%3D3&cacheSeconds=300" alt="multiple-cucumber-html-reporter version status"></a>
 
-Generates interactive HTML reports from Cucumber test runs for reviewing features, scenarios, and failures.
+Generates interactive `HTML` reports from `Cucumber` test runs for reviewing features, scenarios, and failures.
 
 ---
 
@@ -58,25 +58,25 @@ Application UI framework used for the app, components, and reactive state.
 
 <a href="https://www.npmjs.com/package/svelte-check"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fsvelte-check.json%3Fv%3D3&cacheSeconds=300" alt="svelte-check version status"></a>
 
-Runs Svelte-aware TypeScript and component diagnostics in CI.
+Runs `Svelte`-aware `TypeScript` and component diagnostics in CI.
 
 ---
 
 <a href="https://www.npmjs.com/package/@sveltejs/vite-plugin-svelte"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Fsveltejs--vite-plugin-svelte.json%3Fv%3D3&cacheSeconds=300" alt="@sveltejs/vite-plugin-svelte version status"></a>
 
-Integrates Svelte compilation into the Vite build.
+Integrates `Svelte` compilation into the `Vite` build.
 
 ---
 
 <a href="https://www.npmjs.com/package/tailwind-merge"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Ftailwind-merge.json%3Fv%3D3&cacheSeconds=300" alt="tailwind-merge version status"></a>
 
-Required by `tailwind-variants` in shadcn-svelte-generated UI components to merge Tailwind CSS classes and resolve conflicting utility classes.
+Required by `tailwind-variants` in `shadcn-svelte`-generated UI components to merge `Tailwind CSS` classes and resolve conflicting utility classes.
 
 ---
 
 <a href="https://www.npmjs.com/package/tailwind-variants"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Ftailwind-variants.json%3Fv%3D3&cacheSeconds=300" alt="tailwind-variants version status"></a>
 
-Used by shadcn-svelte-generated UI components to define typed Tailwind CSS style variants.
+Used by `shadcn-svelte`-generated UI components to define typed `Tailwind CSS` style variants.
 
 ---
 
@@ -88,19 +88,19 @@ Provides the utility CSS system and project theme used by the application.
 
 <a href="https://www.npmjs.com/package/@tailwindcss/vite"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Ftailwindcss--vite.json%3Fv%3D3&cacheSeconds=300" alt="@tailwindcss/vite version status"></a>
 
-Integrates Tailwind CSS processing into the Vite build.
+Integrates `Tailwind CSS` processing into the `Vite` build.
 
 ---
 
 <a href="https://www.npmjs.com/package/tw-animate-css"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Ftw-animate-css.json%3Fv%3D3&cacheSeconds=300" alt="tw-animate-css version status"></a>
 
-Provides Tailwind-compatible animation utilities imported by the application stylesheet.
+Provides `Tailwind CSS`-compatible animation utilities imported by the application stylesheet.
 
 ---
 
 <a href="https://www.npmjs.com/package/typescript"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fdependencies%2Ftypescript.json%3Fv%3D3&cacheSeconds=300" alt="typescript version status"></a>
 
-Provides the TypeScript compiler and type system used by Svelte and project source files.
+Provides the `TypeScript` compiler and type system used by `Svelte` and project source files.
 
 ---
 
