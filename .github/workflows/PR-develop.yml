@@ -133,8 +133,8 @@ jobs:
 
           echo "Gitflow topology is valid."
 
-  type-check:
-    name: Type Check
+  installation:
+    name: Installation
     runs-on: ubuntu-latest
 
     steps:
@@ -148,16 +148,45 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-          cache: npm
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
+
+      - name: Hand off dependencies
+        uses: actions/cache/save@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+
+  type-check:
+    name: Type Check
+    needs: installation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Type Check
         run: npm --silent run typecheck
 
   test:
     name: Test
+    needs: installation
     runs-on: ubuntu-latest
 
     steps:
@@ -171,16 +200,19 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-          cache: npm
 
-      - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Test
         run: npm --silent run test:source
 
   build:
     name: Build
+    needs: installation
     runs-on: ubuntu-latest
 
     steps:
@@ -194,10 +226,12 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
-          cache: npm
 
-      - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+      - name: Restore dependencies
+        uses: actions/cache/restore@v6
+        with:
+          path: node_modules
+          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Build
         run: npm --silent run build
