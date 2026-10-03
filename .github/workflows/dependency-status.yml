@@ -60,7 +60,7 @@ jobs:
             color="orange"
           fi
 
-          mkdir -p tmp/status/dependencies
+          mkdir -p tmp/status
 
           jq -n \
             --arg message "$message" \
@@ -70,7 +70,7 @@ jobs:
               label: "Dependencies",
               message: $message,
               color: $color
-            }' > tmp/status/dependencies.json
+            }' > tmp/status/version-dependencies.json
 
           while IFS= read -r package; do
             current="$(jq -r --arg package "$package" '.devDependencies[$package]' package.json)"
@@ -93,7 +93,7 @@ jobs:
                 label: $label,
                 message: $current,
                 color: $color
-              }' > "tmp/status/dependencies/$slug.json"
+              }' > "tmp/status/version-dependency-$slug.json"
           done < <(jq -r '.devDependencies | keys[]' package.json)
 
 
@@ -134,3 +134,20 @@ jobs:
 
             jq -e '.success == true' <<<"$response" >/dev/null
           done < <(find tmp/status -type f -name '*.json' -print0)
+
+          legacy_keys=("dependencies.json")
+          while IFS= read -r package; do
+            slug="$(printf '%s' "${package#@}" | sed 's|/|--|g')"
+            legacy_keys+=("dependencies/$slug.json")
+          done < <(jq -r '.devDependencies | keys[]' package.json)
+
+          for legacy_key in "${legacy_keys[@]}"; do
+            response="$(
+              curl --fail-with-body --silent --show-error \
+                --request DELETE \
+                --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/operations-status/objects/${prefix}${legacy_key}"
+            )"
+
+            jq -e '.success == true' <<<"$response" >/dev/null
+          done
