@@ -181,42 +181,6 @@ jobs:
 
           echo "Hotfix validation passed for $HEAD_BRANCH."
 
-  gitflow-status:
-    # Compatibility status required by the existing repository ruleset.
-    name: Gitflow topology
-    needs:
-      - branch-direction
-      - release-validation
-      - hotfix-validation
-    if: always()
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Confirm Gitflow validation
-        shell: bash
-        env:
-          BRANCH_DIRECTION: ${{ needs.branch-direction.result }}
-          RELEASE_VALIDATION: ${{ needs.release-validation.result }}
-          HOTFIX_VALIDATION: ${{ needs.hotfix-validation.result }}
-        run: |
-          set -euo pipefail
-
-          [[ "$BRANCH_DIRECTION" == "success" ]] || {
-            echo "::error::Branch Direction did not pass."
-            exit 1
-          }
-
-          [[ "$RELEASE_VALIDATION" == "success" || "$RELEASE_VALIDATION" == "skipped" ]] || {
-            echo "::error::Release Validation did not pass."
-            exit 1
-          }
-
-          [[ "$HOTFIX_VALIDATION" == "success" || "$HOTFIX_VALIDATION" == "skipped" ]] || {
-            echo "::error::Hotfix Validation did not pass."
-            exit 1
-          }
-
-          echo "Gitflow validation passed."
 
   installation:
     name: Installation
