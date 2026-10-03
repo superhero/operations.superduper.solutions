@@ -119,11 +119,3 @@ Provides the workflow canvas, nodes, edges, handles, background, and controls.
 ## Development status
 
 This project is under active development and is currently in a pre-release state.
-
-## License
-
-Licensed under the **GNU Affero General Public License, version 3 only** (`AGPL-3.0-only`).
-
-See [`LICENSE`](LICENSE) and [`LICENSE-ADDITIONAL-TERMS`](LICENSE-ADDITIONAL-TERMS).
-
-Third-party dependencies retain their respective licenses.
