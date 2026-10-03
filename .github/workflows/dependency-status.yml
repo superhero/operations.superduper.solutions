@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: status-badges-${{ github.ref_name }}
+  group: status-json-${{ github.ref_name }}
   cancel-in-progress: false
 
 permissions:
@@ -60,7 +60,7 @@ jobs:
             color="orange"
           fi
 
-          mkdir -p tmp/badges/dependencies
+          mkdir -p tmp/status/dependencies
 
           jq -n \
             --arg message "$message" \
@@ -70,7 +70,7 @@ jobs:
               label: "Dependencies",
               message: $message,
               color: $color
-            }' > tmp/badges/dependencies.json
+            }' > tmp/status/dependencies.json
 
           while IFS= read -r package; do
             current="$(jq -r --arg package "$package" '.devDependencies[$package]' package.json)"
@@ -93,7 +93,7 @@ jobs:
                 label: $label,
                 message: $current,
                 color: $color
-              }' > "tmp/badges/dependencies/$slug.json"
+              }' > "tmp/status/dependencies/$slug.json"
           done < <(jq -r '.devDependencies | keys[]' package.json)
 
 
@@ -114,13 +114,13 @@ jobs:
             main) prefix="" ;;
             develop) prefix="develop/" ;;
             *)
-              echo "::error::Unsupported badge branch: $GITHUB_REF_NAME" >&2
+              echo "::error::Unsupported status branch: $GITHUB_REF_NAME" >&2
               exit 1
               ;;
           esac
 
           while IFS= read -r -d '' file; do
-            key="${file#tmp/badges/}"
+            key="${file#tmp/status/}"
             object_key="${prefix}${key}"
 
             response="$(
@@ -133,4 +133,4 @@ jobs:
             )"
 
             jq -e '.success == true' <<<"$response" >/dev/null
-          done < <(find tmp/badges -type f -name '*.json' -print0)
+          done < <(find tmp/status -type f -name '*.json' -print0)
