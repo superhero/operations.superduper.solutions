@@ -234,7 +234,7 @@ jobs:
           test -n "$value"
           echo "statements=$value" >> "$GITHUB_OUTPUT"
 
-          mkdir -p tmp/badges
+          mkdir -p tmp/status
           jq -n \
             --arg message "${value}%" \
             '{
@@ -242,7 +242,7 @@ jobs:
               label: "Test Coverage",
               message: $message,
               color: "brightgreen"
-            }' > tmp/badges/coverage.json
+            }' > tmp/status/coverage.json
 
       - name: Hand off coverage report
         if: always()
@@ -258,7 +258,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: coverage-status
-          path: tmp/badges/coverage.json
+          path: tmp/status/coverage.json
           if-no-files-found: error
 
   bundle:
