@@ -1,0 +1,67 @@
+name: pr-on-support
+run-name: "#${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
+
+on:
+  pull_request:
+    branches:
+      - 'support/**'
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - edited
+      - ready_for_review
+
+permissions:
+  contents: read
+
+jobs:
+  validate-branch-direction:
+    name: Validate Branch Direction
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Validating
+        shell: bash
+        env:
+          HEAD_BRANCH: ${{ github.head_ref }}
+          BASE_BRANCH: ${{ github.base_ref }}
+        run: |
+          bash .github/scripts/validate-branch-direction.sh \
+            "$HEAD_BRANCH" \
+            "$BASE_BRANCH" \
+            'support/*' \
+            'hotfix/*'
+
+  validate-hotfix:
+    name: Validate Hotfix
+    if: startsWith(github.head_ref, 'hotfix/')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      HEAD_BRANCH: ${{ github.head_ref }}
+      BASE_BRANCH: ${{ github.base_ref }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Validating
+        shell: bash
+        run: |
+          version="${HEAD_BRANCH#hotfix/}"
+
+          bash .github/scripts/validate-semver.sh "$version"
+          bash .github/scripts/validate-tag-available.sh "$REPOSITORY" "$version"
+          bash .github/scripts/validate-single-active-branch.sh "$REPOSITORY" hotfix "$HEAD_BRANCH"
+          bash .github/scripts/validate-next-patch.sh "$REPOSITORY" "$BASE_BRANCH" "$version"
