@@ -5,7 +5,7 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 ## Development status
 
 [![Develop Integration Gate](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-develop.yml?label=Develop%20Integration%20Gate)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-develop.yml)
-![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsuperhero%2Foperations.superduper.solutions%2Fdevelop%2Fcoverage.json)
+![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Foperations-superduper-badges.pages.dev%2Fcoverage.json)
 [![Main Release Gate](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-main.yml?label=Main%20Release%20Gate)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-main.yml)
 [![Production Deployment](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-main-cd.yml?label=Production%20Deployment)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-main-cd.yml)
 
