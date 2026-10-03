@@ -109,7 +109,7 @@ jobs:
       BASE_BRANCH: ${{ github.base_ref }}
 
     steps:
-      - name: Validate hotfix
+      - name: Validating
         shell: bash
         run: |
           set -euo pipefail
