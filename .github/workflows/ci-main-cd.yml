@@ -190,27 +190,16 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
 
+
   publish-coverage-status:
     name: Publish Coverage Status
     needs: deploy-release
-    concurrency:
-      group: status-badges-main
-      cancel-in-progress: false
     permissions:
       actions: read
       contents: read
     runs-on: ubuntu-latest
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
     steps:
-      - name: Check out merge commit
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
-          persist-credentials: false
-
       - name: Download validated coverage status
         shell: bash
         env:
@@ -225,49 +214,29 @@ jobs:
             --name coverage-status \
             --dir tmp/badges
 
-      - name: Restore dependency status
+      - name: Publish coverage status to R2
         shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_API_TOKEN || secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
 
-          project="operations-superduper-badges"
-          api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$project"
-
-          deployment_id="$(
-            curl -fsSL \
-              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-              "$api" |
-              jq -r '.result.canonical_deployment.id // empty'
-          )"
-
-          [[ -n "$deployment_id" ]] || {
-            echo "::error::No production badge deployment is available to preserve." >&2
+          [[ -n "$CLOUDFLARE_API_TOKEN" && -n "$CLOUDFLARE_ACCOUNT_ID" ]] || {
+            echo "::error::Cloudflare R2 credentials are not configured in GitHub Actions." >&2
             exit 1
           }
 
-          curl -fsSL \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            "$api/deployments/$deployment_id" \
-            > "$RUNNER_TEMP/status-badges-deployment.json"
+          response="$(
+            curl --fail-with-body --silent --show-error \
+              --request PUT \
+              --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              --header "Content-Type: application/json" \
+              --data-binary @tmp/badges/coverage.json \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/operations-badges/objects/coverage.json"
+          )"
 
-          while IFS= read -r path; do
-            target="tmp/badges${path}"
-            mkdir -p "$(dirname "$target")"
-            curl -fsSL "https://operations-superduper-badges.pages.dev${path}" -o "$target"
-          done < <(
-            jq -r '
-              .result.files
-              | keys[]
-              | select(. == "/dependencies.json" or startswith("/dependencies/"))
-            ' "$RUNNER_TEMP/status-badges-deployment.json"
-          )
-
-      - name: Publish coverage status
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
-          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy tmp/badges --project-name=operations-superduper-badges --branch=main
+          jq -e '.success == true' <<<"$response" >/dev/null
 
   backmerge-develop:
     name: Backmerge Develop
