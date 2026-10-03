@@ -8,75 +8,16 @@ on:
     types:
       - closed
 
-permissions:
-  actions: read
-  contents: read
-
 jobs:
-  resolve-release-context:
-    name: Resolve Release Context
-    if: github.event.pull_request.merged == true
-    permissions:
-      contents: read
-      pull-requests: read
-    runs-on: ubuntu-latest
-    outputs:
-      applicable: ${{ steps.release.outputs.applicable }}
-      pr_number: ${{ steps.release.outputs.pr_number }}
-      head_ref: ${{ steps.release.outputs.head_ref }}
-      head_sha: ${{ steps.release.outputs.head_sha }}
-      merge_sha: ${{ steps.release.outputs.merge_sha }}
-
-    steps:
-      - name: Resolve merged release or hotfix PR
-        id: release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
-        run: |
-          set -euo pipefail
-
-          pr="$(
-            gh api "repos/$REPOSITORY/pulls/$PR_NUMBER" |
-              jq -c --arg repo "$REPOSITORY" --arg sha "$MERGE_SHA" '
-                select(
-                  .merged == true and
-                  .merge_commit_sha == $sha and
-                  .base.ref == "main" and
-                  .base.repo.full_name == $repo and
-                  .head.repo.full_name == $repo and
-                  (
-                    (.head.ref | startswith("release/")) or
-                    (.head.ref | startswith("hotfix/"))
-                  )
-                )'
-          )"
-
-          if [[ -z "$pr" ]]; then
-            echo "applicable=false" >> "$GITHUB_OUTPUT"
-            echo "PR #$PR_NUMBER is not a merged same-repository release/* or hotfix/* PR for $MERGE_SHA; post-release work is not applicable."
-            exit 0
-          fi
-
-          pr_number="$(jq -r '.number' <<<"$pr")"
-          head_ref="$(jq -r '.head.ref' <<<"$pr")"
-          head_sha="$(jq -r '.head.sha' <<<"$pr")"
-
-          echo "applicable=true" >> "$GITHUB_OUTPUT"
-          echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
-          echo "head_ref=$head_ref" >> "$GITHUB_OUTPUT"
-          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
-          echo "merge_sha=$MERGE_SHA" >> "$GITHUB_OUTPUT"
-
-          echo "Resolved PR #$pr_number ($head_ref @ ${head_sha:0:7}) merged as ${MERGE_SHA:0:7}."
-
   create-release-tag:
     name: Create Release Tag
-    needs: resolve-release-context
-    if: needs.resolve-release-context.outputs.applicable == 'true'
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (
+        startsWith(github.event.pull_request.head.ref, 'release/') ||
+        startsWith(github.event.pull_request.head.ref, 'hotfix/')
+      )
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -85,35 +26,21 @@ jobs:
       - name: Check out merge commit
         uses: actions/checkout@v7
         with:
-          ref: ${{ needs.resolve-release-context.outputs.merge_sha }}
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
           fetch-depth: 0
 
       - name: Create annotated SemVer tag
         shell: bash
         env:
-          HEAD_BRANCH: ${{ needs.resolve-release-context.outputs.head_ref }}
-          MERGE_SHA: ${{ needs.resolve-release-context.outputs.merge_sha }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
         run: |
           set -euo pipefail
 
-          case "$HEAD_BRANCH" in
-            release/*)
-              kind="release"
-              version="${HEAD_BRANCH#release/}"
-              ;;
-            hotfix/*)
-              kind="hotfix"
-              version="${HEAD_BRANCH#hotfix/}"
-              ;;
-            *)
-              echo "::error::Unsupported source branch '$HEAD_BRANCH'." >&2
-              exit 1
-              ;;
-          esac
+          kind="${HEAD_BRANCH%%/*}"
+          version="${HEAD_BRANCH#*/}"
 
           bash .github/scripts/validate-semver.sh "$version"
-
-          git fetch --quiet --tags --force
 
           if git rev-parse -q --verify "refs/tags/$version" >/dev/null; then
             existing="$(git rev-parse "refs/tags/$version^{}")"
@@ -134,78 +61,52 @@ jobs:
 
   deploy-release:
     name: Deploy Release
-    needs: resolve-release-context
-    if: needs.resolve-release-context.outputs.applicable == 'true'
+    needs: create-release-tag
     permissions:
       actions: read
       contents: read
       deployments: write
-      pull-requests: read
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
 
     steps:
-      - name: Resolve validated CI run
+      - name: Download validated bundle
         id: release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
-          PR_NUMBER: ${{ needs.resolve-release-context.outputs.pr_number }}
-          HEAD_SHA: ${{ needs.resolve-release-context.outputs.head_sha }}
-          HEAD_REF: ${{ needs.resolve-release-context.outputs.head_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
 
-          candidates="$(
+          run_id="$(
             gh run list \
               --repo "$REPOSITORY" \
               --workflow pr-on-main.yml \
               --event pull_request \
               --commit "$HEAD_SHA" \
               --status success \
-              --limit 20 \
+              --limit 1 \
               --json databaseId \
-              --jq '.[].databaseId'
+              --jq '.[0].databaseId // empty'
           )"
 
-          # A successful merged-PR run has no bundle. Skip it when rerunning a release.
-          run_id=""
-          while IFS= read -r candidate; do
-            [[ -n "$candidate" ]] || continue
-            artifact_id="$(
-              gh api --method GET "repos/$REPOSITORY/actions/runs/$candidate/artifacts" \
-                -f name=bundle \
-                --jq '.artifacts[] | select(.expired == false) | .id'
-            )"
-            if [[ -n "$artifact_id" ]]; then
-              run_id="$candidate"
-              break
-            fi
-          done <<<"$candidates"
-
           [[ -n "$run_id" ]] || {
-            echo "::error::No successful release CI run with an unexpired bundle found for PR #$PR_NUMBER at $HEAD_SHA." >&2
+            echo "::error::No successful release CI run found for PR #$PR_NUMBER at $HEAD_SHA." >&2
             exit 1
           }
 
-          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
-
-      - name: Download validated bundle
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-          RUN_ID: ${{ steps.release.outputs.run_id }}
-        run: |
-          set -euo pipefail
           mkdir -p dist
-          gh run download "$RUN_ID" \
+          gh run download "$run_id" \
             --repo "$REPOSITORY" \
             --name bundle \
             --dir dist
+
+          echo "run_id=$run_id" >> "$GITHUB_OUTPUT"
 
       - name: Check deployment credentials
         if: env.CLOUDFLARE_API_TOKEN == '' || env.CLOUDFLARE_ACCOUNT_ID == ''
@@ -215,7 +116,6 @@ jobs:
 
       - name: Deploy validated bundle to Cloudflare Pages
         id: cloudflare
-        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
@@ -223,10 +123,9 @@ jobs:
           command: pages deploy dist --project-name=operations-superduper-solutions
 
       - name: Record GitHub deployment
-        if: env.CLOUDFLARE_API_TOKEN != '' && env.CLOUDFLARE_ACCOUNT_ID != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          MERGE_SHA: ${{ needs.resolve-release-context.outputs.merge_sha }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
           DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
           PAGES_DEPLOYMENT_ID: ${{ steps.cloudflare.outputs.pages-deployment-id }}
           PAGES_ENVIRONMENT: ${{ steps.cloudflare.outputs.pages-environment }}
@@ -276,9 +175,9 @@ jobs:
         env:
           DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
           SOURCE_RUN_ID: ${{ steps.release.outputs.run_id }}
-          PR_NUMBER: ${{ needs.resolve-release-context.outputs.pr_number }}
-          SOURCE_BRANCH: ${{ needs.resolve-release-context.outputs.head_ref }}
-          SOURCE_SHA: ${{ needs.resolve-release-context.outputs.head_sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           {
             echo "**Preview URL:** $DEPLOYMENT_URL"
@@ -290,8 +189,7 @@ jobs:
 
   backmerge-develop:
     name: Backmerge Develop
-    needs: resolve-release-context
-    if: needs.resolve-release-context.outputs.applicable == 'true'
+    needs: create-release-tag
     concurrency:
       group: post-release-backmerge
       cancel-in-progress: false
@@ -305,18 +203,17 @@ jobs:
       REPOSITORY: ${{ github.repository }}
 
     steps:
-      - name: Create GitHub App token for back-merge PRs
+      - name: Create GitHub App token
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
           client-id: ${{ vars.GITHUB_APP_CLIENT_ID || vars.GH_APP_CLIENT_ID }}
           app-id: ${{ vars.GH_APP_ID || vars.GITHUB_APP_ID }}
           private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY || secrets.GH_APP_PRIVATE_KEY }}
-          # Preserve the installed App's permissions; only PR creation needs its identity.
           permission-contents: read
           permission-pull-requests: write
 
-      - name: Synchronize main into develop without a CI gate
+      - name: Backmerge main into develop
         id: sync
         shell: bash
         env:
@@ -324,35 +221,20 @@ jobs:
         run: |
           set -euo pipefail
           echo "merged=false" >> "$GITHUB_OUTPUT"
-          [[ -n "$PR_TOKEN" ]] || {
-            echo "::error::A GitHub App token is required to create back-merge PRs; refusing to fall back to GITHUB_TOKEN." >&2
-            exit 1
-          }
 
           main_sha="$(gh api "repos/$REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
-          develop_sha="$(gh api "repos/$REPOSITORY/git/ref/heads/develop" --jq '.object.sha')"
-          [[ "$main_sha" =~ ^[0-9a-f]{40}$ && "$develop_sha" =~ ^[0-9a-f]{40}$ ]] || {
-            echo "::error::Could not resolve the branch commits." >&2
-            exit 1
-          }
 
-          behind_by="$(gh api "repos/$REPOSITORY/compare/$main_sha...$develop_sha" --jq '.behind_by')"
-          [[ "$behind_by" =~ ^[0-9]+$ ]] || {
-            echo "::error::Could not determine whether synchronization is needed." >&2
-            exit 1
-          }
-          if [[ "$behind_by" == "0" ]]; then
+          if [[ "$(gh api "repos/$REPOSITORY/compare/main...develop" --jq '.behind_by')" == "0" ]]; then
             echo "develop already contains main; no synchronization is needed."
             exit 0
           fi
 
-          # The App creates the PR so its workflows do not require GITHUB_TOKEN approval.
-          # The workflow token retains responsibility for status updates and the merge.
           pr_number="$(
             gh api --method GET "repos/$REPOSITORY/pulls" \
               -f state=open -f base=develop -f "head=${REPOSITORY%%/*}:main" \
               --jq '.[0].number // empty'
           )"
+
           if [[ -z "$pr_number" ]]; then
             pr_number="$(
               GH_TOKEN="$PR_TOKEN" gh api --method POST "repos/$REPOSITORY/pulls" \
@@ -362,46 +244,28 @@ jobs:
                 --jq '.number'
             )"
           fi
-          [[ "$pr_number" =~ ^[0-9]+$ ]] || {
-            echo "::error::Could not resolve the synchronization PR." >&2
-            exit 1
-          }
 
-          pr="$(gh api "repos/$REPOSITORY/pulls/$pr_number")"
-          jq -e --arg repo "$REPOSITORY" --arg sha "$main_sha" '
-            .state == "open" and .draft == false and
-            .base.ref == "develop" and .head.ref == "main" and
-            .base.repo.full_name == $repo and .head.repo.full_name == $repo and
-            .head.sha == $sha
-          ' <<<"$pr" >/dev/null || {
-            echo "::error::PR topology or main head changed; refusing to merge." >&2
-            exit 1
-          }
-
-          # Retry only HTTP 405 while repository rules settle; never bypass conflicts or a changed head.
-          merge_error="$RUNNER_TEMP/backmerge-error.log"
-          for attempt in {1..30}; do
+          for attempt in {1..50}; do
             if result="$(
               gh api --method PUT "repos/$REPOSITORY/pulls/$pr_number/merge" \
-                -f merge_method=merge -f "sha=$main_sha" 2>"$merge_error"
+                -f merge_method=merge -f "sha=$main_sha" 2>&1
             )"; then
               break
             fi
-            if ! grep -q 'HTTP 405' "$merge_error" || [[ "$attempt" == "30" ]]; then
-              cat "$merge_error" >&2
+
+            if [[ "$result" != *"HTTP 405"* || "$attempt" == "50" ]]; then
+              printf '%s\n' "$result" >&2
               exit 1
             fi
-            sleep 2
+
+            sleep 5
           done
-          jq -e '.merged == true' <<<"$result" >/dev/null || {
+
+          merge_sha="$(jq -er 'select(.merged == true) | .sha' <<<"$result")" || {
             echo "::error::GitHub did not merge the synchronization PR." >&2
             exit 1
           }
-          merge_sha="$(jq -r '.sha' <<<"$result")"
-          [[ "$merge_sha" =~ ^[0-9a-f]{40}$ ]] || {
-            echo "::error::GitHub returned an invalid merge commit." >&2
-            exit 1
-          }
+
           echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
           echo "merge_sha=$merge_sha" >> "$GITHUB_OUTPUT"
           echo "merged=true" >> "$GITHUB_OUTPUT"
