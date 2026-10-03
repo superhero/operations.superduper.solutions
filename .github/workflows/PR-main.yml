@@ -747,7 +747,6 @@ jobs:
       group: post-release-backmerge
       cancel-in-progress: false
     permissions:
-      actions: write
       contents: write
       pull-requests: write
       statuses: write
@@ -812,7 +811,7 @@ jobs:
               GH_TOKEN="$PR_TOKEN" gh api --method POST "repos/$REPOSITORY/pulls" \
                 -f base=develop -f head=main \
                 -f title="Back-merge main into develop" \
-                -f body="Automatic Gitflow synchronization. Development checks run after the merge and do not gate synchronization." \
+                -f body="Automatic Gitflow synchronization. Development checks run on this pull request." \
                 --jq '.number'
             )"
           fi
@@ -867,20 +866,6 @@ jobs:
           echo "merge_sha=$merge_sha" >> "$GITHUB_OUTPUT"
           echo "merged=true" >> "$GITHUB_OUTPUT"
 
-      - name: Start development health checks after synchronization
-        id: health
-        if: steps.sync.outputs.merged == 'true'
-        continue-on-error: true
-        shell: bash
-        env:
-          MERGE_SHA: ${{ steps.sync.outputs.merge_sha }}
-        run: |
-          set -euo pipefail
-          # The App-created PR runs topology only; dispatch the non-gating health checks.
-          # Check the resulting develop commit, not the pre-merge main commit.
-          jq -n --arg sha "$MERGE_SHA" '{ref: "develop", inputs: {commit_sha: $sha}}' |
-            gh api --method POST "repos/$REPOSITORY/actions/workflows/PR-develop.yml/dispatches" --input -
-
       - name: Synchronization summary
         if: always()
         shell: bash
@@ -889,16 +874,9 @@ jobs:
           MERGED: ${{ steps.sync.outputs.merged }}
           PR_NUMBER: ${{ steps.sync.outputs.pr_number }}
           MERGE_SHA: ${{ steps.sync.outputs.merge_sha }}
-          HEALTH_OUTCOME: ${{ steps.health.outcome }}
         run: |
           if [[ "$MERGED" == "true" ]]; then
             echo "Merged main into develop through PR #$PR_NUMBER at $MERGE_SHA." >> "$GITHUB_STEP_SUMMARY"
-            if [[ "$HEALTH_OUTCOME" == "success" ]]; then
-              echo "Development health checks requested after the merge; their result does not gate synchronization." >> "$GITHUB_STEP_SUMMARY"
-            else
-              echo "::warning::Synchronization succeeded, but development health checks could not be started."
-              echo "Development health checks could not be started; synchronization remains complete." >> "$GITHUB_STEP_SUMMARY"
-            fi
           elif [[ "$SYNC_OUTCOME" == "success" ]]; then
             echo "develop already contains main; no back-merge was needed." >> "$GITHUB_STEP_SUMMARY"
           else
