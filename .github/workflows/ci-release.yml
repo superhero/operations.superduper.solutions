@@ -69,3 +69,35 @@ jobs:
           bash .github/scripts/validate-tag-available.sh "$REPOSITORY" "$version"
           bash .github/scripts/validate-single-active-branch.sh "$REPOSITORY" hotfix "$HEAD_BRANCH"
           bash .github/scripts/validate-next-patch.sh "$REPOSITORY" "$BASE_BRANCH" "$version"
+
+  auto-merge:
+    name: Auto Merge
+    needs:
+      - validate-branch-direction
+      - validate-hotfix
+    if: >-
+      ${{
+        github.event.pull_request.head.repo.full_name == github.repository
+        && !github.event.pull_request.draft
+        && needs.validate-branch-direction.result == 'success'
+        && (needs.validate-hotfix.result == 'success' || needs.validate-hotfix.result == 'skipped')
+      }}
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Auto Merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/scripts/auto-merge.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA"
