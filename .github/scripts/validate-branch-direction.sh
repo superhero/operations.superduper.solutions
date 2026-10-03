@@ -12,7 +12,7 @@ base_branch="$2"
 expected_base_pattern="$3"
 
 [[ "$base_branch" == $expected_base_pattern ]] || {
-  echo "::error::Target branch '$base_branch' does not match '$expected_base_pattern'."
+  echo "::error::Target branch '$base_branch' does not match '$expected_base_pattern'." >&2
   exit 1
 }
 
@@ -25,5 +25,5 @@ for pattern in "$@"; do
   fi
 done
 
-echo "::error::Branch '$head_branch' may not merge into '$base_branch'."
+echo "::error::Branch '$head_branch' may not merge into '$base_branch'." >&2
 exit 1
