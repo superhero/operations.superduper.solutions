@@ -21,8 +21,53 @@ permissions:
   contents: read
 
 jobs:
+  create-release:
+    name: Create Release
+    if: >-
+      ${{
+        github.head_ref == 'develop'
+        && github.base_ref == 'main'
+        && github.event.pull_request.head.repo.full_name == github.repository
+        && !github.event.pull_request.draft
+      }}
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GITHUB_APP_CLIENT_ID || vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY || secrets.GH_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Create release pull request
+        id: release
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_PR: ${{ github.event.pull_request.number }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/scripts/create-release-pr.sh "$REPOSITORY" "$SOURCE_PR" "$SOURCE_SHA"
+
+      - name: Release summary
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          RELEASE_PR: ${{ steps.release.outputs.release_pr }}
+        run: echo "Created release/$VERSION as PR #$RELEASE_PR." >> "$GITHUB_STEP_SUMMARY"
+
   validate-branch-direction:
     name: Validate Branch Direction
+    if: github.head_ref != 'develop'
     runs-on: ubuntu-latest
 
     steps:
@@ -99,6 +144,7 @@ jobs:
 
   installation:
     name: Installation
+    if: github.head_ref != 'develop'
     runs-on: ubuntu-latest
 
     steps:
@@ -347,7 +393,7 @@ jobs:
       - source-test
       - coverage
       - acceptance-test
-    if: always()
+    if: ${{ github.head_ref != 'develop' && always() }}
     continue-on-error: true
     runs-on: ubuntu-latest
 
@@ -401,7 +447,7 @@ jobs:
     needs:
       - coverage
       - test-report
-    if: always()
+    if: ${{ github.head_ref != 'develop' && always() }}
     continue-on-error: true
     runs-on: ubuntu-latest
 
@@ -453,6 +499,7 @@ jobs:
     if: >-
       ${{
         always()
+        && github.head_ref != 'develop'
         && github.event.pull_request.head.repo.full_name == github.repository
         && !github.event.pull_request.draft
         && needs.validate-branch-direction.result == 'success'
@@ -471,6 +518,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GITHUB_APP_CLIENT_ID || vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY || secrets.GH_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Checkout
         uses: actions/checkout@v7
         with:
@@ -479,7 +535,7 @@ jobs:
 
       - name: Auto Merge
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
