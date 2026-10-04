@@ -30,11 +30,23 @@ format as the acceptance report, `tmp/test/cucumber-test.json`. CI retains the
 automation report as `automation-test-report` on success and failure, ready for
 combined reporting later. Application source coverage remains separate.
 
-`ci-branches.yml` validates PRs into `develop`, `release/*`, and `support/*`.
-`ci-main.yml` creates releases from `develop` trigger PRs and validates release
-and hotfix PRs. Both require workflow validation, Gitflow policy, and application
-checks before the app bot merges a ready PR. Each application job installs once
-and runs its checks locally; npm's download cache is the only cache used.
+Each CI workflow owns one target branch or branch family:
+
+- `ci-develop.yml` validates PRs into `develop`.
+- `ci-release.yml` validates PRs into `release/**`.
+- `ci-support.yml` validates PRs into `support/**`.
+- `ci-main.yml` handles PRs into `main` and deployment after pushes to `main`.
+
+The branch workflows define their own triggers, jobs, permissions, and artifact
+handling. Common Gitflow, merge, release, and publishing logic lives in Bash
+scripts under `.github/scripts`; branch CI does not call a shared workflow.
+The workflow is selected by the PR target, so feature and bugfix PRs run develop
+CI, while hotfix PRs run CI for their chosen main, release, or support target.
+
+Main CI creates releases from `develop` trigger PRs and validates release and
+hotfix PRs. Every automatic merge requires workflow validation, Gitflow policy,
+and application checks. Each application job installs once and runs its checks
+locally; npm's download cache is the only cache used.
 Auto-merges are serialized per target branch and bind both the tested head and
 base commit. If the target advances during CI, update the PR branch to trigger
 fresh validation before merging.
