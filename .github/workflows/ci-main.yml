@@ -63,7 +63,8 @@ jobs:
         env:
           VERSION: ${{ steps.release.outputs.version }}
           RELEASE_PR: ${{ steps.release.outputs.release_pr }}
-        run: echo "Created release/$VERSION as PR #$RELEASE_PR." >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo "Created release/$VERSION as PR #$RELEASE_PR." >> "$GITHUB_STEP_SUMMARY"
 
   validate-branch-direction:
     name: Validate Branch Direction
