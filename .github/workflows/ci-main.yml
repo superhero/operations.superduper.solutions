@@ -21,11 +21,20 @@ permissions:
   contents: read
 
 jobs:
+  workflow-checks:
+    name: Workflow Checks
+    uses: ./.github/workflows/workflow-checks.yml
+
   create-release:
     name: Create Release
+    needs: workflow-checks
+    concurrency:
+      group: release-creation
+      cancel-in-progress: false
     if: >-
       ${{
-        github.head_ref == 'develop'
+        needs.workflow-checks.result == 'success'
+        && github.head_ref == 'develop'
         && github.base_ref == 'main'
         && github.event.pull_request.head.repo.full_name == github.repository
         && !github.event.pull_request.draft
@@ -39,8 +48,8 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ vars.GITHUB_APP_CLIENT_ID || vars.GH_APP_CLIENT_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY || secrets.GH_APP_PRIVATE_KEY }}
+          client-id: ${{ vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
 
@@ -146,6 +155,8 @@ jobs:
   installation:
     name: Installation
     if: github.head_ref != 'develop'
+    outputs:
+      cache_key: ${{ steps.handoff.outputs.cache_key }}
     runs-on: ubuntu-latest
 
     steps:
@@ -163,11 +174,15 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Record handoff cache key
+        id: handoff
+        run: echo "cache_key=dependencies-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+
       - name: Hand off dependencies
         uses: actions/cache/save@v6
         with:
           path: node_modules
-          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ steps.handoff.outputs.cache_key }}
 
   type-check:
     name: Type Check
@@ -189,8 +204,9 @@ jobs:
       - name: Restore dependencies
         uses: actions/cache/restore@v6
         with:
+          fail-on-cache-miss: true
           path: node_modules
-          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ needs.installation.outputs.cache_key }}
 
       - name: Type Check
         run: npm --silent run typecheck
@@ -198,6 +214,8 @@ jobs:
   source-test:
     name: Source Test
     needs: installation
+    outputs:
+      cache_key: ${{ steps.handoff.outputs.cache_key }}
     runs-on: ubuntu-latest
 
     steps:
@@ -215,8 +233,13 @@ jobs:
       - name: Restore dependencies
         uses: actions/cache/restore@v6
         with:
+          fail-on-cache-miss: true
           path: node_modules
-          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ needs.installation.outputs.cache_key }}
+
+      - name: Record handoff cache key
+        id: handoff
+        run: echo "cache_key=source-test-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
 
       - name: Source Test
         run: |
@@ -226,18 +249,20 @@ jobs:
 
       - name: Hand off source test data
         if: always()
-        continue-on-error: true
         uses: actions/cache/save@v6
         with:
           path: |
             tmp/test/source-test-output.txt
             tmp/test/coverage/v8
-          key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ steps.handoff.outputs.cache_key }}
 
   coverage:
     name: Coverage
-    needs: source-test
+    needs:
+      - source-test
+      - installation
     outputs:
+      cache_key: ${{ steps.handoff.outputs.cache_key }}
       statements: ${{ steps.coverage.outputs.statements }}
     permissions:
       actions: read
@@ -259,16 +284,22 @@ jobs:
       - name: Restore dependencies
         uses: actions/cache/restore@v6
         with:
+          fail-on-cache-miss: true
           path: node_modules
-          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ needs.installation.outputs.cache_key }}
 
       - name: Restore source coverage data
         uses: actions/cache/restore@v6
         with:
+          fail-on-cache-miss: true
           path: |
             tmp/test/source-test-output.txt
             tmp/test/coverage/v8
-          key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ needs.source-test.outputs.cache_key }}
+
+      - name: Record handoff cache key
+        id: handoff
+        run: echo "cache_key=coverage-report-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
 
       - name: Coverage
         id: coverage
@@ -293,17 +324,17 @@ jobs:
 
       - name: Hand off coverage report
         if: always()
-        continue-on-error: true
         uses: actions/cache/save@v6
         with:
           path: |
             tmp/test/coverage
             tmp/test/coverage-output.txt
-          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ steps.handoff.outputs.cache_key }}
 
       - name: Hand off coverage status
         uses: actions/upload-artifact@v7
         with:
+          overwrite: true
           name: coverage-status
           path: tmp/status/coverage.json
           if-no-files-found: error
@@ -311,6 +342,7 @@ jobs:
   bundle:
     name: Bundle
     needs:
+      - installation
       - type-check
       - coverage
     runs-on: ubuntu-latest
@@ -330,8 +362,9 @@ jobs:
       - name: Restore dependencies
         uses: actions/cache/restore@v6
         with:
+          fail-on-cache-miss: true
           path: node_modules
-          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ needs.installation.outputs.cache_key }}
 
       - name: Bundle
         run: npm --silent run build
@@ -339,13 +372,18 @@ jobs:
       - name: Upload bundle
         uses: actions/upload-artifact@v7
         with:
+          overwrite: true
           name: bundle
           path: dist
           if-no-files-found: error
 
   acceptance-test:
     name: Acceptance Test
-    needs: bundle
+    needs:
+      - bundle
+      - installation
+    outputs:
+      cache_key: ${{ steps.handoff.outputs.cache_key }}
     runs-on: ubuntu-latest
 
     steps:
@@ -363,14 +401,19 @@ jobs:
       - name: Restore dependencies
         uses: actions/cache/restore@v6
         with:
+          fail-on-cache-miss: true
           path: node_modules
-          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ needs.installation.outputs.cache_key }}
 
       - name: Download bundle
         uses: actions/download-artifact@v8
         with:
           name: bundle
           path: dist
+
+      - name: Record handoff cache key
+        id: handoff
+        run: echo "cache_key=test-report-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
 
       - name: Acceptance Test
         run: |
@@ -386,7 +429,7 @@ jobs:
           path: |
             tmp/test/cucumber-test.json
             tmp/test/test-output.txt
-          key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ steps.handoff.outputs.cache_key }}
 
   test-report:
     name: Test Report
@@ -402,16 +445,20 @@ jobs:
       - name: Restore source test output
         uses: actions/cache/restore@v6
         with:
-          path: tmp/test/source-test-output.txt
-          key: source-test-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+          path: |
+            tmp/test/source-test-output.txt
+            tmp/test/coverage/v8
+          key: ${{ needs.source-test.outputs.cache_key }}
 
       - name: Restore acceptance test report
         uses: actions/cache/restore@v6
         with:
+          fail-on-cache-miss: true
           path: |
             tmp/test/cucumber-test.json
             tmp/test/test-output.txt
-          key: test-report-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ needs.acceptance-test.outputs.cache_key }}
 
       - name: Test summary
         if: always()
@@ -439,6 +486,7 @@ jobs:
       - name: Publish test report
         uses: actions/upload-artifact@v7
         with:
+          overwrite: true
           name: test-report
           path: tmp/test/cucumber-test.json
           if-no-files-found: warn
@@ -449,17 +497,17 @@ jobs:
       - coverage
       - test-report
     if: ${{ github.head_ref != 'develop' && always() }}
-    continue-on-error: true
     runs-on: ubuntu-latest
 
     steps:
       - name: Restore coverage report
         uses: actions/cache/restore@v6
         with:
+          fail-on-cache-miss: true
           path: |
             tmp/test/coverage
             tmp/test/coverage-output.txt
-          key: coverage-report-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ needs.coverage.outputs.cache_key }}
 
       - name: Coverage summary
         if: always()
@@ -481,13 +529,17 @@ jobs:
       - name: Publish coverage report
         uses: actions/upload-artifact@v7
         with:
+          overwrite: true
           name: coverage
           path: tmp/test/coverage
-          if-no-files-found: warn
+          if-no-files-found: error
 
   auto-merge:
     name: Auto Merge
     needs:
+      - workflow-checks
+      - test-report
+      - coverage-report
       - validate-branch-direction
       - validate-release
       - validate-hotfix
@@ -506,6 +558,8 @@ jobs:
         && needs.validate-branch-direction.result == 'success'
         && (needs.validate-release.result == 'success' || needs.validate-release.result == 'skipped')
         && (needs.validate-hotfix.result == 'success' || needs.validate-hotfix.result == 'skipped')
+        && needs.workflow-checks.result == 'success'
+        && needs.coverage-report.result == 'success'
         && needs.installation.result == 'success'
         && needs.type-check.result == 'success'
         && needs.source-test.result == 'success'
@@ -523,8 +577,8 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ vars.GITHUB_APP_CLIENT_ID || vars.GH_APP_CLIENT_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY || secrets.GH_APP_PRIVATE_KEY }}
+          client-id: ${{ vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
 
