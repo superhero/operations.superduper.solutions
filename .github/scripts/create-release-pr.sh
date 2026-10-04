@@ -29,7 +29,9 @@ version="$major.$minor.$((patch + 1))"
 release_branch="release/$version"
 
 existing_sha="$(
-  gh api "repos/$repository/git/ref/heads/$release_branch" --jq '.object.sha' 2>/dev/null || true
+  gh api --paginate "repos/$repository/branches?per_page=100" \
+    | jq -r --arg branch "$release_branch" '.[] | select(.name == $branch) | .commit.sha' \
+    | head -1
 )"
 
 if [[ -n "$existing_sha" && "$existing_sha" != "$source_sha" ]]; then
