@@ -1,0 +1,306 @@
+# Copyright (C) 2026 Erik Landvall
+# SPDX-License-Identifier: AGPL-3.0-only
+# See LICENSE and LICENSE-ADDITIONAL-TERMS.
+name: release-deployment
+
+on:
+  workflow_call:
+
+permissions:
+  actions: read
+  contents: read
+  deployments: write
+
+jobs:
+  deploy-release:
+    name: Deploy Release
+    timeout-minutes: 20
+    outputs:
+      source_run_id: ${{ steps.release.outputs.run_id }}
+    permissions:
+      actions: read
+      contents: read
+      deployments: write
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+    steps:
+      - name: Checkout release automation
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          persist-credentials: false
+
+      - name: Wait for validated release artifacts
+        id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/scripts/find-release-ci.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA"
+
+      - name: Download validated bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_RUN_ID: ${{ steps.release.outputs.run_id }}
+        run: |
+          mkdir -p dist
+          gh run download "$SOURCE_RUN_ID" --repo "$REPOSITORY" --name bundle --dir dist
+
+      - name: Check deployment credentials
+        if: env.CLOUDFLARE_API_TOKEN == '' || env.CLOUDFLARE_ACCOUNT_ID == ''
+        run: |
+          echo "::error::Cloudflare deployment credentials are not configured in GitHub Actions." >&2
+          exit 1
+
+      - name: Reject superseded release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: bash .github/scripts/validate-current-release.sh "$REPOSITORY" "$MERGE_SHA"
+
+      - name: Deploy validated bundle to Cloudflare Pages
+        id: cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=operations-superduper-solutions --branch=main
+
+      - name: Record GitHub deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
+          PAGES_DEPLOYMENT_ID: ${{ steps.cloudflare.outputs.pages-deployment-id }}
+          PAGES_ENVIRONMENT: ${{ steps.cloudflare.outputs.pages-environment }}
+        run: |
+          set -euo pipefail
+
+          environment="${PAGES_ENVIRONMENT:-production}"
+
+          deployment_id="$(
+            jq -n \
+              --arg ref "$MERGE_SHA" \
+              --arg environment "$environment" \
+              '{
+                ref: $ref,
+                auto_merge: false,
+                required_contexts: [],
+                environment: $environment,
+                production_environment: true,
+                description: "Cloudflare Pages"
+              }' |
+            gh api \
+              --method POST \
+              "repos/${GITHUB_REPOSITORY}/deployments" \
+              --input - \
+              --jq '.id'
+          )"
+
+          jq -n \
+            --arg environment "$environment" \
+            --arg environment_url "$DEPLOYMENT_URL" \
+            --arg log_url "https://dash.cloudflare.com/${CLOUDFLARE_ACCOUNT_ID}/pages/view/operations-superduper-solutions/${PAGES_DEPLOYMENT_ID}" \
+            '{
+              state: "success",
+              environment: $environment,
+              environment_url: $environment_url,
+              log_url: $log_url,
+              description: "Cloudflare Pages",
+              auto_inactive: false
+            }' |
+          gh api \
+            --method POST \
+            "repos/${GITHUB_REPOSITORY}/deployments/${deployment_id}/statuses" \
+            --input - \
+            >/dev/null
+
+      - name: Deployment summary
+        env:
+          DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
+          SOURCE_RUN_ID: ${{ steps.release.outputs.run_id }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          {
+            echo "**Preview URL:** $DEPLOYMENT_URL"
+            echo
+            echo "**Promoted artifact:** CI run #$SOURCE_RUN_ID"
+            echo
+            echo "**Source:** PR #$PR_NUMBER ($SOURCE_BRANCH @ ${SOURCE_SHA:0:7})"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+
+
+  publish-test-coverage-report:
+    name: Publish Test Coverage Report
+    needs: deploy-release
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_API_TOKEN || secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Download validated test coverage report
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_RUN_ID: ${{ needs.deploy-release.outputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p tmp/test-coverage-source
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$REPOSITORY" \
+            --name coverage \
+            --dir tmp/test-coverage-source
+
+      - name: Bundle test coverage report
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p tmp/test-coverage-report
+
+          npx --yes coverage-single-html@0.1.4 \
+            tmp/test-coverage-source \
+            --output tmp/test-coverage-report/index.unminified.html \
+            --title "Test Coverage Report"
+
+          npx --yes html-minifier-terser@7.2.0 \
+            tmp/test-coverage-report/index.unminified.html \
+            --collapse-whitespace \
+            --remove-comments \
+            --remove-redundant-attributes \
+            --remove-script-type-attributes \
+            --remove-style-link-type-attributes \
+            --minify-css true \
+            --minify-js true \
+            --output tmp/test-coverage-report/index.html
+
+          rm tmp/test-coverage-report/index.unminified.html
+          test -s tmp/test-coverage-report/index.html
+          test "$(find tmp/test-coverage-report -type f | wc -l)" -eq 1
+
+      - name: Check test coverage publishing configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          [[ -n "$CLOUDFLARE_API_TOKEN" && -n "$CLOUDFLARE_ACCOUNT_ID" ]] || {
+            echo "::error::Cloudflare R2 credentials are not configured in GitHub Actions." >&2
+            exit 1
+          }
+
+      - name: Reject superseded release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: bash .github/scripts/validate-current-release.sh "$REPOSITORY" "$MERGE_SHA"
+
+      - name: Publish test coverage report to R2
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          response="$(
+            curl --fail-with-body --silent --show-error \
+              --request PUT \
+              --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              --header "Content-Type: text/html; charset=utf-8" \
+              --data-binary @tmp/test-coverage-report/index.html \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/operations-status/objects/test-coverage.html"
+          )"
+
+          jq -e '.success == true' <<<"$response" >/dev/null
+
+      - name: Test coverage report summary
+        run: |
+          {
+            echo "**Test coverage report:** https://status.operations.superduper.solutions/test-coverage.html"
+            echo
+            echo "**Published files:** 1"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+
+  publish-coverage-status:
+    name: Publish Test Coverage Status
+    needs: deploy-release
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout release automation
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          persist-credentials: false
+
+      - name: Download validated coverage status
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_RUN_ID: ${{ needs.deploy-release.outputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p tmp/status
+          gh run download "$SOURCE_RUN_ID" \
+            --repo "$REPOSITORY" \
+            --name coverage-status \
+            --dir tmp/status
+
+      - name: Reject superseded release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: bash .github/scripts/validate-current-release.sh "$REPOSITORY" "$MERGE_SHA"
+
+      - name: Publish coverage status to R2
+        shell: bash
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_API_TOKEN || secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+
+          [[ -n "$CLOUDFLARE_API_TOKEN" && -n "$CLOUDFLARE_ACCOUNT_ID" ]] || {
+            echo "::error::Cloudflare R2 credentials are not configured in GitHub Actions." >&2
+            exit 1
+          }
+
+          response="$(
+            curl --fail-with-body --silent --show-error \
+              --request PUT \
+              --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              --header "Content-Type: application/json" \
+              --data-binary @tmp/status/coverage.json \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/operations-status/objects/coverage.json"
+          )"
+
+          jq -e '.success == true' <<<"$response" >/dev/null

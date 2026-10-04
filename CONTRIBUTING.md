@@ -9,6 +9,26 @@ Thank you for contributing to `operations.superduper.solutions`.
 - [Security](doc/adr/security.md)
 - [Gitflow](doc/adr/gitflow.md)
 
+## Workflow validation
+
+For changes to release automation, run these checks from the repository root:
+
+```sh
+python3 -B -m unittest discover -s .github/tests -v
+shellcheck .github/scripts/*.sh
+actionlint
+```
+
+The regression tests use mocked GitHub responses and require Bash, Python 3,
+and jq. They do not create releases or deploy. Development and release CI run
+these checks before auto-merge.
+
+Release-trigger retries reuse the release associated with the source PR and
+commit. Deployment waits up to ten minutes for that release's CI and requires
+the bundle, coverage report, and coverage status artifacts. Ordinary deployment
+retries reject releases superseded by `main`; intentional rollback requires a
+separate operation.
+
 ## Licensing
 
 ### Contribution license
