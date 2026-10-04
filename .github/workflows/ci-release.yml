@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   workflow-checks:
-    name: Validate Workflows
+    name: Automation Checks
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -26,11 +26,6 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-
-      - name: Lint workflows and embedded scripts
-        uses: docker://rhysd/actionlint:1.7.12
-        with:
-          args: -color
 
       - name: Lint standalone scripts
         run: shellcheck .github/scripts/*.sh

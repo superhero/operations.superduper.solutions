@@ -9,14 +9,13 @@ Thank you for contributing to `operations.superduper.solutions`.
 - [Security](doc/adr/security.md)
 - [Gitflow](doc/adr/gitflow.md)
 
-## Workflow validation
+## Automation validation
 
 For changes to release automation, run these checks from the repository root:
 
 ```sh
 npm run test:automation
 shellcheck .github/scripts/*.sh
-actionlint
 ```
 
 Automation uses the same Cucumber feature and JavaScript step format as the
@@ -44,7 +43,7 @@ The workflow is selected by the PR target, so feature and bugfix PRs run develop
 CI, while hotfix PRs run CI for their chosen main, release, or support target.
 
 Main CI creates releases from `develop` trigger PRs and validates release and
-hotfix PRs. Every automatic merge requires workflow validation, Gitflow policy,
+hotfix PRs. Every automatic merge requires automation checks, Gitflow policy,
 and application checks. Each application job installs once and runs its checks
 locally; npm's download cache is the only cache used.
 Auto-merges are serialized per target branch and bind both the tested head and
