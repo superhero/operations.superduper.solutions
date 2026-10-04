@@ -9,14 +9,14 @@ Thank you for contributing to `operations.superduper.solutions`.
 - [Security](doc/adr/security.md)
 - [Gitflow](doc/adr/gitflow.md)
 
-## Workflow validation
+## Automation validation
 
 For changes to release automation, run these checks from the repository root:
 
 ```sh
 npm run test:automation
+npm run badges:dependencies -- --check
 shellcheck .github/scripts/*.sh
-actionlint
 ```
 
 Automation uses the same Cucumber feature and JavaScript step format as the
@@ -30,12 +30,19 @@ format as the acceptance report, `tmp/test/cucumber-test.json`. CI retains the
 automation report as `automation-test-report` on success and failure, ready for
 combined reporting later. Application source coverage remains separate.
 
+The README's package-version badges are generated SVGs in `.github/badges`.
+Their relative image paths follow the branch or tag being viewed. After changing
+dependencies, run `npm run badges:dependencies` and include the updated SVGs in
+the same commit as the manifest. CI checks that the files match `package.json`.
+These badges show declared versions, without a live freshness color; the two
+explicitly labelled main/develop summaries show the latest cron results.
+
 Each CI workflow owns one target branch or branch family:
 
 - `ci-develop.yml` validates PRs into `develop`.
 - `ci-release.yml` validates PRs into `release/**`.
 - `ci-support.yml` validates PRs into `support/**`.
-- `ci-main.yml` handles PRs into `main` and deployment after pushes to `main`.
+- `ci-main.yml` handles PRs into `main` and deploys releases on pushes to `main`.
 
 The branch workflows define their own triggers, jobs, permissions, and artifact
 handling. Common Gitflow, merge, release, and publishing logic lives in Bash
@@ -44,7 +51,7 @@ The workflow is selected by the PR target, so feature and bugfix PRs run develop
 CI, while hotfix PRs run CI for their chosen main, release, or support target.
 
 Main CI creates releases from `develop` trigger PRs and validates release and
-hotfix PRs. Every automatic merge requires workflow validation, Gitflow policy,
+hotfix PRs. Every automatic merge requires automation checks, Gitflow policy,
 and application checks. Each application job installs once and runs its checks
 locally; npm's download cache is the only cache used.
 Auto-merges are serialized per target branch and bind both the tested head and
@@ -92,9 +99,20 @@ Pull requests, and Deployments read/write permissions; each job requests only
 the permissions it uses. The built-in GitHub token is used for read-only API
 access and normal Actions infrastructure such as artifacts and caches.
 
-`dependency-status.yml` refreshes the dependency badges from one `npm outdated`
-result. It and release promotion use `publish-status.sh` for R2 uploads. Badge
-URLs remain stable; legacy object deletion is not part of normal publishing.
+`cron-outdated.yml` refreshes dependency status daily at 06:00 UTC and can also
+be run manually from `main` or `develop`. Every run checks out both branches
+separately, installs their dependencies, then calls `update-dependency-status.sh`
+for each branch. The helper generates a summary from one `npm outdated --json`
+result per branch and uses `publish-status.sh` for R2 uploads. A failure on one
+branch does not cancel the other branch's refresh, and writes are serialized per branch.
+This workflow has no PR or push triggers and does not create or deploy releases.
+The branch CI workflows have no scheduled or manual dependency refreshes.
+The README uses `version-dependencies.json` for main and
+`develop/version-dependencies.json` for develop. Per-package JSON badges are no
+longer published; deleting legacy R2 objects is not part of normal publishing.
+
+GitHub's branch label on a PR run shows its source branch. For example, a
+main-to-develop synchronization PR displays `main` while running `ci-develop`.
 
 ## Licensing
 
