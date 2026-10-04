@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
+    "badges:dependencies": "bash .github/scripts/generate-dependency-badges.sh package.json .github/badges",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json",
     "test": "npm run test:acceptance",
     "test:source": "cucumber-js --config cucumber.config.mjs --profile source",

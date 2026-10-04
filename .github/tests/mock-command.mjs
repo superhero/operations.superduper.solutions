@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
+import { basename } from "node:path";
 
 const [command, ...args] = process.argv.slice(2);
 if (command === "sleep") process.exit(0);
@@ -39,7 +40,25 @@ try
   const queue = JSON.parse(readFileSync(process.env.MOCK_QUEUE, "utf8"));
   const expected = queue.shift();
   assert.ok(expected, `Unexpected ${command} request`);
-  if (expected.command) assert.deepEqual(request.command, expected.command);
+  if (expected.executable) assert.equal(command, expected.executable);
+  if (expected.command)
+  {
+    assert.equal(request.command.length, expected.command.length);
+    for (const [index, argument] of expected.command.entries())
+    {
+      if (typeof argument === "string") assert.equal(request.command[index], argument);
+      else
+      {
+        // Generated uploads live in a fresh temporary directory for each invocation.
+        assert.equal(command, "curl");
+        assert.equal(request.command[index - 1], "--data-binary");
+        assert.ok(request.command[index].startsWith("@"));
+        const file = request.command[index].slice(1);
+        assert.equal(basename(file), argument.file);
+        assert.deepEqual(JSON.parse(readFileSync(file, "utf8")), argument.json);
+      }
+    }
+  }
   else
   {
     assert.equal(request.method, expected.method ?? "GET");
