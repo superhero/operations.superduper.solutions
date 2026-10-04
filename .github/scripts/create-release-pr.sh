@@ -79,7 +79,7 @@ Release trigger accepted.
 
 Created PR #$release_pr from `$release_branch` into `main`, using `develop` at `$short_sha`.
 
-This trigger PR is being closed without merging. Release validation and the actual merge into `main` continue in PR #$release_pr.
+This trigger PR will remain open while release validation continues in PR #$release_pr. Once that release PR merges this exact commit into `main`, GitHub will mark this trigger PR as merged as well.
 EOF
 )"
 
@@ -88,7 +88,6 @@ EOF
     >/dev/null
 fi
 
-gh api --method PATCH "repos/$repository/pulls/$source_pr" -f state=closed >/dev/null
 
 echo "version=$version" >> "$GITHUB_OUTPUT"
 echo "release_pr=$release_pr" >> "$GITHUB_OUTPUT"
