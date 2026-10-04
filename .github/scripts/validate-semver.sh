@@ -6,10 +6,10 @@ usage='Usage: validate-semver.sh <version>'
 [[ -n "${1:-}" ]] || { printf '%s\n<version> is missing\n' "$usage" >&2; exit 1; }
 
 version="$1"
-semver_re='^[0-9]+\.[0-9]+\.[0-9]+$'
+semver_re='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
 
 [[ "$version" =~ $semver_re ]] || {
-  echo "::error::Version '$version' must be unprefixed SemVer MAJOR.MINOR.PATCH." >&2
+  echo "::error::Version '$version' must be unprefixed SemVer MAJOR.MINOR.PATCH with no leading zeros." >&2
   exit 1
 }
 
