@@ -11,8 +11,9 @@ fail() {
   echo "::error::$* Manifest='$manifest', output='$output'." >&2
   exit 1
 }
-[[ $# == 2 || ( $# == 3 && "$mode" == --check ) ]] && [[ -n "$manifest" && -n "$output" ]] ||
+if ! [[ ( $# == 2 || ( $# == 3 && "$mode" == --check ) ) && -n "$manifest" && -n "$output" ]]; then
   fail 'Usage: generate-dependency-badges.sh <package-json> <output-directory> [--check].'
+fi
 
 # Names become filenames, so reject unsafe names and scoped/unscoped slug collisions.
 if ! jq -se 'length == 1 and (.[0] | type == "object" and
