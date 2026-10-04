@@ -123,16 +123,24 @@ jobs:
             key="${file#tmp/status/}"
             object_key="${prefix}${key}"
 
-            response="$(
+            if ! response="$(
               curl --fail-with-body --silent --show-error \
                 --request PUT \
                 --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
                 --header "Content-Type: application/json" \
                 --data-binary @"$file" \
                 "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/operations-status/objects/$object_key"
-            )"
+            )"; then
+              echo "::error::Failed to publish R2 object: $object_key" >&2
+              printf '%s\n' "$response" >&2
+              exit 1
+            fi
 
-            jq -e '.success == true' <<<"$response" >/dev/null
+            if ! jq -e '.success == true' <<<"$response" >/dev/null; then
+              echo "::error::Cloudflare returned an unsuccessful response for R2 object: $object_key" >&2
+              printf '%s\n' "$response" >&2
+              exit 1
+            fi
           done < <(find tmp/status -type f -name '*.json' -print0)
 
           legacy_keys=("dependencies.json")
@@ -142,12 +150,20 @@ jobs:
           done < <(jq -r '.devDependencies | keys[]' package.json)
 
           for legacy_key in "${legacy_keys[@]}"; do
-            response="$(
+            if ! response="$(
               curl --fail-with-body --silent --show-error \
                 --request DELETE \
                 --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
                 "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/operations-status/objects/${prefix}${legacy_key}"
-            )"
+            )"; then
+              echo "::error::Failed to delete legacy R2 object: ${prefix}${legacy_key}" >&2
+              printf '%s\n' "$response" >&2
+              exit 1
+            fi
 
-            jq -e '.success == true' <<<"$response" >/dev/null
+            if ! jq -e '.success == true' <<<"$response" >/dev/null; then
+              echo "::error::Cloudflare returned an unsuccessful response while deleting legacy R2 object: ${prefix}${legacy_key}" >&2
+              printf '%s\n' "$response" >&2
+              exit 1
+            fi
           done
