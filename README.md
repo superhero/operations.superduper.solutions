@@ -13,12 +13,13 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 ## Dependencies
 
-[![Main dependencies](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.operations.superduper.solutions%2Fversion-dependencies.json&label=Main%20dependencies&cacheSeconds=300)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/cron-outdated.yml)
-[![Develop dependencies](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.operations.superduper.solutions%2Fdevelop%2Fversion-dependencies.json&label=Develop%20dependencies&cacheSeconds=300)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/cron-outdated.yml)
-
 Package badges below show the versions declared in this revision's
-[package.json](package.json). The summaries above show the last scheduled or
-manual dependency check for the named branches.
+[package.json](package.json).
+
+The [dependency workflow](https://github.com/superhero/operations.superduper.solutions/actions/workflows/cron-outdated.yml)
+checks every existing repository branch daily at 06:00 UTC and on manual runs,
+using each branch's commit at discovery time. Open a run's summary to see
+outdated packages and their current, wanted, and latest versions.
 
 <a href="https://www.npmjs.com/package/bits-ui"><img src=".github/badges/version-dependency-bits-ui.svg" alt="bits-ui declared version"></a>
 

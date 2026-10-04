@@ -7,23 +7,18 @@ set -euo pipefail
 branch="${1:-}"
 context="repository='${GITHUB_REPOSITORY:-local}', branch='$branch', manifest='package.json', command='npm outdated --json'"
 [[ $# == 1 ]] || {
-  echo "::error::Usage: update-dependency-status.sh <main|develop> ($context)." >&2
+  echo "::error::Usage: update-dependency-status.sh <branch> ($context)." >&2
   exit 1
 }
-case "$branch" in
-  main) prefix="" ;;
-  develop) prefix="develop/" ;;
-  *)
-    echo "::error::Unsupported dependency status branch ($context); expected main or develop." >&2
-    exit 1
-    ;;
-esac
+if [[ -z "$branch" ]] || ! git check-ref-format "refs/heads/$branch"; then
+  echo "::error::Invalid dependency status branch ($context); expected a valid Git branch name." >&2
+  exit 1
+fi
 [[ -f package.json ]] || {
   echo "::error::Package manifest does not exist ($context)." >&2
   exit 1
 }
 
-scripts="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 temporary="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/dependency-status.XXXXXX")"
 trap 'rm -rf -- "$temporary"' EXIT
 
@@ -32,10 +27,18 @@ npm outdated --json > "$temporary/outdated.json" 2> "$temporary/npm.stderr" || s
 if [[ "$status" == 0 && ! -s "$temporary/outdated.json" ]]; then
   echo '{}' > "$temporary/outdated.json"
 fi
-if (( status > 1 )) || ! jq -se 'length == 1 and (.[0] | type == "object" and (has("error") | not))' \
-  "$temporary/outdated.json" >/dev/null 2>&1; then
+validation=""
+if ! jq -se '
+  def version: type == "string" and length > 0;
+  length == 1 and (.[0] | type == "object" and (has("error") | not) and
+    all(to_entries[]; (.key | length > 0) and (.value | type == "object" and
+      (.wanted | version) and (.latest | version) and (.current == null or (.current | version)))))
+' "$temporary/outdated.json" >/dev/null 2>&1; then
+  validation="; expected one JSON object with nonempty wanted/latest versions and optional current versions"
+fi
+if (( status > 1 )) || [[ -n "$validation" ]]; then
   (( status > 0 )) || status=1
-  echo "::error::npm outdated --json failed (exit $status; $context); dependency badges were not published." >&2
+  echo "::error::npm outdated --json failed (exit $status; $context)$validation; dependency report was not generated." >&2
   diagnostic="$(jq -er '
     .error? | select(type == "object" and any(.code, .summary; type == "string" and length > 0)) |
     "npm error \(.code | if type == "string" then . else "unknown" end): \(.summary | if type == "string" then . else "No summary provided" end)"
@@ -53,6 +56,21 @@ if (( status > 1 )) || ! jq -se 'length == 1 and (.[0] | type == "object" and (h
   exit "$status"
 fi
 
-bash "$scripts/generate-dependency-status.sh" package.json "$temporary/outdated.json" "$temporary/status"
-bash "$scripts/publish-status.sh" "$temporary/status/version-dependencies.json" \
-  "${prefix}version-dependencies.json" application/json
+jq -r --arg branch "$branch" '
+  def text:
+    tostring | @html | gsub("[[:cntrl:]]"; " ") |
+    gsub("(?<char>[\\\\`*_\\[\\]|])"; "\\\(.char)");
+  "## Dependency status: \($branch | text)\n",
+  if length == 0 then "All dependencies are up to date."
+  else
+    "\(length) outdated dependencies.\n",
+    "| Package | Current | Wanted | Latest |",
+    "| --- | --- | --- | --- |",
+    (to_entries | sort_by(.key)[] |
+      "| \(.key | text) | \(.value.current // "missing" | text) | \(.value.wanted | text) | \(.value.latest | text) |")
+  end
+' "$temporary/outdated.json" > "$temporary/report.md"
+cat "$temporary/report.md"
+if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+  cat "$temporary/report.md" >> "$GITHUB_STEP_SUMMARY"
+fi

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @automation
-Feature: Publish useful release and dependency status
+Feature: Publish release status and report dependency versions
 
   Scenario Outline: Publish the original file at its stable R2 destination
     Given a status file for "<key>" with content type "<type>"
@@ -39,56 +39,42 @@ Feature: Publish useful release and dependency status
       | CLOUDFLARE_API_TOKEN   | CLOUDFLARE_API_TOKEN is missing   |
       | CLOUDFLARE_ACCOUNT_ID  | CLOUDFLARE_ACCOUNT_ID is missing  |
 
-  Scenario Outline: The dependency summary reflects the registry result
-    Given dependency data that is "<state>"
-    When the dependency summary is generated
-    Then the dependency summary says "<message>" in "<color>"
-
-    Examples:
-      | state            | message     | color       |
-      | current          | up to date  | brightgreen |
-      | outdated         | 1 outdated  | orange      |
-      | several outdated | 2 outdated  | orange      |
-
-  Scenario Outline: Invalid dependency data produces no misleading summary
-    Given dependency data that is "<state>"
-    When the dependency summary is generated
-    Then summary generation fails with "<reason>" and input paths
-    And no dependency summary is written
-
-    Examples:
-      | state             | reason                                  |
-      | registry error    | npm error E401: authentication failed   |
-      | missing version   | did not return valid dependency data   |
-      | invalid manifest  | devDependencies object with string versions |
-
-  Scenario Outline: Scheduled dependency refreshes publish one summary to each branch's destination
-    Given the dependency registry reports "current"
+  Scenario Outline: Dependency checks report current branches without Cloudflare credentials
+    Given the dependency registry reports "<state>"
     When dependency status is updated for "<branch>"
-    Then only the current dependency summary is published under "<prefix>"
+    Then the workflow reports "All dependencies are up to date." for that branch
     And temporary registry data is removed
 
     Examples:
-      | branch  | prefix   |
-      | main    |          |
-      | develop | develop/ |
+      | branch  | state   |
+      | main    | current |
+      | develop | empty   |
 
-  Scenario: Outdated packages do not prevent dependency status publication
+  Scenario: Outdated dependencies show package versions in the workflow without failing the check
     Given the dependency registry reports "outdated"
+    When dependency status is updated for "release/0.0.30"
+    Then the workflow reports "2 outdated dependencies." for that branch
+    And the workflow shows each outdated package with its current, wanted and latest versions
+    And temporary registry data is removed
+
+  Scenario: Dependency reports escape branch names in Markdown
+    Given the dependency registry reports "current"
+    When dependency status is updated for "feature/report|<preview>`tick"
+    Then the workflow displays the branch name as escaped text
+    And temporary registry data is removed
+
+  Scenario: Invalid dependency versions do not produce a misleading report
+    Given the dependency registry reports "missing version"
     When dependency status is updated for "main"
-    Then the published dependency summary says "1 outdated"
+    Then invalid dependency data does not produce a successful report
+    And no successful dependency report is written
     And temporary registry data is removed
 
-  Scenario: An empty successful registry response means dependencies are current
-    Given the dependency registry reports "empty"
-    When dependency status is updated for "develop"
-    Then only the current dependency summary is published under "develop/"
-    And temporary registry data is removed
-
-  Scenario Outline: Registry failures stop publication and explain the failing request safely
+  Scenario Outline: Registry failures explain the failing request safely
     Given the dependency registry reports "failure <exit>"
     When dependency status is updated for "main"
     Then the registry failure includes the branch and safe npm error summary
+    And no successful dependency report is written
     And temporary registry data is removed
 
     Examples:
@@ -99,10 +85,13 @@ Feature: Publish useful release and dependency status
   Scenario: Non-JSON registry failures retain a bounded reason without credentials
     Given the dependency registry reports "failure without JSON"
     When dependency status is updated for "main"
-    Then the registry failure reports sanitized stderr without publishing
+    Then the registry failure reports sanitized stderr
+    And no successful dependency report is written
     And temporary registry data is removed
 
   Scenario: Invalid dependency status branches are rejected before external requests
     Given the dependency registry reports "current"
-    When dependency status is updated for "release/0.0.30"
-    Then the dependency status update fails with "Unsupported dependency status branch" before external requests
+    And the dependency branch name is invalid
+    When dependency status is updated for "release/../main"
+    Then the dependency status update fails with "Invalid dependency status branch" before external requests
+    And no successful dependency report is written

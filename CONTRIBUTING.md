@@ -99,17 +99,18 @@ Pull requests, and Deployments read/write permissions; each job requests only
 the permissions it uses. The built-in GitHub token is used for read-only API
 access and normal Actions infrastructure such as artifacts and caches.
 
-`cron-outdated.yml` refreshes dependency status daily at 06:00 UTC and can also
-be run manually from `main` or `develop`. Every run checks out both branches
-separately, installs their dependencies, then calls `update-dependency-status.sh`
-for each branch. The helper generates a summary from one `npm outdated --json`
-result per branch and uses `publish-status.sh` for R2 uploads. A failure on one
-branch does not cancel the other branch's refresh, and writes are serialized per branch.
+`cron-outdated.yml` checks dependencies daily at 06:00 UTC and can also be run
+manually. Every run discovers all repository branches and checks each branch's
+commit at discovery time. It installs dependencies with lifecycle scripts disabled
+and runs `update-dependency-status.sh` from the workflow's revision. The helper
+reports each branch's `npm outdated --json` results in the workflow logs and
+summary, including current, wanted, and latest versions. A failure on one branch
+does not cancel the other checks.
 This workflow has no PR or push triggers and does not create or deploy releases.
 The branch CI workflows have no scheduled or manual dependency refreshes.
-The README uses `version-dependencies.json` for main and
-`develop/version-dependencies.json` for develop. Per-package JSON badges are no
-longer published; deleting legacy R2 objects is not part of normal publishing.
+README package-version badges are tracked in `.github/badges/`. Dependency
+checks do not upload to R2. Main release promotion still publishes the coverage
+badge (`coverage.json`) and coverage report (`test-coverage.html`) to R2.
 
 GitHub's branch label on a PR run shows its source branch. For example, a
 main-to-develop synchronization PR displays `main` while running `ci-develop`.

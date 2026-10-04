@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Given, Then, When } from "@cucumber/cucumber";
 import { REPOSITORY } from "./support.mjs";
@@ -68,64 +68,27 @@ Then("no publishing request was made", function ()
   assert.deepEqual(this.automation.calls(), []);
 });
 
-Given("dependency data that is {string}", function (state)
-{
-  this.manifest = join(this.automation.root, "package.json");
-  this.outdated = join(this.automation.root, "outdated.json");
-  this.badges = join(this.automation.root, "badges");
-  const manifest = { devDependencies: { "@scope/tool": "1.0.0", current: "2.0.0" } };
-  const responses = {
-    current: {}, outdated: { "@scope/tool": { latest: "1.1.0" } },
-    "several outdated": { "@scope/tool": { latest: "1.1.0" }, current: { latest: "3.0.0" } },
-    "registry error": { error: { code: "E401", summary: "authentication failed", detail: "private registry detail" } },
-    "missing version": { "@scope/tool": { latest: null } }, "invalid manifest": {}
-  };
-  assert.ok(Object.hasOwn(responses, state), `Unknown dependency state: ${state}`);
-  if (state === "invalid manifest") manifest.devDependencies.current = 42;
-  writeFileSync(this.manifest, JSON.stringify(manifest));
-  writeFileSync(this.outdated, JSON.stringify(responses[state]));
-});
-
-When("the dependency summary is generated", function ()
-{
-  this.result = this.automation.execute("generate-dependency-status.sh",
-    [this.manifest, this.outdated, this.badges], [], { success: null });
-});
-
-Then("the dependency summary says {string} in {string}", function (message, color)
-{
-  assert.equal(this.result.status, 0, this.result.stderr);
-  assert.deepEqual(JSON.parse(readFileSync(join(this.badges, "version-dependencies.json"), "utf8")),
-    { schemaVersion: 1, label: "Dependencies", message, color });
-  assert.deepEqual(readdirSync(this.badges), ["version-dependencies.json"]);
-});
-
-Then("summary generation fails with {string} and input paths", function (reason)
-{
-  assert.notEqual(this.result.status, 0);
-  for (const value of [reason, this.manifest, this.outdated, this.badges])
-    assert.ok(this.result.stderr.includes(value), this.result.stderr);
-  assert.ok(!this.result.stderr.includes("private registry detail"));
-});
-
-Then("no dependency summary is written", function ()
-{
-  assert.equal(existsSync(this.badges), false);
-});
-
 Given("the dependency registry reports {string}", function (state)
 {
   this.automation.env.GITHUB_REPOSITORY = REPOSITORY;
+  this.automation.env.GITHUB_STEP_SUMMARY = join(this.automation.root, "summary.md");
   this.automation.env.NPM_TOKEN = "test-npm-secret";
   this.automation.env.NODE_AUTH_TOKEN = "test-node-secret";
+  delete this.automation.env.CLOUDFLARE_API_TOKEN;
+  delete this.automation.env.CLOUDFLARE_ACCOUNT_ID;
+  writeFileSync(this.automation.env.GITHUB_STEP_SUMMARY, "");
   const responses = {
     current: { response: {} },
-    outdated: { response: { "@scope/tool": { latest: "1.1.0" } }, exit_code: 1 },
+    outdated: { response: {
+      "@scope/tool": { current: "1.0.0", wanted: "1.0.1", latest: "1.1.0" },
+      another: { current: "2.0.0", wanted: "2.0.0", latest: "3.0.0" }
+    }, exit_code: 1 },
     empty: { raw: "" },
+    "missing version": { response: { "@scope/tool": { current: "1.0.0", wanted: "1.0.1", latest: null } } },
     "failure without JSON": {
       raw: "not JSON", exit_code: 1,
       stderr: `npm error ECONNRESET: registry connection closed at https://private-user:private-password@registry.example.test\n` +
-        `${this.automation.env.GH_TOKEN} ${this.automation.env.CLOUDFLARE_API_TOKEN} ` +
+        `${this.automation.env.GH_TOKEN} ` +
         `${this.automation.env.NPM_TOKEN} ${this.automation.env.NODE_AUTH_TOKEN}\n${"debug detail ".repeat(200)}`
     }
   };
@@ -140,51 +103,61 @@ Given("the dependency registry reports {string}", function (state)
   assert.ok(Object.hasOwn(responses, state), `Unknown dependency registry state: ${state}`);
   this.dependencyUpdate = { state, response: responses[state] };
   writeFileSync(join(this.automation.root, "package.json"),
-    JSON.stringify({ devDependencies: { "@scope/tool": "1.0.0" } }));
-  // A previous run's badge must never become part of this publication.
-  mkdirSync(join(this.automation.root, "tmp/status"), { recursive: true });
-  writeFileSync(join(this.automation.root, "tmp/status/stale.json"), "{}");
+    JSON.stringify({ devDependencies: { "@scope/tool": "1.0.0", another: "2.0.0" } }));
+});
+
+Given("the dependency branch name is invalid", function ()
+{
+  this.dependencyUpdate.invalidBranch = true;
 });
 
 When("dependency status is updated for {string}", function (branch)
 {
-  const { state, response } = this.dependencyUpdate;
-  const allowed = ["main", "develop"].includes(branch);
+  const { response } = this.dependencyUpdate;
+  this.dependencyUpdate.branch = branch;
+  const allowed = !this.dependencyUpdate.invalidBranch;
   const responses = allowed ? [{ executable: "npm", command: ["outdated", "--json"], ...response }] : [];
-  if (allowed && !state.startsWith("failure"))
-  {
-    const prefix = branch === "main" ? "" : "develop/";
-    const env = this.automation.env;
-    const file = "version-dependencies.json";
-    const json = { schemaVersion: 1, label: "Dependencies",
-      message: state === "outdated" ? "1 outdated" : "up to date",
-      color: state === "outdated" ? "orange" : "brightgreen" };
-    this.dependencyUpdate.summary = json;
-    responses.push({ executable: "curl", command: ["--fail-with-body", "--silent", "--show-error", "--request", "PUT",
-      "--header", `Authorization: Bearer ${env.CLOUDFLARE_API_TOKEN}`, "--header", "Content-Type: application/json",
-      "--data-binary", { file, json },
-      `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/r2/buckets/operations-status/objects/${prefix}${file}`],
-    response: { success: true } });
-  }
   this.result = this.automation.execute("update-dependency-status.sh", branch ? [branch] : [], responses,
     { success: null });
 });
 
-Then("only the current dependency summary is published under {string}", function (prefix)
+Then("the workflow reports {string} for that branch", function (message)
 {
   assert.equal(this.result.status, 0, this.result.stderr);
-  const requests = this.automation.calls();
-  assert.equal(requests.length, 2);
-  assert.deepEqual(requests.slice(1).map(request => request.command.at(-1).split("/objects/")[1]),
-    [`${prefix}version-dependencies.json`]);
-  assert.equal(this.dependencyUpdate.summary.message, "up to date");
+  assert.deepEqual(this.automation.calls().map(request => request.command), [["outdated", "--json"]]);
+  assert.equal(readFileSync(this.automation.env.GITHUB_STEP_SUMMARY, "utf8"), this.result.stdout);
+  for (const value of [message, this.dependencyUpdate.branch])
+    assert.ok(this.result.stdout.includes(value), this.result.stdout);
 });
 
-Then("the published dependency summary says {string}", function (message)
+Then("the workflow shows each outdated package with its current, wanted and latest versions", function ()
+{
+  for (const value of ["| Package | Current | Wanted | Latest |",
+    "| @scope/tool | 1.0.0 | 1.0.1 | 1.1.0 |", "| another | 2.0.0 | 2.0.0 | 3.0.0 |"])
+    assert.ok(this.result.stdout.includes(value), this.result.stdout);
+});
+
+Then("the workflow displays the branch name as escaped text", function ()
 {
   assert.equal(this.result.status, 0, this.result.stderr);
-  assert.equal(this.automation.calls().length, 2);
-  assert.equal(this.dependencyUpdate.summary.message, message);
+  assert.deepEqual(this.automation.calls().map(request => request.command), [["outdated", "--json"]]);
+  assert.equal(readFileSync(this.automation.env.GITHUB_STEP_SUMMARY, "utf8"), this.result.stdout);
+  assert.ok(this.result.stdout.includes("feature/report\\|&lt;preview&gt;\\`tick"), this.result.stdout);
+  assert.ok(!this.result.stdout.includes(this.dependencyUpdate.branch), this.result.stdout);
+});
+
+Then("invalid dependency data does not produce a successful report", function ()
+{
+  assert.notEqual(this.result.status, 0);
+  for (const value of [REPOSITORY, "branch='main'", "package.json", "npm outdated --json"])
+    assert.ok(this.result.stderr.includes(value), this.result.stderr);
+  assert.deepEqual(this.automation.calls().map(request => request.command), [["outdated", "--json"]]);
+});
+
+Then("no successful dependency report is written", function ()
+{
+  assert.equal(this.result.stdout, "");
+  assert.equal(readFileSync(this.automation.env.GITHUB_STEP_SUMMARY, "utf8"), "");
 });
 
 Then("the registry failure includes the branch and safe npm error summary", function ()
@@ -201,11 +174,12 @@ Then("the registry failure includes the branch and safe npm error summary", func
 Then("the dependency status update fails with {string} before external requests", function (reason)
 {
   assert.notEqual(this.result.status, 0);
-  assert.ok(this.result.stderr.includes(reason), this.result.stderr);
+  for (const value of [reason, REPOSITORY, this.dependencyUpdate.branch])
+    assert.ok(this.result.stderr.includes(value), this.result.stderr);
   assert.deepEqual(this.automation.calls(), []);
 });
 
-Then("the registry failure reports sanitized stderr without publishing", function ()
+Then("the registry failure reports sanitized stderr", function ()
 {
   assert.equal(this.result.status, 1);
   for (const value of [REPOSITORY, "branch='main'", "package.json", "npm outdated --json",
@@ -222,5 +196,4 @@ Then("the registry failure reports sanitized stderr without publishing", functio
 Then("temporary registry data is removed", function ()
 {
   assert.deepEqual(readdirSync(this.automation.root).filter(file => file.startsWith("dependency-status.")), []);
-  assert.equal(existsSync(join(this.automation.root, "tmp/status/stale.json")), true);
 });
