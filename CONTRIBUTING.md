@@ -50,9 +50,12 @@ the release branch. Version validation fails on API errors and rejects a version
 already reserved by a release or hotfix, including a merged version whose tag
 has not been created yet.
 
-`ci-main-cd.yml` tags merged releases, opens a synchronization PR for normal
-`develop` CI to validate and merge, and promotes the validated artifacts. All
-production writes share one serialized job. It waits up to ten minutes for the
+`ci-main-cd.yml` runs when `main` changes. It resolves exactly one merged
+same-repository release or hotfix PR for the pushed commit before tagging;
+missing or ambiguous release identity fails with context. Closing a release
+trigger PR creates no extra CD run. The workflow tags the release, opens a
+synchronization PR for normal `develop` CI, and promotes its validated artifacts.
+All production writes share one serialized job. It waits up to ten minutes for the
 matching release CI, checks artifact availability, and rejects superseded
 releases before deployment or status publishing. Intentional rollback is a
 separate operation. Retrying promotion repeats deployment and publishing for

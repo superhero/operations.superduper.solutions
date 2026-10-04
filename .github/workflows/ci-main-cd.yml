@@ -1,12 +1,9 @@
 name: ci-main-cd
-run-name: "#${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
 
 on:
-  pull_request:
+  push:
     branches:
       - main
-    types:
-      - closed
 
 permissions:
   contents: read
@@ -14,13 +11,12 @@ permissions:
 jobs:
   create-release-tag:
     name: Create Release Tag
-    if: >-
-      github.event.pull_request.merged == true &&
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      (
-        startsWith(github.event.pull_request.head.ref, 'release/') ||
-        startsWith(github.event.pull_request.head.ref, 'hotfix/')
-      )
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      pr_number: ${{ steps.release-pr.outputs.pr_number }}
+      head_sha: ${{ steps.release-pr.outputs.head_sha }}
     runs-on: ubuntu-latest
 
     steps:
@@ -35,15 +31,23 @@ jobs:
       - name: Check out merge commit
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
+
+      - name: Resolve merged release
+        id: release-pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          MERGE_SHA: ${{ github.sha }}
+        run: bash .github/scripts/find-release-pr.sh "$REPOSITORY" "$MERGE_SHA"
 
       - name: Create annotated SemVer tag
         shell: bash
         env:
-          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
-          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          HEAD_BRANCH: ${{ steps.release-pr.outputs.head_branch }}
+          MERGE_SHA: ${{ github.sha }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           BOT_LOGIN: ${{ steps.app-token.outputs.app-slug }}[bot]
         run: |
@@ -145,13 +149,13 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       REPOSITORY: ${{ github.repository }}
-      MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+      MERGE_SHA: ${{ github.sha }}
 
     steps:
       - name: Checkout release automation
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Set up Node.js
@@ -162,8 +166,8 @@ jobs:
       - name: Wait for validated release artifacts
         id: release
         env:
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ needs.create-release-tag.outputs.pr_number }}
+          HEAD_SHA: ${{ needs.create-release-tag.outputs.head_sha }}
         run: bash .github/scripts/find-release-ci.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA"
 
       - name: Download release artifacts
