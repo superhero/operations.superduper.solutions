@@ -29,7 +29,7 @@ Before({ tags: "@automation" }, function ()
   const log = join(root, "calls.jsonl");
   const errors = join(root, "mock-errors");
   for (const file of [output, log, errors]) writeFileSync(file, "");
-  for (const command of ["gh", "curl", "sleep"])
+  for (const command of ["gh", "curl", "npm", "sleep"])
   {
     writeFileSync(join(root, command),
       `#!/bin/sh\nexec ${quote(process.execPath)} ${quote(mock)} ${command} "$@"\n`, { mode: 0o755 });

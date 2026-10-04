@@ -34,7 +34,7 @@ Each CI workflow owns one target branch or branch family:
 - `ci-develop.yml` validates PRs into `develop`.
 - `ci-release.yml` validates PRs into `release/**`.
 - `ci-support.yml` validates PRs into `support/**`.
-- `ci-main.yml` handles PRs into `main` and deployment after pushes to `main`.
+- `ci-main.yml` handles PRs into `main` and deploys releases on pushes to `main`.
 
 The branch workflows define their own triggers, jobs, permissions, and artifact
 handling. Common Gitflow, merge, release, and publishing logic lives in Bash
@@ -91,9 +91,19 @@ Pull requests, and Deployments read/write permissions; each job requests only
 the permissions it uses. The built-in GitHub token is used for read-only API
 access and normal Actions infrastructure such as artifacts and caches.
 
-`dependency-status.yml` refreshes the dependency badges from one `npm outdated`
-result. It and release promotion use `publish-status.sh` for R2 uploads. Badge
-URLs remain stable; legacy object deletion is not part of normal publishing.
+`cron-outdated.yml` refreshes dependency status daily at 06:00 UTC and can also
+be run manually from `main`. It checks out and installs the dependencies for
+`main` and `develop` separately, then calls `update-dependency-status.sh` for each
+branch. The helper generates badges from one `npm outdated --json` result per
+branch and uses `publish-status.sh` for R2 uploads. A failure on one branch does
+not cancel the other branch's refresh, and writes are serialized per branch.
+This workflow has no PR or push triggers and does not create or deploy releases.
+The branch CI workflows have no scheduled or manual dependency refreshes.
+Badge URLs remain stable: main uses root keys, and develop uses `develop/` keys.
+Legacy object deletion is not part of normal publishing.
+
+GitHub's branch label on a PR run shows its source branch. For example, a
+main-to-develop synchronization PR displays `main` while running `ci-develop`.
 
 ## Licensing
 

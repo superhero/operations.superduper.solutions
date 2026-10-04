@@ -61,3 +61,48 @@ Feature: Publish useful release and dependency status
       | registry error    | npm error E401: authentication failed   |
       | missing version   | did not return valid dependency data   |
       | invalid manifest  | devDependencies object with string versions |
+
+  Scenario Outline: Scheduled dependency refreshes publish badges to each branch's destination
+    Given the dependency registry reports "current"
+    When dependency status is updated for "<branch>"
+    Then only current dependency badges are published under "<prefix>"
+    And temporary registry data is removed
+
+    Examples:
+      | branch  | prefix   |
+      | main    |          |
+      | develop | develop/ |
+
+  Scenario: Outdated packages do not prevent dependency status publication
+    Given the dependency registry reports "outdated"
+    When dependency status is updated for "main"
+    Then the published dependency summary says "1 outdated"
+    And temporary registry data is removed
+
+  Scenario: An empty successful registry response means dependencies are current
+    Given the dependency registry reports "empty"
+    When dependency status is updated for "develop"
+    Then only current dependency badges are published under "develop/"
+    And temporary registry data is removed
+
+  Scenario Outline: Registry failures stop publication and explain the failing request safely
+    Given the dependency registry reports "failure <exit>"
+    When dependency status is updated for "main"
+    Then the registry failure includes the branch and safe npm error summary
+    And temporary registry data is removed
+
+    Examples:
+      | exit |
+      | 1    |
+      | 2    |
+
+  Scenario: Non-JSON registry failures retain a bounded reason without credentials
+    Given the dependency registry reports "failure without JSON"
+    When dependency status is updated for "main"
+    Then the registry failure reports sanitized stderr without publishing
+    And temporary registry data is removed
+
+  Scenario: Invalid dependency status branches are rejected before external requests
+    Given the dependency registry reports "current"
+    When dependency status is updated for "release/0.0.30"
+    Then the dependency status update fails with "Unsupported dependency status branch" before external requests

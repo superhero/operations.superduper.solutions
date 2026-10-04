@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Given, Then, When } from "@cucumber/cucumber";
-import "./support.mjs";
+import { REPOSITORY } from "./support.mjs";
 
 Given("a status file for {string} with content type {string}", function (key, type)
 {
@@ -116,4 +116,121 @@ Then("badge generation fails with {string} and input paths", function (reason)
 Then("no dependency badges are written", function ()
 {
   assert.equal(existsSync(this.badges), false);
+});
+
+Given("the dependency registry reports {string}", function (state)
+{
+  this.automation.env.GITHUB_REPOSITORY = REPOSITORY;
+  this.automation.env.NPM_TOKEN = "test-npm-secret";
+  this.automation.env.NODE_AUTH_TOKEN = "test-node-secret";
+  const responses = {
+    current: { response: {} },
+    outdated: { response: { "@scope/tool": { latest: "1.1.0" } }, exit_code: 1 },
+    empty: { raw: "" },
+    "failure without JSON": {
+      raw: "not JSON", exit_code: 1,
+      stderr: `npm error ECONNRESET: registry connection closed at https://private-user:private-password@registry.example.test\n` +
+        `${this.automation.env.GH_TOKEN} ${this.automation.env.CLOUDFLARE_API_TOKEN} ` +
+        `${this.automation.env.NPM_TOKEN} ${this.automation.env.NODE_AUTH_TOKEN}\n${"debug detail ".repeat(200)}`
+    }
+  };
+  if (["failure 1", "failure 2"].includes(state))
+  {
+    responses[state] = {
+      response: { error: { code: "E401", summary: `authentication failed: ${this.automation.env.GH_TOKEN}`,
+        detail: "private registry detail" } },
+      stderr: `private registry stderr ${this.automation.env.GH_TOKEN}`, exit_code: Number(state.at(-1))
+    };
+  }
+  assert.ok(Object.hasOwn(responses, state), `Unknown dependency registry state: ${state}`);
+  this.dependencyUpdate = { state, response: responses[state] };
+  writeFileSync(join(this.automation.root, "package.json"),
+    JSON.stringify({ devDependencies: { "@scope/tool": "1.0.0" } }));
+  // A previous run's badge must never become part of this publication.
+  mkdirSync(join(this.automation.root, "tmp/status"), { recursive: true });
+  writeFileSync(join(this.automation.root, "tmp/status/stale.json"), "{}");
+});
+
+When("dependency status is updated for {string}", function (branch)
+{
+  const { state, response } = this.dependencyUpdate;
+  const allowed = ["main", "develop"].includes(branch);
+  const responses = allowed ? [{ executable: "npm", command: ["outdated", "--json"], ...response }] : [];
+  if (allowed && !state.startsWith("failure"))
+  {
+    const prefix = branch === "main" ? "" : "develop/";
+    const env = this.automation.env;
+    this.dependencyUpdate.badges = [
+      ["version-dependencies.json", { schemaVersion: 1, label: "Dependencies",
+        message: state === "outdated" ? "1 outdated" : "up to date",
+        color: state === "outdated" ? "orange" : "brightgreen" }],
+      ["version-dependency-scope--tool.json", { schemaVersion: 1, label: "@scope/tool", message: "1.0.0",
+        color: state === "outdated" ? "orange" : "blue" }]
+    ];
+    for (const [file, json] of this.dependencyUpdate.badges)
+    {
+      responses.push({ executable: "curl", command: ["--fail-with-body", "--silent", "--show-error", "--request", "PUT",
+        "--header", `Authorization: Bearer ${env.CLOUDFLARE_API_TOKEN}`, "--header", "Content-Type: application/json",
+        "--data-binary", { file, json },
+        `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/r2/buckets/operations-status/objects/${prefix}${file}`],
+      response: { success: true } });
+    }
+  }
+  this.result = this.automation.execute("update-dependency-status.sh", branch ? [branch] : [], responses,
+    { success: null });
+});
+
+Then("only current dependency badges are published under {string}", function (prefix)
+{
+  assert.equal(this.result.status, 0, this.result.stderr);
+  const requests = this.automation.calls();
+  assert.equal(requests.length, 3);
+  assert.deepEqual(requests.slice(1).map(request => request.command.at(-1).split("/objects/")[1]),
+    [`${prefix}version-dependencies.json`, `${prefix}version-dependency-scope--tool.json`]);
+  assert.equal(this.dependencyUpdate.badges[0][1].message, "up to date");
+});
+
+Then("the published dependency summary says {string}", function (message)
+{
+  assert.equal(this.result.status, 0, this.result.stderr);
+  assert.equal(this.automation.calls().length, 3);
+  assert.equal(this.dependencyUpdate.badges[0][1].message, message);
+});
+
+Then("the registry failure includes the branch and safe npm error summary", function ()
+{
+  assert.equal(this.result.status, this.dependencyUpdate.response.exit_code);
+  for (const value of [REPOSITORY, "branch='main'", "package.json", "npm outdated --json", `exit ${this.result.status}`,
+    "npm error E401: authentication failed: [REDACTED]"])
+    assert.ok(this.result.stderr.includes(value), this.result.stderr);
+  for (const value of ["private registry detail", "private registry stderr"])
+    assert.ok(!this.result.stderr.includes(value), this.result.stderr);
+  assert.deepEqual(this.automation.calls().map(request => request.command), [["outdated", "--json"]]);
+});
+
+Then("the dependency status update fails with {string} before external requests", function (reason)
+{
+  assert.notEqual(this.result.status, 0);
+  assert.ok(this.result.stderr.includes(reason), this.result.stderr);
+  assert.deepEqual(this.automation.calls(), []);
+});
+
+Then("the registry failure reports sanitized stderr without publishing", function ()
+{
+  assert.equal(this.result.status, 1);
+  for (const value of [REPOSITORY, "branch='main'", "package.json", "npm outdated --json",
+    "npm error ECONNRESET: registry connection closed", "https://[REDACTED]@registry.example.test"])
+    assert.ok(this.result.stderr.includes(value), this.result.stderr);
+  for (const value of ["private-user", "private-password", this.automation.env.NPM_TOKEN, this.automation.env.NODE_AUTH_TOKEN])
+    assert.ok(!this.result.stderr.includes(value), this.result.stderr);
+  const lines = this.result.stderr.trimEnd().split("\n");
+  assert.equal(lines.length, 2);
+  assert.ok(lines[1].length <= 1000, lines[1]);
+  assert.deepEqual(this.automation.calls().map(request => request.command), [["outdated", "--json"]]);
+});
+
+Then("temporary registry data is removed", function ()
+{
+  assert.deepEqual(readdirSync(this.automation.root).filter(file => file.startsWith("dependency-status.")), []);
+  assert.equal(existsSync(join(this.automation.root, "tmp/status/stale.json")), true);
 });

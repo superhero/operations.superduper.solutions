@@ -1,0 +1,48 @@
+# Copyright (C) 2026 Erik Landvall
+# SPDX-License-Identifier: AGPL-3.0-only
+# See LICENSE and LICENSE-ADDITIONAL-TERMS.
+name: cron-outdated
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-status:
+    name: Update Dependency Status (${{ matrix.branch }})
+    if: github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: [main, develop]
+    concurrency:
+      group: status-json-${{ matrix.branch }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout ${{ matrix.branch }}
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ matrix.branch }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Update dependency status
+        env:
+          STATUS_BRANCH: ${{ matrix.branch }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_API_TOKEN || secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: bash .github/scripts/update-dependency-status.sh "$STATUS_BRANCH"
