@@ -50,8 +50,12 @@ the release branch. Version validation fails on API errors and rejects a version
 already reserved by a release or hotfix, including a merged version whose tag
 has not been created yet.
 
-`ci-main-cd.yml` runs when `main` changes. It resolves exactly one merged
-same-repository release or hotfix PR for the pushed commit before tagging;
+The same `ci-main.yml` deploys when `main` changes. PR checks and post-merge
+deployment run separately, with event guards keeping their jobs independent.
+Only superseded PR runs are cancelled; deployment has its own concurrency.
+Artifact lookup selects the matching PR run, never the deployment run itself.
+The main-push run resolves exactly one merged same-repository release or hotfix
+PR for the pushed commit before tagging;
 missing or ambiguous release identity fails with context. Closing a release
 trigger PR creates no extra CD run. The workflow tags the release, opens a
 synchronization PR for normal `develop` CI, and promotes its validated artifacts.
@@ -59,7 +63,7 @@ All production writes share one serialized job. It waits up to ten minutes for t
 matching release CI, checks artifact availability, and rejects superseded
 releases before deployment or status publishing. Intentional rollback is a
 separate operation. Retrying promotion repeats deployment and publishing for
-the current release; use the CD workflow retry rather than rerunning CI for an
+the current release; retry the main-push run rather than rerunning CI for an
 already merged release.
 
 The existing GitHub App (`GH_APP_CLIENT_ID`, `GH_APP_PRIVATE_KEY`) owns PRs,

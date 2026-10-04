@@ -4,10 +4,9 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 ## Development status
 
-[![Develop Integration Gate](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-develop.yml?label=Develop%20Integration%20Gate)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-develop.yml)
+[![Branch CI](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-branches.yml?label=Branch%20CI)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-branches.yml)
 ![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.operations.superduper.solutions%2Fcoverage.json)
-[![Main Release Gate](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-main.yml?label=Main%20Release%20Gate)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-main.yml)
-[![Production Deployment](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-main-cd.yml?label=Production%20Deployment)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-main-cd.yml)
+[![Main CI/CD](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-main.yml?label=Main%20CI%2FCD)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-main.yml)
 
 > [!NOTE]
 > This project is under active development and is currently in a pre-release state.
@@ -119,5 +118,4 @@ Bundles the production build into a single self-contained `dist/index.html` file
 <a href="https://www.npmjs.com/package/@xyflow/svelte"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.operations.superduper.solutions%2Fversion-dependency-xyflow--svelte.json%3Fv%3D3&cacheSeconds=300" alt="@xyflow/svelte version status"></a>
 
 Provides the workflow canvas, nodes, edges, handles, background, and controls.
-
 
