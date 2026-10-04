@@ -65,6 +65,29 @@ if [[ -z "$release_pr" ]]; then
   )"
 fi
 
+comment_marker="<!-- release-trigger -->"
+existing_comment="$(
+  gh api --paginate "repos/$repository/issues/$source_pr/comments?per_page=100" \
+    --jq --arg marker "$comment_marker" '[.[] | select(.body | contains($marker))] | length'
+)"
+
+if [[ "$existing_comment" == "0" ]]; then
+  short_sha="${source_sha:0:7}"
+  comment_body="$(cat <<EOF
+$comment_marker
+Release trigger accepted.
+
+Created PR #$release_pr from `$release_branch` into `main`, using `develop` at `$short_sha`.
+
+This trigger PR is being closed without merging. Release validation and the actual merge into `main` continue in PR #$release_pr.
+EOF
+)"
+
+  gh api --method POST "repos/$repository/issues/$source_pr/comments" \
+    -f "body=$comment_body" \
+    >/dev/null
+fi
+
 gh api --method PATCH "repos/$repository/pulls/$source_pr" -f state=closed >/dev/null
 
 echo "version=$version" >> "$GITHUB_OUTPUT"
