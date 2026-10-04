@@ -21,6 +21,10 @@ permissions:
   contents: read
 
 jobs:
+  workflow-checks:
+    name: Workflow Checks
+    uses: ./.github/workflows/workflow-checks.yml
+
   validate-branch-direction:
     name: Validate Branch Direction
     runs-on: ubuntu-latest
@@ -102,6 +106,8 @@ jobs:
 
   installation:
     name: Installation
+    outputs:
+      cache_key: ${{ steps.handoff.outputs.cache_key }}
     runs-on: ubuntu-latest
 
     steps:
@@ -119,11 +125,15 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Record handoff cache key
+        id: handoff
+        run: echo "cache_key=dependencies-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+
       - name: Hand off dependencies
         uses: actions/cache/save@v6
         with:
           path: node_modules
-          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ steps.handoff.outputs.cache_key }}
 
   type-check:
     name: Type Check
@@ -145,8 +155,9 @@ jobs:
       - name: Restore dependencies
         uses: actions/cache/restore@v6
         with:
+          fail-on-cache-miss: true
           path: node_modules
-          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ needs.installation.outputs.cache_key }}
 
       - name: Type Check
         run: npm --silent run typecheck
@@ -171,8 +182,9 @@ jobs:
       - name: Restore dependencies
         uses: actions/cache/restore@v6
         with:
+          fail-on-cache-miss: true
           path: node_modules
-          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ needs.installation.outputs.cache_key }}
 
       - name: Test
         run: npm --silent run test:source
@@ -197,8 +209,9 @@ jobs:
       - name: Restore dependencies
         uses: actions/cache/restore@v6
         with:
+          fail-on-cache-miss: true
           path: node_modules
-          key: dependencies-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ needs.installation.outputs.cache_key }}
 
       - name: Build
         run: npm --silent run build
@@ -206,6 +219,7 @@ jobs:
   auto-merge:
     name: Auto Merge
     needs:
+      - workflow-checks
       - validate-branch-direction
       - validate-release
       - validate-hotfix
@@ -221,6 +235,7 @@ jobs:
         && needs.validate-branch-direction.result == 'success'
         && (needs.validate-release.result == 'success' || needs.validate-release.result == 'skipped')
         && (needs.validate-hotfix.result == 'success' || needs.validate-hotfix.result == 'skipped')
+        && needs.workflow-checks.result == 'success'
         && needs.installation.result == 'success'
         && needs.type-check.result == 'success'
         && needs.test.result == 'success'
@@ -236,8 +251,8 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ vars.GITHUB_APP_CLIENT_ID || vars.GH_APP_CLIENT_ID }}
-          private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY || secrets.GH_APP_PRIVATE_KEY }}
+          client-id: ${{ vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
 
