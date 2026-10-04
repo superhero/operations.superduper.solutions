@@ -37,3 +37,17 @@ export const acceptance = {
     "src/build.feature"
   ]
 };
+
+export const automation = {
+  ...base,
+  format: [
+    "pretty",
+    "json:tmp/test/cucumber-automation.json"
+  ],
+  import: [
+    ".github/tests/*.test.mjs"
+  ],
+  paths: [
+    ".github/tests/*.feature"
+  ]
+};

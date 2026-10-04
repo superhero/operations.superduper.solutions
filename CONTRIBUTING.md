@@ -14,13 +14,21 @@ Thank you for contributing to `operations.superduper.solutions`.
 For changes to release automation, run these checks from the repository root:
 
 ```sh
-python3 -B -m unittest discover -s .github/tests
+npm run test:automation
 shellcheck .github/scripts/*.sh
 actionlint
 ```
 
-The regression tests mock GitHub and Cloudflare and require Bash, Python 3,
-and jq. They do not create releases or deploy.
+Automation uses the same Cucumber feature and JavaScript step format as the
+application tests. Install the locked dependencies with `npm ci`; the automation
+scenarios also require Bash and jq. They run the real shell scripts with simulated
+GitHub and Cloudflare responses in temporary directories, without creating
+releases or deploying. Unexpected external requests fail the scenario.
+
+The `automation` profile writes `tmp/test/cucumber-automation.json` in the same
+format as the acceptance report, `tmp/test/cucumber-test.json`. CI retains the
+automation report as `automation-test-report` on success and failure, ready for
+combined reporting later. Application source coverage remains separate.
 
 `ci-branches.yml` validates PRs into `develop`, `release/*`, and `support/*`.
 `ci-main.yml` creates releases from `develop` trigger PRs and validates release

@@ -28,5 +28,25 @@ jobs:
       - name: Lint standalone scripts
         run: shellcheck .github/scripts/*.sh
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
       - name: Test automation
-        run: python3 -B -m unittest discover -s .github/tests
+        id: automation
+        run: npm --loglevel=error run test:automation
+
+      - name: Upload automation report
+        if: success() || (failure() && steps.automation.outcome == 'failure')
+        uses: actions/upload-artifact@v7
+        with:
+          name: automation-test-report
+          path: tmp/test/cucumber-automation.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
