@@ -14,19 +14,39 @@ Thank you for contributing to `operations.superduper.solutions`.
 For changes to release automation, run these checks from the repository root:
 
 ```sh
-python3 -B -m unittest discover -s .github/tests
+npm run test:automation
 shellcheck .github/scripts/*.sh
 actionlint
 ```
 
-The regression tests mock GitHub and Cloudflare and require Bash, Python 3,
-and jq. They do not create releases or deploy.
+Automation uses the same Cucumber feature and JavaScript step format as the
+application tests. Install the locked dependencies with `npm ci`; the automation
+scenarios also require Bash and jq. They run the real shell scripts with simulated
+GitHub and Cloudflare responses in temporary directories, without creating
+releases or deploying. Unexpected external requests fail the scenario.
 
-`ci-branches.yml` validates PRs into `develop`, `release/*`, and `support/*`.
-`ci-main.yml` creates releases from `develop` trigger PRs and validates release
-and hotfix PRs. Both require workflow validation, Gitflow policy, and application
-checks before the app bot merges a ready PR. Each application job installs once
-and runs its checks locally; npm's download cache is the only cache used.
+The `automation` profile writes `tmp/test/cucumber-automation.json` in the same
+format as the acceptance report, `tmp/test/cucumber-test.json`. CI retains the
+automation report as `automation-test-report` on success and failure, ready for
+combined reporting later. Application source coverage remains separate.
+
+Each CI workflow owns one target branch or branch family:
+
+- `ci-develop.yml` validates PRs into `develop`.
+- `ci-release.yml` validates PRs into `release/**`.
+- `ci-support.yml` validates PRs into `support/**`.
+- `ci-main.yml` handles PRs into `main` and deployment after pushes to `main`.
+
+The branch workflows define their own triggers, jobs, permissions, and artifact
+handling. Common Gitflow, merge, release, and publishing logic lives in Bash
+scripts under `.github/scripts`; branch CI does not call a shared workflow.
+The workflow is selected by the PR target, so feature and bugfix PRs run develop
+CI, while hotfix PRs run CI for their chosen main, release, or support target.
+
+Main CI creates releases from `develop` trigger PRs and validates release and
+hotfix PRs. Every automatic merge requires workflow validation, Gitflow policy,
+and application checks. Each application job installs once and runs its checks
+locally; npm's download cache is the only cache used.
 Auto-merges are serialized per target branch and bind both the tested head and
 base commit. If the target advances during CI, update the PR branch to trigger
 fresh validation before merging.
@@ -50,8 +70,12 @@ the release branch. Version validation fails on API errors and rejects a version
 already reserved by a release or hotfix, including a merged version whose tag
 has not been created yet.
 
-`ci-main-cd.yml` runs when `main` changes. It resolves exactly one merged
-same-repository release or hotfix PR for the pushed commit before tagging;
+The same `ci-main.yml` deploys when `main` changes. PR checks and post-merge
+deployment run separately, with event guards keeping their jobs independent.
+Only superseded PR runs are cancelled; deployment has its own concurrency.
+Artifact lookup selects the matching PR run, never the deployment run itself.
+The main-push run resolves exactly one merged same-repository release or hotfix
+PR for the pushed commit before tagging;
 missing or ambiguous release identity fails with context. Closing a release
 trigger PR creates no extra CD run. The workflow tags the release, opens a
 synchronization PR for normal `develop` CI, and promotes its validated artifacts.
@@ -59,7 +83,7 @@ All production writes share one serialized job. It waits up to ten minutes for t
 matching release CI, checks artifact availability, and rejects superseded
 releases before deployment or status publishing. Intentional rollback is a
 separate operation. Retrying promotion repeats deployment and publishing for
-the current release; use the CD workflow retry rather than rerunning CI for an
+the current release; retry the main-push run rather than rerunning CI for an
 already merged release.
 
 The existing GitHub App (`GH_APP_CLIENT_ID`, `GH_APP_PRIVATE_KEY`) owns PRs,
