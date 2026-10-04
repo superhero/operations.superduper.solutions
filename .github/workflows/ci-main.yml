@@ -40,7 +40,6 @@ jobs:
         uses: actions/create-github-app-token@v3
         with:
           client-id: ${{ vars.GITHUB_APP_CLIENT_ID || vars.GH_APP_CLIENT_ID }}
-          app-id: ${{ vars.GH_APP_ID || vars.GITHUB_APP_ID }}
           private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY || secrets.GH_APP_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
@@ -524,7 +523,6 @@ jobs:
         uses: actions/create-github-app-token@v3
         with:
           client-id: ${{ vars.GITHUB_APP_CLIENT_ID || vars.GH_APP_CLIENT_ID }}
-          app-id: ${{ vars.GH_APP_ID || vars.GITHUB_APP_ID }}
           private-key: ${{ secrets.GITHUB_APP_PRIVATE_KEY || secrets.GH_APP_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
