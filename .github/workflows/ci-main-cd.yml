@@ -199,9 +199,8 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_API_TOKEN || secrets.CLOUDFLARE_PAGES_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-      CLOUDFLARE_TEST_COVERAGE_PAGES_PROJECT: ${{ vars.CLOUDFLARE_TEST_COVERAGE_PAGES_PROJECT }}
 
     steps:
       - name: Checkout
@@ -261,29 +260,30 @@ jobs:
           set -euo pipefail
 
           [[ -n "$CLOUDFLARE_API_TOKEN" && -n "$CLOUDFLARE_ACCOUNT_ID" ]] || {
-            echo "::error::Cloudflare Pages credentials are not configured in GitHub Actions." >&2
+            echo "::error::Cloudflare R2 credentials are not configured in GitHub Actions." >&2
             exit 1
           }
 
-          [[ -n "$CLOUDFLARE_TEST_COVERAGE_PAGES_PROJECT" ]] || {
-            echo "::error::CLOUDFLARE_TEST_COVERAGE_PAGES_PROJECT is not configured." >&2
-            exit 1
-          }
+      - name: Publish test coverage report to R2
+        shell: bash
+        run: |
+          set -euo pipefail
 
-      - name: Publish test coverage report to Cloudflare Pages
-        id: cloudflare
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
-          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy tmp/test-coverage-report --project-name=${{ vars.CLOUDFLARE_TEST_COVERAGE_PAGES_PROJECT }} --branch=main
+          response="$(
+            curl --fail-with-body --silent --show-error \
+              --request PUT \
+              --header "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              --header "Content-Type: text/html; charset=utf-8" \
+              --data-binary @tmp/test-coverage-report/index.html \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/operations-status/objects/test-coverage.html"
+          )"
+
+          jq -e '.success == true' <<<"$response" >/dev/null
 
       - name: Test coverage report summary
-        env:
-          DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
         run: |
           {
-            echo "**Test coverage report:** $DEPLOYMENT_URL"
+            echo "**Test coverage report:** https://status.operations.superduper.solutions/test-coverage.html"
             echo
             echo "**Published files:** 1"
           } >> "$GITHUB_STEP_SUMMARY"
