@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="178" height="20" role="img" aria-label="tailwind-variants: 3.3.1">
+  <!-- Copyright (C) 2026 Erik Landvall; SPDX-License-Identifier: AGPL-3.0-only. See LICENSE and LICENSE-ADDITIONAL-TERMS. -->
+  <title>tailwind-variants: 3.3.1</title>
+  <clipPath id="round"><rect width="178" height="20" rx="3"/></clipPath>
+  <g clip-path="url(#round)">
+    <rect width="131" height="20" fill="#555"/>
+    <rect x="131" width="47" height="20" fill="#007ec6"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans Mono,monospace" font-size="11">
+    <text x="65" y="14">tailwind-variants</text>
+    <text x="154" y="14">3.3.1</text>
+  </g>
+</svg>

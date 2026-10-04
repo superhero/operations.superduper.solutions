@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 name: cron-outdated
+run-name: "Dependency status: ${{ github.event_name == 'schedule' && 'scheduled' || 'manual' }}"
 
 on:
   schedule:
@@ -14,7 +15,7 @@ permissions:
 jobs:
   dependency-status:
     name: Update Dependency Status (${{ matrix.branch }})
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
     strategy:
       fail-fast: false
       matrix:

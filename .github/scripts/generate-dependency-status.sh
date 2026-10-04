@@ -38,14 +38,3 @@ fi
 jq -n --arg message "$message" --arg color "$color" \
   '{schemaVersion: 1, label: "Dependencies", message: $message, color: $color}' \
   > "$output/version-dependencies.json"
-
-while IFS=$'\t' read -r package current; do
-  latest="$(jq -r --arg package "$package" --arg current "$current" '.[$package].latest // $current' "$outdated")"
-  color=blue
-  [[ "$current" == "$latest" ]] || color=orange
-  slug="${package#@}"
-  slug="${slug//\//--}"
-  jq -n --arg label "$package" --arg message "$current" --arg color "$color" \
-    '{schemaVersion: 1, label: $label, message: $message, color: $color}' \
-    > "$output/version-dependency-$slug.json"
-done < <(jq -r '.devDependencies | to_entries[] | [.key, .value] | @tsv' "$manifest")

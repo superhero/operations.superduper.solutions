@@ -54,6 +54,5 @@ if (( status > 1 )) || ! jq -se 'length == 1 and (.[0] | type == "object" and (h
 fi
 
 bash "$scripts/generate-dependency-status.sh" package.json "$temporary/outdated.json" "$temporary/status"
-for file in "$temporary/status"/*.json; do
-  bash "$scripts/publish-status.sh" "$file" "${prefix}${file##*/}" application/json
-done
+bash "$scripts/publish-status.sh" "$temporary/status/version-dependencies.json" \
+  "${prefix}version-dependencies.json" application/json

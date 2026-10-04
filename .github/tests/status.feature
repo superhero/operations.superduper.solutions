@@ -39,22 +39,22 @@ Feature: Publish useful release and dependency status
       | CLOUDFLARE_API_TOKEN   | CLOUDFLARE_API_TOKEN is missing   |
       | CLOUDFLARE_ACCOUNT_ID  | CLOUDFLARE_ACCOUNT_ID is missing  |
 
-  Scenario Outline: Dependency badges reflect the registry result
+  Scenario Outline: The dependency summary reflects the registry result
     Given dependency data that is "<state>"
-    When dependency badges are generated
+    When the dependency summary is generated
     Then the dependency summary says "<message>" in "<color>"
-    And the scoped package badge uses its stable filename and "<package color>" color
 
     Examples:
-      | state    | message     | color       | package color |
-      | current  | up to date  | brightgreen | blue          |
-      | outdated | 1 outdated  | orange      | orange        |
+      | state            | message     | color       |
+      | current          | up to date  | brightgreen |
+      | outdated         | 1 outdated  | orange      |
+      | several outdated | 2 outdated  | orange      |
 
-  Scenario Outline: Invalid dependency data produces no misleading badges
+  Scenario Outline: Invalid dependency data produces no misleading summary
     Given dependency data that is "<state>"
-    When dependency badges are generated
-    Then badge generation fails with "<reason>" and input paths
-    And no dependency badges are written
+    When the dependency summary is generated
+    Then summary generation fails with "<reason>" and input paths
+    And no dependency summary is written
 
     Examples:
       | state             | reason                                  |
@@ -62,10 +62,10 @@ Feature: Publish useful release and dependency status
       | missing version   | did not return valid dependency data   |
       | invalid manifest  | devDependencies object with string versions |
 
-  Scenario Outline: Scheduled dependency refreshes publish badges to each branch's destination
+  Scenario Outline: Scheduled dependency refreshes publish one summary to each branch's destination
     Given the dependency registry reports "current"
     When dependency status is updated for "<branch>"
-    Then only current dependency badges are published under "<prefix>"
+    Then only the current dependency summary is published under "<prefix>"
     And temporary registry data is removed
 
     Examples:
@@ -82,7 +82,7 @@ Feature: Publish useful release and dependency status
   Scenario: An empty successful registry response means dependencies are current
     Given the dependency registry reports "empty"
     When dependency status is updated for "develop"
-    Then only current dependency badges are published under "develop/"
+    Then only the current dependency summary is published under "develop/"
     And temporary registry data is removed
 
   Scenario Outline: Registry failures stop publication and explain the failing request safely

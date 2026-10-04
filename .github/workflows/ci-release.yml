@@ -39,6 +39,9 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Check dependency version badges
+        run: npm --loglevel=error run badges:dependencies -- --check
+
       - name: Test automation
         id: automation
         run: npm --loglevel=error run test:automation

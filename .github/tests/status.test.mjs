@@ -76,6 +76,7 @@ Given("dependency data that is {string}", function (state)
   const manifest = { devDependencies: { "@scope/tool": "1.0.0", current: "2.0.0" } };
   const responses = {
     current: {}, outdated: { "@scope/tool": { latest: "1.1.0" } },
+    "several outdated": { "@scope/tool": { latest: "1.1.0" }, current: { latest: "3.0.0" } },
     "registry error": { error: { code: "E401", summary: "authentication failed", detail: "private registry detail" } },
     "missing version": { "@scope/tool": { latest: null } }, "invalid manifest": {}
   };
@@ -85,7 +86,7 @@ Given("dependency data that is {string}", function (state)
   writeFileSync(this.outdated, JSON.stringify(responses[state]));
 });
 
-When("dependency badges are generated", function ()
+When("the dependency summary is generated", function ()
 {
   this.result = this.automation.execute("generate-dependency-status.sh",
     [this.manifest, this.outdated, this.badges], [], { success: null });
@@ -96,16 +97,10 @@ Then("the dependency summary says {string} in {string}", function (message, colo
   assert.equal(this.result.status, 0, this.result.stderr);
   assert.deepEqual(JSON.parse(readFileSync(join(this.badges, "version-dependencies.json"), "utf8")),
     { schemaVersion: 1, label: "Dependencies", message, color });
+  assert.deepEqual(readdirSync(this.badges), ["version-dependencies.json"]);
 });
 
-Then("the scoped package badge uses its stable filename and {string} color", function (color)
-{
-  assert.deepEqual(JSON.parse(readFileSync(join(this.badges, "version-dependency-scope--tool.json"), "utf8")),
-    { schemaVersion: 1, label: "@scope/tool", message: "1.0.0", color });
-  assert.equal(JSON.parse(readFileSync(join(this.badges, "version-dependency-current.json"), "utf8")).color, "blue");
-});
-
-Then("badge generation fails with {string} and input paths", function (reason)
+Then("summary generation fails with {string} and input paths", function (reason)
 {
   assert.notEqual(this.result.status, 0);
   for (const value of [reason, this.manifest, this.outdated, this.badges])
@@ -113,7 +108,7 @@ Then("badge generation fails with {string} and input paths", function (reason)
   assert.ok(!this.result.stderr.includes("private registry detail"));
 });
 
-Then("no dependency badges are written", function ()
+Then("no dependency summary is written", function ()
 {
   assert.equal(existsSync(this.badges), false);
 });
@@ -160,41 +155,36 @@ When("dependency status is updated for {string}", function (branch)
   {
     const prefix = branch === "main" ? "" : "develop/";
     const env = this.automation.env;
-    this.dependencyUpdate.badges = [
-      ["version-dependencies.json", { schemaVersion: 1, label: "Dependencies",
-        message: state === "outdated" ? "1 outdated" : "up to date",
-        color: state === "outdated" ? "orange" : "brightgreen" }],
-      ["version-dependency-scope--tool.json", { schemaVersion: 1, label: "@scope/tool", message: "1.0.0",
-        color: state === "outdated" ? "orange" : "blue" }]
-    ];
-    for (const [file, json] of this.dependencyUpdate.badges)
-    {
-      responses.push({ executable: "curl", command: ["--fail-with-body", "--silent", "--show-error", "--request", "PUT",
-        "--header", `Authorization: Bearer ${env.CLOUDFLARE_API_TOKEN}`, "--header", "Content-Type: application/json",
-        "--data-binary", { file, json },
-        `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/r2/buckets/operations-status/objects/${prefix}${file}`],
-      response: { success: true } });
-    }
+    const file = "version-dependencies.json";
+    const json = { schemaVersion: 1, label: "Dependencies",
+      message: state === "outdated" ? "1 outdated" : "up to date",
+      color: state === "outdated" ? "orange" : "brightgreen" };
+    this.dependencyUpdate.summary = json;
+    responses.push({ executable: "curl", command: ["--fail-with-body", "--silent", "--show-error", "--request", "PUT",
+      "--header", `Authorization: Bearer ${env.CLOUDFLARE_API_TOKEN}`, "--header", "Content-Type: application/json",
+      "--data-binary", { file, json },
+      `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/r2/buckets/operations-status/objects/${prefix}${file}`],
+    response: { success: true } });
   }
   this.result = this.automation.execute("update-dependency-status.sh", branch ? [branch] : [], responses,
     { success: null });
 });
 
-Then("only current dependency badges are published under {string}", function (prefix)
+Then("only the current dependency summary is published under {string}", function (prefix)
 {
   assert.equal(this.result.status, 0, this.result.stderr);
   const requests = this.automation.calls();
-  assert.equal(requests.length, 3);
+  assert.equal(requests.length, 2);
   assert.deepEqual(requests.slice(1).map(request => request.command.at(-1).split("/objects/")[1]),
-    [`${prefix}version-dependencies.json`, `${prefix}version-dependency-scope--tool.json`]);
-  assert.equal(this.dependencyUpdate.badges[0][1].message, "up to date");
+    [`${prefix}version-dependencies.json`]);
+  assert.equal(this.dependencyUpdate.summary.message, "up to date");
 });
 
 Then("the published dependency summary says {string}", function (message)
 {
   assert.equal(this.result.status, 0, this.result.stderr);
-  assert.equal(this.automation.calls().length, 3);
-  assert.equal(this.dependencyUpdate.badges[0][1].message, message);
+  assert.equal(this.automation.calls().length, 2);
+  assert.equal(this.dependencyUpdate.summary.message, message);
 });
 
 Then("the registry failure includes the branch and safe npm error summary", function ()
