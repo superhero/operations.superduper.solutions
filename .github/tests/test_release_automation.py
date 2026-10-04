@@ -19,7 +19,6 @@ API = f"repos/{REPOSITORY}"
 SHA = "a" * 40
 OTHER_SHA = "b" * 40
 PULLS = f"{API}/pulls?state=all&base=main&per_page=100"
-COMMENTS = f"{API}/issues/123/comments?per_page=100"
 RUNS = f"{API}/actions/workflows/ci-main.yml/runs"
 
 MOCK_GH = r'''#!/usr/bin/env python3
@@ -65,6 +64,7 @@ for key, value in item.get("fields", {}).items():
     if fields.get(key) != value:
         sys.exit("Field mismatch: " + key)
 if item.get("exit_code"):
+    sys.stderr.write(item.get("stderr", ""))
     sys.exit(item["exit_code"])
 pages = item.get("pages", [item.get("response", {})])
 raw = "\n".join(json.dumps(page) for page in pages)
@@ -161,41 +161,66 @@ class ReleaseAutomationTests(unittest.TestCase):
     def calls(self):
         return [json.loads(line) for line in self.log.read_text().splitlines()]
 
+    def assert_context(self, result, **inputs):
+        self.assertIn(f"repository={REPOSITORY}", result.stderr)
+        for name, value in inputs.items():
+            self.assertIn(f"{name}={value}", result.stderr)
+
     def new_release_prefix(self, tags=None, branches=None):
         return [
             get(PULLS, []), get(f"{API}/pulls/123", source()),
             get(f"{API}/compare/main...{SHA}", {"ahead_by": 2, "behind_by": 0}),
             get(f"{API}/tags?per_page=100", [{"name": "0.0.24"}] if tags is None else tags),
-            get(f"{API}/git/matching-refs/heads/release/", [] if branches is None else branches),
+            get(f"{API}/git/matching-refs/heads/", [] if branches is None else branches),
         ]
 
-    def test_create_release_and_preserve_markdown_backticks(self):
+    def test_create_release_preserves_identity_without_posting_comments(self):
         self.create(self.new_release_prefix() + [
             post(f"{API}/git/refs", fields={"ref": "refs/heads/release/0.0.25", "sha": SHA}),
             post(f"{API}/pulls", {"number": 124}, fields={"head": "release/0.0.25", "base": "main"}),
-            get(COMMENTS, pages=[[], []]), post(f"{API}/issues/123/comments"),
         ])
-        comment = self.calls()[-1]["fields"]["body"]
-        self.assertIn("`release/0.0.25` into `main`, using `develop` at `aaaaaaa`", comment)
+        self.assertFalse(any("/comments" in call["endpoint"] for call in self.calls()))
         self.assertIn(f"<!-- release-source:123:{SHA} -->", self.calls()[6]["fields"]["body"])
         self.assertEqual(self.output.read_text(), "version=0.0.25\nrelease_pr=124\n")
 
     def test_retry_reuses_open_release_without_allocating_version(self):
-        self.create([get(PULLS, [release()]), get(COMMENTS, [{"body": "<!-- release-trigger -->"}])])
+        self.create([get(PULLS, [release()])])
         self.assertEqual(self.output.read_text(), "version=0.0.25\nrelease_pr=124\n")
         self.assertTrue(all(call["method"] == "GET" for call in self.calls()))
 
     def test_retry_after_merge_reuses_legacy_release_on_later_page(self):
         self.create([
             get(PULLS, pages=[[], [release("closed", True, legacy=True)]]),
-            get(COMMENTS, pages=[[{"body": "other comment"}], [{"body": "<!-- release-trigger -->"}]]),
         ])
         self.assertIn("version=0.0.25", self.output.read_text())
+        self.assertTrue(all(call["method"] == "GET" for call in self.calls()))
+
+    def test_retry_reuses_release_after_its_head_has_advanced(self):
+        pr = release()
+        pr["head"]["sha"] = OTHER_SHA
+        self.create([get(PULLS, [pr])])
+        self.assertIn("release_pr=124", self.output.read_text())
+        self.assertEqual(len(self.calls()), 1)
+
+    def test_release_cannot_take_version_reserved_by_hotfix(self):
+        result = self.create(self.new_release_prefix(branches=[{
+            "ref": "refs/heads/hotfix/0.0.25", "object": {"sha": OTHER_SHA},
+        }]), False)
+        self.assertIn("reserved by an active hotfix", result.stderr)
         self.assertTrue(all(call["method"] == "GET" for call in self.calls()))
 
     def test_closed_unmerged_release_requires_reopening(self):
         result = self.create([get(PULLS, [release("closed")])], False)
         self.assertIn("reopen", result.stderr)
+        self.assertIn("PR #124 (release/0.0.25)", result.stderr)
+        self.assert_context(result, source_pr=123, source_sha=SHA)
+
+    def test_duplicate_release_identity_reports_source_context(self):
+        duplicate = release()
+        duplicate["number"] = 125
+        result = self.create([get(PULLS, [release(), duplicate])], False)
+        self.assertIn("Multiple releases match this source", result.stderr)
+        self.assert_context(result, source_pr=123, source_sha=SHA)
 
     def test_stale_closed_or_changed_trigger_never_creates_branch(self):
         for field, value in (("state", "closed"), ("draft", True)):
@@ -204,12 +229,16 @@ class ReleaseAutomationTests(unittest.TestCase):
                 pr[field] = value
                 result = self.create([get(PULLS, []), get(f"{API}/pulls/123", pr)], False)
                 self.assertIn("Release trigger", result.stderr)
+                self.assertIn(f"{field}={str(value).lower()}", result.stderr)
+                self.assert_context(result, source_pr=123, source_sha=SHA)
 
     def test_changed_source_sha_never_creates_branch(self):
         pr = source()
         pr["head"]["sha"] = OTHER_SHA
         result = self.create([get(PULLS, []), get(f"{API}/pulls/123", pr)], False)
         self.assertIn("no longer matches", result.stderr)
+        self.assertIn(f"develop@{OTHER_SHA}", result.stderr)
+        self.assert_context(result, source_pr=123, source_sha=SHA)
 
     def test_source_already_released_has_no_side_effects(self):
         result = self.create([
@@ -217,18 +246,20 @@ class ReleaseAutomationTests(unittest.TestCase):
             get(f"{API}/compare/main...{SHA}", {"ahead_by": 0, "behind_by": 0}),
         ], False)
         self.assertIn("unreleased changes", result.stderr)
+        self.assertIn("expected ahead_by>0 behind_by=0, actual ahead_by=0 behind_by=0", result.stderr)
+        self.assert_context(result, source_pr=123, source_sha=SHA)
 
     def test_first_release_with_no_tags(self):
         self.create(self.new_release_prefix(tags=[]) + [
             post(f"{API}/git/refs", fields={"ref": "refs/heads/release/0.0.1"}),
-            post(f"{API}/pulls", {"number": 124}), get(COMMENTS, [{"body": "<!-- release-trigger -->"}]),
+            post(f"{API}/pulls", {"number": 124}),
         ])
         self.assertIn("version=0.0.1", self.output.read_text())
 
     def test_retry_after_branch_creation_reuses_matching_branch(self):
         self.create(self.new_release_prefix(branches=[{
             "ref": "refs/heads/release/0.0.25", "object": {"sha": SHA},
-        }]) + [post(f"{API}/pulls", {"number": 124}), get(COMMENTS, [{"body": "<!-- release-trigger -->"}])])
+        }]) + [post(f"{API}/pulls", {"number": 124})])
         self.assertFalse(any(call["endpoint"] == f"{API}/git/refs" for call in self.calls()))
 
     def test_conflicting_branch_never_creates_pr(self):
@@ -236,6 +267,9 @@ class ReleaseAutomationTests(unittest.TestCase):
             "ref": "refs/heads/release/0.0.25", "object": {"sha": OTHER_SHA},
         }]), False)
         self.assertIn("different commit", result.stderr)
+        self.assertIn("release/0.0.25", result.stderr)
+        self.assert_context(result, source_pr=123, source_sha=SHA,
+                            expected_sha=SHA, actual_sha=OTHER_SHA)
 
     def test_other_active_release_is_rejected(self):
         other = release()
@@ -253,8 +287,32 @@ class ReleaseAutomationTests(unittest.TestCase):
         self.assertIn("Another untagged release branch", result.stderr)
 
     def test_github_error_is_not_treated_as_an_empty_release_list(self):
-        self.create([get(PULLS, exit_code=1)], False)
+        result = self.create([get(PULLS, exit_code=1, stderr="gh: HTTP 503\n")], False)
+        self.assertIn("gh: HTTP 503", result.stderr)
+        self.assertIn("Could not list pull requests targeting main", result.stderr)
+        self.assert_context(result, source_pr=123, source_sha=SHA)
         self.assertEqual(self.output.read_text(), "")
+
+    def test_release_api_errors_identify_operation_and_source(self):
+        responses = self.new_release_prefix() + [
+            post(f"{API}/git/refs"), post(f"{API}/pulls", {"number": 124}),
+        ]
+        operations = [
+            (1, "Could not read source PR"),
+            (2, f"Could not compare main...{SHA}"),
+            (3, "Could not list version tags"),
+            (4, "Could not list branches before creating release/0.0.25"),
+            (5, f"Could not create release/0.0.25 at {SHA}"),
+            (6, "Could not open release PR release/0.0.25 -> main for version 0.0.25"),
+        ]
+        for index, operation in operations:
+            with self.subTest(operation=operation):
+                failure = {**responses[index], "exit_code": 1, "stderr": "gh: HTTP 503\n"}
+                result = self.create(responses[:index] + [failure], False)
+                self.assertIn("gh: HTTP 503", result.stderr)
+                self.assertIn(operation, result.stderr)
+                self.assert_context(result, source_pr=123, source_sha=SHA)
+                self.assertEqual(self.output.read_text(), "")
 
     def ci_prefix(self, runs=None, branch="release/0.0.25"):
         return [get(f"{API}/pulls/124", merged_release(branch)),
@@ -305,12 +363,17 @@ class ReleaseAutomationTests(unittest.TestCase):
         pr["merged"] = False
         result = self.find([get(f"{API}/pulls/124", pr)], False)
         self.assertIn("not a merged release", result.stderr)
+        self.assertIn("actual merged=false", result.stderr)
+        self.assert_context(result, release_pr=124, head_sha=SHA)
 
     def test_failed_newest_run_does_not_fall_back_to_old_success(self):
         result = self.find(self.ci_prefix([run(41), run(42)]) + [
             get(f"{API}/actions/runs/42", {"status": "completed", "conclusion": "failure"}),
         ], False)
         self.assertIn("finished with failure", result.stderr)
+        self.assertIn("expected success", result.stderr)
+        self.assert_context(result, release_pr=124, head_sha=SHA, run_id=42,
+                            branch="release/0.0.25")
 
     def test_cancelled_run_is_not_deployable(self):
         result = self.find(self.ci_prefix() + [
@@ -326,6 +389,29 @@ class ReleaseAutomationTests(unittest.TestCase):
                     get(f"{API}/actions/runs/42/artifacts?per_page=100", self.artifacts(**arguments)),
                 ], False)
                 self.assertIn("missing required artifacts", result.stderr)
+                self.assertIn(f"missing required artifacts: {next(iter(arguments.values()))}", result.stderr)
+                self.assertIn("available unexpired artifacts:", result.stderr)
+                self.assert_context(result, release_pr=124, head_sha=SHA, run_id=42)
+
+    def test_ci_api_errors_preserve_reason_and_identify_release_operation(self):
+        responses = self.ci_prefix() + [
+            get(f"{API}/actions/runs/42", {"status": "completed", "conclusion": "success"}),
+            get(f"{API}/actions/runs/42/artifacts?per_page=100", self.artifacts()),
+        ]
+        operations = [
+            "Could not read release PR", "Could not list ci-main.yml",
+            "Could not read release CI run 42", "Could not list artifacts for release CI run 42",
+        ]
+        for index, operation in enumerate(operations):
+            with self.subTest(operation=operation):
+                failure = {**responses[index], "exit_code": 1, "stderr": "gh: HTTP 403\n"}
+                result = self.find(responses[:index] + [failure], False)
+                self.assertIn("gh: HTTP 403", result.stderr)
+                self.assertIn(operation, result.stderr)
+                self.assert_context(result, release_pr=124, head_sha=SHA)
+                if index >= 2:
+                    self.assert_context(result, run_id=42, branch="release/0.0.25")
+                self.assertEqual(self.output.read_text(), "")
 
     def test_missing_or_incomplete_run_times_out(self):
         for runs in ([], [run()]):
@@ -335,6 +421,14 @@ class ReleaseAutomationTests(unittest.TestCase):
                     responses.append(get(f"{API}/actions/runs/42", {"status": "in_progress"}))
                 result = self.find(responses, False)
                 self.assertIn("Timed out", result.stderr)
+                self.assertIn(f"last_status={'in_progress' if runs else 'not-found'}", result.stderr)
+                self.assert_context(result, release_pr=124, head_sha=SHA, timeout_seconds=0,
+                                    run_id=42 if runs else "not-found")
+
+    def test_invalid_timeout_reports_its_value_and_release_inputs(self):
+        result = self.find([], False, timeout="invalid")
+        self.assertIn("nonnegative number of seconds", result.stderr)
+        self.assert_context(result, release_pr=124, head_sha=SHA, timeout_seconds="invalid")
 
     def test_current_release_is_accepted_and_stale_release_rejected(self):
         for current, success in ((SHA, True), (OTHER_SHA, False)):
@@ -343,6 +437,16 @@ class ReleaseAutomationTests(unittest.TestCase):
                                       [get(f"{API}/git/ref/heads/main", {"object": {"sha": current}})], success)
                 if not success:
                     self.assertIn("refusing to overwrite production", result.stderr)
+                    self.assertIn(f"expected main={SHA}, actual main={OTHER_SHA}", result.stderr)
+                    self.assert_context(result, merge_sha=SHA)
+
+    def test_current_main_api_error_preserves_reason_and_merge_context(self):
+        result = self.execute("validate-current-release.sh", [REPOSITORY, SHA], [
+            get(f"{API}/git/ref/heads/main", exit_code=1, stderr="gh: network unavailable\n"),
+        ], False)
+        self.assertIn("gh: network unavailable", result.stderr)
+        self.assertIn("Could not read current main SHA before production publishing", result.stderr)
+        self.assert_context(result, merge_sha=SHA)
 
 
 if __name__ == "__main__":

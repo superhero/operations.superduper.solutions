@@ -1,23 +1,19 @@
+# Copyright (C) 2026 Erik Landvall
+# SPDX-License-Identifier: AGPL-3.0-only
+# See LICENSE and LICENSE-ADDITIONAL-TERMS.
 name: ci-main
 run-name: "#${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
 
 on:
   pull_request:
-    branches:
-      - main
-    types:
-      - opened
-      - synchronize
-      - reopened
-      - edited
-      - ready_for_review
+    branches: [main]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
 
 concurrency:
   group: main-ci-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 permissions:
-  actions: read
   contents: read
 
 jobs:
@@ -25,24 +21,41 @@ jobs:
     name: Workflow Checks
     uses: ./.github/workflows/workflow-checks.yml
 
+  validate-pr:
+    name: Validate Gitflow
+    permissions:
+      contents: read
+      pull-requests: read
+    if: github.head_ref != 'develop'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Validate pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+          BASE_BRANCH: ${{ github.base_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/scripts/validate-pr.sh "$REPOSITORY" "$HEAD_BRANCH" "$BASE_BRANCH" "$HEAD_SHA"
+
   create-release:
     name: Create Release
     needs: workflow-checks
+    if: >-
+      github.head_ref == 'develop'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && !github.event.pull_request.draft
     concurrency:
       group: release-creation
       cancel-in-progress: false
-    if: >-
-      ${{
-        needs.workflow-checks.result == 'success'
-        && github.head_ref == 'develop'
-        && github.base_ref == 'main'
-        && github.event.pull_request.head.repo.full_name == github.repository
-        && !github.event.pull_request.draft
-      }}
-    permissions:
-      contents: read
     runs-on: ubuntu-latest
-
+    timeout-minutes: 5
     steps:
       - name: Create GitHub App token
         id: app-token
@@ -60,7 +73,6 @@ jobs:
           persist-credentials: false
 
       - name: Create release pull request
-        id: release
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           REPOSITORY: ${{ github.repository }}
@@ -68,101 +80,17 @@ jobs:
           SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
         run: bash .github/scripts/create-release-pr.sh "$REPOSITORY" "$SOURCE_PR" "$SOURCE_SHA"
 
-      - name: Release summary
-        env:
-          VERSION: ${{ steps.release.outputs.version }}
-          RELEASE_PR: ${{ steps.release.outputs.release_pr }}
-        run: |
-          echo "Created release/$VERSION as PR #$RELEASE_PR." >> "$GITHUB_STEP_SUMMARY"
-
-  validate-branch-direction:
-    name: Validate Branch Direction
+  application:
+    name: Test and Build Release
+    needs: validate-pr
     if: github.head_ref != 'develop'
     runs-on: ubuntu-latest
-
+    timeout-minutes: 15
     steps:
-      - name: Checkout
+      - name: Checkout release head
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-
-      - name: Validating
-        shell: bash
-        env:
-          HEAD_BRANCH: ${{ github.head_ref }}
-          BASE_BRANCH: ${{ github.base_ref }}
-        run: |
-          bash .github/scripts/validate-branch-direction.sh \
-            "$HEAD_BRANCH" \
-            "$BASE_BRANCH" \
-            main \
-            'release/*' \
-            'hotfix/*'
-
-  validate-release:
-    name: Validate Release
-    if: startsWith(github.head_ref, 'release/')
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
-      REPOSITORY: ${{ github.repository }}
-      HEAD_BRANCH: ${{ github.head_ref }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-
-      - name: Validating
-        shell: bash
-        run: |
-          version="${HEAD_BRANCH#release/}"
-
-          bash .github/scripts/validate-semver.sh "$version"
-          bash .github/scripts/validate-tag-available.sh "$REPOSITORY" "$version"
-          bash .github/scripts/validate-single-active-branch.sh "$REPOSITORY" release "$HEAD_BRANCH"
-
-  validate-hotfix:
-    name: Validate Hotfix
-    if: startsWith(github.head_ref, 'hotfix/')
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
-      REPOSITORY: ${{ github.repository }}
-      HEAD_BRANCH: ${{ github.head_ref }}
-      BASE_BRANCH: ${{ github.base_ref }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-
-      - name: Validating
-        shell: bash
-        run: |
-          version="${HEAD_BRANCH#hotfix/}"
-
-          bash .github/scripts/validate-semver.sh "$version"
-          bash .github/scripts/validate-tag-available.sh "$REPOSITORY" "$version"
-          bash .github/scripts/validate-single-active-branch.sh "$REPOSITORY" hotfix "$HEAD_BRANCH"
-          bash .github/scripts/validate-next-patch.sh "$REPOSITORY" "$BASE_BRANCH" "$version"
-
-  installation:
-    name: Installation
-    if: github.head_ref != 'develop'
-    outputs:
-      cache_key: ${{ steps.handoff.outputs.cache_key }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
+          # Deployment resolves this exact PR head and consumes its artifacts.
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
@@ -170,408 +98,88 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
+          cache: npm
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Record handoff cache key
-        id: handoff
-        run: echo "cache_key=dependencies-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
+      - name: Type check
+        run: npm --loglevel=error run typecheck
 
-      - name: Hand off dependencies
-        uses: actions/cache/save@v6
-        with:
-          path: node_modules
-          key: ${{ steps.handoff.outputs.cache_key }}
+      - name: Source tests with coverage
+        run: npm --loglevel=error run test:source:coverage
 
-  type-check:
-    name: Type Check
-    needs: installation
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-
-      - name: Restore dependencies
-        uses: actions/cache/restore@v6
-        with:
-          fail-on-cache-miss: true
-          path: node_modules
-          key: ${{ needs.installation.outputs.cache_key }}
-
-      - name: Type Check
-        run: npm --silent run typecheck
-
-  source-test:
-    name: Source Test
-    needs: installation
-    outputs:
-      cache_key: ${{ steps.handoff.outputs.cache_key }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-
-      - name: Restore dependencies
-        uses: actions/cache/restore@v6
-        with:
-          fail-on-cache-miss: true
-          path: node_modules
-          key: ${{ needs.installation.outputs.cache_key }}
-
-      - name: Record handoff cache key
-        id: handoff
-        run: echo "cache_key=source-test-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
-
-      - name: Source Test
-        run: |
-          mkdir -p tmp/test
-          set -o pipefail
-          npm --silent run test:source:coverage 2>&1 | tee tmp/test/source-test-output.txt
-
-      - name: Hand off source test data
-        if: always()
-        uses: actions/cache/save@v6
-        with:
-          path: |
-            tmp/test/source-test-output.txt
-            tmp/test/coverage/v8
-          key: ${{ steps.handoff.outputs.cache_key }}
-
-  coverage:
-    name: Coverage
-    needs:
-      - source-test
-      - installation
-    outputs:
-      cache_key: ${{ steps.handoff.outputs.cache_key }}
-      statements: ${{ steps.coverage.outputs.statements }}
-    permissions:
-      actions: read
-      contents: read
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-
-      - name: Restore dependencies
-        uses: actions/cache/restore@v6
-        with:
-          fail-on-cache-miss: true
-          path: node_modules
-          key: ${{ needs.installation.outputs.cache_key }}
-
-      - name: Restore source coverage data
-        uses: actions/cache/restore@v6
-        with:
-          fail-on-cache-miss: true
-          path: |
-            tmp/test/source-test-output.txt
-            tmp/test/coverage/v8
-          key: ${{ needs.source-test.outputs.cache_key }}
-
-      - name: Record handoff cache key
-        id: handoff
-        run: echo "cache_key=coverage-report-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
-
-      - name: Coverage
+      - name: Check coverage and prepare status
         id: coverage
         run: |
-          mkdir -p tmp/test
-          set -o pipefail
-          npm --silent run coverage 2>&1 | tee tmp/test/coverage-output.txt
-
-          value="$(grep -E 'Statements[[:space:]]*:' tmp/test/coverage-output.txt | tail -1 | sed -E 's/.*:[[:space:]]*([0-9]+(\.[0-9]+)?)%.*/\1/')"
-          test -n "$value"
-          echo "statements=$value" >> "$GITHUB_OUTPUT"
-
+          npm --loglevel=error run coverage -- --reporter=json-summary
+          value="$(jq -er '.total.statements.pct | numbers' tmp/test/coverage/coverage-summary.json)" || {
+            echo '::error::tmp/test/coverage/coverage-summary.json is missing a numeric total.statements.pct coverage percentage; cannot generate tmp/status/coverage.json.' >&2
+            exit 1
+          }
           mkdir -p tmp/status
-          jq -n \
-            --arg message "${value}%" \
-            '{
-              schemaVersion: 1,
-              label: "Test Coverage",
-              message: $message,
-              color: "brightgreen"
-            }' > tmp/status/coverage.json
+          jq -n --arg message "${value}%" \
+            '{schemaVersion: 1, label: "Test Coverage", message: $message, color: "brightgreen"}' \
+            > tmp/status/coverage.json
+          jq -r '.total | "Coverage: statements \(.statements.pct)%, branches \(.branches.pct)%, functions \(.functions.pct)%, lines \(.lines.pct)%."' \
+            tmp/test/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Hand off coverage report
-        if: always()
-        uses: actions/cache/save@v6
-        with:
-          path: |
-            tmp/test/coverage
-            tmp/test/coverage-output.txt
-          key: ${{ steps.handoff.outputs.cache_key }}
+      - name: Build
+        run: npm --loglevel=error run build
 
-      - name: Hand off coverage status
+      - name: Acceptance tests
+        id: acceptance
+        run: npm --loglevel=error run test:acceptance
+
+      - name: Upload failed acceptance report
+        if: failure() && steps.acceptance.outcome == 'failure'
+        continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
+          name: test-report
+          path: tmp/test/cucumber-test.json
+          if-no-files-found: ignore
           overwrite: true
-          name: coverage-status
-          path: tmp/status/coverage.json
-          if-no-files-found: error
-
-  bundle:
-    name: Bundle
-    needs:
-      - installation
-      - type-check
-      - coverage
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-
-      - name: Restore dependencies
-        uses: actions/cache/restore@v6
-        with:
-          fail-on-cache-miss: true
-          path: node_modules
-          key: ${{ needs.installation.outputs.cache_key }}
-
-      - name: Bundle
-        run: npm --silent run build
+          retention-days: 7
 
       - name: Upload bundle
         uses: actions/upload-artifact@v7
         with:
-          overwrite: true
           name: bundle
           path: dist
           if-no-files-found: error
+          overwrite: true
 
-  acceptance-test:
-    name: Acceptance Test
-    needs:
-      - bundle
-      - installation
-    outputs:
-      cache_key: ${{ steps.handoff.outputs.cache_key }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-
-      - name: Restore dependencies
-        uses: actions/cache/restore@v6
-        with:
-          fail-on-cache-miss: true
-          path: node_modules
-          key: ${{ needs.installation.outputs.cache_key }}
-
-      - name: Download bundle
-        uses: actions/download-artifact@v8
-        with:
-          name: bundle
-          path: dist
-
-      - name: Record handoff cache key
-        id: handoff
-        run: echo "cache_key=test-report-${{ github.run_id }}-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
-
-      - name: Acceptance Test
-        run: |
-          mkdir -p tmp/test
-          set -o pipefail
-          npm --silent run test:acceptance 2>&1 | tee tmp/test/test-output.txt
-
-      - name: Hand off test report
-        if: always()
-        continue-on-error: true
-        uses: actions/cache/save@v6
-        with:
-          path: |
-            tmp/test/cucumber-test.json
-            tmp/test/test-output.txt
-          key: ${{ steps.handoff.outputs.cache_key }}
-
-  test-report:
-    name: Test Report
-    needs:
-      - source-test
-      - coverage
-      - acceptance-test
-    if: ${{ github.head_ref != 'develop' && always() }}
-    continue-on-error: true
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Restore source test output
-        uses: actions/cache/restore@v6
-        with:
-          fail-on-cache-miss: true
-          path: |
-            tmp/test/source-test-output.txt
-            tmp/test/coverage/v8
-          key: ${{ needs.source-test.outputs.cache_key }}
-
-      - name: Restore acceptance test report
-        uses: actions/cache/restore@v6
-        with:
-          fail-on-cache-miss: true
-          path: |
-            tmp/test/cucumber-test.json
-            tmp/test/test-output.txt
-          key: ${{ needs.acceptance-test.outputs.cache_key }}
-
-      - name: Test summary
-        if: always()
-        run: |
-          {
-            echo '```text'
-
-            if [[ -f tmp/test/source-test-output.txt ]]; then
-              sed -E 's/[[:space:]]+# .*:[0-9]+$//' tmp/test/source-test-output.txt
-              echo
-            else
-              echo "No source test output was produced."
-              echo
-            fi
-
-            if [[ -f tmp/test/test-output.txt ]]; then
-              sed -E 's/[[:space:]]+# .*:[0-9]+$//' tmp/test/test-output.txt
-            else
-              echo "No acceptance test output was produced."
-            fi
-
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Publish test report
+      - name: Upload coverage report
+        if: success() || (failure() && steps.coverage.outcome == 'failure')
         uses: actions/upload-artifact@v7
         with:
-          overwrite: true
-          name: test-report
-          path: tmp/test/cucumber-test.json
-          if-no-files-found: warn
-
-  coverage-report:
-    name: Coverage Report
-    needs:
-      - coverage
-      - test-report
-    if: ${{ github.head_ref != 'develop' && always() }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Restore coverage report
-        uses: actions/cache/restore@v6
-        with:
-          fail-on-cache-miss: true
+          name: coverage
           path: |
             tmp/test/coverage
-            tmp/test/coverage-output.txt
-          key: ${{ needs.coverage.outputs.cache_key }}
+            !tmp/test/coverage/v8
+          if-no-files-found: error
+          overwrite: true
 
-      - name: Coverage summary
-        if: always()
-        run: |
-          {
-            echo '```text'
-            if [[ -f tmp/test/coverage-output.txt ]]; then
-              if grep -q "Coverage summary" tmp/test/coverage-output.txt; then
-                awk '/Coverage summary/{show=1} show' tmp/test/coverage-output.txt
-              else
-                cat tmp/test/coverage-output.txt
-              fi
-            else
-              echo "No coverage output was produced."
-            fi
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Publish coverage report
+      - name: Upload coverage status
         uses: actions/upload-artifact@v7
         with:
-          overwrite: true
-          name: coverage
-          path: tmp/test/coverage
+          name: coverage-status
+          path: tmp/status/coverage.json
           if-no-files-found: error
+          overwrite: true
 
   auto-merge:
     name: Auto Merge
-    needs:
-      - workflow-checks
-      - test-report
-      - coverage-report
-      - validate-branch-direction
-      - validate-release
-      - validate-hotfix
-      - installation
-      - type-check
-      - source-test
-      - coverage
-      - bundle
-      - acceptance-test
+    concurrency:
+      group: merge-${{ github.base_ref }}
+      cancel-in-progress: false
+    needs: [workflow-checks, validate-pr, application]
     if: >-
-      ${{
-        always()
-        && github.head_ref != 'develop'
-        && github.event.pull_request.head.repo.full_name == github.repository
-        && !github.event.pull_request.draft
-        && needs.validate-branch-direction.result == 'success'
-        && (needs.validate-release.result == 'success' || needs.validate-release.result == 'skipped')
-        && (needs.validate-hotfix.result == 'success' || needs.validate-hotfix.result == 'skipped')
-        && needs.workflow-checks.result == 'success'
-        && needs.coverage-report.result == 'success'
-        && needs.installation.result == 'success'
-        && needs.type-check.result == 'success'
-        && needs.source-test.result == 'success'
-        && needs.coverage.result == 'success'
-        && needs.bundle.result == 'success'
-        && needs.acceptance-test.result == 'success'
-      }}
-    permissions:
-      contents: write
-      pull-requests: write
+      github.event.pull_request.head.repo.full_name == github.repository
+      && !github.event.pull_request.draft
     runs-on: ubuntu-latest
-
+    timeout-minutes: 5
     steps:
       - name: Create GitHub App token
         id: app-token
@@ -588,10 +196,12 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
-      - name: Auto Merge
+      - name: Merge validated pull request
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: bash .github/scripts/auto-merge.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA"
+          BASE_BRANCH: ${{ github.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bash .github/scripts/auto-merge.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA" "$BASE_BRANCH" "$BASE_SHA"
