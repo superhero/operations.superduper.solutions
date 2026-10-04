@@ -1,9 +1,8 @@
-# actionlint 1.7.12 bundles an older definition of create-github-app-token@v3.
-# Current v3 accepts client-id and deprecates its optional app-id input:
-# https://github.com/actions/create-github-app-token/blob/v3/action.yml
-# Remove these two exceptions when the bundled action definition is updated.
+# Temporary workaround for stale GitHub App inputs in actionlint 1.7.12:
+# https://github.com/rhysd/actionlint/issues/648
+# Remove this file when the pinned actionlint release includes the upstream fix.
 paths:
-  .github/workflows/*.yml:
+  .github/workflows/ci-{main,develop,release,support}.yml:
     ignore:
       - '^missing input "app-id" which is required by action "actions/create-github-app-token@v3"\.'
       - '^input "client-id" is not defined in action "actions/create-github-app-token@v3"\.'

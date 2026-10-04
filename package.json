@@ -8,6 +8,7 @@
     "typecheck": "svelte-check --tsconfig ./tsconfig.json",
     "test": "npm run test:acceptance",
     "test:source": "cucumber-js --config cucumber.config.mjs --profile source",
+    "test:automation": "cucumber-js --config cucumber.config.mjs --profile automation",
     "test:acceptance": "node --eval \"import('node:fs').then(({mkdirSync}) => mkdirSync('tmp/test', { recursive: true }))\" && cucumber-js --config cucumber.config.mjs --profile acceptance",
     "test:acceptance:coverage": "node --eval \"import('node:fs').then(({mkdirSync}) => mkdirSync('tmp/test/coverage/v8', { recursive: true }))\" && c8 --all --src=src --include=src/**/*.ts --exclude=src/index.ts --exclude=src/**/*.d.ts --exclude='src/lib/components/ui/**' --exclude=src/lib/utils.ts --extension=.ts --reporter=none --temp-directory=tmp/test/coverage/v8 npm --loglevel=error run test:acceptance",
     "test:source:coverage": "node --eval \"import('node:fs').then(({mkdirSync}) => mkdirSync('tmp/test/coverage/v8', { recursive: true }))\" && c8 --all --src=src --include=src/**/*.ts --exclude=src/index.ts --exclude=src/**/*.d.ts --exclude='src/lib/components/ui/**' --exclude=src/lib/utils.ts --extension=.ts --reporter=none --temp-directory=tmp/test/coverage/v8 npm --loglevel=error run test:source",
