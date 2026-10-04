@@ -8,6 +8,9 @@ on:
     types:
       - closed
 
+permissions:
+  contents: read
+
 jobs:
   create-release-tag:
     name: Create Release Tag
@@ -18,22 +21,31 @@ jobs:
         startsWith(github.event.pull_request.head.ref, 'release/') ||
         startsWith(github.event.pull_request.head.ref, 'hotfix/')
       )
-    permissions:
-      contents: write
     runs-on: ubuntu-latest
 
     steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          permission-contents: write
+
       - name: Check out merge commit
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
           fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Create annotated SemVer tag
         shell: bash
         env:
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
           MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BOT_LOGIN: ${{ steps.app-token.outputs.app-slug }}[bot]
         run: |
           set -euo pipefail
 
@@ -49,45 +61,34 @@ jobs:
               exit 0
             fi
 
-            echo "::error::Tag '$version' already exists on a different commit." >&2
+            echo "::error::Cannot tag $GITHUB_REPOSITORY from '$HEAD_BRANCH': tag '$version' points to $existing; expected merge commit $MERGE_SHA." >&2
             exit 1
           fi
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          bot_id="$(gh api "users/$BOT_LOGIN" --jq '.id')" || {
+            echo "::error::Cannot resolve tag author '$BOT_LOGIN' for $GITHUB_REPOSITORY tag '$version' at $MERGE_SHA." >&2
+            exit 1
+          }
+          git config user.name "$BOT_LOGIN"
+          git config user.email "$bot_id+$BOT_LOGIN@users.noreply.github.com"
 
-          git tag -a "$version" "$MERGE_SHA" -m "$kind $version"
-          git push origin "refs/tags/$version"
-
-  promote-release:
-    name: Promote Release
-    needs: create-release-tag
-    # Serialize deployment and all status publishing, while allowing every
-    # merged release to be tagged even if a pending deployment is superseded.
-    concurrency:
-      group: production-release
-      cancel-in-progress: false
-    permissions:
-      actions: read
-      contents: read
-      deployments: write
-    uses: ./.github/workflows/release-deployment.yml
-    secrets: inherit
+          git tag -a "$version" "$MERGE_SHA" -m "$kind $version" || {
+            echo "::error::Cannot create annotated tag '$version' at $MERGE_SHA for $GITHUB_REPOSITORY ($HEAD_BRANCH)." >&2
+            exit 1
+          }
+          git push origin "refs/tags/$version" || {
+            echo "::error::Cannot push tag '$version' at $MERGE_SHA to $GITHUB_REPOSITORY via origin." >&2
+            exit 1
+          }
 
   backmerge-develop:
-    name: Backmerge Develop
+    name: Synchronize Develop
     needs: create-release-tag
     concurrency:
       group: post-release-backmerge
       cancel-in-progress: false
-    permissions:
-      contents: write
-      pull-requests: write
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    env:
-      GH_TOKEN: ${{ github.token }}
-      REPOSITORY: ${{ github.repository }}
 
     steps:
       - name: Create GitHub App token
@@ -99,78 +100,161 @@ jobs:
           permission-contents: read
           permission-pull-requests: write
 
-      - name: Backmerge main into develop
-        id: sync
-        shell: bash
+      - name: Open synchronization PR
         env:
-          PR_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
         run: |
-          set -euo pipefail
-          echo "merged=false" >> "$GITHUB_OUTPUT"
-
-          main_sha="$(gh api "repos/$REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
-
-          if [[ "$(gh api "repos/$REPOSITORY/compare/main...develop" --jq '.behind_by')" == "0" ]]; then
-            echo "develop already contains main; no synchronization is needed."
+          behind_by="$(gh api "repos/$REPOSITORY/compare/main...develop" --jq '.behind_by')" || {
+            echo "::error::Cannot compare main...develop in $REPOSITORY before synchronization." >&2
+            exit 1
+          }
+          if [[ "$behind_by" == "0" ]]; then
             exit 0
           fi
-
-          pr_number="$(
-            gh api --method GET "repos/$REPOSITORY/pulls" \
-              -f state=open -f base=develop -f "head=${REPOSITORY%%/*}:main" \
-              --jq '.[0].number // empty'
-          )"
-
-          if [[ -z "$pr_number" ]]; then
-            pr_number="$(
-              GH_TOKEN="$PR_TOKEN" gh api --method POST "repos/$REPOSITORY/pulls" \
-                -f base=develop -f head=main \
-                -f title="Back-merge main into develop" \
-                -f body="Automatic Gitflow synchronization. Development checks run on this pull request." \
-                --jq '.number'
-            )"
-          fi
-
-          for attempt in {1..50}; do
-            if result="$(
-              gh api --method PUT "repos/$REPOSITORY/pulls/$pr_number/merge" \
-                -f merge_method=merge -f "sha=$main_sha" 2>&1
-            )"; then
-              break
-            fi
-
-            if [[ "$result" != *"HTTP 405"* || "$attempt" == "50" ]]; then
-              printf '%s\n' "$result" >&2
+          pr_url="$(gh api --method GET "repos/$REPOSITORY/pulls" \
+            -f state=open -f base=develop -f "head=${REPOSITORY%%/*}:main" \
+            --jq '.[0].html_url // empty')" || {
+            echo "::error::Cannot find an open synchronization PR in $REPOSITORY (head=main, base=develop)." >&2
+            exit 1
+          }
+          if [[ -z "$pr_url" ]]; then
+            pr_url="$(gh api --method POST "repos/$REPOSITORY/pulls" \
+              -f base=develop -f head=main -f title="Synchronize main into develop" \
+              -f body="Synchronize released code. CI validates and merges this PR." \
+              --jq '.html_url')" || {
+              echo "::error::Cannot create synchronization PR in $REPOSITORY (head=main, base=develop, behind_by=$behind_by)." >&2
               exit 1
-            fi
+            }
+          fi
+          echo "Synchronization: $pr_url" >> "$GITHUB_STEP_SUMMARY"
 
-            sleep 5
+  promote-release:
+    name: Promote Release
+    needs: create-release-tag
+    # Keep all production writes in one serialized job. Tagging remains independent.
+    concurrency:
+      group: production-release
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+
+    steps:
+      - name: Checkout release automation
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Wait for validated release artifacts
+        id: release
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: bash .github/scripts/find-release-ci.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA"
+
+      - name: Download release artifacts
+        env:
+          SOURCE_RUN_ID: ${{ steps.release.outputs.run_id }}
+        run: |
+          for artifact in bundle:dist coverage:tmp/coverage coverage-status:tmp/status; do
+            name="${artifact%%:*}"
+            directory="${artifact#*:}"
+            gh run download "$SOURCE_RUN_ID" --repo "$REPOSITORY" --name "$name" --dir "$directory" || {
+              echo "::error::Cannot download artifact '$name' from $REPOSITORY run $SOURCE_RUN_ID to '$directory' for release $MERGE_SHA." >&2
+              exit 1
+            }
           done
 
-          merge_sha="$(jq -er 'select(.merged == true) | .sha' <<<"$result")" || {
-            echo "::error::GitHub did not merge the synchronization PR." >&2
+      - name: Bundle coverage report
+        run: |
+          npx --yes coverage-single-html@0.1.4 tmp/coverage \
+            --output tmp/coverage.html --title "Test Coverage Report"
+          npx --yes html-minifier-terser@7.2.0 tmp/coverage.html \
+            --collapse-whitespace --remove-comments --remove-redundant-attributes \
+            --remove-script-type-attributes --remove-style-link-type-attributes \
+            --minify-css true --minify-js true --output tmp/test-coverage.html
+          test -s tmp/test-coverage.html || {
+            echo '::error::Coverage report bundling produced no HTML: tmp/test-coverage.html (source=tmp/coverage, intermediate=tmp/coverage.html). Publishing stopped.' >&2
             exit 1
           }
 
-          {
-            echo "pr_number=$pr_number"
-            echo "merge_sha=$merge_sha"
-            echo "merged=true"
-          } >> "$GITHUB_OUTPUT"
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          permission-deployments: write
 
-      - name: Synchronization summary
-        if: always()
-        shell: bash
+      - name: Validate production destination
         env:
-          SYNC_OUTCOME: ${{ steps.sync.outcome }}
-          MERGED: ${{ steps.sync.outputs.merged }}
-          PR_NUMBER: ${{ steps.sync.outputs.pr_number }}
-          MERGE_SHA: ${{ steps.sync.outputs.merge_sha }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          if [[ "$MERGED" == "true" ]]; then
-            echo "Merged main into develop through PR #$PR_NUMBER at $MERGE_SHA." >> "$GITHUB_STEP_SUMMARY"
-          elif [[ "$SYNC_OUTCOME" == "success" ]]; then
-            echo "develop already contains main; no back-merge was needed." >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "Synchronization did not complete; see the job log." >> "$GITHUB_STEP_SUMMARY"
-          fi
+          [[ -n "$CLOUDFLARE_API_TOKEN" ]] || {
+            echo "::error::Missing CLOUDFLARE_PAGES_API_TOKEN: cannot deploy $REPOSITORY at $MERGE_SHA (source=dist, project=operations-superduper-solutions, branch=main)." >&2
+            exit 1
+          }
+          [[ -n "$CLOUDFLARE_ACCOUNT_ID" ]] || {
+            echo "::error::Missing CLOUDFLARE_ACCOUNT_ID: cannot deploy $REPOSITORY at $MERGE_SHA (source=dist, project=operations-superduper-solutions, branch=main)." >&2
+            exit 1
+          }
+          bash .github/scripts/validate-current-release.sh "$REPOSITORY" "$MERGE_SHA"
+
+      - name: Deploy to Cloudflare Pages
+        id: cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=operations-superduper-solutions --branch=main
+
+      - name: Record GitHub deployment
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
+        run: |
+          deployment_id="$(gh api --method POST "repos/$REPOSITORY/deployments" \
+            -f ref="$MERGE_SHA" -F auto_merge=false -F 'required_contexts[]' \
+            -f environment=production -F production_environment=true \
+            -f description="Cloudflare Pages" --jq '.id')" || {
+            echo "::error::Cannot record deployment for $REPOSITORY at $MERGE_SHA (environment=production, URL=$DEPLOYMENT_URL)." >&2
+            exit 1
+          }
+          gh api --method POST "repos/$REPOSITORY/deployments/$deployment_id/statuses" \
+            -f state=success -f environment=production -f environment_url="$DEPLOYMENT_URL" \
+            -f log_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null || {
+            echo "::error::Cannot record successful status for deployment $deployment_id in $REPOSITORY at $MERGE_SHA (environment=production, URL=$DEPLOYMENT_URL)." >&2
+            exit 1
+          }
+
+      - name: Publish coverage report and status
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_API_TOKEN || secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          bash .github/scripts/validate-current-release.sh "$REPOSITORY" "$MERGE_SHA"
+          bash .github/scripts/publish-status.sh tmp/test-coverage.html test-coverage.html 'text/html; charset=utf-8'
+          bash .github/scripts/validate-current-release.sh "$REPOSITORY" "$MERGE_SHA"
+          bash .github/scripts/publish-status.sh tmp/status/coverage.json coverage.json application/json
+
+      - name: Deployment summary
+        env:
+          DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
+          SOURCE_RUN_ID: ${{ steps.release.outputs.run_id }}
+        run: |
+          echo "Deployed $DEPLOYMENT_URL from CI run #$SOURCE_RUN_ID." >> "$GITHUB_STEP_SUMMARY"
