@@ -80,7 +80,7 @@ Feature: Release automation
       | release/0.0.25 | merged during validation               | validate  | confirmed | 0      |
       | release/0.0.25 | merged before the merge helper reads it | merge     | confirmed | 0      |
       | hotfix/0.0.25  | merged despite a merge command error    | merge     | confirmed | 1      |
-      | hotfix/0.0.25  | queued before it merges                | merge     | confirmed | 1      |
+      | hotfix/0.0.25  | awaiting merge confirmation            | merge     | confirmed | 1      |
       | release/0.0.25 | fast-forwarded by the merge helper      | merge     | confirmed | 1      |
 
   Scenario Outline: Refuse changed identities and unconfirmed release publication
@@ -104,7 +104,7 @@ Feature: Release automation
       | a failed validation API            | validate  | gh: HTTP 503              | 0      |
       | an unavailable PR API              | validate  | gh: HTTP 503              | 0      |
       | a failed merge command             | merge     | gh: HTTP 503              | 1      |
-      | a merge that remains queued        | merge     | Timed out                 | 1      |
+      | a merge that remains unconfirmed    | merge     | Timed out                 | 1      |
       | an identity change while waiting   | merge     | identity changed          | 1      |
       | an unavailable confirmation API    | merge     | gh: HTTP 503              | 1      |
 

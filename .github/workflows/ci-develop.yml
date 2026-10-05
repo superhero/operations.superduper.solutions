@@ -157,4 +157,5 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BASE_BRANCH: ${{ github.base_ref }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: bash .github/scripts/auto-merge.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA" "$BASE_BRANCH" "$BASE_SHA"
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: bash .github/scripts/auto-merge.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA" "$BASE_BRANCH" "$BASE_SHA" "$HEAD_BRANCH"

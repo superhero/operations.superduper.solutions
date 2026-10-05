@@ -19,7 +19,9 @@ if is_merged; then
   exit 0
 fi
 
-if pending_output="$(bash "$scripts/auto-merge.sh" "$repository" "$pr_number" "$head_sha" main "$base_sha" 2>&1)"; then
+remaining=$((deadline - SECONDS))
+(( remaining >= 0 )) || remaining=0
+if pending_output="$(bash "$scripts/auto-merge.sh" "$repository" "$pr_number" "$head_sha" main "$base_sha" "$head_branch" "$remaining" 2>&1)"; then
   [[ -z "$pending_output" ]] || printf '%s\n' "$pending_output"
   pending_output=""
 else
@@ -30,7 +32,7 @@ else
   exit 0
 fi
 
-# Enabling --auto only queues a merge; publication waits for a confirmed result.
+# Recheck the exact merge metadata before authorizing publication.
 while :; do
   read_merge_pr
   if is_merged; then
@@ -38,7 +40,7 @@ while :; do
     exit 0
   fi
   if (( SECONDS >= deadline )); then
-    fail 'Timed out waiting for the validated release PR to merge; queued auto-merge does not authorize publication.'
+    fail 'Timed out waiting for the validated release PR to merge; publication requires a confirmed result.'
   fi
   remaining=$((deadline - SECONDS))
   (( remaining < 5 )) || remaining=5

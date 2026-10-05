@@ -236,7 +236,7 @@ function releaseState(branch, merged = false, mergeSha = OTHER_SHA)
 
 const releaseRead = pr => get(`${API}/pulls/124`, pr);
 const currentMain = sha => get(`${API}/git/ref/heads/main`, { object: { sha } });
-const squashCommand = ["pr", "merge", "124", "--repo", REPOSITORY, "--auto", "--squash", "--match-head-commit", SHA];
+const squashCommand = ["pr", "merge", "124", "--repo", REPOSITORY, "--squash", "--match-head-commit", SHA];
 
 function releaseComparison()
 {
@@ -282,13 +282,13 @@ Given("release PR {string} is {string} during {string}", function (branch, condi
       this.releaseQueue.push(releaseRead(merged), releaseRead(merged), currentMain(OTHER_SHA));
       break;
     case "merged despite a merge command error":
-      this.releaseQueue.push(releaseRead(open), releaseComparison(),
+      this.releaseQueue.push(releaseRead(open), releaseComparison(), releaseRead(open),
         { command: squashCommand, exit_code: 1, stderr: "gh: HTTP 503\n" },
-        releaseRead(merged), currentMain(OTHER_SHA));
+        releaseRead(merged), releaseRead(merged), currentMain(OTHER_SHA));
       break;
-    case "queued before it merges":
-      this.releaseQueue.push(releaseRead(open), releaseComparison(), { command: squashCommand },
-        releaseRead(open), releaseRead(merged), currentMain(OTHER_SHA));
+    case "awaiting merge confirmation":
+      this.releaseQueue.push(releaseRead(open), releaseComparison(), releaseRead(open), { command: squashCommand },
+        releaseRead(open), releaseRead(merged), releaseRead(merged), currentMain(OTHER_SHA));
       break;
     case "fast-forwarded by the merge helper":
       this.releaseMergedSha = SHA;
@@ -338,18 +338,19 @@ Given("release PR orchestration encounters {string} during {string}", function (
       Object.assign(this.releaseQueue[0], { exit_code: 1, stderr: "gh: HTTP 503\n" });
       break;
     case "a failed merge command":
-      this.releaseQueue.push(releaseRead(open), releaseComparison(),
-        { command: squashCommand, exit_code: 1, stderr: "gh: HTTP 503\n" }, releaseRead(open));
+      this.releaseQueue.push(releaseRead(open), releaseComparison(), releaseRead(open),
+        { command: squashCommand, exit_code: 1, stderr: "gh: HTTP 503\n" }, releaseRead(open), releaseRead(open));
       break;
-    case "a merge that remains queued":
+    case "a merge that remains unconfirmed":
     case "an identity change while waiting":
     case "an unavailable confirmation API":
-      this.releaseQueue.push(releaseRead(open), releaseComparison(), { command: squashCommand });
+      this.releaseQueue.push(releaseRead(open), releaseComparison(), releaseRead(open), { command: squashCommand });
       const followup = releaseRead(structuredClone(open));
       if (condition === "an identity change while waiting") followup.response.head.sha = BASE_SHA;
       if (condition === "an unavailable confirmation API")
         Object.assign(followup, { exit_code: 1, stderr: "gh: HTTP 503\n" });
-      this.releaseQueue.push(followup);
+      this.releaseQueue.push(followup,
+        releaseRead(condition === "an identity change while waiting" ? followup.response : open));
       break;
     default: assert.fail(`Unknown orchestration failure: ${condition}`);
   }

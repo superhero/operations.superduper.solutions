@@ -11,7 +11,7 @@ const TAGS = `${API}/tags?per_page=100`;
 const BRANCHES = `${API}/git/matching-refs/heads/`;
 const CLOSED_PULLS = `${API}/pulls?state=closed&base=main&per_page=100`;
 const MERGE = ["pr", "merge", "123", "--repo", REPOSITORY,
-  "--auto", "--merge", "--match-head-commit", SHA];
+  "--merge", "--match-head-commit", SHA];
 
 const mergeCommand = method => MERGE.map(argument => argument === "--merge" ? `--${method}` : argument);
 
@@ -36,7 +36,7 @@ function mergedRelease(version, kind = "release")
 function pullRequest()
 {
   return {
-    state: "open", draft: false,
+    number: 123, state: "open", merged: false, draft: false,
     base: { ref: "main", sha: BASE_SHA, repo: { full_name: REPOSITORY } },
     head: { ref: "release/1.2.3", sha: SHA, repo: { full_name: REPOSITORY } }
   };
@@ -60,7 +60,8 @@ function refUpdate(base)
 
 function mergedPull(pr)
 {
-  return { ...pr, state: "closed", merged: true, merged_at: "2026-10-07T12:00:00Z", merge_commit_sha: SHA };
+  return { ...structuredClone(pr), state: "closed", merged: true,
+    merged_at: "2026-10-07T12:00:00Z", merge_commit_sha: SHA };
 }
 
 function fastForward(world, pr)
@@ -278,7 +279,8 @@ Given("the validated pull request has {string} when merging starts", function (s
     this.mergeResponses.push(get(`${API}/compare/${OTHER_SHA}...${SHA}`, mergeComparison(2, 1, OTHER_SHA)),
       ...badgeAdvance(BASE_SHA, OTHER_SHA));
   this.mergeAttempted = state === "newer base dependency badges";
-  if (this.mergeAttempted) this.mergeResponses.push({ command: MERGE });
+  if (this.mergeAttempted) this.mergeResponses.push(get(`${API}/pulls/123`, pr),
+    { command: MERGE }, get(`${API}/pulls/123`, mergedPull(pr)));
   if (state === "no changes") fastForward(this, pr);
 });
 
@@ -287,13 +289,15 @@ Given("the validated pull request merges {string} into {string} with {int} commi
   const pr = pullRequest();
   pr.head.ref = head;
   pr.base.ref = base;
+  this.mergeHead = head;
   this.mergeBase = base;
   this.mergeCommand = mergeCommand(method);
   this.mergeAttempted = method !== "fast-forward";
   this.mergeResponses = [get(`${API}/pulls/123`, pr),
     get(`${API}/compare/${BASE_SHA}...${SHA}`, mergeComparison(ahead, behind))];
   if (base === "main" && behind) this.mergeResponses.push(...badgeAdvance(OTHER_SHA, BASE_SHA));
-  if (this.mergeAttempted) this.mergeResponses.push({ command: this.mergeCommand });
+  if (this.mergeAttempted) this.mergeResponses.push(get(`${API}/pulls/123`, pr),
+    { command: this.mergeCommand }, get(`${API}/pulls/123`, mergedPull(pr)));
   else fastForward(this, pr);
 });
 
@@ -302,6 +306,7 @@ Given("a possible fast-forward encounters {string}", function (state)
   const pr = pullRequest();
   pr.head.ref = "main";
   pr.base.ref = "develop";
+  this.mergeHead = "main";
   this.mergeBase = "develop";
   const comparison = mergeComparison();
   this.mergeResponses = [get(`${API}/pulls/123`, pr), get(`${API}/compare/${BASE_SHA}...${SHA}`, comparison)];
@@ -328,6 +333,11 @@ Given("a possible fast-forward encounters {string}", function (state)
   {
     case "GitHub rejecting the ref update":
       Object.assign(update, { exit_code: 1, stderr: "GitHub unavailable" });
+      this.mergeResponses.push(get(`${API}/pulls/123`, pr));
+      return;
+    case "a lost ref response after success":
+      Object.assign(update, { exit_code: 1, stderr: "GitHub connection lost" });
+      this.mergeResponses.push(get(`${API}/pulls/123`, mergedPull(pr)));
       return;
     case "an unexpected ref update response": update.response.object.sha = OTHER_SHA; return;
     case "delayed merged PR recognition":
@@ -337,7 +347,8 @@ Given("a possible fast-forward encounters {string}", function (state)
       this.mergeResponses.push(get(`${API}/pulls/123`, { ...mergedPull(pr), merge_commit_sha: OTHER_SHA }));
       return;
     case "missing merged PR recognition":
-      for (let attempt = 0; attempt < 13; attempt++) this.mergeResponses.push(get(`${API}/pulls/123`, pr));
+      this.mergeTimeout = 0;
+      this.mergeResponses.push(get(`${API}/pulls/123`, pr));
       return;
     default: throw new Error(`Unknown fast-forward state: ${state}`);
   }
@@ -347,28 +358,103 @@ Given("GitHub fails while {string}", function (operation)
 {
   const pr = pullRequest();
   pr.head.ref = "hotfix/1.2.4";
+  this.mergeHead = pr.head.ref;
   this.mergeCommand = mergeCommand("squash");
   const responses = [
     get(`${API}/pulls/123`, pr),
     get(`${API}/compare/${BASE_SHA}...${SHA}`, mergeComparison()),
+    get(`${API}/pulls/123`, pr),
     { command: this.mergeCommand }
   ];
-  const index = ["reading the pull request", "comparing main to the head", "submitting the merge"].indexOf(operation);
-  assert.ok(index >= 0, operation);
+  const index = { "reading the pull request": 0, "comparing main to the head": 1, "submitting the merge": 3 }[operation];
+  assert.notEqual(index, undefined, operation);
   this.mergeResponses = responses.slice(0, index + 1);
   Object.assign(this.mergeResponses[index], { exit_code: 1, stderr: "GitHub unavailable" });
-  this.mergeAttempted = index === 2;
+  this.mergeAttempted = index === 3;
+  if (this.mergeAttempted) this.mergeResponses.push(get(`${API}/pulls/123`, pr));
+});
+
+Given("automatic merge completion encounters {string}", function (state)
+{
+  const pr = pullRequest();
+  pr.head.ref = this.mergeHead = "bugfix/editor";
+  pr.base.ref = this.mergeBase = "develop";
+  const merged = mergedPull(pr);
+  this.mergeResponses = [get(`${API}/pulls/123`, merged)];
+  switch (state)
+  {
+    case "an already merged retry": merged.base.sha = OTHER_SHA; return;
+    case "an already merged different PR": merged.number = 124; return;
+    case "an already merged different source": merged.head.ref = "bugfix/other"; return;
+    case "an already merged different head": merged.head.sha = OTHER_SHA; return;
+    case "an already merged different destination": merged.base.ref = "support/1.x"; return;
+    case "an already merged different source repository": merged.head.repo.full_name = "other/repository"; return;
+    case "an already merged different target repository": merged.base.repo.full_name = "other/repository"; return;
+    case "an already merged retry without merge metadata":
+      merged.merge_commit_sha = null;
+      this.mergeTimeout = 0;
+      return;
+    case "an already merged retry with malformed merge metadata": merged.merge_commit_sha = "invalid"; return;
+  }
+  // Keep mutable PR snapshots independent: GitHub may change state between reads.
+  const current = structuredClone(pr);
+  this.mergeResponses = [get(`${API}/pulls/123`, pr),
+    get(`${API}/compare/${BASE_SHA}...${SHA}`, mergeComparison()),
+    get(`${API}/pulls/123`, current)];
+  switch (state)
+  {
+    case "a racing merge before submission": Object.assign(current, merged); return;
+    case "a changed head before squash submission": current.head.sha = OTHER_SHA; return;
+    case "a changed base before squash submission": current.base.sha = OTHER_SHA; return;
+  }
+  this.mergeAttempted = true;
+  this.mergeCommand = mergeCommand("squash");
+  const request = { command: this.mergeCommand };
+  this.mergeResponses.push(request);
+  switch (state)
+  {
+    case "delayed merge confirmation":
+      this.mergeResponses.push(get(`${API}/pulls/123`, pr), get(`${API}/pulls/123`, merged));
+      return;
+    case "delayed merge commit metadata":
+      this.mergeResponses.push(get(`${API}/pulls/123`, { ...merged, merge_commit_sha: null }),
+        get(`${API}/pulls/123`, { ...merged, merge_commit_sha: OTHER_SHA }));
+      return;
+    case "a merge that remains open":
+      this.mergeTimeout = 0;
+      this.mergeResponses.push(get(`${API}/pulls/123`, pr));
+      return;
+    case "a PR closed without merging after submission":
+      this.mergeResponses.push(get(`${API}/pulls/123`, { ...pr, state: "closed" }));
+      return;
+    case "a different merged head after submission":
+      merged.head.sha = OTHER_SHA;
+      this.mergeResponses.push(get(`${API}/pulls/123`, merged));
+      return;
+    case "a lost merge response after success":
+      Object.assign(request, { exit_code: 1, stderr: "GitHub connection lost" });
+      this.mergeResponses.push(get(`${API}/pulls/123`, merged));
+      return;
+    case "GitHub failing during confirmation":
+      this.mergeResponses.push(get(`${API}/pulls/123`, {}, { exit_code: 1, stderr: "GitHub unavailable" }));
+      return;
+    default: throw new Error(`Unknown merge completion state: ${state}`);
+  }
 });
 
 When("automatic merging runs", function ()
 {
   this.mergeResult = this.automation.execute("auto-merge.sh",
-    [REPOSITORY, "123", SHA, this.mergeBase ?? "main", BASE_SHA], this.mergeResponses, { success: null });
+    [REPOSITORY, "123", SHA, this.mergeBase ?? "main", BASE_SHA,
+      this.mergeHead ?? "release/1.2.3", String(this.mergeTimeout ?? 180)], this.mergeResponses, { success: null });
 });
 
 Then("automatic merging is {string}", function (outcome)
 {
-  checkResult(this.mergeResult, outcome, [REPOSITORY, "PR #123", SHA, this.mergeBase ?? "main", BASE_SHA]);
+  checkResult(this.mergeResult, outcome, [REPOSITORY, "PR #123", SHA, this.mergeBase ?? "main", BASE_SHA,
+    this.mergeHead ?? "release/1.2.3"]);
+  if (outcome === "accepted")
+    assert.ok(this.mergeResult.stdout.includes(`GitHub confirmed ${REPOSITORY} PR #123 merged`), this.mergeResult.stdout);
   assert.deepEqual(this.automation.calls().filter(call => call.command).map(call => call.command),
     this.mergeAttempted ? [this.mergeCommand ?? MERGE] : []);
   const writes = this.automation.calls().filter(call => !call.command && call.method !== "GET");

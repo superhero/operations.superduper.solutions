@@ -9,35 +9,86 @@ pull_request="${2:-}"
 head_sha="${3:-}"
 base_branch="${4:-${GITHUB_BASE_REF:-}}"
 base_sha="${5:-}"
+head_branch="${6:-${GITHUB_HEAD_REF:-}}"
+timeout_seconds="${7:-180}"
+error_log=""
+write_status='not attempted'
+trap '[[ -z "$error_log" ]] || rm -f "$error_log"' EXIT
 
 fail() {
-  echo "::error::Merge refused for $repository PR #$pull_request (expected head $head_sha, base $base_branch at $base_sha): $*" >&2
+  [[ -z "$error_log" || ! -s "$error_log" ]] || cat "$error_log" >&2
+  echo "::error::Merge incomplete for $repository PR #$pull_request (expected source $head_branch at $head_sha, base $base_branch at $base_sha, timeout_seconds=$timeout_seconds, write=$write_status): $*" >&2
   exit 1
 }
 
+[[ $# -ge 5 && $# -le 7 ]] || fail 'Expected repository, PR number, head SHA, base branch, tested base SHA, optional source branch and timeout.'
 [[ -n "$repository" ]] || fail 'Repository is required.'
 [[ "$pull_request" =~ ^[1-9][0-9]*$ ]] || fail 'A pull request number is required.'
 [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]] || fail 'A full pull request head SHA is required.'
 [[ -n "$base_branch" ]] || fail 'The validated pull request base branch is required.'
 [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]] || fail 'The full validated base SHA is required.'
+[[ -n "$head_branch" ]] || fail 'The expected source branch is required as argument six or GITHUB_HEAD_REF.'
+git check-ref-format "refs/heads/$head_branch" || fail "Invalid expected source branch '$head_branch'."
+if ! [[ "$timeout_seconds" =~ ^(0|[1-9][0-9]{0,2})$ ]] || (( timeout_seconds > 240 )); then
+  fail 'Merge confirmation timeout must be a whole number from 0 to 240 seconds.'
+fi
+deadline=$((SECONDS + timeout_seconds))
 
 read_pr() {
   pr="$(gh api "repos/$repository/pulls/$pull_request")" || fail 'Could not read current pull request state.'
-  reason="$(jq -er --arg sha "$head_sha" --arg repository "$repository" --arg base "$base_branch" '
-    if .state != "open" then "State is \(.state); expected open."
+  reason="$(jq -er --argjson number "$pull_request" --arg sha "$head_sha" \
+    --arg source "$head_branch" --arg repository "$repository" --arg base "$base_branch" '
+    if .number != $number then "PR number is \(.number); expected \($number)."
     elif .draft != false then "Draft status is \(.draft); expected false."
     elif .head.repo.full_name != $repository then "Head repository is \(.head.repo.full_name); expected \($repository)."
+    elif .base.repo.full_name != $repository then "Base repository is \(.base.repo.full_name); expected \($repository)."
     elif .head.sha != $sha then "Head changed: expected \($sha), found \(.head.sha); rerun CI."
     elif .base.ref != $base then "Base branch changed: expected \($base), found \(.base.ref); rerun CI."
     elif (.head.ref | type) != "string" or .head.ref == "" then "Source branch is missing or is not a non-empty string."
     elif (.head.ref | test("[[:cntrl:]]")) then "Invalid source branch in current pull request metadata."
+    elif .head.ref != $source then "Source branch changed: expected \($source), found \(.head.ref); rerun CI."
     elif (.base.sha | type) != "string" or (.base.sha | test("^[0-9a-f]{40}$") | not) then "Base commit is missing or invalid."
+    elif .state == "closed" and .merged == true then
+      if (.merged_at | type) != "string" or .merged_at == "" then "Merged PR has no valid merged_at metadata."
+      elif .merge_commit_sha != null and
+        ((.merge_commit_sha | type) != "string" or (.merge_commit_sha | test("^[0-9a-f]{40}$") | not))
+      then "Merged PR has an invalid merge_commit_sha: \(.merge_commit_sha)."
+      else "" end
+    elif .state != "open" or .merged != false then "State is \(.state) with merged=\(.merged); expected open or confirmed merged."
     else "" end' <<< "$pr")" || fail 'Could not parse current pull request state.'
   [[ -z "$reason" ]] || fail "$reason"
 }
+
+is_merged() {
+  jq -e '.merged == true' <<< "$pr" >/dev/null
+}
+
+wait_for_merge() {
+  while :; do
+    if is_merged && jq -e '.merge_commit_sha != null' <<< "$pr" >/dev/null; then
+      echo "GitHub confirmed $repository PR #$pull_request merged: $head_branch at $head_sha -> $base_branch (merge_sha=$(jq -r '.merge_commit_sha' <<< "$pr"))."
+      exit 0
+    fi
+    if (( SECONDS >= deadline )); then
+      fail 'Timed out waiting for GitHub to confirm this exact PR merged with complete merge metadata; inspect the PR and branch before retrying.'
+    fi
+    remaining=$((deadline - SECONDS))
+    (( remaining < 5 )) || remaining=5
+    sleep "$remaining"
+    read_pr
+  done
+}
+
+recover_write_failure() {
+  read_pr
+  is_merged || fail "$1"
+  wait_for_merge
+}
+
 read_pr
-head_branch="$(jq -r '.head.ref' <<< "$pr")"
-git check-ref-format "refs/heads/$head_branch" || fail "Invalid source branch '$head_branch' in current pull request metadata."
+if is_merged; then
+  wait_for_merge
+fi
 
 merge_method=merge
 case "$base_branch:$head_branch" in
@@ -75,40 +126,35 @@ if [[ "$base_branch" == main && "$behind_by" != 0 ]]; then
     fail "Main changed beyond dependency badges since this release was built ($current_base...$head_sha reports behind_by=$behind_by); update the branch and rerun CI."
 fi
 
+# Recheck both mutation paths. A non-force ref update additionally rejects any
+# intervening base change that is not already contained in the tested head.
+read_pr
+if is_merged; then
+  wait_for_merge
+fi
+jq -e --arg base "$current_base" '.base.sha == $base' <<< "$pr" >/dev/null ||
+  fail "Source branch or base commit changed before merging ($head_branch -> $base_branch at $current_base); actual base=$(jq -r '.base.sha' <<< "$pr"); rerun CI."
+error_log="$(mktemp)" || fail 'Could not prepare temporary merge diagnostics.'
+
 if [[ "$behind_by" == 0 && "$ahead_by" != 0 && ( "$merge_method" == merge || "$ahead_by" == 1 ) ]]; then
-  # Recheck just before writing. A non-force ref update also rejects any
-  # intervening base change that is not already contained in the tested head.
-  read_pr
-  jq -e --arg source "$head_branch" --arg base "$current_base" '
-    .head.ref == $source and .base.sha == $base
-  ' <<< "$pr" >/dev/null || fail "Source branch or base commit changed before fast-forward ($head_branch -> $base_branch at $current_base); rerun CI."
+  write_status='fast-forward attempted'
   updated="$(gh api --method PATCH "repos/$repository/git/refs/heads/$base_branch" \
-    -f "sha=$head_sha" -F force=false)" ||
-    fail "GitHub could not fast-forward '$base_branch' from $current_base to tested '$head_branch' at $head_sha."
+    -f "sha=$head_sha" -F force=false 2>"$error_log")" ||
+    recover_write_failure "GitHub could not fast-forward '$base_branch' from $current_base to tested '$head_branch' at $head_sha."
+  write_status='fast-forward applied'
   jq -e --arg ref "refs/heads/$base_branch" --arg sha "$head_sha" '
     .ref == $ref and .object.type == "commit" and .object.sha == $sha
   ' <<< "$updated" >/dev/null || fail "Fast-forward response did not confirm '$base_branch' at $head_sha; inspect the branch before retrying."
-
-  for attempt in {1..13}; do
-    merged="$(gh api "repos/$repository/pulls/$pull_request")" ||
-      fail "Fast-forward applied to '$base_branch' at $head_sha, but GitHub's PR merge status could not be read."
-    if jq -e --arg repository "$repository" --arg source "$head_branch" \
-      --arg base "$base_branch" --arg sha "$head_sha" '
-      .state == "closed" and .merged == true and
-      (.merged_at | type == "string" and length > 0) and
-      .head.repo.full_name == $repository and .head.ref == $source and
-      .head.sha == $sha and .base.ref == $base and .base.repo.full_name == $repository
-    ' <<< "$merged" >/dev/null; then
-      echo "Fast-forwarded '$base_branch' to tested '$head_branch' at $head_sha; GitHub confirmed PR #$pull_request merged."
-      exit 0
-    fi
-    [[ "$attempt" == 13 ]] || sleep 5
-  done
-  fail "Fast-forward applied to '$base_branch' at $head_sha, but GitHub has not confirmed this PR as merged; inspect its status before retrying."
+else
+  write_status="$merge_method attempted"
+  gh pr merge "$pull_request" \
+    --repo "$repository" \
+    "--$merge_method" \
+    --match-head-commit "$head_sha" 2>"$error_log" ||
+    recover_write_failure "GitHub could not merge the validated pull request from '$head_branch' using '$merge_method'."
+  write_status="$merge_method completed"
 fi
-
-gh pr merge "$pull_request" \
-  --repo "$repository" \
-  --auto \
-  "--$merge_method" \
-  --match-head-commit "$head_sha" || fail "GitHub could not merge the validated pull request from '$head_branch' using '$merge_method'."
+cat "$error_log" >&2
+: > "$error_log"
+read_pr
+wait_for_merge

@@ -160,7 +160,7 @@ Feature: Gitflow validation and guarded merging
       | no source branch     | rejected | Source branch is missing          |
       | an empty source branch | rejected | Source branch is missing        |
       | a non-string source branch | rejected | Source branch is missing    |
-      | an invalid source branch | rejected | Invalid source branch         |
+      | an invalid source branch | rejected | Source branch changed         |
       | fallen behind main   | rejected | Main changed                      |
 
   Scenario Outline: Automatic merging chooses the policy for the current branch route
@@ -201,14 +201,15 @@ Feature: Gitflow validation and guarded merging
       | fractional commit counts               | rejected | Invalid comparison metadata      |
       | inconsistent commit counts             | rejected | Invalid comparison metadata      |
       | a changed head before writing          | rejected | Head changed                     |
-      | a changed source branch before writing | rejected | Source branch or base commit     |
+      | a changed source branch before writing | rejected | Source branch changed            |
       | a changed base before writing          | rejected | Source branch or base commit     |
       | a new draft before writing             | rejected | Draft status is true             |
       | GitHub rejecting the ref update        | rejected | GitHub could not fast-forward    |
+      | a lost ref response after success      | accepted |                                  |
       | an unexpected ref update response      | rejected | Fast-forward response            |
       | delayed merged PR recognition         | accepted |                                  |
       | an indirect merge retaining a test-merge SHA | accepted |                             |
-      | missing merged PR recognition         | rejected | GitHub has not confirmed this PR |
+      | missing merged PR recognition         | rejected | Timed out                       |
 
   Scenario: Unavailable version data cannot make a version available
     Given GitHub cannot list repository tags
@@ -216,6 +217,43 @@ Feature: Gitflow validation and guarded merging
     Then Gitflow validation is "rejected"
     And the Gitflow error explains "Could not list repository tags"
     And the Gitflow error explains "GitHub unavailable"
+
+  Scenario Outline: Merge retries recognize only the exact validated PR
+    Given automatic merge completion encounters "<state>"
+    When automatic merging runs
+    Then automatic merging is "<outcome>"
+    And the merge error explains "<reason>"
+
+    Examples:
+      | state                                                 | outcome  | reason              |
+      | an already merged retry                               | accepted |                     |
+      | an already merged different PR                        | rejected | PR number           |
+      | an already merged different source                    | rejected | Source branch       |
+      | an already merged different head                      | rejected | Head changed        |
+      | an already merged different destination               | rejected | Base branch changed |
+      | an already merged different source repository         | rejected | Head repository     |
+      | an already merged different target repository         | rejected | Base repository     |
+      | an already merged retry without merge metadata        | rejected | Timed out           |
+      | an already merged retry with malformed merge metadata | rejected | merge_commit_sha    |
+
+  Scenario Outline: Merge success requires GitHub to confirm completion
+    Given automatic merge completion encounters "<state>"
+    When automatic merging runs
+    Then automatic merging is "<outcome>"
+    And the merge error explains "<reason>"
+
+    Examples:
+      | state                                        | outcome  | reason             |
+      | a racing merge before submission             | accepted |                    |
+      | a changed head before squash submission      | rejected | Head changed       |
+      | a changed base before squash submission      | rejected | base commit        |
+      | delayed merge confirmation                   | accepted |                    |
+      | delayed merge commit metadata                | accepted |                    |
+      | a merge that remains open                    | rejected | Timed out          |
+      | a PR closed without merging after submission | rejected | State is closed    |
+      | a different merged head after submission     | rejected | Head changed       |
+      | a lost merge response after success          | accepted |                    |
+      | GitHub failing during confirmation           | rejected | GitHub unavailable |
 
   Scenario Outline: Merge failures identify the failed operation and preserve GitHub's reason
     Given GitHub fails while "<operation>"

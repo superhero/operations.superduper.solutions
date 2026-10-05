@@ -100,8 +100,11 @@ selects the method from the current PR's source and target branches.
 Both `develop` and `main` PR rules permit merge and squash. GitHub has no
 fast-forward PR merge method, so the App updates the target ref without force
 after CI passes, using the exact tested head and rechecking the PR before writing.
-It waits for GitHub to recognize the PR as merged. Shared branches are never
-rebased, and force-push protection still applies to the App.
+Every merge method waits up to three minutes for GitHub to confirm the exact
+PR and merge commit. A blocked merge reports GitHub's reason; it does not enable
+queued auto-merge. Retries accept an already merged PR only when its repository,
+source branch, tested head, and target branch still match. Shared branches are
+never rebased, and force-push protection still applies to the App.
 
 Before creating a release, automation previews the integration of `develop` and `main`
 and rejects conflicts or changes limited to dependency badges. It creates the
