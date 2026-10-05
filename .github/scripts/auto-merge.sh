@@ -66,7 +66,11 @@ is_merged() {
 wait_for_merge() {
   while :; do
     if is_merged && jq -e '.merge_commit_sha != null' <<< "$pr" >/dev/null; then
-      echo "GitHub confirmed $repository PR #$pull_request merged: $head_branch at $head_sha -> $base_branch (merge_sha=$(jq -r '.merge_commit_sha' <<< "$pr"))."
+      merge_sha="$(jq -r '.merge_commit_sha' <<< "$pr")"
+      if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+        echo "merge_sha=$merge_sha" >> "$GITHUB_OUTPUT"
+      fi
+      echo "GitHub confirmed $repository PR #$pull_request merged: $head_branch at $head_sha -> $base_branch (merge_sha=$merge_sha)."
       exit 0
     fi
     if (( SECONDS >= deadline )); then

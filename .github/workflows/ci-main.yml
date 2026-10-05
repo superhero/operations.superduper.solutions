@@ -226,12 +226,86 @@ jobs:
       - name: Check scenario badge
         run: npm --loglevel=error run badges:scenarios -- --check
 
+  preview:
+    name: Deploy Preview
+    needs: application
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository
+      && !github.event.pull_request.draft
+    concurrency:
+      group: pages-${{ github.head_ref }}
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      PAGES_BRANCH: ${{ github.head_ref }}
+      DEPLOY_SHA: ${{ github.event.pull_request.head.sha }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+    steps:
+      - name: Checkout tested automation
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Download tested bundle
+        run: |
+          gh run download "$GITHUB_RUN_ID" --repo "$REPOSITORY" --name bundle --dir dist || {
+            echo "::error::Cannot download tested bundle from $REPOSITORY run $GITHUB_RUN_ID (branch=$PAGES_BRANCH, commit=$DEPLOY_SHA, destination=dist)." >&2
+            exit 1
+          }
+
+      - name: Check preview content and destination
+        id: prepare
+        run: bash .github/scripts/prepare-pages-deployment.sh "$REPOSITORY" "$PAGES_BRANCH" "$DEPLOY_SHA" dist
+
+      - name: Create GitHub App token
+        if: steps.prepare.outputs.skipped == 'false'
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          permission-deployments: write
+
+      - name: Deploy changed preview
+        if: steps.prepare.outputs.deploy == 'true'
+        id: cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=operations-superduper-solutions --branch="${{ env.PAGES_BRANCH }}" --commit-hash=${{ env.DEPLOY_SHA }} --commit-dirty=false --commit-message=bundle-sha256:${{ steps.prepare.outputs.bundle_hash }}
+
+      - name: Verify and record preview deployment
+        if: >-
+          (success() || (failure() && steps.cloudflare.outcome == 'failure'))
+          && steps.prepare.outputs.skipped == 'false'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BUNDLE_HASH: ${{ steps.prepare.outputs.bundle_hash }}
+          DEPLOYMENT_ID: ${{ steps.cloudflare.outputs.pages-deployment-id || steps.prepare.outputs.deployment_id }}
+          DEPLOYMENT_OUTCOME: ${{ steps.cloudflare.outcome == 'failure' && 'failure' || 'success' }}
+        run: bash .github/scripts/record-pages-deployment.sh "$REPOSITORY" "$PAGES_BRANCH" "$DEPLOY_SHA" "$BUNDLE_HASH" "$DEPLOYMENT_ID" "$DEPLOYMENT_OUTCOME"
+
   auto-merge:
     name: Merge Release
     concurrency:
       group: merge-${{ github.base_ref }}
       cancel-in-progress: false
-    needs: [workflow-checks, validate-pr, application]
+    needs: [workflow-checks, validate-pr, application, preview]
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository
       && !github.event.pull_request.draft
@@ -447,47 +521,32 @@ jobs:
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           permission-deployments: write
 
-      - name: Validate production destination
+      - name: Check production content and destination
+        id: prepare
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          [[ -n "$CLOUDFLARE_API_TOKEN" ]] || {
-            echo "::error::Missing CLOUDFLARE_PAGES_API_TOKEN: cannot deploy $REPOSITORY at $MERGE_SHA (source=dist, project=operations-superduper-solutions, branch=main)." >&2
-            exit 1
-          }
-          [[ -n "$CLOUDFLARE_ACCOUNT_ID" ]] || {
-            echo "::error::Missing CLOUDFLARE_ACCOUNT_ID: cannot deploy $REPOSITORY at $MERGE_SHA (source=dist, project=operations-superduper-solutions, branch=main)." >&2
-            exit 1
-          }
-          bash .github/scripts/validate-current-release.sh "$REPOSITORY" "$MERGE_SHA"
+        run: bash .github/scripts/prepare-pages-deployment.sh "$REPOSITORY" main "$MERGE_SHA" dist
 
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy changed production bundle
+        if: steps.prepare.outputs.deploy == 'true'
         id: cloudflare
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=operations-superduper-solutions --branch=main --commit-hash=${{ needs.create-release-tag.outputs.merge_sha }}
+          command: pages deploy dist --project-name=operations-superduper-solutions --branch=main --commit-hash=${{ needs.create-release-tag.outputs.merge_sha }} --commit-dirty=false --commit-message=bundle-sha256:${{ steps.prepare.outputs.bundle_hash }}
 
-      - name: Record GitHub deployment
+      - name: Verify and record production deployment
+        if: success() || (failure() && steps.cloudflare.outcome == 'failure')
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
-        run: |
-          deployment_id="$(gh api --method POST "repos/$REPOSITORY/deployments" \
-            -f ref="$MERGE_SHA" -F auto_merge=false -F 'required_contexts[]' \
-            -f environment=production -F production_environment=true \
-            -f description="Cloudflare Pages" --jq '.id')" || {
-            echo "::error::Cannot record deployment for $REPOSITORY at $MERGE_SHA (environment=production, URL=$DEPLOYMENT_URL)." >&2
-            exit 1
-          }
-          gh api --method POST "repos/$REPOSITORY/deployments/$deployment_id/statuses" \
-            -f state=success -f environment=production -f environment_url="$DEPLOYMENT_URL" \
-            -f log_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >/dev/null || {
-            echo "::error::Cannot record successful status for deployment $deployment_id in $REPOSITORY at $MERGE_SHA (environment=production, URL=$DEPLOYMENT_URL)." >&2
-            exit 1
-          }
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          BUNDLE_HASH: ${{ steps.prepare.outputs.bundle_hash }}
+          DEPLOYMENT_ID: ${{ steps.cloudflare.outputs.pages-deployment-id || steps.prepare.outputs.deployment_id }}
+          DEPLOYMENT_OUTCOME: ${{ steps.cloudflare.outcome == 'failure' && 'failure' || 'success' }}
+        run: bash .github/scripts/record-pages-deployment.sh "$REPOSITORY" main "$MERGE_SHA" "$BUNDLE_HASH" "$DEPLOYMENT_ID" "$DEPLOYMENT_OUTCOME"
 
       - name: Publish test and coverage reports
         env:
@@ -499,10 +558,6 @@ jobs:
           bash .github/scripts/validate-current-release.sh "$REPOSITORY" "$MERGE_SHA"
           bash .github/scripts/publish-status.sh tmp/test-report.html test-report.html 'text/html; charset=utf-8'
 
-      - name: Deployment summary
-        env:
-          DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
-          SOURCE_RUN_ID: ${{ github.run_id }}
+      - name: Report links
         run: |
-          echo "Deployed $DEPLOYMENT_URL from CI run #$SOURCE_RUN_ID." >> "$GITHUB_STEP_SUMMARY"
           echo '[Test results](https://status.operations.superduper.solutions/test-report.html) · [Coverage report](https://status.operations.superduper.solutions/test-coverage.html)' >> "$GITHUB_STEP_SUMMARY"

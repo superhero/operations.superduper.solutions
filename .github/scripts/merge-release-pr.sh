@@ -21,7 +21,8 @@ fi
 
 remaining=$((deadline - SECONDS))
 (( remaining >= 0 )) || remaining=0
-if pending_output="$(bash "$scripts/auto-merge.sh" "$repository" "$pr_number" "$head_sha" main "$base_sha" "$head_branch" "$remaining" 2>&1)"; then
+# Publish outputs only after this wrapper's final release checks succeed.
+if pending_output="$(GITHUB_OUTPUT='' bash "$scripts/auto-merge.sh" "$repository" "$pr_number" "$head_sha" main "$base_sha" "$head_branch" "$remaining" 2>&1)"; then
   [[ -z "$pending_output" ]] || printf '%s\n' "$pending_output"
   pending_output=""
 else

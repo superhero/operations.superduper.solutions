@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { Given, Then, When } from "@cucumber/cucumber";
 import { API, BASE_SHA, OTHER_SHA, REPOSITORY, SHA, get } from "./support.mjs";
 import { badgeAdvance } from "./badge-advance.test.mjs";
@@ -454,7 +455,12 @@ Then("automatic merging is {string}", function (outcome)
   checkResult(this.mergeResult, outcome, [REPOSITORY, "PR #123", SHA, this.mergeBase ?? "main", BASE_SHA,
     this.mergeHead ?? "release/1.2.3"]);
   if (outcome === "accepted")
+  {
     assert.ok(this.mergeResult.stdout.includes(`GitHub confirmed ${REPOSITORY} PR #123 merged`), this.mergeResult.stdout);
+    const confirmedSha = this.mergeResult.stdout.match(/merge_sha=([0-9a-f]{40})/)[1];
+    assert.equal(readFileSync(this.automation.output, "utf8"), `merge_sha=${confirmedSha}\n`);
+  }
+  else assert.equal(readFileSync(this.automation.output, "utf8"), "");
   assert.deepEqual(this.automation.calls().filter(call => call.command).map(call => call.command),
     this.mergeAttempted ? [this.mergeCommand ?? MERGE] : []);
   const writes = this.automation.calls().filter(call => !call.command && call.method !== "GET");

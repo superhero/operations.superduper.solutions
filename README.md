@@ -9,10 +9,10 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 [![Main CI/CD](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-main.yml?label=Main%20CI%2FCD)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-main.yml)
 
-Creates releases from `develop` and validates release and hotfix pull requests
-before merging into `main`. Continues in the same release run to tag and deploy,
-publish test and coverage reports, and synchronize released changes back to
-`develop`.
+Creates releases from `develop` and validates and previews release and hotfix
+pull requests before merging into `main`. Continues in the same release run to
+tag and deploy, publish test and coverage reports, and synchronize released
+changes back to `develop`.
 
 ---
 
@@ -20,7 +20,8 @@ publish test and coverage reports, and synchronize released changes back to
 
 Validates incoming changes before merging them into `develop`, checking branch
 policy, types, tests, and build output. Keeps feature work, bug fixes, and
-released changes integrated for the next release.
+released changes integrated for the next release, then updates the
+[development preview](https://develop.operations-superduper-solutions.pages.dev).
 
 ## Quality Assurance
 
