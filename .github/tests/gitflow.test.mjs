@@ -4,6 +4,7 @@
 import assert from "node:assert/strict";
 import { Given, Then, When } from "@cucumber/cucumber";
 import { API, BASE_SHA, OTHER_SHA, REPOSITORY, SHA, get } from "./support.mjs";
+import { badgeAdvance } from "./badge-advance.test.mjs";
 
 const TAGS = `${API}/tags?per_page=100`;
 const BRANCHES = `${API}/git/matching-refs/heads/`;
@@ -20,12 +21,12 @@ function availableVersion(tags = [], branches = [])
   ];
 }
 
-function mergedRelease(version)
+function mergedRelease(version, kind = "release")
 {
   return {
     merged_at: "2026-10-04T16:24:20Z",
     merge_commit_sha: BASE_SHA,
-    head: { ref: `release/${version}`, repo: { full_name: REPOSITORY } }
+    head: { ref: `${kind}/${version}`, repo: { full_name: REPOSITORY } }
   };
 }
 
@@ -75,7 +76,14 @@ Given("version {string} has {string}", function (version, reservation)
       this.policyResponses = availableVersion([], ["release/1.3.0"]);
       break;
     case "unmerged changes after its release":
-      this.policyResponses = [...merged, get(`${API}/compare/${SHA}...${BASE_SHA}`, { behind_by: 1 })];
+      this.policyResponses = [...merged, get(`${API}/compare/${SHA}...${BASE_SHA}`, {
+        behind_by: 1, merge_base_commit: { sha: BASE_SHA }
+      }), ...badgeAdvance(BASE_SHA, SHA, [{ filename: "src/bootstrap.ts" }])];
+      break;
+    case "only badge changes after its release":
+      this.policyResponses = [tagged, get(`${API}/compare/${SHA}...${version}`, {
+        behind_by: 1, merge_base_commit: { sha: BASE_SHA }
+      }), ...badgeAdvance(BASE_SHA, SHA)];
       break;
     default: throw new Error(`Unknown reservation: ${reservation}`);
   }
@@ -83,7 +91,16 @@ Given("version {string} has {string}", function (version, reservation)
 
 Given("main has commits missing from the release head", function ()
 {
-  this.policyResponses = [...availableVersion(), get(`${API}/compare/main...${SHA}`, { behind_by: 1 })];
+  this.policyResponses = [...availableVersion(), get(`${API}/compare/main...${SHA}`, {
+    behind_by: 1, merge_base_commit: { sha: BASE_SHA }, base_commit: { sha: OTHER_SHA }
+  }), ...badgeAdvance(BASE_SHA, OTHER_SHA, [{ filename: "src/bootstrap.ts" }])];
+});
+
+Given("main only has dependency badge commits missing from the release head", function ()
+{
+  this.policyResponses = [...availableVersion(), get(`${API}/compare/main...${SHA}`, {
+    behind_by: 1, merge_base_commit: { sha: BASE_SHA }, base_commit: { sha: OTHER_SHA }
+  }), ...badgeAdvance(BASE_SHA, OTHER_SHA)];
 });
 
 Given("support line {string} contains {string} but not {string}", function (base, reachable, unrelated)
@@ -98,6 +115,75 @@ Given("support line {string} contains {string} but not {string}", function (base
 Given("GitHub cannot list repository tags", function ()
 {
   this.policyResponses = [get(TAGS, {}, { exit_code: 1, stderr: "GitHub unavailable" })];
+});
+
+function hotfixSynchronization(state, base)
+{
+  const { version, reservation, target = "active", changes, failure, supportBase = "1.2.3" } = state;
+  const tagged = reservation === "with a tag";
+  const targetVersion = base.replace(/^release\//, "");
+  const tags = tagged ? [version] : [];
+  const closed = tagged ? [] : [mergedRelease(version, "hotfix")];
+  if (target === "tagged") tags.push(targetVersion);
+  if (target === "merged") closed.push(mergedRelease(targetVersion));
+  if (base.startsWith("support/") && supportBase) tags.push(supportBase);
+  const responses = [get(TAGS, tags.map(name => ({ name })))];
+  const unavailable = { exit_code: 1, stderr: "GitHub unavailable" };
+  if (!tagged) responses.push(get(CLOSED_PULLS, closed));
+  if (base === "main") return responses;
+  if (base.startsWith("release/"))
+  {
+    if (!/^release\/(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(base) || target === "tagged") return responses;
+    if (tagged) responses.push(get(CLOSED_PULLS, closed, failure === "target lookup" ? unavailable : {}));
+    if (target === "merged" || failure === "target lookup") return responses;
+  }
+  const released = tagged ? version : BASE_SHA;
+  responses.push(get(`${API}/compare/${SHA}...${released}`, {
+    behind_by: changes ? 1 : 0, merge_base_commit: { sha: BASE_SHA }
+  }, failure === "source comparison" ? unavailable : {}));
+  if (failure === "source comparison") return responses;
+  if (changes)
+  {
+    responses.push(...badgeAdvance(BASE_SHA, SHA, changes === "code" ? [{ filename: "src/bootstrap.ts" }] : undefined));
+    if (changes === "code") return responses;
+  }
+  if (base.startsWith("support/"))
+  {
+    for (const tag of [...tags].sort((left, right) => right.localeCompare(left, undefined, { numeric: true })))
+    {
+      responses.push(get(`${API}/compare/${tag}...${base}`, { behind_by: tag === supportBase ? 0 : 1 },
+        failure === "support comparison" ? unavailable : {}));
+      if (tag === supportBase || failure === "support comparison") break;
+    }
+  }
+  return responses;
+}
+
+Given("hotfix {string} was released {string}", function (version, reservation)
+{
+  assert.ok(["with a tag", "awaiting its tag"].includes(reservation), reservation);
+  this.releasedHotfix = { version, reservation };
+  this.policyResponses = base => hotfixSynchronization(this.releasedHotfix, base);
+});
+
+Given("the hotfix release target is {string}", function (target)
+{
+  this.releasedHotfix.target = target;
+});
+
+Given("the released hotfix has later {string} changes", function (changes)
+{
+  this.releasedHotfix.changes = changes;
+});
+
+Given("the support target has {string}", function (line)
+{
+  this.releasedHotfix.supportBase = line === "no released base" ? null : "1.2.9";
+});
+
+Given("GitHub fails during hotfix synchronization {string}", function (failure)
+{
+  this.releasedHotfix.failure = failure;
 });
 
 When("Gitflow validates {string} into {string}", function (head, base)
@@ -138,14 +224,24 @@ Given("the validated pull request has {string} when merging starts", function (s
     case "a different head": pr.head.sha = OTHER_SHA; break;
     case "a different target": pr.base.ref = "develop"; break;
     case "a newer base commit": pr.base.sha = OTHER_SHA; break;
+    case "newer base dependency badges": pr.base.sha = OTHER_SHA; break;
     case "a fork as its source": pr.head.repo.full_name = "other/repository"; break;
     case "fallen behind main": break;
     default: throw new Error(`Unknown pull request state: ${state}`);
   }
   this.mergeResponses = [get(`${API}/pulls/123`, pr)];
+  if (["a newer base commit", "newer base dependency badges"].includes(state))
+    this.mergeResponses.push(...badgeAdvance(BASE_SHA, OTHER_SHA,
+      state === "a newer base commit" ? [{ filename: "src/bootstrap.ts" }] : undefined));
   if (["no changes", "fallen behind main"].includes(state))
-    this.mergeResponses.push(get(`${API}/compare/main...${SHA}`, { behind_by: state === "no changes" ? 0 : 1 }));
-  this.mergeAttempted = state === "no changes";
+    this.mergeResponses.push(get(`${API}/compare/main...${SHA}`, { behind_by: state === "no changes" ? 0 : 1,
+      merge_base_commit: { sha: BASE_SHA }, base_commit: { sha: OTHER_SHA } }));
+  if (state === "fallen behind main")
+    this.mergeResponses.push(...badgeAdvance(BASE_SHA, OTHER_SHA, [{ filename: "src/bootstrap.ts" }]));
+  if (state === "newer base dependency badges")
+    this.mergeResponses.push(get(`${API}/compare/main...${SHA}`, { behind_by: 1,
+      merge_base_commit: { sha: BASE_SHA }, base_commit: { sha: OTHER_SHA } }), ...badgeAdvance(BASE_SHA, OTHER_SHA));
+  this.mergeAttempted = ["no changes", "newer base dependency badges"].includes(state);
   if (this.mergeAttempted) this.mergeResponses.push({ command: MERGE });
 });
 

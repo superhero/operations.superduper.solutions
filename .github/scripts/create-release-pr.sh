@@ -58,10 +58,23 @@ else
   }
 
   comparison="$(gh api "repos/$repository/compare/main...$source_sha")" || fail "Could not compare main...$source_sha."
-  jq -e '.ahead_by > 0 and .behind_by == 0' <<<"$comparison" >/dev/null || {
+  jq -e '.ahead_by > 0' <<<"$comparison" >/dev/null || {
     actual="$(jq -r '"ahead_by=\(.ahead_by) behind_by=\(.behind_by)"' <<<"$comparison")"
     fail "The source must contain current main and include unreleased changes; expected ahead_by>0 behind_by=0, actual $actual."
   }
+  if ! jq -e '.behind_by == 0' <<< "$comparison" >/dev/null; then
+    bash "$(dirname "${BASH_SOURCE[0]}")/validate-badge-only-advance.sh" "$repository" \
+      "$(jq -r '.merge_base_commit.sha // empty' <<< "$comparison")" \
+      "$(jq -r '.base_commit.sha // empty' <<< "$comparison")" ||
+      fail 'The source must contain current main except for dependency badge updates; update develop and retry.'
+  fi
+  jq -e '
+    def badge: type == "string" and test("\\A\\.github/badges/version-dependency-[a-z0-9][a-z0-9._-]*\\.svg\\z");
+    .files | type == "array" and any(.[];
+      (.filename | type == "string" and (badge | not)) or
+      (.previous_filename? | type == "string" and (badge | not)))
+  ' <<< "$comparison" >/dev/null ||
+    fail 'The source must include unreleased changes outside dependency badges; badge updates do not create releases.'
 
   active="$(jq -r '[.[] | select(.state == "open" and (.head.ref | startswith("release/")))][0] | if . then "\(.head.ref) (PR #\(.number))" else empty end' <<<"$pulls")"
   [[ -z "$active" ]] || fail "Another release is active: $active."

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Given, Then, When } from "@cucumber/cucumber";
 import { REPOSITORY } from "./support.mjs";
@@ -111,14 +111,36 @@ Given("the dependency branch name is invalid", function ()
   this.dependencyUpdate.invalidBranch = true;
 });
 
+Given("dependency badges will be refreshed with the registry check", function ()
+{
+  this.dependencyUpdate.badges = join(this.automation.root, "badges");
+});
+
 When("dependency status is updated for {string}", function (branch)
 {
   const { response } = this.dependencyUpdate;
   this.dependencyUpdate.branch = branch;
   const allowed = !this.dependencyUpdate.invalidBranch;
   const responses = allowed ? [{ executable: "npm", command: ["outdated", "--json"], ...response }] : [];
-  this.result = this.automation.execute("update-dependency-status.sh", branch ? [branch] : [], responses,
+  const args = branch ? [branch] : [];
+  if (this.dependencyUpdate.badges) args.push(this.dependencyUpdate.badges);
+  this.result = this.automation.execute("update-dependency-status.sh", args, responses,
     { success: null });
+});
+
+Then("the dependency badges reflect the same registry result", function ()
+{
+  assert.equal(this.result.status, 0, this.result.stderr);
+  const colour = this.dependencyUpdate.state === "outdated" ? "#fe7d37" : "#007ec6";
+  for (const slug of ["scope--tool", "another"])
+    assert.ok(readFileSync(join(this.dependencyUpdate.badges, `version-dependency-${slug}.svg`), "utf8")
+      .includes(`fill="${colour}"`));
+});
+
+Then("the failed registry check creates no badges", function ()
+{
+  assert.notEqual(this.result.status, 0);
+  assert.equal(existsSync(this.dependencyUpdate.badges), false);
 });
 
 Then("the workflow reports {string} for that branch", function (message)

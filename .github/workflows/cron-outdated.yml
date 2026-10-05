@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: cron-outdated
+  cancel-in-progress: false
+
 jobs:
   branches:
     name: Discover branches
@@ -68,8 +72,23 @@ jobs:
         working-directory: project
         run: npm ci --ignore-scripts --no-audit --no-fund
 
-      - name: Check outdated dependencies
+      - name: Check dependencies and update badge colours
         working-directory: project
         env:
           STATUS_BRANCH: ${{ matrix.branch }}
-        run: bash "$GITHUB_WORKSPACE/automation/.github/scripts/update-dependency-status.sh" "$STATUS_BRANCH"
+        run: bash "$GITHUB_WORKSPACE/automation/.github/scripts/update-dependency-status.sh" "$STATUS_BRANCH" .github/badges
+
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          permission-contents: write
+
+      - name: Commit changed dependency badges
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          STATUS_BRANCH: ${{ matrix.branch }}
+          STATUS_SHA: ${{ matrix.sha }}
+        run: bash automation/.github/scripts/publish-dependency-badges.sh "$GITHUB_REPOSITORY" "$STATUS_BRANCH" "$STATUS_SHA" project

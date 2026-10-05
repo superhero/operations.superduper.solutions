@@ -22,22 +22,29 @@ fail() {
 [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]] || fail 'The full validated base SHA is required.'
 
 pr="$(gh api "repos/$repository/pulls/$pull_request")" || fail 'Could not read current pull request state.'
-reason="$(jq -er --arg sha "$head_sha" --arg repository "$repository" \
-  --arg base "$base_branch" --arg base_sha "$base_sha" '
+reason="$(jq -er --arg sha "$head_sha" --arg repository "$repository" --arg base "$base_branch" '
   if .state != "open" then "State is \(.state); expected open."
   elif .draft != false then "Draft status is \(.draft); expected false."
   elif .head.repo.full_name != $repository then "Head repository is \(.head.repo.full_name); expected \($repository)."
   elif .head.sha != $sha then "Head changed: expected \($sha), found \(.head.sha); rerun CI."
   elif .base.ref != $base then "Base branch changed: expected \($base), found \(.base.ref); rerun CI."
-  elif .base.sha != $base_sha then "Pull request base changed; update the branch and rerun CI. Expected \($base_sha), found \(.base.sha)."
   else "" end' <<< "$pr")" || fail 'Could not parse current pull request state.'
 [[ -z "$reason" ]] || fail "$reason"
+current_base="$(jq -r '.base.sha // empty' <<< "$pr")"
+if [[ "$current_base" != "$base_sha" ]]; then
+  bash "$(dirname "${BASH_SOURCE[0]}")/validate-badge-only-advance.sh" "$repository" "$base_sha" "$current_base" ||
+    fail "Pull request base changed beyond dependency badges; update the branch and rerun CI. Expected $base_sha, found $current_base."
+fi
 
 if [[ "$base_branch" == main ]]; then
   comparison="$(gh api "repos/$repository/compare/main...$head_sha")" ||
     fail "Could not compare main...$head_sha before merging."
-  jq -e '.behind_by == 0' <<< "$comparison" >/dev/null ||
-    fail "Main changed since this release was built (main...$head_sha reports behind_by=$(jq -r '.behind_by' <<< "$comparison")); update the branch and rerun CI."
+  if ! jq -e '.behind_by == 0' <<< "$comparison" >/dev/null; then
+    bash "$(dirname "${BASH_SOURCE[0]}")/validate-badge-only-advance.sh" "$repository" \
+      "$(jq -r '.merge_base_commit.sha // empty' <<< "$comparison")" \
+      "$(jq -r '.base_commit.sha // empty' <<< "$comparison")" ||
+      fail "Main changed beyond dependency badges since this release was built (main...$head_sha reports behind_by=$(jq -r '.behind_by' <<< "$comparison")); update the branch and rerun CI."
+  fi
 fi
 
 gh pr merge "$pull_request" \

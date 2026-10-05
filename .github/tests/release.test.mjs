@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { API, REPOSITORY, SHA, OTHER_SHA, BASE_SHA, get, post } from "./support.mjs";
+import { badgeAdvance, dependencyBadge } from "./badge-advance.test.mjs";
 
 const PULLS = `${API}/pulls?state=all&base=main&per_page=100`;
 const RUNS = `${API}/actions/workflows/ci-main.yml/runs`;
@@ -31,7 +32,7 @@ function source()
 function createPrefix(tags = [{ name: "0.0.24" }], branches = [])
 {
   return [get(PULLS, []), get(`${API}/pulls/123`, source()),
-    get(`${API}/compare/main...${SHA}`, { ahead_by: 2, behind_by: 0 }),
+    get(`${API}/compare/main...${SHA}`, { ahead_by: 2, behind_by: 0, files: [{ filename: "src/bootstrap.ts" }] }),
     get(`${API}/tags?per_page=100`, tags), get(`${API}/git/matching-refs/heads/`, branches)];
 }
 
@@ -83,6 +84,17 @@ Given("the latest release tag is {string}", function (tag)
     post(`${API}/pulls`, { number: 124 }, { fields: { head: "release/0.0.25", base: "main" } })];
 });
 
+Given("develop has unreleased changes and main has only newer dependency badges", function ()
+{
+  this.releaseQueue = createPrefix();
+  Object.assign(this.releaseQueue[2].response, {
+    behind_by: 1, merge_base_commit: { sha: BASE_SHA }, base_commit: { sha: OTHER_SHA }
+  });
+  this.releaseQueue.splice(3, 0, ...badgeAdvance(BASE_SHA, OTHER_SHA));
+  this.releaseQueue.push(post(`${API}/git/refs`, {}, { fields: { ref: "refs/heads/release/0.0.25", sha: SHA } }),
+    post(`${API}/pulls`, { number: 124 }, { fields: { head: "release/0.0.25", base: "main" } }));
+});
+
 Given("the same release already has {string}", function (existing)
 {
   if(existing === "only its branch")
@@ -121,6 +133,10 @@ Given("release creation encounters {string}", function (conflict)
       const trigger = source();
       trigger.head.sha = OTHER_SHA;
       this.releaseQueue = [get(PULLS, []), get(`${API}/pulls/123`, trigger)];
+      break;
+    case "only dependency badge changes":
+      this.releaseQueue = createPrefix().slice(0, 3);
+      this.releaseQueue[2].response.files = [{ filename: dependencyBadge }];
       break;
     default: assert.fail(`Unknown conflict: ${conflict}`);
   }
@@ -270,9 +286,19 @@ Then("artifact selection reports {string} with the release and commit", function
 
 Given("main contains {string}", function (commit)
 {
-  assert.ok(["this release", "a newer release"].includes(commit));
-  this.releaseCurrent = commit === "this release";
-  this.releaseQueue = [get(`${API}/git/ref/heads/main`, { object: { sha: this.releaseCurrent ? SHA : OTHER_SHA } })];
+  assert.ok(["this release", "a newer release", "only newer dependency badges"].includes(commit));
+  this.releaseCurrent = commit !== "a newer release";
+  this.releaseQueue = [get(`${API}/git/ref/heads/main`, { object: { sha: commit === "this release" ? SHA : OTHER_SHA } })];
+  if (commit !== "this release")
+  {
+    const advance = badgeAdvance(SHA, OTHER_SHA);
+    if (commit === "a newer release")
+    {
+      advance[0].response.commits[0].parents.push({ sha: BASE_SHA });
+      advance.pop();
+    }
+    this.releaseQueue.push(...advance);
+  }
 });
 When("production freshness is checked", function ()
 {

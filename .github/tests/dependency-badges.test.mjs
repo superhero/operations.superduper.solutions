@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Given, Then, When } from "@cucumber/cucumber";
@@ -41,10 +41,23 @@ function save(state)
   writeFileSync(state.manifest, JSON.stringify(state.data));
 }
 
-function generate(world, state, check = false)
+function generate(world, state, check = false, outdated)
 {
   return world.automation.execute("generate-dependency-badges.sh",
-    [state.manifest, state.output, ...(check ? ["--check"] : [])], [], { success: null });
+    [state.manifest, state.output, ...(check ? ["--check"] : outdated ? ["--outdated", outdated] : [])],
+    [], { success: null });
+}
+
+function generateWithOutdated(world, state, data)
+{
+  const path = join(world.automation.root, "outdated.json");
+  writeFileSync(path, typeof data === "string" ? data : JSON.stringify(data));
+  return generate(world, state, false, path);
+}
+
+function badge(world, name = "scope--tool")
+{
+  return readFileSync(join(world.localBadges.output, `version-dependency-${name}.svg`), "utf8");
 }
 
 function snapshot(directory)
@@ -210,6 +223,127 @@ Then("local version badge generation rejects these manifest problems without wri
     for (const text of ["Expected one package manifest", state.manifest, state.output])
       assert.ok(result.stderr.includes(text), result.stderr);
     assert.equal(existsSync(state.output), false, problem);
+  }
+  assert.deepEqual(this.automation.calls(), []);
+});
+
+Given("declared dependencies with supplied outdated metadata", function ()
+{
+  this.localBadges = manifest(this);
+  Object.assign(this.localBadges.data.devDependencies, { current: "1.0.0", omitted: "1.0.0" });
+  save(this.localBadges);
+  this.outdated = {
+    "@scope/tool": { wanted: "1.0.0", latest: "2.0.0" },
+    current: { current: "0.9.0", wanted: "1.0.0", latest: "1.0.0" },
+    unrelated: { current: null, wanted: "1.0.0", latest: "2.0.0" }
+  };
+});
+
+When("local badges are generated from the supplied outdated metadata", function ()
+{
+  this.result = generateWithOutdated(this, this.localBadges, this.outdated);
+});
+
+Then("only declared dependencies behind latest are orange without a registry request", function ()
+{
+  assert.equal(this.result.status, 0, this.result.stderr);
+  assert.ok(badge(this).includes('fill="#fe7d37"'));
+  assert.ok(badge(this).includes("<title>@scope/tool: 1.0.0</title>"));
+  for (const name of ["current", "omitted"])
+    assert.ok(badge(this, name).includes('fill="#007ec6"'));
+  assert.deepEqual(readdirSync(this.localBadges.output).sort(), [
+    "version-dependency-current.svg", "version-dependency-omitted.svg", "version-dependency-scope--tool.svg"
+  ]);
+  assert.deepEqual(this.automation.calls(), []);
+});
+
+Given("generated orange local version badges", function ()
+{
+  this.localBadges = manifest(this);
+  const result = generateWithOutdated(this, this.localBadges,
+    { "@scope/tool": { current: "1.0.0", wanted: "1.0.0", latest: "2.0.0" } });
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(badge(this).includes('fill="#fe7d37"'));
+  this.badgesBefore = snapshot(this.localBadges.output);
+});
+
+Then("local version badges remain orange and unchanged", function ()
+{
+  assert.equal(this.result.status, 0, this.result.stderr);
+  assert.deepEqual(snapshot(this.localBadges.output), this.badgesBefore);
+  assert.deepEqual(this.automation.calls(), []);
+});
+
+When("the orange badge content is modified", function ()
+{
+  writeFileSync(join(this.localBadges.output, "version-dependency-scope--tool.svg"),
+    badge(this).replace('fill="#555"', 'fill="#111"'));
+  this.badgesBefore = snapshot(this.localBadges.output);
+});
+
+When("fresh metadata reports the declared version is current", function ()
+{
+  this.result = generateWithOutdated(this, this.localBadges, {});
+});
+
+Then("the dependency badge is blue", function ()
+{
+  assert.equal(this.result.status, 0, this.result.stderr);
+  assert.ok(badge(this).includes('fill="#007ec6"'));
+  assert.ok(!badge(this).includes('fill="#fe7d37"'));
+  assert.ok(badge(this).includes(`<title>@scope/tool: ${this.localBadges.data.devDependencies["@scope/tool"]}</title>`));
+  assert.deepEqual(this.automation.calls(), []);
+});
+
+Then("invalid outdated metadata is rejected without changing badges:", function (table)
+{
+  const invalid = {
+    "malformed JSON": "{",
+    "multiple JSON objects": "{} {}",
+    "array instead of object": [],
+    "missing wanted version": { "@scope/tool": { current: "1.0.0", latest: "2.0.0" } },
+    "non-string latest version": { "@scope/tool": { current: "1.0.0", wanted: "1.0.0", latest: 2 } },
+    "version control characters": { "@scope/tool": { current: "1.0.0", wanted: "1.0.0", latest: "2.0.0\n" } },
+    "npm error response": { error: { code: "E503", summary: "registry unavailable" } }
+  };
+  for (const { problem } of table.hashes())
+  {
+    assert.ok(Object.hasOwn(invalid, problem));
+    const result = generateWithOutdated(this, this.localBadges, invalid[problem]);
+    assert.notEqual(result.status, 0, problem);
+    for (const text of ["Expected one npm outdated JSON object", this.localBadges.manifest, this.localBadges.output])
+      assert.ok(result.stderr.includes(text), result.stderr);
+    assert.deepEqual(snapshot(this.localBadges.output), this.badgesBefore, problem);
+  }
+  assert.deepEqual(this.automation.calls(), []);
+});
+
+Then("badge generation refuses symlink outputs without changing their targets", function ()
+{
+  const outside = join(this.automation.root, "outside");
+  mkdirSync(outside);
+  const target = join(outside, "version-dependency-scope--tool.svg");
+  writeFileSync(target, "outside sentinel");
+  for (const location of ["directory", "ancestor", "badge"])
+  {
+    const state = manifest(this, join(this.automation.root, location));
+    if (location === "badge")
+    {
+      mkdirSync(state.output);
+      symlinkSync(target, join(state.output, "version-dependency-scope--tool.svg"));
+    }
+    else
+    {
+      symlinkSync(outside, state.output);
+      state.output += location === "ancestor" ? "/nested" : "/";
+    }
+    for (const check of [false, true])
+    {
+      const result = generate(this, state, check);
+      assert.notEqual(result.status, 0, location);
+      assert.ok(result.stderr.includes("symlink"), result.stderr);
+      assert.deepEqual(snapshot(outside), { "version-dependency-scope--tool.svg": "outside sentinel" });
+    }
   }
   assert.deepEqual(this.automation.calls(), []);
 });

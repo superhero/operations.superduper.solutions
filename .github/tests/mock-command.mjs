@@ -21,6 +21,7 @@ try
       const argument = args[index];
       if (argument === "--method") request.method = args[++index];
       else if (argument === "--jq") query = args[++index];
+      else if (argument === "--input") request.body = JSON.parse(readFileSync(args[++index], "utf8"));
       else if (argument === "-f" || argument === "-F")
       {
         const field = args[++index];
@@ -46,6 +47,7 @@ try
     assert.equal(request.method, expected.method ?? "GET");
     assert.equal(request.endpoint, expected.endpoint);
     for (const [key, value] of Object.entries(expected.fields ?? {})) assert.equal(request.fields[key], value);
+    if (expected.body) assert.deepEqual(request.body, expected.body);
   }
   writeFileSync(process.env.MOCK_QUEUE, JSON.stringify(queue));
   appendFileSync(process.env.MOCK_LOG, JSON.stringify(request) + "\n");

@@ -12,6 +12,11 @@ Feature: Release automation
     Then release PR 124 identifies version "0.0.25" and its source commit
     And no release comments are posted
 
+  Scenario: Dependency badge updates on main do not block the next release
+    Given develop has unreleased changes and main has only newer dependency badges
+    When release creation succeeds
+    Then release PR 124 identifies version "0.0.25" and its source commit
+
   Scenario Outline: Retry an interrupted or completed release
     Given the same release already has "<existing>"
     When release creation succeeds
@@ -35,6 +40,7 @@ Feature: Release automation
       | a hotfix reserving the version | reserved by an active hotfix |
       | the branch at another commit   | different commit             |
       | an advanced source PR          | no longer matches            |
+      | only dependency badge changes | outside dependency badges    |
 
   Scenario Outline: Preserve GitHub failure reasons and operation context
     Given GitHub rejects "<operation>" with HTTP 503
@@ -137,3 +143,4 @@ Feature: Release automation
       | commit          | decision |
       | this release    | allowed  |
       | a newer release | refused  |
+      | only newer dependency badges | allowed |
