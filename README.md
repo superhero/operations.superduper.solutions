@@ -141,6 +141,12 @@ Provides the type system used by the webpage’s application code and `Svelte`
 components, with `svelte-check` validating workflow data, connections, and
 component properties before integration or release.
 
+> [!NOTE]
+> TypeScript remains on `6.0.3` because `svelte-check` `4.7.6`
+> supports TypeScript 5 and 6 (`^5.0.0 || ^6.0.0`), excluding TypeScript 7.
+> Upgrading to TypeScript 7 requires a compatible `svelte-check` release to
+> preserve the webpage’s Svelte-aware type checking.
+
 ---
 
 <a href="https://www.npmjs.com/package/vite"><img src=".github/badges/version-dependency-vite.svg" alt="vite declared version"></a>
