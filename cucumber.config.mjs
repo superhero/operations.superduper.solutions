@@ -16,6 +16,10 @@ export default {
 
 export const source = {
   ...base,
+  format: [
+    "pretty",
+    "json:tmp/test/cucumber-source.json"
+  ],
   import: [
     "src/application.test.mjs"
   ],

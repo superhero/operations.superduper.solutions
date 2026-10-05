@@ -28,6 +28,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Lint standalone scripts
@@ -121,8 +122,11 @@ jobs:
 
   application:
     name: Test and Build Release
-    needs: validate-pr
+    needs: [validate-pr, workflow-checks]
     if: github.event_name == 'pull_request' && github.head_ref != 'develop'
+    permissions:
+      actions: read
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -146,20 +150,14 @@ jobs:
         run: npm --loglevel=error run typecheck
 
       - name: Source tests with coverage
+        id: source
         run: npm --loglevel=error run test:source:coverage
 
-      - name: Check coverage and prepare status
+      - name: Check coverage and badge
         id: coverage
         run: |
-          npm --loglevel=error run coverage -- --reporter=json-summary
-          value="$(jq -er '.total.statements.pct | numbers' tmp/test/coverage/coverage-summary.json)" || {
-            echo '::error::tmp/test/coverage/coverage-summary.json is missing a numeric total.statements.pct coverage percentage; cannot generate tmp/status/coverage.json.' >&2
-            exit 1
-          }
-          mkdir -p tmp/status
-          jq -n --arg message "${value}%" \
-            '{schemaVersion: 1, label: "Test Coverage", message: $message, color: "brightgreen"}' \
-            > tmp/status/coverage.json
+          npm --loglevel=error run coverage
+          npm --loglevel=error run badges:coverage -- --check
           jq -r '.total | "Coverage: statements \(.statements.pct)%, branches \(.branches.pct)%, functions \(.functions.pct)%, lines \(.lines.pct)%."' \
             tmp/test/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
 
@@ -170,14 +168,15 @@ jobs:
         id: acceptance
         run: npm --loglevel=error run test:acceptance
 
-      - name: Upload failed acceptance report
-        if: failure() && steps.acceptance.outcome == 'failure'
-        continue-on-error: true
+      - name: Upload application test results
+        if: success() || (failure() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure'))
         uses: actions/upload-artifact@v7
         with:
-          name: test-report
-          path: tmp/test/cucumber-test.json
-          if-no-files-found: ignore
+          name: application-test-report
+          path: |
+            tmp/test/cucumber-source.json
+            tmp/test/cucumber-test.json
+          if-no-files-found: error
           overwrite: true
           retention-days: 7
 
@@ -200,13 +199,32 @@ jobs:
           if-no-files-found: error
           overwrite: true
 
-      - name: Upload coverage status
+      - name: Download automation test results
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" \
+            --name automation-test-report --dir tmp/test || {
+            echo "::error::Cannot download artifact 'automation-test-report' from $GITHUB_REPOSITORY run $GITHUB_RUN_ID to 'tmp/test' before generating the combined test report." >&2
+            exit 1
+          }
+
+      - name: Generate combined test report
+        env:
+          REPORT_COMMIT: ${{ github.event.pull_request.head.sha }}
+          REPORT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: npm --loglevel=error run report:tests
+
+      - name: Upload combined test report
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-status
-          path: tmp/status/coverage.json
+          name: test-report
+          path: tmp/test-report.html
           if-no-files-found: error
           overwrite: true
+
+      - name: Check scenario badge
+        run: npm --loglevel=error run badges:scenarios -- --check
 
   auto-merge:
     name: Auto Merge
@@ -412,7 +430,7 @@ jobs:
         env:
           SOURCE_RUN_ID: ${{ steps.release.outputs.run_id }}
         run: |
-          for artifact in bundle:dist coverage:tmp/coverage coverage-status:tmp/status; do
+          for artifact in bundle:dist coverage:tmp/coverage test-report:tmp; do
             name="${artifact%%:*}"
             directory="${artifact#*:}"
             gh run download "$SOURCE_RUN_ID" --repo "$REPOSITORY" --name "$name" --dir "$directory" || {
@@ -484,7 +502,7 @@ jobs:
             exit 1
           }
 
-      - name: Publish coverage report and status
+      - name: Publish test and coverage reports
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_API_TOKEN || secrets.CLOUDFLARE_PAGES_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
@@ -492,7 +510,7 @@ jobs:
           bash .github/scripts/validate-current-release.sh "$REPOSITORY" "$MERGE_SHA"
           bash .github/scripts/publish-status.sh tmp/test-coverage.html test-coverage.html 'text/html; charset=utf-8'
           bash .github/scripts/validate-current-release.sh "$REPOSITORY" "$MERGE_SHA"
-          bash .github/scripts/publish-status.sh tmp/status/coverage.json coverage.json application/json
+          bash .github/scripts/publish-status.sh tmp/test-report.html test-report.html 'text/html; charset=utf-8'
 
       - name: Deployment summary
         env:
@@ -500,3 +518,4 @@ jobs:
           SOURCE_RUN_ID: ${{ steps.release.outputs.run_id }}
         run: |
           echo "Deployed $DEPLOYMENT_URL from CI run #$SOURCE_RUN_ID." >> "$GITHUB_STEP_SUMMARY"
+          echo '[Test results](https://status.operations.superduper.solutions/test-report.html) · [Coverage report](https://status.operations.superduper.solutions/test-coverage.html)' >> "$GITHUB_STEP_SUMMARY"

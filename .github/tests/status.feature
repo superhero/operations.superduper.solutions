@@ -2,20 +2,20 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @automation
-Feature: Publish release status and report dependency versions
+Feature: Publish release reports and report dependency versions
 
-  Scenario Outline: Publish the original file at its stable R2 destination
-    Given a status file for "<key>" with content type "<type>"
+  Scenario Outline: Publish each release report at its stable R2 destination
+    Given a status file for "<key>" with content type "text/html; charset=utf-8"
     When the status is published
     Then R2 receives the file at its configured destination
 
     Examples:
-      | key                | type                     |
-      | coverage.json      | application/json         |
-      | test-coverage.html | text/html; charset=utf-8 |
+      | key                |
+      | test-coverage.html |
+      | test-report.html   |
 
   Scenario Outline: Publishing failures explain the destination without exposing credentials
-    Given a status file for "coverage.json" with content type "application/json"
+    Given a status file for "test-coverage.html" with content type "text/html; charset=utf-8"
     And Cloudflare returns "<response>"
     When the status is published
     Then publishing fails with "<reason>" and destination context
@@ -27,7 +27,7 @@ Feature: Publish release status and report dependency versions
       | invalid JSON           | unsuccessful response           |
 
   Scenario Outline: Missing publishing inputs prevent any request
-    Given a status file for "coverage.json" with content type "application/json"
+    Given a status file for "test-coverage.html" with content type "text/html; charset=utf-8"
     And the publishing input "<input>" is missing
     When the status is published
     Then publishing fails with "<reason>" and destination context

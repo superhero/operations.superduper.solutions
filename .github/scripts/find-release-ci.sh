@@ -66,7 +66,7 @@ while :; do
         gh api --paginate "repos/$repository/actions/runs/$run_id/artifacts?per_page=100" |
           jq -s '[.[].artifacts[] | select(.expired == false) | .name]'
       )" || fail "Could not list artifacts for release CI run $run_id."
-      missing="$(jq -r '["bundle", "coverage", "coverage-status"] - . | join(", ")' <<<"$artifacts")"
+      missing="$(jq -r '["bundle", "coverage", "test-report"] - . | join(", ")' <<<"$artifacts")"
       [[ -z "$missing" ]] || {
         available="$(jq -r 'join(", ")' <<<"$artifacts")"
         fail "Release CI run $run_id is missing required artifacts: $missing; available unexpired artifacts: ${available:-none}."
