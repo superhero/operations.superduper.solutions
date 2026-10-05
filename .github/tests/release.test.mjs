@@ -49,7 +49,7 @@ function ciPrefix(runs = [ciRun()], branch = "release/0.0.25")
 
 function artifacts()
 {
-  return ["bundle", "coverage", "coverage-status"].map(name => ({ name, expired: false }));
+  return ["bundle", "coverage", "test-report"].map(name => ({ name, expired: false }));
 }
 
 function completed(id = 42, conclusion = "success")

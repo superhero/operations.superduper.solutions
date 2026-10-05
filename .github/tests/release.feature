@@ -112,9 +112,10 @@ Feature: Release automation
     And no release output is produced
 
     Examples:
-      | artifact        | condition |
-      | bundle          | expired   |
-      | coverage-status | missing   |
+      | artifact    | condition |
+      | bundle      | expired   |
+      | coverage    | missing   |
+      | test-report | missing   |
 
   Scenario: Wait for CI to appear and finish uploading its reports
     Given release CI appears after a delay and finishes on the next poll
