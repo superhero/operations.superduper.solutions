@@ -11,7 +11,8 @@ on:
 
 concurrency:
   group: release-ci-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  # Keep post-merge publication running when a PR is edited.
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -111,6 +112,15 @@ jobs:
         id: acceptance
         run: npm --loglevel=error run test:acceptance
 
+      - name: Upload tested bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle
+          path: dist
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
       - name: Upload failed acceptance report
         if: failure() && steps.acceptance.outcome == 'failure'
         continue-on-error: true
@@ -124,6 +134,8 @@ jobs:
 
   auto-merge:
     name: Auto Merge
+    outputs:
+      merge_sha: ${{ steps.merge.outputs.merge_sha }}
     concurrency:
       group: merge-${{ github.base_ref }}
       cancel-in-progress: false
@@ -150,6 +162,7 @@ jobs:
           persist-credentials: false
 
       - name: Merge validated pull request
+        id: merge
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           REPOSITORY: ${{ github.repository }}
@@ -159,3 +172,82 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: bash .github/scripts/auto-merge.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA" "$BASE_BRANCH" "$BASE_SHA" "$HEAD_BRANCH"
+
+  preview:
+    name: Deploy Preview
+    needs: auto-merge
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository
+      && !github.event.pull_request.draft
+    concurrency:
+      group: pages-${{ github.base_ref }}
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      PAGES_BRANCH: ${{ github.base_ref }}
+      DEPLOY_SHA: ${{ needs.auto-merge.outputs.merge_sha }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+    steps:
+      - name: Checkout tested automation
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify merged content matches tested bundle
+        env:
+          TESTED_SHA: ${{ github.sha }}
+        run: bash .github/scripts/validate-release-tree.sh "$TESTED_SHA" "$DEPLOY_SHA"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Download tested bundle
+        run: |
+          gh run download "$GITHUB_RUN_ID" --repo "$REPOSITORY" --name bundle --dir dist || {
+            echo "::error::Cannot download tested bundle from $REPOSITORY run $GITHUB_RUN_ID (branch=$PAGES_BRANCH, commit=$DEPLOY_SHA, destination=dist)." >&2
+            exit 1
+          }
+
+      - name: Check preview content and destination
+        id: prepare
+        run: bash .github/scripts/prepare-pages-deployment.sh "$REPOSITORY" "$PAGES_BRANCH" "$DEPLOY_SHA" dist
+
+      - name: Create GitHub App token
+        if: steps.prepare.outputs.skipped == 'false'
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          permission-deployments: write
+
+      - name: Deploy changed preview
+        if: steps.prepare.outputs.deploy == 'true'
+        id: cloudflare
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
+          accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=operations-superduper-solutions --branch="${{ env.PAGES_BRANCH }}" --commit-hash=${{ env.DEPLOY_SHA }} --commit-dirty=false --commit-message=bundle-sha256:${{ steps.prepare.outputs.bundle_hash }}
+
+      - name: Verify and record preview deployment
+        if: >-
+          (success() || (failure() && steps.cloudflare.outcome == 'failure'))
+          && steps.prepare.outputs.skipped == 'false'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BUNDLE_HASH: ${{ steps.prepare.outputs.bundle_hash }}
+          DEPLOYMENT_ID: ${{ steps.cloudflare.outputs.pages-deployment-id || steps.prepare.outputs.deployment_id }}
+          DEPLOYMENT_OUTCOME: ${{ steps.cloudflare.outcome == 'failure' && 'failure' || 'success' }}
+        run: bash .github/scripts/record-pages-deployment.sh "$REPOSITORY" "$PAGES_BRANCH" "$DEPLOY_SHA" "$BUNDLE_HASH" "$DEPLOYMENT_ID" "$DEPLOYMENT_OUTCOME"
