@@ -1,4 +1,4 @@
-## App: [operations.superduper.solutions](https://operations.superduper.solutions)
+## Webpage: [operations.superduper.solutions](https://operations.superduper.solutions)
 
 A browser-based platform for composing OpenAPI operations into reusable workflows.
 
@@ -12,10 +12,19 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 ## Quality Assurance
 
-[![Coverage](.github/badges/test-coverage.svg)](https://status.operations.superduper.solutions/test-coverage.html)
 [![Test Scenarios](.github/badges/test-scenarios.svg)](https://status.operations.superduper.solutions/test-report.html)
 
-## Dependencies
+Shows whether application behavior, build output, and release automation meet
+their tested expectations, helping identify regressions and investigate failures.
+
+---
+
+[![Test Coverage](.github/badges/test-coverage.svg)](https://status.operations.superduper.solutions/test-coverage.html)
+
+Shows which parts of the measured application source are exercised by tests,
+helping identify untested statements, branches, functions, and lines.
+
+## Dependency packages
 
 <a href="https://www.npmjs.com/package/bits-ui"><img src=".github/badges/version-dependency-bits-ui.svg" alt="bits-ui declared version"></a>
 
