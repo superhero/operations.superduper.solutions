@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, readdirSync, renameSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { Given, Then, When } from "@cucumber/cucumber";
 
@@ -75,4 +75,71 @@ Then("the preview fails with {string} and both commit SHAs", function (reason)
   assert.equal(this.previewResult.stdout, "");
   for (const context of [reason, this.previewTarget, this.previewSource])
     assert.ok(this.previewResult.stderr.includes(context), this.previewResult.stderr);
+});
+
+Given("a confirmed release with {string}", function (integration)
+{
+  git(this, "init", "-q", "--initial-branch=main");
+  git(this, "config", "user.name", "Release tree test");
+  git(this, "config", "user.email", "release@example.invalid");
+  git(this, "config", "commit.gpgsign", "false");
+  git(this, "config", "core.filemode", "true");
+  file(this, "application.ts", "original\n");
+  git(this, "commit", "-qm", "Original application");
+  git(this, "checkout", "-qb", "release");
+  file(this, "application.ts", "tested\n");
+  git(this, "commit", "-qm", "Tested release");
+  this.testedReleaseHead = git(this, "rev-parse", "HEAD");
+  git(this, "checkout", "-q", "main");
+  if (integration === "an ordinary merge") git(this, "merge", "--no-ff", "-qm", "Release merge", "release");
+  else if (integration === "a squash with identical trees")
+  {
+    git(this, "merge", "--squash", "release");
+    git(this, "commit", "-qm", "Squashed release");
+  }
+  else git(this, "merge", "--ff-only", "release");
+
+  if (integration === "only dependency badges") file(this, ".github/badges/version-dependency-typescript.svg", "orange\n");
+  if (integration === "unpublished application code") file(this, "application.ts", "untested\n");
+  if (integration === "a quality assurance badge") file(this, ".github/badges/test-scenarios.svg", "changed\n");
+  if (integration === "code renamed into a badge")
+  {
+    const badge = ".github/badges/version-dependency-application.svg";
+    mkdirSync(dirname(join(this.automation.root, badge)), { recursive: true });
+    renameSync(join(this.automation.root, "application.ts"), join(this.automation.root, badge));
+    git(this, "add", "--", "application.ts", badge);
+  }
+  if (integration === "an application mode change")
+  {
+    chmodSync(join(this.automation.root, "application.ts"), 0o755);
+    git(this, "add", "--", "application.ts");
+  }
+  if (integration === "an application symlink")
+  {
+    unlinkSync(join(this.automation.root, "application.ts"));
+    symlinkSync("somewhere-else.ts", join(this.automation.root, "application.ts"));
+    git(this, "add", "--", "application.ts");
+  }
+  if (git(this, "diff", "--cached", "--name-only")) git(this, "commit", "-qm", "Changes during release");
+  this.confirmedReleaseHead = git(this, "rev-parse", "HEAD");
+  this.confirmedReleaseCommit = integration === "an unavailable released commit" ? "f".repeat(40) : this.confirmedReleaseHead;
+  this.releaseTreeFiles = readdirSync(this.automation.root).filter(name => name !== "queue.json").sort();
+});
+
+When("its tree is compared with the tested head", function ()
+{
+  this.releaseTreeResult = this.automation.execute("validate-release-tree.sh",
+    [this.testedReleaseHead, this.confirmedReleaseCommit], [], { success: null });
+});
+
+Then("release tree validation is {string} with {string} and preserves the checkout", function (outcome, reason)
+{
+  assert.equal(this.releaseTreeResult.status === 0, outcome === "accepted", this.releaseTreeResult.stderr);
+  if (outcome === "rejected")
+    for (const context of [reason, this.testedReleaseHead, this.confirmedReleaseCommit])
+      assert.ok(this.releaseTreeResult.stderr.includes(context), this.releaseTreeResult.stderr);
+  assert.equal(git(this, "rev-parse", "HEAD"), this.confirmedReleaseHead);
+  assert.equal(git(this, "status", "--porcelain", "--untracked-files=no"), "");
+  assert.deepEqual(readdirSync(this.automation.root).filter(name => name !== "queue.json").sort(), this.releaseTreeFiles);
+  assert.equal(this.automation.calls().length, 0);
 });

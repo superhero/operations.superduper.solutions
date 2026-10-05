@@ -2,20 +2,17 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 name: ci-main
+run-name: "#${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
 
 on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, edited, ready_for_review]
-  push:
-    branches: [main]
-    paths-ignore:
-      - '.github/badges/version-dependency-*.svg'
 
 concurrency:
-  # Only superseded PR checks are cancelled; deployment must finish independently.
-  group: main-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # A PR update must not interrupt tagging or deployment after the merge.
+  group: main-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -23,7 +20,6 @@ permissions:
 jobs:
   workflow-checks:
     name: Automation Checks
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -67,30 +63,31 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-    if: github.event_name == 'pull_request' && github.head_ref != 'develop'
+    if: github.head_ref != 'develop'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
-      - name: Validate pull request
+      - name: Validate release pull request or retry
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           HEAD_BRANCH: ${{ github.head_ref }}
-          BASE_BRANCH: ${{ github.base_ref }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: bash .github/scripts/validate-pr.sh "$REPOSITORY" "$HEAD_BRANCH" "$BASE_BRANCH" "$HEAD_SHA"
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: bash .github/scripts/validate-release-pr.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_BRANCH" "$HEAD_SHA" "$BASE_SHA"
 
   create-release:
     name: Create Release
     needs: workflow-checks
     if: >-
-      github.event_name == 'pull_request'
-      && github.head_ref == 'develop'
+      github.head_ref == 'develop'
       && github.event.pull_request.head.repo.full_name == github.repository
       && !github.event.pull_request.draft
     concurrency:
@@ -126,7 +123,7 @@ jobs:
   application:
     name: Test and Build Release
     needs: [validate-pr, workflow-checks]
-    if: github.event_name == 'pull_request' && github.head_ref != 'develop'
+    if: github.head_ref != 'develop'
     permissions:
       actions: read
       contents: read
@@ -136,7 +133,7 @@ jobs:
       - name: Checkout release head
         uses: actions/checkout@v7
         with:
-          # Deployment resolves this exact PR head and consumes its artifacts.
+          # The same run promotes these artifacts after confirming the merge.
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
@@ -230,15 +227,18 @@ jobs:
         run: npm --loglevel=error run badges:scenarios -- --check
 
   auto-merge:
-    name: Auto Merge
+    name: Merge Release
     concurrency:
       group: merge-${{ github.base_ref }}
       cancel-in-progress: false
     needs: [workflow-checks, validate-pr, application]
     if: >-
-      github.event_name == 'pull_request'
-      && github.event.pull_request.head.repo.full_name == github.repository
+      github.event.pull_request.head.repo.full_name == github.repository
       && !github.event.pull_request.draft
+    outputs:
+      merge_sha: ${{ steps.release.outputs.merge_sha }}
+      head_branch: ${{ steps.release.outputs.head_branch }}
+      head_sha: ${{ steps.release.outputs.head_sha }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -257,26 +257,27 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
-      - name: Merge validated pull request
+      - name: Confirm merge of validated release
+        id: release
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           REPOSITORY: ${{ github.repository }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          BASE_BRANCH: ${{ github.base_ref }}
+          HEAD_BRANCH: ${{ github.head_ref }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: bash .github/scripts/auto-merge.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA" "$BASE_BRANCH" "$BASE_SHA"
+        run: bash .github/scripts/merge-release-pr.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_BRANCH" "$HEAD_SHA" "$BASE_SHA"
 
   create-release-tag:
     name: Create Release Tag
-    if: github.event_name == 'push'
+    needs: auto-merge
     permissions:
       contents: read
       pull-requests: read
     outputs:
-      pr_number: ${{ steps.release-pr.outputs.pr_number }}
-      head_branch: ${{ steps.release-pr.outputs.head_branch }}
-      head_sha: ${{ steps.release-pr.outputs.head_sha }}
+      merge_sha: ${{ needs.auto-merge.outputs.merge_sha }}
+      head_branch: ${{ needs.auto-merge.outputs.head_branch }}
+      head_sha: ${{ needs.auto-merge.outputs.head_sha }}
     runs-on: ubuntu-latest
 
     steps:
@@ -288,26 +289,29 @@ jobs:
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           permission-contents: write
 
-      - name: Check out merge commit
+      - name: Check out tested head and release history
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.sha }}
+          # Retain the tested head even when a squash merge deleted its branch.
+          ref: ${{ needs.auto-merge.outputs.head_sha }}
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
 
-      - name: Resolve merged release
-        id: release-pr
+      - name: Verify released content before tagging
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
-          MERGE_SHA: ${{ github.sha }}
-        run: bash .github/scripts/find-release-pr.sh "$REPOSITORY" "$MERGE_SHA"
+          HEAD_SHA: ${{ needs.auto-merge.outputs.head_sha }}
+          MERGE_SHA: ${{ needs.auto-merge.outputs.merge_sha }}
+        run: |
+          bash .github/scripts/validate-release-tree.sh "$HEAD_SHA" "$MERGE_SHA"
+          bash .github/scripts/validate-current-release.sh "$REPOSITORY" "$MERGE_SHA"
 
       - name: Create annotated SemVer tag
         shell: bash
         env:
-          HEAD_BRANCH: ${{ steps.release-pr.outputs.head_branch }}
-          MERGE_SHA: ${{ github.sha }}
+          HEAD_BRANCH: ${{ needs.auto-merge.outputs.head_branch }}
+          MERGE_SHA: ${{ needs.auto-merge.outputs.merge_sha }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           BOT_LOGIN: ${{ steps.app-token.outputs.app-slug }}[bot]
         run: |
@@ -367,7 +371,7 @@ jobs:
       - name: Checkout release automation
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.create-release-tag.outputs.merge_sha }}
           persist-credentials: false
 
       - name: Open synchronization PRs
@@ -376,7 +380,7 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           HEAD_BRANCH: ${{ needs.create-release-tag.outputs.head_branch }}
           HEAD_SHA: ${{ needs.create-release-tag.outputs.head_sha }}
-          MERGE_SHA: ${{ github.sha }}
+          MERGE_SHA: ${{ needs.create-release-tag.outputs.merge_sha }}
         run: bash .github/scripts/synchronize-release.sh "$REPOSITORY" "$HEAD_BRANCH" "$HEAD_SHA" "$MERGE_SHA"
 
   promote-release:
@@ -395,13 +399,13 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       REPOSITORY: ${{ github.repository }}
-      MERGE_SHA: ${{ github.sha }}
+      MERGE_SHA: ${{ needs.create-release-tag.outputs.merge_sha }}
 
     steps:
       - name: Checkout release automation
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.create-release-tag.outputs.merge_sha }}
           persist-credentials: false
 
       - name: Set up Node.js
@@ -409,16 +413,9 @@ jobs:
         with:
           node-version-file: .node-version
 
-      - name: Wait for validated release artifacts
-        id: release
-        env:
-          PR_NUMBER: ${{ needs.create-release-tag.outputs.pr_number }}
-          HEAD_SHA: ${{ needs.create-release-tag.outputs.head_sha }}
-        run: bash .github/scripts/find-release-ci.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA"
-
       - name: Download release artifacts
         env:
-          SOURCE_RUN_ID: ${{ steps.release.outputs.run_id }}
+          SOURCE_RUN_ID: ${{ github.run_id }}
         run: |
           for artifact in bundle:dist coverage:tmp/coverage test-report:tmp; do
             name="${artifact%%:*}"
@@ -471,7 +468,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=operations-superduper-solutions --branch=main
+          command: pages deploy dist --project-name=operations-superduper-solutions --branch=main --commit-hash=${{ needs.create-release-tag.outputs.merge_sha }}
 
       - name: Record GitHub deployment
         env:
@@ -505,7 +502,7 @@ jobs:
       - name: Deployment summary
         env:
           DEPLOYMENT_URL: ${{ steps.cloudflare.outputs.deployment-url }}
-          SOURCE_RUN_ID: ${{ steps.release.outputs.run_id }}
+          SOURCE_RUN_ID: ${{ github.run_id }}
         run: |
           echo "Deployed $DEPLOYMENT_URL from CI run #$SOURCE_RUN_ID." >> "$GITHUB_STEP_SUMMARY"
           echo '[Test results](https://status.operations.superduper.solutions/test-report.html) · [Coverage report](https://status.operations.superduper.solutions/test-coverage.html)' >> "$GITHUB_STEP_SUMMARY"

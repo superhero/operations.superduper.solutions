@@ -75,7 +75,7 @@ Each CI workflow owns one target branch or branch family:
 - `ci-develop.yml` validates PRs into `develop`.
 - `ci-release.yml` validates PRs into `release/**`.
 - `ci-support.yml` validates PRs into `support/**`.
-- `ci-main.yml` handles PRs into `main` and deploys releases on pushes to `main`.
+- `ci-main.yml` validates, merges, and deploys release PRs into `main` in one run.
 
 The branch workflows define their own triggers, jobs, permissions, and artifact
 handling. Common Gitflow, merge, release, and publishing logic lives in Bash
@@ -141,17 +141,27 @@ release has reserved the patch needed by an urgent hotfix, give the planned
 release a different version first. Release and hotfix branches cannot share a
 version; synchronization does not rename releases or change version policy.
 
-The same `ci-main.yml` deploys when `main` changes, excluding pushes that only
-update dependency-version SVGs. PR checks and post-merge
-deployment run separately, with event guards keeping their jobs independent.
-Only superseded PR runs are cancelled; deployment has its own concurrency.
-Artifact lookup selects the matching PR run, never the deployment run itself.
-The main-push run resolves exactly one merged same-repository release or hotfix
-PR for the pushed commit before tagging. After a fast-forward, it waits briefly
-for GitHub to recognize the indirect merge; an unmerged PR cannot be released.
-Missing or ambiguous release identity fails with context. Closing a release
-trigger PR creates no extra CD run. The workflow tags the release, opens a
-synchronization PR for normal `develop` CI, and promotes its validated artifacts.
+Each release or hotfix PR into `main` follows one continuous `ci-main.yml` run:
+validation and build, confirmed merge, content verification and tagging, then
+deployment and synchronization. The initial `develop` trigger still creates a
+separate versioned release PR so that PR's exact head can be reviewed and tested.
+There is no push-triggered release run.
+
+The merge step waits for GitHub to confirm the exact PR has merged, including
+queued auto-merges and delayed fast-forward recognition. Before tagging, Git
+compares the tested head and actual released trees directly, permitting only
+dependency-version SVG differences. This also verifies squash merges without
+requiring the tested head to be an ancestor of the released commit. Every
+production step uses the confirmed merge SHA; the PR's synthetic merge commit
+is never a deployment reference. Deployment consumes the bundle and reports
+from successful jobs in the same run, without waiting for the whole run to finish.
+
+Runs are serialized per PR and are not cancelled by newer PR events, because an
+earlier run may already be deploying. Merge and production jobs retain their own
+serialization. Current PR state is checked before merging, and unmerged,
+retargeted, forked, or advanced PRs cannot supply release identity. The workflow
+tags the release, opens any needed synchronization PR for normal `develop` CI,
+and promotes its validated artifacts.
 After a production hotfix, the same synchronization job also opens a PR into
 the active release, if one exists. It uses the tagged main revision so the
 release includes the production history required by its final main CI. A deleted
@@ -167,13 +177,16 @@ the content already matches; it skips only when `develop` already contains
 commit whenever possible.
 `ci-release.yml` validates and merges the synchronization PR. Support-line
 destinations remain explicit rather than receiving every production hotfix.
-All production writes share one serialized job. It waits up to ten minutes for the
-matching release CI, checks artifact availability, and rejects superseded
-releases before deployment or status publishing. Dependency-badge-only advances
-do not supersede a release. Intentional rollback is a separate operation.
-Retrying promotion repeats deployment and publishing for
-the current release; retry the main-push run rather than rerunning CI for an
-already merged release.
+Deployment and report publishing share one serialized job and reject superseded
+releases. Dependency-badge-only advances do not supersede a release. Intentional
+rollback is a separate operation.
+Retry failed jobs from the original release PR run to resume a failed promotion.
+Rerunning all jobs is also supported: a matching, already merged PR is validated
+as a retry, its pinned head is rebuilt, and its released tree is verified again.
+The workflow reuses an existing matching tag and never merges the PR twice.
+If a release was merged manually, rerun its original PR workflow to complete
+publication; a direct push does not start deployment. Retries require that
+release to remain current and its source commit and artifacts to be available.
 
 The existing GitHub App (`GH_APP_CLIENT_ID`, `GH_APP_PRIVATE_KEY`) owns PRs,
 merges, tags, dependency-badge commits, and deployment records. Its installation

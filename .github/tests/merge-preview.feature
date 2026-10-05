@@ -28,3 +28,21 @@ Feature: Preview integration by content
       | changes                 | reason                       |
       | conflicting code        | CONFLICT                     |
       | an unavailable commit   | fetch complete history       |
+
+  Scenario Outline: Confirm that the released tree matches the tested artifacts
+    Given a confirmed release with "<integration>"
+    When its tree is compared with the tested head
+    Then release tree validation is "<outcome>" with "<reason>" and preserves the checkout
+
+    Examples:
+      | integration                    | outcome  | reason                         |
+      | a fast-forward                 | accepted |                                |
+      | an ordinary merge              | accepted |                                |
+      | a squash with identical trees  | accepted |                                |
+      | only dependency badges         | accepted |                                |
+      | unpublished application code   | rejected | application.ts                 |
+      | code renamed into a badge      | rejected | application.ts                 |
+      | a quality assurance badge      | rejected | .github/badges/test-scenarios.svg |
+      | an application mode change     | rejected | application.ts                 |
+      | an application symlink         | rejected | application.ts                 |
+      | an unavailable released commit | rejected | fetch complete history         |

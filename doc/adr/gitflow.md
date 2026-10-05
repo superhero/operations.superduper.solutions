@@ -12,6 +12,7 @@ We follow [git-flow (AVH Edition)](https://github.com/petervanderdoes/gitflow-av
 - Feature and bugfix PRs into `develop`, and production hotfix PRs into `main`, fast-forward when they contain one commit and the target is its ancestor; otherwise they squash.
 - Release publication and synchronization of released code prefer fast-forward, falling back to a merge commit when histories have diverged. Synchronization preserves ancestry, including when both branches already have identical content.
 - The automation App selects the merge method after CI passes. Fast-forward updates use the exact tested head without force; shared branches are never rebased. Main and develop permit both merge and squash for the fallback paths.
+- Release PR validation, confirmed merge, tagging, deployment, and synchronization share one workflow run. Publication uses that run's validated artifacts and the actual merged commit; retries preserve those identities.
 - Release preparation incorporates current `main` into a branch created from `develop` when needed. A release requires actual changes beyond dependency badges.
 - One release and one hotfix may be active at a time.
 - Release and hotfix versions must be distinct. Automatic releases currently reserve the next patch; if an urgent hotfix needs that version, renumber the pending release before proceeding.

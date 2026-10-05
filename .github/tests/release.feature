@@ -62,103 +62,51 @@ Feature: Release automation
       | operation                 | reason                                      |
       | listing releases          | Could not list pull requests targeting main |
       | opening the release PR    | Could not open release PR                   |
-      | finding release artifacts | Could not list artifacts                    |
 
-  Scenario Outline: Resolve a pushed release without confusing the develop trigger
-    Given the pushed commit has a merged "<branch>" PR after a develop PR on another page
-    When the pushed release is resolved
-    Then only PR 124 and its validated "<branch>" head are returned
-
-    Examples:
-      | branch         |
-      | release/0.0.25 |
-      | hotfix/0.0.25  |
-
-  Scenario Outline: Resolve a fast-forward without changing the tested artifact identity
-    Given the pushed "<branch>" head is recognized as merged "<timing>"
-    When the pushed release is resolved
-    Then only PR 124 and its validated "<branch>" head are returned
+  Scenario Outline: Continue the exact release PR through validation and publication
+    Given release PR "<branch>" is "<condition>" during "<operation>"
+    When release PR orchestration runs
+    Then the release PR is "<result>" with <writes> GitHub writes
 
     Examples:
-      | branch         | timing                   |
-      | release/0.0.25 | immediately              |
-      | hotfix/0.0.25  | after a delay            |
-      | release/0.0.25 | alongside an abandoned PR |
+      | branch         | condition                              | operation | result    | writes |
+      | release/0.0.25 | open and valid                         | validate  | validated | 0      |
+      | release/0.0.25 | an open draft                          | validate  | validated | 0      |
+      | release/0.0.25 | already merged                         | validate  | confirmed | 0      |
+      | release/0.0.25 | already merged with a delayed merge SHA | validate | confirmed | 0      |
+      | release/0.0.25 | already merged                         | merge     | confirmed | 0      |
+      | hotfix/0.0.25  | already merged                         | merge     | confirmed | 0      |
+      | release/0.0.25 | already merged with newer badges       | merge     | confirmed | 0      |
+      | release/0.0.25 | merged during validation               | validate  | confirmed | 0      |
+      | release/0.0.25 | merged before the merge helper reads it | merge     | confirmed | 0      |
+      | hotfix/0.0.25  | merged despite a merge command error    | merge     | confirmed | 1      |
+      | hotfix/0.0.25  | queued before it merges                | merge     | confirmed | 1      |
+      | release/0.0.25 | fast-forwarded by the merge helper      | merge     | confirmed | 1      |
 
-  Scenario Outline: Refuse an untrusted or ambiguous pushed release
-    Given the pushed commit has "<association>"
-    When the pushed release is refused
-    Then release identity reports "<reason>" with the pushed commit
-    And no release output or GitHub writes are produced
-
-    Examples:
-      | association                              | reason               |
-      | a different merge commit                 | found 0              |
-      | a fork PR                                | found 0              |
-      | two matching PRs                         | found 2              |
-      | two fast-forward candidates              | found 2              |
-      | an unrecognized fast-forward             | Timed out            |
-      | a fast-forward PR closed without merging | not a merged release |
-      | an advanced fast-forward PR              | no longer identifies |
-      | a recognition API failure                | Could not read PR    |
-
-  Scenario Outline: Select only the tested release PR build
-    Given a merged "<branch>" PR has these CI runs
-      | id | event        | branch  | commit  | PR    |
-      | 42 | pull_request | release | tested  | 124   |
-      | 43 | pull_request | develop | tested  | 124   |
-      | 44 | pull_request | release | other   | 124   |
-      | 45 | pull_request | release | tested  | 999   |
-      | 46 | push         | release | tested  | 124   |
-    And release CI run 42 succeeded with all required artifacts
-    When release artifacts are selected
-    Then only release CI run 42 supplies artifacts
+  Scenario Outline: Refuse changed identities and unconfirmed release publication
+    Given release PR orchestration encounters "<condition>" during "<operation>"
+    When release PR orchestration runs
+    Then release PR orchestration refuses "<reason>" with <writes> GitHub writes
 
     Examples:
-      | branch         |
-      | release/0.0.25 |
-      | hotfix/0.0.25  |
-
-  Scenario: A deployment run cannot supply its own artifacts
-    Given a merged "release/0.0.25" PR has these CI runs
-      | id | event | branch  | commit | PR  |
-      | 42 | push  | release | tested | 124 |
-    When release artifact selection is refused
-    Then artifact selection reports "Timed out" with the release and commit
-    And no release output is produced
-
-  Scenario: Never fall back to an older build when the newest run fails
-    Given a merged "release/0.0.25" PR has these CI runs
-      | id | event        | branch  | commit | PR  |
-      | 41 | pull_request | release | tested | 124 |
-      | 42 | pull_request | release | tested | 124 |
-    And release CI run 42 finished with "failure"
-    When release artifact selection is refused
-    Then artifact selection reports "finished with failure" with the release and commit
-    And no release output is produced
-
-  Scenario Outline: Require every release artifact to remain available
-    Given release CI succeeded but "<artifact>" is "<condition>"
-    When release artifact selection is refused
-    Then artifact selection reports "missing required artifacts: <artifact>" with the release and commit
-    And no release output is produced
-
-    Examples:
-      | artifact    | condition |
-      | bundle      | expired   |
-      | coverage    | missing   |
-      | test-report | missing   |
-
-  Scenario: Wait for CI to appear and finish uploading its reports
-    Given release CI appears after a delay and finishes on the next poll
-    When release artifacts are selected
-    Then only release CI run 42 supplies artifacts
-
-  Scenario: Unmerged PRs cannot provide deployment artifacts
-    Given the release PR has not merged
-    When release artifact selection is refused
-    Then artifact selection reports "not a merged release" with the release and commit
-    And no release output is produced
+      | condition                          | operation | reason                    | writes |
+      | a source fork                      | validate  | identity changed          | 0      |
+      | a target fork                      | merge     | identity changed          | 0      |
+      | a changed source branch            | validate  | identity changed          | 0      |
+      | a changed source commit            | merge     | identity changed          | 0      |
+      | a changed target branch            | validate  | identity changed          | 0      |
+      | a closed unmerged PR               | merge     | closed without merging    | 0      |
+      | a draft PR                         | merge     | draft                     | 0      |
+      | an invalid actual merge SHA        | merge     | valid actual merge SHA    | 0      |
+      | a missing actual merge SHA         | merge     | Timed out                 | 0      |
+      | a superseded merged release        | validate  | no longer current         | 0      |
+      | a failed version validation        | validate  | already exists            | 0      |
+      | a failed validation API            | validate  | gh: HTTP 503              | 0      |
+      | an unavailable PR API              | validate  | gh: HTTP 503              | 0      |
+      | a failed merge command             | merge     | gh: HTTP 503              | 1      |
+      | a merge that remains queued        | merge     | Timed out                 | 1      |
+      | an identity change while waiting   | merge     | identity changed          | 1      |
+      | an unavailable confirmation API    | merge     | gh: HTTP 503              | 1      |
 
   Scenario Outline: Publish only the release currently on main
     Given main contains "<commit>"
