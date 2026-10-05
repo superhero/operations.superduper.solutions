@@ -106,14 +106,6 @@ workflow editor, navigation, and controls into browser JavaScript and CSS.
 
 ---
 
-<a href="https://www.npmjs.com/package/tailwind-merge"><img src=".github/badges/version-dependency-tailwind-merge.svg" alt="tailwind-merge declared version"></a>
-
-An optional peer of `tailwind-variants` in the webpage’s styling stack, with no
-current application usage. Class merging is provided by the installed
-`tailwind-variants` and `cn` implementations.
-
----
-
 <a href="https://www.npmjs.com/package/tailwind-variants"><img src=".github/badges/version-dependency-tailwind-variants.svg" alt="tailwind-variants declared version"></a>
 
 Defines the webpage’s reusable component styles through its `shadcn-svelte`
