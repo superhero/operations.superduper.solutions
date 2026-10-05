@@ -5,7 +5,18 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 ## Development status
 
 [![Develop CI](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-develop.yml?label=Develop%20CI)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-develop.yml)
+
+Validates incoming changes before merging them into `develop`, checking branch
+policy, types, tests, and build output. Keeps feature work, bug fixes, and
+released changes integrated for the next release.
+
+---
+
 [![Main CI/CD](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-main.yml?label=Main%20CI%2FCD)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-main.yml)
+
+Creates releases from `develop` and validates release and hotfix pull requests
+before merging into `main`. Tags and deploys validated releases, publishes test
+and coverage reports, and synchronizes released changes back to `develop`.
 
 > [!NOTE]
 > This project is under active development and is currently in a pre-release state.
@@ -14,15 +25,17 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 [![Test Scenarios](.github/badges/test-scenarios.svg)](https://status.operations.superduper.solutions/test-report.html)
 
-Shows whether application behavior, build output, and release automation meet
-their tested expectations, helping identify regressions and investigate failures.
+Test coverage of the application behavior, build output, and release automation,
+showing which expected outcomes are verified and which scenarios fail, with
+details to help investigate regressions.
 
 ---
 
 [![Test Coverage](.github/badges/test-coverage.svg)](https://status.operations.superduper.solutions/test-coverage.html)
 
-Shows which parts of the measured application source are exercised by tests,
-helping identify untested statements, branches, functions, and lines.
+Code coverage of the measured application source, showing which statements,
+branches, functions, and lines are exercised by tests and where additional
+tests are needed.
 
 ## Dependency packages
 
