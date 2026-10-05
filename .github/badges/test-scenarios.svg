@@ -1,13 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="157" height="20" role="img" aria-label="Scenarios: 105 passed">
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="20" role="img" aria-label="Test Scenarios: 171 passed">
   <!-- Copyright (C) 2026 Erik Landvall; SPDX-License-Identifier: AGPL-3.0-only. See LICENSE and LICENSE-ADDITIONAL-TERMS. -->
-  <title>Scenarios: 105 passed</title>
-  <clipPath id="round"><rect width="157" height="20" rx="3"/></clipPath>
+  <title>Test Scenarios: 171 passed</title>
+  <clipPath id="round"><rect width="192" height="20" rx="3"/></clipPath>
   <g clip-path="url(#round)">
-    <rect width="75" height="20" fill="#555"/>
-    <rect x="75" width="82" height="20" fill="#4c1"/>
+    <rect width="110" height="20" fill="#555"/>
+    <rect x="110" width="82" height="20" fill="#4c1"/>
   </g>
   <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans Mono,monospace" font-size="11">
-    <text x="37" y="14">Scenarios</text>
-    <text x="116" y="14">105 passed</text>
+    <text x="55" y="14">Test Scenarios</text>
+    <text x="151" y="14">171 passed</text>
   </g>
 </svg>

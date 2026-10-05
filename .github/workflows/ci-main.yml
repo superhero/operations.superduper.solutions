@@ -9,6 +9,8 @@ on:
     types: [opened, synchronize, reopened, edited, ready_for_review]
   push:
     branches: [main]
+    paths-ignore:
+      - '.github/badges/version-dependency-*.svg'
 
 concurrency:
   # Only superseded PR checks are cancelled; deployment must finish independently.
@@ -272,6 +274,7 @@ jobs:
       pull-requests: read
     outputs:
       pr_number: ${{ steps.release-pr.outputs.pr_number }}
+      head_branch: ${{ steps.release-pr.outputs.head_branch }}
       head_sha: ${{ steps.release-pr.outputs.head_sha }}
     runs-on: ubuntu-latest
 
@@ -342,7 +345,7 @@ jobs:
           }
 
   backmerge-develop:
-    name: Synchronize Develop
+    name: Synchronize Released Code
     needs: create-release-tag
     concurrency:
       group: post-release-backmerge
@@ -357,37 +360,23 @@ jobs:
         with:
           client-id: ${{ vars.GH_APP_CLIENT_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          permission-contents: read
+          permission-contents: write
           permission-pull-requests: write
 
-      - name: Open synchronization PR
+      - name: Checkout release automation
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Open synchronization PRs
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           REPOSITORY: ${{ github.repository }}
-        run: |
-          behind_by="$(gh api "repos/$REPOSITORY/compare/main...develop" --jq '.behind_by')" || {
-            echo "::error::Cannot compare main...develop in $REPOSITORY before synchronization." >&2
-            exit 1
-          }
-          if [[ "$behind_by" == "0" ]]; then
-            exit 0
-          fi
-          pr_url="$(gh api --method GET "repos/$REPOSITORY/pulls" \
-            -f state=open -f base=develop -f "head=${REPOSITORY%%/*}:main" \
-            --jq '.[0].html_url // empty')" || {
-            echo "::error::Cannot find an open synchronization PR in $REPOSITORY (head=main, base=develop)." >&2
-            exit 1
-          }
-          if [[ -z "$pr_url" ]]; then
-            pr_url="$(gh api --method POST "repos/$REPOSITORY/pulls" \
-              -f base=develop -f head=main -f title="Synchronize main into develop" \
-              -f body="Synchronize released code. CI validates and merges this PR." \
-              --jq '.html_url')" || {
-              echo "::error::Cannot create synchronization PR in $REPOSITORY (head=main, base=develop, behind_by=$behind_by)." >&2
-              exit 1
-            }
-          fi
-          echo "Synchronization: $pr_url" >> "$GITHUB_STEP_SUMMARY"
+          HEAD_BRANCH: ${{ needs.create-release-tag.outputs.head_branch }}
+          HEAD_SHA: ${{ needs.create-release-tag.outputs.head_sha }}
+          MERGE_SHA: ${{ github.sha }}
+        run: bash .github/scripts/synchronize-release.sh "$REPOSITORY" "$HEAD_BRANCH" "$HEAD_SHA" "$MERGE_SHA"
 
   promote-release:
     name: Promote Release

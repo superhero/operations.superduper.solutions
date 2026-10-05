@@ -47,3 +47,45 @@ Feature: Dependency version badges travel with their branch
       | package control characters |
       | scoped filename collision  |
       | version control characters |
+
+  Scenario: Supplied latest versions colour only outdated declared dependencies orange
+    Given declared dependencies with supplied outdated metadata
+    When local badges are generated from the supplied outdated metadata
+    Then only declared dependencies behind latest are orange without a registry request
+
+  Scenario: Ordinary checks and generation preserve only canonical orange badges
+    Given generated orange local version badges
+    When local version badges are checked
+    Then local version badges remain orange and unchanged
+    When local version badges are generated
+    Then local version badges remain orange and unchanged
+    When the orange badge content is modified
+    And local version badges are checked
+    Then the check reports a stale badge with regeneration instructions without changing files
+
+  Scenario: A fresh current observation clears a previous orange badge
+    Given generated orange local version badges
+    When fresh metadata reports the declared version is current
+    Then the dependency badge is blue
+
+  Scenario: Changing a displayed version resets a previous orange badge to blue
+    Given generated orange local version badges
+    When a dependency version changes in the manifest
+    And local version badges are regenerated and checked
+    Then the local badge check succeeds with the updated version
+    And the dependency badge is blue
+
+  Scenario: Invalid registry metadata cannot change existing local badges
+    Given generated orange local version badges
+    Then invalid outdated metadata is rejected without changing badges:
+      | problem                    |
+      | malformed JSON             |
+      | multiple JSON objects      |
+      | array instead of object    |
+      | missing wanted version     |
+      | non-string latest version  |
+      | version control characters |
+      | npm error response         |
+
+  Scenario: Symlink badge output cannot touch files outside its directory
+    Then badge generation refuses symlink outputs without changing their targets

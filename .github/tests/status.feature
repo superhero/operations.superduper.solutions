@@ -95,3 +95,22 @@ Feature: Publish release reports and report dependency versions
     When dependency status is updated for "release/../main"
     Then the dependency status update fails with "Invalid dependency status branch" before external requests
     And no successful dependency report is written
+
+  Scenario Outline: Dependency colours use the same registry check as the branch summary
+    Given the dependency registry reports "<state>"
+    And dependency badges will be refreshed with the registry check
+    When dependency status is updated for "develop"
+    Then the dependency badges reflect the same registry result
+    And temporary registry data is removed
+
+    Examples:
+      | state    |
+      | outdated |
+      | current  |
+
+  Scenario: Registry errors cannot replace dependency badge colours
+    Given the dependency registry reports "failure 1"
+    And dependency badges will be refreshed with the registry check
+    When dependency status is updated for "main"
+    Then the failed registry check creates no badges
+    And no successful dependency report is written

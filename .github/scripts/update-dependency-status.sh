@@ -5,9 +5,10 @@
 set -euo pipefail
 
 branch="${1:-}"
-context="repository='${GITHUB_REPOSITORY:-local}', branch='$branch', manifest='package.json', command='npm outdated --json'"
-[[ $# == 1 ]] || {
-  echo "::error::Usage: update-dependency-status.sh <branch> ($context)." >&2
+badges="${2:-}"
+context="repository='${GITHUB_REPOSITORY:-local}', branch='$branch', manifest='package.json', badges='$badges', command='npm outdated --json'"
+[[ $# == 1 || ( $# == 2 && -n "$badges" ) ]] || {
+  echo "::error::Usage: update-dependency-status.sh <branch> [badge-directory] ($context)." >&2
   exit 1
 }
 if [[ -z "$branch" ]] || ! git check-ref-format "refs/heads/$branch"; then
@@ -54,6 +55,14 @@ if (( status > 1 )) || [[ -n "$validation" ]]; then
     if length == 0 then "npm provided no error summary or stderr." else .[:1000] end
   ' >&2
   exit "$status"
+fi
+
+if [[ -n "$badges" ]]; then
+  scripts="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+  bash "$scripts/generate-dependency-badges.sh" package.json "$badges" --outdated "$temporary/outdated.json" || {
+    echo "::error::Could not update dependency badge colours ($context)." >&2
+    exit 1
+  }
 fi
 
 jq -r --arg branch "$branch" '
