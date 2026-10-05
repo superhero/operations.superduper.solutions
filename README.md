@@ -5,25 +5,17 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 ## Development status
 
 [![Develop CI](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-develop.yml?label=Develop%20CI)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-develop.yml)
-[![Coverage](.github/badges/test-coverage.svg)](https://status.operations.superduper.solutions/test-coverage.html)
-[![Scenarios](.github/badges/test-scenarios.svg)](https://status.operations.superduper.solutions/test-report.html)
 [![Main CI/CD](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-main.yml?label=Main%20CI%2FCD)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-main.yml)
-
-Latest released reports: [test suites](https://status.operations.superduper.solutions/test-report.html)
-and [coverage](https://status.operations.superduper.solutions/test-coverage.html).
 
 > [!NOTE]
 > This project is under active development and is currently in a pre-release state.
 
+## Quality Assurance
+
+[![Coverage](.github/badges/test-coverage.svg)](https://status.operations.superduper.solutions/test-coverage.html)
+[![Test Scenarios](.github/badges/test-scenarios.svg)](https://status.operations.superduper.solutions/test-report.html)
+
 ## Dependencies
-
-Package badges below show the versions declared in this revision's
-[package.json](package.json).
-
-The [dependency workflow](https://github.com/superhero/operations.superduper.solutions/actions/workflows/cron-outdated.yml)
-checks every existing repository branch daily at 06:00 UTC and on manual runs,
-using each branch's commit at discovery time. Open a run's summary to see
-outdated packages and their current, wanted, and latest versions.
 
 <a href="https://www.npmjs.com/package/bits-ui"><img src=".github/badges/version-dependency-bits-ui.svg" alt="bits-ui declared version"></a>
 

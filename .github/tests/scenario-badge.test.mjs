@@ -45,9 +45,9 @@ function badge(world, message, color)
 {
   assert.equal(world.result.status, 0, world.result.stderr);
   assert.deepEqual(JSON.parse(readFileSync(join(world.scenarioBadge.output, "test-scenarios.json"), "utf8")),
-    { schemaVersion: 1, label: "Scenarios", message, color });
+    { schemaVersion: 1, label: "Test Scenarios", message, color });
   const svg = readFileSync(join(world.scenarioBadge.output, "test-scenarios.svg"), "utf8");
-  for (const text of [`aria-label="Scenarios: ${message}"`, `<title>Scenarios: ${message}</title>`, `>${message}</text>`,
+  for (const text of [`aria-label="Test Scenarios: ${message}"`, `<title>Test Scenarios: ${message}</title>`, `>${message}</text>`,
     `fill="${{ brightgreen: "#4c1", orange: "#fe7d37", red: "#e05d44" }[color]}"`])
     assert.ok(svg.includes(text), svg);
   assert.deepEqual(world.automation.calls(), []);

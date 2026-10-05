@@ -38,7 +38,7 @@ After running all three suites, `npm run report:tests` uses
 scenario details, styles, scripts, and fonts; it can be opened offline. Missing
 or invalid suite results stop generation instead of producing a partial report.
 
-The Scenarios badge counts reported test cases across those same three suites,
+The Test Scenarios badge counts reported test cases across those same three suites,
 including each scenario-outline example. Steps are not counted as separate tests.
 After running all suites, `npm run badges:scenarios` updates
 `.github/badges/test-scenarios.json` and its SVG; include them with test changes.
