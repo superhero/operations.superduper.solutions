@@ -341,6 +341,11 @@ Given("release PR orchestration encounters {string} during {string}", function (
       this.releaseQueue.push(releaseRead(open), releaseComparison(), releaseRead(open),
         { command: squashCommand, exit_code: 1, stderr: "gh: HTTP 503\n" }, releaseRead(open), releaseRead(open));
       break;
+    case "an unconfirmed release after helper success":
+      this.releaseTimeout = "30";
+      this.releaseQueue.push(releaseRead(open), releaseComparison(), releaseRead(open),
+        { command: squashCommand }, releaseRead(merged), releaseRead(open));
+      break;
     case "a merge that remains unconfirmed":
     case "an identity change while waiting":
     case "an unavailable confirmation API":

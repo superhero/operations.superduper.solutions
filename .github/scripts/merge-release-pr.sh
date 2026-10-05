@@ -33,16 +33,6 @@ else
 fi
 
 # Recheck the exact merge metadata before authorizing publication.
-while :; do
-  read_merge_pr
-  if is_merged; then
-    confirm_release
-    exit 0
-  fi
-  if (( SECONDS >= deadline )); then
-    fail 'Timed out waiting for the validated release PR to merge; publication requires a confirmed result.'
-  fi
-  remaining=$((deadline - SECONDS))
-  (( remaining < 5 )) || remaining=5
-  sleep "$remaining"
-done
+read_merge_pr
+is_merged || fail 'Release PR is no longer confirmed merged after automatic merging; publication requires a confirmed result.'
+confirm_release

@@ -105,6 +105,7 @@ Feature: Release automation
       | an unavailable PR API              | validate  | gh: HTTP 503              | 0      |
       | a failed merge command             | merge     | gh: HTTP 503              | 1      |
       | a merge that remains unconfirmed    | merge     | Timed out                 | 1      |
+      | an unconfirmed release after helper success | merge | no longer confirmed merged | 1    |
       | an identity change while waiting   | merge     | identity changed          | 1      |
       | an unavailable confirmation API    | merge     | gh: HTTP 503              | 1      |
 
