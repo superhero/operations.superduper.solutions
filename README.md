@@ -21,7 +21,7 @@ changes back to `develop`.
 Validates incoming changes before merging them into `develop`, checking branch
 policy, types, tests, and build output. Keeps feature work, bug fixes, and
 released changes integrated for the next release, then updates the
-[development preview](https://develop.operations-superduper-solutions.pages.dev).
+development preview.
 
 ## Quality Assurance
 
