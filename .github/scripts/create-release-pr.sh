@@ -58,23 +58,15 @@ else
   }
 
   comparison="$(gh api "repos/$repository/compare/main...$source_sha")" || fail "Could not compare main...$source_sha."
-  jq -e '.ahead_by > 0' <<<"$comparison" >/dev/null || {
-    actual="$(jq -r '"ahead_by=\(.ahead_by) behind_by=\(.behind_by)"' <<<"$comparison")"
-    fail "The source must contain current main and include unreleased changes; expected ahead_by>0 behind_by=0, actual $actual."
-  }
-  if ! jq -e '.behind_by == 0' <<< "$comparison" >/dev/null; then
-    bash "$(dirname "${BASH_SOURCE[0]}")/validate-badge-only-advance.sh" "$repository" \
-      "$(jq -r '.merge_base_commit.sha // empty' <<< "$comparison")" \
-      "$(jq -r '.base_commit.sha // empty' <<< "$comparison")" ||
-      fail 'The source must contain current main except for dependency badge updates; update develop and retry.'
-  fi
-  jq -e '
-    def badge: type == "string" and test("\\A\\.github/badges/version-dependency-[a-z0-9][a-z0-9._-]*\\.svg\\z");
-    .files | type == "array" and any(.[];
-      (.filename | type == "string" and (badge | not)) or
-      (.previous_filename? | type == "string" and (badge | not)))
-  ' <<< "$comparison" >/dev/null ||
+  main_sha="$(jq -er '.base_commit.sha | select(test("^[0-9a-f]{40}$"))' <<< "$comparison")" ||
+    fail 'Could not identify the current main commit.'
+  behind_by="$(jq -er '.behind_by | select(type == "number" and . >= 0 and . == floor)' <<< "$comparison")" ||
+    fail "Could not determine whether develop contains main at $main_sha."
+  preview="$(bash "$(dirname "${BASH_SOURCE[0]}")/preview-merge.sh" "$main_sha" "$source_sha")" ||
+    fail "Could not prepare develop with main at $main_sha."
+  jq -e '.substantive_changes == true' <<< "$preview" >/dev/null ||
     fail 'The source must include unreleased changes outside dependency badges; badge updates do not create releases.'
+  expected_tree="$(jq -er '.tree' <<< "$preview")"
 
   active="$(jq -r '[.[] | select(.state == "open" and (.head.ref | startswith("release/")))][0] | if . then "\(.head.ref) (PR #\(.number))" else empty end' <<<"$pulls")"
   [[ -z "$active" ]] || fail "Another release is active: $active."
@@ -104,12 +96,46 @@ else
   )"
   [[ -z "$conflicting" ]] || fail "Another untagged release branch is active: $conflicting; cannot create $release_branch."
   existing_sha="$(jq -r --arg branch "refs/heads/$release_branch" '[.[] | select(.ref == $branch)][0].object.sha // empty' <<<"$branches")"
-  [[ -z "$existing_sha" || "$existing_sha" == "$source_sha" ]] || {
-    fail "$release_branch already exists at a different commit; expected_sha=$source_sha actual_sha=$existing_sha."
+  validate_prepared_release() {
+    jq -e --arg source "$source_sha" --arg main "${2:-$main_sha}" --arg tree "${3:-$expected_tree}" '
+      (.sha | test("^[0-9a-f]{40}$")) and
+      [.parents[].sha] == [$source, $main] and .commit.tree.sha == $tree
+    ' <<< "$1" >/dev/null
   }
+  if [[ -n "$existing_sha" && "$existing_sha" != "$source_sha" ]]; then
+    prepared="$(gh api "repos/$repository/commits/$existing_sha")" ||
+      fail "Could not inspect existing $release_branch at $existing_sha."
+    prepared_main="$(jq -er --arg source "$source_sha" --arg existing "$existing_sha" '
+      select(.sha == $existing and (.parents | type == "array" and length == 2) and
+        .parents[0].sha == $source) | .parents[1].sha | select(test("^[0-9a-f]{40}$"))
+    ' <<< "$prepared")" ||
+      fail "$release_branch already exists at a different commit; expected prepared develop $source_sha, actual_sha=$existing_sha."
+    prepared_tree="$expected_tree"
+    if [[ "$prepared_main" != "$main_sha" ]]; then
+      # An interrupted attempt may have integrated main before its next badge
+      # refresh. Preserve that exact preparation if only badges have advanced.
+      bash "$(dirname "${BASH_SOURCE[0]}")/validate-badge-only-advance.sh" \
+        "$repository" "$prepared_main" "$main_sha" ||
+        fail "$release_branch was prepared against main $prepared_main; current main $main_sha must differ only in dependency badges to retry."
+      prepared_preview="$(bash "$(dirname "${BASH_SOURCE[0]}")/preview-merge.sh" "$prepared_main" "$source_sha")" ||
+        fail "Could not verify prepared $release_branch against develop $source_sha and its original main $prepared_main."
+      prepared_tree="$(jq -er '.tree' <<< "$prepared_preview")" ||
+        fail "Could not identify the expected tree for prepared $release_branch at $existing_sha."
+    fi
+    validate_prepared_release "$prepared" "$prepared_main" "$prepared_tree" ||
+      fail "$release_branch already exists at a different commit; expected develop $source_sha integrated with main $prepared_main and tree $prepared_tree, actual_sha=$existing_sha."
+  fi
   if [[ -z "$existing_sha" ]]; then
     gh api --method POST "repos/$repository/git/refs" \
       -f "ref=refs/heads/$release_branch" -f "sha=$source_sha" >/dev/null || fail "Could not create $release_branch at $source_sha."
+  fi
+  if [[ "$behind_by" != 0 && ( -z "$existing_sha" || "$existing_sha" == "$source_sha" ) ]]; then
+    prepared="$(gh api --method POST "repos/$repository/merges" \
+      -f "base=$release_branch" -f "head=$main_sha" \
+      -f "commit_message=Merge main into $release_branch for source PR #$source_pr ($source_sha)")" ||
+      fail "Could not merge main $main_sha into $release_branch from develop $source_sha."
+    validate_prepared_release "$prepared" ||
+      fail "Prepared $release_branch differs from expected develop $source_sha, main $main_sha, and tree $expected_tree; inspect the branch before retrying."
   fi
 
   release_pr="$(

@@ -17,6 +17,11 @@ Feature: Release automation
     When release creation succeeds
     Then release PR 124 identifies version "0.0.25" and its source commit
 
+  Scenario: A release preserves main ancestry after squash synchronization
+    Given develop has new work after squash synchronization with main
+    When release creation succeeds
+    Then release PR 124 identifies version "0.0.25" and its source commit
+
   Scenario Outline: Retry an interrupted or completed release
     Given the same release already has "<existing>"
     When release creation succeeds
@@ -24,10 +29,12 @@ Feature: Release automation
     And the retry performs <writes> GitHub writes
 
     Examples:
-      | existing          | writes |
-      | an open PR        | 0      |
-      | a merged PR       | 0      |
-      | only its branch   | 1      |
+      | existing                              | writes |
+      | an open PR                            | 0      |
+      | a merged PR                           | 0      |
+      | only its branch                       | 1      |
+      | its prepared integration              | 1      |
+      | its integration before a badge update | 1      |
 
   Scenario Outline: Refuse conflicting release state
     Given release creation encounters "<conflict>"
@@ -36,11 +43,14 @@ Feature: Release automation
     And no release output or GitHub writes are produced
 
     Examples:
-      | conflict                       | reason                       |
-      | a hotfix reserving the version | reserved by an active hotfix |
-      | the branch at another commit   | different commit             |
-      | an advanced source PR          | no longer matches            |
-      | only dependency badge changes | outside dependency badges    |
+      | conflict                              | reason                      |
+      | a hotfix reserving the version         | reserved by an active hotfix |
+      | the branch at another commit          | different commit            |
+      | an advanced source PR                 | no longer matches           |
+      | only dependency badge changes         | outside dependency badges   |
+      | already released content after squash | outside dependency badges |
+      | a prepared branch with another tree   | different commit            |
+      | main code changing after preparation  | dependency badges           |
 
   Scenario Outline: Preserve GitHub failure reasons and operation context
     Given GitHub rejects "<operation>" with HTTP 503
@@ -64,6 +74,17 @@ Feature: Release automation
       | release/0.0.25 |
       | hotfix/0.0.25  |
 
+  Scenario Outline: Resolve a fast-forward without changing the tested artifact identity
+    Given the pushed "<branch>" head is recognized as merged "<timing>"
+    When the pushed release is resolved
+    Then only PR 124 and its validated "<branch>" head are returned
+
+    Examples:
+      | branch         | timing                   |
+      | release/0.0.25 | immediately              |
+      | hotfix/0.0.25  | after a delay            |
+      | release/0.0.25 | alongside an abandoned PR |
+
   Scenario Outline: Refuse an untrusted or ambiguous pushed release
     Given the pushed commit has "<association>"
     When the pushed release is refused
@@ -71,10 +92,15 @@ Feature: Release automation
     And no release output or GitHub writes are produced
 
     Examples:
-      | association                | reason                  |
-      | a different merge commit   | found 0                 |
-      | a fork PR                  | found 0                 |
-      | two matching PRs           | found 2                 |
+      | association                              | reason               |
+      | a different merge commit                 | found 0              |
+      | a fork PR                                | found 0              |
+      | two matching PRs                         | found 2              |
+      | two fast-forward candidates              | found 2              |
+      | an unrecognized fast-forward             | Timed out            |
+      | a fast-forward PR closed without merging | not a merged release |
+      | an advanced fast-forward PR              | no longer identifies |
+      | a recognition API failure                | Could not read PR    |
 
   Scenario Outline: Select only the tested release PR build
     Given a merged "<branch>" PR has these CI runs

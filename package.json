@@ -19,8 +19,8 @@
     "coverage": "c8 report --all --src=src --include=src/**/*.ts --exclude=src/index.ts --exclude=src/**/*.d.ts --exclude='src/lib/components/ui/**' --exclude=src/lib/utils.ts --extension=.ts --reporter=html --reporter=json --reporter=json-summary --reporter=text-summary --reports-dir=tmp/test/coverage --temp-directory=tmp/test/coverage/v8 --check-coverage --statements 100 --branches 100 --functions 100 --lines 100"
   },
   "devDependencies": {
-    "@cucumber/cucumber": "13.2.1",
-    "@lucide/svelte": "1.50.0",
+    "@cucumber/cucumber": "13.3.0",
+    "@lucide/svelte": "1.52.0",
     "@sveltejs/vite-plugin-svelte": "7.3.1",
     "@tailwindcss/vite": "4.3.3",
     "@xyflow/svelte": "1.7.0",
