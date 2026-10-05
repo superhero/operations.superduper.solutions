@@ -5,20 +5,25 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 ## Development status
 
 [![Develop CI](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-develop.yml?label=Develop%20CI)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-develop.yml)
-![Coverage](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.operations.superduper.solutions%2Fcoverage.json)
+[![Coverage](.github/badges/test-coverage.svg)](https://status.operations.superduper.solutions/test-coverage.html)
+[![Scenarios](.github/badges/test-scenarios.svg)](https://status.operations.superduper.solutions/test-report.html)
 [![Main CI/CD](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-main.yml?label=Main%20CI%2FCD)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-main.yml)
+
+Latest released reports: [test suites](https://status.operations.superduper.solutions/test-report.html)
+and [coverage](https://status.operations.superduper.solutions/test-coverage.html).
 
 > [!NOTE]
 > This project is under active development and is currently in a pre-release state.
 
 ## Dependencies
 
-[![Main dependencies](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.operations.superduper.solutions%2Fversion-dependencies.json&label=Main%20dependencies&cacheSeconds=300)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/cron-outdated.yml)
-[![Develop dependencies](https://img.shields.io/endpoint?url=https%3A%2F%2Fstatus.operations.superduper.solutions%2Fdevelop%2Fversion-dependencies.json&label=Develop%20dependencies&cacheSeconds=300)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/cron-outdated.yml)
-
 Package badges below show the versions declared in this revision's
-[package.json](package.json). The summaries above show the last scheduled or
-manual dependency check for the named branches.
+[package.json](package.json).
+
+The [dependency workflow](https://github.com/superhero/operations.superduper.solutions/actions/workflows/cron-outdated.yml)
+checks every existing repository branch daily at 06:00 UTC and on manual runs,
+using each branch's commit at discovery time. Open a run's summary to see
+outdated packages and their current, wanted, and latest versions.
 
 <a href="https://www.npmjs.com/package/bits-ui"><img src=".github/badges/version-dependency-bits-ui.svg" alt="bits-ui declared version"></a>
 
