@@ -91,6 +91,25 @@ Auto-merges are serialized per target branch and bind both the tested head and
 base commit. A target advancement is accepted only when every intervening change
 is to a dependency-version SVG. Other changes require fresh validation before
 merging; the tested head must always match exactly.
+Feature and bugfix PRs into `develop`, and `hotfix/*` PRs into `main`,
+fast-forward when they contain exactly one commit ahead of the current target
+and that target is an ancestor; otherwise the App squash-merges them.
+Release publication and synchronization of released code prefer fast-forward,
+falling back to a merge commit when histories have diverged. The shared helper
+selects the method from the current PR's source and target branches.
+Both `develop` and `main` PR rules permit merge and squash. GitHub has no
+fast-forward PR merge method, so the App updates the target ref without force
+after CI passes, using the exact tested head and rechecking the PR before writing.
+It waits for GitHub to recognize the PR as merged. Shared branches are never
+rebased, and force-push protection still applies to the App.
+
+Before creating a release, automation previews the integration of `develop` and `main`
+and rejects conflicts or changes limited to dependency badges. It creates the
+release branch from the pinned `develop` revision, incorporates pinned `main`,
+then validates and builds that release head through the usual CI flow.
+If the preview reports a conflict, prepare the release branch from `develop`,
+merge `main` into it locally, resolve the conflict, and open its PR into `main`.
+Automation never guesses which conflicting changes to retain.
 
 Release CI builds the exact head commit, requires full coverage, and uploads
 `bundle`, `coverage`, and the combined HTML `test-report` before auto-merge. All
@@ -128,16 +147,24 @@ deployment run separately, with event guards keeping their jobs independent.
 Only superseded PR runs are cancelled; deployment has its own concurrency.
 Artifact lookup selects the matching PR run, never the deployment run itself.
 The main-push run resolves exactly one merged same-repository release or hotfix
-PR for the pushed commit before tagging;
-missing or ambiguous release identity fails with context. Closing a release
+PR for the pushed commit before tagging. After a fast-forward, it waits briefly
+for GitHub to recognize the indirect merge; an unmerged PR cannot be released.
+Missing or ambiguous release identity fails with context. Closing a release
 trigger PR creates no extra CD run. The workflow tags the release, opens a
 synchronization PR for normal `develop` CI, and promotes its validated artifacts.
 After a production hotfix, the same synchronization job also opens a PR into
-the active release, if one exists. It uses the tagged main merge commit so the
+the active release, if one exists. It uses the tagged main revision so the
 release includes the production history required by its final main CI. A deleted
-hotfix branch is restored at that revision; a surviving branch is advanced only
-from its original tested head, without forcing or discarding other commits.
+hotfix branch is restored at that revision. A surviving branch containing only
+the tested hotfix and later dependency badges is merged with the released
+revision, preserving its commits after a squash release. The resulting branch
+must contain the released revision and differ only in dependency badges.
+Unexpected code changes stop synchronization without discarding those commits.
 Retries reuse an open PR or skip a release that already contains the fix.
+Synchronization into `develop` also preserves missing release ancestry when
+the content already matches; it skips only when `develop` already contains
+`main`. Fast-forward synchronization then leaves both branches at the same
+commit whenever possible.
 `ci-release.yml` validates and merges the synchronization PR. Support-line
 destinations remain explicit rather than receiving every production hotfix.
 All production writes share one serialized job. It waits up to ten minutes for the

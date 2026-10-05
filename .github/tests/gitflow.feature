@@ -96,6 +96,8 @@ Feature: Gitflow validation and guarded merging
       | awaiting its tag | support/1.x   | code    | rejected | outside its released version |
       | awaiting its tag | release/1.3.0 | badge   | accepted |                              |
       | with a tag       | support/1.x   | badge   | accepted |                              |
+      | with a tag       | release/1.3.0 | reconciliation | accepted |                       |
+      | awaiting its tag | develop       | reconciliation | accepted |                       |
 
   Scenario Outline: Released hotfixes cannot import another release line into support
     Given hotfix "2.0.1" was released "with a tag"
@@ -155,7 +157,58 @@ Feature: Gitflow validation and guarded merging
       | a newer base commit  | rejected | Pull request base changed         |
       | newer base dependency badges | accepted |                              |
       | a fork as its source | rejected | Head repository                   |
+      | no source branch     | rejected | Source branch is missing          |
+      | an empty source branch | rejected | Source branch is missing        |
+      | a non-string source branch | rejected | Source branch is missing    |
+      | an invalid source branch | rejected | Invalid source branch         |
       | fallen behind main   | rejected | Main changed                      |
+
+  Scenario Outline: Automatic merging chooses the policy for the current branch route
+    Given the validated pull request merges "<head>" into "<base>" with <ahead> commits ahead and <behind> behind using "<method>"
+    When automatic merging runs
+    Then automatic merging is "accepted"
+
+    Examples:
+      | head           | base          | ahead | behind | method       |
+      | feature/editor | develop       | 1     | 0      | fast-forward |
+      | feature/editor | develop       | 2     | 0      | squash       |
+      | bugfix/editor  | develop       | 1     | 0      | fast-forward |
+      | bugfix/editor  | develop       | 1     | 1      | squash       |
+      | main           | develop       | 2     | 0      | fast-forward |
+      | main           | develop       | 2     | 1      | merge        |
+      | release/1.2.3  | develop       | 2     | 0      | fast-forward |
+      | hotfix/1.2.4   | develop       | 2     | 1      | merge        |
+      | hotfix/1.2.4   | main          | 1     | 0      | fast-forward |
+      | hotfix/1.2.4   | main          | 2     | 0      | squash       |
+      | hotfix/1.2.4   | main          | 1     | 1      | squash       |
+      | release/1.2.3  | main          | 2     | 0      | fast-forward |
+      | release/1.2.3  | main          | 2     | 1      | merge        |
+      | hotfix/1.2.4   | release/1.3.0 | 2     | 0      | fast-forward |
+      | hotfix/1.2.4   | release/1.3.0 | 2     | 1      | merge        |
+      | hotfix/1.2.4   | support/1.x   | 2     | 0      | fast-forward |
+      | hotfix/1.2.4   | support/1.x   | 2     | 1      | merge        |
+
+  Scenario Outline: Fast-forwarding verifies its inputs and confirms GitHub recognized the merged PR
+    Given a possible fast-forward encounters "<state>"
+    When automatic merging runs
+    Then automatic merging is "<outcome>"
+    And the merge error explains "<reason>"
+
+    Examples:
+      | state                                  | outcome  | reason                           |
+      | incomplete comparison metadata         | rejected | Invalid comparison metadata      |
+      | a comparison of another base           | rejected | Invalid comparison metadata      |
+      | fractional commit counts               | rejected | Invalid comparison metadata      |
+      | inconsistent commit counts             | rejected | Invalid comparison metadata      |
+      | a changed head before writing          | rejected | Head changed                     |
+      | a changed source branch before writing | rejected | Source branch or base commit     |
+      | a changed base before writing          | rejected | Source branch or base commit     |
+      | a new draft before writing             | rejected | Draft status is true             |
+      | GitHub rejecting the ref update        | rejected | GitHub could not fast-forward    |
+      | an unexpected ref update response      | rejected | Fast-forward response            |
+      | delayed merged PR recognition         | accepted |                                  |
+      | an indirect merge retaining a test-merge SHA | accepted |                             |
+      | missing merged PR recognition         | rejected | GitHub has not confirmed this PR |
 
   Scenario: Unavailable version data cannot make a version available
     Given GitHub cannot list repository tags

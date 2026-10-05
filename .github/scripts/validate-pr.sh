@@ -102,8 +102,8 @@ if [[ -n "$released_revision" ]]; then
   comparison="$(gh api "repos/$repository/compare/$head_sha...$released_revision")" ||
     fail "Could not compare $head_sha...$released_revision to validate release synchronization."
   if ! jq -e '.behind_by == 0' <<< "$comparison" >/dev/null; then
-    bash "$(dirname "${BASH_SOURCE[0]}")/validate-badge-only-advance.sh" "$repository" \
-      "$(jq -r '.merge_base_commit.sha // empty' <<< "$comparison")" "$head_sha" ||
+    bash "$(dirname "${BASH_SOURCE[0]}")/validate-released-content.sh" "$repository" \
+      "$released_revision" "$head_sha" ||
       fail "Branch '$head_branch' contains changes outside its released version '$version' other than dependency badges."
   fi
   if [[ "$kind" == hotfix && "$base_branch" == support/* ]]; then

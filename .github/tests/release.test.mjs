@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { API, REPOSITORY, SHA, OTHER_SHA, BASE_SHA, get, post } from "./support.mjs";
 import { badgeAdvance, dependencyBadge } from "./badge-advance.test.mjs";
@@ -12,6 +13,14 @@ const RUNS = `${API}/actions/workflows/ci-main.yml/runs`;
 const ASSOCIATED = `${API}/commits/${BASE_SHA}/pulls?per_page=100`;
 const ARTIFACTS = `${API}/actions/runs/42/artifacts?per_page=100`;
 const marker = `<!-- release-source:123:${SHA} -->`;
+const TREE = "e".repeat(40);
+const PRIOR_MAIN = "f".repeat(40);
+const PRIOR_TREE = "d".repeat(40);
+
+function preparedRelease(main = BASE_SHA, tree = TREE)
+{
+  return { sha: OTHER_SHA, parents: [{ sha: SHA }, { sha: main }], commit: { tree: { sha: tree } } };
+}
 
 function release(branch = "release/0.0.25")
 {
@@ -32,7 +41,7 @@ function source()
 function createPrefix(tags = [{ name: "0.0.24" }], branches = [])
 {
   return [get(PULLS, []), get(`${API}/pulls/123`, source()),
-    get(`${API}/compare/main...${SHA}`, { ahead_by: 2, behind_by: 0, files: [{ filename: "src/bootstrap.ts" }] }),
+    get(`${API}/compare/main...${SHA}`, { ahead_by: 2, behind_by: 0, base_commit: { sha: BASE_SHA } }),
     get(`${API}/tags?per_page=100`, tags), get(`${API}/git/matching-refs/heads/`, branches)];
 }
 
@@ -60,6 +69,19 @@ function completed(id = 42, conclusion = "success")
 
 function invoke(world, script, args, success)
 {
+  if (script === "create-release-pr.sh")
+  {
+    // Release tests isolate API orchestration; merge-preview tests use real Git histories.
+    writeFileSync(join(world.automation.root, "git"), `#!/bin/sh
+case "$1" in
+  cat-file) exit 0 ;;
+  merge-tree) if [ "$3" = '${PRIOR_MAIN}' ]; then printf '%s\\n' '${PRIOR_TREE}'; else printf '%s\\n' '${TREE}'; fi ;;
+  diff) if [ -n "$RELEASE_CHANGED_PATH" ]; then printf '%s\\0' "$RELEASE_CHANGED_PATH"; fi ;;
+  *) exit 1 ;;
+esac
+`, { mode: 0o755 });
+    world.automation.env.RELEASE_CHANGED_PATH = world.releaseChangedPath ?? "src/bootstrap.ts";
+  }
   world.releaseResult = world.automation.execute(script, args, world.releaseQueue, { success });
 }
 
@@ -87,21 +109,38 @@ Given("the latest release tag is {string}", function (tag)
 Given("develop has unreleased changes and main has only newer dependency badges", function ()
 {
   this.releaseQueue = createPrefix();
-  Object.assign(this.releaseQueue[2].response, {
-    behind_by: 1, merge_base_commit: { sha: BASE_SHA }, base_commit: { sha: OTHER_SHA }
-  });
-  this.releaseQueue.splice(3, 0, ...badgeAdvance(BASE_SHA, OTHER_SHA));
+  this.releaseQueue[2].response.behind_by = 1;
   this.releaseQueue.push(post(`${API}/git/refs`, {}, { fields: { ref: "refs/heads/release/0.0.25", sha: SHA } }),
+    post(`${API}/merges`, preparedRelease(), { fields: { base: "release/0.0.25", head: BASE_SHA } }),
     post(`${API}/pulls`, { number: 124 }, { fields: { head: "release/0.0.25", base: "main" } }));
+});
+
+Given("develop has new work after squash synchronization with main", function ()
+{
+  this.releaseQueue = createPrefix();
+  this.releaseQueue[2].response.behind_by = 3;
+  this.releaseQueue.push(post(`${API}/git/refs`, {}, { fields: { ref: "refs/heads/release/0.0.25", sha: SHA } }),
+    post(`${API}/merges`, preparedRelease(), { fields: { base: "release/0.0.25", head: BASE_SHA } }),
+    post(`${API}/pulls`, { number: 124 }));
 });
 
 Given("the same release already has {string}", function (existing)
 {
-  if(existing === "only its branch")
+  if(["only its branch", "its prepared integration", "its integration before a badge update"].includes(existing))
   {
+    const prepared = existing !== "only its branch";
+    const badgesAdvanced = existing === "its integration before a badge update";
     this.releaseQueue = [...createPrefix(undefined, [
-      { ref: "refs/heads/release/0.0.25", object: { sha: SHA } },
-    ]), post(`${API}/pulls`, { number: 124 })];
+      { ref: "refs/heads/release/0.0.25", object: { sha: prepared ? OTHER_SHA : SHA } },
+    ])];
+    if (prepared)
+    {
+      this.releaseQueue[2].response.behind_by = 3;
+      this.releaseQueue.push(get(`${API}/commits/${OTHER_SHA}`,
+        badgesAdvanced ? preparedRelease(PRIOR_MAIN, PRIOR_TREE) : preparedRelease()));
+      if (badgesAdvanced) this.releaseQueue.push(...badgeAdvance(PRIOR_MAIN, BASE_SHA));
+    }
+    this.releaseQueue.push(post(`${API}/pulls`, { number: 124 }));
     return;
   }
   const pr = release();
@@ -128,6 +167,17 @@ Given("release creation encounters {string}", function (conflict)
       break;
     case "the branch at another commit":
       this.releaseQueue = createPrefix(undefined, [{ ref: "refs/heads/release/0.0.25", object: { sha: OTHER_SHA } }]);
+      this.releaseQueue.push(get(`${API}/commits/${OTHER_SHA}`, { ...preparedRelease(), parents: [{ sha: BASE_SHA }] }));
+      break;
+    case "a prepared branch with another tree":
+      this.releaseQueue = createPrefix(undefined, [{ ref: "refs/heads/release/0.0.25", object: { sha: OTHER_SHA } }]);
+      this.releaseQueue.push(get(`${API}/commits/${OTHER_SHA}`, { ...preparedRelease(), commit: { tree: { sha: BASE_SHA } } }));
+      break;
+    case "main code changing after preparation":
+      this.releaseQueue = createPrefix(undefined, [{ ref: "refs/heads/release/0.0.25", object: { sha: OTHER_SHA } }]);
+      this.releaseQueue[2].response.behind_by = 3;
+      this.releaseQueue.push(get(`${API}/commits/${OTHER_SHA}`, preparedRelease(PRIOR_MAIN, PRIOR_TREE)),
+        ...badgeAdvance(PRIOR_MAIN, BASE_SHA, [{ filename: "src/bootstrap.ts" }]));
       break;
     case "an advanced source PR":
       const trigger = source();
@@ -135,8 +185,10 @@ Given("release creation encounters {string}", function (conflict)
       this.releaseQueue = [get(PULLS, []), get(`${API}/pulls/123`, trigger)];
       break;
     case "only dependency badge changes":
+    case "already released content after squash":
       this.releaseQueue = createPrefix().slice(0, 3);
-      this.releaseQueue[2].response.files = [{ filename: dependencyBadge }];
+      this.releaseQueue[2].response.behind_by = 3;
+      this.releaseChangedPath = conflict === "only dependency badge changes" ? dependencyBadge : "";
       break;
     default: assert.fail(`Unknown conflict: ${conflict}`);
   }
@@ -209,25 +261,72 @@ Given("the pushed commit has {string}", function (association)
 {
   const pr = release();
   const associations = [pr];
+  let followup;
   switch(association)
   {
     case "a different merge commit": pr.merge_commit_sha = OTHER_SHA; break;
     case "a fork PR": pr.head.repo.full_name = "another/repository"; break;
     case "two matching PRs": associations.push({ ...release("hotfix/0.0.26"), number: 125 }); break;
+    case "an unrecognized fast-forward":
+    case "a fast-forward PR closed without merging":
+    case "an advanced fast-forward PR":
+    case "a recognition API failure":
+    case "two fast-forward candidates":
+      Object.assign(pr, { state: "open", merged: false, merged_at: null, merge_commit_sha: null,
+        head: { ...pr.head, sha: BASE_SHA } });
+      if (association === "two fast-forward candidates")
+        associations.push({ ...pr, number: 125, head: { ...pr.head, ref: "hotfix/0.0.26" } });
+      else
+      {
+        followup = get(`${API}/pulls/124`, structuredClone(pr));
+        if (association === "a fast-forward PR closed without merging") followup.response.state = "closed";
+        if (association === "an advanced fast-forward PR") followup.response.head.sha = OTHER_SHA;
+        if (association === "a recognition API failure")
+        {
+          Object.assign(followup, { exit_code: 1, stderr: "gh: HTTP 503\n" });
+          this.releaseRecognitionFailure = true;
+        }
+      }
+      break;
     default: assert.fail(`Unknown association: ${association}`);
   }
   this.releaseQueue = [get(ASSOCIATED, associations)];
+  if (association === "a different merge commit" || association === "a fork PR")
+    this.releaseQueue.push(get(PULLS, associations));
+  if (followup) this.releaseQueue.push(followup);
 });
-When("the pushed release is resolved", function () { invoke(this, "find-release-pr.sh", [REPOSITORY, BASE_SHA], true); });
-When("the pushed release is refused", function () { invoke(this, "find-release-pr.sh", [REPOSITORY, BASE_SHA], false); });
+Given("the pushed {string} head is recognized as merged {string}", function (branch, timing)
+{
+  const merged = { ...release(branch), merge_commit_sha: null };
+  merged.head.sha = BASE_SHA;
+  const pending = { ...merged, state: "open", merged: false, merged_at: null };
+  this.releaseExpectedHead = BASE_SHA;
+  this.releaseRecognitionTimeout = "30";
+  if (timing === "after a delay")
+    this.releaseQueue = [get(ASSOCIATED, []), get(PULLS, [pending]), get(`${API}/pulls/124`, pending)];
+  else if (timing === "alongside an abandoned PR")
+    this.releaseQueue = [get(ASSOCIATED, [merged, { ...pending, number: 125, state: "closed" }])];
+  else
+  {
+    assert.equal(timing, "immediately");
+    this.releaseQueue = [get(ASSOCIATED, [merged])];
+  }
+  this.releaseQueue.push(get(`${API}/pulls/124`, merged));
+});
+When("the pushed release is resolved", function ()
+{
+  invoke(this, "find-release-pr.sh", [REPOSITORY, BASE_SHA, this.releaseRecognitionTimeout ?? "0"], true);
+});
+When("the pushed release is refused", function () { invoke(this, "find-release-pr.sh", [REPOSITORY, BASE_SHA, "0"], false); });
 Then("only PR {int} and its validated {string} head are returned", function (number, branch)
 {
-  assert.equal(output(this), `pr_number=${number}\nhead_branch=${branch}\nhead_sha=${SHA}\n`);
+  assert.equal(output(this), `pr_number=${number}\nhead_branch=${branch}\nhead_sha=${this.releaseExpectedHead ?? SHA}\n`);
   assert.ok(this.automation.calls().every(call => call.method === "GET"));
 });
 Then("release identity reports {string} with the pushed commit", function (reason)
 {
   failure(this, reason, [`merge_sha=${BASE_SHA}`]);
+  if (this.releaseRecognitionFailure) assert.ok(this.releaseResult.stderr.includes("gh: HTTP 503"), this.releaseResult.stderr);
 });
 
 Given("a merged {string} PR has these CI runs", function (branch, table)
