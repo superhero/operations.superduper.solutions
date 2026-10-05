@@ -41,106 +41,132 @@ tests are needed.
 
 <a href="https://www.npmjs.com/package/bits-ui"><img src=".github/badges/version-dependency-bits-ui.svg" alt="bits-ui declared version"></a>
 
-Provides accessible headless UI primitives used by the generated sheet components.
+Supports the webpage’s user interface, providing the accessible dialog primitives
+required by its `shadcn-svelte` sheet components.
 
 ---
 
 <a href="https://www.npmjs.com/package/c8"><img src=".github/badges/version-dependency-c8.svg" alt="c8 declared version"></a>
 
-Collects `V8` code coverage and enforces the repository's 100% coverage thresholds.
+Supports application testing by measuring source code coverage and generating
+coverage reports. The release workflow uses its coverage checks to enforce
+requirements and block releases that leave measured code untested.
 
 ---
 
 <a href="https://www.npmjs.com/package/cn"><img src=".github/badges/version-dependency-cn.svg" alt="cn declared version"></a>
 
-Provides the `cn` class-name utility, re-exported from `src/lib/utils.ts`, for composing `Tailwind CSS` classes in UI components and resolving conflicting utility classes.
+Supports the webpage’s UI styling, combining default and custom `Tailwind CSS`
+classes in `shadcn-svelte` components and resolving conflicts.
 
 ---
 
 <a href="https://www.npmjs.com/package/@cucumber/cucumber"><img src=".github/badges/version-dependency-cucumber--cucumber.svg" alt="@cucumber/cucumber declared version"></a>
 
-Runs the source and acceptance tests defined with `Gherkin` feature files and `Cucumber` step definitions.
+Supports application and CI validation by running source, acceptance, and
+automation scenarios defined in `Gherkin`, producing the results used by the
+combined test report.
 
 ---
 
 <a href="https://www.npmjs.com/package/@lucide/svelte"><img src=".github/badges/version-dependency-lucide--svelte.svg" alt="@lucide/svelte declared version"></a>
 
-Provides icons used by the application's `Svelte` UI components.
+Provides icons for the webpage’s navigation controls, including the menu button
+and the close action in its `shadcn-svelte` sheet.
 
 ---
 
 <a href="https://www.npmjs.com/package/multiple-cucumber-html-reporter"><img src=".github/badges/version-dependency-multiple-cucumber-html-reporter.svg" alt="multiple-cucumber-html-reporter declared version"></a>
 
-Generates interactive `HTML` reports from `Cucumber` test runs for reviewing features, scenarios, and failures.
+Supports release quality review by generating the combined test report from
+source, acceptance, and automation results, with scenario outcomes and failure
+details.
 
 ---
 
 <a href="https://www.npmjs.com/package/svelte"><img src=".github/badges/version-dependency-svelte.svg" alt="svelte declared version"></a>
 
-Application UI framework used for the app, components, and reactive state.
+Provides the webpage’s component framework and reactive state, supporting the
+workflow editor, navigation, and shared UI components.
 
 ---
 
 <a href="https://www.npmjs.com/package/svelte-check"><img src=".github/badges/version-dependency-svelte-check.svg" alt="svelte-check declared version"></a>
 
-Runs `Svelte`-aware `TypeScript` and component diagnostics in CI.
+Checks the webpage’s `Svelte` components and `TypeScript` source for errors,
+allowing the integration and release workflows to catch type and component
+problems before building.
 
 ---
 
 <a href="https://www.npmjs.com/package/@sveltejs/vite-plugin-svelte"><img src=".github/badges/version-dependency-sveltejs--vite-plugin-svelte.svg" alt="@sveltejs/vite-plugin-svelte declared version"></a>
 
-Integrates `Svelte` compilation into the `Vite` build.
+Connects the webpage’s `Svelte` components to the `Vite` build, compiling the
+workflow editor, navigation, and controls into browser JavaScript and CSS.
 
 ---
 
 <a href="https://www.npmjs.com/package/tailwind-merge"><img src=".github/badges/version-dependency-tailwind-merge.svg" alt="tailwind-merge declared version"></a>
 
-Required by `tailwind-variants` in `shadcn-svelte`-generated UI components to merge `Tailwind CSS` classes and resolve conflicting utility classes.
+An optional peer of `tailwind-variants` in the webpage’s styling stack, with no
+current application usage. Class merging is provided by the installed
+`tailwind-variants` and `cn` implementations.
 
 ---
 
 <a href="https://www.npmjs.com/package/tailwind-variants"><img src=".github/badges/version-dependency-tailwind-variants.svg" alt="tailwind-variants declared version"></a>
 
-Used by `shadcn-svelte`-generated UI components to define typed `Tailwind CSS` style variants.
+Defines the webpage’s reusable component styles through its `shadcn-svelte`
+button and sheet components, providing typed variants for button appearance,
+size, and sheet placement.
 
 ---
 
 <a href="https://www.npmjs.com/package/tailwindcss"><img src=".github/badges/version-dependency-tailwindcss.svg" alt="tailwindcss declared version"></a>
 
-Provides the utility CSS system and project theme used by the application.
+Provides the webpage’s utility classes and shared theme tokens, used by its
+`shadcn-svelte` components for layout, styling, colors, and corner radii.
 
 ---
 
 <a href="https://www.npmjs.com/package/@tailwindcss/vite"><img src=".github/badges/version-dependency-tailwindcss--vite.svg" alt="@tailwindcss/vite declared version"></a>
 
-Integrates `Tailwind CSS` processing into the `Vite` build.
+Integrates the webpage’s `Tailwind CSS` styles with the `Vite` build, generating
+the utilities and theme styles used by its buttons and navigation sheet.
 
 ---
 
 <a href="https://www.npmjs.com/package/tw-animate-css"><img src=".github/badges/version-dependency-tw-animate-css.svg" alt="tw-animate-css declared version"></a>
 
-Provides `Tailwind CSS`-compatible animation utilities imported by the application stylesheet.
+Supports motion in the webpage’s `shadcn-svelte` navigation sheet, providing the
+slide and fade animations used when the panel and its overlay open and close.
 
 ---
 
 <a href="https://www.npmjs.com/package/typescript"><img src=".github/badges/version-dependency-typescript.svg" alt="typescript declared version"></a>
 
-Provides the `TypeScript` compiler and type system used by `Svelte` and project source files.
+Provides the type system used by the webpage’s application code and `Svelte`
+components, with `svelte-check` validating workflow data, connections, and
+component properties before integration or release.
 
 ---
 
 <a href="https://www.npmjs.com/package/vite"><img src=".github/badges/version-dependency-vite.svg" alt="vite declared version"></a>
 
-Builds the browser application and produces the production `dist` output.
+Builds the webpage for deployment by combining application code, `Svelte`
+components, and styles. Coordinates the `Svelte`, `Tailwind CSS`, and single-file
+plugins used to produce the release build.
 
 ---
 
 <a href="https://www.npmjs.com/package/vite-plugin-singlefile"><img src=".github/badges/version-dependency-vite-plugin-singlefile.svg" alt="vite-plugin-singlefile declared version"></a>
 
-Bundles the production build into a single self-contained `dist/index.html` file.
+Packages the webpage for deployment as one HTML file with embedded JavaScript
+and CSS, meeting the single-file requirement verified by the acceptance tests.
 
 ---
 
 <a href="https://www.npmjs.com/package/@xyflow/svelte"><img src=".github/badges/version-dependency-xyflow--svelte.svg" alt="@xyflow/svelte declared version"></a>
 
-Provides the workflow canvas, nodes, edges, handles, background, and controls.
+Provides the webpage’s workflow canvas, with draggable nodes, connection handles
+and edges, and controls for navigating the diagram.
