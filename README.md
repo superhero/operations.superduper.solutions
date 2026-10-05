@@ -7,19 +7,19 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 > [!NOTE]
 > This project is under active development and is currently in a pre-release state.
 
-[![Develop CI](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-develop.yml?label=Develop%20CI)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-develop.yml)
-
-Validates incoming changes before merging them into `develop`, checking branch
-policy, types, tests, and build output. Keeps feature work, bug fixes, and
-released changes integrated for the next release.
-
----
-
 [![Main CI/CD](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-main.yml?label=Main%20CI%2FCD)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-main.yml)
 
 Creates releases from `develop` and validates release and hotfix pull requests
 before merging into `main`. Tags and deploys validated releases, publishes test
 and coverage reports, and synchronizes released changes back to `develop`.
+
+---
+
+[![Develop CI](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-develop.yml?label=Develop%20CI)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-develop.yml)
+
+Validates incoming changes before merging them into `develop`, checking branch
+policy, types, tests, and build output. Keeps feature work, bug fixes, and
+released changes integrated for the next release.
 
 ## Quality Assurance
 
