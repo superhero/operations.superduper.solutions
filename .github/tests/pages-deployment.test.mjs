@@ -100,15 +100,15 @@ When("the Pages deployment is prepared", function ()
     const deployments = state === "empty" ? [] : [deployment];
     if (state === "duplicate aliases") deployments.push({ ...deployment, id: "87654321-1234-1234-1234-123456789abc" });
     const paginated = state === "identical on second page";
-    const page = (number, entries, total) => cloudflare(`${base}/deployments?env=preview&page=${number}&per_page=100`, entries,
+    const page = (number, entries, total) => cloudflare(`${base}/deployments?env=preview&page=${number}&per_page=25`, entries,
       { response: { success: true, result: entries,
-        result_info: { page: number, per_page: 100, count: entries.length, total_pages: total } } });
+        result_info: { page: number, per_page: 25, count: entries.length, total_pages: total } } });
     if (paginated)
     {
-      responses.push(page(1, [{ ...deployment, aliases: null }], 2));
+      responses.push(page(1, Array.from({ length: 25 }, () => ({ ...deployment, aliases: null })), 2));
       responses.push(page(2, deployments, 2));
     }
-    else responses.push(page(1, deployments, 1));
+    else responses.push(page(1, deployments, deployments.length ? 1 : 0));
     if (state === "incomplete pagination") responses.at(-1).response.result_info.count++;
   }
   const failedDestination = failedProject || ["failed deployment", "wrong branch", "wrong environment", "invalid URL",

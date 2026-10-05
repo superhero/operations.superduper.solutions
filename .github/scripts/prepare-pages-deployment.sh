@@ -102,13 +102,14 @@ else
   : > "$temporary/candidates"
   page=1
   while :; do
-    endpoint="/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$project/deployments?env=preview&page=$page&per_page=100"
+    # Pages deployment listing accepts at most 25 entries per page.
+    endpoint="/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$project/deployments?env=preview&page=$page&per_page=25"
     cloudflare
     jq -e --argjson page "$page" '
       def integer: type == "number" and . == floor;
       (.result | type == "array") and
-      (.result_info | .page == $page and (.per_page | integer and . > 0 and . <= 100) and
-        (.count | integer and . >= 0 and . <= 100) and
+      (.result_info | .page == $page and (.per_page | integer and . > 0 and . <= 25) and
+        (.count | integer and . >= 0 and . <= 25) and
         (.total_pages | integer and . >= 0 and . <= 1000)) and
       (.result | length) == .result_info.count and
       (.result_info.count <= .result_info.per_page) and
