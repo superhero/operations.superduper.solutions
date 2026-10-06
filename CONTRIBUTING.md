@@ -4,10 +4,10 @@ Thank you for contributing to `operations.superduper.solutions`.
 
 ## Architectural decision records
 
-- [Simplify](doc/adr/simplify.md)
-- [UI](doc/adr/ui.md)
-- [Security](doc/adr/security.md)
-- [Gitflow](doc/adr/gitflow.md)
+- [Simplify](docs/adr/simplify.md)
+- [UI](docs/adr/ui.md)
+- [Security](docs/adr/security.md)
+- [Gitflow](docs/adr/gitflow.md)
 
 ## Automation validation
 
