@@ -2,87 +2,123 @@
 
 A browser-based platform for composing OpenAPI operations into reusable workflows.
 
-## Local development
+## Workflows
 
-Use the Node.js and npm versions declared in `package.json`, then run `npm ci`
-and `npm run dev`. `npm run build` produces a standalone `dist/index.html`.
+### Discover operations
 
-Two **Examples** catalogs provide 33 operations: 19 local mocks under
-**example.com** and 14 live requests under **httpbin**. Find operations by name
-or identifier using local Levenshtein matching, review their inputs, and compose
-a workflow. Request previews and diagram connections do not execute API calls.
-The separate **Run workflow** action identifies the selected catalog's execution
-mode and submits each operation only when confirmed.
+Find operations by name or identifier using local Levenshtein matching, then
+review their inputs. Two **Examples** catalogs provide 33 operations:
 
-The example.com catalog runs entirely in the browser, including its fictional
-project/task data and echoed example requests. Mock changes last for that run.
-Its displayed URLs use [IANA's documentation domain](https://www.iana.org/help/example-domains/);
-no requests are sent to example.com. The httpbin catalog sends real requests to
-[httpbin.org's HTTP request and response service](https://httpbin.org/).
-Network and HTTP failures remain visible and retryable; the live service must
-be available and allow browser access. Both catalogs cover GET, POST, PUT,
-PATCH, DELETE, HEAD and OPTIONS. TRACE is available only as a local mock because
-browser Fetch does not permit it.
+| Catalog | Operations | Execution |
+| --- | --- | --- |
+| **example.com** | 19 | Local browser mocks with fictional project/task data and echoed requests. |
+| **httpbin** | 14 | Live requests to [httpbin.org](https://httpbin.org/). |
 
-Named workflows are saved in this browser; use JSON export/import to keep a
-portable copy. Browsing, editing, matching and mock runs work without a backend.
-Existing `demo:*` project/task identifiers, paths and field identities are
-preserved, so saved workflows continue to resolve their operations.
+The example.com catalog sends no network requests. Its displayed URLs use
+[IANA's documentation domain](https://www.iana.org/help/example-domains/), and
+mock changes last only for the current run. The httpbin service must be
+available and allow browser access.
 
-Adding an operation to the canvas creates separate input and response panels
-from its documented schemas. Connect named output fields to input fields, or
-drop onto an input panel to select the nearest available field. Nested object
-and array branches can be hidden and restored; deleting an operation removes
-its owned panels and connections. Version 2 exports retain these field mappings
-and branch visibility. Existing version 1 plans remain readable and editable.
-Undocumented, recursive, or unsupported schema shapes show an explicit notice;
-response examples are never used to invent fields.
+Both catalogs cover GET, POST, PUT, PATCH, DELETE, HEAD and OPTIONS. TRACE is
+available only as a local mock because browser Fetch does not permit it.
+Browsing, editing, matching and mock runs work without a backend.
 
-The canvas also supports **Switch** gates (first matching branch), **Cast**
-conversions and editable Markdown **Comments**. Describe a workflow from the
-toolbar, and add saved workflows from the sidebar to nest them. Nested nodes
-carry a saved copy of their workflow and expose its unconnected inputs and
-documented outputs; later edits or deletion of the original do not change that
-copy. Version 3 exports include these nodes and descriptions while preserving
-version 1/2 compatibility. The saved-workflow dialog supports selecting several
-documents for deletion and retrying storage failures.
+### Compose and save
 
-Runs ask for a starting operation when needed, validate inputs, pass mapped
-responses through routing nodes and nested workflows, and offer **Next operation**
-and **End run**. Ending a run cancels a pending request; it cannot undo an API
-operation already processed. Cycles and unsupported input shapes report an
-error instead of repeatedly issuing requests.
+Add an operation to create separate input and response panels from its documented
+schemas. Connect named output fields to input fields, or drop onto an input
+panel to select the nearest available field. Nested object and array branches
+can be hidden and restored; deleting an operation removes its panels and
+connections.
+
+Use **Switch** gates to select the first matching branch, **Cast** to convert
+primitive values, and Markdown **Comments** to annotate the canvas. Add a
+workflow description from the toolbar.
+
+Named workflows are saved in this browser. Use JSON export/import for portable
+copies; the saved-workflow dialog supports deleting several documents at once
+and retrying storage failures.
+
+Add saved workflows from the sidebar to nest them. Each nested node stores a
+copy of its workflow and exposes its unconnected inputs and documented outputs.
+Later edits or deletion of the original do not change that copy.
+
+Version 3 exports retain field mappings, branch visibility, utility and nested
+nodes, and descriptions. Version 1/2 documents remain readable and editable;
+legacy `demo:*` project/task identifiers, paths and field identities are preserved.
+
+### Run a workflow
+
+Request previews and canvas connections do not execute API calls. Select
+**Run workflow**, review the catalog's execution mode, and choose a starting
+operation when prompted. Each operation runs only when confirmed: inputs are
+validated and mapped responses pass through routing nodes and nested workflows.
+Use **Next operation** to continue or **End run** to stop.
+
+Ending a run cancels a pending request but cannot undo an API operation already
+processed. Network and HTTP failures remain visible and retryable. Cycles and
+unsupported input shapes report an error instead of repeatedly issuing requests.
+
+## OpenAPI support
 
 The bundled schemas are [`demo.openapi.json`](src/catalogs/demo.openapi.json)
 and [`httpbin.openapi.json`](src/catalogs/httpbin.openapi.json). Their source
-identities, navigation groups and execution destinations are registered together
-in [`src/lib/catalog-registry.ts`](src/lib/catalog-registry.ts).
+identities, navigation groups and execution destinations are registered in
+[`src/lib/catalog-registry.ts`](src/lib/catalog-registry.ts).
 `extractOperations(document, source)` in [`src/lib/catalog.ts`](src/lib/catalog.ts)
-validates each OpenAPI 3.0/3.1 document using its distinct source name. The
-httpbin schemas describe the example forms we provide for its arbitrary echo
-inputs; their chosen names and required fields are not service requirements.
+validates OpenAPI 3.0/3.1 documents using a distinct source name for each catalog.
+
+<details>
+<summary>Supported schemas, request formats and limitations</summary>
 
 Forms support string, number, integer, boolean, object, array and null values.
-Objects and arrays use JSON text with nested type and required-field checks;
-primitive fields also support enums, numeric bounds and Unicode text lengths,
-and arrays support item-count bounds. Local schema references resolve up to a
-12-level nesting limit. Path and header parameters accept primitive values;
-query arrays repeat their parameter name, and flat query objects require
-explicit `deepObject` serialization. Bodies support named JSON objects with
-structured properties, root JSON arrays/scalars/null, plain text, URL-encoded
-forms and multipart forms containing primitive text fields.
+Objects and arrays use JSON text with nested type and required-field checks.
+Primitive fields support enums, numeric bounds and Unicode text lengths;
+arrays support item-count bounds. Local schema references resolve up to a
+12-level nesting limit.
+
+Path and header parameters accept primitive values. Query arrays repeat their
+parameter name; flat query objects require explicit `deepObject` serialization.
+Each operation selects one request media type. Bodies support named JSON objects
+with structured properties, root JSON arrays/scalars/null, plain text,
+URL-encoded forms and multipart forms containing primitive text fields.
 
 Workflow mappings preserve these types and can assemble declared nested
 properties or array-item paths. Each assembled input must satisfy its full
 schema; conflicting connections fail, and Cast converts only primitive values.
-Each operation selects one request media type. File uploads, dynamic object
+
+Undocumented, recursive or unsupported schema shapes show an explicit notice;
+response examples are never used to invent fields. File uploads, dynamic object
 properties, nullable unions, schema composition, cookie parameters and other
-unsupported constraints or serializations fail explicitly; remote references
+unsupported constraints or serializations fail explicitly. Remote references
 are never fetched.
+
+The httpbin schemas describe the example forms provided for its arbitrary echo
+inputs. Their chosen names and required fields are not service requirements.
+
+</details>
+
+## Local development
+
+Use the Node.js and npm versions declared in [`package.json`](package.json):
+
+```sh
+npm ci
+npm run dev
+```
+
+Build the standalone `dist/index.html` with embedded JavaScript and CSS:
+
+```sh
+npm run build
+```
+
+See [Contributing](CONTRIBUTING.md) for architectural decisions, contribution
+conventions and release automation.
 
 ### Browser tests
 
-With Docker running, build and test the application using:
+With Docker running, install dependencies, build and test the application:
 
 ```sh
 npm ci
@@ -90,29 +126,42 @@ npm run build
 npm run test:browser
 ```
 
-These Cucumber scenarios use Playwright Chromium to check operation discovery,
-form validation, request previews, themes, mobile navigation, and workflow
-editing, saving and import/export. The existing branch workflows run the same
-command against the bundle they build with the project's Node.js version.
+Cucumber scenarios use Playwright Chromium to check operation discovery, form
+validation, request previews, themes, mobile navigation, and workflow editing,
+saving and import/export. Branch CI runs the same command against its built
+bundle.
 
-The launcher uses the official Playwright Docker image, with its version taken
-from the pinned `@playwright/test` dependency. Its bundled Node.js runs only the
-tests and a local static server; the application is built beforehand. The first
-run downloads the image, which includes Chromium and its system dependencies;
-later local runs reuse it. Test packages come from `npm ci`. No separate browser
-installation, exposed port, deployment or Cloudflare credentials are needed.
+<details>
+<summary>Browser setup and failure diagnostics</summary>
 
-Each scenario starts with fresh browser storage. Browser tests intercept live
-httpbin requests with controlled responses, so they do not depend on the public
-service. Mock runs are checked for zero network requests. Browser errors and
-unexpected network requests fail the test. Failed scenarios save a screenshot,
-Playwright trace, and diagnostics under `tmp/test/browser/`; GitHub Actions retains these
-for seven days. Open a downloaded `trace.zip` in the
-[Playwright Trace Viewer](https://trace.playwright.dev/) to inspect its actions,
-DOM snapshots, console and network activity. To run one scenario locally, use
-`npm run test:browser -- --name 'The selected theme survives a reload'`.
+The launcher uses the official Playwright Docker image matching the pinned
+`@playwright/test` dependency. The first run downloads Chromium and its system
+dependencies as part of that image; later local runs reuse it. Test packages
+come from `npm ci`. No separate browser installation, exposed port, deployment
+or Cloudflare credentials are needed.
 
-After running source, acceptance, automation, and browser suites,
+The image's Node.js runs only the tests and a local static server. Build the
+application beforehand with the project's declared Node.js version.
+
+Each scenario starts with fresh browser storage. Tests intercept live httpbin
+requests with controlled responses, so they do not depend on the public service.
+Mock runs are checked for zero network requests. Browser errors and unexpected
+network requests fail the test.
+
+Failed scenarios save a screenshot, Playwright trace and diagnostics under
+`tmp/test/browser/`; GitHub Actions retains these for seven days. Open a
+`trace.zip` in the [Playwright Trace Viewer](https://trace.playwright.dev/) to
+inspect actions, DOM snapshots, console and network activity.
+
+To run one scenario locally:
+
+```sh
+npm run test:browser -- --name 'The selected theme survives a reload'
+```
+
+</details>
+
+After running the source, acceptance, automation and browser suites,
 `npm run report:tests` creates the combined `tmp/test-report.html`, including
 browser failure screenshots. Run the complete browser suite before generating
 scenario badges. These tests verify behavior and responsive layout; visual
