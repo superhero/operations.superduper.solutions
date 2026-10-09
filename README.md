@@ -12,7 +12,8 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 Install locked dependencies.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Use the Node.js and npm versions declared in [`package.json`](package.json).
 
 </details>
@@ -22,7 +23,8 @@ Install locked dependencies.
 
 Start the local development server.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Run `npm ci` first.
 
 </details>
@@ -32,7 +34,8 @@ Start the local development server.
 
 Check Svelte components and TypeScript source.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Run `npm ci` first.
 
 </details>
@@ -42,7 +45,8 @@ Check Svelte components and TypeScript source.
 
 Build `dist/index.html`.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Run `npm ci` first.
 
 </details>
@@ -52,7 +56,8 @@ Build `dist/index.html`.
 
 Run the acceptance suite only; alias for `npm run test:acceptance`.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Run `npm ci` and `npm run build` first.
 
 </details>
@@ -62,7 +67,8 @@ Run the acceptance suite only; alias for `npm run test:acceptance`.
 
 Run source scenarios.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Run `npm ci` first.
 
 </details>
@@ -72,7 +78,8 @@ Run source scenarios.
 
 Check the built output.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Run `npm ci` and `npm run build` first.
 
 </details>
@@ -82,7 +89,8 @@ Check the built output.
 
 Check repository automation without deploying.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Run `npm ci` first. Bash and jq are required.
 
 </details>
@@ -92,7 +100,8 @@ Check repository automation without deploying.
 
 Run browser scenarios in Chromium.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Run `npm ci` and `npm run build` first. Bash and running Docker are required.
 
 </details>
@@ -102,7 +111,8 @@ Run browser scenarios in Chromium.
 
 Run source scenarios and collect coverage data.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Run `npm ci` first.
 
 </details>
@@ -112,7 +122,8 @@ Run source scenarios and collect coverage data.
 
 Run acceptance scenarios and collect coverage data.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Run `npm ci` and `npm run build` first.
 
 </details>
@@ -123,7 +134,8 @@ Run acceptance scenarios and collect coverage data.
 Generate reports in `tmp/test/coverage/` and enforce 100% statement, branch,
 function and line coverage.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Collect fresh coverage with `npm run test:source:coverage` or
 > `npm run test:acceptance:coverage` first.
 
@@ -134,7 +146,8 @@ function and line coverage.
 
 Generate the combined `tmp/test-report.html`.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Run `npm ci` first. Fresh, complete results from all four test suites are required.
 
 </details>
@@ -144,7 +157,8 @@ Generate the combined `tmp/test-report.html`.
 
 Update dependency-version badges.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Requires Bash, jq and current dependency versions in `package.json`.
 
 </details>
@@ -154,7 +168,8 @@ Update dependency-version badges.
 
 Update the source-coverage badge.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Requires Bash, jq and a fresh `npm run test:source:coverage` followed by
 > `npm run coverage`.
 
@@ -165,7 +180,8 @@ Update the source-coverage badge.
 
 Update the test-scenario badge.
 
-> [!IMPORTANT]
+> **Important**
+>
 > Requires Bash, jq and fresh, complete results from all four test suites.
 
 </details>
