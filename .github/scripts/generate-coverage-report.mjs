@@ -16,7 +16,7 @@ function openCoverageReport()
   const bytes = file => Uint8Array.from(atob(file.data), character => character.charCodeAt(0));
   const text = file => new TextDecoder().decode(bytes(file));
   let current;
-  let pageURL;
+  let loadedDocument;
   let anchor = "";
 
   function target(reference, page)
@@ -36,15 +36,19 @@ function openCoverageReport()
       (original, quote, reference) => {
         const local = target(reference, path);
         return local ? `url("${asset(local.page)}${local.anchor ? `#${encodeURIComponent(local.anchor)}` : ""}")` : original;
-      }) : bytes(file);
-    const url = URL.createObjectURL(new Blob([content], { type: file.type }));
+      }) : null;
+    // Data URLs are self-contained even when the outer report uses file://.
+    const url = content === null ? `data:${file.type};base64,${file.data}` :
+      `data:text/css;charset=utf-8,${encodeURIComponent(content)}`;
     urls.set(path, url);
     return url;
   }
 
   function scrollToAnchor()
   {
-    if (anchor) (frame.contentDocument.getElementById(anchor) ?? frame.contentDocument.getElementsByName(anchor)[0])?.scrollIntoView();
+    const doc = frame.contentDocument;
+    if (!doc || doc !== loadedDocument) return;
+    if (anchor) (doc.getElementById(anchor) ?? doc.getElementsByName(anchor)[0])?.scrollIntoView();
     else frame.contentWindow.scrollTo(0, 0);
   }
 
@@ -73,13 +77,12 @@ function openCoverageReport()
           if (local) element.setAttribute(attribute, asset(local.page) + (local.anchor ? `#${encodeURIComponent(local.anchor)}` : ""));
         }
       }
+      page.documentElement.dataset.coveragePage = pagePath;
       current = pagePath;
-      const nextURL = URL.createObjectURL(new Blob([`<!doctype html>\n${page.documentElement.outerHTML}`], { type: "text/html" }));
-      // Replacing the frame document avoids adding an extra browser-history
-      // entry for each outer hash route, and reruns this page's own scripts.
-      frame.contentWindow.location.replace(nextURL);
-      if (pageURL) URL.revokeObjectURL(pageURL);
-      pageURL = nextURL;
+      loadedDocument = null;
+      // srcdoc keeps the document accessible under HTTP and file://. Updating
+      // it replaces the frame entry; the outer hash owns navigation history.
+      frame.srcdoc = `<!doctype html>\n${page.documentElement.outerHTML}`;
     }
     catch (failure)
     {
@@ -96,7 +99,12 @@ function openCoverageReport()
   }
 
   frame.addEventListener("load", () => {
-    frame.contentDocument.addEventListener("click", event => {
+    const doc = frame.contentDocument;
+    // Ignore the initial blank document and superseded page loads.
+    if (!doc || doc.URL !== "about:srcdoc" || doc.documentElement.dataset.coveragePage !== current) return;
+    if (doc === loadedDocument) return;
+    loadedDocument = doc;
+    doc.addEventListener("click", event => {
       const link = event.target.closest("a[href]");
       if (!link) return;
       const destination = target(link.getAttribute("href"), current);

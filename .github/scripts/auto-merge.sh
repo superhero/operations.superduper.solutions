@@ -26,6 +26,7 @@ fail() {
 [[ "$pull_request" =~ ^[1-9][0-9]*$ ]] || fail 'A pull request number is required.'
 [[ "$head_sha" =~ ^[0-9a-f]{40}$ ]] || fail 'A full pull request head SHA is required.'
 [[ -n "$base_branch" ]] || fail 'The validated pull request base branch is required.'
+git check-ref-format "refs/heads/$base_branch" || fail "Invalid validated base branch '$base_branch'."
 [[ "$base_sha" =~ ^[0-9a-f]{40}$ ]] || fail 'The full validated base SHA is required.'
 [[ -n "$head_branch" ]] || fail 'The expected source branch is required as argument six or GITHUB_HEAD_REF.'
 git check-ref-format "refs/heads/$head_branch" || fail "Invalid expected source branch '$head_branch'."
@@ -57,6 +58,22 @@ read_pr() {
     elif .state != "open" or .merged != false then "State is \(.state) with merged=\(.merged); expected open or confirmed merged."
     else "" end' <<< "$pr")" || fail 'Could not parse current pull request state.'
   [[ -z "$reason" ]] || fail "$reason"
+}
+
+# PR metadata can lag behind the actual target branch. Read and validate the
+# canonical ref independently; API failures must never fall back to .base.sha.
+read_live_base() {
+  local reference encoded_branch
+  encoded_branch="$(jq -rn --arg branch "$base_branch" '$branch | @uri')" ||
+    fail "Could not encode live target branch '$base_branch'."
+  reference="$(gh api "repos/$repository/git/ref/heads/$encoded_branch")" ||
+    fail "Could not read live target ref 'refs/heads/$base_branch'; no merge attempted."
+  live_base="$(jq -ers --arg ref "refs/heads/$base_branch" '
+    select(length == 1) | .[0] |
+    select(type == "object" and .ref == $ref and .object.type == "commit" and
+      (.object.sha | type == "string" and test("\\A[0-9a-f]{40}\\z"))) |
+    .object.sha
+  ' <<< "$reference")" || fail "Invalid live target ref response for 'refs/heads/$base_branch'; no merge attempted."
 }
 
 is_merged() {
@@ -99,10 +116,11 @@ case "$base_branch:$head_branch" in
   develop:feature/*|develop:bugfix/*|main:hotfix/*) merge_method=squash ;;
 esac
 
-current_base="$(jq -r '.base.sha // empty' <<< "$pr")"
+read_live_base
+current_base="$live_base"
 if [[ "$current_base" != "$base_sha" ]]; then
   bash "$(dirname "${BASH_SOURCE[0]}")/validate-badge-only-advance.sh" "$repository" "$base_sha" "$current_base" ||
-    fail "Pull request base changed beyond dependency badges; update the branch and rerun CI. Expected $base_sha, found $current_base."
+    fail "Pull request base changed beyond dependency badges (live target ref); update the branch and rerun CI. Expected $base_sha, found $current_base."
 fi
 
 comparison="$(gh api "repos/$repository/compare/$current_base...$head_sha")" ||
@@ -130,14 +148,17 @@ if [[ "$base_branch" == main && "$behind_by" != 0 ]]; then
     fail "Main changed beyond dependency badges since this release was built ($current_base...$head_sha reports behind_by=$behind_by); update the branch and rerun CI."
 fi
 
-# Recheck both mutation paths. A non-force ref update additionally rejects any
-# intervening base change that is not already contained in the tested head.
+# Recheck PR identity and the live target immediately before either write.
+# This is not an atomic base lock: native squash/merge still needs strict
+# required checks enforced for the merging App at GitHub's merge boundary.
+# Keep the post-merge tree verification as a separate deployment guard.
 read_pr
 if is_merged; then
   wait_for_merge
 fi
-jq -e --arg base "$current_base" '.base.sha == $base' <<< "$pr" >/dev/null ||
-  fail "Source branch or base commit changed before merging ($head_branch -> $base_branch at $current_base); actual base=$(jq -r '.base.sha' <<< "$pr"); rerun CI."
+read_live_base
+[[ "$live_base" == "$current_base" ]] ||
+  fail "Source branch or base commit changed before merging ($head_branch -> $base_branch at $current_base); actual live base=$live_base; update the branch and rerun CI."
 error_log="$(mktemp)" || fail 'Could not prepare temporary merge diagnostics.'
 
 if [[ "$behind_by" == 0 && "$ahead_by" != 0 && ( "$merge_method" == merge || "$ahead_by" == 1 ) ]]; then

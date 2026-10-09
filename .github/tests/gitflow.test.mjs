@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { Given, Then, When } from "@cucumber/cucumber";
 import { API, BASE_SHA, OTHER_SHA, REPOSITORY, SHA, get } from "./support.mjs";
 import { badgeAdvance } from "./badge-advance.test.mjs";
@@ -59,6 +59,12 @@ function refUpdate(base)
     response: { ref: `refs/heads/${base}`, object: { type: "commit", sha: SHA } } };
 }
 
+function liveBase(pr, sha = pr.base.sha)
+{
+  return get(`${API}/git/ref/heads/${encodeURIComponent(pr.base.ref)}`,
+    { ref: `refs/heads/${pr.base.ref}`, object: { type: "commit", sha } });
+}
+
 function mergedPull(pr)
 {
   return { ...structuredClone(pr), state: "closed", merged: true,
@@ -68,7 +74,7 @@ function mergedPull(pr)
 function fastForward(world, pr)
 {
   world.fastForwardAttempted = true;
-  world.mergeResponses.push(get(`${API}/pulls/123`, pr), refUpdate(pr.base.ref),
+  world.mergeResponses.push(get(`${API}/pulls/123`, pr), liveBase(pr), refUpdate(pr.base.ref),
     get(`${API}/pulls/123`, mergedPull(pr)));
 }
 
@@ -268,6 +274,8 @@ Given("the validated pull request has {string} when merging starts", function (s
     default: throw new Error(`Unknown pull request state: ${state}`);
   }
   this.mergeResponses = [get(`${API}/pulls/123`, pr)];
+  if (["no changes", "a newer base commit", "newer base dependency badges", "fallen behind main"].includes(state))
+    this.mergeResponses.push(liveBase(pr));
   if (["a newer base commit", "newer base dependency badges"].includes(state))
     this.mergeResponses.push(...badgeAdvance(BASE_SHA, OTHER_SHA,
       state === "a newer base commit" ? [{ filename: "src/bootstrap.ts" }] : undefined));
@@ -280,7 +288,7 @@ Given("the validated pull request has {string} when merging starts", function (s
     this.mergeResponses.push(get(`${API}/compare/${OTHER_SHA}...${SHA}`, mergeComparison(2, 1, OTHER_SHA)),
       ...badgeAdvance(BASE_SHA, OTHER_SHA));
   this.mergeAttempted = state === "newer base dependency badges";
-  if (this.mergeAttempted) this.mergeResponses.push(get(`${API}/pulls/123`, pr),
+  if (this.mergeAttempted) this.mergeResponses.push(get(`${API}/pulls/123`, pr), liveBase(pr),
     { command: MERGE }, get(`${API}/pulls/123`, mergedPull(pr)));
   if (state === "no changes") fastForward(this, pr);
 });
@@ -292,12 +300,13 @@ Given("the validated pull request merges {string} into {string} with {int} commi
   pr.base.ref = base;
   this.mergeHead = head;
   this.mergeBase = base;
+  this.verifyLiveBases = head === "feature/editor" && base === "develop" && ahead === 2 && behind === 0;
   this.mergeCommand = mergeCommand(method);
   this.mergeAttempted = method !== "fast-forward";
-  this.mergeResponses = [get(`${API}/pulls/123`, pr),
+  this.mergeResponses = [get(`${API}/pulls/123`, pr), liveBase(pr),
     get(`${API}/compare/${BASE_SHA}...${SHA}`, mergeComparison(ahead, behind))];
   if (base === "main" && behind) this.mergeResponses.push(...badgeAdvance(OTHER_SHA, BASE_SHA));
-  if (this.mergeAttempted) this.mergeResponses.push(get(`${API}/pulls/123`, pr),
+  if (this.mergeAttempted) this.mergeResponses.push(get(`${API}/pulls/123`, pr), liveBase(pr),
     { command: this.mergeCommand }, get(`${API}/pulls/123`, mergedPull(pr)));
   else fastForward(this, pr);
 });
@@ -310,7 +319,7 @@ Given("a possible fast-forward encounters {string}", function (state)
   this.mergeHead = "main";
   this.mergeBase = "develop";
   const comparison = mergeComparison();
-  this.mergeResponses = [get(`${API}/pulls/123`, pr), get(`${API}/compare/${BASE_SHA}...${SHA}`, comparison)];
+  this.mergeResponses = [get(`${API}/pulls/123`, pr), liveBase(pr), get(`${API}/compare/${BASE_SHA}...${SHA}`, comparison)];
   switch (state)
   {
     case "incomplete comparison metadata": delete comparison.total_commits; return;
@@ -324,12 +333,14 @@ Given("a possible fast-forward encounters {string}", function (state)
   {
     case "a changed head before writing": current.head.sha = OTHER_SHA; return;
     case "a changed source branch before writing": current.head.ref = "release/1.2.3"; return;
-    case "a changed base before writing": current.base.sha = OTHER_SHA; return;
+    case "a changed base before writing":
+      // Keep the PR metadata stale while the actual target moves.
+      this.mergeResponses.push(liveBase(pr, OTHER_SHA)); return;
     case "a new draft before writing": current.draft = true; return;
   }
   const update = refUpdate("develop");
   this.fastForwardAttempted = true;
-  this.mergeResponses.push(update);
+  this.mergeResponses.push(liveBase(pr), update);
   switch (state)
   {
     case "GitHub rejecting the ref update":
@@ -362,16 +373,16 @@ Given("GitHub fails while {string}", function (operation)
   this.mergeHead = pr.head.ref;
   this.mergeCommand = mergeCommand("squash");
   const responses = [
-    get(`${API}/pulls/123`, pr),
+    get(`${API}/pulls/123`, pr), liveBase(pr),
     get(`${API}/compare/${BASE_SHA}...${SHA}`, mergeComparison()),
-    get(`${API}/pulls/123`, pr),
+    get(`${API}/pulls/123`, pr), liveBase(pr),
     { command: this.mergeCommand }
   ];
-  const index = { "reading the pull request": 0, "comparing main to the head": 1, "submitting the merge": 3 }[operation];
+  const index = { "reading the pull request": 0, "comparing main to the head": 2, "submitting the merge": 5 }[operation];
   assert.notEqual(index, undefined, operation);
   this.mergeResponses = responses.slice(0, index + 1);
   Object.assign(this.mergeResponses[index], { exit_code: 1, stderr: "GitHub unavailable" });
-  this.mergeAttempted = index === 3;
+  this.mergeAttempted = index === 5;
   if (this.mergeAttempted) this.mergeResponses.push(get(`${API}/pulls/123`, pr));
 });
 
@@ -399,19 +410,20 @@ Given("automatic merge completion encounters {string}", function (state)
   }
   // Keep mutable PR snapshots independent: GitHub may change state between reads.
   const current = structuredClone(pr);
-  this.mergeResponses = [get(`${API}/pulls/123`, pr),
+  this.mergeResponses = [get(`${API}/pulls/123`, pr), liveBase(pr),
     get(`${API}/compare/${BASE_SHA}...${SHA}`, mergeComparison()),
     get(`${API}/pulls/123`, current)];
   switch (state)
   {
     case "a racing merge before submission": Object.assign(current, merged); return;
     case "a changed head before squash submission": current.head.sha = OTHER_SHA; return;
-    case "a changed base before squash submission": current.base.sha = OTHER_SHA; return;
+    case "a changed base before squash submission":
+      this.mergeResponses.push(liveBase(pr, OTHER_SHA)); return;
   }
   this.mergeAttempted = true;
   this.mergeCommand = mergeCommand("squash");
   const request = { command: this.mergeCommand };
-  this.mergeResponses.push(request);
+  this.mergeResponses.push(liveBase(pr), request);
   switch (state)
   {
     case "delayed merge confirmation":
@@ -450,7 +462,7 @@ When("automatic merging runs", function ()
       this.mergeHead ?? "release/1.2.3", String(this.mergeTimeout ?? 180)], this.mergeResponses, { success: null });
 });
 
-Then("automatic merging is {string}", function (outcome)
+Then("automatic merging is {string}", { timeout: 60000 }, function (outcome)
 {
   checkResult(this.mergeResult, outcome, [REPOSITORY, "PR #123", SHA, this.mergeBase ?? "main", BASE_SHA,
     this.mergeHead ?? "release/1.2.3"]);
@@ -466,9 +478,91 @@ Then("automatic merging is {string}", function (outcome)
   const writes = this.automation.calls().filter(call => !call.command && call.method !== "GET");
   assert.deepEqual(writes, this.fastForwardAttempted ? [{ method: "PATCH",
     endpoint: `${API}/git/refs/heads/${this.mergeBase ?? "main"}`, fields: { sha: SHA, force: "false" } }] : []);
+  if (this.verifyLiveBases) verifyLiveBaseGuards(this);
 });
 
 Then("the merge error explains {string}", function (reason)
 {
   if (reason) assert.ok(this.mergeResult.stderr.includes(reason), this.mergeResult.stderr);
 });
+
+// Extend the existing merge-policy scenario without changing the scenario count.
+// Ref fixtures are independent of PR metadata, including the stale-base case.
+function verifyLiveBaseGuards(world)
+{
+  const automation = world.automation;
+  const paths = [automation.output, automation.env.MOCK_LOG, automation.env.MOCK_ERRORS];
+  const saved = paths.map(path => readFileSync(path));
+  const pr = pullRequest();
+  pr.head.ref = "feature/editor";
+  pr.base.ref = "develop";
+  const args = [REPOSITORY, "123", SHA, "develop", BASE_SHA, pr.head.ref, "0"];
+  const prefix = [get(`${API}/pulls/123`, pr), liveBase(pr),
+    get(`${API}/compare/${BASE_SHA}...${SHA}`, mergeComparison()), get(`${API}/pulls/123`, pr)];
+  function run(label, responses, accepted = false, reason = "")
+  {
+    for (const path of paths) writeFileSync(path, "");
+    const result = automation.execute("auto-merge.sh", args, responses, { success: null });
+    const context = `${label}: ${result.stdout}${result.stderr}`;
+    assert.equal(result.status === 0, accepted, context);
+    if (reason) assert.ok(result.stderr.includes(reason), context);
+    const writes = automation.calls().filter(call => call.command || call.method !== "GET");
+    if (!accepted)
+    {
+      assert.deepEqual(writes, [], `${label}: rejection must precede any mutation`);
+      assert.equal(readFileSync(automation.output, "utf8"), "", context);
+      for (const value of [REPOSITORY, "PR #123", SHA, BASE_SHA, pr.head.ref, pr.base.ref])
+        assert.ok(result.stderr.includes(value), context);
+    }
+    else
+    {
+      assert.deepEqual(writes.map(call => call.command), [mergeCommand("squash")], context);
+      assert.equal(readFileSync(automation.output, "utf8"), `merge_sha=${SHA}\n`, context);
+    }
+  }
+  try
+  {
+    run("code advanced while PR metadata stayed stale",
+      [get(`${API}/pulls/123`, pr), liveBase(pr, OTHER_SHA),
+        ...badgeAdvance(BASE_SHA, OTHER_SHA, [{ filename: "src/bootstrap.ts" }])], false, "base changed");
+    run("target advanced between the two live reads",
+      [...prefix, liveBase(pr, OTHER_SHA)], false, "actual live base");
+    const badgeComparison = mergeComparison(2, 1, OTHER_SHA);
+    run("verified badge advance with stale PR metadata",
+      [get(`${API}/pulls/123`, pr), liveBase(pr, OTHER_SHA), ...badgeAdvance(BASE_SHA, OTHER_SHA),
+        get(`${API}/compare/${OTHER_SHA}...${SHA}`, badgeComparison), get(`${API}/pulls/123`, pr),
+        liveBase(pr, OTHER_SHA), { command: mergeCommand("squash") }, get(`${API}/pulls/123`, mergedPull(pr))], true);
+    // The live ref, not a lagging PR .base.sha, also governs the final recheck.
+    const stale = structuredClone(pr);
+    stale.base.sha = OTHER_SHA;
+    run("PR metadata differs while the verified live target is unchanged",
+      [get(`${API}/pulls/123`, stale), liveBase(pr), prefix[2], get(`${API}/pulls/123`, stale),
+        liveBase(pr), { command: mergeCommand("squash") }, get(`${API}/pulls/123`, mergedPull(stale))], true);
+    for (const stage of ["initial", "final"])
+    {
+      for (const state of ["API failure", "deleted ref", "wrong ref", "wrong object type", "missing SHA",
+        "malformed SHA", "SHA with newline", "multiple responses", "invalid JSON"])
+      {
+        const ref = liveBase(pr);
+        switch (state)
+        {
+          case "API failure": Object.assign(ref, { exit_code: 1, stderr: "gh: HTTP 503\n" }); break;
+          case "deleted ref": Object.assign(ref, { exit_code: 1, stderr: "gh: HTTP 404\n" }); break;
+          case "wrong ref": ref.response.ref = "refs/heads/main"; break;
+          case "wrong object type": ref.response.object.type = "tag"; break;
+          case "missing SHA": delete ref.response.object.sha; break;
+          case "malformed SHA": ref.response.object.sha = "bad"; break;
+          case "SHA with newline": ref.response.object.sha += "\n"; break;
+          case "multiple responses": ref.pages = [ref.response, ref.response]; break;
+          case "invalid JSON": ref.raw = "not JSON"; break;
+        }
+        run(`${stage}: ${state}`, [...(stage === "initial" ? [prefix[0]] : prefix), ref], false,
+          ref.exit_code ? "Could not read live target ref" : "Invalid live target ref response");
+      }
+    }
+  }
+  finally
+  {
+    paths.forEach((path, index) => writeFileSync(path, saved[index]));
+  }
+}

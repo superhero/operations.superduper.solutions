@@ -98,3 +98,86 @@ export async function coverageNavigation(page) {
   await heading('source-a.ts');
   await visibleLine('L40');
 }
+
+// Use the installed c8/Istanbul reporter as well as the adversarial fixture.
+// Generated coverage stays inside this scenario's directory, never in the
+// application's coverage directory or its V8 collection directory.
+export async function realCoverageFixture(directory) {
+  await mkdir(join(directory, 'src', 'nested'), { recursive: true });
+  await writeFile(join(directory, 'package.json'), '{"type":"module"}\n');
+  await writeFile(join(directory, 'src', 'root.js'), 'export const answer = 42;\n');
+  for (const name of ['source-a', 'source_a']) {
+    const padding = Array.from({ length: 80 }, (_, index) => `// ${name} line ${index + 1}: Ω`).join('\n');
+    await writeFile(join(directory, 'src', 'nested', `${name}.js`),
+      `export function choose(value) {\n  if (value) return 'Ω';\n  return 'other';\n}\n${padding}\n`);
+  }
+  await writeFile(join(directory, 'exercise.mjs'), `import { answer } from './src/root.js';
+    import { choose } from './src/nested/source-a.js';
+    if (answer !== 42 || choose(true) !== 'Ω') throw new Error('Unexpected fixture result');\n`);
+  execFileSync(process.execPath, [resolve('node_modules/c8/bin/c8.js'), '--all', '--src=src',
+    '--include=src/**/*.js', '--reporter=html', '--reports-dir=coverage', '--temp-directory=v8',
+    process.execPath, 'exercise.mjs'], { cwd: directory });
+  const output = join(directory, 'test-coverage.html');
+  execFileSync(process.execPath, [resolve('.github/scripts/generate-coverage-report.mjs'), output, join(directory, 'coverage')]);
+  return output;
+}
+
+export async function realCoverageNavigation(page) {
+  const frame = page.frameLocator('#coverage');
+  const ready = async () => {
+    await page.waitForFunction(() => {
+      const doc = document.getElementById('coverage').contentDocument;
+      return doc?.readyState === 'complete' && doc.documentElement.dataset.coveragePage;
+    });
+    assert.equal(await page.locator('#coverage-error').textContent(), '');
+  };
+  const visibleLine = async () => {
+    await page.waitForFunction(() => {
+      const frame = document.getElementById('coverage');
+      const marker = frame.contentDocument?.getElementsByName('L40')[0];
+      const top = marker?.getBoundingClientRect().top;
+      return top !== undefined && top >= -1 && top < frame.clientHeight;
+    });
+  };
+  await frame.getByRole('heading', { name: 'All files', exact: true }).waitFor();
+  await ready();
+  await frame.locator('a[href$="nested/index.html"]').click();
+  const links = frame.locator('.coverage-summary tbody td.file a');
+  await links.filter({ hasText: 'source-a.js' }).waitFor();
+  await ready();
+  const originalOrder = await links.allTextContents();
+  assert.deepEqual([...originalOrder].sort(), ['source-a.js', 'source_a.js']);
+  await frame.locator('th[data-col="file"]').click();
+  assert.deepEqual(await links.allTextContents(), [...originalOrder].reverse());
+  await frame.locator('#fileSearch').fill('source_a');
+  assert.equal(await frame.locator('.coverage-summary tbody tr:visible').count(), 1);
+  assert.equal(await frame.locator('.coverage-summary tbody tr:visible td.file a').textContent(), 'source_a.js');
+  await frame.locator('#fileSearch').fill('');
+  await frame.getByRole('link', { name: 'source-a.js', exact: true }).click();
+  await frame.getByRole('heading').filter({ hasText: 'source-a.js' }).waitFor();
+  await ready();
+  assert.ok((await frame.locator('pre.prettyprint').textContent()).includes('Ω'));
+  await frame.locator('a[href="#L40"]').click();
+  await page.waitForURL(url => new URLSearchParams(url.hash.slice(1)).get('line') === 'L40');
+  await visibleLine();
+  const deepLink = page.url();
+  await page.reload();
+  await frame.getByRole('heading').filter({ hasText: 'source-a.js' }).waitFor();
+  await ready();
+  await visibleLine();
+  await frame.locator('h1 a[href="index.html"]').click();
+  await frame.getByRole('link', { name: 'source_a.js', exact: true }).waitFor();
+  await ready();
+  await frame.getByRole('link', { name: 'source_a.js', exact: true }).click();
+  await frame.getByRole('heading').filter({ hasText: 'source_a.js' }).waitFor();
+  await ready();
+  await page.goBack();
+  await frame.getByRole('link', { name: 'source_a.js', exact: true }).waitFor();
+  await page.goBack();
+  await frame.getByRole('heading').filter({ hasText: 'source-a.js' }).waitFor();
+  assert.equal(page.url(), deepLink);
+  await visibleLine();
+  await page.goForward();
+  await frame.getByRole('link', { name: 'source_a.js', exact: true }).waitFor();
+  await ready();
+}

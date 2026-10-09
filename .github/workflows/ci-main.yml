@@ -156,7 +156,7 @@ jobs:
       - name: Check coverage and badge
         id: coverage
         run: |
-          npm --loglevel=error run coverage
+          npm --loglevel=error run test:coverage
           npm --loglevel=error run badges:coverage -- --check
           jq -r '.total | "Coverage: statements \(.statements.pct)%, branches \(.branches.pct)%, functions \(.functions.pct)%, lines \(.lines.pct)%."' \
             tmp/test/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"

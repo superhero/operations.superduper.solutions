@@ -4,7 +4,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, extname, join, resolve } from "node:path";
+import { basename, dirname, extname, join, resolve } from "node:path";
 import { generate } from "multiple-cucumber-html-reporter";
 
 const [output, ...inputs] = process.argv.slice(2);
@@ -106,14 +106,45 @@ try
         scenario.steps.length === 0 || scenario.steps.some(step =>
           !["passed", "failed", "skipped", "undefined", "pending", "ambiguous"].includes(step.result?.status)))))
       throw new Error(`Invalid Cucumber report '${input}': expected a nonempty feature array with scenarios, steps, and result statuses.`);
+    // Transfer runtime metadata from Cucumber hooks before rendering. The
+    // metadata attachment is not a test artifact and should not clutter steps.
+    for (const feature of features)
+    {
+      let browser;
+      for (const scenario of feature.elements)
+        for (const step of [...(scenario.before ?? []), ...scenario.steps, ...(scenario.after ?? [])])
+          if (step.embeddings) step.embeddings = step.embeddings.filter(attachment => {
+            if (attachment.mime_type !== "application/vnd.operations.browser+json") return true;
+            const observed = JSON.parse(Buffer.from(attachment.data, "base64").toString("utf8"));
+            if (!observed || !["chromium", "firefox", "webkit"].includes(observed.name) ||
+              typeof observed.version !== "string" || !/^\d+(?:\.\d+)*$/.test(observed.version))
+              throw new Error(`Invalid browser metadata in '${input}' for '${feature.name}'.`);
+            if (browser && (browser.name !== observed.name || browser.version !== observed.version))
+              throw new Error(`Conflicting browser metadata in '${input}' for '${feature.name}'.`);
+            browser = { name: observed.name, version: observed.version };
+            return false;
+          });
+      if (browser) feature.metadata = { ...feature.metadata, browser };
+      else if (/^cucumber-(?:source|test|automation)\.json$/.test(basename(input)) && !feature.metadata?.browser)
+        feature.metadata = { ...feature.metadata, browser: { name: "Not applicable", version: "" } };
+    }
     featureCount += features.length;
     await writeFile(join(jsonDir, `suite-${index}.json`), JSON.stringify(features));
   }
+  const runUrl = process.env.REPORT_RUN_URL ? new URL(process.env.REPORT_RUN_URL) : undefined;
+  const runId = runUrl?.pathname.match(/\/actions\/runs\/(\d+)\/?$/)?.[1];
+  if (runUrl && (runUrl.protocol !== "https:" || !runId))
+    throw new Error("REPORT_RUN_URL must be an HTTPS GitHub Actions run URL.");
   const customData = {
-    ...(process.env.REPORT_COMMIT ? { Commit: process.env.REPORT_COMMIT } : {}),
-    ...(process.env.REPORT_RUN_URL ? { ciPipeline: process.env.REPORT_RUN_URL } : {})
+    // False suppresses the template field; null restores the runtime username.
+    username: false,
+    ...(process.env.REPORT_COMMIT ? { Commit: process.env.REPORT_COMMIT.slice(0, 7) } : {}),
+    ...(runUrl ? { ciPipeline:
+      `<a href="${runUrl.href.replaceAll("&", "&amp;").replaceAll('"', "&quot;")}" target="_blank" rel="noopener noreferrer">${runId}</a>` } : {})
   };
   await generate({ jsonDir, reportPath, pageTitle: "Test Report", reportName: "Operations tests",
+    // Empty strings restore the default footer. Clear its content and wrapper.
+    pageFooter: " ", customStyle: "footer { display: none; }",
     hideMetadata: true, displayDuration: true, useCDN: false, externalizeMedia: false, logging: "warn", customData });
 
   const types = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".png": "image/png",

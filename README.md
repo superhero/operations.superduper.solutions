@@ -2,126 +2,143 @@
 
 A browser-based platform for composing OpenAPI operations into reusable workflows.
 
-## Local development
-
-Use the Node.js and npm versions declared in `package.json`, then run `npm ci`
-and `npm run dev`. `npm run build` produces a standalone `dist/index.html`.
-
-Two **Examples** catalogs provide 33 operations: 19 local mocks under
-**example.com** and 14 live requests under **httpbin**. Find operations by name
-or identifier using local Levenshtein matching, review their inputs, and compose
-a workflow. Request previews and diagram connections do not execute API calls.
-The separate **Run workflow** action identifies the selected catalog's execution
-mode and submits each operation only when confirmed.
-
-The example.com catalog runs entirely in the browser, including its fictional
-project/task data and echoed example requests. Mock changes last for that run.
-Its displayed URLs use [IANA's documentation domain](https://www.iana.org/help/example-domains/);
-no requests are sent to example.com. The httpbin catalog sends real requests to
-[httpbin.org's HTTP request and response service](https://httpbin.org/).
-Network and HTTP failures remain visible and retryable; the live service must
-be available and allow browser access. Both catalogs cover GET, POST, PUT,
-PATCH, DELETE, HEAD and OPTIONS. TRACE is available only as a local mock because
-browser Fetch does not permit it.
-
-Named workflows are saved in this browser; use JSON export/import to keep a
-portable copy. Browsing, editing, matching and mock runs work without a backend.
-Existing `demo:*` project/task identifiers, paths and field identities are
-preserved, so saved workflows continue to resolve their operations.
-
-Adding an operation to the canvas creates separate input and response panels
-from its documented schemas. Connect named output fields to input fields, or
-drop onto an input panel to select the nearest available field. Nested object
-and array branches can be hidden and restored; deleting an operation removes
-its owned panels and connections. Version 2 exports retain these field mappings
-and branch visibility. Existing version 1 plans remain readable and editable.
-Undocumented, recursive, or unsupported schema shapes show an explicit notice;
-response examples are never used to invent fields.
-
-The canvas also supports **Switch** gates (first matching branch), **Cast**
-conversions and editable Markdown **Comments**. Describe a workflow from the
-toolbar, and add saved workflows from the sidebar to nest them. Nested nodes
-carry a saved copy of their workflow and expose its unconnected inputs and
-documented outputs; later edits or deletion of the original do not change that
-copy. Version 3 exports include these nodes and descriptions while preserving
-version 1/2 compatibility. The saved-workflow dialog supports selecting several
-documents for deletion and retrying storage failures.
-
-Runs ask for a starting operation when needed, validate inputs, pass mapped
-responses through routing nodes and nested workflows, and offer **Next operation**
-and **End run**. Ending a run cancels a pending request; it cannot undo an API
-operation already processed. Cycles and unsupported input shapes report an
-error instead of repeatedly issuing requests.
-
-The bundled schemas are [`demo.openapi.json`](src/catalogs/demo.openapi.json)
-and [`httpbin.openapi.json`](src/catalogs/httpbin.openapi.json). Their source
-identities, navigation groups and execution destinations are registered together
-in [`src/lib/catalog-registry.ts`](src/lib/catalog-registry.ts).
-`extractOperations(document, source)` in [`src/lib/catalog.ts`](src/lib/catalog.ts)
-validates each OpenAPI 3.0/3.1 document using its distinct source name. The
-httpbin schemas describe the example forms we provide for its arbitrary echo
-inputs; their chosen names and required fields are not service requirements.
-
-Forms support string, number, integer, boolean, object, array and null values.
-Objects and arrays use JSON text with nested type and required-field checks;
-primitive fields also support enums, numeric bounds and Unicode text lengths,
-and arrays support item-count bounds. Local schema references resolve up to a
-12-level nesting limit. Path and header parameters accept primitive values;
-query arrays repeat their parameter name, and flat query objects require
-explicit `deepObject` serialization. Bodies support named JSON objects with
-structured properties, root JSON arrays/scalars/null, plain text, URL-encoded
-forms and multipart forms containing primitive text fields.
-
-Workflow mappings preserve these types and can assemble declared nested
-properties or array-item paths. Each assembled input must satisfy its full
-schema; conflicting connections fail, and Cast converts only primitive values.
-Each operation selects one request media type. File uploads, dynamic object
-properties, nullable unions, schema composition, cookie parameters and other
-unsupported constraints or serializations fail explicitly; remote references
-are never fetched.
-
-### Browser tests
-
-With Docker running, build and test the application using:
-
-```sh
-npm ci
-npm run build
-npm run test:browser
-```
-
-These Cucumber scenarios use Playwright Chromium to check operation discovery,
-form validation, request previews, themes, mobile navigation, and workflow
-editing, saving and import/export. The existing branch workflows run the same
-command against the bundle they build with the project's Node.js version.
-
-The launcher uses the official Playwright Docker image, with its version taken
-from the pinned `@playwright/test` dependency. Its bundled Node.js runs only the
-tests and a local static server; the application is built beforehand. The first
-run downloads the image, which includes Chromium and its system dependencies;
-later local runs reuse it. Test packages come from `npm ci`. No separate browser
-installation, exposed port, deployment or Cloudflare credentials are needed.
-
-Each scenario starts with fresh browser storage. Browser tests intercept live
-httpbin requests with controlled responses, so they do not depend on the public
-service. Mock runs are checked for zero network requests. Browser errors and
-unexpected network requests fail the test. Failed scenarios save a screenshot,
-Playwright trace, and diagnostics under `tmp/test/browser/`; GitHub Actions retains these
-for seven days. Open a downloaded `trace.zip` in the
-[Playwright Trace Viewer](https://trace.playwright.dev/) to inspect its actions,
-DOM snapshots, console and network activity. To run one scenario locally, use
-`npm run test:browser -- --name 'The selected theme survives a reload'`.
-
-After running source, acceptance, automation, and browser suites,
-`npm run report:tests` creates the combined `tmp/test-report.html`, including
-browser failure screenshots. Run the complete browser suite before generating
-scenario badges. These tests verify behavior and responsive layout; visual
-comparison baselines can be added once the design is agreed.
-
-## Development status
-
 > [!NOTE]
 > This project is under active development and is currently in a pre-release state.
+
+## npm commands
+
+<details>
+<summary><code>npm ci</code></summary>
+
+- **Purpose:** Install locked dependencies.
+- **Requirements:** Use the Node.js and npm versions declared in [`package.json`](package.json).
+
+</details>
+
+<details>
+<summary><code>npm run badges:coverage</code></summary>
+
+- **Purpose:** Update the source-coverage badge.
+- **Requirements:** Requires Bash, jq and a fresh `npm run test:source:coverage` followed by
+  `npm run test:coverage`.
+
+</details>
+
+<details>
+<summary><code>npm run badges:dependencies</code></summary>
+
+- **Purpose:** Update dependency-version badges.
+- **Requirements:** Requires Bash, jq and current dependency versions in `package.json`.
+
+</details>
+
+<details>
+<summary><code>npm run badges:scenarios</code></summary>
+
+- **Purpose:** Update the test-scenario badge.
+- **Requirements:** Requires Bash, jq and fresh, complete results from all four test suites.
+
+</details>
+
+<details>
+<summary><code>npm run build</code></summary>
+
+- **Purpose:** Build `dist/index.html`.
+- **Requirements:** Run `npm ci` first.
+
+</details>
+
+<details>
+<summary><code>npm run dev</code></summary>
+
+- **Purpose:** Start the local development server.
+- **Requirements:** Run `npm ci` first.
+
+</details>
+
+<details>
+<summary><code>npm run report:tests</code></summary>
+
+- **Purpose:** Generate the combined `tmp/test-report.html`.
+- **Requirements:** Run `npm ci` first. Fresh, complete results from all four test suites are required.
+
+</details>
+
+<details>
+<summary><code>npm run test:acceptance</code></summary>
+
+- **Purpose:** Check the built output.
+- **Requirements:** Run `npm ci` and `npm run build` first.
+
+</details>
+
+<details>
+<summary><code>npm run test:acceptance:coverage</code></summary>
+
+- **Purpose:** Run acceptance scenarios and collect coverage data.
+- **Requirements:** Run `npm ci` and `npm run build` first.
+
+</details>
+
+<details>
+<summary><code>npm run test:automation</code></summary>
+
+- **Purpose:** Check repository automation without deploying.
+- **Requirements:** Run `npm ci` first. Bash and jq are required.
+
+</details>
+
+<details>
+<summary><code>npm run test:browser</code></summary>
+
+- **Purpose:** Run browser scenarios in Chromium.
+- **Requirements:** Run `npm ci` and `npm run build` first. Bash and running Docker are required.
+
+</details>
+
+<details>
+<summary><code>npm run test:coverage</code></summary>
+
+- **Purpose:** Generate reports in `tmp/test/coverage/` and enforce 100% statement, branch,
+  function and line coverage.
+- **Requirements:** Collect fresh coverage with `npm run test:source:coverage` or
+  `npm run test:acceptance:coverage` first.
+
+</details>
+
+<details>
+<summary><code>npm run test:source</code></summary>
+
+- **Purpose:** Run source scenarios.
+- **Requirements:** Run `npm ci` first.
+
+</details>
+
+<details>
+<summary><code>npm run test:source:coverage</code></summary>
+
+- **Purpose:** Run source scenarios and collect coverage data.
+- **Requirements:** Run `npm ci` first.
+
+</details>
+
+<details>
+<summary><code>npm run typecheck</code></summary>
+
+- **Purpose:** Check Svelte components and TypeScript source.
+- **Requirements:** Run `npm ci` first.
+
+</details>
+
+<details>
+<summary><code>npm test</code></summary>
+
+- **Purpose:** Run the acceptance suite only; alias for `npm run test:acceptance`.
+- **Requirements:** Run `npm ci` and `npm run build` first.
+
+</details>
+
+## Development status
 
 [![Main CI/CD](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-main.yml?label=Main%20CI%2FCD)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-main.yml)
 

@@ -3,31 +3,40 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { Given, When, Then } from '@cucumber/cucumber';
-import { coverageFixture, coverageNavigation } from './coverage-report.fixture.mjs';
+import { coverageFixture, coverageNavigation, realCoverageFixture, realCoverageNavigation } from './coverage-report.fixture.mjs';
+
+async function openReport(world, output, name) {
+  const url = world.coverageTransport === 'file' ? pathToFileURL(output).href : `${world.baseURL}/${name}`;
+  world.coverageURLs.push(url);
+  if (world.coverageTransport === 'file') {
+    await world.page.route(url, route => route.continue());
+  } else {
+    const body = await readFile(output);
+    await world.page.route(url, route => route.fulfill({ contentType: 'text/html', body }));
+  }
+  await world.page.goto(url);
+}
 
 Given('a standalone coverage report opened over {string}', async function (transport) {
-  const output = await coverageFixture(this.artifactDirectory);
+  assert.ok(['http', 'file'].includes(transport), transport);
+  this.coverageTransport = transport;
   this.coverageRequests = [];
+  this.coverageURLs = [];
   this.page.on('request', request => this.coverageRequests.push(request.url()));
-  if (transport === 'file') {
-    this.coverageURL = pathToFileURL(output).href;
-    await this.page.route(this.coverageURL, route => route.continue());
-  } else {
-    assert.equal(transport, 'http');
-    this.coverageURL = `${this.baseURL}/test-coverage.html`;
-    const body = await readFile(output);
-    await this.page.route(this.coverageURL, route => route.fulfill({ contentType: 'text/html', body }));
-  }
-  await this.page.goto(this.coverageURL);
+  await openReport(this, await coverageFixture(this.artifactDirectory), 'fixture-coverage.html');
 });
 
 When('I navigate coverage folders, files, source lines and browser history', async function () {
   await coverageNavigation(this.page);
+  const output = await realCoverageFixture(join(this.artifactDirectory, 'real'));
+  await openReport(this, output, 'real-coverage.html');
+  await realCoverageNavigation(this.page);
 });
 
 Then('coverage navigation needs no separate pages or network assets', function () {
   assert.deepEqual(this.coverageRequests.filter(url =>
-    url.split('#')[0] !== this.coverageURL && !url.startsWith('blob:') && !url.startsWith('data:')), []);
+    !this.coverageURLs.includes(url.split('#')[0]) && !url.startsWith('data:')), []);
 });

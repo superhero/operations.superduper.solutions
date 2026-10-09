@@ -235,7 +235,8 @@ function releaseState(branch, merged = false, mergeSha = OTHER_SHA)
 }
 
 const releaseRead = pr => get(`${API}/pulls/124`, pr);
-const currentMain = sha => get(`${API}/git/ref/heads/main`, { object: { sha } });
+const currentMain = sha => get(`${API}/git/ref/heads/main`,
+  { ref: "refs/heads/main", object: { type: "commit", sha } });
 const squashCommand = ["pr", "merge", "124", "--repo", REPOSITORY, "--squash", "--match-head-commit", SHA];
 
 function releaseComparison()
@@ -282,18 +283,18 @@ Given("release PR {string} is {string} during {string}", function (branch, condi
       this.releaseQueue.push(releaseRead(merged), releaseRead(merged), currentMain(OTHER_SHA));
       break;
     case "merged despite a merge command error":
-      this.releaseQueue.push(releaseRead(open), releaseComparison(), releaseRead(open),
+      this.releaseQueue.push(releaseRead(open), currentMain(BASE_SHA), releaseComparison(), releaseRead(open), currentMain(BASE_SHA),
         { command: squashCommand, exit_code: 1, stderr: "gh: HTTP 503\n" },
         releaseRead(merged), releaseRead(merged), currentMain(OTHER_SHA));
       break;
     case "awaiting merge confirmation":
-      this.releaseQueue.push(releaseRead(open), releaseComparison(), releaseRead(open), { command: squashCommand },
+      this.releaseQueue.push(releaseRead(open), currentMain(BASE_SHA), releaseComparison(), releaseRead(open), currentMain(BASE_SHA), { command: squashCommand },
         releaseRead(open), releaseRead(merged), releaseRead(merged), currentMain(OTHER_SHA));
       break;
     case "fast-forwarded by the merge helper":
       this.releaseMergedSha = SHA;
       merged.merge_commit_sha = SHA;
-      this.releaseQueue.push(releaseRead(open), releaseComparison(), releaseRead(open),
+      this.releaseQueue.push(releaseRead(open), currentMain(BASE_SHA), releaseComparison(), releaseRead(open), currentMain(BASE_SHA),
         { method: "PATCH", endpoint: `${API}/git/refs/heads/main`, fields: { sha: SHA, force: "false" },
           response: { ref: "refs/heads/main", object: { type: "commit", sha: SHA } } },
         releaseRead(merged), releaseRead(merged), currentMain(SHA));
@@ -338,18 +339,18 @@ Given("release PR orchestration encounters {string} during {string}", function (
       Object.assign(this.releaseQueue[0], { exit_code: 1, stderr: "gh: HTTP 503\n" });
       break;
     case "a failed merge command":
-      this.releaseQueue.push(releaseRead(open), releaseComparison(), releaseRead(open),
+      this.releaseQueue.push(releaseRead(open), currentMain(BASE_SHA), releaseComparison(), releaseRead(open), currentMain(BASE_SHA),
         { command: squashCommand, exit_code: 1, stderr: "gh: HTTP 503\n" }, releaseRead(open), releaseRead(open));
       break;
     case "an unconfirmed release after helper success":
       this.releaseTimeout = "30";
-      this.releaseQueue.push(releaseRead(open), releaseComparison(), releaseRead(open),
+      this.releaseQueue.push(releaseRead(open), currentMain(BASE_SHA), releaseComparison(), releaseRead(open), currentMain(BASE_SHA),
         { command: squashCommand }, releaseRead(merged), releaseRead(open));
       break;
     case "a merge that remains unconfirmed":
     case "an identity change while waiting":
     case "an unavailable confirmation API":
-      this.releaseQueue.push(releaseRead(open), releaseComparison(), releaseRead(open), { command: squashCommand });
+      this.releaseQueue.push(releaseRead(open), currentMain(BASE_SHA), releaseComparison(), releaseRead(open), currentMain(BASE_SHA), { command: squashCommand });
       const followup = releaseRead(structuredClone(open));
       if (condition === "an identity change while waiting") followup.response.head.sha = BASE_SHA;
       if (condition === "an unavailable confirmation API")

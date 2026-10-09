@@ -64,7 +64,7 @@ commit as the code:
 
 ```sh
 npm run test:source:coverage
-npm run coverage
+npm run test:coverage
 npm run badges:coverage
 ```
 
