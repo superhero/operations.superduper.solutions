@@ -275,7 +275,7 @@ problems before building.
 
 ---
 
-<a href="https://www.npmjs.com/package/@sveltejs/vite-plugin-svelte"><img src=".github/badges/version-dependency-sveltejs--vite-plugin-svelte.svg" alt="@sveltejs/vite-plugin-sveltejs--vite-plugin-svelte declared version"></a>
+<a href="https://www.npmjs.com/package/@sveltejs/vite-plugin-svelte"><img src=".github/badges/version-dependency-sveltejs--vite-plugin-svelte.svg" alt="@sveltejs/vite-plugin-svelte declared version"></a>
 
 Connects the webpage’s `Svelte` components to the `Vite` build, compiling the
 workflow editor, navigation, and controls into browser JavaScript and CSS.
