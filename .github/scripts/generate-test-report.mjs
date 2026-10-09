@@ -109,9 +109,14 @@ try
     featureCount += features.length;
     await writeFile(join(jsonDir, `suite-${index}.json`), JSON.stringify(features));
   }
+  const runUrl = process.env.REPORT_RUN_URL ? new URL(process.env.REPORT_RUN_URL) : undefined;
+  const runId = runUrl?.pathname.match(/\/actions\/runs\/(\d+)\/?$/)?.[1];
+  if (runUrl && (runUrl.protocol !== "https:" || !runId))
+    throw new Error("REPORT_RUN_URL must be an HTTPS GitHub Actions run URL.");
   const customData = {
     ...(process.env.REPORT_COMMIT ? { Commit: process.env.REPORT_COMMIT } : {}),
-    ...(process.env.REPORT_RUN_URL ? { ciPipeline: process.env.REPORT_RUN_URL } : {})
+    ...(runUrl ? { ciPipeline:
+      `<a href="${runUrl.href.replaceAll("&", "&amp;").replaceAll('"', "&quot;")}" target="_blank" rel="noopener noreferrer">${runId}</a>` } : {})
   };
   await generate({ jsonDir, reportPath, pageTitle: "Test Report", reportName: "Operations tests",
     hideMetadata: true, displayDuration: true, useCDN: false, externalizeMedia: false, logging: "warn", customData });

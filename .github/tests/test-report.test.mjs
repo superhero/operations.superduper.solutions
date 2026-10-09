@@ -14,6 +14,7 @@ const screenshot = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8
 Given("Cucumber results from source, acceptance, browser, and automation suites", function ()
 {
   this.testReport = { output: join(this.automation.root, "test-report.html"), inputs: [] };
+  this.automation.env.REPORT_RUN_URL = "https://github.com/superhero/operations.superduper.solutions/actions/runs/37898008768";
   for (const suite of ["source", "acceptance", "browser", "automation"])
   {
     const file = join(this.automation.root, `${suite}.json`);
@@ -60,6 +61,8 @@ Then("the report embeds all suite results, feature pages, scripts, styles, and f
   const html = readFileSync(this.testReport.output, "utf8");
   const files = JSON.parse(html.match(/<script id="report-files" type="application\/json">([^<]+)<\/script>/)[1]);
   const decode = path => Buffer.from(files[path].data, "base64").toString("utf8");
+  assert.ok(decode("index.html").includes(`<a href="${this.automation.env.REPORT_RUN_URL}" target="_blank" rel="noopener noreferrer">37898008768</a>`),
+    "CI Pipeline must link to the run URL using only the run ID as its label");
   const features = Object.keys(files).filter(path => path.startsWith("features/") && path.endsWith(".html"));
   assert.equal(features.length, 4);
   const pages = features.map(decode).join("\n");
