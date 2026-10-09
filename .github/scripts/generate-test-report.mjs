@@ -128,10 +128,11 @@ try
   if (!files["index.html"] || Object.keys(files).filter(path => path.startsWith("features/") && path.endsWith(".html")).length !== featureCount)
     throw new Error("Reporter did not generate an overview and a detail page for every input feature.");
   await mkdir(dirname(resolve(output)), { recursive: true });
+  const warning = (process.env.REPORT_WARNING ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
   await writeFile(output, `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Test Report</title><style>html,body{margin:0;height:100%}iframe{display:block;width:100%;height:100%;border:0}#report-error:empty{display:none}</style></head>
-<body><p id="report-error" role="alert"></p><iframe id="report" title="Cucumber test report"></iframe>
+<title>Test Report</title><style>html,body{margin:0;height:100%}body{display:flex;flex-direction:column}iframe{display:block;width:100%;flex:1;min-height:0;border:0}#report-warning,#report-error{padding:1rem;margin:0;font-family:system-ui,sans-serif}#report-warning{background:#fff3cd;color:#664d03}#report-warning:empty,#report-error:empty{display:none}</style></head>
+<body><p id="report-warning" role="status">${warning}</p><p id="report-error" role="alert"></p><iframe id="report" title="Cucumber test report"></iframe>
 <script id="report-files" type="application/json">${JSON.stringify(files).replaceAll("<", "\\u003c")}</script>
 <script>(${openReport.toString()})();</script></body></html>\n`);
   console.log(`Generated standalone test report: ${output} (${inputs.length} suites, ${featureCount} features).`);

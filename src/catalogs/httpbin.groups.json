@@ -1,0 +1,44 @@
+[
+  {
+    "id": "httpbin",
+    "name": "Examples · httpbin",
+    "description": "Live requests to httpbin.org that echo the values sent by these curated example forms.",
+    "children": [
+      {
+        "id": "methods",
+        "name": "HTTP methods",
+        "description": "Explore the available HTTP request methods and their response behavior.",
+        "operationIds": [
+          "httpbin:echoGet",
+          "httpbin:echoPost",
+          "httpbin:echoPut",
+          "httpbin:echoPatch",
+          "httpbin:echoDelete",
+          "httpbin:echoHead",
+          "httpbin:echoOptions"
+        ]
+      },
+      {
+        "id": "inputs",
+        "name": "Input types",
+        "description": "Explore typed path, query and header inputs, including repeated query values.",
+        "operationIds": [
+          "httpbin:echoParameters"
+        ]
+      },
+      {
+        "id": "bodies",
+        "name": "Body formats",
+        "description": "Explore structured JSON, root values, plain text and encoded text form fields.",
+        "operationIds": [
+          "httpbin:echoJsonObject",
+          "httpbin:echoJsonArray",
+          "httpbin:echoJsonScalar",
+          "httpbin:echoPlainText",
+          "httpbin:echoUrlEncoded",
+          "httpbin:echoMultipart"
+        ]
+      }
+    ]
+  }
+]

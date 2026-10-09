@@ -1,0 +1,52 @@
+/*
+Copyright (C) 2026 Erik Landvall
+SPDX-License-Identifier: AGPL-3.0-only
+See LICENSE and LICENSE-ADDITIONAL-TERMS.
+*/
+
+.detail-report { min-width: 0; padding: 24px; margin: 16px 0 24px; border-radius: 4px; background: var(--color-report-background); overflow-wrap: anywhere; }
+.report-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.report-metric { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-width: 0; min-height: 112px; padding: 20px 12px; border-radius: 4px; background: var(--color-report-card); text-align: center; }
+.report-metric-value { margin: 0; max-width: 100%; line-height: 1.4; }
+.report-metric-label, .report-muted { font-size: 13px; }
+.report-metric-label { color: var(--color-report-metric-label); }
+.report-muted { color: var(--color-report-muted); }
+.report-section { margin-top: 28px; }
+.report-section h3 { margin: 0 0 14px; font-size: 16px; font-weight: 700; }
+.report-facts { display: grid; grid-template-columns: minmax(95px, max-content) minmax(0, 1fr); gap: 10px 20px; margin: 0; font-size: 13px; }
+.report-facts dt { color: var(--color-report-muted); }
+.report-facts dd { margin: 0; min-width: 0; color: var(--color-foreground); }
+.report-facts code { padding: 2px 5px; border-radius: 3px; background: var(--color-report-card); }
+.report-inset { padding: 20px; border-radius: 4px; background: var(--color-report-card); }
+.report-table { width: 100%; margin-top: 16px; border-collapse: separate; border-spacing: 0; border-radius: 4px; background: var(--color-report-card); font-size: 13px; table-layout: fixed; }
+.report-table caption { padding: 12px 0; text-align: left; font-weight: 650; font-size: 14px; }
+.report-table caption strong { font-weight: 800; }
+.report-table th, .report-table td { padding: 12px; text-align: left; vertical-align: top; }
+.report-table thead th { border-bottom: 1px solid var(--color-report-background); font-weight: 650; }
+.report-table tbody th { color: inherit; font-weight: 400; }
+.report-table tbody tr:nth-child(odd) { color: var(--color-muted-foreground); background: color-mix(in srgb, var(--color-surface) 25%, transparent); }
+.report-table tbody tr:nth-child(even) { color: var(--color-foreground); }
+.report-record { --record-inset: 20px; column-gap: 25px; padding: var(--record-inset); }
+.report-record dt { font-weight: 800; color: var(--color-foreground); }
+.report-record dd { position: relative; isolation: isolate; }
+.report-record dd::before { content: ''; position: absolute; z-index: -1; top: 0; bottom: -10px; left: -13px; right: calc(-1 * var(--record-inset)); border-left: 1px solid var(--color-surface); background: color-mix(in srgb, var(--color-surface) 25%, transparent); pointer-events: none; }
+.report-record dd:first-of-type::before { top: calc(-1 * var(--record-inset)); border-top-right-radius: 4px; }
+.report-record dd:last-of-type::before { bottom: calc(-1 * var(--record-inset)); border-bottom-right-radius: 4px; }
+.info-button.report-toggle { width: 32px; height: 32px; background: var(--color-icon-background); color: var(--color-icon-foreground); }
+.info-button.report-toggle:is(:hover,[aria-expanded="true"]) { color: var(--color-icon-hover-foreground); background: var(--color-icon-hover-background); }
+@media (max-width: 599px) {
+  .detail-report { padding: 16px; }
+  .report-metrics { grid-template-columns: 1fr; gap: 8px; }
+  .report-metric { min-height: 92px; padding: 14px 12px; gap: 4px; }
+  .report-facts { grid-template-columns: 1fr; gap: 4px; }
+  .report-facts dd + dt { margin-top: 10px; }
+  .report-facts.report-record { --record-inset: 14px; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 10px 25px; }
+  .report-record dd + dt { margin-top: 0; }
+  .report-inset { padding: 14px; }
+  .report-table thead { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+  .report-table, .report-table tbody, .report-table tr { display: block; }
+  .report-table tr + tr { border-top: 1px dashed var(--color-report-background); }
+  .report-table th, .report-table td { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 4px 10px; padding: 8px 12px; }
+  .report-table th::before, .report-table td::before { content: attr(data-label); color: var(--color-report-muted); font-size: 11px; }
+  .report-table tbody tr > :is(th, td)::before { color: inherit; }
+}

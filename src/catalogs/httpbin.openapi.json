@@ -1,0 +1,1079 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Examples · httpbin",
+    "version": "1.0.0",
+    "description": "Live HTTP request examples using httpbin.org. These curated example forms choose names and types for arbitrary data that the service accepts; they do not define service-required fields. Each body example asks for a body so its echoed JSON can be mapped in a workflow. TRACE is omitted because browser Fetch forbids it; the local example.com catalog includes a mock TRACE operation."
+  },
+  "paths": {
+    "/anything/methods/get": {
+      "get": {
+        "operationId": "echoGet",
+        "summary": "HTTPBin GET request",
+        "description": "Send GET to the live httpbin echo service using its /anything route.",
+        "tags": [
+          "HTTP methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "The request values observed by httpbin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Echo"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {},
+                  "json": null,
+                  "form": {},
+                  "data": "",
+                  "files": {},
+                  "url": "https://httpbin.org/anything/methods/get",
+                  "method": "GET",
+                  "origin": "192.0.2.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anything/methods/post": {
+      "post": {
+        "operationId": "echoPost",
+        "summary": "HTTPBin POST request",
+        "description": "Send POST to the live httpbin echo service using its /anything route.",
+        "tags": [
+          "HTTP methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "The request values observed by httpbin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Echo"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {},
+                  "json": null,
+                  "form": {},
+                  "data": "",
+                  "files": {},
+                  "url": "https://httpbin.org/anything/methods/post",
+                  "method": "POST",
+                  "origin": "192.0.2.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anything/methods/put": {
+      "put": {
+        "operationId": "echoPut",
+        "summary": "HTTPBin PUT request",
+        "description": "Send PUT to the live httpbin echo service using its /anything route.",
+        "tags": [
+          "HTTP methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "The request values observed by httpbin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Echo"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {},
+                  "json": null,
+                  "form": {},
+                  "data": "",
+                  "files": {},
+                  "url": "https://httpbin.org/anything/methods/put",
+                  "method": "PUT",
+                  "origin": "192.0.2.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anything/methods/patch": {
+      "patch": {
+        "operationId": "echoPatch",
+        "summary": "HTTPBin PATCH request",
+        "description": "Send PATCH to the live httpbin echo service using its /anything route.",
+        "tags": [
+          "HTTP methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "The request values observed by httpbin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Echo"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {},
+                  "json": null,
+                  "form": {},
+                  "data": "",
+                  "files": {},
+                  "url": "https://httpbin.org/anything/methods/patch",
+                  "method": "PATCH",
+                  "origin": "192.0.2.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anything/methods/delete": {
+      "delete": {
+        "operationId": "echoDelete",
+        "summary": "HTTPBin DELETE request",
+        "description": "Send DELETE to the live httpbin echo service using its /anything route.",
+        "tags": [
+          "HTTP methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "The request values observed by httpbin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Echo"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {},
+                  "json": null,
+                  "form": {},
+                  "data": "",
+                  "files": {},
+                  "url": "https://httpbin.org/anything/methods/delete",
+                  "method": "DELETE",
+                  "origin": "192.0.2.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anything/methods/head": {
+      "head": {
+        "operationId": "echoHead",
+        "summary": "HTTPBin HEAD request",
+        "description": "Send HEAD to the live httpbin echo service using its /anything route.",
+        "tags": [
+          "HTTP methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "Response headers without a response body.",
+            "headers": {
+              "Allow": {
+                "description": "Methods accepted by this endpoint.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anything/methods/options": {
+      "options": {
+        "operationId": "echoOptions",
+        "summary": "HTTPBin OPTIONS request",
+        "description": "Send OPTIONS to the live httpbin echo service using its /anything route.",
+        "tags": [
+          "HTTP methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "Response headers without a response body.",
+            "headers": {
+              "Allow": {
+                "description": "Methods accepted by this endpoint.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anything/parameters/{sampleId}": {
+      "get": {
+        "operationId": "echoParameters",
+        "summary": "HTTPBin query and header inputs",
+        "description": "Echo chosen string, integer, number, Boolean, enum and array query values, a path segment and a request header. Names and input types are examples; httpbin echoes query and header values as text.",
+        "tags": [
+          "Input types"
+        ],
+        "parameters": [
+          {
+            "name": "sampleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sample ID",
+              "example": "sample-1"
+            }
+          },
+          {
+            "name": "label",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "title": "Label",
+              "example": "Documentation"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "title": "Count",
+              "example": 3
+            }
+          },
+          {
+            "name": "ratio",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "title": "Ratio",
+              "example": 0.75
+            }
+          },
+          {
+            "name": "enabled",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "title": "Enabled",
+              "example": true
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "title": "Priority",
+              "enum": [
+                "low",
+                "normal",
+                "high"
+              ],
+              "example": "normal"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "title": "Tags",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "docs",
+                "example"
+              ]
+            }
+          },
+          {
+            "name": "X-Example-Label",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "title": "Example header",
+              "example": "workflow-example"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The request values observed by httpbin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Echo"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {},
+                  "json": null,
+                  "form": {},
+                  "data": "",
+                  "files": {},
+                  "url": "https://httpbin.org/anything/parameters/{sampleId}",
+                  "method": "GET",
+                  "origin": "192.0.2.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anything/bodies/json-object": {
+      "post": {
+        "operationId": "echoJsonObject",
+        "summary": "HTTPBin JSON object",
+        "description": "Send a chosen JSON object body to httpbin. The fields and types are curated examples of arbitrary data accepted by the service. Includes string, integer, number, Boolean, enum, nested object, array and null properties.",
+        "tags": [
+          "Body formats"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Provide a body for this example so it can be echoed. The live service itself accepts requests without a body.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleObject"
+              },
+              "example": {
+                "label": "Documentation",
+                "count": 3,
+                "ratio": 0.75,
+                "enabled": true,
+                "priority": "normal",
+                "profile": {
+                  "name": "Erik",
+                  "count": 2
+                },
+                "tags": [
+                  "docs",
+                  "example"
+                ],
+                "note": null
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request values observed by httpbin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EchoJsonObject"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {
+                    "Content-Type": "application/json"
+                  },
+                  "json": {
+                    "label": "Documentation",
+                    "count": 3,
+                    "ratio": 0.75,
+                    "enabled": true,
+                    "priority": "normal",
+                    "profile": {
+                      "name": "Erik",
+                      "count": 2
+                    },
+                    "tags": [
+                      "docs",
+                      "example"
+                    ],
+                    "note": null
+                  },
+                  "form": {},
+                  "data": "{\"label\":\"Documentation\",\"count\":3,\"ratio\":0.75,\"enabled\":true,\"priority\":\"normal\",\"profile\":{\"name\":\"Erik\",\"count\":2},\"tags\":[\"docs\",\"example\"],\"note\":null}",
+                  "files": {},
+                  "url": "https://httpbin.org/anything/bodies/json-object",
+                  "method": "POST",
+                  "origin": "192.0.2.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anything/bodies/json-array": {
+      "post": {
+        "operationId": "echoJsonArray",
+        "summary": "HTTPBin JSON array",
+        "description": "Send a chosen JSON array body to httpbin. The fields and types are curated examples of arbitrary data accepted by the service.",
+        "tags": [
+          "Body formats"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Provide a body for this example so it can be echoed. The live service itself accepts requests without a body.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleArray"
+              },
+              "example": [
+                "docs",
+                "example"
+              ]
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request values observed by httpbin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EchoJsonArray"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {
+                    "Content-Type": "application/json"
+                  },
+                  "json": [
+                    "docs",
+                    "example"
+                  ],
+                  "form": {},
+                  "data": "[\"docs\",\"example\"]",
+                  "files": {},
+                  "url": "https://httpbin.org/anything/bodies/json-array",
+                  "method": "POST",
+                  "origin": "192.0.2.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anything/bodies/json-scalar": {
+      "post": {
+        "operationId": "echoJsonScalar",
+        "summary": "HTTPBin JSON scalar",
+        "description": "Send a chosen JSON scalar body to httpbin. The fields and types are curated examples of arbitrary data accepted by the service.",
+        "tags": [
+          "Body formats"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Provide a body for this example so it can be echoed. The live service itself accepts requests without a body.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleScalar"
+              },
+              "example": "Hello from JSON"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request values observed by httpbin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EchoJsonScalar"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {
+                    "Content-Type": "application/json"
+                  },
+                  "json": "Hello from JSON",
+                  "form": {},
+                  "data": "\"Hello from JSON\"",
+                  "files": {},
+                  "url": "https://httpbin.org/anything/bodies/json-scalar",
+                  "method": "POST",
+                  "origin": "192.0.2.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anything/bodies/text": {
+      "post": {
+        "operationId": "echoPlainText",
+        "summary": "HTTPBin plain text",
+        "description": "Send a chosen plain text body to httpbin. The fields and types are curated examples of arbitrary data accepted by the service.",
+        "tags": [
+          "Body formats"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Provide a body for this example so it can be echoed. The live service itself accepts requests without a body.",
+          "content": {
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleText"
+              },
+              "example": "Hello from plain text"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request values observed by httpbin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Echo"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {
+                    "Content-Type": "text/plain"
+                  },
+                  "json": null,
+                  "form": {},
+                  "data": "Hello from plain text",
+                  "files": {},
+                  "url": "https://httpbin.org/anything/bodies/text",
+                  "method": "POST",
+                  "origin": "192.0.2.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anything/bodies/urlencoded": {
+      "post": {
+        "operationId": "echoUrlEncoded",
+        "summary": "HTTPBin URL-encoded form",
+        "description": "Send a chosen URL-encoded form body to httpbin. The fields and types are curated examples of arbitrary data accepted by the service.",
+        "tags": [
+          "Body formats"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Provide a body for this example so it can be echoed. The live service itself accepts requests without a body.",
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleForm"
+              },
+              "example": {
+                "name": "Erik",
+                "message": "Hello from a form"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request values observed by httpbin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EchoUrlEncoded"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                  },
+                  "json": null,
+                  "form": {
+                    "name": "Erik",
+                    "message": "Hello from a form"
+                  },
+                  "data": "",
+                  "files": {},
+                  "url": "https://httpbin.org/anything/bodies/urlencoded",
+                  "method": "POST",
+                  "origin": "192.0.2.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/anything/bodies/multipart": {
+      "post": {
+        "operationId": "echoMultipart",
+        "summary": "HTTPBin multipart text fields",
+        "description": "Send a chosen multipart text fields body to httpbin. The fields and types are curated examples of arbitrary data accepted by the service. This example sends text fields; file uploads are not included.",
+        "tags": [
+          "Body formats"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Provide a body for this example so it can be echoed. The live service itself accepts requests without a body.",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleForm"
+              },
+              "example": {
+                "name": "Erik",
+                "message": "Hello from a form"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The request values observed by httpbin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EchoMultipart"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {
+                    "Content-Type": "multipart/form-data"
+                  },
+                  "json": null,
+                  "form": {
+                    "name": "Erik",
+                    "message": "Hello from a form"
+                  },
+                  "data": "",
+                  "files": {},
+                  "url": "https://httpbin.org/anything/bodies/multipart",
+                  "method": "POST",
+                  "origin": "192.0.2.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ExampleObject": {
+        "type": "object",
+        "title": "Example object",
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "example": "Documentation"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "example": 3
+          },
+          "ratio": {
+            "type": "number",
+            "title": "Ratio",
+            "example": 0.75
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "example": true
+          },
+          "priority": {
+            "type": "string",
+            "title": "Priority",
+            "enum": [
+              "low",
+              "normal",
+              "high"
+            ],
+            "example": "normal"
+          },
+          "profile": {
+            "type": "object",
+            "title": "Profile",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "title": "Name"
+              },
+              "count": {
+                "type": "integer",
+                "title": "Count"
+              }
+            },
+            "example": {
+              "name": "Erik",
+              "count": 2
+            }
+          },
+          "tags": {
+            "type": "array",
+            "title": "Tags",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "docs",
+              "example"
+            ]
+          },
+          "note": {
+            "type": "null",
+            "title": "Null value",
+            "example": null
+          }
+        },
+        "example": {
+          "label": "Documentation",
+          "count": 3,
+          "ratio": 0.75,
+          "enabled": true,
+          "priority": "normal",
+          "profile": {
+            "name": "Erik",
+            "count": 2
+          },
+          "tags": [
+            "docs",
+            "example"
+          ],
+          "note": null
+        }
+      },
+      "ExampleArray": {
+        "type": "array",
+        "title": "Example array",
+        "items": {
+          "type": "string"
+        },
+        "example": [
+          "docs",
+          "example"
+        ]
+      },
+      "ExampleScalar": {
+        "type": "string",
+        "title": "Example scalar",
+        "example": "Hello from JSON"
+      },
+      "ExampleText": {
+        "type": "string",
+        "title": "Text body",
+        "example": "Hello from plain text"
+      },
+      "ExampleForm": {
+        "type": "object",
+        "title": "Example form",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "example": "Erik"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "example": "Hello from a form"
+          }
+        },
+        "example": {
+          "name": "Erik",
+          "message": "Hello from a form"
+        }
+      },
+      "Echo": {
+        "type": "object",
+        "title": "Echoed request",
+        "properties": {
+          "args": {
+            "type": "object",
+            "title": "Query values",
+            "description": "Query parameters as strings or arrays of strings."
+          },
+          "headers": {
+            "type": "object",
+            "title": "Request headers",
+            "description": "Headers observed by the service."
+          },
+          "json": {
+            "type": "null",
+            "title": "JSON value",
+            "description": "Null when no JSON body was sent."
+          },
+          "form": {
+            "type": "object",
+            "title": "Form fields"
+          },
+          "data": {
+            "type": "string",
+            "title": "Raw body"
+          },
+          "files": {
+            "type": "object",
+            "title": "Uploaded files"
+          },
+          "url": {
+            "type": "string",
+            "title": "Request URL"
+          },
+          "method": {
+            "type": "string",
+            "title": "HTTP method"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin address"
+          }
+        }
+      },
+      "EchoJsonObject": {
+        "type": "object",
+        "title": "Echoed request",
+        "properties": {
+          "args": {
+            "type": "object",
+            "title": "Query values",
+            "description": "Query parameters as strings or arrays of strings."
+          },
+          "headers": {
+            "type": "object",
+            "title": "Request headers",
+            "description": "Headers observed by the service."
+          },
+          "json": {
+            "$ref": "#/components/schemas/ExampleObject"
+          },
+          "form": {
+            "type": "object",
+            "title": "Form fields"
+          },
+          "data": {
+            "type": "string",
+            "title": "Raw body"
+          },
+          "files": {
+            "type": "object",
+            "title": "Uploaded files"
+          },
+          "url": {
+            "type": "string",
+            "title": "Request URL"
+          },
+          "method": {
+            "type": "string",
+            "title": "HTTP method"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin address"
+          }
+        }
+      },
+      "EchoJsonArray": {
+        "type": "object",
+        "title": "Echoed request",
+        "properties": {
+          "args": {
+            "type": "object",
+            "title": "Query values",
+            "description": "Query parameters as strings or arrays of strings."
+          },
+          "headers": {
+            "type": "object",
+            "title": "Request headers",
+            "description": "Headers observed by the service."
+          },
+          "json": {
+            "$ref": "#/components/schemas/ExampleArray"
+          },
+          "form": {
+            "type": "object",
+            "title": "Form fields"
+          },
+          "data": {
+            "type": "string",
+            "title": "Raw body"
+          },
+          "files": {
+            "type": "object",
+            "title": "Uploaded files"
+          },
+          "url": {
+            "type": "string",
+            "title": "Request URL"
+          },
+          "method": {
+            "type": "string",
+            "title": "HTTP method"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin address"
+          }
+        }
+      },
+      "EchoJsonScalar": {
+        "type": "object",
+        "title": "Echoed request",
+        "properties": {
+          "args": {
+            "type": "object",
+            "title": "Query values",
+            "description": "Query parameters as strings or arrays of strings."
+          },
+          "headers": {
+            "type": "object",
+            "title": "Request headers",
+            "description": "Headers observed by the service."
+          },
+          "json": {
+            "$ref": "#/components/schemas/ExampleScalar"
+          },
+          "form": {
+            "type": "object",
+            "title": "Form fields"
+          },
+          "data": {
+            "type": "string",
+            "title": "Raw body"
+          },
+          "files": {
+            "type": "object",
+            "title": "Uploaded files"
+          },
+          "url": {
+            "type": "string",
+            "title": "Request URL"
+          },
+          "method": {
+            "type": "string",
+            "title": "HTTP method"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin address"
+          }
+        }
+      },
+      "EchoUrlEncoded": {
+        "type": "object",
+        "title": "Echoed request",
+        "properties": {
+          "args": {
+            "type": "object",
+            "title": "Query values",
+            "description": "Query parameters as strings or arrays of strings."
+          },
+          "headers": {
+            "type": "object",
+            "title": "Request headers",
+            "description": "Headers observed by the service."
+          },
+          "json": {
+            "type": "null",
+            "title": "JSON value",
+            "description": "Null when no JSON body was sent."
+          },
+          "form": {
+            "$ref": "#/components/schemas/ExampleForm"
+          },
+          "data": {
+            "type": "string",
+            "title": "Raw body"
+          },
+          "files": {
+            "type": "object",
+            "title": "Uploaded files"
+          },
+          "url": {
+            "type": "string",
+            "title": "Request URL"
+          },
+          "method": {
+            "type": "string",
+            "title": "HTTP method"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin address"
+          }
+        }
+      },
+      "EchoMultipart": {
+        "type": "object",
+        "title": "Echoed request",
+        "properties": {
+          "args": {
+            "type": "object",
+            "title": "Query values",
+            "description": "Query parameters as strings or arrays of strings."
+          },
+          "headers": {
+            "type": "object",
+            "title": "Request headers",
+            "description": "Headers observed by the service."
+          },
+          "json": {
+            "type": "null",
+            "title": "JSON value",
+            "description": "Null when no JSON body was sent."
+          },
+          "form": {
+            "$ref": "#/components/schemas/ExampleForm"
+          },
+          "data": {
+            "type": "string",
+            "title": "Raw body"
+          },
+          "files": {
+            "type": "object",
+            "title": "Uploaded files"
+          },
+          "url": {
+            "type": "string",
+            "title": "Request URL"
+          },
+          "method": {
+            "type": "string",
+            "title": "HTTP method"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin address"
+          }
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "description": "Official httpbin API description",
+    "url": "https://httpbin.org/spec.json"
+  },
+  "x-source-implementation": "https://github.com/postmanlabs/httpbin/blob/master/httpbin/core.py",
+  "servers": [
+    {
+      "url": "https://httpbin.org",
+      "description": "Public httpbin request and response service."
+    }
+  ]
+}

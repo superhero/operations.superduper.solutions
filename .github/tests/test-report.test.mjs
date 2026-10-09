@@ -9,22 +9,32 @@ import { fileURLToPath } from "node:url";
 import { Given, Then, When } from "@cucumber/cucumber";
 import "./support.mjs";
 
-Given("Cucumber results from source, acceptance, and automation suites", function ()
+const screenshot = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a6E0AAAAASUVORK5CYII=";
+
+Given("Cucumber results from source, acceptance, browser, and automation suites", function ()
 {
   this.testReport = { output: join(this.automation.root, "test-report.html"), inputs: [] };
-  for (const suite of ["source", "acceptance", "automation"])
+  for (const suite of ["source", "acceptance", "browser", "automation"])
   {
     const file = join(this.automation.root, `${suite}.json`);
     const feature = { id: suite, keyword: "Feature", name: `${suite} suite`, description: "", line: 1,
       uri: `${suite}.feature`, elements: [{ id: `${suite};scenario`, keyword: "Scenario", name: `${suite} scenario`,
         line: 2, type: "scenario", steps: [{ keyword: "Given ", name: `${suite} step`, line: 3,
           result: { status: suite === "acceptance" ? "failed" : "passed", duration: 1000000,
-            ...(suite === "acceptance" ? { error_message: "A useful failure reason" } : {}) } }] }] };
+            ...(suite === "acceptance" ? { error_message: "A useful failure reason" } : {}) },
+          ...(suite === "browser" ? { embeddings: [{ data: screenshot, mime_type: "image/png" }] } : {}) }] }] };
     writeFileSync(file, JSON.stringify([feature]));
     this.testReport.inputs.push(file);
   }
   writeFileSync(join(this.automation.root, "coverage-summary.json"), "{}");
   writeFileSync(this.testReport.output, "stale successful report");
+});
+
+Given("browser results were not produced by a failed CI run", function ()
+{
+  const missing = this.testReport.inputs.splice(2, 1)[0];
+  unlinkSync(missing);
+  this.automation.env.REPORT_WARNING = "CI failed. Missing suite results: browser <suite> & diagnostics.";
 });
 
 Given("the acceptance report is {string}", function (problem)
@@ -51,15 +61,16 @@ Then("the report embeds all suite results, feature pages, scripts, styles, and f
   const files = JSON.parse(html.match(/<script id="report-files" type="application\/json">([^<]+)<\/script>/)[1]);
   const decode = path => Buffer.from(files[path].data, "base64").toString("utf8");
   const features = Object.keys(files).filter(path => path.startsWith("features/") && path.endsWith(".html"));
-  assert.equal(features.length, 3);
+  assert.equal(features.length, 4);
   const pages = features.map(decode).join("\n");
-  for (const suite of ["source", "acceptance", "automation"])
+  for (const suite of ["source", "acceptance", "browser", "automation"])
   {
     assert.ok(decode("index.html").includes(`${suite} suite`));
     assert.ok(pages.includes(`${suite} scenario`));
     assert.ok(pages.includes(`${suite} step`));
   }
   assert.ok(pages.includes("A useful failure reason"));
+  assert.ok(pages.includes(screenshot), "Browser screenshots must remain embedded in the standalone report");
   for (const path of ["styles.min.css", "scripts/table.js", "scripts/scenarios.js", "scripts/charts.js",
     "assets/js/apex-charts.js", "assets/css/font-awesome.css", "assets/images/logo.png"])
     assert.ok(files[path]?.data, `Missing embedded resource: ${path}`);
@@ -76,6 +87,16 @@ Then("the report embeds all suite results, feature pages, scripts, styles, and f
   }
   assert.ok(!/<script\b[^>]*\bsrc=|<link\b[^>]*\bhref=/.test(html), "Standalone shell must not load external assets");
   assert.deepEqual(this.automation.calls(), []);
+});
+
+Then("the diagnostic report displays its failure warning as text", function ()
+{
+  assert.equal(this.result.status, 0, this.result.stderr);
+  const html = readFileSync(this.testReport.output, "utf8");
+  assert.ok(html.includes('id="report-warning" role="status">CI failed. Missing suite results: browser &lt;suite&gt; &amp; diagnostics.</p>'));
+  assert.ok(!html.includes("browser <suite>"), "Diagnostic text must not become report markup");
+  const files = JSON.parse(html.match(/<script id="report-files" type="application\/json">([^<]+)<\/script>/)[1]);
+  assert.equal(Object.keys(files).filter(path => path.startsWith("features/") && path.endsWith(".html")).length, 3);
 });
 
 Then("report generation fails with input and output context and removes any stale HTML", function ()

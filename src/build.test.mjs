@@ -24,15 +24,22 @@ Then("the production page contains the workflow canvas", function ()
   assert.match(html, /Workflow canvas/);
 });
 
-Then("the production page contains the add-node action", function ()
+Then("the production page contains the operation catalog and request preview", function ()
 {
-  assert.match(html, /Add node/);
+  assert.match(html, /Operation catalog/);
+  assert.match(html, /Find operations/);
+  assert.match(html, /Prepared locally\. No request has been sent\./);
 });
 
-Then("the production page contains the initial nodes", function ()
+Then("the production page contains the separate example catalogs", function ()
 {
-  assert.match(html, /Node 1/);
-  assert.match(html, /Node 2/);
+  assert.match(html, /List projects/);
+  assert.match(html, /Create task/);
+  assert.match(html, /Examples · example\.com/);
+  assert.match(html, /Examples · httpbin/);
+  assert.match(html, /Mock TRACE request/);
+  assert.match(html, /HTTPBin multipart text fields/);
+  assert.doesNotMatch(html, /\b(?:adamo|telecom|laya)\b|admin-theme|\/v1\/systemone/i);
 });
 
 Then("the production page contains inline JavaScript", function ()

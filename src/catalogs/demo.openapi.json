@@ -1,0 +1,1520 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Examples · example.com",
+    "version": "1.0.0",
+    "description": "Fictional example operations for exploring methods, request inputs and workflow mappings. All operations run locally with mocked responses; example.com does not host this API. The original project and task operation identities remain compatible with saved workflows."
+  },
+  "paths": {
+    "/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "summary": "List projects",
+        "description": "Find projects by name and limit the number of results.",
+        "tags": [
+          "Projects"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "title": "Project name",
+              "maxLength": 80
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "title": "Result limit",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching projects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "example": [
+                    {
+                      "id": "project-1",
+                      "name": "Documentation",
+                      "status": "active"
+                    }
+                  ],
+                  "items": {
+                    "$ref": "#/components/schemas/Project"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        }
+      ],
+      "get": {
+        "operationId": "getProject",
+        "summary": "Get project",
+        "description": "Inspect a project and its current status.",
+        "tags": [
+          "Projects"
+        ],
+        "responses": {
+          "200": {
+            "description": "Project details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {
+                    "id": "project-1",
+                    "name": "Documentation",
+                    "status": "active"
+                  },
+                  "title": "Project",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "name",
+                    "status"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "title": "Project ID",
+                      "description": "The fictional project identifier."
+                    },
+                    "name": {
+                      "type": "string",
+                      "title": "Project name"
+                    },
+                    "status": {
+                      "type": "string",
+                      "title": "Status",
+                      "enum": [
+                        "active",
+                        "archived"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/projects/{projectId}/tasks": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/ProjectId"
+        }
+      ],
+      "post": {
+        "operationId": "createTask",
+        "summary": "Create task",
+        "description": "Add a task to a project with a title, priority and optional estimate.",
+        "tags": [
+          "Tasks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewTask"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Task created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {
+                    "id": "task-1",
+                    "projectId": "project-1",
+                    "title": "Write documentation",
+                    "priority": "normal",
+                    "completed": false
+                  },
+                  "title": "Task",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "priority",
+                    "completed"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "title": "Task ID",
+                      "description": "The fictional task identifier."
+                    },
+                    "projectId": {
+                      "type": "string",
+                      "title": "Project ID"
+                    },
+                    "title": {
+                      "type": "string",
+                      "title": "Title"
+                    },
+                    "priority": {
+                      "type": "string",
+                      "title": "Priority",
+                      "enum": [
+                        "low",
+                        "normal",
+                        "high"
+                      ]
+                    },
+                    "completed": {
+                      "type": "boolean",
+                      "title": "Completed"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tasks/{taskId}": {
+      "parameters": [
+        {
+          "name": "taskId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "title": "Task ID",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        }
+      ],
+      "patch": {
+        "operationId": "updateTask",
+        "summary": "Update task",
+        "description": "Change a task's title, priority or completion status.",
+        "tags": [
+          "Tasks"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "title": "Title",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "priority": {
+                    "type": "string",
+                    "title": "Priority",
+                    "enum": [
+                      "low",
+                      "normal",
+                      "high"
+                    ]
+                  },
+                  "completed": {
+                    "type": "boolean",
+                    "title": "Completed"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "example": {
+                    "id": "task-1",
+                    "title": "Write documentation",
+                    "priority": "high",
+                    "completed": true
+                  },
+                  "title": "Task",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "priority",
+                    "completed"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "title": "Task ID",
+                      "description": "The fictional task identifier."
+                    },
+                    "projectId": {
+                      "type": "string",
+                      "title": "Project ID"
+                    },
+                    "title": {
+                      "type": "string",
+                      "title": "Title"
+                    },
+                    "priority": {
+                      "type": "string",
+                      "title": "Priority",
+                      "enum": [
+                        "low",
+                        "normal",
+                        "high"
+                      ]
+                    },
+                    "completed": {
+                      "type": "boolean",
+                      "title": "Completed"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/methods/get": {
+      "get": {
+        "operationId": "mockGet",
+        "summary": "Mock GET request",
+        "description": "Try GET with a local mocked response; no request is sent to example.com.",
+        "tags": [
+          "HTTP methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "Local mock echo of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Echo"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {},
+                  "json": null,
+                  "form": {},
+                  "data": "",
+                  "files": {},
+                  "url": "https://example.com/examples/methods/get",
+                  "method": "GET",
+                  "origin": "127.0.0.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/methods/post": {
+      "post": {
+        "operationId": "mockPost",
+        "summary": "Mock POST request",
+        "description": "Try POST with a local mocked response; no request is sent to example.com.",
+        "tags": [
+          "HTTP methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "Local mock echo of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Echo"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {},
+                  "json": null,
+                  "form": {},
+                  "data": "",
+                  "files": {},
+                  "url": "https://example.com/examples/methods/post",
+                  "method": "POST",
+                  "origin": "127.0.0.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/methods/put": {
+      "put": {
+        "operationId": "mockPut",
+        "summary": "Mock PUT request",
+        "description": "Try PUT with a local mocked response; no request is sent to example.com.",
+        "tags": [
+          "HTTP methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "Local mock echo of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Echo"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {},
+                  "json": null,
+                  "form": {},
+                  "data": "",
+                  "files": {},
+                  "url": "https://example.com/examples/methods/put",
+                  "method": "PUT",
+                  "origin": "127.0.0.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/methods/patch": {
+      "patch": {
+        "operationId": "mockPatch",
+        "summary": "Mock PATCH request",
+        "description": "Try PATCH with a local mocked response; no request is sent to example.com.",
+        "tags": [
+          "HTTP methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "Local mock echo of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Echo"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {},
+                  "json": null,
+                  "form": {},
+                  "data": "",
+                  "files": {},
+                  "url": "https://example.com/examples/methods/patch",
+                  "method": "PATCH",
+                  "origin": "127.0.0.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/methods/delete": {
+      "delete": {
+        "operationId": "mockDelete",
+        "summary": "Mock DELETE request",
+        "description": "Try DELETE with a local mocked response; no request is sent to example.com.",
+        "tags": [
+          "HTTP methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "Local mock echo of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Echo"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {},
+                  "json": null,
+                  "form": {},
+                  "data": "",
+                  "files": {},
+                  "url": "https://example.com/examples/methods/delete",
+                  "method": "DELETE",
+                  "origin": "127.0.0.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/methods/head": {
+      "head": {
+        "operationId": "mockHead",
+        "summary": "Mock HEAD request",
+        "description": "Try HEAD with a local mocked response; no request is sent to example.com.",
+        "tags": [
+          "HTTP methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "Mock response headers without a response body.",
+            "headers": {
+              "Allow": {
+                "description": "Methods accepted by this endpoint.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/methods/options": {
+      "options": {
+        "operationId": "mockOptions",
+        "summary": "Mock OPTIONS request",
+        "description": "Try OPTIONS with a local mocked response; no request is sent to example.com.",
+        "tags": [
+          "HTTP methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "Mock response headers without a response body.",
+            "headers": {
+              "Allow": {
+                "description": "Methods accepted by this endpoint.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/methods/trace": {
+      "trace": {
+        "operationId": "mockTrace",
+        "summary": "Mock TRACE request",
+        "description": "Try TRACE with a local mocked response; no request is sent to example.com. Browser Fetch does not allow live TRACE requests.",
+        "tags": [
+          "HTTP methods"
+        ],
+        "responses": {
+          "200": {
+            "description": "Local mock echo of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Echo"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {},
+                  "json": null,
+                  "form": {},
+                  "data": "",
+                  "files": {},
+                  "url": "https://example.com/examples/methods/trace",
+                  "method": "TRACE",
+                  "origin": "127.0.0.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/parameters/{sampleId}": {
+      "get": {
+        "operationId": "mockParameters",
+        "summary": "Mock query and header inputs",
+        "description": "Try string, integer, number, Boolean, enum, repeated query values and a request header with a local mock.",
+        "tags": [
+          "Input types"
+        ],
+        "parameters": [
+          {
+            "name": "sampleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sample ID",
+              "example": "sample-1"
+            }
+          },
+          {
+            "name": "label",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "title": "Label",
+              "example": "Documentation"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "title": "Count",
+              "example": 3
+            }
+          },
+          {
+            "name": "ratio",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "title": "Ratio",
+              "example": 0.75
+            }
+          },
+          {
+            "name": "enabled",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "title": "Enabled",
+              "example": true
+            }
+          },
+          {
+            "name": "priority",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "title": "Priority",
+              "enum": [
+                "low",
+                "normal",
+                "high"
+              ],
+              "example": "normal"
+            }
+          },
+          {
+            "name": "tags",
+            "in": "query",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "title": "Tags",
+              "items": {
+                "type": "string"
+              },
+              "example": [
+                "docs",
+                "example"
+              ]
+            }
+          },
+          {
+            "name": "X-Example-Label",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "title": "Example header",
+              "example": "workflow-example"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Local mock echo of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Echo"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {},
+                  "json": null,
+                  "form": {},
+                  "data": "",
+                  "files": {},
+                  "url": "https://example.com/examples/parameters/{sampleId}",
+                  "method": "GET",
+                  "origin": "127.0.0.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/bodies/json-object": {
+      "post": {
+        "operationId": "mockJsonObject",
+        "summary": "Mock JSON object",
+        "description": "Try JSON object with a local mock response. Includes string, integer, number, Boolean, enum, nested object, array and null properties.",
+        "tags": [
+          "Body formats"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Provide a body for this example so it can be echoed.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleObject"
+              },
+              "example": {
+                "label": "Documentation",
+                "count": 3,
+                "ratio": 0.75,
+                "enabled": true,
+                "priority": "normal",
+                "profile": {
+                  "name": "Erik",
+                  "count": 2
+                },
+                "tags": [
+                  "docs",
+                  "example"
+                ],
+                "note": null
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Local mock echo of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EchoJsonObject"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {
+                    "Content-Type": "application/json"
+                  },
+                  "json": {
+                    "label": "Documentation",
+                    "count": 3,
+                    "ratio": 0.75,
+                    "enabled": true,
+                    "priority": "normal",
+                    "profile": {
+                      "name": "Erik",
+                      "count": 2
+                    },
+                    "tags": [
+                      "docs",
+                      "example"
+                    ],
+                    "note": null
+                  },
+                  "form": {},
+                  "data": "{\"label\":\"Documentation\",\"count\":3,\"ratio\":0.75,\"enabled\":true,\"priority\":\"normal\",\"profile\":{\"name\":\"Erik\",\"count\":2},\"tags\":[\"docs\",\"example\"],\"note\":null}",
+                  "files": {},
+                  "url": "https://example.com/examples/bodies/json-object",
+                  "method": "POST",
+                  "origin": "127.0.0.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/bodies/json-array": {
+      "post": {
+        "operationId": "mockJsonArray",
+        "summary": "Mock JSON array",
+        "description": "Try JSON array with a local mock response.",
+        "tags": [
+          "Body formats"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Provide a body for this example so it can be echoed.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleArray"
+              },
+              "example": [
+                "docs",
+                "example"
+              ]
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Local mock echo of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EchoJsonArray"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {
+                    "Content-Type": "application/json"
+                  },
+                  "json": [
+                    "docs",
+                    "example"
+                  ],
+                  "form": {},
+                  "data": "[\"docs\",\"example\"]",
+                  "files": {},
+                  "url": "https://example.com/examples/bodies/json-array",
+                  "method": "POST",
+                  "origin": "127.0.0.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/bodies/json-scalar": {
+      "post": {
+        "operationId": "mockJsonScalar",
+        "summary": "Mock JSON scalar",
+        "description": "Try JSON scalar with a local mock response.",
+        "tags": [
+          "Body formats"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Provide a body for this example so it can be echoed.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleScalar"
+              },
+              "example": "Hello from JSON"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Local mock echo of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EchoJsonScalar"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {
+                    "Content-Type": "application/json"
+                  },
+                  "json": "Hello from JSON",
+                  "form": {},
+                  "data": "\"Hello from JSON\"",
+                  "files": {},
+                  "url": "https://example.com/examples/bodies/json-scalar",
+                  "method": "POST",
+                  "origin": "127.0.0.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/bodies/text": {
+      "post": {
+        "operationId": "mockPlainText",
+        "summary": "Mock plain text",
+        "description": "Try plain text with a local mock response.",
+        "tags": [
+          "Body formats"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Provide a body for this example so it can be echoed.",
+          "content": {
+            "text/plain": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleText"
+              },
+              "example": "Hello from plain text"
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Local mock echo of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Echo"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {
+                    "Content-Type": "text/plain"
+                  },
+                  "json": null,
+                  "form": {},
+                  "data": "Hello from plain text",
+                  "files": {},
+                  "url": "https://example.com/examples/bodies/text",
+                  "method": "POST",
+                  "origin": "127.0.0.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/bodies/urlencoded": {
+      "post": {
+        "operationId": "mockUrlEncoded",
+        "summary": "Mock URL-encoded form",
+        "description": "Try URL-encoded form with a local mock response.",
+        "tags": [
+          "Body formats"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Provide a body for this example so it can be echoed.",
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleForm"
+              },
+              "example": {
+                "name": "Erik",
+                "message": "Hello from a form"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Local mock echo of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EchoUrlEncoded"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                  },
+                  "json": null,
+                  "form": {
+                    "name": "Erik",
+                    "message": "Hello from a form"
+                  },
+                  "data": "",
+                  "files": {},
+                  "url": "https://example.com/examples/bodies/urlencoded",
+                  "method": "POST",
+                  "origin": "127.0.0.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/examples/bodies/multipart": {
+      "post": {
+        "operationId": "mockMultipart",
+        "summary": "Mock multipart text fields",
+        "description": "Try multipart text fields with a local mock response. This example sends text fields; file uploads are not included.",
+        "tags": [
+          "Body formats"
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Provide a body for this example so it can be echoed.",
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ExampleForm"
+              },
+              "example": {
+                "name": "Erik",
+                "message": "Hello from a form"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Local mock echo of the request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EchoMultipart"
+                },
+                "example": {
+                  "args": {},
+                  "headers": {
+                    "Content-Type": "multipart/form-data"
+                  },
+                  "json": null,
+                  "form": {
+                    "name": "Erik",
+                    "message": "Hello from a form"
+                  },
+                  "data": "",
+                  "files": {},
+                  "url": "https://example.com/examples/bodies/multipart",
+                  "method": "POST",
+                  "origin": "127.0.0.1"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "ProjectId": {
+        "name": "projectId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "title": "Project ID",
+          "description": "The identifier of the project to work with.",
+          "minLength": 1,
+          "maxLength": 80
+        }
+      }
+    },
+    "schemas": {
+      "NewTask": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "priority"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "priority": {
+            "type": "string",
+            "title": "Priority",
+            "enum": [
+              "low",
+              "normal",
+              "high"
+            ]
+          },
+          "estimate": {
+            "type": "number",
+            "title": "Estimated hours",
+            "minimum": 0,
+            "maximum": 1000
+          }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "title": "Project",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "status"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Project ID",
+            "description": "The fictional project identifier."
+          },
+          "name": {
+            "type": "string",
+            "title": "Project name"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "enum": [
+              "active",
+              "archived"
+            ]
+          }
+        }
+      },
+      "Task": {
+        "type": "object",
+        "title": "Task",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "title",
+          "priority",
+          "completed"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Task ID",
+            "description": "The fictional task identifier."
+          },
+          "projectId": {
+            "type": "string",
+            "title": "Project ID"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "priority": {
+            "type": "string",
+            "title": "Priority",
+            "enum": [
+              "low",
+              "normal",
+              "high"
+            ]
+          },
+          "completed": {
+            "type": "boolean",
+            "title": "Completed"
+          }
+        }
+      },
+      "ExampleObject": {
+        "type": "object",
+        "title": "Example object",
+        "additionalProperties": false,
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "example": "Documentation"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count",
+            "example": 3
+          },
+          "ratio": {
+            "type": "number",
+            "title": "Ratio",
+            "example": 0.75
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "example": true
+          },
+          "priority": {
+            "type": "string",
+            "title": "Priority",
+            "enum": [
+              "low",
+              "normal",
+              "high"
+            ],
+            "example": "normal"
+          },
+          "profile": {
+            "type": "object",
+            "title": "Profile",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "title": "Name"
+              },
+              "count": {
+                "type": "integer",
+                "title": "Count"
+              }
+            },
+            "example": {
+              "name": "Erik",
+              "count": 2
+            }
+          },
+          "tags": {
+            "type": "array",
+            "title": "Tags",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "docs",
+              "example"
+            ]
+          },
+          "note": {
+            "type": "null",
+            "title": "Null value",
+            "example": null
+          }
+        },
+        "example": {
+          "label": "Documentation",
+          "count": 3,
+          "ratio": 0.75,
+          "enabled": true,
+          "priority": "normal",
+          "profile": {
+            "name": "Erik",
+            "count": 2
+          },
+          "tags": [
+            "docs",
+            "example"
+          ],
+          "note": null
+        }
+      },
+      "ExampleArray": {
+        "type": "array",
+        "title": "Example array",
+        "items": {
+          "type": "string"
+        },
+        "example": [
+          "docs",
+          "example"
+        ]
+      },
+      "ExampleScalar": {
+        "type": "string",
+        "title": "Example scalar",
+        "example": "Hello from JSON"
+      },
+      "ExampleText": {
+        "type": "string",
+        "title": "Text body",
+        "example": "Hello from plain text"
+      },
+      "ExampleForm": {
+        "type": "object",
+        "title": "Example form",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "example": "Erik"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "example": "Hello from a form"
+          }
+        },
+        "example": {
+          "name": "Erik",
+          "message": "Hello from a form"
+        }
+      },
+      "Echo": {
+        "type": "object",
+        "title": "Echoed request",
+        "properties": {
+          "args": {
+            "type": "object",
+            "title": "Query values",
+            "description": "Query parameters as strings or arrays of strings."
+          },
+          "headers": {
+            "type": "object",
+            "title": "Request headers",
+            "description": "Headers observed by the service."
+          },
+          "json": {
+            "type": "null",
+            "title": "JSON value",
+            "description": "Null when no JSON body was sent."
+          },
+          "form": {
+            "type": "object",
+            "title": "Form fields"
+          },
+          "data": {
+            "type": "string",
+            "title": "Raw body"
+          },
+          "files": {
+            "type": "object",
+            "title": "Uploaded files"
+          },
+          "url": {
+            "type": "string",
+            "title": "Request URL"
+          },
+          "method": {
+            "type": "string",
+            "title": "HTTP method"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin address"
+          }
+        }
+      },
+      "EchoJsonObject": {
+        "type": "object",
+        "title": "Echoed request",
+        "properties": {
+          "args": {
+            "type": "object",
+            "title": "Query values",
+            "description": "Query parameters as strings or arrays of strings."
+          },
+          "headers": {
+            "type": "object",
+            "title": "Request headers",
+            "description": "Headers observed by the service."
+          },
+          "json": {
+            "$ref": "#/components/schemas/ExampleObject"
+          },
+          "form": {
+            "type": "object",
+            "title": "Form fields"
+          },
+          "data": {
+            "type": "string",
+            "title": "Raw body"
+          },
+          "files": {
+            "type": "object",
+            "title": "Uploaded files"
+          },
+          "url": {
+            "type": "string",
+            "title": "Request URL"
+          },
+          "method": {
+            "type": "string",
+            "title": "HTTP method"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin address"
+          }
+        }
+      },
+      "EchoJsonArray": {
+        "type": "object",
+        "title": "Echoed request",
+        "properties": {
+          "args": {
+            "type": "object",
+            "title": "Query values",
+            "description": "Query parameters as strings or arrays of strings."
+          },
+          "headers": {
+            "type": "object",
+            "title": "Request headers",
+            "description": "Headers observed by the service."
+          },
+          "json": {
+            "$ref": "#/components/schemas/ExampleArray"
+          },
+          "form": {
+            "type": "object",
+            "title": "Form fields"
+          },
+          "data": {
+            "type": "string",
+            "title": "Raw body"
+          },
+          "files": {
+            "type": "object",
+            "title": "Uploaded files"
+          },
+          "url": {
+            "type": "string",
+            "title": "Request URL"
+          },
+          "method": {
+            "type": "string",
+            "title": "HTTP method"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin address"
+          }
+        }
+      },
+      "EchoJsonScalar": {
+        "type": "object",
+        "title": "Echoed request",
+        "properties": {
+          "args": {
+            "type": "object",
+            "title": "Query values",
+            "description": "Query parameters as strings or arrays of strings."
+          },
+          "headers": {
+            "type": "object",
+            "title": "Request headers",
+            "description": "Headers observed by the service."
+          },
+          "json": {
+            "$ref": "#/components/schemas/ExampleScalar"
+          },
+          "form": {
+            "type": "object",
+            "title": "Form fields"
+          },
+          "data": {
+            "type": "string",
+            "title": "Raw body"
+          },
+          "files": {
+            "type": "object",
+            "title": "Uploaded files"
+          },
+          "url": {
+            "type": "string",
+            "title": "Request URL"
+          },
+          "method": {
+            "type": "string",
+            "title": "HTTP method"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin address"
+          }
+        }
+      },
+      "EchoUrlEncoded": {
+        "type": "object",
+        "title": "Echoed request",
+        "properties": {
+          "args": {
+            "type": "object",
+            "title": "Query values",
+            "description": "Query parameters as strings or arrays of strings."
+          },
+          "headers": {
+            "type": "object",
+            "title": "Request headers",
+            "description": "Headers observed by the service."
+          },
+          "json": {
+            "type": "null",
+            "title": "JSON value",
+            "description": "Null when no JSON body was sent."
+          },
+          "form": {
+            "$ref": "#/components/schemas/ExampleForm"
+          },
+          "data": {
+            "type": "string",
+            "title": "Raw body"
+          },
+          "files": {
+            "type": "object",
+            "title": "Uploaded files"
+          },
+          "url": {
+            "type": "string",
+            "title": "Request URL"
+          },
+          "method": {
+            "type": "string",
+            "title": "HTTP method"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin address"
+          }
+        }
+      },
+      "EchoMultipart": {
+        "type": "object",
+        "title": "Echoed request",
+        "properties": {
+          "args": {
+            "type": "object",
+            "title": "Query values",
+            "description": "Query parameters as strings or arrays of strings."
+          },
+          "headers": {
+            "type": "object",
+            "title": "Request headers",
+            "description": "Headers observed by the service."
+          },
+          "json": {
+            "type": "null",
+            "title": "JSON value",
+            "description": "Null when no JSON body was sent."
+          },
+          "form": {
+            "$ref": "#/components/schemas/ExampleForm"
+          },
+          "data": {
+            "type": "string",
+            "title": "Raw body"
+          },
+          "files": {
+            "type": "object",
+            "title": "Uploaded files"
+          },
+          "url": {
+            "type": "string",
+            "title": "Request URL"
+          },
+          "method": {
+            "type": "string",
+            "title": "HTTP method"
+          },
+          "origin": {
+            "type": "string",
+            "title": "Origin address"
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "url": "https://example.com",
+      "description": "Illustrative address; execution is mocked locally."
+    }
+  ]
+}

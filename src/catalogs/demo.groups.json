@@ -1,0 +1,63 @@
+[
+  {
+    "id": "projects",
+    "name": "Examples · example.com",
+    "description": "Fictional operations with local mock responses for exploring HTTP methods, input types and workflows.",
+    "children": [
+      {
+        "id": "overview",
+        "name": "Overview",
+        "description": "Find projects and inspect their current details and status.",
+        "operationIds": [
+          "demo:listProjects",
+          "demo:getProject"
+        ]
+      },
+      {
+        "id": "tasks",
+        "name": "Tasks",
+        "description": "Create tasks and maintain their titles, priorities and completion status.",
+        "operationIds": [
+          "demo:createTask",
+          "demo:updateTask"
+        ]
+      },
+      {
+        "id": "methods",
+        "name": "HTTP methods",
+        "description": "Explore the available HTTP request methods and their response behavior.",
+        "operationIds": [
+          "demo:mockGet",
+          "demo:mockPost",
+          "demo:mockPut",
+          "demo:mockPatch",
+          "demo:mockDelete",
+          "demo:mockHead",
+          "demo:mockOptions",
+          "demo:mockTrace"
+        ]
+      },
+      {
+        "id": "inputs",
+        "name": "Input types",
+        "description": "Explore typed path, query and header inputs, including repeated query values.",
+        "operationIds": [
+          "demo:mockParameters"
+        ]
+      },
+      {
+        "id": "bodies",
+        "name": "Body formats",
+        "description": "Explore structured JSON, root values, plain text and encoded text form fields.",
+        "operationIds": [
+          "demo:mockJsonObject",
+          "demo:mockJsonArray",
+          "demo:mockJsonScalar",
+          "demo:mockPlainText",
+          "demo:mockUrlEncoded",
+          "demo:mockMultipart"
+        ]
+      }
+    ]
+  }
+]

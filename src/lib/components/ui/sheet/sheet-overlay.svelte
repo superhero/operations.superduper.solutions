@@ -13,8 +13,19 @@
 	bind:ref
 	data-slot="sheet-overlay"
 	class={cn(
-		"data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50",
+		"fixed inset-0 z-50 bg-background/65",
 		className
 	)}
 	{...restProps}
 />
+
+<style>
+	:global([data-slot="sheet-overlay"]) {
+		opacity: 1;
+		transition: opacity 200ms ease-in;
+	}
+	:global([data-slot="sheet-overlay"]:is([data-starting-style], [data-state="closed"])) { opacity: 0; }
+	@media (prefers-reduced-motion: reduce) {
+		:global([data-slot="sheet-overlay"]) { transition: none; }
+	}
+</style>

@@ -1,0 +1,23 @@
+/*
+Copyright (C) 2026 Erik Landvall
+SPDX-License-Identifier: AGPL-3.0-only
+See LICENSE and LICENSE-ADDITIONAL-TERMS.
+*/
+
+.workflow-utility-node { position: relative; width: 260px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); transition: border-color 180ms ease-in, box-shadow 180ms ease-in; }
+.workflow-utility-node:hover:not(.selected) { border-color: var(--color-foreground); }
+.workflow-utility-node.selected, .svelte-flow__node:focus-visible .workflow-utility-node { border-color: var(--color-emphasis); box-shadow: 0 0 0 1px var(--color-emphasis); }
+.workflow-utility-node .utility-title { position: relative; display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 8px 12px; }
+.workflow-utility-node .utility-title strong { min-width: 0; flex: 1; font-size: 12px; font-weight: 650; overflow-wrap: anywhere; }
+.workflow-utility-node .material-symbols-rounded { font-variation-settings: "FILL" 1; }
+.workflow-utility-node .utility-type { flex-shrink: 0; padding: 0 5px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); font-size: 10px; line-height: 18px; }
+.workflow-utility-node .utility-row { position: relative; display: flex; align-items: center; gap: 6px; min-height: 46px; padding: 7px 12px; border-top: 1px solid var(--color-border); font-size: 11px; }
+.workflow-utility-node .utility-action { display: grid; place-items: center; flex-shrink: 0; width: 26px; height: 28px; padding: 0; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
+.workflow-utility-node .utility-action:hover:not(:disabled) { background: var(--color-secondary-hover); color: var(--color-secondary-hover-foreground); }
+.workflow-utility-node .utility-action:disabled { background: var(--color-disabled); color: var(--color-disabled-foreground); }
+.workflow-utility-node .svelte-flow__handle { width: 12px; height: 12px; border: 2px solid var(--color-surface); background: var(--color-emphasis); }
+.workflow-utility-node .svelte-flow__handle.target { background: var(--color-foreground); }
+.workflow-utility-node .utility-value { min-width: 0; width: 100%; min-height: 30px; padding: 6px 8px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font: inherit; }
+.workflow-utility-node .utility-value:disabled { background: var(--color-disabled); color: var(--color-disabled-foreground); opacity: 1; cursor: not-allowed; }
+.workflow-utility-node .utility-value:disabled::placeholder { color: var(--color-disabled-foreground); }
+@media (prefers-reduced-motion: reduce) { .workflow-utility-node, .workflow-utility-node .utility-action, .workflow-utility-node .utility-value { transition: none; } }

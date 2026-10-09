@@ -1,183 +1,148 @@
 <script lang="ts">
-  import {
-    Background,
-    BackgroundVariant,
-    Controls,
-    MarkerType,
-    SvelteFlow,
-    addEdge,
-    type Connection,
-    type Edge,
-    type Node
-  } from "@xyflow/svelte";
-  import "@xyflow/svelte/dist/style.css";
-
-  import { Button } from "$lib/components/ui/button/index.js";
-  import FlowNode from "./FlowNode.svelte";
+  import { tick } from "svelte";
+  import { Tooltip } from "bits-ui";
+  import { operations, type Operation } from "$lib/catalog.ts";
+  import type { WorkspaceMode } from "$lib/workspace.d.ts";
+  import type { WorkflowDocument } from "$lib/workflow-document.ts";
   import Header from "./components/Header.svelte";
   import SideNavigation from "./components/SideNavigation.svelte";
+  import OperationsWorkspace from "./components/OperationsWorkspace.svelte";
+  import WorkflowWorkspace from "./components/WorkflowWorkspace.svelte";
+  import SettingsWorkspace, { palettes } from "./components/SettingsWorkspace.svelte";
+  import BackgroundWave from "./components/BackgroundWave.svelte";
+  import NativeScrollbars from "./components/NativeScrollbars.svelte";
 
-  type FlowNodeType = Node<{ name: string }, "flowNode">;
-
-  const nodeTypes = {
-    flowNode: FlowNode
-  };
-
-  const defaultEdgeOptions = {
-    markerEnd: {
-      type: MarkerType.ArrowClosed
-    }
-  };
-
-  let nextNodeId = 3;
   let navigationOpen = $state(false);
+  let navigationModal = $state(false);
+  let documentModal = $state(false);
+  let savedWorkflows = $state<WorkflowDocument[]>([]);
+  let workflowLibraryError = $state("");
+  let mode = $state<WorkspaceMode>("operations");
+  let dark = $state(document.documentElement.dataset.theme === "dark");
+  let palette = $state(palettes.find(option => option.id === document.documentElement.dataset.palette)?.id ?? palettes[0].id);
+  let operationsWorkspace: OperationsWorkspace;
+  let workflowWorkspace: WorkflowWorkspace;
+  let settingsWorkspace: SettingsWorkspace;
 
-  let nodes = $state.raw<FlowNodeType[]>([
-    {
-      id: "node-1",
-      type: "flowNode",
-      position: { x: 80, y: 100 },
-      data: { name: "Node 1" }
-    },
-    {
-      id: "node-2",
-      type: "flowNode",
-      position: { x: 380, y: 220 },
-      data: { name: "Node 2" }
+  let operationsHost: HTMLDivElement;
+  let lastOperationsFocus: HTMLElement | undefined;
+  let operationsScroll = 0;
+
+  async function focusDestination() {
+    await tick();
+    if (navigationModal) return;
+    if (mode === "workflow") workflowWorkspace.focusCanvas();
+    else if (mode === "settings") {
+      window.scrollTo({ top: 0, behavior: "instant" });
+      settingsWorkspace.focusActive();
     }
-  ]);
-
-  let edges = $state.raw<Edge[]>([]);
-
-  function addNode()
-  {
-    const id = "node-" + nextNodeId;
-    const index = nextNodeId - 1;
-    const column = index % 4;
-    const row = Math.floor(index / 4);
-
-    nodes = [
-      ...nodes,
-      {
-        id,
-        type: "flowNode",
-        position: {
-          x: 80 + column * 260,
-          y: 80 + row * 160
-        },
-        data: {
-          name: "Node " + nextNodeId
-        }
-      }
-    ];
-
-    nextNodeId += 1;
+    else {
+      window.scrollTo({ top: operationsScroll, behavior: "instant" });
+      if (lastOperationsFocus?.isConnected && lastOperationsFocus.getClientRects().length && !lastOperationsFocus.closest('[inert],[hidden]') && !lastOperationsFocus.matches(':disabled')) lastOperationsFocus.focus({ preventScroll: true });
+      else operationsWorkspace.focusActive();
+    }
   }
 
-  function onconnect(connection: Connection)
-  {
-    edges = addEdge(connection, edges);
+  async function setMode(next: WorkspaceMode) {
+    if (next === mode) return;
+    if (mode === "operations") {
+      operationsWorkspace.cancelStepScroll();
+      operationsScroll = window.scrollY;
+    }
+    mode = next;
+    if (matchMedia("(max-width: 899px)").matches) navigationOpen = false;
+    await focusDestination();
   }
 
-  function toggleNavigation()
-  {
-    navigationOpen = !navigationOpen;
+  $effect(() => {
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
+    document.documentElement.classList.toggle("dark", dark);
+  });
+
+  function toggleTheme() {
+    dark = !dark;
+    try { localStorage.setItem("operations-theme", dark ? "dark" : "light"); }
+    catch { /* Retain the selected theme for this session. */ }
+  }
+
+  $effect(() => {
+    document.documentElement.dataset.palette = palette;
+    try { localStorage.setItem("operations-palette", palette); }
+    catch { /* Retain the selected palette for this session. */ }
+  });
+
+  function selectOperation(operation: Operation) {
+    if (mode === "workflow") workflowWorkspace.addOperation(operation);
+    else {
+      mode = "operations";
+      lastOperationsFocus = undefined;
+      operationsWorkspace.selectOperation(operation);
+    }
+    if (window.matchMedia("(max-width: 899px)").matches) navigationOpen = false;
+  }
+
+  async function addToWorkflow(operation: Operation) {
+    await setMode("workflow");
+    await workflowWorkspace.addOperation(operation);
+  }
+
+  async function selectWorkflow(document: WorkflowDocument) {
+    if (mode === "workflow") await workflowWorkspace.addWorkflow(document);
+    else {
+      await setMode("workflow");
+      workflowWorkspace.startRun(document);
+    }
+  }
+
+  /** Limit hover growth using layout dimensions unaffected by transforms. */
+  function sizeHover(event: PointerEvent | FocusEvent) {
+    if (!(event.target instanceof Element)) return;
+    const surfaces = new Set<HTMLElement>();
+    for (let element: Element | null = event.target; element; element = element.parentElement) {
+      if (element instanceof HTMLElement && element.matches('button, summary, .result-card, .saved-documents li'))
+        surfaces.add(element);
+    }
+    // The operation description also animates its action button.
+    const operation = event.target.closest('.catalog-operation');
+    operation?.querySelectorAll<HTMLElement>('.catalog-open-operation').forEach(element => surfaces.add(element));
+
+    const sizes = [...surfaces].map(element => ({ element, width: element.offsetWidth }));
+    for (const { element, width } of sizes) {
+      if (!width) continue;
+      const scale = String(1 + 12 / width);
+      if (element.style.getPropertyValue('--hover-scale') !== scale)
+        element.style.setProperty('--hover-scale', scale);
+    }
   }
 </script>
 
+<svelte:document onpointerover={sizeHover} onfocusin={sizeHover} />
+
 <svelte:head>
   <title>operations.superduper.solutions</title>
-  <meta
-    name="description"
-    content="A browser-based workflow diagram editor."
-  />
+  <meta name="description" content="Discover OpenAPI operations and compose reusable workflows in your browser." />
 </svelte:head>
 
-<Header {navigationOpen} onMenu={toggleNavigation} />
-<SideNavigation bind:open={navigationOpen} />
-
-<main class="app">
-  <section class="canvas" aria-label="Workflow canvas">
-    <Button
-      class="add-node-button"
-      size="lg"
-      onclick={addNode}
-    >
-      Add node
-    </Button>
-
-    <SvelteFlow
-      bind:nodes
-      bind:edges
-      {nodeTypes}
-      {defaultEdgeOptions}
-      {onconnect}
-      proOptions={{ hideAttribution: true }}
-      fitView
-      minZoom={0.25}
-      maxZoom={2}
-    >
-      <Background
-        variant={BackgroundVariant.Dots}
-        gap={24}
-        size={1.2}
-      />
-      <Controls />
-    </SvelteFlow>
-  </section>
-</main>
-
-<style>
-  .app {
-    width: 100%;
-    height: 100%;
-    padding-top: var(--app-header-height);
-    background: var(--color-background);
-  }
-
-  .canvas {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    min-height: 0;
-  }
-
-  :global(.add-node-button) {
-    position: absolute;
-    z-index: 10;
-    top: 1rem;
-    right: 1rem;
-    background: var(--color-accent);
-    color: var(--color-background);
-    font-weight: 800;
-  }
-
-  :global(.add-node-button:hover) {
-    background: var(--color-emphasis);
-  }
-
-  :global(.svelte-flow) {
-    --xy-edge-stroke-default: var(--color-accent);
-    --xy-edge-stroke-selected-default: var(--color-emphasis);
-    --xy-connectionline-stroke-default: var(--color-accent);
-    --xy-background-pattern-dots-color-default:
-      color-mix(in srgb, var(--color-surface) 68%, var(--color-background));
-    --xy-controls-button-background-color-default:
-      color-mix(in srgb, var(--color-background) 66%, var(--color-surface));
-    --xy-controls-button-background-color-hover-default:
-      color-mix(in srgb, var(--color-background) 48%, var(--color-surface));
-    --xy-controls-button-color-default: var(--color-foreground);
-    --xy-controls-button-color-hover-default: var(--color-accent);
-    --xy-controls-button-border-color-default:
-      color-mix(in srgb, var(--color-surface) 58%, var(--color-background));
-    background: var(--color-background);
-  }
-
-  :global(.svelte-flow__edge.selected .svelte-flow__edge-path) {
-    stroke: var(--color-emphasis);
-  }
-
-  :global(.svelte-flow__connection-path) {
-    stroke: var(--color-accent);
-  }
-</style>
+<Tooltip.Provider delayDuration={400} ignoreNonKeyboardFocus disableHoverableContent>
+<BackgroundWave />
+<NativeScrollbars />
+<SideNavigation bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {mode} {dark}
+  workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
+  onSelect={selectOperation} onMode={setMode} onTheme={toggleTheme} />
+<div class="page-content" class:catalog-open={navigationOpen} class:workflow-mode={mode === "workflow"}>
+  <div class="shell">
+    <Header {navigationOpen} onMenu={() => navigationOpen = !navigationOpen} />
+    <main>
+      <div bind:this={operationsHost} hidden={mode !== "operations"} onfocusin={(event) => { if (event.target instanceof HTMLElement) lastOperationsFocus = event.target; }}>
+        <OperationsWorkspace bind:this={operationsWorkspace} {operations} active={mode === "operations"} onAddToWorkflow={addToWorkflow} />
+      </div>
+      <div class="workflow-host" hidden={mode !== "workflow"}>
+        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={mode === "workflow"} {navigationOpen} {navigationModal} onBrowse={() => navigationOpen = true} />
+      </div>
+      <div hidden={mode !== "settings"}>
+        <SettingsWorkspace bind:this={settingsWorkspace} {palette} onPaletteChange={(next) => palette = next} />
+      </div>
+    </main>
+  </div>
+</div>
+</Tooltip.Provider>

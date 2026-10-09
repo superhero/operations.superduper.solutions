@@ -1,6 +1,5 @@
 <script lang="ts">
-  import MenuIcon from "@lucide/svelte/icons/menu";
-  import { Button } from "$lib/components/ui/button/index.js";
+  import MaterialIcon from "$lib/components/MaterialIcon.svelte";
 
   let {
     open,
@@ -11,32 +10,31 @@
   } = $props();
 </script>
 
-<Button
+<button
   class="menu-button"
-  variant="ghost"
-  size="icon"
+  type="button"
   aria-label={open ? "Close navigation" : "Open navigation"}
   aria-expanded={open}
   aria-controls="side-navigation"
   {onclick}
 >
-  <MenuIcon aria-hidden="true" />
-</Button>
+  <MaterialIcon name={open ? "menu_open" : "menu"} />
+</button>
 
 <style>
   :global(.menu-button) {
-    width: 2.5rem;
-    height: 2.5rem;
-    background: transparent;
-    color: var(--color-foreground);
+    display: inline-grid;
+    place-items: center;
+    padding: 0;
+    width: var(--navigation-control-size);
+    height: var(--navigation-control-size);
+    border-radius: 4px;
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
   }
 
   :global(.menu-button:hover) {
-    background: color-mix(
-      in srgb,
-      var(--color-surface) 30%,
-      transparent
-    );
-    color: var(--color-foreground);
+    background: var(--color-primary);
+    color: var(--color-primary-foreground);
   }
 </style>

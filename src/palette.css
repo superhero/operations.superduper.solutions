@@ -1,0 +1,219 @@
+/*
+Copyright (C) 2026 Erik Landvall
+SPDX-License-Identifier: AGPL-3.0-only
+See LICENSE and LICENSE-ADDITIONAL-TERMS.
+*/
+
+/* Each palette has six colors, ordered from lightest (1) to darkest (6).
+   app.css reverses the slots for dark mode. Preview selectors keep every
+   Settings swatch tied to its own palette, independently of the selected one. */
+[data-palette-preview="default"],
+:root {
+  --palette-1: #eee9df;
+  --palette-2: #dedad1;
+  --palette-3: #ffb162;
+  --palette-4: #a35139;
+  --palette-5: #2c3b4d;
+  --palette-6: #1b2632;
+}
+
+[data-palette-preview="sunset"],
+:root[data-palette="sunset"] {
+  --palette-1: #fee7b5;
+  --palette-2: #fe8932;
+  --palette-3: #cd1a30;
+  --palette-4: #7a0c31;
+  --palette-5: #4a0730;
+  --palette-6: #200432;
+}
+
+[data-palette-preview="alpine"],
+:root[data-palette="alpine"] {
+  --palette-1: #d4ece9;
+  --palette-2: #fbae54;
+  --palette-3: #78aead;
+  --palette-4: #d86350;
+  --palette-5: #294c63;
+  --palette-6: #132c47;
+}
+
+[data-palette-preview="obsidian"],
+:root[data-palette="obsidian"] {
+  --palette-1: #e3c95b;
+  --palette-2: #d9a23f;
+  --palette-3: #4c4e4d;
+  --palette-4: #4b443a;
+  --palette-5: #1e2022;
+  --palette-6: #131517;
+}
+
+[data-palette-preview="midnight-gold"],
+:root[data-palette="midnight-gold"] {
+  --palette-1: #f3bd68;
+  --palette-2: #c7843b;
+  --palette-3: #4d6473;
+  --palette-4: #2c4657;
+  --palette-5: #172531;
+  --palette-6: #000101;
+}
+
+[data-palette-preview="neon"],
+:root[data-palette="neon"] {
+  --palette-1: #09d8c7;
+  --palette-2: #bd0927;
+  --palette-3: #17364f;
+  --palette-4: #411e3a;
+  --palette-5: #500a1f;
+  --palette-6: #0d1a2f;
+}
+
+[data-palette-preview="lantern"],
+:root[data-palette="lantern"] {
+  --palette-1: #f6f09c;
+  --palette-2: #ffe44b;
+  --palette-3: #a1e3d8;
+  --palette-4: #968445;
+  --palette-5: #0b5868;
+  --palette-6: #05262d;
+}
+
+[data-palette-preview="spring"],
+:root[data-palette="spring"] {
+  --palette-1: #f6f7ed;
+  --palette-2: #dbe64c;
+  --palette-3: #74c365;
+  --palette-4: #00804c;
+  --palette-5: #1e488f;
+  --palette-6: #001f3f;
+}
+
+[data-palette-preview="bonfire"],
+:root[data-palette="bonfire"] {
+  --palette-1: #ffcb68;
+  --palette-2: #e2773a;
+  --palette-3: #6b504c;
+  --palette-4: #214f5f;
+  --palette-5: #143041;
+  --palette-6: #0c0f1e;
+}
+
+[data-palette-preview="harvest-moon"],
+:root[data-palette="harvest-moon"] {
+  --palette-1: #ae8c6f;
+  --palette-2: #dc4b14;
+  --palette-3: #3b3a37;
+  --palette-4: #551009;
+  --palette-5: #1b2021;
+  --palette-6: #060505;
+}
+
+[data-palette-preview="blue-horizon"],
+:root[data-palette="blue-horizon"] {
+  --palette-1: #e9e4de;
+  --palette-2: #efbf6a;
+  --palette-3: #7699ae;
+  --palette-4: #a55d35;
+  --palette-5: #37729c;
+  --palette-6: #091f46;
+}
+
+[data-palette-preview="golden-violet"],
+:root[data-palette="golden-violet"] {
+  --palette-1: #fdc005;
+  --palette-2: #f68318;
+  --palette-3: #b22e37;
+  --palette-4: #633090;
+  --palette-5: #313575;
+  --palette-6: #321951;
+}
+
+[data-palette-preview="citrus"],
+:root[data-palette="citrus"] {
+  --palette-1: #fff5e6;
+  --palette-2: #f28b0c;
+  --palette-3: #6ca2e8;
+  --palette-4: #f2600c;
+  --palette-5: #818807;
+  --palette-6: #d9310b;
+}
+
+[data-palette-preview="sunflower"],
+:root[data-palette="sunflower"] {
+  --palette-1: #fff5e6;
+  --palette-2: #fbd19d;
+  --palette-3: #d4a36b;
+  --palette-4: #e2730d;
+  --palette-5: #582c18;
+  --palette-6: #13191a;
+}
+
+[data-palette-preview="garden-dusk"],
+:root[data-palette="garden-dusk"] {
+  --palette-1: #eabe6c;
+  --palette-2: #a3c2d2;
+  --palette-3: #e18247;
+  --palette-4: #398797;
+  --palette-5: #77371e;
+  --palette-6: #073f4e;
+}
+
+[data-palette-preview="autumn"],
+:root[data-palette="autumn"] {
+  --palette-1: #b9ada8;
+  --palette-2: #d96f2c;
+  --palette-3: #be3010;
+  --palette-4: #5f4a1d;
+  --palette-5: #6b1004;
+  --palette-6: #29190b;
+}
+
+/* Sampled from the leaves and highlights, excluding the photograph's swatch overlays. */
+[data-palette-preview="rainfall"],
+:root[data-palette="rainfall"] {
+  --palette-1: #dbb88b;
+  --palette-2: #b67d45;
+  --palette-3: #6d7c95;
+  --palette-4: #933547;
+  --palette-5: #493a4b;
+  --palette-6: #111a2c;
+}
+
+[data-palette-preview="graphite-study"],
+:root[data-palette="graphite-study"] {
+  --palette-1: #f5f5f7;
+  --palette-2: #e5e5e7;
+  --palette-3: #aeaeb2;
+  --palette-4: #6c6c70;
+  --palette-5: #3a3a3c;
+  --palette-6: #1c1c1e;
+}
+
+[data-palette-preview="steel-and-mist"],
+:root[data-palette="steel-and-mist"] {
+  --palette-1: #edf0f4;
+  --palette-2: #c4cdd6;
+  --palette-3: #8e9aa8;
+  --palette-4: #606c78;
+  --palette-5: #3a4450;
+  --palette-6: #1a2028;
+}
+
+[data-palette-preview="carbon"],
+:root[data-palette="carbon"] {
+  --palette-1: #e3e5e4;
+  --palette-2: #989c9a;
+  --palette-3: #4b4949;
+  --palette-4: #2b2b2a;
+  --palette-5: #151515;
+  --palette-6: #040404;
+}
+
+[data-palette-preview="heritage-noir"],
+:root[data-palette="heritage-noir"] {
+  --palette-1: #dfd7cc;
+  --palette-2: #a69a8c;
+  --palette-3: #5b5348;
+  --palette-4: #382517;
+  --palette-5: #21221c;
+  --palette-6: #151513;
+}

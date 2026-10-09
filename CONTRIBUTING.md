@@ -25,20 +25,21 @@ scenarios also require Bash and jq. They run the real shell scripts with simulat
 GitHub and Cloudflare responses in temporary directories, without creating
 releases or deploying. Unexpected external requests fail the scenario.
 
-The source, acceptance, and automation profiles write Cucumber JSON to
-`tmp/test/cucumber-source.json`, `tmp/test/cucumber-test.json`, and
-`tmp/test/cucumber-automation.json`. Release CI retains the application and
+The source, acceptance, automation, and browser profiles write Cucumber JSON to
+`tmp/test/cucumber-source.json`, `tmp/test/cucumber-test.json`,
+`tmp/test/cucumber-automation.json`, and `tmp/test/cucumber-browser.json`.
+Release CI retains the application and
 automation results as `application-test-report` and `automation-test-report`,
 including available results when tests fail. Application source coverage remains
 separate.
 
-After running all three suites, `npm run report:tests` uses
+After running all four suites, `npm run report:tests` uses
 `multiple-cucumber-html-reporter` to combine their results into
 `tmp/test-report.html`. The standalone HTML contains the overview, feature and
 scenario details, styles, scripts, and fonts; it can be opened offline. Missing
 or invalid suite results stop generation instead of producing a partial report.
 
-The Test Scenarios badge counts reported test cases across those same three suites,
+The Test Scenarios badge counts reported test cases across those same four suites,
 including each scenario-outline example. Steps are not counted as separate tests.
 After running all suites, `npm run badges:scenarios` updates
 `.github/badges/test-scenarios.json` and its SVG; include them with test changes.
@@ -116,7 +117,7 @@ Automation never guesses which conflicting changes to retain.
 
 Release CI builds the exact head commit, requires full coverage, and uploads
 `bundle`, `coverage`, and the combined HTML `test-report` before auto-merge. All
-three test suites use that same release head; the application job collects the
+four test suites use that same release head; the application job collects the
 automation results from its own workflow run. The head must
 contain current `main` apart from verified dependency-badge updates, with ancestry
 checked again before merging. Failed acceptance reports are downloadable; full

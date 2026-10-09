@@ -128,7 +128,7 @@ jobs:
       actions: read
       contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Checkout release head
         uses: actions/checkout@v7
@@ -168,6 +168,23 @@ jobs:
         id: acceptance
         run: npm --loglevel=error run test:acceptance
 
+      - name: Browser tests against the built bundle
+        id: browser
+        timeout-minutes: 20
+        run: npm --loglevel=error run test:browser
+
+      - name: Upload browser results and diagnostics
+        if: ${{ !cancelled() && (steps.browser.outcome == 'success' || steps.browser.outcome == 'failure') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-test-report
+          path: |
+            tmp/test/cucumber-browser.json
+            tmp/test/browser
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
       - name: Upload application test results
         if: success() || (failure() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure'))
         uses: actions/upload-artifact@v7
@@ -176,6 +193,7 @@ jobs:
           path: |
             tmp/test/cucumber-source.json
             tmp/test/cucumber-test.json
+            tmp/test/cucumber-browser.json
           if-no-files-found: error
           overwrite: true
           retention-days: 7
@@ -189,7 +207,7 @@ jobs:
           overwrite: true
 
       - name: Upload coverage report
-        if: success() || (failure() && steps.coverage.outcome == 'failure')
+        if: ${{ !cancelled() && (steps.coverage.outcome == 'success' || steps.coverage.outcome == 'failure') }}
         uses: actions/upload-artifact@v7
         with:
           name: coverage
@@ -200,6 +218,7 @@ jobs:
           overwrite: true
 
       - name: Download automation test results
+        if: ${{ !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure') }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -210,12 +229,42 @@ jobs:
           }
 
       - name: Generate combined test report
+        id: report
         env:
           REPORT_COMMIT: ${{ github.event.pull_request.head.sha }}
           REPORT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: npm --loglevel=error run report:tests
 
+      - name: Generate diagnostic report after failure
+        id: failure-report
+        if: failure() && !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure')
+        env:
+          REPORT_COMMIT: ${{ github.event.pull_request.head.sha }}
+          REPORT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          reports=()
+          missing=()
+          for suite in source:source acceptance:test browser:browser automation:automation; do
+            file="tmp/test/cucumber-${suite#*:}.json"
+            if [[ -f "$file" ]]; then
+              reports+=("$file")
+            else
+              missing+=("${suite%%:*}")
+            fi
+          done
+          if (( ${#reports[@]} == 0 )); then
+            echo '::error::Cannot generate a diagnostic test report: no Cucumber results were produced. Inspect the failed step logs.' >&2
+            exit 1
+          fi
+          warning='CI failed. This diagnostic report does not certify a successful build.'
+          if (( ${#missing[@]} > 0 )); then
+            warning+=" Missing suite results: ${missing[*]}. See the failed step logs."
+          fi
+          echo "$warning" >> "$GITHUB_STEP_SUMMARY"
+          REPORT_WARNING="$warning" node .github/scripts/generate-test-report.mjs tmp/test-report.html "${reports[@]}"
+
       - name: Upload combined test report
+        if: ${{ !cancelled() && (steps.report.outcome == 'success' || steps.failure-report.outcome == 'success') }}
         uses: actions/upload-artifact@v7
         with:
           name: test-report

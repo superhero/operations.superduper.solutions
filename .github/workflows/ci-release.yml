@@ -83,7 +83,7 @@ jobs:
     name: Test and Build
     needs: validate-pr
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Checkout proposed merge
         uses: actions/checkout@v7
@@ -111,6 +111,23 @@ jobs:
       - name: Acceptance tests
         id: acceptance
         run: npm --loglevel=error run test:acceptance
+
+      - name: Browser tests against the built bundle
+        id: browser
+        timeout-minutes: 20
+        run: npm --loglevel=error run test:browser
+
+      - name: Upload browser results and diagnostics
+        if: ${{ !cancelled() && (steps.browser.outcome == 'success' || steps.browser.outcome == 'failure') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-test-report
+          path: |
+            tmp/test/cucumber-browser.json
+            tmp/test/browser
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
 
       - name: Upload tested bundle
         uses: actions/upload-artifact@v7
