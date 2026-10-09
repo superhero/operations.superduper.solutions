@@ -21,8 +21,7 @@ npm run dev
 | `npm run typecheck` | Check Svelte components and TypeScript source. |
 | `npm run build` | Build `dist/index.html`. |
 
-See [Contributing](CONTRIBUTING.md) for architectural decisions, contribution
-conventions and release automation.
+See the [contributing document](CONTRIBUTING.md) for contribution guidance.
 
 ## Tests
 
