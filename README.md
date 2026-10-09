@@ -16,18 +16,27 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 </details>
 
 <details>
-<summary><code>npm run dev</code></summary>
+<summary><code>npm run badges:coverage</code></summary>
 
-- **Purpose:** Start the local development server.
-- **Requirements:** Run `npm ci` first.
+- **Purpose:** Update the source-coverage badge.
+- **Requirements:** Requires Bash, jq and a fresh `npm run test:source:coverage` followed by
+  `npm run test:coverage`.
 
 </details>
 
 <details>
-<summary><code>npm run typecheck</code></summary>
+<summary><code>npm run badges:dependencies</code></summary>
 
-- **Purpose:** Check Svelte components and TypeScript source.
-- **Requirements:** Run `npm ci` first.
+- **Purpose:** Update dependency-version badges.
+- **Requirements:** Requires Bash, jq and current dependency versions in `package.json`.
+
+</details>
+
+<details>
+<summary><code>npm run badges:scenarios</code></summary>
+
+- **Purpose:** Update the test-scenario badge.
+- **Requirements:** Requires Bash, jq and fresh, complete results from all four test suites.
 
 </details>
 
@@ -40,18 +49,18 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 </details>
 
 <details>
-<summary><code>npm test</code></summary>
+<summary><code>npm run dev</code></summary>
 
-- **Purpose:** Run the acceptance suite only; alias for `npm run test:acceptance`.
-- **Requirements:** Run `npm ci` and `npm run build` first.
+- **Purpose:** Start the local development server.
+- **Requirements:** Run `npm ci` first.
 
 </details>
 
 <details>
-<summary><code>npm run test:source</code></summary>
+<summary><code>npm run report:tests</code></summary>
 
-- **Purpose:** Run source scenarios.
-- **Requirements:** Run `npm ci` first.
+- **Purpose:** Generate the combined `tmp/test-report.html`.
+- **Requirements:** Run `npm ci` first. Fresh, complete results from all four test suites are required.
 
 </details>
 
@@ -59,6 +68,14 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 <summary><code>npm run test:acceptance</code></summary>
 
 - **Purpose:** Check the built output.
+- **Requirements:** Run `npm ci` and `npm run build` first.
+
+</details>
+
+<details>
+<summary><code>npm run test:acceptance:coverage</code></summary>
+
+- **Purpose:** Run acceptance scenarios and collect coverage data.
 - **Requirements:** Run `npm ci` and `npm run build` first.
 
 </details>
@@ -80,23 +97,7 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 </details>
 
 <details>
-<summary><code>npm run test:source:coverage</code></summary>
-
-- **Purpose:** Run source scenarios and collect coverage data.
-- **Requirements:** Run `npm ci` first.
-
-</details>
-
-<details>
-<summary><code>npm run test:acceptance:coverage</code></summary>
-
-- **Purpose:** Run acceptance scenarios and collect coverage data.
-- **Requirements:** Run `npm ci` and `npm run build` first.
-
-</details>
-
-<details>
-<summary><code>npm run coverage</code></summary>
+<summary><code>npm run test:coverage</code></summary>
 
 - **Purpose:** Generate reports in `tmp/test/coverage/` and enforce 100% statement, branch,
   function and line coverage.
@@ -106,35 +107,34 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 </details>
 
 <details>
-<summary><code>npm run report:tests</code></summary>
+<summary><code>npm run test:source</code></summary>
 
-- **Purpose:** Generate the combined `tmp/test-report.html`.
-- **Requirements:** Run `npm ci` first. Fresh, complete results from all four test suites are required.
-
-</details>
-
-<details>
-<summary><code>npm run badges:dependencies</code></summary>
-
-- **Purpose:** Update dependency-version badges.
-- **Requirements:** Requires Bash, jq and current dependency versions in `package.json`.
+- **Purpose:** Run source scenarios.
+- **Requirements:** Run `npm ci` first.
 
 </details>
 
 <details>
-<summary><code>npm run badges:coverage</code></summary>
+<summary><code>npm run test:source:coverage</code></summary>
 
-- **Purpose:** Update the source-coverage badge.
-- **Requirements:** Requires Bash, jq and a fresh `npm run test:source:coverage` followed by
-  `npm run coverage`.
+- **Purpose:** Run source scenarios and collect coverage data.
+- **Requirements:** Run `npm ci` first.
 
 </details>
 
 <details>
-<summary><code>npm run badges:scenarios</code></summary>
+<summary><code>npm run typecheck</code></summary>
 
-- **Purpose:** Update the test-scenario badge.
-- **Requirements:** Requires Bash, jq and fresh, complete results from all four test suites.
+- **Purpose:** Check Svelte components and TypeScript source.
+- **Requirements:** Run `npm ci` first.
+
+</details>
+
+<details>
+<summary><code>npm test</code></summary>
+
+- **Purpose:** Run the acceptance suite only; alias for `npm run test:acceptance`.
+- **Requirements:** Run `npm ci` and `npm run build` first.
 
 </details>
 
