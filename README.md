@@ -10,179 +10,131 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 <details>
 <summary><code>npm ci</code></summary>
 
-Install locked dependencies.
-
-> **Important**
->
-> Use the Node.js and npm versions declared in [`package.json`](package.json).
+- **Purpose:** Install locked dependencies.
+- **Requirements:** Use the Node.js and npm versions declared in [`package.json`](package.json).
 
 </details>
 
 <details>
 <summary><code>npm run dev</code></summary>
 
-Start the local development server.
-
-> **Important**
->
-> Run `npm ci` first.
+- **Purpose:** Start the local development server.
+- **Requirements:** Run `npm ci` first.
 
 </details>
 
 <details>
 <summary><code>npm run typecheck</code></summary>
 
-Check Svelte components and TypeScript source.
-
-> **Important**
->
-> Run `npm ci` first.
+- **Purpose:** Check Svelte components and TypeScript source.
+- **Requirements:** Run `npm ci` first.
 
 </details>
 
 <details>
 <summary><code>npm run build</code></summary>
 
-Build `dist/index.html`.
-
-> **Important**
->
-> Run `npm ci` first.
+- **Purpose:** Build `dist/index.html`.
+- **Requirements:** Run `npm ci` first.
 
 </details>
 
 <details>
 <summary><code>npm test</code></summary>
 
-Run the acceptance suite only; alias for `npm run test:acceptance`.
-
-> **Important**
->
-> Run `npm ci` and `npm run build` first.
+- **Purpose:** Run the acceptance suite only; alias for `npm run test:acceptance`.
+- **Requirements:** Run `npm ci` and `npm run build` first.
 
 </details>
 
 <details>
 <summary><code>npm run test:source</code></summary>
 
-Run source scenarios.
-
-> **Important**
->
-> Run `npm ci` first.
+- **Purpose:** Run source scenarios.
+- **Requirements:** Run `npm ci` first.
 
 </details>
 
 <details>
 <summary><code>npm run test:acceptance</code></summary>
 
-Check the built output.
-
-> **Important**
->
-> Run `npm ci` and `npm run build` first.
+- **Purpose:** Check the built output.
+- **Requirements:** Run `npm ci` and `npm run build` first.
 
 </details>
 
 <details>
 <summary><code>npm run test:automation</code></summary>
 
-Check repository automation without deploying.
-
-> **Important**
->
-> Run `npm ci` first. Bash and jq are required.
+- **Purpose:** Check repository automation without deploying.
+- **Requirements:** Run `npm ci` first. Bash and jq are required.
 
 </details>
 
 <details>
 <summary><code>npm run test:browser</code></summary>
 
-Run browser scenarios in Chromium.
-
-> **Important**
->
-> Run `npm ci` and `npm run build` first. Bash and running Docker are required.
+- **Purpose:** Run browser scenarios in Chromium.
+- **Requirements:** Run `npm ci` and `npm run build` first. Bash and running Docker are required.
 
 </details>
 
 <details>
 <summary><code>npm run test:source:coverage</code></summary>
 
-Run source scenarios and collect coverage data.
-
-> **Important**
->
-> Run `npm ci` first.
+- **Purpose:** Run source scenarios and collect coverage data.
+- **Requirements:** Run `npm ci` first.
 
 </details>
 
 <details>
 <summary><code>npm run test:acceptance:coverage</code></summary>
 
-Run acceptance scenarios and collect coverage data.
-
-> **Important**
->
-> Run `npm ci` and `npm run build` first.
+- **Purpose:** Run acceptance scenarios and collect coverage data.
+- **Requirements:** Run `npm ci` and `npm run build` first.
 
 </details>
 
 <details>
 <summary><code>npm run coverage</code></summary>
 
-Generate reports in `tmp/test/coverage/` and enforce 100% statement, branch,
-function and line coverage.
-
-> **Important**
->
-> Collect fresh coverage with `npm run test:source:coverage` or
-> `npm run test:acceptance:coverage` first.
+- **Purpose:** Generate reports in `tmp/test/coverage/` and enforce 100% statement, branch,
+  function and line coverage.
+- **Requirements:** Collect fresh coverage with `npm run test:source:coverage` or
+  `npm run test:acceptance:coverage` first.
 
 </details>
 
 <details>
 <summary><code>npm run report:tests</code></summary>
 
-Generate the combined `tmp/test-report.html`.
-
-> **Important**
->
-> Run `npm ci` first. Fresh, complete results from all four test suites are required.
+- **Purpose:** Generate the combined `tmp/test-report.html`.
+- **Requirements:** Run `npm ci` first. Fresh, complete results from all four test suites are required.
 
 </details>
 
 <details>
 <summary><code>npm run badges:dependencies</code></summary>
 
-Update dependency-version badges.
-
-> **Important**
->
-> Requires Bash, jq and current dependency versions in `package.json`.
+- **Purpose:** Update dependency-version badges.
+- **Requirements:** Requires Bash, jq and current dependency versions in `package.json`.
 
 </details>
 
 <details>
 <summary><code>npm run badges:coverage</code></summary>
 
-Update the source-coverage badge.
-
-> **Important**
->
-> Requires Bash, jq and a fresh `npm run test:source:coverage` followed by
-> `npm run coverage`.
+- **Purpose:** Update the source-coverage badge.
+- **Requirements:** Requires Bash, jq and a fresh `npm run test:source:coverage` followed by
+  `npm run coverage`.
 
 </details>
 
 <details>
 <summary><code>npm run badges:scenarios</code></summary>
 
-Update the test-scenario badge.
-
-> **Important**
->
-> Requires Bash, jq and fresh, complete results from all four test suites.
+- **Purpose:** Update the test-scenario badge.
+- **Requirements:** Requires Bash, jq and fresh, complete results from all four test suites.
 
 </details>
 
