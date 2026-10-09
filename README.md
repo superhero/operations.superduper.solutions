@@ -7,24 +7,168 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 ## npm commands
 
-| Command | Purpose | Requirements |
-| --- | --- | --- |
-| `npm ci` | Install locked dependencies. | Node.js and npm versions declared in [`package.json`](package.json). |
-| `npm run dev` | Start the local development server. | `npm ci`. |
-| `npm run typecheck` | Check Svelte components and TypeScript source. | `npm ci`. |
-| `npm run build` | Build `dist/index.html`. | `npm ci`. |
-| `npm test` | Run the acceptance suite only; alias for `npm run test:acceptance`. | `npm ci` and a current build. |
-| `npm run test:source` | Run source scenarios. | `npm ci`. |
-| `npm run test:acceptance` | Check the built output. | `npm ci` and a current build. |
-| `npm run test:automation` | Check repository automation without deploying. | `npm ci`, Bash and jq. |
-| `npm run test:browser` | Run browser scenarios in Chromium. | `npm ci`, a current build, Bash and running Docker. |
-| `npm run test:source:coverage` | Run source scenarios and collect coverage data. | `npm ci`. |
-| `npm run test:acceptance:coverage` | Run acceptance scenarios and collect coverage data. | `npm ci` and a current build. |
-| `npm run coverage` | Generate reports in `tmp/test/coverage/` and enforce 100% statement, branch, function and line coverage. | A fresh `test:source:coverage` or `test:acceptance:coverage` run. |
-| `npm run report:tests` | Generate the combined `tmp/test-report.html`. | `npm ci` and fresh, complete results from all four test suites. |
-| `npm run badges:dependencies` | Update dependency-version badges. | Bash, jq and current versions in `package.json`. |
-| `npm run badges:coverage` | Update the source-coverage badge. | Bash, jq and a fresh `npm run test:source:coverage` followed by `npm run coverage`. |
-| `npm run badges:scenarios` | Update the test-scenario badge. | Bash, jq and fresh, complete results from all four test suites. |
+<details>
+<summary><code>npm ci</code></summary>
+
+Install locked dependencies.
+
+> [!IMPORTANT]
+> Use the Node.js and npm versions declared in [`package.json`](package.json).
+
+</details>
+
+<details>
+<summary><code>npm run dev</code></summary>
+
+Start the local development server.
+
+> [!IMPORTANT]
+> Run `npm ci` first.
+
+</details>
+
+<details>
+<summary><code>npm run typecheck</code></summary>
+
+Check Svelte components and TypeScript source.
+
+> [!IMPORTANT]
+> Run `npm ci` first.
+
+</details>
+
+<details>
+<summary><code>npm run build</code></summary>
+
+Build `dist/index.html`.
+
+> [!IMPORTANT]
+> Run `npm ci` first.
+
+</details>
+
+<details>
+<summary><code>npm test</code></summary>
+
+Run the acceptance suite only; alias for `npm run test:acceptance`.
+
+> [!IMPORTANT]
+> Run `npm ci` and `npm run build` first.
+
+</details>
+
+<details>
+<summary><code>npm run test:source</code></summary>
+
+Run source scenarios.
+
+> [!IMPORTANT]
+> Run `npm ci` first.
+
+</details>
+
+<details>
+<summary><code>npm run test:acceptance</code></summary>
+
+Check the built output.
+
+> [!IMPORTANT]
+> Run `npm ci` and `npm run build` first.
+
+</details>
+
+<details>
+<summary><code>npm run test:automation</code></summary>
+
+Check repository automation without deploying.
+
+> [!IMPORTANT]
+> Run `npm ci` first. Bash and jq are required.
+
+</details>
+
+<details>
+<summary><code>npm run test:browser</code></summary>
+
+Run browser scenarios in Chromium.
+
+> [!IMPORTANT]
+> Run `npm ci` and `npm run build` first. Bash and running Docker are required.
+
+</details>
+
+<details>
+<summary><code>npm run test:source:coverage</code></summary>
+
+Run source scenarios and collect coverage data.
+
+> [!IMPORTANT]
+> Run `npm ci` first.
+
+</details>
+
+<details>
+<summary><code>npm run test:acceptance:coverage</code></summary>
+
+Run acceptance scenarios and collect coverage data.
+
+> [!IMPORTANT]
+> Run `npm ci` and `npm run build` first.
+
+</details>
+
+<details>
+<summary><code>npm run coverage</code></summary>
+
+Generate reports in `tmp/test/coverage/` and enforce 100% statement, branch,
+function and line coverage.
+
+> [!IMPORTANT]
+> Collect fresh coverage with `npm run test:source:coverage` or
+> `npm run test:acceptance:coverage` first.
+
+</details>
+
+<details>
+<summary><code>npm run report:tests</code></summary>
+
+Generate the combined `tmp/test-report.html`.
+
+> [!IMPORTANT]
+> Run `npm ci` first. Fresh, complete results from all four test suites are required.
+
+</details>
+
+<details>
+<summary><code>npm run badges:dependencies</code></summary>
+
+Update dependency-version badges.
+
+> [!IMPORTANT]
+> Requires Bash, jq and current dependency versions in `package.json`.
+
+</details>
+
+<details>
+<summary><code>npm run badges:coverage</code></summary>
+
+Update the source-coverage badge.
+
+> [!IMPORTANT]
+> Requires Bash, jq and a fresh `npm run test:source:coverage` followed by
+> `npm run coverage`.
+
+</details>
+
+<details>
+<summary><code>npm run badges:scenarios</code></summary>
+
+Update the test-scenario badge.
+
+> [!IMPORTANT]
+> Requires Bash, jq and fresh, complete results from all four test suites.
+
+</details>
 
 ## Development status
 
@@ -131,7 +275,7 @@ problems before building.
 
 ---
 
-<a href="https://www.npmjs.com/package/@sveltejs/vite-plugin-svelte"><img src=".github/badges/version-dependency-sveltejs--vite-plugin-svelte.svg" alt="@sveltejs/vite-plugin-svelte declared version"></a>
+<a href="https://www.npmjs.com/package/@sveltejs/vite-plugin-svelte"><img src=".github/badges/version-dependency-sveltejs--vite-plugin-svelte.svg" alt="@sveltejs/vite-plugin-sveltejs--vite-plugin-svelte declared version"></a>
 
 Connects the webpage’s `Svelte` components to the `Vite` build, compiling the
 workflow editor, navigation, and controls into browser JavaScript and CSS.
