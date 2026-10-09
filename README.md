@@ -5,98 +5,26 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 > [!NOTE]
 > This project is under active development and is currently in a pre-release state.
 
-## Local development
-
-Use the Node.js and npm versions declared in [`package.json`](package.json).
-Run commands from the repository root. Install the locked dependencies and start
-the development server:
-
-```sh
-npm ci
-npm run dev
-```
-
-| Command | Purpose |
-| --- | --- |
-| `npm run typecheck` | Check Svelte components and TypeScript source. |
-| `npm run build` | Build `dist/index.html`. |
-
-See the [contributing document](CONTRIBUTING.md) for contribution guidance.
-
-## Tests
+## npm commands
 
 | Command | Purpose | Requirements |
 | --- | --- | --- |
-| `npm run test:source` | Run source scenarios. | Installed dependencies. |
-| `npm run test:acceptance` | Check the built output. | A current build. |
-| `npm run test:automation` | Check repository automation without deploying. | Bash and jq. |
-| `npm run test:browser` | Run browser scenarios in Chromium. | A current build and running Docker. |
-
-`npm test` is an alias for `npm run test:acceptance`, not the full test suite.
-The browser launcher downloads its pinned Playwright image when needed; no
-separate browser installation is required.
-
-### Run all suites and generate a report
-
-After `npm ci`, with the requirements above available:
-
-```sh
-npm run typecheck
-npm run build
-npm run test:source
-npm run test:acceptance
-npm run test:automation
-npm run test:browser
-npm run report:tests
-```
-
-Open `tmp/test-report.html` for the combined results. Report generation requires
-results from all four suites. Browser failure diagnostics are saved under
-`tmp/test/browser/`.
-
-### Run a single scenario
-
-Pass a scenario name after `--`, replacing the example name below:
-
-```sh
-npm run test:browser -- --name 'Exact scenario name'
-```
-
-Rerun the complete suite before generating the combined report or scenario badge.
-
-## Coverage
-
-Collect source coverage, then generate reports and check the configured 100%
-statement, branch, function and line thresholds:
-
-```sh
-npm run test:source:coverage
-npm run coverage
-```
-
-Open `tmp/test/coverage/index.html` for the report. The summary used by the
-coverage badge is `tmp/test/coverage/coverage-summary.json`.
-
-`npm run test:acceptance:coverage` collects coverage while running the acceptance
-suite instead. Follow it with `npm run coverage` to report that run; use a fresh
-source-coverage run for the project's coverage badge.
-
-## Badges
-
-Regenerate badges after the relevant changes and commit the updated files under
-`.github/badges/`:
-
-| Command | Required input |
-| --- | --- |
-| `npm run badges:dependencies` | Updated dependency versions in `package.json`. |
-| `npm run badges:coverage` | A fresh `npm run test:source:coverage` followed by `npm run coverage`. |
-| `npm run badges:scenarios` | Fresh, complete results from all four test suites. |
-
-Append `-- --check` to any badge command to validate without writing changes:
-
-```sh
-npm run badges:dependencies -- --check
-```
+| `npm ci` | Install locked dependencies. | Node.js and npm versions declared in [`package.json`](package.json). |
+| `npm run dev` | Start the local development server. | `npm ci`. |
+| `npm run typecheck` | Check Svelte components and TypeScript source. | `npm ci`. |
+| `npm run build` | Build `dist/index.html`. | `npm ci`. |
+| `npm test` | Run the acceptance suite only; alias for `npm run test:acceptance`. | `npm ci` and a current build. |
+| `npm run test:source` | Run source scenarios. | `npm ci`. |
+| `npm run test:acceptance` | Check the built output. | `npm ci` and a current build. |
+| `npm run test:automation` | Check repository automation without deploying. | `npm ci`, Bash and jq. |
+| `npm run test:browser` | Run browser scenarios in Chromium. | `npm ci`, a current build, Bash and running Docker. |
+| `npm run test:source:coverage` | Run source scenarios and collect coverage data. | `npm ci`. |
+| `npm run test:acceptance:coverage` | Run acceptance scenarios and collect coverage data. | `npm ci` and a current build. |
+| `npm run coverage` | Generate reports in `tmp/test/coverage/` and enforce 100% statement, branch, function and line coverage. | A fresh `test:source:coverage` or `test:acceptance:coverage` run. |
+| `npm run report:tests` | Generate the combined `tmp/test-report.html`. | `npm ci` and fresh, complete results from all four test suites. |
+| `npm run badges:dependencies` | Update dependency-version badges. | Bash, jq and current versions in `package.json`. |
+| `npm run badges:coverage` | Update the source-coverage badge. | Bash, jq and a fresh `npm run test:source:coverage` followed by `npm run coverage`. |
+| `npm run badges:scenarios` | Update the test-scenario badge. | Bash, jq and fresh, complete results from all four test suites. |
 
 ## Development status
 
