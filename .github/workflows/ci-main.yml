@@ -550,17 +550,7 @@ jobs:
           done
 
       - name: Bundle coverage report
-        run: |
-          npx --yes coverage-single-html@0.1.4 tmp/coverage \
-            --output tmp/coverage.html --title "Test Coverage Report"
-          npx --yes html-minifier-terser@7.2.0 tmp/coverage.html \
-            --collapse-whitespace --remove-comments --remove-redundant-attributes \
-            --remove-script-type-attributes --remove-style-link-type-attributes \
-            --minify-css true --minify-js true --output tmp/test-coverage.html
-          test -s tmp/test-coverage.html || {
-            echo '::error::Coverage report bundling produced no HTML: tmp/test-coverage.html (source=tmp/coverage, intermediate=tmp/coverage.html). Publishing stopped.' >&2
-            exit 1
-          }
+        run: node .github/scripts/generate-coverage-report.mjs tmp/test-coverage.html tmp/coverage
 
       - name: Create GitHub App token
         id: app-token

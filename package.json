@@ -9,6 +9,7 @@
     "badges:scenarios": "bash .github/scripts/generate-scenario-badge.sh .github/badges tmp/test/cucumber-source.json tmp/test/cucumber-test.json tmp/test/cucumber-automation.json tmp/test/cucumber-browser.json",
     "build": "vite build",
     "dev": "vite --host 127.0.0.1",
+    "report:coverage": "node .github/scripts/generate-coverage-report.mjs tmp/test-coverage.html tmp/test/coverage",
     "report:tests": "node .github/scripts/generate-test-report.mjs tmp/test-report.html tmp/test/cucumber-source.json tmp/test/cucumber-test.json tmp/test/cucumber-automation.json tmp/test/cucumber-browser.json",
     "test": "npm run test:acceptance",
     "test:acceptance": "node --eval \"import('node:fs').then(({mkdirSync}) => mkdirSync('tmp/test', { recursive: true }))\" && cucumber-js --config cucumber.config.mjs --profile acceptance",
