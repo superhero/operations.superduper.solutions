@@ -14,15 +14,20 @@ const screenshot = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8
 Given("Cucumber results from source, acceptance, browser, and automation suites", function ()
 {
   this.testReport = { output: join(this.automation.root, "test-report.html"), inputs: [] };
+  this.automation.env.REPORT_RUN_URL = "https://github.com/superhero/operations.superduper.solutions/actions/runs/37898008768";
+  this.automation.env.REPORT_COMMIT = "af28ee270f2df1ecf9d50a7584b1de577ef25c8b";
   for (const suite of ["source", "acceptance", "browser", "automation"])
   {
-    const file = join(this.automation.root, `${suite}.json`);
+    const file = join(this.automation.root, `cucumber-${suite === "acceptance" ? "test" : suite}.json`);
     const feature = { id: suite, keyword: "Feature", name: `${suite} suite`, description: "", line: 1,
       uri: `${suite}.feature`, elements: [{ id: `${suite};scenario`, keyword: "Scenario", name: `${suite} scenario`,
         line: 2, type: "scenario", steps: [{ keyword: "Given ", name: `${suite} step`, line: 3,
           result: { status: suite === "acceptance" ? "failed" : "passed", duration: 1000000,
             ...(suite === "acceptance" ? { error_message: "A useful failure reason" } : {}) },
           ...(suite === "browser" ? { embeddings: [{ data: screenshot, mime_type: "image/png" }] } : {}) }] }] };
+    if (suite === "browser") feature.elements[0].before = [{ result: { status: "passed", duration: 0 },
+      embeddings: [{ mime_type: "application/vnd.operations.browser+json",
+        data: Buffer.from(JSON.stringify({ name: "chromium", version: "123.0.0.1" })).toString("base64") }] }];
     writeFileSync(file, JSON.stringify([feature]));
     this.testReport.inputs.push(file);
   }
@@ -60,8 +65,30 @@ Then("the report embeds all suite results, feature pages, scripts, styles, and f
   const html = readFileSync(this.testReport.output, "utf8");
   const files = JSON.parse(html.match(/<script id="report-files" type="application\/json">([^<]+)<\/script>/)[1]);
   const decode = path => Buffer.from(files[path].data, "base64").toString("utf8");
+  assert.ok(decode("index.html").includes(`<a href="${this.automation.env.REPORT_RUN_URL}" target="_blank" rel="noopener noreferrer">37898008768</a>`),
+    "CI Pipeline must link to the run URL using only the run ID as its label");
   const features = Object.keys(files).filter(path => path.startsWith("features/") && path.endsWith(".html"));
   assert.equal(features.length, 4);
+  const overview = decode("index.html");
+  assert.ok(overview.includes("af28ee2"), "Display the seven-character commit hash");
+  assert.ok(!overview.includes(this.automation.env.REPORT_COMMIT), "Do not display the full commit hash");
+  assert.ok(overview.includes("chromium 123.0.0.1"), "Use the browser identity captured during the run");
+  assert.ok(overview.includes("Not applicable"), "Non-browser suites must not claim to use Chromium");
+  for (const path of ["index.html", ...features])
+  {
+    const page = decode(path);
+    assert.ok(!/>\s*Username\s*</.test(page), "Omit the runtime username from report headers");
+    const footer = page.match(/<footer\b[^>]*>([\s\S]*?)<\/footer>/)?.[1];
+    if (footer !== undefined)
+      assert.equal(footer.replace(/<[^>]*>/g, "").trim(), "", "The footer must be empty");
+    assert.ok(page.includes("footer { display: none; }"), "Hide the empty footer wrapper");
+    assert.ok(!page.includes("application/vnd.operations.browser+json"), "Do not display metadata-only attachments");
+    if (path !== "index.html" && !page.includes("browser scenario"))
+      assert.ok(!page.includes("chromium 123.0.0.1"), "Browser metadata must stay scoped to browser features");
+  }
+  // Preparing reporter input must not rewrite the original Cucumber results.
+  const originalBrowser = JSON.parse(readFileSync(this.testReport.inputs[2], "utf8"))[0];
+  assert.equal(originalBrowser.elements[0].before[0].embeddings[0].mime_type, "application/vnd.operations.browser+json");
   const pages = features.map(decode).join("\n");
   for (const suite of ["source", "acceptance", "browser", "automation"])
   {

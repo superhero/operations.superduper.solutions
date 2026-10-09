@@ -48,6 +48,9 @@ Before(async function ({ pickle }) {
   this.browser = browser;
   this.baseURL = baseURL;
   this.diagnostics = [];
+  // Capture the running browser, including successful runs and parallel workers.
+  await this.attach(JSON.stringify({ name: browser.browserType().name(), version: browser.version() }),
+    'application/vnd.operations.browser+json');
   const slug = pickle.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 90);
   this.artifactDirectory = resolve('tmp/test/browser', `${slug}-${randomUUID().slice(0, 8)}`);
   this.context = await browser.newContext({
