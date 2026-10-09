@@ -27,16 +27,20 @@ function openCoverageReport()
     return { page: decodeURIComponent(url.pathname.slice(1)), anchor: decodeURIComponent(url.hash.slice(1)) };
   }
 
+  function stylesheet(content, path)
+  {
+    return content.replace(/url\(\s*(['"]?)(.*?)\1\s*\)/g, (original, quote, reference) => {
+      const local = target(reference, path);
+      return local ? `url("${asset(local.page)}${local.anchor ? `#${encodeURIComponent(local.anchor)}` : ""}")` : original;
+    });
+  }
+
   function asset(path)
   {
     if (urls.has(path)) return urls.get(path);
     if (!Object.hasOwn(files, path)) throw new Error(`Missing embedded coverage resource: ${path}`);
     const file = files[path];
-    const content = file.type === "text/css" ? text(file).replace(/url\(\s*(['"]?)(.*?)\1\s*\)/g,
-      (original, quote, reference) => {
-        const local = target(reference, path);
-        return local ? `url("${asset(local.page)}${local.anchor ? `#${encodeURIComponent(local.anchor)}` : ""}")` : original;
-      }) : null;
+    const content = file.type === "text/css" ? stylesheet(text(file), path) : null;
     // Data URLs are self-contained even when the outer report uses file://.
     const url = content === null ? `data:${file.type};base64,${file.data}` :
       `data:text/css;charset=utf-8,${encodeURIComponent(content)}`;
@@ -77,6 +81,10 @@ function openCoverageReport()
           if (local) element.setAttribute(attribute, asset(local.page) + (local.anchor ? `#${encodeURIComponent(local.anchor)}` : ""));
         }
       }
+      for (const style of page.querySelectorAll("style"))
+        style.textContent = stylesheet(style.textContent, pagePath);
+      for (const element of page.querySelectorAll("[style]"))
+        element.setAttribute("style", stylesheet(element.getAttribute("style"), pagePath));
       page.documentElement.dataset.coveragePage = pagePath;
       current = pagePath;
       loadedDocument = null;
