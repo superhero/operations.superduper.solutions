@@ -10,7 +10,7 @@ import { dirname, extname, join, relative, resolve, sep } from "node:path";
 function openCoverageReport()
 {
   const files = JSON.parse(document.getElementById("coverage-files").textContent);
-  let frame = document.getElementById("coverage");
+  const frame = document.getElementById("coverage");
   const error = document.getElementById("coverage-error");
   const urls = new Map();
   const bytes = file => Uint8Array.from(atob(file.data), character => character.charCodeAt(0));
@@ -88,14 +88,9 @@ function openCoverageReport()
       page.documentElement.dataset.coveragePage = pagePath;
       current = pagePath;
       loadedDocument = null;
-      // A fresh frame has no prior document to traverse when the user goes
-      // Back or Forward. Only the outer file/line route owns history entries.
-      const next = frame.cloneNode(false);
-      next.addEventListener("load", pageLoaded);
-      next.srcdoc = `<!doctype html>\n${page.documentElement.outerHTML}`;
-      const previous = frame;
-      frame = next;
-      previous.replaceWith(next);
+      // srcdoc keeps the document accessible under HTTP and file://. Updating
+      // it replaces the frame entry; the outer hash owns navigation history.
+      frame.srcdoc = `<!doctype html>\n${page.documentElement.outerHTML}`;
     }
     catch (failure)
     {
@@ -111,9 +106,7 @@ function openCoverageReport()
     else location.hash = route.toString();
   }
 
-  function pageLoaded(event)
-  {
-    if (event.target !== frame) return;
+  frame.addEventListener("load", () => {
     const doc = frame.contentDocument;
     // Ignore the initial blank document and superseded page loads.
     if (!doc || doc.URL !== "about:srcdoc" || doc.documentElement.dataset.coveragePage !== current) return;
@@ -128,7 +121,7 @@ function openCoverageReport()
       navigate(destination);
     });
     scrollToAnchor();
-  }
+  });
   window.addEventListener("hashchange", show);
   show();
 }
