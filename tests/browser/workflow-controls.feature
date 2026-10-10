@@ -34,7 +34,8 @@ Feature: Workflow utility controls and reusable plans
     Given a workflow with editable routing controls and a comment
     When a workflow description save encounters a storage failure
     Then the description draft remains available for retry
-    When I retry saving the workflow description
+    When I continue editing the description after the failed save
+    And I retry saving the workflow description
     Then the recovered description is saved locally
 
   Scenario: Utility controls and description editing fit a narrow viewport

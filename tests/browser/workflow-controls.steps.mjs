@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { storedWorkflows, blockWorkflowSaving, restoreWorkflowSaving } from "./workflow-storage.fixture.mjs";
+import { storedWorkflows, blockWorkflowSaving, restoreWorkflowSaving, repository } from "./workflow-storage.fixture.mjs";
 import { closeWorkflowDetails, expectWorkflowName, openWorkflowDetails, renameWorkflow, workflowNameInput } from "./workflow-details.fixture.mjs";
 import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
@@ -13,6 +13,8 @@ const node = (page, type) => workflow(page).locator(`.svelte-flow__node-${type}`
 const descriptionDialog = page => page.getByRole("dialog", { name: "Workflow details", exact: true });
 const savedDialog = page => page.getByRole("dialog", { name: "Saved workflows", exact: true });
 const controlComment = '# Release plan\n\n**Ready** [Docs](https://example.com/guide)\n\n<script>window.commentUnsafe = true</script>\n![Image](https://example.com/tracker.png)';
+const retainedDescription = "Keep this description draft after a failed save.";
+const editedDescription = "Keep this edited description after a failed save.";
 
 async function choose(page, control, option) {
   await control.click();
@@ -214,18 +216,39 @@ Then("only the unselected saved workflow remains", async function () {
 });
 
 When("a workflow description save encounters a storage failure", async function () {
+  const savedStatus = this.page.locator(".site-header .document-meta").getByText("Saved locally", { exact: true });
+  await expect(savedStatus).toBeVisible();
   await this.page.getByRole("button", { name: "Workflow details", exact: true }).click();
-  await failStorage(this.page);
   await workflowNameInput(this.page).fill("Retained workflow details");
-  await descriptionDialog(this.page).getByRole("textbox", { name: "Description", exact: true }).fill("Keep this description draft after a failed save.");
+  const description = descriptionDialog(this.page).getByRole("textbox", { name: "Description", exact: true });
+  await description.focus();
+  await expect(savedStatus).toBeVisible();
+  const saved = (await storedWorkflows(this.page)).at(-1);
+  this.descriptionHistoryBefore = await repository(this.page, "inspect", saved.id);
+  await this.page.evaluate(() => {
+    window.workflowAutosaveTransaction = IDBDatabase.prototype.transaction;
+    IDBDatabase.prototype.transaction = function (stores, mode, options) {
+      // Fail after the Git commit is durable, so retry must recover that exact
+      // submitted snapshot before saving any edits made while storage was down.
+      if (mode === "readwrite" && this.name === "operations-workflow-catalog-v1"
+        && Array.isArray(stores) && stores.includes("catalog") && stores.includes("pending"))
+        throw new Error("Storage unavailable for control review");
+      return window.workflowAutosaveTransaction.call(this, stores, mode, options);
+    };
+  });
+  await description.fill(retainedDescription);
   await descriptionDialog(this.page).getByRole("button", { name: "Save workflow details", exact: true }).click();
 });
 
 Then("the description draft remains available for retry", async function () {
   await expect(descriptionDialog(this.page).getByRole("alert")).toContainText("Storage unavailable for control review");
   await expect(workflowNameInput(this.page)).toHaveValue("Retained workflow details");
-  await expect(descriptionDialog(this.page).getByRole("textbox", { name: "Description", exact: true })).toHaveValue("Keep this description draft after a failed save.");
+  await expect(descriptionDialog(this.page).getByRole("textbox", { name: "Description", exact: true })).toHaveValue(retainedDescription);
   await expect(descriptionDialog(this.page).getByRole("button", { name: "Try again", exact: true })).toBeVisible();
+});
+
+When("I continue editing the description after the failed save", async function () {
+  await descriptionDialog(this.page).getByRole("textbox", { name: "Description", exact: true }).fill(editedDescription);
 });
 
 When("I retry saving the workflow description", async function () {
@@ -237,13 +260,20 @@ When("I retry saving the workflow description", async function () {
 Then("the recovered description is saved locally", async function () {
   const saved = await storedWorkflows(this.page);
   assert.equal(saved.at(-1).name, "Retained workflow details");
-  assert.equal(saved.at(-1).description, "Keep this description draft after a failed save.");
+  assert.equal(saved.at(-1).description, editedDescription);
+  const history = await repository(this.page, "inspect", saved.at(-1).id);
+  assert.deepEqual(history.versions.slice(2), this.descriptionHistoryBefore.versions, "Retry must preserve the existing history.");
+  assert.equal(JSON.parse(history.versions[1].text).description, retainedDescription,
+    "The interrupted submitted description must become its own recovered version.");
+  assert.equal(JSON.parse(history.versions[0].text).description, editedDescription);
+  assert.deepEqual(history.versions[0].parent, [history.versions[1].oid]);
+  assert.deepEqual(history.versions[1].parent, [this.descriptionHistoryBefore.versions[0].oid]);
   await expect(this.page.locator(".site-header .document-meta").getByText("Saved locally", { exact: true })).toBeVisible();
   await this.page.reload();
   await setMode(this.page, "workflow");
   await openWorkflowDetails(this.page);
   await expect(workflowNameInput(this.page)).toHaveValue("Retained workflow details");
-  await expect(descriptionDialog(this.page).getByRole("textbox", { name: "Description", exact: true })).toHaveValue("Keep this description draft after a failed save.");
+  await expect(descriptionDialog(this.page).getByRole("textbox", { name: "Description", exact: true })).toHaveValue(editedDescription);
   await closeWorkflowDetails(this.page);
 });
 

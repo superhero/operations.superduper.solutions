@@ -67,6 +67,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let historyError = $state("");
   let revisions = $state<WorkflowRevision[]>([]);
   let savePromise: Promise<boolean> | null = null;
+  let saveAttempt = $state.raw<{ snapshot: string; expectedRevision: string | null } | null>(null);
   let queuedSnapshot: string | null = null;
   let textEditing = $state(false);
   let placement = $state.raw<Promise<void> | null>(null);
@@ -106,7 +107,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const graphBlocked = $derived(!active || !storageReady || actionBusy || navigationModal || dialogOpen || replacementOpen || descriptionOpen || runOpen || historyOpen);
   const keyboardActive = $derived(!graphBlocked);
   const snapshot = $derived(JSON.stringify(documentValue()));
-  const dirty = $derived(snapshot !== savedSnapshot);
+  const dirty = $derived(snapshot !== savedSnapshot || saveAttempt !== null);
   const edgeOptions = $derived({ animated: dashed, markerEnd: { type: MarkerType.ArrowClosed }, type: curved ? "default" : "smoothstep", style: dashed ? "stroke-dasharray: 6 4" : "" });
   const branches = $derived(schemaBranches(nodes, edges));
   const inputTypes = $derived(routingInputTypes(nodes, edges));
@@ -288,6 +289,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     savedSnapshot = saved ? JSON.stringify(documentValue()) : "";
     hasSavedDocument = stored;
     persistedRevision = null;
+    saveAttempt = null;
     initialDraft = !stored && saved ? JSON.parse(snapshot) : null;
     canUndo = canRedo = false;
     saveError = "";
@@ -500,7 +502,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     cancelAutosave();
     if (placement) await placement;
     if (!storageReady) return !dirty && !saving;
-    if (savePromise && !await savePromise) return false;
+    // A new explicit flush retries a failed in-flight save before newer edits.
+    if (savePromise) await savePromise;
     while (dirty) {
       if (!await save()) return false;
     }
@@ -511,7 +514,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     cancelAutosave();
     if (!storageReady) return false;
     if (savePromise && queuedSnapshot === savingSnapshot) return savePromise;
-    if (!savePromise && savingSnapshot === savedSnapshot) return true;
+    if (!savePromise && !saveAttempt && savingSnapshot === savedSnapshot) return true;
     const savingId = id;
     const value: WorkflowDocument = JSON.parse(savingSnapshot);
     const previousSave = savePromise;
@@ -522,6 +525,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         // Capture each completed edit before waiting, so fast actions cannot overwrite it.
         if (previousSave && !await previousSave) return false;
         if (id !== savingId) return false;
+        if (saveAttempt) {
+          // Finalization can fail after Git has durably committed this edit.
+          // Recover that exact attempt before advancing a newer draft, retaining
+          // its expected revision so actual other-tab conflicts still fail.
+          const attempted = saveAttempt;
+          const recovered = await workflowRepository.save(JSON.parse(attempted.snapshot), attempted.expectedRevision);
+          if (id !== savingId) return false;
+          acceptSave(recovered, attempted.snapshot);
+          saveAttempt = null;
+        }
         if (savingSnapshot === savedSnapshot) return true;
         let expectedRevision = persistedRevision;
         if (expectedRevision === null && initialDraft?.id === savingId) {
@@ -530,14 +543,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           if (id === savingId) persistedRevision = baseline.revision;
           initialDraft = null;
         }
+        saveAttempt = { snapshot: savingSnapshot, expectedRevision };
         const state = await workflowRepository.save(value, expectedRevision);
         if (id === savingId) {
-          persistedRevision = state.revision;
-          savedSnapshot = savingSnapshot;
-          hasSavedDocument = true;
-          canUndo = state.canUndo;
-          canRedo = state.canRedo;
-          saveError = "";
+          acceptSave(state, savingSnapshot);
+          saveAttempt = null;
         }
         return true;
       } catch (failure) {
@@ -553,6 +563,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     finally {
       if (savePromise === operation) { saving = false; savePromise = null; queuedSnapshot = null; }
     }
+  }
+
+  function acceptSave(state: WorkflowRepositoryState, saved: string) {
+    persistedRevision = state.revision;
+    savedSnapshot = saved;
+    hasSavedDocument = true;
+    canUndo = state.canUndo;
+    canRedo = state.canRedo;
+    saveError = "";
   }
 
   async function replace(action: (didSave: boolean) => void | Promise<void>, returnToCanvas = false) {
@@ -609,6 +628,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         initialDraft = JSON.parse(snapshot);
         hasSavedDocument = false;
         persistedRevision = null;
+        saveAttempt = null;
         canUndo = canRedo = false;
         saveError = "";
       }
