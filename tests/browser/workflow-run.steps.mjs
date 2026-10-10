@@ -22,11 +22,11 @@ const field = (doc, owner, direction, name) => {
 const mapping = (doc, source, target) => doc.edges.push({ id: `mapping-${doc.edges.length}`, kind: "mapping",
   source: source.id, sourceHandle: source.handle, target: target.id, targetHandle: target.handle });
 const dialog = page => page.getByRole("dialog", { name: "Run workflow: Runner browser", exact: true });
-async function mockEndpoint(page) {
+async function recordExampleRequests(page) {
   const requests = [];
   await page.route("https://example.com/**", async route => {
     requests.push(route.request().url());
-    await route.abort();
+    await route.fallback();
   });
   return requests;
 }
@@ -39,7 +39,7 @@ const openRun = async (page, doc) => {
   await setMode(page, "workflow");
   await workflowAction(page, "Run");
   await expect(dialog(page)).toBeVisible();
-  await expect(dialog(page)).toContainText("Mock example: https://example.com");
+  await expect(dialog(page)).toContainText("Live example: https://example.com");
 };
 const select = async (page, name, value) => {
   await dialog(page).getByRole("combobox", { name, exact: true }).click();
@@ -48,7 +48,7 @@ const select = async (page, name, value) => {
 
 Then("a saved workflow opens a request run with starting choices and an end control", async function () {
   const page = this.page;
-  const requests = await mockEndpoint(page);
+  const requests = await recordExampleRequests(page);
   const doc = fixture(graph("getProject"), graph("listProjects"));
   await seed(page, doc);
   await setMode(page, "operations");
@@ -75,13 +75,13 @@ Then("a saved workflow opens a request run with starting choices and an end cont
   await expect(run.getByRole("heading", { name: "Workflow complete.", exact: true })).toBeVisible();
   await run.getByRole("button", { name: "Close run", exact: true }).click();
   await expect(run).toBeHidden();
-  assert.deepEqual(requests, []);
+  assert.equal(requests.length, 1);
   assert.deepEqual(await page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey), [doc]);
 });
 
 Then("the workflow run dialog validates inputs and passes task results to the next operation", async function () {
   const page = this.page;
-  const requests = await mockEndpoint(page);
+  const requests = await recordExampleRequests(page);
   const doc = fixture(graph("getProject"), graph("createTask"), graph("updateTask"));
   mapping(doc, field(doc, "getProject", "outputs", "Project ID"), field(doc, "createTask", "inputs", "Project ID"));
   mapping(doc, field(doc, "createTask", "outputs", "Task ID"), field(doc, "updateTask", "inputs", "Task ID"));
@@ -93,7 +93,7 @@ Then("the workflow run dialog validates inputs and passes task results to the ne
   await expect(project).toBeFocused();
   await project.fill("missing-project");
   await run.getByRole("button", { name: "Start workflow", exact: true }).click();
-  await expect(run.getByRole("alert")).toContainText("was not found in this demo");
+  await expect(run.getByRole("alert")).toContainText("404");
   await project.fill("project-1");
   await expect(run.getByRole("alert")).toHaveCount(0);
   await run.getByRole("button", { name: "Retry operation", exact: true }).click();
@@ -113,12 +113,14 @@ Then("the workflow run dialog validates inputs and passes task results to the ne
   await expect(run.getByRole("region", { name: "Step 3 response", exact: true })).toContainText("true");
   await run.getByRole("button", { name: "Next operation", exact: true }).click();
   await expect(run.getByRole("status")).toContainText("3 operations completed");
-  assert.deepEqual(requests, []);
+  assert.equal(requests.length, 4);
+  this.diagnostics = this.diagnostics.filter(item => !(item.type === "http-error" && item.url === "https://example.com/projects/missing-project" && item.status === 404
+    || item.type === "console-error" && /Failed to load resource.*404/.test(item.message)));
 });
 
 Then("the workflow run dialog follows a matching switch gate through a cast", async function () {
   const page = this.page;
-  const requests = await mockEndpoint(page);
+  const requests = await recordExampleRequests(page);
   const doc = fixture(graph("updateTask"), graph("listProjects", "selected"), graph("listProjects", "skipped"),
     utility("switch", "switch", { gates: [{ id: "selected", operator: "==", value: "true" }, { id: "skipped", operator: "is_set", value: "" }] }),
     utility("cast", "cast", { targetType: "Number" }));
@@ -138,12 +140,12 @@ Then("the workflow run dialog follows a matching switch gate through a cast", as
   await run.getByRole("button", { name: "Run operation", exact: true }).click();
   await run.getByRole("button", { name: "Next operation", exact: true }).click();
   await expect(run.getByRole("status")).toContainText("2 operations completed");
-  assert.deepEqual(requests, []);
+  assert.equal(requests.length, 2);
 });
 
 Then("ending a workflow run restores the canvas and leaves its saved graph unchanged", async function () {
   const page = this.page;
-  const requests = await mockEndpoint(page);
+  const requests = await recordExampleRequests(page);
   const doc = fixture(graph("getProject"));
   await openRun(page, doc);
   const run = dialog(page);

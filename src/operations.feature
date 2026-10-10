@@ -75,8 +75,13 @@ Feature: Explore operations from a local OpenAPI catalog
       | List projetcs      | demo:listProjects |
       | Create task        | demo:createTask   |
 
-  Scenario: Search handles empty and unrelated queries with no invented match
-    Then empty, oversized and unrelated searches return no operations
+  Scenario: Search rejects empty and oversized queries
+    Then empty and oversized searches return no operations
+
+  Scenario: Search combines the top five with every match above fifty percent
+    Then every operation above fifty percent is included once in descending similarity order
+    And lower scoring operations fill the top five in identifier order for tied scores
+    And an exact fifty percent match is included only when it is in the top five
     And equal matching scores are ordered by operation identifier
 
   Scenario: Evaluation explains filtering without discarding comparison evidence

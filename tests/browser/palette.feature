@@ -4,12 +4,12 @@
 Feature: Reversible six-color palettes
   Scenario: Light and dark modes reverse the same ordered palette
     Then every ordinary theme color reverses its position in the six-color palette
-    And prompt fields, badges and primary actions remain readable in both modes
+    And prompt fields and badges remain readable while primary actions use the label foreground in both modes
 
   Scenario: A replacement palette needs only six new colors
     When I replace only the six ordered palette colors
     Then every ordinary theme color reverses its position in the six-color palette
-    And prompt fields, badges and primary actions remain readable in both modes
+    And prompt fields and badges remain readable while primary actions use the label foreground in both modes
 
   Scenario Outline: Settings preserves <palette> at <width> pixels independently of light and dark mode
     Given I use a viewport of <width> by 844 pixels
@@ -46,18 +46,18 @@ Feature: Reversible six-color palettes
       | 390   | Golden Violet |
       | 1280  | Citrus        |
       | 390   | Citrus        |
-      | 1280  | Sunflower     |
-      | 390   | Sunflower     |
+      | 1280  | Cappuccino    |
+      | 390   | Cappuccino    |
       | 1280  | Garden Dusk   |
       | 390   | Garden Dusk   |
       | 1280  | Autumn        |
       | 390   | Autumn        |
       | 1280  | Rainfall      |
       | 390   | Rainfall      |
-      | 1280  | Graphite Study |
-      | 390   | Graphite Study |
-      | 1280  | Steel and Mist |
-      | 390   | Steel and Mist |
+      | 1280  | Graphite       |
+      | 390   | Graphite       |
+      | 1280  | Steel          |
+      | 390   | Steel          |
       | 1280  | Carbon         |
       | 390   | Carbon         |
       | 1280  | Heritage Noir  |

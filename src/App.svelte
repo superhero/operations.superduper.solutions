@@ -21,6 +21,7 @@
   let dark = $state(document.documentElement.dataset.theme === "dark");
   let palette = $state(palettes.find(option => option.id === document.documentElement.dataset.palette)?.id ?? palettes[0].id);
   let operationsWorkspace: OperationsWorkspace;
+  let sideNavigation: SideNavigation;
   let workflowWorkspace: WorkflowWorkspace;
   let settingsWorkspace: SettingsWorkspace;
 
@@ -99,7 +100,7 @@
     if (!(event.target instanceof Element)) return;
     const surfaces = new Set<HTMLElement>();
     for (let element: Element | null = event.target; element; element = element.parentElement) {
-      if (element instanceof HTMLElement && element.matches('button, summary, .result-card, .saved-documents li'))
+      if (element instanceof HTMLElement && element.matches('button, summary, .result-card, .saved-documents li, .palette-choice'))
         surfaces.add(element);
     }
     // The operation description also animates its action button.
@@ -126,15 +127,15 @@
 <Tooltip.Provider delayDuration={400} ignoreNonKeyboardFocus disableHoverableContent>
 <BackgroundWave />
 <NativeScrollbars />
-<SideNavigation bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {mode} {dark}
+<SideNavigation bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {mode} {dark}
   workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
   onSelect={selectOperation} onMode={setMode} onTheme={toggleTheme} />
 <div class="page-content" class:catalog-open={navigationOpen} class:workflow-mode={mode === "workflow"}>
+  <Header {navigationOpen} onMenu={() => navigationOpen = !navigationOpen} />
   <div class="shell">
-    <Header {navigationOpen} onMenu={() => navigationOpen = !navigationOpen} />
     <main>
       <div bind:this={operationsHost} hidden={mode !== "operations"} onfocusin={(event) => { if (event.target instanceof HTMLElement) lastOperationsFocus = event.target; }}>
-        <OperationsWorkspace bind:this={operationsWorkspace} {operations} active={mode === "operations"} onAddToWorkflow={addToWorkflow} />
+        <OperationsWorkspace bind:this={operationsWorkspace} {operations} active={mode === "operations"} onAddToWorkflow={addToWorkflow} onOperationSelect={(operation) => sideNavigation.revealOperation(operation)} />
       </div>
       <div class="workflow-host" hidden={mode !== "workflow"}>
         <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={mode === "workflow"} {navigationOpen} {navigationModal} onBrowse={() => navigationOpen = true} />

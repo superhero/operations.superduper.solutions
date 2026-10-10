@@ -1,8 +1,8 @@
 [
   {
     "id": "projects",
-    "name": "Examples · example.com",
-    "description": "Fictional operations with local mock responses for exploring HTTP methods, input types and workflows.",
+    "name": "example.com",
+    "description": "Example requests to https://example.com for exploring HTTP methods, input types and workflows.",
     "children": [
       {
         "id": "overview",

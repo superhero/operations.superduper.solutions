@@ -9,7 +9,7 @@ import { expectThemeColors } from './theme-colors.mjs';
 
 // Stable role bindings complement independent contrast and state-distinction checks.
 const progressRoles = {
-  current: ['--color-primary', '--color-primary-foreground'],
+  current: ['--color-catalog-active', '--color-catalog-active-foreground'],
   completed: ['--step-complete-background', '--step-complete-foreground'],
   available: ['--step-available-background', '--step-available-foreground'],
   disabled: ['--step-disabled-background', '--step-disabled-foreground']
@@ -125,7 +125,7 @@ Then('operations controls retain their complete keyboard focus outline', async f
   await expect(prompt).toBeFocused();
   await expect(page.getByRole('navigation', { name: 'Progress', exact: true }).getByRole('button', { name: /Evaluation$/ })).toBeDisabled();
   await prompt.press('Enter');
-  await expectUnclippedFocus(workspace(page).getByRole('heading', { name: 'Matching operations', exact: true }));
+  await expectUnclippedFocus(workspace(page).getByRole('heading', { name: 'Evaluation: Listed operations', exact: true }));
   const card = page.locator('.result-card').first();
   const action = card.getByRole('button', { name: /^Go to operation:/ });
   await expectUnclippedFocus(action);
@@ -237,6 +237,17 @@ Then('result row padding opens the operation while help and keyboard actions rem
   await expect(page.getByRole('textbox', { name: 'Project ID', exact: true })).toBeFocused();
 
   await evaluation.click();
+  await info.click();
+  await expect(info).toHaveAttribute('aria-expanded', 'true');
+  const description = card.locator('.result-description');
+  await expect(description).toBeVisible();
+  const descriptionBounds = await description.boundingBox();
+  assert.ok(descriptionBounds, 'The expanded description needs a clickable area.');
+  await page.mouse.click(descriptionBounds.x + descriptionBounds.width / 2, descriptionBounds.y + descriptionBounds.height / 2);
+  await expect(operation.getByRole('heading', { name: 'Operation: Get project', exact: true })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Project ID', exact: true })).toBeFocused();
+
+  await evaluation.click();
   const action = card.getByRole('button', { name: 'Go to operation: Get project', exact: true });
   await action.focus();
   await action.press('Enter');
@@ -269,8 +280,8 @@ Then('progress colors and navigation states match their roles in both themes', a
       colors.push(await button.evaluate(element => `${getComputedStyle(element, '::before').backgroundColor}/${getComputedStyle(element).color}`));
     }
     assert.equal(new Set(colors).size, 3, `${theme} progress must distinguish current, available and disabled states.`);
-    await expectThemeColors(operation, { color: '--color-background' });
-    await expectThemeColors(operation, { backgroundColor: '--color-foreground' }, '::before');
+    await expectThemeColors(operation, { color: '--color-primary-foreground' });
+    await expectThemeColors(operation, { backgroundColor: '--color-primary' }, '::before');
 
     const input = page.getByRole('textbox', { name: 'Prompt', exact: true });
     await input.fill('Get project');
@@ -283,7 +294,7 @@ Then('progress colors and navigation states match their roles in both themes', a
     await expectThemeColors(prompt, { color: '--color-background' });
     await expectThemeColors(prompt, { backgroundColor: '--color-foreground' }, '::before');
     const completedColors = await prompt.evaluate(element => `${getComputedStyle(element, '::before').backgroundColor}/${getComputedStyle(element).color}`);
-    assert.equal(completedColors, colors[1], `${theme} completed and available steps must share the foreground fill and background text.`);
+    assert.equal(completedColors, colors[0], `${theme} completed and current steps must share the selected menu colors.`);
     await page.getByRole('button', { name: 'Go to operation: Get project', exact: true }).click();
     await expect(operation).toHaveAttribute('aria-current', 'step');
     await expect(evaluation).toHaveClass(/is-complete/);
@@ -316,8 +327,8 @@ Then('progress switches between labels and numbers without losing the operation 
       return box.left >= 0 && box.right <= innerWidth && content.left >= box.left && content.right <= box.right;
     })), 'Every visible step label or number must fit inside its button and viewport.');
   }
-  await page.getByRole('button', { name: 'Prepare request', exact: true }).click();
-  await expect(page.getByRole('region', { name: 'Request preview', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Execute operation', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Operation response', exact: true })).toBeVisible();
   await expect(operation).toHaveAttribute('aria-current', 'step');
   await expect(progress.getByRole('button')).toHaveCount(3);
   await page.getByRole('button', { name: 'Edit inputs', exact: true }).click();
@@ -390,46 +401,22 @@ Then('progress hover layering follows its animation through exit and re-entry', 
   await expect.poll(state).toEqual(idle);
 });
 
-Then('response examples toggle with {string} motion and reset when the preview changes', async function (motion) {
+Then('actual responses reset with {string} motion when the request changes', async function (motion) {
   const page = this.page;
   await page.emulateMedia({ reducedMotion: motion });
-  const summary = page.locator('.request-disclosure > summary');
-  const panel = page.locator('.request-disclosure > .disclosure-panel');
-  const example = page.getByRole('region', { name: 'Example response', exact: true });
-  await expect(summary).toHaveAttribute('aria-expanded', 'false');
-  await expect(example).toHaveCount(0);
-  await summary.press('Enter');
-  await expect(summary).toHaveAttribute('aria-expanded', 'true');
-  if (motion === 'no-preference') {
-    await expect.poll(() => panel.evaluate(element => {
-      const animations = element.getAnimations();
-      for (const animation of animations) animation.playbackRate = 0.1;
-      return animations.length;
-    })).toBeGreaterThan(0);
-    await panel.evaluate(element => { for (const animation of element.getAnimations()) animation.finish(); });
-  } else assert.equal(await panel.evaluate(element => element.getAnimations().length), 0);
-  await expect(example).toBeVisible();
-  await summary.press('Space');
-  await expect(summary).toHaveAttribute('aria-expanded', 'false');
-  await expect(panel).toBeHidden();
-  await expect(summary).toBeFocused();
-
-  await summary.press('Enter');
+  const body = page.getByRole('region', { name: 'Response body', exact: true });
+  await expect(body).toContainText('Documentation');
+  await expect(page.getByRole('region', { name: 'Example response', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Edit inputs', exact: true }).click();
-  await page.getByRole('button', { name: 'Prepare request', exact: true }).click();
-  await expect(summary).toHaveAttribute('aria-expanded', 'false');
-  await expect(example).toHaveCount(0);
-
-  await summary.press('Enter');
-  await page.getByRole('button', { name: 'Edit inputs', exact: true }).click();
-  await page.getByRole('textbox', { name: 'Project ID', exact: true }).fill('changed');
-  await page.getByRole('button', { name: 'Prepare request', exact: true }).click();
-  await expect(summary).toHaveAttribute('aria-expanded', 'false');
-  await expect(page.getByRole('region', { name: 'Prepared request', exact: true })).toContainText('/projects/changed');
-
-  await summary.press('Enter');
+  await expect(body).toHaveCount(0);
+  await page.getByRole('textbox', { name: 'Project ID', exact: true }).fill('project-2');
+  await page.getByRole('button', { name: 'Execute operation', exact: true }).click();
+  await expect(body).toContainText('Website');
+  await expect(body).not.toContainText('Documentation');
   await chooseCatalogOperation(page, 'List projects');
-  await page.getByRole('button', { name: 'Prepare request', exact: true }).click();
-  await expect(summary).toHaveAttribute('aria-expanded', 'false');
-  await expect(example).toHaveCount(0);
+  await expect(body).toHaveCount(0);
+  await page.getByRole('textbox', { name: 'Project name', exact: true }).fill('Documentation');
+  await page.getByRole('button', { name: 'Execute operation', exact: true }).click();
+  await expect(body).toContainText('Documentation');
+  await expect(body).not.toContainText('Website');
 });

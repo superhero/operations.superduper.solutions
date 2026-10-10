@@ -96,7 +96,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <div class="workflow-run">
   {#if destination}
-    <p class="run-endpoint">{destination.kind === "mock" ? `Mock example: ${destination.origin}. Responses are simulated in this browser; no request is sent.` : `Live example: ${destination.origin}. Each confirmed step sends a request to this service.`}</p>
+    <p class="run-endpoint">Live example: {destination.origin}. Each confirmed step sends a request to this service.</p>
   {/if}
   {#if view?.kind === "choice" && !fatal}
     <section aria-label="Starting operation">

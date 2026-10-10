@@ -26,6 +26,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try { return { data: getOperationReport(operation), error: "" }; }
     catch (failure) { return { data: null, error: `Could not prepare the operation report: ${failure instanceof Error ? failure.message : String(failure)}` }; }
   });
+  const serverUrls = $derived.by(() => {
+    const servers = report.data?.schema.servers;
+    return Array.isArray(servers) ? servers.flatMap(server =>
+      server && typeof server.url === "string" ? [server.url] : []) : [];
+  });
 
   onDestroy(() => { disposed = true; clearTimeout(copyStatusTimer); });
 
@@ -65,13 +70,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <section class="report-section" aria-label="Operation metadata">
       <h3>Metadata</h3>
       <dl class="report-facts report-inset report-record">
+        <dt>Name</dt><dd>{data.summary || "—"}</dd>
+        <dt>Description</dt><dd>{data.description || "—"}</dd>
         <dt>Operation ID</dt><dd>{data.operationId}</dd>
         <dt>Catalog identifier</dt><dd>{operation.id}</dd>
+        <dt>{serverUrls.length > 1 ? "Server URLs" : "Server URL"}</dt><dd>{#each serverUrls as url, index}{#if index}<br />{/if}{url}{:else}—{/each}</dd>
         <dt>File</dt><dd>{data.catalog.file}</dd>
         <dt>Catalog version</dt><dd>{data.catalog.version}</dd>
         <dt>OpenAPI version</dt><dd>{data.catalog.openapi}</dd>
-        <dt>Name</dt><dd>{data.summary || "—"}</dd>
-        <dt>Description</dt><dd>{data.description || "—"}</dd>
       </dl>
       {#each inputLocations as location (location.key)}
         {@const fields = operation.fields.filter(field => field.location === location.key)}
@@ -104,9 +110,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </section>
     {/if}
 
-    <section class="report-section" aria-label="Operational JSON schema">
-      <h3>Operational JSON schema</h3>
-      <p class="report-muted">OpenAPI schema for this operation, including its referenced definitions.</p>
+    <section class="report-section" aria-label="Operation JSON schema">
+      <h3>Operation JSON schema</h3>
       {#if data.warnings.length}<ul class="schema-warnings" role="status">{#each data.warnings as warning}<li>{warning}</li>{/each}</ul>{/if}
       <Disclosure class="schema-disclosure" label="OpenAPI schema" open={schemaOpen} onToggle={(next) => { schemaOpen = next; if (next) schemaLoaded = true; }}>
         {#snippet summary()}
@@ -127,7 +132,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .report-groups { margin: 0; padding: 0; list-style: none; }
   .report-groups li { position: relative; margin-left: calc(var(--group-depth) * 24px); }
   .report-groups li + li { margin-top: 14px; }
-  .report-groups li + li::before { position: absolute; content: ''; left: -12px; top: -14px; width: 12px; height: 38px; border-left: 2px solid var(--color-border); border-bottom: 2px solid var(--color-border); border-bottom-left-radius: 4px; }
+  .report-groups li + li::before { position: absolute; content: ''; left: -12px; top: -14px; bottom: calc(50% - 1px); width: 12px; border-left: 2px solid var(--color-border); border-bottom: 2px solid var(--color-border); border-bottom-left-radius: 4px; }
   :global(.schema-disclosure) { margin-top: 16px; }
   :global(.schema-disclosure > summary) { position: sticky; top: calc(var(--app-header-height) + 8px); z-index: 2; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 14px; border-radius: 4px; list-style: none; background: var(--color-report-card); color: var(--color-foreground); font-size: 14px; font-weight: 650; transition: background-color 180ms ease-in, color 180ms ease-in, transform 180ms ease-in, outline-color 180ms ease-in; }
   :global(.schema-disclosure > summary:is(:hover,:focus-within,[aria-expanded="true"])) { background: var(--color-json-header-hover-background); color: var(--color-json-header-hover-foreground); }
@@ -137,7 +142,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-copy-status { position: absolute; top: calc(100% + 8px); left: 0; max-width: 100%; padding: 6px 10px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-muted-foreground); font-size: 11px; font-weight: 700; pointer-events: none; }
   .schema-copy-status:empty { padding: 0; }
   :global(.schema-action) { display: inline-grid; place-items: center; flex: 0 0 28px; width: 28px; height: 32px; padding: 0; border: 0; border-radius: 3px; background: transparent; color: inherit; }
-  :global(.schema-action:is(:hover,:focus-visible):enabled) { background: var(--color-json-header-hover-foreground); color: var(--color-json-header-hover-background); }
+  :global(.schema-action:is(:hover,:focus-visible):enabled:not([aria-pressed="true"])) { background: var(--color-json-header-hover-foreground); color: var(--color-json-header-hover-background); }
+  :global(.schema-action[aria-pressed="true"]) { background: var(--color-catalog-active); color: var(--color-catalog-active-foreground); }
   :global(.schema-action:focus-visible) { outline-color: var(--color-json-header-hover-foreground); }
   :global(.schema-disclosure .json-view) { margin-top: 4px; }
   .schema-warnings { padding-left: 20px; color: var(--color-accent); font-size: 12px; overflow-wrap: anywhere; }

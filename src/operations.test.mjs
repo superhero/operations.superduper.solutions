@@ -159,9 +159,9 @@ Then("the first matching operation is {string}", function (identifier)
   assert.ok(matches[0].similarity > 0.5 && matches[0].similarity <= 1);
 });
 
-Then("empty, oversized and unrelated searches return no operations", function ()
+Then("empty and oversized searches return no operations", function ()
 {
-  for (const query of ["", "__--", "z".repeat(257), "xylophone nebula"]) assert.deepEqual(rankOperations(query, operations), []);
+  for (const query of ["", "__--", "z".repeat(257)]) assert.deepEqual(rankOperations(query, operations), []);
   assert.deepEqual(rankOperations("List projects", []), []);
 });
 
@@ -169,7 +169,41 @@ Then("equal matching scores are ordered by operation identifier", function ()
 {
   const entries = Array.from({ length: 12 }, (_, index) => ({ ...operations[0], id: `fixture:${String(11 - index).padStart(2, "0")}` }));
   assert.deepEqual(rankOperations("List projects", entries).map(result => result.operation.id),
-    Array.from({ length: 10 }, (_, index) => `fixture:${String(index).padStart(2, "0")}`));
+    Array.from({ length: 12 }, (_, index) => `fixture:${String(index).padStart(2, "0")}`));
+});
+
+Then("every operation above fifty percent is included once in descending similarity order", function ()
+{
+  const entries = Array.from({ length: 12 }, (_, index) => ({
+    ...operations[0], id: `fixture:${index}`, name: ["abce", "abcd", "abcde"][index % 3]
+  }));
+  const results = rankOperations("abcd", entries);
+  assert.equal(results.length, 12);
+  assert.equal(new Set(results.map(result => result.operation.id)).size, 12);
+  assert.deepEqual(results.map(result => result.similarity), [1, 1, 1, 1, 0.8, 0.8, 0.8, 0.8, 0.75, 0.75, 0.75, 0.75]);
+});
+
+Then("lower scoring operations fill the top five in identifier order for tied scores", function ()
+{
+  const entries = Array.from({ length: 12 }, (_, index) => ({
+    ...operations[0], id: `fixture:${String(index).padStart(2, "0")}`, name: index === 0 ? "abcd" : index === 1 ? "abce" : "axyz"
+  })).reverse();
+  const results = rankOperations("abcd", entries);
+  assert.deepEqual(results.map(result => result.operation.id),
+    Array.from({ length: 5 }, (_, index) => `fixture:${String(index).padStart(2, "0")}`));
+  assert.deepEqual(results.map(result => result.similarity), [1, 0.75, ...Array(3).fill(0.25)]);
+});
+
+Then("an exact fifty percent match is included only when it is in the top five", function ()
+{
+  const boundary = { ...operations[0], id: "fixture:boundary", name: "abef" };
+  const alone = evaluateOperations("abcd", [boundary]);
+  assert.equal(alone.candidates[0].similarity, 0.5);
+  assert.deepEqual(alone.results, alone.candidates);
+  const stronger = Array.from({ length: 5 }, (_, index) => ({ ...operations[0], id: `fixture:${index}`, name: "abcd" }));
+  const crowded = evaluateOperations("abcd", [...stronger, boundary]);
+  assert.equal(crowded.candidates[5].similarity, 0.5);
+  assert.deepEqual(crowded.results.map(result => result.operation.id), stronger.map(operation => operation.id));
 });
 
 Then("evaluation retains every compared score and the exact proposed results", function ()
@@ -179,15 +213,10 @@ Then("evaluation retains every compared score and the exact proposed results", f
   assert.equal(evaluation.candidates[0].similarity, 1);
   assert.ok(evaluation.candidates.some(candidate => candidate.similarity <= 0.5));
   assert.deepEqual(evaluation.results, rankOperations("List projects", operations));
-  const boundary = evaluateOperations("ab", [{ ...operations[0], id: "ac", name: "ac" }]);
-  assert.equal(boundary.candidates[0].similarity, 0.5);
-  assert.deepEqual(boundary.results, []);
-  const limited = evaluateOperations("List projects", Array.from({ length: 12 }, (_, index) => ({ ...operations[0], id: `entry:${index}` })));
-  assert.equal(limited.candidates.length, 12);
-  assert.deepEqual(limited.results, limited.candidates.slice(0, 10));
   const unrelated = evaluateOperations("xylophone nebula", operations);
   assert.equal(unrelated.candidates.length, operations.length);
-  assert.deepEqual(unrelated.results, []);
+  assert.ok(unrelated.candidates.every(candidate => candidate.similarity <= 0.5));
+  assert.deepEqual(unrelated.results, unrelated.candidates.slice(0, 5));
 });
 
 Then("text, numbers, booleans and enum inputs are converted correctly", function ()

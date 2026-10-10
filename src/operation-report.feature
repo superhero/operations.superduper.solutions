@@ -7,8 +7,8 @@ Feature: Read source operation reports locally
   Scenario: Both example catalogs retain source metadata and their catalog group paths
     Then every bundled example has an independent source report and described group path
 
-  Scenario: Mock and live examples have distinct source routes and keep saved demo identities
-    Then the example registries separate mocked endpoints from live HTTPBin endpoints
+  Scenario: Example catalogs have distinct HTTP routes and keep saved demo identities
+    Then the example registries send requests to their declared example.com and HTTPBin endpoints
 
   Scenario: A scoped report preserves the selected endpoint and its shared context
     Then operation schema reports preserve metadata and inherited parameters without unrelated operations

@@ -5,13 +5,24 @@
 import { operations, type Operation } from "./catalog.ts";
 import { catalogForOperation } from "./catalog-registry.ts";
 import { prepareRequest, type PreparedRequest } from "./operation-input.ts";
-import { createWorkflowDemo } from "./workflow-demo.ts";
 
 export type WorkflowResponse = { status: number; body: unknown };
 export type WorkflowExecutionResult = { request: PreparedRequest; response: WorkflowResponse };
 export type WorkflowExecutor = {
   execute(operation: Operation, values: Record<string, string>, signal?: AbortSignal): WorkflowExecutionResult | Promise<WorkflowExecutionResult>;
 };
+
+export class WorkflowResponseError extends Error
+{
+  readonly response: WorkflowResponse;
+
+  constructor(message: string, response: WorkflowResponse)
+  {
+    super(message);
+    this.name = "WorkflowResponseError";
+    this.response = response;
+  }
+}
 
 export function workflowExecutionForOperation(operation: Operation | string)
 {
@@ -60,7 +71,7 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
         throw new Error("This operation is not available in the bundled test catalog.");
       const request = prepareRequest(canonical, values);
       const { origin } = workflowExecutionForOperation(canonical);
-      if (request.method === "TRACE") throw new Error("Browsers do not permit TRACE requests. Use the mocked TRACE example.");
+      if (request.method === "TRACE") throw new Error("Browsers do not permit TRACE requests.");
       const timeout = AbortSignal.timeout(15_000);
       let response: Response;
       const headers: Record<string, string> = { Accept: canonical.responseMediaType ?? "application/json", ...request.headers };
@@ -77,7 +88,6 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
       {
         throw requestFailure(signal, timeout, `The test request could not reach ${origin}. Check connectivity and whether the endpoint allows browser requests, then retry.`);
       }
-      if (!response.ok) throw new Error(`The test endpoint returned ${response.status}${response.statusText ? ` ${response.statusText}` : ""}. Check the request and retry.`);
       let body: unknown = null;
       if (request.method !== "HEAD" && response.status !== 204 && response.status !== 205)
       {
@@ -86,27 +96,32 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
         catch { throw requestFailure(signal, timeout, "The test response could not be read. Check connectivity and retry."); }
         if (text || request.method !== "OPTIONS")
         {
-          const mediaType = canonical.responseMediaType ?? response.headers.get("Content-Type") ?? "application/json";
+          const mediaType = response.ok
+            ? canonical.responseMediaType ?? response.headers.get("Content-Type") ?? "application/json"
+            : response.headers.get("Content-Type") ?? "text/plain";
           if (/\bjson\b/i.test(mediaType))
           {
             try { body = JSON.parse(text); }
-            catch { throw new Error("The test endpoint did not return valid JSON. Check its response and retry."); }
+            catch
+            {
+              if (response.ok) throw new WorkflowResponseError("The test endpoint did not return valid JSON. Check its response and retry.",
+                { status: response.status, body: text });
+              body = text;
+            }
           }
           else body = text;
         }
       }
+      if (!response.ok) throw new WorkflowResponseError(
+        `The test endpoint returned ${response.status}${response.statusText ? ` ${response.statusText}` : ""}. Check the request and retry.`,
+        { status: response.status, body });
       return { request, response: { status: response.status, body } };
     }
   };
 }
 
-/** A fresh dispatcher keeps mock writes scoped to one workflow run. */
+/** Every registered catalog sends requests to its declared origin. */
 export function createWorkflowExecution(): WorkflowExecutor
 {
-  const mock = createWorkflowDemo();
-  const http = createWorkflowRequestExecution();
-  return { execute(operation, values, signal) {
-    return workflowExecutionForOperation(operation).kind === "mock"
-      ? mock.execute(operation, values) : http.execute(operation, values, signal);
-  } };
+  return createWorkflowRequestExecution();
 }

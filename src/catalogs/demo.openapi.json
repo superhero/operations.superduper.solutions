@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Examples · example.com",
+    "title": "example.com",
     "version": "1.0.0",
-    "description": "Fictional example operations for exploring methods, request inputs and workflow mappings. All operations run locally with mocked responses; example.com does not host this API. The original project and task operation identities remain compatible with saved workflows."
+    "description": "Illustrative example operations for exploring methods, request inputs and workflow mappings. Executing an operation sends a real request to https://example.com and displays its response or error. The original operation identities remain compatible with saved workflows."
   },
   "paths": {
     "/projects": {
@@ -309,14 +309,14 @@
     "/examples/methods/get": {
       "get": {
         "operationId": "mockGet",
-        "summary": "Mock GET request",
-        "description": "Try GET with a local mocked response; no request is sent to example.com.",
+        "summary": "Example GET request",
+        "description": "Try GET by sending a request to https://example.com.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Local mock echo of the request.",
+            "description": "Illustrative response schema.",
             "content": {
               "application/json": {
                 "schema": {
@@ -342,14 +342,14 @@
     "/examples/methods/post": {
       "post": {
         "operationId": "mockPost",
-        "summary": "Mock POST request",
-        "description": "Try POST with a local mocked response; no request is sent to example.com.",
+        "summary": "Example POST request",
+        "description": "Try POST by sending a request to https://example.com.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Local mock echo of the request.",
+            "description": "Illustrative response schema.",
             "content": {
               "application/json": {
                 "schema": {
@@ -375,14 +375,14 @@
     "/examples/methods/put": {
       "put": {
         "operationId": "mockPut",
-        "summary": "Mock PUT request",
-        "description": "Try PUT with a local mocked response; no request is sent to example.com.",
+        "summary": "Example PUT request",
+        "description": "Try PUT by sending a request to https://example.com.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Local mock echo of the request.",
+            "description": "Illustrative response schema.",
             "content": {
               "application/json": {
                 "schema": {
@@ -408,14 +408,14 @@
     "/examples/methods/patch": {
       "patch": {
         "operationId": "mockPatch",
-        "summary": "Mock PATCH request",
-        "description": "Try PATCH with a local mocked response; no request is sent to example.com.",
+        "summary": "Example PATCH request",
+        "description": "Try PATCH by sending a request to https://example.com.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Local mock echo of the request.",
+            "description": "Illustrative response schema.",
             "content": {
               "application/json": {
                 "schema": {
@@ -441,14 +441,14 @@
     "/examples/methods/delete": {
       "delete": {
         "operationId": "mockDelete",
-        "summary": "Mock DELETE request",
-        "description": "Try DELETE with a local mocked response; no request is sent to example.com.",
+        "summary": "Example DELETE request",
+        "description": "Try DELETE by sending a request to https://example.com.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Local mock echo of the request.",
+            "description": "Illustrative response schema.",
             "content": {
               "application/json": {
                 "schema": {
@@ -474,14 +474,14 @@
     "/examples/methods/head": {
       "head": {
         "operationId": "mockHead",
-        "summary": "Mock HEAD request",
-        "description": "Try HEAD with a local mocked response; no request is sent to example.com.",
+        "summary": "Example HEAD request",
+        "description": "Try HEAD by sending a request to https://example.com.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Mock response headers without a response body.",
+            "description": "Response headers without a response body.",
             "headers": {
               "Allow": {
                 "description": "Methods accepted by this endpoint.",
@@ -497,14 +497,14 @@
     "/examples/methods/options": {
       "options": {
         "operationId": "mockOptions",
-        "summary": "Mock OPTIONS request",
-        "description": "Try OPTIONS with a local mocked response; no request is sent to example.com.",
+        "summary": "Example OPTIONS request",
+        "description": "Try OPTIONS by sending a request to https://example.com.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Mock response headers without a response body.",
+            "description": "Response headers without a response body.",
             "headers": {
               "Allow": {
                 "description": "Methods accepted by this endpoint.",
@@ -520,14 +520,14 @@
     "/examples/methods/trace": {
       "trace": {
         "operationId": "mockTrace",
-        "summary": "Mock TRACE request",
-        "description": "Try TRACE with a local mocked response; no request is sent to example.com. Browser Fetch does not allow live TRACE requests.",
+        "summary": "Example TRACE request",
+        "description": "TRACE example. Browser Fetch does not allow TRACE requests.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Local mock echo of the request.",
+            "description": "Illustrative response schema.",
             "content": {
               "application/json": {
                 "schema": {
@@ -553,8 +553,8 @@
     "/examples/parameters/{sampleId}": {
       "get": {
         "operationId": "mockParameters",
-        "summary": "Mock query and header inputs",
-        "description": "Try string, integer, number, Boolean, enum, repeated query values and a request header with a local mock.",
+        "summary": "Example query and header inputs",
+        "description": "Try string, integer, number, Boolean, enum, repeated query values and a request header at https://example.com.",
         "tags": [
           "Input types"
         ],
@@ -648,7 +648,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Local mock echo of the request.",
+            "description": "Illustrative response schema.",
             "content": {
               "application/json": {
                 "schema": {
@@ -674,8 +674,8 @@
     "/examples/bodies/json-object": {
       "post": {
         "operationId": "mockJsonObject",
-        "summary": "Mock JSON object",
-        "description": "Try JSON object with a local mock response. Includes string, integer, number, Boolean, enum, nested object, array and null properties.",
+        "summary": "Example JSON object",
+        "description": "Try JSON object by sending a request to https://example.com. Includes string, integer, number, Boolean, enum, nested object, array and null properties.",
         "tags": [
           "Body formats"
         ],
@@ -708,7 +708,7 @@
         },
         "responses": {
           "200": {
-            "description": "Local mock echo of the request.",
+            "description": "Illustrative response schema.",
             "content": {
               "application/json": {
                 "schema": {
@@ -751,8 +751,8 @@
     "/examples/bodies/json-array": {
       "post": {
         "operationId": "mockJsonArray",
-        "summary": "Mock JSON array",
-        "description": "Try JSON array with a local mock response.",
+        "summary": "Example JSON array",
+        "description": "Try JSON array by sending a request to https://example.com.",
         "tags": [
           "Body formats"
         ],
@@ -773,7 +773,7 @@
         },
         "responses": {
           "200": {
-            "description": "Local mock echo of the request.",
+            "description": "Illustrative response schema.",
             "content": {
               "application/json": {
                 "schema": {
@@ -804,8 +804,8 @@
     "/examples/bodies/json-scalar": {
       "post": {
         "operationId": "mockJsonScalar",
-        "summary": "Mock JSON scalar",
-        "description": "Try JSON scalar with a local mock response.",
+        "summary": "Example JSON scalar",
+        "description": "Try JSON scalar by sending a request to https://example.com.",
         "tags": [
           "Body formats"
         ],
@@ -823,7 +823,7 @@
         },
         "responses": {
           "200": {
-            "description": "Local mock echo of the request.",
+            "description": "Illustrative response schema.",
             "content": {
               "application/json": {
                 "schema": {
@@ -851,8 +851,8 @@
     "/examples/bodies/text": {
       "post": {
         "operationId": "mockPlainText",
-        "summary": "Mock plain text",
-        "description": "Try plain text with a local mock response.",
+        "summary": "Example plain text",
+        "description": "Try plain text by sending a request to https://example.com.",
         "tags": [
           "Body formats"
         ],
@@ -870,7 +870,7 @@
         },
         "responses": {
           "200": {
-            "description": "Local mock echo of the request.",
+            "description": "Illustrative response schema.",
             "content": {
               "application/json": {
                 "schema": {
@@ -898,8 +898,8 @@
     "/examples/bodies/urlencoded": {
       "post": {
         "operationId": "mockUrlEncoded",
-        "summary": "Mock URL-encoded form",
-        "description": "Try URL-encoded form with a local mock response.",
+        "summary": "Example URL-encoded form",
+        "description": "Try URL-encoded form by sending a request to https://example.com.",
         "tags": [
           "Body formats"
         ],
@@ -920,7 +920,7 @@
         },
         "responses": {
           "200": {
-            "description": "Local mock echo of the request.",
+            "description": "Illustrative response schema.",
             "content": {
               "application/json": {
                 "schema": {
@@ -951,8 +951,8 @@
     "/examples/bodies/multipart": {
       "post": {
         "operationId": "mockMultipart",
-        "summary": "Mock multipart text fields",
-        "description": "Try multipart text fields with a local mock response. This example sends text fields; file uploads are not included.",
+        "summary": "Example multipart text fields",
+        "description": "Try multipart text fields by sending a request to https://example.com. This example sends text fields; file uploads are not included.",
         "tags": [
           "Body formats"
         ],
@@ -973,7 +973,7 @@
         },
         "responses": {
           "200": {
-            "description": "Local mock echo of the request.",
+            "description": "Illustrative response schema.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1514,7 +1514,7 @@
   "servers": [
     {
       "url": "https://example.com",
-      "description": "Illustrative address; execution is mocked locally."
+      "description": "Requests are sent to https://example.com."
     }
   ]
 }

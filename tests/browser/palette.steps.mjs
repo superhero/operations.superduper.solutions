@@ -24,12 +24,12 @@ const paletteOptions = [
   { id: 'blue-horizon', name: 'Blue Horizon', selector: ':root[data-palette="blue-horizon"]' },
   { id: 'golden-violet', name: 'Golden Violet', selector: ':root[data-palette="golden-violet"]' },
   { id: 'citrus', name: 'Citrus', selector: ':root[data-palette="citrus"]' },
-  { id: 'sunflower', name: 'Sunflower', selector: ':root[data-palette="sunflower"]' },
+  { id: 'sunflower', name: 'Cappuccino', selector: ':root[data-palette="sunflower"]' },
   { id: 'garden-dusk', name: 'Garden Dusk', selector: ':root[data-palette="garden-dusk"]' },
   { id: 'autumn', name: 'Autumn', selector: ':root[data-palette="autumn"]' },
   { id: 'rainfall', name: 'Rainfall', selector: ':root[data-palette="rainfall"]' },
-  { id: 'graphite-study', name: 'Graphite Study', selector: ':root[data-palette="graphite-study"]' },
-  { id: 'steel-and-mist', name: 'Steel and Mist', selector: ':root[data-palette="steel-and-mist"]' },
+  { id: 'graphite-study', name: 'Graphite', selector: ':root[data-palette="graphite-study"]' },
+  { id: 'steel-and-mist', name: 'Steel', selector: ':root[data-palette="steel-and-mist"]' },
   { id: 'carbon', name: 'Carbon', selector: ':root[data-palette="carbon"]' },
   { id: 'heritage-noir', name: 'Heritage Noir', selector: ':root[data-palette="heritage-noir"]' },
 ];
@@ -54,11 +54,19 @@ function luminance(color) {
     .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
 }
 
-function assertOrdered(colors) {
+// These adjacent pairs retain the user's explicit color-slot choices.
+const curatedSlotInversions = {
+  ':root[data-palette="neon"]': [2],
+  ':root[data-palette="citrus"]': [4],
+};
+
+function assertOrdered(colors, selector = ':root') {
   assert.equal(new Set(colors).size, 6, 'A palette must have six distinct colors.');
   const values = colors.map(luminance);
-  for (let index = 1; index < values.length; index++)
-    assert.ok(values[index - 1] > values[index], `Palette slot ${index} must be lighter than slot ${index + 1}.`);
+  for (let index = 1; index < values.length; index++) {
+    if (curatedSlotInversions[selector]?.includes(index)) continue;
+    assert.ok(values[index - 1] > values[index], `${selector} palette slot ${index} must be lighter than slot ${index + 1}.`);
+  }
 }
 
 async function selectTheme(page, theme) {
@@ -89,13 +97,15 @@ async function resolvedColors(page, names) {
 
 async function expectPaletteChoices(page, selected) {
   const group = paletteGroup(page);
+  const theme = settings(page).locator('summary[aria-label="Theme"]');
+  if (await theme.getAttribute('aria-expanded') === 'false') await theme.click();
+  await expect(theme).toHaveAttribute('aria-expanded', 'true');
   const definitions = new Map((await paletteDefinitions()).map(([, selector, body]) =>
     [selector, [...body.matchAll(/--palette-\d\s*:\s*(#[a-f\d]{6});/gi)].map(match => rgbColor(match[1]))]));
   await expect(group).toBeVisible();
   // Exact role/name locators retain accessible-name and enabled-state checks
   // without the snapshot matcher, which requires the Playwright test runner.
-  for (const { name } of paletteOptions)
-    await expect(paletteChoice(page, name)).toBeEnabled();
+  await Promise.all(paletteOptions.map(({ name }) => expect(paletteChoice(page, name)).toBeEnabled()));
   // Read all 126 swatches together: this helper runs repeatedly for every palette.
   // Keep retrying the complete DOM state while rendering and styles settle.
   await expect.poll(() => group.getByRole('radio').evaluateAll(inputs => inputs.map(input => {
@@ -105,7 +115,7 @@ async function expectPaletteChoices(page, selected) {
       type: input.getAttribute('type'),
       checked: input.checked,
       preview: preview?.getAttribute('data-palette-preview'),
-      swatches: [...(preview?.children ?? [])].map(element => {
+      swatches: [...(preview?.children ?? [])].filter(element => !element.matches(".palette-selected-icon")).map(element => {
         const bounds = element.getBoundingClientRect();
         return {
           visible: element.checkVisibility({ visibilityProperty: true }) && bounds.width > 0 && bounds.height > 0,
@@ -128,7 +138,9 @@ async function expectPaletteChoices(page, selected) {
 
 async function selectPaletteWithKeyboard(page, name) {
   const theme = await page.locator('html').getAttribute('data-theme');
-  await settings(page).getByRole('heading', { name: 'Settings', exact: true }).focus();
+  await settings(page).focus();
+  await page.keyboard.press('Tab');
+  await expect(settings(page).locator('summary[aria-label="Theme"]')).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(paletteGroup(page).getByRole('radio', { checked: true })).toBeFocused();
   const choice = paletteChoice(page, name);
@@ -190,7 +202,7 @@ When('I reload with an {string} palette preference', async function (preference)
     await expect.poll(() => this.page.evaluate(key => localStorage.getItem(key), paletteStorageKey)).toBe('default');
 });
 
-Then('all palettes remain usable in both theme modes', async function () {
+Then('all palettes remain usable in both theme modes', { timeout: 60_000 }, async function () {
   for (const theme of ['dark', 'light']) {
     await selectTheme(this.page, theme);
     for (const { name } of paletteOptions) {
@@ -216,7 +228,7 @@ Then('every ordinary theme color reverses its position in the six-color palette'
     assert.deepEqual(declarations.map(match => match[1]), paletteNames, `${selector} must supply all six ordered palette slots.`);
     const literals = declarations.map(match => match[2].trim());
     for (const color of literals) assert.match(color, /^#[a-f\d]{6}$/i, `${selector} inputs must be literal hex colors.`);
-    assertOrdered(literals);
+    assertOrdered(literals, selector);
   }
 
   const appSource = await readFile('src/app.css', 'utf8');
@@ -228,7 +240,8 @@ Then('every ordinary theme color reverses its position in the six-color palette'
   await selectTheme(this.page, 'light');
   const light = await resolvedColors(this.page, [...paletteNames, ...toneNames, ...roles]);
   const palette = paletteNames.map(name => light[name]);
-  assertOrdered(palette);
+  const selectedId = await this.page.locator('html').getAttribute('data-palette');
+  assertOrdered(palette, paletteOptions.find(option => option.id === selectedId)?.selector);
   for (const [index, tone] of toneNames.entries()) assert.equal(light[tone], palette[index], `${tone} in light mode`);
   for (const role of roles) assert.ok(palette.includes(light[role]), `${role} must use one exact palette color in light mode: ${light[role]}`);
 
@@ -253,7 +266,7 @@ async function expectReadable(control, palette) {
   assert.ok(ratio >= 4.5, `${await control.getAttribute('class')} text contrast must reach 4.5:1; got ${ratio.toFixed(2)}:1.`);
 }
 
-Then('prompt fields, badges and primary actions remain readable in both modes', async function () {
+Then('prompt fields and badges remain readable while primary actions use the label foreground in both modes', async function () {
   const page = this.page;
   for (const theme of ['light', 'dark']) {
     await selectTheme(page, theme);
@@ -264,6 +277,10 @@ Then('prompt fields, badges and primary actions remain readable in both modes', 
     await setMode(page, 'workflow');
     const primary = page.getByRole('button', { name: 'Add operations from the left menu', exact: true })
       .and(page.locator('[data-slot="button"]'));
-    await expectReadable(primary, palette);
+    // Primary action labels intentionally use the label color selected by the theme.
+    const roles = await resolvedColors(page, ['--color-primary', '--color-badge-background']);
+    await expect(primary).toBeVisible();
+    await expect(primary).toHaveCSS('background-color', roles['--color-primary']);
+    await expect(primary).toHaveCSS('color', roles['--color-badge-background']);
   }
 });

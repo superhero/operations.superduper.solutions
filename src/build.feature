@@ -8,7 +8,7 @@ Feature: Production build
     Given the production build has completed
     Then the production page contains the application title
     And the production page contains the workflow canvas
-    And the production page contains the operation catalog and request preview
+    And the production page contains the operation catalog and execution results
     And the production page contains the separate example catalogs
 
   Scenario: JavaScript is embedded in the production page

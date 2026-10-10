@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 See LICENSE and LICENSE-ADDITIONAL-TERMS.
 */
 
-.detail-report { min-width: 0; padding: 24px; margin: 16px 0 24px; border-radius: 4px; background: var(--color-report-background); overflow-wrap: anywhere; }
+.detail-report { min-width: 0; padding: 24px; margin: 16px 0 20px; border-radius: 4px; background: var(--color-report-background); overflow-wrap: anywhere; }
 .report-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
 .report-metric { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-width: 0; min-height: 112px; padding: 20px 12px; border-radius: 4px; background: var(--color-report-card); text-align: center; }
 .report-metric-value { margin: 0; max-width: 100%; line-height: 1.4; }
@@ -24,8 +24,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 .report-table th, .report-table td { padding: 12px; text-align: left; vertical-align: top; }
 .report-table thead th { border-bottom: 1px solid var(--color-report-background); font-weight: 650; }
 .report-table tbody th { color: inherit; font-weight: 400; }
-.report-table tbody tr:nth-child(odd) { color: var(--color-muted-foreground); background: color-mix(in srgb, var(--color-surface) 25%, transparent); }
-.report-table tbody tr:nth-child(even) { color: var(--color-foreground); }
+.report-table tbody tr:nth-child(odd) { background: color-mix(in srgb, var(--color-surface) 25%, transparent); }
 .report-record { --record-inset: 20px; column-gap: 25px; padding: var(--record-inset); }
 .report-record dt { font-weight: 800; color: var(--color-foreground); }
 .report-record dd { position: relative; isolation: isolate; }

@@ -7,6 +7,7 @@ import { createServer } from 'node:http';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
+import { createExampleEndpoint } from './example-endpoint.fixture.mjs';
 
 setDefaultTimeout(30_000);
 let browser;
@@ -68,6 +69,13 @@ Before(async function ({ pickle }) {
       this.diagnostics.push({ type: 'unexpected-network-request', url, method: route.request().method() });
       await route.abort('blockedbyclient');
     }
+  });
+  // Fulfilled HTTP requests keep integration tests isolated while exercising the actual fetch path.
+  this.exampleRequests = [];
+  const exampleEndpoint = createExampleEndpoint();
+  await this.context.route('https://example.com/**', async route => {
+    this.exampleRequests.push({ method: route.request().method(), url: route.request().url(), body: route.request().postData() });
+    await exampleEndpoint(route);
   });
   this.page = await this.context.newPage();
   this.page.setDefaultTimeout(10_000);

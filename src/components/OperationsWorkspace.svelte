@@ -10,7 +10,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import OperationFieldControl from "$lib/components/OperationFieldControl.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import Reveal from "$lib/components/Reveal.svelte";
-  import Disclosure from "$lib/components/Disclosure.svelte";
+  import JsonView from "$lib/components/JsonView.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import type { Operation, InputField } from "$lib/catalog.ts";
   import { evaluateOperations, type OperationMatch } from "$lib/matching.ts";
@@ -18,11 +18,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import OperationReport from "./reports/OperationReport.svelte";
   import "./reports/reports.css";
   import { InputValidationError, prepareRequest } from "$lib/operation-input.ts";
-  let { operations, active = true, onAddToWorkflow }: { operations: Operation[]; active?: boolean; onAddToWorkflow: (operation: Operation) => void } = $props();
+  import { createWorkflowExecution, WorkflowResponseError, type WorkflowResponse } from "$lib/workflow-execution.ts";
+  let { operations, active = true, onAddToWorkflow, onOperationSelect }: { operations: Operation[]; active?: boolean; onAddToWorkflow: (operation: Operation) => void; onOperationSelect?: (operation: Operation) => void } = $props();
   const steps = ["Prompt", "Evaluation", "Operation"];
   const locations = [{ key: "path", label: "Path" }, { key: "query", label: "Query" }, { key: "header", label: "Headers" }, { key: "body", label: "Request body" }] as const;
   let step = $state(0);
-  // Input editing and its request preview both belong to Operation.
+  // Input editing and execution results both belong to Operation.
   const navigationStep = $derived(Math.min(step, steps.length - 1));
   let progress = $state<HTMLElement>();
   let compactProgress = $state(false);
@@ -35,13 +36,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let selected = $state<Operation | null>(null);
   let drafts = $state<Record<string, Record<string, string>>>({});
   let prepared = $state<ReturnType<typeof prepareRequest> | null>(null);
+  const executor = createWorkflowExecution();
+  let requestController: AbortController | undefined;
+  let executing = $state(false);
+  let response = $state<WorkflowResponse | null>(null);
+  let requestError = $state("");
   let error = $state("");
   let fieldError = $state<InputValidationError | null>(null);
   let matchingOpen = $state(false);
   let resultInfo = $state<string[]>([]);
   let operationDetails = $state(false);
   let operationDescription = $state(false);
-  let responseOpen = $state(false);
   let fieldHelp = $state<string[]>([]);
   let panels = $state<HTMLElement[]>([]);
   let panelHeight = $state(0);
@@ -63,7 +68,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     await tick();
     const panel = panels[step];
     if (!panel || panel.closest('[hidden],[inert]')) return;
-    const target = step === 0 ? panel.querySelector<HTMLElement>("textarea") : step === 2 ? (panel.querySelector<HTMLElement>("input,select,textarea,[role=combobox]") ?? panel.querySelector<HTMLElement>("h2")) : panel.querySelector<HTMLElement>("h2");
+    // Open reports and descriptions precede the inputs; return to their title
+    // instead of scrolling past them to the first field.
+    const target = step === 0 ? panel.querySelector<HTMLElement>("textarea") : step === 2 && !operationDetails && !operationDescription ? (panel.querySelector<HTMLElement>("input,select,textarea,[role=combobox]") ?? panel.querySelector<HTMLElement>("h2")) : panel.querySelector<HTMLElement>("h2");
     target?.focus({ preventScroll: true });
     return target;
   }
@@ -74,6 +81,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     window.scrollTo({ top: window.scrollY, behavior: "instant" });
   }
   async function goTo(next: number) {
+    if (next !== 3) cancelRequest();
     cancelStepScroll();
     const navigation = stepNavigation;
     step = next;
@@ -109,8 +117,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const comparison = evaluateOperations(prompt, operations);
     evaluation = { candidates: comparison.candidates, durationMs: performance.now() - started, considered: comparison.candidates.length };
     results = comparison.results; searchedPrompt = prompt; searched = true;
+    resetExecution();
     selected = null; prepared = null; error = ""; fieldError = null;
-    matchingOpen = false; resultInfo = []; operationDetails = false; operationDescription = false; responseOpen = false; fieldHelp = [];
+    matchingOpen = false; resultInfo = []; operationDetails = false; operationDescription = false; fieldHelp = [];
     void goTo(1);
   }
   async function chooseExample(name: string) {
@@ -120,27 +129,60 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     promptInput.focus({ preventScroll: true });
   }
   export function selectOperation(operation: Operation) {
+    resetExecution();
     if (selected?.id !== operation.id) { operationDetails = false; operationDescription = false; fieldHelp = []; }
     selected = operation; drafts[operation.id] ??= Object.fromEntries(operation.fields.map(field => [field.key, ""]));
-    prepared = null; responseOpen = false; error = ""; fieldError = null;
+    onOperationSelect?.(operation);
+    prepared = null; error = ""; fieldError = null;
     void goTo(2);
   }
-  async function prepare(event: SubmitEvent) {
-    event.preventDefault(); if (!selected) return;
+  function cancelRequest() {
+    if (!requestController) return;
+    requestController.abort();
+    requestController = undefined;
+    executing = false;
+    requestError = "The request was cancelled.";
+  }
+  function resetExecution() {
+    cancelRequest();
+    response = null;
+    requestError = "";
+  }
+  async function execute(event?: SubmitEvent) {
+    event?.preventDefault(); if (!selected || executing) return;
     error = ""; fieldError = null;
-    try { prepared = prepareRequest(selected, values); responseOpen = false; await goTo(3); }
+    try { prepared = prepareRequest(selected, values); }
     catch (cause) {
       if (cause instanceof InputValidationError) { fieldError = cause; await tick(); document.getElementById(`field-${cause.fieldKey}`)?.focus(); }
       else error = cause instanceof Error ? cause.message : "Could not prepare the request.";
+      return;
+    }
+    const operation = selected;
+    const submittedValues = { ...values };
+    const controller = new AbortController();
+    requestController = controller;
+    executing = true; response = null; requestError = "";
+    void goTo(3);
+    try {
+      const result = await executor.execute(operation, submittedValues, controller.signal);
+      if (requestController === controller) response = result.response;
+    } catch (cause) {
+      if (requestController !== controller) return;
+      if (cause instanceof WorkflowResponseError) response = cause.response;
+      requestError = cause instanceof Error ? cause.message : "The request could not be completed.";
+    } finally {
+      if (requestController === controller) { requestController = undefined; executing = false; }
     }
   }
   function edit(field: InputField, value: string) {
-    values[field.key] = value; prepared = null; responseOpen = false; error = "";
+    resetExecution();
+    values[field.key] = value; prepared = null; error = "";
     if (fieldError?.fieldKey === field.key) fieldError = null;
   }
   function describedBy(field: InputField) {
     return [field.description && fieldHelp.includes(field.key) ? `help-${field.key}` : "", fieldError?.fieldKey === field.key ? `error-${field.key}` : ""].filter(Boolean).join(" ") || undefined;
   }
+  $effect(() => { if (!active) cancelRequest(); });
   $effect(() => {
     const panel = panels[step];
     if (!mounted || !panel) return;
@@ -202,6 +244,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (submitPrompt) observer.observe(submitPrompt);
     void document.fonts.ready.then(fit);
     return () => {
+      cancelRequest();
       progressObserver.disconnect();
       observer.disconnect();
       motion.removeEventListener("change", settleScroll);
@@ -239,19 +282,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                 {#each operations.slice(0, 3) as operation}<button type="button" onclick={() => chooseExample(operation.name)}><span class="button-content">{operation.name}</span></button>{/each}
               </div>
             </div>
-            <HintButton bind:ref={submitPrompt} type="submit" class="primary-arrow" label="Find operations" aria-label="Find operations"><MaterialIcon name="arrow_circle_right" size={40} /></HintButton>
+            <HintButton bind:ref={submitPrompt} type="submit" class="primary-arrow" label="Find operations" tooltipSide="left" aria-label="Find operations"><MaterialIcon name="play_arrow" size={30} /></HintButton>
           </div>
           <p id="prompt-help" class="sr-only">Find an operation by name or identifier, even with a small typo. Enter searches; Shift+Enter adds a line break.</p>
         </form>
       </section>
       <section class="step-panel" bind:this={panels[1]} inert={step !== 1} aria-hidden={step !== 1} aria-label="Evaluation step">
-        <div class="results-toolbar"><h2 class="context-label" tabindex="-1">Matching operations</h2>
-          <div class="report-control report-pill context-label"><span>Evaluation</span><HintButton class="report-toggle" type="button" label="Review evaluation report" aria-label="Review matching details" aria-expanded={matchingOpen} aria-controls="matching-help" onclick={() => matchingOpen = !matchingOpen}><MaterialIcon name="troubleshoot" size={24} /></HintButton></div>
+        <div class="operation-toolbar report-pill context-label">
+          <h2 class="operation-title" tabindex="-1">Evaluation: Listed operations</h2>
+          <HintButton class="report-toggle" type="button" label="Details" aria-label="Review matching details" aria-expanded={matchingOpen} aria-controls="matching-help" onclick={() => matchingOpen = !matchingOpen}><MaterialIcon name="article" size={16} /></HintButton>
         </div>
         <Reveal open={matchingOpen} id="matching-help">
           {#if evaluation}<EvaluationReport prompt={searchedPrompt} durationMs={evaluation.durationMs} candidates={evaluation.candidates} considered={evaluation.considered} {results} />{/if}
         </Reveal>
-        <p class="hint search-summary">Results for “{searchedPrompt}”</p>
         {#if results.length}<ol class="results-list">
           {#each results as result (result.operation.id)}<li class="result-card">
             <div class="result-row">
@@ -265,7 +308,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                   {/snippet}
                 </HintButton>
               </button>
-              <HintButton class="primary-arrow" type="button" label="Go to operation" aria-label={`Go to operation: ${result.operation.name}`} onclick={() => selectOperation(result.operation)}><MaterialIcon name="arrow_circle_right" size={30} /></HintButton>
+              <HintButton class="primary-arrow" type="button" label="Go to operation" aria-label={`Go to operation: ${result.operation.name}`} onclick={() => selectOperation(result.operation)}><MaterialIcon name="play_arrow" size={20} /></HintButton>
             </div>
             <Reveal open={resultInfo.includes(result.operation.id)} id={`result-${result.operation.id}`}><p class="result-description">{result.operation.description}</p></Reveal>
           </li>{/each}
@@ -275,12 +318,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {#if selected}
           <div class="operation-toolbar report-pill context-label">
             <h2 class="operation-title" tabindex="-1">Operation: {selected.name}</h2>
-            <HintButton class="report-toggle" type="button" label="Details" aria-label="Review operation details" aria-expanded={operationDetails} aria-controls="operation-details" onclick={() => operationDetails = !operationDetails}><MaterialIcon name="quick_reference" size={16} /></HintButton>
+            <HintButton class="report-toggle" type="button" label="Details" aria-label="Review operation details" aria-expanded={operationDetails} aria-controls="operation-details" onclick={() => operationDetails = !operationDetails}><MaterialIcon name="article" size={16} /></HintButton>
             {#if selected.description}<HintButton class="report-toggle" type="button" label="Description" aria-label="Operation description" aria-expanded={operationDescription} aria-controls="operation-description" onclick={() => operationDescription = !operationDescription}><MaterialIcon name="info" size={16} /></HintButton>{/if}
           </div>
           {#if selected.description}<Reveal open={operationDescription} id="operation-description"><p class="hint field-description">{selected.description}</p></Reveal>{/if}
           <Reveal open={operationDetails} id="operation-details">{#key selected.id}<OperationReport operation={selected} />{/key}</Reveal>
-          <form onsubmit={prepare}>
+          <form onsubmit={execute}>
             <div class="operation-fields">
               {#each locations as location}
                 {@const fields = selected.fields.filter(field => field.location === location.key)}
@@ -312,24 +355,37 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
               {#if !selected.fields.length}<p class="hint">This operation does not require any input.</p>{/if}
             </div>
             {#if error}<p role="alert" class="error">{error}</p>{/if}
-            <div class="form-footer"><HintButton class="primary-arrow" type="submit" label="Prepare request" aria-label="Prepare request"><MaterialIcon name="arrow_circle_right" size={40} /></HintButton></div>
+            <div class="form-footer"><HintButton class="primary-arrow" type="submit" label="Execute operation" tooltipSide="left" aria-label="Execute operation" disabled={executing}><MaterialIcon name="play_arrow" size={30} /></HintButton></div>
           </form>
         {/if}
       </section>
-      <section class="step-panel" bind:this={panels[3]} inert={step !== 3} aria-hidden={step !== 3} aria-label="Request preview">
+      <section class="step-panel" bind:this={panels[3]} inert={step !== 3} aria-hidden={step !== 3} aria-label="Operation response">
         {#if selected && prepared}
-          <div class="operation-heading"><div><p class="eyebrow">Request preview</p><h2 tabindex="-1">{selected.name}</h2></div></div>
-          <p class="hint operation-description">Prepared locally. No request has been sent.</p>
-          <div class="json-report" role="region" aria-label="Prepared request"><pre>{JSON.stringify(prepared, null, 2)}</pre></div>
-          {#if selected.responseExample !== undefined}
-            <Disclosure class="request-disclosure" label="Example response" open={responseOpen} onToggle={(next) => responseOpen = next}>
-              {#snippet summary()}<span>Example response from the schema</span><MaterialIcon name="chevron_forward" size={18} />{/snippet}
-              <div class="json-report" role="region" aria-label="Example response"><pre>{JSON.stringify(selected.responseExample, null, 2)}</pre></div>
-            </Disclosure>
+          <div class="operation-heading"><div><p class="eyebrow">Operation response</p><h2 tabindex="-1">{selected.name}</h2></div></div>
+          {#if executing}<p role="status">Request in progress…</p>{/if}
+          {#if response}
+            <p role="status">HTTP {response.status}</p>
+            <section class="operation-response-body" aria-label="Response body">
+              {#if response.body === null}<p class="hint">No response body.</p>
+              {:else if typeof response.body === "string"}<pre>{response.body}</pre>
+              {:else}<JsonView value={response.body} label="Response JSON" />{/if}
+            </section>
           {/if}
-          <div class="form-footer request-footer"><Button variant="secondary" tooltip="Return to the operation inputs" onclick={() => goTo(2)}>Edit inputs</Button><Button tooltip="Add this operation to your workflow" onclick={() => onAddToWorkflow(selected!)}><MaterialIcon name="workflow" size={18} /> Add to workflow</Button></div>
+          {#if requestError}<p role="alert" class="error">{requestError}</p>{/if}
+          <div class="json-report" role="region" aria-label="Prepared request"><pre>{JSON.stringify(prepared, null, 2)}</pre></div>
+          <div class="form-footer request-footer"><Button variant="secondary" tooltip="Return to the operation inputs" onclick={() => goTo(2)}>Edit inputs</Button>
+            {#if executing}<Button tooltip="Cancel the pending request" onclick={cancelRequest}>Cancel request</Button>
+            {:else if requestError}<Button tooltip="Send this request again" onclick={() => execute()}>Retry request</Button>{/if}
+            <Button tooltip="Add this operation to your workflow" onclick={() => onAddToWorkflow(selected!)}><MaterialIcon name="workflow" size={18} /> Add to workflow</Button></div>
         {/if}
       </section>
     </div>
   </div>
 </section>
+
+<style>
+  .workspace { margin: 8px 8px 0; padding-top: calc(var(--content-padding) - 8px); }
+  .workflow-progress { margin-inline: calc(-1 * var(--content-padding) - 8px); }
+  .operation-response-body { margin: 16px 0; }
+  .operation-response-body pre { margin: 0; padding: 12px; background: var(--color-report-card); white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.7 ui-monospace, monospace; }
+</style>

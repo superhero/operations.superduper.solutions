@@ -10,9 +10,9 @@ import { catalogForOperation } from "./lib/catalog-registry.ts";
 import { createOperationGraph, createWorkflowGraph } from "./lib/workflow-graph.ts";
 import { createWorkflowRunner as createRequestRunner } from "./lib/workflow-runner.ts";
 import { createWorkflowDemo } from "./lib/workflow-demo.ts";
-import { createWorkflowRequestExecution, workflowExecutionForOperation, workflowRequestUrl } from "./lib/workflow-execution.ts";
+import { createWorkflowRequestExecution, WorkflowResponseError, workflowExecutionForOperation, workflowRequestUrl } from "./lib/workflow-execution.ts";
 
-const createWorkflowRunner = createRequestRunner;
+const createWorkflowRunner = (value, startingNodeId) => createRequestRunner(value, startingNodeId, createWorkflowDemo());
 
 const operation = name => operations.find(item => item.id === `demo:${name}`);
 const document = (...graphs) => ({ version: 3, id: "run-test", name: "Run test", nodes: graphs.flatMap(graph => graph.nodes),
@@ -86,13 +86,25 @@ Then("workflow request failures explain network server and response problems and
   AbortSignal.timeout = () => AbortSignal.abort();
   try { await assert.rejects(() => failed.execute(operation("getProject"), project), /timed out/); }
   finally { AbortSignal.timeout = timeout; }
-  for (const [response, expected] of [
-    [new Response("server failure", { status: 503, statusText: "Unavailable" }), /503 Unavailable/],
-    [new Response("missing", { status: 404 }), /404/],
-    [new Response("<!doctype html><title>Example Domain</title>"), /did not return valid JSON/]
+  const withoutContentType = new Response("no media type", { status: 500 });
+  withoutContentType.headers.delete("Content-Type");
+  for (const [response, expected, body] of [
+    [new Response("server failure", { status: 503, statusText: "Unavailable" }), /503 Unavailable/, "server failure"],
+    [new Response("missing", { status: 404 }), /404/, "missing"],
+    [Response.json({ detail: "Invalid inputs" }, { status: 422 }), /422/, { detail: "Invalid inputs" }],
+    [new Response('{"detail":"Rate limited"}', { status: 429, headers: { "Content-Type": "application/problem+json" } }), /429/, { detail: "Rate limited" }],
+    [new Response("broken JSON", { status: 500, headers: { "Content-Type": "application/json" } }), /500/, "broken JSON"],
+    [withoutContentType, /500/, "no media type"],
+    [new Response("<!doctype html><title>Example Domain</title>"), /did not return valid JSON/, "<!doctype html><title>Example Domain</title>"]
   ]) {
     const execution = createWorkflowRequestExecution(async () => response);
-    await assert.rejects(() => execution.execute(operation("getProject"), project), expected);
+    await assert.rejects(() => execution.execute(operation("getProject"), project), error => {
+      assert.ok(error instanceof WorkflowResponseError);
+      assert.equal(error.name, "WorkflowResponseError");
+      assert.match(error.message, expected);
+      assert.deepEqual(error.response, { status: response.status, body });
+      return true;
+    });
   }
   const streamingFailure = createWorkflowRequestExecution(async () => {
     const response = Response.json({});
@@ -434,7 +446,7 @@ const atPath = (doc, owner, direction, path) => {
 const jsonValues = { "body:label": "A & B", "body:count": "2", "body:ratio": "1.5", "body:enabled": "false",
   "body:priority": "high", "body:profile": '{"name":"Ada","count":3}', "body:tags": '["one","two"]', "body:note": "null" };
 
-Then("mock examples cover every method without network traffic and live examples use their registered origin", async function () {
+Then("both example catalogs send HTTP requests to their registered origins by default", async function () {
   const previous = globalThis.fetch;
   const calls = [];
   globalThis.fetch = async (url, options) => {
@@ -442,27 +454,29 @@ Then("mock examples cover every method without network traffic and live examples
     return options.method === "HEAD" || options.method === "OPTIONS" ? new Response(null) : Response.json({ method: options.method, remote: true });
   };
   try {
-    for (const op of operations.filter(op => op.id.startsWith("demo:mock") && !op.fields.length)) {
-      const result = await submit(createRequestRunner(document(catalogGraph(op.id))));
-      assert.equal(result.request.method, op.method);
-      assert.equal(result.response.status, 200);
-      if (["HEAD", "OPTIONS"].includes(op.method)) assert.equal(result.response.body, null);
-      else assert.equal(result.response.body.method, op.method);
+    for (const [prefix, origin] of [["demo:mock", "https://example.com"], ["httpbin:echo", "https://httpbin.org"]]) {
+      for (const op of operations.filter(op => op.id.startsWith(prefix) && !op.fields.length && op.method !== "TRACE")) {
+        const result = await submit(createRequestRunner(document(catalogGraph(op.id))));
+        assert.equal(result.request.method, op.method);
+        assert.equal(result.response.status, 200);
+        assert.equal(new URL(calls.at(-1).url).origin, origin);
+        if (["HEAD", "OPTIONS"].includes(op.method)) assert.equal(result.response.body, null);
+        else assert.equal(result.response.body.remote, true);
+      }
     }
-    assert.equal(calls.length, 0);
-    for (const op of operations.filter(op => op.id.startsWith("httpbin:echo") && !op.fields.length)) {
-      const result = await submit(createRequestRunner(document(catalogGraph(op.id))));
-      assert.equal(result.request.method, op.method);
-      if (!["HEAD", "OPTIONS"].includes(op.method)) assert.equal(result.response.body.remote, true);
-    }
-    assert.equal(calls.length, 7);
-    assert.ok(calls.every(call => call.url.startsWith("https://httpbin.org/")));
-    assert.deepEqual(workflowExecutionForOperation("demo:mockTrace"), { kind: "mock", origin: "https://example.com" });
+    assert.equal(calls.length, 14);
+    const forbidden = createRequestRunner(document(catalogGraph("demo:mockTrace")));
+    await assert.rejects(() => submit(forbidden), { message: "Browsers do not permit TRACE requests." });
+    assert.equal(calls.length, 14);
+    assert.deepEqual(workflowExecutionForOperation("demo:mockTrace"), { kind: "http", origin: "https://example.com" });
     assert.deepEqual(workflowExecutionForOperation(catalogOperation("httpbin:echoGet")), { kind: "http", origin: "https://httpbin.org" });
     assert.throws(() => workflowExecutionForOperation("unknown:operation"), /bundled test catalog/);
     assert.throws(() => createWorkflowDemo().execute(catalogOperation("httpbin:echoGet"), {}), /unavailable/);
-    const first = createRequestRunner(document(graph("createTask")));
-    const second = createRequestRunner(document(graph("createTask")));
+    const realTask = createRequestRunner(document(graph("createTask")));
+    assert.deepEqual((await submit(realTask, task)).response.body, { method: "POST", remote: true });
+    assert.equal(calls.at(-1).url, "https://example.com/projects/project-1/tasks");
+    const first = createWorkflowRunner(document(graph("createTask")));
+    const second = createWorkflowRunner(document(graph("createTask")));
     assert.equal((await submit(first, task)).response.body.id, "task-2");
     assert.equal((await submit(second, task)).response.body.id, "task-2");
   } finally { globalThis.fetch = previous; }
@@ -537,7 +551,7 @@ Then("structured values root bodies and nested fields flow between example opera
   mapping(doc, atPath(doc, "target", "outputs", "/json/tags"), atPath(doc, "array", "inputs", "/items"));
   mapping(doc, atPath(doc, "source", "outputs", "/json/label"), atPath(doc, "scalar", "inputs", ""));
   mapping(doc, atPath(doc, "scalar", "outputs", "/json"), atPath(doc, "text", "inputs", ""));
-  const runner = createRequestRunner(doc);
+  const runner = createWorkflowRunner(doc);
   await submit(runner, jsonValues);
   assert.equal(runner.next().nodeId, "target");
   assert.deepEqual(runner.next().values, { "body:note": "null", "body:profile": '{"name":"Ada","count":3}', "body:tags": '["one","two"]' });
@@ -553,12 +567,14 @@ Then("structured values root bodies and nested fields flow between example opera
   const live = document(catalogGraph("httpbin:echoJsonObject", "remote"), catalogGraph("demo:mockJsonObject", "local"));
   mapping(live, atPath(live, "remote", "outputs", "/json/profile"), atPath(live, "local", "inputs", "/profile"));
   const previous = globalThis.fetch;
-  globalThis.fetch = async (url, options) => { assert.ok(url.startsWith("https://httpbin.org")); return Response.json({ json: JSON.parse(options.body) }); };
+  const origins = [];
+  globalThis.fetch = async (url, options) => { origins.push(new URL(url).origin); return Response.json({ json: JSON.parse(options.body) }); };
   try {
     const mixed = createRequestRunner(live);
     await submit(mixed, jsonValues);
     assert.equal(mixed.next().values["body:profile"], '{"name":"Ada","count":3}');
     assert.deepEqual((await submit(mixed)).response.body.json.profile, { name: "Ada", count: 3 });
+    assert.deepEqual(origins, ["https://httpbin.org", "https://example.com"]);
   } finally { globalThis.fetch = previous; }
 });
 
@@ -571,18 +587,18 @@ Then("invalid structured connections stop before the next request", async functi
   for (const [from, to, expected] of [["/json/label", "/profile", /needs a object/], ["/json/profile", "/tags", /needs a array/],
     ["/json/label", "/note", /needs a null/], ["/json/label", "/tags/items", /array item path needs an array/],
     ["/json/tags", "/profile", /needs a object/], ["/json/note", "/profile", /needs a object/]]) {
-    const runner = createRequestRunner(make(from, to));
+    const runner = createWorkflowRunner(make(from, to));
     await submit(runner, jsonValues);
     assert.throws(() => runner.next(), expected);
   }
   const conflicting = make("/json/profile", "/profile");
   mapping(conflicting, atPath(conflicting, "source", "outputs", "/json/label"), atPath(conflicting, "target", "inputs", "/profile/name"));
-  const run = createRequestRunner(conflicting);
+  const run = createWorkflowRunner(conflicting);
   await submit(run, jsonValues);
   assert.throws(() => run.next(), /conflicting values/);
   const consistent = make("/json/profile", "/profile");
   mapping(consistent, atPath(consistent, "source", "outputs", "/json/profile/name"), atPath(consistent, "target", "inputs", "/profile/name"));
-  const valid = createRequestRunner(consistent);
+  const valid = createWorkflowRunner(consistent);
   await submit(valid, jsonValues);
   assert.equal((await submit(valid)).response.body.json.profile.name, "Ada");
 });

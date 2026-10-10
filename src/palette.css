@@ -4,7 +4,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 See LICENSE and LICENSE-ADDITIONAL-TERMS.
 */
 
-/* Each palette has six colors, ordered from lightest (1) to darkest (6).
+/* Each palette has six fixed slots, normally lightest (1) to darkest (6).
+   Authored accent exceptions: Neon 2→3 and Citrus 4→5 increase in lightness.
    app.css reverses the slots for dark mode. Preview selectors keep every
    Settings swatch tied to its own palette, independently of the selected one. */
 [data-palette-preview="default"],
@@ -39,10 +40,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 [data-palette-preview="obsidian"],
 :root[data-palette="obsidian"] {
-  --palette-1: #e3c95b;
-  --palette-2: #d9a23f;
-  --palette-3: #4c4e4d;
-  --palette-4: #4b443a;
+  --palette-1: #f2e4a4;
+  --palette-2: #e3c95b;
+  --palette-3: #d9a23f;
+  --palette-4: #2d3033;
   --palette-5: #1e2022;
   --palette-6: #131517;
 }
@@ -51,7 +52,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 :root[data-palette="midnight-gold"] {
   --palette-1: #f3bd68;
   --palette-2: #c7843b;
-  --palette-3: #4d6473;
+  --palette-3: #536d7c;
   --palette-4: #2c4657;
   --palette-5: #172531;
   --palette-6: #000101;
@@ -61,7 +62,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 :root[data-palette="neon"] {
   --palette-1: #09d8c7;
   --palette-2: #bd0927;
-  --palette-3: #17364f;
+  --palette-3: #168fcc;
   --palette-4: #411e3a;
   --palette-5: #500a1f;
   --palette-6: #0d1a2f;
@@ -89,9 +90,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 [data-palette-preview="bonfire"],
 :root[data-palette="bonfire"] {
-  --palette-1: #ffcb68;
-  --palette-2: #e2773a;
-  --palette-3: #6b504c;
+  --palette-1: #ffe7ad;
+  --palette-2: #ffcb68;
+  --palette-3: #e2773a;
   --palette-4: #214f5f;
   --palette-5: #143041;
   --palette-6: #0c0f1e;
@@ -101,7 +102,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 :root[data-palette="harvest-moon"] {
   --palette-1: #ae8c6f;
   --palette-2: #dc4b14;
-  --palette-3: #3b3a37;
+  --palette-3: #514f49;
   --palette-4: #551009;
   --palette-5: #1b2021;
   --palette-6: #060505;
@@ -110,9 +111,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 [data-palette-preview="blue-horizon"],
 :root[data-palette="blue-horizon"] {
   --palette-1: #e9e4de;
-  --palette-2: #efbf6a;
-  --palette-3: #7699ae;
-  --palette-4: #a55d35;
+  --palette-2: #ecd2a4;
+  --palette-3: #efbf6a;
+  --palette-4: #7699ae;
   --palette-5: #37729c;
   --palette-6: #091f46;
 }
@@ -121,18 +122,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 :root[data-palette="golden-violet"] {
   --palette-1: #fdc005;
   --palette-2: #f68318;
-  --palette-3: #b22e37;
-  --palette-4: #633090;
+  --palette-3: #cd1a30; /* Original: #b22e37. */
+  --palette-4: #54277d;
   --palette-5: #313575;
-  --palette-6: #321951;
+  --palette-6: #26123f;
 }
 
 [data-palette-preview="citrus"],
 :root[data-palette="citrus"] {
   --palette-1: #fff5e6;
-  --palette-2: #f28b0c;
+  --palette-2: #f4e34a;
   --palette-3: #6ca2e8;
-  --palette-4: #f2600c;
+  --palette-4: #52604c;
   --palette-5: #818807;
   --palette-6: #d9310b;
 }
@@ -212,7 +213,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 :root[data-palette="heritage-noir"] {
   --palette-1: #dfd7cc;
   --palette-2: #a69a8c;
-  --palette-3: #5b5348;
+  --palette-3: #7c7950;
   --palette-4: #382517;
   --palette-5: #21221c;
   --palette-6: #151513;

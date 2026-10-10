@@ -106,7 +106,7 @@ Then('the required Priority dropdown supports keyboard choice and cancellation',
   await priority.press('Home');
   await priority.press('Enter');
   await expectFieldValue(page, 'Priority', '');
-  await page.getByRole('button', { name: 'Prepare request', exact: true }).click();
+  await page.getByRole('button', { name: 'Execute operation', exact: true }).click();
   await expect(priority).toBeFocused();
   await expect(page.getByRole('region', { name: 'Prepared request', exact: true })).toHaveCount(0);
   await priority.press('Space');

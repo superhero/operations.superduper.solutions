@@ -9,10 +9,12 @@
 <svelte:window bind:scrollY />
 
 <header class="site-header" style:--header-scroll-strength={scrollStrength}>
-  <div class="brand-controls">
-    <MenuButton open={navigationOpen} onclick={onMenu} />
-    <div class="brand-copy">
-      <strong class="brand">Operations</strong>
+  <div class="header-content">
+    <div class="brand-controls">
+      <MenuButton open={navigationOpen} onclick={onMenu} />
+      <div class="brand-copy">
+        <strong class="brand">Operations</strong>
+      </div>
     </div>
   </div>
 </header>

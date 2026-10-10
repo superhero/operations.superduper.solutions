@@ -8,14 +8,14 @@ Feature: Browser operations workspace
     When I search for the operation "List projetcs"
     Then the results offer the "List projects" form
     When I review the matching details
-    Then the matching explanation describes spelling similarity
+    Then the matching details show ranked operation comparisons
     When I close the matching details
     And I open the "List projects" result
     Then the "List projects" form is displayed
 
-  Scenario: An unrelated prompt explains how to recover
+  Scenario: An unrelated prompt offers the nearest five operations and remains editable
     When I search for the operation "unrelated zeppelins"
-    Then no matching operations are shown
+    Then the five nearest operations are shown
     When I choose to edit the prompt
     Then the prompt still contains "unrelated zeppelins"
 
@@ -35,7 +35,7 @@ Feature: Browser operations workspace
       """
       {"method":"POST","path":"/projects/roadmap%20%2F%202026/tasks","query":{},"body":{"title":"Review documentation","priority":"high","estimate":2.5}}
       """
-    And the page explains that no request has been sent
+    And operation metadata identifies server URL "https://example.com"
 
   Scenario: Query validation and editing keep request previews current
     Given I open the "List projects" operation from the catalog
