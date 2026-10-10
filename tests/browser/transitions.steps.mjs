@@ -5,6 +5,36 @@ import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 
+async function pauseNextAnimation(page, selector, property) {
+  // Observe before the input action: transport and locator waits can otherwise
+  // outlast a short transition when the full browser suite is busy.
+  await page.evaluate(({ selector, property }) => {
+    const element = document.querySelector(selector);
+    const deadline = performance.now() + 5000;
+    window.__testAnimationObserved = new Promise(resolve => {
+      const sample = () => {
+        const animation = element.getAnimations().find(item =>
+          item.effect.getKeyframes().some(frame => property in frame));
+        if (animation) {
+          animation.pause();
+          animation.currentTime = animation.effect.getTiming().duration / 2;
+          resolve(true);
+        } else if (performance.now() < deadline) requestAnimationFrame(sample);
+        else resolve(false);
+      };
+      requestAnimationFrame(sample);
+    });
+  }, { selector, property });
+  return async () => {
+    const observed = await page.evaluate(async () => {
+      const result = await window.__testAnimationObserved;
+      delete window.__testAnimationObserved;
+      return result;
+    });
+    assert.ok(observed, `The ${property} animation must run after the input action.`);
+  };
+}
+
 Then('prompt focus and navigation hover animate and settle with the motion preference', async function () {
   const page = this.page;
   await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -44,14 +74,13 @@ Then('report and schema transitions retain content through interruption', async 
   const json = page.locator('.schema-disclosure .json-view');
   await expect(json).toBeVisible();
   await expect.poll(() => disclosure.evaluate(element => element.getAnimations().length)).toBe(0);
+  const closingMotion = await pauseNextAnimation(page, '.schema-disclosure > .disclosure-panel', 'height');
   await header.press('Enter');
-  const closing = await disclosure.evaluate(element => {
-    const animation = element.getAnimations().find(item => item.effect.getKeyframes().some(frame => 'height' in frame));
-    if (!animation) return null;
-    animation.pause();
-    animation.currentTime = animation.effect.getTiming().duration / 2;
-    return { height: element.getBoundingClientRect().height, content: element.querySelector('.json-view')?.getBoundingClientRect().height };
-  });
+  await closingMotion();
+  const closing = await disclosure.evaluate(element => ({
+    height: element.getBoundingClientRect().height,
+    content: element.querySelector('.json-view')?.getBoundingClientRect().height,
+  }));
   assert.ok(closing?.height > 0 && closing.content > 0, 'Collapsing the schema must retain visible JSON until the panel closes.');
   await header.press('Enter');
   await expect(header).toHaveAttribute('aria-expanded', 'true');
@@ -64,6 +93,10 @@ Then('report and schema transitions retain content through interruption', async 
   await reportButton.click();
   await expect(report).toBeVisible();
   await expect.poll(() => report.evaluate(element => element.parentElement.getAnimations({ subtree: true }).length)).toBe(0);
+  await expect(page.locator('.step-viewport')).not.toHaveClass(/\bfollowing-content-size\b/);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(page.locator('.step-viewport')).toHaveCSS('transition-property', 'height');
+  await expect.poll(() => page.locator('.step-viewport').evaluate(element => parseFloat(getComputedStyle(element).transitionDuration))).toBeGreaterThan(0);
 });
 
 Then('native scrollbars expand on hover and settle without changing the reading position', async function () {
@@ -79,8 +112,11 @@ Then('native scrollbars expand on hover and settle without changing the reading 
   await page.mouse.wheel(0, 50);
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
   const before = await page.evaluate(() => scrollY);
+  const leavingMotion = await pauseNextAnimation(page, 'html', '--scrollbar-y-inset');
   await page.mouse.move(640, 160);
-  await expect.poll(() => root.evaluate(element => element.getAnimations().length)).toBeGreaterThan(0);
+  await leavingMotion();
+  const halfwayInset = await inset();
+  assert.ok(halfwayInset > 0 && halfwayInset < 4, 'The scrollbar thumb must interpolate while leaving hover.');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect.poll(inset).toBe(4);
   await expect.poll(() => root.evaluate(element => element.getAnimations().length)).toBe(0);
@@ -88,4 +124,51 @@ Then('native scrollbars expand on hover and settle without changing the reading 
   await page.mouse.move(1280 - metrics.width / 2, 160);
   await expect.poll(inset).toBe(0);
   await expect.poll(() => root.evaluate(element => element.getAnimations().length)).toBe(0);
+});
+
+Then('prompt examples and page overflow remain stable when resizing under a hovered arrow', async function () {
+  const page = this.page;
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.setViewportSize({ width: 500, height: 900 });
+  const arrow = page.getByRole('button', { name: 'Find operations', exact: true });
+  const firstExample = page.locator('.prompt-suggestion-list button').first();
+  await expect(firstExample).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  const thresholdWidth = await arrow.evaluate(element => {
+    const footer = element.closest('.prompt-footer');
+    const example = footer.querySelector('.prompt-suggestion-list button');
+    const available = footer.clientWidth - element.offsetWidth - parseFloat(getComputedStyle(footer).columnGap);
+    return Math.round(innerWidth - available + example.offsetWidth + 2);
+  });
+  await page.setViewportSize({ width: thresholdWidth + 1, height: 900 });
+  await expect(firstExample).toBeVisible();
+  const thresholdHeight = await page.evaluate(() => Math.floor(document.body.getBoundingClientRect().height) - 1);
+  await page.setViewportSize({ width: thresholdWidth + 1, height: thresholdHeight });
+  const before = await page.locator('.prompt-footer').evaluate(element => ({ height: element.offsetHeight,
+    overflow: document.documentElement.scrollHeight > document.documentElement.clientHeight,
+    gutter: innerWidth - document.documentElement.clientWidth }));
+  assert.ok(before.overflow && before.gutter > 0, 'The fixture must start just beyond page overflow with a real native scrollbar.');
+  const bounds = await arrow.boundingBox();
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height - 3);
+  await expect.poll(() => arrow.evaluate(element => element.getBoundingClientRect().width - element.offsetWidth)).toBeGreaterThan(3);
+  // A real resize invokes example fitting while the arrow is visually scaled by hover.
+  await page.setViewportSize({ width: thresholdWidth, height: thresholdHeight });
+  const samples = await page.locator('.prompt-footer').evaluate(async element => {
+    const result = [];
+    for (let frame = 0; frame < 90; frame += 1) {
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      const examples = element.querySelector('.prompt-suggestion-list');
+      result.push({ hidden: examples.hidden || examples.querySelector('button').hidden, height: element.offsetHeight,
+        overflow: document.documentElement.scrollHeight > document.documentElement.clientHeight });
+    }
+    return result;
+  });
+  assert.ok(samples.every(sample => !sample.hidden && sample.height === before.height && sample.overflow === before.overflow),
+    `Hover feedback must preserve the example, footer height, and page overflow: ${[...new Set(samples.map(sample => JSON.stringify(sample)))].join(', ')}`);
+  await page.mouse.move(0, 0);
+  await expect.poll(() => arrow.evaluate(element => element.getBoundingClientRect().width - element.offsetWidth)).toBe(0);
+  await expect(firstExample).toBeVisible();
+  assert.deepEqual(await page.locator('.prompt-footer').evaluate(element => ({ height: element.offsetHeight,
+    overflow: document.documentElement.scrollHeight > document.documentElement.clientHeight })),
+  { height: before.height, overflow: before.overflow }, 'Leaving the arrow must retain the same example layout and overflow.');
 });

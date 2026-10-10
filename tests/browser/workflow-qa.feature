@@ -3,8 +3,8 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Workflow replacement and export regressions
-  Scenario Outline: Canceling a replacement preserves the draft and useful focus
-    Given two saved QA workflows and an edited current draft
+  Scenario Outline: Canceling a replacement after autosave fails preserves the draft and useful focus
+    Given two saved QA workflows and a draft that cannot autosave
     When I cancel a pending <action> replacement with <dismissal>
     Then the edited QA draft and useful focus are retained after <action>
 
@@ -15,8 +15,8 @@ Feature: Workflow replacement and export regressions
       | New    | Cancel    |
       | Import | Escape    |
 
-  Scenario Outline: Opening a saved workflow resolves the requested snapshot
-    Given two saved QA workflows and an edited current draft
+  Scenario Outline: Opening a saved workflow after autosave fails resolves the requested snapshot
+    Given two saved QA workflows and a draft that cannot autosave
     When I open the <target> saved QA workflow with "<choice>"
     Then the <target> QA workflow reflects "<choice>" and storage remains consistent
 

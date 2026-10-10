@@ -30,6 +30,17 @@
   function togglePath(depth: number, id: string, next: boolean) {
     catalogPath = next ? [...catalogPath.slice(0, depth), id] : catalogPath.slice(0, depth);
   }
+  export function revealOperation(operation: Operation) {
+    function findPath(branches: CatalogGroup[]): string[] | undefined {
+      for (const group of branches) {
+        if (group.operationIds?.includes(operation.id)) return [group.id, operation.id];
+        const childPath = findPath(group.children ?? []);
+        if (childPath) return [group.id, ...childPath];
+      }
+    }
+    const path = findPath(groups);
+    if (path) catalogPath = path;
+  }
   $effect(() => {
     if (mobile && documentModal) open = false;
     if (mobile && open && !documentModal) {
@@ -122,16 +133,17 @@
           <ul class="catalog-operations">
             {#each entries as operation (operation.id)}
               <li data-operation-id={operation.id} data-operation-name={operation.name}>
-                <Disclosure class="catalog-operation" tooltipEnabled={false} open={expanded && catalogPath[depth + 1] === operation.id} onToggle={(next) => togglePath(depth + 1, operation.id, next)}>
-                  {#snippet summary()}<span class="catalog-name">{operation.name}</span><MaterialIcon name="chevron_forward" size={16} />{/snippet}
-                  <div class="catalog-operation-detail">
-                    <button class="catalog-description" type="button" aria-label={`${mode === "workflow" ? "Add to workflow" : "Open form"}: ${operation.name} description`} onclick={() => select(operation)}>{operation.description}</button>
-                    <HintButton class="catalog-open-operation" type="button" label={mode === "workflow" ? "Add to workflow" : "Go to operation"} aria-label={`${mode === "workflow" ? "Add to workflow" : "Open form"}: ${operation.name}`}
-                      onclick={() => select(operation)}>
-                      <MaterialIcon name={mode === "workflow" ? "add_box" : "arrow_circle_right"} size={24} />
-                    </HintButton>
-                  </div>
-                </Disclosure>
+                <button class="catalog-operation-action" type="button" aria-label={`${mode === "workflow" ? "Add to workflow" : "Open form"}: ${operation.name}`}
+                  aria-current={mode !== "workflow" && catalogPath[depth + 1] === operation.id ? "page" : undefined}
+                  onclick={() => { togglePath(depth + 1, operation.id, true); select(operation); }}>
+                  <span class="catalog-name">{operation.name}</span>
+                  <HintButton label={mode === "workflow" ? "Add to workflow" : "Go to operation"} labelAsName={false} tooltipSide="right">
+                    {#snippet child({ props })}
+                      {@const { type: _type, tabindex: _tabindex, ...iconProps } = props}
+                      <span {...iconProps} class="catalog-action-icon"><MaterialIcon name={mode === "workflow" ? "add_box" : "play_arrow"} size={mode === "workflow" ? 24 : 16} /></span>
+                    {/snippet}
+                  </HintButton>
+                </button>
               </li>
             {/each}
           </ul>
@@ -205,9 +217,9 @@
   .catalog-menu { transition: transform 200ms ease-in, visibility 0s linear 200ms; }
   .catalog-menu.open { transition-delay: 0s; }
   .operation-catalog { isolation: isolate; }
-  .workflow-catalog { margin-top: 20px; }
+  .workflow-catalog { margin-top: 12px; }
   /* Keep headings above ancestor and sibling connectors throughout hover exit too. */
-  .operation-catalog :global(summary) { position: relative; z-index: 1; }
+  .operation-catalog :global(summary), .operation-catalog :global(.catalog-operation-action) { position: relative; z-index: 1; }
   .operation-catalog :global(summary),
   .operation-catalog :global(button) {
     transition: background-color 180ms ease-in, border-color 180ms ease-in, color 180ms ease-in,
@@ -221,8 +233,9 @@
 
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
     .operation-catalog :global(summary:not([inert] *)),
+    .operation-catalog :global(.catalog-operation-action:not([inert] *)),
     .operation-catalog :global(.catalog-open-operation:not(:disabled):not([inert] *)) { will-change: transform; }
-    .operation-catalog :global(summary:hover) { transform: scale(min(1.10, var(--hover-scale, 1.10))); }
+    .operation-catalog :global(summary:hover), .operation-catalog :global(.catalog-operation-action:hover) { transform: scale(min(1.10, var(--hover-scale, 1.10))); }
     .operation-catalog :global(.catalog-operation-detail:hover .catalog-open-operation) { transform: scale(min(1.16, var(--hover-scale, 1.16))); }
   }
 

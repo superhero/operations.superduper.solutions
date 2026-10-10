@@ -171,7 +171,7 @@ export function createOperationGraph(operation: Operation, position: { x: number
   const responses = object(source?.responses) ? source.responses : {};
   for (const [status, raw] of Object.entries(responses))
   {
-    if (!/^2(?:\d\d|XX)$/i.test(status)) continue;
+    if (!/^(?:[1-5](?:\d\d|XX)|default)$/i.test(status)) continue;
     const response = resolve(raw, schemaDocument);
     const content = object(response.schema.content) ? response.schema.content : {};
     const representations = Object.entries(content);

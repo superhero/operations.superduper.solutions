@@ -5,7 +5,7 @@
 import type { Operation } from "./catalog.ts";
 
 export const minimumSimilarity = 0.5;
-export const resultLimit = 10;
+export const topResultCount = 5;
 export type OperationMatch = { operation: Operation; similarity: number };
 
 function normalize(value: string): string
@@ -36,7 +36,8 @@ export function evaluateOperations(prompt: string, operations: Operation[]): { c
     operation.name, operation.id, operation.id.slice(operation.id.indexOf(":") + 1)
   ].map(name => similarity(query, normalize(name)))) }))
     .sort((left, right) => right.similarity - left.similarity || left.operation.id.localeCompare(right.operation.id));
-  return { candidates, results: candidates.filter(result => result.similarity > minimumSimilarity).slice(0, resultLimit) };
+  // A single pass merges both selections without repeating their overlap.
+  return { candidates, results: candidates.filter((result, index) => index < topResultCount || result.similarity > minimumSimilarity) };
 }
 
 export function rankOperations(prompt: string, operations: Operation[]): OperationMatch[]

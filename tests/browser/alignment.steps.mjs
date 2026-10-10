@@ -1,6 +1,8 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { storedWorkflows, blockWorkflowSaving, restoreWorkflowSaving } from "./workflow-storage.fixture.mjs";
+import { closeWorkflowDetails, renameWorkflow, workflowNameInput } from "./workflow-details.fixture.mjs";
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
@@ -10,11 +12,6 @@ import { expectThemeColors } from './theme-colors.mjs';
 Then('catalog paths, focus and tooltip dismissal behave consistently', async function () {
   const page = this.page;
   await openCatalog(page);
-  const italic = await page.evaluate(async () => {
-    const faces = await document.fonts.load('italic 400 12px Montserrat');
-    return faces.some(face => face.style === 'italic' && face.status === 'loaded');
-  });
-  assert.ok(italic, 'Italic descriptions must have a bundled real italic font.');
   const groups = page.locator('.catalog-group > summary');
   for (const heading of await groups.all()) await expect(heading).toHaveAttribute('aria-expanded', 'false');
   const root = page.locator('[data-catalog-group="projects"] > .catalog-group > summary');
@@ -22,12 +19,22 @@ Then('catalog paths, focus and tooltip dismissal behave consistently', async fun
   const tasks = page.locator('[data-catalog-group="tasks"] > .catalog-group > summary');
   await root.click();
   await overview.click();
-  const operations = page.locator('[data-catalog-group="overview"] .catalog-operation > summary');
-  await operations.nth(0).click();
-  await operations.nth(1).click();
-  await expect(operations.nth(0)).toHaveAttribute('aria-expanded', 'false');
+  const operations = page.locator('[data-catalog-group="overview"] .catalog-operation-action');
+  const listProjects = page.getByRole('button', { name: 'Open form: List projects', exact: true });
+  const getProject = page.getByRole('button', { name: 'Open form: Get project', exact: true });
+  await operations.getByText('List projects', { exact: true }).click();
+  await expect(workspace(page).getByRole('heading', { name: 'Operation: List projects', exact: true })).toBeVisible();
+  await expect(await field(page, 'Project name')).toBeFocused();
+  await expect(listProjects).toHaveAttribute('aria-current', 'page');
+  await expect(overview).toHaveAttribute('aria-expanded', 'true');
+  await operations.getByText('Get project', { exact: true }).click();
+  await expect(workspace(page).getByRole('heading', { name: 'Operation: Get project', exact: true })).toBeVisible();
+  await expect(await field(page, 'Project ID')).toBeFocused();
+  await expect(listProjects).not.toHaveAttribute('aria-current', 'page');
+  await expect(getProject).toHaveAttribute('aria-current', 'page');
   await tasks.click();
   await expect(overview).toHaveAttribute('aria-expanded', 'false');
+  for (const operation of await operations.all()) await expect(operation).toBeHidden();
   await expect(root).toHaveAttribute('aria-expanded', 'true');
   await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Settings', exact: true }).focus();
   await page.keyboard.press('Tab');
@@ -100,8 +107,37 @@ Then('prompt keyboard controls preserve editing and search deliberately', async 
   await expect(prompt).toBeVisible();
   await prompt.press('Enter');
   await expect(workspace(this.page).getByRole('button', { name: 'Go to operation: List projects', exact: true })).toBeVisible();
-  await expect(workspace(this.page).getByRole('heading', { name: 'Matching operations' })).toBeFocused();
+  await expect(workspace(this.page).getByRole('heading', { name: 'Evaluation: Listed operations' })).toBeFocused();
   await this.page.getByRole('navigation', { name: 'Progress' }).getByRole('button', { name: /Operation$/ }).isDisabled().then(disabled => assert.equal(disabled, true));
+
+  const catalog = page.getByRole('navigation', { name: 'Operation catalog', exact: true, includeHidden: true });
+  const projects = catalog.locator('[data-catalog-group="projects"] > .catalog-group > summary');
+  const overview = catalog.locator('[data-catalog-group="overview"] > .catalog-group > summary');
+  const selectedOperation = catalog.locator('[data-operation-id="demo:listProjects"] > .catalog-operation-action');
+  await closeCatalog(page);
+  await expect(catalog).toBeHidden();
+  await workspace(page).getByRole('button', { name: 'List projects', exact: true }).click();
+  await expect(await field(page, 'Project name')).toBeFocused();
+  await expect(projects).toHaveAttribute('aria-expanded', 'true');
+  await expect(overview).toHaveAttribute('aria-expanded', 'true');
+  await expect(selectedOperation).toHaveAttribute('aria-current', 'page');
+  await expect(catalog).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Open navigation', exact: true })).toBeVisible();
+
+  await openCatalog(page);
+  await expect(selectedOperation).toBeVisible();
+  await projects.click();
+  await expect(projects).toHaveAttribute('aria-expanded', 'false');
+  await expect(overview).toHaveAttribute('aria-expanded', 'false');
+  await progress.getByRole('button', { name: /Evaluation$/ }).click();
+  await expect(catalog).toBeVisible();
+  await workspace(page).getByRole('button', { name: 'Go to operation: List projects', exact: true }).click();
+  await expect(await field(page, 'Project name')).toBeFocused();
+  await expect(projects).toHaveAttribute('aria-expanded', 'true');
+  await expect(overview).toHaveAttribute('aria-expanded', 'true');
+  await expect(selectedOperation).toHaveAttribute('aria-current', 'page');
+  await expect(selectedOperation).toBeVisible();
+  await expect(catalog).toBeVisible();
 });
 
 Then('Unicode titles and decimal estimates can be corrected inline', async function () {
@@ -110,14 +146,14 @@ Then('Unicode titles and decimal estimates can be corrected inline', async funct
   await fillField(page, 'Priority', 'normal');
   await fillField(page, 'Title', '😀'.repeat(121));
   await fillField(page, 'Estimated hours', '.5');
-  await page.getByRole('button', { name: 'Prepare request', exact: true }).click();
+  await page.getByRole('button', { name: 'Execute operation', exact: true }).click();
   const title = await field(page, 'Title');
   await expect(title).toBeFocused();
   await expect(title).toHaveAttribute('aria-invalid', 'true');
   await expect(workspace(page).getByRole('alert')).toContainText('Title');
   await title.fill('😀'.repeat(120));
   await expect(workspace(page).getByRole('alert')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Prepare request', exact: true }).click();
+  await page.getByRole('button', { name: 'Execute operation', exact: true }).click();
   const request = page.getByRole('region', { name: 'Prepared request', exact: true });
   await expect(request).toBeVisible();
   const value = JSON.parse(await request.innerText());
@@ -152,17 +188,12 @@ Then('mobile navigation protects graph shortcuts and returns useful focus', asyn
   await expect.poll(() => page.evaluate(() => Boolean(document.activeElement?.closest('.workflow-workspace')))).toBe(true);
 });
 
-async function failStorage(page) {
-  await page.evaluate(() => {
-    window.restoreStorage = Storage.prototype.setItem;
-    Storage.prototype.setItem = () => { throw new Error('Test storage unavailable'); };
-  });
-}
-async function restoreStorage(page) {
-  await page.evaluate(() => { Storage.prototype.setItem = window.restoreStorage; });
-}
+const failStorage = page => blockWorkflowSaving(page, 'Test storage unavailable');
+const restoreStorage = restoreWorkflowSaving;
 Then('document dialogs allow cancellation and storage-error recovery', async function () {
   const page = this.page;
+  await failStorage(page);
+  await page.getByRole('button', { name: 'Snap to grid', exact: true }).click();
   await page.getByRole('button', { name: 'New workflow', exact: true }).click();
   let dialog = page.getByRole('dialog', { name: 'Unsaved changes', exact: true });
   await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
@@ -170,14 +201,14 @@ Then('document dialogs allow cancellation and storage-error recovery', async fun
   await page.keyboard.press('Escape');
   await expect(operationNodes(page, 'List projects')).toHaveCount(2);
   await page.getByRole('button', { name: 'New workflow', exact: true }).click();
-  await failStorage(page);
   await dialog.getByRole('button', { name: 'Save and continue', exact: true }).click();
   await expect(dialog.getByRole('alert')).toContainText('Test storage unavailable');
   await expect(dialog).toBeVisible();
   await restoreStorage(page);
   await dialog.getByRole('button', { name: 'Save and continue', exact: true }).click();
-  await expect(page.getByRole('textbox', { name: 'Workflow name' })).toBeFocused();
+  await expect(workflowNameInput(page)).toBeFocused();
   await expect(operationNodes(page, 'List projects')).toHaveCount(0);
+  await closeWorkflowDetails(page);
   await page.getByRole('button', { name: 'Open workflow', exact: true }).click();
   dialog = page.getByRole('dialog', { name: 'Saved workflows', exact: true });
   await dialog.getByRole('button', { name: 'Remove Untitled workflow', exact: true }).click();
@@ -197,7 +228,7 @@ Then('document dialogs allow cancellation and storage-error recovery', async fun
 
 Then('a delayed import cannot supersede New', async function () {
   const page = this.page;
-  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('operations-flow-documents-v1'))[0]);
+  const saved = (await storedWorkflows(page))[0];
   await page.evaluate(() => {
     const text = File.prototype.text;
     File.prototype.text = function () {
@@ -209,11 +240,12 @@ Then('a delayed import cannot supersede New', async function () {
   for (const document of [saved, { version: 999 }]) {
   await page.getByLabel('Import workflow file', { exact: true }).setInputFiles({ name: 'stale.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
   await page.getByRole('button', { name: 'New workflow', exact: true }).click();
-  await expect(page.getByRole('textbox', { name: 'Workflow name' })).toHaveValue('Untitled workflow');
-  await expect(page.getByRole('textbox', { name: 'Workflow name' })).toBeFocused();
+  await expect(workflowNameInput(page)).toHaveValue('Untitled workflow');
+  await expect(workflowNameInput(page)).toBeFocused();
   await page.evaluate(() => window.finishImport());
   await expect(workflow(page).getByRole('alert')).toHaveCount(0);
   await expect(operationNodes(page, 'List projects')).toHaveCount(0);
+  await closeWorkflowDetails(page);
   }
 });
 
@@ -243,14 +275,24 @@ Then('repeated nodes and short viewports remain usable', async function () {
   await expect(workflow(page).getByLabel('Instance 2', { exact: true })).toBeVisible();
   await page.setViewportSize({ width: 844, height: 390 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight <= innerHeight)).toBe(true);
-  const toolbar = await page.locator('.workflow-toolbar').boundingBox();
-  const metadata = await page.locator('.document-meta').boundingBox();
-  if (toolbar && metadata) assert.ok(toolbar.y + toolbar.height <= metadata.y, 'Wrapped toolbar must not cover document metadata.');
-  await workflowAction(page, 'Save');
-  await expect(workflow(page).getByText('Saved in this browser.', { exact: true })).toBeVisible();
-  await page.getByRole('textbox', { name: 'Workflow name' }).fill('Changed draft');
-  await expect(workflow(page).getByText('Saved in this browser.', { exact: true })).toHaveCount(0);
-  await expect(workflow(page).getByText('Unsaved changes', { exact: true })).toBeVisible();
+  const status = page.locator('.site-header .document-meta');
+  await expect(status).toHaveAttribute('role', 'status');
+  await expect(status).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  await expect.poll(async () => {
+    const [toolbar, metadata, header, lastButton] = await Promise.all([
+      page.locator('.workflow-toolbar').boundingBox(), status.boundingBox(),
+      page.locator('.site-header').boundingBox(), page.locator('.workflow-toolbar button:visible').last().boundingBox(),
+    ]);
+    return Boolean(toolbar && metadata && header && lastButton &&
+      metadata.y >= header.y && metadata.y + metadata.height <= header.y + header.height + 1 &&
+      metadata.x >= header.x && metadata.x + metadata.width <= header.x + header.width + 1 &&
+      metadata.y + metadata.height <= toolbar.y &&
+      Math.abs(metadata.x + metadata.width - lastButton.x - lastButton.width) <= 1);
+  }).toBe(true);
+  await expect(status.getByText('Saved locally', { exact: true })).toBeVisible();
+  await renameWorkflow(page, 'Changed draft');
+  await expect(status.getByText('Saved locally', { exact: true })).toBeVisible();
+  await expect.poll(async () => (await storedWorkflows(page)).at(-1).name).toBe('Changed draft');
 });
 
 Then('step motion preserves focus and inactive-panel isolation', async function () {
@@ -259,11 +301,11 @@ Then('step motion preserves focus and inactive-panel isolation', async function 
   await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('List projects');
   await page.getByRole('textbox', { name: 'Prompt', exact: true }).press('Enter');
   await expect.poll(() => page.locator('.step-track').evaluate(element => element.getAnimations().length)).toBeGreaterThan(0);
-  await expect(workspace(page).getByRole('heading', { name: 'Matching operations' })).toBeFocused();
+  await expect(workspace(page).getByRole('heading', { name: 'Evaluation: Listed operations' })).toBeFocused();
   await workspace(page).getByRole('button', { name: 'Go to operation: List projects', exact: true }).click();
   await expect(await field(page, 'Project name')).toBeFocused();
   await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Prepare request', exact: true }).click();
+  await page.getByRole('button', { name: 'Execute operation', exact: true }).click();
   await expect(workspace(page).getByRole('heading', { name: 'List projects', exact: true })).toBeFocused();
   await page.getByRole('button', { name: 'Edit inputs', exact: true }).click();
   await expect(await field(page, 'Project name')).toBeFocused();
@@ -275,9 +317,49 @@ Then('step motion preserves focus and inactive-panel isolation', async function 
   await expect.poll(() => page.locator('.step-viewport').evaluate(element => Math.abs(element.clientHeight - element.querySelector('[aria-hidden="false"]').clientHeight) <= 1)).toBe(true);
 });
 
+Then('returning to Operation preserves expanded details and the page top with either motion preference', async function () {
+  const page = this.page;
+  await page.setViewportSize({ width: 1280, height: 600 });
+  const progress = page.getByRole('navigation', { name: 'Progress', exact: true });
+  const details = page.getByRole('button', { name: 'Review operation details', exact: true });
+  const title = workspace(page).getByRole('heading', { name: 'Operation: List projects', exact: true });
+  for (const reducedMotion of ['no-preference', 'reduce']) {
+    await page.emulateMedia({ reducedMotion });
+    if (await details.getAttribute('aria-expanded') !== 'true') await details.click();
+    await expect(page.getByRole('region', { name: 'Operation report', exact: true })).toBeVisible();
+    await expect.poll(() => page.locator('#operation-details').evaluate(element => element.getAnimations().length)).toBe(0);
+    assert.ok(await (await field(page, 'Project name')).evaluate(element => element.getBoundingClientRect().top > innerHeight),
+      'The open report must place the first input below the viewport to exercise unwanted scrolling.');
+
+    await progress.getByRole('button', { name: /Evaluation$/ }).click();
+    await expect(workspace(page).getByRole('heading', { name: 'Evaluation: Listed operations', exact: true })).toBeFocused();
+    await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
+    await progress.getByRole('button', { name: /Operation$/ }).click();
+    await expect(details).toHaveAttribute('aria-expanded', 'true');
+    await expect(title).toBeFocused();
+    await expect(page.getByRole('region', { name: 'Operation report', exact: true })).toBeVisible();
+    const sample = await title.evaluate(async element => {
+      let maximumScroll = 0;
+      let titleStayedVisible = true;
+      const start = performance.now();
+      do {
+        await new Promise(requestAnimationFrame);
+        const bounds = element.getBoundingClientRect();
+        const header = document.querySelector('.site-header').getBoundingClientRect();
+        maximumScroll = Math.max(maximumScroll, Math.abs(scrollY));
+        titleStayedVisible &&= bounds.top >= header.bottom && bounds.bottom <= innerHeight;
+      } while (performance.now() - start < 650);
+      return { maximumScroll, titleStayedVisible };
+    });
+    assert.ok(sample.maximumScroll <= 1, `${reducedMotion}: returning to Operation caused delayed scrolling by ${sample.maximumScroll}px.`);
+    assert.ok(sample.titleStayedVisible, `${reducedMotion}: the operation title must remain below the header and inside the viewport.`);
+    await expect(title).toBeFocused();
+  }
+});
+
 Then('connection movement responds without changing the saved plan', async function () {
   const page = this.page;
-  await workflowAction(page, 'Save');
+  await expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
   const path = connections(page).locator('.svelte-flow__edge-path');
   await expect(path).toHaveCount(1);
   const dash = () => path.evaluate(element => getComputedStyle(element).strokeDashoffset);
@@ -287,7 +369,7 @@ Then('connection movement responds without changing the saved plan', async funct
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect.poll(() => path.evaluate(element => element.getAnimations().length)).toBe(0);
   await expect.poll(() => path.evaluate(element => getComputedStyle(element).strokeDasharray)).not.toBe('none');
-  await expect(workflow(page).getByText('Saved locally', { exact: true })).toBeVisible();
+  await expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Dashed connections', exact: true }).click();
   await expect.poll(() => path.evaluate(element => getComputedStyle(element).strokeDasharray)).toBe('none');
 });

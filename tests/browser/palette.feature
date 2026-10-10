@@ -4,19 +4,19 @@
 Feature: Reversible six-color palettes
   Scenario: Light and dark modes reverse the same ordered palette
     Then every ordinary theme color reverses its position in the six-color palette
-    And prompt fields, badges and primary actions remain readable in both modes
+    And prompt fields and badges remain readable while primary actions use the label foreground in both modes
 
   Scenario: A replacement palette needs only six new colors
     When I replace only the six ordered palette colors
     Then every ordinary theme color reverses its position in the six-color palette
-    And prompt fields, badges and primary actions remain readable in both modes
+    And prompt fields and badges remain readable while primary actions use the label foreground in both modes
 
   Scenario Outline: Settings preserves <palette> at <width> pixels independently of light and dark mode
     Given I use a viewport of <width> by 844 pixels
     When I switch to the settings workspace
     Then Settings offers all palettes with "Default" selected
     When I select the "<palette>" palette with the keyboard
-    Then "<palette>" and theme preferences persist independently after reloading
+    Then "<palette>" and theme settings persist independently after reloading
     And every ordinary theme color reverses its position in the six-color palette
     And the page fits the viewport horizontally
 
@@ -46,30 +46,42 @@ Feature: Reversible six-color palettes
       | 390   | Golden Violet |
       | 1280  | Citrus        |
       | 390   | Citrus        |
-      | 1280  | Sunflower     |
-      | 390   | Sunflower     |
+      | 1280  | Cappuccino    |
+      | 390   | Cappuccino    |
       | 1280  | Garden Dusk   |
       | 390   | Garden Dusk   |
       | 1280  | Autumn        |
       | 390   | Autumn        |
       | 1280  | Rainfall      |
       | 390   | Rainfall      |
-      | 1280  | Graphite Study |
-      | 390   | Graphite Study |
-      | 1280  | Steel and Mist |
-      | 390   | Steel and Mist |
+      | 1280  | Graphite       |
+      | 390   | Graphite       |
+      | 1280  | Steel          |
+      | 390   | Steel          |
       | 1280  | Carbon         |
       | 390   | Carbon         |
       | 1280  | Heritage Noir  |
       | 390   | Heritage Noir  |
 
-  Scenario Outline: Invalid or unavailable palette preferences retain a usable Default palette
-    When I reload with an "<preference>" palette preference
+  Scenario Outline: Invalid or unavailable palette settings retain a usable Default palette
+    When I reload with an "<setting>" palette setting
     And I switch to the settings workspace
     Then Settings offers all palettes with "Default" selected
-    And all palettes remain usable in both theme modes
+    And representative palettes remain usable in both theme modes
 
     Examples:
-      | preference  |
+      | setting     |
       | unknown     |
       | unavailable |
+
+  Scenario: Legacy theme and palette settings migrate to IndexedDB once
+    Then the legacy theme and palette migrate without retaining localStorage copies
+
+  Scenario: IndexedDB settings take precedence and missing keys migrate independently
+    Then IndexedDB settings remain authoritative during per-key migration
+
+  Scenario: Rapid theme and palette changes persist the latest independent choices
+    Then rapid settings changes retain the final theme and palette after reloading
+
+  Scenario: Existing IndexedDB settings survive the store rename
+    Then the version-one preferences store upgrades without losing theme or palette settings

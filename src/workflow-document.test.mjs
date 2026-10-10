@@ -178,11 +178,13 @@ function mapping(plan) {
 function replaceGraph(plan, graph) { return { ...plan, ...graph }; }
 
 Given("a documented workflow with nested objects and arrays", function () { this.rich = richPlan(); });
-Then("location panels and successful response panels have stable named field handles", function () {
+Then("location panels and all documented HTTP response panels have stable named field handles", function () {
   const nodes = this.rich.nodes.filter(node => node.type === "data" && node.data.ownerId === "producer");
   assert.deepEqual(nodes.slice(0, 3).map(node => node.data.label), ["Path parameters", "Query parameters", "Request body"]);
   assert.ok(nodes.some(node => node.data.label === "Response · 200"));
-  assert.ok(!nodes.some(node => node.data.label.includes("400")));
+  assert.ok(nodes.some(node => node.data.label === "Response · 400"));
+  const error = panel(this.rich, "producer", "outputs", "error").data.fields[0];
+  assert.deepEqual(JSON.parse(decodeURIComponent(error.id)), ["output:400:application/json", "/error"]);
   const escaped = panel(this.rich, "producer", "outputs", "a/b~c").data.fields.find(field => field.label === "a/b~c");
   assert.deepEqual(JSON.parse(decodeURIComponent(escaped.id)), ["output:200:application/json", "/a~1b~0c"]);
   assert.ok(nodes.every(node => node.data.fields.every(field => field.id !== "value")));
@@ -194,6 +196,24 @@ Then("location panels and successful response panels have stable named field han
   assert.deepEqual(relocated.nodes.map(node => node.id), this.rich.nodes.filter(node => node.id === "producer" || node.data.ownerId === "producer").map(node => node.id));
   const branch = schemaBranches(this.rich.nodes, this.rich.edges).get("producer");
   assert.equal([...branch.values()].filter(value => value.direction === "inputs").length, 3);
+  const responses = document.paths[operation.path].post.responses;
+  for (const status of ["100", "300", "500", "599", "1XX", "2XX", "3XX", "4XX", "5XX", "099", "600", "6XX", "x-response"])
+    responses[status] = { description: "Documented response without a body" };
+  responses.default = { content: {
+    "application/json": { schema: { type: "object", properties: { message: { type: "string" } } } },
+    "text/plain": { schema: { type: "string" } }
+  } };
+  const allResponses = createOperationGraph(operation, { x: 0, y: 0 }, "all-responses", document);
+  const outputBranches = [...schemaBranches(allResponses.nodes, allResponses.edges).get("all-responses").values()]
+    .filter(value => value.direction === "outputs");
+  assert.deepEqual(outputBranches.map(value => value.label), [
+    "Response · 100", "Response · 200", "Response · 300", "Response · 400", "Response · 500", "Response · 599",
+    "Response · 1XX", "Response · 2XX", "Response · 3XX", "Response · 4XX", "Response · 5XX",
+    "Response · default · application/json", "Response · default · text/plain"
+  ]);
+  const fallback = panel(allResponses, "all-responses", "outputs", "message").data.fields[0];
+  assert.deepEqual(JSON.parse(decodeURIComponent(fallback.id)), ["output:default:application/json", "/message"]);
+  assert.deepEqual(validateWorkflowDocument({ ...plan(), version: 2, ...allResponses }).nodes, allResponses.nodes);
 });
 Then("examples never invent workflow fields", function () {
   const { operation, document } = schemaFixture();
@@ -363,9 +383,16 @@ Then("missing, alternative, recursive, and unsupported schemas display notices w
   for (const schema of schemas) {
     document.paths[operation.path].post.responses["200"].content["application/json"].schema = schema;
     const graph = createOperationGraph(operation, { x: 0, y: 0 }, "notice", document);
-    const outputs = graph.nodes.filter(node => node.type === "data" && node.data.direction === "outputs");
+    const response = graph.nodes.find(node => node.type === "data" && node.data.label === "Response · 200");
+    const branch = new Set([response.id]);
+    for (const id of branch)
+      for (const edge of graph.edges.filter(edge => edge.kind === "schema" && edge.source === id)) branch.add(edge.target);
+    const outputs = graph.nodes.filter(node => branch.has(node.id));
     assert.ok(outputs.some(node => node.data.notice));
     assert.ok(outputs.every(node => node.data.fields.every(field => !field.connectable)));
+    const error = panel(graph, "notice", "outputs", "error").data.fields[0];
+    assert.equal(error.connectable, true);
+    assert.equal(error.type, "Text");
     validateWorkflowDocument({ ...plan(), version: 2, ...graph });
   }
 });

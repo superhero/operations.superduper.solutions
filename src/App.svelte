@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { tick } from "svelte";
+  import { tick, untrack } from "svelte";
   import { Tooltip } from "bits-ui";
   import { operations, type Operation } from "$lib/catalog.ts";
-  import type { WorkspaceMode } from "$lib/workspace.d.ts";
+  import type { WorkspaceMode, WorkflowSaveStatus } from "$lib/workspace.d.ts";
   import type { WorkflowDocument } from "$lib/workflow-document.ts";
+  import { saveSetting, type WorkflowDefaults } from "$lib/app-settings.ts";
   import Header from "./components/Header.svelte";
   import SideNavigation from "./components/SideNavigation.svelte";
   import OperationsWorkspace from "./components/OperationsWorkspace.svelte";
@@ -12,15 +13,22 @@
   import BackgroundWave from "./components/BackgroundWave.svelte";
   import NativeScrollbars from "./components/NativeScrollbars.svelte";
 
+  let { initialWorkflowDefaults }: { initialWorkflowDefaults: WorkflowDefaults } = $props();
+  let workflowDefaults = $state<WorkflowDefaults>(untrack(() => ({ ...initialWorkflowDefaults })));
+  let workflowDefaultsError = $state("");
+  let workflowDefaultsSave = 0;
   let navigationOpen = $state(false);
   let navigationModal = $state(false);
   let documentModal = $state(false);
+  let workflowSaveStatus = $state<WorkflowSaveStatus>("loading");
   let savedWorkflows = $state<WorkflowDocument[]>([]);
   let workflowLibraryError = $state("");
   let mode = $state<WorkspaceMode>("operations");
+  let modeRequest = 0;
   let dark = $state(document.documentElement.dataset.theme === "dark");
   let palette = $state(palettes.find(option => option.id === document.documentElement.dataset.palette)?.id ?? palettes[0].id);
   let operationsWorkspace: OperationsWorkspace;
+  let sideNavigation: SideNavigation;
   let workflowWorkspace: WorkflowWorkspace;
   let settingsWorkspace: SettingsWorkspace;
 
@@ -44,7 +52,10 @@
   }
 
   async function setMode(next: WorkspaceMode) {
+    const request = ++modeRequest;
     if (next === mode) return;
+    if (mode === "workflow" && !await workflowWorkspace.flushPendingChanges()) return;
+    if (request !== modeRequest) return;
     if (mode === "operations") {
       operationsWorkspace.cancelStepScroll();
       operationsScroll = window.scrollY;
@@ -61,17 +72,29 @@
 
   function toggleTheme() {
     dark = !dark;
-    try { localStorage.setItem("operations-theme", dark ? "dark" : "light"); }
-    catch { /* Retain the selected theme for this session. */ }
+    void saveSetting("theme", dark ? "dark" : "light").catch(() => { /* Retain the selection for this session. */ });
   }
 
   $effect(() => {
     document.documentElement.dataset.palette = palette;
-    try { localStorage.setItem("operations-palette", palette); }
-    catch { /* Retain the selected palette for this session. */ }
   });
 
+  function selectPalette(next: typeof palette) {
+    palette = next;
+    void saveSetting("palette", palette).catch(() => { /* Retain the selection for this session. */ });
+  }
+
+  function selectWorkflowDefaults(next: WorkflowDefaults) {
+    workflowDefaults = { ...next };
+    workflowDefaultsError = "";
+    const request = ++workflowDefaultsSave;
+    void saveSetting("workflowDefaults", next).catch(() => {
+      if (request === workflowDefaultsSave) workflowDefaultsError = "Could not save workflow defaults. These choices apply only to this session until saving succeeds.";
+    });
+  }
+
   function selectOperation(operation: Operation) {
+    modeRequest += 1;
     if (mode === "workflow") workflowWorkspace.addOperation(operation);
     else {
       mode = "operations";
@@ -99,7 +122,7 @@
     if (!(event.target instanceof Element)) return;
     const surfaces = new Set<HTMLElement>();
     for (let element: Element | null = event.target; element; element = element.parentElement) {
-      if (element instanceof HTMLElement && element.matches('button, summary, .result-card, .saved-documents li'))
+      if (element instanceof HTMLElement && element.matches('button, summary, .result-card, .saved-documents li, .palette-choice'))
         surfaces.add(element);
     }
     // The operation description also animates its action button.
@@ -126,21 +149,22 @@
 <Tooltip.Provider delayDuration={400} ignoreNonKeyboardFocus disableHoverableContent>
 <BackgroundWave />
 <NativeScrollbars />
-<SideNavigation bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {mode} {dark}
+<SideNavigation bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {mode} {dark}
   workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
   onSelect={selectOperation} onMode={setMode} onTheme={toggleTheme} />
 <div class="page-content" class:catalog-open={navigationOpen} class:workflow-mode={mode === "workflow"}>
+  <Header {navigationOpen} workflowSaveStatus={mode === "workflow" ? workflowSaveStatus : undefined} onMenu={() => navigationOpen = !navigationOpen} />
   <div class="shell">
-    <Header {navigationOpen} onMenu={() => navigationOpen = !navigationOpen} />
     <main>
       <div bind:this={operationsHost} hidden={mode !== "operations"} onfocusin={(event) => { if (event.target instanceof HTMLElement) lastOperationsFocus = event.target; }}>
-        <OperationsWorkspace bind:this={operationsWorkspace} {operations} active={mode === "operations"} onAddToWorkflow={addToWorkflow} />
+        <OperationsWorkspace bind:this={operationsWorkspace} {operations} active={mode === "operations"} onAddToWorkflow={addToWorkflow} onOperationSelect={(operation) => sideNavigation.revealOperation(operation)} />
       </div>
       <div class="workflow-host" hidden={mode !== "workflow"}>
-        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={mode === "workflow"} {navigationOpen} {navigationModal} onBrowse={() => navigationOpen = true} />
+        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={mode === "workflow"} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={() => navigationOpen = true} />
       </div>
       <div hidden={mode !== "settings"}>
-        <SettingsWorkspace bind:this={settingsWorkspace} {palette} onPaletteChange={(next) => palette = next} />
+        <SettingsWorkspace bind:this={settingsWorkspace} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
+          onWorkflowDefaultsChange={selectWorkflowDefaults} onRetryWorkflowDefaults={() => selectWorkflowDefaults(workflowDefaults)} />
       </div>
     </main>
   </div>

@@ -44,10 +44,10 @@ Then("every bundled example has an independent source report and described group
   assert.deepEqual({ catalogs, operations }, before);
 });
 
-Then("the example registries separate mocked endpoints from live HTTPBin endpoints", function () {
+Then("the example registries send requests to their declared example.com and HTTPBin endpoints", function () {
   assert.deepEqual(catalogs.map(catalog => [catalog.id, catalog.name, catalog.execution]), [
-    ["demo", "Examples · example.com", { kind: "mock", origin: "https://example.com" }],
-    ["httpbin", "Examples · httpbin", { kind: "http", origin: "https://httpbin.org" }]
+    ["demo", "example.com", { kind: "http", origin: "https://example.com" }],
+    ["httpbin", "httpbin.org", { kind: "http", origin: "https://httpbin.org" }]
   ]);
   const expectedMethods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"];
   for (const catalog of catalogs) {

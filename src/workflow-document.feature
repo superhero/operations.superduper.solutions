@@ -63,7 +63,7 @@ Feature: Local workflow documents
 
   Scenario: Documented schemas create separate input and response branches
     Given a documented workflow with nested objects and arrays
-    Then location panels and successful response panels have stable named field handles
+    Then location panels and all documented HTTP response panels have stable named field handles
     And examples never invent workflow fields
 
   Scenario: Rich documents preserve mappings and hidden schema branches

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 Feature: Frontend alignment interactions
-  Scenario: Catalog disclosure and keyboard help preserve navigation context
+  Scenario: Direct catalog selection and keyboard help preserve navigation context
     Then catalog paths, focus and tooltip dismissal behave consistently
 
   Scenario: Prompt keyboard submission respects composition and modifiers
@@ -22,7 +22,7 @@ Feature: Frontend alignment interactions
 
   Scenario: A superseded asynchronous import cannot replace a new document
     Given a workflow with 2 instances of "List projects"
-    When I save the workflow as "Existing plan"
+    When I name the workflow "Existing plan" and wait for autosave
     Then a delayed import cannot supersede New
 
   Scenario: Motion follows live accessibility preferences
@@ -34,6 +34,11 @@ Feature: Frontend alignment interactions
 
   Scenario: Step navigation retargets transitions without exposing inactive controls
     Then step motion preserves focus and inactive-panel isolation
+
+  Scenario: Operation navigation preserves expanded details at the top
+    When I search for the operation "List projects"
+    And I open the "List projects" result
+    Then returning to Operation preserves expanded details and the page top with either motion preference
 
   Scenario: Dashed connections respond to live motion preferences
     Given a workflow with 2 instances of "List projects"

@@ -11,14 +11,14 @@ Feature: Workflow utility controls and reusable plans
     And I edit the switch and remove a connected extra gate
     And I write a safely formatted workflow comment
     And I describe this workflow as "Route numeric values and keep the review notes."
-    And I save the workflow as "Routing notes"
+    And I name the workflow "Routing notes" and wait for autosave
     And I reload and reopen the workflow workspace
     Then the routing controls comment and description retain their edits
 
   Scenario: Saved workflows insert as reusable nodes without changing their source
     Given a reusable saved project workflow and an empty parent plan
     When I insert the saved project workflow from the catalog
-    And I save the workflow as "Parent with reusable lookup"
+    And I name the workflow "Parent with reusable lookup" and wait for autosave
     And I reload and reopen the workflow workspace
     Then the reusable workflow keeps its ports and embedded definition
 
@@ -34,7 +34,8 @@ Feature: Workflow utility controls and reusable plans
     Given a workflow with editable routing controls and a comment
     When a workflow description save encounters a storage failure
     Then the description draft remains available for retry
-    When I retry saving the workflow description
+    When I continue editing the description after the failed save
+    And I retry saving the workflow description
     Then the recovered description is saved locally
 
   Scenario: Utility controls and description editing fit a narrow viewport

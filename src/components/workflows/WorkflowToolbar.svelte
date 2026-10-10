@@ -7,15 +7,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { Controls, useSvelteFlow, useStore } from "@xyflow/svelte";
-  import { DropdownMenu } from "bits-ui";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  let { canvas, active, navigationOpen, menuOpen = $bindable(false), snap, curved, dashed, selected, onsnap, oncurved, ondashed, onremove, onnew, onopen, onsave, onexport, onimport, onbrowse, onutility, ondescribe, onrun }:
-    { canvas: HTMLElement | undefined; active: boolean; navigationOpen: boolean; menuOpen?: boolean; snap: boolean; curved: boolean; dashed: boolean; selected: boolean;
+  let { canvas, active, navigationOpen, snap, curved, dashed, selected, onsnap, oncurved, ondashed, onremove, onnew, onopen, onexport, onimport, onbrowse, onutility, ondescribe, onrun, canUndo, canRedo, historyBusy, onundo, onredo, onhistory }:
+    { canvas: HTMLElement | undefined; active: boolean; navigationOpen: boolean; snap: boolean; curved: boolean; dashed: boolean; selected: boolean;
       onsnap: () => void; oncurved: () => void; ondashed: () => void; onremove: () => void;
-      onnew: () => void; onopen: () => void; onsave: () => void; onexport: () => void;
+      onnew: () => void; onopen: () => void; onexport: () => void;
       onimport: () => void; onbrowse: () => void; onutility: (type: "switch" | "cast" | "comment") => void;
-      ondescribe: () => void; onrun: () => void } = $props();
+      ondescribe: () => void; onrun: () => void; canUndo: boolean; canRedo: boolean; historyBusy: boolean;
+      onundo: () => void; onredo: () => void; onhistory: () => void } = $props();
   const { fitView, getInternalNode, getNodes, zoomIn, zoomOut } = useSvelteFlow();
   const store = useStore();
   const minZoomReached = $derived(store.viewport.zoom <= store.minZoom);
@@ -46,16 +46,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 
   onMount(() => {
-    const controls = canvas?.querySelector<HTMLElement>(".workflow-toolbar");
     const observer = new ResizeObserver(() => {
-      if (controls && canvas) {
-        const bounds = controls.getBoundingClientRect();
-        canvas.style.setProperty("--workflow-toolbar-height", `${bounds.height}px`);
-        canvas.style.setProperty("--workflow-toolbar-width", `${bounds.width}px`);
-      }
       void keepNodesVisible();
     });
-    if (controls) observer.observe(controls);
     if (canvas) observer.observe(canvas);
     return () => observer.disconnect();
   });
@@ -83,7 +76,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <HintButton class="svelte-flow__controls-button" aria-label="Browse operations" label="Browse operations" aria-pressed={navigationOpen} aria-controls="side-navigation" onclick={onbrowse}><MaterialIcon name="list" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Switch" label="Switch" onclick={() => onutility("switch")}><MaterialIcon name="alt_route" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Cast" label="Cast" onclick={() => onutility("cast")}><MaterialIcon name="transform" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Comment" label="Comment" onclick={() => onutility("comment")}><MaterialIcon name="comment" size={18} /></HintButton>
+    <HintButton class="svelte-flow__controls-button" aria-label="Comment" label="Comment" onclick={() => onutility("comment")}><MaterialIcon name="sticky_note" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Remove selected" label="Remove selected" disabled={!selected} onclick={onremove}><MaterialIcon name="delete" size={18} /></HintButton>
     </div><div class="workflow-control-group">
     <HintButton class="svelte-flow__controls-button" aria-label="Dashed connections" label="Dashed connections" aria-pressed={dashed} onclick={ondashed}><MaterialIcon name="unknown_med" size={18} /></HintButton>
@@ -100,26 +93,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {/snippet}
   {#snippet after()}
     <div class="workflow-control-group">
-    <HintButton class="svelte-flow__controls-button" aria-label="New workflow" label="New workflow" onclick={onnew}><MaterialIcon name="flowsheet" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Open workflow" label="Open workflow" onclick={onopen}><MaterialIcon name="folder_open" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Describe workflow" label="Describe workflow" onclick={ondescribe}><MaterialIcon name="description" size={18} /></HintButton>
+      <HintButton class="svelte-flow__controls-button" aria-label="Undo" label="Undo" disabled={!canUndo || historyBusy} onclick={onundo}><MaterialIcon name="undo" size={18} /></HintButton>
+      <HintButton class="svelte-flow__controls-button" aria-label="Redo" label="Redo" disabled={!canRedo || historyBusy} onclick={onredo}><MaterialIcon name="redo" size={18} /></HintButton>
+      <HintButton class="svelte-flow__controls-button" aria-label="Workflow history" label="Workflow history" onclick={onhistory}><MaterialIcon name="history" size={18} /></HintButton>
     </div>
     <div class="workflow-control-group">
-      <DropdownMenu.Root bind:open={menuOpen}>
-        <DropdownMenu.Trigger>
-          {#snippet child({ props })}
-            <HintButton {...props} class="svelte-flow__controls-button" label="Workflow actions"><MaterialIcon name="menu" size={18} /></HintButton>
-          {/snippet}
-        </DropdownMenu.Trigger>
-        <DropdownMenu.Portal>
-          <DropdownMenu.Content class="workflow-file-menu" align="end" sideOffset={8} collisionPadding={12} preventScroll={false} strategy="fixed">
-            <DropdownMenu.Item class="workflow-file-item" onSelect={onsave}><MaterialIcon name="save" size={18} />Save workflow</DropdownMenu.Item>
-            <DropdownMenu.Item class="workflow-file-item" onSelect={onrun}><MaterialIcon name="play_arrow" size={18} />Run workflow</DropdownMenu.Item>
-            <DropdownMenu.Item class="workflow-file-item" onSelect={onexport}><MaterialIcon name="download" size={18} />Export workflow</DropdownMenu.Item>
-            <DropdownMenu.Item class="workflow-file-item" onSelect={onimport}><MaterialIcon name="upload" size={18} />Import workflow</DropdownMenu.Item>
-          </DropdownMenu.Content>
-        </DropdownMenu.Portal>
-      </DropdownMenu.Root>
+    <HintButton class="svelte-flow__controls-button" aria-label="New workflow" label="New workflow" onclick={onnew}><MaterialIcon name="flowsheet" size={18} /></HintButton>
+    <HintButton class="svelte-flow__controls-button" aria-label="Open workflow" label="Open workflow" onclick={onopen}><MaterialIcon name="folder_open" size={18} /></HintButton>
+    <HintButton class="svelte-flow__controls-button" aria-label="Workflow details" label="Workflow details" onclick={ondescribe}><MaterialIcon name="article" size={18} /></HintButton>
+    <HintButton class="svelte-flow__controls-button" aria-label="Import workflow" label="Import workflow" onclick={onimport}><MaterialIcon name="upload" size={18} /></HintButton>
+    <HintButton class="svelte-flow__controls-button" aria-label="Export workflow" label="Export workflow" onclick={onexport}><MaterialIcon name="download" size={18} /></HintButton>
+    </div>
+    <div class="workflow-control-group">
+      <HintButton class="svelte-flow__controls-button" aria-label="Run workflow" label="Run workflow" onclick={onrun}><MaterialIcon name="play_arrow" size={18} /></HintButton>
     </div>
   {/snippet}
 </Controls>
@@ -128,15 +114,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .workflow-control-group { display: flex; flex: 0 0 auto; gap: 1px; }
   .workflow-control-group :global(button:first-child) { border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
   .workflow-control-group :global(button:last-child) { border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
-  :global(.workflow-toolbar) { display: flex; flex-wrap: wrap; justify-content: flex-end; max-width: calc(100% - 2rem); gap: 6px; margin: 1rem; padding: 3px; border-radius: 4px; background: var(--color-surface); box-shadow: none; }
+  :global(.workflow-toolbar) { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; max-width: calc(100% - 2rem); gap: 6px; margin: 0 1rem 1rem; padding: 3px; border: 1px solid var(--color-background); border-radius: 4px; background: var(--color-surface); box-shadow: none; }
   :global(.workflow-toolbar .svelte-flow__controls-button) { width: 30px; height: 30px; padding: 6px; border: 0; border-radius: 0; background: var(--color-background); color: var(--color-foreground); transition: color 180ms ease-in, background-color 180ms ease-in, opacity 180ms ease-in, outline-color 180ms ease-in, transform 180ms ease-in; }
   :global(.workflow-toolbar.svelte-flow__controls.horizontal .svelte-flow__controls-button) { border: 0; }
   :global(.workflow-toolbar .svelte-flow__controls-button:is(:hover,:focus-visible):not(:disabled):not([aria-pressed="true"])) { color: var(--color-secondary-hover-foreground); background: var(--color-secondary-hover); }
-  :global(.workflow-toolbar .svelte-flow__controls-button[aria-pressed="true"]) { background: var(--color-primary); color: var(--color-primary-foreground); }
+  :global(.workflow-toolbar .svelte-flow__controls-button[aria-pressed="true"]) { background: var(--color-catalog-active); color: var(--color-catalog-active-foreground); }
   :global(.workflow-toolbar .svelte-flow__controls-button:disabled) { pointer-events: auto; background: var(--color-background); color: var(--color-disabled-foreground); }
-  :global(.workflow-file-menu) { z-index: 60; min-width: 190px; max-width: calc(100vw - 24px); padding: 5px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); box-shadow: 0 4px 16px color-mix(in srgb, var(--color-foreground) 12%, transparent); }
-  :global(.workflow-file-item) { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 7px 10px; border-radius: 3px; font-size: 12px; cursor: pointer; outline: none; transition: color 180ms ease-in, background-color 180ms ease-in; }
-  :global(.workflow-file-item[data-highlighted]) { background: var(--color-secondary-hover); color: var(--color-secondary-hover-foreground); }
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
     :global(.workflow-toolbar button:not(:disabled):not([inert] *)) { will-change: transform; }
     :global(.workflow-toolbar button:hover:not(:disabled)) { transform: scale(min(1.10, var(--hover-scale, 1.10))); }

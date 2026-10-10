@@ -35,6 +35,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.workflow-restore-branch) { position: absolute; z-index: 2; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-background); color: var(--color-foreground); transform: translate(-50%, -50%); transition: background-color 180ms ease-in, color 180ms ease-in, outline-color 180ms ease-in; }
   :global(.workflow-restore-branch[data-side="left"]) { left: 0; }
   :global(.workflow-restore-branch[data-side="right"]) { right: 0; transform: translate(50%, -50%); }
+  :global(.workflow-restore-branch[data-side="top"]), :global(.workflow-restore-branch[data-side="bottom"]) { left: 50%; }
   :global(.workflow-restore-branch[data-side="right"][data-beside="true"]) { right: -28px; }
   :global(.workflow-restore-branch:hover) { background: var(--color-secondary-hover); color: var(--color-secondary-hover-foreground); }
   :global(.workflow-restore-branch .material-symbols-rounded) { font-variation-settings: "FILL" 1; }

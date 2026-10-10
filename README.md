@@ -101,6 +101,10 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 - **Purpose:** Generate reports in `tmp/test/coverage/` and enforce 100% statement, branch,
   function and line coverage.
+- **Scope:** Node-executable application logic. The browser-only
+  `src/lib/workflow-repository.ts`, `src/lib/app-settings.ts` and `src/lib/storage-metrics.ts` adapters are verified by the required browser suite
+  against real IndexedDB (and LightningFS/Git for workflows); they are excluded from this
+  Node coverage report, like the UI's browser integration code.
 - **Requirements:** Collect fresh coverage with `npm run test:source:coverage` or
   `npm run test:acceptance:coverage` first.
 

@@ -49,16 +49,17 @@ async function submitRun(page, name = "Start workflow") {
 
 Then("both example catalogs prepare typed query and header values", async function () {
   const page = this.page;
+  await interceptHttpbin(page);
   await openCatalog(page);
   const catalog = page.getByRole("navigation", { name: "Operation catalog", exact: true });
-  for (const name of ["Examples · example.com", "Examples · httpbin"])
+  for (const name of ["example.com", "httpbin.org"])
     await expect(catalog.getByText(name, { exact: true })).toBeVisible();
   await expect(page.getByText("Demo catalog · 4 operations", { exact: true })).toHaveCount(0);
   await chooseCatalogOperation(page, "HTTPBin query and header inputs");
   for (const [label, value] of Object.entries({ "Sample ID": "space / value", Label: "blue", Count: "3", Ratio: "0.5",
     Enabled: "false", Priority: "high", Tags: '["one","two"]', "Example header": "header value" }))
     await fillField(page, label, value);
-  await page.getByRole("button", { name: "Prepare request", exact: true }).click();
+  await page.getByRole("button", { name: "Execute operation", exact: true }).click();
   const preview = JSON.parse(await workspace(page).getByRole("region", { name: "Prepared request", exact: true }).textContent());
   assert.equal(preview.path, "/anything/parameters/space%20%2F%20value");
   assert.deepEqual(preview.query, { label: "blue", count: 3, ratio: 0.5, enabled: false, priority: "high", tags: ["one", "two"] });
@@ -67,9 +68,10 @@ Then("both example catalogs prepare typed query and header values", async functi
 
 Then("structured example fields validate JSON and preserve nested types", async function () {
   const page = this.page;
+  await interceptHttpbin(page);
   await chooseCatalogOperation(page, "HTTPBin JSON object");
   await fillField(page, "Profile", '{"name":');
-  await page.getByRole("button", { name: "Prepare request", exact: true }).click();
+  await page.getByRole("button", { name: "Execute operation", exact: true }).click();
   await expect(workspace(page).getByRole("alert")).toContainText("enter valid JSON");
   await expect(workspace(page).getByRole("textbox", { name: "Profile", exact: true })).toBeFocused();
   await fillField(page, "Profile", '{"name":"Ada","count":3}');
@@ -77,7 +79,7 @@ Then("structured example fields validate JSON and preserve nested types", async 
   await fillField(page, "Null value", "null");
   await fillField(page, "Count", "2");
   await fillField(page, "Enabled", "false");
-  await page.getByRole("button", { name: "Prepare request", exact: true }).click();
+  await page.getByRole("button", { name: "Execute operation", exact: true }).click();
   const preview = JSON.parse(await workspace(page).getByRole("region", { name: "Prepared request", exact: true }).textContent());
   assert.deepEqual(preview.body, { profile: { name: "Ada", count: 3 }, tags: ["docs", "api"], note: null, count: 2, enabled: false });
 });
@@ -127,21 +129,24 @@ Then("the live example encodes a {string} body", async function (kind) {
   if (kind.startsWith("Json")) assert.equal(sent.headers["content-type"], "application/json");
 });
 
-Then("a mixed workflow passes a mocked array to the live schema", async function () {
+Then("a mixed workflow passes an HTTP response array to the next schema", async function () {
   const page = this.page;
   const requests = await interceptHttpbin(page);
-  const mock = graph("demo:mockJsonArray");
+  const example = graph("demo:mockJsonArray");
   const live = graph("httpbin:echoJsonArray");
-  const output = mock.nodes.find(node => node.type === "data" && node.data.direction === "outputs" && node.data.fields.some(field => field.name === "json" || field.label === "Example array"));
+  const output = example.nodes.find(node => node.type === "data" && node.data.direction === "outputs" && node.data.fields.some(field => field.name === "json" || field.label === "Example array"));
   const outputField = output.data.fields.find(field => field.name === "json" || field.label === "Example array");
   const input = live.nodes.find(node => node.type === "data" && node.data.direction === "inputs");
   const inputField = input.data.fields.find(field => field.label === "Items");
-  const run = await openRun(page, [mock, live], [{ id: "array-mapping", kind: "mapping", source: output.id,
+  const run = await openRun(page, [example, live], [{ id: "array-mapping", kind: "mapping", source: output.id,
     sourceHandle: outputField.id, target: input.id, targetHandle: inputField.id }]);
-  await expect(run).toContainText("Mock example: https://example.com");
+  await expect(run).toContainText("Live example: https://example.com");
   await fillRun(page, "Example array", '["shared","values"]');
   await submitRun(page);
   assert.equal(requests.length, 0);
+  assert.equal(this.exampleRequests.length, 1);
+  assert.equal(this.exampleRequests[0].method, "POST");
+  assert.deepEqual(JSON.parse(this.exampleRequests[0].body), ["shared", "values"]);
   await run.getByRole("button", { name: "Next operation", exact: true }).click();
   await expect(run).toContainText("Live example: https://httpbin.org");
   await expect(run.getByRole("textbox", { name: "Example array", exact: true })).toBeDisabled();

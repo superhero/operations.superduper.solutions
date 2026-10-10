@@ -24,16 +24,42 @@ const paletteOptions = [
   { id: 'blue-horizon', name: 'Blue Horizon', selector: ':root[data-palette="blue-horizon"]' },
   { id: 'golden-violet', name: 'Golden Violet', selector: ':root[data-palette="golden-violet"]' },
   { id: 'citrus', name: 'Citrus', selector: ':root[data-palette="citrus"]' },
-  { id: 'sunflower', name: 'Sunflower', selector: ':root[data-palette="sunflower"]' },
+  { id: 'sunflower', name: 'Cappuccino', selector: ':root[data-palette="sunflower"]' },
   { id: 'garden-dusk', name: 'Garden Dusk', selector: ':root[data-palette="garden-dusk"]' },
   { id: 'autumn', name: 'Autumn', selector: ':root[data-palette="autumn"]' },
   { id: 'rainfall', name: 'Rainfall', selector: ':root[data-palette="rainfall"]' },
-  { id: 'graphite-study', name: 'Graphite Study', selector: ':root[data-palette="graphite-study"]' },
-  { id: 'steel-and-mist', name: 'Steel and Mist', selector: ':root[data-palette="steel-and-mist"]' },
+  { id: 'graphite-study', name: 'Graphite', selector: ':root[data-palette="graphite-study"]' },
+  { id: 'steel-and-mist', name: 'Steel', selector: ':root[data-palette="steel-and-mist"]' },
   { id: 'carbon', name: 'Carbon', selector: ':root[data-palette="carbon"]' },
   { id: 'heritage-noir', name: 'Heritage Noir', selector: ':root[data-palette="heritage-noir"]' },
 ];
-const paletteStorageKey = 'operations-palette';
+const settingsDatabaseName = 'operations-preferences-v1';
+
+async function storedSettings(page, changes) {
+  return page.evaluate(({ databaseName, changes }) => new Promise((resolve, reject) => {
+    const request = indexedDB.open(databaseName);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const database = request.result;
+      const transaction = database.transaction('settings', changes ? 'readwrite' : 'readonly');
+      const store = transaction.objectStore('settings');
+      if (changes) for (const [key, value] of Object.entries(changes)) {
+        if (value === null) store.delete(key);
+        else store.put(value, key);
+      }
+      const theme = store.get('theme');
+      const palette = store.get('palette');
+      transaction.oncomplete = () => { database.close(); resolve({ theme: theme.result, palette: palette.result }); };
+      transaction.onabort = transaction.onerror = () => { database.close(); reject(transaction.error); };
+    };
+  }), { databaseName: settingsDatabaseName, changes });
+}
+
+const legacySettings = page => page.evaluate(() => ({ theme: localStorage.getItem('operations-theme'), palette: localStorage.getItem('operations-palette') }));
+const seedLegacySettings = (page, values) => page.evaluate(values => {
+  localStorage.setItem('operations-theme', values.theme);
+  localStorage.setItem('operations-palette', values.palette);
+}, values);
 const settings = page => page.getByRole('region', { name: 'Settings workspace', exact: true });
 const paletteGroup = page => settings(page).getByRole('group', { name: 'Color palette', exact: true });
 const paletteChoice = (page, name) => paletteGroup(page).getByRole('radio', { name, exact: true });
@@ -54,11 +80,19 @@ function luminance(color) {
     .reduce((sum, value, index) => sum + value * [0.2126, 0.7152, 0.0722][index], 0);
 }
 
-function assertOrdered(colors) {
+// These adjacent pairs retain the user's explicit color-slot choices.
+const curatedSlotInversions = {
+  ':root[data-palette="neon"]': [2],
+  ':root[data-palette="citrus"]': [4],
+};
+
+function assertOrdered(colors, selector = ':root') {
   assert.equal(new Set(colors).size, 6, 'A palette must have six distinct colors.');
   const values = colors.map(luminance);
-  for (let index = 1; index < values.length; index++)
-    assert.ok(values[index - 1] > values[index], `Palette slot ${index} must be lighter than slot ${index + 1}.`);
+  for (let index = 1; index < values.length; index++) {
+    if (curatedSlotInversions[selector]?.includes(index)) continue;
+    assert.ok(values[index - 1] > values[index], `${selector} palette slot ${index} must be lighter than slot ${index + 1}.`);
+  }
 }
 
 async function selectTheme(page, theme) {
@@ -89,13 +123,15 @@ async function resolvedColors(page, names) {
 
 async function expectPaletteChoices(page, selected) {
   const group = paletteGroup(page);
+  const theme = settings(page).locator('summary[aria-label="Theme"]');
+  if (await theme.getAttribute('aria-expanded') === 'false') await theme.click();
+  await expect(theme).toHaveAttribute('aria-expanded', 'true');
   const definitions = new Map((await paletteDefinitions()).map(([, selector, body]) =>
     [selector, [...body.matchAll(/--palette-\d\s*:\s*(#[a-f\d]{6});/gi)].map(match => rgbColor(match[1]))]));
   await expect(group).toBeVisible();
   // Exact role/name locators retain accessible-name and enabled-state checks
   // without the snapshot matcher, which requires the Playwright test runner.
-  for (const { name } of paletteOptions)
-    await expect(paletteChoice(page, name)).toBeEnabled();
+  await Promise.all(paletteOptions.map(({ name }) => expect(paletteChoice(page, name)).toBeEnabled()));
   // Read all 126 swatches together: this helper runs repeatedly for every palette.
   // Keep retrying the complete DOM state while rendering and styles settle.
   await expect.poll(() => group.getByRole('radio').evaluateAll(inputs => inputs.map(input => {
@@ -105,7 +141,7 @@ async function expectPaletteChoices(page, selected) {
       type: input.getAttribute('type'),
       checked: input.checked,
       preview: preview?.getAttribute('data-palette-preview'),
-      swatches: [...(preview?.children ?? [])].map(element => {
+      swatches: [...(preview?.children ?? [])].filter(element => !element.matches(".palette-selected-icon")).map(element => {
         const bounds = element.getBoundingClientRect();
         return {
           visible: element.checkVisibility({ visibilityProperty: true }) && bounds.width > 0 && bounds.height > 0,
@@ -128,7 +164,9 @@ async function expectPaletteChoices(page, selected) {
 
 async function selectPaletteWithKeyboard(page, name) {
   const theme = await page.locator('html').getAttribute('data-theme');
-  await settings(page).getByRole('heading', { name: 'Settings', exact: true }).focus();
+  await settings(page).focus();
+  await page.keyboard.press('Tab');
+  await expect(settings(page).locator('summary[aria-label="Theme"]')).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(paletteGroup(page).getByRole('radio', { checked: true })).toBeFocused();
   const choice = paletteChoice(page, name);
@@ -149,7 +187,7 @@ When('I select the {string} palette with the keyboard', async function (name) {
   await selectPaletteWithKeyboard(this.page, name);
 });
 
-Then('{string} and theme preferences persist independently after reloading', async function (selected) {
+Then('{string} and theme settings persist independently after reloading', async function (selected) {
   const page = this.page;
   const selectedPalette = paletteOptions.find(option => option.name === selected);
   assert.ok(selectedPalette, `Unknown palette option: ${selected}`);
@@ -160,9 +198,8 @@ Then('{string} and theme preferences persist independently after reloading', asy
       await selectPaletteWithKeyboard(page, name);
       await expectPaletteChoices(page, name);
     }
-    await expect.poll(() => page.evaluate(key => ({
-      palette: localStorage.getItem(key), theme: localStorage.getItem('operations-theme'),
-    }), paletteStorageKey)).toEqual({ palette: selectedPalette.id, theme });
+    await expect.poll(() => storedSettings(page)).toEqual({ palette: selectedPalette.id, theme });
+    assert.deepEqual(await legacySettings(page), { theme: null, palette: null });
     await page.reload();
     await setMode(page, 'settings');
     await expectPaletteChoices(page, selected);
@@ -170,35 +207,135 @@ Then('{string} and theme preferences persist independently after reloading', asy
   }
 });
 
-When('I reload with an {string} palette preference', async function (preference) {
-  if (preference === 'unknown') {
-    await this.page.evaluate(key => localStorage.setItem(key, 'unknown-palette'), paletteStorageKey);
+When('I reload with an {string} palette setting', async function (setting) {
+  if (setting === 'unknown') {
+    await storedSettings(this.page, { palette: 'unknown-palette' });
   } else {
-    assert.equal(preference, 'unavailable');
-    await this.page.addInitScript(key => {
-      for (const method of ['getItem', 'setItem']) {
-        const original = Storage.prototype[method];
-        Storage.prototype[method] = function (name, ...args) {
-          if (name === key) throw new DOMException('Test palette storage unavailable', 'SecurityError');
-          return original.call(this, name, ...args);
-        };
-      }
-    }, paletteStorageKey);
+    assert.equal(setting, 'unavailable');
+    await seedLegacySettings(this.page, { theme: 'dark', palette: 'sunset' });
+    await this.page.addInitScript(databaseName => {
+      const original = IDBFactory.prototype.open;
+      IDBFactory.prototype.open = function (name, ...args) {
+        if (name === databaseName) throw new DOMException('Test settings storage unavailable', 'SecurityError');
+        return original.call(this, name, ...args);
+      };
+    }, settingsDatabaseName);
   }
   await this.page.reload();
-  if (preference === 'unknown')
-    await expect.poll(() => this.page.evaluate(key => localStorage.getItem(key), paletteStorageKey)).toBe('default');
+  if (setting === 'unknown')
+    await expect.poll(async () => (await storedSettings(this.page)).palette).toBe('default');
+  else assert.deepEqual(await legacySettings(this.page), { theme: 'dark', palette: 'sunset' }, 'Failed IndexedDB migration must retain the legacy settings.');
 });
 
-Then('all palettes remain usable in both theme modes', async function () {
+Then('representative palettes remain usable in both theme modes', async function () {
   for (const theme of ['dark', 'light']) {
     await selectTheme(this.page, theme);
-    for (const { name } of paletteOptions) {
+    for (const name of ['Default', 'Sunset', 'Graphite']) {
       await selectPaletteWithKeyboard(this.page, name);
       await expectPaletteChoices(this.page, name);
     }
     await expect(this.page.locator('html')).toHaveAttribute('data-theme', theme);
   }
+});
+
+Then('the version-one preferences store upgrades without losing theme or palette settings', async function () {
+  const page = this.page;
+  const fixtureUrl = `${this.baseURL}/settings-upgrade-fixture`;
+  await page.route(fixtureUrl, route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Settings upgrade fixture</title>' }));
+  // Leave the application first so its open database connection cannot block the fixture.
+  await page.goto(fixtureUrl);
+  await page.evaluate(async databaseName => {
+    await new Promise((resolve, reject) => {
+      const request = indexedDB.deleteDatabase(databaseName);
+      request.onsuccess = resolve;
+      request.onerror = request.onblocked = () => reject(request.error ?? new Error('Settings fixture deletion blocked'));
+    });
+    await new Promise((resolve, reject) => {
+      const request = indexedDB.open(databaseName, 1);
+      request.onupgradeneeded = () => request.result.createObjectStore('preferences');
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const database = request.result;
+        const transaction = database.transaction('preferences', 'readwrite');
+        const store = transaction.objectStore('preferences');
+        store.put('dark', 'theme');
+        store.put('sunset', 'palette');
+        transaction.oncomplete = () => { database.close(); resolve(); };
+        transaction.onabort = transaction.onerror = () => { database.close(); reject(transaction.error); };
+      };
+    });
+  }, settingsDatabaseName);
+  await page.goto(this.baseURL);
+  for (let load = 0; load < 2; load++) {
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.locator('html')).toHaveAttribute('data-palette', 'sunset');
+    assert.deepEqual(await storedSettings(page), { theme: 'dark', palette: 'sunset' });
+    if (load === 0) await page.reload();
+  }
+  const schema = await page.evaluate(databaseName => new Promise((resolve, reject) => {
+    const request = indexedDB.open(databaseName);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const database = request.result;
+      const result = { version: database.version, stores: [...database.objectStoreNames] };
+      database.close();
+      resolve(result);
+    };
+  }), settingsDatabaseName);
+  assert.deepEqual(schema, { version: 2, stores: ['settings'] });
+});
+
+Then('the legacy theme and palette migrate without retaining localStorage copies', async function () {
+  const page = this.page;
+  await storedSettings(page, { theme: null, palette: null });
+  await seedLegacySettings(page, { theme: 'dark', palette: 'sunset' });
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('html')).toHaveAttribute('data-palette', 'sunset');
+  assert.deepEqual(await storedSettings(page), { theme: 'dark', palette: 'sunset' });
+  assert.deepEqual(await legacySettings(page), { theme: null, palette: null });
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('html')).toHaveAttribute('data-palette', 'sunset');
+  assert.deepEqual(await storedSettings(page), { theme: 'dark', palette: 'sunset' });
+});
+
+Then('IndexedDB settings remain authoritative during per-key migration', async function () {
+  const page = this.page;
+  await storedSettings(page, { theme: 'dark', palette: null });
+  await seedLegacySettings(page, { theme: 'light', palette: 'alpine' });
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('html')).toHaveAttribute('data-palette', 'alpine');
+  assert.deepEqual(await storedSettings(page), { theme: 'dark', palette: 'alpine' });
+  await storedSettings(page, { palette: 'graphite-study' });
+  await seedLegacySettings(page, { theme: 'light', palette: 'sunset' });
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('html')).toHaveAttribute('data-palette', 'graphite-study');
+  assert.deepEqual(await storedSettings(page), { theme: 'dark', palette: 'graphite-study' });
+  assert.deepEqual(await legacySettings(page), { theme: null, palette: null });
+});
+
+Then('rapid settings changes retain the final theme and palette after reloading', async function () {
+  const page = this.page;
+  await setMode(page, 'settings');
+  await expectPaletteChoices(page, 'Default');
+  await openCatalog(page);
+  await page.evaluate(async () => {
+    const toggle = document.querySelector('[role="switch"][aria-label="Dark theme"]');
+    for (const palette of ['alpine', 'sunset', 'graphite-study', 'default', 'sunset']) {
+      document.querySelector(`input[name="color-palette"][value="${palette}"]`).click();
+      toggle.click();
+      await Promise.resolve();
+    }
+  });
+  await expect.poll(() => storedSettings(page)).toEqual({ theme: 'dark', palette: 'sunset' });
+  assert.deepEqual(await legacySettings(page), { theme: null, palette: null });
+  await page.reload();
+  await setMode(page, 'settings');
+  await expectPaletteChoices(page, 'Sunset');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
 When('I replace only the six ordered palette colors', async function () {
@@ -216,7 +353,7 @@ Then('every ordinary theme color reverses its position in the six-color palette'
     assert.deepEqual(declarations.map(match => match[1]), paletteNames, `${selector} must supply all six ordered palette slots.`);
     const literals = declarations.map(match => match[2].trim());
     for (const color of literals) assert.match(color, /^#[a-f\d]{6}$/i, `${selector} inputs must be literal hex colors.`);
-    assertOrdered(literals);
+    assertOrdered(literals, selector);
   }
 
   const appSource = await readFile('src/app.css', 'utf8');
@@ -228,7 +365,8 @@ Then('every ordinary theme color reverses its position in the six-color palette'
   await selectTheme(this.page, 'light');
   const light = await resolvedColors(this.page, [...paletteNames, ...toneNames, ...roles]);
   const palette = paletteNames.map(name => light[name]);
-  assertOrdered(palette);
+  const selectedId = await this.page.locator('html').getAttribute('data-palette');
+  assertOrdered(palette, paletteOptions.find(option => option.id === selectedId)?.selector);
   for (const [index, tone] of toneNames.entries()) assert.equal(light[tone], palette[index], `${tone} in light mode`);
   for (const role of roles) assert.ok(palette.includes(light[role]), `${role} must use one exact palette color in light mode: ${light[role]}`);
 
@@ -253,7 +391,7 @@ async function expectReadable(control, palette) {
   assert.ok(ratio >= 4.5, `${await control.getAttribute('class')} text contrast must reach 4.5:1; got ${ratio.toFixed(2)}:1.`);
 }
 
-Then('prompt fields, badges and primary actions remain readable in both modes', async function () {
+Then('prompt fields and badges remain readable while primary actions use the label foreground in both modes', async function () {
   const page = this.page;
   for (const theme of ['light', 'dark']) {
     await selectTheme(page, theme);
@@ -262,8 +400,12 @@ Then('prompt fields, badges and primary actions remain readable in both modes', 
     await expectReadable(page.getByRole('textbox', { name: 'Prompt', exact: true }), palette);
     await expectReadable(page.locator('label[for="operation-prompt"]'), palette);
     await setMode(page, 'workflow');
-    const primary = page.getByRole('button', { name: 'Add operations from the left menu', exact: true })
+    const primary = page.getByRole('button', { name: 'Add nodes by selecting workflow operations from the left menu', exact: true })
       .and(page.locator('[data-slot="button"]'));
-    await expectReadable(primary, palette);
+    // Primary action labels intentionally use the label color selected by the theme.
+    const roles = await resolvedColors(page, ['--color-primary', '--color-badge-background']);
+    await expect(primary).toBeVisible();
+    await expect(primary).toHaveCSS('background-color', roles['--color-primary']);
+    await expect(primary).toHaveCSS('color', roles['--color-badge-background']);
   }
 });

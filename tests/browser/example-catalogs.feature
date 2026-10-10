@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-Feature: Separate mocked and live example schemas
+Feature: Separate example HTTP schemas
   Scenario: Browse both example schemas and prepare typed query and header inputs
     Then both example catalogs prepare typed query and header values
 
@@ -32,5 +32,5 @@ Feature: Separate mocked and live example schemas
       | UrlEncoded |
       | Multipart  |
 
-  Scenario: Pass a structured mock result into a live example step
-    Then a mixed workflow passes a mocked array to the live schema
+  Scenario: Pass a structured HTTP result into another example step
+    Then a mixed workflow passes an HTTP response array to the next schema

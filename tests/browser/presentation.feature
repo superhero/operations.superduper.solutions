@@ -17,7 +17,7 @@ Feature: Operations presentation
     When I search for the operation "Get project"
     Then result row padding opens the operation while help and keyboard actions remain independent
 
-  Scenario: Progress shares available and completed colors while preserving navigation states
+  Scenario: Progress distinguishes available actions while preserving selected menu colors
     Then progress colors and navigation states match their roles in both themes
 
   Scenario: Progress adapts to available space without losing the operation draft
@@ -29,13 +29,13 @@ Feature: Operations presentation
     And I open the "Get project" result
     Then progress hover layering follows its animation through exit and re-entry
 
-  Scenario Outline: Response examples disclose smoothly and reset for a new preparation
+  Scenario Outline: Actual responses reset on editing with either motion preference
     Given I open the "Get project" operation from the catalog
     When I enter these operation inputs:
       | label      | value        |
-      | Project ID | presentation |
+      | Project ID | project-1    |
     And I prepare the request
-    Then response examples toggle with "<motion>" motion and reset when the preview changes
+    Then actual responses reset with "<motion>" motion when the request changes
 
     Examples:
       | motion        |

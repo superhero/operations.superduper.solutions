@@ -9,11 +9,17 @@ Feature: Local evaluation and operation reports
     And the evaluation columns show "<proposed>" opposite "<not_proposed>"
 
     Examples:
-      | prompt               | similarity | proposed                   | not_proposed                                                  |
-      | List projects        | 100%       | List projects, Get project | Mock query and header inputs, HTTPBin query and header inputs |
-      | List projetcs        | 85%        | List projects, Get project | Mock query and header inputs, HTTPBin query and header inputs |
-      | List projects please | 65%        | List projects              | Get project                                                   |
-      | task                 | 36%        |                            |                                                               |
+      | prompt               | similarity | proposed | not_proposed |
+      | List projects        | 100%       | List projects, Get project, Example query and header inputs, HTTPBin query and header inputs, Create task | Example JSON object, Update task, HTTPBin JSON object, Example POST request |
+      | List projetcs        | 85%        | List projects, Get project, Example query and header inputs, HTTPBin query and header inputs, Create task | Update task, Example PATCH request, Example POST request, HTTPBin PATCH request |
+      | List projects please | 65%        | List projects, Get project, Create task, Example DELETE request, Example HEAD request | Example query and header inputs, Example POST request, Example TRACE request, HTTPBin DELETE request |
+      | task                 | 36%        | Create task, Update task, Example TRACE request, HTTPBin HEAD request, Example multipart text fields | HTTPBin multipart text fields, HTTPBin PATCH request, Example GET request, Example PUT request |
+      | HTTPBin request      | 79%        | HTTPBin GET request, HTTPBin PUT request, HTTPBin HEAD request, HTTPBin POST request, HTTPBin PATCH request, HTTPBin DELETE request, HTTPBin OPTIONS request, HTTPBin plain text, HTTPBin JSON object | Example OPTIONS request, Example GET request, Example PUT request, HTTPBin JSON scalar, HTTPBin URL-encoded form, HTTPBin multipart text fields, Example HEAD request, Example POST request |
+
+  Scenario: Evaluation report values and statuses provide styled accessible hints
+    When I search for the operation "List projects"
+    And I review the matching details
+    Then evaluation values and statuses show styled hints on hover and keyboard focus
 
   Scenario: Editing the prompt leaves the submitted report intact until a new search
     When I search for the operation "List projects"

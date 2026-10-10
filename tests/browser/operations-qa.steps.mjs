@@ -75,7 +75,11 @@ Then('changing motion preference settles visible details immediately', async fun
       await expect(details).toBeHidden();
       await expect(details.locator('.detail-report')).toHaveCount(0);
     }
+    await expect(page.locator('.step-viewport')).not.toHaveClass(/\bfollowing-content-size\b/);
   }
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(page.locator('.step-viewport')).toHaveCSS('transition-property', 'height');
+  await expect.poll(() => page.locator('.step-viewport').evaluate(element => parseFloat(getComputedStyle(element).transitionDuration))).toBeGreaterThan(0);
 });
 
 Then('the required Priority dropdown supports keyboard choice and cancellation', async function () {
@@ -106,7 +110,7 @@ Then('the required Priority dropdown supports keyboard choice and cancellation',
   await priority.press('Home');
   await priority.press('Enter');
   await expectFieldValue(page, 'Priority', '');
-  await page.getByRole('button', { name: 'Prepare request', exact: true }).click();
+  await page.getByRole('button', { name: 'Execute operation', exact: true }).click();
   await expect(priority).toBeFocused();
   await expect(page.getByRole('region', { name: 'Prepared request', exact: true })).toHaveCount(0);
   await priority.press('Space');

@@ -27,7 +27,8 @@ export const source = {
     "src/workflow-document.test.mjs",
     "src/workflow-runner.test.mjs",
     "src/workflow-comment.test.mjs",
-    "src/workflow-connection-snap.test.mjs"
+    "src/workflow-connection-snap.test.mjs",
+    "src/workflow-change-message.test.mjs"
   ],
   paths: [
     "src/application.feature",
@@ -36,7 +37,8 @@ export const source = {
     "src/workflow-document.feature",
     "src/workflow-runner.feature",
     "src/workflow-comment.feature",
-    "src/workflow-connection-snap.feature"
+    "src/workflow-connection-snap.feature",
+    "src/workflow-change-message.feature"
   ]
 };
 

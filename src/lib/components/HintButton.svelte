@@ -7,8 +7,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { Tooltip } from "bits-ui";
   import { flushSync, onMount, type ComponentProps, type Snippet } from "svelte";
-  let { label, labelAsName = true, tooltipEnabled = true, children, child, disabled, ref = $bindable(null), ...props }:
-    Omit<ComponentProps<typeof Tooltip.Trigger>, "children"> & { label: string; labelAsName?: boolean; tooltipEnabled?: boolean; children?: Snippet } = $props();
+  let { label, labelAsName = true, tooltipEnabled = true, tooltipSide = "top", children, child, disabled, ref = $bindable(null), ...props }:
+    Omit<ComponentProps<typeof Tooltip.Trigger>, "children"> & { label: string; labelAsName?: boolean; tooltipEnabled?: boolean; tooltipSide?: ComponentProps<typeof Tooltip.Content>["side"]; children?: Snippet } = $props();
   const tether = Tooltip.createTether();
   let open = $state(false);
   $effect(() => { if (!tooltipEnabled) tether.close(); });
@@ -38,7 +38,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {@render children?.()}
       </Tooltip.Trigger>
     {/if}
-    <Tooltip.Portal><Tooltip.Content role="tooltip" aria-hidden={!open} class="app-tooltip" sideOffset={8} collisionPadding={8}>
+    <Tooltip.Portal><Tooltip.Content role="tooltip" aria-hidden={!open} class="app-tooltip" side={tooltipSide} sideOffset={8} collisionPadding={8}>
       {label}<Tooltip.Arrow class="tooltip-arrow" />
     </Tooltip.Content></Tooltip.Portal>
   </Tooltip.Root>

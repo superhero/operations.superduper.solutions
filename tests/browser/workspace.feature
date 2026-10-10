@@ -8,14 +8,14 @@ Feature: Browser operations workspace
     When I search for the operation "List projetcs"
     Then the results offer the "List projects" form
     When I review the matching details
-    Then the matching explanation describes spelling similarity
+    Then the matching details show ranked operation comparisons
     When I close the matching details
     And I open the "List projects" result
     Then the "List projects" form is displayed
 
-  Scenario: An unrelated prompt explains how to recover
+  Scenario: An unrelated prompt offers the nearest five operations and remains editable
     When I search for the operation "unrelated zeppelins"
-    Then no matching operations are shown
+    Then the five nearest operations are shown
     When I choose to edit the prompt
     Then the prompt still contains "unrelated zeppelins"
 
@@ -35,7 +35,7 @@ Feature: Browser operations workspace
       """
       {"method":"POST","path":"/projects/roadmap%20%2F%202026/tasks","query":{},"body":{"title":"Review documentation","priority":"high","estimate":2.5}}
       """
-    And the page explains that no request has been sent
+    And operation metadata identifies server URL "https://example.com"
 
   Scenario: Query validation and editing keep request previews current
     Given I open the "List projects" operation from the catalog
@@ -103,7 +103,7 @@ Feature: Browser operations workspace
     Given a workflow with 2 instances of "List projects"
     When I connect the first operation to the second
     And I enable grid snapping and curved dashed connections
-    And I save the workflow as "Project review"
+    And I name the workflow "Project review" and wait for autosave
     And I press Delete while the saved-workflow dialog is open
     Then the workflow still contains 2 instances of "List projects"
     When I reload and reopen the workflow workspace
@@ -142,7 +142,7 @@ Feature: Browser operations workspace
   Scenario: Exported plans import as a separate local document
     Given a workflow with 2 instances of "List projects"
     When I connect the first operation to the second
-    And I save the workflow as "Portable review"
+    And I name the workflow "Portable review" and wait for autosave
     And I export the workflow
     And I start a new workflow
     Then the new workflow is empty and not saved
@@ -155,7 +155,7 @@ Feature: Browser operations workspace
 
   Scenario: Invalid imports report the cause and preserve the current plan
     Given a workflow with 2 instances of "List projects"
-    When I save the workflow as "Keep this plan"
+    When I name the workflow "Keep this plan" and wait for autosave
     And I import an unsupported workflow version
     Then the import error names the file and unsupported version
     And the workflow is named "Keep this plan"

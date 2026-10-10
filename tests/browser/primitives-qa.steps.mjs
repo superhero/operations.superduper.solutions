@@ -35,21 +35,29 @@ Then('expanding a nested catalog item does not clip its parent', async function 
   const child = group.locator('[data-catalog-group="overview"] > .catalog-group');
   await child.locator(':scope > summary').press('Enter');
   assert.ok(await child.locator(':scope > .disclosure-panel').evaluate(element => element.getAnimations().length > 0), 'The nested group must still be opening.');
-  await child.locator('.catalog-operation > summary').first().press('Enter');
   const sample = await group.evaluate(async element => {
-    const panels = [element.querySelector(':scope > .disclosure-panel'), element.querySelector('[data-catalog-group="overview"] > .catalog-group > .disclosure-panel')];
+    const parentPanel = element.querySelector(':scope > .disclosure-panel');
+    const parentContent = parentPanel.querySelector(':scope > .catalog-children');
+    const childPanel = element.querySelector('[data-catalog-group="overview"] > .catalog-group > .disclosure-panel');
     const list = element.querySelector('.catalog-operations');
     let maximumOverflow = 0;
     let frames = 0;
+    let animatedFrames = 0;
     do {
       await new Promise(requestAnimationFrame);
-      for (const panel of panels) maximumOverflow = Math.max(maximumOverflow, list.getBoundingClientRect().bottom - panel.getBoundingClientRect().bottom);
+      if (childPanel.getAnimations().length) animatedFrames += 1;
+      // The child clips its own list while opening; its ancestor must fit the
+      // changing child height and all following siblings throughout that motion.
+      maximumOverflow = Math.max(maximumOverflow, parentContent.getBoundingClientRect().bottom - parentPanel.getBoundingClientRect().bottom);
       frames += 1;
     } while (element.getAnimations({ subtree: true }).length && frames < 60);
-    return { maximumOverflow, frames };
+    const finalChildOverflow = list.getBoundingClientRect().bottom - childPanel.getBoundingClientRect().bottom;
+    return { maximumOverflow, finalChildOverflow, frames, animatedFrames };
   });
+  assert.ok(sample.animatedFrames > 0, 'Containment must be sampled while the nested group is opening.');
   assert.ok(sample.frames < 60, 'Nested disclosure animations must settle.');
   assert.ok(sample.maximumOverflow <= 1, `The parent clipped growing nested content by ${sample.maximumOverflow}px.`);
+  assert.ok(sample.finalChildOverflow <= 1, `The expanded child clipped its operation list by ${sample.finalChildOverflow}px.`);
   await group.locator(':scope > summary').press('Enter');
   assert.ok(await panel.evaluate(element => element.getAnimations().length > 0), 'Closing an expanded child must preserve the parent close animation.');
   await expect(panel).toBeHidden();
@@ -133,7 +141,7 @@ Then('progress hints and examples preserve navigation and disabled states', asyn
   await expect(input).toBeFocused();
   await expect(evaluation).toBeDisabled();
   await input.press('Enter');
-  await expect(page.getByRole('heading', { name: 'Matching operations', exact: true })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'Evaluation: Listed operations', exact: true })).toBeFocused();
   await evaluation.focus();
   await expect(tooltip).toHaveText('Evaluation');
   await expect(evaluation).toHaveAttribute('aria-current', 'step');

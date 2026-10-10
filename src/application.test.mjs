@@ -1,6 +1,33 @@
 import assert from "node:assert/strict";
 import { Given, Then, When } from "@cucumber/cucumber";
 import { startApplication } from "./bootstrap.ts";
+import { formatLocalDate, formatLocalDateTime } from "./lib/datetime.ts";
+
+Then("displayed dates respect browser language and local time", function ()
+{
+  const languages = Object.getOwnPropertyDescriptor(navigator, "languages");
+  const timezone = process.env.TZ;
+  try
+  {
+    process.env.TZ = "America/Los_Angeles";
+    for (const [locale, timestamp, calendar] of [
+      ["sv-SE", "2026-01-01 16:30:00", "2026-01-02"],
+      ["en-GB", "01/01/2026, 16:30:00", "02/01/2026"]
+    ])
+    {
+      Object.defineProperty(navigator, "languages", { configurable: true, value: [locale] });
+      assert.equal(formatLocalDateTime(Date.parse("2026-01-02T00:30:00Z")), timestamp);
+      assert.equal(formatLocalDate("2026-01-02"), calendar);
+    }
+  }
+  finally
+  {
+    if (languages) Object.defineProperty(navigator, "languages", languages);
+    else delete navigator.languages;
+    if (timezone === undefined) delete process.env.TZ;
+    else process.env.TZ = timezone;
+  }
+});
 
 const component = {};
 

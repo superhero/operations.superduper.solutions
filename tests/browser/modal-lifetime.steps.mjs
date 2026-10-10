@@ -4,7 +4,8 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, expandCatalogOperation, workflow, workspace } from './workspace.steps.mjs';
+import { openCatalog, revealCatalogOperation, workflow, workspace } from './workspace.steps.mjs';
+import { blockWorkflowSaving } from './workflow-storage.fixture.mjs';
 
 const sheet = page => page.locator('[data-slot="sheet-content"]');
 const nodes = page => page.locator('.svelte-flow__node-operation');
@@ -20,7 +21,16 @@ async function pauseDismissal(page) {
   await expect(sheet(page)).toHaveAttribute('data-state', 'closed');
   const count = await sheet(page).evaluate(element => {
     const animations = element.getAnimations();
-    for (const animation of animations) animation.pause();
+    element.workflowClosingAnimations = animations;
+    for (const animation of animations) {
+      animation.pause();
+      // A pending pause can otherwise settle just past the active interval,
+      // where Chromium stops returning it from getAnimations() even though
+      // the finished promise awaited by dialog presence is still pending.
+      const end = animation.effect?.getComputedTiming().endTime;
+      if (typeof end === 'number' && Number.isFinite(end))
+        animation.currentTime = Math.min(Number(animation.currentTime ?? 0), end / 2);
+    }
     return animations.length;
   });
   assert.ok(count > 0, 'The normal-motion Sheet must still have an exit animation.');
@@ -28,7 +38,9 @@ async function pauseDismissal(page) {
 
 async function finishDismissal(page) {
   await sheet(page).evaluate(element => {
-    for (const animation of element.getAnimations()) animation.finish();
+    const animations = new Set([...(element.workflowClosingAnimations ?? []), ...element.getAnimations()]);
+    for (const animation of animations) animation.finish();
+    delete element.workflowClosingAnimations;
   });
   await expect(sheet(page)).toHaveCount(0);
 }
@@ -67,6 +79,10 @@ Then('resizing an open desktop catalog preserves the {string} dialog focus and t
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.setViewportSize({ width: 1000, height: 844 });
   await openCatalog(page);
+  if (title === 'Unsaved changes') {
+    await blockWorkflowSaving(page);
+    await page.getByRole('button', { name: 'Snap to grid', exact: true }).click();
+  }
   await page.getByRole('button', { name: title === 'Saved workflows' ? 'Open workflow' : 'New workflow', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: title, exact: true });
   const initial = dialog.getByRole('button', { name: title === 'Saved workflows' ? 'Close' : 'Cancel', exact: true });
@@ -141,7 +157,7 @@ Then('animated navigation completes dismissal before changing workspace or addin
     await expect(target).toBeVisible();
     await expect.poll(() => target.evaluate(element => element.contains(document.activeElement))).toBe(true);
   }
-  const entry = await expandCatalogOperation(page, 'List projects');
+  const entry = await revealCatalogOperation(page, 'List projects');
   const action = entry.getByRole('button', { name: 'Add to workflow: List projects', exact: true });
   await action.click();
   await pauseDismissal(page);

@@ -1,7 +1,7 @@
 [
   {
     "id": "httpbin",
-    "name": "Examples · httpbin",
+    "name": "httpbin.org",
     "description": "Live requests to httpbin.org that echo the values sent by these curated example forms.",
     "children": [
       {

@@ -10,7 +10,7 @@ import { catalogForOperation } from "../../src/lib/catalog-registry.ts";
 const jsonLabel = "Operation OpenAPI JSON";
 const sourceCatalog = catalogForOperation("demo:createTask");
 const selectedPath = "/projects/{projectId}/tasks";
-const schemaHeader = page => page.getByRole("region", { name: "Operational JSON schema", exact: true })
+const schemaHeader = page => page.getByRole("region", { name: "Operation JSON schema", exact: true })
   .locator('summary[aria-label="OpenAPI schema"]');
 const copyButton = page => schemaHeader(page).getByRole("button", { name: "Copy JSON", exact: true });
 const wrapButton = page => schemaHeader(page).getByRole("button", { name: "Wrap lines", exact: true });

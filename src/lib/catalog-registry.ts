@@ -21,14 +21,14 @@ export type Catalog = {
   name: string;
   document: Record<string, unknown>;
   groups: CatalogGroup[];
-  execution: { kind: "mock" | "http"; origin: string };
+  execution: { kind: "http"; origin: string };
 };
 
 /** Source schemas, navigation and execution routes share the same registration. */
 export const catalogs: readonly Catalog[] = [
   {
     id: "demo", file: "demo.openapi.json", name: demo.info.title, document: demo, groups: demoGroups,
-    execution: { kind: "mock", origin: "https://example.com" }
+    execution: { kind: "http", origin: "https://example.com" }
   },
   {
     id: "httpbin", file: "httpbin.openapi.json", name: httpbin.info.title, document: httpbin, groups: httpbinGroups,

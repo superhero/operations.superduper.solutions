@@ -11,7 +11,7 @@ export type DemoResult = { request: PreparedRequest; response: WorkflowResponse 
 type Project = { id: string; name: string; status: string };
 type Task = { id: string; projectId: string; title: string; priority: string; completed: boolean; estimate?: number };
 
-/** Local example responses, with mutable fixture data scoped to one run. */
+/** Explicit test fixture, with mutable data scoped to one injected executor. */
 export function createWorkflowDemo()
 {
   const projects: Project[] = [
@@ -27,7 +27,7 @@ export function createWorkflowDemo()
     {
       const canonical = operations.find(item => item.id === operation.id);
       if (!canonical || canonical.method !== operation.method || canonical.path !== operation.path
-        || catalogForOperation(canonical.id)!.execution.kind !== "mock")
+        || catalogForOperation(canonical.id)!.id !== "demo")
         throw new Error("This operation is unavailable in the local demo.");
       const request = prepareRequest(canonical, values);
       let response: WorkflowResponse;

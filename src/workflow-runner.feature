@@ -48,8 +48,8 @@ Feature: Step through workflow requests with explicit test responses
   Scenario: A long workflow stops at the execution step limit
     Then workflow runs stop after two hundred operations without sending another request
 
-  Scenario: Example catalogs select isolated mock execution or live HTTP execution
-    Then mock examples cover every method without network traffic and live examples use their registered origin
+  Scenario: Both example catalogs use real HTTP execution by default
+    Then both example catalogs send HTTP requests to their registered origins by default
 
   Scenario: HTTP requests preserve media types parameters and empty responses
     Then HTTP examples serialize JSON text forms headers and repeated query values correctly

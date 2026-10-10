@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Examples · httpbin",
+    "title": "httpbin.org",
     "version": "1.0.0",
     "description": "Live HTTP request examples using httpbin.org. These curated example forms choose names and types for arbitrary data that the service accepts; they do not define service-required fields. Each body example asks for a body so its echoed JSON can be mapped in a workflow. TRACE is omitted because browser Fetch forbids it; the local example.com catalog includes a mock TRACE operation."
   },

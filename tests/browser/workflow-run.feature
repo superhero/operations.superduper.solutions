@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-Feature: Run workflows against the mocked example schema
+Feature: Run workflows through the example HTTP endpoint
   Scenario: Open a saved workflow and choose its starting operation
     Then a saved workflow opens a request run with starting choices and an end control
 

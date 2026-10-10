@@ -14,16 +14,21 @@ Feature: Documented workflow fields and mappings
   Scenario: A field mapping keeps its endpoints through saving and reloading
     Given a workflow ready to map Get project to Create task
     When I map the project identifier between those operations
-    And I save the workflow as "Field mapping review"
+    And I name the workflow "Field mapping review" and wait for autosave
     And I reload and reopen the workflow workspace
     Then the project identifier mapping keeps its saved field endpoints
 
   Scenario: Hidden schema branches restore their fields and deleting an owner removes its graph
     Given a workflow with 1 instances of "List projects"
+    When I hide and restore the root query input
     When I hide and restore the nested project response
     Then the nested response retains its field handles and operation
     When I delete the List projects owner
     Then its schema panels and connections are removed
+
+  Scenario: Operation identity and documented response variants have labelled directional ports
+    Given repeated operation nodes with documented response variants
+    Then the identity row separates top input and bottom response ports
 
   Scenario: Dropping on a data panel snaps to the nearest valid input
     Given a workflow ready to map Get project to Create task
@@ -42,7 +47,7 @@ Feature: Documented workflow fields and mappings
   Scenario: Legacy unnamed connections coexist with new schema panels after saving
     Given a legacy workflow with an unnamed operation connection
     When I add "Create task" through the workflow catalog
-    And I save the workflow as "Mixed generation workflow"
+    And I name the workflow "Mixed generation workflow" and wait for autosave
     And I reload and reopen the workflow workspace
     Then the legacy connection and new schema panels both remain usable
 
@@ -58,7 +63,7 @@ Feature: Documented workflow fields and mappings
   Scenario: A hidden branch stays hidden after saving and reloads with a restore control
     Given a workflow with 1 instances of "List projects"
     When I hide the nested project response
-    And I save the workflow as "Hidden branch review"
+    And I name the workflow "Hidden branch review" and wait for autosave
     And I reload and reopen the workflow workspace
     Then the nested response remains hidden with its saved fields
     When I restore the nested project response
