@@ -5,6 +5,36 @@ import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 
+async function pauseNextAnimation(page, selector, property) {
+  // Observe before the input action: transport and locator waits can otherwise
+  // outlast a short transition when the full browser suite is busy.
+  await page.evaluate(({ selector, property }) => {
+    const element = document.querySelector(selector);
+    const deadline = performance.now() + 5000;
+    window.__testAnimationObserved = new Promise(resolve => {
+      const sample = () => {
+        const animation = element.getAnimations().find(item =>
+          item.effect.getKeyframes().some(frame => property in frame));
+        if (animation) {
+          animation.pause();
+          animation.currentTime = animation.effect.getTiming().duration / 2;
+          resolve(true);
+        } else if (performance.now() < deadline) requestAnimationFrame(sample);
+        else resolve(false);
+      };
+      requestAnimationFrame(sample);
+    });
+  }, { selector, property });
+  return async () => {
+    const observed = await page.evaluate(async () => {
+      const result = await window.__testAnimationObserved;
+      delete window.__testAnimationObserved;
+      return result;
+    });
+    assert.ok(observed, `The ${property} animation must run after the input action.`);
+  };
+}
+
 Then('prompt focus and navigation hover animate and settle with the motion preference', async function () {
   const page = this.page;
   await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -44,14 +74,13 @@ Then('report and schema transitions retain content through interruption', async 
   const json = page.locator('.schema-disclosure .json-view');
   await expect(json).toBeVisible();
   await expect.poll(() => disclosure.evaluate(element => element.getAnimations().length)).toBe(0);
+  const closingMotion = await pauseNextAnimation(page, '.schema-disclosure > .disclosure-panel', 'height');
   await header.press('Enter');
-  const closing = await disclosure.evaluate(element => {
-    const animation = element.getAnimations().find(item => item.effect.getKeyframes().some(frame => 'height' in frame));
-    if (!animation) return null;
-    animation.pause();
-    animation.currentTime = animation.effect.getTiming().duration / 2;
-    return { height: element.getBoundingClientRect().height, content: element.querySelector('.json-view')?.getBoundingClientRect().height };
-  });
+  await closingMotion();
+  const closing = await disclosure.evaluate(element => ({
+    height: element.getBoundingClientRect().height,
+    content: element.querySelector('.json-view')?.getBoundingClientRect().height,
+  }));
   assert.ok(closing?.height > 0 && closing.content > 0, 'Collapsing the schema must retain visible JSON until the panel closes.');
   await header.press('Enter');
   await expect(header).toHaveAttribute('aria-expanded', 'true');
@@ -83,8 +112,11 @@ Then('native scrollbars expand on hover and settle without changing the reading 
   await page.mouse.wheel(0, 50);
   await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
   const before = await page.evaluate(() => scrollY);
+  const leavingMotion = await pauseNextAnimation(page, 'html', '--scrollbar-y-inset');
   await page.mouse.move(640, 160);
-  await expect.poll(() => root.evaluate(element => element.getAnimations().length)).toBeGreaterThan(0);
+  await leavingMotion();
+  const halfwayInset = await inset();
+  assert.ok(halfwayInset > 0 && halfwayInset < 4, 'The scrollbar thumb must interpolate while leaving hover.');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect.poll(inset).toBe(4);
   await expect.poll(() => root.evaluate(element => element.getAnimations().length)).toBe(0);

@@ -28,9 +28,11 @@ async function boxSelect(page, ids) {
   const boxes = await Promise.all(ids.map(id => node(page, id).boundingBox()));
   assert.ok(boxes.every(Boolean), 'The operations must have visible bounds for box selection.');
   await page.keyboard.down('Shift');
-  await page.mouse.move(Math.min(...boxes.map(box => box.x)) - 8, Math.min(...boxes.map(box => box.y)) - 8);
+  // At Fit View, adjacent schema panels can be less than eight screen pixels
+  // from an operation. Keep the box's horizontal padding inside that gap.
+  await page.mouse.move(Math.min(...boxes.map(box => box.x)) - 2, Math.min(...boxes.map(box => box.y)) - 8);
   await page.mouse.down();
-  await page.mouse.move(Math.max(...boxes.map(box => box.x + box.width)) + 8,
+  await page.mouse.move(Math.max(...boxes.map(box => box.x + box.width)) + 2,
     Math.max(...boxes.map(box => box.y + box.height)) + 8, { steps: 8 });
   await expect(workflow(page).locator('.svelte-flow__selection')).toBeVisible();
   await page.mouse.up();
