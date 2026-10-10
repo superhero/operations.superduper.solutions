@@ -65,6 +65,9 @@ Then('prompt keyboard controls preserve editing and search deliberately', async 
     await last.focus();
     const focusedExample = await last.innerText();
     await page.setViewportSize({ width, height: 844 });
+    // ResizeObserver must restore hidden examples before we measure the wide row.
+    if (width === 1280) await expect(page.locator('.prompt-suggestion-list button:visible'),
+      'Widening the panel must restore the full example row.').toHaveText(allNames);
     await expect.poll(() => examples.evaluateAll(buttons => {
       const visible = buttons.filter(button => !button.hidden);
       const list = buttons[0].parentElement.getBoundingClientRect();
@@ -79,7 +82,6 @@ Then('prompt keyboard controls preserve editing and search deliberately', async 
     const shown = await page.locator('.prompt-suggestion-list button:visible').allTextContents();
     assert.deepEqual(shown, allNames.slice(0, shown.length), 'Responsive examples must keep their source order without partially clipped labels.');
     if (!shown.includes(focusedExample)) await expect(prompt).toBeFocused();
-    if (width === 1280) assert.deepEqual(shown, allNames, 'Widening the panel must restore the full example row.');
     for (const [index, name] of ['Prompt', 'Evaluation', 'Operation'].entries())
       await expect(progress.getByRole('button', { name: new RegExp(`${name}$`) })).toHaveAccessibleName(`${index + 1}. ${name}`);
     await expect(progress.getByRole('button')).toHaveCount(3);
