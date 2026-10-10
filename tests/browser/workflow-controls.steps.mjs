@@ -1,6 +1,8 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { storedWorkflows, blockWorkflowSaving, restoreWorkflowSaving } from "./workflow-storage.fixture.mjs";
+import { closeWorkflowDetails, expectWorkflowName, openWorkflowDetails, renameWorkflow, workflowNameInput } from "./workflow-details.fixture.mjs";
 import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
@@ -8,7 +10,7 @@ import { closeCatalog, connections, openCatalog, readExport, setMode, workflow }
 
 const storageKey = "operations-flow-documents-v1";
 const node = (page, type) => workflow(page).locator(`.svelte-flow__node-${type}`);
-const descriptionDialog = page => page.getByRole("dialog", { name: "Workflow description", exact: true });
+const descriptionDialog = page => page.getByRole("dialog", { name: "Workflow details", exact: true });
 const savedDialog = page => page.getByRole("dialog", { name: "Saved workflows", exact: true });
 const controlComment = '# Release plan\n\n**Ready** [Docs](https://example.com/guide)\n\n<script>window.commentUnsafe = true</script>\n![Image](https://example.com/tracker.png)';
 
@@ -28,22 +30,8 @@ async function connect(page, source, target) {
   await page.mouse.up();
 }
 
-async function failStorage(page) {
-  await page.evaluate(key => {
-    window.workflowControlSetItem = Storage.prototype.setItem;
-    Storage.prototype.setItem = function (name, value) {
-      if (name === key) throw new Error("Storage unavailable for control review");
-      return window.workflowControlSetItem.call(this, name, value);
-    };
-  }, storageKey);
-}
-
-async function recoverStorage(page) {
-  await page.evaluate(() => {
-    if (window.workflowControlSetItem) Storage.prototype.setItem = window.workflowControlSetItem;
-    delete window.workflowControlSetItem;
-  });
-}
+const failStorage = page => blockWorkflowSaving(page, "Storage unavailable for control review");
+const recoverStorage = restoreWorkflowSaving;
 
 function emptyDocument(id, name) {
   return { version: 3, id, name, description: "", nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, dashed: false };
@@ -53,7 +41,7 @@ async function loadDocuments(page, documents) {
   await page.evaluate(({ key, documents }) => localStorage.setItem(key, JSON.stringify(documents)), { key: storageKey, documents });
   await page.reload();
   await setMode(page, "workflow");
-  await expect(page.getByRole("textbox", { name: "Workflow name", exact: true })).toHaveValue(documents.at(-1).name);
+  await expectWorkflowName(page, documents.at(-1).name);
 }
 
 Given("a workflow with editable routing controls and a comment", async function () {
@@ -116,11 +104,11 @@ When("I write a safely formatted workflow comment", async function () {
 
 When("I describe this workflow as {string}", async function (description) {
   this.controlDescription = description;
-  await this.page.getByRole("button", { name: "Describe workflow", exact: true }).click();
+  await this.page.getByRole("button", { name: "Workflow details", exact: true }).click();
   const dialog = descriptionDialog(this.page);
-  await expect(dialog.getByRole("textbox", { name: "Description", exact: true })).toBeFocused();
+  await expect(workflowNameInput(this.page)).toBeFocused();
   await dialog.getByRole("textbox", { name: "Description", exact: true }).fill(description);
-  await dialog.getByRole("button", { name: "Save description", exact: true }).click();
+  await dialog.getByRole("button", { name: "Save workflow details", exact: true }).click();
   await expect(dialog).toBeHidden();
 });
 
@@ -137,7 +125,7 @@ Then("the routing controls comment and description retain their edits", async fu
   assert.equal(document.edges.length, 1);
   await expect(node(this.page, "switch").getByRole("spinbutton", { name: "Gate 1 value", exact: true })).toHaveValue("42");
   await expect(node(this.page, "comment").locator(".comment-markdown h1")).toHaveText("Release plan");
-  await this.page.getByRole("button", { name: "Describe workflow", exact: true }).click();
+  await this.page.getByRole("button", { name: "Workflow details", exact: true }).click();
   await expect(descriptionDialog(this.page).getByRole("textbox", { name: "Description", exact: true })).toHaveValue(this.controlDescription);
   await descriptionDialog(this.page).getByRole("button", { name: "Close", exact: true }).click();
 });
@@ -182,7 +170,7 @@ Then("the reusable workflow keeps its ports and embedded definition", async func
   assert.equal(document.nodes.filter(item => item.type === "data").length, 2);
   await expect(workflow(this.page).getByLabel("Project ID input", { exact: true })).toHaveCount(1);
   await expect(workflow(this.page).getByLabel("Project ID output", { exact: true })).toHaveCount(1);
-  const saved = await this.page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey);
+  const saved = await storedWorkflows(this.page);
   assert.deepEqual(saved.find(item => item.id === this.reusableFixture.id), this.reusableFixture);
 });
 
@@ -209,7 +197,7 @@ When("the bulk deletion encounters a storage failure", async function () {
 Then("the selected saved workflows are retained for retry", async function () {
   await expect(savedDialog(this.page).getByRole("alert")).toContainText("Storage unavailable for control review");
   await expect(savedDialog(this.page).getByRole("button", { name: "Try again", exact: true })).toBeVisible();
-  assert.deepEqual(await this.page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey), this.controlDocuments);
+  assert.deepEqual(await storedWorkflows(this.page), this.controlDocuments);
 });
 
 When("I retry the bulk deletion after storage recovers", async function () {
@@ -222,18 +210,20 @@ Then("only the unselected saved workflow remains", async function () {
   await expect(dialog.getByRole("checkbox")).toHaveCount(1);
   await expect(dialog.getByRole("checkbox", { name: "Select Keep this plan", exact: true })).not.toBeChecked();
   await expect(dialog.getByRole("button", { name: "Delete selected workflows", exact: true })).toBeDisabled();
-  assert.deepEqual(await this.page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey), [this.controlDocuments[2]]);
+  assert.deepEqual(await storedWorkflows(this.page), [this.controlDocuments[2]]);
 });
 
 When("a workflow description save encounters a storage failure", async function () {
-  await this.page.getByRole("button", { name: "Describe workflow", exact: true }).click();
-  await descriptionDialog(this.page).getByRole("textbox", { name: "Description", exact: true }).fill("Keep this description draft after a failed save.");
+  await this.page.getByRole("button", { name: "Workflow details", exact: true }).click();
   await failStorage(this.page);
-  await descriptionDialog(this.page).getByRole("button", { name: "Save description", exact: true }).click();
+  await workflowNameInput(this.page).fill("Retained workflow details");
+  await descriptionDialog(this.page).getByRole("textbox", { name: "Description", exact: true }).fill("Keep this description draft after a failed save.");
+  await descriptionDialog(this.page).getByRole("button", { name: "Save workflow details", exact: true }).click();
 });
 
 Then("the description draft remains available for retry", async function () {
   await expect(descriptionDialog(this.page).getByRole("alert")).toContainText("Storage unavailable for control review");
+  await expect(workflowNameInput(this.page)).toHaveValue("Retained workflow details");
   await expect(descriptionDialog(this.page).getByRole("textbox", { name: "Description", exact: true })).toHaveValue("Keep this description draft after a failed save.");
   await expect(descriptionDialog(this.page).getByRole("button", { name: "Try again", exact: true })).toBeVisible();
 });
@@ -245,9 +235,16 @@ When("I retry saving the workflow description", async function () {
 });
 
 Then("the recovered description is saved locally", async function () {
-  const saved = await this.page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey);
+  const saved = await storedWorkflows(this.page);
+  assert.equal(saved.at(-1).name, "Retained workflow details");
   assert.equal(saved.at(-1).description, "Keep this description draft after a failed save.");
-  await expect(workflow(this.page).getByText("Saved locally", { exact: true })).toBeVisible();
+  await expect(this.page.locator(".site-header .document-meta").getByText("Saved locally", { exact: true })).toBeVisible();
+  await this.page.reload();
+  await setMode(this.page, "workflow");
+  await openWorkflowDetails(this.page);
+  await expect(workflowNameInput(this.page)).toHaveValue("Retained workflow details");
+  await expect(descriptionDialog(this.page).getByRole("textbox", { name: "Description", exact: true })).toHaveValue("Keep this description draft after a failed save.");
+  await closeWorkflowDetails(this.page);
 });
 
 Then("the utility controls remain usable in the narrow canvas", async function () {
@@ -266,16 +263,17 @@ Then("the utility controls remain usable in the narrow canvas", async function (
 });
 
 When("I edit the current plan and fail to open the saved library", async function () {
-  await this.page.getByRole("textbox", { name: "Workflow name", exact: true }).fill("Keep the edited draft");
+  await renameWorkflow(this.page, "Keep the edited draft");
   await workflow(this.page).getByRole("button", { name: "Cast", exact: true }).click();
   this.libraryDraft = (await readExport(this.page)).document;
-  await this.page.evaluate(key => {
-    window.workflowControlGetItem = Storage.prototype.getItem;
-    Storage.prototype.getItem = function (name) {
-      if (name === key) throw new Error("Saved library unavailable for control review");
-      return window.workflowControlGetItem.call(this, name);
+  await expect(this.page.locator(".site-header .document-meta").getByText("Saved locally", { exact: true })).toBeVisible();
+  await this.page.evaluate(() => {
+    window.workflowControlTransaction = IDBDatabase.prototype.transaction;
+    IDBDatabase.prototype.transaction = function (stores, mode, options) {
+      if (this.name === 'operations-workflow-catalog-v1') throw new Error("Saved library unavailable for control review");
+      return window.workflowControlTransaction.call(this, stores, mode, options);
     };
-  }, storageKey);
+  });
   await this.page.getByRole("button", { name: "Open workflow", exact: true }).click();
 });
 
@@ -287,8 +285,8 @@ Then("the saved library offers a retry without replacing the draft", async funct
 
 When("I retry loading the saved library after storage recovers", async function () {
   await this.page.evaluate(() => {
-    Storage.prototype.getItem = window.workflowControlGetItem;
-    delete window.workflowControlGetItem;
+    IDBDatabase.prototype.transaction = window.workflowControlTransaction;
+    delete window.workflowControlTransaction;
   });
   await savedDialog(this.page).getByRole("button", { name: "Retry", exact: true }).click();
 });
@@ -297,12 +295,12 @@ Then("the saved choices return and the edited draft remains intact", async funct
   const dialog = savedDialog(this.page);
   await expect(dialog.getByRole("alert")).toHaveCount(0);
   await expect(dialog.getByRole("checkbox")).toHaveCount(3);
-  await expect(dialog.getByRole("checkbox", { name: "Select Keep this plan", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("checkbox", { name: "Select Keep the edited draft", exact: true })).toBeVisible();
   await dialog.getByRole("button", { name: "Close", exact: true }).click();
-  await expect(this.page.getByRole("textbox", { name: "Workflow name", exact: true })).toHaveValue("Keep the edited draft");
+  await expectWorkflowName(this.page, "Keep the edited draft");
   await expect(node(this.page, "cast")).toHaveCount(1);
   assert.deepEqual((await readExport(this.page)).document, this.libraryDraft);
-  assert.deepEqual(await this.page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey), this.controlDocuments);
+  assert.deepEqual(await storedWorkflows(this.page), [...this.controlDocuments.slice(0, 2), this.libraryDraft]);
 });
 
 Given("an imported workflow with previously saved routing operands", async function () {
@@ -326,7 +324,7 @@ Given("an imported workflow with previously saved routing operands", async funct
 
 Then("importing and editing metadata retain the saved routing operands", async function () {
   assert.deepEqual((await readExport(this.page)).document.nodes.find(item => item.type === "switch").data.gates, [this.savedGate]);
-  await this.page.getByRole("textbox", { name: "Workflow name", exact: true }).fill("Renamed persisted routing");
+  await renameWorkflow(this.page, "Renamed persisted routing");
   assert.deepEqual((await readExport(this.page)).document.nodes.find(item => item.type === "switch").data.gates, [this.savedGate]);
 });
 

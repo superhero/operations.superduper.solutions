@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { storedWorkflows } from "./workflow-storage.fixture.mjs";
 import assert from "node:assert/strict";
 import { Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
@@ -76,7 +77,7 @@ Then("a saved workflow opens a request run with starting choices and an end cont
   await run.getByRole("button", { name: "Close run", exact: true }).click();
   await expect(run).toBeHidden();
   assert.equal(requests.length, 1);
-  assert.deepEqual(await page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey), [doc]);
+  assert.deepEqual(await storedWorkflows(page), [doc]);
 });
 
 Then("the workflow run dialog validates inputs and passes task results to the next operation", async function () {
@@ -155,7 +156,7 @@ Then("ending a workflow run restores the canvas and leaves its saved graph uncha
   await expect(run).toBeHidden();
   await expect(workflow(page).locator(".svelte-flow__node-operation")).toHaveCount(1);
   await expect.poll(() => page.evaluate(() => Boolean(document.activeElement?.closest(".workflow-workspace")))).toBe(true);
-  assert.deepEqual(await page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey), [doc]);
+  assert.deepEqual(await storedWorkflows(page), [doc]);
   await workflowAction(page, "Run");
   await expect(dialog(page).getByRole("textbox", { name: "Project ID", exact: true })).toHaveValue("");
   await page.keyboard.press("Escape");

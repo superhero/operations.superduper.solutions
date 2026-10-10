@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { closeWorkflowDetails, expectWorkflowName, renameWorkflow, workflowNameInput } from './workflow-details.fixture.mjs';
 import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
@@ -99,11 +100,7 @@ async function expectFieldValue(page, label, value) {
 }
 
 async function workflowAction(page, action) {
-  const item = page.getByRole("menuitem", { name: `${action} workflow`, exact: true });
-  if (!await item.isVisible())
-    await page.getByRole("button", { name: "Workflow actions", exact: true }).click();
-  await item.click();
-  await expect(item).toBeHidden();
+  await page.getByRole("button", { name: `${action} workflow`, exact: true }).click();
 }
 
 async function readExport(page) {
@@ -302,10 +299,9 @@ When("I enable grid snapping and curved dashed connections", async function () {
   for (const name of ["Snap to grid", "Curved connections", "Dashed connections"])
     await this.page.getByRole("button", { name, exact: true }).click();
 });
-When("I save the workflow as {string}", async function (name) {
-  await this.page.getByRole("textbox", { name: "Workflow name", exact: true }).fill(name);
-  await workflowAction(this.page, "Save");
-  await expect(workflow(this.page).getByText("Saved locally", { exact: true })).toBeVisible();
+When("I name the workflow {string} and wait for autosave", async function (name) {
+  await renameWorkflow(this.page, name);
+  await expect(this.page.locator(".site-header .document-meta").getByText("Saved locally", { exact: true })).toBeVisible();
 });
 When("I press Delete while the saved-workflow dialog is open", async function () {
   await this.page.getByRole("button", { name: "Open workflow", exact: true }).click();
@@ -326,7 +322,7 @@ When("I reload and reopen the workflow workspace", async function () {
   await setMode(this.page, "workflow");
 });
 Then("the workflow is named {string}", async function (name) {
-  await expect(this.page.getByRole("textbox", { name: "Workflow name", exact: true })).toHaveValue(name);
+  await expectWorkflowName(this.page, name);
 });
 Then("it contains one connection", async function () { await expect(connections(this.page)).toHaveCount(1); });
 Then("grid snapping and curved dashed connections remain enabled", async function () {
@@ -366,10 +362,12 @@ Then("Settings is the only selected workspace", async function () {
 When("I export the workflow", async function () { this.exported = await readExport(this.page); });
 When("I start a new workflow", async function () {
   await this.page.getByRole("button", { name: "New workflow", exact: true }).click();
+  await expect(workflowNameInput(this.page)).toBeFocused();
+  await closeWorkflowDetails(this.page);
 });
 Then("the new workflow is empty and not saved", async function () {
-  await expect(workflow(this.page).getByRole("button", { name: "Add operations from the left menu", exact: true })).toBeVisible();
-  await expect(workflow(this.page).getByText("Not saved", { exact: true })).toBeVisible();
+  await expect(workflow(this.page).getByRole("button", { name: "Add nodes by selecting workflow operations from the left menu", exact: true })).toBeVisible();
+  await expect(this.page.locator(".site-header .document-meta").getByText("Not saved", { exact: true })).toBeVisible();
 });
 When("I import the exported workflow", async function () {
   await this.page.getByLabel("Import workflow file", { exact: true }).setInputFiles({

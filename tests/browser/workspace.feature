@@ -103,7 +103,7 @@ Feature: Browser operations workspace
     Given a workflow with 2 instances of "List projects"
     When I connect the first operation to the second
     And I enable grid snapping and curved dashed connections
-    And I save the workflow as "Project review"
+    And I name the workflow "Project review" and wait for autosave
     And I press Delete while the saved-workflow dialog is open
     Then the workflow still contains 2 instances of "List projects"
     When I reload and reopen the workflow workspace
@@ -142,7 +142,7 @@ Feature: Browser operations workspace
   Scenario: Exported plans import as a separate local document
     Given a workflow with 2 instances of "List projects"
     When I connect the first operation to the second
-    And I save the workflow as "Portable review"
+    And I name the workflow "Portable review" and wait for autosave
     And I export the workflow
     And I start a new workflow
     Then the new workflow is empty and not saved
@@ -155,7 +155,7 @@ Feature: Browser operations workspace
 
   Scenario: Invalid imports report the cause and preserve the current plan
     Given a workflow with 2 instances of "List projects"
-    When I save the workflow as "Keep this plan"
+    When I name the workflow "Keep this plan" and wait for autosave
     And I import an unsupported workflow version
     Then the import error names the file and unsupported version
     And the workflow is named "Keep this plan"

@@ -8,6 +8,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { createExampleEndpoint } from './example-endpoint.fixture.mjs';
+import { build } from 'vite';
 
 setDefaultTimeout(30_000);
 let browser;
@@ -19,10 +20,20 @@ setWorldConstructor(BrowserWorld);
 
 BeforeAll(async function () {
   const bundle = await readFile('dist/index.html');
+  // This module belongs only to the test server. Inspect real Git repositories
+  // without adding test hooks or filesystem globals to the shipped application.
+  const fixtureBuild = await build({ configFile: false, logLevel: 'error',
+    build: { write: false, target: 'es2024', minify: false,
+      lib: { entry: resolve('tests/browser/workflow-repository.fixture.ts'), formats: ['es'] } } });
+  const fixtureOutput = Array.isArray(fixtureBuild) ? fixtureBuild[0] : fixtureBuild;
+  const repositoryFixture = fixtureOutput.output.find(item => item.type === 'chunk' && item.isEntry).code;
   server = createServer((request, response) => {
     if (request.url === '/') {
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       response.end(bundle);
+    } else if (request.url === '/workflow-repository-fixture.js') {
+      response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
+      response.end(repositoryFixture);
     } else if (request.url === '/favicon.ico') {
       response.writeHead(204);
       response.end();

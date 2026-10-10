@@ -533,6 +533,8 @@ Then("HTTP examples serialize JSON text forms headers and repeated query values 
   const fallback = createWorkflowRequestExecution(async () => { const response = Response.json({ options: true }); response.headers.delete("Content-Type"); return response; });
   assert.deepEqual((await fallback.execute(catalogOperation("httpbin:echoOptions"), {})).response.body, { options: true });
   const demoExecution = createWorkflowDemo();
+  assert.equal(demoExecution.execute(operation("mockHead"), {}).response.body, null);
+  assert.equal(demoExecution.execute(operation("mockOptions"), {}).response.body, null);
   assert.equal(demoExecution.execute(operation("mockJsonScalar"), { "body:$": "hello" }).response.body.data, '"hello"');
   for (const [name, values, property, expected] of [
     ["mockJsonObject", jsonValues, "json", { label: "A & B", count: 2, ratio: 1.5, enabled: false, priority: "high", profile: { name: "Ada", count: 3 }, tags: ["one", "two"], note: null }],

@@ -165,6 +165,7 @@ button, a, textarea { -webkit-tap-highlight-color: transparent; }
 p { margin: 0; }
 ::selection { color: var(--color-selection-foreground); background: var(--color-selection-background); }
 * { scrollbar-width: thin; }
+.svelte-flow__node :is(.operation-title-row, .workflow-kind, .data-title, .utility-title) > .material-symbols-rounded { color: var(--color-background); }
 .page-content { position: relative; margin-left: 0; transition: margin-left 200ms ease-in; }
 .shell, .header-content { max-width: 1060px; margin: 0 auto; }
 .shell { padding: 0 var(--content-padding) var(--content-padding); }
@@ -317,8 +318,10 @@ summary::-webkit-details-marker { display: none; }
 .modal-overlay { position: fixed; inset: 0; z-index: 80; background: color-mix(in srgb, var(--color-background) 65%, transparent); }
 .modal-content { position: fixed; z-index: 81; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(500px, calc(100vw - 2rem)); max-height: 80dvh; padding: 0 24px 24px; overflow-y: auto; overscroll-behavior: contain; scroll-padding-top: 80px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
 .modal-content header { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 0 12px; background: var(--color-surface); }
+.modal-content > header { margin-inline: -24px; padding-inline: 24px; }
 .modal-title { font-size: 18px; font-weight: 650; }
-.modal-close, .text-button { padding: 8px 12px; border-radius: 4px; background: var(--color-background); color: inherit; }
+.modal-close { display: grid; place-items: center end; flex-shrink: 0; width: 32px; height: 32px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: inherit; }
+.text-button { padding: 8px 12px; border-radius: 4px; background: var(--color-background); color: inherit; }
 .modal-description { margin-bottom: 18px; }
 .modal-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .saved-documents { padding: 0; list-style: none; }
@@ -351,6 +354,7 @@ html { scroll-padding-top: calc(var(--app-header-height) + 12px); }
 .workflow-step-list li:has(> .workflow-step-button:enabled:is(:hover,:focus-visible)) { position: relative; z-index: 2; }
 
 .step-viewport { position: relative; isolation: isolate; margin: -8px calc(-1 * var(--content-padding)); overflow: hidden; overflow: clip; transition: height 300ms ease-in; }
+.step-viewport.following-content-size { transition: none; }
 .step-viewport::after { content: ''; position: absolute; inset: 0; z-index: 1; box-shadow: inset 4px 0 3px -1px var(--color-surface), inset -4px 0 3px -1px var(--color-surface); pointer-events: none; }
 .step-track { display: flex; align-items: flex-start; width: 100%; transition: transform 300ms ease-in; }
 .step-panel { flex: 0 0 100%; min-width: 0; padding: 8px var(--content-padding); }

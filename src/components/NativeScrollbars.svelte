@@ -101,6 +101,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   @property --scrollbar-y-inset { syntax: "<length>"; inherits: true; initial-value: 4px; }
   :global(*) { scrollbar-color: var(--color-scrollbar-thumb) transparent; }
   :global(:is(html, .catalog-menu, .catalog-sheet, .modal-content, .json-scroll, .json-report, textarea)) { scrollbar-gutter: stable; }
+  :global(.modal-content) { scrollbar-gutter: stable both-edges; }
   :global(::-webkit-scrollbar) { width: 4px; height: 4px; }
   :global(::-webkit-scrollbar-track), :global(::-webkit-scrollbar-corner) { background: transparent; }
   :global(::-webkit-scrollbar-thumb) { background: var(--color-scrollbar-thumb); border-radius: 4px; }

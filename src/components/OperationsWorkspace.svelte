@@ -50,6 +50,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let fieldHelp = $state<string[]>([]);
   let panels = $state<HTMLElement[]>([]);
   let panelHeight = $state(0);
+  let panelViewport = $state<HTMLDivElement>();
+  let followingContentSize = $state(false);
   let mounted = $state(false);
   let promptFooter = $state<HTMLElement>();
   let examples = $state<HTMLElement>();
@@ -186,9 +188,33 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   $effect(() => {
     const panel = panels[step];
     if (!mounted || !panel) return;
-    const resize = () => panelHeight = panel.getBoundingClientRect().height;
+    let disposed = false;
+    let revision = 0;
+    let motions: Animation[] = [];
+    const resize = () => {
+      const animations = panel.getAnimations({ subtree: true }).filter(animation =>
+        animation.playState === "running" && animation.effect instanceof KeyframeEffect &&
+        animation.effect.getKeyframes().some(frame => "height" in frame || "gridTemplateRows" in frame));
+      if (animations.some(animation => !motions.includes(animation))) {
+        motions = animations;
+        const current = ++revision;
+        // Follow the disclosure's existing animation instead of easing its
+        // height a second time, which continually restarts and clips controls.
+        followingContentSize = true;
+        void Promise.allSettled(animations.map(animation => animation.finished)).then(async () => {
+          if (disposed || current !== revision) return;
+          panelHeight = panel.getBoundingClientRect().height;
+          await tick();
+          if (disposed || current !== revision) return;
+          panelViewport?.getBoundingClientRect();
+          followingContentSize = false;
+          motions = [];
+        });
+      }
+      panelHeight = panel.getBoundingClientRect().height;
+    };
     const observer = new ResizeObserver(resize); observer.observe(panel); resize();
-    return () => observer.disconnect();
+    return () => { disposed = true; observer.disconnect(); followingContentSize = false; };
   });
   onMount(() => {
     mounted = true;
@@ -227,7 +253,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       if (!examples || !promptFooter || !submitPrompt) return;
       examples.hidden = false;
       const buttons = [...examples.querySelectorAll<HTMLButtonElement>("button")];
-      const availableWidth = promptFooter.clientWidth - submitPrompt.getBoundingClientRect().width - parseFloat(getComputedStyle(promptFooter).columnGap);
+      // Hover scaling must not change which examples fit: hiding them changes
+      // the footer height and can move the arrow away from the pointer, looping.
+      const availableWidth = promptFooter.clientWidth - submitPrompt.offsetWidth - parseFloat(getComputedStyle(promptFooter).columnGap);
       let used = 0; let count = 0; let overflow = false;
       for (const button of buttons) {
         button.hidden = false;
@@ -264,7 +292,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <span class="button-content step-content"><MaterialIcon name={`counter_${index + 1}`} class="step-number" /><span class="step-label">{name}</span></span>
     </HintButton></li>{/each}
   </ol></nav>
-  <div class="step-viewport" style:height={panelHeight ? `${panelHeight}px` : "auto"}>
+  <div class="step-viewport" bind:this={panelViewport} class:following-content-size={followingContentSize} style:height={panelHeight ? `${panelHeight}px` : "auto"}>
     <div class="step-track" style:transform={`translateX(${-step * 100}%)`}>
       <section class="step-panel" bind:this={panels[0]} inert={step !== 0} aria-hidden={step !== 0} aria-label="Prompt step">
         <form bind:this={promptForm} onsubmit={(event) => { event.preventDefault(); search(); }}>
@@ -352,7 +380,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                   {/each}
                 </fieldset>{/if}
               {/each}
-              {#if !selected.fields.length}<p class="hint">This operation does not require any input.</p>{/if}
+              {#if !selected.fields.length}<p class="hint">This operation does not accept any input.</p>{/if}
             </div>
             {#if error}<p role="alert" class="error">{error}</p>{/if}
             <div class="form-footer"><HintButton class="primary-arrow" type="submit" label="Execute operation" tooltipSide="left" aria-label="Execute operation" disabled={executing}><MaterialIcon name="play_arrow" size={30} /></HintButton></div>

@@ -1,21 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light" data-palette="default">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script>
-    (() => {
-      let dark = false;
-      let palette = 'default';
-      try {
-        dark = localStorage.getItem('operations-theme') === 'dark';
-        palette = localStorage.getItem('operations-palette') || palette;
-      } catch {}
-      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-      document.documentElement.dataset.palette = palette;
-      document.documentElement.classList.toggle('dark', dark);
-    })();
-  </script>
   <title>operations.superduper.solutions</title>
 </head>
 <body>

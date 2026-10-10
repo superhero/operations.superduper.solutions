@@ -1,17 +1,21 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { storedWorkflows } from "./workflow-storage.fixture.mjs";
+import { expectWorkflowName } from './workflow-details.fixture.mjs';
 import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { chooseCatalogOperation, connections, operationNodes, readExport, setMode, workflow } from "./workspace.steps.mjs";
+import { operations } from "../../src/lib/catalog.ts";
+import { createOperationGraph } from "../../src/lib/workflow-graph.ts";
 
 const panels = (page, ownerId, direction) => workflow(page).locator(
   `.workflow-data-node[data-owner-id=${JSON.stringify(ownerId)}]${direction ? `[data-direction=${JSON.stringify(direction)}]` : ""}`
 );
 const literal = value => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const namedPanel = (page, ownerId, direction, label) => panels(page, ownerId, direction)
-  .filter({ has: page.locator(".data-title strong").filter({ hasText: new RegExp(`^${literal(label)}$`) }) });
+  .filter({ has: page.locator(`.data-title strong[title=${JSON.stringify(label)}]`) });
 const fieldRow = (panel, label) => panel.locator(".data-field").filter({ has: panel.page().locator(".field-name").filter({ hasText: new RegExp(`^${literal(label)}(?:\\s*\\*)?$`) }) });
 const preview = page => workflow(page).locator(".workflow-connection-preview");
 
@@ -62,6 +66,31 @@ async function expectMapping(world) {
   assert.ok(document.edges.some(edge => edge.kind === "schema"), "Field mappings must preserve structural schema connections.");
 }
 
+async function expectOwnerLayout(node, inputs, outputs) {
+  await expect(node.locator('.operation-ports.inputs .port-label')).toHaveText(inputs);
+  await expect(node.locator('.operation-ports.outputs .port-label')).toHaveText(outputs);
+  await expect(node.locator('.operation-title-row .material-symbols-rounded')).toHaveText('http');
+  const layout = await node.evaluate(element => {
+    const bounds = selector => element.querySelector(selector).getBoundingClientRect();
+    const title = bounds('.operation-title-row');
+    const shape = bounds('.operation-node');
+    return { title: { top: title.top, bottom: title.bottom }, shape: { left: shape.left, right: shape.right },
+      inputs: [...element.querySelectorAll('.operation-ports.inputs .svelte-flow__handle')].map(handle => {
+        const box = handle.getBoundingClientRect(); return { x: box.x + box.width / 2, y: box.y + box.height / 2, left: handle.classList.contains('svelte-flow__handle-left') };
+      }), outputs: [...element.querySelectorAll('.operation-ports.outputs .svelte-flow__handle')].map(handle => {
+        const box = handle.getBoundingClientRect(); return { x: box.x + box.width / 2, y: box.y + box.height / 2, right: handle.classList.contains('svelte-flow__handle-right') };
+      }) };
+  });
+  for (const port of layout.inputs) {
+    assert.equal(port.left, true);
+    assert.ok(port.y < layout.title.top && Math.abs(port.x - layout.shape.left) < 2, 'Input handles sit above the identity at the left edge.');
+  }
+  for (const port of layout.outputs) {
+    assert.equal(port.right, true);
+    assert.ok(port.y > layout.title.bottom && Math.abs(port.x - layout.shape.right) < 2, 'Output handles sit below the identity at the right edge.');
+  }
+}
+
 Given("a workflow ready to map Get project to Create task", async function () {
   await setMode(this.page, "workflow");
   await chooseCatalogOperation(this.page, "Get project", "workflow");
@@ -89,6 +118,7 @@ Then("List projects exposes its query parameters and nested project response", a
   await expect(projectId.getByLabel("Project ID output", { exact: true })).toHaveClass(/connectablestart/);
   await expect(response.locator('[data-handleid="value"]')).toHaveAttribute("aria-disabled", "true");
   await expect(operationNodes(this.page, "List projects").locator(".owner-port")).toHaveCount(2);
+  await expectOwnerLayout(operationNodes(this.page, "List projects"), ['Query'], ['200']);
   await expect(connections(this.page)).toHaveCount(0);
 });
 
@@ -108,6 +138,51 @@ Then("Create task separates required path and request-body fields", async functi
     await expect(port).toHaveAttribute("aria-disabled", "true");
     await expect(port).not.toHaveClass(/connectablestart|connectableend/);
   }
+  await expectOwnerLayout(operationNodes(this.page, "Create task"), ['Path', 'Body'], ['201']);
+  await this.page.screenshot({ path: 'tmp/test/workflow-operation-ports.png' });
+});
+
+Given('repeated operation nodes with documented response variants', async function () {
+  const operation = { ...operations.find(operation => operation.id === 'demo:getProject'), name: 'Response variants' };
+  const document = { paths: { [operation.path]: { get: {
+    parameters: [{ name: 'projectId', in: 'path', required: true, schema: { type: 'string', title: 'Project ID' } }],
+    responses: {
+      200: { description: 'Success', content: { 'application/json': { schema: { type: 'string' } }, 'text/plain': { schema: { type: 'string' } } } },
+      400: { description: 'Invalid input', content: { 'application/json': { schema: { type: 'string' } } } },
+      default: { description: 'Other documented response' },
+    },
+  } } } };
+  const graph = createOperationGraph(operation, { x: 470, y: 250 }, 'response-variants', document);
+  graph.nodes.push({ ...graph.nodes[0], id: 'response-variants-2', position: { x: 470, y: 550 } });
+  const saved = { version: 2, id: 'response-variants-review', name: 'Response variants review', ...graph,
+    viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, dashed: false };
+  await this.page.evaluate(document => localStorage.setItem('operations-flow-documents-v1', JSON.stringify([document])), saved);
+  await this.page.reload();
+  await setMode(this.page, 'workflow');
+  await this.page.getByRole('button', { name: 'Fit View', exact: true }).click();
+});
+
+Then('the identity row separates top input and bottom response ports', async function () {
+  const nodes = operationNodes(this.page, 'Response variants');
+  await expect(nodes).toHaveCount(2);
+  await expectOwnerLayout(nodes.first(), ['Path'], ['200 · JSON', '200 · Text', '400', 'default']);
+  for (const media of ['application/json', 'text/plain']) {
+    const port = nodes.first().getByLabel(`Response · 200 · ${media} output`, { exact: true });
+    await expect(port).toHaveAttribute('title', `Response · 200 · ${media}`);
+  }
+  for (const [index, node] of (await nodes.all()).entries()) {
+    await expect(node.locator('.operation-title-row strong')).toHaveText('Response variants');
+    await expect(node.locator('.operation-title-row').getByLabel(`Instance ${index + 1}`, { exact: true })).toBeVisible();
+    const aligned = await node.locator('.operation-title-row').evaluate(element => {
+      const items = [...element.children].map(child => child.getBoundingClientRect());
+      return items.every((item, index) => !index || item.left >= items[index - 1].right - 1)
+        && Math.max(...items.map(item => item.top)) < Math.min(...items.map(item => item.bottom));
+    });
+    assert.equal(aligned, true, 'HTTP icon, name, and instance number share one identity row.');
+  }
+  for (const label of ['Response · 400', 'Response · default'])
+    await expect(namedPanel(this.page, 'response-variants', 'outputs', label)).toBeVisible();
+  await this.page.screenshot({ path: 'tmp/test/workflow-response-ports.png' });
 });
 
 When("I map the project identifier between those operations", async function () {
@@ -128,7 +203,7 @@ When("I map the project identifier by clicking the field handles", async functio
 
 Then("the project identifier mapping keeps its saved field endpoints", async function () {
   await expectMapping(this);
-  const stored = await this.page.evaluate(() => JSON.parse(localStorage.getItem("operations-flow-documents-v1")));
+  const stored = await storedWorkflows(this.page);
   const document = stored.find(item => item.name === "Field mapping review");
   assert.equal(document.version, 2);
   const { source, target, sourceHandle, targetHandle } = document.edges.find(edge => edge.kind === "mapping");
@@ -143,7 +218,7 @@ async function hideNestedResponse(world) {
   await nested.locator(".data-title strong").click();
   await expect(nested).toHaveClass(/selected/);
   await expect(world.page.getByRole("button", { name: "Remove selected", exact: true })).toBeEnabled();
-  await nested.getByRole("button", { name: "Hide Project", exact: true }).click();
+  await world.page.getByRole("button", { name: "Remove selected", exact: true }).click();
   await expect(nested).toHaveCount(0);
   await expect(world.page.getByRole("button", { name: "Remove selected", exact: true })).toBeDisabled();
 }
@@ -161,6 +236,32 @@ When("I hide and restore the nested project response", async function () {
   await hideNestedResponse(this);
   await restoreNestedResponse(this);
 });
+When('I hide and restore the root query input', async function () {
+  const page = this.page;
+  const id = await ownerId(page, 'List projects');
+  const owner = operationNodes(page, 'List projects');
+  const query = namedPanel(page, id, 'inputs', 'Query parameters');
+  const before = (await readExport(page)).document;
+  const handle = owner.getByLabel('Query parameters input', { exact: true });
+  const handleId = await handle.getAttribute('data-handleid');
+  await query.locator('.data-title strong').click();
+  await page.getByRole('button', { name: 'Remove selected', exact: true }).click();
+  await expect(query).toHaveCount(0);
+  const restore = owner.getByRole('button', { name: 'Restore Query parameters', exact: true });
+  await expect(restore).toHaveAttribute('data-side', 'left');
+  const position = await restore.evaluate(element => {
+    const button = element.getBoundingClientRect();
+    const port = element.closest('.operation-port').getBoundingClientRect();
+    return { x: button.x + button.width / 2, y: button.y + button.height / 2, portX: port.x, portY: port.y + port.height / 2 };
+  });
+  assert.ok(Math.abs(position.x - position.portX) < 1 && Math.abs(position.y - position.portY) < 1, 'Restore is centered on the left input port.');
+  await restore.click();
+  await expect(query).toBeVisible();
+  await expect(handle).toHaveAttribute('data-handleid', handleId);
+  const after = (await readExport(page)).document;
+  assert.deepEqual(after.nodes, before.nodes, 'Restoring retains the input panel and fields.');
+  assert.deepEqual(after.edges, before.edges, 'Restoring retains schema connection endpoints.');
+});
 When("I hide the nested project response", async function () { await hideNestedResponse(this); });
 When("I restore the nested project response", async function () { await restoreNestedResponse(this); });
 
@@ -169,7 +270,7 @@ Then("the nested response remains hidden with its saved fields", async function 
   const response = namedPanel(this.page, this.branchOwnerId, "outputs", "Response · 200");
   await expect(response.getByRole("button", { name: "Restore Project", exact: true })).toBeVisible();
   await expect(workflow(this.page).locator(".workflow-schema-edge")).toHaveCount(2);
-  const stored = await this.page.evaluate(() => JSON.parse(localStorage.getItem("operations-flow-documents-v1")));
+  const stored = await storedWorkflows(this.page);
   const document = stored.find(item => item.name === "Hidden branch review");
   assert.ok(document, "The hidden branch must be saved as part of the workflow.");
   const branch = document.nodes.find(node => node.id === this.branchNodeId);
@@ -199,7 +300,7 @@ Then("its schema panels and connections are removed", async function () {
   await expect(operationNodes(this.page, "List projects")).toHaveCount(0);
   await expect(panels(this.page, this.branchOwnerId)).toHaveCount(0);
   await expect(workflow(this.page).locator(".svelte-flow__edge")).toHaveCount(0);
-  await expect(workflow(this.page).getByRole("button", { name: "Add operations from the left menu", exact: true })).toBeVisible();
+  await expect(workflow(this.page).getByRole("button", { name: "Add nodes by selecting workflow operations from the left menu", exact: true })).toBeVisible();
 });
 
 When("I drag the project identifier over the target panel body", async function () {
@@ -288,7 +389,7 @@ Given("an imported legacy workflow near the coordinate limit", async function ()
   await this.page.getByLabel("Import workflow file", { exact: true }).setInputFiles({
     name: "coordinate-limit.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(document)),
   });
-  await expect(this.page.getByRole("textbox", { name: "Workflow name", exact: true })).toHaveValue(document.name);
+  await expectWorkflowName(this.page, document.name);
   await expect(operationNodes(this.page, "List projects")).toHaveCount(2);
   await expect(connections(this.page)).toHaveCount(1);
   this.coordinateBaseline = (await readExport(this.page)).document;

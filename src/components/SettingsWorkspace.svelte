@@ -34,10 +34,33 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import Disclosure from "$lib/components/Disclosure.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
+  import StorageSettings from "./settings/StorageSettings.svelte";
+  import { isValidWorkflowGridSize, workflowGridSizeLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
 
-  let { palette, onPaletteChange }: { palette: PaletteId; onPaletteChange: (palette: PaletteId) => void } = $props();
+  let { palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults }: {
+    palette: PaletteId;
+    onPaletteChange: (palette: PaletteId) => void;
+    workflowDefaults: WorkflowDefaults;
+    onWorkflowDefaultsChange: (next: WorkflowDefaults) => void;
+    workflowDefaultsError?: string;
+    onRetryWorkflowDefaults: () => void;
+  } = $props();
   let workspace: HTMLElement;
-  let themeOpen = $state(false);
+  let openSection = $state<"theme" | "workflow" | "storage" | null>(null);
+  const workflowOptions: { key: "dashed" | "curved" | "snap"; label: string }[] = [
+    { key: "dashed", label: "Dashed lines" },
+    { key: "curved", label: "Curved lines" },
+    { key: "snap", label: "Snap to grid" }
+  ];
+
+  function commitGridSize(input: HTMLInputElement) {
+    const gridSize = input.valueAsNumber;
+    if (!isValidWorkflowGridSize(gridSize)) {
+      input.reportValidity();
+      return;
+    }
+    if (gridSize !== workflowDefaults.gridSize) onWorkflowDefaultsChange({ ...workflowDefaults, gridSize });
+  }
 
   export function focusActive() {
     workspace.focus({ preventScroll: true });
@@ -46,7 +69,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <section class="workspace" aria-label="Settings workspace" bind:this={workspace} tabindex="-1">
   <div class="settings-sections">
-    <Disclosure class="catalog-group settings-section" label="Theme" tooltipEnabled={false} open={themeOpen} onToggle={(next) => themeOpen = next}>
+    <Disclosure class="catalog-group settings-section" label="Theme" tooltipEnabled={false} open={openSection === "theme"} onToggle={(next) => openSection = next ? "theme" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Theme</h2><span class="section-subtitle">Decide what color the webpage will use</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
@@ -69,6 +92,40 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         </div>
       </fieldset>
     </Disclosure>
+    <Disclosure class="catalog-group settings-section" label="Workflow" tooltipEnabled={false} open={openSection === "workflow"} onToggle={(next) => openSection = next ? "workflow" : null}>
+      {#snippet summary()}
+        <div class="section-heading"><h2>Workflow</h2><span class="section-subtitle">Set the canvas grid and defaults for new workflows</span></div>
+        <MaterialIcon name="chevron_forward" size={17} />
+      {/snippet}
+      <fieldset aria-label="Workflow defaults">
+        <div class="workflow-defaults">
+          {#each workflowOptions as option (option.key)}
+            <button class="workflow-default" type="button" role="switch" aria-checked={workflowDefaults[option.key]}
+              onclick={() => onWorkflowDefaultsChange({ ...workflowDefaults, [option.key]: !workflowDefaults[option.key] })}>
+              <span>{option.label}</span><span class="default-switch" aria-hidden="true"><span></span></span>
+            </button>
+          {/each}
+        </div>
+        <label class="grid-size-setting">
+          <span>Grid size</span>
+          <span class="grid-size-control">
+            <input type="number" value={workflowDefaults.gridSize} min={workflowGridSizeLimits.min} max={workflowGridSizeLimits.max}
+              step="1" required onchange={(event) => commitGridSize(event.currentTarget)} />
+            <span aria-hidden="true">px</span>
+          </span>
+        </label>
+        {#if workflowDefaultsError}
+          <div class="defaults-error"><p role="alert">{workflowDefaultsError}</p><button class="defaults-retry" type="button" onclick={onRetryWorkflowDefaults}>Retry saving</button></div>
+        {/if}
+      </fieldset>
+    </Disclosure>
+    <Disclosure class="catalog-group settings-section" label="Storage" tooltipEnabled={false} open={openSection === "storage"} onToggle={(next) => openSection = next ? "storage" : null}>
+      {#snippet summary()}
+        <div class="section-heading"><h2>Storage</h2><span class="section-subtitle">Explore what is saved in this browser</span></div>
+        <MaterialIcon name="chevron_forward" size={17} />
+      {/snippet}
+      {#if openSection === "storage"}<StorageSettings />{/if}
+    </Disclosure>
   </div>
 </section>
 
@@ -82,6 +139,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .section-heading h2 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: normal; }
   .section-subtitle { font-size: 12px; font-weight: 400; }
   fieldset { min-width: 0; margin: 0; padding: 16px; border: 0; }
+  .workflow-defaults { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 10px; }
+  .workflow-default { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 4px; background: var(--color-muted); color: var(--color-catalog-foreground); font-size: 12px; font-weight: 700; text-align: left; }
+  .workflow-default:focus-visible { outline-color: var(--color-ring); }
+  .grid-size-setting { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 10px; padding: 10px 12px; border-radius: 4px; background: var(--color-muted); color: var(--color-catalog-foreground); font-size: 12px; font-weight: 700; }
+  .grid-size-control { display: flex; align-items: center; gap: 8px; }
+  .grid-size-control input { width: 72px; min-height: 32px; padding: 6px 8px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); color: var(--color-catalog-foreground); font: inherit; }
+  .grid-size-control input:focus-visible { outline-color: var(--color-ring); }
+  .default-switch { flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-surface); transition: background-color 180ms ease-in; }
+  .default-switch > span { display: block; width: 18px; height: 18px; border-radius: 2px; background: var(--color-muted-foreground); transform: translateX(0); transition: transform 180ms ease-in, background-color 180ms ease-in; }
+  .workflow-default[aria-checked="true"] .default-switch { background: var(--color-catalog-active); }
+  .workflow-default[aria-checked="true"] .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
+  .defaults-error { display: grid; justify-items: start; gap: 10px; margin-top: 12px; }
+  .defaults-error p { margin: 0; padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; overflow-wrap: anywhere; }
+  .defaults-retry { padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; }
   .palette-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 16px; }
   .palette-choice { position: relative; min-width: 0; cursor: pointer; }
   .palette-choice input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
@@ -99,5 +170,5 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     .palette-choice { z-index: 0; will-change: transform; transition: transform 180ms ease-in, z-index 0s linear 180ms; }
     .palette-choice:hover { z-index: 2; transform: scale(min(1.10, var(--hover-scale, 1.10))); transition-delay: 0s; }
   }
-  @media (prefers-reduced-motion: reduce) { .palette-card, .palette-heading { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .palette-card, .palette-heading, .default-switch, .default-switch > span { transition: none; } }
 </style>

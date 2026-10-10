@@ -1,10 +1,12 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { blockWorkflowSaving, restoreWorkflowSaving } from "./workflow-storage.fixture.mjs";
+import { renameWorkflow } from "./workflow-details.fixture.mjs";
 import assert from "node:assert/strict";
 import { Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { workflow, workflowAction, operationNodes } from "./workspace.steps.mjs";
+import { workflow, operationNodes } from "./workspace.steps.mjs";
 
 const minimap = page => page.getByRole("group", { name: "Workflow minimap", exact: true });
 const camera = page => workflow(page).locator(".svelte-flow__viewport").evaluate(element => {
@@ -85,31 +87,32 @@ Then("the minimap supports pointer navigation and fits narrow and short viewport
   for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
     await page.setViewportSize(viewport);
     await expect.poll(async () => {
-      const [map, canvas, toolbar, meta] = await Promise.all([
+      const [map, canvas, toolbar, meta, header, lastButton] = await Promise.all([
         minimap(page).boundingBox(), workflow(page).boundingBox(), page.locator(".workflow-toolbar").boundingBox(),
-        page.locator(".document-meta").boundingBox(),
+        page.locator(".site-header .document-meta").boundingBox(), page.locator(".site-header").boundingBox(),
+        page.locator(".workflow-toolbar button:visible").last().boundingBox(),
       ]);
-      return Boolean(map && canvas && toolbar && meta &&
+      return Boolean(map && canvas && toolbar && meta && header && lastButton &&
         map.x >= canvas.x && map.x + map.width <= canvas.x + canvas.width &&
-        map.y >= toolbar.y + toolbar.height && map.y >= meta.y + meta.height &&
+        map.y >= toolbar.y + toolbar.height && meta.y + meta.height <= toolbar.y &&
+        meta.y >= header.y && meta.y + meta.height <= header.y + header.height + 1 &&
+        meta.x >= header.x && meta.x + meta.width <= header.x + header.width + 1 &&
+        Math.abs(meta.x + meta.width - lastButton.x - lastButton.width) <= 1 &&
         map.y + map.height <= canvas.y + canvas.height && map.width <= (viewport.width < 480 ? 122 : 182));
     }).toBe(true);
+    await expect(page.locator(".site-header .document-meta")).toHaveAttribute("role", "status");
+    await expect(page.locator(".site-header .document-meta")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
     await minimap(page).focus();
     await page.keyboard.press("Home");
     await pointerNavigate(page);
     assert.deepEqual(await positions(page), beforeNodes, "Resizing and pointer navigation must preserve the graph's geometry.");
     if (viewport.width < 480) {
-      await workflowAction(page, "Save");
-      const notice = workflow(page).getByText("Saved in this browser.", { exact: true });
+      const notice = page.locator(".site-header .document-meta").getByText("Saved locally", { exact: true });
       await feedbackClearOfMinimap(page, notice);
       const longName = "x".repeat(100);
-      await page.getByRole("textbox", { name: "Workflow name", exact: true }).fill(longName);
-      await page.evaluate(() => {
-        window.minimapOriginalSetItem = Storage.prototype.setItem;
-        Storage.prototype.setItem = () => { throw new Error("Test storage unavailable"); };
-      });
+      await blockWorkflowSaving(page, "Test storage unavailable");
       try {
-        await workflowAction(page, "Save");
+        await renameWorkflow(page, longName);
         const error = workflow(page).getByRole("alert");
         await expect(error).toContainText(longName);
         await expect(error).toContainText("Test storage unavailable");
@@ -117,10 +120,7 @@ Then("the minimap supports pointer navigation and fits narrow and short viewport
         assert.ok(await page.locator(".workflow-message").evaluate(element => element.scrollWidth <= element.clientWidth),
           "An unbroken workflow name must wrap inside the narrow error message.");
       } finally {
-        await page.evaluate(() => {
-          Storage.prototype.setItem = window.minimapOriginalSetItem;
-          delete window.minimapOriginalSetItem;
-        });
+        await restoreWorkflowSaving(page);
       }
     }
   }

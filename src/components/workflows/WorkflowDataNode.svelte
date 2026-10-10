@@ -7,7 +7,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { getContext, untrack } from "svelte";
   import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
-  import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { WorkflowData } from "$lib/workflow-document.ts";
   import WorkflowRestoreBranch from "./WorkflowRestoreBranch.svelte";
@@ -15,9 +14,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   type Branch = { id: string; childId: string; direction: "inputs" | "outputs"; label: string; hidden: boolean };
   let { id, data, selected }: NodeProps<Node<WorkflowData, "data">> = $props();
   const branchesFor = getContext<((id: string) => Map<string, Branch> | undefined) | undefined>("workflow-branches");
-  const hide = getContext<(childId: string) => void>("workflow-hide-branch");
   const updateNodeInternals = useUpdateNodeInternals();
   const input = $derived(data.direction === "inputs");
+  const noInputs = $derived(input && !data.fields.length);
   const branches = $derived(branchesFor?.(id));
   const layout = $derived(JSON.stringify([data, [...(branches?.values() ?? [])]]));
 
@@ -27,24 +26,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
 
   function blockPointer(event: MouseEvent | TouchEvent) { event.stopPropagation(); }
-  function hideBranch(event: MouseEvent) {
-    event.stopPropagation();
-    hide(id);
-  }
 </script>
 
-<div class="workflow-data-node" class:selected data-owner-id={data.ownerId} data-direction={data.direction}>
+{#snippet title()}
   <div class="data-title">
     <Handle id="value" type={input ? "source" : "target"} position={input ? Position.Right : Position.Left}
       class="structural-port" isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
       onmousedown={blockPointer} ontouchstart={blockPointer} aria-disabled="true" aria-label={`${data.label} object`} />
     <MaterialIcon name="data_object" size={20} />
-    <strong title={data.label}>{data.label}</strong>
-    <HintButton type="button" class="hide-branch nodrag nopan nokey" label={`Hide ${data.label}`} title={`Hide ${data.label}`}
-      onmousedown={blockPointer} ontouchstart={blockPointer} ondblclick={blockPointer} onclick={hideBranch}>
-      <MaterialIcon name="remove" size={18} />
-    </HintButton>
+    <strong title={data.label}>{input ? data.label.replace(/ parameters$/i, "") : data.label.replace(/^Response · .+$/, "Response")}</strong>
   </div>
+{/snippet}
+
+<div class="workflow-data-node" class:selected data-owner-id={data.ownerId} data-direction={data.direction}>
+  {#if !input}{@render title()}{/if}
   {#if data.fields.length}
     <div class="data-fields">
       {#each data.fields as field (field.id)}
@@ -69,27 +64,30 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
   {/if}
   {#if data.notice || !data.fields.length}
-    <div class="data-notice"><MaterialIcon name="info" size={16} /><span>{data.notice || "No named fields documented."}</span></div>
+    <div class="data-notice" class:no-input={noInputs}>{#if !noInputs}<MaterialIcon name="info" size={16} />{/if}<span class="notice-text">{data.notice || "No named fields documented."}</span></div>
   {/if}
+  {#if input}{@render title()}{/if}
 </div>
 
 <style>
-  .workflow-data-node { width: 260px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); transition: border-color 180ms ease-in, box-shadow 180ms ease-in; }
+  .workflow-data-node { width: max-content; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); transition: border-color 180ms ease-in, box-shadow 180ms ease-in; }
   .workflow-data-node:hover:not(.selected) { border-color: var(--color-foreground); }
   .workflow-data-node.selected, :global(.svelte-flow__node:focus-visible) .workflow-data-node { border-color: var(--color-emphasis); box-shadow: 0 0 0 1px var(--color-emphasis); }
   .data-title { position: relative; display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 8px 12px; }
   .data-title strong { min-width: 0; flex: 1; font-size: 12px; font-weight: 650; overflow-wrap: anywhere; }
+  [data-direction="inputs"] .data-title { border-top: 1px solid var(--color-border); }
+  [data-direction="inputs"] .data-field:first-child, [data-direction="inputs"] > .data-notice:first-child { border-top: 0; }
   .workflow-data-node :global(.material-symbols-rounded) { font-variation-settings: "FILL" 1; }
-  .data-title :global(.hide-branch) { display: grid; place-items: center; flex: 0 0 22px; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); transition: background-color 180ms ease-in, color 180ms ease-in, outline-color 180ms ease-in; }
-  .data-title :global(.hide-branch:hover) { background: var(--color-secondary-hover); color: var(--color-secondary-hover-foreground); }
   .data-field { position: relative; display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 6px 14px; border-top: 1px solid var(--color-border); font-size: 11px; }
   .field-name { min-width: 0; flex: 1; overflow-wrap: anywhere; }
   .required { color: var(--color-foreground); font-weight: 700; text-decoration: none; }
   .field-type { flex-shrink: 0; padding: 0 5px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); font-size: 10px; line-height: 18px; }
   .deferred .field-type { background: var(--color-background); color: var(--color-muted-foreground); }
   .data-notice { display: flex; align-items: flex-start; gap: 7px; padding: 10px 12px; border-top: 1px solid var(--color-border); color: var(--color-muted-foreground); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+  .data-notice.no-input { color: var(--color-badge-background); }
+  .no-input .notice-text { font-style: italic; }
   .workflow-data-node :global(.svelte-flow__handle) { width: 12px; height: 12px; border: 2px solid var(--color-surface); background: var(--color-emphasis); }
   .workflow-data-node :global(.svelte-flow__handle.target) { background: var(--color-foreground); }
   .workflow-data-node :global(.structural-port) { pointer-events: auto; cursor: default; }
-  @media (prefers-reduced-motion: reduce) { .workflow-data-node, .data-title :global(.hide-branch) { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .workflow-data-node { transition: none; } }
 </style>

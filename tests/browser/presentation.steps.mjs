@@ -108,7 +108,7 @@ Then('operations controls retain their complete keyboard focus outline', async f
     for (const { label, minimum, ratio } of contrasts)
       assert.ok(ratio >= minimum, `${theme} ${label} needs readable contrast: ${ratio.toFixed(2)}:1.`);
     await examples.first().hover();
-    await expectThemeColors(examples.first(), { backgroundColor: '--color-chip-hover', color: '--color-chip-hover-foreground' });
+    await expectThemeColors(examples.first(), { backgroundColor: '--color-muted', color: '--color-chip-foreground' });
     for (const { ratio } of await controlContrasts(examples.first()))
       assert.ok(ratio >= 4.5, `${theme} hovered example text needs readable contrast: ${ratio.toFixed(2)}:1.`);
     await page.mouse.move(0, 0);

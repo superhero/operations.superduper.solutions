@@ -8,8 +8,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { Dialog, mergeProps } from "bits-ui";
   import type { Snippet } from "svelte";
   import HintButton from "./HintButton.svelte";
+  import MaterialIcon from "./MaterialIcon.svelte";
   let { open = $bindable(false), title, description, children, initialFocus, onCloseAutoFocus, onEscapeKeydown }:
-    { open: boolean; title: string; description: string; children: Snippet;
+    { open: boolean; title: string; description?: string; children: Snippet;
       initialFocus?: () => HTMLElement | null | undefined; onCloseAutoFocus?: (event: Event) => void;
       onEscapeKeydown?: (event: KeyboardEvent) => void } = $props();
 </script>
@@ -26,12 +27,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           {#snippet child({ props: closeProps })}
             <HintButton label={`Close ${title}`} aria-label="Close">
               {#snippet child({ props: hintProps })}
-                <button {...mergeProps(closeProps, hintProps)} class="modal-close">Close</button>
+                <button {...mergeProps(closeProps, hintProps)} class="modal-close"><MaterialIcon name="close_small" size={28} /></button>
               {/snippet}
             </HintButton>
           {/snippet}
         </Dialog.Close></header>
-      <Dialog.Description class="hint modal-description">{description}</Dialog.Description>
+      {#if description}<Dialog.Description class="hint modal-description">{description}</Dialog.Description>{/if}
       {@render children()}
     </Dialog.Content>
   </Dialog.Portal>

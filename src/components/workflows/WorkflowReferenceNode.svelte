@@ -55,6 +55,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .workflow-reference-node { display: grid; align-content: center; justify-items: center; gap: 6px; width: 160px; padding: 14px 20px; text-align: center; }
   .workflow-kind { display: flex; align-items: center; gap: 5px; color: var(--color-muted-foreground); font-size: 10px; }
   strong { max-width: 100%; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
-  .instance-pill { position: absolute; top: 5px; right: 5px; min-width: 18px; padding: 0 5px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); font: 12px/18px Rationale, sans-serif; font-variant-numeric: tabular-nums; }
+  .instance-pill { min-width: 18px; padding: 0 5px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); font: 12px/18px Rationale, sans-serif; font-variant-numeric: tabular-nums; }
   .workflow-reference-node :global(.owner-port) { pointer-events: auto; cursor: default; }
 </style>

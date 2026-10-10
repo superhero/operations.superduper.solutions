@@ -3,3 +3,4 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 export type WorkspaceMode = "operations" | "workflow" | "settings";
+export type WorkflowSaveStatus = "loading" | "saving" | "saved" | "unsaved" | "error";

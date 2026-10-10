@@ -10,3 +10,21 @@ Feature: Direct workflow node manipulation
       | kind      |
       | operation |
       | data      |
+
+  Scenario Outline: A dragged node centers on the grid and moves freely when snapping is disabled
+    Then dragging a workflow "<kind>" snaps its center to the <gridSize>px grid and preserves its saved coordinates
+
+    Examples:
+      | kind      | gridSize |
+      | operation | 12       |
+      | data      | 12       |
+      | operation | 18       |
+      | data      | 18       |
+
+  Scenario Outline: Newly added nodes center on the configured grid independently of dragging snap
+    Then adding workflow nodes aligns their centers with snapping "<snap>" without moving existing nodes
+
+    Examples:
+      | snap |
+      | off  |
+      | on   |

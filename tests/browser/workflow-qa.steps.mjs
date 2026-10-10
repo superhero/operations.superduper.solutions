@@ -5,10 +5,11 @@ import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { workflow, workflowAction, setMode } from "./workspace.steps.mjs";
+import { storedWorkflows, blockWorkflowSaving, restoreWorkflowSaving } from "./workflow-storage.fixture.mjs";
+import { expectWorkflowName, renameWorkflow } from "./workflow-details.fixture.mjs";
 
 const storageKey = "operations-flow-documents-v1";
 const maxFileSize = 2_000_000;
-const workflowName = page => page.getByRole("textbox", { name: "Workflow name", exact: true });
 const toolbarButton = (page, action) => page.getByRole("button", { name: `${action} workflow`, exact: true });
 const replacementDialog = page => page.getByRole("dialog", { name: "Unsaved changes", exact: true });
 
@@ -28,7 +29,7 @@ async function loadFixtures(page, documents) {
   await page.evaluate(({ key, documents }) => localStorage.setItem(key, JSON.stringify(documents)), { key: storageKey, documents });
   await page.reload();
   await setMode(page, "workflow");
-  await expect(workflowName(page)).toHaveValue(documents.at(-1).name);
+  await expectWorkflowName(page, documents.at(-1).name);
 }
 
 async function readExport(page) {
@@ -49,14 +50,15 @@ async function chooseSaved(page, name) {
     .getByRole("button").filter({ has: page.getByText(name, { exact: true }) }).click();
 }
 
-Given("two saved QA workflows and an edited current draft", async function () {
+Given("two saved QA workflows and a draft that cannot autosave", async function () {
   this.qaOriginal = fixture("qa-current", "Original QA flow");
   this.qaOther = fixture("qa-other", "Other QA flow");
   await loadFixtures(this.page, [this.qaOther, this.qaOriginal]);
-  await workflowName(this.page).fill("Edited QA draft");
+  await blockWorkflowSaving(this.page);
+  await renameWorkflow(this.page, "Edited QA draft");
   await this.page.getByRole("button", { name: "Snap to grid", exact: true }).click();
   this.qaDraft = (await readExport(this.page)).document;
-  await expect(workflow(this.page).getByText("Unsaved changes", { exact: true })).toBeVisible();
+  await expect(this.page.locator(".site-header .document-meta").getByText("Not saved", { exact: true })).toBeVisible();
 });
 
 When("I cancel a pending {word} replacement with {word}", async function (action, dismissal) {
@@ -75,15 +77,17 @@ When("I cancel a pending {word} replacement with {word}", async function (action
 
 Then("the edited QA draft and useful focus are retained after {word}", async function (action) {
   if (action === "Open") await expect(workflow(this.page)).toBeFocused();
-  else if (action === "Import") await expect(this.page.getByRole("button", { name: "Workflow actions", exact: true })).toBeFocused();
+  else if (action === "Import") await expect(this.page.getByRole("button", { name: "Import workflow", exact: true })).toBeFocused();
   else await expect(toolbarButton(this.page, action)).toBeFocused();
   assert.deepEqual((await readExport(this.page)).document, this.qaDraft);
-  await expect(workflow(this.page).getByText("Unsaved changes", { exact: true })).toBeVisible();
-  assert.deepEqual(await this.page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey), [this.qaOther, this.qaOriginal]);
+  await expect(this.page.locator(".site-header .document-meta").getByText("Not saved", { exact: true })).toBeVisible();
+  assert.deepEqual(await storedWorkflows(this.page), [this.qaOther, this.qaOriginal]);
 });
 
 When("I open the {word} saved QA workflow with {string}", async function (target, choice) {
   await chooseSaved(this.page, (target === "current" ? this.qaOriginal : this.qaOther).name);
+  await expect(replacementDialog(this.page)).toBeVisible();
+  if (choice === "Save and continue") await restoreWorkflowSaving(this.page);
   await replacementDialog(this.page).getByRole("button", { name: choice, exact: true }).click();
   await expect(replacementDialog(this.page)).toBeHidden();
 });
@@ -91,11 +95,11 @@ When("I open the {word} saved QA workflow with {string}", async function (target
 Then("the {word} QA workflow reflects {string} and storage remains consistent", async function (target, choice) {
   const savedCurrent = choice === "Save and continue" ? this.qaDraft : this.qaOriginal;
   const expected = target === "current" ? savedCurrent : this.qaOther;
-  await expect(workflowName(this.page)).toHaveValue(expected.name);
   await expect(workflow(this.page)).toBeFocused();
-  await expect(workflow(this.page).getByText("Saved locally", { exact: true })).toBeVisible();
+  await expectWorkflowName(this.page, expected.name);
+  await expect(this.page.locator(".site-header .document-meta").getByText("Saved locally", { exact: true })).toBeVisible();
   assert.deepEqual((await readExport(this.page)).document, expected);
-  assert.deepEqual(await this.page.evaluate(key => JSON.parse(localStorage.getItem(key)), storageKey), [this.qaOther, savedCurrent]);
+  assert.deepEqual(await storedWorkflows(this.page), [this.qaOther, savedCurrent]);
 });
 
 Given("a connected saved QA workflow", async function () {
@@ -152,12 +156,12 @@ Given("a compact QA workflow file just below the import size limit", async funct
 When("I import, export and reimport the near-limit QA workflow", async function () {
   const upload = this.page.getByLabel("Import workflow file", { exact: true });
   await upload.setInputFiles({ name: "compact-workflow.json", mimeType: "application/json", buffer: this.qaBoundaryBuffer });
-  await expect(workflowName(this.page)).toHaveValue(this.qaBoundary.name);
+  await expectWorkflowName(this.page, this.qaBoundary.name);
   this.qaFirstImport = await readExport(this.page);
   assert.ok(this.qaFirstImport.buffer.length <= maxFileSize, "The exported file must fit the import byte limit.");
   await upload.setInputFiles({ name: "exported-workflow.json", mimeType: "application/json", buffer: this.qaFirstImport.buffer });
-  await replacementDialog(this.page).getByRole("button", { name: "Discard changes", exact: true }).click();
-  await expect(replacementDialog(this.page)).toBeHidden();
+  await expect.poll(async () => (await storedWorkflows(this.page)).length).toBe(2);
+  await expect(replacementDialog(this.page)).toHaveCount(0);
 });
 
 Then("the near-limit QA workflow preserves its graph under a new identity", async function () {
@@ -181,5 +185,5 @@ Then("exporting the oversized QA workflow explains how to reduce it without down
   await workflowAction(this.page, "Export");
   await expect(workflow(this.page).getByRole("alert")).toContainText("Reduce this plan before exporting it.");
   assert.equal(downloads.length, 0);
-  await expect(workflowName(this.page)).toHaveValue("Boundary QA flow");
+  await expectWorkflowName(this.page, "Boundary QA flow");
 });

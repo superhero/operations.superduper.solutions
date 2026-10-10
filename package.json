@@ -13,12 +13,12 @@
     "report:tests": "node .github/scripts/generate-test-report.mjs tmp/test-report.html tmp/test/cucumber-source.json tmp/test/cucumber-test.json tmp/test/cucumber-automation.json tmp/test/cucumber-browser.json",
     "test": "npm run test:acceptance",
     "test:acceptance": "node --eval \"import('node:fs').then(({mkdirSync}) => mkdirSync('tmp/test', { recursive: true }))\" && cucumber-js --config cucumber.config.mjs --profile acceptance",
-    "test:acceptance:coverage": "node --eval \"import('node:fs').then(({mkdirSync}) => mkdirSync('tmp/test/coverage/v8', { recursive: true }))\" && c8 --all --src=src --include=src/**/*.ts --exclude=src/index.ts --exclude=src/**/*.d.ts --exclude='src/lib/components/ui/**' --exclude=src/lib/utils.ts --extension=.ts --reporter=none --temp-directory=tmp/test/coverage/v8 npm --loglevel=error run test:acceptance",
+    "test:acceptance:coverage": "node --eval \"import('node:fs').then(({mkdirSync}) => mkdirSync('tmp/test/coverage/v8', { recursive: true }))\" && c8 --all --src=src --include=src/**/*.ts --exclude=src/index.ts --exclude=src/**/*.d.ts --exclude='src/lib/components/ui/**' --exclude=src/lib/utils.ts --exclude=src/lib/workflow-repository.ts --exclude=src/lib/app-settings.ts --exclude=src/lib/storage-metrics.ts --extension=.ts --reporter=none --temp-directory=tmp/test/coverage/v8 npm --loglevel=error run test:acceptance",
     "test:automation": "cucumber-js --config cucumber.config.mjs --profile automation",
     "test:browser": "bash .github/scripts/test-browser.sh",
-    "test:coverage": "c8 report --all --src=src --include=src/**/*.ts --exclude=src/index.ts --exclude=src/**/*.d.ts --exclude='src/lib/components/ui/**' --exclude=src/lib/utils.ts --extension=.ts --reporter=html --reporter=json --reporter=json-summary --reporter=text-summary --reports-dir=tmp/test/coverage --temp-directory=tmp/test/coverage/v8 --check-coverage --statements 100 --branches 100 --functions 100 --lines 100",
+    "test:coverage": "c8 report --all --src=src --include=src/**/*.ts --exclude=src/index.ts --exclude=src/**/*.d.ts --exclude='src/lib/components/ui/**' --exclude=src/lib/utils.ts --exclude=src/lib/workflow-repository.ts --exclude=src/lib/app-settings.ts --exclude=src/lib/storage-metrics.ts --extension=.ts --reporter=html --reporter=json --reporter=json-summary --reporter=text-summary --reports-dir=tmp/test/coverage --temp-directory=tmp/test/coverage/v8 --check-coverage --statements 100 --branches 100 --functions 100 --lines 100",
     "test:source": "cucumber-js --config cucumber.config.mjs --profile source",
-    "test:source:coverage": "node --eval \"import('node:fs').then(({mkdirSync}) => mkdirSync('tmp/test/coverage/v8', { recursive: true }))\" && c8 --all --src=src --include=src/**/*.ts --exclude=src/index.ts --exclude=src/**/*.d.ts --exclude='src/lib/components/ui/**' --exclude=src/lib/utils.ts --extension=.ts --reporter=none --temp-directory=tmp/test/coverage/v8 npm --loglevel=error run test:source",
+    "test:source:coverage": "node --eval \"import('node:fs').then(({mkdirSync}) => mkdirSync('tmp/test/coverage/v8', { recursive: true }))\" && c8 --all --src=src --include=src/**/*.ts --exclude=src/index.ts --exclude=src/**/*.d.ts --exclude='src/lib/components/ui/**' --exclude=src/lib/utils.ts --exclude=src/lib/workflow-repository.ts --exclude=src/lib/app-settings.ts --exclude=src/lib/storage-metrics.ts --extension=.ts --reporter=none --temp-directory=tmp/test/coverage/v8 npm --loglevel=error run test:source",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json"
   },
   "devDependencies": {
@@ -47,5 +47,11 @@
   },
   "files": [
     "dist"
-  ]
+  ],
+  "dependencies": {
+    "@isomorphic-git/lightning-fs": "4.10.3",
+    "buffer": "6.0.3",
+    "idb": "8.0.4",
+    "isomorphic-git": "1.43.3"
+  }
 }

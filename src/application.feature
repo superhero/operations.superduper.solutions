@@ -9,3 +9,6 @@ Feature: Application startup
     Given a document without an application mount target
     When the application starts
     Then startup fails with "Missing #app element"
+
+  Scenario: Dates follow browser language and local time without shifting calendar dates
+    Then displayed dates respect browser language and local time

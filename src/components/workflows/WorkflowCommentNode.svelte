@@ -49,7 +49,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <div bind:this={card} class="workflow-utility-node workflow-comment-node" class:selected>
   <div class="utility-title">
-    <MaterialIcon name="comment" size={20} /><strong>Comment</strong>
+    <MaterialIcon name="sticky_note" size={20} /><strong>Comment</strong>
     <HintButton type="button" class="utility-action nodrag nopan nokey" label={editing ? "Finish editing comment" : "Edit comment"}
       onpointerdown={event => { if (editing) event.preventDefault(); }}
       onclick={() => editing ? finish() : edit()}><MaterialIcon name={editing ? "check" : "edit"} size={18} /></HintButton>

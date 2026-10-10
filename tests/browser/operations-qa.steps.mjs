@@ -75,7 +75,11 @@ Then('changing motion preference settles visible details immediately', async fun
       await expect(details).toBeHidden();
       await expect(details.locator('.detail-report')).toHaveCount(0);
     }
+    await expect(page.locator('.step-viewport')).not.toHaveClass(/\bfollowing-content-size\b/);
   }
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(page.locator('.step-viewport')).toHaveCSS('transition-property', 'height');
+  await expect.poll(() => page.locator('.step-viewport').evaluate(element => parseFloat(getComputedStyle(element).transitionDuration))).toBeGreaterThan(0);
 });
 
 Then('the required Priority dropdown supports keyboard choice and cancellation', async function () {

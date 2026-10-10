@@ -5,13 +5,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
-  import { onMount, setContext, tick } from "svelte";
+  import { onMount, setContext, tick, untrack } from "svelte";
   import { Background, BackgroundVariant, ConnectionLineType, MarkerType, SvelteFlow, addEdge, type Edge, type Node, type Connection } from "@xyflow/svelte";
   import "@xyflow/svelte/dist/style.css";
   import { Button } from "$lib/components/ui/button/index.js";
   import HintButton from "$lib/components/HintButton.svelte";
+  import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { Operation } from "$lib/catalog.ts";
-  import { loadWorkflowDocuments, saveWorkflowDocument, removeWorkflowDocuments, parseWorkflowDocument, validateWorkflowDocument, maxWorkflowFileSize, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowDocumentEdge, type SwitchGate, type CastData } from "$lib/workflow-document.ts";
+  import { parseWorkflowDocument, validateWorkflowDocument, maxWorkflowFileSize, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowDocumentEdge, type SwitchGate, type CastData } from "$lib/workflow-document.ts";
+  import { workflowRepository, type WorkflowRepositoryState, type WorkflowRevision } from "$lib/workflow-repository.ts";
+  import type { WorkflowDefaults } from "$lib/app-settings.ts";
+  import type { WorkflowSaveStatus } from "$lib/workspace.d.ts";
+  import WorkflowHistory from "./workflows/WorkflowHistory.svelte";
   import { createOperationGraph, createUtilityNode, createWorkflowGraph, addSwitchGate, updateSwitchGate, removeSwitchGate, schemaBranches, isWorkflowConnection, removeGraphSelection, restoreDataBranch } from "$lib/workflow-graph.ts";
   import { adaptRoutingGates, routingInputTypes, workflowDescriptionLimit } from "$lib/workflow-utilities.ts";
   import { getOperationReport } from "$lib/operation-report.ts";
@@ -20,6 +25,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowMinimap from "./workflows/WorkflowMinimap.svelte";
   import WorkflowDataNode from "./workflows/WorkflowDataNode.svelte";
   import WorkflowConnectionSnap from "./workflows/WorkflowConnectionSnap.svelte";
+  import WorkflowSelection from "./workflows/WorkflowSelection.svelte";
   import WorkflowSwitchNode from "./workflows/WorkflowSwitchNode.svelte";
   import WorkflowCastNode from "./workflows/WorkflowCastNode.svelte";
   import WorkflowCommentNode from "./workflows/WorkflowCommentNode.svelte";
@@ -27,8 +33,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowRun from "./workflows/WorkflowRun.svelte";
   import Modal from "$lib/components/Modal.svelte";
 
-  let { active, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), documents = $bindable([]), libraryError = $bindable(""), onBrowse }:
-    { active: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; documents?: WorkflowDocument[]; libraryError?: string; onBrowse: () => void } = $props();
+  let { active, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
+    { active: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
   const nodeTypes = { operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
   type CanvasNode<T> = T extends WorkflowDocumentNode ? Node<T["data"], NonNullable<T["type"]>> & { type: NonNullable<T["type"]> } : never;
   type GraphNode = CanvasNode<WorkflowDocumentNode>;
@@ -41,11 +47,34 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let nodes = $state.raw<GraphNode[]>([]);
   let edges = $state.raw<GraphEdge[]>([]);
   let viewport = $state({ x: 0, y: 0, zoom: 1 });
-  let snap = $state(false);
-  let curved = $state(false);
-  let dashed = $state(false);
+  const initialWorkflowDefaults = untrack(() => workflowDefaults);
+  let snap = $state(initialWorkflowDefaults.snap);
+  let curved = $state(initialWorkflowDefaults.curved);
+  let dashed = $state(initialWorkflowDefaults.dashed);
+  const gridSize = $derived(workflowDefaults.gridSize);
   let savedSnapshot = $state("");
   let hasSavedDocument = $state(false);
+  let storageReady = $state(false);
+  let saveError = $state("");
+  let autosaveTimer: ReturnType<typeof setTimeout> | undefined;
+  let persistedRevision = $state<string | null>(null);
+  let saving = $state(false);
+  let actionBusy = $state(false);
+  let canUndo = $state(false);
+  let canRedo = $state(false);
+  let historyOpen = $state(false);
+  let historyLoading = $state(false);
+  let historyError = $state("");
+  let revisions = $state<WorkflowRevision[]>([]);
+  let savePromise: Promise<boolean> | null = null;
+  let queuedSnapshot: string | null = null;
+  let textEditing = $state(false);
+  let placement = $state.raw<Promise<void> | null>(null);
+  let movementAnnouncement = $state("");
+  let textEditTarget: EventTarget | null = null;
+  let initialDraft: WorkflowDocument | null = null;
+  let alive = true;
+  let refreshGeneration = 0;
   let error = $state("");
   let notice = $state("");
   let retry = $state<(() => void) | null>(null);
@@ -58,11 +87,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let dialogOpen = $state(false);
   let descriptionOpen = $state(false);
   let descriptionError = $state("");
-  let descriptionInput: HTMLTextAreaElement;
   let runOpen = $state(false);
   let runDocument = $state<WorkflowDocument | null>(null);
-  let fileMenuOpen = $state(false);
-  let pendingAction = $state<((didSave: boolean) => void) | null>(null);
+  let pendingAction = $state<((didSave: boolean) => void | Promise<void>) | null>(null);
   let replacementOpen = $state(false);
   let replacementError = $state("");
   let cancelReplacement = $state<HTMLButtonElement | null>(null);
@@ -73,10 +100,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let intent = 0;
   let replacementCompleted = false;
   let replacementReturnToCanvas = false;
+  let replacementOrigin: HTMLElement | null = null;
   let revision = $state(0);
   const selected = $derived(nodes.some(node => node.selected) || edges.some(edge => edge.selected));
-  const graphBlocked = $derived(!active || navigationModal || dialogOpen || replacementOpen || descriptionOpen || runOpen);
-  const keyboardActive = $derived(!graphBlocked && !fileMenuOpen);
+  const graphBlocked = $derived(!active || !storageReady || actionBusy || navigationModal || dialogOpen || replacementOpen || descriptionOpen || runOpen || historyOpen);
+  const keyboardActive = $derived(!graphBlocked);
   const snapshot = $derived(JSON.stringify(documentValue()));
   const dirty = $derived(snapshot !== savedSnapshot);
   const edgeOptions = $derived({ animated: dashed, markerEnd: { type: MarkerType.ArrowClosed }, type: curved ? "default" : "smoothstep", style: dashed ? "stroke-dasharray: 6 4" : "" });
@@ -109,9 +137,39 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
 
   $effect(() => { if (active) activated = true; });
-  $effect(() => { documentModal = dialogOpen || replacementOpen || descriptionOpen || runOpen; });
-  $effect(() => { if (graphBlocked) fileMenuOpen = false; });
+  $effect(() => { documentModal = actionBusy || dialogOpen || replacementOpen || descriptionOpen || runOpen || historyOpen; });
   $effect(() => { if (dirty) notice = ""; });
+  $effect(() => {
+    saveStatus = !storageReady ? "loading" : dirty || saving ? saveError ? "error" : "saving" : hasSavedDocument ? "saved" : "unsaved";
+  });
+  $effect(() => {
+    const defaults = workflowDefaults;
+    const ready = storageReady;
+    untrack(() => {
+      // An untouched initial canvas should use Settings even before New is pressed.
+      if (!ready || hasSavedDocument || dirty || saving || !initialDraft) return;
+      snap = defaults.snap;
+      curved = defaults.curved;
+      dashed = defaults.dashed;
+      savedSnapshot = JSON.stringify(documentValue());
+      initialDraft = JSON.parse(savedSnapshot);
+    });
+  });
+  $effect(() => {
+    const value = snapshot;
+    const editing = textEditing || placement !== null || nodes.some(node => node.dragging);
+    if (!storageReady) return;
+    untrack(() => {
+      cancelAutosave();
+      const previous = queuedSnapshot ?? savedSnapshot;
+      if (value === previous || editing) return;
+      if (versionedSnapshot(value) === versionedSnapshot(previous))
+        autosaveTimer = setTimeout(() => { void save(false, value); }, 300);
+      else void save(false, value);
+    });
+    return cancelAutosave;
+  });
+  $effect(() => { if (!active) untrack(flushAutosave); });
   $effect(() => {
     if (!replacementOpen && pendingAction) { pendingAction = null; replacementError = ""; intent += 1; }
   });
@@ -135,6 +193,67 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     return { ...node, type: node.type ?? "operation" } as GraphNode;
   }
 
+  function snapNodeCenter(node: GraphNode): GraphNode {
+    const width = node.measured?.width ?? node.width;
+    const height = node.measured?.height ?? node.height;
+    if (width === undefined || height === undefined) return node;
+    return { ...node, position: {
+      x: Math.round((node.position.x + width / 2) / gridSize) * gridSize - width / 2,
+      y: Math.round((node.position.y + height / 2) / gridSize) * gridSize - height / 2
+    } };
+  }
+
+  function updateCanvasNodes(updated: GraphNode[]) {
+    if (!snap) { nodes = updated; return; }
+    const previous = new Map(nodes.map(node => [node.id, node]));
+    nodes = updated.map(node => {
+      const before = previous.get(node.id);
+      // Keep load, measurement and selection updates at their saved positions.
+      if (!before || node.position.x === before.position.x && node.position.y === before.position.y) return node;
+      return snapNodeCenter(node);
+    });
+  }
+
+  function moveSnappedNodes(event: KeyboardEvent) {
+    if (!snap || !keyboardActive || !(event.target instanceof HTMLElement) ||
+      event.target.closest("input, textarea, select, [contenteditable], .nokey")) return;
+    const target = event.target.closest<HTMLElement>(".svelte-flow__node, .svelte-flow__selection-wrapper");
+    if (!target) return;
+    if (target.matches(".svelte-flow__node") && !nodes.some(node => node.id === target.dataset.id && node.selected && node.draggable !== false)) return;
+    const directions: Record<string, readonly [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    const direction = directions[event.key];
+    if (!direction) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const step = gridSize * (event.shiftKey ? 4 : 1);
+    nodes = nodes.map(node => node.selected && node.draggable !== false && !node.hidden
+      ? snapNodeCenter({ ...node, position: { x: node.position.x + direction[0] * step, y: node.position.y + direction[1] * step } })
+      : node);
+    const moved = nodes.find(node => node.selected && node.draggable !== false && !node.hidden);
+    if (moved) movementAnnouncement = `Moved ${event.key.slice(5).toLowerCase()}. Position ${Math.round(moved.position.x)}, ${Math.round(moved.position.y)}.`;
+  }
+
+  function selectNodeBranch(event: MouseEvent) {
+    if (!keyboardActive || event.shiftKey || !(event.target instanceof Element) ||
+      event.target.closest("button, a, input, textarea, select, [contenteditable], .nokey, .svelte-flow__handle")) return;
+    const wrapper = event.target.closest<HTMLElement>(".svelte-flow__node");
+    const clicked = nodes.find(node => node.id === wrapper?.dataset.id);
+    if (!clicked || clicked.hidden || clicked.type === "comment") return;
+    event.preventDefault();
+    event.stopPropagation();
+    const direction = clicked.type === "data" ? clicked.data.direction : null;
+    const visible = new Set(nodes.filter(node => !node.hidden).map(node => node.id));
+    const selection = new Set([clicked.id]);
+    // Schema branches follow inputs upstream and outputs downstream, without
+    // crossing user mappings to nodes on the opposite side of an operation.
+    for (const id of selection) for (const branch of branches.get(id)?.values() ?? []) {
+      if (!branch.hidden && visible.has(branch.childId) && (!direction || branch.direction === direction))
+        selection.add(branch.childId);
+    }
+    nodes = nodes.map(node => ({ ...node, selected: selection.has(node.id) }));
+    edges = edges.map(edge => edge.selected ? { ...edge, selected: false } : edge);
+  }
+
   function paintEdge(edge: WorkflowDocumentEdge): GraphEdge {
     return { ...edge, ...edgeOptions, ...(edge.kind === "schema" ? { class: "workflow-schema-edge" } : {}) };
   }
@@ -154,6 +273,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 
   function hydrate(document: WorkflowDocument, saved: boolean, stored = saved, focus: "name" | "canvas" | null = null) {
+    cancelAutosave();
+    textEditing = false;
+    textEditTarget = null;
     version = document.version;
     id = document.id;
     name = document.name;
@@ -165,34 +287,81 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     applyGraph(document);
     savedSnapshot = saved ? JSON.stringify(documentValue()) : "";
     hasSavedDocument = stored;
+    persistedRevision = null;
+    initialDraft = !stored && saved ? JSON.parse(snapshot) : null;
+    canUndo = canRedo = false;
+    saveError = "";
     revision += 1;
     error = notice = ""; retry = null;
-    if (focus) void tick().then(() => { if (active) { if (focus === "name") nameInput?.focus(); else focusCanvas(); } });
+    // Let replacement release its busy state before the dialog focuses Name.
+    if (focus) void tick().then(() => requestAnimationFrame(() => {
+      if (!active) return;
+      if (focus === "name") describeWorkflow();
+      else focusCanvas();
+    }));
+  }
+
+  function hydrateSaved(state: WorkflowRepositoryState, focus: "name" | "canvas" | null = null) {
+    hydrate(state.document, true, true, focus);
+    persistedRevision = state.revision;
+    canUndo = state.canUndo;
+    canRedo = state.canRedo;
   }
 
   onMount(() => {
     savedSnapshot = JSON.stringify(documentValue());
-    refreshDocuments(true);
-    const refresh = (event: StorageEvent) => { if (event.storageArea === localStorage) refreshDocuments(); };
-    window.addEventListener("storage", refresh);
-    return () => window.removeEventListener("storage", refresh);
+    initialDraft = JSON.parse(savedSnapshot);
+    void refreshDocuments(true);
+    const unsubscribe = workflowRepository.subscribe(() => { if (storageReady) void refreshDocuments(); });
+    const hidden = () => { if (window.document.visibilityState === "hidden") void flushAutosave(); };
+    const pageHidden = () => { void flushAutosave(); };
+    const input = (event: Event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return;
+      if (!canvas?.contains(target) && target.id !== "workflow-name" && target.id !== "workflow-description") return;
+      textEditTarget = target;
+      textEditing = true;
+    };
+    const blur = (event: FocusEvent) => {
+      if (event.target === textEditTarget) { textEditTarget = null; textEditing = false; }
+    };
+    window.addEventListener("pagehide", pageHidden);
+    window.document.addEventListener("visibilitychange", hidden);
+    window.document.addEventListener("input", input, true);
+    window.document.addEventListener("focusout", blur, true);
+    return () => {
+      alive = false;
+      void flushAutosave();
+      unsubscribe();
+      window.removeEventListener("pagehide", pageHidden);
+      window.document.removeEventListener("visibilitychange", hidden);
+      window.document.removeEventListener("input", input, true);
+      window.document.removeEventListener("focusout", blur, true);
+    };
   });
 
-  export function refreshDocuments(restoreLatest = false): boolean {
+  export async function refreshDocuments(restoreLatest = !storageReady): Promise<boolean> {
+    const generation = ++refreshGeneration;
     try {
-      documents = loadWorkflowDocuments(localStorage);
+      await workflowRepository.initialize();
+      const loaded = await workflowRepository.list();
+      if (!alive || generation !== refreshGeneration) return false;
+      documents = loaded;
       selectedDocuments = selectedDocuments.filter(id => documents.some(document => document.id === id));
       libraryError = "";
       if (restoreLatest && !nodes.length && !dirty) {
         const latest = documents.at(-1);
-        if (latest) hydrate(latest, true);
+        if (latest) {
+          const state = await workflowRepository.load(latest.id);
+          if (!alive || generation !== refreshGeneration) return false;
+          hydrateSaved(state);
+        }
       }
-      if (retry) { error = ""; retry = null; }
+      storageReady = true;
       return true;
     } catch (failure) {
-      describeFailure("Could not load saved workflows", failure);
-      libraryError = error;
-      retry = () => refreshDocuments(restoreLatest);
+      if (!alive || generation !== refreshGeneration) return false;
+      libraryError = `Could not load saved workflows: ${failure instanceof Error ? failure.message : String(failure)}`;
       return false;
     }
   }
@@ -200,6 +369,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const insertionPosition = () => ({ x: (180 - viewport.x) / viewport.zoom, y: (180 - viewport.y) / viewport.zoom });
 
   async function appendGraph(graph: Pick<WorkflowDocument, "nodes" | "edges">, nodeId: string, title: string, requiredVersion: 2 | 3) {
+    if (placement) await placement;
     try {
       if (nodes.length + graph.nodes.length > 500 || edges.length + graph.edges.length > 1000)
         throw new Error("A workflow supports at most 500 nodes and 1000 connections, including its schema panels.");
@@ -213,18 +383,31 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       const current = documentValue();
       validateWorkflowDocument({ ...current, version: Math.max(version, requiredVersion), nodes: [...current.nodes, ...graph.nodes], edges: [...current.edges, ...graph.edges] });
     } catch (failure) { describeFailure(`Could not add “${title}”`, failure); return; }
+    const addedIds = new Set(graph.nodes.map(node => node.id));
+    // Measure the rendered nodes before saving this addition, regardless of drag snapping.
+    placement = tick().then(() => {
+      const elements = new Map([...canvas?.querySelectorAll<HTMLElement>(".svelte-flow__node") ?? []]
+        .map(element => [element.dataset.id, element]));
+      nodes = nodes.map(node => {
+        const element = elements.get(node.id);
+        if (!addedIds.has(node.id) || !element?.offsetWidth || !element.offsetHeight) return node;
+        return snapNodeCenter({ ...node, measured: { width: element.offsetWidth, height: element.offsetHeight } });
+      });
+    }).finally(() => { placement = null; });
     version = Math.max(version, requiredVersion) as 2 | 3;
     nodes = [...nodes.map(node => ({ ...node, selected: false })), ...graph.nodes.map(node => ({ ...graphNode(node), selected: node.id === nodeId }))];
     edges = [...edges.map(edge => ({ ...edge, selected: false })), ...graph.edges.map(paintEdge)];
     error = "";
     notice = "";
+    await placement;
     await tick();
     await toolbar?.reveal(graph.nodes.filter(node => !node.hidden).map(node => node.id));
     if (active && !navigationModal) focusCanvas();
   }
 
   export async function addOperation(operation: Operation) {
-    if (documentModal) return;
+    if (!storageReady && !await refreshDocuments()) return;
+    if (documentModal || actionBusy) return;
     const nodeId = crypto.randomUUID();
     let schema: Record<string, unknown> | undefined;
     try { schema = getOperationReport(operation).schema; }
@@ -240,7 +423,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 
   export async function addWorkflow(document: WorkflowDocument) {
-    if (documentModal) return;
+    if (!storageReady && !await refreshDocuments()) return;
+    if (documentModal || actionBusy) return;
     const nodeId = crypto.randomUUID();
     try { await appendGraph(createWorkflowGraph(document, insertionPosition(), nodeId), nodeId, document.name, 3); }
     catch (failure) { describeFailure(`Could not add “${document.name}”`, failure); }
@@ -256,10 +440,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   function describeWorkflow() { descriptionError = ""; descriptionOpen = true; }
 
-  function saveDescription() {
+  async function saveWorkflowDetails() {
     version = 3;
-    if (save()) { descriptionOpen = false; descriptionError = ""; }
-    else descriptionError = error;
+    if (await flushAutosave()) { descriptionOpen = false; descriptionError = ""; }
+    else descriptionError = saveError;
   }
 
   function prepareConnection(connection: Connection): GraphEdge | null {
@@ -299,37 +483,105 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     edges = edges.map(edge => ({ ...edge, animated: dashed, style: dashed ? "stroke-dasharray: 6 4" : "" }));
   }
 
-  function save(inConfirmation = false): boolean {
-    try {
-      saveWorkflowDocument(localStorage, documentValue());
-      documents = loadWorkflowDocuments(localStorage);
-      savedSnapshot = snapshot;
-      hasSavedDocument = true;
-      error = libraryError = ""; retry = null;
-      notice = "Saved in this browser.";
-      return true;
-    } catch (failure) {
-      const message = `Could not save “${name}”: ${failure instanceof Error ? failure.message : String(failure)}`;
-      if (inConfirmation) replacementError = message;
-      else { error = message; retry = () => { save(); }; }
-      return false;
+  function cancelAutosave() {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = undefined;
+  }
+
+  function versionedSnapshot(value: string): string {
+    if (!value) return "";
+    const { viewport: _viewport, snap: _snap, curved: _curved, dashed: _dashed, ...content } = JSON.parse(value);
+    return JSON.stringify(content);
+  }
+
+  export async function flushPendingChanges(): Promise<boolean> { return flushAutosave(); }
+
+  async function flushAutosave(): Promise<boolean> {
+    cancelAutosave();
+    if (placement) await placement;
+    if (!storageReady) return !dirty && !saving;
+    if (savePromise && !await savePromise) return false;
+    while (dirty) {
+      if (!await save()) return false;
+    }
+    return true;
+  }
+
+  async function save(inConfirmation = false, savingSnapshot = snapshot): Promise<boolean> {
+    cancelAutosave();
+    if (!storageReady) return false;
+    if (savePromise && queuedSnapshot === savingSnapshot) return savePromise;
+    if (!savePromise && savingSnapshot === savedSnapshot) return true;
+    const savingId = id;
+    const value: WorkflowDocument = JSON.parse(savingSnapshot);
+    const previousSave = savePromise;
+    queuedSnapshot = savingSnapshot;
+    saving = true;
+    const operation = (async () => {
+      try {
+        // Capture each completed edit before waiting, so fast actions cannot overwrite it.
+        if (previousSave && !await previousSave) return false;
+        if (id !== savingId) return false;
+        if (savingSnapshot === savedSnapshot) return true;
+        let expectedRevision = persistedRevision;
+        if (expectedRevision === null && initialDraft?.id === savingId) {
+          const baseline = await workflowRepository.save(initialDraft, null, "Create workflow");
+          expectedRevision = baseline.revision;
+          if (id === savingId) persistedRevision = baseline.revision;
+          initialDraft = null;
+        }
+        const state = await workflowRepository.save(value, expectedRevision);
+        if (id === savingId) {
+          persistedRevision = state.revision;
+          savedSnapshot = savingSnapshot;
+          hasSavedDocument = true;
+          canUndo = state.canUndo;
+          canRedo = state.canRedo;
+          saveError = "";
+        }
+        return true;
+      } catch (failure) {
+        if (id === savingId) {
+          saveError = `Could not save “${value.name}”: ${failure instanceof Error ? failure.message : String(failure)}`;
+          if (inConfirmation) replacementError = saveError;
+        }
+        return false;
+      }
+    })();
+    savePromise = operation;
+    try { return await operation; }
+    finally {
+      if (savePromise === operation) { saving = false; savePromise = null; queuedSnapshot = null; }
     }
   }
 
-  function replace(action: (didSave: boolean) => void, returnToCanvas = false) {
-    if (dirty) { pendingAction = action; replacementReturnToCanvas = returnToCanvas; replacementError = ""; replacementOpen = true; }
-    else action(false);
+  async function replace(action: (didSave: boolean) => void | Promise<void>, returnToCanvas = false) {
+    if (actionBusy) return;
+    const origin = window.document.activeElement;
+    const hadChanges = dirty || saving;
+    actionBusy = true;
+    try {
+      if (!await flushAutosave()) {
+        replacementOrigin = origin instanceof HTMLElement ? origin : null;
+        pendingAction = action;
+        replacementReturnToCanvas = returnToCanvas;
+        replacementError = saveError || libraryError;
+        replacementOpen = true;
+      } else await action(hadChanges);
+    } catch (failure) { describeFailure("Could not open workflow", failure); }
+    finally { actionBusy = false; }
   }
 
   function newDocument() {
     intent += 1;
-    replace(() => hydrate({ version: 1, id: crypto.randomUUID(), name: "Untitled workflow", nodes: [], edges: [],
-      viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, dashed: false }, true, false, "name"));
+    void replace(() => hydrate({ version: 1, id: crypto.randomUUID(), name: "Untitled workflow", nodes: [], edges: [],
+      viewport: { x: 0, y: 0, zoom: 1 }, dashed: workflowDefaults.dashed, curved: workflowDefaults.curved,
+      snap: workflowDefaults.snap }, true, false, "name"));
   }
 
   function openDocuments() {
     intent += 1;
-    refreshDocuments();
+    void refreshDocuments();
     removal = null; removalError = ""; selectedDocuments = []; dialogOpen = true;
   }
 
@@ -337,22 +589,83 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     intent += 1;
     replacementCompleted = true;
     dialogOpen = false;
-    replace(didSave => hydrate(didSave && document.id === id ? documentValue() : document, true, true, "canvas"), true);
+    void replace(async () => hydrateSaved(await workflowRepository.load(document.id), "canvas"), true);
   }
 
   async function removeDocuments() {
-    if (!removal) return;
+    if (!removal || actionBusy) return;
     const requested = removal;
+    actionBusy = true;
+    cancelAutosave();
     try {
-      removeWorkflowDocuments(localStorage, removal.map(document => document.id));
-      documents = loadWorkflowDocuments(localStorage);
-      if (removal.some(document => document.id === id)) { savedSnapshot = ""; hasSavedDocument = false; }
+      if (savePromise) await savePromise;
+      if (!requested.some(document => document.id === id) && !await flushAutosave())
+        throw new Error(saveError || "The current workflow could not be saved.");
+      await workflowRepository.remove(requested.map(document => document.id));
+      if (requested.some(document => document.id === id)) {
+        cancelAutosave();
+        id = crypto.randomUUID();
+        savedSnapshot = snapshot;
+        initialDraft = JSON.parse(snapshot);
+        hasSavedDocument = false;
+        persistedRevision = null;
+        canUndo = canRedo = false;
+        saveError = "";
+      }
+      await refreshDocuments();
       selectedDocuments = selectedDocuments.filter(id => documents.some(document => document.id === id));
       removal = null;
       removalError = "";
       await tick();
       window.document.querySelector<HTMLElement>(".document-entry, .modal-close")?.focus();
     } catch (failure) { removalError = `Could not remove ${requested.length === 1 ? `“${requested[0]!.name}”` : `${requested.length} saved workflows`}: ${failure instanceof Error ? failure.message : String(failure)}`; }
+    finally {
+      actionBusy = false;
+      if (dirty && !saveError) autosaveTimer = setTimeout(() => { void save(); }, 300);
+    }
+  }
+
+  async function openHistory() {
+    if (actionBusy || !storageReady) return;
+    historyOpen = true;
+    historyLoading = true;
+    historyError = "";
+    try {
+      if (!await flushAutosave()) throw new Error(saveError || "The latest changes could not be saved.");
+      revisions = hasSavedDocument ? await workflowRepository.history(id) : [];
+    } catch (failure) { historyError = failure instanceof Error ? failure.message : String(failure); }
+    finally { historyLoading = false; }
+  }
+
+  async function changeVersion(action: "undo" | "redo" | "restore", oid?: string) {
+    if (actionBusy || !storageReady) return;
+    actionBusy = true;
+    historyError = "";
+    try {
+      if (!await flushAutosave() || !persistedRevision) throw new Error(saveError || "Save this workflow before changing versions.");
+      const state = action === "restore"
+        ? await workflowRepository.restore(id, oid!, persistedRevision)
+        : await workflowRepository[action](id, persistedRevision);
+      hydrateSaved(state);
+      await refreshDocuments();
+      if (historyOpen) revisions = await workflowRepository.history(id);
+    } catch (failure) {
+      const message = failure instanceof Error ? failure.message : String(failure);
+      if (historyOpen) historyError = message;
+      else { error = message; retry = () => { void changeVersion(action, oid); }; }
+    } finally { actionBusy = false; }
+  }
+
+  function historyShortcut(event: KeyboardEvent) {
+    if (!keyboardActive || event.defaultPrevented || !(event.ctrlKey || event.metaKey) || event.altKey) return;
+    const target = event.target;
+    if (target instanceof Element && target.closest('input, textarea, select, [contenteditable="true"]')) return;
+    const undo = event.key.toLowerCase() === "z" && !event.shiftKey;
+    const redo = (event.key.toLowerCase() === "z" && event.shiftKey) || event.key.toLowerCase() === "y";
+    if (undo || redo) {
+      event.preventDefault();
+      if (undo ? canUndo || dirty : canRedo && !dirty) void changeVersion(undo ? "undo" : "redo");
+    }
   }
 
   function exportDocument() {
@@ -363,7 +676,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       const url = URL.createObjectURL(file);
       const link = window.document.createElement("a");
       link.href = url;
-      link.download = `${document.name.replace(/[^a-z0-9-]/gi, "-") || "workflow"}.json`;
+      link.download = `${document.name.replace(/[^a-z0-9-]/gi, "-").toLowerCase() || "workflow"}.json`;
       link.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
       error = "";
@@ -381,23 +694,35 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       const document = parseWorkflowDocument(await file.text());
       if (generation !== intent) return;
       document.id = crypto.randomUUID();
-      replace(() => hydrate(document, false, false, "canvas"));
+      await replace(() => hydrate(document, false, false, "canvas"));
     } catch (failure) { if (generation === intent) describeFailure(`Could not import “${file.name}”`, failure); }
   }
 
-  function continueReplacement(shouldSave: boolean) {
-    if (shouldSave && !save(true)) return;
+  async function continueReplacement(shouldSave: boolean) {
+    if (actionBusy) return;
+    actionBusy = true;
+    if (shouldSave && !await flushAutosave()) { replacementError = saveError; actionBusy = false; return; }
+    cancelAutosave();
     const action = pendingAction;
     pendingAction = null;
     replacementCompleted = true;
     replacementOpen = false;
     replacementError = "";
-    action?.(shouldSave);
+    try { await action?.(shouldSave); }
+    catch (failure) { describeFailure("Could not open workflow", failure); }
+    finally { actionBusy = false; }
   }
 
   function restoreReplacementFocus(event: Event) {
-    if (replacementCompleted || replacementReturnToCanvas) event.preventDefault();
-    if (!replacementCompleted && replacementReturnToCanvas) void tick().then(focusCanvas);
+    if (replacementCompleted || replacementReturnToCanvas || replacementOrigin) event.preventDefault();
+    if (!replacementCompleted) {
+      const target = replacementOrigin;
+      void tick().then(() => requestAnimationFrame(() => {
+        if (target?.isConnected && !target.closest("[inert]")) target.focus({ preventScroll: true });
+        else focusCanvas();
+      }));
+    }
+    replacementOrigin = null;
     replacementCompleted = false;
     replacementReturnToCanvas = false;
   }
@@ -424,7 +749,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 
   function beforeUnload(event: BeforeUnloadEvent) {
-    if (dirty) { event.preventDefault(); event.returnValue = ""; }
+    // IndexedDB/Git writes are asynchronous: never claim a pending save is durable
+    // during unload. Ask the browser to keep the page open until it completes.
+    if (storageReady && (dirty || saving)) {
+      void flushAutosave();
+      event.preventDefault(); event.returnValue = "";
+    }
   }
 
   function documentSummary(document: WorkflowDocument): string {
@@ -433,16 +763,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 </script>
 
-<svelte:window onbeforeunload={beforeUnload} />
+<svelte:window onbeforeunload={beforeUnload} onkeydown={historyShortcut} />
 
-<section class="workflow-workspace" class:populated={nodes.length > 0} tabindex="-1" aria-label="Workflow canvas" inert={graphBlocked} bind:this={canvas}>
+<section class="workflow-workspace" class:populated={nodes.length > 0} tabindex="-1" aria-label="Workflow canvas" inert={graphBlocked} bind:this={canvas} onkeydowncapture={moveSnappedNodes} ondblclickcapture={selectNodeBranch}>
+  <span class="sr-only" aria-live="assertive" aria-atomic="true">{movementAnnouncement}</span>
   {#if activated}
   {#key revision}
-    <SvelteFlow bind:nodes bind:edges bind:viewport {nodeTypes} defaultEdgeOptions={edgeOptions} connectionLineType={curved ? ConnectionLineType.Bezier : ConnectionLineType.SmoothStep} onbeforeconnect={prepareConnection} onconnect={adaptGates}
+    <SvelteFlow bind:nodes={() => nodes, updateCanvasNodes} bind:edges bind:viewport {nodeTypes} defaultEdgeOptions={edgeOptions} connectionLineType={curved ? ConnectionLineType.Bezier : ConnectionLineType.SmoothStep} onbeforeconnect={prepareConnection} onconnect={adaptGates}
       defaultMarkerColor={null} connectionLineStyle={`marker-end: url(#${connectionMarkerId})`}
-      minZoom={0.25} maxZoom={2} snapGrid={snap ? [24, 24] : [1, 1]}
+      minZoom={0.25} maxZoom={2} {...(snap ? {} : { snapGrid: [1, 1] as [number, number] })}
       deleteKey={keyboardActive ? ["Backspace", "Delete"] : null} selectionKey={keyboardActive ? "Shift" : null}
-      multiSelectionKey={keyboardActive ? ["Meta", "Control"] : null} panActivationKey={keyboardActive ? " " : null}
+      multiSelectionKey={keyboardActive ? ["Shift", "Meta", "Control"] : null} panActivationKey={keyboardActive ? " " : null}
       zoomActivationKey={keyboardActive ? ["Meta", "Control"] : null} disableKeyboardA11y={!keyboardActive}
       isValidConnection={validConnection} onbeforedelete={beforeDelete}
       onconnectstart={() => connectionSnap?.start()}
@@ -455,35 +786,56 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         </marker></defs>
       </svg>
       <Background variant={BackgroundVariant.Dots} gap={24} size={2} />
+      <WorkflowSelection {canvas} active={keyboardActive} />
       <WorkflowConnectionSnap bind:this={connectionSnap} isValidConnection={validConnection} active={keyboardActive} {curved} {dashed} markerEnd={`url(#${connectionMarkerId})`} />
       {#if nodes.length}<WorkflowMinimap active={keyboardActive} />{/if}
-      <WorkflowToolbar bind:this={toolbar} bind:menuOpen={fileMenuOpen} {canvas} {active} {navigationOpen} {snap} {curved} {dashed} {selected}
+      <WorkflowToolbar bind:this={toolbar} {canvas} {active} {navigationOpen} {snap} {curved} {dashed} {selected}
         onsnap={() => snap = !snap} oncurved={switchCurve} ondashed={switchDashes}
-        onremove={removeSelected} onnew={newDocument} onopen={openDocuments} onsave={() => save()}
+        onremove={removeSelected} onnew={newDocument} onopen={openDocuments}
         onexport={exportDocument} onimport={() => upload.click()} onbrowse={onBrowse}
-        onutility={addUtility} ondescribe={describeWorkflow} onrun={() => startRun()} />
+        onutility={addUtility} ondescribe={describeWorkflow} onrun={() => startRun()}
+        canUndo={canUndo || (hasSavedDocument && dirty)} canRedo={canRedo && !dirty} historyBusy={actionBusy || saving}
+        onundo={() => changeVersion("undo")} onredo={() => changeVersion("redo")} onhistory={openHistory} />
     </SvelteFlow>
   {/key}
   {/if}
-  <div class="document-meta">
-    <input bind:this={nameInput} aria-label="Workflow name" maxlength={100} bind:value={name} />
-    <span class:unsaved={dirty} class:fresh={!dirty && !hasSavedDocument}><i aria-hidden="true"></i>{dirty ? "Unsaved changes" : hasSavedDocument ? "Saved locally" : "Not saved"}</span>
-  </div>
   {#if !nodes.length}
-    <div class="workflow-empty"><Button onclick={onBrowse}>Add operations from the left menu</Button></div>
+    <div class="workflow-empty"><Button onclick={onBrowse}><span>Add nodes<br />by selecting workflow operations<br />from the left menu</span></Button></div>
   {/if}
   <div class="workflow-message" aria-live="polite">
+    {#if saveError}<p role="alert">{saveError}</p><Button size="sm" onclick={() => save()}>Retry saving</Button>{/if}
     {#if error}<p role="alert">{error}</p>{#if retry}<Button size="sm" onclick={() => retry?.()}>Retry</Button>{/if}{:else if notice}<p>{notice}</p>{/if}
   </div>
   <input class="file-input" bind:this={upload} type="file" accept="application/json,.json" aria-label="Import workflow file" onchange={importDocument} />
 </section>
 
-<Modal bind:open={descriptionOpen} title="Workflow description" description="Describe what this workflow does." initialFocus={() => descriptionInput}>
+{#if !storageReady && libraryError}
+  <div class="workflow-load-error" role="alert"><p>{libraryError}</p><Button onclick={() => refreshDocuments(true)}>Retry</Button></div>
+{/if}
+
+<Modal bind:open={historyOpen} title="Workflow history"
+  onCloseAutoFocus={(event) => {
+    event.preventDefault();
+    void tick().then(() => requestAnimationFrame(() => {
+      if (active && !navigationModal) canvas?.querySelector<HTMLElement>('button[aria-label="Workflow history"]')?.focus({ preventScroll: true });
+    }));
+  }}>
+  {#if historyError}<p role="alert" class="error">{historyError}</p><Button onclick={openHistory}>Retry</Button>{/if}
+  {#if historyLoading}<p role="status">Loading history…</p>
+  {:else if historyOpen}<WorkflowHistory workflowId={id} {revisions} currentRevision={persistedRevision} busy={actionBusy} onrestore={(oid) => changeVersion("restore", oid)} />{/if}
+</Modal>
+
+<Modal bind:open={descriptionOpen} title="Workflow details" initialFocus={() => nameInput}>
+  <div class="workflow-name-field">
+    <label class="description-label" for="workflow-name">Name</label>
+    <input id="workflow-name" bind:this={nameInput} aria-label="Workflow name" maxlength={100} bind:value={name} disabled={actionBusy || !storageReady} />
+  </div>
   <label class="description-label" for="workflow-description">Description</label>
-  <textarea id="workflow-description" bind:this={descriptionInput} bind:value={description} maxlength={workflowDescriptionLimit}
+  <textarea id="workflow-description" bind:value={description} maxlength={workflowDescriptionLimit}
     oninput={() => version = 3} rows={5} placeholder="Explain the purpose of this workflow…"></textarea>
   {#if descriptionError}<p role="alert" class="error">{descriptionError}</p>{/if}
-  <div class="modal-actions"><Button onclick={saveDescription}>{descriptionError ? "Try again" : "Save description"}</Button></div>
+  <div class="modal-actions" style:justify-content="flex-end"><Button size="icon" aria-label={descriptionError ? "Try again" : "Save workflow details"}
+    tooltip={descriptionError ? "Try again" : "Save workflow details"} onclick={saveWorkflowDetails}><MaterialIcon name="save" size={20} /></Button></div>
 </Modal>
 
 <Modal bind:open={runOpen} title={`Run workflow: ${runDocument?.name ?? name}`} description="Review each step before running it. The operation's catalog determines whether its response is mocked or requested from a live service."
@@ -526,17 +878,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </Modal>
 
 <style>
+  .workflow-load-error { padding: 20px; color: var(--color-error-foreground); background: var(--color-error-background); }
   .workflow-workspace { position: relative; width: 100%; height: 100%; min-height: 0; container: workflow-canvas / inline-size; }
-  .document-meta { position: absolute; z-index: 5; top: calc(var(--workflow-toolbar-height, 36px) + 1.5rem); right: 1rem; display: grid; justify-items: end; gap: 4px; width: var(--workflow-toolbar-width, 350px); max-width: calc(100% - 2rem); padding: 4px; background: color-mix(in srgb, var(--color-background) 75%, transparent); }
-  .document-meta input { width: 100%; min-width: 0; height: 26px; border: 0; border-bottom: 1px solid transparent; background: transparent; color: inherit; font: inherit; font-size: 13px; font-weight: 650; text-align: right; text-overflow: ellipsis; }
-  .document-meta input:hover { border-bottom-color: var(--color-border); }
-  .document-meta input:focus { border-bottom-color: var(--color-accent); outline: none; }
-  .document-meta span { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--color-muted-foreground); }
-  .document-meta i { width: 6px; height: 6px; border-radius: 50%; background: var(--color-foreground); }
-  .document-meta .unsaved i { background: var(--color-accent); }
-  .document-meta .fresh i { background: transparent; }
   .workflow-empty { position: absolute; inset: 0; padding: 1rem; align-content: center; display: grid; justify-items: center; text-align: center; pointer-events: none; }
-  .workflow-empty :global(button) { pointer-events: auto; max-width: 100%; height: auto; min-height: 36px; white-space: normal; font-weight: 700; }
+  .workflow-empty :global(button) { pointer-events: auto; max-width: 100%; height: auto; min-height: 36px; white-space: normal; font-size: 12px; font-weight: 700; text-transform: uppercase; }
   .workflow-message { position: absolute; left: 1rem; bottom: 2.5rem; z-index: 6; max-width: min(500px, calc(100% - 2rem)); font-size: 12px; overflow-wrap: anywhere; }
   .workflow-message p { padding: 10px; border-radius: 4px; background: var(--color-surface); }
   .populated .workflow-message { max-width: min(500px, calc(100% - 228px)); }
@@ -544,7 +889,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .workflow-message [role="alert"] { color: var(--color-error-foreground); background: var(--color-error-background); border-left: 3px solid currentColor; }
   .file-input { display: none; }
   .description-label { display: block; margin-bottom: 8px; font-weight: 700; }
-  #workflow-description { display: block; width: 100%; padding: 12px; border: 0; border-radius: 4px; resize: vertical; background: var(--color-foreground); color: var(--color-background); }
+  .workflow-name-field { margin-bottom: 16px; }
+  #workflow-name, #workflow-description { display: block; width: 100%; padding: 12px; border: 0; border-radius: 4px; background: var(--color-foreground); color: var(--color-background); }
+  #workflow-description { resize: vertical; }
   #workflow-description::placeholder { color: var(--color-surface); }
   .document-selection { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
   .document-selection span { color: var(--color-muted-foreground); font-size: 12px; }
@@ -558,8 +905,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     .saved-documents :global(.document-entry:is(:hover,:focus-visible)) { transform: none; }
   }
   :global(.workflow-workspace .svelte-flow) { --xy-edge-stroke-default: var(--color-graph-line); --xy-edge-stroke-width: 2; --xy-edge-stroke-selected-default: var(--color-emphasis); --xy-connectionline-stroke-default: var(--color-emphasis); --xy-connectionline-stroke-width: 2; --xy-background-pattern-dots-color-default: color-mix(in srgb, var(--color-foreground) 13%, transparent); --xy-background-color-default: transparent; --xy-selection-background-color: color-mix(in srgb, var(--color-accent) 8%, transparent); --xy-selection-border: 1px dashed var(--color-accent); background: transparent; }
-  /* Focusable node wrappers move via transform; never ease their drag positions. */
-  :global(.workflow-workspace .svelte-flow__node) { transition: outline-color 180ms ease-in; }
+  /* Node contents provide focus feedback; wrapper outlines flash on blur. */
+  .workflow-workspace,
+  :global(.workflow-workspace :is(.svelte-flow, .svelte-flow__renderer, .svelte-flow__pane, .svelte-flow__background)) { outline: none; }
+  :global(.workflow-workspace .svelte-flow__node) { outline: none; transition: none; }
+  /* Remove inactive outlines immediately instead of fading from currentColor. */
+  :global(.workflow-workspace:not(:focus-visible)),
+  :global(.workflow-workspace :where(button, a[href], summary, input, select, textarea, [tabindex]):not(:focus-visible)) { outline-style: none; }
   :global(.workflow-workspace .svelte-flow__arrowhead polyline) { stroke: context-stroke; }
   :global(.workflow-workspace .svelte-flow__arrowhead polyline.arrowclosed) { fill: context-stroke; }
   :global(.workflow-workspace .svelte-flow__edge-path) { transition: stroke 120ms ease-in, stroke-width 120ms ease-in; }

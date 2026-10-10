@@ -64,6 +64,10 @@ Then('report and schema transitions retain content through interruption', async 
   await reportButton.click();
   await expect(report).toBeVisible();
   await expect.poll(() => report.evaluate(element => element.parentElement.getAnimations({ subtree: true }).length)).toBe(0);
+  await expect(page.locator('.step-viewport')).not.toHaveClass(/\bfollowing-content-size\b/);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(page.locator('.step-viewport')).toHaveCSS('transition-property', 'height');
+  await expect.poll(() => page.locator('.step-viewport').evaluate(element => parseFloat(getComputedStyle(element).transitionDuration))).toBeGreaterThan(0);
 });
 
 Then('native scrollbars expand on hover and settle without changing the reading position', async function () {
@@ -88,4 +92,51 @@ Then('native scrollbars expand on hover and settle without changing the reading 
   await page.mouse.move(1280 - metrics.width / 2, 160);
   await expect.poll(inset).toBe(0);
   await expect.poll(() => root.evaluate(element => element.getAnimations().length)).toBe(0);
+});
+
+Then('prompt examples and page overflow remain stable when resizing under a hovered arrow', async function () {
+  const page = this.page;
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.setViewportSize({ width: 500, height: 900 });
+  const arrow = page.getByRole('button', { name: 'Find operations', exact: true });
+  const firstExample = page.locator('.prompt-suggestion-list button').first();
+  await expect(firstExample).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  const thresholdWidth = await arrow.evaluate(element => {
+    const footer = element.closest('.prompt-footer');
+    const example = footer.querySelector('.prompt-suggestion-list button');
+    const available = footer.clientWidth - element.offsetWidth - parseFloat(getComputedStyle(footer).columnGap);
+    return Math.round(innerWidth - available + example.offsetWidth + 2);
+  });
+  await page.setViewportSize({ width: thresholdWidth + 1, height: 900 });
+  await expect(firstExample).toBeVisible();
+  const thresholdHeight = await page.evaluate(() => Math.floor(document.body.getBoundingClientRect().height) - 1);
+  await page.setViewportSize({ width: thresholdWidth + 1, height: thresholdHeight });
+  const before = await page.locator('.prompt-footer').evaluate(element => ({ height: element.offsetHeight,
+    overflow: document.documentElement.scrollHeight > document.documentElement.clientHeight,
+    gutter: innerWidth - document.documentElement.clientWidth }));
+  assert.ok(before.overflow && before.gutter > 0, 'The fixture must start just beyond page overflow with a real native scrollbar.');
+  const bounds = await arrow.boundingBox();
+  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height - 3);
+  await expect.poll(() => arrow.evaluate(element => element.getBoundingClientRect().width - element.offsetWidth)).toBeGreaterThan(3);
+  // A real resize invokes example fitting while the arrow is visually scaled by hover.
+  await page.setViewportSize({ width: thresholdWidth, height: thresholdHeight });
+  const samples = await page.locator('.prompt-footer').evaluate(async element => {
+    const result = [];
+    for (let frame = 0; frame < 90; frame += 1) {
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      const examples = element.querySelector('.prompt-suggestion-list');
+      result.push({ hidden: examples.hidden || examples.querySelector('button').hidden, height: element.offsetHeight,
+        overflow: document.documentElement.scrollHeight > document.documentElement.clientHeight });
+    }
+    return result;
+  });
+  assert.ok(samples.every(sample => !sample.hidden && sample.height === before.height && sample.overflow === before.overflow),
+    `Hover feedback must preserve the example, footer height, and page overflow: ${[...new Set(samples.map(sample => JSON.stringify(sample)))].join(', ')}`);
+  await page.mouse.move(0, 0);
+  await expect.poll(() => arrow.evaluate(element => element.getBoundingClientRect().width - element.offsetWidth)).toBe(0);
+  await expect(firstExample).toBeVisible();
+  assert.deepEqual(await page.locator('.prompt-footer').evaluate(element => ({ height: element.offsetHeight,
+    overflow: document.documentElement.scrollHeight > document.documentElement.clientHeight })),
+  { height: before.height, overflow: before.overflow }, 'Leaving the arrow must retain the same example layout and overflow.');
 });
