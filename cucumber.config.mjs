@@ -23,6 +23,10 @@ export const source = {
   import: [
     "src/application.test.mjs",
     "src/operations.test.mjs",
+    "src/integer-scale.test.mjs",
+    "src/metrics-history.test.mjs",
+    "src/metrics-series.test.mjs",
+    "src/logging.test.mjs",
     "src/operation-report.test.mjs",
     "src/workflow-document.test.mjs",
     "src/workflow-runner.test.mjs",
@@ -33,6 +37,10 @@ export const source = {
   paths: [
     "src/application.feature",
     "src/operations.feature",
+    "src/integer-scale.feature",
+    "src/metrics-history.feature",
+    "src/metrics-series.feature",
+    "src/logging.feature",
     "src/operation-report.feature",
     "src/workflow-document.feature",
     "src/workflow-runner.feature",

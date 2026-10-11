@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { When, Then } from "@cucumber/cucumber";
 import { extractOperations, operations } from "./lib/catalog.ts";
 import { evaluateOperations, rankOperations } from "./lib/matching.ts";
-import { InputValidationError, prepareRequest, validateInputValue } from "./lib/operation-input.ts";
+import { additionalBodyField, InputValidationError, prepareRequest, validateInputValue } from "./lib/operation-input.ts";
 
 const parameter = (schema = { type: "string" }, extra = {}) => ({ name: "value", in: "query", schema, ...extra });
 const document = (operation = {}, item = {}) => ({ openapi: "3.1.0", paths: { "/items": { ...item, get: operation } } });
@@ -128,8 +128,8 @@ const invalidCatalogs = {
   "an unsupported media type": () => withBody(undefined, { content: { "application/xml": {} } }),
   "invalid body required": () => withBody(undefined, { required: "yes" }),
   "an unknown schema type": () => withBody({ type: "date" }),
-  "dynamic body properties": () => withBody({ type: "object", properties: {}, additionalProperties: true }),
-  "undeclared required fields": () => withBody({ type: "object", properties: {}, required: ["missing"] }),
+  "invalid additional properties": () => withBody({ type: "object", additionalProperties: 42 }),
+  "undeclared required fields": () => withBody({ type: "object", properties: {}, additionalProperties: false, required: ["missing"] }),
   "invalid required fields": () => withBody({ type: "object", properties: {}, required: "value" }),
   "invalid operation tags": () => document({ tags: "Items" }),
   "blank operation tags": () => document({ tags: [""] })
@@ -402,7 +402,7 @@ Then("unsupported structures and serializations fail during catalog loading", fu
 
 Then("nested values enforce declared types, required fields and bounds", function ()
 {
-  const schema = { type: "array", minItems: 1, maxItems: 2, items: { type: "object", required: ["text"], properties: {
+  const schema = { type: "array", minItems: 1, maxItems: 2, items: { type: "object", additionalProperties: false, required: ["text"], properties: {
     text: { type: "string", minLength: 2, maxLength: 3, enum: ["ok", "yes"] },
     number: { type: "number", minimum: 1, maximum: 2 }, integer: { type: "integer" }, flag: { type: "boolean" }, empty: { type: "null" }
   } } };
@@ -430,4 +430,88 @@ Then("nested values enforce declared types, required fields and bounds", functio
   const result = prepareRequest(obj, { "body:child": '{"__proto__":"literal"}' });
   assert.equal(result.body.child.__proto__, "literal");
   assert.equal(Object.getPrototypeOf(result.body.child), Object.prototype);
+});
+
+Then("omitted and true additional properties preserve arbitrary JSON names and values", function ()
+{
+  const value = JSON.parse('{"known":"ok","items":true,"*":null,"a/b~c":{"list":[1,false]},"__proto__":"literal","constructor":3}');
+  for (const policy of [{}, { additionalProperties: true }, { additionalProperties: {} }, { additionalProperties: { description: "Any JSON value" } }])
+  {
+    const operation = bodyOperation({ type: "object", properties: {
+      dictionary: { type: "object", ...policy },
+      named: { type: "object", properties: { known: { type: "string" } }, ...policy }
+    }, ...policy });
+    assert.equal(operation.bodySchema.additionalProperties, policy.additionalProperties === undefined ? undefined : true);
+    const result = prepareRequest(operation, { "body:dictionary": JSON.stringify(value), "body:named": JSON.stringify(value) });
+    assert.deepEqual(result.body, { dictionary: value, named: value });
+    assert.equal(Object.getPrototypeOf(result.body.dictionary), Object.prototype);
+    assert.equal(Object.hasOwn(result.body.dictionary, "__proto__"), true);
+    assert.throws(() => prepareRequest(operation, { "body:named": '{"known":1}' }), /valid string/);
+    assert.throws(() => prepareRequest(operation, { "body:dictionary": '{"overflow":1e999}' }), /valid JSON/);
+  }
+  const closed = bodyOperation({ type: "object", properties: { dictionary: { type: "object", additionalProperties: false } } });
+  assert.deepEqual(prepareRequest(closed, { "body:dictionary": "{}" }).body, { dictionary: {} });
+  assert.throws(() => prepareRequest(closed, { "body:dictionary": '{"new":true}' }), /not a declared property/);
+});
+
+Then("additional property schemas retain references required names and value constraints", function ()
+{
+  const doc = withBody({ type: "object", additionalProperties: { $ref: "#/entry" }, required: ["first"], properties: {
+    note: { type: "string" }, dictionary: { type: "object", additionalProperties: { $ref: "#/entry" } }
+  } }, { required: true });
+  doc.entry = { type: "array", minItems: 1, items: { type: "object", required: ["count"], additionalProperties: false,
+    properties: { count: { type: "integer", minimum: 1, maximum: 3 } } } };
+  const operation = extractOperations(doc, "fixture")[0];
+  assert.equal(operation.bodySchema.additionalProperties.items.properties.count.maximum, 3);
+  const first = additionalBodyField(operation, "first", "string");
+  assert.equal(first.type, "array");
+  assert.equal(first.required, true);
+  assert.deepEqual(prepareRequest(operation, { "body:first": '[{"count":2}]', "body:note": "declared", "body:dictionary": '{"a/b~c":[{"count":1}]}' }, [first]).body,
+    { first: [{ count: 2 }], note: "declared", dictionary: { "a/b~c": [{ count: 1 }] } });
+  assert.throws(() => prepareRequest(operation, {}), /first is required/);
+  for (const [value, reason] of [["[]", /item count/], ['[{"count":0}]', /allowed range/], ['[{"count":1.5}]', /valid integer/],
+    ['[{"count":2,"extra":true}]', /not a declared property/], ['[{}]', /required/]])
+    assert.throws(() => prepareRequest(operation, { "body:first": value }, [first]), reason);
+  const recursive = withBody({ type: "object", additionalProperties: { $ref: "#/entry" } });
+  recursive.entry = recursive.paths["/items"].get.requestBody.content["application/json"].schema;
+  assert.throws(() => extractOperations(recursive, "fixture"), /nesting exceeds/);
+  const any = withBody({ type: "object", additionalProperties: { $ref: "#/anything" } });
+  any.anything = { description: "Unconstrained referenced schema" };
+  assert.equal(extractOperations(any, "fixture")[0].bodySchema.additionalProperties, true);
+});
+
+Then("dynamic body fields respect canonical policies and transport restrictions", function ()
+{
+  const operation = bodyOperation({ type: "object" });
+  const fields = [["string", "123", "123"], ["number", "123", 123], ["boolean", "true", true], ["null", "null", null],
+    ["object", '{"items":"literal"}', { items: "literal" }], ["array", '[1,"mixed",null]', [1, "mixed", null]]];
+  for (const [type, raw, value] of fields)
+  {
+    const field = additionalBodyField(operation, "__proto__", type);
+    const result = prepareRequest(operation, { "body:__proto__": raw }, [field]);
+    assert.equal(Object.hasOwn(result.body, "__proto__"), true);
+    assert.deepEqual(result.body.__proto__, value);
+    assert.equal(Object.getPrototypeOf(result.body), Object.prototype);
+  }
+  const candidate = additionalBodyField(operation, "extra", "string");
+  for (const raw of ["", "  "])
+    assert.deepEqual(prepareRequest({ ...operation, bodyRequired: false }, { "body:extra": raw }, [candidate]).body, { extra: raw });
+  assert.throws(() => prepareRequest(bodyOperation({ type: "object", additionalProperties: false }), { "body:extra": "value" }, [candidate]), /not allowed/);
+  assert.throws(() => prepareRequest(operation, {}, [{ ...candidate, key: "body:different" }]), /not allowed/);
+  const constrained = bodyOperation({ type: "object", additionalProperties: { type: "integer", minimum: 2 } });
+  assert.throws(() => prepareRequest(constrained, { "body:extra": "1" }, [candidate]), /allowed range/);
+  const query = inputOperation({ type: "object", additionalProperties: true }, { style: "deepObject" });
+  assert.deepEqual(prepareRequest(query, { "query:value": '{"added":false,"__proto__":"safe"}' }).query,
+    { "value[added]": false, "value[__proto__]": "safe" });
+  for (const raw of ['{"added":{}}', '{"added":[]}'])
+    assert.throws(() => prepareRequest(query, { "query:value": raw }), /primitive values/);
+  assert.throws(() => inputOperation({ type: "object", additionalProperties: { type: "array", items: { type: "string" } } }, { style: "deepObject" }), /serialization/);
+  for (const media of ["application/x-www-form-urlencoded", "multipart/form-data"])
+  {
+    const form = bodyOperation({ type: "object", additionalProperties: true }, media);
+    assert.deepEqual(prepareRequest(form, { "body:extra": "value" }, [candidate]).body, { extra: "value" });
+    for (const [type, raw] of [["object", "{}"], ["array", "[]"], ["null", "null"]])
+      assert.throws(() => prepareRequest(form, { "body:extra": raw }, [additionalBodyField(form, "extra", type)]), /primitive text values/);
+    assert.throws(() => bodyOperation({ type: "object", additionalProperties: { type: "object" } }, media), /primitive text fields/);
+  }
 });

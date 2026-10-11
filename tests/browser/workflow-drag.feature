@@ -3,6 +3,9 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Direct workflow node manipulation
+  Scenario: New operation trees use measured columns and reveal their owner to the right
+    Then added operation trees keep clear aligned columns and smoothly reveal the next graph to the right
+
   Scenario Outline: Dragged nodes follow the pointer with normal animations enabled
     Then dragging a workflow "<kind>" keeps its rendered position and connections synchronized
 

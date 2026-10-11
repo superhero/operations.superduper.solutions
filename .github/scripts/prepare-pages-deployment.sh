@@ -60,9 +60,14 @@ while [[ "$ancestor" != / && "$ancestor" != . ]]; do
 done
 shopt -s nullglob dotglob
 files=("$bundle"/*)
-[[ ${#files[@]} == 1 && "${files[0]}" == "$bundle/index.html" && -f "${files[0]}" && ! -L "${files[0]}" && -s "${files[0]}" ]] ||
-  fail 'Expected a single nonempty regular index.html in the bundle; additional files, directories, and symlinks are not supported.'
-bundle_hash="$(sha256sum -- "$bundle/index.html")" || fail 'Could not hash the application bundle.'
+[[ ${#files[@]} == 2 ]] ||
+  fail 'Expected only nonempty regular index.html and _headers files in the bundle; additional files, directories, and symlinks are not supported.'
+for filename in index.html _headers; do
+  [[ -f "$bundle/$filename" && ! -L "$bundle/$filename" && -s "$bundle/$filename" ]] ||
+    fail 'Expected only nonempty regular index.html and _headers files in the bundle; additional files, directories, and symlinks are not supported.'
+done
+# Include hosting metadata and fixed filenames, independent of the build directory.
+bundle_hash="$(cd -- "$bundle" && sha256sum -- index.html _headers | sha256sum)" || fail 'Could not hash the application bundle.'
 bundle_hash="${bundle_hash%% *}"
 alias="$(printf '%s' "$branch" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g')"
 [[ ${#alias} -le 63 ]] || fail 'Branch alias exceeds the DNS label limit of 63 characters.'

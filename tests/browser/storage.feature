@@ -7,10 +7,10 @@ Feature: Read-only browser storage dashboard
     Given a database containing indexed records and an empty store
     Then Storage shows native estimates and accurate database metadata without changing storage
 
-  Scenario: Workflow storage metrics reflect real Git history and refresh after another saved version
+  Scenario: Workflow storage metrics reflect real Git history when reopened after another saved version
     Given two independent Git workflows with saved versions
     Then Storage reports repository bytes and history without changing either workflow
-    And refreshing Storage includes the next saved workflow version
+    And reopening Storage includes the next saved workflow version
 
   Scenario: Storage inspects dirty Git state without rewriting files and isolates repository failures
     Given two independent Git workflows with saved versions

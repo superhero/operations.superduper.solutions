@@ -24,6 +24,14 @@ function fail(input: InputField, message: string): never
   throw new InputValidationError(input.key, `${input.label}: ${message}`);
 }
 
+function validateJson(input: InputField, value: JsonValue, path: string): void
+{
+  if (value === null || typeof value === "string" || typeof value === "boolean") return;
+  if (typeof value === "number" && Number.isFinite(value)) return;
+  if (typeof value !== "object") fail(input, `${path} must be a valid JSON value.`);
+  for (const [name, item] of Object.entries(value)) validateJson(input, item, `${path}.${name}`);
+}
+
 function validate(input: InputField, schema: InputSchema, value: JsonValue, path: string): void
 {
   const type = schema.type;
@@ -41,16 +49,19 @@ function validate(input: InputField, schema: InputSchema, value: JsonValue, path
     const items = value as JsonValue[];
     if (schema.minItems !== undefined && items.length < schema.minItems || schema.maxItems !== undefined && items.length > schema.maxItems)
       fail(input, `${path} item count is outside the allowed range.`);
-    items.forEach((item, index) => validate(input, schema.items!, item, `${path}[${index}]`));
+    items.forEach((item, index) => schema.items ? validate(input, schema.items, item, `${path}[${index}]`)
+      : validateJson(input, item, `${path}[${index}]`));
   }
   if (type === "object")
   {
     const properties = value as Record<string, JsonValue>;
-    for (const name of schema.required!) if (!Object.hasOwn(properties, name)) fail(input, `${path}.${name} is required.`);
+    for (const name of schema.required ?? []) if (!Object.hasOwn(properties, name)) fail(input, `${path}.${name} is required.`);
     for (const [name, item] of Object.entries(properties))
     {
-      if (!Object.hasOwn(schema.properties!, name)) fail(input, `${path}.${name} is not a declared property.`);
-      validate(input, schema.properties![name]!, item, `${path}.${name}`);
+      if (Object.hasOwn(schema.properties ?? {}, name)) validate(input, schema.properties![name]!, item, `${path}.${name}`);
+      else if (schema.additionalProperties === false) fail(input, `${path}.${name} is not a declared property.`);
+      else if (typeof schema.additionalProperties === "object") validate(input, schema.additionalProperties, item, `${path}.${name}`);
+      else validateJson(input, item, `${path}.${name}`);
     }
   }
 }
@@ -94,15 +105,37 @@ function set(target: object, name: string, value: JsonValue)
   Object.defineProperty(target, name, { value, enumerable: true, configurable: true });
 }
 
-export function prepareRequest(operation: Operation, values: Record<string, string>): PreparedRequest
+/** Resolve a concrete workflow property against the authoritative request-body schema. */
+export function additionalBodyField(operation: Operation, name: string, type: InputSchema["type"]): InputField | undefined
+{
+  const root = operation.bodySchema;
+  if (root?.type !== "object" || root.additionalProperties === false || Object.hasOwn(root.properties ?? {}, name)) return;
+  const schema: InputSchema = typeof root.additionalProperties === "object" ? root.additionalProperties : { type };
+  if (!["string", "number", "integer", "boolean", "object", "array", "null"].includes(schema.type)) return;
+  return { ...schema, key: `body:${name}`, name, label: name || "(empty name)", description: "", location: "body",
+    required: root.required?.includes(name) ?? false, schema };
+}
+
+export function prepareRequest(operation: Operation, values: Record<string, string>, workflowFields: InputField[] = operation.fields): PreparedRequest
 {
   const request: PreparedRequest = { method: operation.method, path: operation.path, query: {} };
   const body: Record<string, JsonValue> = {};
-  const hasBody = operation.bodyRequired || operation.fields.some(input => input.location === "body" && (values[input.key] ?? "").trim());
-  for (const input of operation.fields)
+  const fields = [...operation.fields];
+  for (const candidate of workflowFields)
+  {
+    if (candidate.location !== "body" || fields.some(field => field.key === candidate.key)) continue;
+    const input = candidate.key === `body:${candidate.name}` && additionalBodyField(operation, candidate.name, candidate.type);
+    if (!input) fail(candidate, "this body property is not allowed by the operation schema.");
+    fields.push(input);
+  }
+  const supplied = (input: InputField) => Boolean((values[input.key] ?? "").trim()
+    || input.location === "body" && input.type === "string" && operation.bodySchema?.type === "object"
+      && !Object.hasOwn(operation.bodySchema.properties ?? {}, input.name) && Object.hasOwn(values, input.key));
+  const hasBody = operation.bodyRequired || fields.some(input => input.location === "body" && supplied(input));
+  for (const input of fields)
   {
     const raw = values[input.key] ?? "";
-    if (!raw.trim())
+    if (!supplied(input))
     {
       if (input.required && (input.location !== "body" || hasBody)) fail(input, "this field is required.");
       continue;
@@ -111,7 +144,11 @@ export function prepareRequest(operation: Operation, values: Record<string, stri
     if (input.location === "path") request.path = request.path.replaceAll(`{${input.name}}`, encodeURIComponent(String(value)));
     else if (input.location === "query")
     {
-      if (input.type === "object") for (const [name, item] of Object.entries(value as Record<string, JsonValue>)) set(request.query, `${input.name}[${name}]`, item);
+      if (input.type === "object") for (const [name, item] of Object.entries(value as Record<string, JsonValue>))
+      {
+        if (item !== null && typeof item === "object") fail(input, "deepObject query values must be primitive values.");
+        set(request.query, `${input.name}[${name}]`, item);
+      }
       else set(request.query, input.name, value);
     }
     else if (input.location === "header")
@@ -121,11 +158,18 @@ export function prepareRequest(operation: Operation, values: Record<string, stri
       set(request.headers, input.name, String(value));
     }
     else if (operation.bodyValue) request.body = value;
-    else set(body, input.name, value);
+    else
+    {
+      if ((operation.bodyMediaType === "application/x-www-form-urlencoded" || operation.bodyMediaType === "multipart/form-data")
+        && (value === null || typeof value === "object")) fail(input, "form body properties must be primitive text values.");
+      set(body, input.name, value);
+    }
   }
   if (hasBody)
   {
     if (!operation.bodyValue) request.body = body;
+    if (operation.bodySchema) validateInputValue({ key: "body:$", name: "$", label: "Request body", description: "", location: "body",
+      type: operation.bodySchema.type, required: operation.bodyRequired, schema: operation.bodySchema }, request.body!);
     if (operation.bodyMediaType && operation.bodyMediaType !== "application/json") request.contentType = operation.bodyMediaType;
   }
   return request;

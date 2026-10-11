@@ -83,7 +83,7 @@ jobs:
     name: Test and Build
     needs: validate-pr
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - name: Checkout proposed merge
         uses: actions/checkout@v7
@@ -114,7 +114,7 @@ jobs:
 
       - name: Browser tests against the built bundle
         id: browser
-        timeout-minutes: 20
+        timeout-minutes: 30
         run: npm --loglevel=error run test:browser
 
       - name: Upload browser results and diagnostics

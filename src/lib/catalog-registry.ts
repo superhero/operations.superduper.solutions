@@ -16,7 +16,7 @@ export type CatalogGroup = {
 };
 
 export type Catalog = {
-  id: "demo" | "httpbin";
+  id: string;
   file: string;
   name: string;
   document: Record<string, unknown>;
@@ -25,7 +25,7 @@ export type Catalog = {
 };
 
 /** Source schemas, navigation and execution routes share the same registration. */
-export const catalogs: readonly Catalog[] = [
+export const bundledCatalogs: readonly Catalog[] = [
   {
     id: "demo", file: "demo.openapi.json", name: demo.info.title, document: demo, groups: demoGroups,
     execution: { kind: "http", origin: "https://example.com" }
@@ -36,6 +36,14 @@ export const catalogs: readonly Catalog[] = [
   }
 ];
 
+export let catalogs: readonly Catalog[] = bundledCatalogs;
+
+/** Catalog updates go through updateCatalogs so the operation index changes with them. */
+export function replaceCatalogs(next: readonly Catalog[]): void {
+  catalogs = next;
+}
+
 export function catalogForOperation(operationId: string): Catalog | undefined {
-  return catalogs.find(catalog => operationId.startsWith(`${catalog.id}:`));
+  const separator = operationId.indexOf(":");
+  return separator < 0 ? undefined : catalogs.find(catalog => catalog.id === operationId.slice(0, separator));
 }

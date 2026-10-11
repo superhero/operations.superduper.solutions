@@ -4,8 +4,8 @@
 
 import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
-import { workflowStorageKey, maxWorkflowFileSize, validateWorkflowDocument, parseWorkflowDocument, loadWorkflowDocuments, saveWorkflowDocument, removeWorkflowDocument, removeWorkflowDocuments } from "./lib/workflow-document.ts";
-import { createOperationGraph, schemaBranches, isWorkflowConnection, removeGraphSelection, restoreDataBranch, createUtilityNode, createWorkflowGraph, addSwitchGate, updateSwitchGate, removeSwitchGate } from "./lib/workflow-graph.ts";
+import { maxWorkflowFileSize, validateWorkflowDocument, parseWorkflowDocument } from "./lib/workflow-document.ts";
+import { createOperationGraph, schemaBranches, isWorkflowConnection, removeGraphSelection, restoreDataBranch, createUtilityNode, createWorkflowGraph, addSwitchGate, updateSwitchGate, removeSwitchGate, getAdditionalPropertyTypes, addAdditionalProperty, getEditableAdditionalProperties, updateAdditionalProperty, removeAdditionalProperty } from "./lib/workflow-graph.ts";
 import { numericValue, castValue, matchesSwitchGate, matchingSwitchGates, routingInputTypes, operatorsForType, gateForType,
   adaptRoutingGates, switchGateInput, workflowInterface, isValueConnection } from "./lib/workflow-utilities.ts";
 
@@ -16,14 +16,6 @@ function plan() {
     { id: "second", position: { x: 200, y: 100 }, data: { ...data } }
   ], edges: [{ id: "connection", source: "first", target: "second" }],
   viewport: { x: -80, y: 12, zoom: 0.75 }, snap: true, curved: false, dashed: true };
-}
-
-function memory(initial = null) {
-  let value = initial;
-  return {
-    getItem(key) { assert.equal(key, workflowStorageKey); return value; },
-    setItem(key, next) { assert.equal(key, workflowStorageKey); value = next; }
-  };
 }
 
 Given("a workflow connecting two instances of the same operation", function () { this.plan = plan(); });
@@ -76,66 +68,6 @@ Then("malformed and oversized workflow files are rejected", function () {
   assert.throws(() => parseWorkflowDocument("not json"), SyntaxError);
   assert.throws(() => parseWorkflowDocument(" ".repeat(maxWorkflowFileSize + 1)), /smaller than 2 MB/);
 });
-Given("an empty local workflow collection", function () { this.storage = memory(); assert.deepEqual(loadWorkflowDocuments(this.storage), []); });
-When("a workflow is saved, renamed, and saved again", function () {
-  saveWorkflowDocument(this.storage, plan());
-  saveWorkflowDocument(this.storage, { ...plan(), name: "Updated review" });
-});
-Then("there is one saved workflow with the new name", function () {
-  const saved = loadWorkflowDocuments(this.storage);
-  assert.equal(saved.length, 1);
-  assert.equal(saved[0].name, "Updated review");
-});
-When("that workflow is removed", function () {
-  removeWorkflowDocument(this.storage, "not-the-document");
-  assert.equal(loadWorkflowDocuments(this.storage).length, 1);
-  removeWorkflowDocument(this.storage, "plan-1");
-});
-Then("the local workflow collection is empty", function () { assert.deepEqual(loadWorkflowDocuments(this.storage), []); });
-
-Given("a version 1 document saved under the original storage key", function () {
-  // A pre-rename payload and key are deliberately independent of the new helpers.
-  this.originalStorageKey = "operations-flow-documents-v1";
-  this.originalDocuments = JSON.parse(`[{"version":1,"id":"existing-1","name":"Untitled flowchart","nodes":[{"id":"operation-1","position":{"x":10,"y":20},"data":{"operationId":"demo:listProjects","name":"List projects","description":"","method":"GET","path":"/projects"}}],"edges":[],"viewport":{"x":-80,"y":12,"zoom":0.75},"snap":true,"curved":false,"dashed":true}]`);
-  this.storedValues = new Map([[this.originalStorageKey, JSON.stringify(this.originalDocuments)]]);
-  this.storage = {
-    getItem: key => this.storedValues.get(key) ?? null,
-    setItem: (key, value) => this.storedValues.set(key, value)
-  };
-});
-When("that saved document is loaded and saved as a workflow", function () {
-  this.loadedDocuments = loadWorkflowDocuments(this.storage);
-  assert.deepEqual(this.loadedDocuments, this.originalDocuments);
-  saveWorkflowDocument(this.storage, this.loadedDocuments[0]);
-});
-Then("its storage key, document name, and version 1 data remain unchanged", function () {
-  assert.equal(workflowStorageKey, this.originalStorageKey);
-  assert.deepEqual([...this.storedValues.keys()], [this.originalStorageKey]);
-  assert.deepEqual(JSON.parse(this.storedValues.get(this.originalStorageKey)), this.originalDocuments);
-});
-
-Then("invalid and duplicate stored collections are rejected", function () {
-  for (const value of [{}, Array(51).fill(plan())]) {
-    assert.throws(() => loadWorkflowDocuments(memory(JSON.stringify(value))), /at most 50 documents/);
-  }
-  assert.throws(() => loadWorkflowDocuments(memory(JSON.stringify([plan(), plan()]))), /IDs must be unique/);
-  assert.throws(() => loadWorkflowDocuments(memory("broken")), SyntaxError);
-});
-Then("a full collection rejects a new plan but permits updating an existing plan", function () {
-  const documents = Array.from({ length: 50 }, (_, index) => ({ ...plan(), id: String(index) }));
-  const storage = memory(JSON.stringify(documents));
-  assert.throws(() => saveWorkflowDocument(storage, plan()), /collection is full/);
-  saveWorkflowDocument(storage, { ...plan(), id: "0", name: "Updated" });
-  assert.equal(loadWorkflowDocuments(storage).length, 50);
-  assert.equal(loadWorkflowDocuments(storage).at(-1).name, "Updated");
-});
-Then("storage access and quota failures are reported to the caller", function () {
-  const blocked = { getItem() { throw new Error("Storage is blocked"); } };
-  assert.throws(() => loadWorkflowDocuments(blocked), /Storage is blocked/);
-  const quota = { ...memory(), setItem() { throw new Error("Quota exceeded"); } };
-  assert.throws(() => saveWorkflowDocument(quota, plan()), /Quota exceeded/);
-  assert.throws(() => removeWorkflowDocument(quota, "plan-1"), /Quota exceeded/);
-});
 
 function schemaFixture() {
   const operation = { id: "fixture:transform", name: "Transform project", description: "A documented visual example.",
@@ -184,9 +116,9 @@ Then("location panels and all documented HTTP response panels have stable named 
   assert.ok(nodes.some(node => node.data.label === "Response · 200"));
   assert.ok(nodes.some(node => node.data.label === "Response · 400"));
   const error = panel(this.rich, "producer", "outputs", "error").data.fields[0];
-  assert.deepEqual(JSON.parse(decodeURIComponent(error.id)), ["output:400:application/json", "/error"]);
+  assert.deepEqual(JSON.parse(decodeURIComponent(error.id)), ["response:400:application/json", "/body/error"]);
   const escaped = panel(this.rich, "producer", "outputs", "a/b~c").data.fields.find(field => field.label === "a/b~c");
-  assert.deepEqual(JSON.parse(decodeURIComponent(escaped.id)), ["output:200:application/json", "/a~1b~0c"]);
+  assert.deepEqual(JSON.parse(decodeURIComponent(escaped.id)), ["response:200:application/json", "/body/a~1b~0c"]);
   assert.ok(nodes.every(node => node.data.fields.every(field => field.id !== "value")));
   assert.equal(panel(this.rich, "producer", "inputs", "name").data.fields.find(field => field.label === "name").required, true);
   assert.equal(panel(this.rich, "producer", "inputs", "projectId").data.fields[0].description, "Project identity");
@@ -212,7 +144,7 @@ Then("location panels and all documented HTTP response panels have stable named 
     "Response · default · application/json", "Response · default · text/plain"
   ]);
   const fallback = panel(allResponses, "all-responses", "outputs", "message").data.fields[0];
-  assert.deepEqual(JSON.parse(decodeURIComponent(fallback.id)), ["output:default:application/json", "/message"]);
+  assert.deepEqual(JSON.parse(decodeURIComponent(fallback.id)), ["response:default:application/json", "/body/message"]);
   assert.deepEqual(validateWorkflowDocument({ ...plan(), version: 2, ...allResponses }).nodes, allResponses.nodes);
 });
 Then("examples never invent workflow fields", function () {
@@ -224,9 +156,103 @@ Then("examples never invent workflow fields", function () {
   assert.ok(!this.rich.nodes.some(node => node.type === "data" && node.data.fields.some(field => field.label === "inventedFromExample")));
   document.paths[operation.path].post.responses["200"].content["application/json"].schema = { type: "object", example: { invented: "x" } };
   const exampleOnly = createOperationGraph(operation, { x: 0, y: 0 }, "example", document);
-  const output = exampleOnly.nodes.find(node => node.type === "data" && node.data.direction === "outputs");
+  const output = exampleOnly.nodes.find(node => node.type === "data" && node.data.label === "Response body");
   assert.deepEqual(output.data.fields, []);
   assert.match(output.data.notice, /No named properties/);
+});
+
+Then("response outputs retain status messages body shapes and referenced header contracts", function () {
+  const { operation, document } = schemaFixture();
+  document.components = {
+    headers: { Limit: { description: "Requests remaining", schema: { type: "integer" } } },
+    schemas: { Payload: { type: "object", title: "Server payload", properties: { id: { type: "string" } } } },
+    responses: { Success: { description: "Successful response", headers: {
+      "X-Limit": { $ref: "#/components/headers/Limit" },
+      "X-Trace": { schema: { type: "string" }, description: "Request trace", required: true },
+      "X-Unknown": { $ref: "#/missing/header" }
+    }, content: { "application/json": { schema: { $ref: "#/components/schemas/Payload" } } } } }
+  };
+  document.paths[operation.path].post.responses = {
+    "200": { $ref: "#/components/responses/Success" },
+    "201": { description: "Created", content: { "text/plain": { schema: { type: "string" } } } },
+    "202": { description: "Accepted", content: { "application/json": {} } },
+    "204": { description: "No content" },
+    "206": { description: "Partial", content: { "application/json": { schema: { type: "array", items: { type: "integer" } } } } },
+    "500": { $ref: "#/missing/response" }
+  };
+  const graph = createOperationGraph(operation, { x: 0, y: 0 }, "response", document);
+  const root = status => graph.nodes.find(node => node.type === "data" && node.data.label === `Response · ${status}`);
+  assert.deepEqual(root("200").data.fields.map(field => [field.label, field.type]), [
+    ["Status", "Integer"], ["Status message", "Text"], ["Response body", "Object"], ["Response headers", "Object"]
+  ]);
+  assert.deepEqual(root("200").data.fields.map(field => JSON.parse(decodeURIComponent(field.id))),
+    ["status", "statusText", "body", "headers"].map(name => ["response:200:application/json", `/${name}`]));
+  assert.equal(root("200").data.fields[0].description, "Successful response");
+  assert.equal(root("201").data.fields[2].type, "Text");
+  assert.equal(root("202").data.fields[2].type, "Unknown");
+  assert.equal(root("202").data.fields[2].connectable, false);
+  assert.equal(root("204").data.fields[2].type, "Null");
+  assert.equal(root("206").data.fields[2].type, "Array");
+  assert.equal(root("500").data.fields[2].type, "Unknown");
+  const branches = schemaBranches(graph.nodes, graph.edges);
+  const body = graph.nodes.find(node => node.id === branches.get(root("200").id).get(root("200").data.fields[2].id).childId);
+  assert.equal(body.data.label, "Response body");
+  assert.deepEqual(body.data.fields.map(field => field.label), ["id"]);
+  const headers = graph.nodes.find(node => node.id === branches.get(root("200").id).get(root("200").data.fields[3].id).childId);
+  assert.deepEqual(headers.data.fields.map(field => [field.label, field.type]), [["X-Limit", "Integer"], ["X-Trace", "Text"], ["X-Unknown", "Unknown"]]);
+  assert.equal(headers.data.fields[0].description, "Requests remaining");
+  assert.equal(headers.data.fields[1].required, true);
+  assert.equal(headers.data.fields[2].connectable, false);
+  assert.deepEqual(JSON.parse(decodeURIComponent(headers.data.fields[0].id)), ["response:200:application/json", "/headers/X-Limit"]);
+  importedGraph(graph);
+});
+
+Then("response body and header properties remain editable without changing legacy body identities", function () {
+  const { graph: original, node: body, document } = additionalFixture({ type: "object" });
+  const root = original.nodes.find(node => node.type === "data" && node.data.label === "Response · 200");
+  assert.deepEqual(getAdditionalPropertyTypes(original.nodes, root.id, document), []);
+  let graph = addAdditionalProperty(original.nodes, original.edges, body.id, "custom", "Object", document);
+  const custom = graph.nodes.find(node => node.type === "data" && node.data.label === "custom");
+  graph = addAdditionalProperty(graph.nodes, graph.edges, custom.id, "value", "Text", document);
+  assert.deepEqual(JSON.parse(decodeURIComponent(graph.nodes.find(node => node.id === custom.id).data.fields[0].id)),
+    ["response:200:application/json", "/body/custom/value"]);
+  const headers = graph.nodes.find(node => node.id === `additional:${encodeURIComponent(JSON.stringify(["response:200:application/json", "/headers"]))}`);
+  assert.deepEqual(getAdditionalPropertyTypes(graph.nodes, headers.id, document), ["Text"]);
+  graph = addAdditionalProperty(graph.nodes, graph.edges, headers.id, "X-Custom", "Text", document);
+  assert.deepEqual(JSON.parse(decodeURIComponent(graph.nodes.find(node => node.id === headers.id).data.fields[0].id)),
+    ["response:200:application/json", "/headers/X-Custom"]);
+  importedGraph(graph);
+  const owner = original.nodes[0];
+  const legacy = { id: `${owner.id}:${encodeURIComponent(JSON.stringify(["output:200:application/json", ""]))}`,
+    type: "data", position: { x: 300, y: 0 }, data: { ownerId: owner.id, direction: "outputs", label: "Response · 200", fields: [] } };
+  const old = addAdditionalProperty([owner, legacy], [{ id: `schema:${legacy.id}`, kind: "schema", source: owner.id,
+    target: legacy.id, sourceHandle: `schema:${legacy.id}`, targetHandle: "value" }], legacy.id, "original", "Text", document);
+  assert.deepEqual(JSON.parse(decodeURIComponent(old.nodes[1].data.fields[0].id)), ["output:200:application/json", "/original"]);
+  importedGraph(old);
+});
+
+Then("open response header objects add only wire text unless a property schema declares another type", function () {
+  for (const [additional, type] of [[undefined, "Text"], [true, "Text"], [{}, "Text"],
+    [{ $ref: "#/components/schemas/Free" }, "Text"], [{ type: "integer" }, "Integer"],
+    [{ $ref: "#/components/schemas/Count" }, "Integer"]]) {
+    const { operation, document } = schemaFixture();
+    document.components = { schemas: { Free: {}, Count: { type: "integer" } } };
+    document.paths[operation.path].post.responses[200].headers = { "X-Object": { schema: {
+      type: "object", ...(additional === undefined ? {} : { additionalProperties: additional })
+    } } };
+    let graph = createOperationGraph(operation, { x: 0, y: 0 }, "headers", document);
+    const node = graph.nodes.find(node => node.type === "data" && node.data.label === "X-Object");
+    assert.deepEqual(getAdditionalPropertyTypes(graph.nodes, node.id, document), [type]);
+    graph = addAdditionalProperty(graph.nodes, graph.edges, node.id, "value", type, document);
+    const property = getEditableAdditionalProperties(graph.nodes, node.id, document)[0];
+    assert.deepEqual(property.types, [type]);
+    assert.throws(() => addAdditionalProperty(graph.nodes, graph.edges, node.id, "nested", "Object", document), /not permitted/);
+    assert.throws(() => updateAdditionalProperty(graph.nodes, graph.edges, node.id, property.fieldId, "value",
+      type === "Text" ? "Integer" : "Text", document), /not permitted/);
+    graph = updateAdditionalProperty(graph.nodes, graph.edges, node.id, property.fieldId, "renamed", type, document);
+    assert.equal(graph.nodes.find(item => item.id === node.id).data.fields[0].type, type);
+    importedGraph(graph);
+  }
 });
 When("a named output field is mapped to an input field", function () {
   this.mapping = mapping(this.rich);
@@ -237,14 +263,12 @@ When("a separate schema branch is hidden", function () {
   const child = panel(this.rich, "producer", "inputs", "active");
   this.rich = replaceGraph(this.rich, removeGraphSelection({ nodes: [{ id: child.id }], edges: [] }, this.rich.nodes, this.rich.edges));
 });
-Then("the version 2 workflow survives a save and import with its handles and branch state", function () {
+Then("the version 2 workflow survives export and import with its handles and branch state", function () {
   this.rich.nodes[0].selected = true;
   this.rich.nodes[0].width = 160;
   this.rich.nodes[0].measured = { width: 160, height: 100 };
   this.rich.edges[0].selected = true;
-  const storage = memory();
-  saveWorkflowDocument(storage, this.rich);
-  this.richImported = parseWorkflowDocument(JSON.stringify(loadWorkflowDocuments(storage)[0]));
+  this.richImported = parseWorkflowDocument(JSON.stringify(this.rich));
   assert.equal(this.richImported.version, 2);
   assert.ok(this.richImported.nodes.some(node => node.hidden));
   assert.ok(this.richImported.edges.some(edge => edge.detached && edge.hidden));
@@ -389,7 +413,8 @@ Then("missing, alternative, recursive, and unsupported schemas display notices w
       for (const edge of graph.edges.filter(edge => edge.kind === "schema" && edge.source === id)) branch.add(edge.target);
     const outputs = graph.nodes.filter(node => branch.has(node.id));
     assert.ok(outputs.some(node => node.data.notice));
-    assert.ok(outputs.every(node => node.data.fields.every(field => !field.connectable)));
+    assert.ok(outputs.filter(node => node.id !== response.id).every(node => node.data.fields.filter(field => JSON.parse(decodeURIComponent(field.id))[1].startsWith("/body"))
+      .every(field => !field.connectable)));
     const error = panel(graph, "notice", "outputs", "error").data.fields[0];
     assert.equal(error.connectable, true);
     assert.equal(error.type, "Text");
@@ -430,9 +455,10 @@ Then("parameter overrides, scalar responses, and unavailable representations rem
   const query = graph.nodes.find(node => node.type === "data" && node.data.label === "Query parameters");
   assert.equal(query.data.fields[0].type, "Integer");
   const response = graph.nodes.find(node => node.type === "data" && node.data.label.includes("application/json"));
-  assert.equal(response.data.fields[0].type, "Integer");
-  assert.equal(response.data.fields[0].description, "Documented count");
-  assert.ok(graph.nodes.some(node => node.type === "data" && node.data.label === "Response · 204" && node.data.notice));
+  assert.equal(response.data.fields.find(field => field.label === "Response body").type, "Integer");
+  assert.equal(response.data.fields.find(field => field.label === "Response body").description, "Documented count");
+  assert.ok(graph.nodes.some(node => node.type === "data" && node.data.label === "Response · 204"
+    && node.data.fields.some(field => field.label === "Response body" && field.type === "Null")));
   validateWorkflowDocument({ ...plan(), version: 2, ...graph });
   for (const schema of [{ $ref: "#/missing/branch" }, { $ref: "#/components/schemas/Scalar", minimum: 0 },
     { type: ["string", "null"] }, { properties: { named: { type: "string" }, secret: { type: "string", writeOnly: true } } }]) {
@@ -495,11 +521,9 @@ function withGraph(graph, id = "outer") { return { ...plan(), version: 3, id, ..
 function nestedPlan(snapshot, id = "outer") { return withGraph(createWorkflowGraph(snapshot, { x: 0, y: 0 }, `nested-${id}`), id); }
 
 Given("a workflow containing switches, casts, and comments", function () { this.extended = extendedPlan(); });
-When("the extended workflow is saved and imported", function () {
-  const storage = memory();
+When("the extended workflow is exported and imported", function () {
   this.extended.nodes.at(-1).selected = true;
-  saveWorkflowDocument(storage, this.extended);
-  this.extendedImported = parseWorkflowDocument(JSON.stringify(loadWorkflowDocuments(storage)[0]));
+  this.extendedImported = parseWorkflowDocument(JSON.stringify(this.extended));
 });
 Then("its description, gates, cast settings, comments, and named utility connections survive", function () {
   const expected = extendedPlan();
@@ -702,9 +726,7 @@ Then("nested snapshot edits are isolated from the saved source", function () {
   const previous = this.savedNested.nodes[0].data.name;
   snapshot.nodes[0].data.name = "Changed copy";
   assert.equal(this.savedNested.nodes[0].data.name, previous);
-  const storage = memory();
-  saveWorkflowDocument(storage, this.nested);
-  assert.deepEqual(loadWorkflowDocuments(storage)[0], this.nested);
+  assert.deepEqual(parseWorkflowDocument(JSON.stringify(this.nested)), this.nested);
 });
 Then("repeated snapshot copies remain valid", function () {
   const first = createWorkflowGraph(this.savedNested, { x: 0, y: 0 }, "first-copy");
@@ -751,17 +773,6 @@ Then("cyclic and oversized embedded workflow documents are rejected", function (
   assert.throws(() => validateWorkflowDocument(aggregate), /2000 total nodes/);
   for (const node of manyNodes.nodes) node.data.text = "x".repeat(5000);
   assert.throws(() => validateWorkflowDocument(manyNodes), /smaller than 2 MB/);
-});
-Then("selected saved workflows are removed together and failed storage leaves the collection intact", function () {
-  const initial = [plan(), { ...plan(), id: "keep" }, { ...plan(), id: "remove" }];
-  let stored = JSON.stringify(initial);
-  let writes = 0;
-  const storage = { getItem: () => stored, setItem: (_key, value) => { writes++; stored = value; } };
-  removeWorkflowDocuments(storage, ["plan-1", "remove"]);
-  assert.equal(writes, 1);
-  assert.deepEqual(JSON.parse(stored).map(document => document.id), ["keep"]);
-  assert.throws(() => removeWorkflowDocuments({ ...storage, setItem: () => { throw new Error("blocked"); } }, ["keep"]), /blocked/);
-  assert.deepEqual(JSON.parse(stored).map(document => document.id), ["keep"]);
 });
 Then("nested schema projection keeps explanatory notices and handles unfinished connections", function () {
   const p = richPlan();
@@ -829,4 +840,291 @@ Then("example request graphs include structured forms scalar roots headers and n
   assert.equal(field.label, "Request body");
   assert.equal(field.type, "Text");
   assert.equal(JSON.parse(decodeURIComponent(field.id))[1], "");
+});
+
+function additionalFixture(schema, direction = "outputs") {
+  const { operation, document } = schemaFixture();
+  const source = document.paths[operation.path].post;
+  if (direction === "inputs") source.requestBody.content["application/json"].schema = schema;
+  else source.responses["200"].content["application/json"].schema = schema;
+  const graph = createOperationGraph(operation, { x: 0, y: 0 }, "additional", document);
+  const node = graph.nodes.find(node => node.type === "data" && (direction === "inputs" ? node.data.label === "Request body"
+    : node.id === `additional:${encodeURIComponent(JSON.stringify(["response:200:application/json", "/body"]))}`))
+    ?? graph.nodes.find(node => node.type === "data" && node.data.label === "Response · 200");
+  return { graph, node, document };
+}
+const importedGraph = graph => parseWorkflowDocument(JSON.stringify({ ...plan(), version: 3, ...graph }));
+
+Then("open object panels accept typed additional properties with stable escaped handles", function () {
+  const types = ["Text", "Integer", "Number", "Boolean", "Object", "Array", "Null"];
+  for (const additional of [undefined, true, {}]) {
+    const schema = { type: "object", ...(additional === undefined ? {} : { additionalProperties: additional }) };
+    const { graph: original, node, document } = additionalFixture(schema);
+    let graph = importedGraph(original);
+    assert.deepEqual(getAdditionalPropertyTypes(graph.nodes, node.id, document), types);
+    for (const type of types) {
+      const name = `${type}/~ property`;
+      graph = addAdditionalProperty(graph.nodes, graph.edges, node.id, name, type, document);
+      const field = graph.nodes.find(item => item.id === node.id).data.fields.at(-1);
+      assert.equal(field.type, type);
+      assert.equal(field.connectable, true);
+      assert.deepEqual(JSON.parse(decodeURIComponent(field.id)), ["response:200:application/json", `/body/${type}~1~0 property`]);
+      assert.equal(field.required, false);
+      assert.equal(graph.nodes.find(item => item.id === node.id).data.notice, "No named properties documented");
+      assert.deepEqual(importedGraph(graph).nodes, graph.nodes);
+    }
+    assert.equal(original.nodes.find(item => item.id === node.id).data.fields.length, 0);
+    const branches = schemaBranches(graph.nodes, graph.edges).get(node.id);
+    assert.equal(branches.size, 2);
+    const array = graph.nodes.find(item => item.id === [...branches.values()].find(branch => branch.label.startsWith("Array")).childId);
+    assert.equal(array.data.fields[0].label, "Items");
+    assert.equal(array.data.fields[0].connectable, false);
+  }
+});
+Then("added objects remain extensible after export and import", function () {
+  const { graph: original, node, document } = additionalFixture({ type: "object" });
+  let graph = addAdditionalProperty(original.nodes, original.edges, node.id, "__proto__", "Object", document);
+  graph = importedGraph(graph);
+  const childId = [...schemaBranches(graph.nodes, graph.edges).get(node.id).values()][0].childId;
+  assert.ok(getAdditionalPropertyTypes(graph.nodes, childId, document).includes("Object"));
+  graph = addAdditionalProperty(graph.nodes, graph.edges, childId, "items", "Object", document);
+  graph = importedGraph(graph);
+  const grandchildId = [...schemaBranches(graph.nodes, graph.edges).get(childId).values()][0].childId;
+  graph = addAdditionalProperty(graph.nodes, graph.edges, grandchildId, "a/b~c", "Text", document);
+  assert.deepEqual(JSON.parse(decodeURIComponent(graph.nodes.find(item => item.id === grandchildId).data.fields[0].id)),
+    ["response:200:application/json", "/body/__proto__/items/a~1b~0c"]);
+  importedGraph(graph);
+});
+Then("typed additional properties create nested object and array branches in both directions", function () {
+  for (const direction of ["inputs", "outputs"]) {
+    const { graph: original, node, document } = additionalFixture({ type: "object", additionalProperties: { $ref: "#/components/schemas/Extra" } }, direction);
+    document.components = { schemas: { Extra: { type: "array", items: { type: "object", additionalProperties: { type: "integer" },
+      properties: { fixed: { type: "string" } } } } } };
+    assert.deepEqual(getAdditionalPropertyTypes(original.nodes, node.id, document), ["Array"]);
+    assert.throws(() => addAdditionalProperty(original.nodes, original.edges, node.id, "wrong", "Text", document), /type is not permitted/);
+    let graph = addAdditionalProperty(original.nodes, original.edges, node.id, "values", "Array", document);
+    const array = graph.nodes.find(item => item.type === "data" && item.data.label === "values");
+    assert.equal(array.data.fields[0].type, "Object");
+    const itemsId = [...schemaBranches(graph.nodes, graph.edges).get(array.id).values()][0].childId;
+    const items = graph.nodes.find(item => item.id === itemsId);
+    assert.deepEqual(getAdditionalPropertyTypes(graph.nodes, items.id, document), ["Integer"]);
+    graph = addAdditionalProperty(graph.nodes, graph.edges, items.id, "a/b", "Integer", document);
+    const field = graph.nodes.find(item => item.id === items.id).data.fields.at(-1);
+    assert.equal(JSON.parse(decodeURIComponent(field.id))[1], `${direction === "outputs" ? "/body" : ""}/values/items/a~1b`);
+    const edge = graph.edges.find(edge => edge.id === `schema:${items.id}`);
+    assert.equal(direction === "inputs" ? edge.targetHandle : edge.sourceHandle, array.data.fields[0].id);
+    assert.deepEqual(importedGraph(graph).nodes, graph.nodes);
+  }
+  const { graph, node, document } = additionalFixture({ type: "object", required: ["custom"], additionalProperties: { type: "boolean" } });
+  const next = addAdditionalProperty(graph.nodes, graph.edges, node.id, "custom", "Boolean", document);
+  assert.equal(next.nodes.find(item => item.id === node.id).data.fields[0].required, true);
+});
+Then("closed synthetic unavailable and constrained panels reject additional properties", function () {
+  const schemas = [
+    { type: "object", additionalProperties: false }, { type: "object", additionalProperties: "yes" },
+    { type: "object", properties: [] }, { type: "object", required: "field" }, { type: "object", maxProperties: -1 },
+    { type: "object", minProperties: 3, maxProperties: 2 }, { type: "object", maxProperties: 0 },
+    { type: "object", patternProperties: { "^x": { type: "string" } } }, { type: "object", propertyNames: { pattern: "^x" } },
+    { type: "object", allOf: [{ additionalProperties: false }] }, { type: ["object", "array"] },
+    { type: "object", additionalProperties: { oneOf: [{ type: "string" }, { type: "number" }] } },
+    { type: "object", additionalProperties: { type: "string", not: { type: "string" } } },
+    { type: "object", additionalProperties: { $ref: "#/missing" } },
+    { type: "object", additionalProperties: { $ref: "#/missing", type: "string" } },
+    { type: "object", additionalProperties: { type: "object", additionalProperties: "invalid" } },
+    { type: "object", additionalProperties: { type: "array", items: [] } },
+    { type: "object", additionalProperties: { type: "string", writeOnly: true } },
+    { type: "string" }, { type: "array", items: { type: "string" } }, {}, undefined
+  ];
+  for (const schema of schemas) {
+    const { graph, node, document } = additionalFixture(schema);
+    assert.deepEqual(getAdditionalPropertyTypes(graph.nodes, node.id, document), [], JSON.stringify(schema));
+    assert.throws(() => addAdditionalProperty(graph.nodes, graph.edges, node.id, "custom", "Text", document), /additional properties|not permitted/);
+  }
+  const { graph, node, document } = additionalFixture({ type: "object" });
+  const parameter = graph.nodes.find(item => item.type === "data" && item.data.label === "Query parameters");
+  assert.deepEqual(getAdditionalPropertyTypes(graph.nodes, parameter.id, document), []);
+  assert.deepEqual(getAdditionalPropertyTypes(graph.nodes, node.id, {}), []);
+  assert.deepEqual(getAdditionalPropertyTypes(graph.nodes, "missing", document), []);
+  const malformed = structuredClone(graph.nodes);
+  malformed.find(item => item.id === node.id).id = "additional:%invalid";
+  assert.deepEqual(getAdditionalPropertyTypes(malformed, "additional:%invalid", document), []);
+  const nested = createWorkflowGraph(importedGraph(graph), { x: 0, y: 0 }, "nested");
+  for (const panel of nested.nodes.filter(item => item.type === "data"))
+    assert.deepEqual(getAdditionalPropertyTypes(nested.nodes, panel.id, document), []);
+  const hidden = removeGraphSelection({ nodes: [{ id: node.id }], edges: [] }, graph.nodes, graph.edges);
+  assert.deepEqual(getAdditionalPropertyTypes(hidden.nodes, node.id, document), []);
+});
+Then("declared hidden fields and repeated names cannot be added again", function () {
+  for (const direction of ["inputs", "outputs"]) {
+    const { graph, node, document } = additionalFixture({ type: "object", properties: {
+      reserved: { type: "string", [direction === "inputs" ? "readOnly" : "writeOnly"]: true },
+      key: { type: "string", title: "Renamed label" }
+    } }, direction);
+    assert.equal(node.data.fields.length, 1);
+    for (const name of ["key", "reserved"])
+      assert.throws(() => addAdditionalProperty(graph.nodes, graph.edges, node.id, name, "Text", document), /already exists|reserved/);
+    const next = addAdditionalProperty(graph.nodes, graph.edges, node.id, "custom", "Text", document);
+    assert.throws(() => addAdditionalProperty(next.nodes, next.edges, node.id, "custom", "Text", document), /already exists/);
+  }
+});
+Then("property names fields and nested branches stay within document limits", function () {
+  const { graph, node, document } = additionalFixture({ type: "object" });
+  for (const name of ["", "  ", "x".repeat(201), "line\nbreak", "\ud800"])
+    assert.throws(() => addAdditionalProperty(graph.nodes, graph.edges, node.id, name, "Text", document), /Property names/);
+  const wide = additionalFixture({ type: "object", properties: Object.fromEntries(Array.from({ length: 200 }, (_, index) => [`field${index}`, { type: "string" }])) });
+  assert.deepEqual(getAdditionalPropertyTypes(wide.graph.nodes, wide.node.id, wide.document), []);
+  assert.throws(() => addAdditionalProperty(wide.graph.nodes, wide.graph.edges, wide.node.id, "extra", "Text", wide.document), /property limit/);
+  let next = graph;
+  let id = node.id;
+  for (let index = 0; index < 2; index++) {
+    next = addAdditionalProperty(next.nodes, next.edges, id, "x".repeat(200), "Object", document);
+    id = [...schemaBranches(next.nodes, next.edges).get(id).values()][0].childId;
+  }
+  assert.throws(() => addAdditionalProperty(next.nodes, next.edges, id, "x".repeat(200), "Text", document), /size or depth limits/);
+  const full = structuredClone(graph);
+  while (full.nodes.length < 500) full.nodes.push({ id: `comment-${full.nodes.length}`, type: "comment", position: { x: 0, y: 0 }, data: { text: "" } });
+  assert.throws(() => addAdditionalProperty(full.nodes, full.edges, node.id, "extra", "Object", document), /at most 500 nodes/);
+  assert.equal(full.nodes.length, 500);
+});
+
+const addedField = (graph, nodeId, name, document) => getEditableAdditionalProperties(graph.nodes, nodeId, document).find(field => field.name === name).fieldId;
+const propertyChild = (graph, nodeId, fieldId) => schemaBranches(graph.nodes, graph.edges).get(nodeId).get(fieldId).childId;
+
+Then("additional property renames preserve escaped handles mappings and hidden descendants", function () {
+  for (const direction of ["inputs", "outputs"]) {
+    const { graph: original, node, document } = additionalFixture({ type: "object" }, direction);
+    let graph = addAdditionalProperty(original.nodes, original.edges, node.id, "a/b", "Object", document);
+    graph = addAdditionalProperty(graph.nodes, graph.edges, node.id, "a/b-sibling", "Object", document);
+    const fieldId = addedField(graph, node.id, "a/b", document);
+    const childId = propertyChild(graph, node.id, fieldId);
+    graph = addAdditionalProperty(graph.nodes, graph.edges, childId, "nested~", "Object", document);
+    graph = addAdditionalProperty(graph.nodes, graph.edges, childId, "mapped", "Text", document);
+    const nestedId = addedField(graph, childId, "nested~", document);
+    const nestedChildId = propertyChild(graph, childId, nestedId);
+    graph = addAdditionalProperty(graph.nodes, graph.edges, nestedChildId, "leaf", "Text", document);
+    const endpoint = direction === "outputs" ? panel(graph, "additional", "inputs", "name") : panel(graph, "additional", "outputs", "error");
+    const mappings = [fieldId, addedField(graph, childId, "mapped", document)].map((handle, index) => ({
+      id: `preserved-${index}`, kind: "mapping",
+      source: direction === "outputs" ? index ? childId : node.id : endpoint.id,
+      sourceHandle: direction === "outputs" ? handle : endpoint.data.fields[0].id,
+      target: direction === "outputs" ? endpoint.id : index ? childId : node.id,
+      targetHandle: direction === "outputs" ? endpoint.data.fields[0].id : handle
+    }));
+    graph.edges.push(...mappings);
+    graph = removeGraphSelection({ nodes: [{ id: nestedChildId }], edges: [] }, graph.nodes, graph.edges);
+    graph = importedGraph(graph);
+    const before = structuredClone(graph);
+    const siblingId = propertyChild(graph, node.id, addedField(graph, node.id, "a/b-sibling", document));
+    graph = updateAdditionalProperty(graph.nodes, graph.edges, node.id, fieldId, "renamed/~", "Object", document);
+    const nextFieldId = addedField(graph, node.id, "renamed/~", document);
+    const nextChildId = propertyChild(graph, node.id, nextFieldId);
+    const nextNestedId = addedField(graph, nextChildId, "nested~", document);
+    const nextNestedChildId = propertyChild(graph, nextChildId, nextNestedId);
+    assert.deepEqual(graph.nodes.find(item => item.id === siblingId), before.nodes.find(item => item.id === siblingId));
+    assert.deepEqual(graph.nodes.find(item => item.id === nextChildId).position, before.nodes.find(item => item.id === childId).position);
+    assert.equal(graph.nodes.find(item => item.id === nextChildId).data.label, "renamed/~");
+    assert.equal(graph.nodes.find(item => item.id === nextNestedChildId).hidden, true);
+    assert.equal(graph.edges.find(edge => edge.id === `schema:${nextNestedChildId}`).detached, true);
+    assert.equal(graph.edges.find(edge => edge.id === `schema:${nextNestedChildId}`).hidden, true);
+    const renamedMappings = graph.edges.filter(edge => edge.kind === "mapping");
+    assert.deepEqual(renamedMappings.map(edge => edge.id), mappings.map(edge => edge.id));
+    assert.equal(direction === "outputs" ? renamedMappings[0].sourceHandle : renamedMappings[0].targetHandle, nextFieldId);
+    assert.equal(direction === "outputs" ? renamedMappings[1].source : renamedMappings[1].target, nextChildId);
+    const descendantHandle = direction === "outputs" ? renamedMappings[1].sourceHandle : renamedMappings[1].targetHandle;
+    assert.equal(JSON.parse(decodeURIComponent(descendantHandle))[1], `${direction === "outputs" ? "/body" : ""}/renamed~1~0/mapped`);
+    assert.deepEqual(importedGraph(graph).nodes, graph.nodes);
+    assert.deepEqual(graph.nodes.find(item => item.id === node.id).data.fields.map(field => field.label), ["renamed/~", "a/b-sibling"]);
+  }
+});
+
+Then("property type changes retain compatible mappings and replace obsolete descendants", function () {
+  const { graph: original, node, document } = additionalFixture({ type: "object" });
+  let graph = addAdditionalProperty(original.nodes, original.edges, node.id, "change", "Number", document);
+  graph = addAdditionalProperty(graph.nodes, graph.edges, node.id, "last", "Text", document);
+  const fieldId = addedField(graph, node.id, "change", document);
+  const endpoint = panel(graph, "additional", "inputs", "name");
+  graph.nodes.push(createUtilityNode("cast", { x: 800, y: 0 }, "cast"), createUtilityNode("switch", { x: 900, y: 0 }, "switch"));
+  graph.nodes.find(item => item.id === "switch").data.gates[0] = { id: "gate-1", operator: ">", value: "20" };
+  graph.edges.push(...["cast", "switch", endpoint.id].map(target => ({ id: `mapped-${target}`, kind: "mapping", source: node.id,
+    sourceHandle: fieldId, target, targetHandle: target === endpoint.id ? endpoint.data.fields[0].id : "value" })));
+  graph = updateAdditionalProperty(graph.nodes, graph.edges, node.id, fieldId, "change", "Boolean", document);
+  assert.equal(graph.edges.filter(edge => edge.kind === "mapping").length, 3);
+  assert.deepEqual(graph.nodes.find(item => item.id === "switch").data.gates[0], { id: "gate-1", operator: "==", value: "true" });
+  graph = updateAdditionalProperty(graph.nodes, graph.edges, node.id, fieldId, "change", "Object", document);
+  assert.deepEqual(graph.edges.filter(edge => edge.kind === "mapping").map(edge => edge.target), [endpoint.id]);
+  const childId = propertyChild(graph, node.id, fieldId);
+  graph = addAdditionalProperty(graph.nodes, graph.edges, childId, "nested", "Text", document);
+  const nestedField = addedField(graph, childId, "nested", document);
+  graph.edges.push({ id: "obsolete-child-mapping", kind: "mapping", source: childId, sourceHandle: nestedField,
+    target: endpoint.id, targetHandle: endpoint.data.fields[0].id });
+  graph = updateAdditionalProperty(graph.nodes, graph.edges, node.id, fieldId, "changed-name", "Array", document);
+  const nextFieldId = addedField(graph, node.id, "changed-name", document);
+  const arrayId = propertyChild(graph, node.id, nextFieldId);
+  assert.equal(graph.nodes.some(item => item.id === childId), false);
+  assert.equal(graph.edges.some(edge => edge.id === "obsolete-child-mapping"), false);
+  assert.equal(graph.nodes.find(item => item.id === arrayId).data.fields[0].label, "Items");
+  assert.equal(graph.edges.find(edge => edge.kind === "mapping").sourceHandle, nextFieldId);
+  assert.deepEqual(graph.nodes.find(item => item.id === node.id).data.fields.map(field => field.label), ["changed-name", "last"]);
+  const position = graph.nodes.find(item => item.id === arrayId).position;
+  graph = removeGraphSelection({ nodes: [{ id: arrayId }], edges: [] }, graph.nodes, graph.edges);
+  graph = updateAdditionalProperty(graph.nodes, graph.edges, node.id, nextFieldId, "changed-name", "Object", document);
+  assert.deepEqual(graph.nodes.find(item => item.id === arrayId).position, position);
+  assert.equal(graph.nodes.find(item => item.id === arrayId).hidden, true);
+  assert.equal(graph.edges.find(edge => edge.id === `schema:${arrayId}`).detached, true);
+  assert.equal(graph.edges.find(edge => edge.id === `schema:${arrayId}`).hidden, true);
+  graph = updateAdditionalProperty(graph.nodes, graph.edges, node.id, nextFieldId, "changed-name", "Text", document);
+  assert.equal(graph.nodes.some(item => item.id === arrayId), false);
+  assert.equal(schemaBranches(graph.nodes, graph.edges).get(node.id), undefined);
+  importedGraph(graph);
+});
+
+Then("removing added properties retains unrelated graph state and documented fields", function () {
+  const { graph: original, node, document } = additionalFixture({ type: "object", properties: { fixed: { type: "string" } } });
+  let graph = addAdditionalProperty(original.nodes, original.edges, node.id, "remove", "Object", document);
+  graph = addAdditionalProperty(graph.nodes, graph.edges, node.id, "remove-sibling", "Text", document);
+  const fieldId = addedField(graph, node.id, "remove", document);
+  const childId = propertyChild(graph, node.id, fieldId);
+  graph = addAdditionalProperty(graph.nodes, graph.edges, childId, "child", "Text", document);
+  const target = panel(graph, "additional", "inputs", "name");
+  graph.edges.push({ id: "child-mapping", kind: "mapping", source: childId, sourceHandle: addedField(graph, childId, "child", document),
+    target: target.id, targetHandle: target.data.fields[0].id });
+  graph.edges.push({ id: "sibling-mapping", kind: "mapping", source: node.id, sourceHandle: addedField(graph, node.id, "remove-sibling", document),
+    target: target.id, targetHandle: target.data.fields[0].id });
+  const before = structuredClone(graph);
+  graph = removeAdditionalProperty(graph.nodes, graph.edges, node.id, fieldId, document);
+  assert.equal(graph.nodes.some(item => item.id === childId), false);
+  assert.equal(graph.edges.some(edge => edge.id === "child-mapping" || edge.id === `schema:${childId}`), false);
+  assert.deepEqual(graph.edges.find(edge => edge.id === "sibling-mapping"), before.edges.find(edge => edge.id === "sibling-mapping"));
+  assert.deepEqual(graph.nodes.filter(item => item.id !== node.id), before.nodes.filter(item => ![node.id, childId].includes(item.id)));
+  assert.deepEqual(graph.nodes.find(item => item.id === node.id).data.fields.map(field => field.label), ["fixed", "remove-sibling"]);
+  const fixed = node.data.fields[0].id;
+  assert.throws(() => removeAdditionalProperty(graph.nodes, graph.edges, node.id, fixed, document), /Only user-added properties/);
+  assert.throws(() => updateAdditionalProperty(graph.nodes, graph.edges, node.id, fixed, "editable", "Text", document), /Only user-added properties/);
+  importedGraph(graph);
+});
+
+Then("property edits use canonical names and enforce schema policy without addition limits", function () {
+  const { graph: original, node, document } = additionalFixture({ type: "object", maxProperties: 2,
+    properties: { fixed: { type: "string" } }, additionalProperties: { type: "string", title: "Schema title" } });
+  let graph = addAdditionalProperty(original.nodes, original.edges, node.id, "actual/name", "Text", document);
+  assert.deepEqual(getAdditionalPropertyTypes(graph.nodes, node.id, document), []);
+  const fieldId = addedField(graph, node.id, "actual/name", document);
+  assert.deepEqual(getEditableAdditionalProperties(graph.nodes, node.id, document), [{ fieldId, name: "actual/name", types: ["Text"] }]);
+  const noOp = updateAdditionalProperty(graph.nodes, graph.edges, node.id, fieldId, "actual/name", "Text", document);
+  assert.equal(noOp.nodes, graph.nodes);
+  assert.equal(noOp.edges, graph.edges);
+  for (const [name, type, reason] of [["fixed", "Text", /reserved/], ["new", "Object", /not permitted/], ["", "Text", /Property names/]])
+    assert.throws(() => updateAdditionalProperty(graph.nodes, graph.edges, node.id, fieldId, name, type, document), reason);
+  graph = updateAdditionalProperty(graph.nodes, graph.edges, node.id, fieldId, "renamed~", "Text", document);
+  assert.equal(graph.nodes.find(item => item.id === node.id).data.fields[1].label, "Schema title");
+  assert.equal(getEditableAdditionalProperties(graph.nodes, node.id, document)[0].name, "renamed~");
+  const wide = additionalFixture({ type: "object" });
+  const fields = Array.from({ length: 200 }, (_, index) => ({ id: encodeURIComponent(JSON.stringify(["response:200:application/json", `/body/custom${index}`])),
+    label: `custom${index}`, type: "Text", required: false, description: "", connectable: true }));
+  wide.graph.nodes.find(item => item.id === wide.node.id).data.fields = fields;
+  assert.equal(getEditableAdditionalProperties(wide.graph.nodes, wide.node.id, wide.document).length, 200);
+  const updated = updateAdditionalProperty(wide.graph.nodes, wide.graph.edges, wide.node.id, fields[0].id, "updated", "Object", wide.document);
+  assert.equal(updated.nodes.find(item => item.id === wide.node.id).data.fields.length, 200);
+  assert.equal(updated.nodes.find(item => item.id === wide.node.id).data.fields[0].type, "Object");
+  importedGraph(updated);
 });

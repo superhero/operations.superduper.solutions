@@ -5,7 +5,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import OperationFieldControl from "$lib/components/OperationFieldControl.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
@@ -29,6 +29,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let compactProgress = $state(false);
   let prompt = $state("");
   let promptError = $state(false);
+  let examplesOpen = $state(false);
   let searched = $state(false);
   let searchedPrompt = $state("");
   let results = $state<OperationMatch[]>([]);
@@ -53,9 +54,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let panelViewport = $state<HTMLDivElement>();
   let followingContentSize = $state(false);
   let mounted = $state(false);
-  let promptFooter = $state<HTMLElement>();
-  let examples = $state<HTMLElement>();
-  let suggestionLabel = $state<HTMLElement>();
   let promptInput: HTMLTextAreaElement;
   let promptForm: HTMLFormElement;
   let submitPrompt = $state<HTMLButtonElement | null>(null);
@@ -66,6 +64,41 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const complete = $derived([searched, searched && Boolean(selected && results.some(result => result.operation.id === selected!.id))]);
   const bodyProvided = $derived(Boolean(selected?.bodyRequired || selected?.fields.some(field => field.location === "body" && values[field.key]?.trim())));
   const toggle = (list: string[], key: string) => list.includes(key) ? list.filter(value => value !== key) : [...list, key];
+  let previousOperations = untrack(() => operations);
+  $effect(() => {
+    const next = operations;
+    if (next === previousOperations) return;
+    const before = previousOperations;
+    previousOperations = next;
+    untrack(() => {
+      const changed = new Set(before.filter(operation => {
+        const replacement = next.find(candidate => candidate.id === operation.id);
+        return replacement !== operation;
+      }).map(operation => operation.id));
+      const changedInputs = new Set(before.filter(operation => {
+        const replacement = next.find(candidate => candidate.id === operation.id);
+        return !replacement || JSON.stringify(replacement.fields) !== JSON.stringify(operation.fields);
+      }).map(operation => operation.id));
+      drafts = Object.fromEntries(Object.entries(drafts).filter(([id]) => !changedInputs.has(id)));
+      if (selected) {
+        const replacement = next.find(operation => operation.id === selected!.id) ?? null;
+        if (changed.has(selected.id)) {
+          // Source-only changes (for example the server URL) also invalidate an earlier response.
+          resetExecution(); prepared = null; error = ""; fieldError = null;
+          if (replacement) drafts[replacement.id] ??= Object.fromEntries(replacement.fields.map(field => [field.key, ""]));
+        }
+        selected = replacement;
+        if (!replacement && step >= 2) step = searched ? 1 : 0;
+        else if (changed.has(replacement?.id ?? "") && step === 3) step = 2;
+      }
+      if (searched) {
+        const started = performance.now();
+        const comparison = evaluateOperations(searchedPrompt, next);
+        evaluation = { candidates: comparison.candidates, durationMs: performance.now() - started, considered: comparison.candidates.length };
+        results = comparison.results;
+      }
+    });
+  });
   export async function focusActive() {
     await tick();
     const panel = panels[step];
@@ -130,6 +163,32 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     await tick();
     promptInput.focus({ preventScroll: true });
   }
+  function fitExamples(list: HTMLElement, _operations: Operation[]) {
+    let frame = 0;
+    let disposed = false;
+    const fit = () => {
+      frame = 0;
+      const buttons = [...list.querySelectorAll<HTMLButtonElement>("button")];
+      buttons.forEach(button => button.hidden = false);
+      const widths = buttons.map(button => button.offsetWidth);
+      const available = list.clientWidth;
+      const gap = parseFloat(getComputedStyle(list).columnGap) || 0;
+      const focused = document.activeElement;
+      let used = 0;
+      buttons.forEach((button, index) => {
+        const width = widths[index]! + (used ? gap : 0);
+        button.hidden = used + width > available;
+        if (!button.hidden) used += width;
+        else if (button === focused) promptInput.focus({ preventScroll: true });
+      });
+    };
+    const schedule = () => { if (!disposed && !frame) frame = requestAnimationFrame(fit); };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(list);
+    void document.fonts.ready.then(schedule);
+    fit();
+    return { update: schedule, destroy: () => { disposed = true; observer.disconnect(); cancelAnimationFrame(frame); } };
+  }
   export function selectOperation(operation: Operation) {
     resetExecution();
     if (selected?.id !== operation.id) { operationDetails = false; operationDescription = false; fieldHelp = []; }
@@ -189,6 +248,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const panel = panels[step];
     if (!mounted || !panel) return;
     let disposed = false;
+    let resizeFrame = 0;
     let revision = 0;
     let motions: Animation[] = [];
     const resize = () => {
@@ -213,20 +273,37 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       }
       panelHeight = panel.getBoundingClientRect().height;
     };
-    const observer = new ResizeObserver(resize); observer.observe(panel); resize();
-    return () => { disposed = true; observer.disconnect(); followingContentSize = false; };
+    // Changing the viewport height also resizes observed ancestors (body/html).
+    // Apply layout writes outside the browser's resize-notification delivery.
+    const observer = new ResizeObserver(() => {
+      if (!resizeFrame) resizeFrame = requestAnimationFrame(() => { resizeFrame = 0; resize(); });
+    });
+    const transitionStarted = (event: TransitionEvent) => {
+      if (event.propertyName === "grid-template-rows" || event.propertyName === "height") resize();
+    };
+    panel.addEventListener("transitionrun", transitionStarted);
+    observer.observe(panel); resize();
+    return () => {
+      disposed = true; observer.disconnect(); cancelAnimationFrame(resizeFrame);
+      panel.removeEventListener("transitionrun", transitionStarted);
+      followingContentSize = false;
+    };
   });
   onMount(() => {
     mounted = true;
+    let disposed = false;
+    let progressFrame = 0;
     const fitProgress = () => {
-      if (!progress?.clientWidth) return;
+      if (disposed || !progress?.clientWidth) return;
       compactProgress = [...progress.querySelectorAll<HTMLButtonElement>("button")].some(button => {
         const label = button.querySelector<HTMLElement>(".step-label");
         const style = getComputedStyle(button);
         return Boolean(label && label.offsetWidth > button.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight));
       });
     };
-    const progressObserver = new ResizeObserver(fitProgress);
+    const progressObserver = new ResizeObserver(() => {
+      if (!progressFrame) progressFrame = requestAnimationFrame(() => { progressFrame = 0; fitProgress(); });
+    });
     if (progress) progressObserver.observe(progress);
     void document.fonts.ready.then(fitProgress);
     const motion = matchMedia("(prefers-reduced-motion: reduce)");
@@ -249,32 +326,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     window.addEventListener("wheel", interruptScroll, { passive: true });
     window.addEventListener("pointerdown", interruptScroll, { passive: true });
     window.addEventListener("keydown", interruptScroll);
-    const fit = () => {
-      if (!examples || !promptFooter || !submitPrompt) return;
-      examples.hidden = false;
-      const buttons = [...examples.querySelectorAll<HTMLButtonElement>("button")];
-      // Hover scaling must not change which examples fit: hiding them changes
-      // the footer height and can move the arrow away from the pointer, looping.
-      const availableWidth = promptFooter.clientWidth - submitPrompt.offsetWidth - parseFloat(getComputedStyle(promptFooter).columnGap);
-      let used = 0; let count = 0; let overflow = false;
-      for (const button of buttons) {
-        button.hidden = false;
-        const width = button.offsetWidth;
-        const fits = !overflow && used + width <= availableWidth;
-        if (fits) { used += width + 8; count++; }
-        else { overflow = true; if (button === document.activeElement) promptInput.focus({ preventScroll: true }); button.hidden = true; }
-      }
-      if (suggestionLabel) suggestionLabel.hidden = count === 0;
-      examples.hidden = count === 0;
-    };
-    const observer = new ResizeObserver(fit);
-    if (promptFooter) observer.observe(promptFooter);
-    if (submitPrompt) observer.observe(submitPrompt);
-    void document.fonts.ready.then(fit);
     return () => {
+      disposed = true;
+      cancelAnimationFrame(progressFrame);
       cancelRequest();
       progressObserver.disconnect();
-      observer.disconnect();
       motion.removeEventListener("change", settleScroll);
       window.removeEventListener("scrollend", finishScroll);
       window.removeEventListener("wheel", interruptScroll);
@@ -296,20 +352,22 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="step-track" style:transform={`translateX(${-step * 100}%)`}>
       <section class="step-panel" bind:this={panels[0]} inert={step !== 0} aria-hidden={step !== 0} aria-label="Prompt step">
         <form bind:this={promptForm} onsubmit={(event) => { event.preventDefault(); search(); }}>
-          <label for="operation-prompt" class="context-label prompt-label">Prompt</label>
-          <textarea id="operation-prompt" bind:this={promptInput} bind:value={prompt} rows="4" maxlength="240" aria-required="true" placeholder="For example, list projects…" aria-invalid={promptError ? "true" : undefined} aria-describedby={promptError ? "prompt-help prompt-error" : "prompt-help"} oninput={() => promptError = false}
+          <div class="operation-toolbar report-pill context-label">
+            <h2 class="operation-title" tabindex="-1"><label for="operation-prompt">Prompt</label></h2>
+            <HintButton class="report-toggle" type="button" label="Commonly used operations" aria-expanded={examplesOpen} aria-controls="prompt-examples" onclick={() => examplesOpen = !examplesOpen}><MaterialIcon name="quick_phrases" size={16} /></HintButton>
+          </div>
+          <Reveal open={examplesOpen} id="prompt-examples">
+            <div class="prompt-suggestion-list" use:fitExamples={operations}>
+              {#each operations as operation}<button type="button" onclick={() => chooseExample(operation.name)}><span class="button-content">{operation.name}</span></button>{/each}
+            </div>
+          </Reveal>
+          <textarea id="operation-prompt" bind:this={promptInput} bind:value={prompt} rows="3" maxlength="240" aria-required="true" placeholder="For example, list projects…" aria-invalid={promptError ? "true" : undefined} aria-describedby={promptError ? "prompt-help prompt-error" : "prompt-help"} oninput={() => promptError = false}
             onkeydown={(event) => {
               if (event.key !== "Enter" || event.shiftKey || event.isComposing || event.keyCode === 229) return;
               event.preventDefault(); if (!event.repeat && submitPrompt && !submitPrompt.disabled) promptForm.requestSubmit(submitPrompt);
             }}></textarea>
           <Reveal open={promptError} id="prompt-error"><p class="error" role="alert">Enter a prompt to find a matching operation.</p></Reveal>
-          <div class="form-footer prompt-footer" bind:this={promptFooter}>
-            <div class="prompt-suggestions">
-              <span class="context-label" bind:this={suggestionLabel}>Examples</span>
-              <div class="prompt-suggestion-list" bind:this={examples}>
-                {#each operations.slice(0, 3) as operation}<button type="button" onclick={() => chooseExample(operation.name)}><span class="button-content">{operation.name}</span></button>{/each}
-              </div>
-            </div>
+          <div class="form-footer prompt-footer">
             <HintButton bind:ref={submitPrompt} type="submit" class="primary-arrow" label="Find operations" tooltipSide="left" aria-label="Find operations"><MaterialIcon name="play_arrow" size={30} /></HintButton>
           </div>
           <p id="prompt-help" class="sr-only">Find an operation by name or identifier, even with a small typo. Enter searches; Shift+Enter adds a line break.</p>

@@ -1,0 +1,210 @@
+/*
+Copyright (C) 2026 Erik Landvall
+SPDX-License-Identifier: AGPL-3.0-only
+See LICENSE and LICENSE-ADDITIONAL-TERMS.
+*/
+
+/* These six slots inherit the application palette and its light/dark reversal.
+   Override both toolbar themes so its saved preference cannot fork app colors.
+   Specificity beats the library's adopted stylesheet, which follows DOM styles. */
+:host(:defined),
+.dark.dark {
+  --dt-background: var(--tone-1);
+  --dt-surface: var(--tone-2);
+  --dt-highlight: var(--tone-3);
+  --dt-emphasis: var(--tone-4);
+  --dt-muted: var(--tone-5);
+  --dt-foreground: var(--tone-6);
+
+  --color-background: var(--dt-background);
+  --color-foreground: var(--dt-foreground);
+  --color-card: var(--dt-surface);
+  --color-card-foreground: var(--dt-foreground);
+  --color-popover: var(--dt-background);
+  --color-popover-foreground: var(--dt-foreground);
+  --color-primary: var(--dt-emphasis);
+  --color-primary-foreground: var(--dt-highlight);
+  --color-secondary: var(--dt-surface);
+  --color-secondary-foreground: var(--dt-foreground);
+  --color-muted: var(--dt-surface);
+  --color-muted-foreground: var(--dt-muted);
+  --color-accent: var(--dt-highlight);
+  --color-accent-foreground: var(--dt-foreground);
+  --color-destructive: var(--dt-emphasis);
+  --color-destructive-foreground: var(--dt-background);
+  --color-border: var(--dt-muted);
+  --color-input: var(--dt-muted);
+  --color-ring: var(--dt-emphasis);
+  --color-info: var(--dt-muted);
+  --color-info-foreground: var(--dt-muted);
+  --color-success: var(--dt-muted);
+  --color-success-foreground: var(--dt-muted);
+  --color-warning: var(--dt-emphasis);
+  --color-warning-foreground: var(--dt-emphasis);
+
+  --brand-violet: var(--dt-emphasis);
+  --brand-violet-light: var(--dt-highlight);
+  --brand-white: var(--dt-background);
+  --brand-frost: var(--dt-background);
+  --brand-silver: var(--dt-surface);
+  --brand-graphite: var(--dt-muted);
+  --brand-iron: var(--dt-muted);
+  --brand-charcoal: var(--dt-foreground);
+  --brand-black: var(--dt-foreground);
+
+  --color-black: var(--dt-foreground);
+  --color-white: var(--dt-background);
+  --color-orange-400: var(--dt-highlight);
+  --color-orange-500: var(--dt-emphasis);
+  --color-amber-400: var(--dt-highlight);
+  --color-amber-500: var(--dt-emphasis);
+  --color-yellow-400: var(--dt-highlight);
+  --color-yellow-500: var(--dt-emphasis);
+  --color-green-400: var(--dt-muted);
+  --color-green-500: var(--dt-muted);
+  --color-emerald-400: var(--dt-muted);
+  --color-emerald-500: var(--dt-muted);
+  --color-cyan-400: var(--dt-muted);
+  --color-cyan-500: var(--dt-muted);
+  --color-cyan-600: var(--dt-foreground);
+  --color-sky-500: var(--dt-muted);
+  --color-blue-400: var(--dt-muted);
+  --color-blue-500: var(--dt-muted);
+  --color-blue-600: var(--dt-foreground);
+  --color-indigo-500: var(--dt-emphasis);
+  --color-purple-400: var(--dt-highlight);
+  --color-purple-500: var(--dt-emphasis);
+  --shadow-pill: none;
+}
+
+/* Keep toolbar surfaces flat while preserving focus rings on their controls. */
+#__v_dt__root > .transition-pill,
+[role="dialog"][aria-label="DevTools panel"],
+[role="tooltip"][aria-label$=" quick preview"],
+[aria-label$=" pinned tooltip"],
+[aria-label="DevTools quick start"] {
+  box-shadow: none;
+}
+
+/* The library's host reset clears inherited color-scheme. Native controls still
+   follow the app's mode, including when the toolbar previously saved a theme. */
+:host {
+  color-scheme: inherit;
+}
+
+:host, :host * {
+  scrollbar-color: var(--color-border) transparent;
+}
+:host *::-webkit-scrollbar,
+:host *::-webkit-scrollbar-track,
+:host *::-webkit-scrollbar-track-piece,
+:host *::-webkit-scrollbar-corner {
+  background: transparent;
+  box-shadow: none;
+}
+
+nav[aria-label="DevTools apps"],
+nav[aria-label="DevTools apps"] + div > div:first-child {
+  --color-foreground: var(--dt-background);
+  --color-muted-foreground: var(--dt-surface);
+  --color-border: var(--dt-surface);
+  background-color: var(--dt-foreground);
+  color: var(--dt-background);
+}
+
+nav[aria-label="DevTools apps"],
+nav[aria-label="DevTools apps"] > .border-b,
+nav[aria-label="DevTools apps"] > .border-t {
+  border: 0;
+}
+
+button:is(
+  [aria-label="Expand to full width"],
+  [aria-label="Switch to container width"],
+  [aria-label="Enter fullscreen"],
+  [aria-label="Exit fullscreen"],
+  [aria-label="Open in Picture-in-Picture window"]
+) {
+  display: none;
+}
+
+.devtools-content-scroll > .space-y-0 > * {
+  margin-block: 0;
+}
+
+.devtools-content-scroll section.border,
+.devtools-content-scroll section.border > .border-b {
+  border: 0;
+}
+
+/* Config tables use grouped divs; count data rows separately from headers. */
+.devtools-content-scroll section > .divide-y,
+.devtools-content-scroll section > .divide-y > div {
+  border: 0;
+}
+.devtools-content-scroll section > .divide-y {
+  background-color: var(--dt-background);
+}
+.devtools-content-scroll section > .divide-y > .hover\:bg-secondary {
+  background-color: var(--dt-background);
+}
+.devtools-content-scroll section > .divide-y > :nth-child(odd of .hover\:bg-secondary) {
+  background-color: var(--dt-surface);
+}
+.devtools-content-scroll section > .divide-y > .bg-secondary.border-b {
+  background-color: var(--dt-background);
+  border-bottom: 1px solid var(--color-border);
+}
+.devtools-content-scroll section > .divide-y > .bg-secondary.border-b > span:first-child:has(+ div input[type="search"]) {
+  width: 1.25rem;
+  margin-right: 0.25rem;
+  text-align: right;
+  color: var(--color-muted-foreground);
+  opacity: 0.4;
+}
+.devtools-content-scroll section > .divide-y > .bg-secondary.border-b input[type="search"] {
+  background-color: transparent;
+  border: 0;
+  box-shadow: none;
+  outline: none;
+}
+
+.devtools-content-scroll .divide-y > .flex > span.border {
+  border-width: 0;
+  border-radius: 999px;
+  font-weight: 700;
+  background-color: var(--color-border);
+  color: var(--dt-background);
+}
+.devtools-content-scroll .divide-y > .flex > span[class~="border-amber-500/30"],
+.devtools-content-scroll .divide-y > .flex > span[class~="border-blue-500/30"] {
+  background-color: var(--color-badge-background);
+  color: var(--dt-background);
+}
+
+button[aria-label="Toggle devtools panel"] > img { display: none; }
+button[aria-label="Toggle devtools panel"] {
+  color: var(--color-muted-foreground);
+  opacity: 1;
+}
+button[aria-label="Toggle devtools panel"]:hover { color: var(--color-primary); }
+button[aria-label="Toggle devtools panel"]::before {
+  content: "handyman";
+  font-family: "Material Symbols Rounded";
+  font-size: 24px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  font-feature-settings: "liga";
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+::before,
+::after {
+  --tw-shadow-color: color-mix(in srgb, var(--dt-foreground) 15%, transparent);
+  --tw-ring-offset-color: var(--dt-background);
+}

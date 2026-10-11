@@ -9,6 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { createExampleEndpoint } from './example-endpoint.fixture.mjs';
 import { build } from 'vite';
+import { pail } from '@visulima/pail';
 
 setDefaultTimeout(30_000);
 let browser;
@@ -29,7 +30,8 @@ BeforeAll(async function () {
   const repositoryFixture = fixtureOutput.output.find(item => item.type === 'chunk' && item.isEntry).code;
   server = createServer((request, response) => {
     if (request.url === '/') {
-      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8',
+        'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'credentialless' });
       response.end(bundle);
     } else if (request.url === '/workflow-repository-fixture.js') {
       response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
@@ -101,6 +103,13 @@ Before(async function ({ pickle }) {
       this.diagnostics.push({ type: 'http-error', url: response.url(), status: response.status() });
   });
   await this.page.goto(baseURL, { waitUntil: 'load' });
+  // Module loading precedes the worker-backed startup; filling an inert input
+  // does not enter text even though Playwright sees its rendered textarea.
+  await this.page.waitForFunction(() => {
+    const app = document.getElementById('app');
+    return app?.hasChildNodes() && !app.hasAttribute('inert');
+  });
+  await this.page.locator('#startup-status').waitFor({ state: 'detached' });
 });
 
 After(async function ({ pickle, result }) {
@@ -120,7 +129,7 @@ After(async function ({ pickle, result }) {
         const screenshot = await this.page.screenshot({ path: `${this.artifactDirectory}/screenshot.png`, fullPage: true, timeout: 5_000 });
         await this.attach(screenshot, 'image/png');
       }
-      console.error(`Browser diagnostics for "${pickle.name}": ${this.artifactDirectory}`);
+      pail.force.error(`Browser diagnostics for "${pickle.name}": ${this.artifactDirectory}`);
     }
   } finally {
     try {

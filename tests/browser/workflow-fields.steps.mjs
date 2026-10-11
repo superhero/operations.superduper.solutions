@@ -1,8 +1,8 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { storedWorkflows } from "./workflow-storage.fixture.mjs";
-import { expectWorkflowName } from './workflow-details.fixture.mjs';
+import { repository, storedWorkflows } from "./workflow-storage.fixture.mjs";
+import { expectWorkflowName, renameWorkflow } from './workflow-details.fixture.mjs';
 import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
@@ -18,6 +18,17 @@ const namedPanel = (page, ownerId, direction, label) => panels(page, ownerId, di
   .filter({ has: page.locator(`.data-title strong[title=${JSON.stringify(label)}]`) });
 const fieldRow = (panel, label) => panel.locator(".data-field").filter({ has: panel.page().locator(".field-name").filter({ hasText: new RegExp(`^${literal(label)}(?:\\s*\\*)?$`) }) });
 const preview = page => workflow(page).locator(".workflow-connection-preview");
+
+async function expectResponseEnvelope(panel, bodyType) {
+  await expect(panel.locator('.data-field .field-name')).toHaveText([
+    /^Status\s*\*$/, /^Status message\s*\*$/, /^Response body\s*\*$/, /^Response headers\s*\*$/
+  ]);
+  for (const [label, type] of [['Status', 'Integer'], ['Status message', 'Text'], ['Response body', bodyType], ['Response headers', 'Object']])
+    await expect(fieldRow(panel, label).locator('.field-type')).toHaveText(type);
+  await expect(panel.getByLabel('Status output', { exact: true })).toHaveClass(/connectablestart/);
+  await expect(panel.getByLabel('Status message output', { exact: true })).toHaveClass(/connectablestart/);
+  await expect(panel.getByRole('button', { name: 'Edit properties', exact: true })).toHaveCount(0);
+}
 
 async function ownerId(page, name) {
   const node = operationNodes(page, name);
@@ -108,9 +119,15 @@ Then("List projects exposes its query parameters and nested project response", a
   await expect(query.getByLabel("Result limit input", { exact: true })).not.toHaveClass(/connectablestart/);
   await expect(fieldRow(query, "Result limit").locator(".field-type")).toHaveText("Integer");
   const response = namedPanel(this.page, id, "outputs", "Response · 200");
+  const body = namedPanel(this.page, id, "outputs", "Response body");
+  const headers = namedPanel(this.page, id, "outputs", "Response headers");
   const nested = namedPanel(this.page, id, "outputs", "Project");
   await expect(response).toBeVisible();
-  await expect(fieldRow(response, "Project").locator(".field-type")).toHaveText("Object");
+  await expectResponseEnvelope(response, 'Array');
+  await expect(body).toBeVisible();
+  await expect(fieldRow(body, "Project").locator(".field-type")).toHaveText("Object");
+  await expect(headers).toBeVisible();
+  await expect(headers.getByRole('button', { name: 'Edit properties', exact: true })).toBeVisible();
   await expect(nested).toBeVisible();
   const projectId = fieldRow(nested, "Project ID");
   await expect(projectId.locator(".required")).toHaveText("*");
@@ -131,6 +148,7 @@ Then("Create task separates required path and request-body fields", async functi
   await expect(fieldRow(body, "Priority").locator(".required")).toHaveText("*");
   await expect(fieldRow(body, "Estimated hours").locator(".required")).toHaveCount(0);
   await expect(fieldRow(body, "Estimated hours").locator(".field-type")).toHaveText("Number");
+  await expectResponseEnvelope(namedPanel(this.page, id, 'outputs', 'Response · 201'), 'Object');
   await expect(panels(this.page, id, "outputs").getByLabel("Completed output", { exact: true })).toBeVisible();
   const ports = operationNodes(this.page, "Create task").locator(".owner-port");
   await expect(ports).toHaveCount(3);
@@ -156,7 +174,7 @@ Given('repeated operation nodes with documented response variants', async functi
   graph.nodes.push({ ...graph.nodes[0], id: 'response-variants-2', position: { x: 470, y: 550 } });
   const saved = { version: 2, id: 'response-variants-review', name: 'Response variants review', ...graph,
     viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, dashed: false };
-  await this.page.evaluate(document => localStorage.setItem('operations-flow-documents-v1', JSON.stringify([document])), saved);
+  await repository(this.page, 'save', saved, null);
   await this.page.reload();
   await setMode(this.page, 'workflow');
   await this.page.getByRole('button', { name: 'Fit View', exact: true }).click();
@@ -180,8 +198,11 @@ Then('the identity row separates top input and bottom response ports', async fun
     });
     assert.equal(aligned, true, 'HTTP icon, name, and instance number share one identity row.');
   }
-  for (const label of ['Response · 400', 'Response · default'])
-    await expect(namedPanel(this.page, 'response-variants', 'outputs', label)).toBeVisible();
+  for (const label of ['Response · 200 · application/json', 'Response · 200 · text/plain', 'Response · 400', 'Response · default']) {
+    const response = namedPanel(this.page, 'response-variants', 'outputs', label);
+    await expect(response).toBeVisible();
+    await expectResponseEnvelope(response, label === 'Response · default' ? 'Null' : 'Text');
+  }
   await this.page.screenshot({ path: 'tmp/test/workflow-response-ports.png' });
 });
 
@@ -224,7 +245,7 @@ async function hideNestedResponse(world) {
 }
 
 async function restoreNestedResponse(world) {
-  const response = namedPanel(world.page, world.branchOwnerId, "outputs", "Response · 200");
+  const response = namedPanel(world.page, world.branchOwnerId, "outputs", "Response body");
   await response.getByRole("button", { name: "Restore Project", exact: true }).click();
   const nested = namedPanel(world.page, world.branchOwnerId, "outputs", "Project");
   await expect(nested).toBeVisible();
@@ -267,9 +288,9 @@ When("I restore the nested project response", async function () { await restoreN
 
 Then("the nested response remains hidden with its saved fields", async function () {
   await expect(namedPanel(this.page, this.branchOwnerId, "outputs", "Project")).toHaveCount(0);
-  const response = namedPanel(this.page, this.branchOwnerId, "outputs", "Response · 200");
+  const response = namedPanel(this.page, this.branchOwnerId, "outputs", "Response body");
   await expect(response.getByRole("button", { name: "Restore Project", exact: true })).toBeVisible();
-  await expect(workflow(this.page).locator(".workflow-schema-edge")).toHaveCount(2);
+  await expect(workflow(this.page).locator(".workflow-schema-edge")).toHaveCount(4);
   const stored = await storedWorkflows(this.page);
   const document = stored.find(item => item.name === "Hidden branch review");
   assert.ok(document, "The hidden branch must be saved as part of the workflow.");
@@ -286,7 +307,7 @@ Then("the nested response retains its field handles and operation", async functi
   assert.deepEqual(await nested.locator(".data-field .svelte-flow__handle").evaluateAll(handles => handles.map(handle => handle.dataset.handleid)), this.branchHandles);
   assert.equal(await nested.evaluate(element => element.closest(".svelte-flow__node").dataset.id), this.branchNodeId);
   await expect(operationNodes(this.page, "List projects")).toHaveCount(1);
-  await expect(workflow(this.page).locator(".workflow-schema-edge")).toHaveCount(3);
+  await expect(workflow(this.page).locator(".workflow-schema-edge")).toHaveCount(5);
 });
 
 When("I delete the List projects owner", async function () {
@@ -350,7 +371,7 @@ Given("a legacy workflow with an unnamed operation connection", async function (
     edges: [{ id: "legacy-connection", source: "legacy-operation-0", target: "legacy-operation-1" }],
     viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, dashed: false,
   };
-  await this.page.evaluate(document => localStorage.setItem("operations-flow-documents-v1", JSON.stringify([document])), document);
+  await repository(this.page, 'save', document, null);
   await this.page.reload();
   await setMode(this.page, "workflow");
   await expect(operationNodes(this.page, "List projects")).toHaveCount(2);
@@ -366,7 +387,7 @@ Then("the legacy connection and new schema panels both remain usable", async fun
   await expect(workflow(this.page).getByLabel("List projects output", { exact: true })).toHaveCount(2);
   const id = await ownerId(this.page, "Create task");
   await expect(namedPanel(this.page, id, "inputs", "Request body").getByLabel("Title input", { exact: true })).toBeVisible();
-  await expect(workflow(this.page).locator(".workflow-schema-edge")).toHaveCount(3);
+  await expect(workflow(this.page).locator(".workflow-schema-edge")).toHaveCount(5);
   const document = (await readExport(this.page)).document;
   assert.equal(document.version, 2);
   assert.deepEqual(document.edges.find(edge => edge.id === "legacy-connection"), {
@@ -412,4 +433,319 @@ Then("the refused addition explains the limit and preserves the original graph",
   assert.equal(current.version, 1, "A refused addition must not upgrade the original document.");
   assert.deepEqual(current, original, "A refused addition must preserve the original nodes, edges, metadata and view options.");
   assert.ok(originalViewport.zoom > 0 && currentViewport.zoom > 0);
+});
+
+const savedLocally = page => expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
+const responseHeaders = world => namedPanel(world.page, world.additionalOwnerId, 'outputs', 'Request headers');
+const graphContent = document => ({ nodes: document.nodes, edges: document.edges });
+
+async function editProperties(panel) {
+  const edit = panel.getByRole('button', { name: 'Edit properties', exact: true });
+  if (await edit.isVisible()) await edit.click();
+  await expect(panel.getByRole('button', { name: 'Done editing properties', exact: true })).toBeVisible();
+}
+
+async function addResponseProperty(page, panel, name, type, capture = type.toLowerCase()) {
+  await editProperties(panel);
+  await panel.getByRole('button', { name: 'Add field', exact: true }).click();
+  await expect(panel.getByRole('textbox', { name: 'Property name', exact: true })).toBeFocused();
+  await panel.getByRole('textbox', { name: 'Property name', exact: true }).fill(name);
+  await panel.getByRole('combobox', { name: 'Property type', exact: true }).click();
+  await expect(page.getByRole('listbox').getByRole('option')).toHaveCount(7);
+  for (const choice of ['Array', 'Boolean', 'Integer', 'Null', 'Number', 'Object', 'Text'])
+    await expect(page.getByRole('listbox').getByRole('option', { name: choice, exact: true })).toHaveCount(1);
+  await page.getByRole('listbox').getByRole('option', { name: type, exact: true }).click();
+  await page.screenshot({ path: `tmp/test/workflow-additional-property-${capture}-editor.png` });
+  await panel.getByRole('button', { name: 'Add property', exact: true }).click();
+  await expect(panel.getByRole('textbox', { name: 'Property name', exact: true })).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: 'Add field', exact: true })).toBeFocused();
+  await expect(fieldRow(panel, name).locator('.field-type')).toHaveText(type);
+  await expect(panel.getByLabel(`${name} output`, { exact: true })).toHaveClass(/connectablestart/);
+  if (type === 'Object') await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await page.screenshot({ path: `tmp/test/workflow-additional-property-${capture}-added.png` });
+}
+
+Given('a workflow with open HTTPBin response objects and Create task', async function () {
+  await setMode(this.page, 'workflow');
+  await chooseCatalogOperation(this.page, 'HTTPBin GET request', 'workflow');
+  await chooseCatalogOperation(this.page, 'Create task', 'workflow');
+  await this.page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  this.additionalOwnerId = await ownerId(this.page, 'HTTPBin GET request');
+  await renameWorkflow(this.page, 'Additional properties before editing');
+  await savedLocally(this.page);
+});
+
+Then('open response objects offer additional properties while closed inputs do not', async function () {
+  for (const label of ['Response body', 'Response headers', 'Query values', 'Request headers', 'Form fields', 'Uploaded files'])
+    await expect(namedPanel(this.page, this.additionalOwnerId, 'outputs', label)
+      .getByRole('button', { name: 'Edit properties', exact: true })).toBeVisible();
+  const taskId = await ownerId(this.page, 'Create task');
+  for (const label of ['Path parameters', 'Request body']) {
+    const panel = namedPanel(this.page, taskId, 'inputs', label);
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole('button', { name: 'Edit properties', exact: true })).toHaveCount(0);
+  }
+});
+
+When('I cancel adding a response property', async function () {
+  this.additionalBeforeCancel = graphContent((await readExport(this.page)).document);
+  const panel = responseHeaders(this);
+  await editProperties(panel);
+  await panel.getByRole('button', { name: 'Add field', exact: true }).click();
+  await panel.getByRole('textbox', { name: 'Property name', exact: true }).fill('cancelledProperty');
+  await panel.getByRole('button', { name: 'Cancel adding property', exact: true }).click();
+});
+
+Then('cancelling leaves the response graph unchanged', async function () {
+  await expect(responseHeaders(this).getByRole('textbox', { name: 'Property name', exact: true })).toHaveCount(0);
+  await expect(responseHeaders(this).getByRole('button', { name: 'Add field', exact: true })).toBeFocused();
+  assert.deepEqual(graphContent((await readExport(this.page)).document), this.additionalBeforeCancel);
+});
+
+When('I finish editing properties with an unsaved field', async function () {
+  const panel = responseHeaders(this);
+  this.additionalBeforeDone = graphContent((await readExport(this.page)).document);
+  await panel.getByRole('button', { name: 'Add field', exact: true }).click();
+  await panel.getByRole('textbox', { name: 'Property name', exact: true }).fill('Discarded on Done');
+  await expect(panel.getByRole('button', { name: 'Add field', exact: true })).toBeDisabled();
+  await panel.getByRole('button', { name: 'Done editing properties', exact: true }).click();
+});
+
+Then('the property panel returns to its default view without changing the graph', async function () {
+  const panel = responseHeaders(this);
+  await expect(panel.getByRole('button', { name: 'Edit properties', exact: true })).toBeFocused();
+  await expect(panel.getByRole('button', { name: 'Add field', exact: true })).toHaveCount(0);
+  await expect(panel.getByRole('textbox', { name: 'Property name', exact: true })).toHaveCount(0);
+  assert.deepEqual(graphContent((await readExport(this.page)).document), this.additionalBeforeDone);
+});
+
+When('I add the Text response header property {string}', async function (name) {
+  this.additionalPropertyName = name;
+  const panel = responseHeaders(this);
+  await addResponseProperty(this.page, panel, name, 'Text');
+  this.additionalNodeId = await panel.evaluate(element => element.closest('.svelte-flow__node').dataset.id);
+  this.additionalHandleId = await panel.getByLabel(`${name} output`, { exact: true }).getAttribute('data-handleid');
+  await savedLocally(this.page);
+});
+
+Then('undo and redo preserve the added property identity', async function () {
+  const output = responseHeaders(this).getByLabel(`${this.additionalPropertyName} output`, { exact: true });
+  await this.page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(output).toHaveCount(0);
+  await expect(responseHeaders(this)).toBeVisible();
+  await savedLocally(this.page);
+  await this.page.getByRole('button', { name: 'Redo', exact: true }).click();
+  await expect(output).toHaveAttribute('data-handleid', this.additionalHandleId);
+  await expect(fieldRow(responseHeaders(this), this.additionalPropertyName).locator('.field-type')).toHaveText('Text');
+  await savedLocally(this.page);
+});
+
+When('I try to add the same response header property again', async function () {
+  this.additionalBeforeDuplicate = graphContent((await readExport(this.page)).document);
+  const panel = responseHeaders(this);
+  await editProperties(panel);
+  await panel.getByRole('button', { name: 'Add field', exact: true }).click();
+  await panel.getByRole('textbox', { name: 'Property name', exact: true }).fill(this.additionalPropertyName);
+  await panel.getByRole('button', { name: 'Add property', exact: true }).click();
+});
+
+Then('the duplicate property is refused without changing the graph', async function () {
+  const panel = responseHeaders(this);
+  await expect(panel.getByRole('alert')).toContainText('already exists');
+  await expect(fieldRow(panel, this.additionalPropertyName)).toHaveCount(1);
+  assert.deepEqual(graphContent((await readExport(this.page)).document), this.additionalBeforeDuplicate);
+  await panel.getByRole('button', { name: 'Cancel adding property', exact: true }).click();
+});
+
+When('I map the added response header to the Create task project identifier', async function () {
+  const source = responseHeaders(this).getByLabel(`${this.additionalPropertyName} output`, { exact: true });
+  const taskId = await ownerId(this.page, 'Create task');
+  const target = namedPanel(this.page, taskId, 'inputs', 'Path parameters').getByLabel('Project ID input', { exact: true });
+  this.fieldEndpoints = {
+    source: this.additionalNodeId,
+    sourceHandle: this.additionalHandleId,
+    target: await target.evaluate(element => element.closest('.svelte-flow__node').dataset.id),
+    targetHandle: await target.getAttribute('data-handleid'),
+  };
+  await source.click();
+  await target.click();
+  await expectMapping(this);
+});
+
+async function expectSavedResponseProperty(world, name) {
+  const panel = responseHeaders(world);
+  await expect(panel.getByLabel(`${world.additionalPropertyName} output`, { exact: true })).toHaveAttribute('data-handleid', world.additionalHandleId);
+  await expect(fieldRow(panel, world.additionalPropertyName).locator('.field-type')).toHaveText('Text');
+  await expectMapping(world);
+  const saved = (await storedWorkflows(world.page)).find(document => document.name === name);
+  assert.ok(saved, 'The additional property must persist in the saved workflow.');
+  const field = saved.nodes.find(node => node.id === world.additionalNodeId).data.fields.find(field => field.id === world.additionalHandleId);
+  assert.equal(field.label, world.additionalPropertyName);
+  assert.equal(field.type, 'Text');
+  assert.equal(JSON.parse(decodeURIComponent(field.id))[1], `/body/headers/${world.additionalPropertyName}`);
+}
+
+Then('the added response property and its mapping retain their saved identities', async function () {
+  await expectSavedResponseProperty(this, 'Additional response property review');
+});
+
+When('I add an Integer property named {string} to the query values response', async function (name) {
+  this.additionalOwnerId = await ownerId(this.page, 'HTTPBin GET request');
+  this.additionalPropertyName = name;
+  await this.page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await addResponseProperty(this.page, namedPanel(this.page, this.additionalOwnerId, 'outputs', 'Query values'), name, 'Integer');
+});
+
+Then('the query values response exposes the added Integer output', async function () {
+  const panel = namedPanel(this.page, this.additionalOwnerId, 'outputs', 'Query values');
+  await expect(fieldRow(panel, this.additionalPropertyName).locator('.field-type')).toHaveText('Integer');
+  await expect(panel.getByLabel(`${this.additionalPropertyName} output`, { exact: true })).toHaveClass(/connectablestart/);
+  const document = (await readExport(this.page)).document;
+  const nodeId = await panel.evaluate(element => element.closest('.svelte-flow__node').dataset.id);
+  const field = document.nodes.find(node => node.id === nodeId).data.fields.find(field => field.label === this.additionalPropertyName);
+  assert.equal(field.type, 'Integer');
+  assert.equal(JSON.parse(decodeURIComponent(field.id))[1], '/body/args/limit');
+  assert.equal(field.connectable, true);
+});
+
+When('I add an Object property to the query values response', async function () {
+  this.additionalOwnerId = await ownerId(this.page, 'HTTPBin GET request');
+  this.additionalPropertyName = 'requestMetadataForCrossServiceTraceCorrelation';
+  await this.page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await addResponseProperty(this.page, namedPanel(this.page, this.additionalOwnerId, 'outputs', 'Query values'),
+    this.additionalPropertyName, 'Object');
+});
+
+Then('its child panel accepts a nested property without overlapping its parent', async function () {
+  const parent = namedPanel(this.page, this.additionalOwnerId, 'outputs', 'Query values');
+  const child = namedPanel(this.page, this.additionalOwnerId, 'outputs', this.additionalPropertyName);
+  await expect(child.getByRole('button', { name: 'Edit properties', exact: true })).toBeVisible();
+  await addResponseProperty(this.page, child, 'traceId', 'Text', 'nested-text');
+  const parentBox = await parent.boundingBox();
+  const childBox = await child.boundingBox();
+  assert.ok(parentBox && childBox && parentBox.x + parentBox.width < childBox.x,
+    'A long object name keeps its new child panel to the right of its parent.');
+  const parentId = await parent.evaluate(element => element.closest('.svelte-flow__node').dataset.id);
+  const childId = await child.evaluate(element => element.closest('.svelte-flow__node').dataset.id);
+  const document = (await readExport(this.page)).document;
+  assert.ok(document.edges.some(edge => edge.kind === 'schema' && edge.source === parentId && edge.target === childId),
+    'The nested object panel must retain its structural connection.');
+  const field = document.nodes.find(node => node.id === childId).data.fields.find(field => field.label === 'traceId');
+  assert.equal(JSON.parse(decodeURIComponent(field.id))[1], `/body/args/${this.additionalPropertyName}/traceId`);
+});
+
+Then('property edit mode makes only custom names and types editable', async function () {
+  const panel = responseHeaders(this);
+  await panel.getByRole('button', { name: 'Done editing properties', exact: true }).click();
+  await expect(panel.getByRole('button', { name: 'Edit properties', exact: true })).toBeVisible();
+  await expect(panel.getByRole('button', { name: /^Edit property / })).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: 'Add field', exact: true })).toHaveCount(0);
+  await this.page.screenshot({ path: 'tmp/test/workflow-properties-default.png' });
+  await editProperties(panel);
+  const edit = panel.getByRole('button', { name: `Edit property ${this.additionalPropertyName}`, exact: true });
+  await expect(edit.locator('.field-name')).toHaveText(this.additionalPropertyName);
+  await expect(edit.locator('.field-type')).toHaveText('Text');
+  await expect(edit.locator('.material-symbols-rounded')).toHaveCount(0);
+  const documentedResponse = namedPanel(this.page, this.additionalOwnerId, 'outputs', 'Response body');
+  await editProperties(documentedResponse);
+  await expect(documentedResponse.getByRole('button', { name: /^Edit property / })).toHaveCount(0);
+  await documentedResponse.getByRole('button', { name: 'Done editing properties', exact: true }).click();
+  const taskId = await ownerId(this.page, 'Create task');
+  await expect(panels(this.page, taskId).getByRole('button', { name: /^Edit property / })).toHaveCount(0);
+  await expect(workflow(this.page).getByRole('button', { name: 'Remove property', exact: true })).toHaveCount(0);
+});
+
+When('I cancel editing the response header property', async function () {
+  this.additionalBeforeEdit = graphContent((await readExport(this.page)).document);
+  const panel = responseHeaders(this);
+  await editProperties(panel);
+  await panel.getByRole('button', { name: `Edit property ${this.additionalPropertyName}`, exact: true }).click();
+  await expect(panel.getByRole('textbox', { name: 'Property name', exact: true })).toHaveValue(this.additionalPropertyName);
+  await expect(panel.getByRole('combobox', { name: 'Property type', exact: true })).toHaveAttribute('title', 'Text');
+  await expect(panel.getByRole('button', { name: 'Remove property', exact: true })).toBeVisible();
+  await panel.getByRole('textbox', { name: 'Property name', exact: true }).fill('Discarded edit');
+  await panel.getByRole('button', { name: 'Cancel editing property', exact: true }).click();
+});
+
+Then('cancelling the property edit leaves the graph unchanged', async function () {
+  await expect(responseHeaders(this).getByRole('textbox', { name: 'Property name', exact: true })).toHaveCount(0);
+  await expect(responseHeaders(this).getByRole('button', { name: 'Add field', exact: true })).toBeFocused();
+  assert.deepEqual(graphContent((await readExport(this.page)).document), this.additionalBeforeEdit);
+  await expectMapping(this);
+});
+
+When('I rename the response header property to {string}', async function (name) {
+  const panel = responseHeaders(this);
+  await editProperties(panel);
+  await panel.getByRole('button', { name: `Edit property ${this.additionalPropertyName}`, exact: true }).click();
+  await panel.getByRole('textbox', { name: 'Property name', exact: true }).fill(name);
+  await this.page.screenshot({ path: 'tmp/test/workflow-additional-property-edit.png' });
+  await panel.getByRole('button', { name: 'Save property', exact: true }).click();
+  await expect(panel.getByRole('button', { name: 'Add field', exact: true })).toBeFocused();
+  await expect(panel.getByLabel(`${this.additionalPropertyName} output`, { exact: true })).toHaveCount(0);
+  const output = panel.getByLabel(`${name} output`, { exact: true });
+  await expect(output).toBeVisible();
+  const handle = await output.getAttribute('data-handleid');
+  assert.notEqual(handle, this.additionalHandleId, 'Renaming updates the pointer-based field identity.');
+  this.additionalPropertyName = name;
+  this.additionalHandleId = handle;
+  this.fieldEndpoints.sourceHandle = handle;
+  await savedLocally(this.page);
+});
+
+Then('the renamed property keeps its mapping with the updated field identity', async function () {
+  await expectMapping(this);
+  await expect(responseHeaders(this).getByRole('button', { name: `Edit property ${this.additionalPropertyName}`, exact: true })).toBeVisible();
+  assert.equal(JSON.parse(decodeURIComponent(this.additionalHandleId))[1], `/body/headers/${this.additionalPropertyName}`);
+});
+
+Then('the edited response property and mapping retain their saved identities', async function () {
+  await expectSavedResponseProperty(this, 'Edited response property review');
+});
+
+When('I remove the response header property from edit mode', async function () {
+  const panel = responseHeaders(this);
+  await editProperties(panel);
+  await panel.getByRole('button', { name: `Edit property ${this.additionalPropertyName}`, exact: true }).click();
+  await panel.getByRole('button', { name: 'Remove property', exact: true }).click();
+});
+
+Then('the property and its mapping are removed', async function () {
+  const panel = responseHeaders(this);
+  await expect(fieldRow(panel, this.additionalPropertyName)).toHaveCount(0);
+  await expect(panel.getByRole('textbox', { name: 'Property name', exact: true })).toHaveCount(0);
+  await expect(connections(this.page)).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: 'Add field', exact: true })).toBeFocused();
+  await savedLocally(this.page);
+  const document = (await readExport(this.page)).document;
+  assert.equal(document.edges.filter(edge => edge.kind === 'mapping').length, 0);
+  assert.equal(document.nodes.find(node => node.id === this.additionalNodeId).data.fields.length, 0);
+});
+
+When('I undo the property removal', async function () {
+  await this.page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(responseHeaders(this).getByLabel(`${this.additionalPropertyName} output`, { exact: true })).toBeVisible();
+  await savedLocally(this.page);
+});
+
+When('I change the added Object property to Integer', async function () {
+  const panel = namedPanel(this.page, this.additionalOwnerId, 'outputs', 'Query values');
+  const child = namedPanel(this.page, this.additionalOwnerId, 'outputs', this.additionalPropertyName);
+  this.additionalChildId = await child.evaluate(element => element.closest('.svelte-flow__node').dataset.id);
+  await editProperties(panel);
+  await panel.getByRole('button', { name: `Edit property ${this.additionalPropertyName}`, exact: true }).click();
+  await expect(panel.getByRole('textbox', { name: 'Property name', exact: true })).toHaveValue(this.additionalPropertyName);
+  await panel.getByRole('combobox', { name: 'Property type', exact: true }).click();
+  await this.page.getByRole('listbox').getByRole('option', { name: 'Integer', exact: true }).click();
+  await panel.getByRole('button', { name: 'Save property', exact: true }).click();
+});
+
+Then('changing the property type removes its old child panel', async function () {
+  const panel = namedPanel(this.page, this.additionalOwnerId, 'outputs', 'Query values');
+  await expect(fieldRow(panel, this.additionalPropertyName).locator('.field-type')).toHaveText('Integer');
+  await expect(panel.getByLabel(`${this.additionalPropertyName} output`, { exact: true })).toHaveClass(/connectablestart/);
+  await expect(namedPanel(this.page, this.additionalOwnerId, 'outputs', this.additionalPropertyName)).toHaveCount(0);
+  const document = (await readExport(this.page)).document;
+  assert.ok(!document.nodes.some(node => node.id === this.additionalChildId));
+  assert.ok(!document.edges.some(edge => edge.source === this.additionalChildId || edge.target === this.additionalChildId));
 });

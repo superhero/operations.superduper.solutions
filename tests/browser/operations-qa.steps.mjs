@@ -129,6 +129,14 @@ Then('the Priority dropdown uses themed animated choices without overflowing', a
     if (await toggle.getAttribute('aria-checked') !== String(theme === 'dark')) await toggle.click();
     await closeCatalog(page);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.evaluate(() => {
+      const started = event => {
+        if (!event.target.matches('.field-select-content')) return;
+        for (const animation of event.target.getAnimations()) animation.playbackRate = 0.1;
+        document.removeEventListener('animationstart', started, true);
+      };
+      document.addEventListener('animationstart', started, true);
+    });
     await priority.click();
     await expect.poll(() => list.evaluate(element => {
       const moving = element.getAnimations().filter(animation => {
@@ -144,7 +152,7 @@ Then('the Priority dropdown uses themed animated choices without overflowing', a
     await expectThemeColors(list, { backgroundColor: '--color-foreground', color: '--color-background' });
     const high = list.getByRole('option', { name: 'high', exact: true });
     await high.hover();
-    await expectThemeColors(high, { backgroundColor: '--color-emphasis', color: '--color-background' });
+    await expectThemeColors(high, { backgroundColor: '--color-emphasis', color: '--color-primary-foreground' });
     const bounds = await list.boundingBox();
     const viewport = page.viewportSize();
     assert.ok(bounds && bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= viewport.width && bounds.y + bounds.height <= viewport.height,
@@ -165,35 +173,47 @@ Then('the Priority dropdown uses themed animated choices without overflowing', a
   }
 });
 
-Then('Result limit arrows preserve bounds and input focus', async function () {
+Then('the Result limit slider preserves bounds and keyboard focus', async function () {
   const page = this.page;
   const input = await field(page, 'Result limit');
-  const increase = page.getByRole('button', { name: 'Increase Result limit', exact: true });
-  const decrease = page.getByRole('button', { name: 'Decrease Result limit', exact: true });
+  const slider = page.getByRole('slider', { name: 'Result limit', exact: true });
+  await expect(slider).toHaveAttribute('aria-valuemin', '1');
+  await expect(slider).toHaveAttribute('aria-valuemax', '100');
+  await expect(page.getByRole('button', { name: /^(Increase|Decrease) Result limit$/ })).toHaveCount(0);
   await input.fill('1');
-  for (const button of [increase, decrease]) {
-    await expect(button).toHaveAttribute('tabindex', '-1');
-    await expect(button).toHaveAttribute('type', 'button');
+  await slider.focus();
+  for (const [key, value] of [['ArrowLeft', 1], ['ArrowRight', 2], ['ArrowUp', 3], ['ArrowDown', 2],
+    ['Home', 1], ['End', 100], ['ArrowRight', 100], ['ArrowLeft', 99]]) {
+    await slider.press(key);
+    await expect(input).toHaveValue(String(value));
+    await expect(slider).toHaveAttribute('aria-valuenow', String(value));
+    await expect(slider).toBeFocused();
   }
-  await decrease.click();
-  await expect(input).toHaveValue('1');
-  await increase.click();
-  await expect(input).toHaveValue('2');
-  await expect(input).toBeFocused();
-  await input.press('ArrowUp');
-  await expect(input).toHaveValue('3');
-  await input.press('ArrowDown');
-  await expect(input).toHaveValue('2');
-  await input.fill('100');
-  await increase.click();
-  await expect(input).toHaveValue('100');
-  await decrease.click();
-  await expect(input).toHaveValue('99');
-  await expect(input).toBeFocused();
-  await input.press('Tab');
-  await expect(increase).not.toBeFocused();
-  await expect(decrease).not.toBeFocused();
   await expect(page.getByRole('region', { name: 'Prepared request', exact: true })).toHaveCount(0);
+});
+
+Then('the optional Count slider preserves large signed integers and clears without a default', async function () {
+  const page = this.page;
+  const input = await field(page, 'Count');
+  const slider = page.getByRole('slider', { name: 'Count', exact: true });
+  await expect(slider).toHaveAttribute('aria-valuemin', String(Number.MIN_SAFE_INTEGER));
+  await expect(slider).toHaveAttribute('aria-valuemax', String(Number.MAX_SAFE_INTEGER));
+  await expect(input).toHaveValue('');
+  await expect(slider).toHaveAttribute('aria-valuetext', 'Not set');
+  await (await field(page, 'Sample ID')).fill('integer-review');
+  for (const value of [String(Number.MIN_SAFE_INTEGER), String(Number.MAX_SAFE_INTEGER), '']) {
+    await input.fill(value);
+    await expect(input).toHaveValue(value);
+    if (value) await expect(slider).toHaveAttribute('aria-valuenow', value);
+    else await expect(slider).toHaveAttribute('aria-valuetext', 'Not set');
+    assert.equal(await input.evaluate(control => control.validity.valid), true);
+    await page.screenshot({ path: `tmp/test/integer-slider-${value ? Number(value) < 0 ? 'minimum' : 'maximum' : 'empty'}.png` });
+    await page.getByRole('button', { name: 'Execute operation', exact: true }).click();
+    const preview = page.getByRole('region', { name: 'Prepared request', exact: true });
+    await expect(preview).toBeVisible();
+    assert.deepEqual(JSON.parse(await preview.innerText()).query, value ? { count: Number(value) } : {});
+    await page.getByRole('button', { name: 'Edit inputs', exact: true }).click();
+  }
 });
 
 for (const [verb, action] of [['increase', 'Increase'], ['decrease', 'Decrease']]) {
@@ -208,13 +228,21 @@ for (const [verb, action] of [['increase', 'Increase'], ['decrease', 'Decrease']
 
 Then('number arrows reveal through hover and focus with the selected motion preference', async function () {
   const page = this.page;
-  const input = await field(page, 'Result limit');
-  const other = await field(page, 'Project name');
-  const row = page.locator('.joined-field').filter({ has: page.getByRole('spinbutton', { name: 'Result limit', exact: true }) });
+  const input = await field(page, 'Estimated hours');
+  const other = await field(page, 'Title');
+  const row = page.locator('.joined-field').filter({ has: page.getByRole('spinbutton', { name: 'Estimated hours', exact: true }) });
   const arrows = row.locator('.field-number-steppers');
   await other.focus();
   await page.mouse.move(0, 0);
   await expect(arrows).toBeHidden();
+  await arrows.evaluate(element => {
+    const started = event => {
+      if (!['transform', 'translate'].includes(event.propertyName)) return;
+      for (const animation of element.getAnimations()) animation.playbackRate = 0.1;
+      element.removeEventListener('transitionrun', started);
+    };
+    element.addEventListener('transitionrun', started);
+  });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await row.locator('label').hover();
   await expect.poll(() => arrows.evaluate(element => {

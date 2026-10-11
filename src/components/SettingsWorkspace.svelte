@@ -7,59 +7,107 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script module lang="ts">
   export const palettes = [
     { id: "default", name: "Default" },
-    { id: "sunset", name: "Sunset" },
-    { id: "alpine", name: "Alpine" },
-    { id: "obsidian", name: "Obsidian" },
-    { id: "midnight-gold", name: "Midnight Gold" },
-    { id: "neon", name: "Neon" },
-    { id: "lantern", name: "Lantern" },
-    { id: "spring", name: "Spring" },
-    { id: "bonfire", name: "Bonfire" },
-    { id: "harvest-moon", name: "Harvest Moon" },
-    { id: "blue-horizon", name: "Blue Horizon" },
-    { id: "golden-violet", name: "Golden Violet" },
-    { id: "citrus", name: "Citrus" },
-    { id: "sunflower", name: "Cappuccino" },
-    { id: "garden-dusk", name: "Garden Dusk" },
-    { id: "autumn", name: "Autumn" },
-    { id: "rainfall", name: "Rainfall" },
     { id: "graphite-study", name: "Graphite" },
     { id: "steel-and-mist", name: "Steel" },
+    { id: "alpine", name: "Alpine" },
+    { id: "sunflower", name: "Cappuccino" },
+    { id: "bonfire", name: "Bonfire" },
+    { id: "obsidian", name: "Obsidian" },
+    { id: "heritage-noir", name: "Heritage Noir" },
     { id: "carbon", name: "Carbon" },
-    { id: "heritage-noir", name: "Heritage Noir" }
+    { id: "midnight-gold", name: "Midnight Gold" },
+    { id: "harvest-moon", name: "Harvest Moon" },
+    { id: "neon", name: "Neon" },
+    { id: "rainfall", name: "Rainfall" },
+    { id: "autumn", name: "Autumn" },
+    { id: "sunset", name: "Sunset" },
+    { id: "golden-violet", name: "Golden Violet" },
+    { id: "garden-dusk", name: "Garden Dusk" },
+    { id: "blue-horizon", name: "Blue Horizon" },
+    { id: "spring", name: "Spring" },
+    { id: "lantern", name: "Lantern" },
+    { id: "citrus", name: "Citrus" },
   ] as const;
   export type PaletteId = (typeof palettes)[number]["id"];
 </script>
 
 <script lang="ts">
   import Disclosure from "$lib/components/Disclosure.svelte";
+  import FieldInteger from "$lib/components/FieldInteger.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import StorageSettings from "./settings/StorageSettings.svelte";
-  import { isValidWorkflowGridSize, workflowGridSizeLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
+  import LocaleSettings from "./settings/LocaleSettings.svelte";
+  import SchemaSettings from "./settings/SchemaSettings.svelte";
+  import { getSchemaLibrary, loadSchemaLibrary, uploadSchema, replaceSchema, renameSchema, moveSchema, setSchemaEnabled, deleteSchema, downloadSchema } from "$lib/schema-library.ts";
+  import { defaultLocaleSettings, type LocaleSettings as LocalePreferences } from "$lib/locale-settings.ts";
+  import { isValidWorkflowCurveStrength, isValidWorkflowDashGap, isValidWorkflowGridSize,
+    workflowCurveStrengthLimits, workflowDashGapLimits, workflowGridSizeLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
 
-  let { palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults }: {
+  let { palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
+    locale = defaultLocaleSettings, localeError = "", onLocaleChange = () => {}, onRetryLocale = () => {},
+    developerToolbar, developerToolbarError = "", onDeveloperToolbarChange,
+    settingsUnavailable, settingsRetrying, onRetrySettings }: {
     palette: PaletteId;
     onPaletteChange: (palette: PaletteId) => void;
     workflowDefaults: WorkflowDefaults;
     onWorkflowDefaultsChange: (next: WorkflowDefaults) => void;
     workflowDefaultsError?: string;
     onRetryWorkflowDefaults: () => void;
+    locale?: LocalePreferences;
+    localeError?: string;
+    onLocaleChange?: (next: LocalePreferences) => void;
+    onRetryLocale?: () => void;
+    developerToolbar: boolean;
+    developerToolbarError?: string;
+    onDeveloperToolbarChange: (enabled: boolean) => void;
+    settingsUnavailable: boolean;
+    settingsRetrying: boolean;
+    onRetrySettings: () => void;
   } = $props();
   let workspace: HTMLElement;
-  let openSection = $state<"theme" | "workflow" | "storage" | null>(null);
+  let openSection = $state<"theme" | "locale" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
+  const schemaLibrary = $derived(getSchemaLibrary());
+  let gridSizeDraft = $state("");
+  let gridSizeInvalid = $state(false);
+  const savedGridSize = $derived(workflowDefaults.gridSize);
+  let dashGapDraft = $state("");
+  let dashGapInvalid = $state(false);
+  const savedDashGap = $derived(workflowDefaults.dashGap);
+  let curveStrengthDraft = $state("");
+  let curveStrengthInvalid = $state(false);
+  const savedCurveStrength = $derived(workflowDefaults.curveStrength);
   const workflowOptions: { key: "dashed" | "curved" | "snap"; label: string }[] = [
     { key: "dashed", label: "Dashed lines" },
     { key: "curved", label: "Curved lines" },
     { key: "snap", label: "Snap to grid" }
   ];
 
-  function commitGridSize(input: HTMLInputElement) {
-    const gridSize = input.valueAsNumber;
-    if (!isValidWorkflowGridSize(gridSize)) {
-      input.reportValidity();
-      return;
-    }
+  $effect(() => { gridSizeDraft = String(savedGridSize); gridSizeInvalid = false; });
+  $effect(() => { dashGapDraft = String(savedDashGap); dashGapInvalid = false; });
+  $effect(() => { curveStrengthDraft = String(savedCurveStrength); curveStrengthInvalid = false; });
+
+  function commitGridSize() {
+    const raw = gridSizeDraft.trim();
+    const gridSize = Number(raw);
+    gridSizeInvalid = !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(raw) || !isValidWorkflowGridSize(gridSize);
+    if (gridSizeInvalid) return;
     if (gridSize !== workflowDefaults.gridSize) onWorkflowDefaultsChange({ ...workflowDefaults, gridSize });
+  }
+
+  function commitDashGap() {
+    const raw = dashGapDraft.trim();
+    const dashGap = Number(raw);
+    dashGapInvalid = !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(raw) || !isValidWorkflowDashGap(dashGap);
+    if (dashGapInvalid) return;
+    if (dashGap !== workflowDefaults.dashGap) onWorkflowDefaultsChange({ ...workflowDefaults, dashGap });
+  }
+
+  function commitCurveStrength() {
+    const raw = curveStrengthDraft.trim();
+    const curveStrength = Number(raw);
+    curveStrengthInvalid = !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(raw) || !isValidWorkflowCurveStrength(curveStrength);
+    if (curveStrengthInvalid) return;
+    if (curveStrength !== workflowDefaults.curveStrength) onWorkflowDefaultsChange({ ...workflowDefaults, curveStrength });
   }
 
   export function focusActive() {
@@ -69,6 +117,57 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <section class="workspace" aria-label="Settings workspace" bind:this={workspace} tabindex="-1">
   <div class="settings-sections">
+    <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} lazy animateSize open={openSection === "storage"} onToggle={(next) => openSection = next ? "storage" : null}>
+      {#snippet summary()}
+        <div class="section-heading"><h2>Browser</h2><span class="section-subtitle">Monitor browser resource usage</span></div>
+        <MaterialIcon name="chevron_forward" size={17} />
+      {/snippet}
+      {#if settingsUnavailable}
+        <div class="settings-retry">
+          <button class="defaults-retry" type="button" disabled={settingsRetrying} onclick={onRetrySettings}>
+            {settingsRetrying ? "Retrying saved settings…" : "Retry saved settings"}
+          </button>
+        </div>
+      {/if}
+      <StorageSettings />
+    </Disclosure>
+    {#if import.meta.env.DEV}
+      <Disclosure class="catalog-group settings-section" label="Developer" tooltipEnabled={false} open={openSection === "developer"} onToggle={(next) => openSection = next ? "developer" : null}>
+        {#snippet summary()}
+          <div class="section-heading"><h2>Developer</h2><span class="section-subtitle">Choose whether to show the developer toolbar</span></div>
+          <MaterialIcon name="chevron_forward" size={17} />
+        {/snippet}
+        <fieldset class="workflow-settings" aria-label="Developer">
+          <div class="workflow-defaults">
+            <div class="workflow-default-pair">
+              <button class="workflow-default" type="button" role="switch" aria-checked={developerToolbar}
+                onclick={() => onDeveloperToolbarChange(!developerToolbar)}>
+                <span>Developer toolbar</span><span class="default-switch" aria-hidden="true"><span></span></span>
+              </button>
+            </div>
+          </div>
+          {#if developerToolbarError}
+            <div class="defaults-error"><p role="alert">{developerToolbarError}</p><button class="defaults-retry" type="button" onclick={() => onDeveloperToolbarChange(developerToolbar)}>Retry saving</button></div>
+          {/if}
+        </fieldset>
+      </Disclosure>
+    {/if}
+    <Disclosure class="catalog-group settings-section" label="Locale" tooltipEnabled={false} open={openSection === "locale"} onToggle={(next) => openSection = next ? "locale" : null}>
+      {#snippet summary()}
+        <div class="section-heading"><h2>Locale</h2><span class="section-subtitle">Choose date, time and timezone preferences</span></div>
+        <MaterialIcon name="chevron_forward" size={17} />
+      {/snippet}
+      <LocaleSettings value={locale} onValueChange={onLocaleChange} error={localeError} onRetry={onRetryLocale} />
+    </Disclosure>
+    <Disclosure class="catalog-group settings-section" label="Schemas" tooltipEnabled={false} open={openSection === "schemas"} onToggle={(next) => openSection = next ? "schemas" : null}>
+      {#snippet summary()}
+        <div class="section-heading"><h2>Schemas</h2><span class="section-subtitle">Manage your OpenAPI documents</span></div>
+        <MaterialIcon name="chevron_forward" size={17} />
+      {/snippet}
+      <SchemaSettings records={schemaLibrary.records} busy={schemaLibrary.busy} ready={schemaLibrary.initialized} error={schemaLibrary.error}
+        onUpload={uploadSchema} onReplace={replaceSchema} onRename={renameSchema} onMove={moveSchema} onEnabledChange={setSchemaEnabled} onDelete={deleteSchema}
+        onDownload={downloadSchema} onRetry={loadSchemaLibrary} />
+    </Disclosure>
     <Disclosure class="catalog-group settings-section" label="Theme" tooltipEnabled={false} open={openSection === "theme"} onToggle={(next) => openSection = next ? "theme" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Theme</h2><span class="section-subtitle">Decide what color the webpage will use</span></div>
@@ -92,39 +191,63 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         </div>
       </fieldset>
     </Disclosure>
-    <Disclosure class="catalog-group settings-section" label="Workflow" tooltipEnabled={false} open={openSection === "workflow"} onToggle={(next) => openSection = next ? "workflow" : null}>
+    <Disclosure class="catalog-group settings-section" label="Workflows" tooltipEnabled={false} open={openSection === "workflow"} onToggle={(next) => openSection = next ? "workflow" : null}>
       {#snippet summary()}
-        <div class="section-heading"><h2>Workflow</h2><span class="section-subtitle">Set the canvas grid and defaults for new workflows</span></div>
+        <div class="section-heading"><h2>Workflows</h2><span class="section-subtitle">Configure workflow defaults</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
       {/snippet}
-      <fieldset aria-label="Workflow defaults">
+      <fieldset class="workflow-settings" aria-label="Workflow defaults">
         <div class="workflow-defaults">
           {#each workflowOptions as option (option.key)}
-            <button class="workflow-default" type="button" role="switch" aria-checked={workflowDefaults[option.key]}
-              onclick={() => onWorkflowDefaultsChange({ ...workflowDefaults, [option.key]: !workflowDefaults[option.key] })}>
-              <span>{option.label}</span><span class="default-switch" aria-hidden="true"><span></span></span>
-            </button>
+            <div class="workflow-default-pair">
+              <button class="workflow-default" type="button" role="switch" aria-checked={workflowDefaults[option.key]}
+                onclick={() => onWorkflowDefaultsChange({ ...workflowDefaults, [option.key]: !workflowDefaults[option.key] })}>
+                <span>{option.label}</span><span class="default-switch" aria-hidden="true"><span></span></span>
+              </button>
+              {#if option.key === "snap"}
+                <div class="grid-size-setting">
+                  <span>Grid size</span>
+                  <div class="grid-size-control">
+                    <FieldInteger id="workflow-grid-size" label="Grid size" value={gridSizeDraft}
+                      minimum={workflowGridSizeLimits.min} maximum={workflowGridSizeLimits.max} required invalid={gridSizeInvalid}
+                      describedBy={gridSizeInvalid ? "workflow-grid-size-error" : undefined}
+                      onValueChange={value => { gridSizeDraft = value; gridSizeInvalid = false; }} onValueCommit={commitGridSize} />
+                    <span aria-hidden="true">px</span>
+                  </div>
+                  {#if gridSizeInvalid}<span class="grid-size-error" id="workflow-grid-size-error" role="alert">Grid size must be a whole number from {workflowGridSizeLimits.min} to {workflowGridSizeLimits.max}.</span>{/if}
+                </div>
+              {:else if option.key === "dashed"}
+                <div class="grid-size-setting">
+                  <span>Dash gap</span>
+                  <div class="grid-size-control">
+                    <FieldInteger id="workflow-dash-gap" label="Dash gap" value={dashGapDraft}
+                      minimum={workflowDashGapLimits.min} maximum={workflowDashGapLimits.max} required invalid={dashGapInvalid}
+                      describedBy={dashGapInvalid ? "workflow-dash-gap-error" : undefined}
+                      onValueChange={value => { dashGapDraft = value; dashGapInvalid = false; }} onValueCommit={commitDashGap} />
+                    <span aria-hidden="true">px</span>
+                  </div>
+                  {#if dashGapInvalid}<span class="grid-size-error" id="workflow-dash-gap-error" role="alert">Dash gap must be a whole number from {workflowDashGapLimits.min} to {workflowDashGapLimits.max}.</span>{/if}
+                </div>
+              {:else}
+                <div class="grid-size-setting">
+                  <span>Curve strength</span>
+                  <div class="grid-size-control">
+                    <FieldInteger id="workflow-curve-strength" label="Curve strength" value={curveStrengthDraft}
+                      minimum={workflowCurveStrengthLimits.min} maximum={workflowCurveStrengthLimits.max} required invalid={curveStrengthInvalid}
+                      describedBy={curveStrengthInvalid ? "workflow-curve-strength-error" : undefined}
+                      onValueChange={value => { curveStrengthDraft = value; curveStrengthInvalid = false; }} onValueCommit={commitCurveStrength} />
+                    <span aria-hidden="true">%</span>
+                  </div>
+                  {#if curveStrengthInvalid}<span class="grid-size-error" id="workflow-curve-strength-error" role="alert">Curve strength must be a whole number from {workflowCurveStrengthLimits.min} to {workflowCurveStrengthLimits.max}.</span>{/if}
+                </div>
+              {/if}
+            </div>
           {/each}
         </div>
-        <label class="grid-size-setting">
-          <span>Grid size</span>
-          <span class="grid-size-control">
-            <input type="number" value={workflowDefaults.gridSize} min={workflowGridSizeLimits.min} max={workflowGridSizeLimits.max}
-              step="1" required onchange={(event) => commitGridSize(event.currentTarget)} />
-            <span aria-hidden="true">px</span>
-          </span>
-        </label>
         {#if workflowDefaultsError}
           <div class="defaults-error"><p role="alert">{workflowDefaultsError}</p><button class="defaults-retry" type="button" onclick={onRetryWorkflowDefaults}>Retry saving</button></div>
         {/if}
       </fieldset>
-    </Disclosure>
-    <Disclosure class="catalog-group settings-section" label="Storage" tooltipEnabled={false} open={openSection === "storage"} onToggle={(next) => openSection = next ? "storage" : null}>
-      {#snippet summary()}
-        <div class="section-heading"><h2>Storage</h2><span class="section-subtitle">Explore what is saved in this browser</span></div>
-        <MaterialIcon name="chevron_forward" size={17} />
-      {/snippet}
-      {#if openSection === "storage"}<StorageSettings />{/if}
     </Disclosure>
   </div>
 </section>
@@ -139,20 +262,26 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .section-heading h2 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: normal; }
   .section-subtitle { font-size: 12px; font-weight: 400; }
   fieldset { min-width: 0; margin: 0; padding: 16px; border: 0; }
-  .workflow-defaults { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 10px; }
-  .workflow-default { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 4px; background: var(--color-muted); color: var(--color-catalog-foreground); font-size: 12px; font-weight: 700; text-align: left; }
+  .workflow-settings { container-type: inline-size; }
+  .workflow-defaults { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .workflow-default-pair { display: grid; align-content: start; gap: 10px; min-width: 0; padding: 10px; border-radius: 4px; background: var(--color-surface); }
+  .workflow-default { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 4px; background: var(--color-surface); color: var(--color-catalog-foreground); font-size: 12px; font-weight: 700; text-align: left; }
   .workflow-default:focus-visible { outline-color: var(--color-ring); }
-  .grid-size-setting { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 10px; padding: 10px 12px; border-radius: 4px; background: var(--color-muted); color: var(--color-catalog-foreground); font-size: 12px; font-weight: 700; }
-  .grid-size-control { display: flex; align-items: center; gap: 8px; }
-  .grid-size-control input { width: 72px; min-height: 32px; padding: 6px 8px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); color: var(--color-catalog-foreground); font: inherit; }
-  .grid-size-control input:focus-visible { outline-color: var(--color-ring); }
-  .default-switch { flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-surface); transition: background-color 180ms ease-in; }
-  .default-switch > span { display: block; width: 18px; height: 18px; border-radius: 2px; background: var(--color-muted-foreground); transform: translateX(0); transition: transform 180ms ease-in, background-color 180ms ease-in; }
+  .workflow-default-pair > .workflow-default { background: var(--color-background); }
+  .grid-size-setting { display: grid; align-content: center; gap: 8px; min-width: 0; padding: 10px 12px; border-radius: 4px; background: var(--color-background); color: var(--color-catalog-foreground); font-size: 12px; font-weight: 700; }
+  .grid-size-control { display: flex; align-items: center; gap: 8px; min-width: 0; --field-background: var(--color-background); --field-foreground: var(--color-catalog-foreground); }
+  .grid-size-control :global(.field-integer) { flex: 1; min-width: 0; }
+  .grid-size-error { color: var(--color-error-foreground); font-weight: 400; }
+  .default-switch { flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-muted-foreground); transition: background-color 180ms ease-in; }
+  .default-switch > span { display: block; width: 18px; height: 18px; border-radius: 2px; background: var(--color-surface); transform: translateX(0); transition: transform 180ms ease-in, background-color 180ms ease-in; }
   .workflow-default[aria-checked="true"] .default-switch { background: var(--color-catalog-active); }
   .workflow-default[aria-checked="true"] .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
+  @container (max-width: 650px) { .workflow-defaults { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @container (max-width: 430px) { .workflow-defaults { grid-template-columns: 1fr; } }
   .defaults-error { display: grid; justify-items: start; gap: 10px; margin-top: 12px; }
   .defaults-error p { margin: 0; padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; overflow-wrap: anywhere; }
   .defaults-retry { padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; }
+  .settings-retry { padding: 16px 16px 0; }
   .palette-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 16px; }
   .palette-choice { position: relative; min-width: 0; cursor: pointer; }
   .palette-choice input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }

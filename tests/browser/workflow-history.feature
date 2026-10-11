@@ -15,12 +15,23 @@ Feature: Browser-local Git workflow history
 
   Scenario: Opening history does not change the editor or its persisted working file
     When I open workflow history
-    Then history offers direct restore actions without changing the current workflow
+    Then history offers selectable version cards without changing the current workflow
 
-  Scenario: Restoring a version creates a new commit without losing later versions
+  Scenario: Selecting an earlier version moves to its existing commit and preserves later work
     When I open workflow history
-    And I restore the earliest workflow version
-    Then the historical graph is restored while both workflows keep their history
+    And I select the earliest workflow version
+    Then the historical graph is selected without creating a commit or changing another workflow
+    And editing the selected version forks from that existing commit
+
+  Scenario: Keyboard selection locks version cards until the selected workflow is ready
+    When I open workflow history
+    Then keyboard activation selects the existing version while competing cards are disabled
+
+  Scenario: Version selection rejects stale and unrelated revisions without changing history
+    Then checkout rejects invalid revisions and selecting the current revision creates no changes
+
+  Scenario: Interrupted version selection recovers the selected commit and preserved branches
+    Then an interrupted checkout recovers the exact selected commit and Git references
 
   Scenario: Undo and redo survive reload and an edit after undo clears only redo
     Then workflow undo and redo remain available across reloads
@@ -28,7 +39,8 @@ Feature: Browser-local Git workflow history
   Scenario: Repeated edits from an earlier version preserve distinct abandoned branches
     Then repeated edits after undo preserve the real Git branch tree
     And the mobile history tree shows stashed futures without changing the workflow
-    And explicitly restoring a stashed version appends a commit while preserving all branches
+    And selecting a stashed version moves to its existing commit while preserving all branches
+    And the explicit repository restore API still appends a commit
 
   Scenario: Repeating identical abandoned content in the same second creates a distinct fork
     Then an identical same-second edit preserves a distinct abandoned commit
@@ -56,8 +68,8 @@ Feature: Browser-local Git workflow history
       | undo      |
       | redo      |
 
-  Scenario: Migrating an existing browser collection is complete and idempotent
-    Then existing localStorage workflows migrate once and retain their identifiers
+  Scenario: Legacy browser collections remain untouched while Git workflows keep working
+    Then legacy localStorage workflows are ignored and untouched while Git workflows survive reload
 
   Scenario: A legacy pending Undo migrates without losing prior Git commits
     Then an interrupted append-only Undo migrates to real commit navigation

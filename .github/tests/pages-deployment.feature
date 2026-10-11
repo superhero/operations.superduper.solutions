@@ -1,6 +1,6 @@
 @automation @pages-deployment
 Feature: Reuse the active Pages deployment when the tested bundle is unchanged
-  The destination branch and final HTML bytes determine whether a deployment is needed.
+  The destination branch, final HTML bytes, and hosting headers determine whether a deployment is needed.
   A preview for another branch or an older alias target cannot stand in for the current destination.
 
   Scenario Outline: Compare the bundle with the active destination
@@ -17,9 +17,17 @@ Feature: Reuse the active Pages deployment when the tested bundle is unchanged
       | hotfix/1.2.4  | changed                   | true   |
       | develop       | unmarked                  | true   |
       | develop       | no commit message         | true   |
+      | develop       | legacy HTML hash          | true   |
       | develop       | identical without alias   | true   |
       | main          | identical                 | false  |
       | main          | empty                     | true   |
+
+  Scenario: A hosting header change invalidates an otherwise identical deployment
+    Given a tested Pages bundle for "develop"
+    And the Pages destination is "identical"
+    And the Pages bundle is "changed headers"
+    When the Pages deployment is prepared
+    Then the Pages decision is deploy "true" and skipped "false"
 
   Scenario: A dependency badge update does not invalidate a tested bundle
     Given a tested Pages bundle for "develop"
@@ -74,15 +82,19 @@ Feature: Reuse the active Pages deployment when the tested bundle is unchanged
     Given a tested Pages bundle for "develop"
     And the Pages bundle is "<state>"
     When the Pages deployment is prepared
-    Then Pages preparation fails with "single nonempty regular index.html"
+    Then Pages preparation fails with "only nonempty regular index.html and _headers"
 
     Examples:
       | state             |
       | empty HTML        |
+      | missing HTML      |
+      | empty headers     |
+      | missing headers   |
       | extra file        |
       | hidden file       |
       | nested directory  |
       | symlink           |
+      | headers symlink   |
 
   Scenario: Unconfigured branch types cannot claim a Pages alias
     Given a tested Pages bundle for "feature/new-ui"

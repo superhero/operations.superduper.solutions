@@ -11,7 +11,10 @@ import { API, get, OTHER_SHA, REPOSITORY, SHA } from "./support.mjs";
 const PROJECT = "operations-superduper-solutions";
 const ID = "12345678-1234-1234-1234-123456789abc";
 const HTML = "<!doctype html><html><body>Verified application</body></html>\n";
-const HASH = createHash("sha256").update(HTML).digest("hex");
+const HEADERS = "/*\n  Cross-Origin-Opener-Policy: same-origin\n  Cross-Origin-Embedder-Policy: credentialless\n";
+const hash = value => createHash("sha256").update(value).digest("hex");
+const bundleHash = (html, headers) => hash(`${hash(html)}  index.html\n${hash(headers)}  _headers\n`);
+const HASH = bundleHash(HTML, HEADERS);
 const QUERY = "query($owner: String!, $name: String!, $ref: String!) { repository(owner: $owner, name: $name) { ref(qualifiedName: $ref) { target { oid } } } }";
 
 Given("a tested Pages bundle for {string}", function (branch)
@@ -19,6 +22,7 @@ Given("a tested Pages bundle for {string}", function (branch)
   const bundle = join(this.automation.root, "dist");
   mkdirSync(bundle);
   writeFileSync(join(bundle, "index.html"), HTML);
+  writeFileSync(join(bundle, "_headers"), HEADERS);
   this.automation.env.GITHUB_STEP_SUMMARY = join(this.automation.root, "summary.md");
   writeFileSync(this.automation.env.GITHUB_STEP_SUMMARY, "");
   this.pages = { branch, bundle, state: "empty", branchState: "current" };
@@ -38,15 +42,24 @@ Given("the Pages bundle is {string}", function (state)
 {
   const { bundle } = this.pages;
   if (state === "empty HTML") writeFileSync(join(bundle, "index.html"), "");
+  else if (state === "missing HTML") unlinkSync(join(bundle, "index.html"));
+  else if (state === "empty headers") writeFileSync(join(bundle, "_headers"), "");
+  else if (state === "missing headers") unlinkSync(join(bundle, "_headers"));
+  else if (state === "changed headers")
+  {
+    writeFileSync(join(bundle, "_headers"), HEADERS.replace("credentialless", "require-corp"));
+    return;
+  }
   else if (state === "extra file") writeFileSync(join(bundle, "style.css"), "body {}");
   else if (state === "hidden file") writeFileSync(join(bundle, ".assetsignore"), "*");
   else if (state === "nested directory") mkdirSync(join(bundle, "assets"));
-  else if (state === "symlink")
+  else if (state === "symlink" || state === "headers symlink")
   {
-    const target = join(this.automation.root, "index.html");
-    writeFileSync(target, HTML);
-    unlinkSync(join(bundle, "index.html"));
-    symlinkSync(target, join(bundle, "index.html"));
+    const filename = state === "symlink" ? "index.html" : "_headers";
+    const target = join(this.automation.root, filename);
+    writeFileSync(target, state === "symlink" ? HTML : HEADERS);
+    unlinkSync(join(bundle, filename));
+    symlinkSync(target, join(bundle, filename));
   }
   else assert.fail(`Unknown Pages bundle state: ${state}`);
   this.pages.invalidInput = true;
@@ -68,6 +81,7 @@ When("the Pages deployment is prepared", function ()
     deployment_trigger: { metadata: { branch, commit_message: `bundle-sha256:${HASH}` } }
   };
   if (state === "changed") deployment.deployment_trigger.metadata.commit_message = `bundle-sha256:${"b".repeat(64)}`;
+  if (state === "legacy HTML hash") deployment.deployment_trigger.metadata.commit_message = `bundle-sha256:${hash(HTML)}`;
   if (state === "unmarked") deployment.deployment_trigger.metadata.commit_message = "Previous release";
   if (state === "no commit message") deployment.deployment_trigger.metadata.commit_message = null;
   if (state === "identical without alias") deployment.aliases = null;
@@ -146,7 +160,8 @@ Then("the Pages decision is deploy {string} and skipped {string}", function (dep
   const output = Object.fromEntries(readFileSync(this.automation.output, "utf8").trim().split("\n")
     .map(line => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]));
   assert.deepEqual(output, {
-    deploy, skipped, bundle_hash: HASH, alias_url: this.pages.alias,
+    deploy, skipped, bundle_hash: bundleHash(readFileSync(join(this.pages.bundle, "index.html")),
+      readFileSync(join(this.pages.bundle, "_headers"))), alias_url: this.pages.alias,
     deployment_id: deploy === "false" && skipped === "false" ? ID : "",
     deployment_url: deploy === "false" && skipped === "false" ? `https://12345678.${PROJECT}.pages.dev` : ""
   });

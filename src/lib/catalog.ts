@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-import { catalogs } from "./catalog-registry.ts";
+import { catalogs, replaceCatalogs, type Catalog } from "./catalog-registry.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type InputSchema = {
@@ -15,6 +15,7 @@ export type InputSchema = {
   minItems?: number;
   maxItems?: number;
   properties?: Record<string, InputSchema>;
+  additionalProperties?: boolean | InputSchema;
   required?: string[];
   items?: InputSchema;
 };
@@ -39,6 +40,7 @@ export type Operation = {
   bodyRequired: boolean;
   bodyMediaType?: BodyMediaType;
   bodyValue?: boolean;
+  bodySchema?: InputSchema;
   responseExample?: unknown;
   responseMediaType?: string;
 };
@@ -130,17 +132,32 @@ function inputSchema(value: unknown, document: RecordValue, context: string, dep
   if (type === "array") result.items = inputSchema(shape.items, document, `${context}[]`, depth + 1);
   if (type === "object")
   {
-    if (shape.additionalProperties !== undefined && shape.additionalProperties !== false)
-      throw new Error(`${context}: body must describe an object with named fields; dynamic properties are unsupported.`);
-    const properties = object(shape.properties, `${context}: properties`);
+    if (shape.additionalProperties !== undefined)
+    {
+      if (typeof shape.additionalProperties === "boolean") result.additionalProperties = shape.additionalProperties;
+      else
+      {
+        const additional = resolve(shape.additionalProperties, document, `${context}: additionalProperties`);
+        result.additionalProperties = Object.keys(additional).every(key => annotations.includes(key)) ? true
+          : inputSchema(additional, document, `${context}: additionalProperties`, depth + 1);
+      }
+    }
+    const properties = object(shape.properties === undefined ? {} : shape.properties, `${context}: properties`);
     const required = shape.required ?? [];
-    if (!Array.isArray(required) || required.some(name => typeof name !== "string" || !Object.hasOwn(properties, name)))
-      throw new Error(`${context}: required body properties must name declared fields.`);
+    if (!Array.isArray(required) || required.some(name => typeof name !== "string"
+      || result.additionalProperties === false && !Object.hasOwn(properties, name)))
+      throw new Error(`${context}: required body properties must name allowed fields.`);
     result.required = required;
     result.properties = Object.fromEntries(Object.entries(properties).map(([name, property]) =>
       [name, inputSchema(property, document, `${context}.${name}`, depth + 1)]));
   }
   return result;
+}
+
+function objectSchemas(schema: InputSchema): InputSchema[]
+{
+  return [...Object.values(schema.properties!),
+    ...(typeof schema.additionalProperties === "object" ? [schema.additionalProperties] : [])];
 }
 
 function field(value: unknown, document: RecordValue, location: InputField["location"], name: string,
@@ -214,7 +231,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
             || parameter.explode !== undefined && parameter.explode !== query
             || !query && !primitiveTypes.includes(input.type)
             || input.type === "array" && !primitiveTypes.includes(input.schema!.items!.type)
-            || input.type === "object" && Object.values(input.schema!.properties!).some(property => !primitiveTypes.includes(property.type)))
+            || input.type === "object" && objectSchemas(input.schema!).some(property => !primitiveTypes.includes(property.type)))
             throw new Error(`${id}: unsupported parameter serialization; use primitive parameters, form query arrays or flat deepObject query objects.`);
           if (input.location === "header" && !/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(input.name))
             throw new Error(`${id}: invalid header name.`);
@@ -229,6 +246,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
       let bodyRequired = false;
       let bodyMediaType: BodyMediaType | undefined;
       let bodyValue = false;
+      let bodySchema: InputSchema | undefined;
       if (operation.requestBody !== undefined)
       {
         const body = resolve(operation.requestBody, document, `${id}: request body`);
@@ -244,12 +262,13 @@ export function extractOperations(value: unknown, source: string): Operation[]
         supported(media, ["schema", "example", "examples"], id);
         const shape = resolve(media.schema, document, id);
         const schema = inputSchema(shape, document, id);
+        bodySchema = schema;
         if (bodyMediaType === "text/plain" && schema.type !== "string") throw new Error(`${id}: text/plain requires a string schema.`);
         if (bodyMediaType === "application/x-www-form-urlencoded" || bodyMediaType === "multipart/form-data")
-          if (schema.type !== "object" || Object.values(schema.properties!).some(property => !["string", "number", "integer", "boolean"].includes(property.type)))
+          if (schema.type !== "object" || objectSchemas(schema).some(property => !["string", "number", "integer", "boolean"].includes(property.type)))
             throw new Error(`${id}: form bodies require named primitive text fields; files and structured fields are unsupported.`);
         if (schema.type === "object")
-          for (const [name, property] of Object.entries(shape.properties as RecordValue)) fields.push(field(property, document, "body", name, schema.required!.includes(name)));
+          for (const [name, property] of Object.entries((shape.properties ?? {}) as RecordValue)) fields.push(field(property, document, "body", name, schema.required!.includes(name)));
         else
         {
           bodyValue = true;
@@ -270,6 +289,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
         method: method.toUpperCase(), path, fields, bodyRequired, ...responseDetails(operation, document, id) };
       if (bodyMediaType) extracted.bodyMediaType = bodyMediaType;
       if (bodyValue) extracted.bodyValue = true;
+      if (bodySchema) extracted.bodySchema = bodySchema;
       result.push(extracted);
     }
   }
@@ -277,4 +297,45 @@ export function extractOperations(value: unknown, source: string): Operation[]
   return result;
 }
 
-export const operations = catalogs.flatMap(catalog => extractOperations(catalog.document, catalog.id));
+export let operations = catalogs.flatMap(catalog => extractOperations(catalog.document, catalog.id));
+const sourceIdentity = (catalog: Catalog) => JSON.stringify([catalog.file, catalog.document]);
+let operationSources = new Map(catalogs.map(catalog => [catalog.id, sourceIdentity(catalog)]));
+
+export type PreparedCatalog = { catalog: Catalog; operations: Operation[]; sourceIdentity: string };
+
+function validateCatalogIdentifiers(next: readonly Catalog[]): void
+{
+  const identifiers = new Set<string>();
+  for (const catalog of next)
+  {
+    if (!catalog.id.trim() || catalog.id.includes(":") || identifiers.has(catalog.id))
+      throw new Error(`Invalid or duplicate schema identifier: ${catalog.id}.`);
+    identifiers.add(catalog.id);
+  }
+}
+
+/** Publish worker-prepared data without parsing or fingerprinting schemas on the UI thread. */
+export function publishPreparedCatalogs(next: readonly PreparedCatalog[]): void
+{
+  const replacement = next.map(entry => entry.catalog);
+  validateCatalogIdentifiers(replacement);
+  const previousOperations = new Map(operations.map(operation => [operation.id, operation]));
+  const nextSources = new Map<string, string>();
+  const extracted = next.flatMap(({ catalog, operations: prepared, sourceIdentity: identity }) =>
+  {
+    nextSources.set(catalog.id, identity);
+    return operationSources.get(catalog.id) === identity
+      ? prepared.map(operation => previousOperations.get(operation.id) ?? operation) : prepared;
+  });
+  replaceCatalogs(replacement);
+  operations = extracted;
+  operationSources = nextSources;
+}
+
+/** Validate every operation before replacing the live registry and operation index together. */
+export function updateCatalogs(next: readonly Catalog[]): void
+{
+  validateCatalogIdentifiers(next);
+  publishPreparedCatalogs(next.map(catalog => ({ catalog, operations: extractOperations(catalog.document, catalog.id),
+    sourceIdentity: sourceIdentity(catalog) })));
+}

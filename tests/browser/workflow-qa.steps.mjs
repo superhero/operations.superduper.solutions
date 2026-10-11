@@ -5,10 +5,9 @@ import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { workflow, workflowAction, setMode } from "./workspace.steps.mjs";
-import { storedWorkflows, blockWorkflowSaving, restoreWorkflowSaving } from "./workflow-storage.fixture.mjs";
+import { repository, storedWorkflows, blockWorkflowSaving, restoreWorkflowSaving } from "./workflow-storage.fixture.mjs";
 import { expectWorkflowName, renameWorkflow } from "./workflow-details.fixture.mjs";
 
-const storageKey = "operations-flow-documents-v1";
 const maxFileSize = 2_000_000;
 const toolbarButton = (page, action) => page.getByRole("button", { name: `${action} workflow`, exact: true });
 const replacementDialog = page => page.getByRole("dialog", { name: "Unsaved changes", exact: true });
@@ -26,7 +25,7 @@ function fixture(id, name) {
 }
 
 async function loadFixtures(page, documents) {
-  await page.evaluate(({ key, documents }) => localStorage.setItem(key, JSON.stringify(documents)), { key: storageKey, documents });
+  for (const document of documents) await repository(page, 'save', document, null);
   await page.reload();
   await setMode(page, "workflow");
   await expectWorkflowName(page, documents.at(-1).name);

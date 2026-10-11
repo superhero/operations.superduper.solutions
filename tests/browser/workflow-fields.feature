@@ -73,3 +73,48 @@ Feature: Documented workflow fields and mappings
     Given an imported legacy workflow near the coordinate limit
     When I try to add Create task beyond the coordinate limit
     Then the refused addition explains the limit and preserves the original graph
+
+  Scenario: Additional response properties support mapping, history and reload
+    Given a workflow with open HTTPBin response objects and Create task
+    Then open response objects offer additional properties while closed inputs do not
+    When I cancel adding a response property
+    Then cancelling leaves the response graph unchanged
+    When I finish editing properties with an unsaved field
+    Then the property panel returns to its default view without changing the graph
+    When I add the Text response header property "X-Project-Id"
+    Then undo and redo preserve the added property identity
+    When I try to add the same response header property again
+    Then the duplicate property is refused without changing the graph
+    When I map the added response header to the Create task project identifier
+    And I name the workflow "Additional response property review" and wait for autosave
+    And I reload and reopen the workflow workspace
+    Then the added response property and its mapping retain their saved identities
+
+  Scenario: An open response object offers a choice of property types
+    Given a workflow with 1 instances of "HTTPBin GET request"
+    When I add an Integer property named "limit" to the query values response
+    Then the query values response exposes the added Integer output
+
+  Scenario: An added object property exposes its own editable child panel
+    Given a workflow with 1 instances of "HTTPBin GET request"
+    When I add an Object property to the query values response
+    Then its child panel accepts a nested property without overlapping its parent
+    When I change the added Object property to Integer
+    Then changing the property type removes its old child panel
+
+  Scenario: Editing and removing a custom property preserves valid mappings and history
+    Given a workflow with open HTTPBin response objects and Create task
+    When I add the Text response header property "X-Project-Id"
+    And I map the added response header to the Create task project identifier
+    Then property edit mode makes only custom names and types editable
+    When I cancel editing the response header property
+    Then cancelling the property edit leaves the graph unchanged
+    When I rename the response header property to "X-Project-Key"
+    Then the renamed property keeps its mapping with the updated field identity
+    When I name the workflow "Edited response property review" and wait for autosave
+    And I reload and reopen the workflow workspace
+    Then the edited response property and mapping retain their saved identities
+    When I remove the response header property from edit mode
+    Then the property and its mapping are removed
+    When I undo the property removal
+    Then the edited response property and mapping retain their saved identities

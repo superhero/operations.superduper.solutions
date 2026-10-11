@@ -1,10 +1,14 @@
 <script lang="ts">
   import { tick, untrack } from "svelte";
   import { Tooltip } from "bits-ui";
-  import { operations, type Operation } from "$lib/catalog.ts";
+  import type { Operation } from "$lib/catalog.ts";
+  import { getSchemaLibrary } from "$lib/schema-library.ts";
   import type { WorkspaceMode, WorkflowSaveStatus } from "$lib/workspace.d.ts";
   import type { WorkflowDocument } from "$lib/workflow-document.ts";
-  import { saveSetting, type WorkflowDefaults } from "$lib/app-settings.ts";
+  import { loadSettings, saveSetting, type WorkflowDefaults } from "$lib/app-settings.ts";
+  import { defaultLocaleSettings, normalizeLocaleSettings, type LocaleSettings } from "$lib/locale-settings.ts";
+  import { applyLocaleSettings } from "$lib/datetime-state.ts";
+  import { logger } from "$lib/logger.ts";
   import Header from "./components/Header.svelte";
   import SideNavigation from "./components/SideNavigation.svelte";
   import OperationsWorkspace from "./components/OperationsWorkspace.svelte";
@@ -13,8 +17,22 @@
   import BackgroundWave from "./components/BackgroundWave.svelte";
   import NativeScrollbars from "./components/NativeScrollbars.svelte";
 
-  let { initialWorkflowDefaults }: { initialWorkflowDefaults: WorkflowDefaults } = $props();
+  let { initialWorkflowDefaults, initialDeveloperToolbar = false, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
+    initialWorkflowDefaults: WorkflowDefaults;
+    initialDeveloperToolbar?: boolean;
+    initialLocale?: LocaleSettings;
+    initialSettingsError?: Error | null;
+  } = $props();
   let workflowDefaults = $state<WorkflowDefaults>(untrack(() => ({ ...initialWorkflowDefaults })));
+  let developerToolbar = $state(untrack(() => initialDeveloperToolbar));
+  let developerToolbarError = $state("");
+  let developerToolbarSave = 0;
+  let locale = $state<LocaleSettings>(untrack(() => normalizeLocaleSettings(initialLocale)));
+  let localeError = $state("");
+  let localeSave = 0;
+  let settingsError = $state(untrack(() => initialSettingsError));
+  let settingsRetrying = $state(false);
+  const settingsEdits = { theme: 0, palette: 0, workflowDefaults: 0, developerToolbar: 0, locale: 0 };
   let workflowDefaultsError = $state("");
   let workflowDefaultsSave = 0;
   let navigationOpen = $state(false);
@@ -28,6 +46,7 @@
   let dark = $state(document.documentElement.dataset.theme === "dark");
   let palette = $state(palettes.find(option => option.id === document.documentElement.dataset.palette)?.id ?? palettes[0].id);
   let operationsWorkspace: OperationsWorkspace;
+  const operations = $derived(getSchemaLibrary().operations);
   let sideNavigation: SideNavigation;
   let workflowWorkspace: WorkflowWorkspace;
   let settingsWorkspace: SettingsWorkspace;
@@ -71,8 +90,9 @@
   });
 
   function toggleTheme() {
+    settingsEdits.theme += 1;
     dark = !dark;
-    void saveSetting("theme", dark ? "dark" : "light").catch(() => { /* Retain the selection for this session. */ });
+    void saveSetting("theme", dark ? "dark" : "light").catch(reportSettingsError);
   }
 
   $effect(() => {
@@ -80,17 +100,98 @@
   });
 
   function selectPalette(next: typeof palette) {
+    settingsEdits.palette += 1;
     palette = next;
-    void saveSetting("palette", palette).catch(() => { /* Retain the selection for this session. */ });
+    void saveSetting("palette", palette).catch(reportSettingsError);
   }
 
   function selectWorkflowDefaults(next: WorkflowDefaults) {
+    settingsEdits.workflowDefaults += 1;
     workflowDefaults = { ...next };
     workflowDefaultsError = "";
     const request = ++workflowDefaultsSave;
-    void saveSetting("workflowDefaults", next).catch(() => {
-      if (request === workflowDefaultsSave) workflowDefaultsError = "Could not save workflow defaults. These choices apply only to this session until saving succeeds.";
+    void saveSetting("workflowDefaults", next).catch(error => {
+      if (request === workflowDefaultsSave) {
+        workflowDefaultsError = "Could not save workflow defaults. These choices apply only to this session until saving succeeds.";
+        void reportSettingsError(error);
+      }
     });
+  }
+
+  $effect(() => { applyLocaleSettings(locale); });
+
+  function selectLocale(next: LocaleSettings) {
+    settingsEdits.locale += 1;
+    locale = normalizeLocaleSettings(next);
+    localeError = "";
+    const request = ++localeSave;
+    void saveSetting("locale", locale).catch(error => {
+      if (request === localeSave) {
+        localeError = "Could not save locale preferences. These choices apply only to this session until saving succeeds.";
+        void reportSettingsError(error);
+      }
+    });
+  }
+
+  $effect(() => {
+    if (!import.meta.env.DEV) return;
+    document.documentElement.dataset.developerToolbar = String(developerToolbar);
+    for (const toolbar of document.querySelectorAll<HTMLElement>("dev-toolbar"))
+      toolbar.inert = !developerToolbar;
+    if (developerToolbar) {
+      const frame = requestAnimationFrame(() => {
+        for (const toolbar of document.querySelectorAll<HTMLElement & { setToolbarVisible?: (visible: boolean) => void }>("dev-toolbar")) {
+          toolbar.setToolbarVisible?.(true);
+          // Wake the toolbar from its inactivity-minimized state when opting in.
+          toolbar.shadowRoot?.querySelector("#__v_dt__root")?.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
+        }
+      });
+      return () => cancelAnimationFrame(frame);
+    }
+    // Reset panels opened before opting out or by a shortcut while hidden.
+    for (const toolbar of document.querySelectorAll("dev-toolbar"))
+      toolbar.shadowRoot?.querySelector<HTMLButtonElement>('button[aria-label="Close DevTools panel"]')?.click();
+  });
+
+  function selectDeveloperToolbar(next: boolean) {
+    settingsEdits.developerToolbar += 1;
+    developerToolbar = next;
+    developerToolbarError = "";
+    const request = ++developerToolbarSave;
+    void saveSetting("developerToolbar", next).catch(error => {
+      if (request === developerToolbarSave) {
+        developerToolbarError = "Could not save this setting. It applies only to this session until saving succeeds.";
+        void reportSettingsError(error);
+      }
+    });
+  }
+
+  async function reportSettingsError(error: unknown) {
+    const failure = error instanceof Error ? error : new Error("Could not access saved settings.", { cause: error });
+    // Keep the recovered app usable behind the overlay, with its palette applied.
+    await tick();
+    logger.error(failure);
+  }
+
+  async function retrySettings() {
+    if (settingsRetrying) return;
+    settingsRetrying = true;
+    const edits = { ...settingsEdits };
+    try {
+      const settings = await loadSettings(palettes.map(option => option.id));
+      settingsError = settings.storageError;
+      if (settingsError) await reportSettingsError(settingsError);
+      else {
+        // A retry must not replace a choice made while the read was pending.
+        if (edits.theme === settingsEdits.theme) dark = settings.theme === "dark";
+        if (edits.palette === settingsEdits.palette) palette = palettes.find(option => option.id === settings.palette)?.id ?? palettes[0].id;
+        if (edits.workflowDefaults === settingsEdits.workflowDefaults) workflowDefaults = settings.workflowDefaults;
+        if (edits.developerToolbar === settingsEdits.developerToolbar) developerToolbar = settings.developerToolbar;
+        if (edits.locale === settingsEdits.locale) locale = settings.locale;
+      }
+    } finally {
+      settingsRetrying = false;
+    }
   }
 
   function selectOperation(operation: Operation) {
@@ -156,17 +257,47 @@
   <Header {navigationOpen} workflowSaveStatus={mode === "workflow" ? workflowSaveStatus : undefined} onMenu={() => navigationOpen = !navigationOpen} />
   <div class="shell">
     <main>
+      {#if settingsError && !import.meta.env.DEV}
+        <div class="settings-recovery" role="alert">
+          <div class="settings-recovery-message">
+            <h2>Saved settings are unavailable</h2>
+            <p>{settingsError.message}</p>
+            <p>Current choices remain available for this session.</p>
+          </div>
+        </div>
+      {/if}
       <div bind:this={operationsHost} hidden={mode !== "operations"} onfocusin={(event) => { if (event.target instanceof HTMLElement) lastOperationsFocus = event.target; }}>
         <OperationsWorkspace bind:this={operationsWorkspace} {operations} active={mode === "operations"} onAddToWorkflow={addToWorkflow} onOperationSelect={(operation) => sideNavigation.revealOperation(operation)} />
       </div>
       <div class="workflow-host" hidden={mode !== "workflow"}>
-        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={mode === "workflow"} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={() => navigationOpen = true} />
+        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={mode === "workflow"} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={() => navigationOpen = !navigationOpen} />
       </div>
       <div hidden={mode !== "settings"}>
         <SettingsWorkspace bind:this={settingsWorkspace} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
+          {locale} {localeError} onLocaleChange={selectLocale} onRetryLocale={() => selectLocale(locale)}
+          settingsUnavailable={Boolean(settingsError)} {settingsRetrying} onRetrySettings={retrySettings}
+          {developerToolbar} {developerToolbarError} onDeveloperToolbarChange={selectDeveloperToolbar}
           onWorkflowDefaultsChange={selectWorkflowDefaults} onRetryWorkflowDefaults={() => selectWorkflowDefaults(workflowDefaults)} />
       </div>
     </main>
   </div>
 </div>
 </Tooltip.Provider>
+
+<style>
+  .settings-recovery {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 16px;
+    border-radius: 4px;
+    color: var(--color-foreground);
+    background: var(--color-surface);
+  }
+  .settings-recovery-message { flex: 1; min-width: min(100%, 260px); }
+  .settings-recovery h2 { margin: 0 0 8px; font-size: 1rem; font-weight: 700; }
+  .settings-recovery p { margin: 0 0 8px; white-space: pre-line; overflow-wrap: anywhere; }
+</style>

@@ -31,7 +31,24 @@ function record(value: unknown): RecordValue | undefined {
 
 function operationAt(document: RecordValue, path: string, method: string) {
   const verb = method.toLowerCase();
-  const item = record(record(document.paths)?.[path]);
+  let item = record(record(document.paths)?.[path]);
+  const references = new Set<string>();
+  while (item && Object.hasOwn(item, "$ref")) {
+    const reference = item.$ref;
+    if (typeof reference !== "string" || !reference.startsWith("#/") || references.has(reference)
+      || Object.keys(item).length !== 1 || /~(?:[^01]|$)/.test(reference)) {
+      item = undefined;
+      break;
+    }
+    references.add(reference);
+    let target: unknown = document;
+    for (const part of reference.slice(2).split("/")) {
+      const key = part.replace(/~1/g, "/").replace(/~0/g, "~");
+      const parent = record(target);
+      target = parent && Object.hasOwn(parent, key) ? parent[key] : undefined;
+    }
+    item = record(target);
+  }
   const operation = record(item?.[verb]);
   if (!methods.has(verb) || !item || !operation || typeof document.openapi !== "string")
     throw new Error(`Schema unavailable for ${method.toUpperCase()} ${path}: the catalog does not define this OpenAPI operation.`);
@@ -136,20 +153,21 @@ function groupPath(groups: CatalogGroup[], operationId: string): Group[] {
   return [];
 }
 
-/** Resolve reports only from bundled catalogs; imported graph labels are not source schemas. */
+/** Resolve reports from registered schemas; imported graph labels are not source schemas. */
 export function getOperationReport(operation: Operation): OperationReport {
   const catalog = catalogForOperation(operation.id);
   if (!catalog)
-    throw new Error(`Schema unavailable for ${operation.id}: its source catalog is not bundled.`);
+    throw new Error(`Schema unavailable for ${operation.id}: its source schema is not registered.`);
   const { operation: source } = operationAt(catalog.document, operation.path, operation.method);
-  if (operation.id !== `${catalog.id}:${source.operationId}`)
+  const operationId = typeof source.operationId === "string" ? source.operationId : `${operation.method.toUpperCase()} ${operation.path}`;
+  if (operation.id !== `${catalog.id}:${operationId}`)
     throw new Error(`Schema unavailable for ${operation.id}: its identifier does not match the catalog endpoint.`);
   const info = catalog.document.info as { title: string; version: string };
   return {
     catalog: { file: catalog.file, title: info.title, version: info.version, openapi: catalog.document.openapi as string },
-    operationId: source.operationId as string,
-    summary: source.summary as string,
-    description: source.description as string,
+    operationId,
+    summary: typeof source.summary === "string" ? source.summary : operationId,
+    description: typeof source.description === "string" ? source.description : "",
     groups: groupPath(catalog.groups, operation.id),
     ...scopeOperationSchema(catalog.document, operation.path, operation.method)
   };

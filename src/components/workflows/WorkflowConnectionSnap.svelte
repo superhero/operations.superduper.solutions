@@ -5,14 +5,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
-  import { getBezierPath, getSmoothStepPath, useConnection, useNodes, useStore, useSvelteFlow, useViewport,
+  import { getSmoothStepPath, useConnection, useNodes, useStore, useSvelteFlow, useViewport,
     ViewportPortal, type Connection, type InternalNode, type XYPosition } from "@xyflow/svelte";
   import { nearestWorkflowInput, type WorkflowConnectionState, type WorkflowConnectionEnd,
     type WorkflowHandle } from "$lib/workflow-connection-snap.ts";
+  import { workflowCurve } from "$lib/workflow-curve.ts";
 
-  let { isValidConnection, active = true, curved = false, dashed = false, markerEnd }:
+  let { isValidConnection, active = true, curved = false, dashed = false, curveStrength = 50, markerEnd }:
     { isValidConnection: (connection: Connection) => boolean; active?: boolean; curved?: boolean;
-      dashed?: boolean; markerEnd?: string } = $props();
+      dashed?: boolean; curveStrength?: number; markerEnd?: string } = $props();
   const connection = useConnection();
   const nodes = useNodes();
   const viewport = useViewport();
@@ -82,7 +83,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       sourceX: resolved.from.x, sourceY: resolved.from.y, sourcePosition: resolved.fromPosition,
       targetX: resolved.to.x, targetY: resolved.to.y, targetPosition: resolved.toPosition
     };
-    return (curved ? getBezierPath(points) : getSmoothStepPath(points))[0];
+    return (curved ? workflowCurve(points, curveStrength) : getSmoothStepPath(points))[0];
   });
 </script>
 
@@ -93,7 +94,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <svg class="workflow-connection-preview" aria-hidden="true" width="1" height="1"
       data-source={resolved.fromNode.id} data-source-handle={resolved.fromHandle.id}
       data-target={resolved.toNode?.id} data-target-handle={resolved.toHandle?.id}>
-      <path d={path} fill="none" marker-end={markerEnd} stroke-dasharray={dashed ? "6 4" : undefined} />
+      <path d={path} fill="none" marker-end={markerEnd} style:stroke-dasharray={dashed ? "6 var(--workflow-dash-gap, 4)" : undefined} />
       <circle cx={resolved.to.x} cy={resolved.to.y} r="6" />
     </svg>
   </ViewportPortal>

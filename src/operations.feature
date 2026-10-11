@@ -56,7 +56,7 @@ Feature: Explore operations from a local OpenAPI catalog
       | an unsupported media type     | application/json                 |
       | invalid body required         | body required must be Boolean    |
       | an unknown schema type        | unsupported input type           |
-      | dynamic body properties       | body must describe an object     |
+      | invalid additional properties | expected an object               |
       | undeclared required fields    | required body properties         |
       | invalid required fields       | required body properties         |
       | invalid operation tags        | tags must be nonempty strings    |
@@ -124,3 +124,8 @@ Feature: Explore operations from a local OpenAPI catalog
 
   Scenario: Structured values are checked before request preparation or mapping
     Then nested values enforce declared types, required fields and bounds
+
+  Scenario: Object properties follow the schema additional-property policy
+    Then omitted and true additional properties preserve arbitrary JSON names and values
+    And additional property schemas retain references required names and value constraints
+    And dynamic body fields respect canonical policies and transport restrictions

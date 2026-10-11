@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-import { operations, type InputField, type JsonValue, type Operation } from "./catalog.ts";
-import { InputValidationError, validateInputValue } from "./operation-input.ts";
+import { operations, type InputField, type InputSchema, type JsonValue, type Operation } from "./catalog.ts";
+import { additionalBodyField, InputValidationError, validateInputValue } from "./operation-input.ts";
 import { validateWorkflowDocument, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
 import { castValue, matchingSwitchGates } from "./workflow-utilities.ts";
 import { createWorkflowExecution, type WorkflowExecutionResult, type WorkflowResponse, type WorkflowExecutor } from "./workflow-execution.ts";
+import { responseHeaderReader } from "./workflow-response.ts";
 
 type Node = WorkflowDocumentNode;
 type DataNode = Extract<Node, { type: "data" }>;
@@ -29,21 +30,48 @@ export type WorkflowStep = WorkflowVisit | { kind: "choice"; workflowName: strin
 export type WorkflowExecution = WorkflowExecutionResult & { operation: Operation; step: number; workflowName: string };
 const port = (node: string, handle: string) => JSON.stringify([node, handle]);
 const inactive = Symbol("inactive branch");
+const inputTypes: Partial<Record<WorkflowField["type"], InputSchema["type"]>> = {
+  Text: "string", Integer: "integer", Number: "number", Boolean: "boolean", Object: "object", Array: "array", Null: "null"
+};
 const isOwner = (node: Node): node is Owner => node.type === undefined || node.type === "operation" || node.type === "workflow";
 const dataNodes = (frame: Frame, owner: string, direction: "inputs" | "outputs") =>
   frame.document.nodes.filter((node): node is DataNode => node.type === "data" && !node.hidden && node.data.ownerId === owner && node.data.direction === direction);
 
-function identity(field: WorkflowField): [string, string[]]
+function decodedIdentity(id: string): [string, string[]] | undefined
 {
   try
   {
-    const value: unknown = JSON.parse(decodeURIComponent(field.id));
+    const value: unknown = JSON.parse(decodeURIComponent(id));
     if (Array.isArray(value) && value.length === 2 && typeof value[0] === "string" && typeof value[1] === "string"
       && (value[1] === "" || value[1].startsWith("/")) && !/~(?:[^01]|$)/.test(value[1]))
       return [value[0], value[1] === "" ? [] : value[1].slice(1).split("/").map(part => part.replace(/~1/g, "/").replace(/~0/g, "~"))];
   }
   catch { /* Use a recoverable error for unsupported imported fields. */ }
+}
+
+function identity(field: WorkflowField): [string, string[]]
+{
+  const value = decodedIdentity(field.id);
+  if (value) return value;
   throw new Error(`The saved field “${field.label}” has an unsupported path. Add this operation again before running it.`);
+}
+
+const responseStatus = (group: string) => /^(?:response|output):([1-5](?:\d\d|XX)|default)(?::|$)/i.exec(group)?.[1]?.toUpperCase();
+
+function selectedResponseStatus(frame: Frame, owner: string, status: number): string
+{
+  const declared = new Set<string>();
+  // Hidden response branches still determine exact/range/default precedence.
+  for (const panel of frame.document.nodes)
+  {
+    if (panel.type !== "data" || panel.data.ownerId !== owner || panel.data.direction !== "outputs") continue;
+    const groups = panel.data.fields.map(field => decodedIdentity(field.id)?.[0]);
+    if (panel.id.startsWith(`${owner}:`)) groups.push(decodedIdentity(panel.id.slice(owner.length + 1))?.[0]);
+    for (const group of groups) if (group) { const key = responseStatus(group); if (key) declared.add(key); }
+  }
+  const exact = String(status);
+  const range = `${Math.floor(status / 100)}XX`;
+  return declared.has(exact) ? exact : declared.has(range) ? range : "DEFAULT";
 }
 
 function read(value: unknown, path: string[]): unknown
@@ -55,16 +83,36 @@ function read(value: unknown, path: string[]): unknown
     ? read((value as Record<string, unknown>)[head!], tail) : undefined;
 }
 
-function mappedFragment(path: string[], value: unknown): unknown
+function readResponse(response: WorkflowResponse, path: string[], headers?: ReturnType<typeof responseHeaderReader>): unknown
+{
+  if (path[0] === "headers")
+  {
+    if (headers) return read(headers(path[1]), path.slice(2));
+    if (path.length === 1) return response.headers;
+    const key = Object.keys(response.headers).find(name => name.toLowerCase() === path[1]!.toLowerCase());
+    return key === undefined ? undefined : read(response.headers[key], path.slice(2));
+  }
+  return read(response, path);
+}
+
+function mappedOutput(frame: Frame, nodeId: string, fieldId: string): boolean
+{
+  if (frame.edges.some(edge => edge.source === nodeId && edge.sourceHandle === fieldId)) return true;
+  if (!frame.parent || !frame.call) return false;
+  return dataNodes(frame.parent, frame.call.id, "outputs").some(panel => panel.data.fields.some(field =>
+    field.endpoint?.nodeId === nodeId && field.endpoint.fieldId === fieldId && mappedOutput(frame.parent!, panel.id, field.id)));
+}
+
+function mappedFragment(path: string[], value: unknown, arrays: Set<string>, parent: string[]): unknown
 {
   if (!path.length) return value;
   const [head, ...tail] = path;
-  if (head === "items" || head === "*")
+  if ((head === "items" || head === "*") && arrays.has(JSON.stringify(parent)))
   {
     if (!Array.isArray(value)) throw new Error("A connected array item path needs an array value. Check its connection.");
-    return value.map(item => mappedFragment(tail, item));
+    return value.map(item => mappedFragment(tail, item, arrays, [...parent, head]));
   }
-  return { [head!]: mappedFragment(tail, value) };
+  return { [head!]: mappedFragment(tail, value, arrays, [...parent, head!]) };
 }
 
 function mergeMapped(previous: unknown, next: unknown): unknown
@@ -166,6 +214,8 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
 
   function outputs(frame: Frame, node: Owner, response?: WorkflowResponse, child?: Frame)
   {
+    const selectedStatus = response && selectedResponseStatus(frame, node.id, response.status);
+    const headers = response && node.type !== "workflow" ? responseHeaderReader(node.data.operationId, response.status, response.headers) : undefined;
     for (const panel of dataNodes(frame, node.id, "outputs")) for (const field of panel.data.fields)
     {
       let value: unknown = inactive;
@@ -177,9 +227,9 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       else if (response && field.connectable)
       {
         const [group, path] = identity(field);
-        if (group === `output:${response.status}` || group.startsWith(`output:${response.status}:`)
-          || /^output:2XX(?::|$)/i.test(group) && response.status >= 200 && response.status < 300)
-          value = read(response.body, path);
+        if (responseStatus(group) === selectedStatus)
+          value = group.startsWith("response:") ? readResponse(response, path, mappedOutput(frame, panel.id, field.id) ? headers : undefined)
+            : read(response.body, path);
       }
       emit(frame, panel.id, field.id, value);
     }
@@ -230,12 +280,40 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
 
   function visit(frame: Frame, node: OperationNode): WorkflowVisit
   {
-    const operation = operations.find(operation => operation.id === node.data.operationId
+    const canonical = operations.find(operation => operation.id === node.data.operationId
       && operation.method === node.data.method && operation.path === node.data.path);
-    if (!operation) throw new Error(`“${node.data.name}” is unavailable in the bundled test catalog. Add an available operation before running it.`);
+    if (!canonical) throw new Error(`“${node.data.name}” is unavailable in the registered schemas. Add an available operation before running it.`);
+    const operation = { ...canonical, fields: [...canonical.fields] };
     const values: Record<string, string> = {};
     const mappedFields: string[] = [];
     const mapped = new Map<InputField, unknown>();
+    const arrayPaths = new Map<string, Set<string>>();
+    for (const panel of dataNodes(frame, node.id, "inputs")) for (const field of panel.data.fields)
+    {
+      try
+      {
+        const [group, path] = identity(field);
+        if (group === "input:body" && path.length === 1 && field.connectable && inputTypes[field.type]
+          && !operation.fields.some(input => input.location === "body" && input.name === path[0]))
+        {
+          const input = additionalBodyField(operation, path[0]!, inputTypes[field.type]!);
+          if (input) operation.fields.push(input);
+        }
+        if (field.type === "Array")
+        {
+          const arrays = arrayPaths.get(group) ?? new Set<string>();
+          arrays.add(JSON.stringify(path));
+          arrayPaths.set(group, arrays);
+        }
+      }
+      catch { /* Unsupported saved paths are diagnosed only when connected. */ }
+    }
+    if (operation.bodySchema?.type === "array")
+    {
+      const arrays = arrayPaths.get("input:body") ?? new Set<string>();
+      arrays.add("[]");
+      arrayPaths.set("input:body", arrays);
+    }
     for (const panel of dataNodes(frame, node.id, "inputs")) for (const field of panel.data.fields)
     {
       const key = port(panel.id, field.id);
@@ -247,7 +325,8 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       const value = frame.values.get(key);
       if (value === undefined) continue;
       const tail = operation.bodyValue && input.location === "body" ? path : path.slice(1);
-      mapped.set(input, mergeMapped(mapped.get(input), mappedFragment(tail, value)));
+      mapped.set(input, mergeMapped(mapped.get(input), mappedFragment(tail, value, arrayPaths.get(group) ?? new Set(),
+        operation.bodyValue && input.location === "body" ? [] : path.slice(0, 1))));
     }
     for (const [input, value] of mapped)
     {

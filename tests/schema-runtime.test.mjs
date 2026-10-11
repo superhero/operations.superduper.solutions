@@ -1,0 +1,239 @@
+// Copyright (C) 2026 Erik Landvall
+// SPDX-License-Identifier: AGPL-3.0-only
+// See LICENSE and LICENSE-ADDITIONAL-TERMS.
+
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { afterEach, test } from "node:test";
+import { extractOperations, operations, publishPreparedCatalogs, updateCatalogs } from "../src/lib/catalog.ts";
+import { bundledCatalogs, catalogs, catalogForOperation } from "../src/lib/catalog-registry.ts";
+import { getOperationReport } from "../src/lib/operation-report.ts";
+import { validateSchemaDocument } from "../src/lib/schema-documents.ts";
+import { createWorkflowRequestExecution, workflowExecutionForOperation, workflowRequestUrl } from "../src/lib/workflow-execution.ts";
+import { createOperationGraph } from "../src/lib/workflow-graph.ts";
+import { createWorkflowRunner } from "../src/lib/workflow-runner.ts";
+
+const response = { description: "Success", content: { "application/json": { schema: { type: "object" } } } };
+const fixture = (operation = {}, item = {}) => ({
+  openapi: "3.1.0", info: { title: "Registered service", version: "1" },
+  servers: [{ url: "https://api.example.test/v1" }],
+  paths: { "/items": { ...item, get: { operationId: "read", responses: { 200: response }, ...operation } } },
+});
+
+function catalog(document = fixture(), id = "registered") {
+  const validated = validateSchemaDocument(document, id);
+  return { id, file: `${id}.json`, name: validated.name, document: validated.document, groups: validated.groups,
+    execution: { kind: "http", origin: validated.serverUrl } };
+}
+
+function register(document = fixture(), id = "registered") {
+  const result = catalog(document, id);
+  updateCatalogs([...bundledCatalogs, result]);
+  return result;
+}
+
+function workflow(operation, source) {
+  const graph = createOperationGraph(operation, { x: 0, y: 0 }, "registered-node", source);
+  return { version: 3, id: "runtime-test", name: "Registered workflow", ...graph,
+    viewport: { x: 0, y: 0, zoom: 1 }, snap: true, curved: true, dashed: false };
+}
+
+afterEach(() => updateCatalogs(bundledCatalogs));
+
+test("schema validation normalizes a non-Error failure from operation extraction", () => {
+  // Isolate the replacement module so live catalog tests keep their real registry.
+  const script = `
+    import assert from "node:assert/strict";
+    import { registerHooks } from "node:module";
+    registerHooks({
+      resolve(specifier, context, next) {
+        return specifier === "./catalog.ts" && context.parentURL === ${JSON.stringify(new URL("../src/lib/schema-documents.ts", import.meta.url).href)}
+          ? { url: "test:failed-extractor", shortCircuit: true } : next(specifier, context);
+      },
+      load(url, context, next) {
+        return url === "test:failed-extractor"
+          ? { format: "module", source: 'export function extractOperations() { throw "Operation extraction failed"; }', shortCircuit: true }
+          : next(url, context);
+      }
+    });
+    const { validateSchemaDocument } = await import(${JSON.stringify(new URL("../src/lib/schema-documents.ts", import.meta.url).href)});
+    assert.throws(() => validateSchemaDocument(${JSON.stringify(fixture())}, "test"),
+      { message: "Invalid OpenAPI document: Operation extraction failed" });
+  `;
+  const result = spawnSync(process.execPath, ["--input-type=module", "-e", script], { encoding: "utf8" });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test("HTTP execution retains server base paths and resolves operation and path server overrides", async () => {
+  const requests = [];
+  const executor = createWorkflowRequestExecution(async (url, options) => {
+    requests.push({ url, options });
+    return Response.json({ accepted: true });
+  });
+  const document = fixture();
+  document.paths["/path"] = { servers: [{ url: "https://path.example.test/root/" }],
+    get: { operationId: "path", responses: { 200: response } } };
+  document.paths["/operation"] = { servers: [{ url: "https://path.example.test/root" }],
+    get: { operationId: "operation", responses: { 200: response }, servers: [{
+      url: "https://{region}.example.test/{version}",
+      variables: { region: { default: "eu", enum: ["eu", "us"] }, version: { default: "v2" } },
+    }] } };
+  document.paths["/relative"] = { get: { operationId: "relative", responses: { 200: response }, servers: [{ url: "/v3" }] } };
+  register(document);
+  for (const id of ["read", "path", "operation", "relative"])
+    await executor.execute(operations.find(operation => operation.id === `registered:${id}`), {});
+  assert.deepEqual(requests.map(request => request.url), [
+    "https://api.example.test/v1/items", "https://path.example.test/root/path",
+    "https://eu.example.test/v2/operation", "https://api.example.test/v3/relative",
+  ]);
+  assert.deepEqual(workflowExecutionForOperation("registered:operation"), { kind: "http", origin: "https://eu.example.test/v2" });
+  assert.ok(requests.every(request => request.options.credentials === "omit" && request.options.redirect === "error"));
+});
+
+test("request URLs reject host changes and traversal, retain encoded path values, and omit undefined queries", () => {
+  const request = { method: "GET", path: "/items/a%2Fb", query: {
+    omitted: undefined, repeated: ["one", undefined, "two"], empty: null, disabled: false,
+  } };
+  assert.equal(workflowRequestUrl(request, "https://api.example.test/v1/"),
+    "https://api.example.test/v1/items/a%2Fb?repeated=one&repeated=two&empty=null&disabled=false");
+  for (const path of ["//another.example/items", "/\\another.example/items", "/items\\other", "https://another.example/items",
+    "/../items", "/%2e%2E/items", "/items/./more", "/items?changed=true", "/items#fragment", "/items\nmore"])
+    assert.throws(() => workflowRequestUrl({ ...request, path }, "https://api.example.test/v1"), /operation path/);
+  for (const server of ["file:///local", "https://user:secret@example.test"])
+    assert.throws(() => workflowRequestUrl(request, server), /HTTP or HTTPS URL without credentials/);
+});
+
+test("reports support generated identifiers and referenced path items without leaking other operations", async () => {
+  const document = fixture();
+  document.paths["/items"] = { $ref: "#/components/pathItems/Items" };
+  document.components = { pathItems: { Items: {
+    servers: [{ url: "https://referenced.example.test/service" }],
+    parameters: [{ name: "limit", in: "query", schema: { type: "integer" } }],
+    get: { responses: { 200: { description: "Items", content: { "application/json": {
+      schema: { $ref: "#/components/schemas/Items" },
+    } } } } },
+    post: { operationId: "create", responses: { 200: response } },
+  } }, schemas: { Items: { type: "array", items: { type: "string" } }, Unused: { type: "boolean" } } };
+  register(document);
+  const operation = operations.find(operation => operation.id === "registered:GET /items");
+  const report = getOperationReport(operation);
+  assert.equal(report.operationId, "GET /items");
+  assert.equal(report.summary, "GET /items");
+  assert.equal(report.description, "");
+  assert.deepEqual(report.warnings, []);
+  assert.equal(report.groups.at(-1).name, "Operations");
+  assert.equal(report.schema.paths["/items"].parameters[0].name, "limit");
+  assert.equal(Object.hasOwn(report.schema.paths["/items"], "post"), false);
+  assert.deepEqual(Object.keys(report.schema.components.schemas), ["Items"]);
+  const requests = [];
+  const executor = createWorkflowRequestExecution(async url => { requests.push(url); return Response.json([]); });
+  await executor.execute(operation, { "query:limit": "2" });
+  assert.deepEqual(requests, ["https://referenced.example.test/service/items?limit=2"]);
+});
+
+test("catalog changes immediately update reports, runners, and existing executors", async () => {
+  const requests = [];
+  const executor = createWorkflowRequestExecution(async url => { requests.push(url); return Response.json({}); });
+  const source = register();
+  const operation = operations.find(operation => operation.id === "registered:read");
+  const saved = workflow(operation, source.document);
+  assert.equal(createWorkflowRunner(saved, undefined, executor).next().operation.id, operation.id);
+  assert.equal(catalogForOperation(operation.id), source);
+  assert.equal(catalogForOperation("registeredish:read"), undefined);
+  assert.equal(getOperationReport(operation).catalog.title, "Registered service");
+  await executor.execute(operation, {});
+
+  const next = fixture();
+  next.info.title = "Updated service";
+  next.servers = [{ url: "https://updated.example.test/v2" }];
+  register(next);
+  assert.equal(getOperationReport(operation).catalog.title, "Updated service");
+  await executor.execute(operation, {});
+  assert.deepEqual(requests, ["https://api.example.test/v1/items", "https://updated.example.test/v2/items"]);
+
+  const renamed = fixture();
+  renamed.paths["/moved"] = renamed.paths["/items"];
+  delete renamed.paths["/items"];
+  register(renamed);
+  assert.throws(() => createWorkflowRunner(saved, undefined, executor).next(), /unavailable in the registered schemas/);
+  await assert.rejects(() => executor.execute(operation, {}), /not available in the registered schemas/);
+
+  updateCatalogs(bundledCatalogs);
+  assert.equal(operations.some(operation => operation.id.startsWith("registered:")), false);
+  assert.equal(catalogForOperation(operation.id), undefined);
+  assert.throws(() => getOperationReport(operation), /source schema is not registered/);
+  assert.throws(() => workflowExecutionForOperation(operation), /registered schemas/);
+  assert.throws(() => createWorkflowRunner(saved, undefined, executor).next(), /registered schemas/);
+  await assert.rejects(() => executor.execute(operation, {}), /registered schemas/);
+  assert.equal(requests.length, 2);
+});
+
+test("unchanged sources retain operation identity while source-only changes replace it", () => {
+  const source = register();
+  const original = operations.find(operation => operation.id === "registered:read");
+  const bundled = operations.find(operation => operation.id === "demo:listProjects");
+  updateCatalogs([...bundledCatalogs, structuredClone(source)]);
+  assert.equal(operations.find(operation => operation.id === original.id), original);
+  assert.equal(operations.find(operation => operation.id === bundled.id), bundled);
+
+  updateCatalogs([...bundledCatalogs, structuredClone(source), catalog(fixture(), "unrelated")]);
+  assert.equal(operations.find(operation => operation.id === original.id), original);
+  assert.equal(operations.find(operation => operation.id === bundled.id), bundled);
+
+  const changed = structuredClone(source);
+  changed.document.servers = [{ url: "https://changed.example.test/v2" }];
+  updateCatalogs([...bundledCatalogs, changed]);
+  const replacement = operations.find(operation => operation.id === original.id);
+  assert.notEqual(replacement, original);
+  assert.deepEqual(replacement, original, "A server change is visible even when extracted operation fields are equal.");
+  assert.equal(operations.find(operation => operation.id === bundled.id), bundled);
+
+  updateCatalogs([...bundledCatalogs, { ...changed, file: "renamed.json" }]);
+  assert.notEqual(operations.find(operation => operation.id === original.id), replacement);
+});
+
+test("failed catalog replacements preserve both live indices", () => {
+  register();
+  const previousCatalogs = catalogs;
+  const previousOperations = operations;
+  const invalid = { ...catalog(), id: "broken", document: { openapi: "3.1.0", paths: {} } };
+  assert.throws(() => updateCatalogs([...bundledCatalogs, invalid]), /no operations found/);
+  assert.equal(catalogs, previousCatalogs);
+  assert.equal(operations, previousOperations);
+  assert.throws(() => updateCatalogs([catalog(), catalog()]), /duplicate schema identifier/);
+  assert.throws(() => updateCatalogs([{ ...catalog(), id: "invalid:namespace" }]), /Invalid/);
+  assert.equal(catalogs, previousCatalogs);
+  assert.equal(operations, previousOperations);
+});
+
+test("worker-prepared catalogs publish without reprocessing documents and retain unchanged operation identities", () => {
+  const source = register();
+  const original = operations.find(operation => operation.id === "registered:read");
+  const prepare = value => ({ catalog: structuredClone(value), operations: extractOperations(value.document, value.id),
+    sourceIdentity: JSON.stringify([value.file, value.document]) });
+  const prepared = prepare(source);
+  Object.defineProperty(prepared.catalog.document, "paths", { enumerable: true,
+    get() { throw new Error("Prepared documents must not be parsed or serialized again on the UI thread."); } });
+  publishPreparedCatalogs([prepared]);
+  assert.equal(operations[0], original);
+  assert.equal(catalogs[0], prepared.catalog);
+
+  const expanded = prepare(source);
+  const additional = { ...original, id: "registered:additional" };
+  expanded.operations.push(additional);
+  publishPreparedCatalogs([expanded]);
+  assert.equal(operations[0], original);
+  assert.equal(operations[1], additional, "A newly prepared operation must survive when no prior identity can be reused.");
+
+  const changed = structuredClone(source);
+  changed.document.servers = [{ url: "https://changed.example.test/v2" }];
+  publishPreparedCatalogs([prepare(changed)]);
+  assert.notEqual(operations[0], original, "Changed source fingerprints replace operation identity even when fields are unchanged.");
+  assert.deepEqual(operations[0], original);
+  const previousCatalogs = catalogs;
+  const previousOperations = operations;
+  assert.throws(() => publishPreparedCatalogs([prepare(source), prepare(source)]), /duplicate schema identifier/);
+  assert.equal(catalogs, previousCatalogs);
+  assert.equal(operations, previousOperations);
+});

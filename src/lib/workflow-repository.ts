@@ -6,15 +6,16 @@ import LightningFS from "@isomorphic-git/lightning-fs";
 import { Buffer } from "buffer";
 import * as git from "isomorphic-git";
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
-import { loadWorkflowDocuments, validateWorkflowDocument, workflowStorageKey, type WorkflowDocument } from "./workflow-document.ts";
+import { migrateWorkflowDocument, validateWorkflowDocument, type WorkflowDocument } from "./workflow-document.ts";
 import { describeWorkflowChange } from "./workflow-change-message.ts";
+import { reportStartup } from "./startup-reporter.ts";
 import type { StorageCommit, WorkflowStorageEntry, WorkflowStorageMetrics } from "./storage-metrics-types.d.ts";
+import { workflowRepositoryDatabaseName, workflowFilesystemName } from "./storage-names.ts";
+export { workflowRepositoryDatabaseName, workflowFilesystemName } from "./storage-names.ts";
 
 // The isomorphic-git ESM build expects the browser Buffer polyfill.
 if (!("Buffer" in globalThis)) Object.defineProperty(globalThis, "Buffer", { value: Buffer, configurable: true, writable: true });
 
-export const workflowRepositoryDatabaseName = "operations-workflow-catalog-v1";
-export const workflowFilesystemName = "operations-workflow-git-v1";
 const root = "/repositories";
 const filepath = "workflow.json";
 const mainRef = "refs/heads/main";
@@ -50,6 +51,7 @@ type PendingNavigation = {
   undo: string[];
   redo: string[];
   redoTip: string | null;
+  stashes?: NonNullable<PendingCommit["stash"]>[];
   preferences: Preferences;
 };
 type PendingVersion = LegacyPendingVersion | PendingCommit | PendingNavigation;
@@ -60,7 +62,6 @@ interface ApplicationDatabase extends DBSchema
   navigation: { key: string; value: Navigation };
   pending: { key: string; value: PendingVersion };
   removed: { key: string; value: boolean };
-  migrated: { key: string; value: string };
   activity: { key: string; value: number };
 }
 
@@ -103,7 +104,7 @@ function serialize(document: WorkflowDocument): string
 
 function deserialize(json: string, id: string, preferences: Preferences = defaultPreferences): WorkflowDocument
 {
-  const document = validateWorkflowDocument({ ...JSON.parse(json), ...preferences });
+  const document = migrateWorkflowDocument({ ...JSON.parse(json), ...preferences });
   if (document.id !== id) throw new Error("The saved workflow does not match its repository ID.");
   return document;
 }
@@ -129,6 +130,27 @@ async function serialized<T>(key: string, task: () => Promise<T>): Promise<T>
   queues.set(key, pending);
   try { return await pending; }
   finally { if (queues.get(key) === pending) queues.delete(key); }
+}
+
+async function openExistingDatabase<Schema extends DBSchema>(name: string): Promise<IDBPDatabase<Schema> | null>
+{
+  let absent = false;
+  let connection: IDBPDatabase<Schema> | undefined;
+  try
+  {
+    connection = await openDB<Schema>(name, undefined, {
+      upgrade(_database, oldVersion, _newVersion, transaction) {
+        if (oldVersion === 0) {
+          absent = true;
+          void transaction.done.catch(() => {});
+          transaction.abort();
+        }
+      },
+      blocking() { connection?.close(); },
+    });
+    return connection;
+  }
+  catch (error) { if (absent) return null; throw error; }
 }
 
 export function createWorkflowRepository(options: WorkflowRepositoryOptions = {})
@@ -256,15 +278,20 @@ export function createWorkflowRepository(options: WorkflowRepositoryOptions = {}
     if (await refValue(id, redoRef)) await git.deleteRef({ fs, dir: repositoryPath(id), ref: redoRef });
   }
 
-  async function reserveStash(id: string): Promise<PendingCommit["stash"]>
+  async function reserveStashes(id: string, revisions: string[]): Promise<NonNullable<PendingCommit["stash"]>[]>
   {
-    const oid = await refValue(id, redoRef);
-    if (!oid) return undefined;
+    if (!revisions.length) return [];
     const branches = await git.listBranches({ fs, dir: repositoryPath(id) });
     const numbers = branches.filter(name => /^stash-[1-9][0-9]*$/.test(name)).map(name => Number(name.slice(6)));
     const next = Math.max(0, ...numbers) + 1;
-    if (!Number.isSafeInteger(next)) throw new Error("The workflow has exhausted its stash branch numbers.");
-    return { name: `stash-${next}`, oid };
+    if (!Number.isSafeInteger(next + revisions.length - 1)) throw new Error("The workflow has exhausted its stash branch numbers.");
+    return revisions.map((oid, index) => ({ name: `stash-${next + index}`, oid }));
+  }
+
+  async function reserveStash(id: string): Promise<PendingCommit["stash"]>
+  {
+    const oid = await refValue(id, redoRef);
+    return (await reserveStashes(id, oid ? [oid] : []))[0];
   }
 
   async function archiveFuture(id: string, stash: NonNullable<PendingCommit["stash"]>): Promise<void>
@@ -313,6 +340,7 @@ export function createWorkflowRepository(options: WorkflowRepositoryOptions = {}
     const dir = repositoryPath(id);
     const text = await versionText(id, pending.targetRevision);
     const document = deserialize(text, id, pending.preferences);
+    for (const stash of pending.stashes ?? []) await archiveFuture(id, stash);
     if (pending.redoTip) await git.writeRef({ fs, dir, ref: redoRef, value: pending.redoTip, force: true });
     await fs.promises.writeFile(`${dir}/${filepath}`, text, "utf8");
     await git.add({ fs, dir, filepath });
@@ -467,9 +495,10 @@ export function createWorkflowRepository(options: WorkflowRepositoryOptions = {}
       filesystems.set(filesystemName, sharedFilesystem);
     }
     fs = sharedFilesystem;
+    reportStartup("workflow-storage");
     database = await openDB<ApplicationDatabase>(databaseName, 2, {
       upgrade(database) {
-        for (const store of ["catalog", "preferences", "navigation", "pending", "removed", "migrated", "activity"] as const)
+        for (const store of ["catalog", "preferences", "navigation", "pending", "removed", "activity"] as const)
           if (!database.objectStoreNames.contains(store)) database.createObjectStore(store);
       },
       blocking() {
@@ -482,7 +511,9 @@ export function createWorkflowRepository(options: WorkflowRepositoryOptions = {}
       channel.onmessage = notify;
     }
     await serialized(`${lockPrefix}:initialize`, async () => {
+      reportStartup("workflow-files");
       await mkdir(root);
+      reportStartup("find-workflows");
       const ids = new Set([
         ...await database.getAllKeys("catalog"), ...await database.getAllKeys("pending"), ...await database.getAllKeys("removed")
       ]);
@@ -498,52 +529,16 @@ export function createWorkflowRepository(options: WorkflowRepositoryOptions = {}
         // Read workflow.json only inside the same lock used by writers/deletion.
         ids.add(id);
       }
+      reportStartup("check-workflows", `${ids.size} ${ids.size === 1 ? "repository" : "repositories"}`);
       for (const id of ids) await locked(id, () => recover(id));
       await fs.promises.flush();
     });
   }
 
-  async function migrate(storage: Pick<Storage, "getItem" | "removeItem">): Promise<void>
+  async function initialize(): Promise<void>
   {
-    await serialized(`${lockPrefix}:migration`, async () => {
-      const legacy = storage.getItem(workflowStorageKey);
-      if (legacy === null) return;
-      const documents = loadWorkflowDocuments({ getItem: () => legacy });
-      for (const document of documents)
-      {
-        await locked(document.id, async () => {
-          const { oid: fingerprint } = await git.hashBlob({ object: JSON.stringify(document) });
-          if (await database.get("migrated", document.id) === fingerprint || await database.get("removed", document.id)) return;
-          await saveLocked(document, null, "Import existing workflow");
-          await database.put("migrated", fingerprint, document.id);
-        });
-      }
-      if (storage.getItem(workflowStorageKey) !== legacy)
-        throw new Error("The previous workflow collection changed during migration. Reload to finish importing it.");
-      storage.removeItem(workflowStorageKey);
-    });
-  }
-
-  async function initialize(legacyStorage?: Pick<Storage, "getItem" | "removeItem">): Promise<void>
-  {
-    ready ??= bootstrap().then(async () => {
-      if (legacyStorage) return;
-      let storage: Storage;
-      try
-      {
-        storage = localStorage;
-        storage.getItem(workflowStorageKey);
-      }
-      catch
-      {
-        // Some browsers block localStorage separately from IndexedDB. Leave any legacy
-        // data untouched and keep existing IndexedDB repositories usable.
-        return;
-      }
-      await migrate(storage);
-    }).catch(error => { ready = undefined; throw error; });
+    ready ??= bootstrap().catch(error => { ready = undefined; throw error; });
     await ready;
-    if (legacyStorage) await migrate(legacyStorage);
   }
 
   async function historyGraph(id: string): Promise<WorkflowRevision[]>
@@ -593,10 +588,10 @@ export function createWorkflowRepository(options: WorkflowRepositoryOptions = {}
     return result;
   }
 
-  async function historicalDocument(id: string, oid: string): Promise<WorkflowDocument>
+  async function historicalDocument(id: string, oid: string, entries?: WorkflowRevision[]): Promise<WorkflowDocument>
   {
     if (!/^[a-f0-9]{40}$/.test(oid)) throw new Error("Invalid workflow revision.");
-    const entries = await historyGraph(id);
+    entries ??= await historyGraph(id);
     if (!entries.some(entry => entry.oid === oid)) throw new Error("This revision is not in the workflow's history.");
     const preferences = await database.get("preferences", id) ?? defaultPreferences;
     return deserialize(await versionText(id, oid), id, preferences);
@@ -656,7 +651,7 @@ export function createWorkflowRepository(options: WorkflowRepositoryOptions = {}
     });
   }
 
-  async function repositoryMetrics(entry: CatalogEntry, today: number): Promise<WorkflowStorageMetrics>
+  async function repositoryMetrics(entry: CatalogEntry, today: number, fs: LightningFS): Promise<WorkflowStorageMetrics>
   {
     const dir = repositoryPath(entry.id);
     if (entry.repositoryPath !== dir) throw new Error("The workflow repository path does not match its ID.");
@@ -703,8 +698,8 @@ export function createWorkflowRepository(options: WorkflowRepositoryOptions = {}
       parents: [...commit.parent]
     }));
     const day = 86_400_000;
-    const activity = Array.from({ length: 30 }, (_, index) =>
-      ({ date: new Date(today - (29 - index) * day).toISOString().slice(0, 10), count: 0 }));
+    const activity = Array.from({ length: 60 }, (_, index) =>
+      ({ date: new Date(today - (59 - index) * day).toISOString().slice(0, 10), count: 0 }));
     const buckets = new Map(activity.map(bucket => [bucket.date, bucket]));
     for (const commit of commits)
     {
@@ -733,29 +728,50 @@ export function createWorkflowRepository(options: WorkflowRepositoryOptions = {}
     initialize,
     async storageMetrics(): Promise<WorkflowStorageEntry[]>
     {
-      await initialize();
-      const now = new Date();
-      const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
-      const entries = await database.getAll("catalog");
-      const report: WorkflowStorageEntry[] = [];
-      for (const entry of entries)
+      // A recorder must never bootstrap/recover the editor merely to inspect it.
+      const editorReady = ready;
+      if (editorReady) await editorReady;
+      const metricsDatabase = editorReady ? database : await openExistingDatabase<ApplicationDatabase>(databaseName);
+      if (!metricsDatabase) return [];
+      try
       {
-        try
+        if (!metricsDatabase.objectStoreNames.contains("catalog")) return [];
+        const entries = await metricsDatabase.getAll("catalog");
+        if (!entries.length) return [];
+        let metricsFilesystem = fs;
+        if (!editorReady)
         {
-          const item = await locked(entry.id, async () => {
-            const current = await database.get("catalog", entry.id);
-            if (!current || await database.get("removed", entry.id)) return null;
-            // Monitoring does not load/recover a workflow, stage changes, or create commits.
-            return { ...current, metrics: await repositoryMetrics(current, today), error: null };
-          });
-          if (item) report.push(item);
+          const existingFilesystem = await openExistingDatabase<DBSchema>(filesystemName);
+          if (!existingFilesystem) return entries.map(entry => ({ ...entry, metrics: null, error: "The workflow filesystem is unavailable." }));
+          existingFilesystem.close();
+          metricsFilesystem = filesystems.get(filesystemName) ?? new LightningFS(filesystemName, { defer: true });
+          filesystems.set(filesystemName, metricsFilesystem);
         }
-        catch (error)
+        const now = new Date();
+        const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+        const report: WorkflowStorageEntry[] = [];
+        for (const entry of entries)
         {
-          report.push({ ...entry, metrics: null, error: error instanceof Error ? error.message : String(error) });
+          try
+          {
+            const item = await locked(entry.id, async () => {
+              const current = await metricsDatabase.get("catalog", entry.id);
+              const removed = metricsDatabase.objectStoreNames.contains("removed") && await metricsDatabase.get("removed", entry.id);
+              if (!current || removed) return null;
+              // Keep all reads under the writer's lock; LightningFS releases its
+              // filesystem lock automatically after its normal idle interval.
+              return { ...current, metrics: await repositoryMetrics(current, today, metricsFilesystem), error: null };
+            });
+            if (item) report.push(item);
+          }
+          catch (error)
+          {
+            report.push({ ...entry, metrics: null, error: error instanceof Error ? error.message : String(error) });
+          }
         }
+        return report;
       }
-      return report;
+      finally { if (!editorReady) metricsDatabase.close(); }
     },
     subscribe(listener: () => void): () => void
     {
@@ -765,6 +781,7 @@ export function createWorkflowRepository(options: WorkflowRepositoryOptions = {}
     async list(): Promise<WorkflowDocument[]>
     {
       await initialize();
+      reportStartup("read-workflows");
       const entries = await database.getAll("catalog");
       const activity = new Map(await Promise.all(entries.map(async entry =>
         [entry.id, await database.get("activity", entry.id) ?? 0] as const)));
@@ -832,6 +849,56 @@ export function createWorkflowRepository(options: WorkflowRepositoryOptions = {}
         const document = await historicalDocument(id, oid);
         const saved = await navigation(id, current.revision);
         return write(document, current.revision, [...saved.undo, current.revision], `Restore workflow version ${oid.slice(0, 7)}`, true);
+      });
+    },
+    async checkout(id: string, oid: string, expectedRevision: string): Promise<WorkflowRepositoryState>
+    {
+      await initialize();
+      return locked(id, async () => {
+        await recover(id);
+        const current = await state(id);
+        if (current.revision !== expectedRevision) throw new WorkflowConflictError();
+        if (oid === current.revision) return current;
+        const entries = await historyGraph(id);
+        await historicalDocument(id, oid, entries);
+        const future = await refValue(id, redoRef);
+        const branches = entries.filter(entry => entry.branches.some(branch => branch !== "main")).map(entry => entry.oid);
+        let redo: string[] = [];
+        let redoTip: string | null = null;
+        // Prefer the current future, then main, then a saved branch. Redo remains
+        // a real first-parent path from the selected version toward that tip.
+        for (const tip of new Set([...(future ? [future] : []), current.revision, ...branches]))
+        {
+          const chain = await firstParents(id, tip);
+          const index = chain.indexOf(oid);
+          if (index < 0) continue;
+          redo = chain.slice(0, index);
+          redoTip = redo.length ? tip : null;
+          break;
+        }
+        const byId = new Map(entries.map(entry => [entry.oid, entry]));
+        const preserved = new Set<string>();
+        const preserve = (roots: string[]) => {
+          const remaining = [...roots];
+          while (remaining.length)
+          {
+            const revision = remaining.pop()!;
+            if (preserved.has(revision)) continue;
+            preserved.add(revision);
+            remaining.push(...(byId.get(revision)?.parents ?? []));
+          }
+        };
+        preserve([oid, ...branches, ...(redoTip ? [redoTip] : [])]);
+        const abandoned: string[] = [];
+        for (const tip of new Set([...(future ? [future] : []), current.revision]))
+          if (!preserved.has(tip)) { abandoned.push(tip); preserve([tip]); }
+        const stashes = await reserveStashes(id, abandoned);
+        const pending: PendingNavigation = { operation: "navigate", id, baseRevision: current.revision, targetRevision: oid,
+          undo: (await firstParents(id, oid)).slice(1).reverse(), redo, redoTip, preferences: preferencesOf(current.document),
+          ...(stashes.length ? { stashes } : {}) };
+        await database.put("pending", pending, id);
+        await completeNavigation(id, pending);
+        return state(id);
       });
     },
     undo: (id: string, expectedRevision: string) => navigate(id, expectedRevision, "undo"),

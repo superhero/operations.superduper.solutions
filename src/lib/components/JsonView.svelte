@@ -9,7 +9,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import MaterialIcon from "./MaterialIcon.svelte";
 
   type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
-  let { value, label = "JSON document", wrap = true }: { value: unknown; label?: string; wrap?: boolean } = $props();
+  let { value, label = "JSON document", wrap = true, expandedPaths, resetKey = 0 }: { value: unknown; label?: string; wrap?: boolean; expandedPaths?: string[] | undefined; resetKey?: number } = $props();
   let expanded = $state<Record<string, boolean>>({});
 
   const document = $derived.by(() => {
@@ -25,6 +25,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   $effect(() => {
     document.text;
+    expandedPaths;
+    resetKey;
     expanded = {};
   });
 
@@ -40,8 +42,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {@const entries = Object.entries(item)}
     {#if key !== null}<div class="json-line json-container-key">{@render property(key)}</div>{/if}
     {#if entries.length}
-      {@const open = expanded[path] ?? true}
-      <Disclosure class="json-branch" {open} groupLabel={`${label}: ${path}`}
+      {@const open = expanded[path] ?? (expandedPaths?.includes(path) ?? true)}
+      <Disclosure class="json-branch" {open} lazy={expandedPaths !== undefined} groupLabel={`${label}: ${path}`}
         label={`${path}: ${entries.length} ${array ? "items" : "properties"}`} tooltipEnabled={false}
         onToggle={(next) => { expanded[path] = next; }}>
         {#snippet summary()}

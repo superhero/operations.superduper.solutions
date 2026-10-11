@@ -5,12 +5,13 @@
 import assert from "node:assert/strict";
 import { Then } from "@cucumber/cucumber";
 import demo from "./catalogs/demo.openapi.json" with { type: "json" };
-import { operations } from "./lib/catalog.ts";
-import { catalogForOperation } from "./lib/catalog-registry.ts";
-import { createOperationGraph, createWorkflowGraph } from "./lib/workflow-graph.ts";
+import { extractOperations, operations, updateCatalogs } from "./lib/catalog.ts";
+import { catalogs, catalogForOperation } from "./lib/catalog-registry.ts";
+import { addAdditionalProperty, createOperationGraph, createWorkflowGraph } from "./lib/workflow-graph.ts";
 import { createWorkflowRunner as createRequestRunner } from "./lib/workflow-runner.ts";
 import { createWorkflowDemo } from "./lib/workflow-demo.ts";
 import { createWorkflowRequestExecution, WorkflowResponseError, workflowExecutionForOperation, workflowRequestUrl } from "./lib/workflow-execution.ts";
+import { responseHeaderReader } from "./lib/workflow-response.ts";
 
 const createWorkflowRunner = (value, startingNodeId) => createRequestRunner(value, startingNodeId, createWorkflowDemo());
 
@@ -72,9 +73,9 @@ Then("the injectable HTTP executor sends catalog requests and maps actual respon
     assert.equal(workflowRequestUrl({ method: "GET", path: "/projects", query: { name: "A & B", limit: 1 } }, "https://example.com"), "https://example.com/projects?name=A+%26+B&limit=1");
     const execution = createWorkflowRequestExecution(async () => new Response(null, { status: 204 }));
     assert.equal((await execution.execute(operation("getProject"), project)).response.body, null);
-    await assert.rejects(() => execution.execute({ ...operation("getProject"), method: "POST" }, project), /bundled test catalog/);
-    await assert.rejects(() => execution.execute({ ...operation("getProject"), id: "unknown" }, project), /bundled test catalog/);
-    await assert.rejects(() => execution.execute({ ...operation("getProject"), path: "https:\/\/another.example/" }, project), /bundled test catalog/);
+    await assert.rejects(() => execution.execute({ ...operation("getProject"), method: "POST" }, project), /registered schemas/);
+    await assert.rejects(() => execution.execute({ ...operation("getProject"), id: "unknown" }, project), /registered schemas/);
+    await assert.rejects(() => execution.execute({ ...operation("getProject"), path: "https:\/\/another.example/" }, project), /registered schemas/);
   } finally { globalThis.fetch = previous; }
 });
 
@@ -102,7 +103,8 @@ Then("workflow request failures explain network server and response problems and
       assert.ok(error instanceof WorkflowResponseError);
       assert.equal(error.name, "WorkflowResponseError");
       assert.match(error.message, expected);
-      assert.deepEqual(error.response, { status: response.status, body });
+      assert.deepEqual(error.response, { status: response.status, statusText: response.statusText,
+        headers: Object.fromEntries(response.headers), body });
       return true;
     });
   }
@@ -145,7 +147,8 @@ Then("ending a workflow aborts pending requests and prevents late results from c
   await assert.rejects(() => runner.submit(project), /already has a request in progress/);
   runner.end();
   assert.equal(signal.aborted, true);
-  resolve({ request: { method: "GET", path: "/projects/project-1", query: {} }, response: { status: 200, body: { id: "late" } } });
+  resolve({ request: { method: "GET", path: "/projects/project-1", query: {} }, response: { status: 200,
+    statusText: "OK", headers: {}, body: { id: "late" } } });
   await assert.rejects(() => pending, /run has ended/);
   assert.equal(runner.next().message, "Run ended.");
 });
@@ -309,7 +312,7 @@ Then("workflow output fanout runs each consumer and conflicting contributions fa
 Then("unavailable operations invalid mapped values and workflow cycles stop with useful errors", async function () {
   const bad = document(graph("getProject"));
   bad.nodes[0].data.operationId = "unavailable:operation";
-  assert.throws(() => createWorkflowRunner(bad).next(), /unavailable in the bundled test catalog/);
+  assert.throws(() => createWorkflowRunner(bad).next(), /unavailable in the registered schemas/);
   const wrongType = document(graph("getProject"), graph("listProjects"));
   mapping(wrongType, output(wrongType, "getProject", "Project ID"), input(wrongType, "listProjects", "Result limit"));
   const typeRun = createWorkflowRunner(wrongType);
@@ -320,6 +323,10 @@ Then("unavailable operations invalid mapped values and workflow cycles stop with
   const pathRun = createWorkflowRunner(invalidPath);
   await submit(pathRun, project);
   assert.throws(() => pathRun.next(), /unsupported path/);
+  const unmapped = document(graph("getProject"));
+  input(unmapped, "getProject", "Project ID").field.id = "unsupported";
+  const unmappedRun = createWorkflowRunner(unmapped);
+  assert.equal((await submit(unmappedRun, project)).response.body.id, "project-1", "An unused saved field does not block manual inputs.");
   const cycle = document(graph("getProject", "first"), graph("getProject", "second"));
   mapping(cycle, output(cycle, "first", "Project ID"), input(cycle, "second", "Project ID"));
   mapping(cycle, output(cycle, "second", "Project ID"), input(cycle, "first", "Project ID"));
@@ -367,7 +374,8 @@ Then("workflow response mappings support optional values scalar bodies and succe
   mapping(scalar, output(scalar, "scalar", "Response body"), input(scalar, "createTask", "Project ID"));
   const fixture = createWorkflowDemo();
   const scalarRunner = createRequestRunner(scalar, undefined, { execute(operation, values) {
-    return operation.id === "demo:getProject" ? { request: { method: "GET", path: "/projects/project-1", query: {} }, response: { status: 202, body: "project-1" } }
+    return operation.id === "demo:getProject" ? { request: { method: "GET", path: "/projects/project-1", query: {} }, response: {
+      status: 202, statusText: "Accepted", headers: {}, body: "project-1" } }
       : fixture.execute(operation, values);
   } });
   await submit(scalarRunner, project);
@@ -380,7 +388,8 @@ Then("workflow response mappings support optional values scalar bodies and succe
   mapping(missing, output(missing, "getProject", "Project ID"), { id: "unset", handle: "value" });
   mapping(missing, { id: "unset", handle: "missing" }, input(missing, "createTask", "Project ID"));
   const missingRunner = createRequestRunner(missing, undefined, { execute(operation, values) {
-    return operation.id === "demo:getProject" ? { request: { method: "GET", path: "/projects/project-1", query: {} }, response: { status: 200, body: {} } }
+    return operation.id === "demo:getProject" ? { request: { method: "GET", path: "/projects/project-1", query: {} }, response: {
+      status: 200, statusText: "OK", headers: {}, body: {} } }
       : fixture.execute(operation, values);
   } });
   await submit(missingRunner, project);
@@ -438,7 +447,10 @@ const catalogOperation = id => operations.find(item => item.id === id);
 const catalogGraph = (id, owner = id) => createOperationGraph(catalogOperation(id), { x: 0, y: 0 }, owner, catalogForOperation(id).document);
 const atPath = (doc, owner, direction, path) => {
   for (const node of doc.nodes) if (node.type === "data" && node.data.ownerId === owner && node.data.direction === direction) {
-    const field = node.data.fields.find(field => JSON.parse(decodeURIComponent(field.id))[1] === path);
+    const field = node.data.fields.find(field => {
+      const [group, pointer] = JSON.parse(decodeURIComponent(field.id));
+      return pointer === (direction === "outputs" && group.startsWith("response:") ? `/body${path}` : path);
+    });
     if (field) return { node, field };
   }
   throw new Error(`Missing ${owner} ${direction} ${path}`);
@@ -470,7 +482,7 @@ Then("both example catalogs send HTTP requests to their registered origins by de
     assert.equal(calls.length, 14);
     assert.deepEqual(workflowExecutionForOperation("demo:mockTrace"), { kind: "http", origin: "https://example.com" });
     assert.deepEqual(workflowExecutionForOperation(catalogOperation("httpbin:echoGet")), { kind: "http", origin: "https://httpbin.org" });
-    assert.throws(() => workflowExecutionForOperation("unknown:operation"), /bundled test catalog/);
+    assert.throws(() => workflowExecutionForOperation("unknown:operation"), /registered schemas/);
     assert.throws(() => createWorkflowDemo().execute(catalogOperation("httpbin:echoGet"), {}), /unavailable/);
     const realTask = createRequestRunner(document(graph("createTask")));
     assert.deepEqual((await submit(realTask, task)).response.body, { method: "POST", remote: true });
@@ -603,4 +615,242 @@ Then("invalid structured connections stop before the next request", async functi
   const valid = createWorkflowRunner(consistent);
   await submit(valid, jsonValues);
   assert.equal((await submit(valid)).response.body.json.profile.name, "Ada");
+});
+
+const pointerPart = name => name.replaceAll("~", "~0").replaceAll("/", "~1");
+const addProperty = (doc, owner, direction, path, name, type, schema) => {
+  const panel = doc.nodes.find(node => node.type === "data" && node.data.ownerId === owner && node.data.direction === direction
+    && (() => {
+      const [group, pointer] = JSON.parse(decodeURIComponent(node.id.slice(owner.length + 1)));
+      return pointer === (direction === "outputs" && group.startsWith("response:") ? `/body${path}` : path);
+    })());
+  const graph = addAdditionalProperty(doc.nodes, doc.edges, panel.id, name, type, schema);
+  Object.assign(doc, graph);
+  return atPath(doc, owner, direction, `${path}/${pointerPart(name)}`);
+};
+const dynamicFixture = (schema, components) => {
+  const source = { openapi: "3.1.0", info: { title: "Dynamic inputs", version: "1" },
+    servers: [{ url: "https://example.com" }], components, paths: {
+    "/dynamic-source": { get: { operationId: "dynamicSource", responses: { 200: { content: { "application/json": { schema } } } } } },
+    "/dynamic-target": { post: { operationId: "dynamicTarget", requestBody: { required: true, content: { "application/json": { schema } } },
+      responses: { 200: { content: { "application/json": { schema } } } } } }
+  } };
+  const added = extractOperations(source, "dynamic-fixture");
+  const doc = document(createOperationGraph(added[0], { x: 0, y: 0 }, "source", source),
+    createOperationGraph(added[1], { x: 0, y: 0 }, "target", source));
+  return { source, added, doc };
+};
+
+const registerDynamicFixture = source => {
+  const previous = catalogs;
+  updateCatalogs([...catalogs, { id: "dynamic-fixture", name: source.info.title, file: "fixture.json",
+    document: source, groups: [], execution: { kind: "http", origin: "https://example.com" } }]);
+  return () => updateCatalogs(previous);
+};
+
+Then("added root and nested properties retain unusual names and selected types in requests", async function () {
+  for (const policy of [{}, { additionalProperties: true }]) {
+    const fixture = dynamicFixture({ type: "object", ...policy, properties: { dictionary: { type: "object", ...policy } } });
+    const { source, added, doc } = fixture;
+    const response = JSON.parse('{"text":"123","blank":"","spaces":"  ","number":123,"flag":false,"empty":null,"list":[1,"mixed",null],"items":"literal items","*":"literal wildcard","a/b~c":"escaped","__proto__":{"items":{"*":"safe"}},"dictionary":{"items":"nested items","*":"nested wildcard","a/b~c":"nested escaped","__proto__":"nested safe"}}');
+    for (const [name, type] of [["text", "Text"], ["number", "Number"], ["flag", "Boolean"], ["empty", "Null"],
+      ["list", "Array"], ["items", "Text"], ["*", "Text"], ["a/b~c", "Text"], ["blank", "Text"], ["spaces", "Text"]]) {
+      const from = addProperty(doc, "source", "outputs", "", name, type, source);
+      const to = addProperty(doc, "target", "inputs", "", name, type, source);
+      mapping(doc, from, to);
+    }
+    for (const owner of ["source", "target"]) {
+      const direction = owner === "source" ? "outputs" : "inputs";
+      addProperty(doc, owner, direction, "", "__proto__", "Object", source);
+      addProperty(doc, owner, direction, "/__proto__", "items", "Object", source);
+      addProperty(doc, owner, direction, "/__proto__/items", "*", "Text", source);
+    }
+    mapping(doc, atPath(doc, "source", "outputs", "/__proto__/items/*"), atPath(doc, "target", "inputs", "/__proto__/items/*"));
+    for (const name of ["items", "*", "a/b~c", "__proto__"]) {
+      const from = addProperty(doc, "source", "outputs", "/dictionary", name, "Text", source);
+      const to = addProperty(doc, "target", "inputs", "/dictionary", name, "Text", source);
+      mapping(doc, from, to);
+    }
+    addProperty(doc, "target", "inputs", "", "manual", "Text", source);
+    const requests = [];
+    const execution = createWorkflowRequestExecution(async (url, options) => {
+      requests.push(options.body === null ? null : JSON.parse(options.body));
+      return Response.json(options.method === "GET" ? response : requests.at(-1));
+    });
+    const restore = registerDynamicFixture(source);
+    try {
+      const runner = createRequestRunner(JSON.parse(JSON.stringify(doc)), undefined, execution);
+      await submit(runner);
+      assert.equal(runner.next().operation.fields.find(field => field.name === "text").type, "string");
+      assert.equal(runner.next().operation.fields.find(field => field.name === "manual").type, "string");
+      assert.equal(runner.next().mappedFields.includes("body:manual"), false);
+      assert.equal(runner.next().values["body:text"], "123");
+      assert.equal(runner.next().values["body:number"], "123");
+      assert.equal(added[1].fields.some(field => field.name === "text"), false);
+      const expected = { ...response, manual: "Entered during the run" };
+      assert.deepEqual((await submit(runner, { "body:manual": "Entered during the run" })).request.body, expected);
+      assert.deepEqual(requests, [null, expected]);
+      assert.equal(Object.getPrototypeOf(requests[1]), Object.prototype);
+      assert.equal(runner.next().kind, "complete");
+    } finally { restore(); }
+  }
+});
+
+Then("schema constrained additional properties map array entries and reject invalid responses", async function () {
+  const fixture = dynamicFixture({ type: "object", additionalProperties: { $ref: "#/components/schemas/Rows" } }, {
+    schemas: { Rows: { type: "array", minItems: 1, items: { type: "object", additionalProperties: { type: "integer", minimum: 1, maximum: 3 } } } }
+  });
+  const { source, added, doc } = fixture;
+  for (const owner of ["source", "target"]) {
+    const direction = owner === "source" ? "outputs" : "inputs";
+    addProperty(doc, owner, direction, "", "rows", "Array", source);
+    for (const name of ["items", "*", "a/b~c", "__proto__"]) addProperty(doc, owner, direction, "/rows/items", name, "Integer", source);
+  }
+  for (const name of ["items", "*", "a/b~c", "__proto__"]) {
+    const path = `/rows/items/${pointerPart(name)}`;
+    mapping(doc, atPath(doc, "source", "outputs", path), atPath(doc, "target", "inputs", path));
+  }
+  const restore = registerDynamicFixture(source);
+  try {
+    for (const valid of [true, false]) {
+      const response = JSON.parse('{"rows":[{"items":1,"*":2,"a/b~c":3,"__proto__":1},{"items":3,"*":1,"a/b~c":2,"__proto__":3}]}');
+      if (!valid) response.rows[0].items = 0;
+      const requests = [];
+      const runner = createRequestRunner(doc, undefined, createWorkflowRequestExecution(async (url, options) => {
+        requests.push(options.body === null ? null : JSON.parse(options.body));
+        return Response.json(options.method === "GET" ? response : requests.at(-1));
+      }));
+      await submit(runner);
+      if (valid) {
+        assert.deepEqual((await submit(runner)).request.body, response);
+        assert.deepEqual(requests, [null, response]);
+      } else {
+        assert.throws(() => runner.next(), /outside the allowed range/);
+        assert.equal(requests.length, 1);
+      }
+    }
+  } finally { restore(); }
+});
+
+const responseField = (doc, owner, path, status = "200") => {
+  for (const node of doc.nodes) if (node.type === "data" && node.data.ownerId === owner && node.data.direction === "outputs") {
+    const field = node.data.fields.find(field => {
+      const [group, pointer] = JSON.parse(decodeURIComponent(field.id));
+      return (group === `response:${status}` || group.startsWith(`response:${status}:`)) && pointer === path;
+    });
+    if (field) return { node, field };
+  }
+  throw new Error(`Missing response field ${owner} ${status} ${path}`);
+};
+
+Then("workflow response envelopes map status messages headers and nested body values", async function () {
+  const fixture = dynamicFixture({ type: "object", properties: {
+    status: { type: "integer" }, statusText: { type: "string" }, body: { type: "string" },
+    count: { type: "integer" }, values: { type: "array", items: { type: "integer" } },
+    headers: { type: "object", additionalProperties: true }
+  } });
+  fixture.source.paths["/dynamic-source"].get.responses[200].headers = {
+    "X-Count": { schema: { type: "integer" } }, "X-Values": { schema: { type: "array", items: { type: "integer" } } }
+  };
+  const restore = registerDynamicFixture(fixture.source);
+  try {
+    const doc = document(createOperationGraph(fixture.added[0], { x: 0, y: 0 }, "source", fixture.source),
+      createOperationGraph(fixture.added[1], { x: 0, y: 0 }, "target", fixture.source));
+    for (const [from, to] of [["/status", "/status"], ["/statusText", "/statusText"], ["/body/body", "/body"],
+      ["/headers/X-Count", "/count"], ["/headers/X-Values", "/values"], ["/headers", "/headers"]])
+      mapping(doc, responseField(doc, "source", from), atPath(doc, "target", "inputs", to));
+    const runner = createRequestRunner(doc, undefined, createWorkflowRequestExecution(async (url, options) => options.method === "GET"
+      ? Response.json({ body: "actual body", status: 999 }, { statusText: "Fine", headers: {
+        "x-count": "7", "X-VALUES": "1, 2,3", "x-undeclared": "raw"
+      } }) : Response.json(JSON.parse(options.body))));
+    const first = await submit(runner);
+    assert.equal(first.response.statusText, "Fine");
+    assert.equal(first.response.headers["x-count"], "7", "execution retains raw header values");
+    const second = await submit(runner);
+    assert.deepEqual(second.request.body, { status: 200, statusText: "Fine", body: "actual body", count: 7, values: [1, 2, 3],
+      headers: { "content-type": "application/json", "X-Count": 7, "X-Values": [1, 2, 3], "x-undeclared": "raw" } });
+
+    const noBodySchema = structuredClone(demo);
+    noBodySchema.paths["/projects/{projectId}"].get.responses = { 204: { description: "No content" } };
+    const noBody = document(createOperationGraph(operation("getProject"), { x: 0, y: 0 }, "source", noBodySchema), catalogGraph("demo:mockJsonObject", "target"));
+    mapping(noBody, responseField(noBody, "source", "/body", "204"), atPath(noBody, "target", "inputs", "/note"));
+    const emptyRunner = createRequestRunner(noBody, undefined, createWorkflowRequestExecution(async (url, options) =>
+      options.method === "GET" ? new Response(null, { status: 204 }) : Response.json(JSON.parse(options.body))));
+    assert.equal((await submit(emptyRunner, project)).response.statusText, "", "absent status messages remain empty");
+    assert.deepEqual((await submit(emptyRunner)).request.body, { note: null });
+  } finally { restore(); }
+});
+
+Then("documented response headers decode simple scalars arrays and objects safely", function () {
+  const fixture = dynamicFixture({ type: "object" }, { headers: { Count: { schema: { $ref: "#/components/schemas/Count" } } },
+    schemas: { Count: { type: "integer" } } });
+  fixture.source.paths["/dynamic-source"].get.responses[200].headers = {
+    "X-Count": { $ref: "#/components/headers/Count" },
+    "X-Array": { schema: { type: "array", items: { type: "number" } } },
+    "X-Object": { explode: true, schema: { type: "object", properties: { count: { type: "integer" }, flag: { type: "boolean" } }, additionalProperties: false } },
+    "X-Pairs": { schema: { type: "object", properties: { count: { type: "integer" } }, additionalProperties: { type: "boolean" } } },
+    "X-Nested": { schema: { type: "array", items: { type: "object" } } },
+    "X-Content": { content: { "application/json": { schema: { type: "object" } } } }
+  };
+  const restore = registerDynamicFixture(fixture.source);
+  try {
+    const reader = raw => responseHeaderReader(fixture.added[0].id, 200, raw);
+    assert.equal(reader({ "x-count": "12" })("X-COUNT"), 12);
+    assert.deepEqual(reader({ "x-array": "1.5, 2,3e2" })("x-array"), [1.5, 2, 300]);
+    assert.deepEqual(reader({ "x-object": "count=2,flag=false" })("X-Object"), { count: 2, flag: false });
+    assert.deepEqual(reader({ "x-pairs": "count,3,other,true" })("X-Pairs"), { count: 3, other: true });
+    assert.equal(reader({ "x-undeclared": "001" })("X-Undeclared"), "001");
+    assert.equal(reader({})("missing"), undefined);
+    for (const [raw, name, message] of [[{ "x-count": "twelve" }, "X-Count", /valid integer/],
+      [{ "x-count": "9007199254740992" }, "X-Count", /valid integer/],
+      [{ "x-object": "count=2,flag=no" }, "X-Object", /true or false/],
+      [{ "x-pairs": "count" }, "X-Pairs", /alternating property/],
+      [{ "x-nested": "nested" }, "X-Nested", /nested or alternative/],
+      [{ "x-content": "{}" }, "X-Content", /only simple/]])
+      assert.throws(() => reader(raw)(name), message);
+  } finally { restore(); }
+});
+
+Then("response routing prefers exact statuses then ranges then defaults", async function () {
+  for (const [status, includeRange, expected] of [[200, true, "exact"], [202, true, "range"], [202, false, "fallback"]]) {
+    const schema = structuredClone(demo);
+    const response = { description: "Project identifier", content: { "application/json": { schema: { type: "string" } } } };
+    schema.paths["/projects/{projectId}"].get.responses = { 200: response, ...(includeRange ? { "2XX": response } : {}), default: response };
+    const doc = document(createOperationGraph(operation("getProject"), { x: 0, y: 0 }, "source", schema),
+      graph("createTask", "exact"), ...(includeRange ? [graph("createTask", "range")] : []), graph("createTask", "fallback"));
+    for (const [key, owner] of [["200", "exact"], ...(includeRange ? [["2XX", "range"]] : []), ["default", "fallback"]])
+      mapping(doc, responseField(doc, "source", "/body", key), input(doc, owner, "Project ID"));
+    const fixture = createWorkflowDemo();
+    const runner = createRequestRunner(doc, undefined, { execute(operation, values) {
+      return operation.id === "demo:getProject" ? { request: { method: "GET", path: "/projects/project-1", query: {} },
+        response: { status, statusText: "", headers: {}, body: "project-1" } } : fixture.execute(operation, values);
+    } });
+    await submit(runner, project);
+    assert.equal(runner.next().nodeId, expected);
+    await submit(runner, task);
+    assert.equal(runner.next().kind, "complete", "less specific response branches remain inactive");
+  }
+});
+
+Then("legacy response body properties remain unambiguous beside envelope fields", async function () {
+  const source = graph("getProject", "source");
+  const outputIds = new Set(source.nodes.filter(node => node.type === "data" && node.data.direction === "outputs").map(node => node.id));
+  source.nodes = source.nodes.filter(node => !outputIds.has(node.id));
+  source.edges = source.edges.filter(edge => !outputIds.has(edge.source) && !outputIds.has(edge.target));
+  const field = { id: encodeURIComponent(JSON.stringify(["output:200:application/json", "/body"])), label: "Legacy body property",
+    type: "Text", required: false, description: "", connectable: true };
+  const id = `source:${encodeURIComponent(JSON.stringify(["output:200:application/json", ""]))}`;
+  source.nodes.push({ id, type: "data", position: { x: 0, y: 0 }, data: { ownerId: "source", direction: "outputs", label: "Response", fields: [field] } });
+  source.edges.push({ id: `schema:${id}`, kind: "schema", source: "source", target: id, sourceHandle: `schema:${id}`, targetHandle: "value" });
+  const doc = document(source, graph("createTask", "target"));
+  mapping(doc, output(doc, "source", "Legacy body property"), input(doc, "target", "Project ID"));
+  const fixture = createWorkflowDemo();
+  const runner = createRequestRunner(doc, undefined, { execute(operation, values) {
+    return operation.id === "demo:getProject" ? { request: { method: "GET", path: "/projects/project-1", query: {} },
+      response: { status: 200, statusText: "OK", headers: {}, body: { body: "project-1" } } } : fixture.execute(operation, values);
+  } });
+  await submit(runner, project);
+  assert.equal(runner.next().values["path:projectId"], "project-1");
+  await submit(runner, task);
+  assert.equal(runner.next().kind, "complete");
 });

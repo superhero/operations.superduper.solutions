@@ -7,7 +7,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { getContext, tick, untrack } from "svelte";
   import { useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
-  import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { CommentData } from "$lib/workflow-document.ts";
   import { commentTextLimit } from "$lib/workflow-utilities.ts";
@@ -50,16 +49,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <div bind:this={card} class="workflow-utility-node workflow-comment-node" class:selected>
   <div class="utility-title">
     <MaterialIcon name="sticky_note" size={20} /><strong>Comment</strong>
-    <HintButton type="button" class="utility-action nodrag nopan nokey" label={editing ? "Finish editing comment" : "Edit comment"}
-      onpointerdown={event => { if (editing) event.preventDefault(); }}
-      onclick={() => editing ? finish() : edit()}><MaterialIcon name={editing ? "check" : "edit"} size={18} /></HintButton>
   </div>
   {#if editing || !data.text.trim()}
     <div class="comment-editor nodrag nopan nokey nowheel">
       <textarea bind:this={input} aria-label="Comment text (Markdown)" placeholder="Write a comment…" maxlength={commentTextLimit}
         value={data.text} onfocus={() => editing = true} onblur={() => editing = false} onkeydown={keydown}
         oninput={event => changeText(id, event.currentTarget.value)}></textarea>
-      <span class="comment-hint">Markdown · Ctrl/⌘ + Enter to finish</span>
     </div>
   {:else}
     <div bind:this={preview} class="comment-preview nodrag nopan nokey" role="button" tabindex="0" aria-label="Edit comment text"
@@ -78,6 +73,5 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .comment-editor, .comment-preview { padding: 10px 12px; border-top: 1px solid var(--color-border); }
   .comment-preview { min-height: 60px; cursor: text; }
   textarea { display: block; width: 100%; min-height: 112px; max-height: 420px; padding: 8px; border: 0; border-radius: 4px; resize: vertical; background: var(--color-background); color: var(--color-foreground); font: 12px/1.6 ui-monospace, monospace; }
-  .comment-hint { display: block; margin-top: 7px; color: var(--color-muted-foreground); font-size: 10px; }
   @media (prefers-reduced-motion: reduce) { textarea, .comment-preview { transition: none; } }
 </style>

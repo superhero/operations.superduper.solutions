@@ -15,6 +15,7 @@ const connections = page => workflow(page).locator(".svelte-flow__edge:not(.work
 
 async function openCatalog(page) {
   const open = page.getByRole("button", { name: "Open navigation", exact: true });
+  await expect(open.or(page.getByRole("button", { name: "Close navigation", exact: true }))).toBeVisible();
   if (await open.isVisible()) await open.click();
   await expect(page.getByRole("navigation", { name: "Operation catalog", exact: true })).toBeVisible();
 }
@@ -77,6 +78,7 @@ async function setMode(page, mode) {
 async function field(page, label) {
   const options = { name: label, exact: true };
   const input = workspace(page).getByRole("textbox", options)
+    .or(workspace(page).getByRole("textbox", { name: `${label} value`, exact: true }))
     .or(workspace(page).getByRole("spinbutton", options))
     .or(workspace(page).getByRole("combobox", options));
   await expect(input).toBeVisible();
@@ -200,7 +202,14 @@ Then("operation metadata identifies server URL {string}", async function (url) {
   await expect(metadata.locator("dt").filter({ hasText: /^Server URL$/ }).locator("xpath=following-sibling::dd[1]")).toHaveText(url);
 });
 Then("{string} is outside its allowed numeric range", async function (label) {
-  await expect.poll(async () => (await field(this.page, label)).evaluate(input => input.validity.rangeOverflow)).toBe(true);
+  const input = await field(this.page, label);
+  const slider = workspace(this.page).getByRole('slider', { name: label, exact: true });
+  if (await slider.count()) {
+    await expect(slider).toHaveAttribute('aria-invalid', 'true');
+    const value = Number(await input.inputValue());
+    assert.ok(value < Number(await slider.getAttribute('aria-valuemin')) || value > Number(await slider.getAttribute('aria-valuemax')));
+    assert.equal(await input.evaluate(control => control.validity.valid), false);
+  } else await expect.poll(() => input.evaluate(control => control.validity.rangeOverflow)).toBe(true);
 });
 When("I edit the inputs and change {string} to {string}", async function (label, value) {
   await this.page.getByRole("button", { name: "Edit inputs", exact: true }).click();

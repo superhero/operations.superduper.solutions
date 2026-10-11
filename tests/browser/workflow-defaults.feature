@@ -14,3 +14,6 @@ Feature: Browser-local workflow defaults
 
   Scenario: Missing and malformed workflow defaults fall back independently for each option and grid size
     Then invalid workflow defaults retain valid booleans and safely reset other fields
+
+  Scenario: Grid size slider preserves bounds and changes values faster near the center
+    Then the grid size slider supports exact keys and saves its nonlinear pointer value across reload

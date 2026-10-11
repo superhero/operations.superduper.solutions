@@ -53,6 +53,14 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 - **Purpose:** Start the local development server.
 - **Requirements:** Run `npm ci` first.
+- **Errors:** [Visulima's error overlay](https://visulima.com/docs/packages/vite-overlay/) shows development compilation and runtime errors. Its [custom CSS](src/dev/error-overlay.css) follows the selected app palette and light/dark mode. The plugin is excluded from production builds.
+- **Settings storage failures:** Failed database opens, reads, and saves report a native error through Pail, which opens the development overlay. Startup reports it after rendering so the app and palette are ready behind it. Messages distinguish the failed stage, retain the original cause, and explain recovery; browser/profile contention is a possible cause, not something a webpage can confirm. Production shows a descriptive startup alert; Settings retains the Retry saved settings action in both modes. Restart the browser before considering any destructive storage reset.
+  Preserve the standard `Error.cause` chain. A compact tree shows each error type and its code when available, with the current error highlighted. Select a tree entry to inspect it. Development logging retains codes in memory because Visulima omits them from its formatted payload. All messages, source frames, and cause navigation remain available; history continues to track separate reports.
+- **Dev toolbar:** [Visulima Dev Toolbar](https://visulima.com/docs/packages/dev-toolbar/) provides Timeline, Performance and Vite Config panels. It is hidden by default; enable **Settings → Developer → Developer toolbar** to opt in. The choice is saved in IndexedDB. Once enabled, open it with **Alt+Shift+D** or the bottom-center toolbar. It follows the app theme and is excluded from production builds. Error dialogs work independently of this setting.
+- **Logging:** Use the shared [Pail logger](src/lib/logger.ts) for application diagnostics (`logger.info`, `logger.warn`, `logger.error`), with `logger.scope("feature")` when helpful. Its browser reporter preserves error objects and sends application errors directly to the development overlay. Vite console forwarding is disabled, and Visulima intercepts warnings rather than errors, preventing failed transport reports from recursively reporting themselves. Original errors and transport failures remain in the browser console; uncaught exceptions and rejections still reach the overlay. Log diagnostic messages rather than workflow content or request credentials. Node script and test diagnostics also use Pail; machine-readable output retains its original format.
+- **Object inspection:** Runtime error normalization uses [`@visulima/inspector`](https://visulima.com/packages/inspector/) for readable object details. Use its `inspect(value)` result with Pail when a diagnostic needs a text snapshot. Keep native `Error` objects intact so console inspection and overlay stack traces continue to work.
+- **Startup progress:** The loading screen and Pail's `startup` console scope report the current action as `Reading settings — 3 of 12`. Stages follow actual settings reads, workflow storage initialization, repository checks and canvas restoration; later background refreshes do not replay them. Storage failures release the screen so the application's recovery controls remain usable.
+- **Loading preview:** Open `/?dev-loading=1` to keep the CSS loading animation visible indefinitely during development, paused at `Loading application — 1 of 12`. Remove the query to start the app normally; production ignores this flag.
 
 </details>
 
@@ -101,19 +109,23 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 - **Purpose:** Generate reports in `tmp/test/coverage/` and enforce 100% statement, branch,
   function and line coverage.
-- **Scope:** Node-executable application logic. The browser-only
-  `src/lib/workflow-repository.ts`, `src/lib/app-settings.ts` and `src/lib/storage-metrics.ts` adapters are verified by the required browser suite
-  against real IndexedDB (and LightningFS/Git for workflows); they are excluded from this
-  Node coverage report, like the UI's browser integration code.
-- **Requirements:** Collect fresh coverage with `npm run test:source:coverage` or
-  `npm run test:acceptance:coverage` first.
+- **Scope:** Node-executable application logic, including the standalone Node unit tests.
+  [.c8rc.json](.c8rc.json) lists individual browser adapters separately: IndexedDB/Git
+  persistence and migration, worker entry points and page bridges, browser memory/storage
+  APIs, appearance caching, and the DOM startup animation. Type-only modules and the
+  worker global shim are also excluded. Their browser behavior is exercised by the
+  browser suite and the isolated `tests/*.smoke.mjs` checks using real IndexedDB,
+  LightningFS, workers and browser APIs. Pure parsing, mapping, aggregation, layout,
+  response decoding and worker-RPC logic retain the 100% coverage requirement.
+- **Requirements:** Collect fresh coverage with `npm run test:source:coverage` first.
 
 </details>
 
 <details>
 <summary><code>npm run test:source</code></summary>
 
-- **Purpose:** Run source scenarios.
+- **Purpose:** Run source scenarios, then standalone Node tests (`npm run test:unit`).
+  Cucumber scenario reporting is preserved; Node test results are printed separately.
 - **Requirements:** Run `npm ci` first.
 
 </details>
@@ -216,6 +228,25 @@ in [`src/assets/fonts`](src/assets/fonts/README.md).
 
 ---
 
+<a href="https://www.npmjs.com/package/@visulima/dev-toolbar"><img src=".github/badges/version-dependency-visulima--dev-toolbar.svg" alt="@visulima/dev-toolbar declared version"></a>
+
+Provides the optional development toolbar with timing, performance, and Vite
+configuration panels. It is excluded from production builds.
+
+---
+
+<a href="https://www.npmjs.com/package/@visulima/inspector"><img src=".github/badges/version-dependency-visulima--inspector.svg" alt="@visulima/inspector declared version"></a>
+
+Formats object details when normalizing development runtime errors.
+
+---
+
+<a href="https://www.npmjs.com/package/@visulima/vite-overlay"><img src=".github/badges/version-dependency-visulima--vite-overlay.svg" alt="@visulima/vite-overlay declared version"></a>
+
+Displays themed development errors with source frames and their cause chains.
+
+---
+
 <a href="https://www.npmjs.com/package/multiple-cucumber-html-reporter"><img src=".github/badges/version-dependency-multiple-cucumber-html-reporter.svg" alt="multiple-cucumber-html-reporter declared version"></a>
 
 Supports release quality review by generating the combined test report from
@@ -308,7 +339,8 @@ plugins used to produce the release build.
 <a href="https://www.npmjs.com/package/vite-plugin-singlefile"><img src=".github/badges/version-dependency-vite-plugin-singlefile.svg" alt="vite-plugin-singlefile declared version"></a>
 
 Packages the webpage for deployment as one HTML file with embedded JavaScript
-and CSS, meeting the single-file requirement verified by the acceptance tests.
+and CSS. The bundle also includes a Cloudflare Pages `_headers` file to enable
+isolated page-memory measurements; acceptance tests verify both files.
 
 ---
 

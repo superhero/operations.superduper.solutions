@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
 import { Then } from "@cucumber/cucumber";
+import { repository } from "./workflow-storage.fixture.mjs";
 import { expect } from "@playwright/test";
 import { operations } from "../../src/lib/catalog.ts";
 import { catalogForOperation } from "../../src/lib/catalog-registry.ts";
@@ -15,7 +16,7 @@ const runDialog = page => page.getByRole("dialog", { name: "Run workflow: Exampl
 async function openRun(page, graphs, edges = []) {
   const doc = { version: 3, id: "examples-browser", name: "Example requests", nodes: graphs.flatMap(item => item.nodes),
     edges: [...graphs.flatMap(item => item.edges), ...edges], viewport: { x: 0, y: 0, zoom: 1 }, snap: true, curved: true, dashed: false };
-  await page.evaluate(doc => localStorage.setItem("operations-flow-documents-v1", JSON.stringify([doc])), doc);
+  await repository(page, 'save', doc, null);
   await page.reload();
   await setMode(page, "workflow");
   await workflowAction(page, "Run");
@@ -29,6 +30,7 @@ async function fillRun(page, label, value) {
     await select.click();
     await page.getByRole("option", { name: value, exact: true }).click();
   } else await run.getByRole("textbox", { name: label, exact: true })
+    .or(run.getByRole("textbox", { name: `${label} value`, exact: true }))
     .or(run.getByRole("spinbutton", { name: label, exact: true })).fill(value);
 }
 async function interceptHttpbin(page) {

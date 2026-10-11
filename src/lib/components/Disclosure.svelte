@@ -12,10 +12,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { getContext, onMount, setContext, tick, untrack, type Snippet } from "svelte";
   import HintButton from "./HintButton.svelte";
-  let { open = false, onToggle, summary, children, class: className = "", label, groupLabel, hint, tooltipEnabled = true }:
-    { open?: boolean; onToggle: (next: boolean) => void; summary: Snippet; children: Snippet; class?: string; label?: string; groupLabel?: string; hint?: string; tooltipEnabled?: boolean } = $props();
+  let { open = false, onToggle, summary, children, class: className = "", label, groupLabel, hint, tooltipEnabled = true, lazy = false, animateSize = false }:
+    { open?: boolean; onToggle: (next: boolean) => void; summary: Snippet; children: Snippet; class?: string; label?: string; groupLabel?: string; hint?: string; tooltipEnabled?: boolean; lazy?: boolean; animateSize?: boolean } = $props();
   const id = $props.id();
   let panel: HTMLDivElement;
+  let content = $state<HTMLDivElement>();
   let heading: HTMLElement;
   let nestedHover = $state(false);
   let nestedFocus = $state(false);
@@ -23,6 +24,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let ready = $state(false);
   let reduced = $state(true);
   let animation: Animation | undefined;
+  let targetHeight = 0;
   let transition = 0;
   let previous = untrack(() => open);
   const parent = getContext<DisclosureContext | undefined>(disclosureContext);
@@ -36,6 +38,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     animation?.cancel();
     animation = undefined;
     expanded = open;
+    if (animateSize && panel) {
+      targetHeight = open ? content?.getBoundingClientRect().height ?? 0 : 0;
+      panel.style.height = `${targetHeight}px`;
+    }
+  }
+  function animateHeight(from: number, to: number) {
+    targetHeight = to;
+    animation?.cancel();
+    if (animateSize) panel.style.height = `${to}px`;
+    const current = panel.animate([{ height: `${from}px`, overflow: "visible clip" }, { height: `${to}px`, overflow: "visible clip" }], { duration: 240, easing: "ease-in", fill: "both" });
+    animation = current;
+    current.onfinish = () => { if (animation === current) { expanded = open; animation = undefined; current.cancel(); } };
   }
   function settleTree() { settle(); for (const child of childrenToSettle) child(); }
   setContext<DisclosureContext>(disclosureContext, {
@@ -48,7 +62,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const update = () => { reduced = media.matches; if (reduced) settle(); };
     update(); ready = true;
     media.addEventListener("change", update);
-    return () => { parent?.children.delete(settleTree); media.removeEventListener("change", update); animation?.cancel(); };
+    let frame = 0;
+    // Observe natural content, not the animated panel. Keep its height pinned so
+    // asynchronous reports cannot jump before the next animation frame.
+    const observer = animateSize ? new ResizeObserver(() => {
+      if (!frame) frame = requestAnimationFrame(() => {
+        frame = 0;
+        if (!open || !content) return;
+        const height = content.getBoundingClientRect().height;
+        if (height === targetHeight) return;
+        if (reduced) settle();
+        else animateHeight(panel.getBoundingClientRect().height, height);
+      });
+    }) : undefined;
+    if (content) observer?.observe(content);
+    return () => { parent?.children.delete(settleTree); media.removeEventListener("change", update); animation?.cancel(); observer?.disconnect(); cancelAnimationFrame(frame); };
   });
   $effect.pre(() => {
     const next = open;
@@ -65,10 +93,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     expanded = true;
     void tick().then(() => {
       if (revision !== transition || next !== open) return;
-      if (reduced) { expanded = next; return; }
-      const current = panel.animate([{height: `${height}px`, overflow: "visible clip"}, {height: `${next ? panel.scrollHeight : 0}px`, overflow: "visible clip"}], {duration: 240, easing: "ease-in", fill: "both"});
-      animation = current;
-      current.onfinish = () => { if (animation === current) { expanded = open; animation = undefined; current.cancel(); } };
+      if (reduced) { settle(); return; }
+      animateHeight(height, next ? animateSize ? content?.getBoundingClientRect().height ?? 0 : panel.scrollHeight : 0);
     });
   });
 </script>
@@ -91,7 +117,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </summary>
     {/snippet}
   </HintButton>
-  <div bind:this={panel} id={id} class="disclosure-panel" inert={!open} aria-hidden={!open} hidden={!expanded && !open}>
-    {@render children()}
+  <div bind:this={panel} id={id} class="disclosure-panel" class:resizable={animateSize} inert={!open} aria-hidden={!open} hidden={!expanded && !open}>
+    {#if animateSize}
+      <div bind:this={content} class="disclosure-content">
+        {#if !lazy || expanded || open}{@render children()}{/if}
+      </div>
+    {:else if !lazy || expanded || open}
+      {@render children()}
+    {/if}
   </div>
 </details>
+
+<style>
+  .resizable { overflow: visible clip; }
+  .disclosure-content { display: flow-root; }
+</style>

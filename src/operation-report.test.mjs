@@ -255,7 +255,7 @@ Then("unavailable operation schemas fail with a useful reason", function () {
   ]) assert.throws(() => scope(document), /Schema unavailable.*OpenAPI operation/);
   assert.throws(() => scopeOperationSchema(fixture({}, { custom: {} }), selectedPath, "custom"), /Schema unavailable/);
   const known = operations[0];
-  assert.throws(() => getOperationReport({ ...known, id: "other:listProjects" }), /source catalog is not bundled/);
+  assert.throws(() => getOperationReport({ ...known, id: "other:listProjects" }), /source schema is not registered/);
   assert.throws(() => getOperationReport({ ...known, id: "demo:getProject" }), /identifier does not match/);
   assert.throws(() => getOperationReport({ ...known, path: "/missing" }), /Schema unavailable/);
   assert.throws(() => getOperationReport({ ...known, method: "POST" }), /Schema unavailable/);

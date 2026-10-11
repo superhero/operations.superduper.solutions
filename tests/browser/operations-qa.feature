@@ -66,9 +66,9 @@ Feature: Operations navigation quality
       | 1280  |
       | 320   |
 
-  Scenario: Integer arrows respect bounds and preserve native keyboard editing
+  Scenario: Integer sliders respect bounds and preserve exact keyboard editing
     Given I open the "List projects" operation from the catalog
-    Then Result limit arrows preserve bounds and input focus
+    Then the Result limit slider preserves bounds and keyboard focus
     When I prepare the request
     Then the prepared request is:
       """
@@ -99,6 +99,10 @@ Feature: Operations navigation quality
       {"method":"POST","path":"/projects/numeric-review/tasks","query":{},"body":{"title":"Adjust hours","priority":"normal","estimate":0.5}}
       """
 
+  Scenario: Optional integer sliders preserve exact large values and can be cleared
+    Given I open the "Example query and header inputs" operation from the catalog
+    Then the optional Count slider preserves large signed integers and clears without a default
+
   Scenario: Number arrows slide on hover and honor reduced motion
-    Given I open the "List projects" operation from the catalog
+    Given I open the "Create task" operation from the catalog
     Then number arrows reveal through hover and focus with the selected motion preference

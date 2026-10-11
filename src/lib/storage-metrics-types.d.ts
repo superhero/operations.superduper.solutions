@@ -54,6 +54,15 @@ export type DatabaseMetrics = {
 
 export type StorageReport = {
   collectedAt: number;
+  execution: { threads: number | null; dedicatedWorkers: number | null };
+  processing: import("./processing-metrics.ts").ProcessingMetrics;
+  memory: {
+    used: number | null;
+    allocated: number | null;
+    limit: number | null;
+    utilization: number | null;
+    error: string | null;
+  };
   browser: {
     usage: number | null;
     quota: number | null;
@@ -63,6 +72,7 @@ export type StorageReport = {
     breakdown: { name: string; bytes: number }[] | null;
     estimateError: string | null;
     persistenceError: string | null;
+    localStorage: { bytes: number | null; error: string | null };
   };
   indexedDB: {
     available: boolean;
