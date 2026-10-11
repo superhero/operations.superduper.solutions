@@ -81,8 +81,9 @@ Each CI workflow owns one target branch or branch family:
 The branch workflows define their own triggers, jobs, permissions, and artifact
 handling. Common Gitflow, merge, release, and publishing logic lives in Bash
 scripts under `.github/scripts`; branch CI does not call a shared workflow.
-The workflow is selected by the PR target, so feature and bugfix PRs run develop
-CI, while hotfix PRs run CI for their chosen main, release, or support target.
+The workflow is selected by the PR target. Feature and integration bugfix PRs run
+develop CI; release-stabilization bugfix PRs run release CI. Hotfix PRs run CI for
+their chosen main, release, or support target.
 
 Main CI creates releases from `develop` trigger PRs and validates release and
 hotfix PRs. Every automatic merge requires automation checks, Gitflow policy,
@@ -95,8 +96,8 @@ merging; the tested head must always match exactly.
 Feature and bugfix PRs into `develop`, and `hotfix/*` PRs into `main`,
 fast-forward when they contain exactly one commit ahead of the current target
 and that target is an ancestor; otherwise the App squash-merges them.
-Release publication and synchronization of released code prefer fast-forward,
-falling back to a merge commit when histories have diverged. The shared helper
+Release stabilization, publication, and synchronization of released code prefer
+fast-forward, falling back to a merge commit when histories have diverged. The shared helper
 selects the method from the current PR's source and target branches.
 Both `develop` and `main` PR rules permit merge and squash. GitHub has no
 fast-forward PR merge method, so the App updates the target ref without force
@@ -133,9 +134,13 @@ retain their native reason alongside the attempted operation. Log only selected
 context; do not dump argument lists, environments, authentication headers or raw
 API responses. Missing credentials are reported by variable name only.
 Release-trigger retries reuse their release PR, including after corrections to
-the release branch. Version validation fails on API errors and rejects a version
-already reserved by a release or hotfix, including a merged version whose tag
-has not been created yet.
+the release branch. Make stabilization fixes on a `bugfix/*` branch created from
+the active `release/<version>` and open a PR back into that release. Release CI
+validates and merges the fix, then the existing PR into `main` validates the
+updated release head. Stabilization rejects invalid release versions and targets
+already tagged or merged into `main`; direct pushes do not replace these checks.
+Version validation fails on API errors and rejects a version already reserved by
+a release or hotfix, including a merged version whose tag has not been created yet.
 An already released hotfix may synchronize into `develop`, an active release,
 or an explicitly selected support line. Its source must remain within the
 released revision, apart from dependency-badge changes. Released release-branch

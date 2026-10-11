@@ -18,18 +18,21 @@ fail() {
   fail 'Usage: validate-pr.sh <repository> <head-branch> <base-branch> <full-head-sha>; four arguments and a full 40-character head SHA are required.'
 
 case "$base_branch:$head_branch" in
-  main:release/*|main:hotfix/*|develop:feature/*|develop:bugfix/*|develop:release/*|develop:hotfix/*|develop:main|release/*:hotfix/*|support/*:hotfix/*) ;;
+  main:release/*|main:hotfix/*|develop:feature/*|develop:bugfix/*|develop:release/*|develop:hotfix/*|develop:main|release/*:bugfix/*|release/*:hotfix/*|support/*:hotfix/*) ;;
   *) fail "Branch '$head_branch' may not merge into '$base_branch'." ;;
 esac
 
 case "$head_branch" in
   release/*|hotfix/*) ;;
+  bugfix/*) [[ "$base_branch" == release/* ]] || exit 0 ;;
   *) exit 0 ;;
 esac
 kind="${head_branch%%/*}"
 version="${head_branch#*/}"
-bash "$(dirname "${BASH_SOURCE[0]}")/validate-semver.sh" "$version" >/dev/null ||
-  fail "Invalid $kind version '$version'."
+if [[ "$kind" != bugfix ]]; then
+  bash "$(dirname "${BASH_SOURCE[0]}")/validate-semver.sh" "$version" >/dev/null ||
+    fail "Invalid $kind version '$version'."
+fi
 
 # Capture API results before inspecting them: failed requests must never mean
 # an available tag or an empty set of active branches.
@@ -43,6 +46,27 @@ load_closed_main_prs() {
       else error("Expected pages of closed main pull requests") end')" ||
     fail "Could not inspect closed main PRs reserving $1."
 }
+validate_release_target() {
+  local target_version target_released
+  target_version="${base_branch#*/}"
+  bash "$(dirname "${BASH_SOURCE[0]}")/validate-semver.sh" "$target_version" >/dev/null ||
+    fail "Invalid target release version '$target_version'."
+  if jq -e --arg version "$target_version" 'index($version) != null' <<< "$tags" >/dev/null; then
+    fail "Target release '$base_branch' already exists as a tag or merged release."
+  fi
+  load_closed_main_prs "target release '$base_branch'"
+  target_released="$(jq -r --arg repository "$repository" --arg version "$target_version" '
+    any(.[]; .merged_at != null and .head.repo.full_name == $repository and
+      (.head.ref == "release/" + $version or .head.ref == "hotfix/" + $version))' <<< "$closed_main_prs")" ||
+    fail "Could not inspect closed main PRs reserving target release '$base_branch'."
+  if [[ "$target_released" == true ]]; then
+    fail "Target release '$base_branch' already exists as a tag or merged release."
+  fi
+}
+if [[ "$kind" == bugfix ]]; then
+  validate_release_target
+  exit 0
+fi
 validate_hotfix_patch_line() {
   local require_base="${1:-false}" semver_tags tag comparison major minor patch expected
   # The newest target-reachable tag determines this line, independent of tags
@@ -84,20 +108,7 @@ if [[ -n "$released_revision" ]]; then
     *) fail "Version '$version' already exists as a tag or merged release." ;;
   esac
   if [[ "$base_branch" == release/* ]]; then
-    target_version="${base_branch#*/}"
-    bash "$(dirname "${BASH_SOURCE[0]}")/validate-semver.sh" "$target_version" >/dev/null ||
-      fail "Invalid target release version '$target_version'."
-    if jq -e --arg version "$target_version" 'index($version) != null' <<< "$tags" >/dev/null; then
-      fail "Target release '$base_branch' already exists as a tag or merged release."
-    fi
-    load_closed_main_prs "target release '$base_branch'"
-    target_released="$(jq -r --arg repository "$repository" --arg version "$target_version" '
-      any(.[]; .merged_at != null and .head.repo.full_name == $repository and
-        (.head.ref == "release/" + $version or .head.ref == "hotfix/" + $version))' <<< "$closed_main_prs")" ||
-      fail "Could not inspect closed main PRs reserving target release '$base_branch'."
-    if [[ "$target_released" == true ]]; then
-      fail "Target release '$base_branch' already exists as a tag or merged release."
-    fi
+    validate_release_target
   fi
   comparison="$(gh api "repos/$repository/compare/$head_sha...$released_revision")" ||
     fail "Could not compare $head_sha...$released_revision to validate release synchronization."

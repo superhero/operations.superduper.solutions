@@ -95,6 +95,22 @@ Given("a repository without released versions or active release branches", funct
   this.policyResponses = undefined;
 });
 
+Given("the release stabilization target is {string}", function (state)
+{
+  this.policyResponses = base => {
+    const version = base.replace(/^release\//, "");
+    const unavailable = { exit_code: 1, stderr: "GitHub unavailable" };
+    const responses = [get(TAGS, state === "tagged" ? [{ name: version }] : [],
+      state === "tags unavailable" ? unavailable : {})];
+    if (state === "tagged" || state === "tags unavailable" ||
+      !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) return responses;
+    const closed = state.startsWith("merged ") ? [mergedRelease(version, state.slice(7))] : [];
+    responses.push(get(CLOSED_PULLS, {}, state === "history unavailable" ? unavailable :
+      { pages: state === "invalid history" ? [{}] : [[], closed] }));
+    return responses;
+  };
+});
+
 Given("version {string} has {string}", function (version, reservation)
 {
   const tagged = get(TAGS, [{ name: version }]);

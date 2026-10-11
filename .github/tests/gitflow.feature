@@ -12,12 +12,32 @@ Feature: Gitflow validation and guarded merging
     Then Gitflow validation is "<outcome>"
 
     Examples:
-      | head           | base    | outcome  |
-      | feature/editor | develop | accepted |
-      | main           | develop | accepted |
-      | release/1.2.3  | main    | accepted |
-      | develop        | main    | rejected |
-      | other/editor   | develop | rejected |
+      | head           | base          | outcome  |
+      | feature/editor | develop       | accepted |
+      | main           | develop       | accepted |
+      | release/1.2.3  | main          | accepted |
+      | develop        | main          | rejected |
+      | other/editor   | develop       | rejected |
+      | feature/editor | release/1.2.3 | rejected |
+      | bugfix/editor  | main          | rejected |
+      | bugfix/editor  | support/1.x   | rejected |
+
+  Scenario Outline: Release stabilization accepts bugfixes only before publication
+    Given the release stabilization target is "<state>"
+    When Gitflow validates "bugfix/editor" into "<base>"
+    Then Gitflow validation is "<outcome>"
+    And the Gitflow error explains "<reason>"
+
+    Examples:
+      | state               | base           | outcome  | reason                         |
+      | active              | release/1.2.3  | accepted |                                |
+      | tagged              | release/1.2.3  | rejected | already exists                 |
+      | merged release      | release/1.2.3  | rejected | already exists                 |
+      | merged hotfix       | release/1.2.3  | rejected | already exists                 |
+      | active              | release/01.2.3 | rejected | SemVer                         |
+      | tags unavailable    | release/1.2.3  | rejected | Could not list repository tags |
+      | history unavailable | release/1.2.3  | rejected | reserving target release       |
+      | invalid history     | release/1.2.3  | rejected | reserving target release       |
 
   Scenario Outline: Release branches require plain numeric versions
     Given a repository without released versions or active release branches
@@ -185,6 +205,8 @@ Feature: Gitflow validation and guarded merging
       | release/1.2.3  | main          | 2     | 1      | merge        |
       | hotfix/1.2.4   | release/1.3.0 | 2     | 0      | fast-forward |
       | hotfix/1.2.4   | release/1.3.0 | 2     | 1      | merge        |
+      | bugfix/editor  | release/1.3.0 | 2     | 0      | fast-forward |
+      | bugfix/editor  | release/1.3.0 | 2     | 1      | merge        |
       | hotfix/1.2.4   | support/1.x   | 2     | 0      | fast-forward |
       | hotfix/1.2.4   | support/1.x   | 2     | 1      | merge        |
 
