@@ -25,25 +25,66 @@ When('I return to the prompt through progress', async function () {
 Then('animated form details keep the active panel contained', async function () {
   await this.page.emulateMedia({ reducedMotion: 'no-preference' });
   const samples = await this.page.evaluate(async () => {
+    // Reveal also observes the media event in JavaScript; deliver it before opening.
+    await new Promise(requestAnimationFrame);
     const panel = document.querySelector('.step-panel[aria-hidden="false"]');
     const viewport = document.querySelector('.step-viewport');
     const control = panel.querySelector('[aria-label="Review operation details"]');
-    const measurements = [];
-    const start = performance.now();
-    control.click();
-    await new Promise(resolve => {
-      const sample = () => requestAnimationFrame(() => setTimeout(() => {
-        const content = panel.getBoundingClientRect();
-        const clip = viewport.getBoundingClientRect();
-        measurements.push({ height: content.height, clipped: Math.max(0, content.bottom - clip.bottom) });
-        if (performance.now() - start < 650) sample(); else resolve();
-      }, 0));
-      sample();
+    const details = panel.querySelector('#operation-details');
+    const measure = () => {
+      const content = panel.getBoundingClientRect();
+      const clip = viewport.getBoundingClientRect();
+      return { height: content.height, clipped: Math.max(0, content.bottom - clip.bottom) };
+    };
+    const frame = () => new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
+    const measurements = [measure()];
+    let animation;
+    let timer;
+    let captured;
+    const ready = new Promise((resolve, reject) => {
+      captured = resolve;
+      timer = setTimeout(() => reject(new Error('The details grid transition did not start.')), 5000);
     });
-    return measurements;
+    const started = event => {
+      if (event.target !== details || event.propertyName !== 'grid-template-rows') return;
+      animation = details.getAnimations().find(item =>
+        item instanceof CSSTransition && item.transitionProperty === 'grid-template-rows');
+      if (!animation) return;
+      // Keep the real transition running so the app follows its changing size.
+      // Freeze only its clock: CI may otherwise skip the whole 240ms animation.
+      animation.playbackRate = 0;
+      captured();
+    };
+    panel.addEventListener('transitionrun', started);
+    try {
+      control.click();
+      await ready;
+      clearTimeout(timer);
+      await animation.ready;
+      const { delay, duration } = animation.effect.getTiming();
+      if (!(Number(duration) > 0)) throw new Error('The details transition must have a positive duration.');
+      for (const progress of [0, 0.15, 0.35, 0.55, 0.75, 0.95]) {
+        animation.currentTime = delay + Number(duration) * progress;
+        await frame();
+        if (animation.playState !== 'running') throw new Error('The details transition must remain running while sampled.');
+        measurements.push(measure());
+      }
+      animation.playbackRate = 1;
+      animation.finish();
+      await animation.finished;
+      await frame();
+      measurements.push(measure());
+      return measurements;
+    } finally {
+      clearTimeout(timer);
+      panel.removeEventListener('transitionrun', started);
+      if (animation) animation.playbackRate = 1;
+    }
   });
   assert.ok(Math.max(...samples.map(sample => sample.height)) - Math.min(...samples.map(sample => sample.height)) > 40,
     'The check must observe an actual animated expansion.');
+  assert.ok(samples.slice(1, -1).some(sample => sample.height > samples[0].height + 1 && sample.height < samples.at(-1).height - 1),
+    'The check must observe intermediate expanded heights, not only the endpoints.');
   assert.ok(samples.every(sample => sample.clipped <= 2), `Active controls were clipped during expansion: ${JSON.stringify(samples)}`);
 });
 When('I return to the form through progress', async function () {
