@@ -10,6 +10,42 @@ import { openCatalog, closeCatalog, chooseCatalogOperation, field, fillField, wo
 import { expectThemeColors } from './theme-colors.mjs';
 import { operations } from '../../src/lib/catalog.ts';
 
+// Capture before input so a busy browser cannot finish short motion before
+// Playwright sees it. Keep the real animation running with only its clock held.
+async function captureMotion(locator, property) {
+  return locator.evaluateHandle((element, property) => {
+    const original = element.animate;
+    const capture = animation => {
+      if (!state.motion && animation.effect?.getKeyframes().some(frame => property in frame)) {
+        animation.playbackRate = 0;
+        state.motion = animation;
+      }
+    };
+    const started = event => {
+      if (event.target === element && event.propertyName === property)
+        element.getAnimations().forEach(capture);
+    };
+    const state = { motion: null, property, restore() {
+      element.animate = original;
+      element.removeEventListener('transitionrun', started);
+      if (state.motion) state.motion.playbackRate = 1;
+    } };
+    element.animate = function (...args) {
+      const animation = original.apply(this, args);
+      capture(animation);
+      return animation;
+    };
+    element.addEventListener('transitionrun', started);
+    return state;
+  }, property);
+}
+
+async function expectCapturedMotion(capture) {
+  await expect.poll(() => capture.evaluate(({ motion, property }) => Boolean(motion
+    && motion.playState === 'running' && motion.effect.getTiming().duration > 0
+    && new Set(motion.effect.getKeyframes().map(frame => frame[property])).size > 1))).toBe(true);
+}
+
 Then('catalog paths, focus and tooltip dismissal behave consistently', async function () {
   const page = this.page;
   await openCatalog(page);
@@ -258,10 +294,17 @@ Then('ambient and navigation movement honor live reduced motion', async function
   const first = await bitmap();
   await expect.poll(bitmap).not.toBe(first);
   await openCatalog(page);
-  await page.locator('.catalog-group > summary').first().click();
-  await expect.poll(() => page.locator('.catalog-group').first().evaluate(element => element.getAnimations({ subtree: true }).length)).toBeGreaterThan(0);
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await expect.poll(() => page.locator('.catalog-group').first().evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
+  const group = page.locator('.catalog-group').first();
+  const capture = await captureMotion(group.locator('.disclosure-panel').first(), 'height');
+  try {
+    await group.locator(':scope > summary').click();
+    await expectCapturedMotion(capture);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect.poll(() => group.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
+  } finally {
+    await capture.evaluate(state => state.restore());
+    await capture.dispose();
+  }
   const still = await bitmap();
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   assert.equal(await bitmap(), still, 'Reduced motion must stop the ambient canvas.');
@@ -301,8 +344,14 @@ Then('step motion preserves focus and inactive-panel isolation', async function 
   const page = this.page;
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('List projects');
-  await page.getByRole('textbox', { name: 'Prompt', exact: true }).press('Enter');
-  await expect.poll(() => page.locator('.step-track').evaluate(element => element.getAnimations().length)).toBeGreaterThan(0);
+  const capture = await captureMotion(page.locator('.step-track'), 'transform');
+  try {
+    await page.getByRole('textbox', { name: 'Prompt', exact: true }).press('Enter');
+    await expectCapturedMotion(capture);
+  } finally {
+    await capture.evaluate(state => state.restore());
+    await capture.dispose();
+  }
   await expect(workspace(page).getByRole('heading', { name: 'Evaluation: Listed operations' })).toBeFocused();
   await workspace(page).getByRole('button', { name: 'Go to operation: List projects', exact: true }).click();
   await expect(await field(page, 'Project name')).toBeFocused();
@@ -364,14 +413,44 @@ Then('connection movement responds without changing the saved plan', async funct
   await expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
   const path = connections(page).locator('.svelte-flow__edge-path');
   await expect(path).toHaveCount(1);
-  const dash = () => path.evaluate(element => getComputedStyle(element).strokeDashoffset);
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  const offset = await dash();
-  await expect.poll(dash).not.toBe(offset);
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await expect.poll(() => path.evaluate(element => element.getAnimations().length)).toBe(0);
-  await expect.poll(() => path.evaluate(element => getComputedStyle(element).strokeDasharray)).not.toBe('none');
-  await expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
+  const saved = await storedWorkflows(page);
+  // Verify initial motion and resumption after live reduced-motion cancellation.
+  for (let cycle = 0; cycle < 2; cycle += 1) {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await expect.poll(() => path.evaluate(element => element.getAnimations().some(animation =>
+      animation.playState === 'running' && animation.effect.getKeyframes().some(frame => 'strokeDashoffset' in frame)))).toBe(true);
+    const samples = await path.evaluate(async element => {
+      const animation = element.getAnimations().find(item => item.effect.getKeyframes().some(frame => 'strokeDashoffset' in frame));
+      await animation.ready;
+      const before = animation.currentTime;
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const advanced = animation.currentTime > before;
+      const { delay, duration, iterations } = animation.effect.getTiming();
+      const frames = animation.effect.getKeyframes();
+      const first = parseFloat(frames[0].strokeDashoffset);
+      const last = parseFloat(frames.at(-1).strokeDashoffset);
+      const offsets = [];
+      try {
+        animation.playbackRate = 0;
+        for (const progress of [0.2, 0.4, 0.8]) {
+          animation.currentTime = delay + Number(duration) * progress;
+          offsets.push({ value: parseFloat(getComputedStyle(element).strokeDashoffset), expected: first + (last - first) * progress });
+        }
+      } finally { animation.playbackRate = 1; }
+      return { advanced, duration, infinite: iterations === Infinity, first, last, offsets };
+    });
+    await this.attach(JSON.stringify({ cycle: cycle + 1, ...samples }), 'application/json');
+    assert.ok(samples.advanced && samples.duration > 0 && samples.infinite, 'Dashed connections must run continuously on the browser timeline.');
+    assert.ok(Number.isFinite(samples.first) && Number.isFinite(samples.last) && samples.first !== samples.last,
+      `Dash keyframes must use interpolable lengths: ${JSON.stringify(samples)}`);
+    assert.ok(samples.offsets.every(sample => Number.isFinite(sample.value) && Math.abs(sample.value - sample.expected) < 0.02),
+      `Dashes must interpolate smoothly between endpoints: ${JSON.stringify(samples)}`);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect.poll(() => path.evaluate(element => element.getAnimations().length)).toBe(0);
+    await expect.poll(() => path.evaluate(element => getComputedStyle(element).strokeDasharray)).not.toBe('none');
+    await expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
+    assert.deepEqual(await storedWorkflows(page), saved, 'Motion preferences must not change the saved workflow.');
+  }
   await page.getByRole('button', { name: 'Dashed connections', exact: true }).click();
   await expect.poll(() => path.evaluate(element => getComputedStyle(element).strokeDasharray)).toBe('none');
 });

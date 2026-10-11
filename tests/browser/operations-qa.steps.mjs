@@ -95,12 +95,25 @@ Then('changing motion preference settles visible details immediately', async fun
   const details = page.locator('#operation-details');
   for (const opening of [true, false]) {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await details.evaluate(async element => {
+      await new Promise(requestAnimationFrame);
+      const started = event => {
+        if (event.target !== element || event.propertyName !== 'grid-template-rows') return;
+        for (const animation of element.getAnimations()) {
+          if (animation.transitionProperty !== 'grid-template-rows') continue;
+          // Hold real motion before another browser command can miss it.
+          animation.playbackRate = 0;
+          animation.currentTime = Number(animation.effect.getTiming().duration) / 2;
+        }
+        element.removeEventListener('transitionrun', started);
+      };
+      element.addEventListener('transitionrun', started);
+    });
     await page.getByRole('button', { name: 'Review operation details', exact: true }).click();
     await expect.poll(() => details.evaluate(element => {
-      const animations = element.getAnimations().filter(animation => animation.effect.getTiming().duration > 0);
-      // Slow the in-flight transition to isolate preference handling from its
-      // ordinary completion, without substituting the browser's media event.
-      for (const animation of animations) animation.playbackRate = 0.1;
+      const animations = element.getAnimations().filter(animation =>
+        animation.transitionProperty === 'grid-template-rows' && animation.playState === 'running' &&
+        animation.effect.getComputedTiming().progress > 0 && animation.effect.getComputedTiming().progress < 1);
       return animations.length;
     })).toBeGreaterThan(0);
     await page.emulateMedia({ reducedMotion: 'reduce' });

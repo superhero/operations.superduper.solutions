@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { openCatalog, closeCatalog } from './workspace.steps.mjs';
+import { holdHeightAnimations, resumeHeightAnimations, seekHeightAnimation } from './height-animation.fixture.mjs';
 
 Then('navigation focus follows normal-motion opening and breakpoint changes', async function () {
   const page = this.page;
@@ -30,41 +31,50 @@ Then('expanding a nested catalog item does not clip its parent', async function 
   await openCatalog(page);
   const group = page.locator('[data-catalog-group="projects"] > .catalog-group');
   const panel = group.locator(':scope > .disclosure-panel');
-  await group.locator(':scope > summary').press('Enter');
-  assert.ok(await panel.evaluate(element => element.getAnimations().length > 0), 'The parent must still be opening.');
   const child = group.locator('[data-catalog-group="overview"] > .catalog-group');
-  await child.locator(':scope > summary').press('Enter');
-  assert.ok(await child.locator(':scope > .disclosure-panel').evaluate(element => {
-    const animations = element.getAnimations();
-    for (const animation of animations) animation.playbackRate = 0.4;
-    return animations.length > 0;
-  }), 'The nested group must still be opening.');
-  const sample = await group.evaluate(async element => {
-    const parentPanel = element.querySelector(':scope > .disclosure-panel');
-    const parentContent = parentPanel.querySelector(':scope > .catalog-children');
-    const childPanel = element.querySelector('[data-catalog-group="overview"] > .catalog-group > .disclosure-panel');
-    const list = element.querySelector('.catalog-operations');
+  const childPanel = child.locator(':scope > .disclosure-panel');
+  const restoreParent = await holdHeightAnimations(panel);
+  let restoreChild;
+  try {
+    await group.locator(':scope > summary').press('Enter');
+    await expect.poll(() => panel.evaluate(element => element.getAnimations().length)).toBeGreaterThan(0);
+    const parentFrame = await seekHeightAnimation(panel, 0.5);
+    assert.ok(parentFrame.running && parentFrame.to > parentFrame.from, 'The parent must still be opening.');
+    restoreChild = await holdHeightAnimations(childPanel);
+    await child.locator(':scope > summary').press('Enter');
+    await expect.poll(() => childPanel.evaluate(element => element.getAnimations().length)).toBeGreaterThan(0);
+    const frames = [];
     let maximumOverflow = 0;
-    let frames = 0;
-    let animatedFrames = 0;
-    do {
-      await new Promise(requestAnimationFrame);
-      if (childPanel.getAnimations().length) animatedFrames += 1;
+    for (const progress of [0, 0.2, 0.4, 0.6, 0.8, 0.95]) {
+      frames.push(await seekHeightAnimation(childPanel, progress));
       // The child clips its own list while opening; its ancestor must fit the
       // changing child height and all following siblings throughout that motion.
-      maximumOverflow = Math.max(maximumOverflow, parentContent.getBoundingClientRect().bottom - parentPanel.getBoundingClientRect().bottom);
-      frames += 1;
-    } while (element.getAnimations({ subtree: true }).length && frames < 60);
-    const finalChildOverflow = list.getBoundingClientRect().bottom - childPanel.getBoundingClientRect().bottom;
-    return { maximumOverflow, finalChildOverflow, frames, animatedFrames };
-  });
-  assert.ok(sample.animatedFrames > 0, 'Containment must be sampled while the nested group is opening.');
-  assert.ok(sample.frames < 60, 'Nested disclosure animations must settle.');
-  assert.ok(sample.maximumOverflow <= 1, `The parent clipped growing nested content by ${sample.maximumOverflow}px.`);
-  assert.ok(sample.finalChildOverflow <= 1, `The expanded child clipped its operation list by ${sample.finalChildOverflow}px.`);
-  await group.locator(':scope > summary').press('Enter');
-  assert.ok(await panel.evaluate(element => element.getAnimations().length > 0), 'Closing an expanded child must preserve the parent close animation.');
-  await expect(panel).toBeHidden();
+      const overflow = await group.evaluate(element => {
+        const parentPanel = element.querySelector(':scope > .disclosure-panel');
+        const content = parentPanel.querySelector(':scope > .catalog-children');
+        return content.getBoundingClientRect().bottom - parentPanel.getBoundingClientRect().bottom;
+      });
+      maximumOverflow = Math.max(maximumOverflow, overflow);
+    }
+    assert.ok(frames.every(frame => frame.running && frame.to > frame.from), 'Containment must be sampled while the nested group is opening.');
+    assert.ok(frames.some(frame => frame.height > frame.from + 1 && frame.height < frame.to - 1),
+      'The nested group must reach an intermediate height.');
+    assert.ok(maximumOverflow <= 1, `The parent clipped growing nested content by ${maximumOverflow}px.`);
+    await resumeHeightAnimations(childPanel);
+    await expect.poll(() => group.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
+    const finalChildOverflow = await childPanel.evaluate(element =>
+      element.querySelector('.catalog-operations').getBoundingClientRect().bottom - element.getBoundingClientRect().bottom);
+    assert.ok(finalChildOverflow <= 1, `The expanded child clipped its operation list by ${finalChildOverflow}px.`);
+    await group.locator(':scope > summary').press('Enter');
+    await expect.poll(() => panel.evaluate(element => element.getAnimations().length)).toBeGreaterThan(0);
+    const closingFrame = await seekHeightAnimation(panel, 0.5);
+    assert.ok(closingFrame.running && closingFrame.from > closingFrame.to, 'Closing an expanded child must preserve the parent close animation.');
+    await resumeHeightAnimations(panel);
+    await expect(panel).toBeHidden();
+  } finally {
+    await restoreChild?.();
+    await restoreParent();
+  }
 });
 
 Then('hovering another control replaces keyboard help', async function () {

@@ -6,6 +6,7 @@ import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { chooseCatalogOperation, expectFieldValue, fillField } from "./workspace.steps.mjs";
 import { catalogForOperation } from "../../src/lib/catalog-registry.ts";
+import { finishHeightAnimations, holdHeightAnimations, seekHeightAnimation } from "./height-animation.fixture.mjs";
 
 const jsonLabel = "Operation OpenAPI JSON";
 const sourceCatalog = catalogForOperation("demo:createTask");
@@ -119,43 +120,48 @@ When("I reverse a sliding JSON branch and enable reduced motion", async function
         const last = Number.parseFloat(frames.at(-1)?.height);
         return expanding ? last > first : first > last;
       });
-      for (const animation of sliding) animation.playbackRate = 0.1;
       return sliding.length;
     }, opening)).toBeGreaterThan(0);
+    const frame = await seekHeightAnimation(panel, 0.5);
+    assert.ok(frame.running, "The captured JSON animation must still be running.");
+    assert.ok(frame.height > Math.min(frame.from, frame.to) + 1 && frame.height < Math.max(frame.from, frame.to) - 1,
+      "The JSON branch must reach an intermediate height before reversal or reduced motion.");
     await expect(summary).toBeFocused();
   };
-  const finishSlide = () => panel.evaluate(element => {
-    for (const animation of element.getAnimations()) animation.finish();
-  });
-  await page.emulateMedia({ reducedMotion: "no-preference" });
-  await summary.press("Space");
-  await expect(summary).toHaveAttribute("aria-expanded", "false");
-  await expectSliding(false);
-  await expectOpen(parent, true);
-  await summary.press("Enter");
-  await expect(summary).toHaveAttribute("aria-expanded", "true");
-  await expectSliding(true);
-  await finishSlide();
-  await expectOpen(parent, true);
-  await expectOpen(branch(page, nested), false);
-
-  await summary.press("Space");
-  await expectSliding(false);
-  await finishSlide();
-  await expectOpen(parent, false);
-  await expect(summary).toBeFocused();
-  await summary.press("Enter");
-  await expectSliding(true);
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await expectOpen(parent, true);
-  await expect.poll(() => panel.evaluate(element => element.getAnimations().length)).toBe(0);
-  for (const open of [false, true]) {
+  const finishSlide = () => finishHeightAnimations(panel);
+  const restoreCapture = await holdHeightAnimations(panel);
+  try {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.evaluate(() => new Promise(requestAnimationFrame));
     await summary.press("Space");
-    await expectOpen(parent, open);
+    await expect(summary).toHaveAttribute("aria-expanded", "false");
+    await expectSliding(false);
+    await expectOpen(parent, true);
+    await summary.press("Enter");
+    await expect(summary).toHaveAttribute("aria-expanded", "true");
+    await expectSliding(true);
+    await finishSlide();
+    await expectOpen(parent, true);
+    await expectOpen(branch(page, nested), false);
+
+    await summary.press("Space");
+    await expectSliding(false);
+    await finishSlide();
+    await expectOpen(parent, false);
     await expect(summary).toBeFocused();
-    assert.equal(await panel.evaluate(element => element.getAnimations().length), 0, "Reduced-motion folding must not slide.");
-  }
-  await expectOpen(branch(page, nested), false);
+    await summary.press("Enter");
+    await expectSliding(true);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await expectOpen(parent, true);
+    await expect.poll(() => panel.evaluate(element => element.getAnimations().length)).toBe(0);
+    for (const open of [false, true]) {
+      await summary.press("Space");
+      await expectOpen(parent, open);
+      await expect(summary).toBeFocused();
+      assert.equal(await panel.evaluate(element => element.getAnimations().length), 0, "Reduced-motion folding must not slide.");
+    }
+    await expectOpen(branch(page, nested), false);
+  } finally { await restoreCapture(); }
 });
 
 When("I copy the complete JSON across folding wrapping and clipboard failures", async function () {

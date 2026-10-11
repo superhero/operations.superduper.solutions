@@ -17,23 +17,29 @@ async function settleOpening(page) {
 
 // Keep the real exit animation in progress while exercising window shortcuts.
 // Finishing those same browser animations also tests the presence completion path.
-async function pauseDismissal(page) {
-  await expect(sheet(page)).toHaveAttribute('data-state', 'closed');
-  const count = await sheet(page).evaluate(element => {
-    const animations = element.getAnimations();
-    element.workflowClosingAnimations = animations;
-    for (const animation of animations) {
-      animation.pause();
-      // A pending pause can otherwise settle just past the active interval,
-      // where Chromium stops returning it from getAnimations() even though
-      // the finished promise awaited by dialog presence is still pending.
-      const end = animation.effect?.getComputedTiming().endTime;
-      if (typeof end === 'number' && Number.isFinite(end))
-        animation.currentTime = Math.min(Number(animation.currentTime ?? 0), end / 2);
-    }
-    return animations.length;
+async function pauseDismissal(page, dismiss) {
+  // Capture before the input: the 200ms exit can finish between browser calls.
+  await sheet(page).evaluate(element => {
+    element.workflowClosingAnimations = [];
+    const capture = event => {
+      if (event.target !== element || event.propertyName !== 'transform' || element.dataset.state !== 'closed') return;
+      const animations = element.getAnimations().filter(animation => animation.transitionProperty === 'transform');
+      if (!animations.length) return;
+      element.removeEventListener('transitionrun', capture);
+      element.workflowClosingAnimations = animations;
+      for (const animation of animations) {
+        animation.pause();
+        // Keep the real presence transition inside its active interval.
+        const timing = animation.effect.getTiming();
+        animation.currentTime = timing.delay + Number(timing.duration) / 2;
+      }
+    };
+    element.addEventListener('transitionrun', capture);
   });
-  assert.ok(count > 0, 'The normal-motion Sheet must still have an exit animation.');
+  await dismiss();
+  await expect(sheet(page)).toHaveAttribute('data-state', 'closed');
+  await expect.poll(() => sheet(page).evaluate(element => element.workflowClosingAnimations?.length ?? 0),
+    { message: 'The normal-motion Sheet must still have an exit animation.' }).toBeGreaterThan(0);
 }
 
 async function finishDismissal(page) {
@@ -56,9 +62,8 @@ Then('dismissing animated mobile navigation with {string} protects the graph unt
   // Dismiss a fully open sheet so this test can inspect its actual exit. A
   // reversed opening may legitimately finish before the next browser call.
   await settleOpening(page);
-  if (dismissal === 'Escape') await page.keyboard.press('Escape');
-  else await sheet(page).getByRole('button', { name: 'Close', exact: true }).click();
-  await pauseDismissal(page);
+  await pauseDismissal(page, () => dismissal === 'Escape' ? page.keyboard.press('Escape') :
+    sheet(page).getByRole('button', { name: 'Close', exact: true }).click());
   await selected.focus();
   await expect(selected).not.toBeFocused();
   for (const key of ['Delete', 'Backspace', 'ArrowRight', 'Shift+ArrowDown']) await page.keyboard.press(key);
@@ -149,8 +154,8 @@ Then('animated navigation completes dismissal before changing workspace or addin
   for (const destination of ['operations', 'workflow']) {
     await openCatalog(page);
     await settleOpening(page);
-    await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: destination === 'operations' ? 'Operations' : 'Workflows', exact: true }).click();
-    await pauseDismissal(page);
+    await pauseDismissal(page, () => page.getByRole('group', { name: 'Workspace', exact: true })
+      .getByRole('button', { name: destination === 'operations' ? 'Operations' : 'Workflows', exact: true }).click());
     await expect(destination === 'operations' ? page.locator('.workflow-workspace') : workspace(page)).toBeVisible();
     await finishDismissal(page);
     const target = destination === 'operations' ? workspace(page) : workflow(page);
@@ -159,8 +164,7 @@ Then('animated navigation completes dismissal before changing workspace or addin
   }
   const entry = await revealCatalogOperation(page, 'List projects');
   const action = entry.getByRole('button', { name: 'Add to workflow: List projects', exact: true });
-  await action.click();
-  await pauseDismissal(page);
+  await pauseDismissal(page, () => action.click());
   await expect(nodes(page)).toHaveCount(2);
   await page.keyboard.press('Delete');
   await expect(nodes(page)).toHaveCount(2);
@@ -181,8 +185,7 @@ Then('reopening navigation during a keyboard mode change cancels that destinatio
   await settleOpening(page);
   await page.keyboard.press('Shift+Tab');
   await expect(destination).toBeFocused();
-  await page.keyboard.press('Space');
-  await pauseDismissal(page);
+  await pauseDismissal(page, () => page.keyboard.press('Space'));
   await page.keyboard.press('Shift+Tab');
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
   await expect(menu).toBeFocused();

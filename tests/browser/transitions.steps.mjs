@@ -12,16 +12,24 @@ async function pauseNextAnimation(page, selector, property) {
     const element = document.querySelector(selector);
     const deadline = performance.now() + 5000;
     window.__testAnimationObserved = new Promise(resolve => {
+      let observed = false;
       const sample = () => {
+        if (observed) return;
         const animation = element.getAnimations().find(item =>
           item.effect.getKeyframes().some(frame => property in frame));
         if (animation) {
+          observed = true;
+          element.removeEventListener('transitionrun', sample);
           animation.pause();
           animation.currentTime = animation.effect.getTiming().duration / 2;
           resolve(true);
         } else if (performance.now() < deadline) requestAnimationFrame(sample);
-        else resolve(false);
+        else {
+          element.removeEventListener('transitionrun', sample);
+          resolve(false);
+        }
       };
+      element.addEventListener('transitionrun', sample);
       requestAnimationFrame(sample);
     });
   }, { selector, property });
@@ -42,7 +50,9 @@ Then('prompt focus and navigation hover animate and settle with the motion prefe
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
   await menu.focus();
   await expect.poll(() => prompt.evaluate(element => element.getAnimations().length)).toBe(0);
+  const focusing = await pauseNextAnimation(page, '#operation-prompt', 'outlineColor');
   await prompt.focus();
+  await focusing();
   const focusMotion = await prompt.evaluate(element => {
     const animation = element.getAnimations().find(item => item.transitionProperty === 'outline-color');
     if (!animation) return null;
@@ -52,7 +62,9 @@ Then('prompt focus and navigation hover animate and settle with the motion prefe
   });
   assert.ok(focusMotion, 'Prompt focus should fade in, rather than appear abruptly.');
   assert.ok(focusMotion.frames.every(color => color !== focusMotion.color), 'The focus outline should have a visible intermediate color.');
+  const hovering = await pauseNextAnimation(page, '.menu-button', 'transform');
   await menu.hover();
+  await hovering();
   await expect.poll(() => menu.evaluate(element => element.getAnimations({ subtree: true }).length)).toBeGreaterThan(0);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect.poll(() => menu.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);

@@ -1015,7 +1015,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.workflow-workspace .svelte-flow__edge-path) { transition: stroke 120ms ease-in, stroke-width 120ms ease-in; }
   :global(.workflow-workspace .svelte-flow__edge.animated .svelte-flow__edge-path) { animation-name: workflow-dashes; }
   @keyframes workflow-dashes {
-    from { stroke-dashoffset: calc(6 + var(--workflow-dash-gap, 4)); }
+    from { stroke-dashoffset: calc((6 + var(--workflow-dash-gap, 4)) * 1px); }
     to { stroke-dashoffset: 0; }
   }
   :global(.workflow-workspace .svelte-flow__edge:hover .svelte-flow__edge-path) { stroke-width: 3px; }
