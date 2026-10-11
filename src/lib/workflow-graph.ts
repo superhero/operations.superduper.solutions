@@ -5,7 +5,7 @@
 import type { Operation } from "./catalog.ts";
 import { validateWorkflowDocument, type SwitchGate, type WorkflowData, type WorkflowDocument,
   type WorkflowDocumentEdge, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
-import { gateForType, isValueConnection, routingInputTypes, switchGateInput, switchGateLimit,
+import { adaptRoutingGates, gateForType, isValueConnection, routingInputTypes, switchGateInput, switchGateLimit,
   switchOperators, switchValueLimit, workflowInterface } from "./workflow-utilities.ts";
 
 type Schema = Record<string, unknown>;
@@ -99,7 +99,7 @@ function project(source: unknown, document: Schema, group: string, label: string
       if (!fields.length) notice ??= "No named properties documented";
     }
     else if (resolved.type === "Array") add(schema.items, "Items", `${path}/items`, true);
-    else add(schema, direction === "inputs" ? "Request body" : "Response body", path, false);
+    else add(schema, "Request body", path, false);
   }
   const height = 64 + Math.max(fields.length, 1) * 34 + (notice && fields.length ? 40 : 0);
   const span = Math.max(height, children.reduce((sum, child) => sum + child.tree.span, 0) + Math.max(0, children.length - 1) * 32);
@@ -154,6 +154,52 @@ function inputGroups(operation: Operation, source: Schema | undefined, pathItem:
   return result;
 }
 
+function responseEnvelope(raw: unknown, media: string | undefined, document: Schema): Schema
+{
+  const response = resolve(raw, document);
+  const content = object(response.schema.content) ? response.schema.content : {};
+  const representation = media === undefined ? undefined : content[media];
+  const body = media === undefined && !response.notice ? { type: "null" }
+    : object(representation) ? representation.schema : undefined;
+  const properties: Schema = Object.create(null);
+  const required: string[] = [];
+  for (const [name, rawHeader] of Object.entries(object(response.schema.headers) ? response.schema.headers : {}))
+  {
+    const header = resolve(rawHeader, document);
+    const headerRepresentations = object(header.schema.content) ? Object.values(header.schema.content) : [];
+    const headerContent = headerRepresentations.length === 1 ? headerRepresentations[0] : undefined;
+    const schema = header.notice ? undefined : header.schema.schema ?? (object(headerContent) ? headerContent.schema : undefined);
+    properties[name] = { ...(object(schema) ? schema : {}), title: name,
+      ...(typeof header.schema.description === "string" ? { description: header.schema.description } : {}) };
+    if (header.schema.required === true) required.push(name);
+  }
+  return { type: "object", additionalProperties: false, required: ["status", "statusText", "body", "headers"], properties: {
+    status: { type: "integer", title: "Status", description: string(response.schema.description, "HTTP response status code.") },
+    statusText: { type: "string", title: "Status message", description: "HTTP response status message; it can be empty." },
+    body: { ...(object(body) ? body : {}), title: "Response body" },
+    headers: { type: "object", title: "Response headers", properties, required, additionalProperties: { type: "string" } }
+  } };
+}
+
+function placeTree(graph: Graph, tree: Tree, ownerId: string, direction: WorkflowData["direction"], group: string,
+  path: string, x: number, centerY: number, parentId: string, handle?: string): void
+{
+  const input = direction === "inputs";
+  const id = `${ownerId}:${identity(group, path)}`;
+  const edgeId = `schema:${id}`;
+  graph.nodes.push({ id, type: "data", position: { x, y: centerY - tree.height / 2 },
+    data: { ownerId, direction, label: tree.label, fields: tree.fields, ...(tree.notice ? { notice: tree.notice } : {}) } });
+  graph.edges.push({ id: edgeId, kind: "schema", source: input ? id : parentId, target: input ? parentId : id,
+    sourceHandle: input ? "value" : handle ?? edgeId, targetHandle: input ? handle ?? edgeId : "value" });
+  let childY = centerY - (tree.children.reduce((sum, child) => sum + child.tree.span, 0) + Math.max(0, tree.children.length - 1) * 32) / 2;
+  for (const child of tree.children)
+  {
+    placeTree(graph, child.tree, ownerId, direction, group, child.path, x + (input ? -1 : 1) * (panelWidth + gap),
+      childY + child.tree.span / 2, id, child.fieldId);
+    childY += child.tree.span + 32;
+  }
+}
+
 export function createOperationGraph(operation: Operation, position: { x: number; y: number }, ownerId: string,
   schemaDocument: Schema = {}): Graph
 {
@@ -175,9 +221,10 @@ export function createOperationGraph(operation: Operation, position: { x: number
     const response = resolve(raw, schemaDocument);
     const content = object(response.schema.content) ? response.schema.content : {};
     const representations = Object.entries(content);
-    if (!representations.length) outputs.push({ id: `output:${status}`, label: `Response · ${status}`, schema: undefined });
-    for (const [media, value] of representations) outputs.push({ id: `output:${status}:${media}`,
-      label: `Response · ${status}${representations.length > 1 ? ` · ${media}` : ""}`, schema: object(value) ? value.schema : undefined });
+    if (!representations.length) outputs.push({ id: `response:${status}`, label: `Response · ${status}`,
+      schema: responseEnvelope(raw, undefined, schemaDocument) });
+    for (const [media] of representations) outputs.push({ id: `response:${status}:${media}`,
+      label: `Response · ${status}${representations.length > 1 ? ` · ${media}` : ""}`, schema: responseEnvelope(raw, media, schemaDocument) });
   }
   for (const direction of ["inputs", "outputs"] as const)
   {
@@ -188,27 +235,345 @@ export function createOperationGraph(operation: Operation, position: { x: number
       tree: { label: input ? "Inputs" : "Outputs", fields: [], children: [], height: 98, span: 98,
         notice: input ? "No input fields documented" : "Response schema not documented" } as Tree }];
     let y = position.y - (trees.reduce((sum, item) => sum + item.tree.span, 0) + (trees.length - 1) * 32) / 2 + 40;
-    const place = (tree: Tree, group: string, path: string, x: number, centerY: number, parentId: string, handle?: string) => {
-      const id = `${ownerId}:${identity(group, path)}`;
-      const edgeId = `schema:${id}`;
-      nodes.push({ id, type: "data", position: { x, y: centerY - tree.height / 2 },
-        data: { ownerId, direction, label: tree.label, fields: tree.fields, ...(tree.notice ? { notice: tree.notice } : {}) } });
-      edges.push({ id: edgeId, kind: "schema", source: input ? id : parentId, target: input ? parentId : id,
-        sourceHandle: input ? "value" : handle ?? edgeId, targetHandle: input ? handle ?? edgeId : "value" });
-      let childY = centerY - (tree.children.reduce((sum, child) => sum + child.tree.span, 0) + Math.max(0, tree.children.length - 1) * 32) / 2;
-      for (const child of tree.children)
-      {
-        place(child.tree, group, child.path, x + (input ? -1 : 1) * (panelWidth + gap), childY + child.tree.span / 2, id, child.fieldId);
-        childY += child.tree.span + 32;
-      }
-    };
     for (const { id, tree } of trees)
     {
-      place(tree, id, "", position.x + (input ? -panelWidth - gap : 160 + gap), y + tree.span / 2, ownerId);
+      placeTree({ nodes, edges }, tree, ownerId, direction, id, "", position.x + (input ? -panelWidth - gap : 160 + gap),
+        y + tree.span / 2, ownerId);
       y += tree.span + 32;
     }
   }
   return { nodes, edges };
+}
+
+const propertyTypes = Object.values(labels);
+const annotations = ["title", "description", "example", "examples", "default", "deprecated", "readOnly", "writeOnly"];
+const unconstrained = (schema: Schema) => Object.keys(schema).every(key => annotations.includes(key));
+const schemaType = (type: WorkflowField["type"]) => Object.keys(labels).find(key => labels[key] === type)!;
+
+// Unsupported object constraints cannot be treated as permission to add arbitrary names.
+function supportedObject(schema: Schema): boolean
+{
+  if (Object.keys(schema).some(key => ![...annotations, "type", "nullable", "properties", "required",
+    "additionalProperties", "minProperties", "maxProperties"].includes(key))) return false;
+  if (schema.properties !== undefined && !object(schema.properties)) return false;
+  if (schema.required !== undefined && (!Array.isArray(schema.required) || schema.required.some(name => typeof name !== "string") ||
+    new Set(schema.required).size !== schema.required.length)) return false;
+  for (const key of ["minProperties", "maxProperties"])
+    if (schema[key] !== undefined && (typeof schema[key] !== "number" || !Number.isInteger(schema[key]) || schema[key] < 0)) return false;
+  if (typeof schema.minProperties === "number" && typeof schema.maxProperties === "number" && schema.minProperties > schema.maxProperties) return false;
+  return schema.additionalProperties === undefined || typeof schema.additionalProperties === "boolean" || object(schema.additionalProperties);
+}
+
+function extensible(schema: Schema): boolean
+{
+  return supportedObject(schema) && schema.additionalProperties !== false;
+}
+
+function additionalSchema(schema: Schema): unknown
+{
+  return schema.additionalProperties === undefined || schema.additionalProperties === true ? {} : schema.additionalProperties;
+}
+
+function headerPropertyShape(resolved: Shape, group: string, path: string, document: Schema): Shape
+{
+  if (!group.startsWith("response:") || !/^\/headers\/[^/]+$/.test(path) || resolved.type !== "Object") return resolved;
+  const additional = resolve(additionalSchema(resolved.schema), document, resolved.seen);
+  if (additional.notice || !unconstrained(additional.schema)) return resolved;
+  // Undeclared simple-header object properties are wire strings; body properties remain freely typed.
+  return { ...resolved, schema: { ...resolved.schema, additionalProperties: { ...additional.schema, type: "string" } } };
+}
+
+function additionalTypes(source: unknown, document: Schema, seen: string[], depth: number, direction: WorkflowData["direction"]): WorkflowField["type"][]
+{
+  const resolved = resolve(source, document, seen);
+  if (resolved.notice || direction === "inputs" && resolved.schema.readOnly === true || direction === "outputs" && resolved.schema.writeOnly === true) return [];
+  if (unconstrained(resolved.schema)) return [...propertyTypes];
+  const result = shape(source, document, seen, depth);
+  const schema = resolved.schema;
+  const additional = schema.additionalProperties;
+  if (["oneOf", "anyOf", "allOf", "not", "if", "then", "else", "dependentSchemas", "dependencies", "patternProperties",
+    "propertyNames", "unevaluatedProperties", "unevaluatedItems", "contains", "$dynamicRef", "$recursiveRef"].some(key => key in schema)) return [];
+  if (additional !== undefined && typeof additional !== "boolean" && !object(additional) ||
+      schema.properties !== undefined && !object(schema.properties) ||
+      schema.required !== undefined && (!Array.isArray(schema.required) || schema.required.some(name => typeof name !== "string")) ||
+      schema.items !== undefined && !object(schema.items) ||
+      schema.enum !== undefined && (!Array.isArray(schema.enum) || !schema.enum.length)) return [];
+  return result.notice ? [] : [result.type];
+}
+
+function objectPanel(nodes: WorkflowDocumentNode[], nodeId: string, document: Schema)
+{
+  const node = nodes.find(node => node.id === nodeId);
+  if (node?.type !== "data" || node.hidden) return;
+  const owner = nodes.find(owner => owner.id === node.data.ownerId);
+  if (!owner || owner.type !== "operation" && owner.type !== undefined || !node.id.startsWith(`${owner.id}:`)) return;
+  let decoded: unknown;
+  try { decoded = JSON.parse(decodeURIComponent(node.id.slice(owner.id.length + 1))); } catch { return; }
+  if (!Array.isArray(decoded) || decoded.length !== 2 || decoded.some(value => typeof value !== "string")) return;
+  const [group, path] = decoded as [string, string];
+  if (node.id !== `${owner.id}:${identity(group, path)}` || path && (!path.startsWith("/") || /~(?:[^01]|$)/.test(path))) return;
+  const paths = object(document.paths) ? document.paths : {};
+  const pathItem = resolve(paths[owner.data.path], document);
+  const source = pathItem.schema[owner.data.method.toLowerCase()];
+  if (pathItem.notice || !object(source)) return;
+  let value: unknown;
+  if (node.data.direction === "inputs")
+  {
+    if (!path && group !== "input:body") return; // Parameter collections are synthetic objects.
+    const operation: Operation = { ...owner.data, id: owner.data.operationId, group: "", fields: [], bodyRequired: false };
+    value = inputGroups(operation, source, pathItem.schema, document).find(item => item.id === group)?.schema;
+  }
+  else
+  {
+    const match = /^(output|response):([1-5](?:\d\d|XX)|default)(?::(.+))?$/i.exec(group);
+    if (!match || !object(source.responses)) return;
+    if (match[1] === "response") value = responseEnvelope(source.responses[match[2]!], match[3], document);
+    else
+    {
+      const response = resolve(source.responses[match[2]!], document);
+      const media = object(response.schema.content) && match[3] ? response.schema.content[match[3]] : undefined;
+      if (response.notice || !object(media)) return;
+      value = media.schema;
+    }
+  }
+  let resolved = shape(value, document, [], 0);
+  let currentPath = "";
+  const parts = path ? path.slice(1).split("/") : [];
+  if (parts.length >= 12) return;
+  for (const [index, part] of parts.entries())
+  {
+    if (resolved.notice) return;
+    const name = part.replace(/~1/g, "/").replace(/~0/g, "~");
+    const nextPath = `${currentPath}/${part}`;
+    const parent = nodes.find(item => item.id === `${owner.id}:${identity(group, currentPath)}`);
+    const field = parent?.type === "data" ? parent.data.fields.find(field => field.id === identity(group, nextPath)) : undefined;
+    if (!field?.connectable) return;
+    if (resolved.type === "Object")
+    {
+      if (!supportedObject(resolved.schema)) return;
+      const properties = object(resolved.schema.properties) ? resolved.schema.properties : {};
+      if (Object.hasOwn(properties, name)) value = properties[name];
+      else
+      {
+        if (!extensible(resolved.schema)) return;
+        value = additionalSchema(resolved.schema);
+        if (!additionalTypes(value, document, resolved.seen, index + 1, node.data.direction).includes(field.type)) return;
+        const additional = resolve(value, document, resolved.seen);
+        if (unconstrained(additional.schema)) value = { ...additional.schema, type: schemaType(field.type) };
+      }
+    }
+    else if (resolved.type === "Array" && name === "items")
+    {
+      if (Object.keys(resolved.schema).some(key => ![...annotations, "type", "nullable", "items", "minItems", "maxItems"].includes(key))) return;
+      value = resolved.schema.items;
+    }
+    else return;
+    resolved = headerPropertyShape(shape(value, document, resolved.seen, index + 1), group, nextPath, document);
+    if (resolved.type !== field.type) return;
+    currentPath = nextPath;
+  }
+  if (resolved.notice || resolved.type !== "Object" || !extensible(resolved.schema) ||
+    node.data.direction === "inputs" && resolved.schema.readOnly === true || node.data.direction === "outputs" && resolved.schema.writeOnly === true) return;
+  return { node, group, path, resolved, depth: parts.length };
+}
+
+export function getAdditionalPropertyTypes(nodes: WorkflowDocumentNode[], nodeId: string, schemaDocument: Schema = {}): WorkflowField["type"][]
+{
+  const context = objectPanel(nodes, nodeId, schemaDocument);
+  if (!context || context.node.data.fields.length >= 200 ||
+    typeof context.resolved.schema.maxProperties === "number" && context.node.data.fields.length >= context.resolved.schema.maxProperties) return [];
+  return additionalTypes(additionalSchema(context.resolved.schema), schemaDocument, context.resolved.seen, context.depth + 1, context.node.data.direction);
+}
+
+function validatePropertyName(name: string): void
+{
+  if (typeof name !== "string" || !name.trim() || !name.isWellFormed() || name.length > 200 || /[\u0000-\u001f\u007f]/.test(name))
+    throw new Error("Property names must contain 1–200 characters without control characters.");
+}
+
+function validatedPropertyGraph(graph: Graph): Graph
+{
+  // Reuse the document limits, including nested snapshots, before returning an editable graph.
+  validateWorkflowDocument({ version: 3, id: "additional-property", name: "Workflow", ...graph,
+    viewport: { x: 0, y: 0, zoom: 1 }, snap: true, curved: false, dashed: false });
+  return graph;
+}
+
+export function addAdditionalProperty(nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[], nodeId: string,
+  name: string, type: WorkflowField["type"], schemaDocument: Schema = {}): Graph
+{
+  validatePropertyName(name);
+  const context = objectPanel(nodes, nodeId, schemaDocument);
+  if (!context) throw new Error("This object does not allow additional properties, or its schema is unavailable or unsupported.");
+  const { node, group, path, resolved, depth } = context;
+  const fieldPath = `${path}/${pointer(name)}`;
+  const id = identity(group, fieldPath);
+  if (object(resolved.schema.properties) && Object.hasOwn(resolved.schema.properties, name) || node.data.fields.some(field => field.id === id))
+    throw new Error(`Property “${name}” already exists in this object or is reserved by its schema.`);
+  if (!getAdditionalPropertyTypes(nodes, nodeId, schemaDocument).includes(type))
+    throw new Error("This property type is not permitted, or the object has reached its property limit.");
+  let value = additionalSchema(resolved.schema);
+  const additional = resolve(value, schemaDocument, resolved.seen);
+  if (unconstrained(additional.schema)) value = { ...additional.schema, type: schemaType(type) };
+  const owned = nodes.filter((item): item is Extract<WorkflowDocumentNode, { type: "data" }> => item.type === "data" && item.data.ownerId === node.data.ownerId);
+  const budget = { fields: owned.reduce((sum, item) => sum + item.data.fields.length, 0), panels: owned.length };
+  const tree = project({ type: "object", properties: { [name]: value }, required: resolved.schema.required }, schemaDocument, group, node.data.label,
+    path, resolved.seen, depth, budget, node.data.direction);
+  const field = tree.fields[0];
+  const truncated = (tree: Tree): boolean => Boolean(tree.notice?.startsWith("Additional ")) || tree.children.some(child => truncated(child.tree));
+  if (!field || !field.connectable || truncated(tree)) throw new Error("This property exceeds the workflow schema size or depth limits.");
+  const graph: Graph = { nodes: nodes.map(item => item === node ? { ...node,
+    data: { ...node.data, fields: [...node.data.fields, field] } } : item), edges: [...edges] };
+  for (const child of tree.children)
+  {
+    const x = node.position.x + (node.data.direction === "inputs" ? -1 : 1) * (panelWidth + gap);
+    const neighbors = owned.filter(item => item.position.x === x);
+    const y = Math.max(node.position.y, ...neighbors.map(item => item.position.y + 64 + Math.max(item.data.fields.length, 1) * 34 + 72));
+    placeTree(graph, child.tree, node.data.ownerId, node.data.direction, group, child.path, x, y + child.tree.span / 2, node.id, child.fieldId);
+  }
+  return validatedPropertyGraph(graph);
+}
+
+function decodedIdentity(id: string): [string, string] | undefined
+{
+  try
+  {
+    const value: unknown = JSON.parse(decodeURIComponent(id));
+    if (Array.isArray(value) && value.length === 2 && typeof value[0] === "string" && typeof value[1] === "string" && identity(value[0], value[1]) === id)
+      return value as [string, string];
+  }
+  catch { /* Imported handles need not follow schema projection's identity convention. */ }
+}
+
+export function getEditableAdditionalProperties(nodes: WorkflowDocumentNode[], nodeId: string, schemaDocument: Schema = {}):
+  { fieldId: string; name: string; types: WorkflowField["type"][] }[]
+{
+  const context = objectPanel(nodes, nodeId, schemaDocument);
+  if (!context) return [];
+  const { node, group, path, resolved, depth } = context;
+  const types = additionalTypes(additionalSchema(resolved.schema), schemaDocument, resolved.seen, depth + 1, node.data.direction);
+  if (!types.length) return [];
+  const properties = object(resolved.schema.properties) ? resolved.schema.properties : {};
+  return node.data.fields.flatMap(field => {
+    const address = decodedIdentity(field.id);
+    if (!address || address[0] !== group || !address[1].startsWith(`${path}/`)) return [];
+    const part = address[1].slice(path.length + 1);
+    if (part.includes("/") || /~(?:[^01]|$)/.test(part)) return [];
+    const name = part.replace(/~1/g, "/").replace(/~0/g, "~");
+    return Object.hasOwn(properties, name) ? [] : [{ fieldId: field.id, name, types: [...types] }];
+  });
+}
+
+function editableProperty(nodes: WorkflowDocumentNode[], nodeId: string, fieldId: string, schemaDocument: Schema)
+{
+  const context = objectPanel(nodes, nodeId, schemaDocument);
+  const property = getEditableAdditionalProperties(nodes, nodeId, schemaDocument).find(property => property.fieldId === fieldId);
+  if (!context || !property) throw new Error("Only user-added properties with an available, supported object schema can be edited or removed.");
+  return { ...context, property, field: context.node.data.fields.find(field => field.id === fieldId)! };
+}
+
+function withoutProperty(nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[], nodeId: string, fieldId: string): Graph
+{
+  const branches = schemaBranches(nodes, edges);
+  const child = branches.get(nodeId)?.get(fieldId)?.childId;
+  const removed = descendants(new Set(child ? [child] : []), branches);
+  return {
+    nodes: nodes.filter(node => !removed.has(node.id)).map(node => {
+      if (node.id !== nodeId || node.type !== "data") return node;
+      const fields = node.data.fields.filter(field => field.id !== fieldId);
+      return { ...node, data: { ...node.data, fields, ...(!fields.length ? { notice: "No named properties documented" } : {}) } };
+    }),
+    edges: edges.filter(edge => !removed.has(edge.source) && !removed.has(edge.target) &&
+      !(edge.source === nodeId && edge.sourceHandle === fieldId || edge.target === nodeId && edge.targetHandle === fieldId))
+  };
+}
+
+export function removeAdditionalProperty(nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[], nodeId: string,
+  fieldId: string, schemaDocument: Schema = {}): Graph
+{
+  editableProperty(nodes, nodeId, fieldId, schemaDocument);
+  const graph = withoutProperty(nodes, edges, nodeId, fieldId);
+  return validatedPropertyGraph({ nodes: adaptRoutingGates(graph.nodes, graph.edges), edges: graph.edges });
+}
+
+export function updateAdditionalProperty(nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[], nodeId: string,
+  fieldId: string, name: string, type: WorkflowField["type"], schemaDocument: Schema = {}): Graph
+{
+  validatePropertyName(name);
+  const { node, group, path, resolved, field, property } = editableProperty(nodes, nodeId, fieldId, schemaDocument);
+  const nextPath = `${path}/${pointer(name)}`;
+  const nextId = identity(group, nextPath);
+  if (object(resolved.schema.properties) && Object.hasOwn(resolved.schema.properties, name) ||
+      node.data.fields.some(field => field.id === nextId && field.id !== fieldId))
+    throw new Error(`Property “${name}” already exists in this object or is reserved by its schema.`);
+  if (!property.types.includes(type)) throw new Error("This property type is not permitted by the object's schema.");
+  if (name === property.name && type === field.type) return { nodes, edges };
+  const branches = schemaBranches(nodes, edges);
+  const childId = branches.get(nodeId)?.get(fieldId)?.childId;
+  const branch = descendants(new Set(childId ? [childId] : []), branches);
+  if (type !== field.type)
+  {
+    const removed = withoutProperty(nodes, edges, nodeId, fieldId);
+    const graph = addAdditionalProperty(removed.nodes, removed.edges, nodeId, name, type, schemaDocument);
+    const index = node.data.fields.indexOf(field);
+    graph.nodes = graph.nodes.map(item => {
+      if (item.id !== nodeId || item.type !== "data") return item;
+      const fields = item.data.fields.filter(field => field.id !== nextId);
+      fields.splice(index, 0, item.data.fields.find(field => field.id === nextId)!);
+      return { ...item, data: { ...item.data, fields } };
+    });
+    // Keep the replacement branch where the previous branch was, including a hidden attachment.
+    const oldChild = nodes.find(item => item.id === childId);
+    const newChild = graph.nodes.find(item => item.id === `${node.data.ownerId}:${nextId}`);
+    if (oldChild && newChild)
+    {
+      const added = new Set(graph.nodes.filter(item => !removed.nodes.some(previous => previous.id === item.id)).map(item => item.id));
+      graph.nodes = graph.nodes.map(item => added.has(item.id) ? { ...item,
+        position: { x: item.position.x + oldChild.position.x - newChild.position.x, y: item.position.y + oldChild.position.y - newChild.position.y },
+        ...(oldChild.hidden ? { hidden: true } : {}) } : item);
+      const attachment = edges.find(edge => edge.id === `schema:${childId}`);
+      graph.edges = graph.edges.map(edge => edge.kind === "schema" && (added.has(edge.source) || added.has(edge.target)) ? { ...edge,
+        ...(oldChild.hidden ? { hidden: true } : {}), ...(edge.id === `schema:${newChild.id}` && attachment?.detached ? { detached: true } : {}) } : edge);
+    }
+    for (const edge of edges)
+    {
+      if (edge.kind !== "mapping" || branch.has(edge.source) || branch.has(edge.target) ||
+          !(edge.source === nodeId && edge.sourceHandle === fieldId || edge.target === nodeId && edge.targetHandle === fieldId)) continue;
+      const updated = { ...edge, ...(edge.source === nodeId ? { sourceHandle: nextId } : {}), ...(edge.target === nodeId ? { targetHandle: nextId } : {}) };
+      const source = graph.nodes.find(node => node.id === updated.source)!;
+      const target = graph.nodes.find(node => node.id === updated.target)!;
+      if (isValueConnection(updated, source, target, graph.edges)) graph.edges.push(updated);
+    }
+    return validatedPropertyGraph({ nodes: adaptRoutingGates(graph.nodes, graph.edges), edges: graph.edges });
+  }
+  const previousPath = `${path}/${pointer(property.name)}`;
+  const renameIdentity = (id: string): string => {
+    const address = decodedIdentity(id);
+    if (!address || address[0] !== group || address[1] !== previousPath && !address[1].startsWith(`${previousPath}/`))
+      throw new Error("This property's saved branch does not have supported schema identities.");
+    const path = `${nextPath}${address[1].slice(previousPath.length)}`;
+    if (path.length > 500 || identity(group, path).length > 1500) throw new Error("This property exceeds the workflow schema size or depth limits.");
+    return identity(group, path);
+  };
+  const nodeIds = new Map([...branch].map(id => [id, `${node.data.ownerId}:${renameIdentity(id.slice(node.data.ownerId.length + 1))}`]));
+  const fields = new Map<string, Map<string, string>>([[nodeId, new Map([[fieldId, renameIdentity(fieldId)]])]]);
+  const additional = resolve(additionalSchema(resolved.schema), schemaDocument, resolved.seen).schema;
+  const label = string(additional.title, name).slice(0, 200);
+  const nextNodes = nodes.map(item => {
+    if (item.type !== "data") return item;
+    if (branch.has(item.id)) fields.set(item.id, new Map(item.data.fields.map(field => [field.id, renameIdentity(field.id)])));
+    const renamed = fields.get(item.id);
+    if (!renamed) return item;
+    return { ...item, id: nodeIds.get(item.id) ?? item.id, data: { ...item.data, ...(item.id === childId ? { label } : {}),
+      fields: item.data.fields.map(value => ({ ...value, id: renamed.get(value.id) ?? value.id,
+        ...(item.id === nodeId && value.id === fieldId ? { label, required: Array.isArray(resolved.schema.required) && resolved.schema.required.includes(name) } : {}) })) } };
+  });
+  const nextEdges = edges.map(edge => ({ ...edge,
+    id: edge.kind === "schema" && nodeIds.has(edge.id.slice("schema:".length)) ? `schema:${nodeIds.get(edge.id.slice("schema:".length))}` : edge.id,
+    source: nodeIds.get(edge.source) ?? edge.source, target: nodeIds.get(edge.target) ?? edge.target,
+    ...(edge.sourceHandle !== undefined ? { sourceHandle: fields.get(edge.source)?.get(edge.sourceHandle) ?? edge.sourceHandle } : {}),
+    ...(edge.targetHandle !== undefined ? { targetHandle: fields.get(edge.target)?.get(edge.targetHandle) ?? edge.targetHandle } : {}) }));
+  return validatedPropertyGraph({ nodes: nextNodes, edges: nextEdges });
 }
 
 export function schemaBranches(nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[]): Map<string, Map<string, SchemaBranch>>

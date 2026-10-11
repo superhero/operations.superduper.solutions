@@ -11,14 +11,129 @@ import { createOperationGraph } from "../../src/lib/workflow-graph.ts";
 import { chooseCatalogOperation, setMode, workflow } from "./workspace.steps.mjs";
 import { setWorkflowGridSize, storedDefaults } from "./workflow-defaults.steps.mjs";
 
+async function measuredNodes(page) {
+  return workflow(page).locator('.svelte-flow__node').evaluateAll(elements => elements.map(element => {
+    const position = new DOMMatrix(getComputedStyle(element).transform);
+    const zoom = new DOMMatrix(getComputedStyle(element.closest('.svelte-flow__viewport')).transform).a;
+    const bounds = element.getBoundingClientRect();
+    return { id: element.dataset.id, x: position.e, y: position.f, width: bounds.width / zoom, height: bounds.height / zoom };
+  }));
+}
+
+function expectMeasuredTree(document, rendered, ownerId) {
+  const nodes = document.nodes.filter(node => node.id === ownerId || node.type === 'data' && node.data.ownerId === ownerId);
+  const ids = new Set(nodes.map(node => node.id));
+  const geometry = rendered.filter(node => ids.has(node.id));
+  assert.equal(geometry.length, nodes.length, 'Every node in the new tree must be measured.');
+  const depth = new Map([[ownerId, 0]]);
+  const queue = [ownerId];
+  for (const id of queue) for (const edge of document.edges.filter(edge => edge.kind === 'schema')) {
+    const neighbor = edge.source === id ? edge.target : edge.target === id ? edge.source : undefined;
+    if (ids.has(neighbor) && !depth.has(neighbor)) {
+      depth.set(neighbor, depth.get(id) + 1);
+      queue.push(neighbor);
+    }
+  }
+  const columns = new Map();
+  for (const node of nodes) {
+    assert.ok(depth.has(node.id), 'Schema nodes must stay connected to their operation.');
+    const column = depth.get(node.id) * (node.type === 'data' && node.data.direction === 'inputs' ? -1 : 1);
+    const members = columns.get(column) ?? [];
+    members.push(geometry.find(item => item.id === node.id));
+    columns.set(column, members);
+  }
+  assert.ok(columns.size >= 4, 'The fixture must exercise several nested schema columns.');
+  for (const members of columns.values()) {
+    const center = members[0].x + members[0].width / 2;
+    for (const node of members)
+      assert.ok(Math.abs(node.x + node.width / 2 - center) < 1,
+        'Nodes at the same schema depth must share a measured column center.');
+  }
+  const ordered = [...columns].sort(([left], [right]) => left - right);
+  for (let index = 1; index < ordered.length; index++) {
+    const previousRight = Math.max(...ordered[index - 1][1].map(node => node.x + node.width));
+    const nextLeft = Math.min(...ordered[index][1].map(node => node.x));
+    assert.ok(nextLeft - previousRight >= 24, 'Measured column widths must leave a clear horizontal gap.');
+  }
+  for (const [index, left] of geometry.entries()) for (const right of geometry.slice(index + 1)) {
+    const gapX = Math.max(right.x - left.x - left.width, left.x - right.x - right.width);
+    const gapY = Math.max(right.y - left.y - left.height, left.y - right.y - right.height);
+    assert.ok(gapX >= 24 || gapY >= 24,
+      `Measured nodes ${left.id} and ${right.id} must have clear space between them.`);
+  }
+  return geometry;
+}
+
+Then('added operation trees keep clear aligned columns and smoothly reveal the next graph to the right', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const operation = operations.find(item => item.id === 'httpbin:echoGet');
+  const savedLocally = () => expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
+  const positions = nodes => nodes.map(({ id, x, y }) => ({ id, x, y })).sort((left, right) => left.id.localeCompare(right.id));
+  await chooseCatalogOperation(page, operation.name, 'workflow');
+  await savedLocally();
+  const first = (await storedWorkflows(page))[0];
+  const original = await measuredNodes(page);
+  const firstOwner = first.nodes.find(node => node.type === 'operation').id;
+  expectMeasuredTree(first, original, firstOwner);
+
+  // Sample the actual viewport animation rather than relying on a configured duration.
+  await page.evaluate(() => {
+    const sample = { active: true, frames: [] };
+    window.__operationInsertionMotion = sample;
+    const frame = () => {
+      if (!sample.active) return;
+      if (document.querySelectorAll('.svelte-flow__node-operation').length === 2) {
+        const matrix = new DOMMatrix(getComputedStyle(document.querySelector('.svelte-flow__viewport')).transform);
+        sample.frames.push({ x: matrix.e, y: matrix.f, zoom: matrix.a });
+      }
+      requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+  });
+  try {
+    await chooseCatalogOperation(page, operation.name, 'workflow');
+    await expect(workflow(page).locator('.svelte-flow__node-operation')).toHaveCount(2);
+    await savedLocally();
+    const saved = (await storedWorkflows(page)).find(document => document.id === first.id);
+    const rendered = await measuredNodes(page);
+    const secondOwner = saved.nodes.find(node => node.type === 'operation' && node.id !== firstOwner).id;
+    const added = expectMeasuredTree(saved, rendered, secondOwner);
+    assert.deepEqual(positions(rendered.filter(node => original.some(item => item.id === node.id))), positions(original),
+      'Adding another operation must preserve all existing node positions.');
+    const oldRight = Math.max(...original.map(node => node.x + node.width));
+    assert.ok(Math.min(...added.map(node => node.x)) - oldRight >= 80,
+      'The entire new operation tree must start to the right of all existing measured content.');
+    const owner = workflow(page).locator(`.svelte-flow__node[data-id=${JSON.stringify(secondOwner)}]`);
+    await expect.poll(() => owner.evaluate(element => {
+      const node = element.getBoundingClientRect();
+      const canvas = element.closest('.svelte-flow').getBoundingClientRect();
+      return node.left >= canvas.left && node.right <= canvas.right && node.top >= canvas.top && node.bottom <= canvas.bottom;
+    })).toBe(true);
+    await expect.poll(() => page.evaluate(() => {
+      const frames = window.__operationInsertionMotion.frames;
+      if (frames.length < 3) return false;
+      const first = frames[0];
+      const last = frames.at(-1);
+      return frames.some(frame => Math.hypot(frame.x - first.x, frame.y - first.y) > 1
+        && Math.hypot(frame.x - last.x, frame.y - last.y) > 1);
+    })).toBe(true);
+    const frames = await page.evaluate(() => window.__operationInsertionMotion.frames);
+    assert.ok(frames.every(frame => Math.abs(frame.zoom - frames[0].zoom) < 0.001),
+      'Revealing the new owner must pan smoothly without changing the chosen zoom.');
+  } finally {
+    await page.evaluate(() => { window.__operationInsertionMotion.active = false; });
+  }
+});
+
 Then("dragging a workflow {string} keeps its rendered position and connections synchronized", async function (kind) {
   const page = this.page;
   const operation = operations.find(item => item.id === "demo:getProject");
   const graph = createOperationGraph(operation, { x: 470, y: 250 }, "drag-owner", catalogForOperation(operation.id).document);
   const document = { version: 2, id: "drag-regression", name: "Drag regression", ...graph,
     viewport: { x: 0, y: 0, zoom: 0.9 }, snap: false, curved: false, dashed: false };
-  const key = "operations-flow-documents-v1";
-  await page.evaluate(({ key, document }) => localStorage.setItem(key, JSON.stringify([document])), { key, document });
+  await repository(page, 'save', document, null);
   await page.reload();
   await setMode(page, "workflow");
   const attachment = graph.edges[0];
@@ -79,7 +194,7 @@ Then("dragging a workflow {string} snaps its center to the {int}px grid and pres
   const graph = createOperationGraph(operation, { x: 470, y: 250 }, "snap-owner", catalogForOperation(operation.id).document);
   const document = { version: 2, id: "center-snap-regression", name: "Center snap regression", ...graph,
     viewport: { x: 37, y: -19, zoom: 0.9 }, snap: true, curved: false, dashed: false };
-  await page.evaluate(document => localStorage.setItem("operations-flow-documents-v1", JSON.stringify([document])), document);
+  await repository(page, 'save', document, null);
   await page.reload();
   await setMode(page, "workflow");
   const fixture = graph.nodes.find(node => node.type === kind);
@@ -185,7 +300,7 @@ Then("adding workflow nodes aligns their centers with snapping {string} without 
   const document = { version: 3, id: 'insertion-grid', name: 'Insertion grid', description: '',
     nodes: [{ id: 'existing-cast', type: 'cast', position: { x: 241, y: 133 }, data: { targetType: 'Text' } }], edges: [],
     viewport: { x: 37, y: -19, zoom: 0.9 }, snap: snap === 'on', curved: false, dashed: false };
-  await page.evaluate(document => localStorage.setItem('operations-flow-documents-v1', JSON.stringify([document])), document);
+  await repository(page, 'save', document, null);
   await page.reload();
   await setMode(page, 'workflow');
   await expect(workflow(page).locator('.svelte-flow__node')).toHaveCount(1);

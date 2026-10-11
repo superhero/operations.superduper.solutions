@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { openDB, type IDBPDatabase } from "idb";
-import { appSettingsDatabaseName } from "./app-settings.ts";
+import { appSettingsDatabaseName, catalogsDatabaseName, catalogsIndexDatabaseName, legacyStorageNames } from "./storage-names.ts";
 import { workflowFilesystemName, workflowRepositoryDatabaseName, workflowRepository } from "./workflow-repository.ts";
+import { metricsFilesystemName } from "./metrics-history-repository.ts";
+import { applicationExecutionMetrics } from "./application-workers.ts";
+import { collectProcessingMetrics } from "./processing-metrics.ts";
 import type { DatabaseMetrics, DatabaseStoreMetrics, StorageReport } from "./storage-metrics-types.d.ts";
 
-const knownDatabases = [appSettingsDatabaseName, workflowRepositoryDatabaseName, workflowFilesystemName, `${workflowFilesystemName}_lock`];
+const knownDatabases = [appSettingsDatabaseName, catalogsDatabaseName, catalogsIndexDatabaseName, `${catalogsDatabaseName}_lock`, workflowRepositoryDatabaseName, workflowFilesystemName, `${workflowFilesystemName}_lock`, metricsFilesystemName, `${metricsFilesystemName}_lock`, ...Object.values(legacyStorageNames)];
 let pending: Promise<StorageReport> | undefined;
 
 function message(error: unknown): string
@@ -18,6 +21,51 @@ function bytes(value: unknown): number | null
 {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
 }
+
+function localStorageMetrics(): StorageReport["browser"]["localStorage"]
+{
+  try
+  {
+    const storage = globalThis.localStorage;
+    if (!storage) throw new Error("Local storage is not available in this browser.");
+    let total = 0;
+    for (let index = 0; index < storage.length; index++)
+    {
+      const key = storage.key(index);
+      if (key === null) continue;
+      const value = storage.getItem(key);
+      if (value !== null) total += (key.length + value.length) * 2;
+    }
+    return { bytes: total, error: null };
+  }
+  catch (error) { return { bytes: null, error: message(error) }; }
+}
+
+function memoryMetrics(): StorageReport["memory"]
+{
+  const result: StorageReport["memory"] = { used: null, allocated: null, limit: null, utilization: null, error: null };
+  try
+  {
+    const memory = (globalThis.performance as (Performance & {
+      memory?: { usedJSHeapSize?: unknown; totalJSHeapSize?: unknown; jsHeapSizeLimit?: unknown };
+    }) | undefined)?.memory;
+    if (!memory) return result;
+    const used = bytes(memory.usedJSHeapSize);
+    const allocated = bytes(memory.totalJSHeapSize);
+    const limit = bytes(memory.jsHeapSizeLimit);
+    return { used, allocated, limit, utilization: used !== null && allocated !== null && allocated > 0 ? used / allocated : null, error: null };
+  }
+  catch (error) { result.error = message(error); }
+  return result;
+}
+
+/** Only these browser counters require the page; all database/Git work runs in the recorder. */
+export function collectWindowMetrics()
+{
+  return { memory: memoryMetrics(), localStorage: localStorageMetrics(), execution: applicationExecutionMetrics(), processing: collectProcessingMetrics() };
+}
+
+export type WindowMetrics = ReturnType<typeof collectWindowMetrics>;
 
 async function bounded<T>(operation: Promise<T>, label: string, duration = 5000): Promise<T>
 {
@@ -31,11 +79,11 @@ async function bounded<T>(operation: Promise<T>, label: string, duration = 5000)
   finally { clearTimeout(timer); }
 }
 
-async function browserMetrics(): Promise<StorageReport["browser"]>
+async function browserMetrics(windowMetrics?: WindowMetrics): Promise<StorageReport["browser"]>
 {
   const result: StorageReport["browser"] = {
     usage: null, quota: null, remaining: null, utilization: null, persisted: null, breakdown: null,
-    estimateError: null, persistenceError: null,
+    estimateError: null, persistenceError: null, localStorage: windowMetrics?.localStorage ?? localStorageMetrics(),
   };
   const manager = globalThis.navigator?.storage;
   await Promise.all([
@@ -162,16 +210,17 @@ async function indexedDBMetrics(): Promise<StorageReport["indexedDB"]>
 }
 
 /** A read-only, on-demand snapshot; callers share an in-progress collection. */
-export function collectStorageReport(): Promise<StorageReport>
+export function collectStorageReport(windowMetrics?: WindowMetrics): Promise<StorageReport>
 {
   pending ??= (async () => {
     const [browser, indexedDB, repositories] = await Promise.all([
-      browserMetrics(), indexedDBMetrics(),
+      browserMetrics(windowMetrics), indexedDBMetrics(),
       bounded(workflowRepository.storageMetrics(), "Workflow storage metrics", 30000)
         .then(items => ({ items, error: null as string | null }))
         .catch(error => ({ items: [], error: message(error) })),
     ]);
-    return { collectedAt: Date.now(), browser, indexedDB, repositories };
+    return { collectedAt: Date.now(), browser, indexedDB, repositories, memory: windowMetrics?.memory ?? memoryMetrics(),
+      execution: windowMetrics?.execution ?? applicationExecutionMetrics(), processing: windowMetrics?.processing ?? collectProcessingMetrics() };
   })().finally(() => { pending = undefined; });
   return pending;
 }

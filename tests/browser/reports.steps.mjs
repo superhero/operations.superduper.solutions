@@ -148,6 +148,8 @@ Then("evaluation values and statuses show styled hints on hover and keyboard foc
 When("I edit the report prompt to {string} without submitting", async function (prompt) {
   this.previousReportText = await evaluationReport(this.page).innerText();
   await progress(this.page, "Prompt").click();
+  const examplesToggle = this.page.getByRole('button', { name: 'Commonly used operations', exact: true });
+  if (await examplesToggle.getAttribute('aria-expanded') !== 'true') await examplesToggle.click();
   const example = this.page.locator('.prompt-suggestion-list button:visible').last();
   const exampleText = await example.innerText();
   await example.click();

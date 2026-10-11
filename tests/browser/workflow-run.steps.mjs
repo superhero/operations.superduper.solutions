@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { storedWorkflows } from "./workflow-storage.fixture.mjs";
+import { repository, storedWorkflows } from "./workflow-storage.fixture.mjs";
 import assert from "node:assert/strict";
 import { Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
@@ -10,7 +10,6 @@ import { operations } from "../../src/lib/catalog.ts";
 import { createOperationGraph } from "../../src/lib/workflow-graph.ts";
 import { openCatalog, setMode, workflow, workflowAction } from "./workspace.steps.mjs";
 
-const storageKey = "operations-flow-documents-v1";
 const graph = (name, id = name) => createOperationGraph(operations.find(item => item.id === `demo:${name}`), { x: 0, y: 0 }, id, demo);
 const fixture = (...graphs) => ({ version: 3, id: "runner-browser", name: "Runner browser", nodes: graphs.flatMap(graph => graph.nodes),
   edges: graphs.flatMap(graph => graph.edges), viewport: { x: 0, y: 0, zoom: 1 }, snap: true, curved: true, dashed: false });
@@ -32,7 +31,7 @@ async function recordExampleRequests(page) {
   return requests;
 }
 const seed = async (page, doc) => {
-  await page.evaluate(({ key, doc }) => localStorage.setItem(key, JSON.stringify([doc])), { key: storageKey, doc });
+  await repository(page, 'save', doc, null);
   await page.reload();
 };
 const openRun = async (page, doc) => {
@@ -58,11 +57,6 @@ Then("a saved workflow opens a request run with starting choices and an end cont
   const group = catalog.locator(":scope > .catalog-group > summary");
   if (await group.getAttribute("aria-expanded") !== "true") await group.click();
   const saved = page.getByRole("button", { name: "Open workflow: Runner browser", exact: true });
-  // Saved workflow entries use the same expandable catalog presentation as operations.
-  if (!await saved.isVisible()) {
-    const entry = page.locator("[data-workflow-id=runner-browser]");
-    await entry.locator("summary").click();
-  }
   await saved.click();
   const run = dialog(page);
   await expect(run.getByRole("heading", { name: "Choose a starting operation", exact: true })).toBeVisible();
@@ -136,8 +130,10 @@ Then("the workflow run dialog follows a matching switch gate through a cast", as
   await run.getByRole("button", { name: "Start workflow", exact: true }).click();
   await run.getByRole("button", { name: "Next operation", exact: true }).click();
   await expect(run.getByRole("heading", { name: "2. List projects", exact: true })).toBeVisible();
-  await expect(run.getByRole("spinbutton", { name: "Result limit", exact: true })).toHaveValue("1");
-  await expect(run.getByRole("spinbutton", { name: "Result limit", exact: true })).toBeDisabled();
+  await expect(run.getByRole("textbox", { name: "Result limit value", exact: true })).toHaveValue("1");
+  await expect(run.getByRole("textbox", { name: "Result limit value", exact: true })).toBeDisabled();
+  await expect(run.getByRole("slider", { name: "Result limit", exact: true })).toHaveAttribute('aria-valuenow', '1');
+  await expect(run.getByRole("slider", { name: "Result limit", exact: true })).toBeDisabled();
   await run.getByRole("button", { name: "Run operation", exact: true }).click();
   await run.getByRole("button", { name: "Next operation", exact: true }).click();
   await expect(run.getByRole("status")).toContainText("2 operations completed");

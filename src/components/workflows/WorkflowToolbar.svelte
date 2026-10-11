@@ -9,20 +9,23 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { Controls, useSvelteFlow, useStore } from "@xyflow/svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  let { canvas, active, navigationOpen, snap, curved, dashed, selected, onsnap, oncurved, ondashed, onremove, onnew, onopen, onexport, onimport, onbrowse, onutility, ondescribe, onrun, canUndo, canRedo, historyBusy, onundo, onredo, onhistory }:
-    { canvas: HTMLElement | undefined; active: boolean; navigationOpen: boolean; snap: boolean; curved: boolean; dashed: boolean; selected: boolean;
+  let { canvas, active, placing = false, navigationOpen, snap, curved, dashed, selected, onsnap, oncurved, ondashed, onremove, onnew, onopen, onexport, onimport, onbrowse, onutility, ondescribe, onrun, canUndo, canRedo, historyBusy, onundo, onredo, onhistory }:
+    { canvas: HTMLElement | undefined; active: boolean; placing?: boolean; navigationOpen: boolean; snap: boolean; curved: boolean; dashed: boolean; selected: boolean;
       onsnap: () => void; oncurved: () => void; ondashed: () => void; onremove: () => void;
       onnew: () => void; onopen: () => void; onexport: () => void;
       onimport: () => void; onbrowse: () => void; onutility: (type: "switch" | "cast" | "comment") => void;
       ondescribe: () => void; onrun: () => void; canUndo: boolean; canRedo: boolean; historyBusy: boolean;
       onundo: () => void; onredo: () => void; onhistory: () => void } = $props();
-  const { fitView, getInternalNode, getNodes, zoomIn, zoomOut } = useSvelteFlow();
+  const { fitView, getInternalNode, getNodes, getViewport, setViewport, zoomIn, zoomOut } = useSvelteFlow();
   const store = useStore();
   const minZoomReached = $derived(store.viewport.zoom <= store.minZoom);
   const maxZoomReached = $derived(store.viewport.zoom >= store.maxZoom);
   const ariaLabels = $derived(store.ariaLabelConfig);
   let alive = true;
-  onDestroy(() => { alive = false; });
+  let revealing = false;
+  let revealGeneration = 0;
+  let cancelReveal: (() => void) | undefined;
+  onDestroy(() => { alive = false; cancelReveal?.(); });
 
   async function waitForLayout() {
     for (let frame = 0; frame < 60; frame += 1) {
@@ -35,7 +38,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 
   async function keepNodesVisible() {
-    if (!await waitForLayout() || !canvas || !getNodes().length) return;
+    const generation = revealGeneration;
+    if (placing || revealing || !await waitForLayout() || placing || revealing || generation !== revealGeneration || !canvas || !getNodes().length) return;
     const bounds = canvas.getBoundingClientRect();
     const visible = [...canvas.querySelectorAll(".svelte-flow__node:not(.svelte-flow__node-data)")].some(element => {
       const node = element.getBoundingClientRect();
@@ -46,26 +50,66 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 
   onMount(() => {
+    const element = canvas;
+    const interruptReveal = () => {
+      if (!revealing) return;
+      revealGeneration += 1;
+      cancelReveal?.();
+      cancelReveal = undefined;
+      revealing = false;
+      void setViewport(getViewport(), { duration: 0 });
+    };
     const observer = new ResizeObserver(() => {
       void keepNodesVisible();
     });
-    if (canvas) observer.observe(canvas);
-    return () => observer.disconnect();
+    if (element) {
+      observer.observe(element);
+      element.addEventListener("pointerdown", interruptReveal, true);
+      element.addEventListener("wheel", interruptReveal, { capture: true, passive: true });
+    }
+    return () => {
+      observer.disconnect();
+      element?.removeEventListener("pointerdown", interruptReveal, true);
+      element?.removeEventListener("wheel", interruptReveal, true);
+    };
   });
 
   $effect(() => { if (active) void keepNodesVisible(); });
 
   export async function reveal(ids: string | string[]) {
     const requested = typeof ids === "string" ? [ids] : ids;
-    if (!await waitForLayout()) return;
-    for (let frame = 0; frame < 60; frame += 1) {
-      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-      if (!alive || !active) return;
-      const measured = requested.every(id => { const node = getInternalNode(id); return node?.measured.width && node.measured.height; });
-      if (canvas?.clientWidth && canvas.clientHeight && measured) {
-        await fitView({ nodes: requested.map(id => ({ id })), padding: 0.25, minZoom: 0.25, maxZoom: 1, duration: 0 });
+    if (!requested.length) return;
+    const generation = ++revealGeneration;
+    cancelReveal?.();
+    const cancelled = new Promise<void>(resolve => { cancelReveal = resolve; });
+    // Stop an older pan at its current position before measuring the next target.
+    if (revealing) void setViewport(getViewport(), { duration: 0 });
+    revealing = true;
+    try {
+      if (!await waitForLayout()) return;
+      for (let frame = 0; frame < 60; frame += 1) {
+        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+        if (!alive || !active || generation !== revealGeneration) return;
+        const measured = requested.map(getInternalNode);
+        if (!canvas?.clientWidth || !canvas.clientHeight || !measured.every(node => node?.measured.width && node.measured.height)) continue;
+        const left = Math.min(...measured.map(node => node!.internals.positionAbsolute.x));
+        const top = Math.min(...measured.map(node => node!.internals.positionAbsolute.y));
+        const right = Math.max(...measured.map(node => node!.internals.positionAbsolute.x + node!.measured.width!));
+        const bottom = Math.max(...measured.map(node => node!.internals.positionAbsolute.y + node!.measured.height!));
+        const padding = 24;
+        const bounds = canvas.getBoundingClientRect();
+        const toolbar = canvas.querySelector(".workflow-toolbar")?.getBoundingClientRect();
+        const insetTop = Math.max(padding, (toolbar?.bottom ?? bounds.top) - bounds.top + padding);
+        const width = Math.max(1, canvas.clientWidth - padding * 2);
+        const height = Math.max(1, canvas.clientHeight - insetTop - padding);
+        const zoom = Math.max(store.minZoom, Math.min(getViewport().zoom, width / (right - left), height / (bottom - top)));
+        const duration = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 280;
+        await Promise.race([cancelled, setViewport({ x: padding + width / 2 - (left + right) / 2 * zoom,
+          y: insetTop + height / 2 - (top + bottom) / 2 * zoom, zoom }, { duration, interpolate: "linear" })]);
         return;
       }
+    } finally {
+      if (generation === revealGeneration) { revealing = false; cancelReveal = undefined; }
     }
   }
 </script>

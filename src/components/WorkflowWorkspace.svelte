@@ -12,12 +12,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { Operation } from "$lib/catalog.ts";
-  import { parseWorkflowDocument, validateWorkflowDocument, maxWorkflowFileSize, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowDocumentEdge, type SwitchGate, type CastData } from "$lib/workflow-document.ts";
-  import { workflowRepository, type WorkflowRepositoryState, type WorkflowRevision } from "$lib/workflow-repository.ts";
+  import { catalogForOperation } from "$lib/catalog-registry.ts";
+  import { parseWorkflowDocument, validateWorkflowDocument, maxWorkflowFileSize, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowDocumentEdge, type WorkflowField, type SwitchGate, type CastData } from "$lib/workflow-document.ts";
+  import { workflowRepository } from "$lib/workflow-repository-client.ts";
+  import type { WorkflowRepositoryState, WorkflowRevision } from "$lib/workflow-repository.ts";
+  import { finishStartup, reportStartup } from "$lib/startup-progress.ts";
   import type { WorkflowDefaults } from "$lib/app-settings.ts";
   import type { WorkflowSaveStatus } from "$lib/workspace.d.ts";
   import WorkflowHistory from "./workflows/WorkflowHistory.svelte";
-  import { createOperationGraph, createUtilityNode, createWorkflowGraph, addSwitchGate, updateSwitchGate, removeSwitchGate, schemaBranches, isWorkflowConnection, removeGraphSelection, restoreDataBranch } from "$lib/workflow-graph.ts";
+  import { createOperationGraph, createUtilityNode, createWorkflowGraph, addAdditionalProperty, getAdditionalPropertyTypes, getEditableAdditionalProperties, updateAdditionalProperty, removeAdditionalProperty, addSwitchGate, updateSwitchGate, removeSwitchGate, schemaBranches, isWorkflowConnection, removeGraphSelection, restoreDataBranch } from "$lib/workflow-graph.ts";
+  import { layoutAddedGraph } from "$lib/workflow-layout.ts";
   import { adaptRoutingGates, routingInputTypes, workflowDescriptionLimit } from "$lib/workflow-utilities.ts";
   import { getOperationReport } from "$lib/operation-report.ts";
   import WorkflowNode from "../WorkflowNode.svelte";
@@ -25,6 +29,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowMinimap from "./workflows/WorkflowMinimap.svelte";
   import WorkflowDataNode from "./workflows/WorkflowDataNode.svelte";
   import WorkflowConnectionSnap from "./workflows/WorkflowConnectionSnap.svelte";
+  import WorkflowCurveEdge from "./workflows/WorkflowCurveEdge.svelte";
+  import WorkflowConnectionLine from "./workflows/WorkflowConnectionLine.svelte";
   import WorkflowSelection from "./workflows/WorkflowSelection.svelte";
   import WorkflowSwitchNode from "./workflows/WorkflowSwitchNode.svelte";
   import WorkflowCastNode from "./workflows/WorkflowCastNode.svelte";
@@ -36,6 +42,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let { active, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
     { active: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
   const nodeTypes = { operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
+  const edgeTypes = { default: WorkflowCurveEdge };
   type CanvasNode<T> = T extends WorkflowDocumentNode ? Node<T["data"], NonNullable<T["type"]>> & { type: NonNullable<T["type"]> } : never;
   type GraphNode = CanvasNode<WorkflowDocumentNode>;
   type GraphEdge = Edge & WorkflowDocumentEdge;
@@ -94,8 +101,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let replacementOpen = $state(false);
   let replacementError = $state("");
   let cancelReplacement = $state<HTMLButtonElement | null>(null);
-  let removal = $state<WorkflowDocument[] | null>(null);
-  let selectedDocuments = $state<string[]>([]);
+  let removal = $state<WorkflowDocument | null>(null);
   let removalError = $state("");
   let cancelRemoval = $state<HTMLButtonElement | null>(null);
   let intent = 0;
@@ -108,13 +114,34 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const keyboardActive = $derived(!graphBlocked);
   const snapshot = $derived(JSON.stringify(documentValue()));
   const dirty = $derived(snapshot !== savedSnapshot || saveAttempt !== null);
-  const edgeOptions = $derived({ animated: dashed, markerEnd: { type: MarkerType.ArrowClosed }, type: curved ? "default" : "smoothstep", style: dashed ? "stroke-dasharray: 6 4" : "" });
+  const edgeOptions = $derived({ animated: dashed, markerEnd: { type: MarkerType.ArrowClosed }, type: curved ? "default" : "smoothstep", style: dashed ? "stroke-dasharray: 6 var(--workflow-dash-gap, 4)" : "" });
   const branches = $derived(schemaBranches(nodes, edges));
   const inputTypes = $derived(routingInputTypes(nodes, edges));
 
   setContext("workflow-branches", (nodeId: string) => branches.get(nodeId));
   setContext("workflow-editor-active", () => keyboardActive);
+  setContext("workflow-curve-strength", () => workflowDefaults.curveStrength);
+  setContext("workflow-connection-options", () => ({ curved, strength: workflowDefaults.curveStrength,
+    style: `${edgeOptions.style}; marker-end: url(#${connectionMarkerId})` }));
   setContext("workflow-input-type", (nodeId: string) => inputTypes.get(nodeId) ?? "Unknown");
+  setContext("workflow-add-property", {
+    types: (nodeId: string) => getAdditionalPropertyTypes(nodes, nodeId, propertySchema(nodeId)),
+    editable: (nodeId: string) => getEditableAdditionalProperties(nodes, nodeId, propertySchema(nodeId)),
+    add: (nodeId: string, name: string, type: WorkflowField["type"]) => {
+      if (!keyboardActive) throw new Error("The workflow is not available for editing.");
+      applyPropertyGraph(addAdditionalProperty(nodes, edges, nodeId, name, type, propertySchema(nodeId)));
+    },
+    edit: (nodeId: string, fieldId: string, name: string, type: WorkflowField["type"]) => {
+      if (!keyboardActive) throw new Error("The workflow is not available for editing.");
+      const node = nodes.find(node => node.id === nodeId);
+      const changedType = node?.type === "data" && node.data.fields.find(field => field.id === fieldId)?.type !== type;
+      applyPropertyGraph(updateAdditionalProperty(nodes, edges, nodeId, fieldId, name, type, propertySchema(nodeId)), changedType);
+    },
+    remove: (nodeId: string, fieldId: string) => {
+      if (!keyboardActive) throw new Error("The workflow is not available for editing.");
+      applyPropertyGraph(removeAdditionalProperty(nodes, edges, nodeId, fieldId, propertySchema(nodeId)), false);
+    }
+  });
   setContext("workflow-switch-gates", {
     add: (nodeId: string) => { if (keyboardActive) applyGraph(addSwitchGate(nodeId, crypto.randomUUID(), nodes, edges)); },
     remove: (nodeId: string, gateId: string) => { if (keyboardActive) applyGraph(removeSwitchGate(nodeId, gateId, nodes, edges), true); },
@@ -188,6 +215,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const common = { id: node.id, position: node.position, ...(node.hidden ? { hidden: true } : {}) };
     if (node.type === "operation") return { ...common, ...(version >= 2 ? { type: "operation" as const } : {}), data: node.data };
     return { ...common, type: node.type, data: node.data } as WorkflowDocumentNode;
+  }
+
+  function propertySchema(nodeId: string): Record<string, unknown> {
+    const node = nodes.find(node => node.id === nodeId);
+    const owner = node?.type === "data" ? nodes.find(owner => owner.id === node.data.ownerId) : undefined;
+    return owner?.type === "operation" ? catalogForOperation(owner.data.operationId)?.document ?? {} : {};
   }
 
   function graphNode(node: WorkflowDocumentNode): GraphNode {
@@ -264,6 +297,49 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     edges = graph.edges.map(edge => ({ ...paintEdge(edge), ...(edge.hidden ? { selected: false } : {}) }));
   }
 
+  function applyPropertyGraph(graph: Pick<WorkflowDocument, "nodes" | "edges">, placeNewNodes = true) {
+    validateWorkflowDocument({ ...documentValue(), ...graph });
+    const addedIds = new Set(placeNewNodes ? graph.nodes.filter(node => !nodes.some(current => current.id === node.id)).map(node => node.id) : []);
+    placement = tick().then(() => {
+      const elements = new Map([...canvas?.querySelectorAll<HTMLElement>(".svelte-flow__node") ?? []]
+        .map(element => [element.dataset.id, element]));
+      const placed = new Map(nodes.map(node => [node.id, node]));
+      for (const node of nodes) {
+        const element = elements.get(node.id);
+        if (!addedIds.has(node.id) || !element?.offsetWidth || !element.offsetHeight || node.type !== "data") continue;
+        const input = node.data.direction === "inputs";
+        const attachment = graph.edges.find(edge => edge.kind === "schema" && (input ? edge.source : edge.target) === node.id);
+        const parent = attachment && placed.get(input ? attachment.target : attachment.source);
+        const parentWidth = parent && elements.get(parent.id)?.offsetWidth;
+        // Keep long property names clear of their new child panels in either direction.
+        const position = parent && parentWidth ? { ...node.position,
+          x: input ? parent.position.x - element.offsetWidth - 64 : parent.position.x + parentWidth + 64 } : node.position;
+        placed.set(node.id, snapNodeCenter({ ...node, position, measured: { width: element.offsetWidth, height: element.offsetHeight } }));
+      }
+      // A new property can grow an existing panel without adding another node.
+      // Use rendered sizes to keep lower panels clear of its fields and controls.
+      const panels = [...placed.values()].filter(node => node.type === "data" && !node.hidden)
+        .sort((a, b) => a.position.y - b.position.y);
+      const positioned: { ownerId: string; direction: string; x: number; right: number; bottom: number }[] = [];
+      for (const node of panels) {
+        const element = elements.get(node.id);
+        if (node.type !== "data" || !element?.offsetWidth || !element.offsetHeight) continue;
+        const x = node.position.x;
+        const right = x + element.offsetWidth;
+        const y = Math.max(node.position.y, ...positioned.filter(previous =>
+          previous.ownerId === node.data.ownerId && previous.direction === node.data.direction &&
+          previous.x < right && previous.right > x).map(previous => previous.bottom + 32));
+        const updated = y > node.position.y ? snapNodeCenter({ ...node, position: { x, y },
+          measured: { width: element.offsetWidth, height: element.offsetHeight } }) : node;
+        placed.set(node.id, updated);
+        positioned.push({ ownerId: node.data.ownerId, direction: node.data.direction,
+          x, right, bottom: updated.position.y + element.offsetHeight });
+      }
+      nodes = nodes.map(node => placed.get(node.id)!);
+    }).finally(() => { placement = null; });
+    applyGraph(graph);
+  }
+
   function validConnection(connection: Connection | GraphEdge): boolean {
     return keyboardActive && !branches.get(connection.target)?.get(connection.targetHandle ?? "")?.hidden &&
       isWorkflowConnection(connection, nodes, edges);
@@ -313,7 +389,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   onMount(() => {
     savedSnapshot = JSON.stringify(documentValue());
     initialDraft = JSON.parse(savedSnapshot);
-    void refreshDocuments(true);
+    void refreshDocuments(true, true).then(async loaded => {
+      if (!loaded) return;
+      await tick();
+      finishStartup();
+    }).catch(async failure => {
+      // Release the loader with the original failure even if rendering also fails.
+      await tick().catch(() => {});
+      finishStartup(failure);
+    });
     const unsubscribe = workflowRepository.subscribe(() => { if (storageReady) void refreshDocuments(); });
     const hidden = () => { if (window.document.visibilityState === "hidden") void flushAutosave(); };
     const pageHidden = () => { void flushAutosave(); };
@@ -342,28 +426,31 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     };
   });
 
-  export async function refreshDocuments(restoreLatest = !storageReady): Promise<boolean> {
+  export async function refreshDocuments(restoreLatest = !storageReady, startup = false): Promise<boolean> {
     const generation = ++refreshGeneration;
     try {
       await workflowRepository.initialize();
       const loaded = await workflowRepository.list();
       if (!alive || generation !== refreshGeneration) return false;
       documents = loaded;
-      selectedDocuments = selectedDocuments.filter(id => documents.some(document => document.id === id));
       libraryError = "";
+      if (startup) reportStartup("load-workflow", documents.length ? undefined : "No saved workflow");
+      let restored: WorkflowRepositoryState | undefined;
       if (restoreLatest && !nodes.length && !dirty) {
         const latest = documents.at(-1);
         if (latest) {
-          const state = await workflowRepository.load(latest.id);
+          restored = await workflowRepository.load(latest.id);
           if (!alive || generation !== refreshGeneration) return false;
-          hydrateSaved(state);
         }
       }
+      if (startup) reportStartup("canvas");
+      if (restored) hydrateSaved(restored);
       storageReady = true;
       return true;
     } catch (failure) {
       if (!alive || generation !== refreshGeneration) return false;
       libraryError = `Could not load saved workflows: ${failure instanceof Error ? failure.message : String(failure)}`;
+      if (startup) throw failure;
       return false;
     }
   }
@@ -375,26 +462,23 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try {
       if (nodes.length + graph.nodes.length > 500 || edges.length + graph.edges.length > 1000)
         throw new Error("A workflow supports at most 500 nodes and 1000 connections, including its schema panels.");
-      const visible = nodes.filter(node => !node.hidden);
-      if (visible.length) {
-        const bottom = Math.max(...visible.map(node => node.position.y + (node.measured?.height ?? 80)));
-        const top = Math.min(...graph.nodes.filter(node => !node.hidden).map(node => node.position.y));
-        const offset = Math.max(0, bottom + 80 - top);
-        graph.nodes = graph.nodes.map(node => ({ ...node, position: { x: node.position.x, y: node.position.y + offset } }));
-      }
       const current = documentValue();
       validateWorkflowDocument({ ...current, version: Math.max(version, requiredVersion), nodes: [...current.nodes, ...graph.nodes], edges: [...current.edges, ...graph.edges] });
     } catch (failure) { describeFailure(`Could not add “${title}”`, failure); return; }
     const addedIds = new Set(graph.nodes.map(node => node.id));
-    // Measure the rendered nodes before saving this addition, regardless of drag snapping.
+    // Use rendered sizes to align the new tree and place it after existing content.
     placement = tick().then(() => {
       const elements = new Map([...canvas?.querySelectorAll<HTMLElement>(".svelte-flow__node") ?? []]
         .map(element => [element.dataset.id, element]));
-      nodes = nodes.map(node => {
+      const measured = nodes.map(node => {
         const element = elements.get(node.id);
-        if (!addedIds.has(node.id) || !element?.offsetWidth || !element.offsetHeight) return node;
-        return snapNodeCenter({ ...node, measured: { width: element.offsetWidth, height: element.offsetHeight } });
+        return element?.offsetWidth && element.offsetHeight
+          ? { ...node, measured: { width: element.offsetWidth, height: element.offsetHeight } }
+          : node;
       });
+      const positioned = new Map(layoutAddedGraph(measured.filter(node => addedIds.has(node.id)), graph.edges,
+        measured.filter(node => !addedIds.has(node.id)), gridSize, nodeId).map(node => [node.id, node]));
+      nodes = nodes.map(node => positioned.get(node.id) ?? node);
     }).finally(() => { placement = null; });
     version = Math.max(version, requiredVersion) as 2 | 3;
     nodes = [...nodes.map(node => ({ ...node, selected: false })), ...graph.nodes.map(node => ({ ...graphNode(node), selected: node.id === nodeId }))];
@@ -403,7 +487,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     notice = "";
     await placement;
     await tick();
-    await toolbar?.reveal(graph.nodes.filter(node => !node.hidden).map(node => node.id));
+    await toolbar?.reveal(nodeId);
     if (active && !navigationModal) focusCanvas();
   }
 
@@ -482,7 +566,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   function switchDashes() {
     dashed = !dashed;
-    edges = edges.map(edge => ({ ...edge, animated: dashed, style: dashed ? "stroke-dasharray: 6 4" : "" }));
+    edges = edges.map(edge => ({ ...edge, animated: dashed, style: edgeOptions.style }));
   }
 
   function cancelAutosave() {
@@ -601,7 +685,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function openDocuments() {
     intent += 1;
     void refreshDocuments();
-    removal = null; removalError = ""; selectedDocuments = []; dialogOpen = true;
+    removal = null; removalError = ""; dialogOpen = true;
   }
 
   function openDocument(document: WorkflowDocument) {
@@ -611,17 +695,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     void replace(async () => hydrateSaved(await workflowRepository.load(document.id), "canvas"), true);
   }
 
-  async function removeDocuments() {
+  async function removeDocument() {
     if (!removal || actionBusy) return;
     const requested = removal;
     actionBusy = true;
     cancelAutosave();
     try {
       if (savePromise) await savePromise;
-      if (!requested.some(document => document.id === id) && !await flushAutosave())
+      if (requested.id !== id && !await flushAutosave())
         throw new Error(saveError || "The current workflow could not be saved.");
-      await workflowRepository.remove(requested.map(document => document.id));
-      if (requested.some(document => document.id === id)) {
+      await workflowRepository.remove([requested.id]);
+      if (requested.id === id) {
         cancelAutosave();
         id = crypto.randomUUID();
         savedSnapshot = snapshot;
@@ -633,12 +717,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         saveError = "";
       }
       await refreshDocuments();
-      selectedDocuments = selectedDocuments.filter(id => documents.some(document => document.id === id));
       removal = null;
       removalError = "";
       await tick();
       window.document.querySelector<HTMLElement>(".document-entry, .modal-close")?.focus();
-    } catch (failure) { removalError = `Could not remove ${requested.length === 1 ? `“${requested[0]!.name}”` : `${requested.length} saved workflows`}: ${failure instanceof Error ? failure.message : String(failure)}`; }
+    } catch (failure) { removalError = `Could not remove “${requested.name}”: ${failure instanceof Error ? failure.message : String(failure)}`; }
     finally {
       actionBusy = false;
       if (dirty && !saveError) autosaveTimer = setTimeout(() => { void save(); }, 300);
@@ -657,14 +740,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     finally { historyLoading = false; }
   }
 
-  async function changeVersion(action: "undo" | "redo" | "restore", oid?: string) {
+  async function changeVersion(action: "undo" | "redo" | "checkout", oid?: string) {
     if (actionBusy || !storageReady) return;
     actionBusy = true;
     historyError = "";
     try {
       if (!await flushAutosave() || !persistedRevision) throw new Error(saveError || "Save this workflow before changing versions.");
-      const state = action === "restore"
-        ? await workflowRepository.restore(id, oid!, persistedRevision)
+      const state = action === "checkout"
+        ? await workflowRepository.checkout(id, oid!, persistedRevision)
         : await workflowRepository[action](id, persistedRevision);
       hydrateSaved(state);
       await refreshDocuments();
@@ -747,15 +830,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     replacementReturnToCanvas = false;
   }
 
-  async function confirmRemoval(documents: WorkflowDocument[]) {
-    removal = documents;
+  async function confirmRemoval(document: WorkflowDocument) {
+    removal = document;
     removalError = "";
     await tick();
     cancelRemoval?.focus();
   }
 
   async function cancelRemove() {
-    const id = removal?.[0]?.id;
+    const id = removal?.id;
     removal = null;
     removalError = "";
     await tick();
@@ -785,12 +868,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <svelte:window onbeforeunload={beforeUnload} onkeydown={historyShortcut} />
 
-<section class="workflow-workspace" class:populated={nodes.length > 0} tabindex="-1" aria-label="Workflow canvas" inert={graphBlocked} bind:this={canvas} onkeydowncapture={moveSnappedNodes} ondblclickcapture={selectNodeBranch}>
+<section class="workflow-workspace" class:populated={nodes.length > 0} style:--workflow-dash-gap={workflowDefaults.dashGap} tabindex="-1" aria-label="Workflow canvas" inert={graphBlocked} bind:this={canvas} onkeydowncapture={moveSnappedNodes} ondblclickcapture={selectNodeBranch}>
   <span class="sr-only" aria-live="assertive" aria-atomic="true">{movementAnnouncement}</span>
   {#if activated}
   {#key revision}
-    <SvelteFlow bind:nodes={() => nodes, updateCanvasNodes} bind:edges bind:viewport {nodeTypes} defaultEdgeOptions={edgeOptions} connectionLineType={curved ? ConnectionLineType.Bezier : ConnectionLineType.SmoothStep} onbeforeconnect={prepareConnection} onconnect={adaptGates}
-      defaultMarkerColor={null} connectionLineStyle={`marker-end: url(#${connectionMarkerId})`}
+    <SvelteFlow bind:nodes={() => nodes, updateCanvasNodes} bind:edges bind:viewport {nodeTypes} {edgeTypes} defaultEdgeOptions={edgeOptions} connectionLineComponent={WorkflowConnectionLine} connectionLineType={curved ? ConnectionLineType.Bezier : ConnectionLineType.SmoothStep} onbeforeconnect={prepareConnection} onconnect={adaptGates}
+      defaultMarkerColor={null} connectionLineStyle={`${edgeOptions.style}; marker-end: url(#${connectionMarkerId})`}
       minZoom={0.25} maxZoom={2} {...(snap ? {} : { snapGrid: [1, 1] as [number, number] })}
       deleteKey={keyboardActive ? ["Backspace", "Delete"] : null} selectionKey={keyboardActive ? "Shift" : null}
       multiSelectionKey={keyboardActive ? ["Shift", "Meta", "Control"] : null} panActivationKey={keyboardActive ? " " : null}
@@ -807,9 +890,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </svg>
       <Background variant={BackgroundVariant.Dots} gap={24} size={2} />
       <WorkflowSelection {canvas} active={keyboardActive} />
-      <WorkflowConnectionSnap bind:this={connectionSnap} isValidConnection={validConnection} active={keyboardActive} {curved} {dashed} markerEnd={`url(#${connectionMarkerId})`} />
+      <WorkflowConnectionSnap bind:this={connectionSnap} isValidConnection={validConnection} active={keyboardActive} {curved} {dashed} curveStrength={workflowDefaults.curveStrength} markerEnd={`url(#${connectionMarkerId})`} />
       {#if nodes.length}<WorkflowMinimap active={keyboardActive} />{/if}
-      <WorkflowToolbar bind:this={toolbar} {canvas} {active} {navigationOpen} {snap} {curved} {dashed} {selected}
+      <WorkflowToolbar bind:this={toolbar} {canvas} {active} {navigationOpen} {snap} {curved} {dashed} {selected} placing={placement !== null}
         onsnap={() => snap = !snap} oncurved={switchCurve} ondashed={switchDashes}
         onremove={removeSelected} onnew={newDocument} onopen={openDocuments}
         onexport={exportDocument} onimport={() => upload.click()} onbrowse={onBrowse}
@@ -842,7 +925,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }}>
   {#if historyError}<p role="alert" class="error">{historyError}</p><Button onclick={openHistory}>Retry</Button>{/if}
   {#if historyLoading}<p role="status">Loading history…</p>
-  {:else if historyOpen}<WorkflowHistory workflowId={id} {revisions} currentRevision={persistedRevision} busy={actionBusy} onrestore={(oid) => changeVersion("restore", oid)} />{/if}
+  {:else if historyOpen}<WorkflowHistory workflowId={id} {revisions} currentRevision={persistedRevision} busy={actionBusy} onselect={(oid) => changeVersion("checkout", oid)} />{/if}
 </Modal>
 
 <Modal bind:open={descriptionOpen} title="Workflow details" initialFocus={() => nameInput}>
@@ -872,27 +955,23 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </div>
 </Modal>
 
-<Modal bind:open={dialogOpen} title="Saved workflows" description="Stored in this browser. Export a copy to keep it elsewhere."
+<Modal bind:open={dialogOpen} title="Saved workflows"
   onCloseAutoFocus={(event) => { if (replacementCompleted) { event.preventDefault(); replacementCompleted = false; } }}
   onEscapeKeydown={(event) => { if (removal) { event.preventDefault(); void cancelRemove(); } }}>
   {#if removal}
     <div class="removal-confirmation" role="group" aria-label="Confirm removal">
-      <p>{removal.length === 1 ? `Remove “${removal[0]!.name}” from this browser?` : `Remove ${removal.length} saved workflows from this browser?`}</p>
+      <p>Remove “{removal.name}” from this browser?</p>
       {#if removalError}<p role="alert" class="error">{removalError}</p>{/if}
-      <div class="modal-actions"><Button variant="outline" tooltip="Remove the selected saved workflows from this browser" onclick={removeDocuments}>{removalError ? "Try again" : "Remove"}</Button>
+      <div class="modal-actions"><Button variant="outline" tooltip="Remove this saved workflow from this browser" onclick={removeDocument}>{removalError ? "Try again" : "Remove"}</Button>
         <HintButton class="text-button" bind:ref={cancelRemoval} aria-label="Cancel" label="Keep this saved workflow" onclick={cancelRemove}>Cancel</HintButton></div>
     </div>
   {:else}
   {#if libraryError}<p role="alert" class="error">{libraryError}</p><Button onclick={() => refreshDocuments()}>Retry</Button>{/if}
-  {#if documents.length}
-    <div class="document-selection"><span>{selectedDocuments.length} selected</span><Button size="sm" disabled={!selectedDocuments.length}
-      onclick={() => confirmRemoval(documents.filter(document => selectedDocuments.includes(document.id)))}>Delete selected workflows</Button></div>
-  {/if}
   {#if !documents.length}<p>No saved workflows yet.</p>{/if}
   <ul class="saved-documents">{#each documents as document (document.id)}
-    <li data-document-id={document.id}><input type="checkbox" aria-label={`Select ${document.name}`} value={document.id} bind:group={selectedDocuments} />
+    <li data-document-id={document.id}>
       <HintButton class="document-entry" aria-label={`${document.name} ${documentSummary(document)}`} label={`Open ${document.name}`} onclick={() => openDocument(document)}><strong>{document.name}</strong><span>{documentSummary(document)}</span></HintButton>
-      <Button variant="ghost" size="sm" aria-label={`Remove ${document.name}`} tooltip={`Remove ${document.name} from saved workflows`} onclick={() => confirmRemoval([document])}>Remove</Button></li>
+      <HintButton class="document-remove" aria-label={`Remove ${document.name}`} label={`Remove ${document.name} from saved workflows`} onclick={() => confirmRemoval(document)}><MaterialIcon name="delete" size={18} /></HintButton></li>
   {/each}</ul>
   {/if}
 </Modal>
@@ -913,16 +992,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   #workflow-name, #workflow-description { display: block; width: 100%; padding: 12px; border: 0; border-radius: 4px; background: var(--color-foreground); color: var(--color-background); }
   #workflow-description { resize: vertical; }
   #workflow-description::placeholder { color: var(--color-surface); }
-  .document-selection { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
-  .document-selection span { color: var(--color-muted-foreground); font-size: 12px; }
-  .saved-documents input[type="checkbox"] { flex-shrink: 0; width: 18px; height: 18px; accent-color: var(--color-emphasis); }
-  .saved-documents li { position: relative; transition: transform 180ms ease-in; }
-  .saved-documents :global(.document-entry:is(:hover,:focus-visible)) { background: var(--color-chip-hover); color: var(--color-chip-hover-foreground); }
-  .saved-documents :global(.document-entry:is(:hover,:focus-visible) span) { color: inherit; }
+  .saved-documents { display: grid; gap: 16px; padding-block: 8px; }
+  .saved-documents li { position: relative; align-items: stretch; gap: 0; padding: 0; border-radius: 4px; background: var(--color-background); transition: transform 180ms ease-in; }
+  .saved-documents :global(.document-entry), .saved-documents :global(.document-remove) { background: transparent; color: inherit; }
+  .saved-documents :global(.document-remove) { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 40px; padding: 0; border: 0; border-left: 1px solid var(--color-surface); border-radius: 0 4px 4px 0; }
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
     .saved-documents li:has(:global(.document-entry:enabled)):not([inert] *) { will-change: transform; }
-    .saved-documents li:has(:global(.document-entry:is(:hover,:focus-visible))) { z-index: 1; transform: scale(min(1.10, var(--hover-scale, 1.10))); }
-    .saved-documents :global(.document-entry:is(:hover,:focus-visible)) { transform: none; }
+    .saved-documents li:has(:global(button:is(:hover,:focus-visible))) { z-index: 1; transform: scale(min(1.10, var(--hover-scale, 1.10))); }
+    .saved-documents :global(.document-remove .material-symbols-rounded) { transition: transform 180ms ease-in; }
+    .saved-documents :global(.document-remove:hover .material-symbols-rounded) { transform: scale(1.4); }
   }
   :global(.workflow-workspace .svelte-flow) { --xy-edge-stroke-default: var(--color-graph-line); --xy-edge-stroke-width: 2; --xy-edge-stroke-selected-default: var(--color-emphasis); --xy-connectionline-stroke-default: var(--color-emphasis); --xy-connectionline-stroke-width: 2; --xy-background-pattern-dots-color-default: color-mix(in srgb, var(--color-foreground) 13%, transparent); --xy-background-color-default: transparent; --xy-selection-background-color: color-mix(in srgb, var(--color-accent) 8%, transparent); --xy-selection-border: 1px dashed var(--color-accent); background: transparent; }
   /* Node contents provide focus feedback; wrapper outlines flash on blur. */
@@ -935,5 +1013,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.workflow-workspace .svelte-flow__arrowhead polyline) { stroke: context-stroke; }
   :global(.workflow-workspace .svelte-flow__arrowhead polyline.arrowclosed) { fill: context-stroke; }
   :global(.workflow-workspace .svelte-flow__edge-path) { transition: stroke 120ms ease-in, stroke-width 120ms ease-in; }
+  :global(.workflow-workspace .svelte-flow__edge.animated .svelte-flow__edge-path) { animation-name: workflow-dashes; }
+  @keyframes workflow-dashes {
+    from { stroke-dashoffset: calc(6 + var(--workflow-dash-gap, 4)); }
+    to { stroke-dashoffset: 0; }
+  }
   :global(.workflow-workspace .svelte-flow__edge:hover .svelte-flow__edge-path) { stroke-width: 3px; }
 </style>

@@ -6,11 +6,11 @@ import assert from 'node:assert/strict';
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { setMode, workflow } from './workspace.steps.mjs';
-import { repository, storedWorkflows, storageKey } from './workflow-storage.fixture.mjs';
+import { repository, storedWorkflows } from './workflow-storage.fixture.mjs';
 
 const historyDialog = page => page.getByRole('dialog', { name: 'Workflow history', exact: true });
 const revisionRow = (page, oid) => historyDialog(page).locator(`li[data-version-oid="${oid}"]`);
-const restoreVersion = (page, oid) => revisionRow(page, oid).getByRole('button', { name: /^Restore version/ });
+const versionCard = (page, oid) => revisionRow(page, oid).locator('button.version-card');
 const saved = page => expect(page.locator(".site-header .document-meta").getByText('Saved locally', { exact: true })).toBeVisible();
 const content = ({ viewport, snap, curved, dashed, ...document }) => document;
 const document = (id, name) => ({ version: 3, id, name, description: '',
@@ -32,12 +32,21 @@ async function openHistory(page) {
   await expect(historyDialog(page)).toBeVisible();
 }
 
-async function expectDirectRestoreActions(page, currentRevision) {
+async function expectVersionCards(page, currentRevision) {
   const dialog = historyDialog(page);
   await expect(dialog.getByRole('button', { name: /Preview/i })).toHaveCount(0);
+  await expect(dialog.getByRole('button', { name: /^Restore version/ })).toHaveCount(0);
   await expect(dialog.getByRole('region', { name: 'Version preview', exact: true })).toHaveCount(0);
   await expect(dialog.getByLabel('Workflow version JSON', { exact: true })).toHaveCount(0);
-  await expect(restoreVersion(page, currentRevision)).toHaveCount(0);
+  await expect(versionCard(page, currentRevision)).toHaveAttribute('aria-current', 'true');
+  for (const row of await dialog.locator('li[data-version-oid]').all()) {
+    const card = row.locator('button.version-card');
+    await expect(row.getByRole('button')).toHaveCount(1);
+    const title = (await card.locator('strong').innerText()).replace(/\s+/g, ' ').trim();
+    const date = (await card.locator('time').innerText()).replace(/\s+/g, ' ').trim();
+    const current = await row.getAttribute('data-version-oid') === currentRevision;
+    await expect(card).toHaveAccessibleName(`${title} ${date}${current ? ' Current version' : ''}`);
+  }
   await expect(dialog.locator('code')).toHaveCount(0);
   const presentation = await dialog.evaluate(element => ({
     revisions: [...element.querySelectorAll('[data-version-oid]')].map(row => row.dataset.versionOid),
@@ -154,37 +163,126 @@ Then('workflow history records useful messages and derives legacy titles from th
 
 When('I open workflow history', async function () {
   this.historyBeforeOpen = await repository(this.page, 'inspect', this.historyFirst.id);
+  this.historyGraphBeforeOpen = await repository(this.page, 'inspectGraph', this.historyFirst.id);
   await openHistory(this.page);
-  await expect(restoreVersion(this.page, this.historyFirstOid)).toBeVisible();
+  await expect(versionCard(this.page, this.historyFirstOid)).toBeVisible();
 });
 
-Then('history offers direct restore actions without changing the current workflow', async function () {
-  await expectDirectRestoreActions(this.page, this.historyLatestOid);
+Then('history offers selectable version cards without changing the current workflow', async function () {
+  await expectVersionCards(this.page, this.historyLatestOid);
   assert.deepEqual(await repository(this.page, 'inspect', this.historyFirst.id), this.historyBeforeOpen);
   await historyDialog(this.page).getByRole('button', { name: 'Close', exact: true }).click();
   await expectWorkflowName(this.page, this.historyLatest.name);
   await expect(workflow(this.page).locator('.svelte-flow__node-comment')).toHaveCount(1);
 });
 
-When('I restore the earliest workflow version', async function () {
-  await restoreVersion(this.page, this.historyFirstOid).click();
-  if (await historyDialog(this.page).isVisible()) await historyDialog(this.page).getByRole('button', { name: 'Close', exact: true }).click();
-  await expectWorkflowName(this.page, this.historyFirst.name);
-  await saved(this.page);
+When('I select the earliest workflow version', async function () {
+  await versionCard(this.page, this.historyFirstOid).click();
+  await expect(historyDialog(this.page)).toBeVisible();
+  await expect(versionCard(this.page, this.historyFirstOid)).toHaveAttribute('aria-current', 'true');
+  await expect(versionCard(this.page, this.historyLatestOid)).not.toHaveAttribute('aria-current', 'true');
 });
 
-Then('the historical graph is restored while both workflows keep their history', async function () {
-  const restored = await repository(this.page, 'inspect', this.historyFirst.id);
-  assert.equal(restored.versions.length, 3);
-  assert.deepEqual(restored.versions[0].parent, [this.historyLatestOid]);
-  assert.deepEqual(restored.versions.slice(1), this.historyBeforeOpen.versions);
-  assert.deepEqual(JSON.parse(restored.working), content(this.historyFirst));
+Then('the historical graph is selected without creating a commit or changing another workflow', async function () {
+  const selected = await repository(this.page, 'inspectGraph', this.historyFirst.id);
+  assertGraph(selected, this.historyFirstOid, { main: this.historyFirstOid }, 2);
+  assert.equal(selected.redo, this.historyLatestOid);
+  assert.deepEqual(selected.commits, this.historyGraphBeforeOpen.commits, 'Selecting a version preserves every existing Git object without creating a new commit.');
+  assert.deepEqual(graphContent(selected), content(this.historyFirst));
+  await expectVersionCards(this.page, this.historyFirstOid);
+  await expect(historyDialog(this.page).locator('li[data-version-oid]')).toHaveCount(2);
+  await this.page.screenshot({ path: 'tmp/test/workflow-history-selected-version.png' });
+  await historyDialog(this.page).getByRole('button', { name: 'Close', exact: true }).click();
+  await expectWorkflowName(this.page, this.historyFirst.name);
+  await saved(this.page);
   assert.deepEqual(await repository(this.page, 'inspect', this.historyOther.id), this.historyOtherBefore);
   await this.page.reload();
   await setMode(this.page, 'workflow');
   await expectWorkflowName(this.page, this.historyFirst.name);
   await expect(workflow(this.page).locator('.svelte-flow__node-comment')).toHaveCount(0);
   await expect(workflow(this.page).locator('.svelte-flow__node-cast')).toHaveCount(1);
+  const reopened = await repository(this.page, 'inspectGraph', this.historyFirst.id);
+  assertGraph(reopened, this.historyFirstOid, { main: this.historyFirstOid }, 2);
+  assert.deepEqual(reopened.commits, selected.commits);
+});
+
+Then('editing the selected version forks from that existing commit', async function () {
+  await renameWorkflow(this.page, 'New direction from selected version');
+  await saved(this.page);
+  const edited = await repository(this.page, 'inspectGraph', this.historyFirst.id);
+  assertGraph(edited, edited.head, { main: edited.head, 'stash-1': this.historyLatestOid }, 3);
+  assert.notEqual(edited.head, this.historyFirstOid);
+  assert.deepEqual(graphCommit(edited, edited.head).parent, [this.historyFirstOid]);
+  for (const commit of this.historyGraphBeforeOpen.commits) assert.deepEqual(graphCommit(edited, commit.oid), commit);
+  assert.equal(graphContent(edited).name, 'New direction from selected version');
+  assert.deepEqual(await repository(this.page, 'inspect', this.historyOther.id), this.historyOtherBefore);
+});
+
+Then('keyboard activation selects the existing version while competing cards are disabled', async function () {
+  const page = this.page;
+  await repository(page, 'holdWrites', this.historyFirst.id);
+  try {
+    const card = versionCard(page, this.historyFirstOid);
+    await card.focus();
+    await card.press('Enter');
+    await expect(historyDialog(page).getByRole('region', { name: 'Workflow version history', exact: true })).toHaveAttribute('aria-busy', 'true');
+    for (const card of await historyDialog(page).locator('button.version-card').all()) await expect(card).toBeDisabled();
+    assert.deepEqual(await repository(page, 'inspectGraph', this.historyFirst.id), this.historyGraphBeforeOpen,
+      'The selected revision remains unchanged while the checkout waits for its write lock.');
+  } finally { await repository(page, 'releaseWrites'); }
+  await expect(versionCard(page, this.historyFirstOid)).toHaveAttribute('aria-current', 'true');
+  await expect(historyDialog(page)).toBeVisible();
+  const selected = await repository(page, 'inspectGraph', this.historyFirst.id);
+  assertGraph(selected, this.historyFirstOid, { main: this.historyFirstOid }, 2);
+  assert.deepEqual(selected.commits, this.historyGraphBeforeOpen.commits);
+  const latest = versionCard(page, this.historyLatestOid);
+  await expect(latest).toBeEnabled();
+  await latest.focus();
+  await latest.press('Space');
+  await expect(latest).toHaveAttribute('aria-current', 'true');
+  const returned = await repository(page, 'inspectGraph', this.historyFirst.id);
+  assertGraph(returned, this.historyLatestOid, { main: this.historyLatestOid }, 2);
+  assert.deepEqual(returned.commits, this.historyGraphBeforeOpen.commits);
+  assert.deepEqual(await repository(page, 'inspect', this.historyOther.id), this.historyOtherBefore);
+});
+
+Then('checkout rejects invalid revisions and selecting the current revision creates no changes', async function () {
+  const page = this.page;
+  const before = await repository(page, 'inspectGraph', this.historyFirst.id);
+  await assert.rejects(repository(page, 'checkout', this.historyFirst.id, this.historyFirstOid, this.historyFirstOid), /changed in another tab/);
+  for (const oid of [this.historyOtherBefore.versions[0].oid, '0'.repeat(40)])
+    await assert.rejects(repository(page, 'checkout', this.historyFirst.id, oid, this.historyLatestOid), /not in the workflow's history/);
+  const current = await repository(page, 'checkout', this.historyFirst.id, this.historyLatestOid, this.historyLatestOid);
+  assert.equal(current.revision, this.historyLatestOid);
+  assert.deepEqual(await repository(page, 'inspectGraph', this.historyFirst.id), before,
+    'Rejected selections and selecting the current revision preserve commits, references, index and working JSON.');
+  assert.deepEqual(await repository(page, 'inspect', this.historyOther.id), this.historyOtherBefore);
+});
+
+Then('an interrupted checkout recovers the exact selected commit and Git references', async function () {
+  const page = this.page;
+  await repository(page, 'undo', this.historyFirst.id, this.historyLatestOid);
+  const fork = await repository(page, 'save', { ...this.historyFirst, name: 'Work before interrupted selection' }, this.historyFirstOid);
+  const before = await repository(page, 'inspectGraph', this.historyFirst.id);
+  const failure = await repository(page, 'interruptCatalogFinish', this.historyFirst.id, this.historyLatestOid, 'checkout', fork.revision);
+  assert.match(failure, /Interrupted catalogue update after Git commit/);
+  const interrupted = await repository(page, 'inspectGraph', this.historyFirst.id);
+  assert.ok(interrupted.pending, 'Interrupted selection retains a recovery journal.');
+  assertGraph(interrupted, this.historyLatestOid, {
+    main: this.historyLatestOid, 'stash-1': this.historyLatestOid, 'stash-2': fork.revision,
+  }, 3);
+  assert.deepEqual(interrupted.commits, before.commits);
+  for (let reload = 0; reload < 2; reload++) {
+    await page.reload();
+    await setMode(page, 'workflow');
+    await expectWorkflowName(page, this.historyLatest.name);
+    const recovered = await repository(page, 'inspectGraph', this.historyFirst.id);
+    assert.equal(recovered.pending, undefined);
+    for (const key of ['head', 'headRef', 'branches', 'redo', 'commits', 'working'])
+      assert.deepEqual(recovered[key], interrupted[key], `${key} survives ${reload ? 'the second reload' : 'checkout recovery'}.`);
+    assert.equal((await repository(page, 'load', this.historyFirst.id)).revision, this.historyLatestOid);
+  }
+  assert.deepEqual(await repository(page, 'inspect', this.historyOther.id), this.historyOtherBefore);
 });
 
 Then('workflow undo and redo remain available across reloads', async function () {
@@ -257,12 +355,12 @@ Then('the mobile history tree shows stashed futures without changing the workflo
   const before = await repository(page, 'inspectGraph', this.historyFirst.id);
   await openHistory(page);
   const dialog = historyDialog(page);
-  await expectDirectRestoreActions(page, before.head);
+  await expectVersionCards(page, before.head);
   await expect(dialog.locator('.version-graph circle[data-commit]')).toHaveCount(4);
   await expect(dialog.locator('.version-graph path[data-child][data-parent]')).toHaveCount(3);
   for (const commit of before.commits) {
     await expect(revisionRow(page, commit.oid)).toHaveCount(1);
-    if (commit.oid !== before.head) await expect(restoreVersion(page, commit.oid)).toBeVisible();
+    await expect(versionCard(page, commit.oid)).toBeVisible();
     for (const parent of commit.parent)
       await expect(dialog.locator(`path[data-child="${commit.oid}"][data-parent="${parent}"]`)).toHaveCount(1);
   }
@@ -281,17 +379,39 @@ Then('the mobile history tree shows stashed futures without changing the workflo
   assert.ok(bounds.width <= bounds.client + 1 && bounds.left >= 0 && bounds.right <= bounds.viewport, JSON.stringify(bounds));
 });
 
-Then('explicitly restoring a stashed version appends a commit while preserving all branches', async function () {
+Then('selecting a stashed version moves to its existing commit while preserving all branches', async function () {
   const page = this.page;
-  await restoreVersion(page, this.historyLatestOid).click();
-  if (await historyDialog(page).isVisible()) await historyDialog(page).getByRole('button', { name: 'Close', exact: true }).click();
+  await versionCard(page, this.historyLatestOid).click();
+  await expect(historyDialog(page)).toBeVisible();
+  await expect(versionCard(page, this.historyLatestOid)).toHaveAttribute('aria-current', 'true');
+  await expect(historyDialog(page).locator('li[data-version-oid]')).toHaveCount(4);
+  const selected = await repository(page, 'inspectGraph', this.historyFirst.id);
+  assertGraph(selected, this.historyLatestOid, {
+    ...this.historyForkGraph.branches, main: this.historyLatestOid, 'stash-3': this.historyForkGraph.head,
+  }, 4);
+  assert.equal(selected.redo, null);
+  assert.deepEqual(selected.commits, this.historyForkGraph.commits);
+  assert.deepEqual(graphContent(selected), content(this.historyLatest));
+  await historyDialog(page).getByRole('button', { name: 'Close', exact: true }).click();
   await saved(page);
   await expectWorkflowName(page, this.historyLatest.name);
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expectWorkflowName(page, this.historyLatest.name);
+  assert.deepEqual((await repository(page, 'inspectGraph', this.historyFirst.id)).commits, this.historyForkGraph.commits);
+  assert.deepEqual(await repository(page, 'inspect', this.historyOther.id), this.historyOtherBefore);
+  this.historySelectedGraph = selected;
+});
+
+Then('the explicit repository restore API still appends a commit', async function () {
+  const page = this.page;
+  const result = await repository(page, 'restore', this.historyFirst.id, this.historyFirstOid, this.historyLatestOid);
   const restored = await repository(page, 'inspectGraph', this.historyFirst.id);
-  assertGraph(restored, restored.head, { ...this.historyForkGraph.branches, main: restored.head }, 5);
-  assert.deepEqual(graphCommit(restored, restored.head).parent, [this.historyForkGraph.head]);
-  assert.deepEqual(graphContent(restored), content(this.historyLatest));
-  for (const commit of this.historyForkGraph.commits) assert.deepEqual(graphCommit(restored, commit.oid), commit);
+  assertGraph(restored, result.revision, { ...this.historySelectedGraph.branches, main: result.revision }, 5);
+  assert.notEqual(result.revision, this.historyFirstOid);
+  assert.deepEqual(graphCommit(restored, result.revision).parent, [this.historyLatestOid]);
+  assert.deepEqual(graphContent(restored), content(this.historyFirst));
+  for (const commit of this.historySelectedGraph.commits) assert.deepEqual(graphCommit(restored, commit.oid), commit);
   assert.deepEqual(await repository(page, 'inspect', this.historyOther.id), this.historyOtherBefore);
 });
 
@@ -473,22 +593,25 @@ Then('a paused text edit and a paused node drag each create only one completed v
   assert.deepEqual(await repository(page, 'inspect', this.historyOther.id), this.historyOtherBefore);
 });
 
-Then('existing localStorage workflows migrate once and retain their identifiers', async function () {
-  const legacy = document('legacy-migration', 'Existing browser workflow');
-  await this.page.evaluate(({ key, legacy }) => localStorage.setItem(key, JSON.stringify([legacy])), { key: storageKey, legacy });
-  await this.page.reload();
-  await setMode(this.page, 'workflow');
-  await expect.poll(() => this.page.evaluate(key => localStorage.getItem(key), storageKey)).toBe(null);
-  const imported = await repository(this.page, 'load', legacy.id);
-  assert.deepEqual(imported.document, legacy);
-  assert.equal((await repository(this.page, 'history', legacy.id)).length, 1);
-  await this.page.evaluate(({ key, legacy }) => localStorage.setItem(key, JSON.stringify([legacy])), { key: storageKey, legacy });
-  await this.page.reload();
-  await setMode(this.page, 'workflow');
-  await expect.poll(() => this.page.evaluate(key => localStorage.getItem(key), storageKey)).toBe(null);
-  assert.equal((await repository(this.page, 'history', legacy.id)).length, 1);
-  assert.equal((await storedWorkflows(this.page)).length, 3);
-  assert.deepEqual(await repository(this.page, 'inspect', this.historyOther.id), this.historyOtherBefore);
+Then('legacy localStorage workflows are ignored and untouched while Git workflows survive reload', async function () {
+  const page = this.page;
+  const storageKey = 'operations-flow-documents-v1';
+  const legacy = document('ignored-legacy-workflow', 'Existing browser workflow');
+  const before = await repository(page, 'inspect', this.historyFirst.id);
+  const workflows = await storedWorkflows(page);
+  for (const value of [JSON.stringify([legacy]), '{malformed legacy workflows']) {
+    await page.evaluate(({ key, value }) => localStorage.setItem(key, value), { key: storageKey, value });
+    for (let reload = 0; reload < 2; reload++) {
+      await page.reload();
+      await setMode(page, 'workflow');
+      await expectWorkflowName(page, this.historyLatest.name);
+      await saved(page);
+      assert.equal(await page.evaluate(key => localStorage.getItem(key), storageKey), value);
+      assert.deepEqual(await storedWorkflows(page), workflows, 'Only existing Git workflows remain in the saved collection.');
+      assert.deepEqual(await repository(page, 'inspect', this.historyFirst.id), before);
+      assert.deepEqual(await repository(page, 'inspect', this.historyOther.id), this.historyOtherBefore);
+    }
+  }
 });
 
 Then('an interrupted append-only Undo migrates to real commit navigation', async function () {

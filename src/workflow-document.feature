@@ -43,34 +43,21 @@ Feature: Local workflow documents
   Scenario: Malformed or oversized JSON cannot be imported
     Then malformed and oversized workflow files are rejected
 
-  Scenario: Saved plans can be replaced and removed locally
-    Given an empty local workflow collection
-    When a workflow is saved, renamed, and saved again
-    Then there is one saved workflow with the new name
-    When that workflow is removed
-    Then the local workflow collection is empty
-
-  Scenario: Existing saved documents remain compatible after the workflow rename
-    Given a version 1 document saved under the original storage key
-    When that saved document is loaded and saved as a workflow
-    Then its storage key, document name, and version 1 data remain unchanged
-
-  Scenario: Broken or full local storage never silently replaces plans
-    Given a workflow connecting two instances of the same operation
-    Then invalid and duplicate stored collections are rejected
-    And a full collection rejects a new plan but permits updating an existing plan
-    And storage access and quota failures are reported to the caller
-
   Scenario: Documented schemas create separate input and response branches
     Given a documented workflow with nested objects and arrays
     Then location panels and all documented HTTP response panels have stable named field handles
     And examples never invent workflow fields
 
+  Scenario: HTTP response envelopes expose metadata body and documented headers
+    Then response outputs retain status messages body shapes and referenced header contracts
+    And response body and header properties remain editable without changing legacy body identities
+    And open response header objects add only wire text unless a property schema declares another type
+
   Scenario: Rich documents preserve mappings and hidden schema branches
     Given a documented workflow with nested objects and arrays
     When a named output field is mapped to an input field
     And a separate schema branch is hidden
-    Then the version 2 workflow survives a save and import with its handles and branch state
+    Then the version 2 workflow survives export and import with its handles and branch state
     And runtime selection and dimensions are not persisted
 
   Scenario: Field mapping uses direction and named ports without guessing type compatibility
@@ -140,7 +127,7 @@ Feature: Local workflow documents
 
   Scenario: Version 3 retains editable workflow notes and utility node settings
     Given a workflow containing switches, casts, and comments
-    When the extended workflow is saved and imported
+    When the extended workflow is exported and imported
     Then its description, gates, cast settings, comments, and named utility connections survive
     And earlier document versions retain their original supported shape
 
@@ -175,7 +162,7 @@ Feature: Local workflow documents
   Scenario: Partly supplied object inputs expose only the remaining fields
     Then nested interfaces omit supplied objects, supplied descendants, and hidden branches
 
-  Scenario: Nested snapshots preserve portable endpoints across save and import
+  Scenario: Nested snapshots preserve portable endpoints across export and import
     Given a saved workflow with an internally supplied input
     When that saved workflow is embedded in another workflow
     Then nested snapshot edits are isolated from the saved source
@@ -185,12 +172,35 @@ Feature: Local workflow documents
   Scenario: Embedded snapshots cannot exceed bounded depth, graph size, or file size
     Then cyclic and oversized embedded workflow documents are rejected
 
-  Scenario: Bulk removal updates local storage atomically
-    Then selected saved workflows are removed together and failed storage leaves the collection intact
-
   Scenario: Nested interfaces retain schema notices and terminate malformed ancestry
     Then nested schema projection keeps explanatory notices and handles unfinished connections
     And aggregate field limits include every repeated snapshot copy
 
   Scenario: Every supported request media type has a usable input graph
     Then example request graphs include structured forms scalar roots headers and null values
+
+  Scenario: Open object properties remain editable after import
+    Then open object panels accept typed additional properties with stable escaped handles
+    And added objects remain extensible after export and import
+
+  Scenario: Schema-valued additional properties preserve nested contracts
+    Then typed additional properties create nested object and array branches in both directions
+
+  Scenario: Closed and ambiguous object contracts cannot be bypassed
+    Then closed synthetic unavailable and constrained panels reject additional properties
+    And declared hidden fields and repeated names cannot be added again
+
+  Scenario: Additional object properties respect graph bounds
+    Then property names fields and nested branches stay within document limits
+
+  Scenario: Added property names can change without breaking their connections
+    Then additional property renames preserve escaped handles mappings and hidden descendants
+
+  Scenario: Added property types update only their affected branches
+    Then property type changes retain compatible mappings and replace obsolete descendants
+
+  Scenario: Removing an added property removes its owned branch
+    Then removing added properties retains unrelated graph state and documented fields
+
+  Scenario: Existing added properties remain editable when an object is full
+    Then property edits use canonical names and enforce schema policy without addition limits

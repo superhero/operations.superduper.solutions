@@ -5,23 +5,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
-  import { onDestroy } from "svelte";
   import type { Operation } from "$lib/catalog.ts";
   import { getOperationReport } from "$lib/operation-report.ts";
-  import Disclosure from "$lib/components/Disclosure.svelte";
-  import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  import HintButton from "$lib/components/HintButton.svelte";
-  import JsonView from "$lib/components/JsonView.svelte";
+  import JsonSchemaView from "$lib/components/JsonSchemaView.svelte";
 
   let { operation }: { operation: Operation } = $props();
   const inputLocations = [{ key: "path", label: "Path" }, { key: "query", label: "Query" }, { key: "header", label: "Headers" }, { key: "body", label: "Body" }] as const;
-  let schemaOpen = $state(false);
-  let schemaLoaded = $state(false);
-  let schemaWrap = $state(true);
-  let copying = $state(false);
-  let copyStatus = $state("");
-  let copyStatusTimer: ReturnType<typeof setTimeout> | undefined;
-  let disposed = false;
   const report = $derived.by(() => {
     try { return { data: getOperationReport(operation), error: "" }; }
     catch (failure) { return { data: null, error: `Could not prepare the operation report: ${failure instanceof Error ? failure.message : String(failure)}` }; }
@@ -31,31 +20,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     return Array.isArray(servers) ? servers.flatMap(server =>
       server && typeof server.url === "string" ? [server.url] : []) : [];
   });
-
-  onDestroy(() => { disposed = true; clearTimeout(copyStatusTimer); });
-
-  function showCopyStatus(message: string) {
-    if (disposed) return;
-    copyStatus = message;
-    copyStatusTimer = setTimeout(() => copyStatus = "", 5000);
-  }
-
-  async function copySchema(event: MouseEvent) {
-    event.preventDefault();
-    event.stopPropagation();
-    const schema = report.data?.schema;
-    if (!schema || copying) return;
-    copying = true;
-    clearTimeout(copyStatusTimer);
-    copyStatus = "";
-    try {
-      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
-      await navigator.clipboard.writeText(JSON.stringify(schema, null, 2));
-      if (report.data?.schema === schema) showCopyStatus("JSON copied.");
-    } catch {
-      if (report.data?.schema === schema) showCopyStatus("Could not copy JSON. Check clipboard access and try again.");
-    } finally { copying = false; }
-  }
 </script>
 
 <section class="detail-report" aria-label="Operation report">
@@ -113,16 +77,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <section class="report-section" aria-label="Operation JSON schema">
       <h3>Operation JSON schema</h3>
       {#if data.warnings.length}<ul class="schema-warnings" role="status">{#each data.warnings as warning}<li>{warning}</li>{/each}</ul>{/if}
-      <Disclosure class="schema-disclosure" label="OpenAPI schema" open={schemaOpen} onToggle={(next) => { schemaOpen = next; if (next) schemaLoaded = true; }}>
-        {#snippet summary()}
-          <HintButton class="schema-action" label="Copy JSON" aria-label="Copy JSON" aria-disabled={copying} aria-busy={copying} onclick={copySchema}><MaterialIcon name="file_copy" size={20} /></HintButton>
-          <MaterialIcon name="chevron_forward" class="schema-chevron" size={20} />
-          <span class="schema-title">OpenAPI schema<span class="schema-copy-status" role="status">{copyStatus}</span></span>
-          {#if schemaOpen}<HintButton class="schema-action" label="Wrap lines" aria-label="Wrap lines" aria-pressed={schemaWrap}
-            onclick={(event) => { event.preventDefault(); event.stopPropagation(); schemaWrap = !schemaWrap; }}><MaterialIcon name={schemaWrap ? "format_text_wrap" : "format_text_overflow"} size={20} /></HintButton>{/if}
-        {/snippet}
-        {#if schemaLoaded}<JsonView value={data.schema} label="Operation OpenAPI JSON" wrap={schemaWrap} />{/if}
-      </Disclosure>
+      <JsonSchemaView value={data.schema} label="Operation OpenAPI JSON" />
     </section>
   {:else}<p role="alert" class="error">{report.error}</p>{/if}
 </section>
@@ -133,23 +88,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .report-groups li { position: relative; margin-left: calc(var(--group-depth) * 24px); }
   .report-groups li + li { margin-top: 14px; }
   .report-groups li + li::before { position: absolute; content: ''; left: -12px; top: -14px; bottom: calc(50% - 1px); width: 12px; border-left: 2px solid var(--color-border); border-bottom: 2px solid var(--color-border); border-bottom-left-radius: 4px; }
-  :global(.schema-disclosure) { margin-top: 16px; }
-  :global(.schema-disclosure > summary) { position: sticky; top: calc(var(--app-header-height) + 8px); z-index: 2; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 14px; border-radius: 4px; list-style: none; background: var(--color-report-card); color: var(--color-foreground); font-size: 14px; font-weight: 650; transition: background-color 180ms ease-in, color 180ms ease-in, transform 180ms ease-in, outline-color 180ms ease-in; }
-  :global(.schema-disclosure > summary:is(:hover,:focus-within,[aria-expanded="true"])) { background: var(--color-json-header-hover-background); color: var(--color-json-header-hover-foreground); }
-  :global(.schema-chevron) { transition: transform 180ms ease-in; }
-  :global(.schema-disclosure > summary[aria-expanded="true"] .schema-chevron) { transform: rotate(90deg); }
-  .schema-title { flex: 1; min-width: 0; }
-  .schema-copy-status { position: absolute; top: calc(100% + 8px); left: 0; max-width: 100%; padding: 6px 10px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-muted-foreground); font-size: 11px; font-weight: 700; pointer-events: none; }
-  .schema-copy-status:empty { padding: 0; }
-  :global(.schema-action) { display: inline-grid; place-items: center; flex: 0 0 28px; width: 28px; height: 32px; padding: 0; border: 0; border-radius: 3px; background: transparent; color: inherit; }
-  :global(.schema-action:is(:hover,:focus-visible):enabled:not([aria-pressed="true"])) { background: var(--color-json-header-hover-foreground); color: var(--color-json-header-hover-background); }
-  :global(.schema-action[aria-pressed="true"]) { background: var(--color-catalog-active); color: var(--color-catalog-active-foreground); }
-  :global(.schema-action:focus-visible) { outline-color: var(--color-json-header-hover-foreground); }
-  :global(.schema-disclosure .json-view) { margin-top: 4px; }
   .schema-warnings { padding-left: 20px; color: var(--color-accent); font-size: 12px; overflow-wrap: anywhere; }
-  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-    :global(.detail-report .schema-disclosure > summary:not([inert] *)) { will-change: transform; }
-    :global(.detail-report .schema-disclosure > summary:hover) { transform: scale(min(1.06, var(--hover-scale, 1.06))); }
-  }
   @media (max-width: 599px) { .report-groups li { margin-left: calc(var(--group-depth) * 16px); } }
 </style>

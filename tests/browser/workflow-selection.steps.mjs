@@ -6,7 +6,7 @@ import { Given, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { operations } from '../../src/lib/catalog.ts';
 import { createOperationGraph, removeGraphSelection } from '../../src/lib/workflow-graph.ts';
-import { repository, storageKey } from './workflow-storage.fixture.mjs';
+import { repository } from './workflow-storage.fixture.mjs';
 import { readExport, setMode, workflow } from './workspace.steps.mjs';
 
 const node = (page, id) => workflow(page).locator(`.svelte-flow__node[data-id=${JSON.stringify(id)}]`);
@@ -60,10 +60,10 @@ Given('nested workflow input and output branches mapped to another operation', a
   const graph = removeGraphSelection({ nodes: [panel(primary, 'Hidden input'), panel(primary, 'Hidden output')], edges: [] },
     [...primary.nodes, ...other.nodes], [...primary.edges, ...other.edges,
       mapping('mapped-output', panel(primary, 'Output branch'), panel(other, 'Request body')),
-      mapping('mapped-input', panel(other, 'Response · 200'), panel(primary, 'Input branch'))]);
+      mapping('mapped-input', panel(other, 'Response body'), panel(primary, 'Input branch'))]);
   const document = { version: 3, id: 'branch-selection', name: 'Branch selection review', description: '', ...graph,
     viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, dashed: false };
-  await this.page.evaluate(({ key, document }) => localStorage.setItem(key, JSON.stringify([document])), { key: storageKey, document });
+  await repository(this.page, 'save', document, null);
   await this.page.reload();
   await setMode(this.page, 'workflow');
   await this.page.getByRole('button', { name: 'Fit View', exact: true }).click();
@@ -114,9 +114,11 @@ Then('Shift-drag rectangles retain prior nodes and edges while adding only their
     const expectedEdges = [...new Set([...retainedEdges, ...this.selectionBaseline.edges
       .filter(edge => !edge.hidden && (edge.source === id || edge.target === id)).map(edge => edge.id)])];
     await page.keyboard.down('Shift');
-    await page.mouse.move(box.x - 8, box.y - 8);
+    // Fit View compresses column gaps; keep the box inside the same narrow
+    // horizontal gutter used by boxSelect instead of catching a neighbor.
+    await page.mouse.move(box.x - 2, box.y - 8);
     await page.mouse.down();
-    await page.mouse.move(box.x + box.width + 8, box.y + box.height + 8, { steps: 8 });
+    await page.mouse.move(box.x + box.width + 2, box.y + box.height + 8, { steps: 8 });
     await expect(workflow(page).locator('.svelte-flow__selection')).toBeVisible();
     await expectSelection(expectedNodes, expectedEdges);
     if (shrink) {
@@ -163,8 +165,9 @@ Then('double-clicking owners and data panels replaces selection with their visib
   const ids = this.selectionIds;
   const branches = [
     ['Selection owner', ['Selection owner', 'Request body', 'Input branch', 'Input leaf', 'Input sibling',
-      'Response · 200', 'Output branch', 'Output leaf', 'Output sibling']],
-    ['Response · 200', ['Response · 200', 'Output branch', 'Output leaf', 'Output sibling']],
+      'Response · 200', 'Response body', 'Response headers', 'Output branch', 'Output leaf', 'Output sibling']],
+    ['Response · 200', ['Response · 200', 'Response body', 'Response headers', 'Output branch', 'Output leaf', 'Output sibling']],
+    ['Response body', ['Response body', 'Output branch', 'Output leaf', 'Output sibling']],
     ['Output branch', ['Output branch', 'Output leaf']],
     ['Output leaf', ['Output leaf']],
     ['Request body', ['Request body', 'Input branch', 'Input leaf', 'Input sibling']],

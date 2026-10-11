@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
+  import { flip } from "svelte/animate";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import Disclosure from "$lib/components/Disclosure.svelte";
@@ -16,11 +17,14 @@
   let mobile = $state(false);
   let catalogPath = $state<string[]>([]);
   let workflowsOpen = $state(false);
-  let expandedWorkflow = $state("");
   let navigation = $state<HTMLElement>();
   let destination: (() => void) | null = null;
   let restoreNavigationFocus = false;
-  const groups: CatalogGroup[] = catalogs.flatMap(catalog => catalog.groups);
+  const groups: CatalogGroup[] = $derived.by(() => {
+    // The operation snapshot changes together with the registered source documents.
+    void operations;
+    return catalogs.flatMap(catalog => catalog.groups);
+  });
   function groupOperations(group: CatalogGroup) {
     return operations.filter(operation => group.operationIds?.includes(operation.id));
   }
@@ -162,7 +166,11 @@
     </HintButton>
   </div>
   <nav class="operation-catalog" aria-label="Operation catalog">
-    {#each groups as group (group.id)}{@render branch(group, 0, true)}{/each}
+    {#each groups.filter(group => groupCount(group) > 0) as group (group.id)}
+      <div class="catalog-reorder" animate:flip={{ duration: () => matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 180 }}>
+        {@render branch(group, 0, true)}
+      </div>
+    {/each}
   </nav>
   <nav class="operation-catalog workflow-catalog" aria-label="Saved workflow catalog">
     <Disclosure class="catalog-group" label={`Workflows, ${workflows.length} saved`} tooltipEnabled={false} open={workflowsOpen} onToggle={(next) => workflowsOpen = next}>
@@ -173,17 +181,16 @@
       <ul class="catalog-operations">
         {#each workflows as workflow (workflow.id)}
           <li data-workflow-id={workflow.id}>
-            <Disclosure class="catalog-operation" tooltipEnabled={false} open={expandedWorkflow === workflow.id} onToggle={(next) => expandedWorkflow = next ? workflow.id : ""}>
-              {#snippet summary()}<span class="catalog-name">{workflow.name}</span><MaterialIcon name="chevron_forward" size={16} />{/snippet}
-              <div class="catalog-operation-detail">
-                <button class="catalog-description" type="button" aria-label={`${mode === "workflow" ? "Add to workflow" : "Open workflow"}: ${workflow.name} description`}
-                  onclick={() => navigate(() => onWorkflowSelect(workflow))}>{workflow.description || "Saved workflow"}</button>
-                <HintButton class="catalog-open-operation" type="button" label={mode === "workflow" ? "Add to workflow" : "Open workflow"}
-                  aria-label={`${mode === "workflow" ? "Add to workflow" : "Open workflow"}: ${workflow.name}`} onclick={() => navigate(() => onWorkflowSelect(workflow))}>
-                  <MaterialIcon name={mode === "workflow" ? "add_box" : "play_circle"} size={24} />
-                </HintButton>
-              </div>
-            </Disclosure>
+            <button class="catalog-operation-action" type="button" aria-label={`${mode === "workflow" ? "Add to workflow" : "Open workflow"}: ${workflow.name}`}
+              onclick={() => navigate(() => onWorkflowSelect(workflow))}>
+              <span class="catalog-name">{workflow.name}</span>
+              <HintButton label={mode === "workflow" ? "Add to workflow" : "Open workflow"} labelAsName={false} tooltipSide="right">
+                {#snippet child({ props })}
+                  {@const { type: _type, tabindex: _tabindex, ...iconProps } = props}
+                  <span {...iconProps} class="catalog-action-icon"><MaterialIcon name={mode === "workflow" ? "add_box" : "play_arrow"} size={mode === "workflow" ? 24 : 16} /></span>
+                {/snippet}
+              </HintButton>
+            </button>
           </li>
         {/each}
       </ul>
@@ -217,6 +224,7 @@
   .catalog-menu { transition: transform 200ms ease-in, visibility 0s linear 200ms; }
   .catalog-menu.open { transition-delay: 0s; }
   .operation-catalog { isolation: isolate; }
+  .catalog-reorder + .catalog-reorder { margin-top: 12px; }
   .workflow-catalog { margin-top: 12px; }
   /* Keep headings above ancestor and sibling connectors throughout hover exit too. */
   .operation-catalog :global(summary), .operation-catalog :global(.catalog-operation-action) { position: relative; z-index: 1; }

@@ -8,6 +8,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { InputField } from "$lib/catalog.ts";
   import FieldSelect from "./FieldSelect.svelte";
   import FieldNumber from "./FieldNumber.svelte";
+  import FieldInteger from "./FieldInteger.svelte";
 
   let { field, id, value, onValueChange, required = field.required, disabled = false, invalid = false,
     active = true, describedBy, multiline = false, portalZIndex = 40 }:
@@ -18,11 +19,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const placeholder = $derived(field.type === "object" ? '{"name": "Example"}' : field.type === "array" ? '["example", "values"]' : field.type === "null" ? "null" : "");
 </script>
 
-{#if field.enum || field.type === "boolean"}
+{#if field.type === "integer"}
+  <FieldInteger {id} label={field.label} {value} minimum={field.minimum} maximum={field.maximum}
+    options={field.enum as number[] | undefined} {onValueChange} {required} {disabled} {invalid} {describedBy} />
+{:else if field.enum || field.type === "boolean"}
   <FieldSelect {id} label={field.label} {value} options={field.enum ?? [true, false]} {active} {disabled}
     {onValueChange} {required} {invalid} {describedBy} {portalZIndex} />
-{:else if field.type === "number" || field.type === "integer"}
-  <FieldNumber {id} label={field.label} {value} integer={field.type === "integer"} minimum={field.minimum}
+{:else if field.type === "number"}
+  <FieldNumber {id} label={field.label} {value} minimum={field.minimum}
     maximum={field.maximum} {onValueChange} {required} {disabled} {invalid} {describedBy} />
 {:else if structured || multiline}
   <textarea class="field-input" class:json-input={structured} {id} aria-label={field.label} {value} {required} {disabled}

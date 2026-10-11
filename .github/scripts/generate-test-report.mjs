@@ -6,6 +6,10 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { generate } from "multiple-cucumber-html-reporter";
+import { createPail, pail } from "@visulima/pail";
+
+// GitHub workflow commands must stay undecorated and on the error stream.
+const annotations = createPail({ stdout: process.stderr, logLevel: "informational", interactive: false });
 
 const [output, ...inputs] = process.argv.slice(2);
 const context = `output='${output ?? ""}', inputs=${JSON.stringify(inputs)}`;
@@ -166,7 +170,7 @@ try
 <body><p id="report-warning" role="status">${warning}</p><p id="report-error" role="alert"></p><iframe id="report" title="Cucumber test report"></iframe>
 <script id="report-files" type="application/json">${JSON.stringify(files).replaceAll("<", "\\u003c")}</script>
 <script>(${openReport.toString()})();</script></body></html>\n`);
-  console.log(`Generated standalone test report: ${output} (${inputs.length} suites, ${featureCount} features).`);
+  pail.force.success(`Generated standalone test report: ${output} (${inputs.length} suites, ${featureCount} features).`);
 }
 catch (error)
 {
@@ -175,7 +179,7 @@ catch (error)
   for (const name of ["NPM_TOKEN", "NODE_AUTH_TOKEN", "GH_TOKEN", "GITHUB_TOKEN", "GH_APP_PRIVATE_KEY",
     "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_PAGES_API_TOKEN", "CLOUDFLARE_R2_API_TOKEN"])
     if (process.env[name]) message = message.replaceAll(process.env[name], "[REDACTED]");
-  console.error(message.replace(/[\r\n]+/g, " "));
+  annotations.raw(`${message.replace(/[\r\n]+/g, " ")}\n`);
   process.exitCode = 1;
 }
 finally

@@ -156,6 +156,8 @@
 html, body, #app { width: 100%; min-height: 100%; margin: 0; }
 body { background: var(--color-background); color: var(--color-foreground); font-family: Montserrat, ui-sans-serif, system-ui, sans-serif; font-size: 14px; line-height: 1.5; }
 button, input, select, textarea { font: inherit; }
+/* Keep input values bold even when a component uses a font shorthand. */
+input, textarea { font-weight: 700 !important; }
 button, summary, select { cursor: pointer; }
 button:disabled, [data-slot="button"][aria-disabled="true"] { cursor: not-allowed; background: var(--color-disabled); color: var(--color-disabled-foreground); opacity: 1; box-shadow: none; }
 button, a, textarea { -webkit-tap-highlight-color: transparent; }
@@ -211,15 +213,16 @@ p { margin: 0; }
 .workflow-progress.compact .step-number { display: inline-block; }
 @container (max-width: 400px) { .workflow-step-list { --step-tip: 8px; } }
 .field-heading { display: inline-block; margin-bottom: 10px; font-size: 14px; font-weight: 650; }
-#operation-prompt { display: block; width: 100%; min-height: 126px; padding: 8px 12px; resize: none; border: 0; border-radius: 4px; background: var(--field-background); color: var(--field-foreground); font-size: inherit; line-height: inherit; }
+#operation-prompt { display: block; width: 100%; min-height: calc(3lh + 16px); field-sizing: content; overflow: hidden; scrollbar-gutter: auto; padding: 8px 12px; resize: none; border: 0; border-radius: 4px; background: var(--field-background); color: var(--field-foreground); font-size: inherit; line-height: inherit; }
 #operation-prompt:focus { outline: 3px solid var(--color-ring); outline-offset: 3px; }
 #operation-prompt::placeholder, .operation-fields .field-input::placeholder { color: var(--color-surface); opacity: 1; }
-input::placeholder, textarea::placeholder { color: var(--color-muted-foreground); font-style: italic; }
+input::placeholder, textarea::placeholder { color: var(--color-muted-foreground); font-weight: 400; font-style: italic; }
 .form-footer { display: flex; justify-content: flex-end; align-items: center; gap: 20px; padding-top: 24px; }
 .form-footer > .hint { flex: 1; }
-.prompt-suggestions { flex: 1; min-width: 0; }
-.prompt-suggestion-list { display: flex; flex-wrap: nowrap; min-width: 0; overflow: hidden; overflow: clip; overflow-clip-margin: 12px; gap: 8px; margin-top: 8px; }
-.prompt-suggestion-list button { min-height: 40px; padding: 8px 11px; border: 0; border-radius: 4px; background: var(--color-muted); color: var(--color-chip-foreground); font-size: 12px; font-weight: 700; text-align: left; }
+.prompt-suggestion-list { display: flex; min-width: 0; gap: 8px; margin-bottom: 20px; }
+/* Keep hover room above/beside examples, but clip at the sliding bottom edge. */
+#prompt-examples > .reveal-panel-inner { overflow: visible; clip-path: inset(-12px -12px 0); }
+.prompt-suggestion-list button { min-height: 32px; padding: 4px 11px; border: 0; border-radius: 4px; background: var(--color-muted); color: var(--color-chip-foreground); font-size: 12px; font-weight: 700; text-align: left; }
 .primary-arrow { display: inline-grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); }
 .search-summary { margin: 12px 0 18px; overflow-wrap: anywhere; }
 .results-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
@@ -245,7 +248,7 @@ h2 { margin: 5px 0 0; font-size: 23px; font-weight: 650; letter-spacing: -0.6px;
 #operation-prompt, .operation-fields { --field-background: var(--color-foreground); --field-foreground: var(--color-background); --field-addon: var(--control-addon); }
 .operation-fields { display: grid; gap: 18px; padding: 0; }
 .joined-field { display: grid; grid-template-columns: minmax(0,25%) minmax(0,1fr) auto; min-height: 40px; background: var(--field-background); color: var(--field-foreground); border: 0; border-radius: 4px; overflow: hidden; outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
-.joined-field:has(:is(.field-input,.field-select-trigger):disabled) { --field-background: var(--color-disabled); --field-foreground: var(--color-disabled-foreground); }
+.joined-field:has(:is(.field-input,.field-select-trigger,.integer-value):disabled) { --field-background: var(--color-disabled); --field-foreground: var(--color-disabled-foreground); }
 .joined-field:focus-within { outline: 3px solid var(--color-ring); outline-offset: 3px; }
 .joined-field label { display: flex; align-items: center; justify-content: flex-end; min-width: 0; margin: 0; padding: 6px 10px; font-size: 13px; font-weight: 600; text-align: right; overflow-wrap: anywhere; background: var(--control-addon); color: var(--control-label); }
 .joined-field :is(.field-input,.field-select-trigger) { min-width: 0; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 0; outline: none; background: transparent; color: inherit; }
@@ -354,7 +357,8 @@ html { scroll-padding-top: calc(var(--app-header-height) + 12px); }
 .workflow-step-list li:has(> .workflow-step-button:enabled:is(:hover,:focus-visible)) { position: relative; z-index: 2; }
 
 .step-viewport { position: relative; isolation: isolate; margin: -8px calc(-1 * var(--content-padding)); overflow: hidden; overflow: clip; transition: height 300ms ease-in; }
-.step-viewport.following-content-size { transition: none; }
+.step-viewport.following-content-size { height: auto !important; transition: none; }
+.step-viewport.following-content-size .step-panel[aria-hidden="true"] { height: 0; overflow: clip; }
 .step-viewport::after { content: ''; position: absolute; inset: 0; z-index: 1; box-shadow: inset 4px 0 3px -1px var(--color-surface), inset -4px 0 3px -1px var(--color-surface); pointer-events: none; }
 .step-track { display: flex; align-items: flex-start; width: 100%; transition: transform 300ms ease-in; }
 .step-panel { flex: 0 0 100%; min-width: 0; padding: 8px var(--content-padding); }
@@ -370,7 +374,6 @@ html { scroll-padding-top: calc(var(--app-header-height) + 12px); }
 .report-pill .report-toggle { display: grid; place-items: center; flex-shrink: 0; width: 32px; padding: 4px; border: 0; border-radius: 0 4px 4px 0; background: inherit; color: inherit; transition: outline-color 180ms ease-in; }
 .report-pill .report-toggle:not(:last-child) { border-radius: 0; }
 .operation-toolbar { margin: 0 0 20px; }
-.prompt-label { margin-bottom: 10px; }
 /* Paint partial lines within the native fieldset border box, preserving the legend and spacing. */
 .request-input-group {
   /* Two thirds of the 75% line layer keeps the solid section at 50% of the fieldset. */
@@ -406,13 +409,13 @@ html { scroll-padding-top: calc(var(--app-header-height) + 12px); }
 #operation-description .field-description { margin: 0; padding: 0 0 20px; }
 #operation-details .detail-report, #matching-help .detail-report { margin-top: 0; }
 .prompt-footer { align-items: flex-end; }
-.prompt-suggestion-list button { flex-shrink: 0; white-space: nowrap; }
+.prompt-suggestion-list button { flex: 0 0 auto; white-space: nowrap; }
 .request-footer { flex-wrap: wrap; }
 @media (max-width: 599px) {
   .operation-heading { flex-wrap: wrap; }
   .joined-field { grid-template-columns: minmax(0,1fr) auto; }
   .joined-field label { grid-column: 1 / -1; justify-content: flex-start; text-align: left; }
-  .joined-field :is(.field-input,.field-select-trigger,.field-number) { grid-column: 1; }
+  .joined-field :is(.field-input,.field-select-trigger,.field-number,.field-integer) { grid-column: 1; }
   .joined-field .field-actions { grid-column: 2; grid-row: 2; }
   .request-input-group { padding: 12px 0 0 12px; }
 }
@@ -421,6 +424,6 @@ html { scroll-padding-top: calc(var(--app-header-height) + 12px); }
   :where(button, a[href], summary, input, select, textarea, [tabindex]):not(:focus-visible), .joined-field:not(:focus-within) { outline-style: none; }
 }
 
-.app-tooltip { z-index: 100; max-width: min(280px, calc(100vw - 16px)); padding: 6px 10px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-muted-foreground); font-size: 11px; font-weight: 700; }
+.app-tooltip { z-index: 100; max-width: min(280px, calc(100vw - 16px)); padding: 6px 10px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-muted-foreground); font-size: 11px; font-weight: 700; overflow-wrap: anywhere; }
 .tooltip-arrow { color: var(--color-badge-background); }
 @media (prefers-reduced-motion: reduce) { .operation-node, .workflow-workspace .svelte-flow__edge path { transition: none !important; } .workflow-workspace .svelte-flow__edge.animated path { animation: none !important; } }

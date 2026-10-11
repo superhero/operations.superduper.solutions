@@ -9,16 +9,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { formatLocalDateTime } from "$lib/datetime.ts";
   import type { WorkflowRevision } from "$lib/workflow-repository.ts";
 
-  let { workflowId, revisions, currentRevision, busy = false, onrestore }: {
+  let { workflowId, revisions, currentRevision, busy = false, onselect }: {
     workflowId: string;
     revisions: WorkflowRevision[];
     currentRevision: string | null;
     busy?: boolean;
-    onrestore: (oid: string) => void | Promise<void>;
+    onselect: (oid: string) => void | Promise<void>;
   } = $props();
 
-  let restoring = $state("");
-  let restoreError = $state("");
+  let selecting = $state("");
+  let selectionError = $state("");
   let disposed = false;
   let treeElement = $state<HTMLDivElement>();
   let rowCenters = $state<Record<string, number>>({});
@@ -110,29 +110,29 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   $effect(() => {
     workflowId;
     untrack(() => {
-      restoreError = "";
+      selectionError = "";
     });
   });
 
   onDestroy(() => { disposed = true; });
 
-  async function restore(oid: string)
+  async function selectVersion(oid: string)
   {
-    if (oid === currentRevision || !revisions.some(revision => revision.oid === oid) || busy || restoring) return;
+    if (oid === currentRevision || !revisions.some(revision => revision.oid === oid) || busy || selecting) return;
     const id = workflowId;
-    restoring = oid;
-    restoreError = "";
-    try { await onrestore(oid); }
+    selecting = oid;
+    selectionError = "";
+    try { await onselect(oid); }
     catch (cause)
     {
       if (!disposed && id === workflowId)
-        restoreError = cause instanceof Error ? cause.message : "This version could not be restored.";
+        selectionError = cause instanceof Error ? cause.message : "This version could not be selected.";
     }
-    finally { if (!disposed) restoring = ""; }
+    finally { if (!disposed) selecting = ""; }
   }
 </script>
 
-<section class="workflow-history" aria-label="Workflow version history" aria-busy={busy || restoring !== ""}>
+<section class="workflow-history" aria-label="Workflow version history" aria-busy={busy || selecting !== ""}>
   {#if revisions.length}
     <div class="version-scroll">
       <div class="version-tree" style={`--graph-width: ${graph.width}px`} bind:this={treeElement}>
@@ -157,19 +157,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <ol class="version-list" aria-label="Saved workflow versions">
           {#each revisions as revision (revision.oid)}
             <li class:current={revision.oid === currentRevision} data-version-oid={revision.oid}>
-              <div class="version-description">
-                <strong>{revision.message.replace(/^Restore workflow version [a-f0-9]{7,40}\b/, "Restore workflow version")}</strong>
-                <span class="version-meta">
-                  <time datetime={new Date(revision.timestamp).toISOString()}>{formatLocalDateTime(revision.timestamp)}</time>
+              <button type="button" class="version-card" aria-current={revision.oid === currentRevision ? "true" : undefined}
+                aria-disabled={revision.oid === currentRevision} disabled={busy || selecting !== ""} onclick={() => selectVersion(revision.oid)}>
+                <span class="version-description">
+                  <strong>{revision.message.replace(/^Restore workflow version [a-f0-9]{7,40}\b/, "Restore workflow version")}</strong>
+                  <span class="version-meta">
+                    <time datetime={new Date(revision.timestamp).toISOString()}>{formatLocalDateTime(revision.timestamp)}</time>
+                  </span>
+                  {#if revision.oid === currentRevision}<span class="current-version">Current version</span>{/if}
                 </span>
-                {#if revision.oid === currentRevision}<span class="current-version">Current version</span>{/if}
-              </div>
-              {#if revision.oid !== currentRevision}
-                <button type="button" class="restore-button" aria-label={`Restore version from ${formatLocalDateTime(revision.timestamp)}`}
-                  disabled={busy || restoring !== ""} onclick={() => restore(revision.oid)}>
-                  {restoring === revision.oid ? "Restoring…" : "Restore version"}
-                </button>
-              {/if}
+              </button>
             </li>
           {/each}
         </ol>
@@ -179,7 +176,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <p class="hint">No saved versions yet.</p>
   {/if}
 
-  {#if restoreError}<p role="alert">{restoreError}</p>{/if}
+  {#if selectionError}<p role="alert">{selectionError}</p>{/if}
 </section>
 
 <style>
@@ -192,17 +189,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .version-graph circle:is(.current, .alternative) { fill: var(--color-surface); }
   .version-graph circle.current { fill: var(--color-primary); }
   .version-list { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0 0 0 calc(var(--graph-width) + 4px); }
-  .version-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px; border-left: 2px solid transparent; border-radius: 4px; background: var(--color-report-card); }
-  .version-list li.current { border-left-color: var(--color-badge-background); }
+  .version-list li { min-width: 0; }
+  .version-card { display: block; width: 100%; padding: 10px; border: 0; border-left: 2px solid transparent; border-radius: 4px; background: var(--color-report-card); color: inherit; font: inherit; text-align: left; cursor: pointer; transition: transform 180ms ease-in; }
+  .version-card[aria-current="true"] { border-left-color: var(--color-badge-background); cursor: default; }
   .version-description { display: grid; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
   .version-description strong { white-space: pre-line; }
   .version-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; color: var(--color-muted-foreground); font-size: 11px; }
   .current-version { color: var(--color-badge-background); font-size: 11px; font-weight: 700; }
-  button { flex-shrink: 0; min-height: 36px; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-secondary); color: var(--color-secondary-foreground); font-size: 12px; font-weight: 700; transition: background-color 180ms ease-in, color 180ms ease-in; }
   button:focus-visible { outline: 2px solid var(--color-foreground); outline-offset: 2px; }
-  .restore-button { background: var(--color-primary); color: var(--color-primary-foreground); }
   button:disabled { color: var(--color-muted-foreground); cursor: not-allowed; }
   p { margin: 0; line-height: 1.6; }
   [role="alert"] { padding: 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); }
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .version-card:not(:disabled, [aria-current="true"]) { will-change: transform; }
+    .version-card:not(:disabled, [aria-current="true"]):hover { transform: scale(min(1.10, var(--hover-scale, 1.10))); }
+  }
   @media (prefers-reduced-motion: reduce) { button, .version-graph circle { transition: none; } }
 </style>

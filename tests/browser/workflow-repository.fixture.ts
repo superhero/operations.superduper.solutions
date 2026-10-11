@@ -163,7 +163,8 @@ export async function callRepository(method: string, args: unknown[]) {
     };
     try {
       const action = typeof args[2] === 'string' ? args[2] : 'save';
-      await Reflect.apply(Reflect.get(workflowRepository, action), workflowRepository, args.slice(0, 2));
+      const actionArgs = action === 'checkout' ? [args[0], args[1], args[3]] : args.slice(0, 2);
+      await Reflect.apply(Reflect.get(workflowRepository, action), workflowRepository, actionArgs);
     }
     catch (error) { return String(error); }
     // Keep the outage active until reload. A broadcast-triggered catalogue read

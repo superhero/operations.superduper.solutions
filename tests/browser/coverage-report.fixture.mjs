@@ -3,8 +3,8 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join, relative, resolve } from 'node:path';
 
 // A small Istanbul-style report: named line anchors, repeated IDs, relative
 // assets, per-page scripts and filenames that collide when punctuation is lost.
@@ -114,9 +114,18 @@ export async function realCoverageFixture(directory) {
   await writeFile(join(directory, 'exercise.mjs'), `import { answer } from './src/root.js';
     import { choose } from './src/nested/source-a.js';
     if (answer !== 42 || choose(true) !== 'Ω') throw new Error('Unexpected fixture result');\n`);
-  execFileSync(process.execPath, [resolve('node_modules/c8/bin/c8.js'), '--all', '--src=src',
-    '--include=src/**/*.js', '--reporter=html', '--reports-dir=coverage', '--temp-directory=v8',
+  // c8 searches ancestor directories for config. Keep this JavaScript fixture
+  // independent of the application's TypeScript coverage scope and thresholds.
+  await writeFile(join(directory, '.c8rc.json'), `${JSON.stringify({
+    all: true, src: ['src'], include: ['src/**/*.js'], exclude: [], extension: ['.js'],
+    reporter: ['html', 'json'], 'reports-dir': 'coverage', 'temp-directory': 'v8',
+  }, null, 2)}\n`);
+  execFileSync(process.execPath, [resolve('node_modules/c8/bin/c8.js'), '--config=.c8rc.json',
     process.execPath, 'exercise.mjs'], { cwd: directory });
+  const coverage = JSON.parse(await readFile(join(directory, 'coverage', 'coverage-final.json'), 'utf8'));
+  assert.deepEqual(Object.keys(coverage).map(file => relative(directory, file).replaceAll('\\', '/')).sort(),
+    ['src/nested/source-a.js', 'src/nested/source_a.js', 'src/root.js'],
+    'The real coverage fixture must include both executed and unexecuted JavaScript files.');
   const output = join(directory, 'test-coverage.html');
   execFileSync(process.execPath, [resolve('.github/scripts/generate-coverage-report.mjs'), output, join(directory, 'coverage')]);
   return output;

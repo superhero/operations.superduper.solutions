@@ -1,14 +1,13 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { storedWorkflows, blockWorkflowSaving, restoreWorkflowSaving, repository } from "./workflow-storage.fixture.mjs";
+import { storedWorkflows, restoreWorkflowSaving, repository, workflowStorageWorker } from "./workflow-storage.fixture.mjs";
 import { closeWorkflowDetails, expectWorkflowName, openWorkflowDetails, renameWorkflow, workflowNameInput } from "./workflow-details.fixture.mjs";
 import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { closeCatalog, connections, openCatalog, readExport, setMode, workflow } from "./workspace.steps.mjs";
 
-const storageKey = "operations-flow-documents-v1";
 const node = (page, type) => workflow(page).locator(`.svelte-flow__node-${type}`);
 const descriptionDialog = page => page.getByRole("dialog", { name: "Workflow details", exact: true });
 const savedDialog = page => page.getByRole("dialog", { name: "Saved workflows", exact: true });
@@ -32,15 +31,33 @@ async function connect(page, source, target) {
   await page.mouse.up();
 }
 
-const failStorage = page => blockWorkflowSaving(page, "Storage unavailable for control review");
 const recoverStorage = restoreWorkflowSaving;
+
+async function failControlStorage(page, message, writesOnly) {
+  const worker = await workflowStorageWorker(page);
+  await worker.evaluate(({ message, writesOnly }) => {
+    self.workflowControlTransaction = IDBDatabase.prototype.transaction;
+    IDBDatabase.prototype.transaction = function (stores, mode, options) {
+      if (this.name === 'v1/workflows/index' && (!writesOnly || mode === 'readwrite')) throw new Error(message);
+      return self.workflowControlTransaction.call(this, stores, mode, options);
+    };
+  }, { message, writesOnly });
+}
+
+async function recoverControlStorage(page) {
+  const worker = await workflowStorageWorker(page);
+  await worker.evaluate(() => {
+    IDBDatabase.prototype.transaction = self.workflowControlTransaction;
+    delete self.workflowControlTransaction;
+  });
+}
 
 function emptyDocument(id, name) {
   return { version: 3, id, name, description: "", nodes: [], edges: [], viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, dashed: false };
 }
 
 async function loadDocuments(page, documents) {
-  await page.evaluate(({ key, documents }) => localStorage.setItem(key, JSON.stringify(documents)), { key: storageKey, documents });
+  for (const document of documents) await repository(page, 'save', document, null);
   await page.reload();
   await setMode(page, "workflow");
   await expectWorkflowName(page, documents.at(-1).name);
@@ -98,7 +115,7 @@ When("I write a safely formatted workflow comment", async function () {
   await expect(comment.getByRole("link", { name: "Docs", exact: true })).toHaveAttribute("target", "_blank");
   await expect(comment.locator("script, img")).toHaveCount(0);
   assert.equal(await this.page.evaluate(() => window.commentUnsafe), undefined);
-  await comment.getByRole("button", { name: "Edit comment", exact: true }).click();
+  await comment.getByRole("button", { name: "Edit comment text", exact: true }).click();
   await expect(input).toHaveValue(controlComment);
   await input.press("Escape");
   await expect(input).toHaveCount(0);
@@ -155,8 +172,6 @@ When("I insert the saved project workflow from the catalog", async function () {
   const heading = catalog.locator(":scope > .catalog-group > summary");
   if (await heading.getAttribute("aria-expanded") !== "true") await heading.click();
   const entry = catalog.locator('[data-workflow-id="reusable-project"]');
-  const summary = entry.locator(":scope > .catalog-operation > summary");
-  if (await summary.getAttribute("aria-expanded") !== "true") await summary.click();
   await entry.getByRole("button", { name: "Add to workflow: Reusable project lookup", exact: true }).click();
   await closeCatalog(this.page);
   await expect(node(this.page, "workflow")).toHaveCount(1);
@@ -181,38 +196,56 @@ Given("three saved workflow control examples", async function () {
   await loadDocuments(this.page, this.controlDocuments);
 });
 
-When("I select two saved workflows for deletion", async function () {
+When("I cancel removing a saved workflow from its row", async function () {
   await this.page.getByRole("button", { name: "Open workflow", exact: true }).click();
   const dialog = savedDialog(this.page);
-  await expect(dialog.getByRole("button", { name: "Delete selected workflows", exact: true })).toBeDisabled();
-  await dialog.getByRole("checkbox", { name: "Select Remove alpha", exact: true }).check();
-  await dialog.getByRole("checkbox", { name: "Select Remove beta", exact: true }).check();
-  await dialog.getByRole("button", { name: "Delete selected workflows", exact: true }).click();
-  await expect(dialog.getByRole("group", { name: "Confirm removal", exact: true })).toContainText("Remove 2 saved workflows");
+  await expect(dialog.getByRole("checkbox")).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Delete selected workflows", exact: true })).toHaveCount(0);
+  for (const document of this.controlDocuments)
+    await expect(dialog.getByRole("button", { name: `Remove ${document.name}`, exact: true })
+      .locator('.material-symbols-rounded')).toHaveText('delete');
+  await dialog.getByRole("button", { name: "Remove Remove beta", exact: true }).click();
+  await expect(dialog.getByRole("group", { name: "Confirm removal", exact: true })).toContainText('Remove “Remove beta”');
+  await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
 });
 
-When("the bulk deletion encounters a storage failure", async function () {
-  await failStorage(this.page);
-  await savedDialog(this.page).getByRole("button", { name: "Remove", exact: true }).click();
+Then("all saved workflow control examples remain", async function () {
+  const dialog = savedDialog(this.page);
+  await expect(dialog.getByRole("group", { name: "Confirm removal", exact: true })).toHaveCount(0);
+  await expect(dialog.locator('.saved-documents li')).toHaveCount(3);
+  assert.deepEqual(await storedWorkflows(this.page), this.controlDocuments);
 });
 
-Then("the selected saved workflows are retained for retry", async function () {
+When("removing one saved workflow encounters a storage failure", async function () {
+  const dialog = savedDialog(this.page);
+  await dialog.getByRole("button", { name: "Remove Remove alpha", exact: true }).click();
+  await expect(dialog.getByRole("group", { name: "Confirm removal", exact: true })).toContainText('Remove “Remove alpha”');
+  await failControlStorage(this.page, 'Storage unavailable for control review', true);
+  await dialog.getByRole("button", { name: "Remove", exact: true }).click();
+});
+
+Then("the saved workflow is retained for retry", async function () {
   await expect(savedDialog(this.page).getByRole("alert")).toContainText("Storage unavailable for control review");
   await expect(savedDialog(this.page).getByRole("button", { name: "Try again", exact: true })).toBeVisible();
   assert.deepEqual(await storedWorkflows(this.page), this.controlDocuments);
 });
 
-When("I retry the bulk deletion after storage recovers", async function () {
-  await recoverStorage(this.page);
+When("I retry removing the workflow after storage recovers", async function () {
+  await recoverControlStorage(this.page);
   await savedDialog(this.page).getByRole("button", { name: "Try again", exact: true }).click();
 });
 
-Then("only the unselected saved workflow remains", async function () {
+Then("only that saved workflow is removed", async function () {
   const dialog = savedDialog(this.page);
-  await expect(dialog.getByRole("checkbox")).toHaveCount(1);
-  await expect(dialog.getByRole("checkbox", { name: "Select Keep this plan", exact: true })).not.toBeChecked();
-  await expect(dialog.getByRole("button", { name: "Delete selected workflows", exact: true })).toBeDisabled();
-  assert.deepEqual(await storedWorkflows(this.page), [this.controlDocuments[2]]);
+  await expect(dialog.locator('.saved-documents li')).toHaveCount(2);
+  await expect(dialog.getByRole("checkbox")).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Remove Remove alpha", exact: true })).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Remove Remove beta", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Remove Keep this plan", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Delete selected workflows", exact: true })).toHaveCount(0);
+  assert.deepEqual(await storedWorkflows(this.page), this.controlDocuments.slice(1));
+  await dialog.getByRole("button", { name: "Close", exact: true }).click();
+  await expectWorkflowName(this.page, "Keep this plan");
 });
 
 When("a workflow description save encounters a storage failure", async function () {
@@ -225,15 +258,16 @@ When("a workflow description save encounters a storage failure", async function 
   await expect(savedStatus).toBeVisible();
   const saved = (await storedWorkflows(this.page)).at(-1);
   this.descriptionHistoryBefore = await repository(this.page, "inspect", saved.id);
-  await this.page.evaluate(() => {
-    window.workflowAutosaveTransaction = IDBDatabase.prototype.transaction;
+  const worker = await workflowStorageWorker(this.page);
+  await worker.evaluate(() => {
+    self.workflowAutosaveTransaction = IDBDatabase.prototype.transaction;
     IDBDatabase.prototype.transaction = function (stores, mode, options) {
       // Fail after the Git commit is durable, so retry must recover that exact
       // submitted snapshot before saving any edits made while storage was down.
-      if (mode === "readwrite" && this.name === "operations-workflow-catalog-v1"
+      if (mode === "readwrite" && this.name === "v1/workflows/index"
         && Array.isArray(stores) && stores.includes("catalog") && stores.includes("pending"))
         throw new Error("Storage unavailable for control review");
-      return window.workflowAutosaveTransaction.call(this, stores, mode, options);
+      return self.workflowAutosaveTransaction.call(this, stores, mode, options);
     };
   });
   await description.fill(retainedDescription);
@@ -297,13 +331,7 @@ When("I edit the current plan and fail to open the saved library", async functio
   await workflow(this.page).getByRole("button", { name: "Cast", exact: true }).click();
   this.libraryDraft = (await readExport(this.page)).document;
   await expect(this.page.locator(".site-header .document-meta").getByText("Saved locally", { exact: true })).toBeVisible();
-  await this.page.evaluate(() => {
-    window.workflowControlTransaction = IDBDatabase.prototype.transaction;
-    IDBDatabase.prototype.transaction = function (stores, mode, options) {
-      if (this.name === 'operations-workflow-catalog-v1') throw new Error("Saved library unavailable for control review");
-      return window.workflowControlTransaction.call(this, stores, mode, options);
-    };
-  });
+  await failControlStorage(this.page, 'Saved library unavailable for control review', false);
   await this.page.getByRole("button", { name: "Open workflow", exact: true }).click();
 });
 
@@ -314,18 +342,16 @@ Then("the saved library offers a retry without replacing the draft", async funct
 });
 
 When("I retry loading the saved library after storage recovers", async function () {
-  await this.page.evaluate(() => {
-    IDBDatabase.prototype.transaction = window.workflowControlTransaction;
-    delete window.workflowControlTransaction;
-  });
+  await recoverControlStorage(this.page);
   await savedDialog(this.page).getByRole("button", { name: "Retry", exact: true }).click();
 });
 
 Then("the saved choices return and the edited draft remains intact", async function () {
   const dialog = savedDialog(this.page);
   await expect(dialog.getByRole("alert")).toHaveCount(0);
-  await expect(dialog.getByRole("checkbox")).toHaveCount(3);
-  await expect(dialog.getByRole("checkbox", { name: "Select Keep the edited draft", exact: true })).toBeVisible();
+  await expect(dialog.locator('.saved-documents li')).toHaveCount(3);
+  await expect(dialog.getByRole("checkbox")).toHaveCount(0);
+  await expect(dialog.getByRole("button", { name: "Remove Keep the edited draft", exact: true })).toBeVisible();
   await dialog.getByRole("button", { name: "Close", exact: true }).click();
   await expectWorkflowName(this.page, "Keep the edited draft");
   await expect(node(this.page, "cast")).toHaveCount(1);

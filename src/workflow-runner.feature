@@ -59,3 +59,17 @@ Feature: Step through workflow requests with explicit test responses
 
   Scenario: Structured mappings reject incompatible or conflicting values
     Then invalid structured connections stop before the next request
+
+  Scenario: Added object properties participate in HTTP execution
+    Then added root and nested properties retain unusual names and selected types in requests
+    And schema constrained additional properties map array entries and reject invalid responses
+
+  Scenario: HTTP response metadata maps with its documented header types
+    Then workflow response envelopes map status messages headers and nested body values
+    And documented response headers decode simple scalars arrays and objects safely
+
+  Scenario: Response branches follow OpenAPI status precedence
+    Then response routing prefers exact statuses then ranges then defaults
+
+  Scenario: Legacy response fields keep their original body paths
+    Then legacy response body properties remain unambiguous beside envelope fields

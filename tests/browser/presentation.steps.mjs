@@ -91,6 +91,8 @@ async function controlContrasts(controls) {
 Then('operations controls retain their complete keyboard focus outline', async function () {
   const page = this.page;
   const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
+  const examplesToggle = page.getByRole('button', { name: 'Commonly used operations', exact: true });
+  await examplesToggle.click();
   await page.keyboard.press('Tab');
   for (const theme of ['light', 'dark']) {
     await selectTheme(page, theme);
@@ -99,12 +101,13 @@ Then('operations controls retain their complete keyboard focus outline', async f
     assert.ok(ring.width >= 3 && ring.offset > 0 && ring.radius > 0, 'The prompt needs a strong separated focus ring around rounded corners.');
     await expectThemeColors(prompt, { backgroundColor: '--color-foreground', color: '--color-background', outlineColor: '--color-ring' });
     await expectThemeColors(prompt, { color: '--color-surface' }, '::placeholder');
-    for (const badge of await workspace(page).locator('label[for="operation-prompt"], .prompt-suggestions > span:not([hidden])').all())
-      await expectThemeColors(badge, { backgroundColor: '--color-badge-background', color: '--color-badge-foreground' });
+    await expectThemeColors(workspace(page).locator('.operation-toolbar').first(), {
+      backgroundColor: '--color-badge-background', color: '--color-badge-foreground'
+    });
     const examples = page.locator('.prompt-suggestion-list button:visible');
     for (const example of await examples.all())
       await expectThemeColors(example, { backgroundColor: '--color-muted', color: '--color-chip-foreground' });
-    const contrasts = await controlContrasts(workspace(page).locator('textarea, label[for="operation-prompt"], .prompt-suggestions > span:not([hidden]), .prompt-suggestion-list button:visible'));
+    const contrasts = await controlContrasts(workspace(page).locator('textarea, label[for="operation-prompt"], .prompt-suggestion-list button:visible'));
     for (const { label, minimum, ratio } of contrasts)
       assert.ok(ratio >= minimum, `${theme} ${label} needs readable contrast: ${ratio.toFixed(2)}:1.`);
     await examples.first().hover();
@@ -117,7 +120,8 @@ Then('operations controls retain their complete keyboard focus outline', async f
   const example = page.locator('.prompt-suggestion-list button:visible').first();
   const suggested = await example.innerText();
   await expect(prompt).toBeFocused();
-  await prompt.press('Tab');
+  await expectUnclippedFocus(examplesToggle);
+  await examplesToggle.press('Tab');
   await expect(example).toBeFocused();
   await expectUnclippedFocus(example);
   await example.press('Enter');

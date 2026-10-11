@@ -1,8 +1,9 @@
 Feature: Production build
 
-  Scenario: Build produces a single deployment artifact
+  Scenario: Build produces a single application page and hosting metadata
     Given the production build has completed
-    Then the dist directory contains only "index.html"
+    Then the dist directory contains only the application page and hosting headers
+    And the hosting headers enable cross-origin isolation
 
   Scenario: Production page exposes operations and the workflow editor
     Given the production build has completed

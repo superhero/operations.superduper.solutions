@@ -6,14 +6,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <script lang="ts">
   import MaterialIcon from "./MaterialIcon.svelte";
+  import FieldInteger from "./FieldInteger.svelte";
 
   let { id, label, value, integer = false, minimum, maximum, required = false, disabled = false, invalid = false, describedBy, onValueChange }:
     { id: string; label: string; value: string; integer?: boolean; minimum?: number | undefined; maximum?: number | undefined;
       required?: boolean; disabled?: boolean; invalid?: boolean; describedBy?: string | undefined; onValueChange: (value: string) => void } = $props();
-  let input: HTMLInputElement;
+  let input = $state<HTMLInputElement>();
 
   function change(direction: 1 | -1) {
-    if (disabled || input.disabled || input.readOnly || input.matches(":disabled")) return;
+    if (disabled || !input || input.disabled || input.readOnly || input.matches(":disabled")) return;
     input.focus({ preventScroll: true });
     const previous = input.value;
     if (integer) input.stepUp(direction);
@@ -35,6 +36,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 </script>
 
+{#if integer}
+  <FieldInteger {id} {label} {value} {minimum} {maximum} {required} {disabled} {invalid} {describedBy} {onValueChange} />
+{:else}
 <div class="field-number" class:disabled>
   <input bind:this={input} class="field-input" {id} type="number" {value} {required} {disabled}
     min={minimum} max={maximum} step={integer ? 1 : "any"} aria-label={label}
@@ -47,6 +51,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       onpointerdown={(event) => event.preventDefault()} onclick={() => change(-1)}><MaterialIcon name="keyboard_arrow_down" size={18} /></button>
   </div>
 </div>
+{/if}
 
 <style>
   .field-number { position: relative; min-width: 0; width: 100%; overflow: hidden; }

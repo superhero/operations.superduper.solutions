@@ -22,13 +22,14 @@ Feature: Workflow utility controls and reusable plans
     And I reload and reopen the workflow workspace
     Then the reusable workflow keeps its ports and embedded definition
 
-  Scenario: Bulk workflow deletion can recover from a storage failure
+  Scenario: Removing one saved workflow supports cancellation and recovery from a storage failure
     Given three saved workflow control examples
-    When I select two saved workflows for deletion
-    And the bulk deletion encounters a storage failure
-    Then the selected saved workflows are retained for retry
-    When I retry the bulk deletion after storage recovers
-    Then only the unselected saved workflow remains
+    When I cancel removing a saved workflow from its row
+    Then all saved workflow control examples remain
+    When removing one saved workflow encounters a storage failure
+    Then the saved workflow is retained for retry
+    When I retry removing the workflow after storage recovers
+    Then only that saved workflow is removed
 
   Scenario: Description editing keeps its draft through a failed save
     Given a workflow with editable routing controls and a comment

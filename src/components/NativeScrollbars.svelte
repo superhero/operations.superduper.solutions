@@ -9,7 +9,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   onMount(() => {
     if (!CSS.supports("selector(::-webkit-scrollbar)") || !CSS.registerProperty) return;
-    const selector = "html, .catalog-menu, .catalog-sheet, .modal-content, .json-scroll, textarea";
+    const selector = "html, .catalog-menu, .catalog-sheet, .modal-content, .json-scroll, textarea, #__v_o__panel, #__v_o__panel *";
     const properties = { x: "--scrollbar-x-inset", y: "--scrollbar-y-inset" };
     type Hit = { element: HTMLElement; axis: keyof typeof properties };
     const animations = new Map<HTMLElement, Partial<Record<Hit["axis"], Animation>>>();
@@ -91,7 +91,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       reduced.removeEventListener("change", preference);
       for (const axes of animations.values()) for (const animation of Object.values(axes)) animation.cancel();
       document.documentElement.classList.remove("animated-scrollbars");
-      for (const element of document.querySelectorAll<HTMLElement>(selector)) for (const property of Object.values(properties)) element.style.removeProperty(property);
+      const roots: ParentNode[] = [document, ...Array.from(document.querySelectorAll("vite-error-overlay"), overlay => overlay.shadowRoot).filter((root): root is ShadowRoot => root !== null)];
+      for (const root of roots) for (const element of root.querySelectorAll<HTMLElement>(selector)) for (const property of Object.values(properties)) element.style.removeProperty(property);
     };
   });
 </script>
@@ -103,7 +104,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(:is(html, .catalog-menu, .catalog-sheet, .modal-content, .json-scroll, .json-report, textarea)) { scrollbar-gutter: stable; }
   :global(.modal-content) { scrollbar-gutter: stable both-edges; }
   :global(::-webkit-scrollbar) { width: 4px; height: 4px; }
-  :global(::-webkit-scrollbar-track), :global(::-webkit-scrollbar-corner) { background: transparent; }
+  :global(::-webkit-scrollbar), :global(::-webkit-scrollbar-track), :global(::-webkit-scrollbar-track-piece), :global(::-webkit-scrollbar-corner) { background: transparent; box-shadow: none; }
   :global(::-webkit-scrollbar-thumb) { background: var(--color-scrollbar-thumb); border-radius: 4px; }
   :global(:root.animated-scrollbars), :global(.animated-scrollbars :is(.catalog-menu, .catalog-sheet, .modal-content, .json-scroll, textarea)) {
     scrollbar-width: auto; scrollbar-color: auto;

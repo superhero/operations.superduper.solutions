@@ -29,8 +29,8 @@ export function createWorkflowDemo()
       if (!canonical || canonical.method !== operation.method || canonical.path !== operation.path
         || catalogForOperation(canonical.id)!.id !== "demo")
         throw new Error("This operation is unavailable in the local demo.");
-      const request = prepareRequest(canonical, values);
-      let response: WorkflowResponse;
+      const request = prepareRequest(canonical, values, operation.fields);
+      let response: Pick<WorkflowResponse, "status" | "body">;
       if (canonical.id === "demo:listProjects")
       {
         const name = String(request.query.name ?? "").toLowerCase();
@@ -79,7 +79,8 @@ export function createWorkflowDemo()
           form: request.contentType === "application/x-www-form-urlencoded" || request.contentType === "multipart/form-data" ? request.body : {}, files: {}
         } };
       }
-      return { request, response: structuredClone(response) };
+      return { request, response: structuredClone({ ...response, statusText: response.status === 201 ? "Created" : "OK",
+        headers: { "content-type": canonical.responseMediaType ?? "application/json" } }) };
     }
   };
 }

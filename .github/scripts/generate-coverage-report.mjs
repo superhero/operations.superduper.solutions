@@ -4,6 +4,10 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { dirname, extname, join, relative, resolve, sep } from "node:path";
+import { createPail, pail } from "@visulima/pail";
+
+// GitHub workflow commands must stay undecorated and on the error stream.
+const annotations = createPail({ stdout: process.stderr, logLevel: "informational", interactive: false });
 
 // Keep each Istanbul page in its own document so scripts, filters and line IDs
 // operate on that page, not on a mixture of every page in the report.
@@ -160,7 +164,7 @@ try
 <body><p id="coverage-error" role="alert"></p><iframe id="coverage" title="Code coverage report"></iframe>
 <script id="coverage-files" type="application/json">${JSON.stringify(files).replaceAll("<", "\\u003c")}</script>
 <script>(${openCoverageReport.toString()})();</script></body></html>\n`);
-  console.log(`Generated standalone coverage report: ${output} (${Object.keys(files).filter(path => path.endsWith(".html")).length} pages).`);
+  pail.force.success(`Generated standalone coverage report: ${output} (${Object.keys(files).filter(path => path.endsWith(".html")).length} pages).`);
 }
 catch (error)
 {
@@ -169,6 +173,6 @@ catch (error)
   for (const name of ["NPM_TOKEN", "NODE_AUTH_TOKEN", "GH_TOKEN", "GITHUB_TOKEN", "GH_APP_PRIVATE_KEY",
     "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_PAGES_API_TOKEN", "CLOUDFLARE_R2_API_TOKEN"])
     if (process.env[name]) message = message.replaceAll(process.env[name], "[REDACTED]");
-  console.error(message.replace(/[\r\n]+/g, " "));
+  annotations.raw(`${message.replace(/[\r\n]+/g, " ")}\n`);
   process.exitCode = 1;
 }

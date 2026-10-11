@@ -8,6 +8,7 @@ import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { openCatalog, closeCatalog, chooseCatalogOperation, field, fillField, workflow, workflowAction, workspace, operationNodes, connections } from './workspace.steps.mjs';
 import { expectThemeColors } from './theme-colors.mjs';
+import { operations } from '../../src/lib/catalog.ts';
 
 Then('catalog paths, focus and tooltip dismissal behave consistently', async function () {
   const page = this.page;
@@ -65,30 +66,31 @@ Then('prompt keyboard controls preserve editing and search deliberately', async 
 
   await page.evaluate(() => document.fonts.ready);
   const originalViewport = page.viewportSize();
+  const examplesToggle = page.getByRole('button', { name: 'Commonly used operations', exact: true });
+  await expect(examplesToggle).toHaveAttribute('aria-expanded', 'false');
+  await examplesToggle.click();
+  await expect(examplesToggle).toHaveAttribute('aria-expanded', 'true');
   const examples = page.locator('.prompt-suggestion-list button');
   const allNames = await examples.allTextContents();
+  assert.deepEqual(allNames, operations.map(operation => operation.name));
   for (const width of [1280, 320, 390, 1280]) {
-    const last = page.locator('.prompt-suggestion-list button:visible').last();
+    const visible = page.locator('.prompt-suggestion-list button:visible');
+    const last = examples.nth(allNames.indexOf(await visible.last().textContent()));
     await last.focus();
-    const focusedExample = await last.innerText();
     await page.setViewportSize({ width, height: 844 });
-    // ResizeObserver must restore hidden examples before we measure the wide row.
-    if (width === 1280) await expect(page.locator('.prompt-suggestion-list button:visible'),
-      'Widening the panel must restore the full example row.').toHaveText(allNames);
-    await expect.poll(() => examples.evaluateAll(buttons => {
-      const visible = buttons.filter(button => !button.hidden);
+    await expect.poll(() => visible.count(), 'At least one complete example must fit every viewport.').toBeGreaterThan(0);
+    await expect(examples).toHaveText(allNames);
+    await expect.poll(() => visible.evaluateAll(buttons => {
       const list = buttons[0].parentElement.getBoundingClientRect();
-      const submit = document.querySelector('[aria-label="Find operations"]').getBoundingClientRect();
-      return visible.length > 0 && visible.every((button, index) => {
+      return buttons.every((button, index) => {
         const box = button.getBoundingClientRect();
-        return button === buttons[index] && box.left >= list.left && box.right <= list.right + 1 &&
-          box.right <= submit.left && button.scrollWidth <= button.clientWidth + 1 &&
-          Math.abs(box.top - visible[0].getBoundingClientRect().top) <= 1;
+        const previous = buttons[index - 1]?.getBoundingClientRect();
+        return !button.hidden && box.left >= list.left && box.right <= list.right + 1 &&
+          button.scrollWidth <= button.clientWidth + 1 &&
+          (!previous || Math.abs(box.top - previous.top) <= 1 && box.left >= previous.right);
       }) && document.documentElement.scrollWidth <= innerWidth;
     })).toBe(true);
-    const shown = await page.locator('.prompt-suggestion-list button:visible').allTextContents();
-    assert.deepEqual(shown, allNames.slice(0, shown.length), 'Responsive examples must keep their source order without partially clipped labels.');
-    if (!shown.includes(focusedExample)) await expect(prompt).toBeFocused();
+    await expect(await last.isVisible() ? last : prompt).toBeFocused();
     for (const [index, name] of ['Prompt', 'Evaluation', 'Operation'].entries())
       await expect(progress.getByRole('button', { name: new RegExp(`${name}$`) })).toHaveAccessibleName(`${index + 1}. ${name}`);
     await expect(progress.getByRole('button')).toHaveCount(3);

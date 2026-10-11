@@ -65,8 +65,6 @@ export type WorkflowDocument = {
   dashed: boolean;
 };
 
-// Existing documents keep their original key and version 1 JSON shape.
-export const workflowStorageKey = "operations-flow-documents-v1";
 export const maxWorkflowFileSize = 2_000_000;
 
 function record(value: unknown): Record<string, unknown>
@@ -350,39 +348,18 @@ export function validateWorkflowDocument(value: unknown): WorkflowDocument
   return document;
 }
 
+/**
+ * Entry point for future migrations keyed by workflow document version.
+ * Supported formats currently need no conversion. Reading a document never
+ * rewrites its working file or historical Git commits.
+ */
+export function migrateWorkflowDocument(value: unknown): WorkflowDocument
+{
+  return validateWorkflowDocument(value);
+}
+
 export function parseWorkflowDocument(json: string): WorkflowDocument
 {
   if (json.length > maxWorkflowFileSize) throw new Error("Workflow documents must be smaller than 2 MB.");
-  return validateWorkflowDocument(JSON.parse(json));
-}
-
-export function loadWorkflowDocuments(storage: Pick<Storage, "getItem">): WorkflowDocument[]
-{
-  const json = storage.getItem(workflowStorageKey);
-  if (json === null) return [];
-  const value: unknown = JSON.parse(json);
-  if (!Array.isArray(value) || value.length > 50)
-    throw new Error("The local workflow collection must contain at most 50 documents.");
-  const documents = value.map(validateWorkflowDocument);
-  uniqueIds(documents);
-  return documents;
-}
-
-export function saveWorkflowDocument(storage: Pick<Storage, "getItem" | "setItem">, value: WorkflowDocument): void
-{
-  const document = validateWorkflowDocument(value);
-  const documents = loadWorkflowDocuments(storage).filter(item => item.id !== document.id);
-  if (documents.length >= 50) throw new Error("The local workflow collection is full; remove a saved document first.");
-  storage.setItem(workflowStorageKey, JSON.stringify([...documents, document]));
-}
-
-export function removeWorkflowDocument(storage: Pick<Storage, "getItem" | "setItem">, id: string): void
-{
-  removeWorkflowDocuments(storage, [id]);
-}
-
-export function removeWorkflowDocuments(storage: Pick<Storage, "getItem" | "setItem">, ids: readonly string[]): void
-{
-  const removed = new Set(ids);
-  storage.setItem(workflowStorageKey, JSON.stringify(loadWorkflowDocuments(storage).filter(item => !removed.has(item.id))));
+  return migrateWorkflowDocument(JSON.parse(json));
 }

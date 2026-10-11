@@ -9,9 +9,15 @@ Given("the production build has completed", async function ()
   html = await readFile("dist/index.html", "utf8");
 });
 
-Then("the dist directory contains only {string}", async function (filename)
+Then("the dist directory contains only the application page and hosting headers", async function ()
 {
-  assert.deepEqual(await readdir("dist"), [filename]);
+  assert.deepEqual((await readdir("dist")).sort(), ["_headers", "index.html"]);
+});
+
+Then("the hosting headers enable cross-origin isolation", async function ()
+{
+  const headers = await readFile("dist/_headers", "utf8");
+  assert.match(headers, /^\/\*\n  Cross-Origin-Opener-Policy: same-origin\n  Cross-Origin-Embedder-Policy: credentialless\n$/);
 });
 
 Then("the production page contains the application title", function ()

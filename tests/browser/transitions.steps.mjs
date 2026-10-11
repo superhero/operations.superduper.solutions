@@ -70,11 +70,11 @@ Then('report and schema transitions retain content through interruption', async 
   const report = page.getByRole('region', { name: 'Operation report', exact: true });
   const header = report.locator('summary[aria-label="OpenAPI schema"]');
   await header.click();
-  const disclosure = page.locator('.schema-disclosure > .disclosure-panel');
-  const json = page.locator('.schema-disclosure .json-view');
+  const disclosure = report.locator('.schema-disclosure > .disclosure-panel');
+  const json = report.locator('.schema-disclosure .json-view');
   await expect(json).toBeVisible();
   await expect.poll(() => disclosure.evaluate(element => element.getAnimations().length)).toBe(0);
-  const closingMotion = await pauseNextAnimation(page, '.schema-disclosure > .disclosure-panel', 'height');
+  const closingMotion = await pauseNextAnimation(page, '[aria-label="Operation report"] .schema-disclosure > .disclosure-panel', 'height');
   await header.press('Enter');
   await closingMotion();
   const closing = await disclosure.evaluate(element => ({
@@ -131,19 +131,14 @@ Then('prompt examples and page overflow remain stable when resizing under a hove
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.setViewportSize({ width: 500, height: 900 });
   const arrow = page.getByRole('button', { name: 'Find operations', exact: true });
-  const firstExample = page.locator('.prompt-suggestion-list button').first();
+  await page.getByRole('button', { name: 'Commonly used operations', exact: true }).click();
+  const firstExample = page.locator('.prompt-suggestion-list button:not([hidden])').first();
   await expect(firstExample).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
-  const thresholdWidth = await arrow.evaluate(element => {
-    const footer = element.closest('.prompt-footer');
-    const example = footer.querySelector('.prompt-suggestion-list button');
-    const available = footer.clientWidth - element.offsetWidth - parseFloat(getComputedStyle(footer).columnGap);
-    return Math.round(innerWidth - available + example.offsetWidth + 2);
-  });
-  await page.setViewportSize({ width: thresholdWidth + 1, height: 900 });
-  await expect(firstExample).toBeVisible();
+  await page.mouse.move(0, 0);
+  await expect.poll(() => page.locator('#prompt-examples').evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
   const thresholdHeight = await page.evaluate(() => Math.floor(document.body.getBoundingClientRect().height) - 1);
-  await page.setViewportSize({ width: thresholdWidth + 1, height: thresholdHeight });
+  await page.setViewportSize({ width: 500, height: thresholdHeight });
   const before = await page.locator('.prompt-footer').evaluate(element => ({ height: element.offsetHeight,
     overflow: document.documentElement.scrollHeight > document.documentElement.clientHeight,
     gutter: innerWidth - document.documentElement.clientWidth }));
@@ -151,20 +146,30 @@ Then('prompt examples and page overflow remain stable when resizing under a hove
   const bounds = await arrow.boundingBox();
   await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height - 3);
   await expect.poll(() => arrow.evaluate(element => element.getBoundingClientRect().width - element.offsetWidth)).toBeGreaterThan(3);
-  // A real resize invokes example fitting while the arrow is visually scaled by hover.
-  await page.setViewportSize({ width: thresholdWidth, height: thresholdHeight });
+  // Fitting may change the visible count, but must retain one complete row
+  // without changing footer height or toggling page overflow under hover.
+  await page.setViewportSize({ width: 499, height: thresholdHeight });
   const samples = await page.locator('.prompt-footer').evaluate(async element => {
     const result = [];
     for (let frame = 0; frame < 90; frame += 1) {
       await new Promise(resolve => requestAnimationFrame(resolve));
-      const examples = element.querySelector('.prompt-suggestion-list');
-      result.push({ hidden: examples.hidden || examples.querySelector('button').hidden, height: element.offsetHeight,
+      const list = document.querySelector('.prompt-suggestion-list');
+      const bounds = list.getBoundingClientRect();
+      const examples = [...list.querySelectorAll('button:not([hidden])')];
+      const top = examples[0]?.getBoundingClientRect().top;
+      const fits = examples.length > 0 && examples.every(button => {
+        const box = button.getBoundingClientRect();
+        return button.checkVisibility() && Math.abs(box.top - top) <= 1 &&
+          box.left >= bounds.left - 1 && box.right <= bounds.right + 1 &&
+          button.scrollWidth <= button.clientWidth + 1;
+      }) && document.documentElement.scrollWidth <= innerWidth;
+      result.push({ visible: examples.length, fits, height: element.offsetHeight,
         overflow: document.documentElement.scrollHeight > document.documentElement.clientHeight });
     }
     return result;
   });
-  assert.ok(samples.every(sample => !sample.hidden && sample.height === before.height && sample.overflow === before.overflow),
-    `Hover feedback must preserve the example, footer height, and page overflow: ${[...new Set(samples.map(sample => JSON.stringify(sample)))].join(', ')}`);
+  assert.ok(samples.every(sample => sample.fits && sample.height === before.height && sample.overflow === before.overflow),
+    `Hover feedback must preserve one complete example row, footer height, and page overflow: ${[...new Set(samples.map(sample => JSON.stringify(sample)))].join(', ')}`);
   await page.mouse.move(0, 0);
   await expect.poll(() => arrow.evaluate(element => element.getBoundingClientRect().width - element.offsetWidth)).toBe(0);
   await expect(firstExample).toBeVisible();

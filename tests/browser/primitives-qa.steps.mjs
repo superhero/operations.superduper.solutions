@@ -34,7 +34,11 @@ Then('expanding a nested catalog item does not clip its parent', async function 
   assert.ok(await panel.evaluate(element => element.getAnimations().length > 0), 'The parent must still be opening.');
   const child = group.locator('[data-catalog-group="overview"] > .catalog-group');
   await child.locator(':scope > summary').press('Enter');
-  assert.ok(await child.locator(':scope > .disclosure-panel').evaluate(element => element.getAnimations().length > 0), 'The nested group must still be opening.');
+  assert.ok(await child.locator(':scope > .disclosure-panel').evaluate(element => {
+    const animations = element.getAnimations();
+    for (const animation of animations) animation.playbackRate = 0.4;
+    return animations.length > 0;
+  }), 'The nested group must still be opening.');
   const sample = await group.evaluate(async element => {
     const parentPanel = element.querySelector(':scope > .disclosure-panel');
     const parentContent = parentPanel.querySelector(':scope > .catalog-children');
@@ -90,6 +94,8 @@ Then('progress hints and examples preserve navigation and disabled states', asyn
   const evaluation = progress.getByRole('button', { name: '2. Evaluation', exact: true });
   const operation = progress.getByRole('button', { name: '3. Operation', exact: true });
   const input = page.getByRole('textbox', { name: 'Prompt', exact: true });
+  const examplesToggle = page.getByRole('button', { name: 'Commonly used operations', exact: true });
+  await expect(examplesToggle).toHaveAttribute('aria-expanded', 'false');
   await expect(progress.locator('.step-label:visible')).toHaveCount(3);
   await promptStep.hover();
   // Observe beyond the provider's hover delay: visible labels need no tooltip.
@@ -98,6 +104,8 @@ Then('progress hints and examples preserve navigation and disabled states', asyn
   await page.mouse.move(0, 0);
   await input.focus();
   await input.press('Shift+Tab');
+  await expect(examplesToggle).toBeFocused();
+  await examplesToggle.press('Shift+Tab');
   await expect(promptStep).toBeFocused();
   await expect(tooltip).toHaveCount(0);
 
@@ -108,6 +116,8 @@ Then('progress hints and examples preserve navigation and disabled states', asyn
   await page.mouse.move(0, 0);
   await input.focus();
   await input.press('Shift+Tab');
+  await expect(examplesToggle).toBeFocused();
+  await examplesToggle.press('Shift+Tab');
   await expect(promptStep).toBeFocused();
   await expect(tooltip).toHaveText('Prompt');
   await page.keyboard.press('Escape');
@@ -129,9 +139,19 @@ Then('progress hints and examples preserve navigation and disabled states', asyn
   }
   await page.mouse.move(0, 0);
   await promptStep.press('Tab');
+  await expect(examplesToggle).toBeFocused();
+  await expect(tooltip).toHaveText('Commonly used operations');
+  await expect(examplesToggle.locator('.material-symbols-rounded')).toHaveText('quick_phrases');
+  await examplesToggle.press('Tab');
   await expect(input).toBeFocused();
+  await input.press('Shift+Tab');
+  await examplesToggle.press('Enter');
+  await expect(examplesToggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('.prompt-suggestion-list button:visible')).toHaveCount(1);
 
   const example = page.locator('.prompt-suggestion-list').getByRole('button', { name: 'List projects', exact: true });
+  await examplesToggle.press('Tab');
+  await expect(example).toBeFocused();
   await example.hover();
   await page.waitForTimeout(450);
   await expect(tooltip).toHaveCount(0);
@@ -163,7 +183,7 @@ Then('schema action hints take priority over the disclosure hint', async functio
   const page = this.page;
   const tooltip = page.getByRole('tooltip');
   await page.getByRole('button', { name: 'Review operation details', exact: true }).click();
-  const header = page.locator('summary[aria-label="OpenAPI schema"]');
+  const header = page.getByRole('region', { name: 'Operation JSON schema', exact: true }).locator('summary[aria-label="OpenAPI schema"]');
   await header.scrollIntoViewIfNeeded();
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.mouse.move(0, 0);

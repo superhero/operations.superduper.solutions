@@ -5,8 +5,9 @@
 import { operations, type Operation } from "./catalog.ts";
 import { catalogForOperation } from "./catalog-registry.ts";
 import { prepareRequest, type PreparedRequest } from "./operation-input.ts";
+import { operationServerUrl } from "./schema-documents.ts";
 
-export type WorkflowResponse = { status: number; body: unknown };
+export type WorkflowResponse = { status: number; statusText: string; headers: Record<string, string>; body: unknown };
 export type WorkflowExecutionResult = { request: PreparedRequest; response: WorkflowResponse };
 export type WorkflowExecutor = {
   execute(operation: Operation, values: Record<string, string>, signal?: AbortSignal): WorkflowExecutionResult | Promise<WorkflowExecutionResult>;
@@ -26,16 +27,25 @@ export class WorkflowResponseError extends Error
 
 export function workflowExecutionForOperation(operation: Operation | string)
 {
-  const catalog = catalogForOperation(typeof operation === "string" ? operation : operation.id);
-  if (!catalog) throw new Error("This operation is not available in the bundled test catalog.");
-  return catalog.execution;
+  const id = typeof operation === "string" ? operation : operation.id;
+  const catalog = catalogForOperation(id);
+  const canonical = operations.find(item => item.id === id);
+  if (!catalog || !canonical) throw new Error("This operation is not available in the registered schemas.");
+  return { ...catalog.execution, origin: operationServerUrl(catalog.document, canonical) };
 }
 
 export function workflowRequestUrl(request: PreparedRequest, origin: string): string
 {
-  const url = new URL(request.path, origin);
+  const url = new URL(origin);
+  if (!["http:", "https:"].includes(url.protocol) || url.username || url.password)
+    throw new Error("The operation server must be an absolute HTTP or HTTPS URL without credentials.");
+  if (!request.path.startsWith("/") || request.path.startsWith("//") || /[\\?#\u0000-\u0020\u007f]/.test(request.path)
+    || request.path.split("/").some(segment => /^(?:\.|%2e){1,2}$/i.test(segment)))
+    throw new Error("The operation path must be an absolute path without an authority, backslashes, query, fragment or traversal segments.");
+  url.pathname = `${url.pathname.replace(/\/+$/, "")}${request.path}`;
   for (const [key, value] of Object.entries(request.query))
-    for (const item of Array.isArray(value) ? value : [value]) url.searchParams.append(key, String(item));
+    for (const item of Array.isArray(value) ? value : [value])
+      if (item !== undefined) url.searchParams.append(key, String(item));
   return url.href;
 }
 
@@ -56,7 +66,7 @@ function requestBody(request: PreparedRequest): BodyInit | null
 function requestFailure(signal: AbortSignal | undefined, timeout: AbortSignal, message: string): Error
 {
   if (signal?.aborted) return new Error("The request was cancelled.");
-  if (timeout.aborted) return new Error("The request timed out. Retry the operation when the test endpoint is available.");
+  if (timeout.aborted) return new Error("The request timed out. Retry the operation when the endpoint is available.");
   return new Error(message);
 }
 
@@ -68,9 +78,10 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
     {
       const canonical = operations.find(item => item.id === operation.id);
       if (!canonical || canonical.method !== operation.method || canonical.path !== operation.path)
-        throw new Error("This operation is not available in the bundled test catalog.");
-      const request = prepareRequest(canonical, values);
+        throw new Error("This operation is not available in the registered schemas.");
+      const request = prepareRequest(canonical, values, operation.fields);
       const { origin } = workflowExecutionForOperation(canonical);
+      const url = workflowRequestUrl(request, origin);
       if (request.method === "TRACE") throw new Error("Browsers do not permit TRACE requests.");
       const timeout = AbortSignal.timeout(15_000);
       let response: Response;
@@ -79,21 +90,22 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
         headers["Content-Type"] = request.contentType ?? "application/json";
       try
       {
-        response = await fetchRequest(workflowRequestUrl(request, origin), {
+        response = await fetchRequest(url, {
           method: request.method, redirect: "error", credentials: "omit", headers, body: requestBody(request),
           signal: signal ? AbortSignal.any([signal, timeout]) : timeout
         });
       }
       catch
       {
-        throw requestFailure(signal, timeout, `The test request could not reach ${origin}. Check connectivity and whether the endpoint allows browser requests, then retry.`);
+        throw requestFailure(signal, timeout, `The request could not reach ${origin}. Check connectivity and whether the endpoint allows browser requests, then retry.`);
       }
+      const metadata = { status: response.status, statusText: response.statusText, headers: Object.fromEntries(response.headers) };
       let body: unknown = null;
       if (request.method !== "HEAD" && response.status !== 204 && response.status !== 205)
       {
         let text: string;
         try { text = await response.text(); }
-        catch { throw requestFailure(signal, timeout, "The test response could not be read. Check connectivity and retry."); }
+        catch { throw requestFailure(signal, timeout, "The response could not be read. Check connectivity and retry."); }
         if (text || request.method !== "OPTIONS")
         {
           const mediaType = response.ok
@@ -104,8 +116,8 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
             try { body = JSON.parse(text); }
             catch
             {
-              if (response.ok) throw new WorkflowResponseError("The test endpoint did not return valid JSON. Check its response and retry.",
-                { status: response.status, body: text });
+              if (response.ok) throw new WorkflowResponseError("The endpoint did not return valid JSON. Check its response and retry.",
+                { ...metadata, body: text });
               body = text;
             }
           }
@@ -113,14 +125,14 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
         }
       }
       if (!response.ok) throw new WorkflowResponseError(
-        `The test endpoint returned ${response.status}${response.statusText ? ` ${response.statusText}` : ""}. Check the request and retry.`,
-        { status: response.status, body });
-      return { request, response: { status: response.status, body } };
+        `The endpoint returned ${response.status}${response.statusText ? ` ${response.statusText}` : ""}. Check the request and retry.`,
+        { ...metadata, body });
+      return { request, response: { ...metadata, body } };
     }
   };
 }
 
-/** Every registered catalog sends requests to its declared origin. */
+/** Every registered schema sends requests to the operation's effective server. */
 export function createWorkflowExecution(): WorkflowExecutor
 {
   return createWorkflowRequestExecution();

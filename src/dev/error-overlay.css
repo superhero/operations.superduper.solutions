@@ -1,0 +1,338 @@
+/*
+Copyright (C) 2026 Erik Landvall
+SPDX-License-Identifier: AGPL-3.0-only
+See LICENSE and LICENSE-ADDITIONAL-TERMS.
+*/
+
+/* Injected into Visulima's shadow DOM. Inherit the app's active tone slots:
+   the overlay declares its own --color-* variables, while --tone-* already
+   follow the selected palette and light/dark mode. Fall back before app CSS loads. */
+:host, .dark {
+  --color-background: var(--tone-1, #eee9df);
+  --color-card: var(--tone-2, #dedad1);
+  --color-foreground: var(--tone-6, #1b2632);
+  --color-accent: var(--color-card);
+  --color-muted: var(--color-card);
+  --color-muted-foreground: var(--tone-5, #2c3b4d);
+  --color-scrollbar-thumb: var(--tone-5, #2c3b4d);
+  --color-primary: var(--tone-4, #a35139);
+  --color-primary-foreground: var(--tone-3, #ffb162);
+  --color-border: color-mix(in srgb, var(--color-muted-foreground) 25%, transparent);
+  --color-ring: var(--color-primary);
+  --color-destructive: var(--color-primary);
+  --color-destructive-foreground: var(--color-primary-foreground);
+  --color-success: var(--color-muted-foreground);
+  --color-success-foreground: var(--color-background);
+  --color-warning: var(--color-primary-foreground);
+  --color-info: var(--color-muted-foreground);
+  --color-black: var(--color-foreground);
+  --color-white: var(--color-background);
+  --color-red-400: var(--color-primary);
+  --color-red-500: var(--color-primary);
+  --color-red-600: var(--color-primary);
+  --color-yellow-500: var(--color-warning);
+  --color-yellow-600: var(--color-warning);
+  --color-green-400: var(--color-muted-foreground);
+  --color-green-500: var(--color-muted-foreground);
+  --color-green-600: var(--color-muted-foreground);
+  --color-emerald-500: var(--color-muted-foreground);
+  --color-cyan-600: var(--color-muted-foreground);
+  --color-blue-50: var(--color-card);
+  --color-blue-500: var(--color-primary);
+  --color-blue-600: var(--color-primary);
+  --color-gray-50: var(--color-card);
+  --color-gray-400: var(--color-muted-foreground);
+  --color-gray-600: var(--color-muted-foreground);
+  --color-gray-700: var(--color-foreground);
+  --ono-v-bg: var(--color-background);
+  --ono-v-surface: var(--color-card);
+  --ono-v-surface-muted: var(--color-card);
+  --ono-v-border: var(--color-border);
+  --ono-v-text: var(--color-foreground);
+  --ono-v-text-muted: var(--color-muted-foreground);
+  --ono-v-primary: var(--color-primary);
+  --ono-v-red-orange: var(--color-primary);
+  --ono-v-on-accent: var(--color-primary-foreground);
+  --ono-v-chip-bg: var(--color-muted);
+  --ono-v-chip-text: var(--color-foreground);
+  --ono-v-neutral: var(--color-muted-foreground);
+  --ono-v-neutral-bg: var(--color-muted);
+  --ono-v-success: var(--color-success);
+  --ono-v-link: var(--color-primary);
+  --ono-v-hover-overlay: color-mix(in srgb, var(--color-foreground) 8%, transparent);
+  --ono-v-success-bg: color-mix(in srgb, var(--color-success) 12%, transparent);
+  color-scheme: inherit;
+  font-family: Montserrat, ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Mirror NativeScrollbars inside the overlay's shadow root. */
+:host, :host * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb) transparent;
+}
+:host :is(.overflow-auto, .overflow-y-auto, .overflow-x-auto, .shiki, textarea) { scrollbar-gutter: stable; }
+:host :is(.devtools-content-scroll, #__v_o__overlay, .shiki) { scrollbar-gutter: auto; }
+:host *::-webkit-scrollbar { width: 4px; height: 4px; }
+:host *::-webkit-scrollbar,
+:host *::-webkit-scrollbar-track,
+:host *::-webkit-scrollbar-track-piece,
+:host *::-webkit-scrollbar-corner { background: transparent; box-shadow: none; }
+:host *::-webkit-scrollbar-thumb { background: var(--color-scrollbar-thumb); border-radius: 4px; }
+:host-context(.animated-scrollbars) * {
+  scrollbar-width: auto;
+  scrollbar-color: auto;
+  --scrollbar-x-inset: 4px;
+  --scrollbar-y-inset: 4px;
+}
+:host-context(.animated-scrollbars) *::-webkit-scrollbar { width: 8px; height: 8px; }
+:host-context(.animated-scrollbars) *::-webkit-scrollbar-thumb {
+  --scrollbar-left-inset: var(--scrollbar-y-inset);
+  --scrollbar-top-inset: var(--scrollbar-x-inset);
+  --scrollbar-cap-radius: calc((8px - var(--scrollbar-left-inset) - var(--scrollbar-top-inset)) / 2);
+  background-clip: padding-box;
+  border: 0 solid transparent;
+  border-left-width: var(--scrollbar-left-inset);
+  border-top-width: var(--scrollbar-top-inset);
+  border-radius: calc(var(--scrollbar-cap-radius) + var(--scrollbar-left-inset)) var(--scrollbar-cap-radius) var(--scrollbar-cap-radius) calc(var(--scrollbar-cap-radius) + var(--scrollbar-left-inset)) / calc(var(--scrollbar-cap-radius) + var(--scrollbar-top-inset)) calc(var(--scrollbar-cap-radius) + var(--scrollbar-top-inset)) var(--scrollbar-cap-radius) var(--scrollbar-cap-radius);
+}
+:host *::-webkit-scrollbar-thumb:vertical { --scrollbar-top-inset: 0px !important; }
+:host *::-webkit-scrollbar-thumb:horizontal { --scrollbar-left-inset: 0px !important; }
+/* Keep the code scrollbar flush with the last line instead of reserving an inset. */
+:host-context(.animated-scrollbars) .shiki { --scrollbar-x-inset: 0px !important; }
+:host-context(.animated-scrollbars) .shiki::-webkit-scrollbar { height: 4px; }
+
+#__v_o__panel, #__v_o__balloon, button, select, input, textarea, kbd {
+  border-radius: 4px;
+}
+
+#__v_o__root > div:has(> #__v_o__panel) {
+  max-width: calc(var(--ono-v-dialog-max-width) - 32px);
+}
+
+#__v_o__panel {
+  box-shadow: none;
+}
+
+#operations-error-issue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  color: var(--ono-v-text);
+  transition: background-color 150ms ease, opacity 150ms ease;
+}
+#operations-error-issue svg { width: 16px; height: 16px; }
+#operations-error-issue:hover { background: var(--ono-v-hover-overlay); }
+#operations-error-issue:active { opacity: 0.8; }
+
+/* Also present for compilation errors that prevent application JS from loading. */
+#__v_o__panel::after {
+  content: "Protect your saved work. Clearing site data will permanently delete all progress done in this application; nothing is saved on a server, everything is saved locally in your browser.";
+  display: list-item;
+  list-style-position: inside;
+  flex-shrink: 0;
+  padding: 12px 16px;
+  border-top: 1px solid var(--ono-v-border);
+  background: var(--ono-v-surface);
+  color: var(--ono-v-text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+#__v_o__panel::after::marker {
+  content: "⚠︎ ";
+  font-size: 18px;
+}
+
+#__v_o__backdrop {
+  background: color-mix(in srgb, var(--palette-6, #1b2632) 50%, transparent);
+}
+
+#__v_o__heading, #__v_o__message {
+  color: var(--ono-v-text);
+}
+
+#__v_o__message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+#__v_o__stacktrace > div {
+  background: var(--ono-v-bg);
+}
+
+@supports (interpolate-size: allow-keywords) and selector(details::details-content) {
+  #__v_o__stacktrace { interpolate-size: allow-keywords; }
+  #__v_o__stacktrace::details-content {
+    block-size: 0;
+    overflow: clip;
+    transition: block-size 220ms ease, content-visibility 220ms allow-discrete;
+  }
+  #__v_o__stacktrace[open]::details-content { block-size: auto; }
+}
+
+/* Solution hints use Tailwind typography's independent light/dark colors. */
+#__v_o__solutions_container {
+  --tw-prose-body: var(--ono-v-text);
+  --tw-prose-headings: var(--ono-v-text);
+  --tw-prose-bold: var(--ono-v-text);
+  --tw-prose-code: var(--ono-v-text);
+  --tw-prose-quotes: var(--ono-v-text);
+  --tw-prose-links: var(--ono-v-link);
+  --tw-prose-pre-code: var(--ono-v-text);
+  --tw-prose-pre-bg: var(--ono-v-surface);
+  margin: 0;
+  padding: 12px 56px 12px 16px;
+  border-block: 1px solid var(--ono-v-border);
+  background: var(--ono-v-bg);
+  color: var(--ono-v-text);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+#__v_o__solutions_container > :first-child {
+  margin-top: 0;
+  font-weight: 700;
+}
+#__v_o__solutions_container > :last-child { margin-bottom: 0; }
+#__v_o__solutions > :is([title="Possible Solution"], [data-dev-tooltip-title="Possible Solution"]) {
+  background: transparent !important;
+  color: var(--ono-v-primary);
+}
+
+#operations-error-context {
+  padding: 8px 16px;
+  color: var(--ono-v-text);
+  background: var(--ono-v-surface);
+  border-bottom: 1px solid var(--ono-v-border);
+  font-size: 13px;
+  line-height: 1.5;
+}
+/* Match the catalog separators: 5px dashes separated by 8px gaps. */
+#__v_o__message, #operations-error-context {
+  border-bottom: 1px solid transparent;
+  background-image: linear-gradient(to right, transparent 0 4px, var(--ono-v-border) 4px 9px, transparent 9px);
+  background-size: 13px 1px;
+  background-position: center bottom;
+  background-repeat: repeat-x;
+  background-origin: border-box;
+}
+#operations-error-context[hidden] { display: none; }
+#operations-error-context ol { list-style: none; margin: 0; padding: 0; }
+#operations-error-context ol ol {
+  margin-left: 10px;
+  padding-left: 14px;
+}
+#operations-error-context li { position: relative; padding-top: 2px; }
+#operations-error-context ol ol > li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -14px;
+  width: 12px;
+  height: 15px;
+  border-left: 1px solid var(--ono-v-border);
+  border-bottom: 1px solid var(--ono-v-border);
+}
+#operations-error-context button {
+  display: block;
+  max-width: 100%;
+  padding: 2px 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ono-v-text-muted);
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+#operations-error-context button:not([aria-current]):hover {
+  background: var(--ono-v-hover-overlay);
+  color: var(--ono-v-text);
+}
+#operations-error-context button[aria-current="true"] {
+  background: var(--ono-v-primary);
+  color: var(--ono-v-on-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #__v_o__stacktrace::details-content, #operations-error-context button { transition: none; }
+}
+
+/* Balloon backgrounds/text and the active history control have inline colors. */
+#__v_o__balloon, #__v_o__balloon_close {
+  background: var(--color-primary) !important;
+  color: var(--color-primary-foreground) !important;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--color-foreground) 25%, transparent);
+}
+#__v_o__balloon_text, #__v_o__balloon_count { color: inherit !important; }
+#__v_o__balloon_close { border-color: var(--ono-v-border) !important; }
+#__v_o__history_toggle[style] { color: var(--color-primary-foreground) !important; }
+
+/* The application owns the palette and mode; don't offer a separate theme. */
+#v-o-theme-switch { display: none; }
+
+#__v_o__editor, #__v_o__mode { display: none; }
+
+input, textarea { font-weight: 700; }
+input::placeholder, textarea::placeholder { font-weight: 400; font-style: italic; }
+::selection { background: var(--color-primary); color: var(--color-background); }
+:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+
+/* Shiki's pinned min-light tokens remain inline even in dark mode. Remap
+   those categories, including its dark overrides, without losing highlighting. */
+.shiki, .dark .shiki {
+  color: var(--ono-v-text) !important;
+  background-color: var(--ono-v-bg) !important;
+  letter-spacing: normal;
+  padding-bottom: 0;
+}
+.shiki code {
+  display: grid;
+  width: max-content;
+  min-width: 100%;
+}
+.shiki .line {
+  background-image: radial-gradient(circle, var(--ono-v-border) 0.5px, transparent 0.5px),
+    linear-gradient(to right,
+    color-mix(in srgb, var(--ono-v-text-muted) 15%, transparent) var(--codeframe-gutter-width, 4ch),
+    transparent var(--codeframe-gutter-width, 4ch));
+  background-size: 3px 1px, 100% 100%;
+  background-position: left bottom, left top;
+  background-repeat: repeat-x, no-repeat;
+  border-bottom: 1px solid transparent;
+  background-origin: border-box;
+}
+/* The library also paints unstyled line wrappers in its independent dark mode. */
+.shiki span, .dark .shiki span {
+  --syntax-token: var(--ono-v-text);
+  --shiki-dark: var(--syntax-token) !important;
+  --shiki-dark-bg: transparent !important;
+  color: var(--syntax-token) !important;
+  background-color: transparent !important;
+}
+.shiki span[style^="color:#C2C3C5" i] {
+  --syntax-token: var(--ono-v-text-muted);
+  font-style: italic !important;
+}
+.shiki span:is([style^="color:#22863A" i], [style^="color:#2B5581" i]) {
+  --syntax-token: var(--ono-v-text-muted);
+}
+.shiki span:is([style^="color:#D32F2F" i], [style^="color:#CD3131" i],
+  [style^="color:#6F42C1" i], [style^="color:#800080" i]) {
+  --syntax-token: var(--ono-v-primary);
+}
+.shiki span:is([style^="color:#1976D2" i], [style^="color:#316BCD" i],
+  [style^="color:#FF9800" i], [style^="color:#CD9731" i]) {
+  --syntax-token: var(--ono-v-text);
+  --shiki-dark-font-weight: 700;
+  font-weight: 700 !important;
+}
