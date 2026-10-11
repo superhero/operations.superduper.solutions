@@ -67,6 +67,8 @@ async function setMode(page, mode) {
   const button = page.getByRole("group", { name: "Workspace", exact: true }).getByRole("button", { name, exact: true });
   if (await button.getAttribute("aria-pressed") !== "true") {
     await button.click();
+    if (await page.evaluate(() => matchMedia("(max-width: 899px)").matches))
+      await expect(page.getByRole("navigation", { name: "Operation catalog", exact: true })).toBeHidden();
     if (mode === "settings")
       await expect(page.getByRole("region", { name: "Settings workspace", exact: true })).toBeFocused();
   }
