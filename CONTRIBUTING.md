@@ -13,4 +13,4 @@ Thank you for contributing to `operations.superduper.solutions`.
 - [Background loading and persistence](docs/adr/background-loading.md)
 - [Testing and test reports](docs/adr/testing-and-reports.md)
 - [Source coverage](docs/adr/source-coverage.md)
-- [Offer the project under AGPLv3 only](docs/adr/licensing.md)
+- [Offer the project under AGPLv3-only](docs/adr/licensing.md)

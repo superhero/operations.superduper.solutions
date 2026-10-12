@@ -1,16 +1,16 @@
-# Offer the project under AGPLv3 only
+# Offer the project under AGPLv3-only
 
 Use the same explicit license for first-party project material and contributions,
 while preserving author attribution and the project's additional terms.
 
-The project is offered under **GNU AGPLv3 only** (`AGPL-3.0-only`), together with
+The project is offered under **GNU AGPLv3-only** (`AGPL-3.0-only`), together with
 applicable Section 7 additional terms. [LICENSE](../../LICENSE) and
 [LICENSE-ADDITIONAL-TERMS](../../LICENSE-ADDITIONAL-TERMS) contain the governing
 terms.
 
 ## Contribution license
 
-By submitting a contribution, you agree that it is licensed under **GNU AGPLv3 only** (`AGPL-3.0-only`) together with `LICENSE-ADDITIONAL-TERMS`.
+By submitting a contribution, you agree that it is licensed under **GNU AGPLv3-only** (`AGPL-3.0-only`) together with `LICENSE-ADDITIONAL-TERMS`.
 
 You retain the copyright in your contribution unless you separately assign it in writing.
 
