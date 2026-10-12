@@ -113,7 +113,8 @@ gitGraph BT:
 One `docs/<topic>` branch carries three successive documentation edits, merged
 into `develop`, `release`, and `main` through explicitly selected PRs. The release
 branches from `develop` after its documentation merge. After the release update,
-`main` is merged into `develop` before the final docs edit goes to `main`.
+the release is validated and merged into `main`, then `main` is merged back into
+`develop`. The final docs edit goes to `main` afterward.
 The shared docs branch starts from `main` and accumulates only documentation
 changes; each later edit includes the earlier ones. Every target must pass the
 full Markdown-only check.
@@ -147,6 +148,8 @@ gitGraph BT:
     commit id: "Document release"
     checkout release
     merge docs id: "Update release"
+    checkout main
+    merge release id: "Deployed" tag: "1.1.0"
     checkout develop
     merge main id: "Sync main"
     checkout docs
