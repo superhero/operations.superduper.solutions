@@ -31,56 +31,105 @@ the application.
 | `hotfix/<version>` | Patch fixes starting from released `main`. |
 | `docs/*` | Markdown changes starting from the explicitly chosen `develop` or `main` target. |
 
-The example prepares `1.1.0` while `1.0.1` fixes production. The tagged hotfix
-returns to `develop` and the active release before that release is published.
+Read each graph **from bottom to top**. Each example shows one part of the
+branching model. Branch labels omit topic and version suffixes; commit labels
+explain the work and where it is integrated.
+
+### Everyday changes
+
+Features and integration fixes return to `develop`. Documentation returns only
+to its chosen target: `develop` in this example, or `main` for released docs.
 
 ```mermaid
-%%{init: {"theme": "base", "gitGraph": {"showCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "gitGraph": {"mainBranchName": "develop", "showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+    "commitLabelFontSize": "12px", "commitLabelColor": "#0D1117", "commitLabelBackground": "#D8DEE4",
+    "git0": "#39B8B0", "gitBranchLabel0": "#0D1117",
+    "git1": "#E3B341", "gitBranchLabel1": "#0D1117",
+    "git2": "#F06060", "gitBranchLabel2": "#0D1117",
+    "git3": "#58A6FF", "gitBranchLabel3": "#0D1117"
+}}}%%
+gitGraph BT:
+    commit id: "Start"
+    branch "feature" order: 1
+    commit id: "Feature"
+    checkout develop
+    merge "feature" id: "Integrate feature"
+    branch "bugfix" order: 2
+    commit id: "Fix"
+    checkout develop
+    merge "bugfix" id: "Integrate fix"
+    branch "docs" order: 3
+    commit id: "Documentation"
+    checkout develop
+    merge "docs" id: "Integrate docs"
+```
+
+### Preparing and publishing a release
+
+A release incorporates `main` and receives stabilization fixes while development
+continues. After validation, it is published to `main`, tagged, and synchronized
+back into `develop`.
+
+```mermaid
+%%{init: {"theme": "base", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+    "commitLabelFontSize": "12px", "commitLabelColor": "#0D1117", "commitLabelBackground": "#D8DEE4",
+    "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
+    "git1": "#A3C441", "gitBranchLabel1": "#0D1117",
+    "git2": "#F06060", "gitBranchLabel2": "#0D1117",
+    "git3": "#39B8B0", "gitBranchLabel3": "#0D1117"
+}}}%%
+gitGraph BT:
+    commit id: "Released" tag: "1.0.0"
+    branch develop order: 3
+    commit id: "Integrated work"
+    branch "release" order: 1
+    merge main id: "Sync main"
+    branch "bugfix" order: 2
+    commit id: "Stabilize"
+    checkout develop
+    commit id: "Next work"
+    checkout "release"
+    merge "bugfix" id: "Integrate fix"
+    checkout main
+    merge "release" id: "Publish" tag: "1.1.0"
+    checkout develop
+    merge main id: "Sync release"
+```
+
+### Fixing production during a release
+
+A hotfix starts from released `main`. Once published and tagged, `main` is
+synchronized into `develop`. The hotfix branch also receives the tagged revision
+before carrying the fix into the active release.
+
+```mermaid
+%%{init: {"theme": "base", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+    "commitLabelFontSize": "12px", "commitLabelColor": "#0D1117", "commitLabelBackground": "#D8DEE4",
     "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
     "git1": "#A371F7", "gitBranchLabel1": "#0D1117",
     "git2": "#A3C441", "gitBranchLabel2": "#0D1117",
-    "git3": "#F06060", "gitBranchLabel3": "#0D1117",
-    "git4": "#39B8B0", "gitBranchLabel4": "#0D1117",
-    "git5": "#E3B341", "gitBranchLabel5": "#0D1117",
-    "git6": "#F06060", "gitBranchLabel6": "#0D1117",
-    "git7": "#58A6FF", "gitBranchLabel7": "#0D1117"
+    "git3": "#39B8B0", "gitBranchLabel3": "#0D1117"
 }}}%%
 gitGraph BT:
-    commit tag: "1.0.0"
-    branch develop order: 4
-    branch "feature/topic" order: 5
-    commit
-    checkout develop
-    merge "feature/topic"
-    branch "bugfix/topic" order: 6
-    commit
-    checkout develop
-    merge "bugfix/topic"
-    branch "release/1.1.0" order: 2
-    branch "bugfix/stabilize" order: 3
-    commit
-    checkout "release/1.1.0"
-    merge "bugfix/stabilize"
+    commit id: "Released" tag: "1.0.0"
+    branch develop order: 3
+    commit id: "Next release"
+    branch "release" order: 2
+    commit id: "Prepare release"
     checkout main
-    branch "hotfix/1.0.1" order: 1
-    commit
+    branch "hotfix" order: 1
+    commit id: "Repair"
     checkout main
-    merge "hotfix/1.0.1" tag: "1.0.1"
+    merge "hotfix" id: "Publish patch" tag: "1.0.1"
+    checkout "hotfix"
+    merge main id: "Sync tag"
+    checkout "release"
+    merge "hotfix" id: "Apply patch"
     checkout develop
-    merge main
-    checkout "hotfix/1.0.1"
-    merge main
-    checkout "release/1.1.0"
-    merge "hotfix/1.0.1"
-    checkout main
-    merge "release/1.1.0" tag: "1.1.0"
-    checkout develop
-    merge main
-    branch "docs/guide" order: 7
-    commit
-    checkout develop
-    merge "docs/guide"
+    merge main id: "Sync patch"
 ```
+
+### Merge methods
 
 - Feature, integration bugfix, production hotfix and documentation PRs
   fast-forward when they contain one commit and the target is its ancestor;
