@@ -1,17 +1,17 @@
 # Repository automation
 
-Validation, reports, badges, and GitHub Actions workflows. See
-[Contributing](../../CONTRIBUTING.md) for project guidance and
-[Continuous integration](../../docs/adr/continuous-integration.md) and
-[Continuous deployment](../../docs/adr/continuous-deployment.md) for the branching, release and
-deployment decisions.
+Commands, workflows and recovery procedures for GitHub Actions.
+The decisions behind them are recorded in
+[Continuous integration](../../docs/adr/continuous-integration.md),
+[Continuous deployment](../../docs/adr/continuous-deployment.md) and
+[Test suite reports](../../docs/adr/test-suite-reports.md).
+See [Contributing](../../CONTRIBUTING.md) for wider project guidance.
 
 - [Local validation](#local-validation)
+- [Test reports](#test-reports), [coverage reports](#coverage-reports) and [badges](#badges)
 - [Documentation-only changes](#documentation-only-changes)
-- [Test reports](#test-reports)
-- [Scenario badges](#scenario-badges), [dependency badges](#dependency-badges), and [coverage badges](#coverage-badges)
-- [Branch workflows](#branch-workflows) and [merging](#validation-and-merging)
-- [Release preparation](#release-preparation), [checks](#release-checks-and-diagnostics), and [stabilization](#release-stabilization-and-versions)
+- [Branch workflows](#branch-workflows) and [merge rules](#validation-and-merging)
+- [Release preparation](#release-preparation), [checks](#release-checks-and-diagnostics) and [stabilization](#release-stabilization-and-versions)
 - [Publication and synchronization](#publication-and-synchronization), including [retries](#retrying-publication)
 - [GitHub App permissions](#github-app-permissions)
 - [Scheduled dependency checks](#scheduled-dependency-checks)
@@ -19,7 +19,19 @@ deployment decisions.
 
 ## Local validation
 
-For changes to release automation, run these checks from the repository root:
+### Prerequisites
+
+- Run commands from the repository root after `npm ci`.
+- Automation tests require Bash, Git and jq; shell validation also needs ShellCheck.
+- Acceptance and browser tests require `npm run build` first.
+- Browser tests require running Docker and use the pinned Playwright image.
+
+Browser tests exercise the built bundle with container networking disabled.
+Automation tests run real shell scripts in temporary directories with simulated
+GitHub and Cloudflare responses. They neither release nor deploy; unexpected
+external requests fail the scenario.
+
+### Automation changes
 
 ```sh
 npm run test:automation
@@ -27,126 +39,164 @@ npm run badges:dependencies -- --check
 shellcheck .github/scripts/*.sh
 ```
 
-Automation uses the same Cucumber feature and JavaScript step format as the
-application tests. Install the locked dependencies with `npm ci`; the automation
-scenarios also require Bash, Git and jq. They run the real shell scripts with simulated
-GitHub and Cloudflare responses in temporary directories, without creating
-releases or deploying. Unexpected external requests fail the scenario.
+The [npm command reference](../../README.md#npm-commands) covers individual commands.
 
 ## Test reports
 
-See [Testing, coverage and reporting](../../docs/adr/test-suite-reports.md) for the
-Cucumber decision and the pending standalone-test reporting gap.
+### Run all four suites
 
-The source, acceptance, automation, and browser profiles write Cucumber JSON to
-`tmp/test/cucumber-source.json`, `tmp/test/cucumber-test.json`,
-`tmp/test/cucumber-automation.json`, and `tmp/test/cucumber-browser.json`.
-Release CI retains the application and
-automation results as `application-test-report` and `automation-test-report`,
-including available results when tests fail. Application source coverage remains
-separate.
+| Suite | Command | JSON output under `tmp/test/` |
+| --- | --- | --- |
+| Source | `npm run test:source` | `cucumber-source.json` |
+| Acceptance | `npm run test:acceptance` | `cucumber-test.json` |
+| Automation | `npm run test:automation` | `cucumber-automation.json` |
+| Browser | `npm run test:browser` | `cucumber-browser.json` |
 
-After running all four suites, `npm run report:tests` uses
-`multiple-cucumber-html-reporter` to combine their results into
-`tmp/test-report.html`. The standalone HTML contains the overview, feature and
-scenario details, styles, scripts, and fonts; it can be opened offline. Missing
-or invalid suite results stop generation instead of producing a partial report.
+Use `test:source:coverage` instead of `test:source` when collecting coverage.
+The [testing ADR](../../docs/adr/test-suite-reports.md) defines Cucumber reporting
+and records the remaining standalone Node and browser smoke-test gap.
 
-## Scenario badges
+### Generate the combined report
 
-The Test Scenarios badge counts reported test cases across those same four suites,
-including each scenario-outline example. Steps are not counted as separate tests.
-After running all suites, `npm run badges:scenarios` updates
-`.github/badges/test-scenarios.json` and its SVG; include them with test changes.
-Release CI checks both with `npm run badges:scenarios -- --check`. A scenario
-passes only when every step and hook passes; failed or skipped cases cannot
-produce an all-passing badge. Detailed results stay in the HTML report.
+After a fresh, complete run of all four suites:
 
-## Dependency badges
+```sh
+npm run report:tests
+```
 
-The README's package-version badges are generated SVGs in `.github/badges`.
-Their relative image paths follow the branch or tag being viewed. After changing
-dependencies, run `npm run badges:dependencies` and include the updated SVGs in
-the same commit as the manifest. CI checks that the files match `package.json`.
-The dependency cron colours each badge orange when the declared version differs
-from npm's reported `latest` version and blue otherwise. The colour records the
-last successful check for that branch. Ordinary generation and CI preserve it while the declared
-version is unchanged; changing a version resets its badge to blue until checked.
-Registry failures leave the badges unchanged.
+`multiple-cucumber-html-reporter` produces `tmp/test-report.html`. The standalone
+file contains the overview, feature/scenario details and all required assets
+for offline viewing.
 
-## Coverage badges
+Missing or invalid inputs fail normal generation. Generation does not establish
+that tests were discovered or results are current; filtered or stale results
+must not represent complete validation.
 
-See [Testing, coverage and reporting](../../docs/adr/test-suite-reports.md) for the measured scope
-and coverage requirements.
+### Results after failure
 
-The coverage badge records measured statement coverage in
-`.github/badges/test-coverage.json`, with a matching SVG for the README. Regenerate
-both files from a fresh source-coverage run and include any changes in the same
-commit as the code:
+- Release CI retains available raw results as `application-test-report` and
+  `automation-test-report`.
+- A partial diagnostic HTML report may be generated after failure. It names
+  missing suites and explicitly warns that validation failed.
+- Detailed test output remains in job logs; coverage is reported separately.
+
+## Coverage reports
+
+Collect fresh source coverage, enforce its thresholds and package the report:
 
 ```sh
 npm run test:source:coverage
 npm run test:coverage
-npm run badges:coverage
+npm run report:coverage
 ```
 
-Release CI checks both files against its measured coverage with
-`npm run badges:coverage -- --check`. Badge updates do not create bot commits.
+Outputs are `tmp/test/coverage/` and standalone `tmp/test-coverage.html`.
+The [coverage decision](../../docs/adr/test-suite-reports.md#coverage) defines
+100% statement, branch, function and line coverage within the configured scope.
+
+## Badges
+
+### Scenario badges
+
+After all four suites, run `npm run badges:scenarios`. Commit the updated
+`.github/badges/test-scenarios.json` and SVG with the test changes.
+
+- Counts include every reported scenario-outline example, not individual steps.
+- Passing requires successful steps and hooks; failed or skipped cases cannot
+  represent an all-passing suite.
+- Release CI checks the files with `npm run badges:scenarios -- --check`.
+
+### Dependency badges
+
+Run `npm run badges:dependencies` after manifest changes and commit the generated
+SVGs under `.github/badges/` with `package.json`. CI checks their agreement.
+Relative README links show the versions for the viewed branch or tag.
+
+| Color | Last successful registry check |
+| --- | --- |
+| Blue | Declared version matches npm's `latest` |
+| Orange | Declared version differs from `latest` |
+
+Ordinary generation preserves the last status while the declared version stays
+unchanged. A version change resets its badge to blue until checked. Registry
+failures leave badges unchanged.
+
+### Coverage badges
+
+After the fresh coverage run, use `npm run badges:coverage`. Commit
+`.github/badges/test-coverage.json` and its SVG with the code changes.
+
+The badge shows statement coverage; the full report includes all four measures.
+Release CI checks against its own measurements with
+`npm run badges:coverage -- --check`; it does not create coverage-badge commits.
 
 ## Documentation-only changes
 
-Create `docs/<topic>` from the branch you intend to update, either `develop` or
-`main`, and open a PR to that same target. Only regular, non-executable Markdown
-files (`.md`, case-insensitive) may be added, edited, renamed, or deleted. Images,
-badges, configuration, scripts, and other file types use the normal feature or
-bugfix path, even when related to documentation.
+Branch policy is described in the
+[documentation integration decision](../../docs/adr/continuous-integration.md#updating-documentation).
 
-[`ci-docs.yml`](ci-docs.yml) checks the complete Git change set from merge base to
-the pinned PR head. It inspects both sides of renames, rejects symlinks,
-executable files, submodules, and empty changes, and fails if Git cannot verify
-the history. It does not rely on the capped GitHub changed-files list.
+### Branch and file scope
 
-The workflow runs trusted automation from the default branch using
-`pull_request_target`. PR content is fetched only as Git objects and is never
-checked out or executed. No packages are installed, and no test suites, builds,
-releases, tags, deployments, reports, or synchronization jobs run. The normal
-`main` and `develop` workflows skip `docs/*` PRs; mixed changes fail the
-documentation check rather than falling through to application CI.
+- Create `docs/<topic>` from the intended target, `develop` or `main`, and open
+  a PR to that same branch.
+- Only regular, non-executable Markdown files (`.md`, case-insensitive) qualify.
+  Additions, edits, renames and deletions are supported.
+- Images, badges, scripts and configuration use the feature or bugfix path,
+  even when their purpose is documentation.
 
-After successful validation, the App merges same-repository, non-draft PRs using
-the existing exact-head and target-revision checks. A single commit fast-forwards
-when the target is its ancestor; other documentation PRs squash. A documentation
-branch targeting `main` must include current `main`, apart from dependency-badge
-updates. Choose each destination explicitly: merging into `main` does not open a
-PR to `develop` or synchronize another branch.
+### Validation and trust
 
-Before a documentation merge into `main`, a lightweight check ensures that no
-production release workflow is currently running. If one is active, retry the
-documentation workflow after it finishes; this prevents a documentation commit
-from interrupting that release's tagging or deployment.
+[`ci-docs.yml`](ci-docs.yml) checks the full Git diff from merge base to pinned PR
+head, including both sides of renames. It rejects symlinks, executables,
+submodules, empty changes and unverifiable history, without relying on GitHub's
+capped changed-files list.
 
-To check a documentation branch locally after fetching the target:
+The `pull_request_target` workflow executes trusted default-branch automation.
+PR content is fetched as Git objects, never checked out or executed.
+
+- No packages are installed. Tests, builds, releases, tags, deployments, reports
+  and synchronization jobs do not run.
+- Normal `main` and `develop` CI skip `docs/*` PRs.
+- Mixed changes fail documentation validation; they do not fall through to
+  application CI.
+
+### Merging and retry
+
+Only same-repository, non-draft PRs auto-merge after validation. The App verifies
+the tested head and target revision. One commit fast-forwards when the target is
+its ancestor; other documentation PRs squash.
+
+For a `main` target:
+
+- Include current `main`, except permitted dependency-badge advances.
+- A pre-merge check blocks merging while a production release workflow is active.
+  Retry after it finishes to avoid interrupting tagging or deployment.
+- Merging does not open a synchronization PR to `develop`. Choose each
+  destination explicitly.
+
+### Local check
+
+Fetch the intended target, then run:
 
 ```sh
 bash .github/scripts/validate-documentation-changes.sh \
   "$(git rev-parse origin/develop)" "$(git rev-parse HEAD)"
 ```
 
-Use `origin/main` instead when targeting `main`.
+Substitute `origin/main` for a `main` target.
 
 ### Enabling the documentation workflow
 
-The automation itself changes YAML and shell scripts, so its initial rollout
-uses normal CI and release promotion. The workflow and helpers must reach the
-default branch (`main`), and the normal CI exclusions must exist in both target
-branches, before the fast path is available for each target.
+The workflow's own YAML and scripts require normal CI and release promotion.
+Before the fast path is available:
 
-GitHub's public-repository event policy also needs an explicit
-`pull_request_target` allowance scoped to `.github/workflows/ci-docs.yml`.
-The [policy definition](../policies/documentation-events.json) limits that
-allowance to trusted documentation automation. An administrator can create the
-policy once from the repository root, or update the existing policy if already
-configured:
+1. Put the workflow and helpers on the default branch, `main`.
+2. Include normal-CI exclusions on both target branches.
+3. Allow `pull_request_target` specifically for `.github/workflows/ci-docs.yml`
+   through the repository's Actions event policy.
+
+An administrator can create the scoped
+[policy](../policies/documentation-events.json) from the repository root:
 
 ```sh
 gh api --method POST \
@@ -155,208 +205,290 @@ gh api --method POST \
   --input .github/policies/documentation-events.json
 ```
 
-See [GitHub's event policy guidance](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target)
+Update the existing policy instead if already configured. See GitHub's
+[event-policy guidance](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target)
 and [Actions policy API](https://docs.github.com/en/rest/actions/policies#create-a-repository-actions-policy).
 
 ## Branch workflows
 
-Target `develop` with `feature/*` and `bugfix/*` PRs. Create `release/<version>`
-from `develop` and target `main`. Create production `hotfix/<version>` branches
-from released `main`, using its next patch version, and target `main`.
+### Choose the target
 
-Application CI is split by target branch or branch family:
+| Working branch | Create from | PR target |
+| --- | --- | --- |
+| `feature/*` or integration `bugfix/*` | `develop` | `develop` |
+| Stabilization `bugfix/*` | Active `release/<version>` | That release |
+| `release/<version>` | `develop` | `main` |
+| Production `hotfix/<version>` | Released `main` | `main` |
 
-- [`ci-develop.yml`](ci-develop.yml) validates PRs into `develop`.
-- [`ci-release.yml`](ci-release.yml) validates PRs into `release/**`.
-- [`ci-support.yml`](ci-support.yml) validates PRs into `support/**`.
-- [`ci-main.yml`](ci-main.yml) validates, merges, and deploys release PRs into `main` in one run.
+Production hotfixes use the next patch version of released `main`.
 
-The branch workflows define their own triggers, jobs, permissions, and artifact
-handling. Common Gitflow, merge, release, and publishing logic lives in Bash
-scripts under `.github/scripts`; branch CI does not call a shared workflow.
-The workflow is selected by the PR target. Feature and integration bugfix PRs run
-develop CI; release-stabilization bugfix PRs run release CI. Hotfix PRs run CI for
-their chosen main, release, or support target.
+A `develop` PR targeting `main` triggers creation of a separate versioned release
+PR; that release head is reviewed and tested before integration.
+
+### Workflow routing
+
+| PR target | Workflow |
+| --- | --- |
+| `develop` | [`ci-develop.yml`](ci-develop.yml) |
+| `release/**` | [`ci-release.yml`](ci-release.yml) |
+| `support/**` | [`ci-support.yml`](ci-support.yml) |
+| `main` | [`ci-main.yml`](ci-main.yml): validation, merge and publication |
+
+The target selects the workflow, including for hotfix PRs to a release or support
+line. Each workflow owns its triggers, permissions, jobs and artifacts. Shared
+policy and publishing helpers live in `.github/scripts`; branch CI does not call
+a shared workflow. Each application job installs once; only npm downloads are
+cached.
 
 ## Validation and merging
 
-Main CI creates releases from `develop` trigger PRs and validates release and
-hotfix PRs. Automatic code merges require automation checks, Gitflow policy,
-and application checks; documentation uses its separate validation path.
-Each application job installs once and runs its checks locally; npm's download
-cache is the only cache used.
-Auto-merges are serialized per target branch and bind both the tested head and
-base commit. A target advancement is accepted only when every intervening change
-is to a dependency-version SVG. Other changes require fresh validation before
-merging; the tested head must always match exactly.
-Feature and bugfix PRs into `develop`, and `hotfix/*` PRs into `main`,
-fast-forward when they contain exactly one commit ahead of the current target
-and that target is an ancestor; otherwise the App squash-merges them.
-Release stabilization, publication, and synchronization of released code prefer
-fast-forward, falling back to a merge commit when histories have diverged. The shared helper
-selects the method from the current PR's source and target branches.
-Both `develop` and `main` PR rules permit merge and squash. GitHub has no
-fast-forward PR merge method, so the App updates the target ref without force
-after CI passes, using the exact tested head and rechecking the PR before writing.
-Every merge method waits up to three minutes for GitHub to confirm the exact
-PR and merge commit. A blocked merge reports GitHub's reason; it does not enable
-queued auto-merge. Retries accept an already merged PR only when its repository,
-source branch, tested head, and target branch still match. Shared branches are
-never rebased, and force-push protection still applies to the App.
+### Required checks
+
+Code auto-merges require automation tests, Gitflow policy and application checks.
+Documentation uses its separate path.
+
+Merges are serialized per target and bind the tested head and base revision.
+The head must match exactly. Target advances containing only dependency-version
+SVG changes are accepted; other advances require fresh validation.
+
+### Merge methods
+
+| Integration | Method |
+| --- | --- |
+| Feature/bugfix → `develop`; hotfix → `main` | Fast-forward for exactly one commit ahead with an ancestor target; otherwise squash |
+| Release stabilization, release → `main`, released-code synchronization | Fast-forward where possible; otherwise merge commit |
+| Documentation | See [documentation merge rules](#merging-and-retry) |
+
+Both `develop` and `main` permit merge and squash. GitHub has no fast-forward PR
+method, so the App updates the target ref without force after rechecking the PR
+and tested revision. Shared branches are never rebased.
+
+### Merge confirmation
+
+- Every method waits up to three minutes for GitHub to confirm the exact PR and
+  merge commit, including delayed fast-forward recognition or an existing queue.
+- A blocked merge reports GitHub's reason; automation does not enable queued
+  auto-merge as a fallback.
+- Retries accept an already merged PR only when repository, source, tested head
+  and target still match. Force-push protection applies to the App.
 
 ## Release preparation
 
-Before creating a release, automation previews the integration of `develop` and `main`
-and rejects conflicts or changes limited to dependency badges. It creates the
-release branch from the pinned `develop` revision, incorporates pinned `main`,
-then validates and builds that release head through the usual CI flow.
-If the preview reports a conflict, prepare the release branch from `develop`,
-merge `main` into it locally, resolve the conflict, and open its PR into `main`.
-Automation never guesses which conflicting changes to retain.
+### Automatic preparation
+
+1. Preview integration of pinned `develop` and `main` revisions.
+2. Reject conflicts and changes limited to dependency badges.
+3. Create the release branch from pinned `develop` and incorporate pinned `main`.
+4. Validate and build that release head through normal CI.
+
+### Conflict recovery
+
+Create the release branch from `develop`, merge `main` locally, resolve conflicts
+and open its PR into `main`. Automation never chooses conflicting content for you.
 
 ## Release checks and diagnostics
 
-Release CI builds the exact head commit, requires full coverage, and uploads
-`bundle`, `coverage`, and the combined HTML `test-report` before auto-merge. All
-four test suites use that same release head; the application job collects the
-automation results from its own workflow run. The head must
-contain current `main` apart from verified dependency-badge updates, with ancestry
-checked again before merging. Failed acceptance reports are downloadable; full
-test output stays in job logs.
-Coverage reports are also retained when the coverage check fails. Workflow
-guards explain the rejected input or missing output with an error annotation;
-native tool diagnostics remain in step logs. npm errors are kept visible even
-when routine logging is reduced, and R2 failures include structured Cloudflare
-error details without dumping raw responses or credentials.
-Errors include the relevant nonsecret inputs (such as PR, branch, commit, file
-or destination), with expected and actual values for mismatches. API failures
-retain their native reason alongside the attempted operation. Log only selected
-context; do not dump argument lists, environments, authentication headers or raw
-API responses. Missing credentials are reported by variable name only.
+### Required evidence
+
+Release CI builds the exact head, requires full scoped coverage and runs all
+four suites against that revision. Automation results come from the same workflow
+run. The release head must include current `main`, except verified dependency
+SVG updates; ancestry is checked again before merge.
+
+Artifacts uploaded before auto-merge:
+
+| Artifact | Contents |
+| --- | --- |
+| `bundle` | Tested application |
+| `coverage` | Source coverage reports |
+| `test-report` | Combined HTML test report |
+
+Failed acceptance results remain downloadable. Coverage reports are retained
+even when thresholds fail; full tool output remains in job logs.
+
+### Actionable errors
+
+Following the [error-reporting decision](../../docs/adr/error-view.md), guards
+identify rejected inputs or missing outputs while preserving native diagnostics:
+
+- Include relevant PRs, branches, commits, files or destinations and expected
+  versus actual values for mismatches.
+- Keep npm failures visible and API reasons alongside the attempted operation.
+  R2 failures include structured Cloudflare error details.
+- Never dump argument lists, environments, authentication headers or raw API
+  responses. Identify missing credentials by variable name only.
 
 ## Release stabilization and versions
 
-At most one release and one hotfix may be active at a time.
-Release-trigger retries reuse their release PR, including after corrections to
-the release branch. Make stabilization fixes on a `bugfix/*` branch created from
-the active `release/<version>` and open a PR back into that release. Release CI
-validates and merges the fix, then the existing PR into `main` validates the
-updated release head. Stabilization rejects invalid release versions and targets
-already tagged or merged into `main`; direct pushes do not replace these checks.
-Version validation fails on API errors and rejects a version already reserved by
-a release or hotfix, including a merged version whose tag has not been created yet.
-An already released hotfix may synchronize into `develop`, an active release,
-or an explicitly selected support line. Its source must remain within the
-released revision, apart from dependency-badge changes. Released release-branch
-targets are rejected; support destinations retain their next-patch version check.
-Automatic release creation still selects the next patch version. If an active
-release has reserved the patch needed by an urgent hotfix, give the planned
-release a different version first. Release and hotfix branches cannot share a
-version; synchronization does not rename releases or change version policy.
+### Active versions
+
+- At most one release and one hotfix may be active.
+- Automatic release creation chooses the next patch version.
+- Versions must be unique across releases and hotfixes, including merged versions
+  whose tags are still pending. API errors fail version validation.
+- If a planned release reserves the patch needed by an urgent hotfix, give the
+  planned release a different version first.
+
+### Stabilization fixes
+
+Create `bugfix/*` from the active `release/<version>` and open a PR back to it.
+Release CI merges validated fixes; the existing PR into `main` then validates
+the updated head. Release-trigger retries reuse that PR, including after fixes.
+
+Invalid versions and release targets already tagged or merged into `main` are
+rejected. Direct pushes do not replace stabilization checks.
+
+### Released hotfixes
+
+A released hotfix may synchronize into `develop`, an active release or an
+explicitly selected support line. Its source must stay within the released
+revision apart from dependency badges. Released release targets are rejected;
+support targets retain the next-patch check. Synchronization does not rename
+releases or change version policy.
 
 ## Publication and synchronization
 
-Each release or hotfix PR into `main` follows one continuous `ci-main.yml` run:
-validation and build, confirmed merge, content verification and tagging, then
-deployment and synchronization. The initial `develop` trigger still creates a
-separate versioned release PR so that PR's exact head can be reviewed and tested.
+The [deployment ADR](../../docs/adr/continuous-deployment.md) explains artifact
+promotion to Cloudflare Pages and report storage in R2.
+
+### Run lifecycle
+
+A release or hotfix PR into `main` uses one `ci-main.yml` run for validation,
+build, confirmed merge, tree verification, tagging, deployment and synchronization.
 There is no push-triggered release run.
 
-Successful code integration into `develop` or `release/*` publishes a Cloudflare
-Pages branch preview in the same CI run. Release and production hotfix PRs
-preview their tested head before merging into `main`, without a manual approval
-gate. Superseded previews are skipped; documentation PRs do not deploy previews.
+Runs are serialized per PR and are not cancelled by newer events: earlier runs
+may already be deploying. Merge and production jobs have their own serialization.
 
-Preview and production publication use the tested bundle without rebuilding it.
-Identical `index.html` and `_headers` files reuse the active deployment on the
-same branch. Publishing that bundle to a different branch creates a separate
-Pages deployment, while Wrangler reuses already uploaded assets.
+### Previews and bundle reuse
 
-The merge step waits for GitHub to confirm the exact PR has merged, including
-queued auto-merges and delayed fast-forward recognition. Before tagging, Git
-compares the tested head and actual released trees directly, permitting only
-dependency-version SVG differences. This also verifies squash merges without
-requiring the tested head to be an ancestor of the released commit. Every
-production step uses the confirmed merge SHA; the PR's synthetic merge commit
-is never a deployment reference. Deployment consumes the bundle and reports
-from successful jobs in the same run, without waiting for the whole run to finish.
+- Successful integrations into `develop` or `release/*` publish Pages previews
+  in the same run.
+- Release and production-hotfix PRs preview their tested head before merging,
+  without a manual approval gate.
+- Superseded previews are skipped; documentation PRs do not deploy previews.
 
-Runs are serialized per PR and are not cancelled by newer PR events, because an
-earlier run may already be deploying. Merge and production jobs retain their own
-serialization. Current PR state is checked before merging, and unmerged,
-retargeted, forked, or advanced PRs cannot supply release identity. The workflow
-creates a tag matching the branch's unprefixed Semantic Version
-(for example, `release/1.2.3` produces `1.2.3`), opens any needed synchronization
-PR from `main` into `develop`, and promotes its validated artifacts.
-After a production hotfix, the same synchronization job also opens a PR into
-the active release, if one exists. It uses the tagged main revision so the
-release includes the production history required by its final main CI. A deleted
-hotfix branch is restored at that revision. A surviving branch containing only
-the tested hotfix and later dependency badges is merged with the released
-revision, preserving its commits after a squash release. The resulting branch
-must contain the released revision and differ only in dependency badges.
-Unexpected code changes stop synchronization without discarding those commits.
-Retries reuse an open PR or skip a release that already contains the fix.
-Synchronization into `develop` also preserves missing release ancestry when
-the content already matches; it skips only when `develop` already contains
-`main`. Fast-forward synchronization then leaves both branches at the same
-commit whenever possible.
-`ci-release.yml` validates and merges the synchronization PR. Support-line
-destinations remain explicit rather than receiving every production hotfix.
-Deployment and report publishing share one serialized job and reject superseded
-releases. Dependency-badge-only advances do not supersede a release. Intentional
+Preview and production use the tested bundle without rebuilding. Matching
+`index.html` and `_headers` reuse the active deployment on the same branch.
+Another branch gets a separate deployment; Wrangler can reuse uploaded assets.
+
+### Production identity
+
+Before tagging, Git compares the tested and released trees, allowing only
+dependency-version SVG differences. This verifies squash merges without requiring
+the tested head to be an ancestor of the released commit.
+
+- Every production step uses the confirmed merge SHA, never the synthetic PR
+  merge commit.
+- Current PR checks reject unmerged, retargeted, forked or advanced PRs as release
+  identity sources.
+- Tags use the branch's unprefixed Semantic Version: `release/1.2.3` → `1.2.3`.
+- Bundle and reports come from successful jobs in the same run; publication need
+  not wait for the entire workflow to finish.
+
+Deployment and report publication share a serialized job and reject superseded
+releases. Dependency-badge-only advances do not supersede a release; intentional
 rollback is a separate operation.
+
+### Report destinations
+
+Production promotion uploads `test-coverage.html` and `test-report.html` to R2
+from validated artifacts. Dependency checks and badge files do not publish to R2.
+
+### Synchronization into develop
+
+Automation opens a PR from `main` into `develop` when needed. It preserves missing
+release ancestry even when content already matches, skipping only if `develop`
+already contains `main`. Fast-forward synchronization aligns both branch heads
+when possible.
+
+### Hotfix synchronization into a release
+
+After a production hotfix, automation also opens a PR into the active release,
+if one exists. It uses tagged `main` so final release validation includes the
+production history:
+
+- Restore a deleted hotfix branch at the released revision.
+- Merge that revision into a surviving branch containing only the tested hotfix
+  and later dependency badges, preserving its commits after a squash release.
+- Require the resulting branch to contain the released revision and differ only
+  in dependency badges. Unexpected code stops synchronization without discarding it.
+- Reuse an open PR on retry, or skip a release already containing the fix.
+
+`ci-release.yml` validates and merges the PR. Support destinations remain explicit;
+they do not receive every production hotfix automatically.
 
 ## Retrying publication
 
-Retry failed jobs from the original release PR run to resume a failed promotion.
-Rerunning all jobs is also supported: a matching, already merged PR is validated
-as a retry, its pinned head is rebuilt, and its released tree is verified again.
-The workflow reuses an existing matching tag and never merges the PR twice.
-If a release was merged manually, rerun its original PR workflow to complete
-publication; a direct push does not start deployment. Retries require that
-release to remain current and its source commit and artifacts to be available.
+### Failed promotion
+
+Retry failed jobs in the original release PR run. A full rerun is also supported:
+it recognizes the matching merged PR, rebuilds the pinned head and verifies the
+released tree again. Matching tags are reused; the PR is never merged twice.
+
+### Manual merges and prerequisites
+
+After a manual release merge, rerun the original PR workflow to publish it;
+a direct push does not deploy. The release must remain current, and its source
+commit and required artifacts must still be available.
 
 ## GitHub App permissions
 
-The existing GitHub App (`GH_APP_CLIENT_ID`, `GH_APP_PRIVATE_KEY`) owns PRs,
-merges, tags, dependency-badge commits, and deployment records. Its installation
-needs Contents, Pull requests, and Deployments read/write permissions; each job requests only
-the permissions it uses. The built-in GitHub token is used for read-only API
-access and normal Actions infrastructure such as artifacts and caches.
-For direct badge updates on protected branches, the App needs a bypass of the
-pull-request requirement for `main`, `develop`, `release/*`, and `support/*`.
-That bypass also permits validated fast-forward integration and release
-preparation; the owning helpers verify the expected branch revisions before writing.
-Force-push protections are separate rulesets without that bypass. Permanent
-`main`, `develop`, and support branches also reject deletion; temporary release
-branches can still be deleted after merging. GitHub
-cannot scope this bypass to badge paths; the publishing helper restricts the
-commit to dependency-version SVGs and the exact checked branch head.
+### Credentials and job permissions
+
+The App uses `GH_APP_CLIENT_ID` and `GH_APP_PRIVATE_KEY`, following the
+[runtime-secrets decision](../../docs/adr/runtime-secrets.md).
+It owns PRs, merges, tags, dependency-badge commits and deployment records.
+
+- Installation permissions: Contents, Pull requests and Deployments, read/write.
+- Each job requests only the permissions it uses.
+- The built-in GitHub token handles read-only APIs and normal Actions
+  infrastructure, including artifacts and caches.
+
+### Protected-branch bypass
+
+The App needs a pull-request-rule bypass for `main`, `develop`, `release/*` and
+`support/*`. This permits dependency-badge updates, validated fast-forwards and
+release preparation; helpers verify expected branch revisions before writing.
+
+GitHub cannot restrict the bypass to badge paths. The badge publisher therefore
+limits commits to dependency-version SVGs at the exact checked branch head.
+
+### Protections retained
+
+Force-push rules remain separate, without an App bypass. Permanent `main`,
+`develop` and support branches reject deletion; temporary release branches may
+be deleted after merging.
 
 ## Scheduled dependency checks
 
-`cron-outdated.yml` checks dependencies daily at 06:00 UTC and can also be run
-manually. Every run discovers repository branches, excludes `docs/*`, and checks each remaining branch's
-commit at discovery time. It installs dependencies with lifecycle scripts disabled
-and runs `update-dependency-status.sh` from the workflow's revision. The helper
-reports each branch's `npm outdated --json` results in the workflow logs and
-summary, including current, wanted, and latest versions. The same result refreshes
-the branch's dependency SVG colours. The App commits only changed badge files,
-so unchanged results create no commits. A branch that moved or was deleted after
-discovery is skipped; a concurrent change during publication rejects the commit
-without overwriting it. A failure on one branch does not cancel the other checks.
-This workflow has no PR or push triggers. Badge-only pushes do not deploy releases;
-updates to an open PR's source branch still run its normal CI checks.
-Documentation branches are excluded from dependency checks and badge publication
-so generated SVGs cannot enter their Markdown-only changes.
-The branch CI workflows have no scheduled or manual dependency refreshes.
-README package-version badges are tracked in `.github/badges/`. Dependency
-checks and the coverage badge do not upload to R2. Main release promotion
-publishes the coverage report (`test-coverage.html`) and combined Cucumber report
-(`test-report.html`) to R2, using artifacts from the validated release run.
+### Schedule and scope
+
+[`cron-outdated.yml`](cron-outdated.yml) runs daily at **06:00 UTC** or manually.
+It has no PR or push triggers; branch CI has no scheduled/manual dependency refresh.
+
+Each run discovers branches and pins their current commits. It excludes `docs/*`
+so generated SVGs cannot enter Markdown-only changes.
+
+### Checks and results
+
+- Install each branch's dependencies with lifecycle scripts disabled.
+- Run `update-dependency-status.sh` from the workflow revision.
+- Report `npm outdated --json` results—current, wanted and latest—in logs and
+  the summary. The same results refresh [badge colors](#dependency-badges).
+- A failure on one branch does not cancel the others.
+
+### Safe publication
+
+The App commits only changed dependency SVGs; unchanged results create no commit.
+Branches moved or deleted since discovery are skipped. A concurrent change during
+publication rejects the commit without overwriting it.
+
+Badge-only pushes do not deploy releases, but changes to an open PR's source
+branch still run its normal CI checks.
 
 ## Reading workflow runs
 
-GitHub's branch label on a PR run shows its source branch. For example, a
-main-to-develop synchronization PR displays `main` while running `ci-develop`.
+GitHub labels PR runs with the **source** branch; the **target** selects CI.
+A `main` → `develop` synchronization PR therefore displays `main` while running
+`ci-develop`.
