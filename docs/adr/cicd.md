@@ -77,7 +77,7 @@ gitGraph BT:
     merge main id: "Sync release"
 ```
 
-### Fixing production
+### Hotfixes
 
 A hotfix starts from released `main` and merges back into `main`. Once published
 and tagged, `main` is synchronized into `develop`.
@@ -103,7 +103,7 @@ gitGraph BT:
     merge main id: "Sync patch"
 ```
 
-### Including a hotfix in the next release
+#### Including a hotfix in the next release
 
 A hotfix starts from released `main` and merges into the active release. After
 validation, the release merges into `main` and is tagged; `main` is then
