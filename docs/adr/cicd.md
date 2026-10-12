@@ -1,7 +1,7 @@
 # CICD
 
 > [!IMPORTANT]
-> Continuous integration and deployment follow Gitflow, with a fully passing test suite required for release
+> Continuous integration and deployment follow a Gitflow branch strategy, with automated tests that help assure quality between development cycles and deployments
 
 ## Development to release
 
