@@ -18,7 +18,7 @@ Database names are slash-separated namespaces, not physical directory trees:
 | OpenAPI document | `v1/catalogs`, `/repositories/<id>` | `schema.json` | `v1/catalogs/index` |
 | Completed resource aggregates | `v1/metrics`, `/metrics` | One immutable JSON file per 15-minute interval | No separate catalogue |
 
-Each workflow and schema has a stable identifier; display names and uploaded filenames do not select repository paths. Resource intervals belong to one aggregate history rather than one repository per sample. See [schema management](openapi-library.md) and [resource monitoring](resource-monitoring.md) for their specific write and retention rules. Undo and Redo are workflow features, not requirements imposed on every repository type. Remote transport, credentials, synchronization and general branch-management controls remain outside this decision.
+Each workflow and schema has a stable identifier; display names and uploaded filenames do not select repository paths. Resource intervals belong to one aggregate history rather than one repository per sample. See [schema management](openapi-adaptation.md#persistence-and-recovery) and [resource monitoring](resource-monitoring.md) for their specific write and retention rules. Undo and Redo are workflow features, not requirements imposed on every repository type. Remote transport, credentials, synchronization and general branch-management controls remain outside this decision.
 
 ## Workflow snapshots and autosave
 

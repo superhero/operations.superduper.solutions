@@ -15,7 +15,6 @@ Before contributing, please review the architectural decision records (ADRs) bel
 - [Test reporting includes every test, and release validation requires 100% coverage of explicitly scoped application logic](docs/adr/test-suite-reports.md)
 - [Project code and contributions are licensed under AGPLv3-only with additional terms under Section 7](docs/adr/licensing-choice.md)
 - [Application content is versioned in separate browser-local Git repositories to preserve independent change histories](docs/adr/browser-version-management.md)
-- [OpenAPI documents define the application’s available operations and are managed through a browser-local schema library](docs/adr/openapi-library.md)
-- [The application’s workflows represent HTTP operations as nodes whose inputs and responses follow the OpenAPI model](docs/adr/openapi-workflow-nodes.md)
+- [OpenAPI documents define the application’s available operations and the input and response models of its workflow nodes](docs/adr/openapi-adaptation.md)
 - [The application provides current and historical insights into processing, memory and storage usage](docs/adr/resource-monitoring.md)
 - [Artifacts with distinct purposes are kept separate wherever practical](docs/adr/responsibility-segregation.md)
