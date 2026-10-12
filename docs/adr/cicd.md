@@ -45,23 +45,29 @@ gitGraph BT:
     merge main id: "Sync release"
 ```
 
+### Branching
+
 `feature/*` and integration `bugfix/*` branches start from and return to `develop`
 through PRs. A `release/<version>` branches from `develop` after feature
 integration and incorporates current `main`. Stabilization fixes use `bugfix/*`
 branches from that release and return to it.
+
+The illustrated `develop` → `release` update is not yet supported by CI branch
+validation.
+
+### Validation and publication
 
 Releases, including hotfixes, require a fully passing test suite and all required
 checks. Protected branches enforce checks tied to the tested revision. CI merges
 and tags the verified revision, deploys its tested artifacts, and opens a
 `main` → `develop` synchronization PR.
 
+### Merge policy
+
 Feature and integration bugfix PRs, hotfix PRs into `main`, and documentation PRs
 fast-forward when they contain one commit and the target is its ancestor;
 otherwise they squash. Release stabilization, publication and synchronization
 fast-forward where possible; otherwise they use merge commits.
-
-The illustrated `develop` → `release` update is not yet supported by CI branch
-validation.
 
 ## Hotfixes
 
