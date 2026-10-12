@@ -42,7 +42,7 @@ Features and integration fixes return to `develop`. Documentation returns only
 to its chosen target: `develop` in this example, or `main` for released docs.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": ".commit-label { font-weight: 700; } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 8px; transform: translateX(3px); }", "gitGraph": {"mainBranchName": "develop", "showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": ".commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"mainBranchName": "develop", "showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
     "git0": "#39B8B0", "gitBranchLabel0": "#0D1117",
     "git1": "#E3B341", "gitBranchLabel1": "#0D1117",
@@ -72,7 +72,7 @@ continues. After validation, it is published to `main`, tagged, and synchronized
 back into `develop`.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": ".commit-label { font-weight: 700; } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 8px; transform: translateX(3px); }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": ".commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
     "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
     "git1": "#A3C441", "gitBranchLabel1": "#0D1117",
@@ -106,7 +106,7 @@ synchronized into `develop`. The hotfix branch also receives the tagged revision
 before carrying the fix into the active release.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": ".commit-label { font-weight: 700; } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 8px; transform: translateX(3px); }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": ".commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
     "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
     "git1": "#A371F7", "gitBranchLabel1": "#0D1117",
