@@ -29,13 +29,12 @@ the application.
 | `bugfix/*` | Fixes starting from `develop` or the active release, returning to that same branch. |
 | `release/<version>` | Release preparation from `develop`, incorporating current `main`. |
 | `hotfix/<version>` | Patch fixes starting from released `main`. |
-| `docs/*` | Markdown changes starting from the explicitly chosen `develop` or `main` target. |
+| `docs/*` | Markdown-only updates with explicitly selected targets; see [documentation paths](#updating-documentation). |
 
 Read each graph **from bottom to top**. Each example shows one part of the
 branching model. Branch labels omit topic and version suffixes; commit labels
 explain the work and where it is integrated. The first graph shows where
-`develop` and `release` branch from; later examples omit the earlier shared
-history of `main` and `develop`.
+`develop` and `release` branch from; later examples omit earlier shared history.
 
 ### Development to release
 
@@ -117,36 +116,42 @@ gitGraph BT:
 
 ### Updating documentation
 
-Each `docs/<topic>` branch starts from and returns to its chosen target:
-`develop` for ongoing work, or `main` for released documentation. The two docs
-branches below illustrate these separate paths. Neither merge synchronizes the
-other target or triggers a release or deployment.
+A `docs/<topic>` branch can serve multiple explicitly selected targets: `main`,
+`develop`, and an active `release/*` branch. Each target gets its own PR; targets
+are not synchronized automatically. The documentation workflow does not publish
+releases.
+
+The graph shows the intended paths. CI currently supports documentation PRs only
+to `main` and `develop`; release targeting and reliable reuse across targets are
+planned automation work.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2) { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+3) { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
     "git0": "#4CB269", "gitBranchLabel0": "#0D1117",
-    "git1": "#71B3FF", "gitBranchLabel1": "#0D1117",
+    "git1": "#B1CD5E", "gitBranchLabel1": "#0D1117",
     "git2": "#57C3BC", "gitBranchLabel2": "#0D1117",
     "git3": "#71B3FF", "gitBranchLabel3": "#0D1117"
 }}}%%
 gitGraph BT:
-    %% Independent roots omit shared history; hide their two initial notes.
+    %% Existing branch histories are omitted; hide their three initial notes.
     branch develop order: 2
+    branch release order: 1
     checkout main
     commit id: "Released" tag: "1.0.0"
+    checkout release
+    commit id: "Release base"
     checkout develop
     commit id: "Start"
     checkout main
-    branch "docs/main" order: 1
-    commit id: "Released docs"
+    branch docs order: 3
+    commit id: "Documentation"
+    checkout develop
+    merge docs id: "Update develop"
+    checkout release
+    merge docs id: "Update release"
     checkout main
-    merge "docs/main" id: "Update main"
-    checkout develop
-    branch "docs/dev" order: 3
-    commit id: "Development docs"
-    checkout develop
-    merge "docs/dev" id: "Update develop"
+    merge docs id: "Update main"
 ```
 
 ### Merge methods
@@ -158,9 +163,8 @@ gitGraph BT:
   possible; otherwise they use a merge commit to preserve history.
 
 Mermaid draws each [integration as a merge commit](https://mermaid.js.org/syntax/gitgraph.html#merging-two-branches);
-the policies above determine the actual Git history. Each documentation branch
-merges only into its chosen `develop` or `main` target, without automatic
-synchronization.
+the policies above determine the actual Git history. Each documentation PR
+targets one branch explicitly, without automatic synchronization.
 
 See [Repository automation](../../.github/workflows/README.md) for branch rules,
 merge methods, contributor procedures and publication details.
