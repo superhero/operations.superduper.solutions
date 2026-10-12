@@ -58,21 +58,33 @@ Stabilization fixes use `bugfix/*` branches from the active release and return
 to that release through a PR.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false, "mainBranchName": "release"}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2) { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
-    "git0": "#B1CD5E", "gitBranchLabel0": "#0D1117",
-    "git1": "#EB8D5B", "gitBranchLabel1": "#0D1117"
+    "git0": "#4CB269", "gitBranchLabel0": "#0D1117",
+    "git1": "#B1CD5E", "gitBranchLabel1": "#0D1117",
+    "git2": "#57C3BC", "gitBranchLabel2": "#0D1117",
+    "git3": "#EB8D5B", "gitBranchLabel3": "#0D1117"
 }}}%%
 gitGraph BT:
-    commit id: "Release candidate"
-    branch bugfix order: 1
+    %% Hide the two initial notes while retaining their branch connections.
+    commit id: "Released" tag: "1.0.0"
+    branch develop order: 2
+    commit id: "Start"
+    branch release order: 1
+    commit id: "Create release branch"
+    branch bugfix order: 3
     commit id: "Fix"
     checkout release
     merge bugfix id: "Integrate fix"
+    checkout main
+    merge release id: "Deployed" tag: "1.1.0"
+    checkout develop
+    merge main id: "Sync release"
 ```
 
-The fix is validated before merging, then included in the release's validation
-and publication.
+The fix is validated before merging into the release. After release validation,
+`release` merges into `main`; a synchronization PR then carries `main` back into
+`develop`.
 
 ### Validation and publication
 
