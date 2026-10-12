@@ -22,9 +22,11 @@ suffixes.
     "git4": "#EB8D5B", "gitBranchLabel4": "#0D1117"
 }}}%%
 gitGraph BT:
-    %% In BT order, the last two label groups are the initial notes; the version tag stays visible.
-    commit id: "Released" tag: "1.0.0"
+    %% Show existing main and develop lanes with earlier ancestry and initial notes omitted.
     branch develop order: 2
+    checkout main
+    commit id: "Released" tag: "1.0.0"
+    checkout develop
     commit id: "Start"
     branch "feature" order: 3
     commit id: "Feature"
