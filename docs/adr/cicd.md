@@ -43,6 +43,7 @@ Features and integration fixes return to `develop`. Documentation returns only
 to its chosen target: `develop` in this example, or `main` for released docs.
 Here, a release branches from `develop` after feature integration. Later fix and
 documentation updates are explicitly incorporated before publication to `main`.
+After publication, `main` is merged back into `develop`.
 
 The illustrated `develop` → `release` updates are not yet supported by
 [CI branch validation](../../.github/scripts/validate-pr.sh).
@@ -83,6 +84,8 @@ gitGraph BT:
     merge develop id: "Include docs"
     checkout main
     merge "release" id: "Publish" tag: "1.1.0"
+    checkout develop
+    merge main id: "Sync release"
 ```
 
 ### Preparing and publishing a release
