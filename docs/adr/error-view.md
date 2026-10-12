@@ -1,7 +1,7 @@
 # Error reporting
 
 > [!IMPORTANT]
-> Errors are reported clearly through the user interface and console.
+> Errors are reported with full transparency through both the user interface and console.
 
 ## Console diagnostics
 
