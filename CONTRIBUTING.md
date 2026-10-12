@@ -7,6 +7,7 @@ Before contributing, please review the architectural decision records (ADRs) bel
 ## Architectural decision records
 
 - [Application content is versioned in separate browser-local Git repositories to preserve independent change histories](docs/adr/local-resource-management.md)
+- [Architectural decision records are maintained to preserve reasoning and guide future changes](docs/adr/decision-records.md)
 - [Artifacts with distinct purposes are kept separate wherever practical](docs/adr/responsibility-segregation.md)
 - [Continuous deployment publishes tested artifacts to Cloudflare, preserving traceability to validated revisions.](docs/adr/continuous-deployment.md)
 - [Continuous integration follows a Gitflow branch strategy, with GitHub Actions automating tests that help assure quality between development cycles.](docs/adr/continuous-integration.md)
