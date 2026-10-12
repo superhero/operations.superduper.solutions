@@ -68,7 +68,7 @@ gitGraph BT:
     checkout develop
     merge "feature" id: "Integrate feature"
     branch "release" order: 1
-    commit id: "Create release version"
+    commit id: "Create release branch"
     checkout develop
     branch "bugfix" order: 4
     commit id: "Fix"
@@ -146,7 +146,7 @@ gitGraph BT:
     checkout develop
     commit id: "Next release"
     branch "release" order: 2
-    commit id: "Create release version"
+    commit id: "Create release branch"
     checkout main
     branch "hotfix" order: 1
     commit id: "Repair"
