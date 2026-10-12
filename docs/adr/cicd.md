@@ -146,8 +146,10 @@ from `develop` after the first documentation merge, is validated and merged into
 The shared docs branch starts from `main` and accumulates only documentation
 changes; each later edit includes the earlier ones. Every target must pass the
 full Markdown-only check. Reliable branch reuse across targets remains planned
-automation work. The documentation workflow itself does not publish releases or
-synchronize target branches.
+automation work. Documentation merges do not create release versions or tags,
+publish releases, or trigger deployments. Merging a docs PR into `main` does not
+open a synchronization PR to `develop`; each target requires its own explicitly
+requested PR.
 
 ```mermaid
 %%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2) { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
