@@ -1,7 +1,7 @@
 # Continuous integration
 
 > [!IMPORTANT]
-> Continuous integration follows a Gitflow branch strategy, with automated tests that help assure quality between development cycles.
+> Continuous integration follows a Gitflow branch strategy, with GitHub Actions automating tests that help assure quality between development cycles.
 
 ## Development to release
 
@@ -102,9 +102,9 @@ The fix is validated before merging into the release. After release validation,
 ### Validation and release
 
 Releases, including hotfixes, require a fully passing test suite and all required
-checks. Protected branches enforce checks tied to the tested revision. CI merges
-and tags the verified revision, then opens a `main` → `develop` synchronization
-PR.
+checks. Protected branches enforce checks tied to the tested revision. GitHub
+Actions merges and tags the verified revision, then opens a `main` → `develop`
+synchronization PR.
 
 ### Merge policy
 
