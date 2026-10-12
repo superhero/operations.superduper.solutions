@@ -2,7 +2,7 @@
 
 Keep ongoing development separate from released code, and publish the same
 revision and artifacts that passed validation. Use the
-[git-flow model](https://github.com/petervanderdoes/gitflow-avh) with
+[AVH git-flow model](https://github.com/petervanderdoes/gitflow-avh) with
 [Semantic Versioning](https://semver.org/) and automated validation, merging and
 release publication. Markdown-only changes use a lighter path because they do
 not change the application.
