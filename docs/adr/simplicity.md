@@ -1,7 +1,12 @@
-# Simple, clear solutions take precedence over unnecessary complexity
+# Simplicity
 
+> [!IMPORTANT]
+> Simple, clear solutions take precedence over unnecessary complexity.
+
+> [!NOTE]
 > Less is more.
->
+
+> [!NOTE]
 > Keep it simple.
 
 ## Implementation
