@@ -1,6 +1,8 @@
 # Contributing
 
-Thank you for contributing to `operations.superduper.solutions`.
+Thank you for considering contributing to `operations.superduper.solutions`.
+
+Before contributing, please review the architectural decision records (ADRs) below to understand the project's design choices and the reasons behind them.
 
 ## Architectural decision records
 
