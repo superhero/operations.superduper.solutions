@@ -49,7 +49,7 @@ The illustrated `develop` → `release` updates are not yet supported by
 [CI branch validation](../../.github/scripts/validate-pr.sh).
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": ".branchLabel { font-weight: 700; } .branchLabelBkg { clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2) { visibility: hidden; } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": ".branchLabel { font-weight: 700; } .branchLabelBkg { clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2) { visibility: hidden; } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #A3C441; stroke-dasharray: none; } .commit-labels g:nth-last-of-type(4) { transform-box: fill-box; transform: translate(calc(100% + 44px), -26px); } .commit-labels g:nth-last-of-type(4) .commit-label-bkg { stroke-width: 56px; clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 4px) calc(100% + 4px), 4px calc(100% + 4px), -10px calc(50% + 28px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
     "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
     "git1": "#A3C441", "gitBranchLabel1": "#0D1117",
@@ -59,6 +59,7 @@ The illustrated `develop` → `release` updates are not yet supported by
     "git5": "#58A6FF", "gitBranchLabel5": "#0D1117"
 }}}%%
 gitGraph BT:
+    %% Keep the feature-integration note clear of the leftward release fork.
     %% In BT order, the last two label groups are the initial notes; the version tag stays visible.
     commit id: "Released" tag: "1.0.0"
     branch develop order: 2
@@ -131,7 +132,7 @@ synchronized into `develop`. The hotfix branch also receives the tagged revision
 before carrying the fix into the active release.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": ".branchLabel { font-weight: 700; } .branchLabelBkg { clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:last-of-type { visibility: hidden; } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": ".branchLabel { font-weight: 700; } .branchLabelBkg { clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:last-of-type { visibility: hidden; } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #A3C441; stroke-dasharray: none; } .commit-labels g:nth-last-of-type(2) { transform-box: fill-box; transform: translate(calc(100% + 44px), -26px); } .commit-labels g:nth-last-of-type(2) .commit-label-bkg { stroke-width: 56px; clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 4px) calc(100% + 4px), 4px calc(100% + 4px), -10px calc(50% + 28px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
     "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
     "git1": "#A371F7", "gitBranchLabel1": "#0D1117",
@@ -139,6 +140,7 @@ before carrying the fix into the active release.
     "git3": "#39B8B0", "gitBranchLabel3": "#0D1117"
 }}}%%
 gitGraph BT:
+    %% Keep the next-release note clear of the leftward release fork.
     %% In BT order, the initial commit note is the last label group; its tag stays visible.
     branch develop order: 3
     checkout main
