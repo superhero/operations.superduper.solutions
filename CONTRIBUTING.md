@@ -8,7 +8,8 @@ Before contributing, please review the architectural decision records (ADRs) bel
 
 - [Application content is versioned in separate browser-local Git repositories to preserve independent change histories](docs/adr/local-resource-management.md)
 - [Artifacts with distinct purposes are kept separate wherever practical](docs/adr/responsibility-segregation.md)
-- [Continuous integration and deployment follow a Gitflow branch strategy, with automated tests that help assure quality between development cycles and deployments.](docs/adr/cicd.md)
+- [Continuous deployment promotes tested artifacts to previews and production, keeping publication traceable to the validated revision.](docs/adr/cd.md)
+- [Continuous integration follows a Gitflow branch strategy, with automated tests that help assure quality between development cycles.](docs/adr/ci.md)
 - [Dedicated workers handle background processing to reduce main-thread workload](docs/adr/dedicated-workers.md)
 - [Errors are reported clearly through the user interface and console](docs/adr/error-view.md)
 - [OpenAPI documents define the application’s available operations and the input and response models of its workflow nodes](docs/adr/openapi-adaptation.md)

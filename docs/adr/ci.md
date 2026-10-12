@@ -1,7 +1,7 @@
-# CICD
+# Continuous integration
 
 > [!IMPORTANT]
-> Continuous integration and deployment follow a Gitflow branch strategy, with automated tests that help assure quality between development cycles and deployments.
+> Continuous integration follows a Gitflow branch strategy, with automated tests that help assure quality between development cycles.
 
 ## Development to release
 
@@ -47,7 +47,7 @@ gitGraph BT:
     checkout "release"
     merge develop id: "Include fix"
     checkout main
-    merge "release" id: "Deployed" tag: "1.1.0"
+    merge "release" id: "Integrate release" tag: "1.1.0"
     checkout develop
     merge main id: "Sync release"
     %% A hidden main endpoint and a 50px develop extension align the continuing tips.
@@ -87,7 +87,7 @@ gitGraph BT:
     checkout release
     merge bugfix id: "Integrate fix"
     checkout main
-    merge release id: "Deployed" tag: "1.1.0"
+    merge release id: "Integrate release" tag: "1.1.0"
     checkout develop
     merge main id: "Sync release"
     %% A hidden main endpoint and a 50px develop extension align the continuing tips.
@@ -99,20 +99,20 @@ The fix is validated before merging into the release. After release validation,
 `release` merges into `main`; a synchronization PR then carries `main` back into
 `develop`.
 
-### Validation and publication
+### Validation and release
 
 Releases, including hotfixes, require a fully passing test suite and all required
 checks. Protected branches enforce checks tied to the tested revision. CI merges
-and tags the verified revision, deploys its tested artifacts, and opens a
-`main` → `develop` synchronization PR.
+and tags the verified revision, then opens a `main` → `develop` synchronization
+PR.
 
 ### Merge policy
 
 Feature and integration bugfix PRs, hotfix PRs into `main`, and documentation PRs
 fast-forward when they contain one commit and the target branch tip is an
-ancestor of that commit; otherwise they squash. Release stabilization,
-publication and synchronization fast-forward where possible; otherwise they
-use merge commits.
+ancestor of that commit; otherwise they squash. Release stabilization PRs,
+release PRs into `main` and synchronization PRs fast-forward where possible;
+otherwise they use merge commits.
 
 ## Hotfixes
 
@@ -136,7 +136,7 @@ gitGraph BT:
     branch "hotfix" order: 1
     commit id: "Repair"
     checkout main
-    merge "hotfix" id: "Publish patch" tag: "1.0.1"
+    merge "hotfix" id: "Integrate patch" tag: "1.0.1"
     checkout develop
     merge main id: "Sync patch"
     %% A hidden main endpoint and a 50px develop extension align the continuing tips.
@@ -177,7 +177,7 @@ gitGraph BT:
     checkout "release"
     merge "hotfix" id: "Apply fix"
     checkout main
-    merge "release" id: "Deployed" tag: "1.1.0"
+    merge "release" id: "Integrate release" tag: "1.1.0"
     checkout develop
     merge main id: "Sync release"
     %% A hidden main endpoint and a 50px develop extension align the continuing tips.
@@ -222,7 +222,7 @@ gitGraph BT:
     branch release order: 1
     commit id: "Create release branch"
     checkout main
-    merge release id: "Deployed" tag: "1.1.0"
+    merge release id: "Integrate release" tag: "1.1.0"
     checkout develop
     merge main id: "Sync main"
     %% A hidden main endpoint and a 50px develop extension align the continuing tips.
@@ -231,7 +231,7 @@ gitGraph BT:
 ```
 
 The docs PR updates `develop`. The later release follows the normal validation,
-publication and `main` → `develop` synchronization path.
+tagging and `main` → `develop` synchronization path.
 
 ### Release
 
@@ -262,7 +262,7 @@ gitGraph BT:
     checkout release
     merge docs id: "Update release"
     checkout main
-    merge release id: "Deployed" tag: "1.1.0"
+    merge release id: "Integrate release" tag: "1.1.0"
     checkout develop
     merge main id: "Sync main"
     %% A hidden main endpoint and a 50px develop extension align the continuing tips.
@@ -271,11 +271,11 @@ gitGraph BT:
 ```
 
 The intended docs PR updates `release`. The later release follows the normal
-validation, publication and `main` → `develop` synchronization path.
+validation, tagging and `main` → `develop` synchronization path.
 
 ### Main
 
-Branch from `main` to correct documentation for the published version.
+Branch from `main` to correct documentation for the released version.
 
 ```mermaid
 %%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2), .commit.main-origin { visibility: hidden; } .commit-labels g:first-of-type, .commit.main-end { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"mainBranchName": "main", "showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
@@ -302,5 +302,5 @@ These changes reach `main` directly, without going through a release branch.
 
 Each target validates the full Markdown-only change set. Docs PRs skip
 application tests and builds. They do not create release versions or tags,
-publish releases, deploy, or open synchronization PRs. Each target needs its
-own explicitly requested PR.
+publish releases, or open synchronization PRs. Each target needs its own
+explicitly requested PR.
