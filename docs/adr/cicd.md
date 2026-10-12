@@ -17,9 +17,7 @@ not change the application.
 - Release stabilization uses a `bugfix/*` branch from the active `release/<version>` and a PR back into that release. The target must have valid SemVer and must not already be tagged or merged into `main`.
 - `release/<version>` starts from `develop`, merges into `main`, is tagged with the same unprefixed SemVer, then `main` is merged back into `develop`.
 - `hotfix/<version>` is patch-only. Production hotfixes start from released `main` and follow the same release and back-merge path. After tagging, the released hotfix revision is also synchronized into an active `release/*` through a PR.
-- Hotfixes may target a selected `support/*` line; its latest reachable release determines the next patch version. Production fixes are not automatically merged into every maintenance line.
 - Synchronizing an already released hotfix must not introduce unreleased code or reuse its version for another production release.
-- `support/*` provides long-lived maintenance lines.
 - Feature and bugfix PRs into `develop`, and production hotfix PRs into `main`, fast-forward when they contain one commit and the target is its ancestor; otherwise they squash.
 - Release stabilization, publication, and synchronization of released code prefer fast-forward, falling back to a merge commit when histories have diverged. Synchronization preserves ancestry, including when both branches already have identical content.
 - The automation App selects the merge method after the applicable CI validation passes. Fast-forward updates use the exact validated head without force; shared branches are never rebased. Main and develop permit both merge and squash for the fallback paths.
