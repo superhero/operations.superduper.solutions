@@ -54,7 +54,7 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 - **Purpose:** Start the local development server.
 - **Requirements:** Run `npm ci` first.
 - **Guidance:** [Diagnostics and error reporting](docs/adr/error-view.md),
-  and [startup progress and loading preview](docs/adr/dedicated-workers.md#startup-progress-and-loading-preview).
+  and [startup progress and loading preview](docs/adr/dedicated-workers.md#startup-progress).
 
 </details>
 
