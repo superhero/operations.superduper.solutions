@@ -2,7 +2,7 @@
 
 Validation, reports, badges, and GitHub Actions workflows. See
 [Contributing](../../CONTRIBUTING.md) for project guidance and
-[Continuous integration and deployment](../../docs/adr/branching-and-releases.md)
+[Continuous integration and deployment](../../docs/adr/continuous-integration-deployment.md)
 for the branching and release decision.
 
 - [Local validation](#local-validation)
@@ -34,7 +34,7 @@ releases or deploying. Unexpected external requests fail the scenario.
 
 ## Test reports
 
-See [Testing, coverage and reporting](../../docs/adr/testing-coverage-and-reporting.md) for the
+See [Testing, coverage and reporting](../../docs/adr/test-reporting-coverage.md) for the
 Cucumber decision and the pending standalone-test reporting gap.
 
 The source, acceptance, automation, and browser profiles write Cucumber JSON to
@@ -75,7 +75,7 @@ Registry failures leave the badges unchanged.
 
 ## Coverage badges
 
-See [Testing, coverage and reporting](../../docs/adr/testing-coverage-and-reporting.md) for the measured scope
+See [Testing, coverage and reporting](../../docs/adr/test-reporting-coverage.md) for the measured scope
 and coverage requirements.
 
 The coverage badge records measured statement coverage in

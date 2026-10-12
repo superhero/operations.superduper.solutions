@@ -47,7 +47,7 @@ opens, reads and saves, preserve the original cause, and explain recovery. The
 [application](../../src/App.svelte) reports them through Pail after rendering so
 the interface and palette are ready behind the overlay. Production displays a
 descriptive startup alert instead. Settings retains recovery controls in both
-modes, and [startup loading](background-processing.md) releases the loading
+modes, and [startup loading](dedicated-workers.md) releases the loading
 screen when storage fails.
 
 The overlay works independently of the optional developer toolbar. Both

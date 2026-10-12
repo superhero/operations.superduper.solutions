@@ -4,7 +4,7 @@
 
 The schema library is the source of available operations for navigation, matching, reports and workflow execution. Users manage OpenAPI documents locally and choose which are enabled. Changes to the enabled library update the active operation registry without rewriting saved workflows.
 
-This makes operation discovery and execution follow the same documents while allowing users to replace or disable an API independently. Documents follow the [application content versioning model](content-versioning.md); parsing, validation and repository work run in [dedicated workers](background-processing.md).
+This makes operation discovery and execution follow the same documents while allowing users to replace or disable an API independently. Documents follow the [application content versioning model](browser-git-versioning.md); parsing, validation and repository work run in [dedicated workers](dedicated-workers.md).
 
 ## Document management
 

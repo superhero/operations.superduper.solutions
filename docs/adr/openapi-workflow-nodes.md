@@ -4,7 +4,7 @@
 
 An operation node and its connected data panels represent the inputs and responses described by its OpenAPI document. This keeps workflow mappings tied to the API contract rather than presenting every request and response as an undifferentiated value. Utility nodes retain their own application-defined models.
 
-The projection covers the application's supported OpenAPI features; it does not imply complete OpenAPI conformance. The [schema library](schema-management.md) validates execution compatibility before making operations available.
+The projection covers the application's supported OpenAPI features; it does not imply complete OpenAPI conformance. The [schema library](openapi-library.md) validates execution compatibility before making operations available.
 
 ## Inputs
 

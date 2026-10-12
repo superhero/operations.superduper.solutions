@@ -6,7 +6,7 @@ Content that must change and restore together forms one versioned unit. Each uni
 
 Repository working files are the authoritative persisted content, and Git commits are historical snapshots. isomorphic-git receives a LightningFS filesystem and repository directory explicitly. LightningFS owns its IndexedDB persistence; application code uses its public filesystem APIs. Separate application databases, accessed through `idb`, hold catalogue and recovery metadata rather than another independently editable content copy. Application settings in `v1/settings` and non-versioned editor state remain outside Git.
 
-This separates versioning from storage and keeps history boundaries aligned with application content. It also requires coordinated writes: serialize mutations, protect them across tabs with Web Locks, and recover interrupted changes before accepting new ones. Read historical content from Git blobs without checking out or modifying the working files. Run substantial repository work in [dedicated workers](background-processing.md).
+This separates versioning from storage and keeps history boundaries aligned with application content. It also requires coordinated writes: serialize mutations, protect them across tabs with Web Locks, and recover interrupted changes before accepting new ones. Read historical content from Git blobs without checking out or modifying the working files. Run substantial repository work in [dedicated workers](dedicated-workers.md).
 
 ## Repository boundaries
 
@@ -18,7 +18,7 @@ Database names are slash-separated namespaces, not physical directory trees:
 | OpenAPI document | `v1/catalogs`, `/repositories/<id>` | `schema.json` | `v1/catalogs/index` |
 | Completed resource aggregates | `v1/metrics`, `/metrics` | One immutable JSON file per 15-minute interval | No separate catalogue |
 
-Each workflow and schema has a stable identifier; display names and uploaded filenames do not select repository paths. Resource intervals belong to one aggregate history rather than one repository per sample. See [schema management](schema-management.md) and [resource monitoring](resource-monitoring.md) for their specific write and retention rules. Undo and Redo are workflow features, not requirements imposed on every repository type. Remote transport, credentials, synchronization and general branch-management controls remain outside this decision.
+Each workflow and schema has a stable identifier; display names and uploaded filenames do not select repository paths. Resource intervals belong to one aggregate history rather than one repository per sample. See [schema management](openapi-library.md) and [resource monitoring](resource-monitoring.md) for their specific write and retention rules. Undo and Redo are workflow features, not requirements imposed on every repository type. Remote transport, credentials, synchronization and general branch-management controls remain outside this decision.
 
 ## Workflow snapshots and autosave
 
