@@ -4,7 +4,7 @@
 
 The browser-local schema library supplies operations for navigation, matching, reports and workflow execution. Each HTTP operation node and its connected data panels derive their inputs and responses from the same OpenAPI document, keeping workflow mappings tied to that API contract.
 
-Users manage documents locally and choose which are enabled. Changes update the active operation registry without rewriting saved workflows. Documents follow the [application content versioning model](browser-version-management.md); parsing, validation and repository work run in [dedicated workers](dedicated-workers.md).
+Users manage documents locally and choose which are enabled. Changes update the active operation registry without rewriting saved workflows. Documents follow the [application content versioning model](local-resource-management.md); parsing, validation and repository work run in [dedicated workers](dedicated-workers.md).
 
 The library validates compatibility with the application's supported OpenAPI features before making operations available. Utility nodes retain their own application-defined models.
 

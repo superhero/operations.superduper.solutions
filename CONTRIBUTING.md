@@ -6,7 +6,7 @@ Before contributing, please review the architectural decision records (ADRs) bel
 
 ## Architectural decision records
 
-- [Application content is versioned in separate browser-local Git repositories to preserve independent change histories](docs/adr/browser-version-management.md)
+- [Application content is versioned in separate browser-local Git repositories to preserve independent change histories](docs/adr/local-resource-management.md)
 - [Artifacts with distinct purposes are kept separate wherever practical](docs/adr/responsibility-segregation.md)
 - [Continuous integration and deployment follow Gitflow, with a fully passing test suite required for release](docs/adr/continuous-integration-and-deployment.md)
 - [Dedicated workers handle background processing to reduce main-thread workload](docs/adr/dedicated-workers.md)
