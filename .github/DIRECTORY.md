@@ -24,6 +24,9 @@ the checked-in automation sources.
 
 ## Procedures and decisions
 
+This guide is named `DIRECTORY.md` because GitHub displays `.github/README.md`
+ahead of the root README on the repository homepage.
+
 The [workflow guide](workflows/README.md) owns commands and operating procedures.
 The [CI](../docs/adr/continuous-integration.md),
 [deployment](../docs/adr/continuous-deployment.md) and
