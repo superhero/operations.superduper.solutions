@@ -1,6 +1,13 @@
-# Gitflow
+# Use Gitflow with automated releases
 
-We follow [git-flow (AVH Edition)](https://github.com/petervanderdoes/gitflow-avh) with [Semantic Versioning](https://semver.org/).
+Keep ongoing development separate from released code, and publish the same
+revision and artifacts that passed validation. Use the
+[git-flow model](https://github.com/petervanderdoes/gitflow-avh) with
+[Semantic Versioning](https://semver.org/) and automated validation, merging and
+release publication. Markdown-only changes use a lighter path because they do
+not change the application.
+
+## Branch and release policy
 
 - `main` contains released code; `develop` is the integration branch.
 - `feature/*` and `bugfix/*` merge into `develop`.
@@ -23,3 +30,13 @@ We follow [git-flow (AVH Edition)](https://github.com/petervanderdoes/gitflow-av
 - One release and one hotfix may be active at a time.
 - Release and hotfix versions must be distinct. Automatic releases currently reserve the next patch; if an urgent hotfix needs that version, renumber the pending release before proceeding.
 - Protected branches require PRs and reject force pushes. The automation App may bypass the PR requirement for dependency badges, validated fast-forward integration, and release preparation; release branch deletion remains available after merging.
+
+## Contributor guidance
+
+See [Repository automation](../../.github/workflows/README.md) for local checks,
+test reports, badges, CI workflows, releases and deployment.
+
+For Markdown-only changes, use a `docs/<topic>` branch from the intended target,
+`develop` or `main`. See the [documentation workflow](../../.github/workflows/README.md#documentation-only-changes)
+for validation and merging. Choose each target explicitly; documentation changes
+are not synchronized between branches automatically.

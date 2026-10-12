@@ -7,21 +7,12 @@ Thank you for contributing to `operations.superduper.solutions`.
 - [Simplify](docs/adr/simplify.md)
 - [UI](docs/adr/ui.md)
 - [Security](docs/adr/security.md)
-- [Gitflow](docs/adr/gitflow.md)
+- [Use Gitflow with automated releases](docs/adr/branching-and-releases.md)
 - [Development diagnostics](docs/adr/development-diagnostics.md)
 - [Logging](docs/adr/logging.md)
 - [Background loading and persistence](docs/adr/background-loading.md)
 - [Testing and test reports](docs/adr/testing-and-reports.md)
 - [Source coverage](docs/adr/source-coverage.md)
-
-## Automation validation
-
-See [Repository automation](.github/workflows/README.md) for local checks, test
-reports, badges, CI workflows, releases, and deployment.
-
-For Markdown-only changes, use a `docs/<topic>` branch from the intended target,
-`develop` or `main`. See the [documentation workflow](.github/workflows/README.md#documentation-only-changes)
-for the fast validation and merge path.
 
 ## Licensing
 

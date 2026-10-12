@@ -2,7 +2,8 @@
 
 Validation, reports, badges, and GitHub Actions workflows. See
 [Contributing](../../CONTRIBUTING.md) for project guidance and
-[Gitflow](../../docs/adr/gitflow.md) for branch policy.
+[Use Gitflow with automated releases](../../docs/adr/branching-and-releases.md)
+for the branching and release decision.
 
 - [Local validation](#local-validation)
 - [Documentation-only changes](#documentation-only-changes)
