@@ -1,12 +1,13 @@
-# Project code and contributions are licensed under AGPLv3-only with additional terms under Section 7
+# Licensing
 
-Use the same explicit license for first-party project material and contributions,
-while preserving author attribution and the project's additional terms.
+> [!IMPORTANT]
+> Project code and contributions are licensed under AGPLv3-only with additional terms under Section 7.
 
-The project is offered under **GNU AGPLv3-only** (`AGPL-3.0-only`), together with
-applicable Section 7 additional terms. [LICENSE](../../LICENSE) and
-[LICENSE-ADDITIONAL-TERMS](../../LICENSE-ADDITIONAL-TERMS) contain the governing
-terms.
+## Project license
+
+The project is offered under **GNU AGPLv3-only** (`AGPL-3.0-only`), with applicable
+Section 7 additional terms. `LICENSE` and `LICENSE-ADDITIONAL-TERMS` contain the
+governing terms.
 
 ## Contribution license
 
