@@ -10,7 +10,11 @@ ongoing work in `develop` from releases in `main`. Versions follow
 [Semantic Versioning](https://semver.org/).
 
 Read the diagrams **from bottom to top**. Branch labels omit topic and version
-suffixes.
+suffixes. Plain branch ends indicate earlier or later history omitted from the
+diagram.
+
+The overview's `develop` → `release` update is not yet supported by CI branch
+validation.
 
 ```mermaid
 %%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2), .commit.main-origin { visibility: hidden; } path.arrow2:not(.arrow2 ~ .arrow2) { filter: drop-shadow(0 50px 0 #57C3BC); } .commit-labels g:first-of-type, .commit.main-end { visibility: hidden; } .commit-arrows path.arrow2:nth-last-child(3) { filter: drop-shadow(0 -50px 0 #57C3BC); } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
@@ -56,9 +60,6 @@ gitGraph BT:
 `feature/*` and integration `bugfix/*` branches start from and return to `develop`
 through PRs. A `release/<version>` branches from `develop` after feature
 integration and incorporates current `main`.
-
-The overview's `develop` → `release` update is not yet supported by CI branch
-validation.
 
 Stabilization fixes use `bugfix/*` branches from the active release and return
 to that release through a PR.
@@ -108,9 +109,10 @@ and tags the verified revision, deploys its tested artifacts, and opens a
 ### Merge policy
 
 Feature and integration bugfix PRs, hotfix PRs into `main`, and documentation PRs
-fast-forward when they contain one commit and the target is its ancestor;
-otherwise they squash. Release stabilization, publication and synchronization
-fast-forward where possible; otherwise they use merge commits.
+fast-forward when they contain one commit and the target branch tip is an
+ancestor of that commit; otherwise they squash. Release stabilization,
+publication and synchronization fast-forward where possible; otherwise they
+use merge commits.
 
 ## Hotfixes
 
@@ -272,9 +274,8 @@ gitGraph BT:
     commit id: "main-end"
 ```
 
-The intended docs PR updates `release` without tagging or deploying it. The
-later release follows the normal validation, publication and `main` → `develop`
-synchronization path.
+The intended docs PR updates `release`. The later release follows the normal
+validation, publication and `main` → `develop` synchronization path.
 
 ### Main
 
@@ -299,13 +300,7 @@ gitGraph BT:
     commit id: "main-end"
 ```
 
-The PR updates `main` without publishing a new version or opening a
-synchronization PR to `develop`.
-
-### Branch reuse
-
-Reliable reuse of one docs branch across multiple targets remains planned
-automation work.
+These changes reach `main` directly, without going through a release branch.
 
 ### Validation and automation
 
