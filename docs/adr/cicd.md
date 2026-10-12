@@ -41,7 +41,7 @@ history of `main` and `develop`.
 
 Features and integration fixes return to `develop`. Documentation returns only
 to its chosen target: `develop` in this example, or `main` for released docs.
-When the integrated work is ready, a release branches from `develop`.
+Here, a release branches from `develop` after feature integration.
 
 ```mermaid
 %%{init: {"theme": "base", "themeCSS": ".commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
@@ -61,6 +61,9 @@ gitGraph BT:
     commit id: "Feature"
     checkout develop
     merge "feature" id: "Integrate feature"
+    branch "release" order: 1
+    commit id: "Prepare release"
+    checkout develop
     branch "bugfix" order: 4
     commit id: "Fix"
     checkout develop
@@ -69,8 +72,6 @@ gitGraph BT:
     commit id: "Documentation"
     checkout develop
     merge "docs" id: "Integrate docs"
-    branch "release" order: 1
-    commit id: "Prepare release"
 ```
 
 ### Preparing and publishing a release
