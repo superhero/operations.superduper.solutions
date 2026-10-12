@@ -1,46 +1,15 @@
 # Continuous integration and deployment follow Gitflow, with a fully passing test suite required for release
 
+## Development to release
+
 Development and releases follow the
 [AVH git-flow model](https://github.com/petervanderdoes/gitflow-avh) with
 [Semantic Versioning](https://semver.org/). `develop` integrates ongoing work;
 `main` contains releases. This separation lets development continue while a
-release is stabilized.
+release is prepared.
 
-Releases require a fully passing test suite and all required validation.
-Publication uses the verified release revision and build artifacts from that
-validation run, preserving the connection between what was tested and what
-users receive.
-
-CI automates validation, merging, tagging, deployment and branch synchronization.
-Protected branches and checks tied to the tested revision guard against
-publishing unvalidated changes.
-
-Markdown-only changes have a separate, strictly checked documentation path.
-They skip application tests, builds and publication because they cannot change
-the application.
-
-## Branches and merge paths
-
-| Branch | Role and starting point |
-|---|---|
-| `main` | Released code. |
-| `develop` | Integration of ongoing work. |
-| `feature/*` | New work, starting from `develop`. |
-| `bugfix/*` | Fixes starting from `develop` or the active release, returning to that same branch. |
-| `release/<version>` | Release preparation from `develop`, incorporating current `main`. |
-| `hotfix/<version>` | Patch fixes starting from released `main`. |
-| `docs/*` | Markdown-only updates with explicitly selected targets; see [documentation paths](#updating-documentation). |
-
-Read each graph **from bottom to top**. Each example shows one part of the
-branching model. Branch labels omit topic and version suffixes; commit labels
-explain the work and where it is integrated.
-
----
-
-### Development to release
-
-Features and fixes are integrated in `develop` before a release carries them to
-`main`. The graph shows how development can continue while a release is prepared.
+Read all four diagrams **from bottom to top**. Branch labels omit topic and
+version suffixes; commit labels explain the work and its integration.
 
 ```mermaid
 %%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2) { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
@@ -75,19 +44,37 @@ gitGraph BT:
     merge main id: "Sync release"
 ```
 
-The release branches from `develop` after feature integration and incorporates
-later fixes before publication. Once validated, it merges into `main` and receives
-its version tag. A synchronization PR then carries `main` back into `develop`.
+New work starts on `feature/*` branches from `develop`. Integration fixes use
+`bugfix/*` branches from `develop`; both return through PRs. A `release/<version>`
+branch starts from `develop` after feature integration, incorporates current
+`main`, and collects later fixes before publication. Stabilization fixes use
+`bugfix/*` branches from the active release and return to that release.
+
+Every release, including a hotfix, requires a fully passing test suite and all
+required validation. CI automates validation, merging, tagging, deployment and
+synchronization. Protected branches and checks tied to the tested revision guard
+publication. The verified revision and its tested artifacts are published
+together. After publication to `main`, a synchronization PR carries `main` back
+into `develop`.
+
+Feature and integration bugfix PRs fast-forward when they contain one commit and
+the target is its ancestor; otherwise they squash. Release stabilization,
+publication and synchronization fast-forward where possible; otherwise they use
+a merge commit to preserve history. Mermaid draws every
+[integration as a merge commit](https://mermaid.js.org/syntax/gitgraph.html#merging-two-branches);
+the merge policies described here determine the actual Git history.
 
 The illustrated `develop` → `release` update is not yet supported by
-[CI branch validation](../../.github/scripts/validate-pr.sh).
+[CI branch validation](../../.github/scripts/validate-pr.sh). See
+[Repository automation](../../.github/workflows/README.md) for the operational
+branch rules, contributor procedures and publication details.
 
 ---
 
-### Hotfixes
+## Hotfixes
 
-A production fix branches from released `main` so it can be published without
-waiting for the next release.
+A production fix starts on `hotfix/<version>` from released `main`, using the
+next patch version. It can be published without waiting for the next release.
 
 ```mermaid
 %%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:last-of-type { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
@@ -110,13 +97,17 @@ gitGraph BT:
     merge main id: "Sync patch"
 ```
 
-After validation, the hotfix merges back into `main` and receives the next patch
+After validation, the hotfix merges back into `main` and receives its patch
 version tag. A synchronization PR from `main` to `develop` then carries the
 published fix into ongoing development.
 
+A hotfix PR into `main` fast-forwards when it contains one commit and the target
+is its ancestor; otherwise it squashes. Publication and synchronization follow
+the validation and merge policies described above.
+
 ---
 
-#### Including a hotfix in the next release
+### Including a hotfix in the next release
 
 A hotfix can also enter an active release. This example shows the fix reaching
 production through that release.
@@ -150,13 +141,16 @@ gitGraph BT:
 The hotfix merges into `release`, then the validated release merges into `main`
 and receives its release version tag. Synchronization from `main` to `develop`
 follows publication. The hotfix-to-release merge does not create a separate tag.
+These merges fast-forward where possible; otherwise merge commits preserve
+the release history.
 
 ---
 
-### Updating documentation
+## Updating documentation
 
-Documentation updates target `develop` or `main` through explicitly selected
-PRs. This example reuses one docs branch for two successive edits.
+A `docs/<topic>` branch contains Markdown-only updates for explicitly selected
+`develop` or `main` PRs. This example reuses one docs branch for two successive
+edits.
 
 ```mermaid
 %%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2) { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
@@ -194,26 +188,12 @@ edit goes directly to `main`.
 
 The shared docs branch starts from `main` and retains its earlier documentation
 changes. Every target must pass the full Markdown-only check; reliable branch
-reuse across targets remains planned automation work.
+reuse across targets remains planned automation work. This restricted path skips
+application tests and builds because it cannot change the application.
+Documentation PRs fast-forward when they contain one commit and the target is
+its ancestor; otherwise they squash.
 
 Documentation merges do not create release versions or tags, publish releases,
 or trigger deployments. A docs PR merged into `main` does not open a
 synchronization PR to `develop`; each target requires its own explicitly
 requested PR.
-
----
-
-### Merge methods
-
-- Feature, integration bugfix, production hotfix and documentation PRs
-  fast-forward when they contain one commit and the target is its ancestor;
-  otherwise they squash.
-- Release stabilization, publication and synchronization fast-forward where
-  possible; otherwise they use a merge commit to preserve history.
-
-Mermaid draws each [integration as a merge commit](https://mermaid.js.org/syntax/gitgraph.html#merging-two-branches);
-the policies above determine the actual Git history. Each documentation PR
-targets one branch explicitly, without automatic synchronization.
-
-See [Repository automation](../../.github/workflows/README.md) for branch rules,
-merge methods, contributor procedures and publication details.
