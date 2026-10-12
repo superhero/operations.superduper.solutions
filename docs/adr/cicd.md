@@ -33,8 +33,7 @@ the application.
 
 Read each graph **from bottom to top**. Each example shows one part of the
 branching model. Branch labels omit topic and version suffixes; commit labels
-explain the work and where it is integrated. The development and hotfix graphs
-show branch origins; the documentation graph omits earlier shared history.
+explain the work and where it is integrated.
 
 ### Development to release
 
@@ -129,15 +128,12 @@ planned automation work.
     "git3": "#71B3FF", "gitBranchLabel3": "#0D1117"
 }}}%%
 gitGraph BT:
-    %% Existing branch histories are omitted; hide their three initial notes.
-    branch develop order: 2
-    branch release order: 1
-    checkout main
+    %% Hide the three initial notes while retaining their branch connections.
     commit id: "Released" tag: "1.0.0"
-    checkout release
-    commit id: "Release base"
-    checkout develop
+    branch develop order: 2
     commit id: "Start"
+    branch release order: 1
+    commit id: "Release base"
     checkout main
     branch docs order: 3
     commit id: "Documentation"
