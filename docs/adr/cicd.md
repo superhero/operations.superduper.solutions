@@ -49,14 +49,14 @@ The illustrated `develop` → `release` updates are not yet supported by
 [CI branch validation](../../.github/scripts/validate-pr.sh).
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": ".commit-labels g:nth-last-of-type(-n+2) { visibility: hidden; } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": ".branchLabel { font-weight: 700; } .branchLabelBkg { clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2) { visibility: hidden; } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
-    "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
-    "git1": "#A3C441", "gitBranchLabel1": "#0D1117",
-    "git2": "#39B8B0", "gitBranchLabel2": "#0D1117",
-    "git3": "#E3B341", "gitBranchLabel3": "#0D1117",
-    "git4": "#F06060", "gitBranchLabel4": "#0D1117",
-    "git5": "#58A6FF", "gitBranchLabel5": "#0D1117"
+    "git0": "#2DA44E", "gitBranchLabel0": "#FFFFFF",
+    "git1": "#A3C441", "gitBranchLabel1": "#FFFFFF",
+    "git2": "#39B8B0", "gitBranchLabel2": "#FFFFFF",
+    "git3": "#E3B341", "gitBranchLabel3": "#FFFFFF",
+    "git4": "#F06060", "gitBranchLabel4": "#FFFFFF",
+    "git5": "#58A6FF", "gitBranchLabel5": "#FFFFFF"
 }}}%%
 gitGraph BT:
     %% In BT order, the last two label groups are the initial notes; the version tag stays visible.
@@ -96,12 +96,12 @@ continues. After validation, it is published to `main`, tagged, and synchronized
 back into `develop`.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": ".commit-labels g:last-of-type { visibility: hidden; } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": ".branchLabel { font-weight: 700; } .branchLabelBkg { clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:last-of-type { visibility: hidden; } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
-    "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
-    "git1": "#A3C441", "gitBranchLabel1": "#0D1117",
-    "git2": "#F06060", "gitBranchLabel2": "#0D1117",
-    "git3": "#39B8B0", "gitBranchLabel3": "#0D1117"
+    "git0": "#2DA44E", "gitBranchLabel0": "#FFFFFF",
+    "git1": "#A3C441", "gitBranchLabel1": "#FFFFFF",
+    "git2": "#F06060", "gitBranchLabel2": "#FFFFFF",
+    "git3": "#39B8B0", "gitBranchLabel3": "#FFFFFF"
 }}}%%
 gitGraph BT:
     %% In BT order, the initial commit note is the last label group; its tag stays visible.
@@ -131,12 +131,12 @@ synchronized into `develop`. The hotfix branch also receives the tagged revision
 before carrying the fix into the active release.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": ".commit-labels g:last-of-type { visibility: hidden; } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": ".branchLabel { font-weight: 700; } .branchLabelBkg { clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:last-of-type { visibility: hidden; } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
-    "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
-    "git1": "#A371F7", "gitBranchLabel1": "#0D1117",
-    "git2": "#A3C441", "gitBranchLabel2": "#0D1117",
-    "git3": "#39B8B0", "gitBranchLabel3": "#0D1117"
+    "git0": "#2DA44E", "gitBranchLabel0": "#FFFFFF",
+    "git1": "#A371F7", "gitBranchLabel1": "#FFFFFF",
+    "git2": "#A3C441", "gitBranchLabel2": "#FFFFFF",
+    "git3": "#39B8B0", "gitBranchLabel3": "#FFFFFF"
 }}}%%
 gitGraph BT:
     %% In BT order, the initial commit note is the last label group; its tag stays visible.
