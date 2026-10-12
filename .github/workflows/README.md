@@ -33,6 +33,9 @@ releases or deploying. Unexpected external requests fail the scenario.
 
 ## Test reports
 
+See [Testing and test reports](../../docs/adr/testing-and-reports.md) for the
+Cucumber decision and the pending standalone-test reporting gap.
+
 The source, acceptance, automation, and browser profiles write Cucumber JSON to
 `tmp/test/cucumber-source.json`, `tmp/test/cucumber-test.json`,
 `tmp/test/cucumber-automation.json`, and `tmp/test/cucumber-browser.json`.
@@ -70,6 +73,9 @@ version is unchanged; changing a version resets its badge to blue until checked.
 Registry failures leave the badges unchanged.
 
 ## Coverage badges
+
+See [Source coverage](../../docs/adr/source-coverage.md) for the measured scope
+and coverage requirements.
 
 The coverage badge records measured statement coverage in
 `.github/badges/test-coverage.json`, with a matching SVG for the README. Regenerate

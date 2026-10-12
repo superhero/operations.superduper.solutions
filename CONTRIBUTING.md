@@ -11,6 +11,8 @@ Thank you for contributing to `operations.superduper.solutions`.
 - [Development diagnostics](docs/adr/development-diagnostics.md)
 - [Logging](docs/adr/logging.md)
 - [Background loading and persistence](docs/adr/background-loading.md)
+- [Testing and test reports](docs/adr/testing-and-reports.md)
+- [Source coverage](docs/adr/source-coverage.md)
 
 ## Automation validation
 

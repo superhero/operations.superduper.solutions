@@ -112,14 +112,8 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 - **Purpose:** Generate reports in `tmp/test/coverage/` and enforce 100% statement, branch,
   function and line coverage.
-- **Scope:** Node-executable application logic, including the standalone Node unit tests.
-  [.c8rc.json](.c8rc.json) lists individual browser adapters separately: IndexedDB/Git
-  persistence and migration, worker entry points and page bridges, browser memory/storage
-  APIs, appearance caching, and the DOM startup animation. Type-only modules and the
-  worker global shim are also excluded. Their browser behavior is exercised by the
-  browser suite and the isolated `tests/*.smoke.mjs` checks using real IndexedDB,
-  LightningFS, workers and browser APIs. Pure parsing, mapping, aggregation, layout,
-  response decoding and worker-RPC logic retain the 100% coverage requirement.
+- **Scope:** Node-executable application logic; see [Source coverage](docs/adr/source-coverage.md)
+  for the scope and exclusions.
 - **Requirements:** Collect fresh coverage with `npm run test:source:coverage` first.
 
 </details>
