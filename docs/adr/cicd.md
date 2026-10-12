@@ -84,7 +84,7 @@ gitGraph BT:
     checkout "release"
     merge develop id: "Include docs"
     checkout main
-    merge "release" id: "Publish" tag: "1.1.0"
+    merge "release" id: "Deployed" tag: "1.1.0"
     checkout develop
     merge main id: "Sync release"
 ```
@@ -119,7 +119,7 @@ gitGraph BT:
     checkout "release"
     merge "bugfix" id: "Integrate fix"
     checkout main
-    merge "release" id: "Publish" tag: "1.1.0"
+    merge "release" id: "Deployed" tag: "1.1.0"
     checkout develop
     merge main id: "Sync release"
 ```
