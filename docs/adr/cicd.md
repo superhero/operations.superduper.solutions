@@ -118,7 +118,7 @@ A `hotfix/<version>` branches from released `main` using the next patch version,
 allowing a production fix without waiting for the next release.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2), .commit.develop-origin { visibility: hidden; } path.arrow2:not(.arrow2 ~ .arrow2) { filter: drop-shadow(0 50px 0 #57C3BC); } .commit-labels g:first-of-type, .commit.main-end { visibility: hidden; } .commit-arrows path.arrow2:nth-last-child(3) { filter: drop-shadow(0 50px 0 #57C3BC) drop-shadow(0 -50px 0 #57C3BC); } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+3), .commit.develop-origin, .commit.main-origin { visibility: hidden; } path.arrow2:not(.arrow2 ~ .arrow2) { filter: drop-shadow(0 100px 0 #57C3BC); } .commit-labels g:first-of-type, .commit.main-end { visibility: hidden; } .commit-arrows path.arrow2:nth-last-child(3) { filter: drop-shadow(0 100px 0 #57C3BC) drop-shadow(0 -50px 0 #57C3BC); } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
     "git0": "#4CB269", "gitBranchLabel0": "#0D1117",
     "git1": "#EB7D61", "gitBranchLabel1": "#0D1117",
@@ -128,9 +128,11 @@ gitGraph BT:
     %% Show existing main and develop lanes with earlier ancestry and initial notes omitted.
     branch develop order: 2
     checkout main
+    %% A hidden anchor continues main below the released version.
+    commit id: "main-origin"
     commit id: "Released" tag: "1.0.0"
     checkout develop
-    %% Hide the required develop anchor; extend its line by 50px to show prior history without a starting node.
+    %% Hide the required develop anchor; extend its line by 100px to show prior history without a starting node.
     commit id: "develop-origin"
     checkout main
     branch "hotfix" order: 1
@@ -152,7 +154,7 @@ tag. A synchronization PR then carries `main` into `develop`.
 A hotfix can instead be included in an active release.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:last-of-type { visibility: hidden; } path.arrow3:not(.arrow3 ~ .arrow3) { filter: drop-shadow(0 50px 0 #57C3BC); } .commit-labels g:first-of-type, .commit.main-end { visibility: hidden; } .commit-arrows path.arrow3:nth-last-child(3) { filter: drop-shadow(0 50px 0 #57C3BC) drop-shadow(0 -50px 0 #57C3BC); } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2), .commit.main-origin { visibility: hidden; } path.arrow3:not(.arrow3 ~ .arrow3) { filter: drop-shadow(0 100px 0 #57C3BC); } .commit-labels g:first-of-type, .commit.main-end { visibility: hidden; } .commit-arrows path.arrow3:nth-last-child(3) { filter: drop-shadow(0 100px 0 #57C3BC) drop-shadow(0 -50px 0 #57C3BC); } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
     "git0": "#4CB269", "gitBranchLabel0": "#0D1117",
     "git1": "#EB7D61", "gitBranchLabel1": "#0D1117",
@@ -163,9 +165,11 @@ gitGraph BT:
     %% Show existing main and develop lanes with earlier ancestry omitted.
     branch develop order: 3
     checkout main
+    %% A hidden anchor continues main below the released version.
+    commit id: "main-origin"
     commit id: "Released" tag: "1.0.0"
     checkout develop
-    %% Extend develop by 50px before this fork to show prior history without a starting node.
+    %% Extend develop by 100px before this fork to show prior history without a starting node.
     commit id: "Next release"
     branch "release" order: 2
     commit id: "Create release branch"
@@ -277,12 +281,14 @@ synchronization path.
 Branch from `main` to correct documentation for the published version.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:last-of-type { visibility: hidden; } .commit-labels g:first-of-type, .commit.main-end { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"mainBranchName": "main", "showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2), .commit.main-origin { visibility: hidden; } .commit-labels g:first-of-type, .commit.main-end { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"mainBranchName": "main", "showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
     "git0": "#4CB269", "gitBranchLabel0": "#0D1117",
     "git1": "#71B3FF", "gitBranchLabel1": "#0D1117"
 }}}%%
 gitGraph BT:
+    %% A hidden anchor continues main below the visible documentation fork.
+    commit id: "main-origin"
     %% Hide the existing target commit note while retaining its connection.
     commit id: "Existing"
     branch docs order: 1
