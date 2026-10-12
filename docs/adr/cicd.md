@@ -66,9 +66,11 @@ to that release through a PR.
     "git3": "#57C3BC", "gitBranchLabel3": "#0D1117"
 }}}%%
 gitGraph BT:
-    %% Hide the two initial notes while retaining their branch connections.
-    commit id: "Released" tag: "1.0.0"
+    %% Show existing main and develop lanes with earlier ancestry and initial notes omitted.
     branch develop order: 3
+    checkout main
+    commit id: "Released" tag: "1.0.0"
+    checkout develop
     commit id: "Start"
     branch release order: 1
     commit id: "Create release branch"
