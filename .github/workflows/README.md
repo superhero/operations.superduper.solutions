@@ -2,7 +2,7 @@
 
 Validation, reports, badges, and GitHub Actions workflows. See
 [Contributing](../../CONTRIBUTING.md) for project guidance and
-[Continuous integration and deployment](../../docs/adr/continuous-integration-and-deployment.md)
+[Continuous integration and deployment](../../docs/adr/cicd.md)
 for the branching and release decision.
 
 - [Local validation](#local-validation)
