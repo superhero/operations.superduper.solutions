@@ -35,7 +35,16 @@ The example prepares `1.1.0` while `1.0.1` fixes production. The tagged hotfix
 returns to `develop` and the active release before that release is published.
 
 ```mermaid
-%%{init: {"gitGraph": {"showCommitLabel": false}}}%%
+%%{init: {"theme": "base", "gitGraph": {"showCommitLabel": false}, "themeVariables": {
+    "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
+    "git1": "#A371F7", "gitBranchLabel1": "#0D1117",
+    "git2": "#A3C441", "gitBranchLabel2": "#0D1117",
+    "git3": "#F06060", "gitBranchLabel3": "#0D1117",
+    "git4": "#39B8B0", "gitBranchLabel4": "#0D1117",
+    "git5": "#E3B341", "gitBranchLabel5": "#0D1117",
+    "git6": "#F06060", "gitBranchLabel6": "#0D1117",
+    "git7": "#58A6FF", "gitBranchLabel7": "#0D1117"
+}}}%%
 gitGraph BT:
     commit tag: "1.0.0"
     branch develop order: 4
