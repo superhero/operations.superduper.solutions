@@ -1,11 +1,21 @@
 # Continuous deployment
 
 > [!IMPORTANT]
-> Continuous deployment promotes tested artifacts to previews and production, keeping publication traceable to the validated revision.
+> Continuous deployment promotes tested artifacts to previews and production on Cloudflare, keeping publication traceable to the validated revision.
+
+## Cloudflare hosting
+
+Cloudflare Pages hosts the static application, with `main` serving production
+and separate branch deployments providing previews. Cloudflare R2 stores the
+published test and coverage reports separately from the application bundle.
+
+GitHub Actions uploads the tested application to Pages through Wrangler and
+publishes its validation reports to R2. This fits the application's static
+build; saved application data remains in the browser.
 
 ## Preview and production
 
-Cloudflare Pages provides branch previews after code integrates into `develop`
+Branch previews are published after code integrates into `develop`
 or `release/*`. Release and hotfix PRs targeting `main` preview their tested
 head before merging. Production follows the confirmed merge after all required
 checks pass, without a separate manual deployment gate.
