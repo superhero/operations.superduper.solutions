@@ -223,21 +223,36 @@ This route is planned; current documentation CI supports only `develop` and
 `main`.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:last-of-type { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"mainBranchName": "release", "showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2), .commit.main-origin { visibility: hidden; } path.arrow3:not(.arrow3 ~ .arrow3) { filter: drop-shadow(0 50px 0 #57C3BC); } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
-    "git0": "#B1CD5E", "gitBranchLabel0": "#0D1117",
-    "git1": "#71B3FF", "gitBranchLabel1": "#0D1117"
+    "git0": "#4CB269", "gitBranchLabel0": "#0D1117",
+    "git1": "#B1CD5E", "gitBranchLabel1": "#0D1117",
+    "git2": "#71B3FF", "gitBranchLabel2": "#0D1117",
+    "git3": "#57C3BC", "gitBranchLabel3": "#0D1117"
 }}}%%
 gitGraph BT:
-    %% Hide the existing target commit note while retaining its connection.
-    commit id: "Existing"
-    branch docs order: 1
+    %% Show existing main and develop lanes with earlier ancestry and initial notes omitted.
+    branch develop order: 3
+    checkout main
+    %% Hide the main marker; extend develop by 50px below its visible release fork to align the starts.
+    commit id: "main-origin"
+    checkout develop
+    commit id: "Start"
+    branch release order: 1
+    commit id: "Create release branch"
+    branch docs order: 2
     commit id: "Document release"
     checkout release
     merge docs id: "Update release"
+    checkout main
+    merge release id: "Deployed" tag: "1.1.0"
+    checkout develop
+    merge main id: "Sync main"
 ```
 
-The intended PR updates the release branch without tagging or deploying it.
+The intended docs PR updates `release` without tagging or deploying it. The
+later release follows the normal validation, publication and `main` → `develop`
+synchronization path.
 
 ### Main
 
