@@ -36,7 +36,7 @@ returns to `develop` and the active release before that release is published.
 
 ```mermaid
 %%{init: {"gitGraph": {"showCommitLabel": false}}}%%
-gitGraph LR:
+gitGraph BT:
     commit tag: "1.0.0"
     branch develop order: 4
     branch "feature/topic" order: 5
