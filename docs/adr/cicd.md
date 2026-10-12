@@ -66,11 +66,9 @@ to that release through a PR.
     "git3": "#57C3BC", "gitBranchLabel3": "#0D1117"
 }}}%%
 gitGraph BT:
-    %% Show existing main and develop lanes with earlier ancestry and initial notes omitted.
-    branch develop order: 3
-    checkout main
+    %% Hide the two initial notes while retaining their branch connections.
     commit id: "Released" tag: "1.0.0"
-    checkout develop
+    branch develop order: 3
     commit id: "Start"
     branch release order: 1
     commit id: "Create release branch"
@@ -115,9 +113,11 @@ allowing a production fix without waiting for the next release.
     "git2": "#57C3BC", "gitBranchLabel2": "#0D1117"
 }}}%%
 gitGraph BT:
-    %% In BT order, the initial commit note is the last label group; its tag stays visible.
-    commit id: "Released" tag: "1.0.0"
+    %% Show existing main and develop lanes with earlier ancestry and initial notes omitted.
     branch develop order: 2
+    checkout main
+    commit id: "Released" tag: "1.0.0"
+    checkout develop
     %% Invisible anchor: Mermaid requires a develop commit before merging main back.
     commit id: "develop-origin"
     checkout main
