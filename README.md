@@ -5,6 +5,37 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 > [!NOTE]
 > This project is under active development and is currently in a pre-release state.
 
+## Project structure
+
+### Find the right directory
+
+| Directory | Responsibility |
+| --- | --- |
+| [src](src/README.md) | Application startup, interface, domain logic and bundled assets |
+| [tests](tests/README.md) | Browser scenarios, fixtures and standalone tests awaiting migration |
+| [.github](.github/README.md) | CI workflows, automation helpers, policies, tests and generated badges |
+| [docs](docs/README.md) | Architectural decisions and contributor documentation |
+
+Directory READMEs explain local file responsibilities and placement. Start with
+[Contributing](CONTRIBUTING.md) for the architectural decision index and
+[repository automation](.github/workflows/README.md) for validation and release
+procedures.
+
+### Root files
+
+Keep project-wide configuration and governance here:
+
+| Files | Purpose |
+| --- | --- |
+| `package.json`, `package-lock.json`, `.node-version` | Commands, dependencies and the supported toolchain |
+| `vite.config.mjs`, `tsconfig.json`, `components.json` | Build integration, TypeScript rules and shared UI component configuration |
+| `cucumber.config.mjs`, `.c8rc.json` | Test profiles, reporting outputs and measured coverage scope |
+| `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CITATION.cff`, license files | Contribution guidance, conduct, citation and licensing |
+
+Application behavior belongs under `src`; automation belongs under `.github`.
+Build output (`dist`), temporary reports (`tmp`) and installed dependencies
+(`node_modules`) are generated and ignored, not places for authored project files.
+
 ## npm commands
 
 <details>
@@ -53,14 +84,16 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 - **Purpose:** Start the local development server.
 - **Requirements:** Run `npm ci` first.
-- **Errors:** [Visulima's error overlay](https://visulima.com/docs/packages/vite-overlay/) shows development compilation and runtime errors. Its [custom CSS](src/dev/error-overlay.css) follows the selected app palette and light/dark mode. The plugin is excluded from production builds.
-- **Settings storage failures:** Failed database opens, reads, and saves report a native error through Pail, which opens the development overlay. Startup reports it after rendering so the app and palette are ready behind it. Messages distinguish the failed stage, retain the original cause, and explain recovery; browser/profile contention is a possible cause, not something a webpage can confirm. Production shows a descriptive startup alert; Settings retains the Retry saved settings action in both modes. Restart the browser before considering any destructive storage reset.
-  Preserve the standard `Error.cause` chain. A compact tree shows each error type and its code when available, with the current error highlighted. Select a tree entry to inspect it. Development logging retains codes in memory because Visulima omits them from its formatted payload. All messages, source frames, and cause navigation remain available; history continues to track separate reports.
-- **Dev toolbar:** [Visulima Dev Toolbar](https://visulima.com/docs/packages/dev-toolbar/) provides Timeline, Performance and Vite Config panels. It is hidden by default; enable **Settings → Developer → Developer toolbar** to opt in. The choice is saved in IndexedDB. Once enabled, open it with **Alt+Shift+D** or the bottom-center toolbar. It follows the app theme and is excluded from production builds. Error dialogs work independently of this setting.
-- **Logging:** Use the shared [Pail logger](src/lib/logger.ts) for application diagnostics (`logger.info`, `logger.warn`, `logger.error`), with `logger.scope("feature")` when helpful. Its browser reporter preserves error objects and sends application errors directly to the development overlay. Vite console forwarding is disabled, and Visulima intercepts warnings rather than errors, preventing failed transport reports from recursively reporting themselves. Original errors and transport failures remain in the browser console; uncaught exceptions and rejections still reach the overlay. Log diagnostic messages rather than workflow content or request credentials. Node script and test diagnostics also use Pail; machine-readable output retains its original format.
-- **Object inspection:** Runtime error normalization uses [`@visulima/inspector`](https://visulima.com/packages/inspector/) for readable object details. Use its `inspect(value)` result with Pail when a diagnostic needs a text snapshot. Keep native `Error` objects intact so console inspection and overlay stack traces continue to work.
-- **Startup progress:** The loading screen and Pail's `startup` console scope report the current action as `Reading settings — 3 of 12`. Stages follow actual settings reads, workflow storage initialization, repository checks and canvas restoration; later background refreshes do not replay them. Storage failures release the screen so the application's recovery controls remain usable.
-- **Loading preview:** Open `/?dev-loading=1` to keep the CSS loading animation visible indefinitely during development, paused at `Loading application — 1 of 12`. Remove the query to start the app normally; production ignores this flag.
+- **Guidance:** [Diagnostics and error reporting](docs/adr/error-view.md),
+  and [startup progress and loading preview](docs/adr/dedicated-workers.md#startup-progress).
+
+</details>
+
+<details>
+<summary><code>npm run report:coverage</code></summary>
+
+- **Purpose:** Package the generated coverage report into the standalone `tmp/test-coverage.html`.
+- **Requirements:** Run `npm ci`, `npm run test:source:coverage` and `npm run test:coverage` first.
 
 </details>
 
@@ -92,7 +125,7 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 <summary><code>npm run test:automation</code></summary>
 
 - **Purpose:** Check repository automation without deploying.
-- **Requirements:** Run `npm ci` first. Bash and jq are required.
+- **Requirements:** Run `npm ci` first. Bash, Git and jq are required.
 
 </details>
 
@@ -109,14 +142,8 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 - **Purpose:** Generate reports in `tmp/test/coverage/` and enforce 100% statement, branch,
   function and line coverage.
-- **Scope:** Node-executable application logic, including the standalone Node unit tests.
-  [.c8rc.json](.c8rc.json) lists individual browser adapters separately: IndexedDB/Git
-  persistence and migration, worker entry points and page bridges, browser memory/storage
-  APIs, appearance caching, and the DOM startup animation. Type-only modules and the
-  worker global shim are also excluded. Their browser behavior is exercised by the
-  browser suite and the isolated `tests/*.smoke.mjs` checks using real IndexedDB,
-  LightningFS, workers and browser APIs. Pure parsing, mapping, aggregation, layout,
-  response decoding and worker-RPC logic retain the 100% coverage requirement.
+- **Scope:** Node-executable application logic; see [Testing, coverage and reporting](docs/adr/test-suite-reports.md)
+  for the scope and exclusions.
 - **Requirements:** Collect fresh coverage with `npm run test:source:coverage` first.
 
 </details>
@@ -133,7 +160,16 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 <details>
 <summary><code>npm run test:source:coverage</code></summary>
 
-- **Purpose:** Run source scenarios and collect coverage data.
+- **Purpose:** Run source Cucumber scenarios and standalone Node tests, collecting coverage data for both.
+- **Requirements:** Run `npm ci` first.
+
+</details>
+
+<details>
+<summary><code>npm run test:unit</code></summary>
+
+- **Purpose:** Run `tests/*.test.mjs` with Node's built-in test runner.
+  These tests also run as part of `test:source`; their results are printed separately from Cucumber reports.
 - **Requirements:** Run `npm ci` first.
 
 </details>
@@ -190,10 +226,6 @@ tests are needed.
 
 ## Dependency packages
 
-All direct dependencies from `dependencies` and `devDependencies` in
-[`package.json`](package.json) are listed below. Transitive dependencies are
-recorded in [`package-lock.json`](package-lock.json).
-
 <a href="https://www.npmjs.com/package/bits-ui"><img src=".github/badges/version-dependency-bits-ui.svg" alt="bits-ui declared version"></a>
 
 Provides accessible dialog, select, popover, and tooltip primitives used by the
@@ -203,7 +235,9 @@ webpage’s shared controls and `shadcn-svelte` sheet components.
 
 <a href="https://www.npmjs.com/package/buffer"><img src=".github/badges/version-dependency-buffer.svg" alt="buffer declared version"></a>
 
-Provides browser-compatible `Buffer` support for local Git operations.
+Provides the Node.js `Buffer` API that `isomorphic-git` needs to read and write
+binary Git data in the browser. LightningFS stores the resulting repository
+files locally in IndexedDB.
 
 ---
 
@@ -233,8 +267,7 @@ combined test report.
 <a href="https://www.npmjs.com/package/idb"><img src=".github/badges/version-dependency-idb.svg" alt="idb declared version"></a>
 
 Provides promise-based IndexedDB access for settings, workflow and schema
-catalogues, storage inspection, and database migrations. LightningFS manages its
-own filesystem persistence separately.
+catalogues, storage inspection, and database migrations.
 
 ---
 
