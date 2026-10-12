@@ -112,9 +112,11 @@ gitGraph BT:
 
 One `docs/<topic>` branch carries three successive documentation edits, merged
 into `develop`, `release`, and `main` through explicitly selected PRs. The release
-branches from `develop` after its documentation merge. The shared docs branch
-starts from `main` and accumulates only documentation changes; each later edit
-includes the earlier ones. Every target must pass the full Markdown-only check.
+branches from `develop` after its documentation merge. After the release update,
+`main` is merged into `develop` before the final docs edit goes to `main`.
+The shared docs branch starts from `main` and accumulates only documentation
+changes; each later edit includes the earlier ones. Every target must pass the
+full Markdown-only check.
 
 The graph shows the intended paths. CI currently supports documentation PRs only
 to `main` and `develop`; release targeting and reliable reuse across targets are
@@ -145,6 +147,8 @@ gitGraph BT:
     commit id: "Document release"
     checkout release
     merge docs id: "Update release"
+    checkout develop
+    merge main id: "Sync main"
     checkout docs
     commit id: "Document main"
     checkout main
