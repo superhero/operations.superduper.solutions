@@ -1,45 +1,23 @@
 # Contributing
 
-Thank you for contributing to `operations.superduper.solutions`.
+Thank you for considering contributing to `operations.superduper.solutions`.
+
+> [!NOTE]
+> Before contributing, please review the architectural decision records (ADRs) below to understand the project's design choices and the reasons behind them.
 
 ## Architectural decision records
 
-- [Simplify](docs/adr/simplify.md)
-- [UI](docs/adr/ui.md)
-- [Security](docs/adr/security.md)
-- [Gitflow](docs/adr/gitflow.md)
-
-## Automation validation
-
-See [Repository automation](.github/workflows/README.md) for local checks, test
-reports, badges, CI workflows, releases, and deployment.
-
-For Markdown-only changes, use a `docs/<topic>` branch from the intended target,
-`develop` or `main`. See the [documentation workflow](.github/workflows/README.md#documentation-only-changes)
-for the fast validation and merge path.
-
-## Licensing
-
-### Contribution license
-
-By submitting a contribution, you agree that it is licensed under **GNU AGPLv3 only** (`AGPL-3.0-only`) together with `LICENSE-ADDITIONAL-TERMS`.
-
-You retain the copyright in your contribution unless you separately assign it in writing.
-
-By contributing, you represent that you have the right to submit the contribution under these terms.
-
-### Source-file license notices
-
-Preserve existing copyright, license, attribution, and Section 7 notices.
-
-For new first-party source files, where comments are supported, use:
-
-```text
-Copyright (C) <year> <author name>
-SPDX-License-Identifier: AGPL-3.0-only
-See LICENSE and LICENSE-ADDITIONAL-TERMS.
-```
-
-Do not replace another author's copyright notice with your own.
-
-The project uses `AGPL-3.0-only`, not `AGPL-3.0-or-later`.
+- [Application content is versioned in separate browser-local Git repositories to preserve independent change histories](docs/adr/local-resource-management.md)
+- [Architectural decision records are maintained to preserve reasoning and guide future changes](docs/adr/decision-records.md)
+- [Artifacts with distinct purposes are kept separate wherever practical](docs/adr/responsibility-segregation.md)
+- [Continuous deployment publishes tested artifacts to Cloudflare, preserving traceability to validated revisions.](docs/adr/continuous-deployment.md)
+- [Continuous integration follows a Gitflow branch strategy, with GitHub Actions automating tests that help assure quality between development cycles.](docs/adr/continuous-integration.md)
+- [Dedicated workers handle background processing to reduce main-thread workload](docs/adr/dedicated-workers.md)
+- [Errors are reported with full transparency through both the user interface and console](docs/adr/error-view.md)
+- [OpenAPI documents define the application’s available operations and the input and response models of its workflow nodes](docs/adr/openapi-adaptation.md)
+- [Project code and contributions are licensed under AGPLv3-only with additional terms under Section 7](docs/adr/licensing-choice.md)
+- [Secrets are excluded from version control and supplied through runtime configuration](docs/adr/runtime-secrets.md)
+- [Simple, clear solutions take precedence over unnecessary complexity](docs/adr/simplicity.md)
+- [Test reporting includes every test, and release validation requires 100% coverage of explicitly scoped application logic](docs/adr/test-suite-reports.md)
+- [The application provides current and historical insights into processing, memory and storage usage](docs/adr/resource-monitoring.md)
+- [The interface is built around Svelte, with shared theme and interaction rules](docs/adr/svelte-interface.md)
