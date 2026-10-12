@@ -4,7 +4,7 @@
 
 Application data and its history live in the browser. Current measurements help explain resource use; recorded measurements make changes over time visible. Settings → Browser therefore presents Processing, Memory, Storage, Git filesystem and Histogram views backed by browser and library APIs.
 
-Collection runs independently of Settings in a dedicated worker. The dashboard shows the latest available observations, and history retains completed 15-minute aggregates. This follows the [background-processing decision](dedicated-workers.md) and gives measurements their own history under the [content-versioning model](browser-git-versioning.md).
+Collection runs independently of Settings in a dedicated worker. The dashboard shows the latest available observations, and history retains completed 15-minute aggregates. This follows the [background-processing decision](dedicated-workers.md) and gives measurements their own history under the [content-versioning model](browser-version-management.md).
 
 ## Measurement boundaries
 

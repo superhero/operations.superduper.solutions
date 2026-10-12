@@ -53,7 +53,7 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 - **Purpose:** Start the local development server.
 - **Requirements:** Run `npm ci` first.
-- **Guidance:** [Diagnostics and error reporting](docs/adr/error-reporting.md),
+- **Guidance:** [Diagnostics and error reporting](docs/adr/error-view.md),
   and [startup progress and loading preview](docs/adr/dedicated-workers.md#startup-progress-and-loading-preview).
 
 </details>
@@ -111,7 +111,7 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 - **Purpose:** Generate reports in `tmp/test/coverage/` and enforce 100% statement, branch,
   function and line coverage.
-- **Scope:** Node-executable application logic; see [Testing, coverage and reporting](docs/adr/test-reporting-coverage.md)
+- **Scope:** Node-executable application logic; see [Testing, coverage and reporting](docs/adr/test-suite-reports.md)
   for the scope and exclusions.
 - **Requirements:** Collect fresh coverage with `npm run test:source:coverage` first.
 

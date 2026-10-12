@@ -24,7 +24,7 @@ do not replay startup progress.
 
 On success, show `Completed` before fading out the loading screen. On failure,
 release the screen when the app has rendered so its recovery controls remain
-usable. See [diagnostics and error reporting](error-reporting.md) for settings
+usable. See [diagnostics and error reporting](error-view.md) for settings
 storage errors and recovery.
 
 To develop the animation, run `npm run dev` and open `/?dev-loading=1`. This pauses
