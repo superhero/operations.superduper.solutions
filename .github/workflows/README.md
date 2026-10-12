@@ -159,6 +159,10 @@ and [Actions policy API](https://docs.github.com/en/rest/actions/policies#create
 
 ## Branch workflows
 
+Target `develop` with `feature/*` and `bugfix/*` PRs. Create `release/<version>`
+from `develop` and target `main`. Create production `hotfix/<version>` branches
+from released `main`, using its next patch version, and target `main`.
+
 Application CI is split by target branch or branch family:
 
 - [`ci-develop.yml`](ci-develop.yml) validates PRs into `develop`.
@@ -176,9 +180,10 @@ their chosen main, release, or support target.
 ## Validation and merging
 
 Main CI creates releases from `develop` trigger PRs and validates release and
-hotfix PRs. Every automatic merge requires automation checks, Gitflow policy,
-and application checks. Each application job installs once and runs its checks
-locally; npm's download cache is the only cache used.
+hotfix PRs. Automatic code merges require automation checks, Gitflow policy,
+and application checks; documentation uses its separate validation path.
+Each application job installs once and runs its checks locally; npm's download
+cache is the only cache used.
 Auto-merges are serialized per target branch and bind both the tested head and
 base commit. A target advancement is accepted only when every intervening change
 is to a dependency-version SVG. Other changes require fresh validation before
@@ -230,6 +235,7 @@ API responses. Missing credentials are reported by variable name only.
 
 ## Release stabilization and versions
 
+At most one release and one hotfix may be active at a time.
 Release-trigger retries reuse their release PR, including after corrections to
 the release branch. Make stabilization fixes on a `bugfix/*` branch created from
 the active `release/<version>` and open a PR back into that release. Release CI
@@ -255,6 +261,16 @@ deployment and synchronization. The initial `develop` trigger still creates a
 separate versioned release PR so that PR's exact head can be reviewed and tested.
 There is no push-triggered release run.
 
+Successful code integration into `develop` or `release/*` publishes a Cloudflare
+Pages branch preview in the same CI run. Release and production hotfix PRs
+preview their tested head before merging into `main`, without a manual approval
+gate. Superseded previews are skipped; documentation PRs do not deploy previews.
+
+Preview and production publication use the tested bundle without rebuilding it.
+Identical `index.html` and `_headers` files reuse the active deployment on the
+same branch. Publishing that bundle to a different branch creates a separate
+Pages deployment, while Wrangler reuses already uploaded assets.
+
 The merge step waits for GitHub to confirm the exact PR has merged, including
 queued auto-merges and delayed fast-forward recognition. Before tagging, Git
 compares the tested head and actual released trees directly, permitting only
@@ -268,8 +284,9 @@ Runs are serialized per PR and are not cancelled by newer PR events, because an
 earlier run may already be deploying. Merge and production jobs retain their own
 serialization. Current PR state is checked before merging, and unmerged,
 retargeted, forked, or advanced PRs cannot supply release identity. The workflow
-tags the release, opens any needed synchronization PR for normal `develop` CI,
-and promotes its validated artifacts.
+creates a tag matching the branch's unprefixed Semantic Version
+(for example, `release/1.2.3` produces `1.2.3`), opens any needed synchronization
+PR from `main` into `develop`, and promotes its validated artifacts.
 After a production hotfix, the same synchronization job also opens a PR into
 the active release, if one exists. It uses the tagged main revision so the
 release includes the production history required by its final main CI. A deleted
@@ -308,6 +325,8 @@ the permissions it uses. The built-in GitHub token is used for read-only API
 access and normal Actions infrastructure such as artifacts and caches.
 For direct badge updates on protected branches, the App needs a bypass of the
 pull-request requirement for `main`, `develop`, `release/*`, and `support/*`.
+That bypass also permits validated fast-forward integration and release
+preparation; the owning helpers verify the expected branch revisions before writing.
 Force-push protections are separate rulesets without that bypass. Permanent
 `main`, `develop`, and support branches also reject deletion; temporary release
 branches can still be deleted after merging. GitHub
