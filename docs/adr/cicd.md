@@ -33,7 +33,8 @@ the application.
 
 Read each graph **from bottom to top**. Each example shows one part of the
 branching model. Branch labels omit topic and version suffixes; commit labels
-explain the work and where it is integrated.
+explain the work and where it is integrated. `main` and `develop` are already
+established, parallel branches; their earlier shared history is omitted.
 
 ### Everyday changes
 
@@ -79,8 +80,10 @@ back into `develop`.
     "git3": "#39B8B0", "gitBranchLabel3": "#0D1117"
 }}}%%
 gitGraph BT:
-    commit id: "Released" tag: "1.0.0"
     branch develop order: 3
+    checkout main
+    commit id: "Released" tag: "1.0.0"
+    checkout develop
     commit id: "Integrated work"
     branch "release" order: 1
     merge main id: "Sync main"
@@ -111,8 +114,10 @@ before carrying the fix into the active release.
     "git3": "#39B8B0", "gitBranchLabel3": "#0D1117"
 }}}%%
 gitGraph BT:
-    commit id: "Released" tag: "1.0.0"
     branch develop order: 3
+    checkout main
+    commit id: "Released" tag: "1.0.0"
+    checkout develop
     commit id: "Next release"
     branch "release" order: 2
     commit id: "Prepare release"
