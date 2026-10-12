@@ -97,8 +97,6 @@ gitGraph BT:
 After validation, the hotfix merges into `main` and receives its patch version
 tag. A synchronization PR then carries `main` into `develop`.
 
----
-
 ### Including a hotfix in the next release
 
 A hotfix can instead be included in an active release.
