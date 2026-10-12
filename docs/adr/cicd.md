@@ -5,8 +5,9 @@
 
 ## Development to release
 
-The AVH git-flow model separates ongoing work in `develop` from releases in
-`main`. Versions follow Semantic Versioning.
+The [AVH git-flow model](https://github.com/petervanderdoes/gitflow-avh) separates
+ongoing work in `develop` from releases in `main`. Versions follow
+[Semantic Versioning](https://semver.org/).
 
 Read the diagrams **from bottom to top**. Branch labels omit topic and version
 suffixes.
