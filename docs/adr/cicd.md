@@ -24,10 +24,10 @@ the application.
 | Branch | Role and starting point |
 |---|---|
 | `main` | Released code. |
-| `release/<version>` | Release preparation from `develop`, incorporating current `main`. |
 | `develop` | Integration of ongoing work. |
 | `feature/*` | New work, starting from `develop`. |
 | `bugfix/*` | Fixes starting from `develop` or the active release, returning to that same branch. |
+| `release/<version>` | Release preparation from `develop`, incorporating current `main`. |
 | `hotfix/<version>` | Patch fixes starting from released `main`. |
 | `docs/*` | Markdown changes starting from the explicitly chosen `develop` or `main` target. |
 
@@ -35,33 +35,56 @@ Read each graph **from bottom to top**. Each example shows one part of the
 branching model. Branch labels omit topic and version suffixes; commit labels
 explain the work and where it is integrated.
 
-### Development and releases
+### Everyday changes
 
-Features return to `develop`, from which a release is prepared. The release
-incorporates `main` and receives stabilization fixes while development continues.
-After validation, it is published to `main`, tagged, and synchronized back into
-`develop`. Integration fixes instead start from and return to `develop`.
+Features and integration fixes return to `develop`. Documentation returns only
+to its chosen target: `develop` in this example, or `main` for released docs.
+
+```mermaid
+%%{init: {"theme": "base", "gitGraph": {"mainBranchName": "develop", "showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+    "commitLabelFontSize": "12px", "commitLabelColor": "#0D1117", "commitLabelBackground": "#D8DEE4",
+    "git0": "#39B8B0", "gitBranchLabel0": "#0D1117",
+    "git1": "#E3B341", "gitBranchLabel1": "#0D1117",
+    "git2": "#F06060", "gitBranchLabel2": "#0D1117",
+    "git3": "#58A6FF", "gitBranchLabel3": "#0D1117"
+}}}%%
+gitGraph BT:
+    commit id: "Start"
+    branch "feature" order: 1
+    commit id: "Feature"
+    checkout develop
+    merge "feature" id: "Integrate feature"
+    branch "bugfix" order: 2
+    commit id: "Fix"
+    checkout develop
+    merge "bugfix" id: "Integrate fix"
+    branch "docs" order: 3
+    commit id: "Documentation"
+    checkout develop
+    merge "docs" id: "Integrate docs"
+```
+
+### Preparing and publishing a release
+
+A release incorporates `main` and receives stabilization fixes while development
+continues. After validation, it is published to `main`, tagged, and synchronized
+back into `develop`.
 
 ```mermaid
 %%{init: {"theme": "base", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "12px", "commitLabelColor": "#0D1117", "commitLabelBackground": "#D8DEE4",
     "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
     "git1": "#A3C441", "gitBranchLabel1": "#0D1117",
-    "git2": "#39B8B0", "gitBranchLabel2": "#0D1117",
-    "git3": "#E3B341", "gitBranchLabel3": "#0D1117",
-    "git4": "#F06060", "gitBranchLabel4": "#0D1117"
+    "git2": "#F06060", "gitBranchLabel2": "#0D1117",
+    "git3": "#39B8B0", "gitBranchLabel3": "#0D1117"
 }}}%%
 gitGraph BT:
     commit id: "Released" tag: "1.0.0"
-    branch develop order: 2
-    commit id: "Development"
-    branch "feature" order: 3
-    commit id: "Feature"
-    checkout develop
-    merge "feature" id: "Integrate feature"
+    branch develop order: 3
+    commit id: "Integrated work"
     branch "release" order: 1
     merge main id: "Sync main"
-    branch "bugfix" order: 4
+    branch "bugfix" order: 2
     commit id: "Stabilize"
     checkout develop
     commit id: "Next work"
@@ -106,26 +129,6 @@ gitGraph BT:
     merge main id: "Sync patch"
 ```
 
-### Documentation changes
-
-A documentation branch starts from its explicitly chosen `develop` or `main`
-target and returns only to that branch. This example targets `develop`; merging
-documentation does not trigger branch synchronization.
-
-```mermaid
-%%{init: {"theme": "base", "gitGraph": {"mainBranchName": "develop", "showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
-    "commitLabelFontSize": "12px", "commitLabelColor": "#0D1117", "commitLabelBackground": "#D8DEE4",
-    "git0": "#39B8B0", "gitBranchLabel0": "#0D1117",
-    "git1": "#58A6FF", "gitBranchLabel1": "#0D1117"
-}}}%%
-gitGraph BT:
-    commit id: "Chosen target"
-    branch "docs" order: 1
-    commit id: "Documentation"
-    checkout develop
-    merge "docs" id: "Integrate docs"
-```
-
 ### Merge methods
 
 - Feature, integration bugfix, production hotfix and documentation PRs
@@ -135,7 +138,9 @@ gitGraph BT:
   possible; otherwise they use a merge commit to preserve history.
 
 Mermaid draws each [integration as a merge commit](https://mermaid.js.org/syntax/gitgraph.html#merging-two-branches);
-the policies above determine the actual Git history.
+the policies above determine the actual Git history. Each documentation branch
+merges only into its chosen `develop` or `main` target, without automatic
+synchronization.
 
 See [Repository automation](../../.github/workflows/README.md) for branch rules,
 merge methods, contributor procedures and publication details.
