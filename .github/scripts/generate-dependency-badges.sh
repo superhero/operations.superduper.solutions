@@ -19,13 +19,17 @@ fi
 
 # Names become filenames, so reject unsafe names and scoped/unscoped slug collisions.
 if ! jq -se 'length == 1 and (.[0] | type == "object" and
-  (.devDependencies | type == "object" and
-    all(to_entries[];
+  (has("dependencies") or has("devDependencies")) and
+  (if has("dependencies") then .dependencies | type == "object" else true end) and
+  (if has("devDependencies") then .devDependencies | type == "object" else true end) and
+  ([ (.dependencies // {}), (.devDependencies // {}) ] | map(to_entries) | add |
+    all(.[];
       (.key | test("\\A(@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*\\z")) and
       (.value | type == "string" and length > 0 and (explode | all(. >= 32 and . != 127)))) and
-    ([keys[] | ltrimstr("@") | gsub("/"; "--")] | length == (unique | length))))' \
+    (group_by(.key) | all(.[]; map(.value) | unique | length == 1)) and
+    ([unique_by(.key)[] | .key | ltrimstr("@") | gsub("/"; "--")] | length == (unique | length))))' \
   "$manifest" >/dev/null 2>&1; then
-  fail 'Expected one package manifest with a devDependencies object, safe package names, unique badge filenames, and nonempty string versions without control characters.'
+  fail 'Expected one package manifest with dependencies or devDependencies objects, safe package names, unique badge filenames, and nonempty, consistent string versions without control characters.'
 fi
 
 if [[ "$mode" == --outdated ]] && ! jq -se 'length == 1 and (.[0] |
@@ -84,7 +88,7 @@ while IFS=$'\t' read -r slug label version label_length version_length colour; d
   fi
   render_svg "$colour" > "$generated/$badge"
 done < <(jq -r --arg mode "$mode" --slurpfile outdated "${outdated:-/dev/null}" '
-  .devDependencies | to_entries | sort_by(.key)[] |
+  (.dependencies // {}) + (.devDependencies // {}) | to_entries | sort_by(.key)[] |
   [(.key | ltrimstr("@") | gsub("/"; "--")), (.key | @html), (.value | @html),
     (.key | length), (.value | length),
     (if $mode == "--outdated" and $outdated[0][.key] != null and $outdated[0][.key].latest != .value

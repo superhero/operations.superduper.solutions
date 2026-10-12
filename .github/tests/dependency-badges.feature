@@ -40,13 +40,16 @@ Feature: Dependency version badges travel with their branch
 
   Scenario: Invalid manifests cannot write unsafe or misleading badges
     Then local version badge generation rejects these manifest problems without writing files:
-      | problem                    |
-      | malformed JSON             |
-      | non-string version         |
-      | filename traversal         |
-      | package control characters |
-      | scoped filename collision  |
-      | version control characters |
+      | problem                         |
+      | malformed JSON                  |
+      | non-object dependency group     |
+      | non-string version              |
+      | filename traversal              |
+      | package control characters      |
+      | scoped filename collision       |
+      | version control characters      |
+      | cross-group filename collision  |
+      | conflicting dependency versions |
 
   Scenario: Supplied latest versions colour only outdated declared dependencies orange
     Given declared dependencies with supplied outdated metadata

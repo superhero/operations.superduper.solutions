@@ -190,10 +190,20 @@ tests are needed.
 
 ## Dependency packages
 
+All direct dependencies from `dependencies` and `devDependencies` in
+[`package.json`](package.json) are listed below. Transitive dependencies are
+recorded in [`package-lock.json`](package-lock.json).
+
 <a href="https://www.npmjs.com/package/bits-ui"><img src=".github/badges/version-dependency-bits-ui.svg" alt="bits-ui declared version"></a>
 
-Supports the webpage’s user interface, providing the accessible dialog primitives
-required by its `shadcn-svelte` sheet components.
+Provides accessible dialog, select, popover, and tooltip primitives used by the
+webpage’s shared controls and `shadcn-svelte` sheet components.
+
+---
+
+<a href="https://www.npmjs.com/package/buffer"><img src=".github/badges/version-dependency-buffer.svg" alt="buffer declared version"></a>
+
+Provides browser-compatible `Buffer` support for local Git operations.
 
 ---
 
@@ -220,6 +230,29 @@ combined test report.
 
 ---
 
+<a href="https://www.npmjs.com/package/idb"><img src=".github/badges/version-dependency-idb.svg" alt="idb declared version"></a>
+
+Provides promise-based IndexedDB access for settings, workflow and schema
+catalogues, storage inspection, and database migrations. LightningFS manages its
+own filesystem persistence separately.
+
+---
+
+<a href="https://www.npmjs.com/package/isomorphic-git"><img src=".github/badges/version-dependency-isomorphic-git.svg" alt="isomorphic-git declared version"></a>
+
+Creates and reads local Git history for workflows, uploaded schemas, and recorded
+resource metrics, using the LightningFS filesystem. Each workflow and uploaded
+schema has its own repository.
+
+---
+
+<a href="https://www.npmjs.com/package/@isomorphic-git/lightning-fs"><img src=".github/badges/version-dependency-isomorphic-git--lightning-fs.svg" alt="@isomorphic-git/lightning-fs declared version"></a>
+
+Provides the IndexedDB-backed filesystem that stores repository working files
+and Git metadata in the browser.
+
+---
+
 <a href="https://www.npmjs.com/package/@lucide/svelte"><img src=".github/badges/version-dependency-lucide--svelte.svg" alt="@lucide/svelte declared version"></a>
 
 Retained for optional SVG icons in Svelte components. The main interface uses
@@ -238,6 +271,14 @@ configuration panels. It is excluded from production builds.
 <a href="https://www.npmjs.com/package/@visulima/inspector"><img src=".github/badges/version-dependency-visulima--inspector.svg" alt="@visulima/inspector declared version"></a>
 
 Formats object details when normalizing development runtime errors.
+
+---
+
+<a href="https://www.npmjs.com/package/@visulima/pail"><img src=".github/badges/version-dependency-visulima--pail.svg" alt="@visulima/pail declared version"></a>
+
+Provides scoped logging for the application, workers, development server, scripts,
+and tests. The browser reporter preserves native errors and forwards application
+errors to the development overlay.
 
 ---
 
@@ -348,3 +389,10 @@ isolated page-memory measurements; acceptance tests verify both files.
 
 Provides the webpage’s workflow canvas, with draggable nodes, connection handles
 and edges, and controls for navigating the diagram.
+
+---
+
+<a href="https://www.npmjs.com/package/yaml"><img src=".github/badges/version-dependency-yaml.svg" alt="yaml declared version"></a>
+
+Parses uploaded OpenAPI documents in YAML 1.2 format, converting their contents
+into JSON-compatible values for schema validation and operation discovery.

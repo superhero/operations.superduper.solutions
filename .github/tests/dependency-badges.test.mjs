@@ -11,10 +11,10 @@ import "./support.mjs";
 Then("the README links every manifest dependency to its existing local version badge", function ()
 {
   const root = fileURLToPath(new URL("../../", import.meta.url));
-  const dependencies = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).devDependencies;
+  const { dependencies, devDependencies } = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   const readme = readFileSync(join(root, "README.md"), "utf8");
   const badges = [...readme.matchAll(/<a href="https:\/\/www\.npmjs\.com\/package\/([^"]+)"[^>]*>\s*<img\b[^>]*\bsrc="([^"]+)"[^>]*>\s*<\/a>/g)];
-  assert.deepEqual(badges.map((match) => match[1]).sort(), Object.keys(dependencies).sort(),
+  assert.deepEqual(badges.map((match) => match[1]).sort(), Object.keys({ ...dependencies, ...devDependencies }).sort(),
     "README dependency badges must cover exactly the packages in package.json");
   for (const [, name, source] of badges)
   {
@@ -77,7 +77,15 @@ function failure(world, reason)
 Given("branch manifests with different dependency versions", function ()
 {
   this.branchBadges = ["main", "develop", "release/0.1.0"].map((branch, index) =>
-    manifest(this, join(this.automation.root, branch), `${index + 1}.0.0`));
+  {
+    const version = `${index + 1}.0.0`;
+    const state = manifest(this, join(this.automation.root, branch), version);
+    if (index > 0) state.data.dependencies = { "runtime-tool": version };
+    if (index === 1) delete state.data.devDependencies;
+    if (index === 2) state.data.dependencies["@scope/tool"] = version;
+    save(state);
+    return state;
+  });
 });
 
 When("local version badges are generated for each branch", function ()
@@ -93,10 +101,18 @@ Then("each branch badge displays its own version without a registry request", fu
 {
   for (const state of this.branchBadges)
   {
-    const svg = readFileSync(join(state.output, "version-dependency-scope--tool.svg"), "utf8");
-    assert.ok(svg.includes(`<title>@scope/tool: ${state.data.devDependencies["@scope/tool"]}</title>`));
-    assert.ok(svg.includes('fill="#007ec6"'));
-    assert.ok(svg.includes("SPDX-License-Identifier: AGPL-3.0-only"));
+    const dependencies = { ...state.data.dependencies, ...state.data.devDependencies };
+    assert.equal(readdirSync(state.output).length, Object.keys(dependencies).length);
+    for (const [name, version] of Object.entries(dependencies))
+    {
+      const slug = name.replace(/^@/, "").replaceAll("/", "--");
+      const svg = readFileSync(join(state.output, `version-dependency-${slug}.svg`), "utf8");
+      assert.ok(svg.includes(`<title>${name}: ${version}</title>`));
+      assert.ok(svg.includes('fill="#007ec6"'));
+      assert.ok(svg.includes("SPDX-License-Identifier: AGPL-3.0-only"));
+    }
+    const result = generate(this, state, true);
+    assert.equal(result.status, 0, result.stderr);
   }
   assert.deepEqual(this.automation.calls(), []);
 });
@@ -204,25 +220,31 @@ Then("the badge contains escaped version text and accessible labels", function (
 
 Then("local version badge generation rejects these manifest problems without writing files:", function (table)
 {
+  const inEitherGroup = (data) => [{ dependencies: data }, { devDependencies: data }];
   const invalid = {
-    "malformed JSON": "{",
-    "non-string version": { "@scope/tool": 42 },
-    "filename traversal": { "../../escape": "1.0.0" },
-    "package control characters": { "tool\n": "1.0.0" },
-    "scoped filename collision": { "@scope/tool": "1.0.0", "scope--tool": "2.0.0" },
-    "version control characters": { "@scope/tool": "1.0.0\n2.0.0" }
+    "malformed JSON": ["{"],
+    "non-object dependency group": [...inEitherGroup(null), ...inEitherGroup([])],
+    "non-string version": inEitherGroup({ "@scope/tool": 42 }),
+    "filename traversal": inEitherGroup({ "../../escape": "1.0.0" }),
+    "package control characters": inEitherGroup({ "tool\n": "1.0.0" }),
+    "scoped filename collision": inEitherGroup({ "@scope/tool": "1.0.0", "scope--tool": "2.0.0" }),
+    "version control characters": inEitherGroup({ "@scope/tool": "1.0.0\n2.0.0" }),
+    "cross-group filename collision": [{ dependencies: { "@scope/tool": "1.0.0" }, devDependencies: { "scope--tool": "2.0.0" } }],
+    "conflicting dependency versions": [{ dependencies: { "@scope/tool": "1.0.0" }, devDependencies: { "@scope/tool": "2.0.0" } }]
   };
   for (const { problem } of table.hashes())
   {
     assert.ok(Object.hasOwn(invalid, problem));
-    const state = manifest(this);
-    const data = invalid[problem];
-    writeFileSync(state.manifest, typeof data === "string" ? data : JSON.stringify({ devDependencies: data }));
-    const result = generate(this, state);
-    assert.notEqual(result.status, 0, problem);
-    for (const text of ["Expected one package manifest", state.manifest, state.output])
-      assert.ok(result.stderr.includes(text), result.stderr);
-    assert.equal(existsSync(state.output), false, problem);
+    for (const data of invalid[problem])
+    {
+      const state = manifest(this);
+      writeFileSync(state.manifest, typeof data === "string" ? data : JSON.stringify(data));
+      const result = generate(this, state);
+      assert.notEqual(result.status, 0, problem);
+      for (const text of ["Expected one package manifest", state.manifest, state.output])
+        assert.ok(result.stderr.includes(text), result.stderr);
+      assert.equal(existsSync(state.output), false, problem);
+    }
   }
   assert.deepEqual(this.automation.calls(), []);
 });
@@ -231,9 +253,11 @@ Given("declared dependencies with supplied outdated metadata", function ()
 {
   this.localBadges = manifest(this);
   Object.assign(this.localBadges.data.devDependencies, { current: "1.0.0", omitted: "1.0.0" });
+  this.localBadges.data.dependencies = { "runtime-current": "1.0.0", "runtime-outdated": "1.0.0" };
   save(this.localBadges);
   this.outdated = {
     "@scope/tool": { wanted: "1.0.0", latest: "2.0.0" },
+    "runtime-outdated": { wanted: "1.0.0", latest: "2.0.0" },
     current: { current: "0.9.0", wanted: "1.0.0", latest: "1.0.0" },
     unrelated: { current: null, wanted: "1.0.0", latest: "2.0.0" }
   };
@@ -249,10 +273,13 @@ Then("only declared dependencies behind latest are orange without a registry req
   assert.equal(this.result.status, 0, this.result.stderr);
   assert.ok(badge(this).includes('fill="#fe7d37"'));
   assert.ok(badge(this).includes("<title>@scope/tool: 1.0.0</title>"));
-  for (const name of ["current", "omitted"])
+  assert.ok(badge(this, "runtime-outdated").includes('fill="#fe7d37"'));
+  assert.ok(badge(this, "runtime-outdated").includes("<title>runtime-outdated: 1.0.0</title>"));
+  for (const name of ["current", "omitted", "runtime-current"])
     assert.ok(badge(this, name).includes('fill="#007ec6"'));
   assert.deepEqual(readdirSync(this.localBadges.output).sort(), [
-    "version-dependency-current.svg", "version-dependency-omitted.svg", "version-dependency-scope--tool.svg"
+    "version-dependency-current.svg", "version-dependency-omitted.svg", "version-dependency-runtime-current.svg",
+    "version-dependency-runtime-outdated.svg", "version-dependency-scope--tool.svg"
   ]);
   assert.deepEqual(this.automation.calls(), []);
 });
