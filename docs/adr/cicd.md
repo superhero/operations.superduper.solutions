@@ -33,36 +33,44 @@ the application.
 
 Read each graph **from bottom to top**. Each example shows one part of the
 branching model. Branch labels omit topic and version suffixes; commit labels
-explain the work and where it is integrated. `main` and `develop` are already
-established, parallel branches; their earlier shared history is omitted.
+explain the work and where it is integrated. The first graph shows where
+`develop` and `release` branch from; later examples omit the earlier shared
+history of `main` and `develop`.
 
 ### Everyday changes
 
 Features and integration fixes return to `develop`. Documentation returns only
 to its chosen target: `develop` in this example, or `main` for released docs.
+When the integrated work is ready, a release branches from `develop`.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": ".commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"mainBranchName": "develop", "showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": ".commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
-    "git0": "#39B8B0", "gitBranchLabel0": "#0D1117",
-    "git1": "#E3B341", "gitBranchLabel1": "#0D1117",
-    "git2": "#F06060", "gitBranchLabel2": "#0D1117",
-    "git3": "#58A6FF", "gitBranchLabel3": "#0D1117"
+    "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
+    "git1": "#A3C441", "gitBranchLabel1": "#0D1117",
+    "git2": "#39B8B0", "gitBranchLabel2": "#0D1117",
+    "git3": "#E3B341", "gitBranchLabel3": "#0D1117",
+    "git4": "#F06060", "gitBranchLabel4": "#0D1117",
+    "git5": "#58A6FF", "gitBranchLabel5": "#0D1117"
 }}}%%
 gitGraph BT:
+    commit id: "Released" tag: "1.0.0"
+    branch develop order: 2
     commit id: "Start"
-    branch "feature" order: 1
+    branch "feature" order: 3
     commit id: "Feature"
     checkout develop
     merge "feature" id: "Integrate feature"
-    branch "bugfix" order: 2
+    branch "bugfix" order: 4
     commit id: "Fix"
     checkout develop
     merge "bugfix" id: "Integrate fix"
-    branch "docs" order: 3
+    branch "docs" order: 5
     commit id: "Documentation"
     checkout develop
     merge "docs" id: "Integrate docs"
+    branch "release" order: 1
+    commit id: "Prepare release"
 ```
 
 ### Preparing and publishing a release
