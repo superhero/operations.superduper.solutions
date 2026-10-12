@@ -33,8 +33,8 @@ the application.
 
 Read each graph **from bottom to top**. Each example shows one part of the
 branching model. Branch labels omit topic and version suffixes; commit labels
-explain the work and where it is integrated. The first graph shows where
-`develop` and `release` branch from; later examples omit earlier shared history.
+explain the work and where it is integrated. The development and hotfix graphs
+show branch origins; the documentation graph omits earlier shared history.
 
 ### Development to release
 
@@ -94,10 +94,8 @@ before carrying the fix into the active release.
 }}}%%
 gitGraph BT:
     %% In BT order, the initial commit note is the last label group; its tag stays visible.
-    branch develop order: 3
-    checkout main
     commit id: "Released" tag: "1.0.0"
-    checkout develop
+    branch develop order: 3
     commit id: "Next release"
     branch "release" order: 2
     commit id: "Create release branch"
