@@ -1,4 +1,7 @@
-# Continuous integration and deployment follow Gitflow, with a fully passing test suite required for release
+# CICD
+
+> [!IMPORTANT]
+> Continuous integration and deployment follow Gitflow, with a fully passing test suite required for release
 
 ## Development to release
 
@@ -68,8 +71,6 @@ The illustrated `develop` → `release` update is not yet supported by
 [CI branch validation](../../.github/scripts/validate-pr.sh). See
 [Repository automation](../../.github/workflows/README.md) for the operational
 branch rules, contributor procedures and publication details.
-
----
 
 ## Hotfixes
 
@@ -143,8 +144,6 @@ and receives its release version tag. Synchronization from `main` to `develop`
 follows publication. The hotfix-to-release merge does not create a separate tag.
 These merges fast-forward where possible; otherwise merge commits preserve
 the release history.
-
----
 
 ## Updating documentation
 
