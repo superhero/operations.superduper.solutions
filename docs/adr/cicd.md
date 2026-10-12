@@ -168,47 +168,83 @@ release then merges into `main` and receives its release version tag. A
 
 ## Updating documentation
 
-`docs/<topic>` PRs update Markdown on explicitly selected `develop` or `main`
-targets.
+`docs/<topic>` branches start from their intended target and return through a
+Markdown-only PR. Each diagram shows a separate target.
+
+### Development
+
+Branch from `develop` to update documentation for ongoing development.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:last-of-type { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:last-of-type { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"mainBranchName": "develop", "showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
-    "git0": "#4CB269", "gitBranchLabel0": "#0D1117",
-    "git1": "#B1CD5E", "gitBranchLabel1": "#0D1117",
-    "git2": "#57C3BC", "gitBranchLabel2": "#0D1117",
-    "git3": "#71B3FF", "gitBranchLabel3": "#0D1117"
+    "git0": "#57C3BC", "gitBranchLabel0": "#0D1117",
+    "git1": "#71B3FF", "gitBranchLabel1": "#0D1117"
 }}}%%
 gitGraph BT:
-    %% Hide the initial note while retaining its commit connection and tag.
-    commit id: "Released" tag: "1.0.0"
-    branch develop order: 2
-    checkout main
-    branch docs order: 3
+    %% Hide the existing target commit note while retaining its connection.
+    commit id: "Existing"
+    branch docs order: 1
     commit id: "Document development"
     checkout develop
     merge docs id: "Update develop"
-    branch release order: 1
-    commit id: "Create release branch"
-    checkout main
-    merge release id: "Deployed" tag: "1.1.0"
-    checkout develop
-    merge main id: "Sync main"
-    checkout docs
+```
+
+The PR merges into `develop`; it does not publish a release.
+
+### Release
+
+Branch from the active `release/<version>` to update its documentation.
+This route is planned; current documentation CI supports only `develop` and
+`main`.
+
+```mermaid
+%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:last-of-type { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"mainBranchName": "release", "showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+    "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
+    "git0": "#B1CD5E", "gitBranchLabel0": "#0D1117",
+    "git1": "#71B3FF", "gitBranchLabel1": "#0D1117"
+}}}%%
+gitGraph BT:
+    %% Hide the existing target commit note while retaining its connection.
+    commit id: "Existing"
+    branch docs order: 1
+    commit id: "Document release"
+    checkout release
+    merge docs id: "Update release"
+```
+
+The intended PR updates the release branch without tagging or deploying it.
+
+### Main
+
+Branch from `main` to correct documentation for the published version.
+
+```mermaid
+%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:last-of-type { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"mainBranchName": "main", "showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+    "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
+    "git0": "#4CB269", "gitBranchLabel0": "#0D1117",
+    "git1": "#71B3FF", "gitBranchLabel1": "#0D1117"
+}}}%%
+gitGraph BT:
+    %% Hide the existing target commit note while retaining its connection.
+    commit id: "Existing"
+    branch docs order: 1
     commit id: "Document main"
     checkout main
     merge docs id: "Update main"
 ```
 
+The PR updates `main` without publishing a new version or opening a
+synchronization PR to `develop`.
+
 ### Branch reuse
 
-Here, a docs branch from `main` targets `develop` first, then `main` after a
-release. Later edits retain earlier documentation changes; reliable branch reuse
-across targets remains planned automation work.
+Reliable reuse of one docs branch across multiple targets remains planned
+automation work.
 
 ### Validation and automation
 
 Each target validates the full Markdown-only change set. Docs PRs skip
 application tests and builds. They do not create release versions or tags,
-publish releases, deploy, or open synchronization PRs—including `main` → `develop`.
-Each target needs its own explicitly requested PR.
+publish releases, deploy, or open synchronization PRs. Each target needs its
+own explicitly requested PR.
