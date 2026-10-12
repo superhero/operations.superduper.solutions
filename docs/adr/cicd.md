@@ -5,9 +5,8 @@
 
 ## Development to release
 
-The [AVH git-flow model](https://github.com/petervanderdoes/gitflow-avh) separates
-ongoing work in `develop` from releases in `main`, with versions following
-[Semantic Versioning](https://semver.org/).
+The AVH git-flow model separates ongoing work in `develop` from releases in
+`main`. Versions follow Semantic Versioning.
 
 Read the diagrams **from bottom to top**. Branch labels omit topic and version
 suffixes.
@@ -60,10 +59,8 @@ fast-forward when they contain one commit and the target is its ancestor;
 otherwise they squash. Release stabilization, publication and synchronization
 fast-forward where possible; otherwise they use merge commits.
 
-The illustrated `develop` → `release` update is not yet supported by
-[CI branch validation](../../.github/scripts/validate-pr.sh).
-[Repository automation](../../.github/workflows/README.md) covers the procedures
-and implementation details.
+The illustrated `develop` → `release` update is not yet supported by CI branch
+validation.
 
 ## Hotfixes
 
