@@ -58,10 +58,7 @@ and tags the verified revision, deploys its tested artifacts, and opens a
 Feature and integration bugfix PRs, hotfix PRs into `main`, and documentation PRs
 fast-forward when they contain one commit and the target is its ancestor;
 otherwise they squash. Release stabilization, publication and synchronization
-fast-forward where possible; otherwise they use merge commits. Mermaid depicts
-all
-[integrations as merge commits](https://mermaid.js.org/syntax/gitgraph.html#merging-two-branches),
-regardless of these policies.
+fast-forward where possible; otherwise they use merge commits.
 
 The illustrated `develop` → `release` update is not yet supported by
 [CI branch validation](../../.github/scripts/validate-pr.sh).
