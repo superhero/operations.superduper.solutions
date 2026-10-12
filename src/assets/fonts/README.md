@@ -4,6 +4,17 @@ Montserrat (variable Latin subset) and Rationale are bundled locally for the
 interface. Their SIL Open Font License notices are included alongside the fonts.
 Vite embeds these assets in the single-file build; no font service is contacted.
 
+## Integration
+
+Declare font faces in [app.css](../../app.css) with local URLs, matching each
+file's supported style and weight. Use the shared
+[MaterialIcon component](../../lib/components/MaterialIcon.svelte) for icon glyphs.
+When replacing a font, preserve its license notice and record its source, subset,
+variant and checksum here. Check the production build and affected glyphs before
+removing an older asset. See the [asset guide](../README.md) for packaging rules.
+
+## Material Symbols Rounded
+
 Material Symbols Rounded supplies the interface icons through the shared
 `MaterialIcon.svelte` component. The unmodified local font has filled glyphs
 (`FILL=1`), weight 400, optical size 24 and grade 0 baked in. Its complete glyph
@@ -14,4 +25,12 @@ set supports choosing additional icons without fetching a font at runtime.
 - SHA-256: `2b8339899e392ce26a96f86da3b4c581e218c4b463ee3b09d9c1431ed96da7b3`
 - License: [Apache 2.0](Material-Symbols-Apache-2.0.txt)
 
-Montserrat Latin italic (variable weights 100–900), copied unchanged from the reference on 2026-10-06. License: Montserrat-OFL.txt. SHA-256: `86589d0b59b311712c3cbaac0b94eb054ecda4be7b52d695588548e4754b3165`. Bundled in the standalone HTML.
+## Text font notices
+
+Montserrat uses [Montserrat-OFL.txt](Montserrat-OFL.txt); Rationale uses
+[Rationale-OFL.txt](Rationale-OFL.txt).
+
+Montserrat Latin italic (variable weights 100–900), copied unchanged from the
+reference on 2026-10-06. License: [Montserrat-OFL.txt](Montserrat-OFL.txt).
+SHA-256: `86589d0b59b311712c3cbaac0b94eb054ecda4be7b52d695588548e4754b3165`.
+Bundled in the standalone HTML.

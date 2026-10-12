@@ -7,6 +7,13 @@ The decisions behind them are recorded in
 [Test suite reports](../../docs/adr/test-suite-reports.md).
 See [Contributing](../../CONTRIBUTING.md) for wider project guidance.
 
+Keep event triggers, permissions, job dependencies and artifact wiring in this
+directory's workflow YAML. Reusable executable behavior belongs in
+[`../scripts/`](../scripts/README.md), its Cucumber coverage in
+[`../tests/`](../tests/README.md), and repository-administration payloads in
+[`../policies/`](../policies/README.md). See the
+[automation directory map](../README.md) for generated outputs and other files.
+
 - [Local validation](#local-validation)
 - [Test reports](#test-reports), [coverage reports](#coverage-reports) and [badges](#badges)
 - [Documentation-only changes](#documentation-only-changes)
