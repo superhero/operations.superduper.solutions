@@ -55,7 +55,7 @@ The illustrated `develop` → `release` updates are not yet supported by
     "git1": "#A3C441", "gitBranchLabel1": "#0D1117",
     "git2": "#39B8B0", "gitBranchLabel2": "#0D1117",
     "git3": "#E3B341", "gitBranchLabel3": "#0D1117",
-    "git4": "#F06060", "gitBranchLabel4": "#0D1117",
+    "git4": "#E8793E", "gitBranchLabel4": "#0D1117",
     "git5": "#58A6FF", "gitBranchLabel5": "#0D1117"
 }}}%%
 gitGraph BT:
@@ -101,7 +101,7 @@ back into `develop`.
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
     "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
     "git1": "#A3C441", "gitBranchLabel1": "#0D1117",
-    "git2": "#F06060", "gitBranchLabel2": "#0D1117",
+    "git2": "#E8793E", "gitBranchLabel2": "#0D1117",
     "git3": "#39B8B0", "gitBranchLabel3": "#0D1117"
 }}}%%
 gitGraph BT:
