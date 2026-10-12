@@ -62,17 +62,17 @@ to that release through a PR.
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
     "git0": "#4CB269", "gitBranchLabel0": "#0D1117",
     "git1": "#B1CD5E", "gitBranchLabel1": "#0D1117",
-    "git2": "#57C3BC", "gitBranchLabel2": "#0D1117",
-    "git3": "#EB8D5B", "gitBranchLabel3": "#0D1117"
+    "git2": "#EB8D5B", "gitBranchLabel2": "#0D1117",
+    "git3": "#57C3BC", "gitBranchLabel3": "#0D1117"
 }}}%%
 gitGraph BT:
     %% Hide the two initial notes while retaining their branch connections.
     commit id: "Released" tag: "1.0.0"
-    branch develop order: 2
+    branch develop order: 3
     commit id: "Start"
     branch release order: 1
     commit id: "Create release branch"
-    branch bugfix order: 3
+    branch bugfix order: 2
     commit id: "Fix"
     checkout release
     merge bugfix id: "Integrate fix"
