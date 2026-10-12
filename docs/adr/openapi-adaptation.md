@@ -1,53 +1,146 @@
-# OpenAPI documents define the application’s available operations and the input and response models of its workflow nodes
+# OpenAPI adaptation
 
-## Decision
+> [!IMPORTANT]
+> OpenAPI documents define the application’s available operations and the input and response models of its workflow nodes.
 
-The browser-local schema library supplies operations for navigation, matching, reports and workflow execution. Each HTTP operation node and its connected data panels derive their inputs and responses from the same OpenAPI document, keeping workflow mappings tied to that API contract.
+## API contract
 
-Users manage documents locally and choose which are enabled. Changes update the active operation registry without rewriting saved workflows. Documents follow the [application content versioning model](local-resource-management.md); parsing, validation and repository work run in [dedicated workers](dedicated-workers.md).
+The browser-local schema library supplies operations for navigation, matching,
+reports and workflow execution. HTTP operation nodes and their connected data
+panels derive inputs and responses from the same document, preserving the API
+contract. Utility nodes retain application-defined models.
 
-The library validates compatibility with the application's supported OpenAPI features before making operations available. Utility nodes retain their own application-defined models.
+Users choose which documents are enabled. Changes update the active registry
+without rewriting saved workflows. Compatibility is checked before operations
+become available; parsing, validation and repository work run in dedicated workers.
 
 ## Schema library
 
 ### Document management
 
-Settings exposes **Schemas** with the subtitle “Manage your OpenAPI documents”. Users can upload JSON or YAML, rename a document, enable or disable it, replace it, download normalized JSON, and explicitly confirm deletion. The name field is always editable and saves changed names on blur. Renaming updates the document's `info.title` and records a descriptive commit in its existing repository; its ID and other content remain unchanged. The section follows the alphabetical settings order. Full source editing and remote Git integration are outside this first version.
+**Settings → Schemas**, subtitled “Manage your OpenAPI documents”, supports JSON
+and YAML upload, renaming, enablement, replacement, normalized JSON download and
+confirmed deletion. Settings sections remain alphabetically ordered. Full source
+editing and remote Git integration are outside this version.
 
-Each card also exposes the complete document through the same read-only JSON viewer used in operation reports, including collapsible scopes, line wrapping and copying JSON. The viewer renders on first expansion, including for disabled documents. Each opening shows the paths and HTTP methods with operation bodies and other nested fields folded. Viewing does not change the document or its Git history.
+The name is always editable; changes save on blur. Renaming changes only
+`info.title` and creates a descriptive commit in the existing repository,
+preserving its ID and other content.
 
-### Persistence and recovery
+### Document inspection
 
-Each document has an immutable identifier and an independent Git repository at `/repositories/<id>` in the shared LightningFS filesystem `v1/catalogs`. The repository contains one predictably formatted `schema.json`; working files are the authoritative persisted documents. Import creates the first commit, replacement adds a commit in the same repository, and identical content creates no extra commit. Historical reads use Git blobs and do not modify the working file. Different files, even with the same filename, receive different repository IDs.
-
-The separate `v1/catalogs/index` IndexedDB database stores document metadata, repository paths, enablement, initialization state and recovery journals. It does not store another editable copy of a schema. Enablement is application state outside Git. A serialized queue and browser lock protect repository writes across tabs. Immutable Git objects are flushed before publishing a recovery journal; the working file, index, branch reference and metadata can then be finalized after an interrupted save. Deletion records a tombstone before removing only the selected repository and metadata. Saved workflow documents remain untouched.
-
-Schema cards can be reordered by dragging a card before or after another. Cards slide into a local preview as the pointer moves; only dropping saves that order, while cancellation restores the original arrangement. Their order lives in the metadata database's `state` store, separately from schema documents and Git history. Moves resolve the latest order under the same browser lock; dropping a card in its existing position adds no write. New documents append, deletion removes their order entries, and older metadata without an order falls back to creation time and stable ID.
+Cards show the complete document in the same read-only JSON viewer as operation
+reports, with collapsible scopes, line wrapping and copying. The viewer renders
+on first expansion, even for disabled documents. Each opening exposes paths and
+HTTP methods while folding operation bodies and other nested fields. Viewing
+changes neither content nor Git history.
 
 ### Available operations
 
-Seed the bundled examples only once, preserving their `demo` and `httpbin` IDs and authored navigation groups. Deleting all documents must not reseed them. Load schema repositories before restoring workflows. Successfully loaded, enabled documents replace the active registry atomically and immediately update navigation, matching and reports. Removed or disabled operations are unavailable for future execution; existing workflow references retain their IDs and can work again when the same document is enabled. Replacement retains IDs but changed or removed endpoints remain subject to workflow execution validation.
+Bundled examples seed once, preserving the `demo` and `httpbin` IDs and authored
+navigation groups. Deleting every document does not reseed them. Schema
+repositories load before workflows are restored.
 
-### Validation and failures
+Successfully loaded, enabled documents replace the registry atomically, updating
+navigation, matching and reports immediately. Removed or disabled operations
+cannot execute, but saved workflow references keep their IDs and can work again
+when the same document is enabled. Replacement retains IDs; changed or removed
+endpoints remain subject to execution validation.
 
-Uploads are limited to 10 MiB and must be compatible OpenAPI 3.0/3.1 documents. Validate metadata, JSON-compatible YAML values, references, operation identities, executable inputs and server URLs before persisting. Existing execution limitations are reported explicitly rather than silently dropping unsupported operations. No external references are fetched. Effective HTTP(S) server URLs honor document, path and operation overrides and server-variable defaults. Joining operation paths preserves the server base path and rejects authority changes or traversal. This validation checks application compatibility; it is not a general-purpose OpenAPI conformance validator.
+## Persistence
 
-Validation and storage failures retain the current document list and show an actionable error in the section. Failed initial loading disables document mutations until a retry succeeds. Cache/fallback data is never imported into a repository automatically. Browser tests cover startup, persistence, active operations, replacement history, isolation, deletion, invalid input and retry.
+### Repository identity
+
+Each document has an immutable ID and its own Git repository at
+`/repositories/<id>` in LightningFS `v1/catalogs`. Different files receive distinct
+IDs even when filenames match. The predictably formatted `schema.json` working
+file is authoritative persisted content.
+
+Import creates the first commit; replacement commits to the same repository.
+Identical content adds no commit. Historical reads use immutable Git blobs
+without changing the working file.
+
+### Metadata and recovery
+
+`v1/catalogs/index` stores document metadata, repository paths, enablement,
+initialization state and recovery journals, not another editable schema copy.
+Enablement remains outside Git.
+
+A serialized queue and browser lock protect writes across tabs. Immutable Git
+objects are flushed before publishing a recovery journal, allowing the working
+file, index, branch reference and metadata to be finalized after interruption.
+Deletion records a tombstone before removing only the selected repository and
+metadata. Saved workflows remain untouched.
+
+### Card ordering
+
+Cards slide into a local preview during dragging. Dropping before or after
+another card saves the order; cancellation restores the original arrangement.
+Order lives in the metadata database's `state` store, outside schema documents
+and Git history.
+
+Moves resolve the latest order under the same browser lock; dropping in the
+existing position causes no write. New documents append, deletion removes their
+entries, and older metadata without a saved order falls back to creation time
+and stable ID.
+
+## Validation
+
+### Documents and server URLs
+
+Uploads are limited to 10 MiB and compatible OpenAPI 3.0/3.1 documents. Validation
+covers metadata, JSON-compatible YAML values, references, operation identities,
+executable inputs and server URLs before persistence. Execution limitations are
+reported explicitly; unsupported operations are not silently omitted. External
+references are not fetched.
+
+Effective HTTP(S) server URLs honor document, path and operation overrides and
+server-variable defaults. Joining paths preserves the server base path and
+rejects authority changes or traversal. These checks establish application
+compatibility, not general OpenAPI conformance.
+
+### Failure handling
+
+Validation and storage failures retain the document list and show actionable
+errors in Schemas. Failed initial loading blocks mutations until retry succeeds.
+Cache or fallback data is never imported into a repository automatically.
+
+Browser tests cover startup, persistence, active operations, replacement history,
+isolation, deletion, invalid input and retry.
 
 ## Workflow projection
 
 ### Inputs
 
-Parameter panels group fields by their OpenAPI location. Path-level parameters are combined with operation-level parameters, with the latter overriding matching names and locations. The request-body panel uses the operation's selected media type. Nested objects and arrays become connected data panels with schema-derived names, types and required markers. Unknown or undocumented structure remains explicit rather than acquiring an invented schema.
+Parameter panels group fields by OpenAPI location. Operation-level parameters
+override path-level parameters with the same name and location. Request bodies
+use the selected media type. Nested objects and arrays form connected panels with
+schema-derived names, types and required markers. Unknown or undocumented
+structure remains explicit; no schema is invented.
 
-### Responses and execution
+### Response model
 
-New HTTP nodes expose one response object for each documented status and representation. Its fields are **Status**, **Status message**, **Response body**, and **Response headers**. Body schemas and documented response headers produce their own nested fields. Responses without content have a null body; unavailable schemas remain explicitly unknown.
+New HTTP nodes expose one response object per documented status and
+representation, containing **Status**, **Status message**, **Response body** and
+**Response headers**. Body schemas and documented headers supply nested fields.
+Responses without content have a null body; missing schemas remain unknown.
 
-HTTP execution retains the actual status, status message, readable headers, and parsed body. An empty status message stays empty. Header lookup is case-insensitive. Documented header values are decoded for typed workflow mappings; undeclared headers remain text. Failed requests retain their response metadata and remain retryable.
+This envelope wraps the OpenAPI response; it does not add a level inside the
+API's response body.
 
-The envelope is application structure around the OpenAPI response, not an extra level inside the API's response body. Header serialization follows the [OpenAPI Header Object](https://spec.openapis.org/oas/v3.1.0.html#header-object) rules supported by the workflow runner.
+### Execution
+
+Execution retains the actual status, status message, readable headers and parsed
+body. Empty status messages stay empty. Header lookup is case-insensitive;
+documented values are decoded for typed mappings, while undeclared headers stay
+text. Failed requests retain response metadata and remain retryable.
+
+Header serialization follows the workflow runner's supported
+[OpenAPI Header Object](https://spec.openapis.org/oas/v3.1.0.html#header-object) rules.
 
 ### Saved workflow compatibility
 
-Response field identities use `response:<status>[:media]` and JSON pointers into the response object. Previously saved `output:<status>[:media]` fields remain rooted in the body, preserving their existing mappings. Saved graphs and Git snapshots are not regenerated from a potentially changed OpenAPI document; newly added HTTP nodes use the response layout.
+Response field identities use `response:<status>[:media]` and JSON pointers into
+the response object. Legacy `output:<status>[:media]` fields remain body-rooted,
+preserving existing mappings. Saved graphs and Git snapshots are not regenerated
+from changed documents; newly added HTTP nodes use the response layout.
