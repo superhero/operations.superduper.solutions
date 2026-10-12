@@ -190,10 +190,6 @@ tests are needed.
 
 ## Dependency packages
 
-All direct dependencies from `dependencies` and `devDependencies` in
-[`package.json`](package.json) are listed below. Transitive dependencies are
-recorded in [`package-lock.json`](package-lock.json).
-
 <a href="https://www.npmjs.com/package/bits-ui"><img src=".github/badges/version-dependency-bits-ui.svg" alt="bits-ui declared version"></a>
 
 Provides accessible dialog, select, popover, and tooltip primitives used by the
@@ -203,7 +199,9 @@ webpage’s shared controls and `shadcn-svelte` sheet components.
 
 <a href="https://www.npmjs.com/package/buffer"><img src=".github/badges/version-dependency-buffer.svg" alt="buffer declared version"></a>
 
-Provides browser-compatible `Buffer` support for local Git operations.
+Provides the Node.js `Buffer` API that `isomorphic-git` needs to read and write
+binary Git data in the browser. LightningFS stores the resulting repository
+files locally in IndexedDB.
 
 ---
 
@@ -233,8 +231,7 @@ combined test report.
 <a href="https://www.npmjs.com/package/idb"><img src=".github/badges/version-dependency-idb.svg" alt="idb declared version"></a>
 
 Provides promise-based IndexedDB access for settings, workflow and schema
-catalogues, storage inspection, and database migrations. LightningFS manages its
-own filesystem persistence separately.
+catalogues, storage inspection, and database migrations.
 
 ---
 
