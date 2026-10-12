@@ -37,11 +37,15 @@ explain the work and where it is integrated. The first graph shows where
 `develop` and `release` branch from; later examples omit the earlier shared
 history of `main` and `develop`.
 
-### Everyday changes
+### Development to release
 
 Features and integration fixes return to `develop`. Documentation returns only
 to its chosen target: `develop` in this example, or `main` for released docs.
-Here, a release branches from `develop` after feature integration.
+Here, a release branches from `develop` after feature integration. Later fix and
+documentation updates are explicitly incorporated before publication to `main`.
+
+The illustrated `develop` → `release` updates are not yet supported by
+[CI branch validation](../../.github/scripts/validate-pr.sh).
 
 ```mermaid
 %%{init: {"theme": "base", "themeCSS": ".commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
@@ -68,10 +72,17 @@ gitGraph BT:
     commit id: "Fix"
     checkout develop
     merge "bugfix" id: "Integrate fix"
+    checkout "release"
+    merge develop id: "Include fix"
+    checkout develop
     branch "docs" order: 5
     commit id: "Documentation"
     checkout develop
     merge "docs" id: "Integrate docs"
+    checkout "release"
+    merge develop id: "Include docs"
+    checkout main
+    merge "release" id: "Publish" tag: "1.1.0"
 ```
 
 ### Preparing and publishing a release
