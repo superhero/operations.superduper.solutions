@@ -21,6 +21,10 @@ Feature: Gitflow validation and guarded merging
       | feature/editor | release/1.2.3 | rejected |
       | bugfix/editor  | main          | rejected |
       | bugfix/editor  | support/1.x   | rejected |
+      | docs/readme    | develop       | accepted |
+      | docs/readme    | main          | accepted |
+      | docs/readme    | release/1.2.3 | rejected |
+      | docs/readme    | support/1.x   | rejected |
 
   Scenario Outline: Release stabilization accepts bugfixes only before publication
     Given the release stabilization target is "<state>"
@@ -194,6 +198,11 @@ Feature: Gitflow validation and guarded merging
       | feature/editor | develop       | 2     | 0      | squash       |
       | bugfix/editor  | develop       | 1     | 0      | fast-forward |
       | bugfix/editor  | develop       | 1     | 1      | squash       |
+      | docs/readme    | develop       | 1     | 0      | fast-forward |
+      | docs/readme    | develop       | 2     | 0      | squash       |
+      | docs/readme    | develop       | 1     | 1      | squash       |
+      | docs/readme    | main          | 1     | 0      | fast-forward |
+      | docs/readme    | main          | 2     | 0      | squash       |
       | main           | develop       | 2     | 0      | fast-forward |
       | main           | develop       | 2     | 1      | merge        |
       | release/1.2.3  | develop       | 2     | 0      | fast-forward |

@@ -39,9 +39,14 @@ branches="$(jq -cse '
 
 count="$(jq 'length' <<< "$branches")"
 (( count > 0 )) || fail 'No branches were returned; dependency checks cannot run.'
-(( count <= 256 )) || fail "Found $count branches; GitHub Actions supports at most 256 jobs in a matrix. No branches were omitted."
 while IFS= read -r branch; do
   git check-ref-format "refs/heads/$branch" >/dev/null 2>&1 || fail "GitHub returned an invalid branch name: $branch"
 done < <(jq -r '.[].branch' <<< "$branches")
+
+# Generated SVG commits would violate the Markdown-only documentation route.
+branches="$(jq -c '[.[] | select(.branch | startswith("docs/") | not)]' <<< "$branches")"
+count="$(jq 'length' <<< "$branches")"
+(( count > 0 )) || fail 'No branches are eligible for dependency checks after excluding docs/*.'
+(( count <= 256 )) || fail "Found $count branches; GitHub Actions supports at most 256 jobs in a matrix. No eligible branches were omitted."
 
 printf '%s\n' "$branches"

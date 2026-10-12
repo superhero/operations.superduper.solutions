@@ -21,6 +21,12 @@ Given("the dependency branch API fails", function ()
   this.dependencyBranches = { exit_code: 1, stderr: `HTTP 403: denied ${this.automation.env.GH_TOKEN}\n` };
 });
 
+Given("the dependency branch API includes 256 documentation branches", function ()
+{
+  this.dependencyBranches = { response: [branch("main"), branch("develop"), branch("feature/docs"),
+    ...Array.from({ length: 256 }, (_, index) => branch(`docs/change-${index}`))] };
+});
+
 Given("the dependency branch API returns {string}", function (data)
 {
   const responses = {
@@ -28,6 +34,7 @@ Given("the dependency branch API returns {string}", function (data)
     empty: { response: [] },
     "invalid SHA": { response: [branch("main", "not-a-commit")] },
     "invalid ref": { response: [branch("feature/../bad")] },
+    "only docs": { response: [branch("docs/readme")] },
     "257 branches": { response: Array.from({ length: 257 }, (_, index) => branch(`feature/change-${index}`)) }
   };
   assert.ok(Object.hasOwn(responses, data), `Unknown branch API data: ${data}`);
@@ -55,4 +62,11 @@ Then("dependency branch discovery fails with {string}", function (reason)
   assert.equal(this.result.stdout, "");
   for (const value of [reason, REPOSITORY, endpoint])
     assert.ok(this.result.stderr.includes(value), this.result.stderr);
+});
+
+Then("the dependency matrix contains only the application branches", function ()
+{
+  assert.equal(this.result.status, 0, this.result.stderr);
+  assert.equal(this.result.stderr, "");
+  assert.deepEqual(JSON.parse(this.result.stdout), ["main", "develop", "feature/docs"].map(name => ({ branch: name, sha: SHA })));
 });

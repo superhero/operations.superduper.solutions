@@ -14,6 +14,10 @@ Thank you for contributing to `operations.superduper.solutions`.
 See [Repository automation](.github/workflows/README.md) for local checks, test
 reports, badges, CI workflows, releases, and deployment.
 
+For Markdown-only changes, use a `docs/<topic>` branch from the intended target,
+`develop` or `main`. See the [documentation workflow](.github/workflows/README.md#documentation-only-changes)
+for the fast validation and merge path.
+
 ## Licensing
 
 ### Contribution license

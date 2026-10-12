@@ -5,6 +5,7 @@ Validation, reports, badges, and GitHub Actions workflows. See
 [Gitflow](../../docs/adr/gitflow.md) for branch policy.
 
 - [Local validation](#local-validation)
+- [Documentation-only changes](#documentation-only-changes)
 - [Test reports](#test-reports)
 - [Scenario badges](#scenario-badges), [dependency badges](#dependency-badges), and [coverage badges](#coverage-badges)
 - [Branch workflows](#branch-workflows) and [merging](#validation-and-merging)
@@ -84,9 +85,74 @@ npm run badges:coverage
 Release CI checks both files against its measured coverage with
 `npm run badges:coverage -- --check`. Badge updates do not create bot commits.
 
+## Documentation-only changes
+
+Create `docs/<topic>` from the branch you intend to update, either `develop` or
+`main`, and open a PR to that same target. Only regular, non-executable Markdown
+files (`.md`, case-insensitive) may be added, edited, renamed, or deleted. Images,
+badges, configuration, scripts, and other file types use the normal feature or
+bugfix path, even when related to documentation.
+
+[`ci-docs.yml`](ci-docs.yml) checks the complete Git change set from merge base to
+the pinned PR head. It inspects both sides of renames, rejects symlinks,
+executable files, submodules, and empty changes, and fails if Git cannot verify
+the history. It does not rely on the capped GitHub changed-files list.
+
+The workflow runs trusted automation from the default branch using
+`pull_request_target`. PR content is fetched only as Git objects and is never
+checked out or executed. No packages are installed, and no test suites, builds,
+releases, tags, deployments, reports, or synchronization jobs run. The normal
+`main` and `develop` workflows skip `docs/*` PRs; mixed changes fail the
+documentation check rather than falling through to application CI.
+
+After successful validation, the App merges same-repository, non-draft PRs using
+the existing exact-head and target-revision checks. A single commit fast-forwards
+when the target is its ancestor; other documentation PRs squash. A documentation
+branch targeting `main` must include current `main`, apart from dependency-badge
+updates. Choose each destination explicitly: merging into `main` does not open a
+PR to `develop` or synchronize another branch.
+
+Before a documentation merge into `main`, a lightweight check ensures that no
+production release workflow is currently running. If one is active, retry the
+documentation workflow after it finishes; this prevents a documentation commit
+from interrupting that release's tagging or deployment.
+
+To check a documentation branch locally after fetching the target:
+
+```sh
+bash .github/scripts/validate-documentation-changes.sh \
+  "$(git rev-parse origin/develop)" "$(git rev-parse HEAD)"
+```
+
+Use `origin/main` instead when targeting `main`.
+
+### Enabling the documentation workflow
+
+The automation itself changes YAML and shell scripts, so its initial rollout
+uses normal CI and release promotion. The workflow and helpers must reach the
+default branch (`main`), and the normal CI exclusions must exist in both target
+branches, before the fast path is available for each target.
+
+GitHub's public-repository event policy also needs an explicit
+`pull_request_target` allowance scoped to `.github/workflows/ci-docs.yml`.
+The [policy definition](../policies/documentation-events.json) limits that
+allowance to trusted documentation automation. An administrator can create the
+policy once from the repository root, or update the existing policy if already
+configured:
+
+```sh
+gh api --method POST \
+  repos/superhero/operations.superduper.solutions/actions/policies \
+  -H 'X-GitHub-Api-Version: 2026-03-10' \
+  --input .github/policies/documentation-events.json
+```
+
+See [GitHub's event policy guidance](https://docs.github.com/en/actions/reference/security/securely-using-pull_request_target)
+and [Actions policy API](https://docs.github.com/en/rest/actions/policies#create-a-repository-actions-policy).
+
 ## Branch workflows
 
-Each CI workflow owns one target branch or branch family:
+Application CI is split by target branch or branch family:
 
 - [`ci-develop.yml`](ci-develop.yml) validates PRs into `develop`.
 - [`ci-release.yml`](ci-release.yml) validates PRs into `release/**`.
@@ -244,7 +310,7 @@ commit to dependency-version SVGs and the exact checked branch head.
 ## Scheduled dependency checks
 
 `cron-outdated.yml` checks dependencies daily at 06:00 UTC and can also be run
-manually. Every run discovers all repository branches and checks each branch's
+manually. Every run discovers repository branches, excludes `docs/*`, and checks each remaining branch's
 commit at discovery time. It installs dependencies with lifecycle scripts disabled
 and runs `update-dependency-status.sh` from the workflow's revision. The helper
 reports each branch's `npm outdated --json` results in the workflow logs and
@@ -255,6 +321,8 @@ discovery is skipped; a concurrent change during publication rejects the commit
 without overwriting it. A failure on one branch does not cancel the other checks.
 This workflow has no PR or push triggers. Badge-only pushes do not deploy releases;
 updates to an open PR's source branch still run its normal CI checks.
+Documentation branches are excluded from dependency checks and badge publication
+so generated SVGs cannot enter their Markdown-only changes.
 The branch CI workflows have no scheduled or manual dependency refreshes.
 README package-version badges are tracked in `.github/badges/`. Dependency
 checks and the coverage badge do not upload to R2. Main release promotion

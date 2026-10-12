@@ -71,6 +71,12 @@ Given("the publication branch is {string}", function (state)
   this.publication.responses = [remoteHead(this.publication, state === "deleted" ? null : { target: { oid: OTHER_SHA } })];
 });
 
+Given("dependency badge publication targets a documentation branch", function ()
+{
+  this.publication.branch = "docs/guides/readme";
+  this.publication.responses = [];
+});
+
 Given("the badge publication API fails during {string}", function (operation)
 {
   const token = this.automation.env.GH_TOKEN;
@@ -98,6 +104,16 @@ Then("publication reports no commit and makes no remote request", function ()
   assert.ok(this.result.stdout.includes("no commit needed"), this.result.stdout);
   assert.deepEqual(this.automation.calls(), []);
   assert.equal(git(this.publication.project, "status", "--porcelain=v1", "--untracked-files=all"), this.publication.status);
+});
+
+Then("publication skips documentation without any remote request or checkout changes", function ()
+{
+  assert.equal(this.result.status, 0, this.result.stderr);
+  assert.ok(this.result.stdout.includes("Markdown-only documentation branches do not receive generated badges"), this.result.stdout);
+  assert.deepEqual(this.automation.calls(), []);
+  assert.ok(readFileSync(this.publication.summary, "utf8").includes("publication skipped"));
+  assert.equal(git(this.publication.project, "status", "--porcelain=v1", "--untracked-files=all"), this.publication.status);
+  assert.equal(git(this.publication.project, "rev-parse", "HEAD"), this.publication.sha);
 });
 
 Then("publication sends only changed added and deleted badges with an expected head", function ()

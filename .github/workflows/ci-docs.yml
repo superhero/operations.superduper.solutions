@@ -1,0 +1,98 @@
+# Copyright (C) 2026 Erik Landvall
+# SPDX-License-Identifier: AGPL-3.0-only
+# See LICENSE and LICENSE-ADDITIONAL-TERMS.
+name: ci-docs
+run-name: "#${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
+
+# Use the trusted default-branch revision selected by pull_request_target.
+# Proposed and target revisions are Git objects only, never checked out.
+on:
+  pull_request_target:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  documentation:
+    name: Validate and Merge Documentation
+    if: startsWith(github.head_ref, 'docs/')
+    concurrency:
+      group: merge-${{ github.base_ref }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout trusted default-branch automation
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch proposed documentation objects
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ && "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            echo '::error::Full pull request base and head SHAs are required.' >&2
+            exit 1
+          }
+          authorization="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w 0)"
+          echo "::add-mask::$authorization"
+          GIT_CONFIG_COUNT=1 \
+            GIT_CONFIG_KEY_0="http.${GITHUB_SERVER_URL}/.extraheader" \
+            GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $authorization" \
+            git fetch --no-tags origin "$BASE_SHA" "$HEAD_SHA"
+
+      - name: Validate documentation route and contents
+        env:
+          REPOSITORY: ${{ github.repository }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+          BASE_BRANCH: ${{ github.base_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          bash .github/scripts/validate-pr.sh "$REPOSITORY" "$HEAD_BRANCH" "$BASE_BRANCH" "$HEAD_SHA"
+          bash .github/scripts/validate-documentation-changes.sh "$BASE_SHA" "$HEAD_SHA"
+
+      - name: Check documentation merge timing
+        if: >-
+          github.event.pull_request.head.repo.full_name == github.repository
+          && !github.event.pull_request.draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          BASE_BRANCH: ${{ github.base_ref }}
+        run: bash .github/scripts/validate-documentation-merge.sh "$REPOSITORY" "$BASE_BRANCH"
+
+      - name: Create GitHub App token
+        if: >-
+          github.event.pull_request.head.repo.full_name == github.repository
+          && !github.event.pull_request.draft
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Merge validated documentation
+        if: >-
+          github.event.pull_request.head.repo.full_name == github.repository
+          && !github.event.pull_request.draft
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_BRANCH: ${{ github.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: bash .github/scripts/auto-merge.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA" "$BASE_BRANCH" "$BASE_SHA" "$HEAD_BRANCH"

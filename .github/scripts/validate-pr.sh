@@ -18,7 +18,7 @@ fail() {
   fail 'Usage: validate-pr.sh <repository> <head-branch> <base-branch> <full-head-sha>; four arguments and a full 40-character head SHA are required.'
 
 case "$base_branch:$head_branch" in
-  main:release/*|main:hotfix/*|develop:feature/*|develop:bugfix/*|develop:release/*|develop:hotfix/*|develop:main|release/*:bugfix/*|release/*:hotfix/*|support/*:hotfix/*) ;;
+  main:docs/*|develop:docs/*|main:release/*|main:hotfix/*|develop:feature/*|develop:bugfix/*|develop:release/*|develop:hotfix/*|develop:main|release/*:bugfix/*|release/*:hotfix/*|support/*:hotfix/*) ;;
   *) fail "Branch '$head_branch' may not merge into '$base_branch'." ;;
 esac
 

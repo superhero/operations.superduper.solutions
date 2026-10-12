@@ -9,6 +9,12 @@ Feature: Dependency badge commits preserve the checked branch head
     When dependency badges are published
     Then publication reports no commit and makes no remote request
 
+  Scenario: Documentation branches cannot receive generated badge commits
+    Given a pinned checkout with dependency badge changes
+    And dependency badge publication targets a documentation branch
+    When dependency badges are published
+    Then publication skips documentation without any remote request or checkout changes
+
   Scenario: A dependency badge commit contains only changed badge files
     Given a pinned checkout with dependency badge changes
     When dependency badges are published

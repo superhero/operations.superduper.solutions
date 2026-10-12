@@ -2,12 +2,17 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @automation
-Feature: Discover every branch for scheduled dependency checks
+Feature: Discover eligible branches for scheduled dependency checks
 
   Scenario: Dependency branch discovery includes every page and pins each branch revision
     Given the dependency branch API returns multiple pages
     When dependency branches are discovered
     Then the dependency matrix contains every branch and its commit
+
+  Scenario: Documentation branches never enter the dependency matrix or consume its capacity
+    Given the dependency branch API includes 256 documentation branches
+    When dependency branches are discovered
+    Then the dependency matrix contains only the application branches
 
   Scenario: Dependency branch discovery explains GitHub failures without credentials
     Given the dependency branch API fails
@@ -25,6 +30,7 @@ Feature: Discover every branch for scheduled dependency checks
       | empty          | No branches were returned           |
       | invalid SHA    | GitHub returned invalid branch data |
       | invalid ref    | GitHub returned an invalid branch name |
+      | only docs      | No branches are eligible for dependency checks |
 
   Scenario: Dependency branch discovery never silently drops branches at the matrix limit
     Given the dependency branch API returns "257 branches"

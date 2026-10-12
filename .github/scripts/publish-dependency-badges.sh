@@ -26,6 +26,10 @@ summary() {
 if [[ -z "$branch" ]] || ! git check-ref-format "refs/heads/$branch" >/dev/null 2>&1; then
   fail 'Expected a valid branch name.'
 fi
+if [[ "$branch" == docs/* ]]; then
+  summary "Dependency badge publication skipped for $repository:$branch: Markdown-only documentation branches do not receive generated badges."
+  exit 0
+fi
 [[ -d "$project" ]] || fail 'Project directory does not exist.'
 
 # Check every ancestor before Git or payload reads can follow a checkout-supplied link.

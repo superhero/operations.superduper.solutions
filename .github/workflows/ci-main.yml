@@ -20,6 +20,7 @@ permissions:
 jobs:
   workflow-checks:
     name: Automation Checks
+    if: "!startsWith(github.head_ref, 'docs/')"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -63,7 +64,9 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
-    if: github.head_ref != 'develop'
+    if: >-
+      !startsWith(github.head_ref, 'docs/')
+      && (github.head_ref != 'develop')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -87,7 +90,8 @@ jobs:
     name: Create Release
     needs: workflow-checks
     if: >-
-      github.head_ref == 'develop'
+      !startsWith(github.head_ref, 'docs/')
+      && github.head_ref == 'develop'
       && github.event.pull_request.head.repo.full_name == github.repository
       && !github.event.pull_request.draft
     concurrency:
@@ -123,7 +127,9 @@ jobs:
   application:
     name: Test and Build Release
     needs: [validate-pr, workflow-checks]
-    if: github.head_ref != 'develop'
+    if: >-
+      !startsWith(github.head_ref, 'docs/')
+      && (github.head_ref != 'develop')
     permissions:
       actions: read
       contents: read
@@ -279,7 +285,8 @@ jobs:
     name: Deploy Preview
     needs: application
     if: >-
-      github.event.pull_request.head.repo.full_name == github.repository
+      !startsWith(github.head_ref, 'docs/')
+      && github.event.pull_request.head.repo.full_name == github.repository
       && !github.event.pull_request.draft
     concurrency:
       group: pages-${{ github.head_ref }}
@@ -356,7 +363,8 @@ jobs:
       cancel-in-progress: false
     needs: [workflow-checks, validate-pr, application, preview]
     if: >-
-      github.event.pull_request.head.repo.full_name == github.repository
+      !startsWith(github.head_ref, 'docs/')
+      && github.event.pull_request.head.repo.full_name == github.repository
       && !github.event.pull_request.draft
     outputs:
       merge_sha: ${{ steps.release.outputs.merge_sha }}
@@ -393,6 +401,7 @@ jobs:
 
   create-release-tag:
     name: Create Release Tag
+    if: "!startsWith(github.head_ref, 'docs/')"
     needs: auto-merge
     permissions:
       contents: read
@@ -474,6 +483,7 @@ jobs:
 
   backmerge-develop:
     name: Synchronize Released Code
+    if: "!startsWith(github.head_ref, 'docs/')"
     needs: create-release-tag
     concurrency:
       group: post-release-backmerge
@@ -508,6 +518,7 @@ jobs:
 
   promote-release:
     name: Promote Release
+    if: "!startsWith(github.head_ref, 'docs/')"
     needs: create-release-tag
     # Keep all production writes in one serialized job. Tagging remains independent.
     concurrency:
