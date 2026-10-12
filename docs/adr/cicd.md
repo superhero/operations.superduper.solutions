@@ -110,19 +110,17 @@ gitGraph BT:
 
 ### Updating documentation
 
-One `docs/<topic>` branch carries three successive documentation edits, merged
-into `develop`, `release`, and `main` through explicitly selected PRs. The release
-branches from `develop` after its documentation merge. After the release update,
-the release is validated and merged into `main`, then `main` is merged back into
-`develop`. The final docs edit goes to `main` afterward.
+One `docs/<topic>` branch carries two successive documentation edits, merged
+into `develop` and `main` through explicitly selected PRs. The release branches
+from `develop` after the first documentation merge, is validated and merged into
+`main`, then `main` is merged back into `develop`. The second docs edit goes to
+`main` afterward.
+
 The shared docs branch starts from `main` and accumulates only documentation
 changes; each later edit includes the earlier ones. Every target must pass the
-full Markdown-only check.
-
-The graph shows the intended paths. CI currently supports documentation PRs only
-to `main` and `develop`; release targeting and reliable reuse across targets are
-planned automation work. Targets are not synchronized automatically, and
-documentation PRs do not publish releases.
+full Markdown-only check. Reliable branch reuse across targets remains planned
+automation work. The documentation workflow itself does not publish releases or
+synchronize target branches.
 
 ```mermaid
 %%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2) { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
@@ -144,10 +142,6 @@ gitGraph BT:
     merge docs id: "Update develop"
     branch release order: 1
     commit id: "Create release branch"
-    checkout docs
-    commit id: "Document release"
-    checkout release
-    merge docs id: "Update release"
     checkout main
     merge release id: "Deployed" tag: "1.1.0"
     checkout develop
