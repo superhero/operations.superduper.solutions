@@ -34,7 +34,7 @@ the application.
 Read each graph **from bottom to top**. Each example shows one part of the
 branching model. Branch labels omit topic and version suffixes; commit labels
 explain the work and where it is integrated. The first graph shows where
-`develop` and `release` branch from; later examples omit the earlier shared
+`develop` and `release` branch from; the hotfix example omits the earlier shared
 history of `main` and `develop`.
 
 ### Development to release
@@ -84,41 +84,6 @@ gitGraph BT:
     merge "docs" id: "Integrate docs"
     checkout "release"
     merge develop id: "Include docs"
-    checkout main
-    merge "release" id: "Deployed" tag: "1.1.0"
-    checkout develop
-    merge main id: "Sync release"
-```
-
-### Preparing and publishing a release
-
-A release incorporates `main` and receives stabilization fixes while development
-continues. After validation, it is published to `main`, tagged, and synchronized
-back into `develop`.
-
-```mermaid
-%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel { font-weight: 700; } .branchLabelBkg { clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:last-of-type { visibility: hidden; } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
-    "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
-    "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
-    "git1": "#A3C441", "gitBranchLabel1": "#0D1117",
-    "git2": "#E8793E", "gitBranchLabel2": "#0D1117",
-    "git3": "#39B8B0", "gitBranchLabel3": "#0D1117"
-}}}%%
-gitGraph BT:
-    %% In BT order, the initial commit note is the last label group; its tag stays visible.
-    branch develop order: 3
-    checkout main
-    commit id: "Released" tag: "1.0.0"
-    checkout develop
-    commit id: "Integrated work"
-    branch "release" order: 1
-    merge main id: "Sync main"
-    branch "bugfix" order: 2
-    commit id: "Stabilize"
-    checkout develop
-    commit id: "Next work"
-    checkout "release"
-    merge "bugfix" id: "Integrate fix"
     checkout main
     merge "release" id: "Deployed" tag: "1.1.0"
     checkout develop
