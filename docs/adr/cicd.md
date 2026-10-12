@@ -167,9 +167,13 @@ gitGraph BT:
     merge docs id: "Update main"
 ```
 
+### Branch reuse
+
 Here, a docs branch from `main` targets `develop` first, then `main` after a
 release. Later edits retain earlier documentation changes; reliable branch reuse
 across targets remains planned automation work.
+
+### Validation and automation
 
 Each target validates the full Markdown-only change set. Docs PRs skip
 application tests and builds. They do not create release versions or tags,
