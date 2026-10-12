@@ -1,4 +1,4 @@
-# Simplify
+# Simple, clear solutions take precedence over unnecessary complexity
 
 > Less is more.
 >

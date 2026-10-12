@@ -1,10 +1,12 @@
-# Background loading and persistence
+# Dedicated workers handle background processing to reduce main-thread workload
 
-Schema processing and workflow Git operations run in separate, persistent dedicated workers. Both use inline Vite workers so the production application remains a single HTML file. The browser resource metrics count these workers alongside the metrics recorder.
+Background computation and persistence share resources with rendering when they run on the main thread. Dedicated workers handle eligible work so the interface has less competing work to perform. Schema processing, workflow Git operations and resource recording have separate, persistent workers, bundled as inline Vite workers so the production application remains a single HTML file.
 
 The schema worker prepares storage namespaces, reads and writes repositories, parses uploads, validates documents, extracts operations, and prepares summaries and source fingerprints. The page publishes the resulting registry without repeating validation or extraction. Unchanged sources retain their existing operation objects. Card summaries use the prepared metadata instead of inspecting the full schema on every render.
 
 The workflow worker owns the editor's repository client for initialization, loading, autosave and history. Existing Web Locks, IndexedDB stores and recovery journals remain authoritative. It forwards startup stages and repository notifications to the page. Direct backend entry points remain available to the metrics worker and persistence tests.
+
+The resource recorder collects measurements, aggregates intervals and persists their history in its own worker. Window-only APIs use an asynchronous bridge to the main thread; see [resource monitoring](resource-monitoring.md).
 
 Worker calls preserve error names, messages, stacks, codes and cause chains. Failed calls reject normally; no persisted fallback copy is introduced. Development disposal drains accepted calls before terminating a worker so hot replacement does not interrupt a write.
 
@@ -22,7 +24,7 @@ do not replay startup progress.
 
 On success, show `Completed` before fading out the loading screen. On failure,
 release the screen when the app has rendered so its recovery controls remain
-usable. See [development diagnostics](development-diagnostics.md) for settings
+usable. See [diagnostics and error reporting](diagnostics-and-error-reporting.md) for settings
 storage errors and recovery.
 
 To develop the animation, run `npm run dev` and open `/?dev-loading=1`. This pauses

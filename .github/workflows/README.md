@@ -2,7 +2,7 @@
 
 Validation, reports, badges, and GitHub Actions workflows. See
 [Contributing](../../CONTRIBUTING.md) for project guidance and
-[Use Gitflow with automated releases](../../docs/adr/branching-and-releases.md)
+[Continuous integration and deployment](../../docs/adr/branching-and-releases.md)
 for the branching and release decision.
 
 - [Local validation](#local-validation)
@@ -28,13 +28,13 @@ shellcheck .github/scripts/*.sh
 
 Automation uses the same Cucumber feature and JavaScript step format as the
 application tests. Install the locked dependencies with `npm ci`; the automation
-scenarios also require Bash and jq. They run the real shell scripts with simulated
+scenarios also require Bash, Git and jq. They run the real shell scripts with simulated
 GitHub and Cloudflare responses in temporary directories, without creating
 releases or deploying. Unexpected external requests fail the scenario.
 
 ## Test reports
 
-See [Testing and test reports](../../docs/adr/testing-and-reports.md) for the
+See [Testing, coverage and reporting](../../docs/adr/testing-coverage-and-reporting.md) for the
 Cucumber decision and the pending standalone-test reporting gap.
 
 The source, acceptance, automation, and browser profiles write Cucumber JSON to
@@ -75,7 +75,7 @@ Registry failures leave the badges unchanged.
 
 ## Coverage badges
 
-See [Source coverage](../../docs/adr/source-coverage.md) for the measured scope
+See [Testing, coverage and reporting](../../docs/adr/testing-coverage-and-reporting.md) for the measured scope
 and coverage requirements.
 
 The coverage badge records measured statement coverage in

@@ -1,4 +1,4 @@
-# Use Gitflow with automated releases
+# Continuous integration and deployment follow Gitflow, with a fully passing test suite required for release
 
 Keep ongoing development separate from released code, and publish the same
 revision and artifacts that passed validation. Use the

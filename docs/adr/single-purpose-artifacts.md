@@ -1,3 +1,6 @@
-# Single-Purpose Artifacts
+# Artifacts with distinct purposes are kept separate wherever practical
 
-Software artifacts should have one clearly defined primary purpose. Distinct behaviors or responsibilities should be separated into distinct artifacts whenever practical, rather than introducing multiple operational modes within the same artifact.
+Artifact boundaries follow their primary purpose. This applies to documents,
+code and tooling. Distinct responsibilities belong in separate artifacts when
+that separation clarifies their purpose; closely related responsibilities may
+remain together when splitting them would add unnecessary complexity.

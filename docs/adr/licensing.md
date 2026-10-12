@@ -1,4 +1,4 @@
-# Offer the project under AGPLv3-only
+# Project code and contributions are licensed under AGPLv3-only with additional terms under Section 7
 
 Use the same explicit license for first-party project material and contributions,
 while preserving author attribution and the project's additional terms.
