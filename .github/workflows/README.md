@@ -12,7 +12,7 @@ directory's workflow YAML. Reusable executable behavior belongs in
 [`../scripts/`](../scripts/README.md), its Cucumber coverage in
 [`../tests/`](../tests/README.md), and repository-administration payloads in
 [`../policies/`](../policies/README.md). See the
-[automation directory map](../README.md) for generated outputs and other files.
+[automation directory map](../DIRECTORY.md) for generated outputs and other files.
 
 - [Local validation](#local-validation)
 - [Test reports](#test-reports), [coverage reports](#coverage-reports) and [badges](#badges)
