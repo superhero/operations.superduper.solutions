@@ -110,39 +110,45 @@ gitGraph BT:
 
 ### Updating documentation
 
-A `docs/<topic>` branch can serve multiple explicitly selected targets: `main`,
-`develop`, and an active `release/*` branch. Each target gets its own PR; targets
-are not synchronized automatically. The documentation workflow does not publish
-releases.
+Each documentation edit starts from its intended target and merges back through
+its own PR. The first edit returns to `develop` before `release` branches from
+it. Two further edits start from and return to `release` and `main`, respectively.
+The numbered `docs` branches distinguish these independent edits.
 
 The graph shows the intended paths. CI currently supports documentation PRs only
-to `main` and `develop`; release targeting and reliable reuse across targets are
-planned automation work.
+to `main` and `develop`; release targeting is planned automation work. Targets
+are not synchronized automatically, and documentation PRs do not publish releases.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+3) { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2) { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
     "git0": "#4CB269", "gitBranchLabel0": "#0D1117",
     "git1": "#B1CD5E", "gitBranchLabel1": "#0D1117",
     "git2": "#57C3BC", "gitBranchLabel2": "#0D1117",
-    "git3": "#71B3FF", "gitBranchLabel3": "#0D1117"
+    "git3": "#71B3FF", "gitBranchLabel3": "#0D1117",
+    "git4": "#71B3FF", "gitBranchLabel4": "#0D1117",
+    "git5": "#71B3FF", "gitBranchLabel5": "#0D1117"
 }}}%%
 gitGraph BT:
-    %% Hide the three initial notes while retaining their branch connections.
+    %% Hide the two initial notes while retaining their branch connections.
     commit id: "Released" tag: "1.0.0"
     branch develop order: 2
     commit id: "Start"
-    branch release order: 1
-    commit id: "Release base"
-    checkout main
-    branch docs order: 3
-    commit id: "Documentation"
+    branch "docs/1" order: 3
+    commit id: "Document development"
     checkout develop
-    merge docs id: "Update develop"
+    merge "docs/1" id: "Update develop"
+    branch release order: 1
+    commit id: "Create release branch"
+    branch "docs/2" order: 4
+    commit id: "Document release"
     checkout release
-    merge docs id: "Update release"
+    merge "docs/2" id: "Update release"
     checkout main
-    merge docs id: "Update main"
+    branch "docs/3" order: 5
+    commit id: "Document main"
+    checkout main
+    merge "docs/3" id: "Update main"
 ```
 
 ### Merge methods
