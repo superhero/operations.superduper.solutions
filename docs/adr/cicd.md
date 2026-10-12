@@ -49,14 +49,14 @@ The illustrated `develop` → `release` updates are not yet supported by
 [CI branch validation](../../.github/scripts/validate-pr.sh).
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .branchLabelBkg { clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2) { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #A3C441; stroke-dasharray: none; } .commit-labels g:nth-last-of-type(4) { transform-box: fill-box; transform-origin: -24px calc(50% + 40px); transform: translate(calc(100% + 44px), -38px) rotate(10deg); } .commit-labels g:nth-last-of-type(4) .commit-label-bkg { stroke-width: 80px; clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 4px) calc(100% + 4px), 4px calc(100% + 4px), -10px calc(50% + 40px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .branchLabelBkg { clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2) { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; } .commit-labels g:nth-last-of-type(4) { transform-box: fill-box; transform-origin: -24px calc(50% + 40px); transform: translate(calc(100% + 44px), -38px) rotate(10deg); } .commit-labels g:nth-last-of-type(4) .commit-label-bkg { stroke-width: 80px; clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 4px) calc(100% + 4px), 4px calc(100% + 4px), -10px calc(50% + 40px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
-    "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
-    "git1": "#A3C441", "gitBranchLabel1": "#0D1117",
-    "git2": "#39B8B0", "gitBranchLabel2": "#0D1117",
-    "git3": "#E3B341", "gitBranchLabel3": "#0D1117",
-    "git4": "#E8793E", "gitBranchLabel4": "#0D1117",
-    "git5": "#58A6FF", "gitBranchLabel5": "#0D1117"
+    "git0": "#4CB269", "gitBranchLabel0": "#0D1117",
+    "git1": "#B1CD5E", "gitBranchLabel1": "#0D1117",
+    "git2": "#57C3BC", "gitBranchLabel2": "#0D1117",
+    "git3": "#E7BE5E", "gitBranchLabel3": "#0D1117",
+    "git4": "#EB8D5B", "gitBranchLabel4": "#0D1117",
+    "git5": "#71B3FF", "gitBranchLabel5": "#0D1117"
 }}}%%
 gitGraph BT:
     %% Keep the feature-integration note clear of the leftward release fork.
@@ -97,12 +97,12 @@ synchronized into `develop`. The hotfix branch also receives the tagged revision
 before carrying the fix into the active release.
 
 ```mermaid
-%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .branchLabelBkg { clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:last-of-type { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #A3C441; stroke-dasharray: none; } .commit-labels g:nth-last-of-type(2) { transform-box: fill-box; transform-origin: -24px calc(50% + 40px); transform: translate(calc(100% + 44px), -38px) rotate(10deg); } .commit-labels g:nth-last-of-type(2) .commit-label-bkg { stroke-width: 80px; clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 4px) calc(100% + 4px), 4px calc(100% + 4px), -10px calc(50% + 40px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
+%%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .branchLabelBkg { clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:last-of-type { visibility: hidden; } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { opacity: 1; stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; } .commit-labels g:nth-last-of-type(2) { transform-box: fill-box; transform-origin: -24px calc(50% + 40px); transform: translate(calc(100% + 44px), -38px) rotate(10deg); } .commit-labels g:nth-last-of-type(2) .commit-label-bkg { stroke-width: 80px; clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 4px) calc(100% + 4px), 4px calc(100% + 4px), -10px calc(50% + 40px), -4px calc(100% + 4px)) fill-box; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
     "commitLabelFontSize": "14px", "commitLabelColor": "#FFFFFF", "commitLabelBackground": "#17365D",
-    "git0": "#2DA44E", "gitBranchLabel0": "#0D1117",
-    "git1": "#A371F7", "gitBranchLabel1": "#0D1117",
-    "git2": "#A3C441", "gitBranchLabel2": "#0D1117",
-    "git3": "#39B8B0", "gitBranchLabel3": "#0D1117"
+    "git0": "#4CB269", "gitBranchLabel0": "#0D1117",
+    "git1": "#B186F8", "gitBranchLabel1": "#0D1117",
+    "git2": "#B1CD5E", "gitBranchLabel2": "#0D1117",
+    "git3": "#57C3BC", "gitBranchLabel3": "#0D1117"
 }}}%%
 gitGraph BT:
     %% Keep the next-release note clear of the leftward release fork.
