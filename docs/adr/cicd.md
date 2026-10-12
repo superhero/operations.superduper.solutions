@@ -145,9 +145,11 @@ A hotfix can instead be included in an active release.
     "git3": "#57C3BC", "gitBranchLabel3": "#0D1117"
 }}}%%
 gitGraph BT:
-    %% In BT order, the initial commit note is the last label group; its tag stays visible.
-    commit id: "Released" tag: "1.0.0"
+    %% Show existing main and develop lanes with earlier ancestry omitted.
     branch develop order: 3
+    checkout main
+    commit id: "Released" tag: "1.0.0"
+    checkout develop
     commit id: "Next release"
     branch "release" order: 2
     commit id: "Create release branch"
