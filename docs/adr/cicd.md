@@ -31,24 +31,58 @@ the application.
 | `hotfix/<version>` | Patch fixes starting from released `main`. |
 | `docs/*` | Markdown changes starting from the explicitly chosen `develop` or `main` target. |
 
-Solid arrows show merges or synchronization; the dashed arrow creates a branch.
+The example prepares `1.1.0` while `1.0.1` fixes production. The tagged hotfix
+returns to `develop` and the active release before that release is published.
 
 ```mermaid
-flowchart LR
-    feature["feature/*"] --> develop["develop"]
-    bugfix["bugfix/*"] -->|integration| develop
-    bugfix -->|stabilization| release["release/&lt;version&gt;"]
-    develop -.->|create| release
-    release --> main["main"]
-    hotfix["hotfix/&lt;version&gt;"] --> main
-    main -->|after release or hotfix| develop
-    hotfix -->|after tagging, if active| release
-    docs["docs/*"] -->|chosen target| develop
-    docs -->|chosen target| main
+%%{init: {"gitGraph": {"showCommitLabel": false}}}%%
+gitGraph LR:
+    commit tag: "1.0.0"
+    branch develop order: 4
+    branch "feature/topic" order: 5
+    commit
+    checkout develop
+    merge "feature/topic"
+    branch "bugfix/topic" order: 6
+    commit
+    checkout develop
+    merge "bugfix/topic"
+    branch "release/1.1.0" order: 2
+    branch "bugfix/stabilize" order: 3
+    commit
+    checkout "release/1.1.0"
+    merge "bugfix/stabilize"
+    checkout main
+    branch "hotfix/1.0.1" order: 1
+    commit
+    checkout main
+    merge "hotfix/1.0.1" tag: "1.0.1"
+    checkout develop
+    merge main
+    checkout "hotfix/1.0.1"
+    merge main
+    checkout "release/1.1.0"
+    merge "hotfix/1.0.1"
+    checkout main
+    merge "release/1.1.0" tag: "1.1.0"
+    checkout develop
+    merge main
+    branch "docs/guide" order: 7
+    commit
+    checkout develop
+    merge "docs/guide"
 ```
 
-Each documentation branch merges only into its chosen target; the two paths are
-alternatives, with no automatic synchronization.
+- Feature, integration bugfix, production hotfix and documentation PRs
+  fast-forward when they contain one commit and the target is its ancestor;
+  otherwise they squash.
+- Release stabilization, publication and synchronization fast-forward where
+  possible; otherwise they use a merge commit to preserve history.
+
+Mermaid draws each [integration as a merge commit](https://mermaid.js.org/syntax/gitgraph.html#merging-two-branches);
+the policies above determine the actual Git history. Each documentation branch
+merges only into its chosen `develop` or `main` target, without automatic
+synchronization.
 
 See [Repository automation](../../.github/workflows/README.md) for branch rules,
 merge methods, contributor procedures and publication details.
