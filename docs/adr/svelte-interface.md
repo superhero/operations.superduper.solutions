@@ -1,104 +1,288 @@
-# The interface is built around Svelte, with shared theme and interaction rules
+# Svelte interface
 
-## Stack
+> [!IMPORTANT]
+> The interface is built around Svelte, with shared theme and interaction rules.
 
-- use **Svelte** for application UI;
-- use **shadcn-svelte** for common UI components, adapting the owned component source when needed;
-- use **Svelte Flow** (`@xyflow/svelte`) for workflow graph interaction.
+## Interface foundation
 
-Prefer these before creating equivalent UI primitives from scratch.
+Svelte supplies the application UI, shadcn-svelte supplies common components,
+and Svelte Flow (`@xyflow/svelte`) supplies graph interaction. Adapt owned
+component source before building equivalent primitives. The archived `laya-ai`
+0.13.11 editor is the reference for workflow behavior.
 
-Use **workflow** consistently for the product concept in UI copy, code, filenames and tests. Preserve third-party API and icon identifiers, and existing storage keys needed to keep saved workflows compatible.
+The product term is **workflow**, consistently across UI, code, filenames and
+tests. Third-party identifiers and existing storage keys retain their compatibility.
 
-## Colors
+## Shared theme
 
-A color palette is exactly six hex values in fixed slots: `--palette-1` through `--palette-6`. Define them in `src/palette.css`, normally ordered by relative luminance from lightest to darkest. Preserve the explicitly chosen accent placements in Neon (slot 3 is lighter than slot 2) and Citrus (slot 5 is lighter than slot 4); do not automatically sort these palettes. Palette identity and display mode are independent: every palette supports both light and dark mode through the same mapping.
+### Palettes and modes
 
-`src/app.css` exposes six active slots, `--tone-1` through `--tone-6`. Light mode uses the palette in order; dark mode reverses it exactly:
+Each palette defines exactly six hex values, `--palette-1` through `--palette-6`,
+in `src/palette.css`. Values normally run from lightest to darkest; Neon and
+Citrus retain their intentional accent placements rather than being sorted.
 
-| Active slot | Light mode | Dark mode |
+Palette identity and light/dark mode are independent. `src/app.css` maps them to
+`--tone-1` through `--tone-6`: light mode preserves the order; dark mode reverses
+it exactly and sets `color-scheme`.
+
+Components consume shared semantic roles, never raw slots or palette/mode
+conditions. Each role aliases a slot or another role; dark mode does not override
+individual roles. New palettes change only the six values at the document root.
+The animated background follows both palette and mode changes.
+
+### Semantic roles
+
+| Element | Fill slot | Text slot |
 | --- | --- | --- |
-| 1 | Palette 1 | Palette 6 |
-| 2 | Palette 2 | Palette 5 |
-| 3 | Palette 3 | Palette 4 |
-| 4 | Palette 4 | Palette 3 |
-| 5 | Palette 5 | Palette 2 |
-| 6 | Palette 6 | Palette 1 |
+| Page / panels | 1 / 2 | 6; secondary text 5 |
+| Inputs | 6 | 1 |
+| Field labels | 5 | 2 |
+| Primary actions, including available progress steps | 4 | 3 |
+| Label badges | 3 | 6 |
+| Current/completed steps, opened catalog items, selected switches | 6 | 1 |
+| Disabled controls | 5 | 2 |
 
-Define every component-facing role once, as an alias to an active slot or another role. The dark-mode selector only reverses these six slots and sets `color-scheme`; it must not override individual semantic roles. Inputs, reports, interaction states and effects follow the same reversal as the rest of the interface. Components must not reference palette or active slots directly, nor branch on the selected palette or mode.
+Idle catalog items retain their secondary text color on hover. Ordinary frames
+use slot 1, catalog tree connectors use the label role at slot 3, and dashed
+operation separators use the page background. Library borders must not inherit
+`currentColor`; focus, validation, selection and graph connections retain
+separate semantic roles.
 
-Use slot 1 for the page, 2 for panels, 6 for ordinary text, and 5 for secondary text. Input surfaces use slot 6 with text 1, while their label backgrounds use slot 5 with text 2. Filled primary actions use 4 with label-colored text 3; label badges use 3 with text 6. Completed and current steps, opened catalog items, and selected switches use the ordinary text color as their fill (slot 6) with opposite text (slot 1). Idle catalog items use slot 5 text and retain their colors on hover. This employs all six colors during normal use.
+Progress buttons meet without gaps, with pane-colored chevron boundaries
+separate from focus outlines. Disabled controls remain fully opaque, use native
+disabled semantics, and neither activate nor scale on hover.
 
-Ordinary frames use the shared border role at slot 1, which becomes palette slot 6 in dark mode. Catalog tree connectors use the label role at slot 3; dashed operation separators use the page background role. Do not allow library borders to inherit `currentColor`. Focus, selection, validation and graph connections retain their distinct roles because they communicate interaction or relationships.
+### Contrast and effects
 
-Progress buttons sit directly together without layout gaps. Their chevron edges have fixed 4px borders: right edges except on the last button, and left edges except on the first. Borders always match the pane's surface color, including during hover. There are no borders along the top or bottom. Keep these separate from the keyboard focus outline and disabled-state colors.
+Base surfaces, text, borders and hover states use exact palette colors; blending
+does not create extra shades. Transparency is reserved for effects such as
+shadows, focus halos, backdrops, scroll fades, canvas decoration and transitions.
+Page backgrounds remain solid beneath animated lines.
 
-Available progress steps use the primary button colors, distinct from the pane surface.
-
-Disabled buttons use slot 5 for the background and slot 2 for the foreground, reversed with the theme. Progress steps, toolbar controls and shared buttons use these same disabled roles at full opacity, with native disabled semantics and no hover activation or scaling. Do not use opacity alone to represent an unavailable action.
-
-Replacing a palette changes only its six ordered values. Additional named palettes can define those same six variables under `:root[data-palette="name"]`; mode and component rules stay shared. Apply palette selection at the document root, where the aliases resolve. The animated background observes palette selection as well as mode changes. Keep the currently selected hex values out of this ADR.
+Normal text and placeholders require at least 4.5:1 contrast, including hover
+states. Required, selected and error states also use text, icons or structure.
+Validate every palette in both modes, correcting palette values or shared roles
+rather than adding mode-specific exceptions. Checks cover reversal, replacement
+palettes, role bindings and contrast without duplicating shipped hex values.
 
 ## Settings and startup
 
-Settings groups palettes in a collapsible Theme section with the same opened colors as the catalog menu. Each choice displays six swatches above its name. Idle borders and name backgrounds use the idle menu background; selection changes the name strip to the opened-menu colors and overlays a filled award star. Keep the card background equal to its border and overlap the name strip by one pixel to avoid seams during scaling. The star uses the selected fill with an opposite-color shadow, overshoots slightly on entry, and scales to zero on exit; respect reduced motion. Swatches preview palette values directly; surrounding controls use semantic roles. Store the chosen palette and light/dark mode as separate keys in the `settings` store of IndexedDB, outside workflow Git history. Use the database identifier `v1/settings`; the namespace migration copies saved data before removing the retired database. Open its current version without forcing an upgrade; use the legacy `preferences` store when it is still present so older open tabs cannot block startup. Preserve palette identifiers when display names change. Read settings in a bounded readonly transaction before rendering, then queue any migration or normalization separately from startup. Migrate legacy localStorage keys only when the corresponding IndexedDB value is absent, removing the legacy keys only after a successful transaction. Bound opens and writes too, close late connections, and abort timed-out transactions to prevent delayed writes. If storage is unavailable, mount with valid legacy choices or temporary defaults and provide Retry saved settings; do not persist fallback values. Apply recovered choices without replacing edits made during the retry. Settings failures use the shared [diagnostics and error reporting](error-view.md): a development overlay, a production startup alert, and a retry action in Settings.
+### Storage and recovery
 
-Cache the last successfully read or saved palette and mode in localStorage under `v1/settings/appearance-cache`. A synchronous head script applies these before first paint, with the shared stylesheet loaded directly from the head so the loading screen uses the same colors. IndexedDB remains authoritative: successful reads replace the cache, including defaults for missing settings; failed reads retain valid cached appearance. Never migrate this cache into IndexedDB. Refresh the cache only after a successful transaction, and tolerate missing, malformed or unavailable localStorage without disrupting startup or settings saves.
+Only one Settings section opens at a time. Settings live outside workflow Git
+history in IndexedDB `v1/settings`. Palette and mode are separate values;
+renaming a palette preserves its identifier.
 
-Only one Settings section opens at a time. Workflows contains default switches for dashed lines, curved lines and snap to grid, persisted together under `workflowDefaults` in the same settings store. Missing or invalid flags default individually to false. Load defaults before mounting the editor and apply them to New and an untouched, unsaved initial canvas. Existing, edited and imported workflows retain their own flags; toolbar changes do not change application defaults. Grid size is stored alongside these defaults and accepts whole pixels from 1 to 32, defaulting to 12 when missing or invalid. It applies immediately to every canvas, including existing workflows, and controls node placement and center snapping without moving existing nodes or changing workflow documents. Decorative background dots keep their fixed 24px spacing, independent of the setting. Dash gap accepts 1–128 px, and curve strength accepts 0–100; both are stored with workflow defaults. Report failed setting writes with a retry action while retaining the choices for the current session.
+Read settings before mounting, using bounded readonly transactions without
+forcing an upgrade. Retain access through the legacy `preferences` store when
+present; queue preference migration and normalization separately from startup.
+Namespace migration copies saved data before retiring its source. Legacy
+localStorage choices migrate only into missing settings and are removed only
+after a successful transaction.
 
-Newly added workflow nodes always align their measured centers to the configured grid, including operation data panels, nested workflows and utility nodes. The snap toggle controls subsequent movement only. Complete initial placement before autosaving so each addition produces one version with its final coordinates; do not reposition existing nodes.
+Bound opens and writes, close late connections, and abort timed-out transactions
+to prevent delayed writes. Unavailable storage releases startup with valid legacy
+choices or temporary defaults, without persisting fallback values. Failed writes
+retain session choices. Shared diagnostics explain failures and Settings offers
+retry; recovered values must not overwrite edits made during retry.
 
-Locale provides date format, 12/24-hour time and timezone preferences, stored together under `locale` in the settings IndexedDB store. Defaults follow the browser; explicit numeric date patterns use Gregorian dates and Latin digits, while automatic and long formats use the browser's locale. Apply saved preferences before mounting, and update existing history dates and chart tooltips reactively when choices change. Calendar-only dates retain their recorded day regardless of timezone; timestamp formatting uses the chosen timezone without changing stored instants or UTC aggregation boundaries. Invalid saved fields fall back individually to browser defaults. Failed writes retain the current choices and offer retry. Language selection remains outside the current scope.
+### Appearance cache
 
-Settings exposes current processing, memory and storage measurements, Git filesystem information and historical charts under Browser. Background collection continues when this section is closed. Retain the distinction between approximate browser usage, record counts and logical file sizes; see [resource monitoring](resource-monitoring.md).
+The localStorage entry `v1/settings/appearance-cache` holds the last successfully
+read or saved palette and mode. A synchronous head script and shared stylesheet
+apply them before first paint, including the loading screen.
 
-## Contrast and effects
+IndexedDB remains authoritative. Successful reads replace cached choices,
+including defaults for missing settings; failed reads retain valid cached
+appearance. Refresh the cache only after successful transactions, never import
+it into IndexedDB, and tolerate missing, malformed or unavailable localStorage.
 
-Both page backgrounds are solid colors beneath the animated lines. Ordinary fills, text, borders and hover states must use one of the six exact colors. Never mix two palette colors to manufacture another shade. Mixing a palette color with transparency is reserved for effects: shadows, focus halos, modal backdrops, scroll fades, canvas grid/wave decoration and selection/minimap masks. Transitional opacity is also an effect, not an additional base color.
+Theme choices preview all six colors. Surrounding controls use semantic roles;
+a name highlight and star identify selection without relying on color alone.
+Selection animation respects reduced motion.
 
-Lightness order alone does not guarantee contrast. Keep normal text and placeholders at least 4.5:1 against their surfaces, including hovered controls, and distinguish required, selected and error states through text, icons or structure as well as color. Validate each palette with the shared mappings in both modes; revise unsuitable palette values or shared role assignments instead of adding mode-specific exceptions. Browser checks cover exact reversal, replacement palettes, semantic role bindings, contrast and behavior without duplicating the shipped hex values.
+### Workflow defaults
 
-## Hover scaling
+`workflowDefaults` stores dashed-line, curved-line and snap-to-grid flags,
+plus grid size, dash gap and curve strength. Missing or invalid flags default
+individually to false. Load defaults before the editor mounts and apply them to
+new workflows and the untouched initial canvas. Existing, edited and imported
+workflows retain their flags; toolbar changes do not alter application defaults.
 
-Limit hover enlargement to 12px of total width, capped by each control's scale limit. Measure layout width on pointer entry or keyboard focus so wide rows grow less than compact buttons, using one shared document handler that also covers portal content. Preserve uniform scaling of the surface and its contents.
+Grid size accepts whole pixels from 1–32, defaulting to 12. It applies immediately
+to placement and center snapping on every canvas without repositioning nodes or
+changing workflow documents. Decorative dots retain independent 24px spacing.
+Dash gap accepts 1–128 px and curve strength 0–100.
 
-The operation viewport eases discrete height changes, but follows animated report and schema heights directly. Do not restart the outer height transition on every disclosure frame: it lags behind and clips controls. Apply the final measured height before restoring easing, and discard stale animation completions after reversal or navigation.
+### Locale
 
-Fit prompt suggestions using untransformed layout widths, including the submit arrow. A hover-scaled bounding rectangle must not determine which examples are hidden: hiding examples changes the footer height and the arrow's position under the pointer, creating a resize/hover feedback loop that can repeatedly toggle page overflow.
+Date format, 12/24-hour time and timezone share the `locale` setting. Browser
+defaults apply to absent or invalid fields individually. Explicit numeric patterns
+use Gregorian dates and Latin digits; automatic and long formats follow the
+browser locale. Language selection remains outside the current scope.
 
-Scale controls once, keeping their nested text and icons in the same animation. On devices with a fine pointer and hover support, retain a composited layer only for enabled controls that actually scale. This avoids the text-rendering change observed in Brave when its temporary animation layer disappeared at transition completion. Do not add or remove the hint on hover: both entering and leaving must keep the same rendering mode. Reduced-motion and touch-only layouts do not request these layers.
+Apply preferences before mounting and update visible dates and chart tooltips
+reactively. Calendar-only dates retain their day; timezones affect timestamp
+display without changing stored instants or UTC aggregation boundaries.
 
-Keep progress buttons above idle neighbors until their hover-out scaling finishes. Use the same duration for the scale transition and delayed stacking reset, with immediate elevation on entry. A newly hovered or keyboard-focused neighbor takes priority over a button still returning to rest. Disabled controls and reduced-motion layouts reset without this delay.
+### Resource monitoring
 
-The tradeoff is slightly softer enlarged text and some additional rendering memory. Keep the treatment scoped to small controls and headings, not page panels or every element. Native disclosure chevron rotation and switch-thumb movement remain independent of this scaling treatment.
+Browser settings expose resource measurements and history. Collection continues
+while the section is closed; approximate storage usage, record counts and logical
+file sizes remain distinct.
+
+## Shared interactions
+
+### Motion and layout
+
+Hover enlargement adds at most 12px of width, subject to each control's scale
+limit. A shared handler measures layout width on pointer entry or keyboard focus,
+including portal content. Controls scale once with their text and icons;
+native chevron rotation and switch-thumb movement stay independent.
+
+Layout decisions use untransformed dimensions so hover cannot create a
+resize/overflow feedback loop. Operation views ease discrete height changes but
+follow animated disclosures directly, without restarting an outer transition
+every frame. Apply the final height before restoring easing; reversals and
+navigation discard stale animation completions.
+
+On fine-pointer devices with hover support, enabled controls that scale retain
+a composited layer through entry and exit to prevent text-rendering flashes.
+Scope this to small controls and headings: enlarged text may soften and layers
+consume memory. Touch-only and reduced-motion layouts do not request these layers.
+
+Progress buttons stay above idle neighbors through hover-out; a newly hovered
+or focused neighbor takes priority. Disabled controls and reduced-motion layouts
+reset stacking immediately.
+
+### Integer inputs
+
+Integer fields share a logarithmic slider with editable exact-value entry.
+Missing bounds extend to JavaScript's safe-integer limits, including negatives
+when no minimum is declared. An explicit maximum selects a symmetric curve:
+values change fastest near the midpoint and more slowly near the limits.
+
+Round bounds inward, preserve optional blanks and restrict enums to permitted
+integers. Arrow keys change the value by one; Home/End select limits. Exact entry
+covers the full permitted range. Decimal fields retain numeric controls; the
+grid slider saves only completed changes.
 
 ## Workflow canvas
 
-Use the archived `laya-ai` 0.13.11 workflow editor as the behavioral reference for operation owners, schema panels, field connections, routing nodes, comments and saved workflows. Adapt those behaviors to the shared semantic theme and Svelte Flow. Plans remain browser-local; execution is a separate, explicit action.
+### Graph structure
 
-Automatically save one version per completed workflow edit, without a manual Save workflow action. Group typing until blur and dragging until drop; debounce non-versioned view preferences. Use the browser-local Git repositories and separate IndexedDB application catalogue described in [application content versioning](local-resource-management.md). Await pending saves before replacing the current workflow or leaving its workspace. Hiding the page starts a flush; unloading while an asynchronous save is pending requires an unload warning, since the browser cannot await IndexedDB work. Leave untouched empty drafts out of the saved library. Deleting the current saved workflow cancels its pending save; only a subsequent edit may save that draft again. Show saving and saved status, retain edits when storage fails, and offer retry. Refuse to overwrite a workflow changed or deleted in another tab; keep the local draft available for export or explicit replacement. Undo/Redo navigate existing commits. Editing after Undo preserves the old future on a numbered `stash-N` branch and continues on `main`. Show the real branch tree with readable change messages and the current version highlighted. The entire title-and-date history card selects its existing commit, moving HEAD without creating another commit. Keep the dialog open and update the current marker; preserve other branches and later versions when navigating.
+Operations own schema-derived input panels on the left and documented responses
+on the right, including error, wildcard and default responses. Names and instance
+numbers remain on one line; attachment labels distinguish input locations,
+response codes and media types without changing saved handle IDs.
 
-Each newly added operation owns input panels on the left and documented response panels on the right, including error, wildcard and default responses. Its node displays the HTTP icon, name and instance number in one unwrapped row between separators, widening to fit the title. Named input attachments sit on the left edge of the section above that row (Path, Query, Body, Headers and Cookies), with response-code attachments on the right edge of the section below. Stack attachments in individual rows and keep media names when they distinguish representations. Short labels do not change saved handle IDs. Named object properties and array items come from documented schemas, never inferred response examples. Unsupported or unavailable schema shapes show a notice. Keep structural schema attachments distinct from user mappings: users connect named output fields to named input fields; operation ports and panel headers only express ownership. Body snapping considers visible, eligible input handles before choosing the nearest one and shows a faint target preview alongside the pointer connection.
+Ownership attachments are distinct from user mappings between output and input
+fields. Schemas supply structure, never inferred response examples. Unsupported
+or unavailable shapes remain explicit. Connection snapping considers only
+visible, eligible inputs and previews the nearest target.
 
-Hiding a branch preserves its structure for restoration and removes affected mappings. Deleting an operation removes its owned panels and connections. Persist ownership, field handles and hidden branches in version 2 documents, while continuing to read and edit version 1 operation-only plans under the existing storage key. Selection, measurements and drag previews are transient UI state. Canvas nodes retain their size on hover so ports remain stable during connection gestures. Their position transforms must update directly during pointer and keyboard movement: exclude focusable Svelte Flow node wrappers from shared transform transitions, which otherwise make rendered nodes trail behind their connections. Snap each moved node's measured center to the configured grid (12px by default), retaining top-left coordinates in saved documents and leaving loaded positions unchanged. With snapping enabled, arrow keys move one grid cell, or four with Shift. Keep hover and focus color feedback on the node contents.
+Hiding a branch preserves its structure for restoration but removes affected
+mappings. Deleting an operation removes its owned panels and connections.
+Existing document formats remain readable and editable; newer features do not
+rewrite older documents until used. Selection, measurements and drag previews
+remain transient.
 
-Shift-click toggles individual nodes without changing other nodes; deselecting a node also clears its selected incident connections. Shift-drag adds the rectangle's nodes and connections to the selection that existed when the gesture began. Shrinking the rectangle removes only new hits outside its current bounds. Handle node toggles before the canvas selection rectangle captures their pointer events. Double-click an operation or nested workflow to select it and its visible schema descendants on both sides. For a data node, select it and only its same-direction descendants: upstream for inputs, downstream for outputs. Replace the previous selection, exclude hidden branches, and never cross user mappings to the opposite direction. Empty-space clicks and Escape clear the selection, including the group overlay. Selection remains transient and does not create a saved version.
+### Placement and selection
 
-Version 3 adds descriptions, Switch, Cast, Comment and nested workflow nodes without rewriting old documents until a new feature is used. A Switch emits its input through its first matching gate; connected operands replace manual values. Removing a gate also removes its mappings, and the final gate cannot be removed. Cast converts primitive values to Text, Number or Boolean. Comment Markdown renders escaped text and safe links, never raw HTML. Editing a node must not trigger canvas delete, pan or selection shortcuts.
+All added nodes align their measured centers to the grid, regardless of the snap
+toggle. Finish placement before autosave so each addition records one version at
+its final coordinates. Existing and loaded positions remain unchanged.
 
-Nested workflow nodes contain a validated snapshot, so exported plans remain portable and deleting a saved original does not break its copies. Their interface exposes unsupplied inputs and documented outputs; endpoint identities must match the embedded graph. Bound document size, aggregate graph size and nesting depth. Saved-library updates, description saves and bulk removals report storage errors and allow retry without discarding the draft.
+Snapping controls later movement by node center; documents retain top-left
+coordinates. With snapping enabled, arrow keys move one cell, or four with Shift.
+Nodes retain their size on hover, and position transforms update directly so
+shared transitions cannot delay nodes behind their connections.
 
-Run controls use explicit step submission, starting-operation choice, Next operation and End run. Show the selected operation's destination before submission. Route execution through the shared catalog registry and an injectable HTTP executor: **example.com** contains 19 illustrative operations targeting `https://example.com`, while **httpbin.org** contains 14 operations targeting `https://httpbin.org`. Both catalogs send real requests and report actual transport, HTTP and response-decoding failures with retry. Schema examples describe sample data; they never substitute for a server response. Keep fixtures explicitly injected in tests, outside the production execution path. Browser tests intercept requests to both origins.
+- Shift-click toggles a node without changing others; deselection also clears
+  its selected incident connections. Node toggles precede rectangle capture.
+- Shift-drag adds nodes and connections to the selection at gesture start.
+  Shrinking the rectangle removes only new hits outside its bounds.
+- Double-click replaces selection with an operation or nested workflow and its
+  visible schema descendants on both sides. Data nodes select themselves and
+  visible descendants upstream for inputs or downstream for outputs, never
+  crossing user mappings into the opposite direction.
+- Empty-space clicks and Escape clear selection and its group overlay.
 
-Both catalogs demonstrate GET, POST, PUT, PATCH, DELETE, HEAD and OPTIONS; the example.com catalog also includes TRACE, which reports an unsupported-method error because browser Fetch forbids it. Preserve the existing `demo:*` operation identifiers, paths and field identities so saved documents remain compatible, including legacy `mock*` identifiers. Register source schemas, navigation groups and execution origins together; do not infer a destination from an operation's visible label.
+Selection never creates a saved version. Editing inside nodes must not trigger
+canvas shortcuts.
 
-Object data panels offer Edit properties when their schema permits additional properties, including when `additionalProperties` is omitted. In edit mode, that control becomes Add field, user-added field names and types become clickable to open their editor, and a Done control exits the mode. Keep per-field edit icons out of the normal view. Let users choose a concrete type for unrestricted properties; use the documented type for schema-constrained additions. Explicitly closed objects, synthetic parameter collections and fixed nested-workflow interfaces do not offer additions. The individual property editor changes its name and type and offers Remove. Renaming preserves mapped connections and nested branches; changing type removes incompatible connections and obsolete child branches. Removing a property removes its descendants and incident mappings, and Undo can restore the edit. Declared schema properties remain fixed. Preserve names through escaped field pointers, reject duplicates, and include added fields and child panels in ordinary autosave, history and exports. Recover permissions from the operation schema for existing saved workflows; no document-format migration is required.
+### Edits and history
 
-Use the same typed input controls for request previews and workflow runs. Render object and array drafts as JSON text, and validate declared nested properties, additional-property policies, item types, required fields and supported bounds before execution. Support primitive path/header parameters, repeated query-array parameters and explicitly declared flat `deepObject` query objects. Request bodies may be named JSON objects with structured properties, root JSON values, plain text, URL-encoded forms or multipart forms with primitive text fields. Connected additional body properties retain their selected types and are validated against the canonical operation schema before execution. Each operation declares one request media type; multipart file uploads, schema unions/composition, remote references and unsupported constraints remain explicit errors. The curated httpbin schemas define example forms for arbitrary echo inputs, not additional requirements imposed by the service.
+Autosave records completed edits, with visible saving status and retry. Await
+pending saves before changing workflows or workspace; page hiding starts a flush,
+while pending asynchronous writes require an unload warning. Refuse to overwrite
+workflows changed or deleted in another tab. Storage failures and conflicts
+preserve drafts for retry, export or explicit replacement.
+Untouched drafts stay out of the library; deleting the current saved workflow
+cancels pending saves until another edit.
 
-Integer controls use a shared logarithmic slider with an editable exact-value readout. Missing bounds extend to JavaScript's safe-integer limits, preserving negative values when no minimum is declared. An explicit maximum selects a symmetric logarithmic curve whose values change fastest near the midpoint and more slowly toward the limits. Round schema bounds inward to whole numbers, preserve optional blanks, and restrict integer enums to their permitted values. Arrow keys change the actual integer by one, Home/End select the limits, and exact entry remains available across the full safe range. Decimal fields retain their numeric controls. The grid-size slider retains its 1–32 px bounds and persists only completed changes.
+Undo, Redo and history cards navigate existing commits. Editing from the past
+preserves the old future. History shows actual parent relationships, meaningful
+change messages and the current version. Selecting a title-and-date card updates
+the marker without closing the dialog or discarding later history.
 
-The Operation phase's Execute operation action validates the draft and submits it through that same catalog executor. Show the schema's declared server URLs in the operation report's Metadata, honoring operation and path server overrides. Preserve the declared URLs rather than appending request paths or query inputs. Keep the method in the report's metrics. After submission, show request progress and the actual HTTP status and response body, retaining the prepared input for review. HTTP and decoding failures retain their returned bodies for inspection. Prevent duplicate submissions, allow cancellation and explicit retry, and cancel pending requests when leaving the response view, changing operations or leaving the workspace. Ignore stale completions. Neither standalone operations nor workflow runs fabricate responses or retain a local substitute for server state.
+### Utility and nested nodes
 
-Preserve mapped field types and assemble declared nested-property and array-item mappings before validating the complete input. Conflicting mapped values fail; Cast remains limited to primitive conversions. Propagate routing and nested outputs, and cancel pending live requests when the run closes. Running does not modify the editor's document, and cycles fail rather than repeat API calls indefinitely.
+Switch uses the first matching gate, with connected operands replacing manual
+values. Removing a gate removes its mappings; the last gate cannot be removed.
+Cast converts primitives to Text, Number or Boolean. Comment Markdown escapes
+text and permits safe links, never raw HTML.
+
+Nested workflows embed validated snapshots, remaining portable and independent
+of deleted originals. Interfaces expose unsupplied inputs and documented outputs;
+endpoint identities match the embedded graph. Document size, aggregate graph
+size and nesting depth are bounded.
+
+### Additional properties
+
+Object panels offer property editing when schemas permit additions, including
+an omitted `additionalProperties`. Declared properties remain fixed. Unrestricted
+additions allow concrete type selection; constrained additions use their
+schema-defined type. Closed objects, synthetic parameter collections and fixed
+nested-workflow interfaces do not allow additions.
+
+Renaming preserves mappings and nested branches. Type changes remove incompatible
+connections and obsolete children; removal clears descendants and incident
+mappings. Escaped field pointers preserve names, duplicates are rejected, and
+edits participate in autosave, Undo and exports. Existing workflows recover
+permissions from their operation schema without a format migration.
+
+## Request execution
+
+### Shared validation
+
+Standalone operations and workflow runs share typed controls, the catalog
+registry and an injectable HTTP executor. Object and array drafts use JSON text.
+Validate complete inputs against canonical schemas, including nested fields,
+additional properties, array items, required values and supported bounds.
+Unsupported input shapes, encodings and constraints produce explicit errors.
+
+Assemble nested and array mappings before validation, retaining field types.
+Conflicting mappings fail; Cast handles primitive conversions only. Routing and
+nested nodes propagate outputs, and cycles fail instead of repeating API calls
+indefinitely.
+
+### Live requests
+
+Workflow plans remain browser-local. Execution is explicit and never changes the
+editor document. Workflow controls choose a starting operation, submit steps,
+advance or end the run. Show the destination before submission; reports retain
+declared server URLs, honoring
+path/operation overrides, separately from the HTTP method. Destinations come from
+the registry, never visible labels. Existing `demo:*` and legacy `mock*` identities
+remain compatible.
+
+Bundled examples send real requests; schema examples never substitute for server
+responses. Test fixtures are injected outside production execution. Show progress
+and actual status/body, retaining prepared inputs and error response bodies for
+inspection and explicit retry. Browser-forbidden methods fail explicitly.
+
+Prevent duplicate submissions, support cancellation, and cancel pending requests
+on operation changes, response/workspace exit or run closure. Ignore stale
+completions. Neither execution path fabricates responses or stores a local
+substitute for server state.
