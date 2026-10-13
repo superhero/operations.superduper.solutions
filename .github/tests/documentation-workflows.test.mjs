@@ -18,7 +18,7 @@ function workflow(name)
   return document.toJS();
 }
 
-function condition(expression, { source = "docs/readme", target = "main", fork = false, draft = false } = {})
+function condition(expression, { source = "docs/readme", target = "main", fork = false, draft = false, updated = false } = {})
 {
   assert.equal(typeof expression, "string", "The job or step must explicitly guard its route");
   const github = {
@@ -28,8 +28,9 @@ function condition(expression, { source = "docs/readme", target = "main", fork =
     event: { pull_request: { draft, head: { repo: { full_name: fork ? "fork/project" : "owner/project" } } } }
   };
   // These checked-in job conditions use GitHub's Boolean/string expression subset.
-  const evaluate = new Function("github", "startsWith", `return (${expression.replace(/^\s*\$\{\{([\s\S]*)\}\}\s*$/, "$1")});`);
-  return evaluate(github, (value, prefix) => value.toLowerCase().startsWith(prefix.toLowerCase()));
+  const evaluate = new Function("github", "startsWith", "steps", `return (${expression.replace(/^\s*\$\{\{([\s\S]*)\}\}\s*$/, "$1")});`);
+  return evaluate(github, (value, prefix) => value.toLowerCase().startsWith(prefix.toLowerCase()),
+    { prepare: { outputs: { updated: String(updated) } } });
 }
 
 Given("the documentation workflow configuration", function ()
@@ -109,7 +110,7 @@ Then("the documentation workflow performs no testing, deployment, tagging or syn
   const configuration = this.documentationWorkflow;
   assert.deepEqual(Object.keys(configuration.jobs), ["documentation"]);
   const steps = configuration.jobs.documentation.steps;
-  assert.equal(steps.length, 6, "Only checkout, fetch, content and timing validation, scoped token creation and merge are needed");
+  assert.equal(steps.length, 7, "Only trusted validation, optional Staging preparation and merge are needed");
   assert.deepEqual(steps.filter(step => step.uses).map(step => step.uses), [
     "actions/checkout@v7", "actions/create-github-app-token@v3"
   ]);
@@ -120,7 +121,7 @@ Then("the documentation workflow performs no testing, deployment, tagging or syn
 
 Then("documentation writes follow validation with restricted credentials", function ()
 {
-  const [, , validation, timing, token, merge] = this.documentationWorkflow.jobs.documentation.steps;
+  const [, , validation, timing, token, prepare, merge] = this.documentationWorkflow.jobs.documentation.steps;
   assert.match(validation.run, /validate-documentation-changes\.sh/);
   assert.equal(timing.run, 'bash .github/scripts/validate-documentation-merge.sh "$REPOSITORY" "$BASE_BRANCH"');
   assert.deepEqual(timing.env, {
@@ -142,6 +143,17 @@ Then("documentation writes follow validation with restricted credentials", funct
       "Write steps must retain the default success prerequisite");
     assert.equal(step["continue-on-error"], undefined);
   }
+  assert.equal(condition(prepare.if, { target: "main" }), false);
+  assert.equal(condition(prepare.if, { target: "develop" }), true);
+  assert.equal(condition(prepare.if, { target: "develop", fork: true }), false);
+  assert.equal(condition(prepare.if, { target: "develop", draft: true }), false);
+  assert.equal(prepare.id, "prepare");
+  assert.match(prepare.run, /bash \.github\/scripts\/prepare-changelog\.sh/);
+  assert.equal(prepare.env.GH_TOKEN, "${{ steps.app-token.outputs.token }}");
+  assert.equal(prepare.env.BASE_SHA, BASE_SHA);
+  assert.equal(prepare.env.HEAD_SHA, HEAD_SHA);
+  assert.equal(condition(merge.if, { target: "develop", updated: true }), false,
+    "The generated source head must receive its own validation before merging");
   assert.equal(merge.env.GH_TOKEN, "${{ steps.app-token.outputs.token }}");
   assert.equal(merge.env.BASE_SHA, BASE_SHA);
   assert.equal(merge.env.HEAD_SHA, HEAD_SHA);

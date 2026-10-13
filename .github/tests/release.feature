@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Erik Landvall
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
-@automation
+@automation @release
 Feature: Release automation
   Releases reuse their identity on retries and deploy only the validated build
   belonging to the release currently on main.
@@ -21,6 +21,12 @@ Feature: Release automation
     Given develop has new work after squash synchronization with main
     When release creation succeeds
     Then release PR 124 identifies version "0.0.25" and its source commit
+
+  Scenario: A later develop integration updates the active release
+    Given an open release already contains an earlier develop integration
+    When release creation succeeds
+    Then release PR 124 identifies version "0.0.25"
+    And the active release records the additional source without opening another PR
 
   Scenario Outline: Retry an interrupted or completed release
     Given the same release already has "<existing>"
@@ -51,6 +57,11 @@ Feature: Release automation
       | already released content after squash | outside dependency badges |
       | a prepared branch with another tree   | different commit            |
       | main code changing after preparation  | dependency badges           |
+      | source advancing during preparation   | changed during release preparation |
+      | main advancing during preparation     | Main changed during release preparation |
+      | an active version already tagged      | already tagged |
+      | a matching closed unmerged release    | closed without merging |
+      | an active release closing during preparation | Active release changed during preparation |
 
   Scenario Outline: Preserve GitHub failure reasons and operation context
     Given GitHub rejects "<operation>" with HTTP 503

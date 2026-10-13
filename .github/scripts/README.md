@@ -12,6 +12,7 @@ recovery procedures.
 | Branch, version and content validation | `validate-pr.sh`, `validate-semver.sh`, `validate-badge-only-advance.sh`, `validate-released-content.sh`, `validate-release-tree.sh`, `validate-current-release.sh` |
 | Documentation integration | `validate-documentation-changes.sh`, `validate-documentation-merge.sh` |
 | Merge and release lifecycle | `auto-merge.sh`, `preview-merge.sh`, `create-release-pr.sh`, `validate-release-pr.sh`, `merge-release-pr.sh`, `synchronize-release.sh` |
+| Changelog preservation | `changelog.mjs` manages commit entries and version sections; preparation helpers update PR and release branches before validation |
 | Shared release identity checks | `release-pr.sh`, sourced by the validation and merge entrypoints |
 | Pages and report publication | `prepare-pages-deployment.sh`, `record-pages-deployment.sh`, `publish-status.sh` |
 | Dependency status | `list-dependency-branches.sh`, `update-dependency-status.sh`, `publish-dependency-badges.sh` |

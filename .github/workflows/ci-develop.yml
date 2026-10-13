@@ -81,10 +81,83 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: bash .github/scripts/validate-pr.sh "$REPOSITORY" "$HEAD_BRANCH" "$BASE_BRANCH" "$HEAD_SHA"
 
+  prepare-changelog:
+    name: Prepare Staging Changelog
+    if: "!startsWith(github.head_ref, 'docs/')"
+    needs: [workflow-checks, validate-pr]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      updated: ${{ steps.prepare.outputs.updated }}
+    env:
+      PREPARE_STAGING: >-
+        ${{ github.event.pull_request.head.repo.full_name == github.repository
+            && !github.event.pull_request.draft
+            && (startsWith(github.head_ref, 'feature/') || startsWith(github.head_ref, 'bugfix/')) }}
+    steps:
+      - name: Checkout trusted base automation
+        if: env.PREPARE_STAGING == 'true'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select validated changelog automation and fetch pinned objects
+        if: env.PREPARE_STAGING == 'true'
+        id: automation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          TESTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ && "$TESTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          authorization="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w 0)"
+          echo "::add-mask::$authorization"
+          GIT_CONFIG_COUNT=1 \
+            GIT_CONFIG_KEY_0="http.${GITHUB_SERVER_URL}/.extraheader" \
+            GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $authorization" \
+            git fetch --no-tags origin "$HEAD_SHA" "$TESTED_SHA"
+          scripts="$GITHUB_WORKSPACE/.github/scripts"
+          if [[ ! -f "$scripts/prepare-changelog.sh" || ! -f "$scripts/prepare-changelog.mjs" || ! -f "$scripts/changelog.mjs" ]]; then
+            # First rollout: these exact proposed-merge files have already
+            # passed workflow-checks, under the existing same-repository trust model.
+            scripts="$(mktemp -d "$RUNNER_TEMP/changelog-automation.XXXXXX")"
+            for file in prepare-changelog.sh prepare-changelog.mjs changelog.mjs; do
+              git show "$TESTED_SHA:.github/scripts/$file" > "$scripts/$file"
+            done
+          fi
+          echo "scripts=$scripts" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub App token
+        if: env.PREPARE_STAGING == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: read
+
+      - name: Prepare source changelog before application tests
+        if: env.PREPARE_STAGING == 'true'
+        id: prepare
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_BRANCH: ${{ github.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+          SCRIPTS: ${{ steps.automation.outputs.scripts }}
+        run: bash "$SCRIPTS/prepare-changelog.sh" "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA" "$BASE_BRANCH" "$BASE_SHA" "$HEAD_BRANCH"
+
   application:
     name: Test and Build
-    if: "!startsWith(github.head_ref, 'docs/')"
-    needs: validate-pr
+    if: "!startsWith(github.head_ref, 'docs/') && needs.prepare-changelog.outputs.updated != 'true'"
+    needs: [validate-pr, prepare-changelog]
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
