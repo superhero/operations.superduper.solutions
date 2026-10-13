@@ -32,7 +32,7 @@ function decodeError(value: RemoteError): Error {
   return error;
 }
 
-/** Lazy, tracked worker calls. Disposal drains writes before terminating their worker. */
+/** Lazy, tracked calls. Disposal drains writes unless immediate cancellation is requested. */
 export function createWorkerClient(factory: () => Worker) {
   let worker: Worker | undefined;
   let release: (() => void) | undefined;
@@ -91,10 +91,11 @@ export function createWorkerClient(factory: () => Worker) {
       listeners.add(listener);
       return () => { listeners.delete(listener); };
     },
-    dispose(): void {
+    dispose(immediate = false): void {
       disposed = true;
       listeners.clear();
-      if (requests.size === 0) stop();
+      if (immediate) stop(new DOMException("The background calculation was cancelled.", "AbortError"));
+      else if (requests.size === 0) stop();
     },
   };
 }

@@ -394,6 +394,13 @@ and edges, and controls for navigating the diagram.
 
 ---
 
+<a href="https://www.npmjs.com/package/@xyflow/system"><img src=".github/badges/version-dependency-xyflow--system.svg" alt="@xyflow/system declared version"></a>
+
+Supplies Svelte Flow's measured handle geometry to the workflow connection router,
+so previews and completed arrows meet the same endpoints.
+
+---
+
 <a href="https://www.npmjs.com/package/yaml"><img src=".github/badges/version-dependency-yaml.svg" alt="yaml declared version"></a>
 
 Parses uploaded OpenAPI documents in YAML 1.2 format, converting their contents

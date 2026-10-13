@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
-import { Then, When } from '@cucumber/cucumber';
+import { Given, Then, When } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { readExport, setMode, workflow } from './workspace.steps.mjs';
 import { closeWorkflowDetails, workflowNameInput } from './workflow-details.fixture.mjs';
 import { repository, storedWorkflows } from './workflow-storage.fixture.mjs';
 
-const disabledDefaults = { dashed: false, curved: false, snap: false, gridSize: 12, dashGap: 4, curveStrength: 50 };
-const enabledDefaults = { dashed: true, curved: true, snap: true, gridSize: 12, dashGap: 4, curveStrength: 50 };
+const disabledDefaults = { dashed: false, curved: false, snap: false, gridSize: 12, dashGap: 4, curveStrength: 50, nodeClearance: 12 };
+const enabledDefaults = { dashed: true, curved: true, snap: true, gridSize: 12, dashGap: 4, curveStrength: 50, nodeClearance: 12 };
 const settingLabels = { dashed: 'Dashed lines', curved: 'Curved lines', snap: 'Snap to grid' };
 const toolbarLabels = { dashed: 'Dashed connections', curved: 'Curved connections', snap: 'Snap to grid' };
 const settings = page => page.getByRole('region', { name: 'Settings workspace', exact: true });
@@ -47,6 +47,8 @@ async function expectDefaultSwitches(page, defaults) {
   await expect(settings(page).getByRole('slider', { name: 'Dash gap', exact: true })).toHaveAttribute('aria-valuenow', String(defaults.dashGap));
   await expect(settings(page).getByRole('textbox', { name: 'Curve strength value', exact: true })).toHaveValue(String(defaults.curveStrength));
   await expect(settings(page).getByRole('slider', { name: 'Curve strength', exact: true })).toHaveAttribute('aria-valuenow', String(defaults.curveStrength));
+  await expect(settings(page).getByRole('textbox', { name: 'Node clearance value', exact: true })).toHaveValue(String(defaults.nodeClearance));
+  await expect(settings(page).getByRole('slider', { name: 'Node clearance', exact: true })).toHaveAttribute('aria-valuenow', String(defaults.nodeClearance));
 }
 
 export async function setWorkflowGridSize(page, gridSize) {
@@ -56,6 +58,15 @@ export async function setWorkflowGridSize(page, gridSize) {
   await control.press('Tab');
   await expect(control).toHaveValue(String(gridSize));
   await expect.poll(async () => (await storedDefaults(page)).gridSize).toBe(gridSize);
+}
+
+export async function setWorkflowNodeClearance(page, nodeClearance) {
+  await openDefaults(page);
+  const control = settings(page).getByRole('textbox', { name: 'Node clearance value', exact: true });
+  await control.fill(String(nodeClearance));
+  await control.press('Tab');
+  await expect(control).toHaveValue(String(nodeClearance));
+  await expect.poll(async () => (await storedDefaults(page)).nodeClearance).toBe(nodeClearance);
 }
 
 async function setDefaults(page, defaults) {
@@ -240,4 +251,56 @@ Then('the grid size slider supports exact keys and saves its nonlinear pointer v
   await openDefaults(page);
   await expect(input).toHaveValue(String(selected));
   await expect(slider).toHaveAttribute('aria-valuenow', String(selected));
+});
+
+Given('workflow defaults saved with node clearance {word}', async function (raw) {
+  this.nodeClearanceDefaults = { ...disabledDefaults, dashed: true, snap: true,
+    gridSize: 27, dashGap: 6, curveStrength: 71 };
+  const stored = { ...this.nodeClearanceDefaults };
+  if (raw === 'missing') delete stored.nodeClearance;
+  else stored.nodeClearance = raw === 'NaN' ? NaN : raw === 'Infinity' ? Infinity : JSON.parse(raw);
+  await storedDefaults(this.page, stored);
+});
+
+When('Settings reloads the saved node clearance', async function () {
+  await this.page.reload();
+  await openDefaults(this.page);
+});
+
+Then('node clearance is {int} and the other saved workflow defaults are preserved', async function (nodeClearance) {
+  const expected = { ...this.nodeClearanceDefaults, nodeClearance };
+  await expectDefaultSwitches(this.page, expected);
+  await expect.poll(() => storedDefaults(this.page)).toEqual(expected);
+  assert.deepEqual(await storedWorkflows(this.page), [], 'Normalizing a browser setting must not create workflow documents.');
+});
+
+Then('node clearance enforces its bounds and survives reload without saving a workflow', async function () {
+  const page = this.page;
+  await openDefaults(page);
+  const slider = settings(page).getByRole('slider', { name: 'Node clearance', exact: true });
+  const input = settings(page).getByRole('textbox', { name: 'Node clearance value', exact: true });
+  await expect(slider).toHaveAttribute('aria-valuemin', '0');
+  await expect(slider).toHaveAttribute('aria-valuemax', '128');
+  await expect(input).toHaveValue('12');
+  for (const invalid of ['-1', '129', '12.5', 'not-a-number', '']) {
+    await input.fill(invalid);
+    await input.press('Tab');
+    await expect(settings(page).getByRole('alert')).toContainText('Node clearance must be a whole number from 0 to 128.');
+    assert.equal((await storedDefaults(page)).nodeClearance, 12, 'Invalid drafts must leave the persisted clearance intact.');
+  }
+  for (const value of [0, 128, 24]) {
+    await setWorkflowNodeClearance(page, value);
+    await expect(slider).toHaveAttribute('aria-valuenow', String(value));
+    await expect(settings(page).getByRole('alert')).toHaveCount(0);
+  }
+  for (const [key, value] of [['Home', 0], ['ArrowLeft', 0], ['End', 128], ['ArrowRight', 128], ['ArrowLeft', 127]]) {
+    await slider.press(key);
+    await expect(input).toHaveValue(String(value));
+    await expect(slider).toHaveAttribute('aria-valuenow', String(value));
+  }
+  await expect.poll(() => storedDefaults(page)).toEqual({ ...disabledDefaults, nodeClearance: 127 });
+  await page.reload();
+  await openDefaults(page);
+  await expectDefaultSwitches(page, { ...disabledDefaults, nodeClearance: 127 });
+  assert.deepEqual(await storedWorkflows(page), [], 'Saving clearance must not save an untouched workflow.');
 });

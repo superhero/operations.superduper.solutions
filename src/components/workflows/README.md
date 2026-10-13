@@ -20,6 +20,10 @@ graph transformations, persistence and request execution in their existing
 [`$lib` modules](../../lib/README.md). Preserve saved node/handle identities and
 the distinction between ownership attachments and user mappings.
 
+Orthogonal edges use the portable [`flow-routing`](../../lib/flow-routing/README.md)
+module. This directory retains the application-specific curve controls and
+connection eligibility checks; route geometry stays outside persisted documents.
+
 ## Interaction constraints
 
 Node controls use `nodrag`, `nopan`, `nokey` and, where needed, `nowheel` to keep

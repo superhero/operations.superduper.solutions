@@ -5,18 +5,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
   import { getContext } from "svelte";
-  import { getSmoothStepPath, useConnection } from "@xyflow/svelte";
+  import type { Position } from "@xyflow/svelte";
   import { workflowCurve } from "$lib/workflow-curve.ts";
+  import RoutedConnection from "$lib/flow-routing/RoutedConnection.svelte";
 
-  const connection = useConnection();
   const options = getContext<() => { curved: boolean; strength: number; style: string }>("workflow-connection-options");
-  const path = $derived.by(() => {
-    const state = connection.current;
-    if (!state.inProgress) return "";
-    const points = { sourceX: state.from.x, sourceY: state.from.y, sourcePosition: state.fromPosition,
-      targetX: state.to.x, targetY: state.to.y, targetPosition: state.toPosition };
-    return (options().curved ? workflowCurve(points, options().strength) : getSmoothStepPath(points))[0];
-  });
 </script>
 
-<path d={path} style={options().style} fill="none" class="svelte-flow__connection-path" />
+<RoutedConnection style={options().style} curve={options().curved ? points => workflowCurve({ ...points,
+  sourcePosition: points.sourcePosition as Position, targetPosition: points.targetPosition as Position }, options().strength)[0] : undefined} />

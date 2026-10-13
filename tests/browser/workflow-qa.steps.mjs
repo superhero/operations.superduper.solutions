@@ -107,31 +107,40 @@ Given("a connected saved QA workflow", async function () {
 
 Then("I can select the connection beside its visible line while hovered", async function () {
   const edge = workflow(this.page).getByRole("group", { name: /^Edge from / });
-  const visiblePath = edge.locator(".svelte-flow__edge-path");
+  const visiblePath = edge.locator(".svelte-flow__edge-path:not(.flow-routing-dash-base)").first();
   const interactionPath = edge.locator(".svelte-flow__edge-interaction");
-  await expect(interactionPath).toHaveCSS("stroke-width", "20px");
-  const point = await visiblePath.evaluate(path => {
-    const middle = path.getTotalLength() / 2;
-    const matrix = path.getScreenCTM();
-    const screenPoint = length => {
-      const point = path.getPointAtLength(length);
-      return new DOMPoint(point.x, point.y).matrixTransform(matrix);
-    };
-    const center = screenPoint(middle);
-    const before = screenPoint(middle - 1);
-    const after = screenPoint(middle + 1);
-    const dx = after.x - before.x;
-    const dy = after.y - before.y;
-    const length = Math.hypot(dx, dy);
-    return { x: center.x, y: center.y, besideX: center.x - dy / length * 6, besideY: center.y + dx / length * 6 };
-  });
-  await this.page.mouse.move(point.x, point.y);
-  await expect(visiblePath).toHaveCSS("stroke-width", "3px");
-  await expect(interactionPath).toHaveCSS("stroke-width", "20px");
-  await this.page.mouse.move(point.besideX, point.besideY);
-  await expect(visiblePath).toHaveCSS("stroke-width", "3px");
-  await this.page.mouse.click(point.besideX, point.besideY);
-  await expect(edge).toHaveClass(/selected/);
+  for (const dashed of [false, true]) {
+    if (dashed) {
+      const pane = await workflow(this.page).locator('.svelte-flow__pane').boundingBox();
+      await this.page.mouse.click(pane.x + 12, pane.y + pane.height / 2);
+      await expect(edge).not.toHaveClass(/selected/);
+      await workflow(this.page).getByRole('button', { name: 'Dashed connections', exact: true }).click();
+      await expect(edge.locator('.flow-routing-dashes')).toBeVisible();
+    }
+    await expect(interactionPath).toHaveCSS("stroke-width", "20px");
+    const point = await interactionPath.evaluate(path => {
+      const middle = path.getTotalLength() / 2;
+      const matrix = path.getScreenCTM();
+      const screenPoint = length => {
+        const point = path.getPointAtLength(length);
+        return new DOMPoint(point.x, point.y).matrixTransform(matrix);
+      };
+      const center = screenPoint(middle);
+      const before = screenPoint(middle - 1);
+      const after = screenPoint(middle + 1);
+      const dx = after.x - before.x;
+      const dy = after.y - before.y;
+      const length = Math.hypot(dx, dy);
+      return { x: center.x, y: center.y, besideX: center.x - dy / length * 6, besideY: center.y + dx / length * 6 };
+    });
+    await this.page.mouse.move(point.x, point.y);
+    await expect(visiblePath).toHaveCSS("stroke-width", "3px");
+    await expect(interactionPath).toHaveCSS("stroke-width", "20px");
+    await this.page.mouse.move(point.besideX, point.besideY);
+    await expect(visiblePath).toHaveCSS("stroke-width", "3px");
+    await this.page.mouse.click(point.besideX, point.besideY);
+    await expect(edge).toHaveClass(/selected/);
+  }
 });
 
 function largeFixture(descriptionLength) {

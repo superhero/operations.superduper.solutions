@@ -6,7 +6,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <script lang="ts">
   import { onMount, setContext, tick, untrack } from "svelte";
-  import { Background, BackgroundVariant, ConnectionLineType, MarkerType, SvelteFlow, addEdge, type Edge, type Node, type Connection } from "@xyflow/svelte";
+  import { Background, BackgroundVariant, ConnectionLineType, MarkerType, SvelteFlow, SvelteFlowProvider, addEdge, type Edge, type Node, type Connection } from "@xyflow/svelte";
   import "@xyflow/svelte/dist/style.css";
   import { Button } from "$lib/components/ui/button/index.js";
   import HintButton from "$lib/components/HintButton.svelte";
@@ -31,6 +31,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowConnectionSnap from "./workflows/WorkflowConnectionSnap.svelte";
   import WorkflowCurveEdge from "./workflows/WorkflowCurveEdge.svelte";
   import WorkflowConnectionLine from "./workflows/WorkflowConnectionLine.svelte";
+  import RoutingScope from "$lib/flow-routing/RoutingScope.svelte";
+  import RoutedEdge from "$lib/flow-routing/RoutedEdge.svelte";
+  import { createWorkflowRoutingClient } from "$lib/workflow-routing-client.ts";
+  import { logger } from "$lib/logger.ts";
   import WorkflowSelection from "./workflows/WorkflowSelection.svelte";
   import WorkflowSwitchNode from "./workflows/WorkflowSwitchNode.svelte";
   import WorkflowCastNode from "./workflows/WorkflowCastNode.svelte";
@@ -42,7 +46,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let { active, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
     { active: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
   const nodeTypes = { operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
-  const edgeTypes = { default: WorkflowCurveEdge };
+  const edgeTypes = { default: WorkflowCurveEdge, smoothstep: RoutedEdge };
   type CanvasNode<T> = T extends WorkflowDocumentNode ? Node<T["data"], NonNullable<T["type"]>> & { type: NonNullable<T["type"]> } : never;
   type GraphNode = CanvasNode<WorkflowDocumentNode>;
   type GraphEdge = Edge & WorkflowDocumentEdge;
@@ -868,10 +872,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <svelte:window onbeforeunload={beforeUnload} onkeydown={historyShortcut} />
 
-<section class="workflow-workspace" class:populated={nodes.length > 0} style:--workflow-dash-gap={workflowDefaults.dashGap} tabindex="-1" aria-label="Workflow canvas" inert={graphBlocked} bind:this={canvas} onkeydowncapture={moveSnappedNodes} ondblclickcapture={selectNodeBranch}>
+<section class="workflow-workspace" class:populated={nodes.length > 0} style:--workflow-dash-gap={workflowDefaults.dashGap}
+  style:--flow-routing-dash-period={6 + workflowDefaults.dashGap} style:--flow-routing-dash-duration={`${(6 + workflowDefaults.dashGap) / 20}s`}
+  tabindex="-1" aria-label="Workflow canvas" inert={graphBlocked} bind:this={canvas} onkeydowncapture={moveSnappedNodes} ondblclickcapture={selectNodeBranch}>
   <span class="sr-only" aria-live="assertive" aria-atomic="true">{movementAnnouncement}</span>
   {#if activated}
   {#key revision}
+    <SvelteFlowProvider>
+    <RoutingScope enabled={active && !curved} dashPeriod={6 + workflowDefaults.dashGap}
+      options={{ nodePadding: workflowDefaults.nodeClearance }}
+      createClient={createWorkflowRoutingClient} resolveConnection={state => connectionSnap?.preview(state) ?? state}
+      onerror={cause => {
+        const failure = new Error("Workflow edge routing stopped. Standard connection paths remain available. Reopen the workflow or switch curved connections on and off to retry.", { cause });
+        error = failure.message;
+        logger.error(failure.message, failure);
+      }}>
     <SvelteFlow bind:nodes={() => nodes, updateCanvasNodes} bind:edges bind:viewport {nodeTypes} {edgeTypes} defaultEdgeOptions={edgeOptions} connectionLineComponent={WorkflowConnectionLine} connectionLineType={curved ? ConnectionLineType.Bezier : ConnectionLineType.SmoothStep} onbeforeconnect={prepareConnection} onconnect={adaptGates}
       defaultMarkerColor={null} connectionLineStyle={`${edgeOptions.style}; marker-end: url(#${connectionMarkerId})`}
       minZoom={0.25} maxZoom={2} {...(snap ? {} : { snapGrid: [1, 1] as [number, number] })}
@@ -900,6 +915,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         canUndo={canUndo || (hasSavedDocument && dirty)} canRedo={canRedo && !dirty} historyBusy={actionBusy || saving}
         onundo={() => changeVersion("undo")} onredo={() => changeVersion("redo")} onhistory={openHistory} />
     </SvelteFlow>
+    </RoutingScope>
+    </SvelteFlowProvider>
   {/key}
   {/if}
   {#if !nodes.length}
@@ -1013,7 +1030,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.workflow-workspace .svelte-flow__arrowhead polyline) { stroke: context-stroke; }
   :global(.workflow-workspace .svelte-flow__arrowhead polyline.arrowclosed) { fill: context-stroke; }
   :global(.workflow-workspace .svelte-flow__edge-path) { transition: stroke 120ms ease-in, stroke-width 120ms ease-in; }
-  :global(.workflow-workspace .svelte-flow__edge.animated .svelte-flow__edge-path) { animation-name: workflow-dashes; }
+  :global(.workflow-workspace .svelte-flow__edge.animated .svelte-flow__edge-path:not(.flow-routing-dash):not(.flow-routing-dash-base)) { animation-name: workflow-dashes; animation-duration: var(--flow-routing-dash-duration); }
+  /* Disabled form controls swallow mouseup in Chromium; the canvas owns a drag. */
+  :global(.workflow-workspace .svelte-flow:has(.svelte-flow__connectionline) .svelte-flow__node :is(input, textarea, select, button)) { pointer-events: none; }
   @keyframes workflow-dashes {
     from { stroke-dashoffset: calc((6 + var(--workflow-dash-gap, 4)) * 1px); }
     to { stroke-dashoffset: 0; }

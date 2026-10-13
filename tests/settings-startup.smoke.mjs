@@ -15,7 +15,7 @@ const server = await createServer({ configFile: resolve('vite.config.mjs'), conf
   cacheDir: resolve(artifactDirectory, '.vite'),
   server: { host: '127.0.0.1', port: 0, strictPort: true, open: false } });
 const saved = { theme: 'dark', palette: 'sunset',
-  workflowDefaults: { dashed: true, curved: true, snap: true, gridSize: 27, dashGap: 4, curveStrength: 50 } };
+  workflowDefaults: { dashed: true, curved: true, snap: true, gridSize: 27, dashGap: 4, curveStrength: 50, nodeClearance: 24 } };
 const cases = [];
 const diagnostics = [];
 const chainMessage = 'Cause-tree regression preview.';

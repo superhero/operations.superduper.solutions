@@ -1,0 +1,30 @@
+/*
+Copyright (C) 2026 Erik Landvall
+SPDX-License-Identifier: AGPL-3.0-only
+See LICENSE and LICENSE-ADDITIONAL-TERMS.
+*/
+
+/* One inherited clock keeps new and existing segments at the same world phase. */
+@property --flow-routing-dash-phase {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
+}
+.svelte-flow:has(.flow-routing-dashes) {
+  animation: flow-routing-dash-clock var(--flow-routing-dash-duration, 0.5s) linear infinite;
+}
+@keyframes flow-routing-dash-clock {
+  from { --flow-routing-dash-phase: calc(var(--flow-routing-dash-period, 10) * 1px); }
+  to { --flow-routing-dash-phase: 0px; }
+}
+.svelte-flow__edge-path.flow-routing-dash-base { display: none; }
+/* An explicit transparent stroke keeps the full hit area outside the path's
+   fill bounds, including horizontal/vertical outer runs and hidden dash bases. */
+.flow-routing-path + .svelte-flow__edge-interaction { stroke: transparent; }
+.svelte-flow__edge.animated path.flow-routing-dash {
+  animation: none;
+  stroke-dashoffset: calc(var(--flow-routing-dash-origin) + var(--flow-routing-dash-phase));
+}
+@media (prefers-reduced-motion: reduce) {
+  .svelte-flow:has(.flow-routing-dashes) { animation: none; }
+}

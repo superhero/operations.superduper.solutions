@@ -32,6 +32,7 @@
     "@visulima/inspector": "2.1.0",
     "@visulima/vite-overlay": "2.0.41",
     "@xyflow/svelte": "1.7.0",
+    "@xyflow/system": "0.0.83",
     "bits-ui": "2.19.5",
     "c8": "12.0.0",
     "cn": "0.4.0",

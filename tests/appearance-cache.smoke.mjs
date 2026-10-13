@@ -12,9 +12,9 @@ const directory = resolve('tmp/test/appearance-cache');
 const cacheKey = 'v1/settings/appearance-cache';
 const cached = { version: 1, theme: 'dark', palette: 'sunset' };
 const authoritative = { theme: 'light', palette: 'alpine',
-  workflowDefaults: { dashed: true, curved: false, snap: true, gridSize: 27, dashGap: 6, curveStrength: 70 } };
+  workflowDefaults: { dashed: true, curved: false, snap: true, gridSize: 27, dashGap: 6, curveStrength: 70, nodeClearance: 24 } };
 const defaults = { theme: 'light', palette: 'default',
-  workflowDefaults: { dashed: false, curved: false, snap: false, gridSize: 12, dashGap: 4, curveStrength: 50 } };
+  workflowDefaults: { dashed: false, curved: false, snap: false, gridSize: 12, dashGap: 4, curveStrength: 50, nodeClearance: 12 } };
 const results = [], errors = [];
 await mkdir(directory, { recursive: true });
 const server = await createServer({ configFile: resolve('vite.config.mjs'), configLoader: 'native',
