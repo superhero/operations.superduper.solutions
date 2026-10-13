@@ -157,6 +157,72 @@ export function adaptRoutingGates(nodes: WorkflowDocumentNode[], edges: Workflow
     gateForType(gate, types.get(node.id)!, wired.has(JSON.stringify([node.id, switchGateInput(gate.id)])))) } });
 }
 
+export function workflowInputConnected(targetId: string, targetHandle: string | null | undefined,
+  edges: WorkflowDocumentEdge[]): boolean
+{
+  return edges.some(edge => edge.kind !== "schema" && !edge.hidden && !edge.detached &&
+    edge.target === targetId && (edge.targetHandle ?? null) === (targetHandle ?? null));
+}
+
+type ValueConnection = { source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null };
+type ConnectionValueType = WorkflowField["type"] | "Mixed";
+const scalarConnectionType = (type: ConnectionValueType) => ["Text", "Integer", "Number", "Boolean"].includes(type);
+const numericConnectionType = (type: ConnectionValueType) => type === "Integer" || type === "Number";
+
+// Interactive checks stay separate from document validation so old saved graphs
+// remain readable. Switch outputs retain the precise input type, including Integer.
+export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
+  nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[]): boolean
+{
+  const byId = new Map(nodes.map(node => [node.id, node]));
+  const active = edges.filter(edge => edge.kind === "mapping" && !edge.hidden && !edge.detached &&
+    !byId.get(edge.source)!.hidden && !byId.get(edge.target)!.hidden);
+  const mainInputs = (nodeId: string) => active.filter(edge => edge.target === nodeId && edge.targetHandle === "value");
+  const outputType = (nodeId: string, handle: string | null | undefined, seen = new Set<string>()): ConnectionValueType => {
+    const node = byId.get(nodeId)!;
+    if (node.type === "data") return node.data.fields.find(field => field.id === handle)!.type;
+    if (node.type === "cast") return node.data.targetType;
+    if (seen.has(nodeId)) return "Unknown";
+    const ancestors = new Set([...seen, nodeId]);
+    const types = new Set(mainInputs(nodeId).map(edge => outputType(edge.source, edge.sourceHandle, ancestors)));
+    return types.size === 1 ? [...types][0]! : types.size ? "Mixed" : "Unknown";
+  };
+  const compatible = (candidate: ValueConnection): boolean => {
+    const type = outputType(candidate.source, candidate.sourceHandle);
+    if (type === "Unknown" || type === "Mixed") return false;
+    const target = byId.get(candidate.target)!;
+    if (target.type === "data")
+    {
+      const expected = target.data.fields.find(field => field.id === candidate.targetHandle)!.type;
+      return type === expected || type === "Integer" && expected === "Number";
+    }
+    if (!scalarConnectionType(type)) return false;
+    if (target.type === "cast" || candidate.targetHandle === "value" || !mainInputs(target.id).length) return true;
+    const expected = outputType(target.id, undefined);
+    return type === expected || numericConnectionType(type) && numericConnectionType(expected);
+  };
+  if (!compatible(connection)) return false;
+  if (byId.get(connection.target)!.type !== "switch" || connection.targetHandle !== "value") return true;
+
+  active.push({ ...connection, id: "pending-connection", kind: "mapping",
+    sourceHandle: connection.sourceHandle!, targetHandle: connection.targetHandle });
+  const pending = [connection.target];
+  const visited = new Set<string>();
+  for (const nodeId of pending)
+  {
+    if (visited.has(nodeId)) continue;
+    visited.add(nodeId);
+    for (const edge of active)
+    {
+      if (edge.target === nodeId && edge.targetHandle !== "value" && !compatible(edge)) return false;
+      if (edge.source !== nodeId) continue;
+      if (!compatible(edge)) return false;
+      if (byId.get(edge.target)!.type === "switch" && edge.targetHandle === "value") pending.push(edge.target);
+    }
+  }
+  return true;
+}
+
 export function isValueConnection(connection: { sourceHandle?: string | null; targetHandle?: string | null },
   source: WorkflowDocumentNode, target: WorkflowDocumentNode, edges: WorkflowDocumentEdge[] = []): boolean
 {

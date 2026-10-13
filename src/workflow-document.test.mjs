@@ -18,6 +18,9 @@ function plan() {
   viewport: { x: -80, y: 12, zoom: 0.75 }, snap: true, curved: false, dashed: true };
 }
 
+const manualRoute = () => [{ x: 10, y: 20 }, { x: 100, y: 20 }, { x: 100, y: 100 }, { x: 200, y: 100 }];
+const staircaseRoute = length => Array.from({ length }, (_, index) => ({ x: Math.floor((index + 1) / 2), y: Math.floor(index / 2) }));
+
 Given("a workflow connecting two instances of the same operation", function () { this.plan = plan(); });
 When("that workflow is serialized and imported", function () {
   this.plan.nodes[0].selected = true;
@@ -67,6 +70,87 @@ Then("invalid workflow documents are rejected for these reasons:", function (tab
 Then("malformed and oversized workflow files are rejected", function () {
   assert.throws(() => parseWorkflowDocument("not json"), SyntaxError);
   assert.throws(() => parseWorkflowDocument(" ".repeat(maxWorkflowFileSize + 1)), /smaller than 2 MB/);
+});
+
+Then("version {int} workflows preserve authored routes and leave automatic connections unchanged", function (version) {
+  const automatic = { ...plan(), version };
+  assert.deepEqual(parseWorkflowDocument(JSON.stringify(automatic)), automatic);
+  assert.equal("manualRoute" in validateWorkflowDocument(automatic).edges[0], false);
+  const authored = structuredClone(automatic);
+  authored.edges[0].manualRoute = manualRoute();
+  assert.deepEqual(parseWorkflowDocument(JSON.stringify(authored)), authored);
+  assert.equal(validateWorkflowDocument(authored).version, version);
+});
+
+Then("manual route validation clones points and removes duplicate and collinear points", function () {
+  const document = plan();
+  const points = [{ x: 10, y: 20 }, { x: 10, y: 20 }, { x: 50, y: 20 }, { x: 100, y: 20 },
+    { x: 100, y: 60 }, { x: 100, y: 100 }, { x: 200, y: 100, selected: true }];
+  document.edges[0].manualRoute = points;
+  const before = structuredClone(document);
+  const normalized = validateWorkflowDocument(document);
+  const route = normalized.edges[0].manualRoute;
+  assert.deepEqual(route, manualRoute());
+  assert.deepEqual(document, before);
+  assert.notEqual(route, points);
+  for (const point of route) assert.ok(!points.includes(point));
+  assert.deepEqual(validateWorkflowDocument(normalized), normalized);
+  route[0].x = 11;
+  assert.deepEqual(document, before);
+});
+
+Then("manual routes accept 128 points and coordinates at both allowed boundaries", function () {
+  const document = plan();
+  document.edges[0].manualRoute = staircaseRoute(128);
+  assert.deepEqual(validateWorkflowDocument(document).edges[0].manualRoute, document.edges[0].manualRoute);
+  document.edges[0].manualRoute = [{ x: -1_000_000, y: -1_000_000 }, { x: 1_000_000, y: -1_000_000 },
+    { x: 1_000_000, y: 1_000_000 }];
+  assert.deepEqual(parseWorkflowDocument(JSON.stringify(document)), document);
+});
+
+const invalidManualRoutes = {
+  "a null value": () => null,
+  "a non-array value": () => ({}),
+  "no points": () => [],
+  "one point": () => [{ x: 0, y: 0 }],
+  "more than 128 points": () => staircaseRoute(129),
+  "too many redundant points": () => [...Array.from({ length: 128 }, () => ({ x: 0, y: 0 })), { x: 1, y: 0 }],
+  "a null point": () => [null, { x: 0, y: 0 }],
+  "an array point": () => [Object.assign([], { x: 0, y: 0 }), { x: 1, y: 0 }],
+  "a function point": () => [Object.assign(() => {}, { x: 0, y: 0 }), { x: 1, y: 0 }],
+  "a missing coordinate": () => [{ x: 0 }, { x: 1, y: 0 }],
+  "a nonnumeric coordinate": () => [{ x: "0", y: 0 }, { x: 1, y: 0 }],
+  "an infinite coordinate": () => [{ x: Infinity, y: 0 }, { x: 1, y: 0 }],
+  "a NaN coordinate": () => [{ x: NaN, y: 0 }, { x: 1, y: 0 }],
+  "a coordinate above bounds": () => [{ x: 1_000_001, y: 0 }, { x: 1, y: 0 }],
+  "a coordinate below bounds": () => [{ x: -1_000_001, y: 0 }, { x: 1, y: 0 }],
+  "a diagonal segment": () => [{ x: 0, y: 0 }, { x: 1, y: 1 }],
+  "a tiny diagonal segment": () => [{ x: 0, y: 0 }, { x: 1, y: 0.000001 }],
+  "an immediate reversal": () => [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 5, y: 0 }],
+  "only duplicate points": () => [{ x: 0, y: 0 }, { x: 0, y: 0 }],
+};
+
+Then(/^workflow validation rejects a manual route with (.+)$/, function (defect) {
+  const document = plan();
+  document.edges[0].manualRoute = invalidManualRoutes[defect]();
+  assert.throws(() => validateWorkflowDocument(document), /Manual connection routes must contain 2 to 128 points/);
+});
+
+Then("nested workflow snapshots clone authored routes while new interface connections remain automatic", function () {
+  const source = plan();
+  source.edges[0].manualRoute = manualRoute();
+  const outer = nestedPlan(source);
+  const snapshot = outer.nodes.find(node => node.type === "workflow").data.snapshot;
+  assert.deepEqual(snapshot, source);
+  assert.notEqual(snapshot.edges[0].manualRoute, source.edges[0].manualRoute);
+  assert.ok(outer.edges.length > 0);
+  assert.ok(outer.edges.every(edge => !("manualRoute" in edge)));
+  const validated = validateWorkflowDocument(outer);
+  assert.deepEqual(parseWorkflowDocument(JSON.stringify(outer)), validated);
+  const importedRoute = validated.nodes.find(node => node.type === "workflow").data.snapshot.edges[0].manualRoute;
+  source.edges[0].manualRoute[0].x = 12;
+  snapshot.edges[0].manualRoute[0].x = 14;
+  assert.deepEqual(importedRoute, manualRoute());
 });
 
 function schemaFixture() {
@@ -289,7 +373,7 @@ Then("only visible output-to-input named field connections are accepted", functi
   const target = panel(this.rich, "receiver", "inputs", "enabled");
   assert.equal(isWorkflowConnection({ source: source.id, target: target.id,
     sourceHandle: source.data.fields.find(field => field.label === "estimate").id,
-    targetHandle: target.data.fields.find(field => field.label === "enabled").id }, this.rich.nodes, this.rich.edges), true);
+    targetHandle: target.data.fields.find(field => field.label === "enabled").id }, this.rich.nodes, this.rich.edges), false);
   const hidden = this.rich.nodes.map(node => node.id === candidate.source ? { ...node, hidden: true } : node);
   assert.equal(isWorkflowConnection(candidate, hidden, this.rich.edges), false);
   assert.equal(isWorkflowConnection({ source: "producer", target: "receiver" }, this.rich.nodes, this.rich.edges), false);
@@ -304,6 +388,7 @@ Then("duplicate mappings and structural header connections are rejected", functi
 When("a nested schema connection is removed", function () {
   const parent = panel(this.rich, "producer", "outputs", "project");
   this.branch = [...schemaBranches(this.rich.nodes, this.rich.edges).get(parent.id).values()][0];
+  this.rich.edges.find(edge => edge.id === `schema:${this.branch.childId}`).manualRoute = manualRoute();
   this.beforeRemoval = structuredClone(this.rich);
   this.rich = replaceGraph(this.rich, removeGraphSelection({ nodes: [], edges: [{ id: `schema:${this.branch.childId}` }] }, this.rich.nodes, this.rich.edges));
 });
@@ -313,6 +398,7 @@ Then("that branch and its descendants are hidden while their topology is retaine
   assert.equal(this.rich.nodes.find(node => node.id === this.branch.childId).hidden, true);
   assert.equal(panel(this.rich, "producer", "outputs", "title").hidden, true);
   assert.equal(this.rich.edges.find(edge => edge.id === `schema:${this.branch.childId}`).detached, true);
+  assert.deepEqual(this.rich.edges.find(edge => edge.id === `schema:${this.branch.childId}`).manualRoute, manualRoute());
   assert.deepEqual(validateWorkflowDocument(this.rich), this.rich);
   const nested = panel(this.rich, "producer", "outputs", "title");
   assert.deepEqual(restoreDataBranch(nested.id, this.rich.nodes, this.rich.edges), { nodes: this.rich.nodes, edges: this.rich.edges });
@@ -538,6 +624,8 @@ Then("earlier document versions retain their original supported shape", function
 });
 Then("utility ports accept scalar routes and reject invalid directions, objects, comments, and duplicate operands", function () {
   const p = this.extended;
+  p.nodes.find(node => node.id === "cast").data.targetType = "Text";
+  const availableEdges = p.edges.filter(edge => edge.kind !== "mapping");
   const input = panel(p, "receiver", "inputs", "name");
   const inputHandle = input.data.fields.find(field => field.label === "name").id;
   const condition = p.nodes.find(node => node.id === "switch");
@@ -551,7 +639,8 @@ Then("utility ports accept scalar routes and reject invalid directions, objects,
     { source: output.id, sourceHandle: outputHandle, target: "switch", targetHandle: "value" },
     { source: output.id, sourceHandle: outputHandle, target: "switch", targetHandle: switchGateInput("gate-1") }
   ];
-  for (const candidate of valid) assert.equal(isWorkflowConnection(candidate, p.nodes, p.edges), true, JSON.stringify(candidate));
+  for (const candidate of valid) assert.equal(isWorkflowConnection(candidate, p.nodes,
+    p.edges.filter(edge => edge.target !== candidate.target || edge.targetHandle !== candidate.targetHandle)), true, JSON.stringify(candidate));
   const invalid = [
     { source: "cast", sourceHandle: "bad", target: "switch", targetHandle: "value" },
     { source: "switch", sourceHandle: "missing", target: "cast", targetHandle: "value" },
@@ -563,7 +652,7 @@ Then("utility ports accept scalar routes and reject invalid directions, objects,
     { source: object.id, sourceHandle: objectHandle, target: "switch", targetHandle: "value" },
     { source: object.id, sourceHandle: objectHandle, target: "cast", targetHandle: "value" }
   ];
-  for (const candidate of invalid) assert.equal(isWorkflowConnection(candidate, p.nodes, p.edges), false, JSON.stringify(candidate));
+  for (const candidate of invalid) assert.equal(isWorkflowConnection(candidate, p.nodes, availableEdges), false, JSON.stringify(candidate));
   p.edges.push({ ...valid[3], id: "operand", kind: "mapping" });
   assert.equal(isWorkflowConnection({ source: "cast", sourceHandle: "result", target: "switch", targetHandle: switchGateInput("gate-1") }, p.nodes, p.edges), false);
   assert.deepEqual(validateWorkflowDocument(p), p);
@@ -1010,7 +1099,9 @@ Then("additional property renames preserve escaped handles mappings and hidden d
       target: direction === "outputs" ? endpoint.id : index ? childId : node.id,
       targetHandle: direction === "outputs" ? endpoint.data.fields[0].id : handle
     }));
+    for (const edge of mappings) edge.manualRoute = manualRoute();
     graph.edges.push(...mappings);
+    graph.edges.find(edge => edge.id === `schema:${nestedChildId}`).manualRoute = manualRoute();
     graph = removeGraphSelection({ nodes: [{ id: nestedChildId }], edges: [] }, graph.nodes, graph.edges);
     graph = importedGraph(graph);
     const before = structuredClone(graph);
@@ -1026,8 +1117,10 @@ Then("additional property renames preserve escaped handles mappings and hidden d
     assert.equal(graph.nodes.find(item => item.id === nextNestedChildId).hidden, true);
     assert.equal(graph.edges.find(edge => edge.id === `schema:${nextNestedChildId}`).detached, true);
     assert.equal(graph.edges.find(edge => edge.id === `schema:${nextNestedChildId}`).hidden, true);
+    assert.deepEqual(graph.edges.find(edge => edge.id === `schema:${nextNestedChildId}`).manualRoute, manualRoute());
     const renamedMappings = graph.edges.filter(edge => edge.kind === "mapping");
     assert.deepEqual(renamedMappings.map(edge => edge.id), mappings.map(edge => edge.id));
+    assert.ok(renamedMappings.every(edge => JSON.stringify(edge.manualRoute) === JSON.stringify(manualRoute())));
     assert.equal(direction === "outputs" ? renamedMappings[0].sourceHandle : renamedMappings[0].targetHandle, nextFieldId);
     assert.equal(direction === "outputs" ? renamedMappings[1].source : renamedMappings[1].target, nextChildId);
     const descendantHandle = direction === "outputs" ? renamedMappings[1].sourceHandle : renamedMappings[1].targetHandle;

@@ -217,9 +217,12 @@ When("I map the project identifier between those operations", async function () 
 
 When("I map the project identifier by clicking the field handles", async function () {
   const { source, target } = await mappingPorts(this);
-  await source.click();
-  await target.click();
+  for (const handle of [source, target]) {
+    const point = await center(handle);
+    await this.page.mouse.click(point.x, point.y);
+  }
   await expect(connections(this.page)).toHaveCount(1);
+  await this.page.keyboard.press('Escape');
 });
 
 Then("the project identifier mapping keeps its saved field endpoints", async function () {

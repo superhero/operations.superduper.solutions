@@ -307,8 +307,11 @@ When("I connect the first operation to the second", async function () {
   await expect(connections(this.page)).toHaveCount(1);
 });
 When("I enable grid snapping and curved dashed connections", async function () {
-  for (const name of ["Snap to grid", "Curved connections", "Dashed connections"])
-    await this.page.getByRole("button", { name, exact: true }).click();
+  for (const name of ["Snap to grid", "Curved connections", "Dashed connections"]) {
+    const toggle = this.page.getByRole("button", { name, exact: true });
+    if (await toggle.getAttribute("aria-pressed") !== "true") await toggle.click();
+    await expect(toggle).toHaveAttribute("aria-pressed", "true");
+  }
 });
 When("I name the workflow {string} and wait for autosave", async function (name) {
   await renameWorkflow(this.page, name);

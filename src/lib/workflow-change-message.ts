@@ -4,6 +4,7 @@
 
 import type { SwitchGate, WorkflowDocument, WorkflowDocumentEdge, WorkflowDocumentNode } from "./workflow-document.ts";
 import { switchOperators } from "./workflow-utilities.ts";
+import { normalizeManualRoute } from "./flow-routing/manual.js";
 
 const excerpt = (value: string, limit = 72): string => {
   const text = value.trim().replace(/\s+/g, " ");
@@ -207,8 +208,14 @@ export function describeWorkflowChange(before: WorkflowDocument | null, after: W
   }
   for (const edge of after.edges)
   {
-    if (edge.kind === "schema") continue;
     const old = oldEdges.get(edge.id);
+    if (old && same(endpoints(old), endpoints(edge)))
+    {
+      const route = normalizeManualRoute(edge.manualRoute);
+      if (!same(normalizeManualRoute(old.manualRoute), route))
+        add(route ? "Adjust connection route" : "Reset connection route", next.connection(edge));
+    }
+    if (edge.kind === "schema") continue;
     if (!old || !same(endpoints(old), endpoints(edge))) add("Connect", next.connection(edge));
   }
   for (const [verb, values] of groups) actions.push(`${verb} ${list(values)}`);

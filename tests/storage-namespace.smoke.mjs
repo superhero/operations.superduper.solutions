@@ -34,7 +34,7 @@ const legacy = { settings: "operations-preferences-v1", catalog: "operations-wor
 const current = { settings: "v1/settings", catalog: "v1/workflows/index", workflows: "v1/workflows", metrics: "v1/metrics" };
 const legacyDatabaseNames = [...Object.values(legacy), `${legacy.workflows}_lock`, `${legacy.metrics}_lock`];
 const savedSettings = { theme: "dark", palette: "sunset", developerToolbar: true,
-  workflowDefaults: { dashed: true, curved: true, snap: true, gridSize: 27, dashGap: 6, curveStrength: 71, nodeClearance: 24 } };
+  workflowDefaults: { dashed: true, curved: true, snap: true, nodeSymbols: true, gridSize: 27, dashLength: 8, dashGap: 6, dashSpeed: 32, curveStrength: 71, nodeClearance: 24 } };
 const document = { version: 3, id: "namespace-migration-workflow", name: "Original workflow", description: "Saved before namespace migration",
   nodes: [], edges: [], viewport: { x: 35, y: -17, zoom: 1.25 }, snap: true, curved: true, dashed: true };
 const duration = 15 * 60_000;

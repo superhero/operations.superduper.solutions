@@ -98,7 +98,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <svg class="workflow-connection-preview" aria-hidden="true" width="1" height="1"
       data-source={resolved.fromNode.id} data-source-handle={resolved.fromHandle.id}
       data-target={resolved.toNode?.id} data-target-handle={resolved.toHandle?.id}>
-      <path d={path} fill="none" marker-end={markerEnd} style:stroke-dasharray={dashed ? "6 var(--workflow-dash-gap, 4)" : undefined} />
+      <path d={path} fill="none" marker-end={markerEnd} style:stroke-dasharray={dashed ? "var(--workflow-dash-length, 6) var(--workflow-dash-gap, 4)" : undefined} />
       <circle cx={resolved.to.x} cy={resolved.to.y} r="6" />
     </svg>
   </ViewportPortal>

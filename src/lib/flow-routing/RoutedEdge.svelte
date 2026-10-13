@@ -9,10 +9,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { routingContext, type RoutingContext } from './context.ts';
   import { bendRadius, routePath, routeMidpoint, projectRoute } from './path.js';
   import { dashSegments } from './dashes.js';
+  import SegmentControls from './SegmentControls.svelte';
   import './dashes.css';
 
   let props: EdgeProps = $props();
   const routing = getContext<RoutingContext | undefined>(routingContext);
+  let hovered = $state(false);
+  let focused = $state(false);
+  let group: SVGGElement;
   const obstacles = $derived(routing?.obstacles() ?? []);
   const projected = $derived(projectRoute(routing?.route(props.id), props));
   const segments = $derived(props.animated ? dashSegments(projected, routing?.dashPeriod() ?? 10, bendRadius, obstacles) : []);
@@ -26,6 +30,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
 </script>
 
+<g bind:this={group} role="presentation" onpointerenter={() => hovered = true} onpointerleave={() => hovered = false}
+  onfocusin={() => focused = true} onfocusout={event => focused = event.relatedTarget instanceof Node && group.contains(event.relatedTarget)}>
 <BaseEdge id={props.id} path={geometry[0]} class={segments.length ? 'flow-routing-path flow-routing-dash-base' : 'flow-routing-path'}
   labelX={geometry[1]} labelY={geometry[2]} label={props.label ?? ''} labelStyle={props.labelStyle ?? ''}
   markerStart={props.markerStart ?? ''} markerEnd={props.markerEnd ?? ''} style={props.style ?? ''} interactionWidth={props.interactionWidth ?? 20} />
@@ -39,3 +45,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {/each}
   </g>
 {/if}
+{#if routing?.editable() && projected && (hovered || focused || props.selected || routing.dragging(props.id))}
+  <SegmentControls id={props.id} route={projected} {routing} />
+{/if}
+</g>

@@ -278,3 +278,64 @@ Then('workflow change messages tolerate missing display references without expos
   changed.nodes[0].data.gates[0].operator = '==';
   assert.equal(describe(unknownGate, changed), 'Change Switch · Gate 1 from future-operator “yes” to Equals “yes”');
 });
+
+const manualRoute = () => [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }, { x: 200, y: 100 }];
+function routeHistoryFixture(kind) {
+  if (kind === 'legacy') {
+    const before = { ...workflow([operation('private-source', 'Get project'), operation('private-target', 'Create deployment')],
+      [{ id: 'private-edge', source: 'private-source', target: 'private-target' }]), version: 1 };
+    return { before, edge: before.edges[0], label: '“Get project” to “Create deployment”' };
+  }
+  const source = branch('private-source', 'Get project');
+  if (kind === 'schema') {
+    return { before: source, edge: source.edges.find(edge => edge.target === 'private-source-outputs'),
+      label: '“Get project” to “Get project” · Output · Response' };
+  }
+  const target = branch('private-target', 'Create deployment');
+  const edge = mapping('private-edge', 'private-source-outputs', 'private-source-outputs-field', 'private-target-inputs', 'private-target-inputs-field');
+  return { before: workflow([...source.nodes, ...target.nodes], [...source.edges, ...target.edges, edge]), edge,
+    label: '“Get project” · Output · Response · Project ID to “Create deployment” · Input · Path · Project reference' };
+}
+
+Then(/^workflow history describes (new|adjusted|reset) route intent on a (mapping|schema|legacy) connection$/, function (action, kind) {
+  const { before, edge, label } = routeHistoryFixture(kind);
+  if (action !== 'new') edge.manualRoute = manualRoute();
+  const after = structuredClone(before);
+  const changed = after.edges.find(candidate => candidate.id === edge.id);
+  if (action === 'reset') delete changed.manualRoute;
+  else changed.manualRoute = [{ x: 0, y: 0 }, { x: 120, y: 0 }, { x: 120, y: 100 }, { x: 200, y: 100 }];
+  assert.equal(describe(before, after), `${action === 'reset' ? 'Reset' : 'Adjust'} connection route ${label}`);
+  assert.doesNotMatch(describe(before, after), /private-|schema:|Disconnect|Connect /);
+});
+
+Then('workflow history ignores duplicate and collinear manual route points', function () {
+  const { before, edge } = routeHistoryFixture('mapping');
+  edge.manualRoute = manualRoute();
+  const after = structuredClone(before);
+  after.edges.find(candidate => candidate.id === edge.id).manualRoute = [{ x: 0, y: 0 }, { x: 0, y: 0 },
+    { x: 50, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 40 }, { x: 100, y: 100 }, { x: 200, y: 100 }];
+  assert.equal(describe(before, after), 'Save workflow');
+  assert.equal(describe(after, before), 'Save workflow');
+});
+
+Then('workflow history omits separate route messages for new and reconnected edges', function () {
+  const { before, edge, label } = routeHistoryFixture('mapping');
+  edge.manualRoute = manualRoute();
+  const unconnected = { ...before, edges: before.edges.filter(candidate => candidate.id !== edge.id) };
+  assert.equal(describe(unconnected, before), `Connect ${label}`);
+  const after = structuredClone(before);
+  const changed = after.edges.find(candidate => candidate.id === edge.id);
+  changed.target = 'private-source-inputs';
+  changed.targetHandle = 'private-source-inputs-field';
+  changed.manualRoute = [{ x: 0, y: 0 }, { x: 150, y: 0 }];
+  assert.equal(describe(before, after), `Disconnect ${label}; Connect “Get project” · Output · Response · Project ID to “Get project” · Input · Path · Project reference`);
+});
+
+Then('workflow history recognizes manual routes inside nested snapshots', function () {
+  const { before: snapshot, edge } = routeHistoryFixture('mapping');
+  edge.manualRoute = manualRoute();
+  const before = workflow([nested('private-nested', snapshot)]);
+  const after = structuredClone(before);
+  delete after.nodes[0].data.snapshot.edges.find(candidate => candidate.id === edge.id).manualRoute;
+  assert.equal(describe(before, after), 'Update nested workflow “Project delivery”');
+});

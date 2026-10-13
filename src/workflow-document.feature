@@ -43,6 +43,54 @@ Feature: Local workflow documents
   Scenario: Malformed or oversized JSON cannot be imported
     Then malformed and oversized workflow files are rejected
 
+  @manual-routing-persistence
+  Scenario Outline: Manual routes survive export and import in every supported document version
+    Then version <version> workflows preserve authored routes and leave automatic connections unchanged
+
+    Examples:
+      | version |
+      | 1       |
+      | 2       |
+      | 3       |
+
+  @manual-routing-persistence
+  Scenario: Authored routes are normalized without retaining caller-owned data
+    Then manual route validation clones points and removes duplicate and collinear points
+
+  @manual-routing-persistence
+  Scenario: Route limits include their documented boundaries
+    Then manual routes accept 128 points and coordinates at both allowed boundaries
+
+  @manual-routing-persistence
+  Scenario Outline: Invalid authored routes cannot enter workflow storage
+    Then workflow validation rejects a manual route with <defect>
+
+    Examples:
+      | defect                    |
+      | a null value              |
+      | a non-array value         |
+      | no points                 |
+      | one point                 |
+      | more than 128 points      |
+      | too many redundant points |
+      | a null point              |
+      | an array point            |
+      | a function point          |
+      | a missing coordinate      |
+      | a nonnumeric coordinate   |
+      | an infinite coordinate    |
+      | a NaN coordinate          |
+      | a coordinate above bounds |
+      | a coordinate below bounds |
+      | a diagonal segment        |
+      | a tiny diagonal segment   |
+      | an immediate reversal     |
+      | only duplicate points     |
+
+  @manual-routing-persistence
+  Scenario: Nested workflow routes remain isolated from their source and outer interface
+    Then nested workflow snapshots clone authored routes while new interface connections remain automatic
+
   Scenario: Documented schemas create separate input and response branches
     Given a documented workflow with nested objects and arrays
     Then location panels and all documented HTTP response panels have stable named field handles
@@ -60,7 +108,7 @@ Feature: Local workflow documents
     Then the version 2 workflow survives export and import with its handles and branch state
     And runtime selection and dimensions are not persisted
 
-  Scenario: Field mapping uses direction and named ports without guessing type compatibility
+  Scenario: Field mapping uses direction, named ports, and compatible declared types
     Given a documented workflow with nested objects and arrays
     Then only visible output-to-input named field connections are accepted
     And duplicate mappings and structural header connections are rejected

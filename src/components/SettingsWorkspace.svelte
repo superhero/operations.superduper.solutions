@@ -40,8 +40,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import SchemaSettings from "./settings/SchemaSettings.svelte";
   import { getSchemaLibrary, loadSchemaLibrary, uploadSchema, replaceSchema, renameSchema, moveSchema, setSchemaEnabled, deleteSchema, downloadSchema } from "$lib/schema-library.ts";
   import { defaultLocaleSettings, type LocaleSettings as LocalePreferences } from "$lib/locale-settings.ts";
-  import { isValidWorkflowCurveStrength, isValidWorkflowDashGap, isValidWorkflowGridSize, isValidWorkflowNodeClearance,
-    workflowCurveStrengthLimits, workflowDashGapLimits, workflowGridSizeLimits, workflowNodeClearanceLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
+  import { isValidWorkflowCurveStrength, isValidWorkflowDashLength, isValidWorkflowDashGap, isValidWorkflowDashSpeed, isValidWorkflowGridSize, isValidWorkflowNodeClearance,
+    workflowCurveStrengthLimits, workflowDashLengthLimits, workflowDashGapLimits, workflowDashSpeedLimits, workflowGridSizeLimits, workflowNodeClearanceLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
 
   let { palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
     locale = defaultLocaleSettings, localeError = "", onLocaleChange = () => {}, onRetryLocale = () => {},
@@ -70,9 +70,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let gridSizeDraft = $state("");
   let gridSizeInvalid = $state(false);
   const savedGridSize = $derived(workflowDefaults.gridSize);
+  let dashLengthDraft = $state("");
+  let dashLengthInvalid = $state(false);
+  const savedDashLength = $derived(workflowDefaults.dashLength);
   let dashGapDraft = $state("");
   let dashGapInvalid = $state(false);
   const savedDashGap = $derived(workflowDefaults.dashGap);
+  let dashSpeedDraft = $state("");
+  let dashSpeedInvalid = $state(false);
+  const savedDashSpeed = $derived(workflowDefaults.dashSpeed);
   let curveStrengthDraft = $state("");
   let curveStrengthInvalid = $state(false);
   const savedCurveStrength = $derived(workflowDefaults.curveStrength);
@@ -86,7 +92,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   ];
 
   $effect(() => { gridSizeDraft = String(savedGridSize); gridSizeInvalid = false; });
+  $effect(() => { dashLengthDraft = String(savedDashLength); dashLengthInvalid = false; });
   $effect(() => { dashGapDraft = String(savedDashGap); dashGapInvalid = false; });
+  $effect(() => { dashSpeedDraft = String(savedDashSpeed); dashSpeedInvalid = false; });
   $effect(() => { curveStrengthDraft = String(savedCurveStrength); curveStrengthInvalid = false; });
   $effect(() => { nodeClearanceDraft = String(savedNodeClearance); nodeClearanceInvalid = false; });
 
@@ -98,12 +106,28 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (gridSize !== workflowDefaults.gridSize) onWorkflowDefaultsChange({ ...workflowDefaults, gridSize });
   }
 
+  function commitDashLength() {
+    const raw = dashLengthDraft.trim();
+    const dashLength = Number(raw);
+    dashLengthInvalid = !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(raw) || !isValidWorkflowDashLength(dashLength);
+    if (dashLengthInvalid) return;
+    if (dashLength !== workflowDefaults.dashLength) onWorkflowDefaultsChange({ ...workflowDefaults, dashLength });
+  }
+
   function commitDashGap() {
     const raw = dashGapDraft.trim();
     const dashGap = Number(raw);
     dashGapInvalid = !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(raw) || !isValidWorkflowDashGap(dashGap);
     if (dashGapInvalid) return;
     if (dashGap !== workflowDefaults.dashGap) onWorkflowDefaultsChange({ ...workflowDefaults, dashGap });
+  }
+
+  function commitDashSpeed() {
+    const raw = dashSpeedDraft.trim();
+    const dashSpeed = Number(raw);
+    dashSpeedInvalid = !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(raw) || !isValidWorkflowDashSpeed(dashSpeed);
+    if (dashSpeedInvalid) return;
+    if (dashSpeed !== workflowDefaults.dashSpeed) onWorkflowDefaultsChange({ ...workflowDefaults, dashSpeed });
   }
 
   function commitCurveStrength() {
@@ -230,6 +254,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                 </div>
               {:else if option.key === "dashed"}
                 <div class="grid-size-setting">
+                  <span>Dash length</span>
+                  <div class="grid-size-control">
+                    <FieldInteger id="workflow-dash-length" label="Dash length" value={dashLengthDraft}
+                      minimum={workflowDashLengthLimits.min} maximum={workflowDashLengthLimits.max} required invalid={dashLengthInvalid}
+                      describedBy={dashLengthInvalid ? "workflow-dash-length-error" : undefined}
+                      onValueChange={value => { dashLengthDraft = value; dashLengthInvalid = false; }} onValueCommit={commitDashLength} />
+                    <span aria-hidden="true">px</span>
+                  </div>
+                  {#if dashLengthInvalid}<span class="grid-size-error" id="workflow-dash-length-error" role="alert">Dash length must be a whole number from {workflowDashLengthLimits.min} to {workflowDashLengthLimits.max}.</span>{/if}
+                </div>
+                <div class="grid-size-setting">
                   <span>Dash gap</span>
                   <div class="grid-size-control">
                     <FieldInteger id="workflow-dash-gap" label="Dash gap" value={dashGapDraft}
@@ -239,6 +274,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                     <span aria-hidden="true">px</span>
                   </div>
                   {#if dashGapInvalid}<span class="grid-size-error" id="workflow-dash-gap-error" role="alert">Dash gap must be a whole number from {workflowDashGapLimits.min} to {workflowDashGapLimits.max}.</span>{/if}
+                </div>
+                <div class="grid-size-setting">
+                  <span>Dash speed</span>
+                  <div class="grid-size-control">
+                    <FieldInteger id="workflow-dash-speed" label="Dash speed" value={dashSpeedDraft}
+                      minimum={workflowDashSpeedLimits.min} maximum={workflowDashSpeedLimits.max} required invalid={dashSpeedInvalid}
+                      describedBy={dashSpeedInvalid ? "workflow-dash-speed-error" : undefined}
+                      onValueChange={value => { dashSpeedDraft = value; dashSpeedInvalid = false; }} onValueCommit={commitDashSpeed} />
+                    <span aria-hidden="true">px/s</span>
+                  </div>
+                  {#if dashSpeedInvalid}<span class="grid-size-error" id="workflow-dash-speed-error" role="alert">Dash speed must be a whole number from {workflowDashSpeedLimits.min} to {workflowDashSpeedLimits.max}.</span>{/if}
                 </div>
               {:else}
                 <div class="grid-size-setting">
@@ -252,20 +298,28 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                   </div>
                   {#if curveStrengthInvalid}<span class="grid-size-error" id="workflow-curve-strength-error" role="alert">Curve strength must be a whole number from {workflowCurveStrengthLimits.min} to {workflowCurveStrengthLimits.max}.</span>{/if}
                 </div>
-                <div class="grid-size-setting">
-                  <span>Node clearance</span>
-                  <div class="grid-size-control">
-                    <FieldInteger id="workflow-node-clearance" label="Node clearance" value={nodeClearanceDraft}
-                      minimum={workflowNodeClearanceLimits.min} maximum={workflowNodeClearanceLimits.max} required invalid={nodeClearanceInvalid}
-                      describedBy={nodeClearanceInvalid ? "workflow-node-clearance-error" : undefined}
-                      onValueChange={value => { nodeClearanceDraft = value; nodeClearanceInvalid = false; }} onValueCommit={commitNodeClearance} />
-                    <span aria-hidden="true">px</span>
-                  </div>
-                  {#if nodeClearanceInvalid}<span class="grid-size-error" id="workflow-node-clearance-error" role="alert">Node clearance must be a whole number from {workflowNodeClearanceLimits.min} to {workflowNodeClearanceLimits.max}.</span>{/if}
-                </div>
               {/if}
             </div>
           {/each}
+          <div class="workflow-default-pair">
+            <div class="grid-size-setting">
+              <span>Node clearance</span>
+              <div class="grid-size-control">
+                <FieldInteger id="workflow-node-clearance" label="Node clearance" value={nodeClearanceDraft}
+                  minimum={workflowNodeClearanceLimits.min} maximum={workflowNodeClearanceLimits.max} required invalid={nodeClearanceInvalid}
+                  describedBy={nodeClearanceInvalid ? "workflow-node-clearance-error" : undefined}
+                  onValueChange={value => { nodeClearanceDraft = value; nodeClearanceInvalid = false; }} onValueCommit={commitNodeClearance} />
+                <span aria-hidden="true">px</span>
+              </div>
+              {#if nodeClearanceInvalid}<span class="grid-size-error" id="workflow-node-clearance-error" role="alert">Node clearance must be a whole number from {workflowNodeClearanceLimits.min} to {workflowNodeClearanceLimits.max}.</span>{/if}
+            </div>
+          </div>
+          <div class="workflow-default-pair">
+            <button class="workflow-default" type="button" role="switch" aria-checked={workflowDefaults.nodeSymbols}
+              onclick={() => onWorkflowDefaultsChange({ ...workflowDefaults, nodeSymbols: !workflowDefaults.nodeSymbols })}>
+              <span>Node symbols</span><span class="default-switch" aria-hidden="true"><span></span></span>
+            </button>
+          </div>
         </div>
         {#if workflowDefaultsError}
           <div class="defaults-error"><p role="alert">{workflowDefaultsError}</p><button class="defaults-retry" type="button" onclick={onRetryWorkflowDefaults}>Retry saving</button></div>

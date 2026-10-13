@@ -12,6 +12,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 }
 .svelte-flow:has(.flow-routing-dashes) {
   animation: flow-routing-dash-clock var(--flow-routing-dash-duration, 0.5s) linear infinite;
+  animation-play-state: var(--flow-routing-dash-play-state, running);
 }
 @keyframes flow-routing-dash-clock {
   from { --flow-routing-dash-phase: calc(var(--flow-routing-dash-period, 10) * 1px); }

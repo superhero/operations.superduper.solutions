@@ -4,6 +4,7 @@
 
 import { commentTextLimit, isValueConnection, switchGateLimit, switchOperators, switchValueLimit,
   workflowDescriptionLimit, workflowInterface } from "./workflow-utilities.ts";
+import { normalizeManualRoute } from "./flow-routing/manual.js";
 
 export type OperationData = {
   operationId: string;
@@ -51,6 +52,7 @@ export type WorkflowDocumentEdge = {
   kind?: "schema" | "mapping";
   hidden?: boolean;
   detached?: boolean;
+  manualRoute?: { x: number; y: number }[];
 };
 export type WorkflowDocument = {
   version: 1 | 2 | 3;
@@ -315,8 +317,12 @@ function validateDocument(value: unknown, context: ValidationContext, depth: num
       throw new Error("Every workflow connection must refer to nodes in this document.");
     if (rich && edge.kind !== undefined && edge.kind !== "schema" && edge.kind !== "mapping")
       throw new Error("Unsupported workflow connection kind.");
+    const manualRoute = edge.manualRoute === undefined ? undefined : normalizeManualRoute(edge.manualRoute);
+    if (manualRoute === null)
+      throw new Error("Manual connection routes must contain 2 to 128 points with finite coordinates between -1000000 and 1000000, orthogonal segments and no immediate reversals.");
     return {
       id: text(edge.id, "Connection ID", rich ? 4096 : 256), source, target,
+      ...(manualRoute ? { manualRoute } : {}),
       ...(rich && edge.kind !== undefined ? { kind: edge.kind as "schema" | "mapping" } : {}),
       ...(rich && edge.sourceHandle !== undefined ? { sourceHandle: text(edge.sourceHandle, "Source handle", 4096) } : {}),
       ...(rich && edge.targetHandle !== undefined ? { targetHandle: text(edge.targetHandle, "Target handle", 4096) } : {}),

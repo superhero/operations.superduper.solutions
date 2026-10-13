@@ -10,12 +10,14 @@ import { readAppearanceCache, writeAppearanceCache } from "./appearance-cache.ts
 import { appSettingsDatabaseName } from "./storage-names.ts";
 export { appSettingsDatabaseName } from "./storage-names.ts";
 
-export type WorkflowDefaults = { dashed: boolean; curved: boolean; snap: boolean; gridSize: number; dashGap: number; curveStrength: number; nodeClearance: number };
+export type WorkflowDefaults = { dashed: boolean; curved: boolean; snap: boolean; nodeSymbols: boolean; gridSize: number; dashLength: number; dashGap: number; dashSpeed: number; curveStrength: number; nodeClearance: number };
 export const workflowGridSizeLimits = { min: 1, max: 32 } as const;
+export const workflowDashLengthLimits = { min: 1, max: 128 } as const;
 export const workflowDashGapLimits = { min: 1, max: 128 } as const;
+export const workflowDashSpeedLimits = { min: 0, max: 512 } as const;
 export const workflowCurveStrengthLimits = { min: 0, max: 100 } as const;
 export const workflowNodeClearanceLimits = { min: 0, max: 128 } as const;
-export const defaultWorkflowSettings: Readonly<WorkflowDefaults> = { dashed: false, curved: false, snap: false, gridSize: 12, dashGap: 4, curveStrength: 50, nodeClearance: 12 };
+export const defaultWorkflowSettings: Readonly<WorkflowDefaults> = { dashed: true, curved: false, snap: true, nodeSymbols: true, gridSize: 8, dashLength: 8, dashGap: 16, dashSpeed: 64, curveStrength: 50, nodeClearance: 16 };
 
 export function isValidWorkflowGridSize(value: unknown): value is number
 {
@@ -23,10 +25,22 @@ export function isValidWorkflowGridSize(value: unknown): value is number
     && value >= workflowGridSizeLimits.min && value <= workflowGridSizeLimits.max;
 }
 
+export function isValidWorkflowDashLength(value: unknown): value is number
+{
+  return typeof value === "number" && Number.isSafeInteger(value)
+    && value >= workflowDashLengthLimits.min && value <= workflowDashLengthLimits.max;
+}
+
 export function isValidWorkflowDashGap(value: unknown): value is number
 {
   return typeof value === "number" && Number.isSafeInteger(value)
     && value >= workflowDashGapLimits.min && value <= workflowDashGapLimits.max;
+}
+
+export function isValidWorkflowDashSpeed(value: unknown): value is number
+{
+  return typeof value === "number" && Number.isSafeInteger(value)
+    && value >= workflowDashSpeedLimits.min && value <= workflowDashSpeedLimits.max;
 }
 
 export function isValidWorkflowCurveStrength(value: unknown): value is number
@@ -181,8 +195,11 @@ function normalize(saved: SavedSettings, legacy: LegacySettings, paletteIds: rea
     dashed: typeof workflow.dashed === "boolean" ? workflow.dashed : defaultWorkflowSettings.dashed,
     curved: typeof workflow.curved === "boolean" ? workflow.curved : defaultWorkflowSettings.curved,
     snap: typeof workflow.snap === "boolean" ? workflow.snap : defaultWorkflowSettings.snap,
+    nodeSymbols: typeof workflow.nodeSymbols === "boolean" ? workflow.nodeSymbols : defaultWorkflowSettings.nodeSymbols,
     gridSize: isValidWorkflowGridSize(workflow.gridSize) ? workflow.gridSize : defaultWorkflowSettings.gridSize,
+    dashLength: isValidWorkflowDashLength(workflow.dashLength) ? workflow.dashLength : defaultWorkflowSettings.dashLength,
     dashGap: isValidWorkflowDashGap(workflow.dashGap) ? workflow.dashGap : defaultWorkflowSettings.dashGap,
+    dashSpeed: isValidWorkflowDashSpeed(workflow.dashSpeed) ? workflow.dashSpeed : defaultWorkflowSettings.dashSpeed,
     curveStrength: isValidWorkflowCurveStrength(workflow.curveStrength) ? workflow.curveStrength : defaultWorkflowSettings.curveStrength,
     nodeClearance: isValidWorkflowNodeClearance(workflow.nodeClearance) ? workflow.nodeClearance : defaultWorkflowSettings.nodeClearance,
   } };
