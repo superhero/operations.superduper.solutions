@@ -174,17 +174,36 @@ Given(/^an occupied (cast|switch|switch operand|legacy) workflow input$/, async 
 Then('its existing connection blocks another source until it is deleted', async function () {
   const page = this.page, input = target(page, this.singleHandle), alternative = source(page, 'source-b', this.singleLegacy);
   await expectLocked(input, true);
+  await expect(input).not.toHaveClass(/\bconnectablestart\b/);
   await assertRejected(this, alternative, input);
   await removeConnection(page, 'single-original');
   await expectLocked(input, false);
+  if (this.singleLegacy) await expect(input).toHaveClass(/\bconnectablestart\b/);
   await gesture(page, alternative, input, 'click');
   await expect(connections(page)).toHaveCount(this.singleBaseline.edges.length);
   await expectLocked(input, true);
+  await expect(input).not.toHaveClass(/\bconnectablestart\b/);
   await saved(page);
   const document = (await readExport(page)).document;
   const added = document.edges.find(edge => edge.source === 'single-source-b');
   assert.equal(added?.target, 'single-target');
   assert.equal(added?.targetHandle ?? null, this.singleHandle);
+  if (this.singleLegacy) {
+    await removeConnection(page, added.id);
+    await expectLocked(input, false);
+    await expect(input).toHaveClass(/\bconnectablestart\b/);
+    await expect(alternative).toHaveClass(/\bconnectableend\b/);
+    await gesture(page, input, alternative);
+    await expect(connections(page)).toHaveCount(1);
+    await expectLocked(input, true);
+    await expect(input).not.toHaveClass(/\bconnectablestart\b/);
+    await saved(page);
+    const reversed = (await readExport(page)).document.edges[0];
+    assert.equal(reversed.source, 'single-source-b', 'A reverse drag must retain the output as its source.');
+    assert.equal(reversed.target, 'single-target', 'A reverse drag must retain the input as its target.');
+    assert.equal(reversed.sourceHandle ?? null, null);
+    assert.equal(reversed.targetHandle ?? null, null);
+  }
 });
 
 Given('a saved cast input with two existing incoming connections', async function () {

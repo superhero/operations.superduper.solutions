@@ -64,8 +64,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <div class="operation-port">
           <span class="port-label">{input ? "Input" : "Output"}</span>
           <span class="port-type">Object</span>
-          <Handle type={input ? "target" : "source"} {position} isConnectableStart={!input}
-            isConnectableEnd={input && !connected} aria-disabled={input && connected}
+          <Handle type={input ? "target" : "source"} {position} isConnectableStart={!input || !connected}
+            isConnectableEnd={!input || !connected} aria-disabled={input && connected}
             aria-label={`${data.name} ${input ? "input" : "output"}`} />
         </div>
       {/if}
