@@ -5,37 +5,6 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 > [!NOTE]
 > This project is under active development and is currently in a pre-release state.
 
-## Project structure
-
-### Find the right directory
-
-| Directory | Responsibility |
-| --- | --- |
-| [src](src/README.md) | Application startup, interface, domain logic and bundled assets |
-| [tests](tests/README.md) | Browser scenarios, fixtures and standalone tests awaiting migration |
-| [.github](.github/README.md) | CI workflows, automation helpers, policies, tests and generated badges |
-| [docs](docs/README.md) | Architectural decisions and contributor documentation |
-
-Directory READMEs explain local file responsibilities and placement. Start with
-[Contributing](CONTRIBUTING.md) for the architectural decision index and
-[repository automation](.github/workflows/README.md) for validation and release
-procedures.
-
-### Root files
-
-Keep project-wide configuration and governance here:
-
-| Files | Purpose |
-| --- | --- |
-| `package.json`, `package-lock.json`, `.node-version` | Commands, dependencies and the supported toolchain |
-| `vite.config.mjs`, `tsconfig.json`, `components.json` | Build integration, TypeScript rules and shared UI component configuration |
-| `cucumber.config.mjs`, `.c8rc.json` | Test profiles, reporting outputs and measured coverage scope |
-| `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CITATION.cff`, license files | Contribution guidance, conduct, citation and licensing |
-
-Application behavior belongs under `src`; automation belongs under `.github`.
-Build output (`dist`), temporary reports (`tmp`) and installed dependencies
-(`node_modules`) are generated and ignored, not places for authored project files.
-
 ## npm commands
 
 <details>
