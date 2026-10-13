@@ -2,6 +2,10 @@
 
 ## Staging
 
+<!-- changelog-staging-end -->
+
+## 0.0.42
+
 <!-- changelog-commit:e2551bfd987b9ce39bc7853e90b2b05994494a71 -->
 ### Commit [`e2551bf`](https://github.com/superhero/operations.superduper.solutions/commit/e2551bfd987b9ce39bc7853e90b2b05994494a71)
 
@@ -61,5 +65,3 @@ chore: integrate staged changelog automation from develop
 Combine the validated changelog automation with manual connection editing and its reverse-connection fix. Regenerate the scenario badge from the combined test evidence.
 
 ```
-
-<!-- changelog-staging-end -->
