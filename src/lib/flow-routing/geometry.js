@@ -22,7 +22,8 @@ export function routingScene(nodes, edges, getInternalNode) {
       id: edge.id, sourceNode, targetNode, sourceHandle: edge.sourceHandle,
       targetHandle: edge.targetHandle, connectionMode: ConnectionMode.Strict,
     });
-    if (position) connections.push({ id: edge.id, source: edge.source, target: edge.target, ...position });
+    if (position) connections.push({ id: edge.id, source: edge.source, target: edge.target, ...position,
+      ...(edge.manualRoute !== undefined ? { manualRoute: edge.manualRoute.map(point => ({ x: point.x, y: point.y })) } : {}) });
   }
   return { nodes: obstacles, edges: connections };
 }

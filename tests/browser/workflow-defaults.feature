@@ -5,8 +5,8 @@
 @workflow-defaults
 Feature: Browser-local workflow defaults
   Scenario: Workflow defaults persist and initialize untouched and new workflows
-    Then Settings sections open exclusively and workflow defaults start disabled
-    When I enable all workflow defaults
+    Then Settings sections open exclusively with the current workflow defaults in a fresh browser
+    When I save different workflow defaults
     And workflow defaults recover after a failed settings save
     Then the defaults survive reload and initialize untouched and new workflows
 
@@ -26,17 +26,29 @@ Feature: Browser-local workflow defaults
 
     Examples:
       | stored   | expected |
-      | missing  | 12       |
+      | missing  | 16       |
       | 0        | 0        |
       | 24       | 24       |
       | 128      | 128      |
-      | -1       | 12       |
-      | 129      | 12       |
-      | 12.5     | 12       |
-      | "24"     | 12       |
-      | null     | 12       |
-      | NaN      | 12       |
-      | Infinity | 12       |
+      | -1       | 16       |
+      | 129      | 16       |
+      | 12.5     | 16       |
+      | "24"     | 16       |
+      | null     | 16       |
+      | NaN      | 16       |
+      | Infinity | 16       |
 
   Scenario: Node clearance accepts bounded integer values and rejects invalid drafts
     Then node clearance enforces its bounds and survives reload without saving a workflow
+
+  @workflow-dash-settings
+  Scenario: Dash length and speed normalize independently from other browser defaults
+    Then missing and malformed dash settings preserve each other and the remaining workflow defaults
+
+  @workflow-dash-settings
+  Scenario: Dash length and speed accept bounded integers and retain a paused speed after reload
+    Then dash length and speed controls reject invalid drafts and persist their independent limits
+
+  @workflow-node-symbols
+  Scenario: Node symbols change immediately and persist without hiding workflow actions
+    Then the Node symbols preference hides existing node headings and footers across reload and restores them independently of actions

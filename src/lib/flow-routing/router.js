@@ -5,7 +5,8 @@
 // Orthogonal routing over obstacle boundaries, independent of Svelte and the DOM.
 // Searches are deliberately bounded: impossible or very crowded scenes retain a
 // visible fallback connection instead of holding up the editor.
-const EPSILON = 1e-7;
+import { EPSILON, rectangles, terminalRectangles, intersects, clearRoute } from './clearance.js';
+import { resolveManualRoute } from './manual.js';
 const directions = { right: [1, 0], bottom: [0, 1], left: [-1, 0], top: [0, -1] };
 const defaults = { nodePadding: 12, stubLength: 20, maxLengthRatio: 4, maxGridPoints: 8192, maxWork: 500000, maxRoutedEdges: 250 };
 const distance = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
@@ -28,55 +29,6 @@ function simplify(points) {
     output.push({ x: point.x, y: point.y });
   }
   return output;
-}
-
-function rectangles(nodes, padding) {
-  return nodes.map((node) => ({ id: node.id, left: node.x - padding, top: node.y - padding,
-    right: node.x + node.width + padding, bottom: node.y + node.height + padding }));
-}
-
-// A tight terminal may need less clearance on the faces forming its corridor.
-// Keep every other face padded instead of making the whole scene hug node bodies.
-function terminalRectangles(nodes, padding, edge) {
-  const bodies = rectangles(nodes, 0), boxes = rectangles(nodes, padding);
-  const axes = [['left', 'right', 'top', 'bottom', 'x'], ['top', 'bottom', 'left', 'right', 'y']];
-  for (const id of [edge.source, edge.target]) {
-    const owner = bodies.findIndex(box => box.id === id);
-    if (owner < 0) continue;
-    for (let index = 0; index < bodies.length; index++) {
-      if (index === owner) continue;
-      for (const [low, high, acrossLow, acrossHigh] of axes) {
-        const a = bodies[owner], b = bodies[index];
-        if (Math.min(a[acrossHigh], b[acrossHigh]) <= Math.max(a[acrossLow], b[acrossLow])) continue;
-        const [first, second] = a[high] <= b[low] ? [owner, index] : [index, owner];
-        if (bodies[first][high] > bodies[second][low]) continue;
-        const middle = (bodies[first][high] + bodies[second][low]) / 2;
-        boxes[first][high] = Math.min(boxes[first][high], middle);
-        boxes[second][low] = Math.max(boxes[second][low], middle);
-      }
-    }
-  }
-  for (const [point, owner] of [[{ x: edge.sourceX, y: edge.sourceY }, edge.source],
-    [{ x: edge.targetX, y: edge.targetY }, edge.target]]) {
-    for (let index = 0; index < boxes.length; index++) {
-      const box = boxes[index], body = bodies[index];
-      if (body.id === owner || point.x < box.left || point.x > box.right || point.y < box.top || point.y > box.bottom) continue;
-      // Handles and free-pointer tips can themselves lie inside another node's
-      // preferred buffer. Reserve half the available terminal gap on that face.
-      for (const [low, high, , , axis] of axes) {
-        if (point[axis] <= body[low]) box[low] = Math.max(box[low], (point[axis] + body[low]) / 2);
-        else if (point[axis] >= body[high]) box[high] = Math.min(box[high], (point[axis] + body[high]) / 2);
-      }
-    }
-  }
-  return boxes;
-}
-
-function intersects(a, b, box) {
-  if (Math.abs(a.x - b.x) < EPSILON) return a.x > box.left + EPSILON && a.x < box.right - EPSILON &&
-    Math.max(a.y, b.y) > box.top + EPSILON && Math.min(a.y, b.y) < box.bottom - EPSILON;
-  return a.y > box.top + EPSILON && a.y < box.bottom - EPSILON &&
-    Math.max(a.x, b.x) > box.left + EPSILON && Math.min(a.x, b.x) < box.right - EPSILON;
 }
 
 function clear(a, b, boxes, budget, except) {
@@ -321,15 +273,6 @@ function sharedLength(points, routes, edge, budget) {
   return total;
 }
 
-function clearRoute(points, boxes, edge, budget) {
-  for (let i = 1; i < points.length; i++) for (const box of boxes) {
-    if (--budget.work < 0) return false;
-    if (i === 1 && box.id === edge.source || i === points.length - 1 && box.id === edge.target) continue;
-    if (intersects(points[i - 1], points[i], box)) return false;
-  }
-  return true;
-}
-
 function alignSegments(edge, nodes, routes, original, options, budget) {
   if (original.status !== 'routed' || original.points.length < 4 || !routes.length || budget.work <= 0) return original;
   let current = original, shared = sharedLength(current.points, routes, edge, budget);
@@ -384,21 +327,29 @@ export function routeEdges({ nodes, edges }, options = {}) {
   const config = settings(options), budget = { work: config.maxWork }, sorted = [...edges].sort(compareId);
   const obstacles = nodes.filter((node) => [node.x, node.y, node.width, node.height].every(Number.isFinite) && node.width > 0 && node.height > 0).sort(compareId);
   const output = new Map();
-  for (const [index, edge] of sorted.entries()) output.set(edge.id,
-    index < config.maxRoutedEdges ? baseline(edge, obstacles, config, budget) : fallback(edge, config));
+  for (const [index, edge] of sorted.entries()) {
+    const manual = edge.manualRoute !== undefined ? resolveManualRoute(edge.manualRoute, edge, obstacles, config, budget) : null;
+    output.set(edge.id, manual || (index < config.maxRoutedEdges ? baseline(edge, obstacles, config, budget) : fallback(edge, config)));
+  }
   for (const edge of sorted.slice(0, config.maxRoutedEdges)) {
     if (budget.work <= 0) break;
+    if (output.get(edge.id).manualState === 'applied') continue;
     const routes = sorted.map((other) => ({ ...other, points: output.get(other.id).points }));
     const routed = improve(edge, obstacles, routes, output.get(edge.id), config, budget);
     output.set(edge.id, alignSegments(edge, obstacles, routes, routed, config, budget));
   }
+  for (const edge of sorted) if (edge.manualRoute !== undefined && !output.get(edge.id).manualState)
+    output.set(edge.id, { ...output.get(edge.id), manualState: 'suspended' });
   return output;
 }
 
 export function routeConnection(edge, nodes, existingRoutes = [], options = {}) {
   const config = settings(options), budget = { work: config.maxWork };
   const obstacles = nodes.filter((node) => [node.x, node.y, node.width, node.height].every(Number.isFinite) && node.width > 0 && node.height > 0).sort(compareId);
+  const manual = edge.manualRoute !== undefined ? resolveManualRoute(edge.manualRoute, edge, obstacles, config, budget) : null;
+  if (manual) return manual;
   const routes = existingRoutes.map((route) => ({ ...route, points: simplify(route.points) })).sort(compareId);
   const routed = improve(edge, obstacles, routes, baseline(edge, obstacles, config, budget), config, budget);
-  return alignSegments(edge, obstacles, routes, routed, config, budget);
+  const output = alignSegments(edge, obstacles, routes, routed, config, budget);
+  return edge.manualRoute !== undefined ? { ...output, manualState: 'suspended' } : output;
 }

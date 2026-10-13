@@ -37,6 +37,11 @@ Feature: Measured workflow connection routing
     Given an imported routing workflow with dash gap 13
     Then reduced motion keeps the routed dashes stationary
 
+  @workflow-dash-settings
+  Scenario: Dash preferences update routed and curved connections with pause and resume
+    Given an imported routing workflow with dash gap 4
+    Then dash length gap and speed update existing routes and previews and pause both connection styles
+
   Scenario: Curved connections retain the configured curve strength
     Given an imported routing workflow with a blocking node
     Then changing curve strength changes its control points without changing its endpoints

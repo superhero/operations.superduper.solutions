@@ -5,8 +5,8 @@
 import type { Operation } from "./catalog.ts";
 import { validateWorkflowDocument, type SwitchGate, type WorkflowData, type WorkflowDocument,
   type WorkflowDocumentEdge, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
-import { adaptRoutingGates, gateForType, isValueConnection, routingInputTypes, switchGateInput, switchGateLimit,
-  switchOperators, switchValueLimit, workflowInterface } from "./workflow-utilities.ts";
+import { adaptRoutingGates, gateForType, isValueConnection, isWorkflowConnectionTypeCompatible, routingInputTypes, switchGateInput, switchGateLimit,
+  switchOperators, switchValueLimit, workflowInputConnected, workflowInterface } from "./workflow-utilities.ts";
 
 type Schema = Record<string, unknown>;
 type Shape = { schema: Schema; seen: string[]; type: WorkflowField["type"]; notice?: string };
@@ -602,13 +602,12 @@ export function isWorkflowConnection(connection: { source: string; target: strin
 {
   const source = nodes.find(node => node.id === connection.source);
   const target = nodes.find(node => node.id === connection.target);
-  if (!source || !target || source === target || source.hidden || target.hidden || edges.some(edge =>
-    edge.source === source.id && edge.target === target.id &&
-    (edge.sourceHandle ?? null) === (connection.sourceHandle ?? null) && (edge.targetHandle ?? null) === (connection.targetHandle ?? null))) return false;
+  if (!source || !target || source === target || source.hidden || target.hidden ||
+    workflowInputConnected(target.id, connection.targetHandle, edges)) return false;
   if ((source.type === "operation" || source.type === undefined) && (target.type === "operation" || target.type === undefined))
     return !connection.sourceHandle && !connection.targetHandle &&
     !nodes.some(node => node.type === "data" && [source.id, target.id].includes(node.data.ownerId));
-  return isValueConnection(connection, source, target, edges);
+  return isValueConnection(connection, source, target, edges) && isWorkflowConnectionTypeCompatible(connection, nodes, edges);
 }
 
 export function createUtilityNode(type: "switch" | "cast" | "comment", position: { x: number; y: number }, id: string): WorkflowDocumentNode

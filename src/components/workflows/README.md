@@ -31,6 +31,24 @@ editing separate from canvas gestures. Preserve modal shortcut isolation,
 connection eligibility, transient selection and completed-edit autosave. Comment
 previews use the local Markdown parser with escaped text and restricted links.
 
+Each input accepts one active value connection and unlocks when it is disconnected.
+Outputs can feed multiple inputs; schema attachments do not occupy value inputs.
+Keep handle availability and connection validation aligned through
+`workflowInputConnected`. Previously saved connections remain readable.
+
+New connections require matching declared types, with Integer also accepted by
+Number inputs. Cast nodes provide scalar conversions; Switch outputs retain their
+incoming type. Object and Array connections still require runtime schema validation.
+
+Native Tab order follows each operation's input columns inward, then the operation,
+then its output columns outward; Shift+Tab reverses it. `workflow-focus-order.ts`
+orders rendered nodes by schema branches while retaining their saved order and
+positions. Keep each node's controls together and hidden nodes out of navigation.
+
+The Workflows setting **Node symbols** controls decorative header/footer icons
+across all node types. Action icons remain visible; this preference is stored with
+browser settings and applies immediately to existing workflows.
+
 Use shared semantic colors and reduced-motion behavior. The
 [workflow canvas contract](../../../docs/adr/svelte-interface.md#workflow-canvas)
 records selection, placement, history and execution expectations.

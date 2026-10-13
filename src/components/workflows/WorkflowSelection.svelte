@@ -88,7 +88,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       additive = null;
     }
     function escape(event: KeyboardEvent) {
-      if (event.key !== "Escape" || store.connection.inProgress || !(event.target instanceof Element) ||
+      if (event.key !== "Escape" || store.connection.inProgress || store.clickConnectStartHandle || !(event.target instanceof Element) ||
         event.target.closest("input, textarea, select, [contenteditable], .nokey") ||
         event.target !== document.body && !element.contains(event.target)) return;
       event.preventDefault();

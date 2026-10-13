@@ -23,6 +23,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     edit: (id: string, fieldId: string, name: string, type: WorkflowField["type"]) => void;
     remove: (id: string, fieldId: string) => void } | undefined>("workflow-add-property");
   const editorActive = getContext<(() => boolean) | undefined>("workflow-editor-active");
+  const inputConnected = getContext<((id: string, handleId?: string | null) => boolean) | undefined>("workflow-input-connected");
   const active = $derived(editorActive?.() ?? true);
   const propertyTypes = $derived.by(() => {
     data;
@@ -124,13 +125,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {@const branch = branches?.get(field.id)}
         {@const position = input ? Position.Left : Position.Right}
         {@const editable = editableProperties.get(field.id)}
+        {@const connected = input && (inputConnected?.(id, field.id) ?? false)}
         <div class="data-field" class:deferred={!field.connectable} data-field-id={field.id}
           title={[field.description, field.required ? "Required" : ""].filter(Boolean).join("\n")}>
           {#if field.connectable || branch}
             <Handle id={field.id} type={input ? "target" : "source"} {position}
               style={branch?.hidden && (input || !field.connectable) ? "visibility: hidden" : undefined}
               isConnectable={field.connectable} isConnectableStart={field.connectable && !input}
-              isConnectableEnd={field.connectable && input} aria-disabled={!field.connectable}
+              isConnectableEnd={field.connectable && input && !connected} aria-disabled={!field.connectable || connected}
               aria-label={`${field.label} ${input ? "input" : "output"}`} />
           {/if}
           {#if branch?.hidden}
@@ -214,9 +216,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .property-editor.editing { grid-template-columns: minmax(110px, 1fr) 90px repeat(3, 26px); }
   .property-name { min-width: 0; width: 100%; min-height: 30px; padding: 5px 8px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font-size: 11px; }
   .property-name::placeholder { color: var(--color-muted-foreground); }
-  .property-actions :global(.property-action) { display: flex; align-items: center; justify-content: center; min-height: 26px; padding: 0; border: 0; background: transparent; color: var(--color-foreground); font-size: 11px; }
+  .property-actions :global(.property-action) { display: flex; align-items: center; justify-content: center; min-height: 26px; padding: 0; border: 0; border-radius: 4px; outline-offset: 6px; background: transparent; color: var(--color-foreground); font-size: 11px; }
   .property-actions :global(.property-action:disabled) { color: var(--color-muted-foreground); }
   .property-actions :global(.properties-mode) { flex: 1; gap: 5px; }
+  .property-controls :global(.property-action) { position: relative; outline: none; }
+  .property-controls :global(.property-action::after) { content: ""; position: absolute; inset: -6px -12px; border-radius: inherit; outline: 3px solid transparent; outline-offset: 0; pointer-events: none; transition: outline-color 180ms ease-in; }
+  .property-controls :global(.property-action:focus-visible::after) { outline-color: var(--color-ring); }
   .property-error { grid-column: 1 / -1; max-width: 300px; color: var(--color-badge-background); font-size: 11px; overflow-wrap: anywhere; }
   .workflow-data-node :global(.svelte-flow__handle) { width: 12px; height: 12px; border: 2px solid var(--color-surface); background: var(--color-emphasis); }
   .workflow-data-node :global(.svelte-flow__handle.target) { background: var(--color-foreground); }

@@ -6,7 +6,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <script lang="ts">
   import { getContext, untrack } from "svelte";
-  import { Handle, Position, useNodeConnections, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
+  import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import FieldNumber from "$lib/components/FieldNumber.svelte";
@@ -20,10 +20,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     edit: (id: string, gateId: string, patch: Partial<Pick<SwitchGate, "operator" | "value">>) => void }>("workflow-switch-gates");
   const inputTypeFor = getContext<(id: string) => RoutingType>("workflow-input-type");
   const editorActive = getContext<(() => boolean) | undefined>("workflow-editor-active");
+  const inputConnected = getContext<((id: string, handleId?: string | null) => boolean) | undefined>("workflow-input-connected");
+  const valueConnected = $derived(inputConnected?.(id, "value") ?? false);
   const inputType = $derived(inputTypeFor(id));
   const operators = $derived(operatorsForType(inputType));
   const active = $derived(editorActive?.() ?? true);
-  const connections = useNodeConnections({ handleType: "target" });
   const updateNodeInternals = useUpdateNodeInternals();
   const layout = $derived(JSON.stringify([inputType, data.gates.map(gate => gate.id)]));
   $effect(() => { layout; untrack(() => updateNodeInternals(id)); });
@@ -31,15 +32,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <div class="workflow-utility-node workflow-switch-node" class:selected>
   <div class="utility-title">
-    <Handle id="value" type="target" position={Position.Left} isConnectableStart={false} aria-label={`Switch input (${inputType})`} />
+    <Handle id="value" type="target" position={Position.Left} isConnectableStart={false}
+      isConnectableEnd={!valueConnected} aria-disabled={valueConnected} aria-label={`Switch input (${inputType})`} />
     <MaterialIcon name="call_split" size={20} /><strong>Switch</strong><span class="utility-type">{inputType}</span>
   </div>
   {#each data.gates as gate, index (gate.id)}
     {@const operator = operators.find(choice => choice.value === gate.operator) ?? operators[0]}
-    {@const connected = connections.current.some(connection => connection.targetHandle === switchGateInput(gate.id))}
+    {@const connected = inputConnected?.(id, switchGateInput(gate.id)) ?? false}
     <div class="utility-row switch-gate nodrag nopan nokey" data-gate-id={gate.id}>
       <Handle id={switchGateInput(gate.id)} type="target" position={Position.Left} isConnectableStart={false}
-        isConnectableEnd={!connected} aria-label={`Gate ${index + 1} value input`} />
+        isConnectableEnd={!connected && !operator?.unary} aria-disabled={connected || !!operator?.unary}
+        aria-label={`Gate ${index + 1} value input`} />
       <HintButton type="button" class="utility-action" label={`Remove gate ${index + 1}`} disabled={data.gates.length === 1}
         onclick={() => gates.remove(id, gate.id)}><MaterialIcon name="cancel" size={18} /></HintButton>
       <div class="gate-operator">

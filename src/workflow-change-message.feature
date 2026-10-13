@@ -42,3 +42,31 @@ Feature: Workflow history describes completed edits
 
   Scenario: Partial legacy snapshots still produce readable labels
     Then workflow change messages tolerate missing display references without exposing IDs
+
+  @manual-routing-persistence
+  Scenario Outline: Route edits describe the connection without exposing generated identities
+    Then workflow history describes <action> route intent on a <kind> connection
+
+    Examples:
+      | action   | kind    |
+      | new      | mapping |
+      | adjusted | mapping |
+      | reset    | mapping |
+      | new      | schema  |
+      | adjusted | schema  |
+      | reset    | schema  |
+      | new      | legacy  |
+      | adjusted | legacy  |
+      | reset    | legacy  |
+
+  @manual-routing-persistence
+  Scenario: Equivalent authored point lists are the same route
+    Then workflow history ignores duplicate and collinear manual route points
+
+  @manual-routing-persistence
+  Scenario: Connecting and reconnecting already describe their new routes
+    Then workflow history omits separate route messages for new and reconnected edges
+
+  @manual-routing-persistence
+  Scenario: An authored route changes a nested workflow snapshot
+    Then workflow history recognizes manual routes inside nested snapshots

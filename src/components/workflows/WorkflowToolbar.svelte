@@ -161,6 +161,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.workflow-toolbar) { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; max-width: calc(100% - 2rem); gap: 6px; margin: 0 1rem 1rem; padding: 3px; border: 1px solid var(--color-background); border-radius: 4px; background: var(--color-surface); box-shadow: none; }
   :global(.workflow-toolbar .svelte-flow__controls-button) { width: 30px; height: 30px; padding: 6px; border: 0; border-radius: 0; background: var(--color-background); color: var(--color-foreground); transition: color 180ms ease-in, background-color 180ms ease-in, opacity 180ms ease-in, outline-color 180ms ease-in, transform 180ms ease-in; }
   :global(.workflow-toolbar.svelte-flow__controls.horizontal .svelte-flow__controls-button) { border: 0; }
+  :global(.workflow-toolbar .svelte-flow__controls-button:focus-visible) { position: relative; z-index: 1; }
   :global(.workflow-toolbar .svelte-flow__controls-button:is(:hover,:focus-visible):not(:disabled):not([aria-pressed="true"])) { color: var(--color-secondary-hover-foreground); background: var(--color-secondary-hover); }
   :global(.workflow-toolbar .svelte-flow__controls-button[aria-pressed="true"]) { background: var(--color-catalog-active); color: var(--color-catalog-active-foreground); }
   :global(.workflow-toolbar .svelte-flow__controls-button:disabled) { pointer-events: auto; background: var(--color-background); color: var(--color-disabled-foreground); }

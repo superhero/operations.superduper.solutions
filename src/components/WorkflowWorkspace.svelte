@@ -22,7 +22,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowHistory from "./workflows/WorkflowHistory.svelte";
   import { createOperationGraph, createUtilityNode, createWorkflowGraph, addAdditionalProperty, getAdditionalPropertyTypes, getEditableAdditionalProperties, updateAdditionalProperty, removeAdditionalProperty, addSwitchGate, updateSwitchGate, removeSwitchGate, schemaBranches, isWorkflowConnection, removeGraphSelection, restoreDataBranch } from "$lib/workflow-graph.ts";
   import { layoutAddedGraph } from "$lib/workflow-layout.ts";
-  import { adaptRoutingGates, routingInputTypes, workflowDescriptionLimit } from "$lib/workflow-utilities.ts";
+  import { orderWorkflowNodes, restoreWorkflowNodeOrder } from "$lib/workflow-focus-order.ts";
+  import { adaptRoutingGates, routingInputTypes, workflowDescriptionLimit, workflowInputConnected } from "$lib/workflow-utilities.ts";
   import { getOperationReport } from "$lib/operation-report.ts";
   import WorkflowNode from "../WorkflowNode.svelte";
   import WorkflowToolbar from "./workflows/WorkflowToolbar.svelte";
@@ -57,6 +58,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let description = $state("");
   let nodes = $state.raw<GraphNode[]>([]);
   let edges = $state.raw<GraphEdge[]>([]);
+  const orderedNodes = $derived(orderWorkflowNodes(nodes, edges));
   let viewport = $state({ x: 0, y: 0, zoom: 1 });
   const initialWorkflowDefaults = untrack(() => workflowDefaults);
   let snap = $state(initialWorkflowDefaults.snap);
@@ -118,7 +120,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const keyboardActive = $derived(!graphBlocked);
   const snapshot = $derived(JSON.stringify(documentValue()));
   const dirty = $derived(snapshot !== savedSnapshot || saveAttempt !== null);
-  const edgeOptions = $derived({ animated: dashed, markerEnd: { type: MarkerType.ArrowClosed }, type: curved ? "default" : "smoothstep", style: dashed ? "stroke-dasharray: 6 var(--workflow-dash-gap, 4)" : "" });
+  const dashPeriod = $derived(workflowDefaults.dashLength + workflowDefaults.dashGap);
+  const edgeOptions = $derived({ animated: dashed, markerEnd: { type: MarkerType.ArrowClosed }, type: curved ? "default" : "smoothstep", style: dashed ? "stroke-dasharray: var(--workflow-dash-length, 6) var(--workflow-dash-gap, 4)" : "" });
   const branches = $derived(schemaBranches(nodes, edges));
   const inputTypes = $derived(routingInputTypes(nodes, edges));
 
@@ -128,6 +131,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   setContext("workflow-connection-options", () => ({ curved, strength: workflowDefaults.curveStrength,
     style: `${edgeOptions.style}; marker-end: url(#${connectionMarkerId})` }));
   setContext("workflow-input-type", (nodeId: string) => inputTypes.get(nodeId) ?? "Unknown");
+  setContext("workflow-input-connected", (nodeId: string, handleId?: string | null) => workflowInputConnected(nodeId, handleId, edges));
   setContext("workflow-add-property", {
     types: (nodeId: string) => getAdditionalPropertyTypes(nodes, nodeId, propertySchema(nodeId)),
     editable: (nodeId: string) => getEditableAdditionalProperties(nodes, nodeId, propertySchema(nodeId)),
@@ -209,6 +213,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function documentValue(): WorkflowDocument {
     return { version, id, name, ...(version === 3 ? { description } : {}), nodes: nodes.map(storedNode),
       edges: edges.map(edge => ({ id: edge.id, source: edge.source, target: edge.target,
+        ...(edge.manualRoute ? { manualRoute: edge.manualRoute.map(point => ({ ...point })) } : {}),
         ...(version >= 2 ? { ...(edge.sourceHandle ? { sourceHandle: edge.sourceHandle } : {}),
           ...(edge.targetHandle ? { targetHandle: edge.targetHandle } : {}), ...(edge.kind ? { kind: edge.kind } : {}),
           ...(edge.hidden ? { hidden: true } : {}), ...(edge.detached ? { detached: true } : {}) } : {}) })),
@@ -242,6 +247,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 
   function updateCanvasNodes(updated: GraphNode[]) {
+    // Render in reading order without turning focus/measurement updates into document edits.
+    updated = restoreWorkflowNodeOrder(nodes, updated);
     if (!snap) { nodes = updated; return; }
     const previous = new Map(nodes.map(node => [node.id, node]));
     nodes = updated.map(node => {
@@ -872,22 +879,32 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <svelte:window onbeforeunload={beforeUnload} onkeydown={historyShortcut} />
 
-<section class="workflow-workspace" class:populated={nodes.length > 0} style:--workflow-dash-gap={workflowDefaults.dashGap}
-  style:--flow-routing-dash-period={6 + workflowDefaults.dashGap} style:--flow-routing-dash-duration={`${(6 + workflowDefaults.dashGap) / 20}s`}
+<section class="workflow-workspace" class:populated={nodes.length > 0} class:hide-node-symbols={!workflowDefaults.nodeSymbols}
+  style:--workflow-dash-length={workflowDefaults.dashLength} style:--workflow-dash-gap={workflowDefaults.dashGap}
+  style:--flow-routing-dash-period={dashPeriod} style:--flow-routing-dash-duration={`${dashPeriod / Math.max(1, workflowDefaults.dashSpeed)}s`}
+  style:--flow-routing-dash-play-state={workflowDefaults.dashSpeed === 0 ? "paused" : "running"}
   tabindex="-1" aria-label="Workflow canvas" inert={graphBlocked} bind:this={canvas} onkeydowncapture={moveSnappedNodes} ondblclickcapture={selectNodeBranch}>
   <span class="sr-only" aria-live="assertive" aria-atomic="true">{movementAnnouncement}</span>
   {#if activated}
   {#key revision}
     <SvelteFlowProvider>
-    <RoutingScope enabled={active && !curved} dashPeriod={6 + workflowDefaults.dashGap}
+    <RoutingScope enabled={active && !curved} editable={keyboardActive} {dashPeriod}
       options={{ nodePadding: workflowDefaults.nodeClearance }}
+      onroutechange={(id, points) => {
+        if (!keyboardActive) return;
+        edges = edges.map(edge => {
+          if (edge.id !== id) return edge;
+          const { manualRoute: previous, ...rest } = edge;
+          return points ? { ...rest, manualRoute: points.map(point => ({ ...point })) } : rest;
+        });
+      }}
       createClient={createWorkflowRoutingClient} resolveConnection={state => connectionSnap?.preview(state) ?? state}
       onerror={cause => {
         const failure = new Error("Workflow edge routing stopped. Standard connection paths remain available. Reopen the workflow or switch curved connections on and off to retry.", { cause });
         error = failure.message;
         logger.error(failure.message, failure);
       }}>
-    <SvelteFlow bind:nodes={() => nodes, updateCanvasNodes} bind:edges bind:viewport {nodeTypes} {edgeTypes} defaultEdgeOptions={edgeOptions} connectionLineComponent={WorkflowConnectionLine} connectionLineType={curved ? ConnectionLineType.Bezier : ConnectionLineType.SmoothStep} onbeforeconnect={prepareConnection} onconnect={adaptGates}
+    <SvelteFlow bind:nodes={() => orderedNodes, updateCanvasNodes} bind:edges bind:viewport {nodeTypes} {edgeTypes} defaultEdgeOptions={edgeOptions} connectionLineComponent={WorkflowConnectionLine} connectionLineType={curved ? ConnectionLineType.Bezier : ConnectionLineType.SmoothStep} onbeforeconnect={prepareConnection} onconnect={adaptGates}
       defaultMarkerColor={null} connectionLineStyle={`${edgeOptions.style}; marker-end: url(#${connectionMarkerId})`}
       minZoom={0.25} maxZoom={2} {...(snap ? {} : { snapGrid: [1, 1] as [number, number] })}
       deleteKey={keyboardActive ? ["Backspace", "Delete"] : null} selectionKey={keyboardActive ? "Shift" : null}
@@ -1024,17 +1041,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .workflow-workspace,
   :global(.workflow-workspace :is(.svelte-flow, .svelte-flow__renderer, .svelte-flow__pane, .svelte-flow__background)) { outline: none; }
   :global(.workflow-workspace .svelte-flow__node) { outline: none; transition: none; }
+  :global(.workflow-workspace.hide-node-symbols .svelte-flow__node :is(.operation-title-row, .data-title, .utility-title, .workflow-kind) > .material-symbols-rounded) { display: none; }
   /* Remove inactive outlines immediately instead of fading from currentColor. */
   :global(.workflow-workspace:not(:focus-visible)),
   :global(.workflow-workspace :where(button, a[href], summary, input, select, textarea, [tabindex]):not(:focus-visible)) { outline-style: none; }
   :global(.workflow-workspace .svelte-flow__arrowhead polyline) { stroke: context-stroke; }
   :global(.workflow-workspace .svelte-flow__arrowhead polyline.arrowclosed) { fill: context-stroke; }
   :global(.workflow-workspace .svelte-flow__edge-path) { transition: stroke 120ms ease-in, stroke-width 120ms ease-in; }
-  :global(.workflow-workspace .svelte-flow__edge.animated .svelte-flow__edge-path:not(.flow-routing-dash):not(.flow-routing-dash-base)) { animation-name: workflow-dashes; animation-duration: var(--flow-routing-dash-duration); }
+  :global(.workflow-workspace .svelte-flow__edge.animated .svelte-flow__edge-path:not(.flow-routing-dash):not(.flow-routing-dash-base)) { animation-name: workflow-dashes; animation-duration: var(--flow-routing-dash-duration); animation-play-state: var(--flow-routing-dash-play-state); }
   /* Disabled form controls swallow mouseup in Chromium; the canvas owns a drag. */
   :global(.workflow-workspace .svelte-flow:has(.svelte-flow__connectionline) .svelte-flow__node :is(input, textarea, select, button)) { pointer-events: none; }
   @keyframes workflow-dashes {
-    from { stroke-dashoffset: calc((6 + var(--workflow-dash-gap, 4)) * 1px); }
+    from { stroke-dashoffset: calc(var(--flow-routing-dash-period) * 1px); }
     to { stroke-dashoffset: 0; }
   }
   :global(.workflow-workspace .svelte-flow__edge:hover .svelte-flow__edge-path) { stroke-width: 3px; }

@@ -255,11 +255,9 @@ Then("dragging a workflow {string} snaps its center to the {int}px grid and pres
   };
   const baseline = await capture();
   assert.deepEqual(position(baseline), fixture.position, "Loading a document with snapping enabled must retain its coordinates.");
-  if (gridSize !== 12) {
-    await setWorkflowGridSize(page, gridSize);
-    await setMode(page, 'workflow');
-    assert.deepEqual(position(await capture()), position(baseline), 'Changing the global grid size must not reposition existing nodes.');
-  }
+  await setWorkflowGridSize(page, gridSize);
+  await setMode(page, 'workflow');
+  assert.deepEqual(position(await capture()), position(baseline), 'Changing the global grid size must not reposition existing nodes.');
   await expectBackgroundSpacing();
   let snapped = await drag([[83, 53], [137, 79], [-37, 31]], (geometry, x, y) => {
     assertCentered(geometry);

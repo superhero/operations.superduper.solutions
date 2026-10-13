@@ -22,6 +22,8 @@ Then('graph selection feedback remains distinct in the {string} theme', async fu
   await expect(selected).toHaveCSS('border-color', border);
 
   const snap = page.getByRole('button', { name: 'Snap to grid', exact: true });
+  if (await snap.getAttribute('aria-pressed') === 'true') await snap.click();
+  await expect(snap).toHaveAttribute('aria-pressed', 'false');
   const paint = () => snap.evaluate(element => {
     const style = getComputedStyle(element);
     return { background: style.backgroundColor, color: style.color };

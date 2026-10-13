@@ -16,12 +16,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const changeType = getContext<(id: string, targetType: CastData["targetType"]) => void>("workflow-cast-type");
   const inputTypeFor = getContext<(id: string) => string>("workflow-input-type");
   const editorActive = getContext<(() => boolean) | undefined>("workflow-editor-active");
+  const inputConnected = getContext<((id: string, handleId?: string | null) => boolean) | undefined>("workflow-input-connected");
+  const connected = $derived(inputConnected?.(id, "value") ?? false);
   const inputType = $derived(inputTypeFor(id));
 </script>
 
 <div class="workflow-utility-node workflow-cast-node" class:selected>
   <div class="utility-title">
-    <Handle id="value" type="target" position={Position.Left} isConnectableStart={false} aria-label={`Cast input (${inputType})`} />
+    <Handle id="value" type="target" position={Position.Left} isConnectableStart={false}
+      isConnectableEnd={!connected} aria-disabled={connected} aria-label={`Cast input (${inputType})`} />
     <MaterialIcon name="transform" size={20} /><strong>Cast</strong><span class="utility-type">{inputType}</span>
   </div>
   <div class="utility-row cast-type nodrag nopan nokey">

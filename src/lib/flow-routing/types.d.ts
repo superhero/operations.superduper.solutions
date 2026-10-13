@@ -33,6 +33,8 @@ export interface RoutingEdge extends EdgeEndpoints {
   source: string;
   /** Free-pointer previews do not have a target node. */
   target?: string | undefined;
+  /** Authored anchors; automatic and suspended routes never overwrite these. */
+  manualRoute?: Point[] | undefined;
 }
 
 export interface Polyline {
@@ -45,6 +47,8 @@ export interface RouteGeometry extends Polyline {
   /** Manhattan length of the unrounded polyline. */
   length: number;
   status?: RouteStatus;
+  /** Derived state present only when this edge has authored routing intent. */
+  manualState?: 'applied' | 'suspended';
 }
 
 export interface Route extends RouteGeometry {

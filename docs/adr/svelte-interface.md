@@ -103,16 +103,21 @@ Selection animation respects reduced motion.
 
 ### Workflow defaults
 
-`workflowDefaults` stores dashed-line, curved-line and snap-to-grid flags,
-plus grid size, dash gap and curve strength. Missing or invalid flags default
-individually to false. Load defaults before the editor mounts and apply them to
+`workflowDefaults` stores connection styling, grid snapping and node-symbol
+preferences. Missing or invalid values fall back independently: dashed lines,
+snapping and node symbols start enabled; curved lines start disabled.
+Load defaults before the editor mounts and apply them to
 new workflows and the untouched initial canvas. Existing, edited and imported
 workflows retain their flags; toolbar changes do not alter application defaults.
 
-Grid size accepts whole pixels from 1–32, defaulting to 12. It applies immediately
+Grid size accepts whole pixels from 1–32, defaulting to 8. It applies immediately
 to placement and center snapping on every canvas without repositioning nodes or
 changing workflow documents. Decorative dots retain independent 24px spacing.
-Dash gap accepts 1–128 px and curve strength 0–100.
+Dash length and gap accept 1–128 px, defaulting to 8 and 16 respectively.
+Dash speed accepts 0–512 px/s, defaulting to 64; zero pauses motion.
+Curve strength accepts 0–100, defaulting to 50. Node clearance accepts
+0–128 diagram units, defaulting to 16, and applies to orthogonal routing and
+manual segment adjustments.
 
 ### Locale
 
@@ -199,7 +204,14 @@ During connection dragging, retain the raw pointer line and a faint preview of
 the eligible target. Reuse that preview on release. Dash spacing follows Settings;
 shared straight runs synchronize in world coordinates at a constant speed, with
 motion stopped for reduced-motion preferences. Curved connections retain their
-adjustable strength. Paths, caches and worker state never enter saved documents.
+adjustable strength. Generated paths, caches and worker state never enter saved
+documents.
+
+Orthogonal segments can be adjusted perpendicular to their direction, stopping
+at node clearance. A completed gesture saves one authored route for undo and
+redo; previews remain transient. Authored routes preserve attached endpoints
+when nodes move. If blocked, automatic routing takes over temporarily without
+discarding that intent. Reset restores automatic routing explicitly.
 
 ### Placement and selection
 

@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 import type { ConnectionState, InternalNodeBase, Viewport } from "@xyflow/system";
-import type { RoutingEdge, RoutingScene } from "./types.js";
+import type { Point, RoutingEdge, RoutingScene } from "./types.js";
 
 export interface SceneNode {
   id: string;
@@ -19,6 +19,7 @@ export interface SceneEdge {
   type?: string | undefined;
   hidden?: boolean | undefined;
   detached?: boolean | undefined;
+  manualRoute?: Point[] | undefined;
 }
 
 /** Derive absolute measured rectangles and outer handle endpoints from XYFlow internals. */

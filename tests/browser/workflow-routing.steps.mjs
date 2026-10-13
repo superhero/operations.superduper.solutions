@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { readExport, setMode, workflow } from './workspace.steps.mjs';
-import { setWorkflowNodeClearance, storedDefaults } from './workflow-defaults.steps.mjs';
+import { setWorkflowNodeClearance, setWorkflowDashValues, storedDefaults } from './workflow-defaults.steps.mjs';
 import { repository, storedWorkflows } from './workflow-storage.fixture.mjs';
 
 const node = (page, id) => workflow(page).locator(`.svelte-flow__node[data-id="${id}"]`);
@@ -318,10 +318,10 @@ async function dashSnapshot(page) {
   }));
 }
 
-function expectSharedPhase(segments, gap) {
-  const period = 6 + gap;
+function expectSharedPhase(segments, gap, length = 8) {
+  const period = length + gap;
   for (const segment of segments) {
-    assert.deepEqual(segment.dash, [6, gap], 'Every routed dash must use the configured gap.');
+    assert.deepEqual(segment.dash, [length, gap], 'Every routed dash must use the configured length and gap.');
     assert.equal(segment.animation, 'none', 'Each segment must inherit the shared clock.');
   }
   let overlaps = 0;
@@ -374,6 +374,102 @@ Then('reduced motion keeps the routed dashes stationary', async function () {
   const still = await dashSnapshot(page);
   await frames(page, 10);
   assert.deepEqual(await dashSnapshot(page), still, 'Reduced motion must freeze every routed dash segment.');
+});
+
+Then('dash length gap and speed update existing routes and previews and pause both connection styles', async function () {
+  const page = this.page;
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expectClearRoute(page);
+  const later = await center(handle(page, 'routing-later', 'value'));
+  await beginConnection(page);
+  await page.mouse.move(later.x, later.y, { steps: 12 });
+  await page.mouse.up();
+  await expect(workflow(page).locator('.svelte-flow__edge')).toHaveCount(2);
+  await saved(page);
+  let baseline = (await readExport(page)).document;
+  let history = await repository(page, 'history', baseline.id);
+  const flow = workflow(page).locator('.svelte-flow');
+  const curvedPaths = workflow(page).locator('.svelte-flow__edge .svelte-flow__edge-path:not(.flow-routing-dash):not(.flow-routing-dash-base)');
+  const change = async values => {
+    await setWorkflowDashValues(page, values);
+    await setMode(page, 'workflow');
+  };
+  const clock = async (locator, length, gap, speed) => {
+    await expect.poll(() => locator.evaluate(element => {
+      const style = getComputedStyle(element);
+      return { period: Number(style.getPropertyValue('--flow-routing-dash-period')),
+        duration: parseFloat(style.animationDuration), state: style.animationPlayState };
+    })).toEqual({ period: length + gap, duration: (length + gap) / Math.max(1, speed), state: speed ? 'running' : 'paused' });
+  };
+  const preview = async (length, gap) => {
+    const target = await center(handle(page, 'routing-blocker', 'value'));
+    await beginConnection(page);
+    try {
+      await page.mouse.move(target.x, target.y, { steps: 12 });
+      await expect(ghost(page)).toHaveAttribute('data-target', 'routing-blocker');
+      await expect(ghost(page).locator('path')).toHaveCSS('stroke-dasharray', `${length}px, ${gap}px`);
+    } finally {
+      await page.keyboard.press('Escape');
+      await page.mouse.up();
+    }
+    await expect(ghost(page)).toHaveCount(0);
+    await expect(workflow(page).locator('.svelte-flow__edge')).toHaveCount(2);
+  };
+  const curvedSnapshot = () => curvedPaths.evaluateAll(paths => paths.map(path => {
+    const style = getComputedStyle(path);
+    return { dash: style.strokeDasharray.split(/[ ,]+/).map(parseFloat), offset: parseFloat(style.strokeDashoffset) };
+  }));
+  await change({ dashLength: 11, dashGap: 7, dashSpeed: 30 });
+  await expect.poll(async () => new Set((await dashSnapshot(page)).map(segment => segment.edge)).size).toBe(2);
+  await clock(flow, 11, 7, 30);
+  for (let sample = 0; sample < 3; sample++) {
+    expectSharedPhase(await dashSnapshot(page), 7, 11);
+    await frames(page, 3);
+  }
+  const moving = await dashSnapshot(page);
+  await expect.poll(async () => (await dashSnapshot(page))[0].offset).not.toBe(moving[0].offset);
+  await preview(11, 7);
+  await change({ dashSpeed: 0 });
+  await clock(flow, 11, 7, 0);
+  const paused = await dashSnapshot(page);
+  await frames(page, 10);
+  assert.deepEqual(await dashSnapshot(page), paused, 'Zero speed must freeze every orthogonal dash segment.');
+  await change({ dashSpeed: 60 });
+  await clock(flow, 11, 7, 60);
+  await expect.poll(async () => (await dashSnapshot(page))[0].offset).not.toBe(paused[0].offset);
+  expectSharedPhase(await dashSnapshot(page), 7, 11);
+  assert.deepEqual((await readExport(page)).document, baseline, 'Dash appearance remains a browser preference.');
+  assert.deepEqual(await repository(page, 'history', baseline.id), history);
+
+  await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
+  await expect(route(page)).toHaveAttribute('d', / C/);
+  await expect(curvedPaths).toHaveCount(2);
+  await saved(page);
+  baseline = (await readExport(page)).document;
+  history = await repository(page, 'history', baseline.id);
+  await change({ dashLength: 19, dashGap: 5, dashSpeed: 24 });
+  for (const path of await curvedPaths.all()) {
+    await expect(path).toHaveCSS('stroke-dasharray', '19px, 5px');
+    await clock(path, 19, 5, 24);
+  }
+  await preview(19, 5);
+  await change({ dashSpeed: 0 });
+  for (const path of await curvedPaths.all()) await clock(path, 19, 5, 0);
+  const curvedPaused = await curvedSnapshot();
+  await frames(page, 10);
+  assert.deepEqual(await curvedSnapshot(), curvedPaused, 'Zero speed must freeze both curved connections.');
+  await change({ dashSpeed: 48 });
+  for (const path of await curvedPaths.all()) await clock(path, 19, 5, 48);
+  await expect.poll(async () => (await curvedSnapshot())[0].offset).not.toBe(curvedPaused[0].offset);
+  assert.deepEqual((await readExport(page)).document, baseline);
+  assert.deepEqual(await repository(page, 'history', baseline.id), history, 'Dash changes must not add workflow history.');
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(curvedPaths).toHaveCount(2);
+  for (const path of await curvedPaths.all()) {
+    await expect(path).toHaveCSS('stroke-dasharray', '19px, 5px');
+    await clock(path, 19, 5, 48);
+  }
 });
 
 async function changeCurveStrength(page, value) {
@@ -662,10 +758,10 @@ Then('changing node clearance preserves measured spacing without changing the wo
   const page = this.page;
   await expectClearRoute(page);
   await expect.poll(() => minimumNodeClearance(route(page), 'routing-blocker'),
-    { message: 'The default route must leave twelve diagram units around the measured blocker.' }).toBeGreaterThanOrEqual(11.5);
+    { message: 'The default route must leave sixteen diagram units around the measured blocker.' }).toBeGreaterThanOrEqual(15.5);
   const originalPath = await route(page).getAttribute('d');
   const originalDocument = (await readExport(page)).document;
-  assert.equal((await storedDefaults(page)).nodeClearance, 12);
+  assert.equal((await storedDefaults(page)).nodeClearance, 16);
   await setWorkflowNodeClearance(page, 36);
   await setMode(page, 'workflow');
   await expect.poll(() => route(page).getAttribute('d')).not.toBe(originalPath);
@@ -687,7 +783,7 @@ Then('changing node clearance preserves measured spacing without changing the wo
 
 Then('its narrow output corridor preserves {int} units around unconstrained node faces', async function (clearance) {
   const page = this.page;
-  if (clearance !== 12) {
+  if (clearance !== 16) {
     await setWorkflowNodeClearance(page, clearance);
     await setMode(page, 'workflow');
   }
@@ -699,7 +795,7 @@ Then('its narrow output corridor preserves {int} units around unconstrained node
     return (blocker.left - source.right) / zoom;
   });
   assert.ok(terminalGap > 0 && terminalGap < 12,
-    `The measured output corridor must be narrower than the default clearance (gap ${terminalGap}).`);
+    `The measured output corridor must be narrower than either tested clearance (gap ${terminalGap}).`);
   const faceClearances = () => route(page).evaluate(element => {
     const matrix = element.getScreenCTM(), zoom = Math.hypot(matrix.a, matrix.b);
     const nodes = ['routing-source', 'routing-target'].map(id => ({ id,
