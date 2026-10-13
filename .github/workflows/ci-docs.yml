@@ -83,10 +83,27 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
 
+      - name: Prepare Staging changelog for develop
+        if: >-
+          github.base_ref == 'develop'
+          && github.event.pull_request.head.repo.full_name == github.repository
+          && !github.event.pull_request.draft
+        id: prepare
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_BRANCH: ${{ github.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+        run: bash .github/scripts/prepare-changelog.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA" "$BASE_BRANCH" "$BASE_SHA" "$HEAD_BRANCH"
+
       - name: Merge validated documentation
         if: >-
           github.event.pull_request.head.repo.full_name == github.repository
           && !github.event.pull_request.draft
+          && steps.prepare.outputs.updated != 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           REPOSITORY: ${{ github.repository }}

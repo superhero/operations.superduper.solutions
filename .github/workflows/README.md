@@ -230,7 +230,8 @@ and [Actions policy API](https://docs.github.com/en/rest/actions/policies#create
 Production hotfixes use the next patch version of released `main`.
 
 A `develop` PR targeting `main` triggers creation of a separate versioned release
-PR; that release head is reviewed and tested before integration.
+PR, or updates the release already open. That release head is reviewed and tested
+before integration.
 
 ### Workflow routing
 
@@ -279,6 +280,25 @@ and tested revision. Shared branches are never rebased.
 - Retries accept an already merged PR only when repository, source, tested head
   and target still match. Force-push protection applies to the App.
 
+### Commit messages and changelog
+
+The root [`CHANGELOG.md`](../../CHANGELOG.md) preserves complete commit messages
+before feature, integration bugfix and documentation PRs are squashed into
+`develop`. Each entry records its original commit; **Staging** stays at the top.
+
+- Preparation adds a changelog commit to the PR branch. Its new revision runs
+  through CI before merging; automation does not alter the tested tree afterward.
+- Generated changelog commits are omitted. Retries deduplicate original commit
+  identities, including entries already assigned to a release.
+- Existing squashed history is not reconstructed. Write useful commit subjects
+  and bodies; their text is retained as written.
+- Concurrent PRs may need the usual update from `develop`. Resolve changelog
+  entries with the shared merge helper, preserving every commit identity, then
+  rerun validation. Conflicts in application files require a normal resolution.
+
+The documentation preparation step uses trusted automation from `main`, so that
+part becomes active after the helpers and workflow are promoted there.
+
 ## Release preparation
 
 ### Automatic preparation
@@ -286,12 +306,24 @@ and tested revision. Shared branches are never rebased.
 1. Preview integration of pinned `develop` and `main` revisions.
 2. Reject conflicts and changes limited to dependency badges.
 3. Create the release branch from pinned `develop` and incorporate pinned `main`.
-4. Validate and build that release head through normal CI.
+4. Move **Staging** entries into the selected version in `CHANGELOG.md`.
+5. Validate and build that prepared release head through normal CI.
+
+### Updating an open release
+
+Use the same `develop` → `main` trigger again. Automation updates the open
+release rather than allocating another version, retaining release-only fixes.
+New Staging entries join its existing version section; earlier versions remain
+unchanged. An empty Staging section remains available for subsequent work.
+
+Retries verify the source, target and prepared content before writing. Conflicting
+application changes and a branch that advances during preparation stop the update.
 
 ### Conflict recovery
 
 Create the release branch from `develop`, merge `main` locally, resolve conflicts
-and open its PR into `main`. Automation never chooses conflicting content for you.
+and open its PR into `main`. Changelog entries have a deterministic merge; automation
+does not choose conflicting application content for you.
 
 ## Release checks and diagnostics
 
@@ -408,6 +440,11 @@ Automation opens a PR from `main` into `develop` when needed. It preserves missi
 release ancestry even when content already matches, skipping only if `develop`
 already contains `main`. Fast-forward synchronization aligns both branch heads
 when possible.
+
+If development continues after a release is cut, overlapping changelog edits
+may need resolution. The Staging boundary prevents Git from silently assigning
+new work to the old version. Combine the two changelogs by commit identity,
+keeping unreleased entries in Staging.
 
 ### Hotfix synchronization into a release
 
