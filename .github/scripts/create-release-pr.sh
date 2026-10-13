@@ -7,6 +7,7 @@ set -euo pipefail
 repository="${1:-${GITHUB_REPOSITORY:-}}"
 source_pr="${2:-}"
 source_sha="${3:-}"
+changelog_helper="$(dirname "${BASH_SOURCE[0]}")/prepare-release-changelog.mjs"
 
 fail() {
   printf '::error::%s (repository=%s source_pr=%s source_sha=%s)\n' \
@@ -60,18 +61,53 @@ else
   comparison="$(gh api "repos/$repository/compare/main...$source_sha")" || fail "Could not compare main...$source_sha."
   main_sha="$(jq -er '.base_commit.sha | select(test("^[0-9a-f]{40}$"))' <<< "$comparison")" ||
     fail 'Could not identify the current main commit.'
-  behind_by="$(jq -er '.behind_by | select(type == "number" and . >= 0 and . == floor)' <<< "$comparison")" ||
+  jq -e '.behind_by | select(type == "number" and . >= 0 and . == floor)' <<< "$comparison" >/dev/null ||
     fail "Could not determine whether develop contains main at $main_sha."
-  preview="$(bash "$(dirname "${BASH_SOURCE[0]}")/preview-merge.sh" "$main_sha" "$source_sha")" ||
+  assert_fresh_source() {
+    local current_source current_main
+    current_source="$(gh api "repos/$repository/pulls/$source_pr")" || fail 'Could not recheck source PR before publication.'
+    jq -e --arg sha "$source_sha" --arg repository "$repository" '
+      .state == "open" and .draft == false and .head.ref == "develop" and .base.ref == "main" and
+      .head.sha == $sha and .head.repo.full_name == $repository
+    ' <<< "$current_source" >/dev/null || fail 'Source PR changed during release preparation; retry its current head.'
+    current_main="$(gh api "repos/$repository/git/ref/heads/main" --jq '.object.sha')" || fail 'Could not recheck main before publication.'
+    [[ "$current_main" == "$main_sha" ]] || fail "Main changed during release preparation from $main_sha to $current_main; retry."
+  }
+  preview="$(node "$changelog_helper" prepare "$source_sha" "$main_sha")" ||
     fail "Could not prepare develop with main at $main_sha."
   jq -e '.substantive_changes == true' <<< "$preview" >/dev/null ||
     fail 'The source must include unreleased changes outside dependency badges; badge updates do not create releases.'
-  expected_tree="$(jq -er '.tree' <<< "$preview")"
-
-  active="$(jq -r '[.[] | select(.state == "open" and (.head.ref | startswith("release/")))][0] | if . then "\(.head.ref) (PR #\(.number))" else empty end' <<<"$pulls")"
-  [[ -z "$active" ]] || fail "Another release is active: $active."
-
   tags="$(gh api --paginate "repos/$repository/tags?per_page=100" | jq -s '[.[][] | .name]')" || fail 'Could not list version tags.'
+  active="$(jq -c --arg repository "$repository" '
+    [.[] | select(.state == "open" and .head.repo.full_name == $repository and (.head.ref | startswith("release/")))] |
+    if length > 1 then error("Multiple open releases") else .[0] // empty end
+  ' <<< "$pulls")" || fail 'Cannot select one active release.'
+  if [[ -n "$active" ]]; then
+    release_branch="$(jq -r '.head.ref' <<< "$active")"
+    release_pr="$(jq -r '.number' <<< "$active")"
+    version="${release_branch#release/}"
+    existing_sha="$(jq -er '.head.sha | select(test("^[0-9a-f]{40}$"))' <<< "$active")" || fail 'Active release has no valid head SHA.'
+    jq -e --arg version "$version" 'index($version) == null' <<< "$tags" >/dev/null || fail "Version $version is already tagged."
+    jq -e --arg branch "$release_branch" 'all(.[]; .head.ref != $branch or .merged_at == null)' <<< "$pulls" >/dev/null ||
+      fail "Version $version has already been merged."
+    preparation="$(node "$changelog_helper" prepare "$source_sha" "$main_sha" "$version" "$existing_sha")" ||
+      fail "Could not integrate develop into $release_branch at $existing_sha."
+    prepared_sha="$(jq -er '.sha' <<< "$preparation")"
+    current_release="$(gh api "repos/$repository/pulls/$release_pr")" || fail 'Could not recheck active release before publication.'
+    jq -e --arg branch "$release_branch" --arg sha "$existing_sha" --arg repository "$repository" '
+      .state == "open" and .merged_at == null and .base.ref == "main" and
+      .head.ref == $branch and .head.sha == $sha and .head.repo.full_name == $repository
+    ' <<< "$current_release" >/dev/null || fail 'Active release changed during preparation; retry its current head.'
+    assert_fresh_source
+    node "$changelog_helper" publish "$repository" "$release_branch" "$existing_sha" "$prepared_sha" ||
+      fail "Could not update $release_branch; its expected head was $existing_sha."
+    updated_body="$(jq -r '.body // ""' <<< "$current_release")
+
+$source_marker"
+    gh api --method PATCH "repos/$repository/pulls/$release_pr" -f "body=$updated_body" >/dev/null ||
+      fail "Could not record the integrated source on release PR #$release_pr."
+    echo "Updated $release_branch from develop $source_sha."
+  else
   latest="$(
     jq -r --argjson tags "$tags" '
       ($tags + [.[] | select(.merged_at != null) | .head.ref | sub("^(release|hotfix)/"; "")])[] |
@@ -82,6 +118,10 @@ else
   IFS=. read -r major minor patch <<<"$latest"
   version="$major.$minor.$((10#$patch + 1))"
   release_branch="release/$version"
+  preparation="$(node "$changelog_helper" prepare "$source_sha" "$main_sha" "$version")" ||
+    fail "Could not prepare changelog for $release_branch."
+  expected_tree="$(jq -er '.tree' <<< "$preparation")"
+  prepared_sha="$(jq -er '.sha' <<< "$preparation")"
 
   branches="$(gh api --paginate "repos/$repository/git/matching-refs/heads/" | jq -s '[.[][]]')" || fail "Could not list branches before creating $release_branch."
   if jq -e --arg ref "refs/heads/hotfix/$version" 'any(.[]; .ref == $ref)' <<<"$branches" >/dev/null; then
@@ -117,7 +157,7 @@ else
       bash "$(dirname "${BASH_SOURCE[0]}")/validate-badge-only-advance.sh" \
         "$repository" "$prepared_main" "$main_sha" ||
         fail "$release_branch was prepared against main $prepared_main; current main $main_sha must differ only in dependency badges to retry."
-      prepared_preview="$(bash "$(dirname "${BASH_SOURCE[0]}")/preview-merge.sh" "$prepared_main" "$source_sha")" ||
+      prepared_preview="$(node "$changelog_helper" prepare "$source_sha" "$prepared_main" "$version")" ||
         fail "Could not verify prepared $release_branch against develop $source_sha and its original main $prepared_main."
       prepared_tree="$(jq -er '.tree' <<< "$prepared_preview")" ||
         fail "Could not identify the expected tree for prepared $release_branch at $existing_sha."
@@ -125,17 +165,17 @@ else
     validate_prepared_release "$prepared" "$prepared_main" "$prepared_tree" ||
       fail "$release_branch already exists at a different commit; expected develop $source_sha integrated with main $prepared_main and tree $prepared_tree, actual_sha=$existing_sha."
   fi
+  assert_fresh_source
   if [[ -z "$existing_sha" ]]; then
     gh api --method POST "repos/$repository/git/refs" \
       -f "ref=refs/heads/$release_branch" -f "sha=$source_sha" >/dev/null || fail "Could not create $release_branch at $source_sha."
   fi
-  if [[ "$behind_by" != 0 && ( -z "$existing_sha" || "$existing_sha" == "$source_sha" ) ]]; then
-    prepared="$(gh api --method POST "repos/$repository/merges" \
-      -f "base=$release_branch" -f "head=$main_sha" \
-      -f "commit_message=Merge main into $release_branch for source PR #$source_pr ($source_sha)")" ||
-      fail "Could not merge main $main_sha into $release_branch from develop $source_sha."
-    validate_prepared_release "$prepared" ||
-      fail "Prepared $release_branch differs from expected develop $source_sha, main $main_sha, and tree $expected_tree; inspect the branch before retrying."
+  if [[ -z "$existing_sha" || "$existing_sha" == "$source_sha" ]]; then
+    node "$changelog_helper" publish "$repository" "$release_branch" "$source_sha" "$prepared_sha" ||
+      fail "Could not prepare $release_branch; its expected head was develop $source_sha."
+  else
+    node "$changelog_helper" publish "$repository" "$release_branch" "$existing_sha" "$existing_sha" ||
+      fail "Prepared $release_branch changed before its pull request could be opened; expected $existing_sha."
   fi
 
   release_pr="$(
@@ -145,6 +185,7 @@ else
 
 $source_marker" --jq '.number'
   )" || fail "Could not open release PR $release_branch -> main for version $version."
+  fi
 fi
 
 {

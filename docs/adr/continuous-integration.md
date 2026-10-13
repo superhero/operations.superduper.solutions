@@ -114,6 +114,12 @@ ancestor of that commit; otherwise they squash. Release stabilization PRs,
 release PRs into `main` and synchronization PRs fast-forward where possible;
 otherwise they use merge commits.
 
+Commit messages are preserved in the root changelog before work is squashed
+into `develop`. Unreleased entries stay under **Staging**; release preparation
+moves them into the selected version. Further development updates extend that
+same release section without duplicating entries. The prepared changelog is
+part of the revision validated by CI.
+
 ## Hotfixes
 
 A `hotfix/<version>` branches from released `main` using the next patch version,

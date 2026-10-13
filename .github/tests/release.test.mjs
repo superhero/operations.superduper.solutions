@@ -46,7 +46,22 @@ function invoke(world, script, args, success)
 {
   if (script === "create-release-pr.sh")
   {
-    // Release tests isolate API orchestration; merge-preview tests use real Git histories.
+    // API orchestration is isolated here; changelog-release tests exercise the helper with real Git.
+    writeFileSync(join(world.automation.root, "node"), `#!/bin/sh
+case "$2" in
+  prepare)
+    tree='${TREE}'
+    if [ "$4" = '${PRIOR_MAIN}' ]; then tree='${PRIOR_TREE}'; fi
+    substantive=true
+    case "$RELEASE_CHANGED_PATH" in
+      ''|.github/badges/version-dependency-*.svg) substantive=false ;;
+    esac
+    printf '{"tree":"%s","sha":"%s","substantive_changes":%s}\\n' "$tree" '${OTHER_SHA}' "$substantive"
+    ;;
+  publish) exit 0 ;;
+  *) exit 1 ;;
+esac
+`, { mode: 0o755 });
     writeFileSync(join(world.automation.root, "git"), `#!/bin/sh
 case "$1" in
   cat-file) exit 0 ;;
@@ -56,6 +71,11 @@ case "$1" in
 esac
 `, { mode: 0o755 });
     world.automation.env.RELEASE_CHANGED_PATH = world.releaseChangedPath ?? "src/bootstrap.ts";
+    // A final source/main read protects the first write from stale preparations.
+    const firstWrite = world.releaseQueue.findIndex(request => request.method === "POST" || request.method === "PATCH");
+    if (firstWrite !== -1)
+      world.releaseQueue.splice(firstWrite, 0, get(`${API}/pulls/123`, source()),
+        get(`${API}/git/ref/heads/main`, { object: { sha: BASE_SHA } }));
   }
   world.releaseResult = world.automation.execute(script, args, world.releaseQueue, { success });
 }
@@ -86,7 +106,6 @@ Given("develop has unreleased changes and main has only newer dependency badges"
   this.releaseQueue = createPrefix();
   this.releaseQueue[2].response.behind_by = 1;
   this.releaseQueue.push(post(`${API}/git/refs`, {}, { fields: { ref: "refs/heads/release/0.0.25", sha: SHA } }),
-    post(`${API}/merges`, preparedRelease(), { fields: { base: "release/0.0.25", head: BASE_SHA } }),
     post(`${API}/pulls`, { number: 124 }, { fields: { head: "release/0.0.25", base: "main" } }));
 });
 
@@ -95,8 +114,18 @@ Given("develop has new work after squash synchronization with main", function ()
   this.releaseQueue = createPrefix();
   this.releaseQueue[2].response.behind_by = 3;
   this.releaseQueue.push(post(`${API}/git/refs`, {}, { fields: { ref: "refs/heads/release/0.0.25", sha: SHA } }),
-    post(`${API}/merges`, preparedRelease(), { fields: { base: "release/0.0.25", head: BASE_SHA } }),
     post(`${API}/pulls`, { number: 124 }));
+});
+
+Given("an open release already contains an earlier develop integration", function ()
+{
+  const active = release();
+  Object.assign(active, { state: "open", merged_at: null, body: "Earlier integration marker" });
+  active.head.sha = OTHER_SHA;
+  this.releaseQueue = createPrefix().slice(0, 4);
+  this.releaseQueue[0] = get(PULLS, [active]);
+  this.releaseQueue.push(get(`${API}/pulls/124`, active),
+    { method: "PATCH", endpoint: `${API}/pulls/124`, response: {} });
 });
 
 Given("the same release already has {string}", function (existing)
@@ -159,6 +188,31 @@ Given("release creation encounters {string}", function (conflict)
       trigger.head.sha = OTHER_SHA;
       this.releaseQueue = [get(PULLS, []), get(`${API}/pulls/123`, trigger)];
       break;
+    case "source advancing during preparation":
+      this.releaseQueue = [...createPrefix(), get(`${API}/pulls/123`, {
+        ...source(), head: { ...source().head, sha: OTHER_SHA },
+      })];
+      break;
+    case "main advancing during preparation":
+      this.releaseQueue = [...createPrefix(), get(`${API}/pulls/123`, source()),
+        get(`${API}/git/ref/heads/main`, { object: { sha: OTHER_SHA } })];
+      break;
+    case "an active version already tagged":
+      const active = release();
+      Object.assign(active, { state: "open", merged_at: null, body: "Earlier integration" });
+      this.releaseQueue = createPrefix([{ name: "0.0.25" }]).slice(0, 4);
+      this.releaseQueue[0] = get(PULLS, [active]);
+      break;
+    case "a matching closed unmerged release":
+      this.releaseQueue = [get(PULLS, [{ ...release(), merged: false, merged_at: null }])];
+      break;
+    case "an active release closing during preparation":
+      const closing = release();
+      Object.assign(closing, { state: "open", merged_at: null, body: "Earlier integration" });
+      this.releaseQueue = createPrefix().slice(0, 4);
+      this.releaseQueue[0] = get(PULLS, [closing]);
+      this.releaseQueue.push(get(`${API}/pulls/124`, { ...closing, state: "closed" }));
+      break;
     case "only dependency badge changes":
     case "already released content after squash":
       this.releaseQueue = createPrefix().slice(0, 3);
@@ -190,6 +244,15 @@ Then("release PR {int} identifies version {string} and its source commit", funct
 Then("no release comments are posted", function ()
 {
   assert.ok(this.automation.calls().every(call => !call.endpoint.includes("/comments")));
+});
+Then("the active release records the additional source without opening another PR", function ()
+{
+  const writes = this.automation.calls().filter(call => call.method !== "GET");
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].method, "PATCH");
+  assert.equal(writes[0].endpoint, `${API}/pulls/124`);
+  assert.ok(writes[0].fields.body.includes("Earlier integration marker"));
+  assert.ok(writes[0].fields.body.includes(marker));
 });
 Then("the retry performs {int} GitHub writes", function (count)
 {
