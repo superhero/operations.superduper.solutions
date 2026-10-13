@@ -5,11 +5,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
+  import { getContext } from "svelte";
   import { getSmoothStepPath, useConnection, useNodes, useStore, useSvelteFlow, useViewport,
-    ViewportPortal, type Connection, type InternalNode, type XYPosition } from "@xyflow/svelte";
+    ViewportPortal, type Connection, type InternalNode, type XYPosition, type Position } from "@xyflow/svelte";
   import { nearestWorkflowInput, type WorkflowConnectionState, type WorkflowConnectionEnd,
     type WorkflowHandle } from "$lib/workflow-connection-snap.ts";
   import { workflowCurve } from "$lib/workflow-curve.ts";
+  import { routingContext, type RoutingContext } from "$lib/flow-routing/context.ts";
+  import { connectionGeometry } from "$lib/flow-routing/geometry.js";
+  import { bendRadius, previewPath } from "$lib/flow-routing/path.js";
 
   let { isValidConnection, active = true, curved = false, dashed = false, curveStrength = 50, markerEnd }:
     { isValidConnection: (connection: Connection) => boolean; active?: boolean; curved?: boolean;
@@ -19,6 +23,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const viewport = useViewport();
   const flow = useSvelteFlow();
   const store = useStore();
+  const routing = getContext<RoutingContext | undefined>(routingContext);
   let cancelled = $state(false);
 
   export function start() { cancelled = false; }
@@ -52,7 +57,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const snapped = target(state, { x: (state.pointer.x - x) / zoom, y: (state.pointer.y - y) / zoom });
     return snapped ? {
       ...state, isValid: true, toNode: snapped.node, to: snapped.point,
-      toHandle: snapped.handle, toPosition: snapped.handle.position
+      toHandle: { ...snapped.handle, type: "target", nodeId: snapped.node.id }, toPosition: snapped.handle.position
     } : state;
   }
 
@@ -77,13 +82,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   $effect(() => { if (!active) cancel(); });
   const resolved = $derived(preview(connection.current));
   const path = $derived.by(() => {
-    const original = connection.current;
-    if (!resolved.inProgress || resolved === original) return "";
-    const points = {
-      sourceX: resolved.from.x, sourceY: resolved.from.y, sourcePosition: resolved.fromPosition,
-      targetX: resolved.to.x, targetY: resolved.to.y, targetPosition: resolved.toPosition
-    };
-    return (curved ? workflowCurve(points, curveStrength) : getSmoothStepPath(points))[0];
+    if (!resolved.inProgress || !resolved.isValid || !resolved.toNode) return "";
+    const geometry = connectionGeometry(resolved)!;
+    const points = { ...geometry, sourcePosition: geometry.sourcePosition as Position, targetPosition: geometry.targetPosition as Position };
+    if (curved) return workflowCurve(points, curveStrength)[0];
+    return previewPath(routing?.preview(), points, bendRadius, routing?.obstacles() ?? []) ??
+      getSmoothStepPath({ ...points, borderRadius: bendRadius, stepPosition: 1 })[0];
   });
 </script>
 

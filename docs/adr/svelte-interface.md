@@ -187,6 +187,20 @@ Existing document formats remain readable and editable; newer features do not
 rewrite older documents until used. Selection, measurements and drag previews
 remain transient.
 
+### Connection paths
+
+Orthogonal connections route around measured nodes in a dedicated worker, with
+bounded crossing reduction and four-unit rounded corners. Shared runs are
+intentional; adding a connection preserves the existing routes. Cached geometry
+keeps endpoints attached while routing catches up, with ordinary paths available
+if routing fails or exceeds its limits.
+
+During connection dragging, retain the raw pointer line and a faint preview of
+the eligible target. Reuse that preview on release. Dash spacing follows Settings;
+shared straight runs synchronize in world coordinates at a constant speed, with
+motion stopped for reduced-motion preferences. Curved connections retain their
+adjustable strength. Paths, caches and worker state never enter saved documents.
+
 ### Placement and selection
 
 All added nodes align their measured centers to the grid, regardless of the snap

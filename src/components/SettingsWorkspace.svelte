@@ -40,8 +40,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import SchemaSettings from "./settings/SchemaSettings.svelte";
   import { getSchemaLibrary, loadSchemaLibrary, uploadSchema, replaceSchema, renameSchema, moveSchema, setSchemaEnabled, deleteSchema, downloadSchema } from "$lib/schema-library.ts";
   import { defaultLocaleSettings, type LocaleSettings as LocalePreferences } from "$lib/locale-settings.ts";
-  import { isValidWorkflowCurveStrength, isValidWorkflowDashGap, isValidWorkflowGridSize,
-    workflowCurveStrengthLimits, workflowDashGapLimits, workflowGridSizeLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
+  import { isValidWorkflowCurveStrength, isValidWorkflowDashGap, isValidWorkflowGridSize, isValidWorkflowNodeClearance,
+    workflowCurveStrengthLimits, workflowDashGapLimits, workflowGridSizeLimits, workflowNodeClearanceLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
 
   let { palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
     locale = defaultLocaleSettings, localeError = "", onLocaleChange = () => {}, onRetryLocale = () => {},
@@ -76,6 +76,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let curveStrengthDraft = $state("");
   let curveStrengthInvalid = $state(false);
   const savedCurveStrength = $derived(workflowDefaults.curveStrength);
+  let nodeClearanceDraft = $state("");
+  let nodeClearanceInvalid = $state(false);
+  const savedNodeClearance = $derived(workflowDefaults.nodeClearance);
   const workflowOptions: { key: "dashed" | "curved" | "snap"; label: string }[] = [
     { key: "dashed", label: "Dashed lines" },
     { key: "curved", label: "Curved lines" },
@@ -85,6 +88,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   $effect(() => { gridSizeDraft = String(savedGridSize); gridSizeInvalid = false; });
   $effect(() => { dashGapDraft = String(savedDashGap); dashGapInvalid = false; });
   $effect(() => { curveStrengthDraft = String(savedCurveStrength); curveStrengthInvalid = false; });
+  $effect(() => { nodeClearanceDraft = String(savedNodeClearance); nodeClearanceInvalid = false; });
 
   function commitGridSize() {
     const raw = gridSizeDraft.trim();
@@ -108,6 +112,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     curveStrengthInvalid = !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(raw) || !isValidWorkflowCurveStrength(curveStrength);
     if (curveStrengthInvalid) return;
     if (curveStrength !== workflowDefaults.curveStrength) onWorkflowDefaultsChange({ ...workflowDefaults, curveStrength });
+  }
+
+  function commitNodeClearance() {
+    const raw = nodeClearanceDraft.trim();
+    const nodeClearance = Number(raw);
+    nodeClearanceInvalid = !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(raw) || !isValidWorkflowNodeClearance(nodeClearance);
+    if (nodeClearanceInvalid) return;
+    if (nodeClearance !== workflowDefaults.nodeClearance) onWorkflowDefaultsChange({ ...workflowDefaults, nodeClearance });
   }
 
   export function focusActive() {
@@ -239,6 +251,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                     <span aria-hidden="true">%</span>
                   </div>
                   {#if curveStrengthInvalid}<span class="grid-size-error" id="workflow-curve-strength-error" role="alert">Curve strength must be a whole number from {workflowCurveStrengthLimits.min} to {workflowCurveStrengthLimits.max}.</span>{/if}
+                </div>
+                <div class="grid-size-setting">
+                  <span>Node clearance</span>
+                  <div class="grid-size-control">
+                    <FieldInteger id="workflow-node-clearance" label="Node clearance" value={nodeClearanceDraft}
+                      minimum={workflowNodeClearanceLimits.min} maximum={workflowNodeClearanceLimits.max} required invalid={nodeClearanceInvalid}
+                      describedBy={nodeClearanceInvalid ? "workflow-node-clearance-error" : undefined}
+                      onValueChange={value => { nodeClearanceDraft = value; nodeClearanceInvalid = false; }} onValueCommit={commitNodeClearance} />
+                    <span aria-hidden="true">px</span>
+                  </div>
+                  {#if nodeClearanceInvalid}<span class="grid-size-error" id="workflow-node-clearance-error" role="alert">Node clearance must be a whole number from {workflowNodeClearanceLimits.min} to {workflowNodeClearanceLimits.max}.</span>{/if}
                 </div>
               {/if}
             </div>

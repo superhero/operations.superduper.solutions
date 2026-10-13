@@ -23,7 +23,7 @@ export function nearestWorkflowInput(
   isValidConnection: (connection: Connection) => boolean,
   isHandleAvailable: (node: InternalNode, handle: WorkflowHandle) => boolean = () => true
 ): WorkflowSnapTarget | null {
-  if (!origin.fromNode || origin.fromHandle?.type !== "source" || origin.inProgress === false ||
+  if (!origin?.fromNode || origin.fromHandle?.type !== "source" || origin.inProgress === false ||
       origin.isValid === true || origin.fromNode.hidden || origin.fromNode.connectable === false ||
       !Number.isFinite(pointer.x) || !Number.isFinite(pointer.y)) return null;
 
@@ -31,9 +31,9 @@ export function nearestWorkflowInput(
   let selectedZ = -Infinity;
   for (const node of nodes) {
     if (!node || node.id === origin.fromNode.id || node.hidden || node.connectable === false) continue;
-    const { positionAbsolute: position, handleBounds } = node.internals;
-    const { width, height } = node.measured;
-    if (width === undefined || height === undefined || width <= 0 || height <= 0 ||
+    const { positionAbsolute: position, handleBounds } = node.internals ?? {};
+    const { width, height } = node.measured ?? {};
+    if (!position || width === undefined || height === undefined || width <= 0 || height <= 0 ||
         ![position.x, position.y, width, height].every(Number.isFinite) ||
         pointer.x < position.x || pointer.x > position.x + width ||
         pointer.y < position.y || pointer.y > position.y + height) continue;

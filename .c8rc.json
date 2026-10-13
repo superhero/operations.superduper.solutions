@@ -1,7 +1,7 @@
 {
   "all": true,
   "src": ["src"],
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/lib/flow-routing/*.js"],
   "exclude": [
     "src/index.ts",
     "src/dev/**",
@@ -10,6 +10,7 @@
     "src/lib/utils.ts",
     "src/lib/app-settings.ts",
     "src/lib/appearance-cache.ts",
+    "src/lib/flow-routing/context.ts",
     "src/lib/metrics-history-repository.ts",
     "src/lib/metrics-recorder-types.ts",
     "src/lib/metrics-recorder.ts",
@@ -27,9 +28,11 @@
     "src/lib/worker-runtime.ts",
     "src/lib/workflow-repository.ts",
     "src/lib/workflow-repository-client.ts",
-    "src/lib/workflow-repository.worker.ts"
+    "src/lib/workflow-repository.worker.ts",
+    "src/lib/workflow-routing-client.ts",
+    "src/lib/workflow-routing.worker.ts"
   ],
-  "extension": [".ts"],
+  "extension": [".ts", ".js"],
   "reporter": ["html", "json", "json-summary", "text-summary"],
   "reports-dir": "tmp/test/coverage",
   "temp-directory": "tmp/test/coverage/v8",

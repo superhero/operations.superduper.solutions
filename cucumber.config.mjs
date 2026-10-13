@@ -32,7 +32,16 @@ export const source = {
     "src/workflow-runner.test.mjs",
     "src/workflow-comment.test.mjs",
     "src/workflow-connection-snap.test.mjs",
-    "src/workflow-change-message.test.mjs"
+    "src/workflow-change-message.test.mjs",
+    "src/flow-routing-engine.test.mjs",
+    "src/flow-routing-adapter.test.mjs",
+    "src/flow-routing-path.test.mjs",
+    "src/flow-routing-dashes.test.mjs",
+    "src/flow-routing-rounding.test.mjs",
+    "src/flow-routing-snapping.test.mjs",
+    "src/flow-routing-worker-lifecycle.test.mjs",
+    "src/flow-routing-handoff.test.mjs",
+    "src/lib/flow-routing/coverage-regressions.test.mjs"
   ],
   paths: [
     "src/application.feature",
@@ -46,7 +55,16 @@ export const source = {
     "src/workflow-runner.feature",
     "src/workflow-comment.feature",
     "src/workflow-connection-snap.feature",
-    "src/workflow-change-message.feature"
+    "src/workflow-change-message.feature",
+    "src/flow-routing-engine.feature",
+    "src/flow-routing-adapter.feature",
+    "src/flow-routing-path.feature",
+    "src/flow-routing-dashes.feature",
+    "src/flow-routing-rounding.feature",
+    "src/flow-routing-snapping.feature",
+    "src/flow-routing-worker-lifecycle.feature",
+    "src/flow-routing-handoff.feature",
+    "src/lib/flow-routing/coverage-regressions.feature"
   ]
 };
 

@@ -10,11 +10,12 @@ import { readAppearanceCache, writeAppearanceCache } from "./appearance-cache.ts
 import { appSettingsDatabaseName } from "./storage-names.ts";
 export { appSettingsDatabaseName } from "./storage-names.ts";
 
-export type WorkflowDefaults = { dashed: boolean; curved: boolean; snap: boolean; gridSize: number; dashGap: number; curveStrength: number };
+export type WorkflowDefaults = { dashed: boolean; curved: boolean; snap: boolean; gridSize: number; dashGap: number; curveStrength: number; nodeClearance: number };
 export const workflowGridSizeLimits = { min: 1, max: 32 } as const;
 export const workflowDashGapLimits = { min: 1, max: 128 } as const;
 export const workflowCurveStrengthLimits = { min: 0, max: 100 } as const;
-export const defaultWorkflowSettings: Readonly<WorkflowDefaults> = { dashed: false, curved: false, snap: false, gridSize: 12, dashGap: 4, curveStrength: 50 };
+export const workflowNodeClearanceLimits = { min: 0, max: 128 } as const;
+export const defaultWorkflowSettings: Readonly<WorkflowDefaults> = { dashed: false, curved: false, snap: false, gridSize: 12, dashGap: 4, curveStrength: 50, nodeClearance: 12 };
 
 export function isValidWorkflowGridSize(value: unknown): value is number
 {
@@ -32,6 +33,12 @@ export function isValidWorkflowCurveStrength(value: unknown): value is number
 {
   return typeof value === "number" && Number.isSafeInteger(value)
     && value >= workflowCurveStrengthLimits.min && value <= workflowCurveStrengthLimits.max;
+}
+
+export function isValidWorkflowNodeClearance(value: unknown): value is number
+{
+  return typeof value === "number" && Number.isSafeInteger(value)
+    && value >= workflowNodeClearanceLimits.min && value <= workflowNodeClearanceLimits.max;
 }
 type SettingValues = { theme: string; palette: string; workflowDefaults: WorkflowDefaults; developerToolbar: boolean; locale: LocaleSettings };
 
@@ -177,6 +184,7 @@ function normalize(saved: SavedSettings, legacy: LegacySettings, paletteIds: rea
     gridSize: isValidWorkflowGridSize(workflow.gridSize) ? workflow.gridSize : defaultWorkflowSettings.gridSize,
     dashGap: isValidWorkflowDashGap(workflow.dashGap) ? workflow.dashGap : defaultWorkflowSettings.dashGap,
     curveStrength: isValidWorkflowCurveStrength(workflow.curveStrength) ? workflow.curveStrength : defaultWorkflowSettings.curveStrength,
+    nodeClearance: isValidWorkflowNodeClearance(workflow.nodeClearance) ? workflow.nodeClearance : defaultWorkflowSettings.nodeClearance,
   } };
 }
 
