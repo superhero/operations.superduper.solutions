@@ -6,6 +6,7 @@ import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { chooseCatalogOperation, expectFieldValue, fillField } from "./workspace.steps.mjs";
 import { catalogForOperation } from "../../src/lib/catalog-registry.ts";
+import { metricsCacheKey } from "../../src/lib/metrics-cache.ts";
 import { finishHeightAnimations, holdHeightAnimations, seekHeightAnimation } from "./height-animation.fixture.mjs";
 
 const jsonLabel = "Operation OpenAPI JSON";
@@ -18,7 +19,9 @@ const wrapButton = page => schemaHeader(page).getByRole("button", { name: "Wrap 
 const viewer = page => page.getByRole("region", { name: jsonLabel, exact: true });
 const branch = (page, path) => viewer(page).getByRole("group", { name: `${jsonLabel}: ${path}`, exact: true });
 const heading = (page, path) => branch(page, path).locator(":scope > summary");
-const storage = page => page.evaluate(() => Object.entries(localStorage).sort(([a], [b]) => a.localeCompare(b)));
+// The background metrics recorder refreshes its cache independently of JSON review.
+const storage = page => page.evaluate(cacheKey => Object.entries(localStorage)
+  .filter(([key]) => key !== cacheKey).sort(([a], [b]) => a.localeCompare(b)), metricsCacheKey);
 
 async function expectOpen(element, open) {
   await expect.poll(() => element.evaluate(details => details.open)).toBe(open);
@@ -315,7 +318,21 @@ When("delayed clipboard success and failure leave the JSON controls in place", a
   } finally { await original.dispose(); }
 });
 
-Then("reviewing JSON has left the operation draft and local storage unchanged", async function () {
+When("the cached metrics report refreshes while I review JSON", async function () {
+  await expect.poll(() => this.page.evaluate(key => JSON.parse(localStorage.getItem(key))?.report?.collectedAt ?? null,
+    metricsCacheKey)).not.toBeNull();
+  const timestamps = await this.page.evaluate(key => {
+    // Clone the real recorder payload so this refresh remains a valid cache entry.
+    const payload = JSON.parse(localStorage.getItem(key));
+    const before = payload.report.collectedAt;
+    payload.report.collectedAt = Math.max(Date.now(), before + 1);
+    localStorage.setItem(key, JSON.stringify(payload));
+    return { before, after: JSON.parse(localStorage.getItem(key)).report.collectedAt };
+  }, metricsCacheKey);
+  assert.ok(timestamps.after > timestamps.before, "The regression must refresh the cached metrics report during JSON review.");
+});
+
+Then("reviewing JSON has left the operation draft and non-metric local storage unchanged", async function () {
   for (const [label, value] of Object.entries(this.jsonDraft)) await expectFieldValue(this.page, label, value);
   assert.deepEqual(await storage(this.page), this.jsonStorage);
   await expect(this.page.getByRole("region", { name: "Prepared request", exact: true })).toHaveCount(0);
