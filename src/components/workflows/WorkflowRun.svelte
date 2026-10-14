@@ -8,6 +8,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { onMount, tick } from "svelte";
   import OperationFieldControl from "$lib/components/OperationFieldControl.svelte";
   import JsonView from "$lib/components/JsonView.svelte";
+  import HintButton from "$lib/components/HintButton.svelte";
+  import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import { InputValidationError, prepareRequest } from "$lib/operation-input.ts";
   import type { WorkflowDocument } from "$lib/workflow-document.ts";
   import { createWorkflowRunner, type WorkflowStep, type WorkflowExecution } from "$lib/workflow-runner.ts";
@@ -155,7 +157,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/each}
     </section>
   {/if}
-  <footer><button type="button" onclick={end}>{view?.kind === "complete" ? "Close run" : "End run"}</button></footer>
+  <footer>
+    <HintButton type="button" label="Quit" onclick={end}>
+      {#snippet child({ props })}
+        <button {...props} class="run-quit"><MaterialIcon name="exit_to_app" size={20} /></button>
+      {/snippet}
+    </HintButton>
+  </footer>
 </div>
 
 <style>
@@ -173,6 +181,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .joined-field { display: block; overflow: hidden; border-radius: 4px; --field-background: var(--color-foreground); --field-foreground: var(--color-background); }
   button { border: 1px solid var(--color-surface); border-radius: 4px; padding: 9px 14px; color: var(--color-foreground); background: transparent; }
   button.run-primary { background: var(--color-foreground); color: var(--color-background); }
+  button.run-quit { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; }
   .run-success { font-size: 12px; }
   .run-error { margin: 0; padding: 12px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; line-height: 1.6; }
   .run-results { min-width: 0; display: grid; gap: 12px; }

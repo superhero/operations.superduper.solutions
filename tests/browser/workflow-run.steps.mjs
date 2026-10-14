@@ -68,7 +68,7 @@ Then("a saved workflow opens a request run with starting choices and an end cont
   await expect(run.getByRole("region", { name: "Step 1 response", exact: true })).toContainText("Website");
   await run.getByRole("button", { name: "Next operation", exact: true }).click();
   await expect(run.getByRole("heading", { name: "Workflow complete.", exact: true })).toBeVisible();
-  await run.getByRole("button", { name: "Close run", exact: true }).click();
+  await run.getByRole("button", { name: "Quit", exact: true }).click();
   await expect(run).toBeHidden();
   assert.equal(requests.length, 1);
   assert.deepEqual(await storedWorkflows(page), [doc]);
@@ -148,7 +148,17 @@ Then("ending a workflow run restores the canvas and leaves its saved graph uncha
   const run = dialog(page);
   await run.getByRole("textbox", { name: "Project ID", exact: true }).fill("project-1");
   await page.keyboard.press("Delete");
-  await run.getByRole("button", { name: "End run", exact: true }).click();
+  const quit = run.getByRole("button", { name: "Quit", exact: true });
+  await expect(quit.locator(".material-symbols-rounded")).toHaveText("exit_to_app");
+  await expect(quit).not.toHaveAttribute("title");
+  await quit.hover();
+  const tooltip = page.getByRole("tooltip");
+  await expect(tooltip).toHaveCount(1);
+  await expect(tooltip).toHaveClass(/\bapp-tooltip\b/);
+  await expect(tooltip).toHaveText("Quit");
+  await page.mouse.move(0, 0);
+  await expect(tooltip).toHaveCount(0);
+  await quit.click();
   await expect(run).toBeHidden();
   await expect(workflow(page).locator(".svelte-flow__node-operation")).toHaveCount(1);
   await expect.poll(() => page.evaluate(() => Boolean(document.activeElement?.closest(".workflow-workspace")))).toBe(true);
