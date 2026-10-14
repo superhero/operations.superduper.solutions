@@ -170,7 +170,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .run-endpoint { margin: 0; padding: 12px; border-left: 3px solid var(--color-emphasis); background: var(--color-report-card); font-size: 12px; line-height: 1.6; }
   .run-request { font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
   h3 { margin: 0 0 8px; font-size: 16px; }
-  h3:focus { outline: none; }
+  h3[tabindex="-1"] { outline: none; }
   .run-choices { display: grid; gap: 8px; margin: 12px 0; }
   .run-choices label { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 4px; background: var(--color-report-card); }
   .run-fields { display: grid; gap: 16px; margin: 16px 0; }

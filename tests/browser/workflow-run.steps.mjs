@@ -78,6 +78,37 @@ Then("a saved workflow opens a request run with starting choices and an end cont
   assert.deepEqual(await storedWorkflows(page), [doc]);
 });
 
+Then("moving focus from a run heading keeps it unoutlined and preserves control focus rings", async function () {
+  const page = this.page;
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await seed(page, fixture(graph("getProject"), graph("listProjects")));
+  await setMode(page, "workflow");
+  await workflowAction(page, "Run");
+  const run = dialog(page);
+  const heading = run.getByRole("heading", { name: "Choose a starting operation", exact: true });
+  await expect(heading).toBeVisible();
+  const outlines = await heading.evaluate(async element => {
+    element.focus();
+    await Promise.all(element.getAnimations().map(animation => animation.finished));
+    const styles = [getComputedStyle(element).outlineStyle];
+    element.closest("section").querySelector('input[type="radio"]').focus();
+    const until = performance.now() + 240;
+    do {
+      await new Promise(requestAnimationFrame);
+      styles.push(getComputedStyle(element).outlineStyle);
+    } while (performance.now() < until);
+    return styles;
+  });
+  assert.ok(outlines.every(style => style === "none"), `The passive heading must stay unoutlined through blur: ${outlines.join(", ")}`);
+  await heading.focus();
+  await page.keyboard.press("Tab");
+  const radio = run.getByRole("radio", { name: "Get project", exact: true });
+  await expect(radio).toBeFocused();
+  assert.ok(await radio.evaluate(element => element.matches(":focus-visible")));
+  await expect(radio).toHaveCSS("outline-style", "solid");
+  await run.getByRole("button", { name: "Quit", exact: true }).click();
+});
+
 Then("the workflow run dialog validates inputs and passes task results to the next operation", async function () {
   const page = this.page;
   const requests = await recordExampleRequests(page);
