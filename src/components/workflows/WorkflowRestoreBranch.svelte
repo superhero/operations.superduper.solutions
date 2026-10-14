@@ -26,7 +26,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <HintButton type="button" class="workflow-restore-branch nodrag nopan nokey" data-side={position}
-  data-beside={beside} style={`top: ${top}`} label={`Restore ${branch.label}`} title={`Restore ${branch.label}`}
+  data-beside={beside} style={`top: ${top}`} label={`Restore ${branch.label}`}
   onmousedown={blockPointer} ontouchstart={blockPointer} ondblclick={blockPointer} onclick={restoreBranch}>
   <MaterialIcon name={beside ? "add_location" : "add_box"} size={18} />
 </HintButton>

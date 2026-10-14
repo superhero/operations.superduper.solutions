@@ -7,6 +7,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { getContext, untrack } from "svelte";
   import { Handle, Position, useSvelteFlow, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
+  import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { WorkflowReferenceData } from "$lib/workflow-document.ts";
   import WorkflowRestoreBranch from "./WorkflowRestoreBranch.svelte";
@@ -31,9 +32,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <div class="workflow-utility-node workflow-reference-node" class:selected data-workflow-name={data.name}
-  style:min-height={`${Math.max(88, portCount * 28 + 28)}px`} title={data.description}>
+  style:min-height={`${Math.max(88, portCount * 28 + 28)}px`}>
   <div class="workflow-kind"><MaterialIcon name="flowsheet" size={20} /><span>Workflow</span></div>
-  <strong>{data.name}</strong>
+  <HintButton label={data.description} labelAsName={false} tooltipEnabled={Boolean(data.description)} tabindex={-1}>
+    {#snippet child({ props })}
+      {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
+      <strong {...hintProps}>{data.name}</strong>
+    {/snippet}
+  </HintButton>
   {#if ordinal}<span class="instance-pill" aria-label={`Instance ${ordinal}`}>{ordinal}</span>{/if}
   {#each ["inputs", "outputs"] as direction}
     {@const input = direction === "inputs"}
@@ -41,11 +47,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {@const position = input ? Position.Left : Position.Right}
     {#each group as branch, index (branch.id)}
       {@const top = `calc(50% + ${(index - (group.length - 1) / 2) * 28}px)`}
-      <Handle id={`schema:${branch.childId}`} type={input ? "target" : "source"} {position}
-        class="owner-port" style={`top: ${top}; visibility: ${branch.hidden ? "hidden" : "visible"}`}
-        isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
-        onmousedown={blockPointer} ontouchstart={blockPointer} aria-disabled="true"
-        aria-label={`${branch.label} ${input ? "input" : "output"}`} title={branch.label} />
+      <HintButton label={branch.label} labelAsName={false} tabindex={-1}>
+        {#snippet child({ props })}
+          {@const { id: _id, type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
+          <Handle {...hintProps} id={`schema:${branch.childId}`} type={input ? "target" : "source"} {position}
+            class="owner-port" style={`top: ${top}; visibility: ${branch.hidden ? "hidden" : "visible"}`}
+            isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
+            onmousedown={blockPointer} ontouchstart={blockPointer} aria-disabled="true"
+            aria-label={`${branch.label} ${input ? "input" : "output"}`} />
+        {/snippet}
+      </HintButton>
       {#if branch.hidden}<WorkflowRestoreBranch {branch} {position} {top} />{/if}
     {/each}
   {/each}

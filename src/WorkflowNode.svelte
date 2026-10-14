@@ -7,6 +7,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { getContext, untrack } from "svelte";
   import { useSvelteFlow, useUpdateNodeInternals, Handle, Position, type Node, type NodeProps } from "@xyflow/svelte";
+  import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { OperationData } from "$lib/workflow-document.ts";
   import WorkflowRestoreBranch from "./components/workflows/WorkflowRestoreBranch.svelte";
@@ -17,6 +18,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const branchesFor = getContext<((id: string) => Map<string, Branch> | undefined) | undefined>("workflow-branches");
   const inputConnected = getContext<((id: string, handleId?: string | null) => boolean) | undefined>("workflow-input-connected");
   let { id, data, selected }: NodeProps<Node<OperationData, "operation">> = $props();
+  let hoveredRestore = $state<string>();
   const occurrences = $derived(getNodes().filter(node => node.type === "operation" && node.data.operationId === data.operationId));
   const ordinal = $derived(occurrences.length > 1 ? occurrences.findIndex(node => node.id === id) + 1 : 0);
   const branches = $derived(branchesFor?.(id));
@@ -49,16 +51,23 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#each group as branch (branch.id)}
       {@const label = portLabel(branch.label)}
       {@const separator = label.indexOf(" · ")}
-      <div class="operation-port" title={branch.label}>
-        <span class="port-label">{#if input}{label}{:else}<span class="port-code">{separator < 0 ? label : label.slice(0, separator)}</span>{separator < 0 ? "" : label.slice(separator)}{/if}</span>
-        <span class="port-type">Object</span>
-        <Handle id={branch.id} type={input ? "target" : "source"} {position}
-          class="owner-port" style={`visibility: ${branch.hidden ? "hidden" : "visible"}`}
-          isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
-          onmousedown={blockPointer} ontouchstart={blockPointer}
-          aria-disabled="true" aria-label={`${branch.label} ${input ? "input" : "output"}`} title={branch.label} />
-        {#if branch.hidden}<WorkflowRestoreBranch {branch} {position} />{/if}
-      </div>
+      <HintButton label={branch.label} labelAsName={false} tabindex={-1} tooltipEnabled={hoveredRestore !== branch.id}
+        onpointerover={event => hoveredRestore = event.target instanceof Element && event.target.closest(".workflow-restore-branch") ? branch.id : undefined}
+        onpointerleave={() => hoveredRestore = undefined}>
+        {#snippet child({ props })}
+          {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
+          <div {...hintProps} class="operation-port">
+            <span class="port-label">{#if input}{label}{:else}<span class="port-code">{separator < 0 ? label : label.slice(0, separator)}</span>{separator < 0 ? "" : label.slice(separator)}{/if}</span>
+            <span class="port-type">Object</span>
+            <Handle id={branch.id} type={input ? "target" : "source"} {position}
+              class="owner-port" style={`visibility: ${branch.hidden ? "hidden" : "visible"}`}
+              isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
+              onmousedown={blockPointer} ontouchstart={blockPointer}
+              aria-disabled="true" aria-label={`${branch.label} ${input ? "input" : "output"}`} />
+            {#if branch.hidden}<WorkflowRestoreBranch {branch} {position} />{/if}
+          </div>
+        {/snippet}
+      </HintButton>
     {:else}
       {#if !portCount}
         <div class="operation-port">
@@ -73,13 +82,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </div>
 {/snippet}
 
-<div class="operation-node" class:selected data-operation-name={data.name} title={`${data.method} ${data.path}\n${data.description}`}>
+<div class="operation-node" class:selected data-operation-name={data.name}>
   {@render portRow("inputs")}
-  <div class="operation-title-row">
-    <MaterialIcon name="http" size={28} />
-    <strong>{data.name}</strong>
-    {#if ordinal}<span class="instance-pill" aria-label={`Instance ${ordinal}`}>{ordinal}</span>{/if}
-  </div>
+  <HintButton label={`${data.method} ${data.path}\n${data.description}`} labelAsName={false} tabindex={-1}>
+    {#snippet child({ props })}
+      {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
+      <div {...hintProps} class="operation-title-row">
+        <MaterialIcon name="http" size={28} />
+        <strong>{data.name}</strong>
+        {#if ordinal}<span class="instance-pill" aria-label={`Instance ${ordinal}`}>{ordinal}</span>{/if}
+      </div>
+    {/snippet}
+  </HintButton>
   <span class="sr-only">{data.method} {data.path}. {data.description}</span>
   {@render portRow("outputs")}
 </div>

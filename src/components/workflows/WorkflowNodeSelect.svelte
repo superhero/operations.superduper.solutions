@@ -5,8 +5,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
-  import { Select } from "bits-ui";
+  import { Select, mergeProps } from "bits-ui";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
+  import HintButton from "$lib/components/HintButton.svelte";
 
   let { label, value, choices, disabled = false, active = true, onchange }: {
     label: string; value: string; choices: { value: string; label: string; symbol?: string }[];
@@ -18,8 +19,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <Select.Root type="single" {value} {disabled} items={choices} onValueChange={onchange} bind:open>
-  <Select.Trigger class="workflow-node-select nodrag nopan nokey" role="combobox" aria-label={label} title={selected?.label}>
-    <span>{selected?.symbol ?? selected?.label ?? value}</span><MaterialIcon name="expand_more" size={16} />
+  <Select.Trigger class="workflow-node-select nodrag nopan nokey" role="combobox" aria-label={label}>
+    {#snippet child({ props: selectProps })}
+      <HintButton label={selected?.label ?? value} labelAsName={false} tooltipEnabled={!open}>
+        {#snippet child({ props: hintProps })}
+          <button {...mergeProps(hintProps, selectProps)}>
+            <span>{selected?.symbol ?? selected?.label ?? value}</span><MaterialIcon name="expand_more" size={16} />
+          </button>
+        {/snippet}
+      </HintButton>
+    {/snippet}
   </Select.Trigger>
   <Select.Portal>
     <Select.Content class="workflow-node-select-options nodrag nopan nokey nowheel" aria-label={label} sideOffset={5} collisionPadding={10} preventScroll={false}>

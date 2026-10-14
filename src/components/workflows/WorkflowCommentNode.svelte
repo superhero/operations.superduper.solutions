@@ -7,6 +7,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { getContext, tick, untrack } from "svelte";
   import { useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
+  import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { CommentData } from "$lib/workflow-document.ts";
   import { commentTextLimit } from "$lib/workflow-utilities.ts";
@@ -57,14 +58,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         oninput={event => changeText(id, event.currentTarget.value)}></textarea>
     </div>
   {:else}
-    <div bind:this={preview} class="comment-preview nodrag nopan nokey" role="button" tabindex="0" aria-label="Edit comment text"
-      title="Click or press Enter to edit" onclick={edit} onkeydown={event => {
+    <HintButton label="Click or press Enter to edit" labelAsName={false} aria-label="Edit comment text" tabindex={0}
+      onclick={edit} onkeydown={event => {
         if (event.target === event.currentTarget && ["Enter", " "].includes(event.key)) {
           event.preventDefault(); event.stopPropagation(); void edit(event);
         }
       }}>
-      <WorkflowCommentPreview text={data.text} />
-    </div>
+      {#snippet child({ props })}
+        {@const { type: _type, disabled: _disabled, ...hintProps } = props}
+        <div {...hintProps} bind:this={preview} class="comment-preview nodrag nopan nokey" role="button">
+          <WorkflowCommentPreview text={data.text} />
+        </div>
+      {/snippet}
+    </HintButton>
   {/if}
 </div>
 

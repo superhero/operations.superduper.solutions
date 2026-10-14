@@ -43,6 +43,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let propertyError = $state("");
   let nameInput = $state<HTMLInputElement>();
   let propertiesButton = $state<HTMLButtonElement | null>(null);
+  let hoveredFieldDetail = $state<string>();
   const updateNodeInternals = useUpdateNodeInternals();
   const input = $derived(data.direction === "inputs");
   const noFields = $derived(!data.fields.length);
@@ -108,12 +109,22 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       class="structural-port" isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
       onmousedown={blockPointer} ontouchstart={blockPointer} aria-disabled="true" aria-label={`${data.label} object`} />
     <MaterialIcon name="data_object" size={20} />
-    <strong title={data.label}>{input ? data.label.replace(/ parameters$/i, "") : data.label.replace(/^Response · .+$/, "Response")}</strong>
+    <HintButton label={data.label} labelAsName={false}>
+      {#snippet child({ props })}
+        {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
+        <strong {...hintProps} data-label={data.label}>{input ? data.label.replace(/ parameters$/i, "") : data.label.replace(/^Response · .+$/, "Response")}</strong>
+      {/snippet}
+    </HintButton>
   </div>
 {/snippet}
 
 {#snippet fieldContent(field: WorkflowField)}
-  <span class="field-name">{field.label}{#if field.required}<abbr class="required" title="Required"> *</abbr>{/if}</span>
+  <span class="field-name">{field.label}{#if field.required}<HintButton label="Required" labelAsName={false}>
+      {#snippet child({ props })}
+        {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
+        <abbr {...hintProps} class="required" aria-label="Required"> *</abbr>
+      {/snippet}
+    </HintButton>{/if}</span>
   <span class="field-type">{field.type}</span>
 {/snippet}
 
@@ -126,27 +137,34 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {@const position = input ? Position.Left : Position.Right}
         {@const editable = editableProperties.get(field.id)}
         {@const connected = input && (inputConnected?.(id, field.id) ?? false)}
-        <div class="data-field" class:deferred={!field.connectable} data-field-id={field.id}
-          title={[field.description, field.required ? "Required" : ""].filter(Boolean).join("\n")}>
-          {#if field.connectable || branch}
-            <Handle id={field.id} type={input ? "target" : "source"} {position}
-              style={branch?.hidden && (input || !field.connectable) ? "visibility: hidden" : undefined}
-              isConnectable={field.connectable} isConnectableStart={field.connectable && !input}
-              isConnectableEnd={field.connectable && input && !connected} aria-disabled={!field.connectable || connected}
-              aria-label={`${field.label} ${input ? "input" : "output"}`} />
-          {/if}
-          {#if branch?.hidden}
-            <WorkflowRestoreBranch {branch} {position} beside={!input && field.connectable} />
-          {/if}
-          {#if editMode && editable}
-            <button type="button" class="editable-field nodrag nopan nokey" aria-label={`Edit property ${editable.name}`}
-              aria-pressed={editing === field.id} disabled={!active} onclick={() => openProperty(field.id)}>
-              {@render fieldContent(field)}
-            </button>
-          {:else}
-            {@render fieldContent(field)}
-          {/if}
-        </div>
+        {@const hint = [field.description, field.required ? "Required" : ""].filter(Boolean).join("\n")}
+        <HintButton label={hint} labelAsName={false} tooltipEnabled={Boolean(hint) && hoveredFieldDetail !== field.id}
+          onpointerover={event => hoveredFieldDetail = event.target instanceof Element && event.target.closest(".required, .workflow-restore-branch") ? field.id : undefined}
+          onpointerleave={() => hoveredFieldDetail = undefined}>
+          {#snippet child({ props })}
+            {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
+            <div {...hintProps} class="data-field" class:deferred={!field.connectable} data-field-id={field.id}>
+              {#if field.connectable || branch}
+                <Handle id={field.id} type={input ? "target" : "source"} {position}
+                  style={branch?.hidden && (input || !field.connectable) ? "visibility: hidden" : undefined}
+                  isConnectable={field.connectable} isConnectableStart={field.connectable && !input}
+                  isConnectableEnd={field.connectable && input && !connected} aria-disabled={!field.connectable || connected}
+                  aria-label={`${field.label} ${input ? "input" : "output"}`} />
+              {/if}
+              {#if branch?.hidden}
+                <WorkflowRestoreBranch {branch} {position} beside={!input && field.connectable} />
+              {/if}
+              {#if editMode && editable}
+                <button type="button" class="editable-field nodrag nopan nokey" aria-label={`Edit property ${editable.name}`}
+                  aria-pressed={editing === field.id} disabled={!active} onclick={() => openProperty(field.id)}>
+                  {@render fieldContent(field)}
+                </button>
+              {:else}
+                {@render fieldContent(field)}
+              {/if}
+            </div>
+          {/snippet}
+        </HintButton>
       {/each}
     </div>
   {/if}

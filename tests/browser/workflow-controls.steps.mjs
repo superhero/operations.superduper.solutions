@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { closeCatalog, connections, openCatalog, readExport, setMode, workflow } from "./workspace.steps.mjs";
+import { expectHoverHint } from "./workflow-fields.steps.mjs";
 
 const node = (page, type) => workflow(page).locator(`.svelte-flow__node-${type}`);
 const descriptionDialog = page => page.getByRole("dialog", { name: "Workflow details", exact: true });
@@ -113,9 +114,13 @@ When("I write a safely formatted workflow comment", async function () {
   await expect(comment.locator(".comment-markdown strong")).toHaveText("Ready");
   await expect(comment.getByRole("link", { name: "Docs", exact: true })).toHaveAttribute("rel", "noopener noreferrer");
   await expect(comment.getByRole("link", { name: "Docs", exact: true })).toHaveAttribute("target", "_blank");
+  await expect(comment.getByRole("link", { name: "Docs", exact: true })).toHaveAttribute("href", "https://example.com/guide");
   await expect(comment.locator("script, img")).toHaveCount(0);
   assert.equal(await this.page.evaluate(() => window.commentUnsafe), undefined);
-  await comment.getByRole("button", { name: "Edit comment text", exact: true }).click();
+  const preview = comment.getByRole("button", { name: "Edit comment text", exact: true });
+  await expectHoverHint(preview, 'Click or press Enter to edit');
+  await expect(preview).toHaveAttribute('tabindex', '0');
+  await preview.click();
   await expect(input).toHaveValue(controlComment);
   await input.press("Escape");
   await expect(input).toHaveCount(0);
@@ -178,7 +183,14 @@ When("I insert the saved project workflow from the catalog", async function () {
 });
 
 Then("the reusable workflow keeps its ports and embedded definition", async function () {
-  await expect(node(this.page, "workflow").locator("[data-workflow-name]")).toHaveAttribute("data-workflow-name", this.reusableFixture.name);
+  const referenceNode = node(this.page, "workflow");
+  await expect(referenceNode.locator("[data-workflow-name]")).toHaveAttribute("data-workflow-name", this.reusableFixture.name);
+  await expect(referenceNode.locator('[title]')).toHaveCount(0);
+  await expectHoverHint(referenceNode.locator('.workflow-reference-node > strong'), this.reusableFixture.description);
+  const inputPort = referenceNode.getByLabel('Get project · Path parameters input', { exact: true });
+  await expectHoverHint(inputPort, 'Get project · Path parameters');
+  await expect(inputPort).toHaveAttribute('tabindex', '-1');
+  await expect(inputPort).toHaveAttribute('aria-disabled', 'true');
   const document = (await readExport(this.page)).document;
   const reference = document.nodes.find(item => item.type === "workflow");
   assert.equal(reference.data.workflowId, this.reusableFixture.id);
