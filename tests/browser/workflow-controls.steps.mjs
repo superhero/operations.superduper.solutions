@@ -8,6 +8,7 @@ import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { closeCatalog, connections, openCatalog, readExport, setMode, workflow } from "./workspace.steps.mjs";
 import { expectHoverHint } from "./workflow-fields.steps.mjs";
+import { gesture as connect } from "./workflow-single-input.steps.mjs";
 
 const node = (page, type) => workflow(page).locator(`.svelte-flow__node-${type}`);
 const descriptionDialog = page => page.getByRole("dialog", { name: "Workflow details", exact: true });
@@ -20,16 +21,6 @@ async function choose(page, control, option) {
   await control.click();
   await page.getByRole("listbox").getByRole("option", { name: option, exact: true }).click();
   await expect(page.getByRole("listbox")).toHaveCount(0);
-}
-
-async function connect(page, source, target) {
-  const start = await source.boundingBox();
-  const end = await target.boundingBox();
-  assert.ok(start && end, "Routing handles must be visible.");
-  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2, { steps: 16 });
-  await page.mouse.up();
 }
 
 const recoverStorage = restoreWorkflowSaving;
