@@ -73,6 +73,18 @@ Document reuse, rollout and retry behavior with Cucumber regression coverage.
 
 ```
 
+<!-- changelog-commit:6108eb9a9c03c5a625c0b99e516b4cd4b4cbe904 -->
+### Commit [`6108eb9`](https://github.com/superhero/operations.superduper.solutions/commit/6108eb9a9c03c5a625c0b99e516b4cd4b4cbe904)
+
+```text
+feat(errors): retain bounded browser error history
+
+Capture application, runtime, rejection and worker diagnostics without changing their existing console and UI reporting. Keep 1,000 unique errors in IndexedDB with occurrence counts and atomic FIFO eviction across tabs.
+
+Record through a dedicated worker with bounded pending work, guarded failures and explicit retry. Expose paginated history, stacks and causes in Browser settings. Cover capture, persistence, concurrency and recovery with Cucumber scenarios.
+
+```
+
 <!-- changelog-staging-end -->
 
 ## 0.0.42
