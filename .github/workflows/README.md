@@ -290,14 +290,29 @@ before feature, integration bugfix and documentation PRs are squashed into
   through CI before merging; automation does not alter the tested tree afterward.
 - Generated changelog commits are omitted. Retries deduplicate original commit
   identities, including entries already assigned to a release.
-- Existing squashed history is not reconstructed. Write useful commit subjects
-  and bodies; their text is retained as written.
+- Write useful commit subjects and bodies; their text is retained as written.
 - Concurrent PRs may need the usual update from `develop`. Resolve changelog
   entries with the shared merge helper, preserving every commit identity, then
   rerun validation. Conflicts in application files require a normal resolution.
 
 The documentation preparation step uses trusted automation from `main`, so that
 part becomes active after the helpers and workflow are promoted there.
+
+### Recovered history
+
+History through `0.0.42` was backfilled from Git objects and merged PR heads:
+
+- Original messages replace squash summaries, with each commit recorded once.
+  Routine branch-merge messages and generated changelog commits are omitted;
+  authored integration messages remain.
+- Entries belong to their earliest confirmed containing tag, following the full
+  ancestry and recovered squash history. This records inclusion, not deployment.
+- The [`0.0.21` release PR](https://github.com/superhero/operations.superduper.solutions/pull/101)
+  merged without a surviving tag. Its changes appear under `0.0.22`, their first
+  confirmed tag.
+
+This was a historical recovery; normal PR preparation captures new messages
+before squashing.
 
 ## Release preparation
 
