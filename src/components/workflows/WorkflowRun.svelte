@@ -108,9 +108,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <label><input type="radio" name="workflow-start" value={choice.id} bind:group={selected} />{choice.label}</label>
         {/each}
       </div>
-      <button type="button" class="run-primary run-action" onclick={start} disabled={!selected}>
-        <MaterialIcon name="start" size={20} /><span>Start</span>
-      </button>
     </section>
   {:else if view?.kind === "operation" && !fatal}
     <section aria-label="Current workflow operation">
@@ -159,6 +156,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </section>
   {/if}
   <footer>
+    {#if view?.kind === "choice" && !fatal}
+      <button type="button" class="run-primary run-action" onclick={start} disabled={!selected}>
+        <span>Start</span><MaterialIcon name="start" size={20} />
+      </button>
+    {/if}
     <button type="button" class="run-primary run-action" onclick={end}>
       <MaterialIcon name="exit_to_app" size={20} /><span>Quit</span>
     </button>
@@ -185,5 +187,5 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .run-error { margin: 0; padding: 12px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; line-height: 1.6; }
   .run-results { min-width: 0; display: grid; gap: 12px; }
   summary { cursor: pointer; padding: 10px 0; font-size: 12px; font-weight: 700; }
-  footer { display: flex; justify-content: flex-end; padding-top: 8px; border-top: 1px solid var(--color-surface); }
+  footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 8px; border-top: 1px solid var(--color-surface); }
 </style>
