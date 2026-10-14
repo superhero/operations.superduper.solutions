@@ -10,7 +10,8 @@ recovery procedures.
 | Area | Scripts |
 | --- | --- |
 | Branch, version and content validation | `validate-pr.sh`, `validate-semver.sh`, `validate-badge-only-advance.sh`, `validate-released-content.sh`, `validate-release-tree.sh`, `validate-current-release.sh` |
-| Documentation integration | `validate-documentation-changes.sh`, `validate-documentation-merge.sh` |
+| Documentation integration | `validate-documentation-changes.sh` checks each target's full diff; `validate-documentation-merge.sh` coordinates publication; `restore-documentation-branch.sh` recovers an explicitly identified merged PR's source |
+| Release update routing | `classify-release-update.sh` pauses publication for Markdown-only advances of an open release PR |
 | Merge and release lifecycle | `auto-merge.sh`, `preview-merge.sh`, `create-release-pr.sh`, `validate-release-pr.sh`, `merge-release-pr.sh`, `synchronize-release.sh` |
 | Changelog preservation | `changelog.mjs` manages commit entries and version sections; preparation helpers update PR and release branches before validation |
 | Shared release identity checks | `release-pr.sh`, sourced by the validation and merge entrypoints |

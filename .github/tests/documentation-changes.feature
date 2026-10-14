@@ -48,3 +48,35 @@ Feature: Documentation integration accepts only Markdown documents
       | unrelated histories      | common ancestor              |
       | ambiguous merge bases    | exactly one merge base       |
       | an unavailable tree      | complete documentation diff  |
+
+  Scenario Outline: One documentation branch is checked independently for each selected target
+    Given a reusable documentation branch has "<history>"
+    When the same documentation head is validated against each integration target
+    Then documentation validation for each target preserves the repository and is
+      | target        | outcome   |
+      | main          | <main>    |
+      | develop       | accepted  |
+      | release/1.2.3 | <release> |
+
+    Examples:
+      | history               | main     | release  |
+      | shared ancestry       | accepted | accepted |
+      | a develop base        | rejected | rejected |
+      | a develop refresh     | rejected | rejected |
+
+  Scenario Outline: Later documentation edits do not inherit code from a previous squash target
+    Given a reusable documentation branch has "shared ancestry"
+    And its first documentation change was squashed into "<first target>"
+    And the original documentation branch receives another Markdown edit
+    When the same documentation head is validated against each integration target
+    Then documentation validation for each target preserves the repository and is
+      | target        | outcome  |
+      | main          | accepted |
+      | develop       | accepted |
+      | release/1.2.3 | accepted |
+
+    Examples:
+      | first target  |
+      | main          |
+      | develop       |
+      | release/1.2.3 |

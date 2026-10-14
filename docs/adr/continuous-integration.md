@@ -242,8 +242,8 @@ tagging and `main` → `develop` synchronization path.
 ### Release
 
 Branch from the active `release/<version>` to update its documentation.
-This route is planned; current documentation CI supports only `develop` and
-`main`.
+Documentation updates do not resume an open release's publication pipeline.
+An explicit release action resumes full validation of the updated revision.
 
 ```mermaid
 %%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2), .commit.main-origin { visibility: hidden; } path.arrow3:not(.arrow3 ~ .arrow3) { filter: drop-shadow(0 50px 0 #57C3BC); } .commit-labels g:first-of-type, .commit.main-end { visibility: hidden; } .commit-arrows path.arrow3:nth-last-child(3) { filter: drop-shadow(0 50px 0 #57C3BC) drop-shadow(0 -50px 0 #57C3BC); } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
@@ -310,3 +310,7 @@ Each target validates the full Markdown-only change set. Docs PRs skip
 application tests and builds. They do not create release versions or tags,
 publish releases, or open synchronization PRs. Each target needs its own
 explicitly requested PR.
+
+One source branch may serve several targets when its complete diff is
+Markdown-only against each. Branch recovery preserves the original source
+revision, including after a squash; it never propagates changes automatically.

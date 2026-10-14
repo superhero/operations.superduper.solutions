@@ -23,8 +23,41 @@ Feature: Gitflow validation and guarded merging
       | bugfix/editor  | support/1.x   | rejected |
       | docs/readme    | develop       | accepted |
       | docs/readme    | main          | accepted |
-      | docs/readme    | release/1.2.3 | rejected |
+      | docs/readme    | release/1.2.3 | accepted |
       | docs/readme    | support/1.x   | rejected |
+      | docs/readme    | hotfix/1.2.3  | rejected |
+      | docs/readme    | feature/editor | rejected |
+
+  Scenario Outline: Documentation on main and develop does not require release metadata
+    Given a repository without released versions or active release branches
+    When Gitflow validates "docs/readme" into "<base>"
+    Then Gitflow validation is "accepted"
+    And Gitflow makes no API requests
+
+    Examples:
+      | base    |
+      | main    |
+      | develop |
+
+  Scenario Outline: Documentation targets only verified active release versions
+    Given the release stabilization target is "<state>"
+    When Gitflow validates "docs/readme" into "<base>"
+    Then Gitflow validation is "<outcome>"
+    And the Gitflow error explains "<reason>"
+
+    Examples:
+      | state               | base              | outcome  | reason                         |
+      | active              | release/1.2.3     | accepted |                                |
+      | tagged              | release/1.2.3     | rejected | already exists                 |
+      | merged release      | release/1.2.3     | rejected | already exists                 |
+      | merged hotfix       | release/1.2.3     | rejected | already exists                 |
+      | active              | release/01.2.3    | rejected | SemVer                         |
+      | active              | release/1.2.3-rc.1 | rejected | SemVer                         |
+      | tags unavailable    | release/1.2.3     | rejected | Could not list repository tags |
+      | invalid tags        | release/1.2.3     | rejected | Could not list repository tags |
+      | invalid tag record  | release/1.2.3     | rejected | Could not list repository tags |
+      | history unavailable | release/1.2.3     | rejected | reserving target release       |
+      | invalid history     | release/1.2.3     | rejected | reserving target release       |
 
   Scenario Outline: Release stabilization accepts bugfixes only before publication
     Given the release stabilization target is "<state>"
@@ -203,6 +236,9 @@ Feature: Gitflow validation and guarded merging
       | docs/readme    | develop       | 1     | 1      | squash       |
       | docs/readme    | main          | 1     | 0      | fast-forward |
       | docs/readme    | main          | 2     | 0      | squash       |
+      | docs/readme    | release/1.2.3 | 1     | 0      | fast-forward |
+      | docs/readme    | release/1.2.3 | 2     | 0      | squash       |
+      | docs/readme    | release/1.2.3 | 1     | 1      | squash       |
       | main           | develop       | 2     | 0      | fast-forward |
       | main           | develop       | 2     | 1      | merge        |
       | release/1.2.3  | develop       | 2     | 0      | fast-forward |

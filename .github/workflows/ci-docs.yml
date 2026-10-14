@@ -8,12 +8,20 @@ run-name: "#${{ github.event.pull_request.number }}: ${{ github.event.pull_reque
 # Proposed and target revisions are Git objects only, never checked out.
 on:
   pull_request_target:
-    branches: [main, develop]
+    branches: [main, develop, 'release/**']
     types: [opened, synchronize, reopened, edited, ready_for_review]
+
+# Release documentation also holds the production merge lock. The job retains
+# the destination lock below, so neither release stabilization nor publication
+# can merge concurrently with this update.
+concurrency:
+  group: ${{ startsWith(github.head_ref, 'docs/') && startsWith(github.base_ref, 'release/') && 'merge-main' || format('documentation-pr-{0}', github.event.pull_request.number) }}
+  cancel-in-progress: false
 
 permissions:
   actions: read
   contents: read
+  pull-requests: read
 
 jobs:
   documentation:
@@ -52,6 +60,7 @@ jobs:
 
       - name: Validate documentation route and contents
         env:
+          GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           HEAD_BRANCH: ${{ github.head_ref }}
           BASE_BRANCH: ${{ github.base_ref }}

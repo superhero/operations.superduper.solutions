@@ -17,7 +17,7 @@ Then("worker accounting distinguishes page contexts and releases workers idempot
     delete globalThis.window;
     assert.deepEqual(applicationExecutionMetrics(), { threads: null, dedicatedWorkers: null });
     Object.defineProperty(globalThis, "window", { configurable: true, value: {} });
-    release = trackApplicationWorker({});
+    release = trackApplicationWorker(new EventTarget());
     assert.deepEqual(applicationExecutionMetrics(), { threads: 2, dedicatedWorkers: 1 });
     release(); release();
     assert.deepEqual(applicationExecutionMetrics(), { threads: 1, dedicatedWorkers: 0 });
@@ -44,7 +44,7 @@ Then("startup reporters can be registered replaced and detached without retainin
 
 Then("storage namespaces separate schema catalogs workflow repositories settings and metrics", () => {
   assert.deepEqual(Object.values(names).filter(value => typeof value === "string").sort(), [
-    "v1/catalogs", "v1/catalogs/index", "v1/metrics", "v1/settings", "v1/workflows", "v1/workflows/index"
+    "v1/catalogs", "v1/catalogs/index", "v1/errors", "v1/metrics", "v1/settings", "v1/workflows", "v1/workflows/index"
   ]);
   assert.equal(names.legacyStorageNames.workflowIndex, "operations-workflow-catalog-v1");
 });

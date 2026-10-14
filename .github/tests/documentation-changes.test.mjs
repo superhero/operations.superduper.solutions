@@ -25,13 +25,39 @@ function file(world, path, content = "# Documentation\n")
   git(world, "add", "--", path);
 }
 
+function initialize(world)
+{
+  git(world, "init", "-q", "--initial-branch=main");
+  git(world, "config", "user.name", "Documentation test");
+  git(world, "config", "user.email", "documentation@example.invalid");
+  git(world, "config", "commit.gpgsign", "false");
+  git(world, "config", "core.filemode", "true");
+}
+
+function checkoutState(world)
+{
+  return {
+    head: git(world, "rev-parse", "HEAD"),
+    branch: git(world, "symbolic-ref", "HEAD"),
+    branches: git(world, "for-each-ref", "--format=%(refname) %(objectname)", "refs/heads"),
+    status: git(world, "status", "--porcelain", "--untracked-files=no"),
+    unstaged: git(world, "diff", "--binary"),
+    staged: git(world, "diff", "--cached", "--binary")
+  };
+}
+
+function checkValidation(result, args, outcome, reason)
+{
+  assert.equal(result.status === 0, outcome === "accepted", result.stdout + result.stderr);
+  if (outcome === "rejected")
+    for (const context of [reason, ...args.slice(0, 2)])
+      assert.ok(result.stderr.includes(context), result.stderr);
+  else assert.match(result.stdout, /^Validated [1-9][0-9]* Markdown document changes\./);
+}
+
 Given("a documentation branch contains {string}", function (change)
 {
-  git(this, "init", "-q", "--initial-branch=main");
-  git(this, "config", "user.name", "Documentation test");
-  git(this, "config", "user.email", "documentation@example.invalid");
-  git(this, "config", "commit.gpgsign", "false");
-  git(this, "config", "core.filemode", "true");
+  initialize(this);
   for (const path of ["README.md", "docs/remove.md", "docs/old.md", "application.ts"]) file(this, path);
   if (change.includes("executable") && change !== "executable Markdown")
   {
@@ -150,14 +176,75 @@ When("its documentation changes are validated", function ()
 
 Then("documentation validation is {string} with {string} and preserves the checkout", function (outcome, reason)
 {
-  const result = this.documentationResult;
-  assert.equal(result.status === 0, outcome === "accepted", result.stdout + result.stderr);
-  if (outcome === "rejected")
-    for (const context of [reason, ...this.documentationArguments.slice(0, 2)])
-      assert.ok(result.stderr.includes(context), result.stderr);
-  else assert.match(result.stdout, /^Validated [1-9][0-9]* Markdown document changes\./);
+  checkValidation(this.documentationResult, this.documentationArguments, outcome, reason);
   assert.equal(git(this, "rev-parse", "HEAD"), this.documentationHead);
   assert.equal(git(this, "status", "--porcelain", "--untracked-files=no"), this.documentationStatus);
   assert.equal(existsSync(join(this.automation.root, "executed")), false);
+  assert.deepEqual(this.automation.calls(), []);
+});
+
+Given("a reusable documentation branch has {string}", function (history)
+{
+  initialize(this);
+  file(this, "README.md", "# Initial documentation\n");
+  file(this, "application.ts", "initial code\n");
+  git(this, "commit", "-qm", "Shared starting point");
+  const shared = git(this, "rev-parse", "HEAD");
+  this.documentationTargets = ["main", "develop", "release/1.2.3"];
+  for (const target of this.documentationTargets)
+  {
+    git(this, "checkout", "-qB", target, shared);
+    file(this, "application.ts", `${target} code\n`);
+    git(this, "commit", "-qm", `Code for ${target}`);
+  }
+  git(this, "checkout", "-qb", "docs/reused", history === "a develop base" ? "develop" : shared);
+  file(this, "README.md", "# First documentation edit\n");
+  git(this, "commit", "-qm", "First documentation edit");
+  if (history === "a develop refresh")
+    git(this, "merge", "--no-edit", "develop");
+  else assert.ok(["shared ancestry", "a develop base"].includes(history), history);
+  this.documentationHead = git(this, "rev-parse", "HEAD");
+});
+
+Given("its first documentation change was squashed into {string}", function (target)
+{
+  assert.ok(this.documentationTargets.includes(target), target);
+  git(this, "checkout", "-q", target);
+  git(this, "merge", "--squash", "docs/reused");
+  git(this, "commit", "-qm", "Squash first documentation edit");
+  git(this, "checkout", "-q", "docs/reused");
+  assert.equal(git(this, "rev-parse", "HEAD"), this.documentationHead);
+});
+
+Given("the original documentation branch receives another Markdown edit", function ()
+{
+  file(this, "README.md", "# Second documentation edit\n");
+  git(this, "commit", "-qm", "Second documentation edit");
+  this.documentationHead = git(this, "rev-parse", "HEAD");
+  assert.equal(git(this, "show", "HEAD:application.ts"), "initial code");
+});
+
+When("the same documentation head is validated against each integration target", function ()
+{
+  // Local edits must not affect the committed diff or be overwritten by validation.
+  file(this, "README.md", "# Staged local edit\n");
+  writeFileSync(join(this.automation.root, "README.md"), "# Unstaged local edit\n");
+  const original = checkoutState(this);
+  this.documentationTargetResults = this.documentationTargets.map(target => {
+    const args = [git(this, "rev-parse", target), this.documentationHead];
+    const result = this.automation.execute("validate-documentation-changes.sh", args, [], { success: null });
+    return { target, args, result, original, after: checkoutState(this) };
+  });
+});
+
+Then("documentation validation for each target preserves the repository and is", function (table)
+{
+  assert.deepEqual(this.documentationTargetResults.map(({ target }) => target), table.hashes().map(row => row.target));
+  for (const [index, { outcome }] of table.hashes().entries())
+  {
+    const { args, result, original, after } = this.documentationTargetResults[index];
+    checkValidation(result, args, outcome, "Only Markdown");
+    assert.deepEqual(after, original);
+  }
   assert.deepEqual(this.automation.calls(), []);
 });

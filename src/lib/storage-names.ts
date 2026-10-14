@@ -8,6 +8,7 @@ export const catalogsIndexDatabaseName = "v1/catalogs/index";
 export const workflowRepositoryDatabaseName = "v1/workflows/index";
 export const workflowFilesystemName = "v1/workflows";
 export const metricsFilesystemName = "v1/metrics";
+export const errorHistoryDatabaseName = "v1/errors";
 
 export const legacyStorageNames = {
   settings: "operations-preferences-v1",

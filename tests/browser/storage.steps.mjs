@@ -145,6 +145,7 @@ Then('Storage shows native estimates and accurate database metadata without chan
   const result = await report(page);
   assert.equal(result.indexedDB.available, true);
   assert.equal(result.indexedDB.enumeration, 'complete');
+  assert.deepEqual(await databaseNames(page), namesBefore, 'Resource inspection must not create databases.');
   assert.equal(typeof result.browser.persisted, 'boolean');
   assert.ok(result.browser.usage >= 0 && result.browser.quota > 0);
   assert.equal(result.browser.remaining, Math.max(0, result.browser.quota - result.browser.usage));
@@ -168,7 +169,10 @@ Then('Storage shows native estimates and accurate database metadata without chan
   await expect(details.locator('details, summary')).toHaveCount(0);
   await expect(value(browserStorage(page), 'Used')).not.toHaveText('Unavailable');
   assert.deepEqual(await databaseContents(page, this.storageDatabaseName), recordsBefore);
-  assert.deepEqual(await databaseNames(page), namesBefore, 'Monitoring must not create phantom databases.');
+  // Opening Browser settings also initializes the independent error-history service.
+  // That owned database is distinct from the resource collector's readonly inspection.
+  assert.deepEqual((await databaseNames(page)).filter(name => name !== 'v1/errors'), namesBefore.filter(name => name !== 'v1/errors'),
+    'Monitoring must not create phantom databases.');
 });
 
 Then('Storage reports repository bytes and history without changing either workflow', { timeout: 90000 }, async function () {
@@ -284,6 +288,8 @@ Given('browser storage estimate and enumeration APIs are unavailable', async fun
 
 Then('Storage reports unavailable metrics and safely inspects existing application databases', { timeout: 90000 }, async function () {
   const result = await report(this.page);
+  const nativeNames = () => this.page.evaluate(async () => (await window.storageOriginalDatabases()).map(database => database.name).sort());
+  assert.deepEqual(await nativeNames(), this.storageDatabaseNames, 'Fallback resource inspection must not create databases.');
   assert.equal(result.browser.usage, null);
   assert.equal(result.browser.quota, null);
   assert.equal(result.browser.persisted, null);
@@ -294,7 +300,8 @@ Then('Storage reports unavailable metrics and safely inspects existing applicati
   await expect(value(browserStorage(this.page), 'Quota')).toHaveText('Unavailable');
   await expect(value(browserStorage(this.page), 'Persistence')).toHaveText('Unavailable');
   await expect(databases(this.page)).toContainText('v1/settings');
-  assert.deepEqual(await this.page.evaluate(async () => (await window.storageOriginalDatabases()).map(database => database.name).sort()), this.storageDatabaseNames);
+  assert.deepEqual((await nativeNames()).filter(name => name !== 'v1/errors'), this.storageDatabaseNames.filter(name => name !== 'v1/errors'),
+    'Only the independent error-history service may initialize its database when Browser settings open.');
 });
 
 Given('storage contains a database and workflow with long names', async function () {

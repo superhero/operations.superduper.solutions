@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { trackApplicationWorker } from "./application-workers.ts";
+import { reportApplicationError } from "./error-diagnostics.ts";
 
 type RemoteError = { name: string; message: string; stack?: string; code?: string | number; cause?: RemoteError; errors?: RemoteError[] };
 type Request = { kind: "request"; id: number; method: string; args: unknown[] };
@@ -33,12 +34,12 @@ function decodeError(value: RemoteError): Error {
 }
 
 /** Lazy, tracked calls. Disposal drains writes unless immediate cancellation is requested. */
-export function createWorkerClient(factory: () => Worker) {
+export function createWorkerClient(factory: () => Worker, options: { reportErrors?: boolean; scope?: string } = {}) {
   let worker: Worker | undefined;
   let release: (() => void) | undefined;
   let nextId = 0;
   let disposed = false;
-  const requests = new Map<number, { resolve: (value: unknown) => void; reject: (error: unknown) => void }>();
+  const requests = new Map<number, { method: string; resolve: (value: unknown) => void; reject: (error: unknown) => void }>();
   const listeners = new Set<(event: WorkerEvent) => void>();
 
   function stop(error?: Error) {
@@ -55,14 +56,18 @@ export function createWorkerClient(factory: () => Worker) {
     if (worker) return worker;
     const created = factory();
     worker = created;
-    release = trackApplicationWorker(created);
+    release = trackApplicationWorker(created, options);
     created.addEventListener("message", (event: MessageEvent<Reply>) => {
       const reply = event.data;
       if (reply.kind === "event") { for (const listener of listeners) listener(reply.event); return; }
       const request = requests.get(reply.id);
       if (!request) return;
       requests.delete(reply.id);
-      if (reply.kind === "error") request.reject(decodeError(reply.error));
+      if (reply.kind === "error") {
+        const error = decodeError(reply.error);
+        if (options.reportErrors !== false) reportApplicationError(error, { source: "worker", scope: options.scope, operation: request.method });
+        request.reject(error);
+      }
       else request.resolve(reply.value);
       if (disposed && requests.size === 0) stop();
     });
@@ -82,9 +87,13 @@ export function createWorkerClient(factory: () => Worker) {
         const id = ++nextId;
         try {
           const active = start();
-          requests.set(id, { resolve: value => resolve(value as T), reject });
+          requests.set(id, { method, resolve: value => resolve(value as T), reject });
           active.postMessage({ kind: "request", id, method, args } satisfies Request);
-        } catch (error) { requests.delete(id); reject(error); }
+        } catch (error) {
+          requests.delete(id);
+          if (!disposed && options.reportErrors !== false) reportApplicationError(error, { source: "worker", scope: options.scope, operation: method });
+          reject(error);
+        }
       });
     },
     subscribe(listener: (event: WorkerEvent) => void): () => void {
