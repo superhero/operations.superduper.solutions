@@ -48,6 +48,23 @@ Generate browser and compatibility icons from the schema artwork with a\nshared 
 
 ```
 
+<!-- changelog-commit:a6d9b4f27c9bdc536895e6aaf8fede4b5cd1333b -->
+### Commit [`a6d9b4f`](https://github.com/superhero/operations.superduper.solutions/commit/a6d9b4f27c9bdc536895e6aaf8fede4b5cd1333b)
+
+```text
+feat(ui): add optional theme-aware cursors
+
+Render the prepared SVG artwork with the active palette while retaining
+existing cursor states, hotspots and native keyword fallbacks. Add a
+default-on Theme preference with immediate opt-out, confirmed appearance
+caching and protection against delayed settings reads.
+
+Apply the same cursor variables to workflow controls and developer shadow
+roots. Preserve native text selection, drag/drop and resize behavior, and
+carry the reference artwork provenance and licenses with the templates.
+
+```
+
 <!-- changelog-staging-end -->
 
 ## 0.0.42
