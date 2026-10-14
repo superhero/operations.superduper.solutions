@@ -60,14 +60,17 @@ while [[ "$ancestor" != / && "$ancestor" != . ]]; do
 done
 shopt -s nullglob dotglob
 files=("$bundle"/*)
-[[ ${#files[@]} == 2 ]] ||
-  fail 'Expected only nonempty regular index.html and _headers files in the bundle; additional files, directories, and symlinks are not supported.'
-for filename in index.html _headers; do
+# Keep the complete release contract in bytewise filename order. Every hosted
+# icon participates in reuse detection, including compatibility-only exports.
+bundle_files=(_headers apple-touch-icon.png favicon.bmp favicon.gif favicon.ico favicon.jpg favicon.png favicon.ppm favicon.svg favicon.tiff index.html)
+[[ ${#files[@]} -eq ${#bundle_files[@]} ]] ||
+  fail 'Expected only the eleven nonempty regular application, hosting, and favicon files; additional files, directories, and symlinks are not supported.'
+for filename in "${bundle_files[@]}"; do
   [[ -f "$bundle/$filename" && ! -L "$bundle/$filename" && -s "$bundle/$filename" ]] ||
-    fail 'Expected only nonempty regular index.html and _headers files in the bundle; additional files, directories, and symlinks are not supported.'
+    fail 'Expected only the eleven nonempty regular application, hosting, and favicon files; additional files, directories, and symlinks are not supported.'
 done
-# Include hosting metadata and fixed filenames, independent of the build directory.
-bundle_hash="$(cd -- "$bundle" && sha256sum -- index.html _headers | sha256sum)" || fail 'Could not hash the application bundle.'
+# Include every file's bytes and fixed filename, independent of build directory.
+bundle_hash="$(cd -- "$bundle" && sha256sum -- "${bundle_files[@]}" | sha256sum)" || fail 'Could not hash the application bundle.'
 bundle_hash="${bundle_hash%% *}"
 alias="$(printf '%s' "$branch" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g')"
 [[ ${#alias} -le 63 ]] || fail 'Branch alias exceeds the DNS label limit of 63 characters.'

@@ -24,14 +24,19 @@ boundary when modifying it rather than assuming all node renderers are colocated
 ## Build boundary
 
 [Vite configuration](../vite.config.mjs) embeds application code, styles, fonts and
-workers into `dist/index.html`. `public/_headers` supplies hosting metadata and is
-copied unchanged. Files added to `public` become extra distribution files; the
-acceptance and deployment checks require exactly `index.html` and `_headers`.
+workers into `dist/index.html`. `public/_headers` supplies hosting metadata.
+Generated favicon compatibility files in `public` support browser tabs, saved
+shortcuts and icon consumers; the application itself remains self-contained.
+Acceptance and deployment checks require exactly `index.html`, `_headers`,
+`favicon.svg`, `favicon.ico`, `favicon.png`, `favicon.bmp`, `favicon.gif`,
+`favicon.jpg`, `favicon.ppm`, `favicon.tiff` and `apple-touch-icon.png`.
+Run `npm run icons:generate` after changing the source artwork; every build checks
+that the committed compatibility files match it.
 
 ## Verification
 
 Source behavior scenarios pair `*.feature` with `*.test.mjs` here. Add both paths
 to the explicit `source` profile in [cucumber.config.mjs](../cucumber.config.mjs).
-`build.*` belongs to the separate acceptance profile. Use `npm run test:source`
+`build.*` and `favicons.*` belong to the separate acceptance profile. Use `npm run test:source`
 for source checks; `npm run build && npm run test:acceptance` verifies packaging.
 Browser-driven coverage belongs in [tests](../tests/README.md).

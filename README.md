@@ -43,7 +43,8 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 <details>
 <summary><code>npm run build</code></summary>
 
-- **Purpose:** Build `dist/index.html`.
+- **Purpose:** Verify favicon freshness and build the embedded application,
+  hosting headers and browser icon compatibility files in `dist`.
 - **Requirements:** Run `npm ci` first.
 
 </details>
@@ -55,6 +56,16 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 - **Requirements:** Run `npm ci` first.
 - **Guidance:** [Diagnostics and error reporting](docs/adr/error-view.md),
   and [startup progress and loading preview](docs/adr/dedicated-workers.md#startup-progress).
+
+</details>
+
+<details>
+<summary><code>npm run icons:generate</code> / <code>npm run icons:check</code></summary>
+
+- **Purpose:** Generate favicon compatibility files from the original SVG, or
+  check their byte-for-byte freshness without writing.
+- **Requirements:** Run `npm ci` first and use the pinned Node.js/npm versions.
+- **Guidance:** [Bundled assets](src/assets/README.md).
 
 </details>
 
@@ -306,6 +317,13 @@ layout. Captures screenshots and traces to explain browser test failures.
 
 ---
 
+<a href="https://www.npmjs.com/package/sharp"><img src=".github/badges/version-dependency-sharp.svg" alt="sharp declared version"></a>
+
+Generates checked-in favicon compatibility files from the original SVG during
+development. It is build tooling and is not included in the browser application.
+
+---
+
 <a href="https://www.npmjs.com/package/svelte"><img src=".github/badges/version-dependency-svelte.svg" alt="svelte declared version"></a>
 
 Provides the webpage’s component framework and reactive state, supporting the
@@ -382,8 +400,8 @@ plugins used to produce the release build.
 <a href="https://www.npmjs.com/package/vite-plugin-singlefile"><img src=".github/badges/version-dependency-vite-plugin-singlefile.svg" alt="vite-plugin-singlefile declared version"></a>
 
 Packages the webpage for deployment as one HTML file with embedded JavaScript
-and CSS. The bundle also includes a Cloudflare Pages `_headers` file to enable
-isolated page-memory measurements; acceptance tests verify both files.
+and CSS. The bundle also includes Cloudflare Pages `_headers` and nine favicon
+compatibility files; acceptance and deployment checks verify this exact set.
 
 ---
 

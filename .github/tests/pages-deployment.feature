@@ -1,6 +1,9 @@
+# Copyright (C) 2026 Erik Landvall
+# SPDX-License-Identifier: AGPL-3.0-only
+# See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @automation @pages-deployment
 Feature: Reuse the active Pages deployment when the tested bundle is unchanged
-  The destination branch, final HTML bytes, and hosting headers determine whether a deployment is needed.
+  The destination branch, final HTML bytes, hosting headers, and every icon determine whether a deployment is needed.
   A preview for another branch or an older alias target cannot stand in for the current destination.
 
   Scenario Outline: Compare the bundle with the active destination
@@ -35,6 +38,46 @@ Feature: Reuse the active Pages deployment when the tested bundle is unchanged
     And the Pages branch is "advanced with badges"
     When the Pages deployment is prepared
     Then the Pages decision is deploy "false" and skipped "false"
+
+  Scenario Outline: A change to any hosted icon invalidates an otherwise identical deployment
+    Given a tested Pages bundle for "develop"
+    And the Pages destination is "identical"
+    And the Pages icon "<filename>" has changed
+    When the Pages deployment is prepared
+    Then the Pages decision is deploy "true" and skipped "false"
+
+    Examples:
+      | filename             |
+      | favicon.svg          |
+      | favicon.ico          |
+      | favicon.png          |
+      | favicon.bmp          |
+      | favicon.gif          |
+      | favicon.jpg          |
+      | favicon.ppm          |
+      | favicon.tiff         |
+      | apple-touch-icon.png |
+
+  Scenario Outline: Every hosted fallback must be present as a nonempty regular file
+    Given a tested Pages bundle for "develop"
+    And the Pages icon "<filename>" is "<state>"
+    When the Pages deployment is prepared
+    Then Pages preparation fails with "eleven nonempty regular application, hosting, and favicon files"
+
+    Examples:
+      | filename             | state       |
+      | favicon.svg          | missing     |
+      | favicon.ico          | missing     |
+      | favicon.png          | missing     |
+      | favicon.bmp          | missing     |
+      | favicon.gif          | missing     |
+      | favicon.jpg          | missing     |
+      | favicon.ppm          | missing     |
+      | favicon.tiff         | missing     |
+      | apple-touch-icon.png | missing     |
+      | favicon.png          | empty       |
+      | favicon.ico          | a symlink   |
+      | favicon.svg          | a directory |
 
   Scenario Outline: A stale preview cannot replace a newer branch
     Given a tested Pages bundle for "release/1.2.3"
@@ -82,7 +125,7 @@ Feature: Reuse the active Pages deployment when the tested bundle is unchanged
     Given a tested Pages bundle for "develop"
     And the Pages bundle is "<state>"
     When the Pages deployment is prepared
-    Then Pages preparation fails with "only nonempty regular index.html and _headers"
+    Then Pages preparation fails with "eleven nonempty regular application, hosting, and favicon files"
 
     Examples:
       | state             |

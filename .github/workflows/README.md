@@ -423,7 +423,10 @@ may already be deploying. Merge and production jobs have their own serialization
 - Superseded previews are skipped; documentation PRs do not deploy previews.
 
 Preview and production use the tested bundle without rebuilding. Matching
-`index.html` and `_headers` reuse the active deployment on the same branch.
+application HTML, hosting headers and all nine favicon compatibility files
+reuse the active deployment on the same branch. The finite eleven-file
+allowlist rejects missing, empty, extra, nested and symlinked outputs; every
+allowed filename and its bytes contribute to the deterministic bundle hash.
 Another branch gets a separate deployment; Wrangler can reuse uploaded assets.
 
 ### Production identity

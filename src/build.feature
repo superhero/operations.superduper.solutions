@@ -1,8 +1,8 @@
 Feature: Production build
 
-  Scenario: Build produces a single application page and hosting metadata
+  Scenario: Build produces one embedded application and the exact hosting compatibility files
     Given the production build has completed
-    Then the dist directory contains only the application page and hosting headers
+    Then the dist directory contains only the application page hosting headers and favicon compatibility files
     And the hosting headers enable cross-origin isolation
 
   Scenario: Production page exposes operations and the workflow editor

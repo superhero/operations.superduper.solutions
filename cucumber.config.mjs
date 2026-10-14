@@ -83,10 +83,12 @@ export const acceptance = {
     "json:tmp/test/cucumber-test.json"
   ],
   import: [
-    "src/build.test.mjs"
+    "src/build.test.mjs",
+    "src/favicons.test.mjs"
   ],
   paths: [
-    "src/build.feature"
+    "src/build.feature",
+    "src/favicons.feature"
   ]
 };
 

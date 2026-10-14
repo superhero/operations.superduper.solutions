@@ -9,7 +9,7 @@ example that appears in the combined report.
 | Behavior | Location and registration |
 | --- | --- |
 | Node-executable application logic | Feature and step files beside the source in `src/`; register both in the explicit `source` profile |
-| Built artifact acceptance | `src/build.feature` and `src/build.test.mjs`; the `acceptance` profile explicitly selects these files |
+| Built artifact acceptance | `src/build.*` and `src/favicons.*`; the `acceptance` profile explicitly selects their feature and step files |
 | Browser interactions and rendering | [`browser/`](browser/README.md); its profile discovers top-level `.feature` and `.steps.mjs` files |
 | Repository automation | [`.github/tests/`](../.github/tests/README.md); its profile discovers top-level `.feature` and `.test.mjs` files |
 | Test-only source fixtures | [`fixtures/`](fixtures/README.md), or beside the browser steps that use them |

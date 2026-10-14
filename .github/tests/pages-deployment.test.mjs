@@ -12,17 +12,19 @@ const PROJECT = "operations-superduper-solutions";
 const ID = "12345678-1234-1234-1234-123456789abc";
 const HTML = "<!doctype html><html><body>Verified application</body></html>\n";
 const HEADERS = "/*\n  Cross-Origin-Opener-Policy: same-origin\n  Cross-Origin-Embedder-Policy: credentialless\n";
+const ICONS = ["favicon.svg", "favicon.ico", "favicon.png", "favicon.bmp", "favicon.gif", "favicon.jpg", "favicon.ppm", "favicon.tiff", "apple-touch-icon.png"];
+const FILES = { "index.html": HTML, _headers: HEADERS,
+  ...Object.fromEntries(ICONS.map(name => [name, `Fixture asset bytes: ${name}\n`])) };
 const hash = value => createHash("sha256").update(value).digest("hex");
-const bundleHash = (html, headers) => hash(`${hash(html)}  index.html\n${hash(headers)}  _headers\n`);
-const HASH = bundleHash(HTML, HEADERS);
+const bundleHash = files => hash(Object.keys(files).sort().map(name => `${hash(files[name])}  ${name}\n`).join(""));
+const HASH = bundleHash(FILES);
 const QUERY = "query($owner: String!, $name: String!, $ref: String!) { repository(owner: $owner, name: $name) { ref(qualifiedName: $ref) { target { oid } } } }";
 
 Given("a tested Pages bundle for {string}", function (branch)
 {
   const bundle = join(this.automation.root, "dist");
   mkdirSync(bundle);
-  writeFileSync(join(bundle, "index.html"), HTML);
-  writeFileSync(join(bundle, "_headers"), HEADERS);
+  for (const [filename, contents] of Object.entries(FILES)) writeFileSync(join(bundle, filename), contents);
   this.automation.env.GITHUB_STEP_SUMMARY = join(this.automation.root, "summary.md");
   writeFileSync(this.automation.env.GITHUB_STEP_SUMMARY, "");
   this.pages = { branch, bundle, state: "empty", branchState: "current" };
@@ -36,6 +38,32 @@ Given("the Pages destination is {string}", function (state)
 Given("the Pages branch is {string}", function (state)
 {
   this.pages.branchState = state;
+});
+
+Given("the Pages icon {string} has changed", function (filename)
+{
+  assert.ok(ICONS.includes(filename));
+  writeFileSync(join(this.pages.bundle, filename), `Updated fixture asset bytes: ${filename}\n`);
+});
+
+Given("the Pages icon {string} is {string}", function (filename, state)
+{
+  assert.ok(ICONS.includes(filename));
+  const path = join(this.pages.bundle, filename);
+  if (state === "empty") writeFileSync(path, "");
+  else
+  {
+    unlinkSync(path);
+    if (state === "a directory") mkdirSync(path);
+    else if (state === "a symlink")
+    {
+      const target = join(this.automation.root, filename);
+      writeFileSync(target, FILES[filename]);
+      symlinkSync(target, path);
+    }
+    else assert.equal(state, "missing");
+  }
+  this.pages.invalidInput = true;
 });
 
 Given("the Pages bundle is {string}", function (state)
@@ -160,8 +188,8 @@ Then("the Pages decision is deploy {string} and skipped {string}", function (dep
   const output = Object.fromEntries(readFileSync(this.automation.output, "utf8").trim().split("\n")
     .map(line => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]));
   assert.deepEqual(output, {
-    deploy, skipped, bundle_hash: bundleHash(readFileSync(join(this.pages.bundle, "index.html")),
-      readFileSync(join(this.pages.bundle, "_headers"))), alias_url: this.pages.alias,
+    deploy, skipped, bundle_hash: bundleHash(Object.fromEntries(Object.keys(FILES)
+      .map(filename => [filename, readFileSync(join(this.pages.bundle, filename))]))), alias_url: this.pages.alias,
     deployment_id: deploy === "false" && skipped === "false" ? ID : "",
     deployment_url: deploy === "false" && skipped === "false" ? `https://12345678.${PROJECT}.pages.dev` : ""
   });
