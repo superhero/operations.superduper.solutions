@@ -197,7 +197,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             onclick={() => openProperty()}><MaterialIcon name="add" size={18} /><span>Add field</span></HintButton>
           <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="button" class="property-action" label="Done editing properties" onclick={finishEditing}><MaterialIcon name="check" size={18} /></HintButton>
         {:else}
-          <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="button" class="property-action properties-mode" label="Edit properties" bind:ref={propertiesButton}
+          <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="button" class="property-action properties-mode" label="Edit properties" tooltipEnabled={false} bind:ref={propertiesButton}
             disabled={!active} onclick={() => editMode = true}><MaterialIcon name="edit" size={18} /><span>Edit properties</span></HintButton>
         {/if}
       </div>
