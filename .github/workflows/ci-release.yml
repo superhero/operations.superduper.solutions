@@ -18,38 +18,89 @@ permissions:
   contents: read
 
 jobs:
+  validation:
+    name: Find Previous Validation
+
+    if: >-
+      !startsWith(github.head_ref, 'docs/')
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      reused: ${{ steps.find.outputs.reused }}
+      source_run_id: ${{ steps.find.outputs.source_run_id }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout validation inputs
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Find complete matching validation
+        id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          TARGET_SHA: ${{ github.sha }}
+        run: node .github/scripts/find-validation.mjs "$REPOSITORY" "$TARGET_SHA" tmp/reused-validation
+
+      - name: Retain verified artifacts for this run
+        if: steps.find.outputs.reused == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: reused-validation
+          path: tmp/reused-validation
+          overwrite: true
+          if-no-files-found: error
+          retention-days: 7
+
   workflow-checks:
     name: Automation Checks
+    needs: validation
     if: "!startsWith(github.head_ref, 'docs/')"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Checkout
+        if: needs.validation.outputs.reused != 'true'
         uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Lint standalone scripts
+        if: needs.validation.outputs.reused != 'true'
         run: shellcheck .github/scripts/*.sh
 
       - name: Set up Node.js
+        if: needs.validation.outputs.reused != 'true'
         uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: npm
 
       - name: Install dependencies
+        if: needs.validation.outputs.reused != 'true'
         run: npm ci --no-audit --no-fund
 
       - name: Check dependency version badges
+        if: needs.validation.outputs.reused != 'true'
         run: npm --loglevel=error run badges:dependencies -- --check
 
       - name: Test automation
+        if: needs.validation.outputs.reused != 'true'
         id: automation
         run: npm --loglevel=error run test:automation
 
       - name: Upload automation report
-        if: success() || (failure() && steps.automation.outcome == 'failure')
+        if: ${{ !cancelled() && (steps.automation.outcome == 'success' || steps.automation.outcome == 'failure') }}
         uses: actions/upload-artifact@v7
         with:
           name: automation-test-report
@@ -57,6 +108,12 @@ jobs:
           if-no-files-found: error
           overwrite: true
           retention-days: 7
+
+      - name: Reuse successful automation validation
+        if: needs.validation.outputs.reused == 'true'
+        env:
+          SOURCE_RUN_ID: ${{ needs.validation.outputs.source_run_id }}
+        run: echo "Automation already passed in validated run $SOURCE_RUN_ID."
 
   validate-pr:
     name: Validate Gitflow
@@ -83,14 +140,20 @@ jobs:
 
   application:
     name: Test and Build
-    if: "!startsWith(github.head_ref, 'docs/')"
-    needs: validate-pr
+    needs: [validate-pr, workflow-checks, validation]
+    if: >-
+      !startsWith(github.head_ref, 'docs/')
+    permissions:
+      actions: read
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - name: Checkout proposed merge
+      - name: Checkout validation inputs
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Node.js
@@ -99,23 +162,48 @@ jobs:
           node-version-file: .node-version
           cache: npm
 
+      - name: Restore verified validation artifacts
+        if: needs.validation.outputs.reused == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ needs.validation.outputs.source_run_id }}
+        run: |
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name reused-validation --dir tmp/validation
+          printf 'Reusing complete validation and unchanged artifacts from run %s. Reports retain their original commit and run URL.\n' "$SOURCE_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Install dependencies
+        if: needs.validation.outputs.reused != 'true'
         run: npm ci --no-audit --no-fund
 
       - name: Type check
+        if: needs.validation.outputs.reused != 'true'
         run: npm --loglevel=error run typecheck
 
-      - name: Source tests
-        run: npm --loglevel=error run test:source
+      - name: Source tests with coverage
+        if: needs.validation.outputs.reused != 'true'
+        id: source
+        run: npm --loglevel=error run test:source:coverage
+
+      - name: Check coverage and badge
+        if: needs.validation.outputs.reused != 'true'
+        id: coverage
+        run: |
+          npm --loglevel=error run test:coverage
+          npm --loglevel=error run badges:coverage -- --check
+          jq -r '.total | "Coverage: statements \(.statements.pct)%, branches \(.branches.pct)%, functions \(.functions.pct)%, lines \(.lines.pct)%."' \
+            tmp/test/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build
+        if: needs.validation.outputs.reused != 'true'
         run: npm --loglevel=error run build
 
       - name: Acceptance tests
+        if: needs.validation.outputs.reused != 'true'
         id: acceptance
         run: npm --loglevel=error run test:acceptance
 
       - name: Browser tests against the built bundle
+        if: needs.validation.outputs.reused != 'true'
         id: browser
         timeout-minutes: 30
         run: npm --loglevel=error run test:browser
@@ -132,23 +220,115 @@ jobs:
           overwrite: true
           retention-days: 7
 
-      - name: Upload tested bundle
+      - name: Upload application test results
+        if: ${{ !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure') }}
         uses: actions/upload-artifact@v7
         with:
-          name: bundle
-          path: dist
+          name: application-test-report
+          path: |
+            tmp/test/cucumber-source.json
+            tmp/test/cucumber-test.json
+            tmp/test/cucumber-browser.json
           if-no-files-found: error
           overwrite: true
           retention-days: 7
 
-      - name: Upload failed acceptance report
-        if: failure() && steps.acceptance.outcome == 'failure'
-        continue-on-error: true
+      - name: Download automation test results
+        if: ${{ !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name automation-test-report --dir tmp/test
+
+      - name: Generate combined test report
+        if: needs.validation.outputs.reused != 'true'
+        id: report
+        env:
+          REPORT_COMMIT: ${{ github.sha }}
+          REPORT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: npm --loglevel=error run report:tests
+
+      - name: Generate diagnostic report after failure
+        id: failure-report
+        if: failure() && !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure')
+        env:
+          REPORT_COMMIT: ${{ github.sha }}
+          REPORT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          reports=()
+          missing=()
+          for suite in source:source acceptance:test browser:browser automation:automation; do
+            file="tmp/test/cucumber-${suite#*:}.json"
+            if [[ -f "$file" ]]; then reports+=("$file"); else missing+=("${suite%%:*}"); fi
+          done
+          (( ${#reports[@]} > 0 )) || exit 1
+          warning='CI failed. This diagnostic report does not certify a successful build.'
+          if (( ${#missing[@]} > 0 )); then warning+=" Missing suite results: ${missing[*]}."; fi
+          REPORT_WARNING="$warning" node .github/scripts/generate-test-report.mjs tmp/test-report.html "${reports[@]}"
+
+      - name: Upload failed validation diagnostics
+        if: failure() && steps.failure-report.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-diagnostics
+          path: |
+            tmp/test-report.html
+            tmp/test/coverage
+            !tmp/test/coverage/v8
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Check scenario badge
+        if: needs.validation.outputs.reused != 'true'
+        run: npm --loglevel=error run badges:scenarios -- --check
+
+      - name: Bind complete validation to its inputs and artifacts
+        if: needs.validation.outputs.reused != 'true'
+        env:
+          REPOSITORY: ${{ github.repository }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          TESTED_SHA: ${{ github.sha }}
+        run: |
+          mkdir -p tmp/validation/bundle tmp/validation/coverage tmp/validation/test-report
+          cp -a dist/. tmp/validation/bundle/
+          cp -a tmp/test/coverage/. tmp/validation/coverage/
+          rm -rf tmp/validation/coverage/v8
+          cp tmp/test-report.html tmp/validation/test-report/
+          node .github/scripts/validation-artifacts.mjs create "$REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$PR_HEAD_SHA" "$TESTED_SHA" tmp/validation/bundle tmp/validation/coverage tmp/validation/test-report/test-report.html tmp/validation/validation-manifest.json
+
+      - name: Upload tested bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle
+          path: tmp/validation/bundle
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: tmp/validation/coverage
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+      - name: Upload combined test report
         uses: actions/upload-artifact@v7
         with:
           name: test-report
-          path: tmp/test/cucumber-test.json
-          if-no-files-found: ignore
+          path: tmp/validation/test-report/test-report.html
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+      - name: Upload original validation proof
+        if: needs.validation.outputs.reused != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-manifest
+          path: tmp/validation/validation-manifest.json
+          if-no-files-found: error
           overwrite: true
           retention-days: 7
 

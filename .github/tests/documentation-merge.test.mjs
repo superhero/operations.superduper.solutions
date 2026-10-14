@@ -55,3 +55,34 @@ Then("documentation publication safety is {string} with {string}", function (out
     assert.equal(call.endpoint, endpoint);
   }
 });
+
+Given("generated changelog publication waits {string} seconds with {string}", function (seconds, state)
+{
+  const active = get(endpoint, page([run("release/1.2.3")]));
+  const inactive = get(endpoint, page([]));
+  const fixtures = {
+    "a finishing release": [active, inactive],
+    "a release exceeding the deadline": [active, active, active],
+    "an API failure while waiting": [active, get(endpoint, {}, { exit_code: 1, stderr: "HTTP 503: unavailable\n" })],
+    "invalid data while waiting": [active, get(endpoint, {}, { raw: "not JSON" })],
+    "an invalid wait setting": [],
+  };
+  assert.ok(Object.hasOwn(fixtures, state), state);
+  this.documentationWait = { seconds, fixtures: fixtures[state] };
+});
+
+When("bounded documentation publication safety is checked", function ()
+{
+  const state = this.documentationWait;
+  state.result = this.automation.execute("validate-documentation-merge.sh", [REPOSITORY, "release/1.2.3"],
+    state.fixtures, { success: null, env: { DOCUMENTATION_MERGE_WAIT_SECONDS: state.seconds } });
+});
+
+Then("bounded documentation publication is {string} after {int} reads with {string}", function (outcome, count, reason)
+{
+  const { result } = this.documentationWait;
+  assert.equal(result.status === 0, outcome === "accepted", result.stdout + result.stderr);
+  assert.equal(this.automation.calls().length, count);
+  assert.ok(this.automation.calls().every(call => call.method === "GET" && call.endpoint === endpoint));
+  if (reason) assert.ok(result.stderr.includes(reason), result.stderr);
+});

@@ -9,8 +9,8 @@ import { Given, When, Then } from "@cucumber/cucumber";
 import { addCommits, mergeChangelogs, parseChangelog, releaseChangelog } from "../scripts/changelog.mjs";
 import { REPOSITORY } from "./support.mjs";
 
-const STAGING_END = "<!-- changelog-staging-end -->";
-const EMPTY = `# Changelog\n\n## Staging\n\n${STAGING_END}\n`;
+const LATEST_END = "<!-- changelog-latest-end -->";
+const EMPTY = `# Changelog\n\n## Latest\n\n${LATEST_END}\n`;
 const commit = (id, message = `Change ${id}`) => ({ sha: id.repeat(40), message });
 const stage = (text, ...ids) => addCommits(text, ids.map(id => commit(id)), REPOSITORY);
 const allEntries = document => [...document.staging, ...document.releases.flatMap(release => release.entries)];
@@ -90,7 +90,7 @@ Then("the original changelog commit remains {string}", function (placement)
   assert.ok(entries.some(entry => entry.sha === "a".repeat(40)));
 });
 
-Then("the new changelog commit remains in Staging", function ()
+Then("the new changelog commit remains in Latest", function ()
 {
   assert.ok(parseChangelog(this.changelogText).staging.some(entry => entry.sha === "b".repeat(40)));
 });
@@ -105,7 +105,7 @@ When("those changelog commits are staged", function ()
   this.changelogText = addCommits("", this.changelogCommits);
 });
 
-Then("both distinct commit identities remain in Staging", function ()
+Then("both distinct commit identities remain in Latest", function ()
 {
   assert.deepEqual(parseChangelog(this.changelogText).staging, this.changelogCommits);
 });
@@ -126,7 +126,7 @@ When("the changelog is released as {string}", function (version)
   this.changelogText = releaseChangelog(this.changelogText, version);
 });
 
-Then("Staging is the first changelog section and is empty", function ()
+Then("Latest is the first changelog section and is empty", function ()
 {
   assert.ok(this.changelogText.startsWith(`${EMPTY}\n## `));
   assert.deepEqual(parseChangelog(this.changelogText).staging, []);
@@ -168,7 +168,7 @@ Then("the released commit occurs only under its original version", function ()
   assert.equal(allEntries(document).filter(entry => entry.sha === "b".repeat(40)).length, 1);
 });
 
-Then("new development work remains in Staging", function ()
+Then("new development work remains in Latest", function ()
 {
   assert.deepEqual(parseChangelog(this.changelogText).staging, [{ ...commit("c"), repository: REPOSITORY }]);
 });
@@ -180,7 +180,14 @@ Then("merging the resulting changelog again makes no change", function ()
 
 Given("the initial changelog text is {string}", function (initial)
 {
-  this.changelogText = initial === "absent" ? "" : initial === "legacy empty Staging" ? "# Changelog\n\n## Staging\n" : EMPTY;
+  const cases = {
+    absent: "",
+    "empty Latest": EMPTY,
+    "empty Staging": "# Changelog\n\n## Staging\n\n<!-- changelog-staging-end -->\n",
+    "legacy empty Staging": "# Changelog\n\n## Staging\n",
+  };
+  assert.ok(Object.hasOwn(cases, initial));
+  this.changelogText = cases[initial];
 });
 
 When("the changelog is merged without new commits", function ()
@@ -188,30 +195,72 @@ When("the changelog is merged without new commits", function ()
   this.changelogText = mergeChangelogs(this.changelogText);
 });
 
-Then("the changelog contains only its title and empty Staging section", function ()
+Then("the changelog contains only its title and empty Latest section", function ()
 {
   assert.equal(this.changelogText, EMPTY);
+});
+
+Given("a legacy Staging changelog with released and unreleased messages", function ()
+{
+  const message = "docs: preserve literal Staging metadata\n\n## Staging\n\n<!-- changelog-staging-end -->\n\nChangelog-Generated: staging-v1\n";
+  this.changelogLegacyReleased = { ...commit("a", message), repository: REPOSITORY };
+  this.changelogLegacyUnreleased = { ...commit("b", `fix: unreleased message\n\n${message}`), repository: REPOSITORY };
+  this.changelogText = addCommits(releaseChangelog(addCommits("", [this.changelogLegacyReleased], REPOSITORY), "1.0.0"),
+    [this.changelogLegacyUnreleased], REPOSITORY)
+    .replace("## Latest", "## Staging").replace(LATEST_END, "<!-- changelog-staging-end -->");
+});
+
+When("that legacy changelog is migrated by {string}", function (operation)
+{
+  this.changelogMigration = operation;
+  if (operation === "merging") this.changelogText = mergeChangelogs(this.changelogText, EMPTY);
+  else if (operation === "appending") this.changelogText = stage(this.changelogText, "c");
+  else if (operation === "releasing") this.changelogText = releaseChangelog(this.changelogText, "1.1.0");
+  else assert.fail(`Unknown migration: ${operation}`);
+});
+
+Then("Latest and its boundary are written in the canonical format", function ()
+{
+  assert.ok(this.changelogText.startsWith("# Changelog\n\n## Latest\n"));
+  assert.ok(this.changelogText.includes(`\n\n${LATEST_END}\n\n## 1.`));
+  assert.equal(mergeChangelogs(this.changelogText), this.changelogText);
+});
+
+Then("legacy messages and release assignments survive the migration", function ()
+{
+  const document = parseChangelog(this.changelogText);
+  const released = this.changelogMigration === "releasing";
+  assert.deepEqual(document.releases, [
+    ...(released ? [{ version: "1.1.0", entries: [this.changelogLegacyUnreleased] }] : []),
+    { version: "1.0.0", entries: [this.changelogLegacyReleased] },
+  ]);
+  assert.deepEqual(document.staging, [
+    ...(!released ? [this.changelogLegacyUnreleased] : []),
+    ...(this.changelogMigration === "appending" ? [{ ...commit("c"), repository: REPOSITORY }] : []),
+  ]);
 });
 
 Given("changelog content contains {string}", function (problem)
 {
   const valid = stage("", "a");
-  const entry = valid.slice(valid.indexOf("<!-- changelog-commit:"), valid.indexOf(STAGING_END)).trim();
+  const entry = valid.slice(valid.indexOf("<!-- changelog-commit:"), valid.indexOf(LATEST_END)).trim();
   const cases = {
-    "an unrelated title": "# Release notes\n\n## Staging\n",
-    "a missing Staging section": "# Changelog\n\n## 1.0.0\n",
+    "an unrelated title": "# Release notes\n\n## Latest\n",
+    "a missing Latest section": "# Changelog\n\n## 1.0.0\n",
     "authored prose": `${valid}\nDo not discard this manually written explanation.\n`,
     "an unknown section": `${valid}\n## Notes\n`,
     "duplicate versions": `${valid}\n## 1.0.0\n\n## 1.0.0\n`,
-    "a repeated commit ID": valid.replace(STAGING_END, `${entry}\n\n${STAGING_END}`),
+    "a repeated commit ID": valid.replace(LATEST_END, `${entry}\n\n${LATEST_END}`),
     "a missing closing fence": valid.slice(0, valid.lastIndexOf("```")),
     "a shortened commit ID": valid.replace(`changelog-commit:${"a".repeat(40)}`, "changelog-commit:aaaaaaa"),
     "a mismatched heading": valid.replace("### Commit [`aaaaaaa`]", "### Commit [`bbbbbbb`]"),
     "an unsafe message fence": valid.replace("Change a", "Change a\n````"),
     "a prefixed version": `${valid}\n## v1.0.0\n`,
-    "a missing Staging boundary": valid.replace(STAGING_END, ""),
-    "a repeated Staging boundary": `${valid}\n${STAGING_END}\n`,
-    "an entry past Staging": `${valid}\n${entry}\n`,
+    "a missing Latest boundary": valid.replace(LATEST_END, ""),
+    "a repeated Latest boundary": `${valid}\n${LATEST_END}\n`,
+    "an entry past Latest": `${valid}\n${entry}\n`,
+    "a mismatched legacy boundary": valid.replace(LATEST_END, "<!-- changelog-staging-end -->"),
+    "a mismatched legacy heading": valid.replace("## Latest", "## Staging"),
   };
   assert.ok(Object.hasOwn(cases, problem));
   this.changelogText = cases[problem];
@@ -331,7 +380,7 @@ function assertReleaseAssignments(world, text)
   assert.deepEqual(document.releases.map(release => [release.version, release.entries.map(entry => entry.sha)]), releases);
 }
 
-Then("Git either preserves new work in Staging or reports a changelog conflict", function ()
+Then("Git either preserves new work in Latest or reports a changelog conflict", function ()
 {
   if (this.changelogGitMerge.status === 0)
   {

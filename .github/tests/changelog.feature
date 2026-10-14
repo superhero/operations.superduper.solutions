@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @automation @changelog-document
-Feature: Preserve commit messages through staging and release changelogs
-  Each commit is identified by its full SHA. Staging contains unreleased work,
+Feature: Preserve commit messages through Latest and release changelogs
+  Each commit is identified by its full SHA. Latest contains unreleased work,
   while release sections retain the full messages previously published there.
 
   Scenario Outline: Preserve complete messages as literal text
@@ -27,7 +27,7 @@ Feature: Preserve commit messages through staging and release changelogs
     When the same changelog commit is added twice alongside a new commit
     Then each full commit SHA appears exactly once in the changelog
     And the original changelog commit remains "<placement>"
-    And the new changelog commit remains in Staging
+    And the new changelog commit remains in Latest
 
     Examples:
       | placement |
@@ -37,12 +37,12 @@ Feature: Preserve commit messages through staging and release changelogs
   Scenario: Identical messages from separate commits retain separate identities
     Given two changelog commits have identical messages and different full SHAs
     When those changelog commits are staged
-    Then both distinct commit identities remain in Staging
+    Then both distinct commit identities remain in Latest
 
   Scenario Outline: Release preparation preserves prior versions and supports retries
     Given the changelog is ready for "<operation>"
     When the changelog is released as "<version>"
-    Then Staging is the first changelog section and is empty
+    Then Latest is the first changelog section and is empty
     And the changelog release sections contain "<sections>"
     And preparing that changelog release again makes no change
 
@@ -53,11 +53,11 @@ Feature: Preserve commit messages through staging and release changelogs
       | extending a release     | 1.1.0   | 1.1.0:b,c;1.0.0:a         |
       | numeric version sorting | 1.10.0  | 1.10.0:c;1.9.0:b;1.0.0:a  |
 
-  Scenario Outline: Merge release history with stale development Staging
+  Scenario Outline: Merge release history with stale development Latest
     Given release and development changelogs share a released commit
     When the changelogs are merged with "<first>" first
     Then the released commit occurs only under its original version
-    And new development work remains in Staging
+    And new development work remains in Latest
     And merging the resulting changelog again makes no change
 
     Examples:
@@ -68,18 +68,31 @@ Feature: Preserve commit messages through staging and release changelogs
   Scenario Outline: Initialize an absent changelog without inventing history
     Given the initial changelog text is "<initial>"
     When the changelog is merged without new commits
-    Then the changelog contains only its title and empty Staging section
+    Then the changelog contains only its title and empty Latest section
 
     Examples:
-      | initial       |
-      | absent        |
-      | empty Staging |
+      | initial              |
+      | absent               |
+      | empty Latest         |
+      | empty Staging        |
       | legacy empty Staging |
+
+  Scenario Outline: Migrate legacy Staging documents without rewriting commit messages
+    Given a legacy Staging changelog with released and unreleased messages
+    When that legacy changelog is migrated by "<operation>"
+    Then Latest and its boundary are written in the canonical format
+    And legacy messages and release assignments survive the migration
+
+    Examples:
+      | operation |
+      | merging   |
+      | appending |
+      | releasing |
 
   Scenario Outline: Ordinary Git merges never silently release new development work
     Given a Git changelog history with "<history>"
     When a release is merged into development with "<advance>"
-    Then Git either preserves new work in Staging or reports a changelog conflict
+    Then Git either preserves new work in Latest or reports a changelog conflict
     And the managed changelog merge preserves the correct release assignment
 
     Examples:
@@ -98,7 +111,7 @@ Feature: Preserve commit messages through staging and release changelogs
     Examples:
       | problem                  | reason                            |
       | an unrelated title       | expected # Changelog              |
-      | a missing Staging section| expected Staging                  |
+      | a missing Latest section| expected Latest                  |
       | authored prose           | refusing to discard authored      |
       | an unknown section       | SemVer                            |
       | duplicate versions       | duplicate version                 |
@@ -108,9 +121,11 @@ Feature: Preserve commit messages through staging and release changelogs
       | a mismatched heading     | commit heading does not match     |
       | an unsafe message fence  | unsafe or noncanonical            |
       | a prefixed version       | SemVer                            |
-      | a missing Staging boundary | missing Staging boundary       |
-      | a repeated Staging boundary | duplicate or misplaced Staging |
-      | an entry past Staging    | commit outside Staging boundary   |
+      | a missing Latest boundary | missing Latest boundary       |
+      | a repeated Latest boundary | duplicate or misplaced Latest |
+      | an entry past Latest    | commit outside Latest boundary   |
+      | a mismatched legacy boundary | heading and boundary do not match |
+      | a mismatched legacy heading | heading and boundary do not match |
 
   Scenario Outline: Refuse contradictory histories for the same full commit SHA
     Given changelog histories disagree about "<conflict>"

@@ -4,7 +4,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
-import { addCommits, mergeChangelogs, STAGING_TRAILER } from "./changelog.mjs";
+import { addCommits, LATEST_TRAILER, mergeChangelogs, RELEASE_TRAILER, STAGING_TRAILER } from "./changelog.mjs";
 
 const [base, head, repository, destination] = process.argv.slice(2);
 if (process.argv.length !== 6 || ![base, head].every(sha => /^[0-9a-f]{40}$/.test(sha)))
@@ -29,7 +29,7 @@ const commits = git("rev-list", "--reverse", "--topo-order", `${base}..${head}`)
   .filter(({ sha, message }) =>
   {
     const trailers = execFileSync("git", ["interpret-trailers", "--parse"], { input: message, encoding: "utf8" });
-    if (!trailers.split("\n").includes(STAGING_TRAILER)) return true;
+    if (!trailers.split("\n").some(trailer => [LATEST_TRAILER, STAGING_TRAILER, RELEASE_TRAILER].includes(trailer))) return true;
     const parents = git("rev-list", "--parents", "-n", "1", sha).trim().split(" ").slice(1);
     if (parents.length !== 1) return true;
     const paths = git("diff-tree", "--no-commit-id", "--name-only", "--no-renames", "-r", "-z", sha)

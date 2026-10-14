@@ -119,7 +119,7 @@ $source_marker"
   version="$major.$minor.$((10#$patch + 1))"
   release_branch="release/$version"
   preparation="$(node "$changelog_helper" prepare "$source_sha" "$main_sha" "$version")" ||
-    fail "Could not prepare changelog for $release_branch."
+    fail "Could not integrate develop and main for $release_branch."
   expected_tree="$(jq -er '.tree' <<< "$preparation")"
   prepared_sha="$(jq -er '.sha' <<< "$preparation")"
 

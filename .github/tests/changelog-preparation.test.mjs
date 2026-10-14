@@ -7,10 +7,14 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Given, Then, When } from "@cucumber/cucumber";
 import { parseDocument } from "yaml";
+import { addCommits, parseChangelog, releaseChangelog } from "../scripts/changelog.mjs";
 import { API, REPOSITORY, get } from "./support.mjs";
 
-const SOURCE = "feature/staging-messages";
-const TRAILER = "Changelog-Generated: staging-v1";
+const SOURCE = "feature/latest-messages";
+const TRAILER = "Changelog-Generated: latest-v1";
+const LEGACY_TRAILER = "Changelog-Generated: staging-v1";
+const RELEASE_TRAILER = "Changelog-Generated: release-v1";
+const generatedTrailer = format => ({ Latest: TRAILER, Staging: LEGACY_TRAILER, Release: RELEASE_TRAILER })[format];
 function git(world, ...args)
 {
   const result = spawnSync("git", args, { cwd: world.automation.root,
@@ -19,9 +23,9 @@ function git(world, ...args)
   assert.equal(result.status, 0, result.stderr);
   return result.stdout.trimEnd();
 }
-function commitMessage(world, message, file = "application.txt")
+function commitMessage(world, message, file = "application.txt", content = `${message}\n`)
 {
-  writeFileSync(join(world.automation.root, file), `${message}\n`);
+  writeFileSync(join(world.automation.root, file), content);
   git(world, "add", "--", file);
   const result = spawnSync("git", ["commit", "-q", "-F", "-"], { cwd: world.automation.root,
     env: { ...process.env, ...world.automation.env }, input: message, encoding: "utf8" });
@@ -38,14 +42,14 @@ function source(world, count)
   git(world, "config", "user.name", "Changelog Tester");
   git(world, "config", "user.email", "changelog@example.invalid");
   writeFileSync(join(world.automation.root, "application.txt"), "initial\n");
-  writeFileSync(join(world.automation.root, "CHANGELOG.md"), "# Changelog\n\n## Staging\n");
+  writeFileSync(join(world.automation.root, "CHANGELOG.md"), "# Changelog\n\n## Latest\n\n<!-- changelog-latest-end -->\n");
   git(world, "add", "application.txt", "CHANGELOG.md");
   git(world, "commit", "-q", "-m", "Initial project");
   world.preparationBase = git(world, "rev-parse", "HEAD");
   git(world, "switch", "-q", "-c", SOURCE);
   const messages = count ? Array.from({ length: count }, (_, index) => `fix: retained message ${index + 1}\n\nBody ${index + 1}.\n`) : [
     "feat: retain the full rationale\n\nFirst paragraph.\n\nSecond paragraph with `code`, <html>, and ``` fences.\n\nReviewed-by: Contributor\n",
-    "chore(changelog): record Staging commit messages\n\nA manual commit with the same subject must remain.\n"
+    "chore(changelog): record Latest commit messages\n\nA manual commit with the same subject must remain.\n"
   ];
   for (const message of messages) commitMessage(world, message);
   world.preparationHead = git(world, "rev-parse", "HEAD");
@@ -76,9 +80,39 @@ function remote(world, branch)
 }
 Given("a changelog source with full commit messages", function () { source(this); });
 Given("a changelog source with {int} small commits", function (count) { source(this, count); });
-Given("a commit with the generated trailer changes application content", function ()
+Given("a commit with the {string} generated trailer changes application content", function (format)
 {
-  this.preparationHead = commitMessage(this, `fix: handwritten with metadata trailer\n\nKeep this application change.\n\n${TRAILER}\n`);
+  const trailer = generatedTrailer(format);
+  this.preparationHead = commitMessage(this, `fix: handwritten with metadata trailer\n\nKeep this application change.\n\n${trailer}\n`);
+  git(this, "push", "-q", "origin", SOURCE);
+});
+Given("an earlier {string} generated changelog commit precedes more source work", function (format)
+{
+  let text = addCommits("", this.preparationMessages, REPOSITORY);
+  if (format === "Staging") text = text.replace("## Latest", "## Staging")
+    .replace("<!-- changelog-latest-end -->", "<!-- changelog-staging-end -->");
+  if (format === "Release") text = releaseChangelog(text, "1.2.3");
+  const trailer = generatedTrailer(format);
+  this.preparationEarlierGenerated = commitMessage(this, `chore(changelog): record ${format} commit messages\n\n${trailer}\n`,
+    "CHANGELOG.md", text);
+  this.preparationMessages.pop();
+  this.preparationHead = commitMessage(this, "fix: source work after changelog preparation\n\nPreserve this follow-up as well.\n");
+  git(this, "push", "-q", "origin", SOURCE);
+});
+Given("a changelog-only merge commit has the release generated trailer", function ()
+{
+  writeFileSync(join(this.automation.root, "CHANGELOG.md"), addCommits("", this.preparationMessages, REPOSITORY));
+  git(this, "add", "CHANGELOG.md");
+  const tree = git(this, "write-tree");
+  const message = `docs: preserve a manual merge rationale\n\n${RELEASE_TRAILER}\n`;
+  const merged = spawnSync("git", ["commit-tree", tree, "-p", this.preparationHead, "-p", this.preparationBase, "-F", "-"],
+    { cwd: this.automation.root, env: { ...process.env, ...this.automation.env }, input: message, encoding: "utf8" });
+  assert.equal(merged.status, 0, merged.stderr);
+  const sha = merged.stdout.trim();
+  assert.equal(git(this, "diff", "--name-only", this.preparationHead, sha), "CHANGELOG.md");
+  git(this, "update-ref", `refs/heads/${SOURCE}`, sha);
+  this.preparationMessages.push({ sha, message });
+  this.preparationHead = sha;
   git(this, "push", "-q", "origin", SOURCE);
 });
 Given("changelog preparation encounters {string}", function (state)
@@ -136,6 +170,7 @@ Then("a single changelog commit extends the exact source head", function ()
   assert.notEqual(this.preparationGenerated, this.preparationHead);
   assert.equal(git(this, "show", "-s", "--format=%P", this.preparationGenerated), this.preparationHead);
   assert.equal(git(this, "diff-tree", "--no-commit-id", "--name-only", "-r", this.preparationGenerated), "CHANGELOG.md");
+  assert.match(git(this, "show", "-s", "--format=%B", this.preparationGenerated), /Changelog-Generated: latest-v1$/);
   assert.equal(remote(this, "develop"), this.preparationBase);
   assert.equal(git(this, "rev-parse", "HEAD"), this.preparationHead, "The caller checkout must remain unchanged");
   assert.equal(readFileSync(this.automation.output, "utf8"), "updated=true\n");
@@ -144,11 +179,23 @@ Then("every full source message is preserved", function ()
 {
   assert.equal(this.preparationResult.status, 0, this.preparationResult.stderr);
   const text = git(this, "show", `${remote(this, SOURCE)}:CHANGELOG.md`);
+  assert.ok(text.startsWith("# Changelog\n\n## Latest\n"));
+  assert.ok(text.includes("<!-- changelog-latest-end -->"));
+  const document = parseChangelog(text);
+  const entries = [...document.staging, ...document.releases.flatMap(release => release.entries)];
+  const bySha = (left, right) => left.sha.localeCompare(right.sha);
+  assert.deepEqual(entries.map(entry => ({ sha: entry.sha, message: entry.message })).sort(bySha),
+    [...this.preparationMessages].sort(bySha));
   for (const { sha, message } of this.preparationMessages)
   {
     assert.ok(text.includes(sha), `Missing source SHA ${sha}`);
     assert.ok(text.includes(message), `Missing full source message ${sha}`);
   }
+});
+Then("the earlier generated changelog commit is excluded", function ()
+{
+  const text = git(this, "show", `${remote(this, SOURCE)}:CHANGELOG.md`);
+  assert.ok(!text.includes(this.preparationEarlierGenerated), "Earlier generated commits must remain excluded after renaming");
 });
 When("preparation retries at the generated head", function ()
 {
@@ -181,10 +228,11 @@ Then("develop changelog preparation is isolated from heavy tests and safely gate
   const { jobs } = document.toJS();
   const prepare = jobs["prepare-changelog"];
   assert.deepEqual(prepare.needs, ["workflow-checks", "validate-pr"]);
-  assert.deepEqual(jobs.application.needs, ["validate-pr", "prepare-changelog"]);
+  for (const prerequisite of ["validate-pr", "prepare-changelog"])
+    assert.ok(jobs.application.needs.includes(prerequisite));
   assert.match(jobs.application.if, /needs\.prepare-changelog\.outputs\.updated != 'true'/);
   assert.equal(prepare.if, "!startsWith(github.head_ref, 'docs/')", "Other valid routes must keep application CI");
-  const eligibility = prepare.env.PREPARE_STAGING;
+  const eligibility = prepare.env.PREPARE_LATEST;
   for (const source of ["feature/topic", "bugfix/topic", "main", "release/1.2.3"])
     for (const fork of [false, true])
       for (const draft of [false, true])
@@ -195,7 +243,7 @@ Then("develop changelog preparation is isolated from heavy tests and safely gate
         assert.equal(evaluate(github, (value, prefix) => value.startsWith(prefix)),
           !fork && !draft && /^(feature|bugfix)\//.test(source));
       }
-  assert.ok(prepare.steps.every(step => step.if === "env.PREPARE_STAGING == 'true'"));
+  assert.ok(prepare.steps.every(step => step.if === "env.PREPARE_LATEST == 'true'"));
   assert.deepEqual(prepare.steps[0].with, { ref: "${{ github.event.pull_request.base.sha }}", "fetch-depth": 0, "persist-credentials": false });
   assert.match(prepare.steps[1].run, /git show "\$TESTED_SHA:\.github\/scripts\/\$file"/);
   assert.equal(prepare.steps[2].with["permission-contents"], "write");

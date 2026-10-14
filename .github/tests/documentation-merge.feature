@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Erik Landvall
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
-@automation
+@automation @documentation-merge
 Feature: Documentation merges do not interrupt production publication
 
   Scenario: Develop documentation does not need production release inspection
@@ -62,3 +62,29 @@ Feature: Documentation merges do not interrupt production publication
     Given documentation publication inspection targets "release/next" with "no active runs"
     When documentation publication safety is checked
     Then documentation publication safety is "rejected" with "Invalid target release version"
+
+  Scenario Outline: Bound the wait for a generated changelog PR's creating workflow
+    Given generated changelog publication waits "4" seconds with "<state>"
+    When bounded documentation publication safety is checked
+    Then bounded documentation publication is "<outcome>" after <reads> reads with "<reason>"
+
+    Examples:
+      | state                            | outcome  | reads | reason                  |
+      | a finishing release              | accepted | 2     |                         |
+      | a release exceeding the deadline | rejected | 3     | Rerun documentation CI  |
+      | an API failure while waiting     | rejected | 2     | Could not inspect       |
+      | invalid data while waiting       | rejected | 2     | Invalid or incomplete   |
+
+  Scenario Outline: Invalid documentation wait settings fail before API access
+    Given generated changelog publication waits "<seconds>" seconds with "an invalid wait setting"
+    When bounded documentation publication safety is checked
+    Then bounded documentation publication is "rejected" after 0 reads with "must be an integer from 0 to 120"
+
+    Examples:
+      | seconds |
+      | -1      |
+      | 1.5     |
+      | 121     |
+      | 9999    |
+      | 04      |
+      | later   |

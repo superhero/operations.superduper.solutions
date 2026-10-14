@@ -1,8 +1,8 @@
 # Changelog
 
-## Staging
+## Latest
 
-<!-- changelog-staging-end -->
+<!-- changelog-latest-end -->
 
 ## 0.0.43
 

@@ -2,12 +2,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+export const LATEST_TRAILER = "Changelog-Generated: latest-v1";
+export const RELEASE_TRAILER = "Changelog-Generated: release-v1";
+// Keep recognizing metadata produced before the unreleased section was renamed.
 export const STAGING_TRAILER = "Changelog-Generated: staging-v1";
+const LATEST_END = "<!-- changelog-latest-end -->";
 const STAGING_END = "<!-- changelog-staging-end -->";
 
 const SHA = /^[0-9a-f]{40}$/;
 const VERSION = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/;
 const REPOSITORY = /^[A-Za-z0-9][A-Za-z0-9-]*\/[A-Za-z0-9_.-]+$/;
+// Retain the data API while migrating the serialized unreleased section name.
 const emptyDocument = () => ({ staging: [], releases: [] });
 
 function requireValue(condition, reason)
@@ -81,16 +86,16 @@ function compareVersions(left, right)
   return 0;
 }
 
-/** Render a validated document with Staging first and newest release versions first. */
+/** Render a validated document with Latest first and newest release versions first. */
 export function formatChangelog(document)
 {
   validateDocument(document);
-  const sections = [{ version: "Staging", entries: document.staging }, ...[...document.releases].sort(compareVersions)];
-  // Keep a boundary after Staging even when empty. Without it, Git can merge a
+  const sections = [{ version: "Latest", entries: document.staging }, ...[...document.releases].sort(compareVersions)];
+  // Keep a boundary after Latest even when empty. Without it, Git can merge a
   // release heading above old entries and silently place new staged work below it.
   return `# Changelog\n\n${sections.map(section => `## ${section.version}${section.entries.length ?
-    `\n\n${section.entries.map(formatEntry).join("\n\n")}` : ""}${section.version === "Staging" ?
-    `\n\n${STAGING_END}` : ""}`).join("\n\n")}\n`;
+    `\n\n${section.entries.map(formatEntry).join("\n\n")}` : ""}${section.version === "Latest" ?
+    `\n\n${LATEST_END}` : ""}`).join("\n\n")}\n`;
 }
 
 /** Parse only the managed format. Unknown prose fails rather than being silently erased. */
@@ -104,18 +109,20 @@ export function parseChangelog(text)
   let index = 1;
   const skipBlank = () => { while (lines[index] === "") index++; };
   skipBlank();
-  requireValue(lines[index] === "## Staging", "expected Staging as the first section");
+  requireValue(["## Latest", "## Staging"].includes(lines[index]), "expected Latest as the first section");
+  const boundary = lines[index] === "## Staging" ? STAGING_END : LATEST_END;
   index++;
   let entries = document.staging;
-  let stagingClosed = false;
+  let latestClosed = false;
   while (index < lines.length)
   {
     skipBlank();
     if (index >= lines.length) break;
-    if (lines[index] === STAGING_END)
+    if ([LATEST_END, STAGING_END].includes(lines[index]))
     {
-      requireValue(!stagingClosed && entries === document.staging, "duplicate or misplaced Staging boundary");
-      stagingClosed = true;
+      requireValue(lines[index] === boundary, "unreleased heading and boundary do not match");
+      requireValue(!latestClosed && entries === document.staging, "duplicate or misplaced Latest boundary");
+      latestClosed = true;
       index++;
       continue;
     }
@@ -123,7 +130,7 @@ export function parseChangelog(text)
     {
       const version = lines[index++].slice(3);
       validateVersion(version);
-      requireValue(stagingClosed, "missing Staging boundary before released versions");
+      requireValue(latestClosed, "missing Latest boundary before released versions");
       const release = { version, entries: [] };
       document.releases.push(release);
       entries = release.entries;
@@ -131,7 +138,7 @@ export function parseChangelog(text)
     }
     const marker = /^<!-- changelog-commit:([0-9a-f]{40}) -->$/.exec(lines[index++]);
     requireValue(marker, `unrecognized content at line ${index}; refusing to discard authored content`);
-    requireValue(!stagingClosed || entries !== document.staging, "commit outside Staging boundary");
+    requireValue(!latestClosed || entries !== document.staging, "commit outside Latest boundary");
     const entry = { sha: marker[1] };
     const heading = lines[index++];
     const link = /^### Commit \[`[0-9a-f]{7}`\]\(https:\/\/github\.com\/([^/]+\/[^/]+)\/commit\/[0-9a-f]{40}\)$/.exec(heading);
@@ -149,8 +156,8 @@ export function parseChangelog(text)
   }
   // Accept the original empty initializer, but require the boundary once entries
   // or releases exist. The next rendering upgrades that empty initializer.
-  requireValue(stagingClosed || (document.staging.length === 0 && document.releases.length === 0),
-    "missing Staging boundary");
+  requireValue(latestClosed || (document.staging.length === 0 && document.releases.length === 0),
+    "missing Latest boundary");
   validateDocument(document);
   return document;
 }
@@ -200,7 +207,7 @@ function combineDocuments(documents)
   return document;
 }
 
-/** Union documents by full SHA. Released placement wins over a stale Staging copy. */
+/** Union documents by full SHA. Released placement wins over a stale Latest copy. */
 export function mergeChangelogs(...texts)
 {
   return formatChangelog(combineDocuments(texts.map(parseChangelog)));
@@ -216,7 +223,7 @@ export function addCommits(text, commits, repository)
   return formatChangelog(combineDocuments([parseChangelog(text), { staging: additions, releases: [] }]));
 }
 
-/** Fold Staging into a release, also supporting retries that extend the same version. */
+/** Fold Latest into a release, also supporting retries that extend the same version. */
 export function releaseChangelog(text, version)
 {
   validateVersion(version);

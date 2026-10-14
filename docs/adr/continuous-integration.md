@@ -13,8 +13,9 @@ Read the diagrams **from bottom to top**. Branch labels omit topic and version
 suffixes. Plain branch ends indicate earlier or later history omitted from the
 diagram.
 
-The overview's `develop` → `release` update is not yet supported by CI branch
-validation.
+The overview's `develop` → `release` update is performed by repeating the
+`develop` → `main` release trigger. It updates the active release; a direct
+`develop` → `release` PR is not a supported branch route.
 
 ```mermaid
 %%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2), .commit.main-origin { visibility: hidden; } path.arrow2:not(.arrow2 ~ .arrow2) { filter: drop-shadow(0 50px 0 #57C3BC); } .commit-labels g:first-of-type, .commit.main-end { visibility: hidden; } .commit-arrows path.arrow2:nth-last-child(3) { filter: drop-shadow(0 -50px 0 #57C3BC); } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
@@ -59,7 +60,8 @@ gitGraph BT:
 
 `feature/*` and integration `bugfix/*` branches start from and return to `develop`
 through PRs. A `release/<version>` branches from `develop` after feature
-integration and incorporates current `main`.
+integration and incorporates current `main`. When `main` is already an ancestor,
+release creation preserves the exact source snapshot.
 
 Stabilization fixes use `bugfix/*` branches from the active release and return
 to that release through a PR.
@@ -106,6 +108,14 @@ checks. Protected branches enforce checks tied to the tested revision. GitHub
 Actions merges and tags the verified revision, then opens a `main` → `develop`
 synchronization PR.
 
+Integrations into `develop` and active releases complete type checking, scoped
+coverage, build and all four test suites before merging. Later workflows may
+reuse complete successful validation when every tracked input matches except
+the managed root `CHANGELOG.md`. Reuse verifies the original run, tested revision,
+complete reports and bundle hashes, preserving their provenance. Missing,
+expired or unverifiable evidence requires fresh validation; current branch and
+merge checks still apply.
+
 ### Merge policy
 
 Feature and integration bugfix PRs, hotfix PRs into `main`, and documentation PRs
@@ -115,10 +125,16 @@ release PRs into `main` and synchronization PRs fast-forward where possible;
 otherwise they use merge commits.
 
 Commit messages are preserved in the root changelog before work is squashed
-into `develop`. Unreleased entries stay under **Staging**; release preparation
-moves them into the selected version. Further development updates extend that
-same release section without duplicating entries. The prepared changelog is
-part of the revision validated by CI.
+into `develop`. Unreleased entries accumulate under **Latest**. Release creation
+preserves that changelog and automatically opens a separate
+`docs/release-changelog-<version>` PR into the release branch to move those
+entries into the selected version. That docs PR must merge before the release
+can merge into `main`, so the version tag contains the correct changelog.
+
+Further development preserves earlier released entries and adds new work to
+Latest. Another changelog review extends the same release version without
+duplicating entries. Its canonical metadata change resumes release processing
+and may reuse complete validation when the remaining inputs match.
 
 ## Hotfixes
 
@@ -242,8 +258,11 @@ tagging and `main` → `develop` synchronization path.
 ### Release
 
 Branch from the active `release/<version>` to update its documentation.
-Documentation updates do not resume an open release's publication pipeline.
-An explicit release action resumes full validation of the updated revision.
+Ordinary documentation updates do not resume an open release's publication
+pipeline; an explicit release action resumes validation of the updated revision.
+The automatically generated changelog versioning PR is the narrow exception:
+its canonical change resumes the release after merging, with complete matching
+validation reused when available.
 
 ```mermaid
 %%{init: {"theme": "base", "themeCSS": "line.branch { stroke: #8B949E; stroke-width: 1px; stroke-dasharray: 1 4; stroke-linecap: round; } .branchLabel, .tag-label { font-weight: 700; } .tag-label-bkg, .commit-label-bkg { opacity: 0.9; } .tag-label-bkg { fill: #B8E6C4; stroke: #8ED3A2; } .branchLabelBkg { opacity: 1; clip-path: inset(0 8px 0 0 round 4px) fill-box; } .commit-labels g:nth-last-of-type(-n+2), .commit.main-origin { visibility: hidden; } path.arrow3:not(.arrow3 ~ .arrow3) { filter: drop-shadow(0 50px 0 #57C3BC); } .commit-labels g:first-of-type, .commit.main-end { visibility: hidden; } .commit-arrows path.arrow3:nth-last-child(3) { filter: drop-shadow(0 50px 0 #57C3BC) drop-shadow(0 -50px 0 #57C3BC); } .commit-labels g { transform-box: fill-box; transform-origin: calc(100% + 17px) calc(50% + 2px); transform: rotate(-10deg); } .commit-label { font-weight: 700; transform: translateX(-8px); } .commit-label-bkg { stroke: #17365D; stroke-width: 20px; transform: translateX(-5px); clip-path: polygon(-4px -4px, calc(100% + 4px) -4px, calc(100% + 10px) 50%, calc(100% + 4px) calc(100% + 4px), -4px calc(100% + 4px)) fill-box; } .commit.branch { stroke: #B1CD5E; stroke-dasharray: none; }", "gitGraph": {"showCommitLabel": true, "rotateCommitLabel": false}, "themeVariables": {
@@ -307,9 +326,10 @@ These changes reach `main` directly, without going through a release branch.
 ### Validation and automation
 
 Each target validates the full Markdown-only change set. Docs PRs skip
-application tests and builds. They do not create release versions or tags,
-publish releases, or open synchronization PRs. Each target needs its own
-explicitly requested PR.
+application tests and builds. They do not allocate release numbers, create tags,
+publish releases, or open synchronization PRs. Authored documentation needs an
+explicit PR for each target; release changelog versioning has its own automatic
+PR into the active release.
 
 One source branch may serve several targets when its complete diff is
 Markdown-only against each. Branch recovery preserves the original source

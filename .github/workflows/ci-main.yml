@@ -43,7 +43,7 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          if [[ ! -e .github/scripts/classify-release-update.sh ]]; then
+          if [[ ! -e .github/scripts/classify-release-update.sh || ! -e .github/scripts/check-release-changelog-update.mjs || ! -e .github/scripts/changelog.mjs ]]; then
             echo 'Trusted base predates release routing; no incremental comparison is needed.'
             exit 0
           fi
@@ -69,16 +69,61 @@ jobs:
           set -euo pipefail
           # Bootstrap the first promotion of this workflow while main still
           # predates its helper. Keep the legacy full pipeline in that case.
-          if [[ ! -e .github/scripts/classify-release-update.sh ]]; then
+          if [[ ! -e .github/scripts/classify-release-update.sh || ! -e .github/scripts/check-release-changelog-update.mjs || ! -e .github/scripts/changelog.mjs ]]; then
             echo 'run_release=true' >> "$GITHUB_OUTPUT"
             echo 'Trusted base predates release routing; run the full pipeline.'
             exit 0
           fi
           bash .github/scripts/classify-release-update.sh "$EVENT_ACTION" "$HEAD_BRANCH" "$BEFORE_SHA" "$HEAD_SHA"
 
+  validation:
+    name: Find Previous Validation
+    needs: release-route
+    if: >-
+      !startsWith(github.head_ref, 'docs/')
+      && needs.release-route.outputs.run_release == 'true'
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      reused: ${{ steps.find.outputs.reused }}
+      source_run_id: ${{ steps.find.outputs.source_run_id }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout validation inputs
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Find complete matching validation
+        id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          TARGET_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node .github/scripts/find-validation.mjs "$REPOSITORY" "$TARGET_SHA" tmp/reused-validation
+
+      - name: Retain verified artifacts for this run
+        if: steps.find.outputs.reused == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: reused-validation
+          path: tmp/reused-validation
+          overwrite: true
+          if-no-files-found: error
+          retention-days: 7
+
   workflow-checks:
     name: Automation Checks
-    needs: release-route
+    needs: [release-route, validation]
     if: >-
       !startsWith(github.head_ref, 'docs/')
       && needs.release-route.outputs.run_release == 'true'
@@ -86,32 +131,38 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
+        if: needs.validation.outputs.reused != 'true'
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Lint standalone scripts
+        if: needs.validation.outputs.reused != 'true'
         run: shellcheck .github/scripts/*.sh
 
       - name: Set up Node.js
+        if: needs.validation.outputs.reused != 'true'
         uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: npm
 
       - name: Install dependencies
+        if: needs.validation.outputs.reused != 'true'
         run: npm ci --no-audit --no-fund
 
       - name: Check dependency version badges
+        if: needs.validation.outputs.reused != 'true'
         run: npm --loglevel=error run badges:dependencies -- --check
 
       - name: Test automation
+        if: needs.validation.outputs.reused != 'true'
         id: automation
         run: npm --loglevel=error run test:automation
 
       - name: Upload automation report
-        if: success() || (failure() && steps.automation.outcome == 'failure')
+        if: ${{ !cancelled() && (steps.automation.outcome == 'success' || steps.automation.outcome == 'failure') }}
         uses: actions/upload-artifact@v7
         with:
           name: automation-test-report
@@ -119,6 +170,12 @@ jobs:
           if-no-files-found: error
           overwrite: true
           retention-days: 7
+
+      - name: Reuse successful automation validation
+        if: needs.validation.outputs.reused == 'true'
+        env:
+          SOURCE_RUN_ID: ${{ needs.validation.outputs.source_run_id }}
+        run: echo "Automation already passed in validated run $SOURCE_RUN_ID."
 
   validate-pr:
     name: Validate Gitflow
@@ -192,23 +249,77 @@ jobs:
           SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
         run: bash .github/scripts/create-release-pr.sh "$REPOSITORY" "$SOURCE_PR" "$SOURCE_SHA"
 
-  application:
-    name: Test and Build Release
-    needs: [validate-pr, workflow-checks]
+  release-changelog:
+    name: Prepare Release Changelog
+    needs: [workflow-checks, validate-pr]
     if: >-
       !startsWith(github.head_ref, 'docs/')
-      && (github.head_ref != 'develop')
+      && github.head_ref != 'develop'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && !github.event.pull_request.draft
+    concurrency:
+      group: release-changelog-${{ github.head_ref }}
+      cancel-in-progress: false
+    outputs:
+      ready: ${{ steps.prepare.outputs.ready }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout validated release automation
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: Create GitHub App token
+        if: startsWith(github.head_ref, 'release/')
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Open release changelog documentation PR
+        id: prepare
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [[ "$HEAD_BRANCH" == release/* ]]; then
+            bash .github/scripts/create-release-changelog-pr.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_BRANCH" "$HEAD_SHA"
+          else
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          fi
+
+  application:
+    name: Test and Build Release
+    needs: [validate-pr, workflow-checks, validation, release-changelog]
+    if: >-
+      !startsWith(github.head_ref, 'docs/')
+      && github.head_ref != 'develop'
+      && needs.release-changelog.outputs.ready == 'true'
     permissions:
       actions: read
       contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - name: Checkout release head
+      - name: Checkout validation inputs
         uses: actions/checkout@v7
         with:
-          # The same run promotes these artifacts after confirming the merge.
           ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up Node.js
@@ -217,17 +328,30 @@ jobs:
           node-version-file: .node-version
           cache: npm
 
+      - name: Restore verified validation artifacts
+        if: needs.validation.outputs.reused == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ needs.validation.outputs.source_run_id }}
+        run: |
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name reused-validation --dir tmp/validation
+          printf 'Reusing complete validation and unchanged artifacts from run %s. Reports retain their original commit and run URL.\n' "$SOURCE_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Install dependencies
+        if: needs.validation.outputs.reused != 'true'
         run: npm ci --no-audit --no-fund
 
       - name: Type check
+        if: needs.validation.outputs.reused != 'true'
         run: npm --loglevel=error run typecheck
 
       - name: Source tests with coverage
+        if: needs.validation.outputs.reused != 'true'
         id: source
         run: npm --loglevel=error run test:source:coverage
 
       - name: Check coverage and badge
+        if: needs.validation.outputs.reused != 'true'
         id: coverage
         run: |
           npm --loglevel=error run test:coverage
@@ -236,13 +360,16 @@ jobs:
             tmp/test/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build
+        if: needs.validation.outputs.reused != 'true'
         run: npm --loglevel=error run build
 
       - name: Acceptance tests
+        if: needs.validation.outputs.reused != 'true'
         id: acceptance
         run: npm --loglevel=error run test:acceptance
 
       - name: Browser tests against the built bundle
+        if: needs.validation.outputs.reused != 'true'
         id: browser
         timeout-minutes: 30
         run: npm --loglevel=error run test:browser
@@ -260,7 +387,7 @@ jobs:
           retention-days: 7
 
       - name: Upload application test results
-        if: success() || (failure() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure'))
+        if: ${{ !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure') }}
         uses: actions/upload-artifact@v7
         with:
           name: application-test-report
@@ -272,37 +399,14 @@ jobs:
           overwrite: true
           retention-days: 7
 
-      - name: Upload bundle
-        uses: actions/upload-artifact@v7
-        with:
-          name: bundle
-          path: dist
-          if-no-files-found: error
-          overwrite: true
-
-      - name: Upload coverage report
-        if: ${{ !cancelled() && (steps.coverage.outcome == 'success' || steps.coverage.outcome == 'failure') }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage
-          path: |
-            tmp/test/coverage
-            !tmp/test/coverage/v8
-          if-no-files-found: error
-          overwrite: true
-
       - name: Download automation test results
         if: ${{ !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure') }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" \
-            --name automation-test-report --dir tmp/test || {
-            echo "::error::Cannot download artifact 'automation-test-report' from $GITHUB_REPOSITORY run $GITHUB_RUN_ID to 'tmp/test' before generating the combined test report." >&2
-            exit 1
-          }
+        run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name automation-test-report --dir tmp/test
 
       - name: Generate combined test report
+        if: needs.validation.outputs.reused != 'true'
         id: report
         env:
           REPORT_COMMIT: ${{ github.event.pull_request.head.sha }}
@@ -320,34 +424,79 @@ jobs:
           missing=()
           for suite in source:source acceptance:test browser:browser automation:automation; do
             file="tmp/test/cucumber-${suite#*:}.json"
-            if [[ -f "$file" ]]; then
-              reports+=("$file")
-            else
-              missing+=("${suite%%:*}")
-            fi
+            if [[ -f "$file" ]]; then reports+=("$file"); else missing+=("${suite%%:*}"); fi
           done
-          if (( ${#reports[@]} == 0 )); then
-            echo '::error::Cannot generate a diagnostic test report: no Cucumber results were produced. Inspect the failed step logs.' >&2
-            exit 1
-          fi
+          (( ${#reports[@]} > 0 )) || exit 1
           warning='CI failed. This diagnostic report does not certify a successful build.'
-          if (( ${#missing[@]} > 0 )); then
-            warning+=" Missing suite results: ${missing[*]}. See the failed step logs."
-          fi
-          echo "$warning" >> "$GITHUB_STEP_SUMMARY"
+          if (( ${#missing[@]} > 0 )); then warning+=" Missing suite results: ${missing[*]}."; fi
           REPORT_WARNING="$warning" node .github/scripts/generate-test-report.mjs tmp/test-report.html "${reports[@]}"
 
+      - name: Upload failed validation diagnostics
+        if: failure() && steps.failure-report.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-diagnostics
+          path: |
+            tmp/test-report.html
+            tmp/test/coverage
+            !tmp/test/coverage/v8
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Check scenario badge
+        if: needs.validation.outputs.reused != 'true'
+        run: npm --loglevel=error run badges:scenarios -- --check
+
+      - name: Bind complete validation to its inputs and artifacts
+        if: needs.validation.outputs.reused != 'true'
+        env:
+          REPOSITORY: ${{ github.repository }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          TESTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          mkdir -p tmp/validation/bundle tmp/validation/coverage tmp/validation/test-report
+          cp -a dist/. tmp/validation/bundle/
+          cp -a tmp/test/coverage/. tmp/validation/coverage/
+          rm -rf tmp/validation/coverage/v8
+          cp tmp/test-report.html tmp/validation/test-report/
+          node .github/scripts/validation-artifacts.mjs create "$REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$PR_HEAD_SHA" "$TESTED_SHA" tmp/validation/bundle tmp/validation/coverage tmp/validation/test-report/test-report.html tmp/validation/validation-manifest.json
+
+      - name: Upload tested bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle
+          path: tmp/validation/bundle
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: tmp/validation/coverage
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
       - name: Upload combined test report
-        if: ${{ !cancelled() && (steps.report.outcome == 'success' || steps.failure-report.outcome == 'success') }}
         uses: actions/upload-artifact@v7
         with:
           name: test-report
-          path: tmp/test-report.html
+          path: tmp/validation/test-report/test-report.html
           if-no-files-found: error
           overwrite: true
+          retention-days: 7
 
-      - name: Check scenario badge
-        run: npm --loglevel=error run badges:scenarios -- --check
+      - name: Upload original validation proof
+        if: needs.validation.outputs.reused != 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-manifest
+          path: tmp/validation/validation-manifest.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
 
   preview:
     name: Deploy Preview

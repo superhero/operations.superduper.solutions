@@ -3,8 +3,28 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @automation
 Feature: Documentation advances do not restart release publication
-  Only a nonempty Markdown-only forward update to an existing release pull
-  request may skip the full pipeline. Unverifiable comparisons stop routing.
+  Ordinary nonempty Markdown-only forward updates to an existing release pull
+  request skip the full pipeline. Exact changelog preparation resumes publication,
+  and unverifiable comparisons stop routing.
+
+  Scenario Outline: Release changelog routing checks <change>
+    Given a release synchronization contains "<change>"
+    When the release update is classified
+    Then the release pipeline is "<route>" without changing the trusted checkout
+
+    Examples:
+      | change                                     | route   |
+      | an exact release changelog fold            | full    |
+      | a legacy release changelog fold            | full    |
+      | a release changelog for another version    | skipped |
+      | a partial release changelog fold           | skipped |
+      | a noncanonical release changelog fold      | skipped |
+      | a release changelog rewriting old messages | skipped |
+      | a release changelog beside other Markdown  | skipped |
+      | an empty release changelog fold            | full    |
+      | normalization of an existing release version | full  |
+      | a release changelog normalization          | skipped |
+      | authored release changelog notes           | skipped |
 
   Scenario Outline: Route a release synchronization containing <change>
     Given a release synchronization contains "<change>"
@@ -106,3 +126,18 @@ Feature: Documentation advances do not restart release publication
     And its release event is "synchronize" on "release/1.2.3" without a previous head
     When the release routing workflow steps execute
     Then the release pipeline is "blocked" without changing the trusted checkout
+
+  Scenario: Bootstrap the release changelog capability before trusted main provides it
+    Given a release synchronization contains "a Markdown edit"
+    And its trusted classifier predates release changelog routing
+    And its release event is "synchronize" on "release/1.2.3" without a previous head
+    When the release routing workflow steps execute
+    Then the release pipeline is "full" without changing the trusted checkout
+
+  Scenario: Bootstrap when the trusted release checker lacks its changelog module
+    Given a release synchronization contains "a Markdown edit"
+    And its trusted release classifier is available
+    And its trusted release checker lacks its changelog module
+    And its release event is "synchronize" on "release/1.2.3" without a previous head
+    When the release routing workflow steps execute
+    Then the release pipeline is "full" without changing the trusted checkout
