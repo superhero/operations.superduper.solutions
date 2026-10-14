@@ -15,7 +15,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let { bars = [], activeBar = null, series = [] }:
     { bars?: MetricsBar[]; activeBar?: MetricsBar | null; series?: MetricSeries[] } = $props();
   const id = $props.id();
-  let chosenKey = $state("");
+  let chosenKey = $state("heap.used");
   let range = $state("day");
   let selectedStart = $state<number | null>(null);
   const metric = $derived(series.find(entry => entry.key === chosenKey) ?? series[0]);
