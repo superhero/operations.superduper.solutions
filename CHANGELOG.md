@@ -2,6 +2,10 @@
 
 ## Staging
 
+<!-- changelog-staging-end -->
+
+## 0.0.43
+
 <!-- changelog-commit:37fb88f5c9d5af2613c1d7c82e75d6bd7953121c -->
 ### Commit [`37fb88f`](https://github.com/superhero/operations.superduper.solutions/commit/37fb88f5c9d5af2613c1d7c82e75d6bd7953121c)
 
@@ -132,8 +136,6 @@ Merge develop into bugfix/theme-checkmark-shadow
 Preserve the integrated error history, Cucumber suites, and staged changelog while retaining the theme checkmark shadow removal.
 
 ```
-
-<!-- changelog-staging-end -->
 
 ## 0.0.42
 
