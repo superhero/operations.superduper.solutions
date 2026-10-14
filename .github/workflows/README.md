@@ -81,7 +81,7 @@ must not represent complete validation.
 
 ### Results after failure
 
-- Release CI retains available raw results as `application-test-report` and
+- Development and release CI retain available raw results as `application-test-report` and
   `automation-test-report`.
 - A partial diagnostic HTML report may be generated after failure. It names
   missing suites and explicitly warns that validation failed.
@@ -177,11 +177,13 @@ its ancestor; other documentation PRs squash.
 - A `main` target requires current `main`, except permitted dependency-badge advances.
 - Documentation merges into `main` or a release share the production merge lock.
   A pre-merge check also blocks them while a production release workflow is active;
-  retry after it finishes.
-- A Markdown-only advance of an open release PR pauses its pipeline. To resume
+  generated release-changelog PRs wait up to two minutes for that work to finish.
+  Other documentation PRs require a retry after it finishes.
+- An ordinary Markdown-only advance of an open release PR pauses its pipeline. To resume
   release validation intentionally, reopen the release PR, mark it ready for
-  review, or edit it. The actual new head receives full validation before any
-  publication; previous artifacts are not reused.
+  review, or edit it. A canonical changelog versioning update resumes automatically.
+  Publication always requires complete validation for the current inputs, using
+  the verified reuse rules below or a fresh run.
 
 ### Reusing a source branch
 
@@ -287,6 +289,10 @@ cached.
 Code auto-merges require automation tests, Gitflow policy and application checks.
 Documentation uses its separate path.
 
+PRs into `develop` and `release/*` complete type checking, scoped coverage,
+build, source, acceptance, automation and browser tests before merging. They
+produce the same complete bundle, reports and validation evidence as release CI.
+
 Merges are serialized per target and bind the tested head and base revision.
 The head must match exactly. Target advances containing only dependency-version
 SVG changes are accepted; other advances require fresh validation.
@@ -316,7 +322,7 @@ and tested revision. Shared branches are never rebased.
 
 The root [`CHANGELOG.md`](../../CHANGELOG.md) preserves complete commit messages
 before feature, integration bugfix and documentation PRs are squashed into
-`develop`. Each entry records its original commit; **Staging** stays at the top.
+`develop`. Each entry records its original commit; **Latest** stays at the top.
 
 - Preparation adds a changelog commit to the PR branch. Its new revision runs
   through CI before merging; automation does not alter the tested tree afterward.
@@ -352,19 +358,37 @@ before squashing.
 
 1. Preview integration of pinned `develop` and `main` revisions.
 2. Reject conflicts and changes limited to dependency badges.
-3. Create the release branch from pinned `develop` and incorporate pinned `main`.
-4. Move **Staging** entries into the selected version in `CHANGELOG.md`.
-5. Validate and build that prepared release head through normal CI.
+3. Create the release branch from pinned `develop`. Keep its exact snapshot when
+   it already contains `main`; otherwise integrate pinned `main` without versioning
+   the changelog.
+4. Open `docs/release-changelog-<version>` into `release/<version>` to move
+   **Latest** entries into the selected version. Only `CHANGELOG.md` changes.
+5. Wait for that docs PR to merge, then resume the release PR with the versioned
+   changelog. Reuse complete matching validation or run the full suite before
+   merging into `main`, tagging and publishing.
+
+The docs PR is created automatically and uses the ordinary documentation
+validation and merge path. Its merge must precede the release merge so the tag
+contains the correct changelog. Ordinary authored documentation updates do not
+receive this automatic release-resume behavior.
 
 ### Updating an open release
 
 Use the same `develop` → `main` trigger again. Automation updates the open
 release rather than allocating another version, retaining release-only fixes.
-New Staging entries join its existing version section; earlier versions remain
-unchanged. An empty Staging section remains available for subsequent work.
+New entries accumulate in Latest while existing version sections and release
+fixes remain intact. The changelog docs PR is refreshed, or a new PR is opened
+after an earlier merge, to extend the same version without duplicating entries.
+An empty Latest section remains available for subsequent work.
 
 Retries verify the source, target and prepared content before writing. Conflicting
 application changes and a branch that advances during preparation stop the update.
+Unexpected work on the generated docs branch is never overwritten. A docs PR
+closed without merging must be reopened before retrying.
+
+During the first rollout, `ci-docs` still runs the old default-branch automation.
+If it rejects the newly generated PR because its creating release run is still
+finishing, rerun that docs workflow after the release run completes.
 
 ### Conflict recovery
 
@@ -376,10 +400,28 @@ does not choose conflicting application content for you.
 
 ### Required evidence
 
-Release CI builds the exact head, requires full scoped coverage and runs all
-four suites against that revision. Automation results come from the same workflow
-run. The release head must include current `main`, except verified dependency
-SVG updates; ancestry is checked again before merge.
+Release CI requires full scoped coverage and all four suites for its application
+inputs. Fresh runs build the exact release head and collect automation results
+from the same run. The release head must include current `main`, except verified
+dependency SVG updates; ancestry is checked again before merge.
+
+### Reusing complete validation
+
+`develop`, release stabilization and main-target workflows may reuse a successful
+same-repository validation run when every tracked input matches, except the
+managed root `CHANGELOG.md`. Other Markdown files, workflows, tests, dependency
+files, build configuration and file modes remain part of the comparison.
+
+Reuse requires successful automation and application jobs, the original tested
+commit and run identity, and a complete unexpired bundle, coverage report,
+combined test report and validation manifest. Downloaded file hashes must match
+the manifest. Missing, stale, expired, incomplete or unverifiable evidence falls
+back to full validation.
+
+The original bundle and reports are retained without rebuilding or rewriting
+their provenance. The combined report identifies its original tested commit and
+run URL; the current run summary identifies the reused run. Current branch,
+version, changelog and merge checks still run for the new revision.
 
 Artifacts uploaded before auto-merge:
 
@@ -388,6 +430,7 @@ Artifacts uploaded before auto-merge:
 | `bundle` | Tested application |
 | `coverage` | Source coverage reports |
 | `test-report` | Combined HTML test report |
+| `validation-manifest` | Original run, tested inputs and artifact hashes, produced by fresh complete validation |
 
 Failed acceptance results remain downloadable. Coverage reports are retained
 even when thresholds fail; full tool output remains in job logs.
@@ -439,9 +482,11 @@ promotion to Cloudflare Pages and report storage in R2.
 
 ### Run lifecycle
 
-A release or hotfix PR into `main` uses one `ci-main.yml` run for validation,
-build, confirmed merge, tree verification, tagging, deployment and synchronization.
-There is no push-triggered release run.
+A release PR first pauses for its changelog docs PR. Once that PR merges, a new
+`ci-main.yml` run validates or reuses complete evidence, confirms the release
+merge, verifies its tree, tags, deploys and synchronizes. Hotfixes follow their
+main-target validation and publication path directly. There is no push-triggered
+release run.
 
 Runs are serialized per PR and are not cancelled by newer events: earlier runs
 may already be deploying. Merge and production jobs have their own serialization.
@@ -472,8 +517,10 @@ the tested head to be an ancestor of the released commit.
 - Current PR checks reject unmerged, retargeted, forked or advanced PRs as release
   identity sources.
 - Tags use the branch's unprefixed Semantic Version: `release/1.2.3` → `1.2.3`.
-- Bundle and reports come from successful jobs in the same run; publication need
-  not wait for the entire workflow to finish.
+- Bundle and reports come from successful jobs in the current run or from
+  verified complete validation with matching inputs. Reused artifacts retain
+  their original provenance; publication need not wait for the current workflow
+  to finish.
 
 Deployment and report publication share a serialized job and reject superseded
 releases. Dependency-badge-only advances do not supersede a release; intentional
@@ -492,9 +539,9 @@ already contains `main`. Fast-forward synchronization aligns both branch heads
 when possible.
 
 If development continues after a release is cut, overlapping changelog edits
-may need resolution. The Staging boundary prevents Git from silently assigning
+may need resolution. The Latest boundary prevents Git from silently assigning
 new work to the old version. Combine the two changelogs by commit identity,
-keeping unreleased entries in Staging.
+keeping unreleased entries in Latest.
 
 ### Hotfix synchronization into a release
 

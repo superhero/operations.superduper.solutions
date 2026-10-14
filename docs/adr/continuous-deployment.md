@@ -10,9 +10,16 @@ R2 stores test and coverage reports.
 
 ## Artifact promotion
 
-GitHub Actions publishes the application bundle and reports from the same
-successful validation run, without rebuilding. Production requires a verified
-release or hotfix merge into `main`, without a separate manual deployment gate.
+GitHub Actions publishes the application bundle and reports from complete
+successful validation, without rebuilding. A later workflow may reuse those
+artifacts only when all tracked inputs match except the managed root changelog,
+and the original successful run, complete reports and artifact hashes verify.
+Missing or expired evidence requires fresh validation. Reused reports retain
+their original tested commit and run provenance.
+
+Production requires a verified release or hotfix merge into `main`, without a
+separate manual deployment gate. For a release, its changelog versioning docs PR
+merges into the release branch first, so the release tag includes the changelog.
 
 ## Deployment triggers
 

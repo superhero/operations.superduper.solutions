@@ -60,7 +60,7 @@ function addEntry(world, sha, message)
   writeFileSync(path, addCommits(readFileSync(path, "utf8"), [{ sha, message }], "example/repository"));
 }
 
-Given("a local release prepared from develop Staging", function ()
+Given("a local release prepared from develop Latest", function ()
 {
   const root = join(this.automation.root, "release-work");
   mkdirSync(root);
@@ -68,7 +68,7 @@ Given("a local release prepared from develop Staging", function ()
   git(this, "init", "-q", "--initial-branch=main");
   git(this, "config", "user.name", "Release fixture");
   git(this, "config", "user.email", "release@example.invalid");
-  write(this, "CHANGELOG.md", "# Changelog\n\n## Staging\n");
+  write(this, "CHANGELOG.md", "# Changelog\n\n## Latest\n");
   write(this, "app.txt", "initial\n");
   this.releaseGit.main = commit(this, "initial");
   git(this, "checkout", "-qb", "develop");
@@ -79,8 +79,8 @@ Given("a local release prepared from develop Staging", function ()
   git(this, "init", "--bare", "-q", this.releaseGit.remote);
   git(this, "push", this.releaseGit.remote, `${this.releaseGit.source}:refs/heads/${branch}`);
   this.releaseGit.prepared = prepared(this);
-  assert.equal(git(this, "show", "-s", "--format=%P", this.releaseGit.prepared.sha),
-    `${this.releaseGit.source} ${this.releaseGit.main}`);
+  assert.equal(this.releaseGit.prepared.sha, this.releaseGit.source);
+  assert.equal(this.releaseGit.prepared.tree, git(this, "rev-parse", `${this.releaseGit.source}^{tree}`));
   assert.equal(publish(this, this.releaseGit.source, this.releaseGit.prepared.sha).status, 0);
   this.releaseGit.head = this.releaseGit.prepared.sha;
   this.releaseGit.expectedRemote = remoteHead(this);
@@ -105,20 +105,20 @@ When("the next develop integration prepares that release", function ()
   const result = publish(this, this.releaseGit.head, this.releaseGit.prepared.sha);
   assert.equal(result.status, 0, result.stderr);
 });
-Then("the release version contains each staged commit exactly once", function ()
+Then("the release Latest contains each new commit exactly once", function ()
 {
   const text = git(this, "show", `${this.releaseGit.prepared.sha}:CHANGELOG.md`);
   const document = parseChangelog(text);
-  assert.deepEqual(document.releases.map(release => release.version), [version]);
-  assert.deepEqual(new Set(document.releases[0].entries.map(entry => entry.sha)), new Set([a, b, fix]));
-  assert.equal(document.releases[0].entries.length, 3);
-  assert.equal(document.releases[0].entries.find(entry => entry.sha === b).message, "feat: second feature\n\nKeep this body too.");
+  assert.deepEqual(document.releases, []);
+  assert.deepEqual(new Set(document.staging.map(entry => entry.sha)), new Set([a, b, fix]));
+  assert.equal(document.staging.length, 3);
+  assert.equal(document.staging.find(entry => entry.sha === b).message, "feat: second feature\n\nKeep this body too.");
 });
-Then("the release retains its own fix and has empty Staging", function ()
+Then("the release retains its own fix awaiting changelog review", function ()
 {
   const sha = this.releaseGit.prepared.sha;
   assert.equal(git(this, "show", `${sha}:release-fix.txt`), "retain this release fix");
-  assert.deepEqual(parseChangelog(git(this, "show", `${sha}:CHANGELOG.md`)).staging, []);
+  assert.equal(parseChangelog(git(this, "show", `${sha}:CHANGELOG.md`)).staging.length, 3);
   assert.equal(prepared(this, sha).sha, sha);
 });
 When("release changelog preparation is retried", function ()
@@ -188,4 +188,40 @@ When("only the initialized baseline is compared for release eligibility", functi
 Then("changelog preparation reports no substantive release changes", function ()
 {
   assert.equal(this.releaseGit.eligibility.substantive_changes, false);
+});
+
+Given("the release changelog has already been versioned by its docs PR", function ()
+{
+  const result = command(this, process.execPath, ["--input-type=module", "--eval",
+    `import { prepareChangelogReview } from ${JSON.stringify(helper)}; console.log(JSON.stringify(prepareChangelogReview(JSON.parse(process.argv[1]))));`,
+    JSON.stringify({ head: this.releaseGit.head, version })]);
+  assert.equal(result.status, 0, result.stderr);
+  const prepared = JSON.parse(result.stdout);
+  assert.equal(publish(this, this.releaseGit.head, prepared.sha).status, 0);
+  this.releaseGit.head = prepared.sha;
+});
+
+Then("integration preserves released entries and keeps new changes in Latest", function ()
+{
+  const document = parseChangelog(git(this, "show", `${this.releaseGit.prepared.sha}:CHANGELOG.md`));
+  assert.deepEqual(document.releases.map(release => release.version), [version]);
+  assert.deepEqual(document.releases[0].entries.map(entry => entry.sha), [a]);
+  assert.deepEqual(new Set(document.staging.map(entry => entry.sha)), new Set([b, fix]));
+});
+
+Given("main has another independent change", function ()
+{
+  git(this, "checkout", "main");
+  write(this, "main-fix.txt", "main ancestry\n");
+  this.releaseGit.main = commit(this, "fix: main ancestry");
+});
+
+Then("the release integrates main ancestry without versioning Latest", function ()
+{
+  const sha = this.releaseGit.prepared.sha;
+  assert.equal(git(this, "show", "-s", "--format=%P", sha), `${this.releaseGit.source} ${this.releaseGit.main}`);
+  const document = parseChangelog(git(this, "show", `${sha}:CHANGELOG.md`));
+  assert.deepEqual(document.releases, []);
+  assert.deepEqual(document.staging.map(entry => entry.sha), [a]);
+  assert.equal(git(this, "show", `${sha}:main-fix.txt`), "main ancestry");
 });

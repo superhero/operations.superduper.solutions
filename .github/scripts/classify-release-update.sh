@@ -57,6 +57,7 @@ git diff --raw -z --no-abbrev --no-renames --no-ext-diff --no-textconv \
   "$before_sha" "$head_sha" -- > "$changes" || fail 'Could not inspect the complete release update.'
 count=0
 documentation_only=true
+release_changelog_only=true
 while IFS= read -r -d '' entry; do
   IFS= read -r -d '' path || fail 'The release change inventory is incomplete.'
   [[ "$entry" =~ ^:([0-9]{6})\ ([0-9]{6})\ ([0-9a-f]{40})\ ([0-9a-f]{40})\ ([ADMT])$ ]] ||
@@ -65,6 +66,7 @@ while IFS= read -r -d '' entry; do
   new_mode="${BASH_REMATCH[2]}"
   old_object="${BASH_REMATCH[3]}"
   new_object="${BASH_REMATCH[4]}"
+  [[ "$path" == CHANGELOG.md && "$old_mode" == 100644 && "$new_mode" == 100644 ]] || release_changelog_only=false
   [[ "$path" == *.[mM][dD] ]] || documentation_only=false
   for side in "$old_mode:$old_object" "$new_mode:$new_object"; do
     mode="${side%%:*}"
@@ -78,6 +80,15 @@ while IFS= read -r -d '' entry; do
   done
   count=$((count + 1))
 done < "$changes"
+if [[ "$release_changelog_only" == true ]] && ((count == 1)); then
+  if node "$(dirname "${BASH_SOURCE[0]}")/check-release-changelog-update.mjs" \
+    "$old_object" "$new_object" "${head_branch#release/}"; then
+    route true 'Run the full pipeline for the exact release changelog preparation.'
+  else
+    status=$?
+    [[ "$status" == 1 ]] || fail 'Could not verify the release changelog preparation.'
+  fi
+fi
 if [[ "$documentation_only" == true ]] && ((count > 0)); then
   route false "Skip release publication for $count Markdown-only forward changes."
 fi

@@ -26,6 +26,17 @@ The normal report command rejects missing or invalid inputs but cannot detect
 unregistered tests, filtered runs or stale results. Skipped and unfinished cases
 are not passes.
 
+Integrations into `develop` and active releases produce the complete four-suite
+report, scoped coverage and tested bundle before merging. A later integration
+may reuse that complete evidence only when every tracked input matches except
+the managed root `CHANGELOG.md`. The original successful workflow, tested commit,
+artifact completeness and file hashes must verify; missing, expired or invalid
+evidence requires a fresh run.
+
+Reuse preserves the original report bytes and its tested commit and run URL.
+The current workflow records which earlier run supplied the evidence; it does
+not present reused results as freshly executed tests.
+
 After failure, CI may retain a partial diagnostic report. Missing suites and
 failed validation remain explicit; that report cannot certify success.
 

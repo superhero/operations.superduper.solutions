@@ -22,6 +22,13 @@ expected `gh`, `curl` and `npm` responses; unexpected calls and unused responses
 fail validation. Keep fixture data with the responsible steps, and create
 temporary Git repositories for history-sensitive cases.
 
+Changelog scenarios cover Latest accumulation, preservation of released entries,
+separate release docs PRs, retries and concurrent branch updates. Validation
+reuse scenarios verify matching inputs, complete artifact hashes and original
+run provenance, plus fresh-validation fallback when evidence cannot be trusted.
+Workflow scenarios check that upstream integrations produce all four suites and
+that publication waits for the versioned release changelog.
+
 ## Reporting and validation
 
 Each independently evaluated case must remain visible in Cucumber results;

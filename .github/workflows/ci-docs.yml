@@ -78,6 +78,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           BASE_BRANCH: ${{ github.base_ref }}
+          DOCUMENTATION_MERGE_WAIT_SECONDS: ${{ startsWith(github.head_ref, 'docs/release-changelog-') && startsWith(github.base_ref, 'release/') && '120' || '0' }}
         run: bash .github/scripts/validate-documentation-merge.sh "$REPOSITORY" "$BASE_BRANCH"
 
       - name: Create GitHub App token
@@ -92,7 +93,7 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
 
-      - name: Prepare Staging changelog for develop
+      - name: Prepare Latest changelog for develop
         if: >-
           github.base_ref == 'develop'
           && github.event.pull_request.head.repo.full_name == github.repository

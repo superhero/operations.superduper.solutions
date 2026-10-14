@@ -19,7 +19,7 @@ function authenticatedEnvironment(token)
 function git(args, { input, env, allowFailure = false } = {})
 {
   const result = spawnSync("git", args, {
-    input, env: { ...process.env, ...env }, encoding: "utf8", maxBuffer: 32 * 1024 * 1024,
+    input, env: { ...process.env, GIT_NO_REPLACE_OBJECTS: "1", ...env }, encoding: "utf8", maxBuffer: 32 * 1024 * 1024,
   });
   if (result.error) throw result.error;
   if (result.status !== 0 && !allowFailure)
@@ -49,7 +49,7 @@ function replaceChangelog(tree, text)
   finally { rmSync(temporary, { recursive: true, force: true }); }
 }
 
-function commit(tree, parents, version)
+function commit(tree, parents, message)
 {
   // Stable identity and time make an interrupted preparation reproducible.
   const date = Math.max(...parents.map(parent => Number(git(["show", "-s", "--format=%ct", parent]).stdout)));
@@ -59,7 +59,7 @@ function commit(tree, parents, version)
     GIT_AUTHOR_DATE: `${date} +0000`, GIT_COMMITTER_DATE: `${date} +0000`,
   };
   return git(["commit-tree", tree, ...[...new Set(parents)].flatMap(parent => ["-p", parent])], {
-    env, input: `chore(release): prepare ${version}\n\nFold Staging into ${version}.\n`,
+    env, input: message,
   }).stdout.trim();
 }
 
@@ -96,19 +96,55 @@ export function prepareRelease({ source, main, version, head = source })
   }
   if (version && !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version))
     throw new Error("Release preparation requires a stable semantic version.");
-  const integratedSource = head === source ? source :
-    commit(mergeReleaseTrees(head, source), [head, source], version ?? "preview");
-  const rawTree = mergeReleaseTrees(integratedSource, main);
+  const isAncestor = (ancestor, descendant) =>
+    git(["merge-base", "--is-ancestor", ancestor, descendant], { allowFailure: true }).status === 0;
+  const message = `chore(release): integrate ${version ?? "preview"}\n`;
+  const integratedSource = isAncestor(source, head) ? head : isAncestor(head, source) ? source :
+    commit(mergeReleaseTrees(head, source), [head, source], message);
+  // Preserve the exact source snapshot when main is already in its history.
+  // Versioning is reviewed separately in a docs PR targeting this release.
+  const containsMain = isAncestor(main, integratedSource);
+  const rawTree = containsMain ? git(["rev-parse", `${integratedSource}^{tree}`]).stdout.trim() :
+    mergeReleaseTrees(integratedSource, main);
   const changes = git(["diff", "--name-only", "--no-renames", "-z", main, rawTree]).stdout.split("\0").filter(Boolean);
   const substantive = changes.some(path => path === "CHANGELOG.md" ?
     mergeChangelogs(changelog(main)) !== mergeChangelogs(changelog(rawTree)) :
     !/^\.github\/badges\/version-dependency-[a-z0-9][a-z0-9._-]*\.svg$/.test(path));
   if (!version) return { tree: rawTree, substantive_changes: substantive };
-  const document = changelog(rawTree);
-  const tree = document ? replaceChangelog(rawTree, releaseChangelog(document, version)) : rawTree;
-  const alreadyPrepared = git(["rev-parse", `${head}^{tree}`]).stdout.trim() === tree &&
-    [source, main].every(parent => git(["merge-base", "--is-ancestor", parent, head], { allowFailure: true }).status === 0);
-  return { tree, sha: alreadyPrepared ? head : commit(tree, [head, source, main], version), substantive_changes: substantive };
+  return { tree: rawTree, sha: containsMain ? integratedSource : commit(rawTree, [integratedSource, main], message),
+    substantive_changes: substantive };
+}
+
+export function prepareChangelogReview({ head, version })
+{
+  if (!SHA.test(head) || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version))
+    throw new Error("Changelog review requires a full release head SHA and stable version.");
+  const document = changelog(head);
+  const canonical = releaseChangelog(document, version);
+  const tree = git(["rev-parse", `${head}^{tree}`]).stdout.trim();
+  if (canonical === document) return { ready: true, sha: head, tree };
+  const preparedTree = replaceChangelog(tree, canonical);
+  return { ready: false, tree: preparedTree, sha: commit(preparedTree, [head],
+    `docs(changelog): release ${version}\n\nChangelog-Generated: release-v1\n`) };
+}
+
+export function assertChangelogReviewBranch({ sha, head, version })
+{
+  if (![sha, head].every(value => SHA.test(value))) throw new Error("Invalid changelog branch SHA.");
+  const parents = git(["show", "-s", "--format=%P", sha]).stdout.trim().split(" ");
+  if (parents.length !== 1 || !SHA.test(parents[0]) ||
+      git(["merge-base", "--is-ancestor", parents[0], head], { allowFailure: true }).status !== 0 ||
+      prepareChangelogReview({ head: parents[0], version }).sha !== sha)
+    throw new Error("The changelog docs branch contains unexpected work; refusing to replace it.");
+}
+
+export function publishChangelogReview({ remote, branch, expected = "", sha, token })
+{
+  if (!/^docs\/release-changelog-\d+\.\d+\.\d+$/.test(branch) ||
+      (expected && !SHA.test(expected)) || !SHA.test(sha)) throw new Error("Invalid changelog publication identity.");
+  git(["push", `--force-with-lease=refs/heads/${branch}:${expected}`, remote, `${sha}:refs/heads/${branch}`], {
+    env: authenticatedEnvironment(token),
+  });
 }
 
 export function publishRelease({ remote, branch, expected, sha, token })

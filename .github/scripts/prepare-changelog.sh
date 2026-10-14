@@ -22,7 +22,7 @@ fail() {
 [[ "$head_sha" =~ ^[0-9a-f]{40}$ && "$base_sha" =~ ^[0-9a-f]{40}$ ]] || fail 'Full commit SHAs are required.'
 case "$base_branch:$head_branch" in
   develop:feature/*|develop:bugfix/*|develop:docs/*) ;;
-  *) fail 'Only feature, bugfix, or docs pull requests targeting develop prepare Staging.' ;;
+  *) fail 'Only feature, bugfix, or docs pull requests targeting develop prepare Latest.' ;;
 esac
 git check-ref-format "refs/heads/$head_branch" || fail 'Invalid source branch.'
 
@@ -62,7 +62,7 @@ existing="$(git rev-parse --verify "$head_sha:CHANGELOG.md" 2>/dev/null || true)
 if [[ "$existing" == "$blob" ]]; then
   check_current
   [[ -z "${GITHUB_OUTPUT:-}" ]] || echo 'updated=false' >> "$GITHUB_OUTPUT"
-  echo 'Staging already preserves every source commit message; CI may continue.'
+  echo 'Latest already preserves every source commit message; CI may continue.'
   exit 0
 fi
 # Build only a CHANGELOG.md tree edit. Do not check out or execute proposed code,
@@ -74,9 +74,9 @@ tree="$(git write-tree)"
 commit="$(GIT_AUTHOR_NAME='github-actions[bot]' GIT_AUTHOR_EMAIL='41898282+github-actions[bot]@users.noreply.github.com' \
   GIT_COMMITTER_NAME='github-actions[bot]' GIT_COMMITTER_EMAIL='41898282+github-actions[bot]@users.noreply.github.com' \
   git commit-tree "$tree" -p "$head_sha" <<'MESSAGE'
-chore(changelog): record Staging commit messages
+chore(changelog): record Latest commit messages
 
-Changelog-Generated: staging-v1
+Changelog-Generated: latest-v1
 MESSAGE
 )"
 check_current
@@ -89,4 +89,4 @@ GIT_CONFIG_COUNT=1 \
   git push --force-with-lease="refs/heads/$head_branch:$head_sha" origin "$commit:refs/heads/$head_branch" ||
   fail 'Source changed or GitHub refused the update; no history was rewritten. Rerun CI.'
 [[ -z "${GITHUB_OUTPUT:-}" ]] || echo 'updated=true' >> "$GITHUB_OUTPUT"
-echo "Prepared Staging at $commit; the synchronize run must validate the new source head before merging."
+echo "Prepared Latest at $commit; the synchronize run must validate the new source head before merging."

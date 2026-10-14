@@ -7,7 +7,14 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, symlinkSync
 import { dirname, join } from "node:path";
 import { Given, Then, When } from "@cucumber/cucumber";
 import { parse } from "yaml";
+import { addCommits, mergeChangelogs, releaseChangelog } from "../scripts/changelog.mjs";
 import "./support.mjs";
+
+const changelogChanges = new Set([
+  "an exact release changelog fold", "a legacy release changelog fold", "a release changelog for another version",
+  "a partial release changelog fold", "a noncanonical release changelog fold", "a release changelog rewriting old messages", "a release changelog beside other Markdown",
+  "an empty release changelog fold", "normalization of an existing release version", "a release changelog normalization", "authored release changelog notes",
+]);
 
 function git(world, ...args)
 {
@@ -49,6 +56,17 @@ Given("a release synchronization contains {string}", function (change)
   git(this, "config", "commit.gpgsign", "false");
   git(this, "config", "core.filemode", "true");
   for (const path of ["README.md", "docs/remove.md", "docs/old.md", "application.ts"]) file(this, path);
+  const history = releaseChangelog(addCommits("", [{ sha: "a".repeat(40), message: "Historical message" }]),
+    change === "normalization of an existing release version" ? "1.2.3" : "1.1.0");
+  const pending = [
+    { sha: "b".repeat(40), message: "feat: preserve $(touch executed) as literal text\n\nFull source rationale.\n" },
+    { sha: "c".repeat(40), message: "fix: include the complete pending set\n" },
+  ];
+  let changelog = ["an empty release changelog fold", "a release changelog normalization", "normalization of an existing release version"].includes(change)
+    ? history : addCommits(history, pending);
+  if (["a legacy release changelog fold", "a release changelog normalization", "normalization of an existing release version"].includes(change))
+    changelog = changelog.replace("## Latest", "## Staging").replace("<!-- changelog-latest-end -->", "<!-- changelog-staging-end -->");
+  if (changelogChanges.has(change)) file(this, "CHANGELOG.md", changelog);
   if (["formerly executable Markdown", "deleted executable Markdown"].includes(change))
   {
     chmodSync(join(this.automation.root, "README.md"), 0o755);
@@ -65,6 +83,25 @@ Given("a release synchronization contains {string}", function (change)
   git(this, "checkout", "-qb", "release/1.2.3");
   switch (change)
   {
+    case "an exact release changelog fold":
+    case "a legacy release changelog fold":
+    case "an empty release changelog fold":
+    case "normalization of an existing release version":
+      file(this, "CHANGELOG.md", releaseChangelog(changelog, "1.2.3")); break;
+    case "a release changelog for another version":
+      file(this, "CHANGELOG.md", releaseChangelog(changelog, "1.2.4")); break;
+    case "a partial release changelog fold":
+      file(this, "CHANGELOG.md", releaseChangelog(addCommits(history, pending.slice(0, 1)), "1.2.3")); break;
+    case "a noncanonical release changelog fold":
+      file(this, "CHANGELOG.md", `${releaseChangelog(changelog, "1.2.3")}\n`); break;
+    case "a release changelog rewriting old messages":
+      file(this, "CHANGELOG.md", releaseChangelog(changelog, "1.2.3").replace("Historical message", "Altered historical message")); break;
+    case "a release changelog beside other Markdown":
+      file(this, "CHANGELOG.md", releaseChangelog(changelog, "1.2.3"));
+      file(this, "README.md", "# Updated documentation\n");
+      break;
+    case "a release changelog normalization": file(this, "CHANGELOG.md", mergeChangelogs(changelog)); break;
+    case "authored release changelog notes": file(this, "CHANGELOG.md", `${changelog}\nHandwritten release notes.\n`); break;
     case "a Markdown edit": file(this, "README.md", "# Updated documentation\n"); break;
     case "a Markdown addition": file(this, "docs/NEW.MD"); break;
     case "a Markdown deletion": git(this, "rm", "-q", "docs/remove.md"); break;
@@ -213,9 +250,24 @@ Given("its pinned release objects cannot be fetched", function ()
 
 Given("its trusted release classifier is available", function ()
 {
+  for (const name of ["classify-release-update.sh", "check-release-changelog-update.mjs", "changelog.mjs"])
+  {
+    const path = join(this.automation.root, ".github/scripts", name);
+    mkdirSync(dirname(path), { recursive: true });
+    writeFileSync(path, readFileSync(new URL(`../scripts/${name}`, import.meta.url)));
+  }
+});
+
+Given("its trusted classifier predates release changelog routing", function ()
+{
   const path = join(this.automation.root, ".github/scripts/classify-release-update.sh");
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, readFileSync(new URL("../scripts/classify-release-update.sh", import.meta.url)));
+  writeFileSync(path, '#!/usr/bin/env bash\ntouch executed\nprintf "run_release=false\\n" >> "$GITHUB_OUTPUT"\n');
+});
+
+Given("its trusted release checker lacks its changelog module", function ()
+{
+  unlinkSync(join(this.automation.root, ".github/scripts/changelog.mjs"));
 });
 
 Given("only the proposed release contains a classifier", function ()

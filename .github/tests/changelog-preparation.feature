@@ -14,6 +14,22 @@ Feature: Preserve complete source commit messages before develop squashes
     When preparation retries at the generated head
     Then preparation reports that no source update is needed
 
+  Scenario Outline: Earlier generated commits never enter the changelog during migration
+    Given a changelog source with full commit messages
+    And an earlier "<format>" generated changelog commit precedes more source work
+    When the source changelog is prepared
+    Then a single changelog commit extends the exact source head
+    And every full source message is preserved
+    And the earlier generated changelog commit is excluded
+    When preparation retries at the generated head
+    Then preparation reports that no source update is needed
+
+    Examples:
+      | format  |
+      | Latest  |
+      | Staging |
+      | Release |
+
   Scenario Outline: Preparation refuses stale or ineligible pull requests without changing refs
     Given a changelog source with full commit messages
     And changelog preparation encounters "<state>"
@@ -35,9 +51,21 @@ Feature: Preserve complete source commit messages before develop squashes
       | base changes before push        |
       | source races the push lease     |
 
-  Scenario: A manual metadata-looking commit is preserved
+  Scenario Outline: A manual metadata-looking commit is preserved
     Given a changelog source with full commit messages
-    And a commit with the generated trailer changes application content
+    And a commit with the "<format>" generated trailer changes application content
+    When the source changelog is prepared
+    Then every full source message is preserved
+
+    Examples:
+      | format  |
+      | Latest  |
+      | Staging |
+      | Release |
+
+  Scenario: A merge commit with release metadata preserves its message
+    Given a changelog source with full commit messages
+    And a changelog-only merge commit has the release generated trailer
     When the source changelog is prepared
     Then every full source message is preserved
 

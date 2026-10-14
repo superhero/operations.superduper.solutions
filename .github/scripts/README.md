@@ -10,10 +10,11 @@ recovery procedures.
 | Area | Scripts |
 | --- | --- |
 | Branch, version and content validation | `validate-pr.sh`, `validate-semver.sh`, `validate-badge-only-advance.sh`, `validate-released-content.sh`, `validate-release-tree.sh`, `validate-current-release.sh` |
-| Documentation integration | `validate-documentation-changes.sh` checks each target's full diff; `validate-documentation-merge.sh` coordinates publication; `restore-documentation-branch.sh` recovers an explicitly identified merged PR's source |
-| Release update routing | `classify-release-update.sh` pauses publication for Markdown-only advances of an open release PR |
+| Documentation integration | `validate-documentation-changes.sh` checks each target's full diff; `validate-documentation-merge.sh` coordinates publication with an optional bounded wait; `restore-documentation-branch.sh` recovers an explicitly identified merged PR's source |
+| Release update routing | `classify-release-update.sh` pauses publication for ordinary Markdown-only advances; `check-release-changelog-update.mjs` recognizes canonical changelog versioning that resumes the release |
 | Merge and release lifecycle | `auto-merge.sh`, `preview-merge.sh`, `create-release-pr.sh`, `validate-release-pr.sh`, `merge-release-pr.sh`, `synchronize-release.sh` |
-| Changelog preservation | `changelog.mjs` manages commit entries and version sections; preparation helpers update PR and release branches before validation |
+| Changelog preservation | `changelog.mjs` manages Latest entries and version sections; `prepare-changelog.*` captures commit messages before integration; `prepare-release-changelog.mjs` preserves release source snapshots; `create-release-changelog-pr.*` opens the separate docs PR that versions the changelog before release |
+| Complete validation reuse | `validation-artifacts.mjs` binds tested inputs and artifact hashes; `find-validation.mjs` verifies successful original runs and complete artifacts before reuse, otherwise selecting fresh validation |
 | Shared release identity checks | `release-pr.sh`, sourced by the validation and merge entrypoints |
 | Pages and report publication | `prepare-pages-deployment.sh`, `record-pages-deployment.sh`, `publish-status.sh` |
 | Dependency status | `list-dependency-branches.sh`, `update-dependency-status.sh`, `publish-dependency-badges.sh` |

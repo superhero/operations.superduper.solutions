@@ -29,10 +29,10 @@ function condition(expression, { source = "docs/readme", target = "main", fork =
   };
   // These checked-in job conditions use GitHub's Boolean/string expression subset.
   const evaluate = new Function("github", "startsWith", "steps", "needs", `return (${expression
-    .replace(/^\s*\$\{\{([\s\S]*)\}\}\s*$/, "$1").replaceAll("needs.release-route", 'needs["release-route"]')});`);
+    .replace(/^\s*\$\{\{([\s\S]*)\}\}\s*$/, "$1").replace(/needs\.([\w-]+)/g, 'needs["$1"]')});`);
   return evaluate(github, (value, prefix) => value.toLowerCase().startsWith(prefix.toLowerCase()),
     { prepare: { outputs: { updated: String(updated) } } },
-    { "release-route": { outputs: { run_release: String(runRelease) } } });
+    { "release-route": { outputs: { run_release: String(runRelease) } }, validation: { outputs: { reused: "false" } }, "release-changelog": { outputs: { ready: "true" } }, "prepare-changelog": { outputs: { updated: String(updated) } } });
 }
 
 Given("the documentation workflow configuration", function ()
@@ -113,7 +113,7 @@ Then("the documentation workflow performs no testing, deployment, tagging or syn
   const configuration = this.documentationWorkflow;
   assert.deepEqual(Object.keys(configuration.jobs), ["documentation"]);
   const steps = configuration.jobs.documentation.steps;
-  assert.equal(steps.length, 7, "Only trusted validation, optional Staging preparation and merge are needed");
+  assert.equal(steps.length, 7, "Only trusted validation, optional Latest preparation and merge are needed");
   assert.deepEqual(steps.filter(step => step.uses).map(step => step.uses), [
     "actions/checkout@v7", "actions/create-github-app-token@v3"
   ]);
@@ -128,7 +128,8 @@ Then("documentation writes follow validation with restricted credentials", funct
   assert.match(validation.run, /validate-documentation-changes\.sh/);
   assert.equal(timing.run, 'bash .github/scripts/validate-documentation-merge.sh "$REPOSITORY" "$BASE_BRANCH"');
   assert.deepEqual(timing.env, {
-    GH_TOKEN: "${{ github.token }}", REPOSITORY: "${{ github.repository }}", BASE_BRANCH: "${{ github.base_ref }}"
+    GH_TOKEN: "${{ github.token }}", REPOSITORY: "${{ github.repository }}", BASE_BRANCH: "${{ github.base_ref }}",
+    DOCUMENTATION_MERGE_WAIT_SECONDS: "${{ startsWith(github.head_ref, 'docs/release-changelog-') && startsWith(github.base_ref, 'release/') && '120' || '0' }}"
   });
   assert.equal(token.uses, "actions/create-github-app-token@v3");
   assert.deepEqual(token.with, {
@@ -186,7 +187,7 @@ Then("a documentation-only release advance cannot reach application or publicati
   const jobs = workflow("ci-main").jobs;
   for (const root of ["workflow-checks", "validate-pr"])
   {
-    assert.deepEqual(jobs[root].needs, "release-route");
+    assert.ok([jobs[root].needs].flat().includes("release-route"));
     assert.equal(condition(jobs[root].if, { source: "release/1.2.3", runRelease: false }), false);
     assert.equal(condition(jobs[root].if, { source: "release/1.2.3", runRelease: true }), true);
   }
