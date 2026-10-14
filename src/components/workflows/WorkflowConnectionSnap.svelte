@@ -11,11 +11,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { nearestWorkflowInput, type WorkflowConnectionState, type WorkflowConnectionEnd,
     type WorkflowHandle } from "$lib/workflow-connection-snap.ts";
   import { workflowCurve } from "$lib/workflow-curve.ts";
+  import { defaultWorkflowSettings } from "$lib/app-settings.ts";
   import { routingContext, type RoutingContext } from "$lib/flow-routing/context.ts";
   import { connectionGeometry } from "$lib/flow-routing/geometry.js";
   import { bendRadius, previewPath } from "$lib/flow-routing/path.js";
 
-  let { isValidConnection, active = true, curved = false, dashed = false, curveStrength = 50, markerEnd }:
+  let { isValidConnection, active = true, curved = false, dashed = false, curveStrength = defaultWorkflowSettings.curveStrength, markerEnd }:
     { isValidConnection: (connection: Connection) => boolean; active?: boolean; curved?: boolean;
       dashed?: boolean; curveStrength?: number; markerEnd?: string } = $props();
   const connection = useConnection();

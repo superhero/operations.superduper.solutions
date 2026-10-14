@@ -115,7 +115,7 @@ to placement and center snapping on every canvas without repositioning nodes or
 changing workflow documents. Decorative dots retain independent 24px spacing.
 Dash length and gap accept 1–128 px, defaulting to 8 and 16 respectively.
 Dash speed accepts 0–512 px/s, defaulting to 64; zero pauses motion.
-Curve strength accepts 0–100, defaulting to 50. Node clearance accepts
+Curve strength accepts 0–200%, defaulting to 100%. Node clearance accepts
 0–128 diagram units, defaulting to 16, and applies to orthogonal routing and
 manual segment adjustments.
 
