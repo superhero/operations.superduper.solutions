@@ -52,7 +52,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#each group as branch (branch.id)}
       {@const label = portLabel(branch.label)}
       {@const separator = label.indexOf(" · ")}
-      <HintButton label={branch.label} labelAsName={false} tabindex={-1} tooltipEnabled={hoveredRestore !== branch.id}
+      <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={branch.label} labelAsName={false} tabindex={-1} tooltipEnabled={hoveredRestore !== branch.id}
         onpointerover={event => hoveredRestore = event.target instanceof Element && event.target.closest(".workflow-restore-branch") ? branch.id : undefined}
         onpointerleave={() => hoveredRestore = undefined}>
         {#snippet child({ props })}
@@ -85,7 +85,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <div class="operation-node workflow-owner-node" class:selected data-operation-name={data.name}>
   {@render portRow("inputs")}
-  <HintButton label={`${data.method} ${data.path}\n${data.description}`} labelAsName={false} tabindex={-1}>
+  <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={`${data.method} ${data.path}\n${data.description}`} labelAsName={false} tabindex={-1}>
     {#snippet child({ props })}
       {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
       <div {...hintProps} class="operation-title-row">

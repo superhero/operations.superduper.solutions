@@ -109,7 +109,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       class="structural-port" isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
       onmousedown={blockPointer} ontouchstart={blockPointer} aria-disabled="true" aria-label={`${data.label} object`} />
     <MaterialIcon name="data_object" size={20} />
-    <HintButton label={data.label} labelAsName={false}>
+    <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={data.label} labelAsName={false}>
       {#snippet child({ props })}
         {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
         <strong {...hintProps} data-label={data.label}>{input ? data.label.replace(/ parameters$/i, "") : data.label.replace(/^Response · .+$/, "Response")}</strong>
@@ -119,7 +119,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 {/snippet}
 
 {#snippet fieldContent(field: WorkflowField)}
-  <span class="field-name">{field.label}{#if field.required}<HintButton label="Required" labelAsName={false}>
+  <span class="field-name">{field.label}{#if field.required}<HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label="Required" labelAsName={false}>
       {#snippet child({ props })}
         {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
         <abbr {...hintProps} class="required" aria-label="Required"> *</abbr>
@@ -138,7 +138,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {@const editable = editableProperties.get(field.id)}
         {@const connected = input && (inputConnected?.(id, field.id) ?? false)}
         {@const hint = [field.description, field.required ? "Required" : ""].filter(Boolean).join("\n")}
-        <HintButton label={hint} labelAsName={false} tooltipEnabled={Boolean(hint) && hoveredFieldDetail !== field.id}
+        <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={hint} labelAsName={false} tooltipEnabled={Boolean(hint) && hoveredFieldDetail !== field.id}
           onpointerover={event => hoveredFieldDetail = event.target instanceof Element && event.target.closest(".required, .workflow-restore-branch") ? field.id : undefined}
           onpointerleave={() => hoveredFieldDetail = undefined}>
           {#snippet child({ props })}
@@ -182,22 +182,22 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             }} />
           <WorkflowNodeSelect label="Property type" value={propertyType} choices={choices.map(type => ({ value: type, label: type }))}
             {active} disabled={!active || choices.length === 1} onchange={type => propertyType = type as WorkflowField["type"]} />
-          <HintButton type="submit" class="property-action" label={editing ? "Save property" : "Add property"} disabled={!active || !propertyName.trim()}><MaterialIcon name={editing ? "save" : "check"} size={18} /></HintButton>
+          <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="submit" class="property-action" label={editing ? "Save property" : "Add property"} disabled={!active || !propertyName.trim()}><MaterialIcon name={editing ? "save" : "check"} size={18} /></HintButton>
           {#if editing}
-            <HintButton type="button" class="property-action" label="Remove property" disabled={!active} onclick={removeProperty}><MaterialIcon name="delete" size={18} /></HintButton>
+            <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="button" class="property-action" label="Remove property" disabled={!active} onclick={removeProperty}><MaterialIcon name="delete" size={18} /></HintButton>
           {/if}
-          <HintButton type="button" class="property-action" label={editing ? "Cancel editing property" : "Cancel adding property"} onclick={closeProperty}><MaterialIcon name="close" size={18} /></HintButton>
+          <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="button" class="property-action" label={editing ? "Cancel editing property" : "Cancel adding property"} onclick={closeProperty}><MaterialIcon name="close" size={18} /></HintButton>
           {#if propertyError}<span class="property-error" role="alert">{propertyError}</span>{/if}
         </form>
       {/if}
       <div class="property-controls">
         {#if editMode}
-          <HintButton type="button" class="property-action properties-mode" label="Add field" bind:ref={propertiesButton}
+          <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="button" class="property-action properties-mode" label="Add field" bind:ref={propertiesButton}
             disabled={!active || !propertyTypes.length || data.fields.length >= 200 || (adding && !editing)}
             onclick={() => openProperty()}><MaterialIcon name="add" size={18} /><span>Add field</span></HintButton>
-          <HintButton type="button" class="property-action" label="Done editing properties" onclick={finishEditing}><MaterialIcon name="check" size={18} /></HintButton>
+          <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="button" class="property-action" label="Done editing properties" onclick={finishEditing}><MaterialIcon name="check" size={18} /></HintButton>
         {:else}
-          <HintButton type="button" class="property-action properties-mode" label="Edit properties" bind:ref={propertiesButton}
+          <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="button" class="property-action properties-mode" label="Edit properties" bind:ref={propertiesButton}
             disabled={!active} onclick={() => editMode = true}><MaterialIcon name="edit" size={18} /><span>Edit properties</span></HintButton>
         {/if}
       </div>

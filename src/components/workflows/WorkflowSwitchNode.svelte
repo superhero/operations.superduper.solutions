@@ -43,7 +43,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <Handle id={switchGateInput(gate.id)} type="target" position={Position.Left} isConnectableStart={false}
         isConnectableEnd={!connected && !operator?.unary} aria-disabled={connected || !!operator?.unary}
         aria-label={`Gate ${index + 1} value input`} />
-      <HintButton type="button" class="utility-action" label={`Remove gate ${index + 1}`} disabled={data.gates.length === 1}
+      <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="button" class="utility-action" label={`Remove gate ${index + 1}`} disabled={data.gates.length === 1}
         onclick={() => gates.remove(id, gate.id)}><MaterialIcon name="cancel" size={18} /></HintButton>
       <div class="gate-operator">
         <WorkflowNodeSelect label={`Gate ${index + 1} operator`} value={gate.operator} choices={operators} {active}
@@ -69,7 +69,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
   {/each}
   <div class="switch-actions nodrag nopan nokey">
-    <HintButton type="button" class="utility-action add-gate" label="Add gate" disabled={data.gates.length >= switchGateLimit}
+    <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="button" class="utility-action add-gate" label="Add gate" disabled={data.gates.length >= switchGateLimit}
       onclick={() => gates.add(id)}><MaterialIcon name="add" size={18} /><span>Add gate</span></HintButton>
   </div>
 </div>

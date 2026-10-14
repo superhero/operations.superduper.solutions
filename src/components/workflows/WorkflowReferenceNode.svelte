@@ -38,7 +38,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {@const position = input ? Position.Left : Position.Right}
   <div class="operation-ports" class:inputs={input} class:outputs={!input} aria-label={input ? "Input connections" : "Output connections"}>
     {#each ports[direction] as branch (branch.id)}
-      <HintButton label={branch.label} labelAsName={false} tabindex={-1} tooltipEnabled={hoveredRestore !== branch.id}
+      <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={branch.label} labelAsName={false} tabindex={-1} tooltipEnabled={hoveredRestore !== branch.id}
         onpointerover={event => hoveredRestore = event.target instanceof Element && event.target.closest(".workflow-restore-branch") ? branch.id : undefined}
         onpointerleave={() => hoveredRestore = undefined}>
         {#snippet child({ props })}
@@ -60,7 +60,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <div class="workflow-owner-node workflow-reference-node" class:selected data-workflow-name={displayName}>
   {@render portRow("inputs")}
-  <HintButton label={data.description} labelAsName={false} tooltipEnabled={Boolean(data.description)} tabindex={-1}>
+  <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={data.description} labelAsName={false} tooltipEnabled={Boolean(data.description)} tabindex={-1}>
     {#snippet child({ props })}
       {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
       <div {...hintProps} class="operation-title-row">

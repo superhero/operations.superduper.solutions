@@ -21,7 +21,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <Select.Root type="single" {value} {disabled} items={choices} onValueChange={onchange} bind:open>
   <Select.Trigger class="workflow-node-select nodrag nopan nokey" role="combobox" aria-label={label}>
     {#snippet child({ props: selectProps })}
-      <HintButton label={selected?.label ?? value} labelAsName={false} tooltipEnabled={!open}>
+      <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={selected?.label ?? value} labelAsName={false} tooltipEnabled={!open}>
         {#snippet child({ props: hintProps })}
           <button {...mergeProps(hintProps, selectProps)}>
             <span>{selected?.symbol ?? selected?.label ?? value}</span><MaterialIcon name="expand_more" size={16} />

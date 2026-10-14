@@ -58,7 +58,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         oninput={event => changeText(id, event.currentTarget.value)}></textarea>
     </div>
   {:else}
-    <HintButton label="Click or press Enter to edit" labelAsName={false} aria-label="Edit comment text" tabindex={0}
+    <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label="Click or press Enter to edit" labelAsName={false} aria-label="Edit comment text" tabindex={0}
       onclick={edit} onkeydown={event => {
         if (event.target === event.currentTarget && ["Enter", " "].includes(event.key)) {
           event.preventDefault(); event.stopPropagation(); void edit(event);

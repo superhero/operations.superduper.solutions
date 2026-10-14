@@ -7,8 +7,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { Tooltip } from "bits-ui";
   import { flushSync, onMount, type ComponentProps, type Snippet } from "svelte";
-  let { label, bottomLabel, labelAsName = true, tooltipEnabled = true, tooltipSide = "top", children, child, disabled, ref = $bindable(null), ...props }:
-    Omit<ComponentProps<typeof Tooltip.Trigger>, "children"> & { label: string; bottomLabel?: string; labelAsName?: boolean; tooltipEnabled?: boolean; tooltipSide?: ComponentProps<typeof Tooltip.Content>["side"]; children?: Snippet } = $props();
+  let { label, bottomLabel, labelAsName = true, tooltipEnabled = true, tooltipSide = "top", tooltipAnchorSelector, children, child, disabled, ref = $bindable(null), ...props }:
+    Omit<ComponentProps<typeof Tooltip.Trigger>, "children"> & { label: string; bottomLabel?: string; labelAsName?: boolean; tooltipEnabled?: boolean; tooltipSide?: ComponentProps<typeof Tooltip.Content>["side"]; tooltipAnchorSelector?: string; children?: Snippet } = $props();
+  const anchor = $derived.by(() => {
+    const trigger = ref;
+    const container = tooltipAnchorSelector ? trigger?.closest(tooltipAnchorSelector) : null;
+    if (!trigger || !container) return null;
+    return { contextElement: container, getBoundingClientRect: () => {
+      // Keep the hovered row's height while clearing the whole container horizontally.
+      const outer = container.getBoundingClientRect();
+      const inner = trigger.getBoundingClientRect();
+      return new DOMRect(outer.x, inner.y, outer.width, inner.height);
+    } };
+  });
   const tether = Tooltip.createTether();
   let open = $state(false);
   $effect(() => { if (!tooltipEnabled) tether.close(); });
@@ -38,7 +49,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {@render children?.()}
       </Tooltip.Trigger>
     {/if}
-    <Tooltip.Portal><Tooltip.Content role={bottomLabel ? "presentation" : "tooltip"} aria-hidden={!open} class={bottomLabel ? "app-tooltip paired-tooltip" : "app-tooltip"} side={bottomLabel ? "top" : tooltipSide} sideOffset={8} collisionPadding={8}>
+    <Tooltip.Portal><Tooltip.Content customAnchor={anchor} role={bottomLabel ? "presentation" : "tooltip"} aria-hidden={!open} class={bottomLabel ? "app-tooltip paired-tooltip" : "app-tooltip"} side={bottomLabel ? "top" : tooltipSide} sideOffset={8} collisionPadding={8}>
       {#if bottomLabel}
         <div role="tooltip" class="app-tooltip tooltip-primary" data-side="top">{label}</div>
         <div role="tooltip" class="app-tooltip tooltip-secondary" data-side="bottom">{bottomLabel}</div>

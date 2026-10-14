@@ -27,6 +27,18 @@ export async function expectHoverHint(trigger, text) {
   await expect(tooltip).toHaveCount(1);
   await expect(tooltip).toHaveClass(/\bapp-tooltip\b/);
   await expect(tooltip).toHaveText(text);
+  await expect.poll(async () => {
+    const node = await trigger.evaluate(element => {
+      const bounds = element.closest('.svelte-flow__node')?.getBoundingClientRect();
+      return bounds ? { left: bounds.left } : undefined;
+    });
+    const hint = await tooltip.boundingBox();
+    if (!node || !hint) return false;
+    // Leave room for the tooltip gap and viewport collision padding. Near the
+    // viewport edge, collision handling may choose another side instead.
+    if (node.left < hint.width + 24) return true;
+    return await tooltip.getAttribute('data-side') === 'left' && hint.x + hint.width <= node.left - 2;
+  }, { message: 'Node tooltips must sit outside the whole node on its left when space permits.' }).toBe(true);
   await page.mouse.move(0, 0);
   await expect(tooltip).toHaveCount(0);
 }
