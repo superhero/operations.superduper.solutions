@@ -9,6 +9,7 @@ Feature: Carry complete validation through integration and release
     Given the validation workflow for "<target>"
     When matching validation is "missing"
     Then all validation suites run before a new proof is published
+    And exactly one fresh proof is published after all validation artifacts
     And release artifacts remain bound to the exact tested checkout
     Examples:
       | target  |
@@ -30,6 +31,7 @@ Feature: Carry complete validation through integration and release
   Scenario Outline: Reuse cannot bypass failed validation or publication guards
     Given the validation workflow for "<target>"
     Then reuse has read-only access and publication requires successful validation
+    And failure diagnostics cannot substitute for successful validation proof
     Examples:
       | target  |
       | develop |

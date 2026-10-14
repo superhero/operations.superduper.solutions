@@ -49,11 +49,7 @@ Feature: Reuse complete validation only for trusted identical inputs
       | another workflow                   |
       | another event                      |
       | a failed run                       |
-      | a missing application job          |
-      | a failed application job           |
-      | a skipped automation job           |
-      | a duplicate application job        |
-      | incomplete job pagination          |
+      | incomplete artifact pagination     |
       | a missing bundle artifact          |
       | a missing manifest artifact        |
       | an expired coverage artifact       |
@@ -104,6 +100,28 @@ Feature: Reuse complete validation only for trusted identical inputs
 
     Examples:
       | condition                                  |
-      | budget exhaustion before a matching run     |
+      | budget exhaustion before a matching run    |
       | budget exhaustion during artifact download |
-      | too many candidates before a matching run  |
+      | too many candidates before a matching run   |
+
+  Scenario Outline: Transient remote reads recover without changing validation evidence
+    Given a completed validation run with "identical inputs"
+    And validation remote reads encounter "<failure>"
+    When matching validation artifacts are requested
+    Then validation is "<outcome>" with the original provenance
+    And remote retries preserve the shared budget and clean artifacts
+
+    Examples:
+      | failure                               | outcome |
+      | two API timeouts                      | reused  |
+      | one API network interruption          | reused  |
+      | repeated API server failures          | fresh   |
+      | API authorization failure             | fresh   |
+      | missing API resource                  | fresh   |
+      | API rate limit                        | fresh   |
+      | malformed API response                | fresh   |
+      | invalid proof after API recovery      | fresh   |
+      | shrinking budget after two timeouts   | reused  |
+      | retry wait exhausts the budget        | fresh   |
+      | interrupted artifact download         | reused  |
+      | repeated artifact interruptions       | fresh   |

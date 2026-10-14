@@ -412,11 +412,18 @@ same-repository validation run when every tracked input matches, except the
 managed root `CHANGELOG.md`. Other Markdown files, workflows, tests, dependency
 files, build configuration and file modes remain part of the comparison.
 
-Reuse requires successful automation and application jobs, the original tested
-commit and run identity, and a complete unexpired bundle, coverage report,
-combined test report and validation manifest. Downloaded file hashes must match
-the manifest. Missing, stale, expired, incomplete or unverifiable evidence falls
-back to full validation.
+Fresh runs publish a validation manifest only after automation, application
+tests, reports and badge checks succeed. Reuse verifies that manifest against
+the original successful run and tested commit, without listing individual jobs
+again. The bundle, coverage and combined test report must be complete,
+unexpired and match the manifest's file hashes. Missing or unverifiable evidence
+requires full validation.
+
+Remote reads allow 30 seconds per attempt and up to two retries for transient
+network or server failures, with 1- and 2-second waits. All requests, downloads
+and waits share a 120-second lookup budget. Authentication, rate-limit and
+invalid-evidence failures are not retried. Logs identify the failed operation
+and failure category without exposing credentials or raw response bodies.
 
 The original bundle and reports are retained without rebuilding or rewriting
 their provenance. The combined report identifies its original tested commit and

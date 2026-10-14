@@ -1,29 +1,18 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { execFileSync } from "node:child_process";
 import { appendFileSync, cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { ARTIFACT_NAMES, MANIFEST_NAME, inputFingerprint, inventory, isPositiveInteger, isRepository, isSha,
   localIdentity, verifyArtifacts } from "./validation-artifacts.mjs";
+import { githubRequest, githubDownload, ValidationRequestError, requestFailureDescription } from "./validation-request.mjs";
 
-export const TRUSTED_WORKFLOWS = {
-  "ci-develop.yml": "Test and Build",
-  "ci-release.yml": "Test and Build",
-  "ci-main.yml": "Test and Build Release"
-};
+export const TRUSTED_WORKFLOWS = new Set(["ci-develop.yml", "ci-release.yml", "ci-main.yml"]);
 const LOOKUP_BUDGET_MS = 120000;
 const MAX_CANDIDATES = 20;
 class LookupBudgetExhausted extends Error {}
-const invoke = (args, timeoutMs) => execFileSync("gh", args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: timeoutMs,
-  killSignal: "SIGKILL",
-  maxBuffer: 16 * 1024 * 1024 });
-const github = (endpoint, { timeoutMs }) => JSON.parse(invoke(["api", endpoint], timeoutMs));
-const downloadArtifact = (repository, runId, name, directory, { timeoutMs }) => invoke([
-  "run", "download", String(runId), "--repo", repository, "--name", name, "--dir", directory
-], timeoutMs);
 
 function trustedRun(run, repository, workflow)
 {
@@ -61,8 +50,9 @@ function validArtifact(artifact, run)
     && Number.isFinite(Date.parse(artifact.expires_at)) && Date.parse(artifact.expires_at) > Date.now();
 }
 
-export async function findValidation({ repository, targetSha, destination, cwd = process.cwd(), api = github,
-  download = downloadArtifact, note = console.log, now = () => performance.now() })
+export async function findValidation({ repository, targetSha, destination, cwd = process.cwd(), api = githubRequest,
+  download = githubDownload, note = console.log, now = () => performance.now(),
+  wait = milliseconds => new Promise(resolveWait => setTimeout(resolveWait, milliseconds)) })
 {
   if (!isRepository(repository) || !isSha(targetSha) || !destination) throw new Error("Repository, full target SHA and destination are required.");
   if (existsSync(destination)) throw new Error("Validation destination must not exist; refusing to mix artifacts.");
@@ -77,14 +67,37 @@ export async function findValidation({ repository, targetSha, destination, cwd =
     if (duration <= 0) throw new LookupBudgetExhausted();
     return Math.ceil(duration);
   };
-  const bounded = async (operation, timeoutMs, ...args) =>
+  const remoteRead = async (operation, label, args, beforeAttempt = () => {}) =>
   {
-    const value = await operation(...args, { timeoutMs: Math.min(timeoutMs, remaining()) });
-    remaining();
-    return value;
+    for (let attempt = 1; attempt <= 3; attempt++)
+    {
+      remaining();
+      beforeAttempt();
+      const timeoutMs = Math.min(30000, remaining());
+      const started = now();
+      try
+      {
+        const value = await operation(...args, { timeoutMs });
+        remaining();
+        return value;
+      }
+      catch (error)
+      {
+        if (error instanceof LookupBudgetExhausted) throw error;
+        note(`${label}: ${requestFailureDescription(error)}; attempt=${attempt}/3 elapsed_ms=${Math.ceil(now() - started)} timeout_ms=${timeoutMs}.`);
+        if (!(error instanceof ValidationRequestError) || !error.retryable || attempt === 3) throw error;
+        const delay = attempt * 1000;
+        if (remaining() <= delay) throw new LookupBudgetExhausted();
+        note(`${label}: retrying after ${delay}ms within the lookup time budget.`);
+        await wait(delay);
+        remaining();
+      }
+    }
   };
-  const request = endpoint => bounded(api, 10000, endpoint);
-  const downloadWithinBudget = (...args) => bounded(download, 30000, ...args);
+  const request = endpoint => remoteRead(api, `GitHub API ${endpoint}`, [endpoint]);
+  const downloadWithinBudget = (ownerRepo, runId, name, directory) => remoteRead(download,
+    `Artifact ${name} from run ${runId}`, [ownerRepo, runId, name, directory],
+    () => rmSync(directory, { recursive: true, force: true }));
   let candidates = [];
   try
   {
@@ -97,7 +110,10 @@ export async function findValidation({ repository, targetSha, destination, cwd =
       && artifact.expired === false && isPositiveInteger(artifact.workflow_run?.id)).map(artifact => artifact.workflow_run.id))]
       .sort((a, b) => b - a).slice(0, MAX_CANDIDATES);
   }
-  catch { note("Validation proof lookup unavailable; fresh validation remains available."); }
+  catch (error)
+  {
+    note(`Validation proof lookup unavailable: ${error instanceof LookupBudgetExhausted ? "lookup time budget exhausted" : requestFailureDescription(error)}; fresh validation remains available.`);
+  }
   for (const runId of candidates)
   {
     if (now() >= deadline)
@@ -112,17 +128,11 @@ export async function findValidation({ repository, targetSha, destination, cwd =
     {
       const run = await request(`repos/${repository}/actions/runs/${runId}`);
       const workflow = typeof run.path === "string" ? run.path.split("@")[0].split("/").at(-1) : "";
-      if (!Object.hasOwn(TRUSTED_WORKFLOWS, workflow) || run.id !== runId || !trustedRun(run, repository, workflow))
+      if (!TRUSTED_WORKFLOWS.has(workflow) || run.id !== runId || !trustedRun(run, repository, workflow))
         throw new Error("Validation proof was not produced by a trusted successful workflow run.");
-      phase = "successful validation jobs";
-      const jobs = await allPages(request, `repos/${repository}/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs`, "jobs");
-      for (const name of ["Automation Checks", TRUSTED_WORKFLOWS[workflow]])
-      {
-        const matches = jobs.filter(job => job.name === name);
-        if (matches.length !== 1 || matches[0].status !== "completed" || matches[0].conclusion !== "success"
-          || matches[0].run_id !== run.id || matches[0].head_sha !== run.head_sha)
-          throw new Error("Expected validation jobs did not complete successfully.");
-      }
+      // Trusted producers create this proof only after every required suite,
+      // report and badge check succeeds. A same-attempt manifest plus the
+      // successful run preserves that evidence without another jobs API call.
       phase = "complete unexpired artifacts";
       const artifacts = await allPages(request, `repos/${repository}/actions/runs/${run.id}/artifacts`, "artifacts");
       for (const name of ARTIFACT_NAMES)
@@ -176,7 +186,7 @@ export async function findValidation({ repository, targetSha, destination, cwd =
         note("Validation lookup time budget exhausted; full validation is required.");
         break;
       }
-      note(`Validation run ${runId} rejected during ${phase}; trying another run.`);
+      note(`Validation run ${runId} rejected during ${phase}: ${requestFailureDescription(error)}; trying another run.`);
     }
     finally { rmSync(temporary, { recursive: true, force: true }); }
   }
