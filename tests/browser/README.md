@@ -18,9 +18,17 @@ under the [testing standard](../../docs/adr/test-suite-reports.md).
 Run `npm run build` before `npm run test:browser`. The
 [runner](../../.github/scripts/test-browser.sh) uses the matching pinned
 Playwright container with networking disabled. Support serves `dist/index.html`
-on loopback, creates a fresh browser context for each scenario, and rejects
+and the exact favicon allowlist with their declared MIME types on loopback,
+creates a fresh browser context for each scenario, and rejects
 unexpected external requests. Simulate endpoint responses through test routes;
 keep test hooks out of the shipped application.
+
+Playwright aborts routed requests whose URL ends in `/favicon.ico` before its
+route callback runs. Favicon scenarios therefore fetch that exact hosted URL
+through Playwright's HTTP client, then give the returned bytes to Chromium's
+image decoder as a data URL. This verifies both the real endpoint and ICO
+decoding without weakening the external-network boundary. Other icon formats
+use ordinary browser requests.
 
 ## Scenario state and diagnostics
 

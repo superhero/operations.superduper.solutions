@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import { Given, Then } from "@cucumber/cucumber";
+import { faviconFiles } from "../build/favicons.mjs";
 
 let html;
 
@@ -9,9 +10,9 @@ Given("the production build has completed", async function ()
   html = await readFile("dist/index.html", "utf8");
 });
 
-Then("the dist directory contains only the application page and hosting headers", async function ()
+Then("the dist directory contains only the application page hosting headers and favicon compatibility files", async function ()
 {
-  assert.deepEqual((await readdir("dist")).sort(), ["_headers", "index.html"]);
+  assert.deepEqual((await readdir("dist")).sort(), ["_headers", "index.html", ...faviconFiles].sort());
 });
 
 Then("the hosting headers enable cross-origin isolation", async function ()

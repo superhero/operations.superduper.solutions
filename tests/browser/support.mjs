@@ -21,6 +21,13 @@ setWorldConstructor(BrowserWorld);
 
 BeforeAll(async function () {
   const bundle = await readFile('dist/index.html');
+  const iconTypes = {
+    "favicon.svg": "image/svg+xml", "favicon.ico": "image/x-icon", "favicon.png": "image/png",
+    "favicon.bmp": "image/bmp", "favicon.gif": "image/gif", "favicon.jpg": "image/jpeg",
+    "favicon.ppm": "image/x-portable-pixmap", "favicon.tiff": "image/tiff", "apple-touch-icon.png": "image/png",
+  };
+  const icons = new Map(await Promise.all(Object.entries(iconTypes).map(async ([filename, type]) =>
+    [`/${filename}`, { type, bytes: await readFile(`dist/${filename}`) }])));
   // This module belongs only to the test server. Inspect real Git repositories
   // without adding test hooks or filesystem globals to the shipped application.
   const fixtureBuild = await build({ configFile: false, logLevel: 'error',
@@ -36,12 +43,13 @@ BeforeAll(async function () {
     } else if (request.url === '/workflow-repository-fixture.js') {
       response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
       response.end(repositoryFixture);
-    } else if (request.url === '/favicon.ico') {
-      response.writeHead(204);
-      response.end();
+    } else if (icons.has(request.url)) {
+      const icon = icons.get(request.url);
+      response.writeHead(200, { 'content-type': icon.type });
+      response.end(icon.bytes);
     } else {
       response.writeHead(404);
-      response.end('This test server serves only the standalone application at /.');
+      response.end('This test server serves only the standalone application, its favicon files and the repository fixture.');
     }
   });
   await new Promise((resolveListen, reject) => {
