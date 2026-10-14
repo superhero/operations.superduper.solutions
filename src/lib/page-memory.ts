@@ -47,8 +47,7 @@ export async function collectPageMemory(): Promise<PageMemoryReport>
   {
     if (!globalThis.isSecureContext)
       return { ...empty(), unavailable: "Page memory measurement requires HTTPS or localhost." };
-    if (!globalThis.crossOriginIsolated)
-      return { ...empty(), unavailable: "Page memory measurement requires this page to be cross-origin isolated." };
+    if (!globalThis.crossOriginIsolated) return empty();
     const performance = globalThis.performance as MemoryPerformance | undefined;
     const measure = performance?.measureUserAgentSpecificMemory;
     if (typeof measure !== "function")
