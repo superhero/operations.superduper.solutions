@@ -73,6 +73,16 @@ Document reuse, rollout and retry behavior with Cucumber regression coverage.
 
 ```
 
+<!-- changelog-commit:62eb4215e0b77559172107f5dd69c8becd1ab0c7 -->
+### Commit [`62eb421`](https://github.com/superhero/operations.superduper.solutions/commit/62eb4215e0b77559172107f5dd69c8becd1ab0c7)
+
+```text
+fix(ui): remove selected theme checkmark shadow
+
+Remove the checkmark text shadow and its shadow transition while preserving the selected theme icon, colors and scale animation.
+
+```
+
 <!-- changelog-staging-end -->
 
 ## 0.0.42
