@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.45
+
 <!-- changelog-commit:58bebe05eea9512142065372084bd7d819cc4c06 -->
 ### Commit [`58bebe0`](https://github.com/superhero/operations.superduper.solutions/commit/58bebe05eea9512142065372084bd7d819cc4c06)
 
@@ -26,8 +30,6 @@ gates that ensure only complete fresh validation can publish proof.
 chore: merge develop after release changelog synchronization
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.44
 
