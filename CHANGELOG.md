@@ -2,6 +2,14 @@
 
 ## Latest
 
+<!-- changelog-commit:d7bff6aee256717b40eedec93f26c5f857ef24ab -->
+### Commit [`d7bff6a`](https://github.com/superhero/operations.superduper.solutions/commit/d7bff6aee256717b40eedec93f26c5f857ef24ab)
+
+```text
+fix(settings): remove page memory isolation notice
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.45
