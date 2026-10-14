@@ -76,6 +76,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .workflow-switch-node { width: 300px; }
+  .workflow-switch-node .switch-gate { padding-left: 6px; }
   .switch-gate :global(.remove-gate) { display: grid; place-items: center; flex-shrink: 0; width: 26px; height: 28px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--color-background); }
   .switch-gate :global(.remove-gate:hover:not(:disabled)) { color: var(--color-foreground); }
   .gate-operator { flex: 0 0 64px; }
