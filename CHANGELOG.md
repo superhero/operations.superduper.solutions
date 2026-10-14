@@ -2,6 +2,14 @@
 
 ## Latest
 
+<!-- changelog-commit:17b4d758ca8df902ce1c60233fa8d73abce6f92b -->
+### Commit [`17b4d75`](https://github.com/superhero/operations.superduper.solutions/commit/17b4d758ca8df902ce1c60233fa8d73abce6f92b)
+
+```text
+fix(settings): default histogram to used JavaScript heap
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.45
