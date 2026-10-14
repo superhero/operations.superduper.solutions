@@ -35,8 +35,9 @@ Given("documentation publication inspection targets {string} with {string}", fun
 When("documentation publication safety is checked", function ()
 {
   const { target, fixture } = this.documentationPublication;
+  const inspect = target === "main" || target === "release/1.2.3";
   this.documentationPublication.result = this.automation.execute("validate-documentation-merge.sh",
-    [REPOSITORY, target], target === "main" ? [get(endpoint, {}, fixture)] : [], { success: null });
+    [REPOSITORY, target], inspect ? [get(endpoint, {}, fixture)] : [], { success: null });
 });
 
 Then("documentation publication safety is {string} with {string}", function (outcome, reason)
@@ -47,7 +48,7 @@ Then("documentation publication safety is {string} with {string}", function (out
     for (const value of [reason, REPOSITORY, target])
       assert.ok(result.stderr.includes(value), result.stderr);
   const calls = this.automation.calls();
-  assert.equal(calls.length, target === "main" ? 1 : 0);
+  assert.equal(calls.length, target === "main" || target === "release/1.2.3" ? 1 : 0);
   for (const call of calls)
   {
     assert.equal(call.method, "GET");

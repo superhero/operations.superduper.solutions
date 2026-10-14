@@ -113,7 +113,7 @@ fi
 
 merge_method=merge
 case "$base_branch:$head_branch" in
-  develop:docs/*|main:docs/*|develop:feature/*|develop:bugfix/*|main:hotfix/*) merge_method=squash ;;
+  develop:docs/*|main:docs/*|release/*:docs/*|develop:feature/*|develop:bugfix/*|main:hotfix/*) merge_method=squash ;;
 esac
 
 read_live_base

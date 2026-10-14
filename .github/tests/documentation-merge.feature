@@ -39,5 +39,26 @@ Feature: Documentation merges do not interrupt production publication
 
     Examples:
       | target        |
-      | release/1.2.3 |
+      | hotfix/1.2.3 |
       | other         |
+
+  Scenario Outline: Release documentation waits for publication to finish
+    Given documentation publication inspection targets "release/1.2.3" with "<state>"
+    When documentation publication safety is checked
+    Then documentation publication safety is "<outcome>" with "<reason>"
+
+    Examples:
+      | state                 | outcome  | reason                 |
+      | no active runs        | accepted |                        |
+      | unrelated active runs | accepted |                        |
+      | an active release     | rejected | Rerun documentation CI |
+      | an active hotfix      | rejected | Rerun documentation CI |
+      | release preparation   | rejected | Rerun documentation CI |
+      | a release on page two | rejected | release/1.2.3          |
+      | an API failure        | rejected | Could not inspect      |
+      | incomplete pagination | rejected | Invalid or incomplete  |
+
+  Scenario: Malformed release destinations never inspect publication
+    Given documentation publication inspection targets "release/next" with "no active runs"
+    When documentation publication safety is checked
+    Then documentation publication safety is "rejected" with "Invalid target release version"

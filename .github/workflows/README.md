@@ -144,8 +144,8 @@ Branch policy is described in the
 
 ### Branch and file scope
 
-- Create `docs/<topic>` from the intended target, `develop` or `main`, and open
-  a PR to that same branch.
+- Create `docs/<topic>` from the intended target: `develop`, `main`, or an active
+  `release/<version>`. Open a PR for each destination explicitly.
 - Only regular, non-executable Markdown files (`.md`, case-insensitive) qualify.
   Additions, edits, renames and deletions are supported.
 - Images, badges, scripts and configuration use the feature or bugfix path,
@@ -163,7 +163,8 @@ PR content is fetched as Git objects, never checked out or executed.
 
 - No packages are installed. Tests, builds, releases, tags, deployments, reports
   and synchronization jobs do not run.
-- Normal `main` and `develop` CI skip `docs/*` PRs.
+- Normal `main`, `develop` and release CI skip `docs/*` PRs. Release targets must
+  have a valid, unpublished version and must not have already merged into `main`.
 - Mixed changes fail documentation validation; they do not fall through to
   application CI.
 
@@ -173,13 +174,42 @@ Only same-repository, non-draft PRs auto-merge after validation. The App verifie
 the tested head and target revision. One commit fast-forwards when the target is
 its ancestor; other documentation PRs squash.
 
-For a `main` target:
+- A `main` target requires current `main`, except permitted dependency-badge advances.
+- Documentation merges into `main` or a release share the production merge lock.
+  A pre-merge check also blocks them while a production release workflow is active;
+  retry after it finishes.
+- A Markdown-only advance of an open release PR pauses its pipeline. To resume
+  release validation intentionally, reopen the release PR, mark it ready for
+  review, or edit it. The actual new head receives full validation before any
+  publication; previous artifacts are not reused.
 
-- Include current `main`, except permitted dependency-badge advances.
-- A pre-merge check blocks merging while a production release workflow is active.
-  Retry after it finishes to avoid interrupting tagging or deployment.
-- Merging does not open a synchronization PR to `develop`. Choose each
-  destination explicitly.
+### Reusing a source branch
+
+One docs branch can serve several explicit PRs. Each target validates its own
+full diff; passing against `develop` does not establish that `main` or a release
+is safe. No target is added automatically.
+
+- Prefer a shared ancestor when preparing changes for several targets. A branch
+  based on, or refreshed from, `develop` may carry application changes that other
+  targets must reject.
+- Resolve conflicts without importing unrelated target changes. If histories
+  cannot satisfy every target, create a separate docs branch from that target
+  and carry over only the intended Markdown edits.
+- Changelog preparation for `develop` may advance the source. Other open PRs
+  validate that new head independently.
+
+If GitHub deletes the source after merging, restore its **original PR head**,
+not the squash commit, before opening the next explicit PR:
+
+```sh
+bash .github/scripts/restore-documentation-branch.sh \
+  owner/repository 123 docs/topic ORIGINAL_FULL_HEAD_SHA ORIGINAL_BASE
+```
+
+Use the merged PR's exact number, head SHA and base (`main`, `develop` or
+`release/<version>`). The helper verifies that identity, creates only a missing
+ref, and confirms it afterward. An existing branch at another SHA is never
+overwritten. Retrying an exact restoration is safe; recovery does not open PRs.
 
 ### Local check
 
@@ -190,7 +220,7 @@ bash .github/scripts/validate-documentation-changes.sh \
   "$(git rev-parse origin/develop)" "$(git rev-parse HEAD)"
 ```
 
-Substitute `origin/main` for a `main` target.
+Substitute `origin/main` or `origin/release/<version>` for the other targets.
 
 ### Enabling the documentation workflow
 
@@ -198,7 +228,9 @@ The workflow's own YAML and scripts require normal CI and release promotion.
 Before the fast path is available:
 
 1. Put the workflow and helpers on the default branch, `main`.
-2. Include normal-CI exclusions on both target branches.
+2. Include normal-CI exclusions on all intended targets, including active releases.
+   Release-update classification must be present on `main`; until then, release
+   events retain full validation rather than using the Markdown fast path.
 3. Allow `pull_request_target` specifically for `.github/workflows/ci-docs.yml`
    through the repository's Actions event policy.
 
