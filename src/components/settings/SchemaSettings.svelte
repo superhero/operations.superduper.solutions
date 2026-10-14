@@ -214,8 +214,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <div class="schema-toolbar">
     <Button class="upload-action" size="sm" variant="secondary" aria-label="Upload OpenAPI document" disabled={mutationsDisabled} onclick={() => uploadInput.click()}>
       <MaterialIcon name="upload_file" size={20} />
-      <span>Upload an OpenAPI 3.0 or 3.1 document in JSON or YAML format.</span>
+      <span>Upload</span>
     </Button>
+    <p class="schema-upload-guidance">an OpenAPI 3.0 or 3.1 document in JSON or YAML format.</p>
   </div>
 
   {#if working && pending !== ""}<p class="schema-status" role="status">{pending ?? "Loading OpenAPI documents…"}</p>{/if}
@@ -303,13 +304,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .schema-settings { display: grid; gap: 12px; min-width: 0; padding: 16px; color: var(--color-catalog-active-foreground); container-type: inline-size; }
-  .schema-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .schema-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+  .schema-upload-guidance { flex: 1 1 240px; min-width: 0; margin: 0; font-size: 14px; overflow-wrap: anywhere; }
   .schema-status { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .schema-toolbar :global(.upload-action) { height: auto; min-height: 44px; max-width: 100%; padding-block: 12px; white-space: normal; text-align: left; background: var(--color-background); color: var(--color-foreground); }
   .schema-list { position: relative; display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
   .schema-drag-area { position: relative; min-width: 0; }
   .schema-drag-surface { position: absolute; inset: 0; z-index: 3; }
-  .schema-card, .schema-empty { min-width: 0; padding: 16px; border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
+  .schema-toolbar, .schema-card, .schema-empty { min-width: 0; padding: 16px; border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
   .schema-heading { --schema-control-size: calc(var(--spacing) * 8); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
   .schema-name { display: flex; flex: 1; min-width: min(100%, 180px); height: var(--schema-control-size); border-radius: 4px; background: var(--color-background); color: var(--color-foreground); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
   .schema-name:focus-within { outline-color: var(--color-ring); }
