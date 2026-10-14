@@ -53,5 +53,5 @@ operations. See [OpenAPI adaptation](../../docs/adr/openapi-adaptation.md).
 ## Verification
 
 Add new domain scenarios alongside [source](../README.md) using Cucumber.
-[tests](../../tests/README.md) contains browser scenarios and remaining standalone
-checks.
+[tests](../../tests/README.md) contains browser scenarios and smoke scripts
+awaiting migration into browser reporting.

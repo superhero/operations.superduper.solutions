@@ -2,18 +2,28 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
-import { test } from "node:test";
-import { metricsCacheKey, readMetricsCache, writeMetricsCache } from "../src/lib/metrics-cache.ts";
+import { After, Before, Then } from "@cucumber/cucumber";
+import { metricsCacheKey, readMetricsCache, writeMetricsCache } from "./lib/metrics-cache.ts";
 
 const duration = 15 * 60_000;
 const now = Date.UTC(2026, 9, 11, 12, 7);
 const currentStart = Math.floor(now / duration) * duration;
 const maxCharacters = 512 * 1024;
 
-function storage(t)
+Before({ tags: "@metrics-cache" }, function () {
+  this.metricsCacheGlobals = [[globalThis, "localStorage"], [globalThis, "window"], [Date, "now"]]
+    .map(([target, name]) => ({ target, name, descriptor: Object.getOwnPropertyDescriptor(target, name) }));
+});
+
+After({ tags: "@metrics-cache" }, function () {
+  for (const { target, name, descriptor } of this.metricsCacheGlobals) {
+    if (descriptor) Object.defineProperty(target, name, descriptor);
+    else delete target[name];
+  }
+});
+
+function storage()
 {
-  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
-  const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
   const values = new Map();
   const result = {
     getItem: key => values.get(key) ?? null,
@@ -24,13 +34,7 @@ function storage(t)
   Object.defineProperty(globalThis, "window", { configurable: true, value: {
     get localStorage() { return globalThis.localStorage; },
   } });
-  t.mock.method(Date, "now", () => now);
-  t.after(() => {
-    if (descriptor) Object.defineProperty(globalThis, "localStorage", descriptor);
-    else delete globalThis.localStorage;
-    if (windowDescriptor) Object.defineProperty(globalThis, "window", windowDescriptor);
-    else delete globalThis.window;
-  });
+  Object.defineProperty(Date, "now", { configurable: true, value: () => now });
   return result;
 }
 
@@ -84,8 +88,8 @@ function freeze(value)
   return value;
 }
 
-test("metrics cache round-trips completed history before a live report exists", t => {
-  const local = storage(t);
+Then("metrics cache round-trips completed history before a live report exists", () => {
+  const local = storage();
   assert.equal(metricsCacheKey, "v1/metrics/cache");
   assert.equal(readMetricsCache(), null);
   const value = { report: null, pageMemory: null, bars: [bar()] };
@@ -94,8 +98,8 @@ test("metrics cache round-trips completed history before a live report exists", 
   assert.equal(JSON.parse(local.getItem(metricsCacheKey)).version, 1);
 });
 
-test("metrics cache round-trips a full report and page-memory breakdown without mutating the input", t => {
-  storage(t);
+Then("metrics cache round-trips a full report and page-memory breakdown without mutating the input", () => {
+  storage();
   const value = freeze(snapshot());
   const original = structuredClone(value);
   assert.doesNotThrow(() => writeMetricsCache(value));
@@ -107,8 +111,8 @@ test("metrics cache round-trips a full report and page-memory breakdown without 
   assert.deepEqual(readMetricsCache(), original, "Readers cannot mutate the stored snapshot through an earlier read.");
 });
 
-test("metrics cache retains the newest 96 completed intervals and excludes live or raw samples", t => {
-  const local = storage(t);
+Then("metrics cache retains the newest 96 completed intervals and excludes live or raw samples", () => {
+  const local = storage();
   const completed = Array.from({ length: 104 }, (_, index) => bar(currentStart - (104 - index) * duration, index + 4));
   const value = freeze({ report: null, pageMemory: null,
     bars: [...completed].reverse().map(entry => ({ ...entry, samples: [{ timestamp: entry.start, value: 1_234 }] }))
@@ -127,8 +131,8 @@ test("metrics cache retains the newest 96 completed intervals and excludes live 
   assert.deepEqual(value, original);
 });
 
-test("an older writer cannot replace a more recent report", t => {
-  storage(t);
+Then("an older writer cannot replace a more recent report", () => {
+  storage();
   const newer = snapshot();
   writeMetricsCache(newer);
   const older = snapshot();
@@ -138,8 +142,8 @@ test("an older writer cannot replace a more recent report", t => {
   assert.deepEqual(readMetricsCache().report, newer.report);
 });
 
-test("metrics cache ignores invalid JSON, unsupported envelopes, and malformed nested measurements", t => {
-  const local = storage(t);
+Then("metrics cache ignores invalid JSON, unsupported envelopes, and malformed nested measurements", () => {
+  const local = storage();
   writeMetricsCache(snapshot());
   const valid = local.getItem(metricsCacheKey);
   const malformed = ["", "{", "null", "[]", "42", JSON.stringify({ version: 2 }), JSON.stringify({ version: 1 })];
@@ -162,8 +166,8 @@ test("metrics cache ignores invalid JSON, unsupported envelopes, and malformed n
   }
 });
 
-test("metrics cache bounds serialized input and output", t => {
-  const local = storage(t);
+Then("metrics cache bounds serialized input and output", () => {
+  const local = storage();
   writeMetricsCache(snapshot());
   local.setItem(metricsCacheKey, `${" ".repeat(maxCharacters)}${local.getItem(metricsCacheKey)}`);
   assert.equal(readMetricsCache(), null);
@@ -175,8 +179,8 @@ test("metrics cache bounds serialized input and output", t => {
   assert.equal(text === null || text.length <= maxCharacters, true);
 });
 
-test("missing, denied, unreadable, and quota-limited localStorage never break metric collection", t => {
-  storage(t);
+Then("missing, denied, unreadable, and quota-limited localStorage never break metric collection", () => {
+  storage();
   const failure = () => { throw new Error("Storage is unavailable"); };
   for (const descriptor of [
     null,
@@ -194,8 +198,8 @@ test("missing, denied, unreadable, and quota-limited localStorage never break me
   assert.doesNotThrow(() => writeMetricsCache(snapshot()));
 });
 
-test("cached database inventories preserve partial enumeration and compound or external keys", t => {
-  storage(t);
+Then("cached database inventories preserve partial enumeration and compound or external keys", () => {
+  storage();
   for (const enumeration of ["known", "unavailable"]) {
     for (const keyPath of [null, ["tenant", "id"]]) {
       const value = snapshot();
@@ -207,8 +211,8 @@ test("cached database inventories preserve partial enumeration and compound or e
   }
 });
 
-test("cache retains the newest complete candles when earlier candles exceed its byte budget", t => {
-  storage(t);
+Then("cache retains the newest complete candles when earlier candles exceed its byte budget", () => {
+  storage();
   const oversized = bar(currentStart - 2 * duration);
   oversized.metrics["x".repeat(maxCharacters)] = oversized.metrics["memory.used"];
   writeMetricsCache({ report: null, pageMemory: null, bars: [oversized, bar()] });

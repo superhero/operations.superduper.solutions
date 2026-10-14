@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { Then } from "@cucumber/cucumber";
 import { createSchemaDocumentId, operationServerUrl, parseSchemaDocument, schemaDocumentMaxBytes, validateSchemaDocument }
-  from "../src/lib/schema-documents.ts";
-import { bundledCatalogs } from "../src/lib/catalog-registry.ts";
+  from "./lib/schema-documents.ts";
+import { bundledCatalogs } from "./lib/catalog-registry.ts";
 
 const response = { "200": { description: "OK" } };
 const document = (operation = {}, extra = {}) => ({
@@ -13,7 +13,7 @@ const document = (operation = {}, extra = {}) => ({
   paths: { "/items": { get: { operationId: "listItems", responses: response, ...operation } } }, ...extra,
 });
 
-test("JSON and YAML imports retain complete documents and support bounded aliases", () => {
+Then("JSON and YAML imports retain complete documents and support bounded aliases", () => {
   const value = document({}, { "x-vendor-data": { retained: true } });
   assert.deepEqual(parseSchemaDocument(JSON.stringify(value), "upload.JSON"), value);
   const parsed = parseSchemaDocument(`openapi: 3.1.0
@@ -33,7 +33,7 @@ x-vendor-data: {retained: true}
   assert.equal(parsed["x-vendor-data"].retained, true);
 });
 
-test("malformed, ambiguous and non-JSON YAML content fails before extraction", () => {
+Then("malformed, ambiguous and non-JSON YAML content fails before extraction", () => {
   for (const [source, filename] of [
     ["{", "bad.json"], ["a: 1\na: 2", "bad.yaml"], ["a: .inf", "bad.yml"], ["a: !unknown value", "bad.yaml"],
     ["a: &loop [*loop]", "bad.yaml"], ["? [a, b]\n: c", "bad.yaml"], ["---\na: b\n---\na: c", "bad.yaml"],
@@ -46,7 +46,7 @@ test("malformed, ambiguous and non-JSON YAML content fails before extraction", (
   assert.throws(() => parseSchemaDocument(" ".repeat(schemaDocumentMaxBytes + 1), "large.json"), /10 MiB/);
 });
 
-test("expanded documents reject excessive nesting, bytes, incompatible objects, and ambiguous mapping keys", () => {
+Then("expanded documents reject excessive nesting, bytes, incompatible objects, and ambiguous mapping keys", () => {
   let nested = null;
   for (let index = 0; index < 102; index++) nested = { nested };
   assert.throws(() => validateSchemaDocument(document({}, { "x-nested": nested }), "test"), /nesting or expanded value limit/);
@@ -57,13 +57,18 @@ test("expanded documents reject excessive nesting, bytes, incompatible objects, 
   assert.deepEqual(validateSchemaDocument(document({}, { "x-metadata": metadata }), "test").document["x-metadata"], { retained: "safe" });
 });
 
-test("parser failures retain non-Error causes with the uploaded filename", context => {
-  context.mock.method(JSON, "parse", () => { throw "parser unavailable"; });
-  assert.throws(() => parseSchemaDocument("{}", "unavailable.json"), error =>
-    error.message === "Could not parse unavailable.json: parser unavailable" && error.cause === "parser unavailable");
+Then("parser failures retain non-Error causes with the uploaded filename", () => {
+  const originalParse = JSON.parse;
+  try {
+    JSON.parse = () => { throw "parser unavailable"; };
+    assert.throws(() => parseSchemaDocument("{}", "unavailable.json"), error =>
+      error.message === "Could not parse unavailable.json: parser unavailable" && error.cause === "parser unavailable");
+  } finally {
+    JSON.parse = originalParse;
+  }
 });
 
-test("imports use opaque identities and title collisions do not merge operation namespaces", () => {
+Then("imports use opaque identities and title collisions do not merge operation namespaces", () => {
   const firstId = createSchemaDocumentId();
   const secondId = createSchemaDocumentId();
   assert.notEqual(firstId, secondId);
@@ -74,7 +79,7 @@ test("imports use opaque identities and title collisions do not merge operation 
     assert.throws(() => validateSchemaDocument(document(), id), /schema ID/);
 });
 
-test("required metadata and invalid operation definitions have invalid-document diagnostics", () => {
+Then("required metadata and invalid operation definitions have invalid-document diagnostics", () => {
   for (const value of [
     document({}, { info: {} }), document({}, { info: { title: " ", version: "1" } }),
     document({}, { info: { title: "A", version: 1 } }), document({ operationId: 1 }),
@@ -89,7 +94,7 @@ test("required metadata and invalid operation definitions have invalid-document 
   assert.throws(() => validateSchemaDocument(duplicate, "test"), /duplicate operation identifier/);
 });
 
-test("valid OpenAPI features outside the executable subset say unsupported", () => {
+Then("valid OpenAPI features outside the executable subset say unsupported", () => {
   const parameter = schema => [{ in: "query", name: "x", schema }];
   for (const value of [
     document({}, { openapi: "3.2.0" }), document({ parameters: parameter({ type: "string", format: "uuid" }) }),
@@ -101,7 +106,7 @@ test("valid OpenAPI features outside the executable subset say unsupported", () 
   assert.equal(validateSchemaDocument(document({ security: [] }, { security: [{ apiKey: [] }] }), "test").operations.length, 1);
 });
 
-test("tag groups are namespaced, preserve descriptions and include untagged operations", () => {
+Then("tag groups are namespaced, preserve descriptions and include untagged operations", () => {
   const value = document({ tags: ["Items"] }, {
     tags: [{ name: "Items", description: "Manage inventory" }],
     paths: {
@@ -120,7 +125,7 @@ test("tag groups are namespaced, preserve descriptions and include untagged oper
   assert.equal(groups[0].description, "Manage inventory");
 });
 
-test("effective servers retain base paths, resolve defaults and follow operation/path precedence", () => {
+Then("effective servers retain base paths, resolve defaults and follow operation and path precedence", () => {
   const value = document({}, { servers: [{ url: "https://{host}/v{version}", variables: {
     host: { default: "api.example.test" }, version: { default: "2", enum: ["1", "2"] },
   } }] });
@@ -137,7 +142,7 @@ test("effective servers retain base paths, resolve defaults and follow operation
   assert.equal(validateSchemaDocument(value, "test").serverUrl, "https://operation.example.test/prefix");
 });
 
-test("local Path Item references retain inherited parameters and server overrides", () => {
+Then("local Path Item references retain inherited parameters and server overrides", () => {
   const value = document({}, {
     paths: { "/items/{id}": { $ref: "#/components/pathItems/item" } },
     components: { pathItems: { item: {
@@ -153,7 +158,7 @@ test("local Path Item references retain inherited parameters and server override
   assert.throws(() => validateSchemaDocument(value, "test"), /cyclic or malformed reference/);
 });
 
-test("path and response references reject unsafe targets without silently dropping sibling fields", () => {
+Then("path and response references reject unsafe targets without silently dropping sibling fields", () => {
   for (const [reference, reason] of [
     [{ $ref: 4 }, /\$ref must be a string/],
     [{ $ref: "https://remote.example.test/paths.json" }, /only local document references/],
@@ -169,7 +174,7 @@ test("path and response references reject unsafe targets without silently droppi
   }), "test"), /malformed percent encoding/);
 });
 
-test("server definitions require valid URL strings and usable variable defaults", () => {
+Then("server definitions require valid URL strings and usable variable defaults", () => {
   for (const [servers, reason] of [
     [{ url: "https://api.example.test" }, /servers must be an array/],
     [[{ url: 5 }], /server url must be a nonempty string/],
@@ -181,7 +186,7 @@ test("server definitions require valid URL strings and usable variable defaults"
   ]) assert.throws(() => validateSchemaDocument(document({}, { servers }), "test"), reason);
 });
 
-test("vendor extensions and empty webhooks remain metadata while executable webhooks and Swagger are rejected", () => {
+Then("vendor extensions and empty webhooks remain metadata while executable webhooks and Swagger are rejected", () => {
   const value = document({ responses: { ...response, "x-response-note": "retained" } }, { webhooks: {} });
   value.paths["x-path-note"] = "retained";
   const validated = validateSchemaDocument(value, "test");
@@ -192,7 +197,7 @@ test("vendor extensions and empty webhooks remain metadata while executable webh
   assert.throws(() => validateSchemaDocument(document({}, { swagger: "2.0" }), "test"), /Only OpenAPI 3.0 and 3.1/);
 });
 
-test("unsafe paths and unusable servers are rejected instead of routing to the application origin", () => {
+Then("unsafe paths and unusable servers are rejected instead of routing to the application origin", () => {
   for (const path of ["//other.example.test", "/../admin", "/%2e%2e/admin", "/one//two", "/one\\two", "/%2fhost", "/items?x=1", "/items#fragment"])
     assert.throws(() => validateSchemaDocument(document({}, { paths: { [path]: { get: { responses: response } } } }), "test"), /Unsupported by this application/);
   for (const servers of [undefined, [], [{ url: "/api" }], [{ url: "file:///tmp/api" }], [{ url: "https://u:p@example.test" }],
@@ -200,7 +205,7 @@ test("unsafe paths and unusable servers are rejected instead of routing to the a
     assert.throws(() => validateSchemaDocument(document({}, { servers }), "test"), /JSON-compatible|Unsupported by this application|Invalid OpenAPI document/);
 });
 
-test("both bundled schemas remain valid with their durable operation identifiers", () => {
+Then("both bundled schemas remain valid with their durable operation identifiers", () => {
   for (const catalog of bundledCatalogs)
   {
     const result = validateSchemaDocument(catalog.document, catalog.id);

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
-import test from 'node:test';
-import { layoutAddedGraph } from '../src/lib/workflow-layout.ts';
+import { Then } from '@cucumber/cucumber';
+import { layoutAddedGraph } from './lib/workflow-layout.ts';
 
 const operation = (id, width, height, position = { x: 180, y: 180 }) => ({ id, type: 'operation', position,
   measured: { width, height }, data: { operationId: id, name: id, description: '', method: 'GET', path: '/' } });
@@ -23,7 +23,7 @@ function assertNoOverlap(nodes) {
   }
 }
 
-test('measured schema trees keep wide owners clear, align columns, and separate unequal nested subtrees', () => {
+Then('measured workflow schema trees keep wide owners clear, align columns, and separate unequal nested subtrees', () => {
   const nodes = [operation('owner', 481, 143), panel('query', 'inputs', 277, 231), panel('nested-query', 'inputs', 323, 112),
     panel('response', 'outputs', 293, 208), panel('error', 'outputs', 209, 351), panel('body', 'outputs', 267, 471),
     panel('headers', 'outputs', 192, 146), panel('body-a', 'outputs', 193, 149), panel('body-b', 'outputs', 299, 177)];
@@ -47,7 +47,7 @@ test('measured schema trees keep wide owners clear, align columns, and separate 
   assert.deepEqual(nodes, before, 'Layout must not mutate its input nodes.');
 });
 
-test('append places all new inputs after existing bounds and preserves the previous owner row', () => {
+Then('appended workflow nodes place all new inputs after existing bounds and preserve the previous owner row', () => {
   const existing = [operation('previous', 413, 111, { x: -313, y: -47.5 }),
     { ...panel('previous-output', 'outputs', 397, 200, 'previous'), position: { x: 511, y: 500 } },
     { ...panel('hidden', 'outputs', 500, 500), position: { x: 1_000_000, y: 1_000_000 }, hidden: true }];
@@ -61,7 +61,7 @@ test('append places all new inputs after existing bounds and preserves the previ
   assert.deepEqual(existing, original, 'Existing user-arranged nodes must stay unchanged.');
 });
 
-test('utility nodes also append to the right and snap their centers', () => {
+Then('workflow utility nodes append to the right and snap their centers', () => {
   const previous = [operation('previous', 220, 96, { x: 0, y: 0 })];
   const utility = { id: 'cast', type: 'cast', position: { x: 8, y: -700 }, measured: { width: 231, height: 82 }, data: { targetType: 'Text' } };
   const result = layoutAddedGraph([utility], [], previous, 12, utility.id);
@@ -71,7 +71,7 @@ test('utility nodes also append to the right and snap their centers', () => {
   assert.equal(result[0].data, utility.data);
 });
 
-test('unmeasured nodes use explicit dimensions or safe defaults while missing owners stay untouched', () => {
+Then('unmeasured workflow nodes use explicit dimensions or safe defaults while missing owners stay untouched', () => {
   const owner = operation('owner');
   delete owner.measured;
   const child = panel('response', 'outputs');
@@ -85,7 +85,7 @@ test('unmeasured nodes use explicit dimensions or safe defaults while missing ow
   assert.deepEqual(layoutAddedGraph([owner], [], [], 12, 'absent'), [owner]);
 });
 
-test('nonstructural, hidden, duplicate and cyclic edges cannot distort the new schema tree', () => {
+Then('nonstructural, hidden, duplicate and cyclic workflow edges cannot distort the new schema tree', () => {
   const owner = operation('owner', 200, 80);
   const child = panel('child', 'outputs', 240, 100);
   const hidden = { ...panel('hidden', 'outputs', 900, 900), hidden: true };

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
-import test from 'node:test';
-import { createOperationGraph, getAdditionalPropertyTypes } from '../src/lib/workflow-graph.ts';
+import { Then } from '@cucumber/cucumber';
+import { createOperationGraph, getAdditionalPropertyTypes } from './lib/workflow-graph.ts';
 
 const output = 'response:200:application/json';
 const types = ['Text', 'Integer', 'Number', 'Boolean', 'Object', 'Array', 'Null'];
@@ -26,7 +26,7 @@ const panel = (group, path, direction = 'outputs') => ({ id: nodeId(group, path)
   position: { x: 0, y: 0 }, data: { ownerId: 'owner', direction, label: 'Imported panel', fields: [] } });
 const allowed = (graph, id = nodeId(output, '/body')) => getAdditionalPropertyTypes(graph.nodes, id, graph.document);
 
-test('response headers project one documented content representation and keep ambiguous headers nonconnectable', () => {
+Then('workflow response headers project one documented content representation and keep ambiguous headers nonconnectable', () => {
   const graph = fixture();
   graph.source.responses[200].headers = {
     Count: { required: true, description: 'Remaining requests', content: { 'text/plain': { schema: { type: 'integer' } } } },
@@ -43,7 +43,7 @@ test('response headers project one documented content representation and keep am
   assert.equal(fields[0].description, 'Remaining requests');
 });
 
-test('malformed additional-property constraints cannot enable arbitrary fields', () => {
+Then('malformed workflow additional-property constraints cannot enable arbitrary fields', () => {
   for (const schema of [
     { type: 'object', properties: [] }, { type: 'object', required: 'name' }, { type: 'object', required: [1] },
     { type: 'array', items: [] }, { type: 'string', enum: 'value' }, { type: 'string', enum: [] },
@@ -55,7 +55,7 @@ test('malformed additional-property constraints cannot enable arbitrary fields',
   assert.deepEqual(allowed(fixture({ type: 'object', additionalProperties: { type: 'string', enum: ['value'] } })), ['Text']);
 });
 
-test('imported panels require a real owner and a canonical, well-formed schema identity', () => {
+Then('imported workflow panels require a real owner and a canonical well-formed schema identity', () => {
   for (const mutate of [
     graph => { graph.nodes = graph.nodes.filter(node => node.id !== 'owner'); },
     graph => { graph.nodes[0].type = 'cast'; },
@@ -77,7 +77,7 @@ test('imported panels require a real owner and a canonical, well-formed schema i
   assert.deepEqual(allowed(legacyOwner), types, 'Legacy operation owners without an explicit type remain supported.');
 });
 
-test('legacy output panels require an available response and a named object media representation', () => {
+Then('legacy workflow output panels require an available response and a named object media representation', () => {
   const check = (group, mutate, expected = []) => {
     const graph = fixture();
     const node = panel(group, '');
@@ -94,7 +94,7 @@ test('legacy output panels require an available response and a named object medi
   check(output, graph => { delete graph.source.responses; });
 });
 
-test('stale imported child panels cannot authorize changes through missing parents or changed schemas', () => {
+Then('stale imported workflow child panels cannot authorize changes through missing parents or changed schemas', () => {
   const childId = nodeId(output, '/body/child');
   for (const mutate of [
     graph => { graph.nodes = graph.nodes.filter(node => node.id !== nodeId(output, '/body')); },
@@ -117,7 +117,7 @@ test('stale imported child panels cannot authorize changes through missing paren
   }
 });
 
-test('imported array panels reject unsupported item constraints and paths beyond the expansion limit', () => {
+Then('imported workflow array panels reject unsupported item constraints and paths beyond the expansion limit', () => {
   const graph = fixture({ type: 'array', items: { type: 'object' } });
   const itemsId = nodeId(output, '/body/items');
   assert.deepEqual(allowed(graph, itemsId), types);

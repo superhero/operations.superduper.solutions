@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import { Then } from '@cucumber/cucumber';
 import { createOperationGraph, createUtilityNode, addAdditionalProperty, getEditableAdditionalProperties,
-  updateAdditionalProperty, removeAdditionalProperty } from '../src/lib/workflow-graph.ts';
+  updateAdditionalProperty, removeAdditionalProperty } from './lib/workflow-graph.ts';
 
 const identity = (path, group = 'input:body') => encodeURIComponent(JSON.stringify([group, path]));
 const field = (id) => ({ id, label: 'Imported field', type: 'Text', required: false, description: '', connectable: true });
@@ -21,7 +21,7 @@ const add = (fixture, name, type = 'Text', nodeId = fixture.node.id) => {
   return fixture;
 };
 
-test('only canonical direct user properties are offered for editing', () => {
+Then('only canonical direct workflow user properties are offered for editing', () => {
   const f = fixture({ type: 'object', properties: { fixed: { type: 'string' } } });
   f.node.data.fields.push(...['%', 'null', identity('/x', 'wrong-group'), identity('outside'),
     identity('/child/nested'), identity('/bad~2'), identity('/valid')].map(field));
@@ -31,7 +31,7 @@ test('only canonical direct user properties are offered for editing', () => {
   assert.deepEqual(getEditableAdditionalProperties(constrained.graph.nodes, constrained.node.id, constrained.document), []);
 });
 
-test('removing the last custom field restores the empty-object notice', () => {
+Then('removing the last custom workflow field restores the empty-object notice', () => {
   const f = add(fixture(), 'last');
   const result = removeAdditionalProperty(f.graph.nodes, f.graph.edges, f.node.id, identity('/last'), f.document);
   const node = result.nodes.find(node => node.id === f.node.id);
@@ -39,7 +39,7 @@ test('removing the last custom field restores the empty-object notice', () => {
   assert.equal(node.data.notice, 'No named properties documented');
 });
 
-test('input property type changes retain incoming wires and unrelated mappings', () => {
+Then('workflow input property type changes retain incoming wires and unrelated mappings', () => {
   const f = add(fixture(), 'old');
   for (const id of ['source', 'other']) f.graph.nodes.push(createUtilityNode('cast', { x: 800, y: 0 }, id));
   f.graph.edges.push({ id: 'incoming', kind: 'mapping', source: 'source', sourceHandle: 'result', target: f.node.id, targetHandle: identity('/old') },
@@ -49,7 +49,7 @@ test('input property type changes retain incoming wires and unrelated mappings',
   assert.deepEqual(result.edges.find(edge => edge.id === 'unrelated'), f.graph.edges.find(edge => edge.id === 'unrelated'));
 });
 
-test('renaming preserves order-only edges and recalculates required names', () => {
+Then('workflow property renaming preserves order-only edges and recalculates required names', () => {
   const f = add(fixture({ type: 'object', required: ['new'] }), 'old');
   const other = structuredClone(f.graph.nodes[0]);
   other.id = 'other';
@@ -60,7 +60,7 @@ test('renaming preserves order-only edges and recalculates required names', () =
   assert.equal(result.nodes.find(node => node.id === f.node.id).data.fields[0].required, true);
 });
 
-test('renaming a branch rejects malformed descendant identities without changing its source graph', () => {
+Then('renaming a workflow branch rejects malformed descendant identities without changing its source graph', () => {
   for (const invalid of ['%', identity('/unrelated'), identity('/old/value', 'wrong-group')]) {
     const f = add(fixture(), 'old', 'Object');
     const child = f.graph.nodes.find(node => node.id === `owner:${identity('/old')}`);
@@ -71,7 +71,7 @@ test('renaming a branch rejects malformed descendant identities without changing
   }
 });
 
-test('branch renaming enforces descendant path and encoded identity limits', () => {
+Then('workflow branch renaming enforces descendant path and encoded identity limits', () => {
   for (const name of ['n'.repeat(200), '雪'.repeat(180)]) {
     const f = add(fixture(), 'old', 'Object');
     add(f, 'a'.repeat(200), 'Object', `owner:${identity('/old')}`);
