@@ -18,25 +18,28 @@ fail() {
   fail 'Usage: validate-pr.sh <repository> <head-branch> <base-branch> <full-head-sha>; four arguments and a full 40-character head SHA are required.'
 
 case "$base_branch:$head_branch" in
-  main:docs/*|develop:docs/*|main:release/*|main:hotfix/*|develop:feature/*|develop:bugfix/*|develop:release/*|develop:hotfix/*|develop:main|release/*:bugfix/*|release/*:hotfix/*|support/*:hotfix/*) ;;
+  main:docs/*|develop:docs/*|release/*:docs/*|main:release/*|main:hotfix/*|develop:feature/*|develop:bugfix/*|develop:release/*|develop:hotfix/*|develop:main|release/*:bugfix/*|release/*:hotfix/*|support/*:hotfix/*) ;;
   *) fail "Branch '$head_branch' may not merge into '$base_branch'." ;;
 esac
 
 case "$head_branch" in
   release/*|hotfix/*) ;;
-  bugfix/*) [[ "$base_branch" == release/* ]] || exit 0 ;;
+  bugfix/*|docs/*) [[ "$base_branch" == release/* ]] || exit 0 ;;
   *) exit 0 ;;
 esac
 kind="${head_branch%%/*}"
 version="${head_branch#*/}"
-if [[ "$kind" != bugfix ]]; then
+if [[ "$kind" == release || "$kind" == hotfix ]]; then
   bash "$(dirname "${BASH_SOURCE[0]}")/validate-semver.sh" "$version" >/dev/null ||
     fail "Invalid $kind version '$version'."
 fi
 
 # Capture API results before inspecting them: failed requests must never mean
 # an available tag or an empty set of active branches.
-tags="$(gh api --paginate "repos/$repository/tags?per_page=100" | jq -sc '[.[][] | .name]')" ||
+tags="$(gh api --paginate "repos/$repository/tags?per_page=100" |
+  jq -cse 'if length > 0 and all(.[]; type == "array" and
+      all(.[]; type == "object" and (.name | type == "string" and length > 0)))
+    then [.[][] | .name] else error("Expected pages of repository tags") end')" ||
   fail 'Could not list repository tags.'
 closed_main_prs=""
 load_closed_main_prs() {
@@ -63,7 +66,7 @@ validate_release_target() {
     fail "Target release '$base_branch' already exists as a tag or merged release."
   fi
 }
-if [[ "$kind" == bugfix ]]; then
+if [[ "$kind" == bugfix || "$kind" == docs ]]; then
   validate_release_target
   exit 0
 fi

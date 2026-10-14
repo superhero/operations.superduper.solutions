@@ -16,8 +16,12 @@ Feature: Lightweight documentation workflow routing
       | source       | target  | outcome |
       | docs/readme  | main    | enabled |
       | docs/readme  | develop | enabled |
+      | docs/readme  | release/1.2.3 | enabled |
       | bugfix/docs  | main    | skipped |
       | feature/docs | develop | skipped |
+
+  Scenario: Documentation-only advances on a release source do not restart publication
+    Then a documentation-only release advance cannot reach application or publication jobs
 
   Scenario: Documentation validation cannot execute proposed automation
     Given the documentation workflow configuration

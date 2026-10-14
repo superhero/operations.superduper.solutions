@@ -18,9 +18,70 @@ permissions:
   contents: read
 
 jobs:
+  release-route:
+    name: Classify Release Update
+    if: "!startsWith(github.head_ref, 'docs/')"
+    permissions:
+      contents: read
+    outputs:
+      run_release: ${{ steps.classify.outputs.run_release }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout trusted event base automation
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Fetch pinned release update objects
+        if: github.event.action == 'synchronize' && startsWith(github.head_ref, 'release/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [[ ! -e .github/scripts/classify-release-update.sh ]]; then
+            echo 'Trusted base predates release routing; no incremental comparison is needed.'
+            exit 0
+          fi
+          [[ "$BEFORE_SHA" =~ ^[0-9a-f]{40}$ && "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            echo '::error::Full previous and current release head SHAs are required.' >&2
+            exit 1
+          }
+          authorization="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w 0)"
+          echo "::add-mask::$authorization"
+          GIT_CONFIG_COUNT=1 \
+            GIT_CONFIG_KEY_0="http.${GITHUB_SERVER_URL}/.extraheader" \
+            GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $authorization" \
+            git fetch --no-tags origin "$BEFORE_SHA" "$HEAD_SHA"
+
+      - name: Classify release update
+        id: classify
+        env:
+          EVENT_ACTION: ${{ github.event.action }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+          BEFORE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          # Bootstrap the first promotion of this workflow while main still
+          # predates its helper. Keep the legacy full pipeline in that case.
+          if [[ ! -e .github/scripts/classify-release-update.sh ]]; then
+            echo 'run_release=true' >> "$GITHUB_OUTPUT"
+            echo 'Trusted base predates release routing; run the full pipeline.'
+            exit 0
+          fi
+          bash .github/scripts/classify-release-update.sh "$EVENT_ACTION" "$HEAD_BRANCH" "$BEFORE_SHA" "$HEAD_SHA"
+
   workflow-checks:
     name: Automation Checks
-    if: "!startsWith(github.head_ref, 'docs/')"
+    needs: release-route
+    if: >-
+      !startsWith(github.head_ref, 'docs/')
+      && needs.release-route.outputs.run_release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -61,11 +122,13 @@ jobs:
 
   validate-pr:
     name: Validate Gitflow
+    needs: release-route
     permissions:
       contents: read
       pull-requests: read
     if: >-
       !startsWith(github.head_ref, 'docs/')
+      && needs.release-route.outputs.run_release == 'true'
       && (github.head_ref != 'develop')
     runs-on: ubuntu-latest
     timeout-minutes: 5

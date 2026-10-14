@@ -18,7 +18,7 @@ function workflow(name)
   return document.toJS();
 }
 
-function condition(expression, { source = "docs/readme", target = "main", fork = false, draft = false, updated = false } = {})
+function condition(expression, { source = "docs/readme", target = "main", fork = false, draft = false, updated = false, runRelease = true } = {})
 {
   assert.equal(typeof expression, "string", "The job or step must explicitly guard its route");
   const github = {
@@ -28,9 +28,11 @@ function condition(expression, { source = "docs/readme", target = "main", fork =
     event: { pull_request: { draft, head: { repo: { full_name: fork ? "fork/project" : "owner/project" } } } }
   };
   // These checked-in job conditions use GitHub's Boolean/string expression subset.
-  const evaluate = new Function("github", "startsWith", "steps", `return (${expression.replace(/^\s*\$\{\{([\s\S]*)\}\}\s*$/, "$1")});`);
+  const evaluate = new Function("github", "startsWith", "steps", "needs", `return (${expression
+    .replace(/^\s*\$\{\{([\s\S]*)\}\}\s*$/, "$1").replaceAll("needs.release-route", 'needs["release-route"]')});`);
   return evaluate(github, (value, prefix) => value.toLowerCase().startsWith(prefix.toLowerCase()),
-    { prepare: { outputs: { updated: String(updated) } } });
+    { prepare: { outputs: { updated: String(updated) } } },
+    { "release-route": { outputs: { run_release: String(runRelease) } } });
 }
 
 Given("the documentation workflow configuration", function ()
@@ -47,7 +49,7 @@ Then("the dedicated documentation job is {string}", function (outcome)
 {
   const configuration = this.documentationWorkflow;
   assert.deepEqual(Object.keys(configuration.on), ["pull_request_target"]);
-  assert.deepEqual(configuration.on.pull_request_target.branches, ["main", "develop"]);
+  assert.deepEqual(configuration.on.pull_request_target.branches, ["main", "develop", "release/**"]);
   assert.deepEqual(configuration.on.pull_request_target.types, ["opened", "synchronize", "reopened", "edited", "ready_for_review"]);
   assert.equal(condition(configuration.jobs.documentation.if, this.documentationRoute), outcome === "enabled");
 });
@@ -55,7 +57,7 @@ Then("the dedicated documentation job is {string}", function (outcome)
 Then("documentation branches skip every regular job on that target", function ()
 {
   const { target } = this.documentationRoute;
-  const regular = workflow(`ci-${target}`);
+  const regular = workflow(`ci-${target.startsWith("release/") ? "release" : target}`);
   assert.deepEqual(Object.keys(regular.on), ["pull_request"]);
   for (const [name, job] of Object.entries(regular.jobs))
   {
@@ -69,7 +71,7 @@ Then("documentation branches skip every regular job on that target", function ()
 Then("documentation validation uses only trusted default-branch code and pinned Git objects", function ()
 {
   const configuration = this.documentationWorkflow;
-  assert.deepEqual(configuration.permissions, { actions: "read", contents: "read" });
+  assert.deepEqual(configuration.permissions, { actions: "read", contents: "read", "pull-requests": "read" });
   const policy = JSON.parse(readFileSync(new URL("../policies/documentation-events.json", import.meta.url), "utf8"));
   assert.equal(policy.enforcement, "active");
   assert.deepEqual(policy.conditions, {
@@ -94,6 +96,7 @@ Then("documentation validation uses only trusted default-branch code and pinned 
   assert.doesNotMatch(fetch.run, /\$\{\{/);
   assert.equal(validation.env.HEAD_SHA, HEAD_SHA);
   assert.equal(validation.env.BASE_SHA, BASE_SHA);
+  assert.equal(validation.env.GH_TOKEN, "${{ github.token }}", "Release target validation needs read-only API access");
   assert.equal(validation.run.trim(), [
     'bash .github/scripts/validate-pr.sh "$REPOSITORY" "$HEAD_BRANCH" "$BASE_BRANCH" "$HEAD_SHA"',
     'bash .github/scripts/validate-documentation-changes.sh "$BASE_SHA" "$HEAD_SHA"'
@@ -166,6 +169,36 @@ Then("documentation merging shares the destination merge lock", function ()
 {
   const lock = this.documentationWorkflow.jobs.documentation.concurrency;
   assert.deepEqual(lock, { group: "merge-${{ github.base_ref }}", "cancel-in-progress": false });
-  for (const target of ["main", "develop"])
+  for (const target of ["main", "develop", "release"])
     assert.deepEqual(workflow(`ci-${target}`).jobs["auto-merge"].concurrency, lock);
+  const outer = this.documentationWorkflow.concurrency;
+  assert.equal(outer["cancel-in-progress"], false);
+  const evaluate = new Function("github", "startsWith", "format", `return (${outer.group.slice(3, -2)});`);
+  const group = (source, target) => evaluate({ head_ref: source, base_ref: target, event: { pull_request: { number: 123 } } },
+    (value, prefix) => value.startsWith(prefix), (value, number) => value.replace("{0}", number));
+  assert.equal(group("docs/readme", "release/1.2.3"), "merge-main", "Release docs also exclude production merging");
+  assert.notEqual(group("docs/readme", "main"), "merge-main", "A workflow must not deadlock on its own job lock");
+  assert.notEqual(group("bugfix/editor", "release/1.2.3"), "merge-main", "Skipped docs jobs must not reserve production merging");
+});
+
+Then("a documentation-only release advance cannot reach application or publication jobs", function ()
+{
+  const jobs = workflow("ci-main").jobs;
+  for (const root of ["workflow-checks", "validate-pr"])
+  {
+    assert.deepEqual(jobs[root].needs, "release-route");
+    assert.equal(condition(jobs[root].if, { source: "release/1.2.3", runRelease: false }), false);
+    assert.equal(condition(jobs[root].if, { source: "release/1.2.3", runRelease: true }), true);
+  }
+  const reached = new Set(["release-route"]);
+  for (const [name, job] of Object.entries(jobs))
+  {
+    if (name === "release-route") continue;
+    assert.doesNotMatch(job.if, /\b(?:always|failure|cancelled)\s*\(/, "Downstream jobs must retain successful prerequisites");
+    const dependencies = Array.isArray(job.needs) ? job.needs : [job.needs];
+    assert.ok(dependencies.every(dependency => Object.hasOwn(jobs, dependency)), `${name} requires known routing dependencies`);
+    if (dependencies.every(dependency => reached.has(dependency)) &&
+      condition(job.if, { source: "release/1.2.3", runRelease: false })) reached.add(name);
+  }
+  assert.deepEqual([...reached], ["release-route"]);
 });

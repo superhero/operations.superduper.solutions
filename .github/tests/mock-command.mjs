@@ -30,6 +30,7 @@ try
         request.fields[field.slice(0, separator)] = field.slice(separator + 1);
       }
       else if (argument === "--paginate") continue;
+      else if (argument === "--include") request.include = true;
       else
       {
         assert.ok(!argument.startsWith("-") && request.endpoint === undefined, `Unexpected gh argument: ${argument}`);

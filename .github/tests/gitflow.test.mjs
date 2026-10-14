@@ -100,9 +100,10 @@ Given("the release stabilization target is {string}", function (state)
   this.policyResponses = base => {
     const version = base.replace(/^release\//, "");
     const unavailable = { exit_code: 1, stderr: "GitHub unavailable" };
-    const responses = [get(TAGS, state === "tagged" ? [{ name: version }] : [],
-      state === "tags unavailable" ? unavailable : {})];
-    if (state === "tagged" || state === "tags unavailable" ||
+    const tags = state === "tagged" ? [{ name: version }] : [];
+    const responses = [get(TAGS, {}, state === "tags unavailable" ? unavailable :
+      { pages: state === "invalid tags" ? [{}] : state === "invalid tag record" ? [[{}]] : [[], tags] })];
+    if (["tagged", "tags unavailable", "invalid tags", "invalid tag record"].includes(state) ||
       !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) return responses;
     const closed = state.startsWith("merged ") ? [mergedRelease(version, state.slice(7))] : [];
     responses.push(get(CLOSED_PULLS, {}, state === "history unavailable" ? unavailable :
@@ -249,6 +250,8 @@ When("Gitflow validates {string} into {string}", function (head, base)
   if (!responses)
   {
     responses = [];
+    if (/^(bugfix|docs)\//.test(head) && base.startsWith("release/"))
+      responses = [get(TAGS, []), get(CLOSED_PULLS, [])];
     if (/^(release|hotfix)\/(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(head))
     {
       responses = availableVersion();
@@ -267,6 +270,11 @@ Then("Gitflow validation is {string}", function (outcome)
 Then("the Gitflow error explains {string}", function (reason)
 {
   if (reason) assert.ok(this.policyResult.stderr.includes(reason), this.policyResult.stderr);
+});
+
+Then("Gitflow makes no API requests", function ()
+{
+  assert.deepEqual(this.automation.calls(), []);
 });
 
 Given("the validated pull request has {string} when merging starts", function (state)

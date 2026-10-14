@@ -11,12 +11,16 @@ fail() {
   exit 1
 }
 if ! [[ $# == 2 && "$repository" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ &&
-  ( "$base_branch" == main || "$base_branch" == develop ) ]]; then
-  fail 'Usage: validate-documentation-merge.sh <owner/repository> <main|develop>.'
+  ( "$base_branch" == main || "$base_branch" == develop || "$base_branch" == release/* ) ]]; then
+  fail 'Usage: validate-documentation-merge.sh <owner/repository> <main|develop|release/version>.'
 fi
-[[ "$base_branch" == main ]] || exit 0
+if [[ "$base_branch" == release/* ]]; then
+  bash "$(dirname "${BASH_SOURCE[0]}")/validate-semver.sh" "${base_branch#*/}" >/dev/null ||
+    fail "Invalid target release version '${base_branch#*/}'."
+fi
+[[ "$base_branch" != develop ]] || exit 0
 
-# Called while holding the main merge lock: a release waiting for that lock
+# Both main and release documentation hold the main merge lock: a release
 # cannot start publication between this check and the documentation merge.
 runs="$(gh api --paginate "repos/$repository/actions/workflows/ci-main.yml/runs?status=in_progress&per_page=100")" ||
   fail 'Could not inspect active production releases; no documentation merge attempted.'
