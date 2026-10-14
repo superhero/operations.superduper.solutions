@@ -253,6 +253,58 @@ Then("the reusable workflow keeps its ports and embedded definition", async func
   assert.deepEqual(saved.find(item => item.id === this.reusableFixture.id), this.reusableFixture);
 });
 
+function embeddedWorkflow(id, snapshot, x = 0) {
+  return { id, type: "workflow", position: { x, y: 0 }, data: {
+    workflowId: snapshot.id, name: snapshot.name, description: snapshot.description, snapshot,
+  } };
+}
+
+Given("a saved workflow containing a reference to itself", async function () {
+  this.referenceSource = emptyDocument("self-reference", "Original self-reference");
+  await loadDocuments(this.page, [{ ...this.referenceSource,
+    nodes: [embeddedWorkflow("embedded-self", this.referenceSource)],
+  }]);
+  await expect(node(this.page, "workflow")).toHaveCount(1);
+});
+
+Then("the self-reference shows {string} with its original snapshot", async function (name) {
+  const reference = node(this.page, "workflow");
+  await expect(reference.locator(".operation-title-row strong")).toHaveText(name);
+  await expect(reference.locator("[data-workflow-name]")).toHaveAttribute("data-workflow-name", name);
+  const { document } = await readExport(this.page);
+  assert.equal(document.name, name);
+  assert.deepEqual(document.nodes[0].data.snapshot, this.referenceSource);
+});
+
+Given("a parent workflow containing two copies of a saved workflow", async function () {
+  this.referenceSource = emptyDocument("rename-source", "Original source workflow");
+  const parent = { ...emptyDocument("rename-parent", "Parent of renamed references"), nodes: [
+    embeddedWorkflow("first-reference", this.referenceSource),
+    embeddedWorkflow("second-reference", this.referenceSource, 360),
+  ] };
+  await loadDocuments(this.page, [this.referenceSource, parent]);
+  await expect(node(this.page, "workflow")).toHaveCount(2);
+  this.referenceParent = await repository(this.page, "load", parent.id);
+});
+
+When("the saved source workflow is renamed to {string}", async function (name) {
+  const source = await repository(this.page, "load", this.referenceSource.id);
+  await repository(this.page, "save", { ...source.document, name }, source.revision);
+});
+
+When("the saved source workflow is removed", async function () {
+  await repository(this.page, "remove", [this.referenceSource.id]);
+});
+
+Then("both references show {string} without changing their saved definitions", async function (name) {
+  await expect(node(this.page, "workflow").locator(".operation-title-row strong")).toHaveText([name, name]);
+  const { document } = await readExport(this.page);
+  assert.deepEqual(document.nodes, this.referenceParent.document.nodes);
+  const parent = await repository(this.page, "load", this.referenceParent.document.id);
+  assert.equal(parent.revision, this.referenceParent.revision, "A source-name update must not create a parent revision.");
+  assert.deepEqual(parent.document.nodes, this.referenceParent.document.nodes);
+});
+
 Given("three saved workflow control examples", async function () {
   this.controlDocuments = [emptyDocument("remove-a", "Remove alpha"), emptyDocument("remove-b", "Remove beta"), emptyDocument("keep", "Keep this plan")];
   await loadDocuments(this.page, this.controlDocuments);

@@ -19,6 +19,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const { getNodes } = useSvelteFlow();
   const updateNodeInternals = useUpdateNodeInternals();
   const branchesFor = getContext<(id: string) => Map<string, Branch> | undefined>("workflow-branches");
+  const nameFor = getContext<(id: string) => string | undefined>("workflow-name");
+  const displayName = $derived(nameFor(data.workflowId) || data.name);
   const occurrences = $derived(getNodes().filter(node => node.type === "workflow" && node.data.workflowId === data.workflowId));
   const ordinal = $derived(occurrences.length > 1 ? occurrences.findIndex(node => node.id === id) + 1 : 0);
   const branches = $derived(branchesFor(id));
@@ -26,7 +28,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     inputs: [...(branches?.values() ?? [])].filter(branch => branch.direction === "inputs"),
     outputs: [...(branches?.values() ?? [])].filter(branch => branch.direction === "outputs")
   });
-  const layout = $derived(JSON.stringify([data.name, ordinal, ports]));
+  const layout = $derived(JSON.stringify([displayName, ordinal, ports]));
   $effect(() => { layout; untrack(() => updateNodeInternals(id)); });
   function blockPointer(event: MouseEvent | TouchEvent) { event.stopPropagation(); }
 </script>
@@ -56,13 +58,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </div>
 {/snippet}
 
-<div class="workflow-owner-node workflow-reference-node" class:selected data-workflow-name={data.name}>
+<div class="workflow-owner-node workflow-reference-node" class:selected data-workflow-name={displayName}>
   {@render portRow("inputs")}
   <HintButton label={data.description} labelAsName={false} tooltipEnabled={Boolean(data.description)} tabindex={-1}>
     {#snippet child({ props })}
       {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
       <div {...hintProps} class="operation-title-row">
-        <MaterialIcon name="flowsheet" size={28} /><strong>{data.name}</strong>
+        <MaterialIcon name="flowsheet" size={28} /><strong>{displayName}</strong>
         {#if ordinal}<span class="instance-pill" aria-label={`Instance ${ordinal}`}>{ordinal}</span>{/if}
       </div>
     {/snippet}

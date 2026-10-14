@@ -124,8 +124,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const edgeOptions = $derived({ animated: dashed, markerEnd: { type: MarkerType.ArrowClosed }, type: curved ? "default" : "smoothstep", style: dashed ? "stroke-dasharray: var(--workflow-dash-length, 6) var(--workflow-dash-gap, 4)" : "" });
   const branches = $derived(schemaBranches(nodes, edges));
   const inputTypes = $derived(routingInputTypes(nodes, edges));
+  const workflowNames = $derived(new Map(documents.map(document => [document.id, document.name])));
 
   setContext("workflow-branches", (nodeId: string) => branches.get(nodeId));
+  // Reference titles follow live names without changing their embedded definitions.
+  setContext("workflow-name", (workflowId: string) => workflowId === id ? name : workflowNames.get(workflowId));
   setContext("workflow-editor-active", () => keyboardActive);
   setContext("workflow-curve-strength", () => workflowDefaults.curveStrength);
   setContext("workflow-connection-options", () => ({ curved, strength: workflowDefaults.curveStrength,
