@@ -370,8 +370,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .palette-heading strong { font-size: 13px; font-weight: 700; }
   .palette-swatches { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); overflow: hidden; }
   .palette-swatches > span { height: 108px; }
-  .palette-swatches :global(.palette-selected-icon) { position: absolute; top: 50%; left: 50%; width: 64px; height: 64px; transform: translate(-50%, -50%) scale(0); color: var(--color-catalog-active); text-shadow: 0 2px 4px var(--color-catalog-active-foreground); font-variation-settings: "FILL" 1; transition: transform 180ms ease-in, color 180ms ease-in, text-shadow 180ms ease-in; pointer-events: none; }
-  input:checked + .palette-card :global(.palette-selected-icon) { transform: translate(-50%, -50%) scale(1); transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), color 180ms ease-in, text-shadow 180ms ease-in; }
+  .palette-swatches :global(.palette-selected-icon) { position: absolute; top: 50%; left: 50%; width: 64px; height: 64px; transform: translate(-50%, -50%) scale(0); color: var(--color-catalog-active); font-variation-settings: "FILL" 1; transition: transform 180ms ease-in, color 180ms ease-in; pointer-events: none; }
+  input:checked + .palette-card :global(.palette-selected-icon) { transform: translate(-50%, -50%) scale(1); transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), color 180ms ease-in; }
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
     .palette-choice { z-index: 0; will-change: transform; transition: transform 180ms ease-in, z-index 0s linear 180ms; }
     .palette-choice:hover { z-index: 2; transform: scale(min(1.10, var(--hover-scale, 1.10))); transition-delay: 0s; }
