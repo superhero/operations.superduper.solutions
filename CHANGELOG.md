@@ -48,6 +48,14 @@ Generate browser and compatibility icons from the schema artwork with a\nshared 
 
 ```
 
+<!-- changelog-commit:607fdec818bd682b2463bab3abc10c8e12cc8c06 -->
+### Commit [`607fdec`](https://github.com/superhero/operations.superduper.solutions/commit/607fdec818bd682b2463bab3abc10c8e12cc8c06)
+
+```text
+fix(ui): use Spring colors for the favicon
+
+```
+
 <!-- changelog-staging-end -->
 
 ## 0.0.42
