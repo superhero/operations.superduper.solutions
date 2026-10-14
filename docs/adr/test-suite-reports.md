@@ -40,12 +40,8 @@ behavioral tests. Changes to coverage scope must preserve that verification.
 Report completeness, passing tests and coverage are separate requirements;
 assertions must verify meaningful outcomes, not merely execute code.
 
-## Pending migration
+## Remaining migration
 
-Standalone Node tests run through `test:unit` within `test:source`, affecting CI
-and coverage without appearing in the combined report or scenario count.
-Isolated browser smoke scripts also remain outside reporting.
-
-These tests must move into the appropriate Cucumber profiles, preserving
-assertions, failure behavior and coverage. Verify report and badge inclusion
-before removing the old execution path. New tests follow the Cucumber standard.
+Isolated browser smoke scripts still need migration into browser Cucumber
+scenarios. Preserve their assertions and failure behavior, and verify each
+case appears in reports and badges before removing its old execution path.

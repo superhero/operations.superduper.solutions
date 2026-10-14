@@ -85,6 +85,34 @@ Record through a dedicated worker with bounded pending work, guarded failures an
 
 ```
 
+<!-- changelog-commit:df6803cb23e9799f255859c8b7a595775ee444d4 -->
+### Commit [`df6803c`](https://github.com/superhero/operations.superduper.solutions/commit/df6803cb23e9799f255859c8b7a595775ee444d4)
+
+```text
+test: migrate standalone source tests to Cucumber
+
+Report all 78 existing Node test cases as individual source scenarios while
+preserving their assertions and restoring shared state after each case.
+Remove the separate test:unit path so source execution, coverage, reports
+and scenario badges use the same Cucumber results.
+
+Verify explicit source registration and real runner failure propagation,
+including cleanup-hook failures, through generated HTML and badge outputs.
+Update contributor guidance while retaining the separate browser smoke
+migration gap.
+
+```
+
+<!-- changelog-commit:efd5d7114ecd15749e9eb58a996614570fc179da -->
+### Commit [`efd5d71`](https://github.com/superhero/operations.superduper.solutions/commit/efd5d7114ecd15749e9eb58a996614570fc179da)
+
+```text
+Merge develop into feature/cucumber-test-reporting
+
+Reconcile the error-monitoring worker fixture with Cucumber cleanup and retain the new error namespace. Regenerate scenario totals for the combined reporting and documentation-target changes.
+
+```
+
 <!-- changelog-staging-end -->
 
 ## 0.0.42

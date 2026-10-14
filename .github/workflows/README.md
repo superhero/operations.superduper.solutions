@@ -61,7 +61,7 @@ The [npm command reference](../../README.md#npm-commands) covers individual comm
 
 Use `test:source:coverage` instead of `test:source` when collecting coverage.
 The [testing ADR](../../docs/adr/test-suite-reports.md) defines Cucumber reporting
-and records the remaining standalone Node and browser smoke-test gap.
+and records the remaining browser smoke-test gap.
 
 ### Generate the combined report
 

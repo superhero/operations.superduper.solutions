@@ -131,8 +131,8 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 <details>
 <summary><code>npm run test:source</code></summary>
 
-- **Purpose:** Run source scenarios, then standalone Node tests (`npm run test:unit`).
-  Cucumber scenario reporting is preserved; Node test results are printed separately.
+- **Purpose:** Run all source behavior and unit scenarios through Cucumber,
+  recording each result in `tmp/test/cucumber-source.json`.
 - **Requirements:** Run `npm ci` first.
 
 </details>
@@ -140,16 +140,7 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 <details>
 <summary><code>npm run test:source:coverage</code></summary>
 
-- **Purpose:** Run source Cucumber scenarios and standalone Node tests, collecting coverage data for both.
-- **Requirements:** Run `npm ci` first.
-
-</details>
-
-<details>
-<summary><code>npm run test:unit</code></summary>
-
-- **Purpose:** Run `tests/*.test.mjs` with Node's built-in test runner.
-  These tests also run as part of `test:source`; their results are printed separately from Cucumber reports.
+- **Purpose:** Run all source Cucumber scenarios and collect coverage data.
 - **Requirements:** Run `npm ci` first.
 
 </details>

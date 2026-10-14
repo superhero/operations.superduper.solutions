@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
-import { test } from "node:test";
-import { collectProcessingMetrics, startProcessingMetrics, stopProcessingMetrics } from "../src/lib/processing-metrics.ts";
+import { Then } from "@cucumber/cucumber";
+import { collectProcessingMetrics, startProcessingMetrics, stopProcessingMetrics } from "./lib/processing-metrics.ts";
 
-test("processing measurements drain and reset bounded counters, preserve late tasks, and stop cleanly", () => {
+Then("processing measurements drain and reset bounded counters, preserve late tasks, and stop cleanly", () => {
   const originals = Object.fromEntries(["window", "performance", "PerformanceObserver"]
     .map(name => [name, Object.getOwnPropertyDescriptor(globalThis, name)]));
   let now = 100;
