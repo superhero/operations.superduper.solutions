@@ -113,6 +113,26 @@ Reconcile the error-monitoring worker fixture with Cucumber cleanup and retain t
 
 ```
 
+<!-- changelog-commit:62eb4215e0b77559172107f5dd69c8becd1ab0c7 -->
+### Commit [`62eb421`](https://github.com/superhero/operations.superduper.solutions/commit/62eb4215e0b77559172107f5dd69c8becd1ab0c7)
+
+```text
+fix(ui): remove selected theme checkmark shadow
+
+Remove the checkmark text shadow and its shadow transition while preserving the selected theme icon, colors and scale animation.
+
+```
+
+<!-- changelog-commit:6c9d41a02e9045f91afcf661a4f8cf62da6475ff -->
+### Commit [`6c9d41a`](https://github.com/superhero/operations.superduper.solutions/commit/6c9d41a02e9045f91afcf661a4f8cf62da6475ff)
+
+```text
+Merge develop into bugfix/theme-checkmark-shadow
+
+Preserve the integrated error history, Cucumber suites, and staged changelog while retaining the theme checkmark shadow removal.
+
+```
+
 <!-- changelog-staging-end -->
 
 ## 0.0.42
