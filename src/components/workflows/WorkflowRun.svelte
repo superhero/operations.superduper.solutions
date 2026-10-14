@@ -179,7 +179,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .run-field { display: grid; gap: 6px; }
   .run-field > label { font-size: 12px; font-weight: 700; }
   .run-field small { font-size: 11px; line-height: 1.5; color: var(--color-muted-foreground); }
-  .joined-field { display: block; overflow: hidden; border-radius: 4px; --field-background: var(--color-foreground); --field-foreground: var(--color-background); }
+  .joined-field { display: block; overflow: hidden; border-radius: 4px; --field-background: var(--color-background); --field-foreground: var(--color-foreground); }
   button { border: 1px solid var(--color-surface); border-radius: 4px; padding: 9px 14px; color: var(--color-foreground); background: transparent; }
   button.run-primary { background: var(--color-foreground); color: var(--color-background); }
   button.run-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; }
