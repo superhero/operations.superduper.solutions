@@ -182,7 +182,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .joined-field { display: block; overflow: hidden; border-radius: 4px; --field-background: var(--color-foreground); --field-foreground: var(--color-background); }
   button { border: 1px solid var(--color-surface); border-radius: 4px; padding: 9px 14px; color: var(--color-foreground); background: transparent; }
   button.run-primary { background: var(--color-foreground); color: var(--color-background); }
-  button.run-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+  button.run-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; }
   .run-success { font-size: 12px; }
   .run-error { margin: 0; padding: 12px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; line-height: 1.6; }
   .run-results { min-width: 0; display: grid; gap: 12px; }
