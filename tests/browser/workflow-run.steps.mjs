@@ -61,17 +61,52 @@ Then("a saved workflow opens a request run with starting choices and an end cont
   const run = dialog(page);
   await expect(run.getByRole("heading", { name: "Choose a starting operation", exact: true })).toBeVisible();
   await run.getByRole("radio", { name: "Get project", exact: true }).check();
-  await run.getByRole("button", { name: "Continue", exact: true }).click();
+  const start = run.getByRole("button", { name: "Start", exact: true });
+  await expect(start.locator(".material-symbols-rounded")).toHaveText("start");
+  await expect(start.locator("span").filter({ hasText: /^Start$/ })).toBeVisible();
+  await expect(start).not.toHaveAttribute("title");
+  await start.click();
   await expect(run.getByRole("heading", { name: "1. Get project", exact: true })).toBeVisible();
   await run.getByRole("textbox", { name: "Project ID", exact: true }).fill("project-2");
   await run.getByRole("button", { name: "Start workflow", exact: true }).click();
   await expect(run.getByRole("region", { name: "Step 1 response", exact: true })).toContainText("Website");
   await run.getByRole("button", { name: "Next operation", exact: true }).click();
   await expect(run.getByRole("heading", { name: "Workflow complete.", exact: true })).toBeVisible();
-  await run.getByRole("button", { name: "Close run", exact: true }).click();
+  await run.getByRole("button", { name: "Quit", exact: true }).click();
   await expect(run).toBeHidden();
   assert.equal(requests.length, 1);
   assert.deepEqual(await storedWorkflows(page), [doc]);
+});
+
+Then("moving focus from a run heading keeps it unoutlined and preserves control focus rings", async function () {
+  const page = this.page;
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await seed(page, fixture(graph("getProject"), graph("listProjects")));
+  await setMode(page, "workflow");
+  await workflowAction(page, "Run");
+  const run = dialog(page);
+  const heading = run.getByRole("heading", { name: "Choose a starting operation", exact: true });
+  await expect(heading).toBeVisible();
+  const outlines = await heading.evaluate(async element => {
+    element.focus();
+    await Promise.all(element.getAnimations().map(animation => animation.finished));
+    const styles = [getComputedStyle(element).outlineStyle];
+    element.closest("section").querySelector('input[type="radio"]').focus();
+    const until = performance.now() + 240;
+    do {
+      await new Promise(requestAnimationFrame);
+      styles.push(getComputedStyle(element).outlineStyle);
+    } while (performance.now() < until);
+    return styles;
+  });
+  assert.ok(outlines.every(style => style === "none"), `The passive heading must stay unoutlined through blur: ${outlines.join(", ")}`);
+  await heading.focus();
+  await page.keyboard.press("Tab");
+  const radio = run.getByRole("radio", { name: "Get project", exact: true });
+  await expect(radio).toBeFocused();
+  assert.ok(await radio.evaluate(element => element.matches(":focus-visible")));
+  await expect(radio).toHaveCSS("outline-style", "solid");
+  await run.getByRole("button", { name: "Quit", exact: true }).click();
 });
 
 Then("the workflow run dialog validates inputs and passes task results to the next operation", async function () {
@@ -148,7 +183,11 @@ Then("ending a workflow run restores the canvas and leaves its saved graph uncha
   const run = dialog(page);
   await run.getByRole("textbox", { name: "Project ID", exact: true }).fill("project-1");
   await page.keyboard.press("Delete");
-  await run.getByRole("button", { name: "End run", exact: true }).click();
+  const quit = run.getByRole("button", { name: "Quit", exact: true });
+  await expect(quit.locator(".material-symbols-rounded")).toHaveText("exit_to_app");
+  await expect(quit.locator("span").filter({ hasText: /^Quit$/ })).toBeVisible();
+  await expect(quit).not.toHaveAttribute("title");
+  await quit.click();
   await expect(run).toBeHidden();
   await expect(workflow(page).locator(".svelte-flow__node-operation")).toHaveCount(1);
   await expect.poll(() => page.evaluate(() => Boolean(document.activeElement?.closest(".workflow-workspace")))).toBe(true);

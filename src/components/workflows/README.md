@@ -11,6 +11,7 @@ currently lives at [WorkflowNode.svelte](../../WorkflowNode.svelte).
 | Change | Start here |
 | --- | --- |
 | Node fields and utility interactions | `WorkflowDataNode`, `WorkflowSwitchNode`, `WorkflowCastNode`, `WorkflowCommentNode`, `WorkflowReferenceNode` |
+| Shared operation and workflow-reference card layout | `workflow-owner-nodes.css` |
 | Connection rendering and target previews | `WorkflowCurveEdge`, `WorkflowConnectionLine`, `WorkflowConnectionSnap` |
 | Selection and navigation aids | `WorkflowSelection`, `WorkflowMinimap`, `WorkflowToolbar` |
 | Versions and execution | `WorkflowHistory`, `WorkflowRun` |

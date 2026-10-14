@@ -15,13 +15,37 @@ const panels = (page, ownerId, direction) => workflow(page).locator(
 );
 const literal = value => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const namedPanel = (page, ownerId, direction, label) => panels(page, ownerId, direction)
-  .filter({ has: page.locator(`.data-title strong[title=${JSON.stringify(label)}]`) });
-const fieldRow = (panel, label) => panel.locator(".data-field").filter({ has: panel.page().locator(".field-name").filter({ hasText: new RegExp(`^${literal(label)}(?:\\s*\\*)?$`) }) });
+  .filter({ has: page.locator(`.data-title strong[data-label=${JSON.stringify(label)}]`) });
+const fieldRow = (panel, label) => panel.locator(".data-field").filter({ has: panel.page().locator(".field-name").filter({ hasText: new RegExp(`^${literal(label)}(?:\\s*\\*)?\\s*$`) }) });
 const preview = page => workflow(page).locator(".workflow-connection-preview");
+
+export async function expectHoverHint(trigger, text) {
+  const page = trigger.page();
+  const tooltip = page.getByRole('tooltip');
+  await expect(trigger).not.toHaveAttribute('title');
+  await trigger.hover();
+  await expect(tooltip).toHaveCount(1);
+  await expect(tooltip).toHaveClass(/\bapp-tooltip\b/);
+  await expect(tooltip).toHaveText(text);
+  await expect.poll(async () => {
+    const node = await trigger.evaluate(element => {
+      const bounds = element.closest('.svelte-flow__node')?.getBoundingClientRect();
+      return bounds ? { left: bounds.left } : undefined;
+    });
+    const hint = await tooltip.boundingBox();
+    if (!node || !hint) return false;
+    // Leave room for the tooltip gap and viewport collision padding. Near the
+    // viewport edge, collision handling may choose another side instead.
+    if (node.left < hint.width + 24) return true;
+    return await tooltip.getAttribute('data-side') === 'left' && hint.x + hint.width <= node.left - 2;
+  }, { message: 'Node tooltips must sit outside the whole node on its left when space permits.' }).toBe(true);
+  await page.mouse.move(0, 0);
+  await expect(tooltip).toHaveCount(0);
+}
 
 async function expectResponseEnvelope(panel, bodyType) {
   await expect(panel.locator('.data-field .field-name')).toHaveText([
-    /^Status\s*\*$/, /^Status message\s*\*$/, /^Response body\s*\*$/, /^Response headers\s*\*$/
+    /^Status\s*\*\s*$/, /^Status message\s*\*\s*$/, /^Response body\s*\*\s*$/, /^Response headers\s*\*\s*$/
   ]);
   for (const [label, type] of [['Status', 'Integer'], ['Status message', 'Text'], ['Response body', bodyType], ['Response headers', 'Object']])
     await expect(fieldRow(panel, label).locator('.field-type')).toHaveText(type);
@@ -131,7 +155,14 @@ Then("List projects exposes its query parameters and nested project response", a
   await expect(nested).toBeVisible();
   const projectId = fieldRow(nested, "Project ID");
   await expect(projectId.locator(".required")).toHaveText("*");
-  await expect(projectId).toHaveAttribute("title", /fictional project identifier/);
+  await expect(workflow(this.page).locator('.svelte-flow__node[title], .svelte-flow__node [title]')).toHaveCount(0);
+  await expectHoverHint(operationNodes(this.page, 'List projects').locator('.operation-title-row'),
+    'GET /projects\nFind projects by name and limit the number of results.');
+  await expectHoverHint(nested.locator('.data-title strong'), 'Project');
+  await expectHoverHint(projectId, /fictional project identifier[\s\S]*Required/);
+  await expectHoverHint(projectId.locator('.required'), 'Required');
+  assert.ok(await projectId.evaluate(element => element.tabIndex < 0), 'Field hints must preserve the native node tab order.');
+  assert.ok(await projectId.locator('.required').evaluate(element => element.tabIndex < 0), 'Required markers must not add tab stops.');
   await expect(projectId.getByLabel("Project ID output", { exact: true })).toHaveClass(/connectablestart/);
   await expect(response.locator('[data-handleid="value"]')).toHaveAttribute("aria-disabled", "true");
   await expect(operationNodes(this.page, "List projects").locator(".owner-port")).toHaveCount(2);
@@ -171,6 +202,9 @@ Given('repeated operation nodes with documented response variants', async functi
     },
   } } } };
   const graph = createOperationGraph(operation, { x: 470, y: 250 }, 'response-variants', document);
+  // The saved fixture's wider repeated-operation identity needs room before its response column.
+  for (const node of graph.nodes)
+    if (node.type === 'data' && node.data.direction === 'outputs') node.position.x += 160;
   graph.nodes.push({ ...graph.nodes[0], id: 'response-variants-2', position: { x: 470, y: 550 } });
   const saved = { version: 2, id: 'response-variants-review', name: 'Response variants review', ...graph,
     viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, dashed: false };
@@ -186,7 +220,8 @@ Then('the identity row separates top input and bottom response ports', async fun
   await expectOwnerLayout(nodes.first(), ['Path'], ['200 · JSON', '200 · Text', '400', 'default']);
   for (const media of ['application/json', 'text/plain']) {
     const port = nodes.first().getByLabel(`Response · 200 · ${media} output`, { exact: true });
-    await expect(port).toHaveAttribute('title', `Response · 200 · ${media}`);
+    await expectHoverHint(port, `Response · 200 · ${media}`);
+    await expect(port).toHaveAttribute('tabindex', '-1');
   }
   for (const [index, node] of (await nodes.all()).entries()) {
     await expect(node.locator('.operation-title-row strong')).toHaveText('Response variants');
@@ -273,6 +308,7 @@ When('I hide and restore the root query input', async function () {
   await expect(query).toHaveCount(0);
   const restore = owner.getByRole('button', { name: 'Restore Query parameters', exact: true });
   await expect(restore).toHaveAttribute('data-side', 'left');
+  await expectHoverHint(restore, 'Restore Query parameters');
   const position = await restore.evaluate(element => {
     const button = element.getBoundingClientRect();
     const port = element.closest('.operation-port').getBoundingClientRect();
@@ -664,7 +700,16 @@ When('I cancel editing the response header property', async function () {
   await editProperties(panel);
   await panel.getByRole('button', { name: `Edit property ${this.additionalPropertyName}`, exact: true }).click();
   await expect(panel.getByRole('textbox', { name: 'Property name', exact: true })).toHaveValue(this.additionalPropertyName);
-  await expect(panel.getByRole('combobox', { name: 'Property type', exact: true })).toHaveAttribute('title', 'Text');
+  const propertyType = panel.getByRole('combobox', { name: 'Property type', exact: true });
+  await expectHoverHint(propertyType, 'Text');
+  await panel.getByRole('textbox', { name: 'Property name', exact: true }).focus();
+  await this.page.keyboard.press('Tab');
+  await expect(propertyType).toBeFocused();
+  await expect(this.page.getByRole('tooltip')).toHaveClass(/\bapp-tooltip\b/);
+  await expect(this.page.getByRole('tooltip')).toHaveText('Text');
+  await this.page.keyboard.press('Escape');
+  await expect(this.page.getByRole('tooltip')).toHaveCount(0);
+  await expect(propertyType).toBeFocused();
   await expect(panel.getByRole('button', { name: 'Remove property', exact: true })).toBeVisible();
   await panel.getByRole('textbox', { name: 'Property name', exact: true }).fill('Discarded edit');
   await panel.getByRole('button', { name: 'Cancel editing property', exact: true }).click();

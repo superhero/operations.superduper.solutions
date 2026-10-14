@@ -1,12 +1,12 @@
 # Copyright (C) 2026 Erik Landvall
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
-Feature: Recorded errors in Browser settings
+Feature: Recorded errors in Logs settings
   Error history stays available independently of resource sampling and survives reloads.
 
   Scenario: Error details preserve cause chains and paginate saved history
     Given 26 saved errors including a repeated failure with a cause
-    When I open the recorded errors in Browser settings
+    When I open the recorded errors in Logs settings
     Then the error history shows 26 unique errors and 25 entries
     When I expand the newest recorded error
     Then its saved cause, stack, occurrence count and observation times are visible
@@ -16,7 +16,7 @@ Feature: Recorded errors in Browser settings
     Then the error history shows 26 unique errors and 25 entries
 
   Scenario: Error history refreshes when another tab saves an error
-    When I open the recorded errors in Browser settings
+    When I open the recorded errors in Logs settings
     Then the error history is empty
     When another tab records a failure
     Then the error history shows 1 unique errors and 1 entries
@@ -51,7 +51,7 @@ Feature: Recorded errors in Browser settings
 
   Scenario: Uncaught application errors and rejected promises retain browser reporting and history
     When the built application throws an error and rejects an unhandled promise
-    And I open the recorded errors in Browser settings
+    And I open the recorded errors in Logs settings
     Then both runtime failures appear in history and preserve their original browser errors
     When I reload and open the recorded errors
     Then both runtime failures remain in the saved error history

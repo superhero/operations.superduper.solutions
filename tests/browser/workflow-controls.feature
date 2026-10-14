@@ -22,6 +22,20 @@ Feature: Workflow utility controls and reusable plans
     And I reload and reopen the workflow workspace
     Then the reusable workflow keeps its ports and embedded definition
 
+  Scenario: A self-reference follows workflow renaming without changing its snapshot
+    Given a saved workflow containing a reference to itself
+    When I name the workflow "Renamed self-reference" and wait for autosave
+    Then the self-reference shows "Renamed self-reference" with its original snapshot
+    When I reload and reopen the workflow workspace
+    Then the self-reference shows "Renamed self-reference" with its original snapshot
+
+  Scenario: Existing references follow source renaming without rewriting their parent
+    Given a parent workflow containing two copies of a saved workflow
+    When the saved source workflow is renamed to "Renamed source workflow"
+    Then both references show "Renamed source workflow" without changing their saved definitions
+    When the saved source workflow is removed
+    Then both references show "Original source workflow" without changing their saved definitions
+
   Scenario: Removing one saved workflow supports cancellation and recovery from a storage failure
     Given three saved workflow control examples
     When I cancel removing a saved workflow from its row

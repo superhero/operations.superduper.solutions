@@ -14,6 +14,10 @@ async function openHistory(page) {
   await setMode(page, 'settings');
   const browser = page.locator('summary[aria-label="Browser"]');
   if (await browser.getAttribute('aria-expanded') !== 'true') await browser.click();
+  await expect(browser.locator('..').getByRole('region', { name: 'Errors', exact: true })).toHaveCount(0);
+  const logs = page.locator('summary[aria-label="Logs"]');
+  await logs.click();
+  await expect(browser).toHaveAttribute('aria-expanded', 'false');
   await expect(history(page)).toBeVisible();
   await expect(history(page)).toHaveAttribute('aria-busy', 'false');
 }
@@ -43,7 +47,7 @@ Given('26 saved errors including a repeated failure with a cause', async functio
   }, fixture);
 });
 
-When('I open the recorded errors in Browser settings', async function () { await openHistory(this.page); });
+When('I open the recorded errors in Logs settings', async function () { await openHistory(this.page); });
 Then('the error history shows {int} unique errors and {int} entries', async function (total, entries) {
   await expect(history(this.page).locator('.metrics dd')).toHaveText(String(total));
   await expect(history(this.page).locator('details.entry')).toHaveCount(entries);

@@ -14,7 +14,7 @@ const cached = { version: 1, theme: 'dark', palette: 'sunset' };
 const authoritative = { theme: 'light', palette: 'alpine',
   workflowDefaults: { dashed: true, curved: false, snap: true, nodeSymbols: true, gridSize: 27, dashLength: 8, dashGap: 6, dashSpeed: 32, curveStrength: 70, nodeClearance: 24 } };
 const defaults = { theme: 'light', palette: 'default',
-  workflowDefaults: { dashed: true, curved: false, snap: true, nodeSymbols: true, gridSize: 8, dashLength: 8, dashGap: 16, dashSpeed: 64, curveStrength: 50, nodeClearance: 16 } };
+  workflowDefaults: { dashed: true, curved: true, snap: true, nodeSymbols: true, gridSize: 8, dashLength: 8, dashGap: 16, dashSpeed: 64, curveStrength: 100, nodeClearance: 16 } };
 const results = [], errors = [];
 await mkdir(directory, { recursive: true });
 const server = await createServer({ configFile: resolve('vite.config.mjs'), configLoader: 'native',

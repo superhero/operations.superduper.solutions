@@ -43,8 +43,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <Handle id={switchGateInput(gate.id)} type="target" position={Position.Left} isConnectableStart={false}
         isConnectableEnd={!connected && !operator?.unary} aria-disabled={connected || !!operator?.unary}
         aria-label={`Gate ${index + 1} value input`} />
-      <HintButton type="button" class="utility-action" label={`Remove gate ${index + 1}`} disabled={data.gates.length === 1}
-        onclick={() => gates.remove(id, gate.id)}><MaterialIcon name="cancel" size={18} /></HintButton>
+      <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="button" class="remove-gate" label={`Remove gate ${index + 1}`} disabled={data.gates.length === 1}
+        onclick={() => gates.remove(id, gate.id)}><MaterialIcon name="close_small" size={24} /></HintButton>
       <div class="gate-operator">
         <WorkflowNodeSelect label={`Gate ${index + 1} operator`} value={gate.operator} choices={operators} {active}
           onchange={operator => gates.edit(id, gate.id, { operator: operator as SwitchGate["operator"] })} />
@@ -69,13 +69,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
   {/each}
   <div class="switch-actions nodrag nopan nokey">
-    <HintButton type="button" class="utility-action add-gate" label="Add gate" disabled={data.gates.length >= switchGateLimit}
+    <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="button" class="utility-action add-gate" label="Add gate" disabled={data.gates.length >= switchGateLimit}
       onclick={() => gates.add(id)}><MaterialIcon name="add" size={18} /><span>Add gate</span></HintButton>
   </div>
 </div>
 
 <style>
   .workflow-switch-node { width: 300px; }
+  .workflow-switch-node .switch-gate { padding-left: 9px; }
+  .switch-gate :global(.remove-gate) { display: grid; place-items: center; flex-shrink: 0; width: 26px; height: 28px; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--color-background); }
+  .switch-gate :global(.remove-gate:hover:not(:disabled)) { color: var(--color-foreground); }
   .gate-operator { flex: 0 0 64px; }
   .gate-value { min-width: 0; flex: 1; }
   textarea.utility-value { display: block; height: 30px; resize: vertical; max-height: 160px; }

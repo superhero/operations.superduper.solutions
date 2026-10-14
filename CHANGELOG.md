@@ -10,6 +10,284 @@ fix(settings): remove page memory isolation notice
 
 ```
 
+<!-- changelog-commit:8f791350cb0607d2c5a5fb288e1f1a1e7c45fa02 -->
+### Commit [`8f79135`](https://github.com/superhero/operations.superduper.solutions/commit/8f791350cb0607d2c5a5fb288e1f1a1e7c45fa02)
+
+```text
+feat(workflows): extend curve strength to 200 percent
+
+Default new settings and connection previews to 100 percent while preserving saved curve strengths. Update the documented range and existing browser checks for persistence and rendering at the new maximum.
+
+```
+
+<!-- changelog-commit:fafda940fe7be6927f6d95533e0d5a2eb4ae10a4 -->
+### Commit [`fafda94`](https://github.com/superhero/operations.superduper.solutions/commit/fafda940fe7be6927f6d95533e0d5a2eb4ae10a4)
+
+```text
+feat(workflows): enable curved lines by default
+
+```
+
+<!-- changelog-commit:17b4d758ca8df902ce1c60233fa8d73abce6f92b -->
+### Commit [`17b4d75`](https://github.com/superhero/operations.superduper.solutions/commit/17b4d758ca8df902ce1c60233fa8d73abce6f92b)
+
+```text
+fix(settings): default histogram to used JavaScript heap
+
+```
+
+<!-- changelog-commit:1a73ea7441bc702cf971c9e09e7dbed038a017dd -->
+### Commit [`1a73ea7`](https://github.com/superhero/operations.superduper.solutions/commit/1a73ea7441bc702cf971c9e09e7dbed038a017dd)
+
+```text
+feat(settings): move error history into Logs
+
+```
+
+<!-- changelog-commit:ada61ebf8b82a16e4b9afb8178692fde9f1b0ccc -->
+### Commit [`ada61eb`](https://github.com/superhero/operations.superduper.solutions/commit/ada61ebf8b82a16e4b9afb8178692fde9f1b0ccc)
+
+```text
+fix(workflows): remove Edit properties tooltip
+
+```
+
+<!-- changelog-commit:7ebc29a1792ba839323b48c0de98d977dcf78fcd -->
+### Commit [`7ebc29a`](https://github.com/superhero/operations.superduper.solutions/commit/7ebc29a1792ba839323b48c0de98d977dcf78fcd)
+
+```text
+feat(workflows): replace native node titles with tooltips
+
+Share the styled tooltip presentation across node descriptions, fields, ports, comments and selectors while preserving focus order and connection behavior. Avoid duplicate and competing nested hints.
+
+```
+
+<!-- changelog-commit:dd33ae27e65fd07ed375264da79ff918b8d939d0 -->
+### Commit [`dd33ae2`](https://github.com/superhero/operations.superduper.solutions/commit/dd33ae27e65fd07ed375264da79ff918b8d939d0)
+
+```text
+feat(workflows): match reference nodes to operation layout
+
+Share owner-card styles and give embedded workflows input and output rows around the name while retaining the flowsheet icon and schema connection identities.
+
+```
+
+<!-- changelog-commit:43077c2b969488141a16690b8ece405b19189d34 -->
+### Commit [`43077c2`](https://github.com/superhero/operations.superduper.solutions/commit/43077c2b969488141a16690b8ece405b19189d34)
+
+```text
+fix(workflows): follow renamed workflow reference titles
+
+Resolve reference titles from the active workflow or saved library so
+renames appear immediately, including self-references. Preserve embedded
+definitions and parent history, falling back to the saved title when the
+source is unavailable. Cover rename, reload and fallback with Cucumber.
+
+```
+
+<!-- changelog-commit:4ba1d1ba1fb9abb4fa1fe0b57a77b72e00316443 -->
+### Commit [`4ba1d1b`](https://github.com/superhero/operations.superduper.solutions/commit/4ba1d1ba1fb9abb4fa1fe0b57a77b72e00316443)
+
+```text
+fix(workflows): align node tooltips outside the left edge
+
+Anchor node hints to the card width at their trigger's height so small
+controls cannot place tooltips over the node. Retain viewport collision
+handling and existing positioning elsewhere in the application.
+
+Verify the tooltip clears the node boundary in focused Cucumber scenarios.
+
+```
+
+<!-- changelog-commit:6c4b620ab1ba6871ab43d4e3ac5a8baab2956ee3 -->
+### Commit [`6c4b620`](https://github.com/superhero/operations.superduper.solutions/commit/6c4b620ab1ba6871ab43d4e3ac5a8baab2956ee3)
+
+```text
+style(workflows): simplify the gate remove control
+
+```
+
+<!-- changelog-commit:0a530ee1c5d09383d71bd4d6884de1ba209b8f62 -->
+### Commit [`0a530ee`](https://github.com/superhero/operations.superduper.solutions/commit/0a530ee1c5d09383d71bd4d6884de1ba209b8f62)
+
+```text
+style(workflows): remove node dropdown shadows
+
+```
+
+<!-- changelog-commit:0ff6971f62a75452e174f4756f59f4917b6ba529 -->
+### Commit [`0ff6971`](https://github.com/superhero/operations.superduper.solutions/commit/0ff6971f62a75452e174f4756f59f4917b6ba529)
+
+```text
+style(workflows): use the dedicated small close symbol
+
+```
+
+<!-- changelog-commit:18be25e44b683f7f1e21144e396d25cdc43823a9 -->
+### Commit [`18be25e`](https://github.com/superhero/operations.superduper.solutions/commit/18be25e44b683f7f1e21144e396d25cdc43823a9)
+
+```text
+style(workflows): highlight gate removal on hover
+
+```
+
+<!-- changelog-commit:62839ba12e1d9458427bf090b6590ce28636fbae -->
+### Commit [`62839ba`](https://github.com/superhero/operations.superduper.solutions/commit/62839ba12e1d9458427bf090b6590ce28636fbae)
+
+```text
+style(workflows): reduce gate row left spacing
+
+```
+
+<!-- changelog-commit:6fef7eae365fe696ff846441e57d5853554b4a62 -->
+### Commit [`6fef7ea`](https://github.com/superhero/operations.superduper.solutions/commit/6fef7eae365fe696ff846441e57d5853554b4a62)
+
+```text
+style(workflows): balance gate row left spacing
+
+```
+
+<!-- changelog-commit:617aa86e16d29f6abea1564e191b838bd7d0a8be -->
+### Commit [`617aa86`](https://github.com/superhero/operations.superduper.solutions/commit/617aa86e16d29f6abea1564e191b838bd7d0a8be)
+
+```text
+style(workflows): replace end-run text with a quit icon
+
+```
+
+<!-- changelog-commit:04b990acc9a7deb2c5938c6145a58fc6a45bebd1 -->
+### Commit [`04b990a`](https://github.com/superhero/operations.superduper.solutions/commit/04b990acc9a7deb2c5938c6145a58fc6a45bebd1)
+
+```text
+style(workflows): use the start icon for continue
+
+```
+
+<!-- changelog-commit:26a73a67fa49be3ebc00f5c2378e029bde13486e -->
+### Commit [`26a73a6`](https://github.com/superhero/operations.superduper.solutions/commit/26a73a67fa49be3ebc00f5c2378e029bde13486e)
+
+```text
+style(workflows): label and fill run action buttons
+
+```
+
+<!-- changelog-commit:d384d34f7bf752e78156b1424d14e977af02b604 -->
+### Commit [`d384d34`](https://github.com/superhero/operations.superduper.solutions/commit/d384d34f7bf752e78156b1424d14e977af02b604)
+
+```text
+style(workflows): round run starting options
+
+```
+
+<!-- changelog-commit:e183dc05965bd2e6f91b13777bc0a417bf1c5b8d -->
+### Commit [`e183dc0`](https://github.com/superhero/operations.superduper.solutions/commit/e183dc05965bd2e6f91b13777bc0a417bf1c5b8d)
+
+```text
+fix(workflows): prevent run heading outline flashes on blur
+
+Keep passive focus targets unoutlined in both states so the global outline
+transition cannot briefly paint a foreground-colored border on blur.
+Preserve programmatic heading focus and keyboard focus rings on controls.
+
+Cover the transition frame by frame in a Cucumber browser regression.
+
+```
+
+<!-- changelog-commit:dd6e48d0628561dcf7f9f515fc788c7e2b3522f4 -->
+### Commit [`dd6e48d`](https://github.com/superhero/operations.superduper.solutions/commit/dd6e48d0628561dcf7f9f515fc788c7e2b3522f4)
+
+```text
+style(workflows): align start and quit in the run footer
+
+```
+
+<!-- changelog-commit:5e7841424399e31e5708d71d798234f68161358d -->
+### Commit [`5e78414`](https://github.com/superhero/operations.superduper.solutions/commit/5e7841424399e31e5708d71d798234f68161358d)
+
+```text
+style(workflows): bold start and quit labels
+
+```
+
+<!-- changelog-commit:776ae2f9c10b580055bee1c6720000c84b2c7dce -->
+### Commit [`776ae2f`](https://github.com/superhero/operations.superduper.solutions/commit/776ae2f9c10b580055bee1c6720000c84b2c7dce)
+
+```text
+style(workflows): use primary backgrounds for run inputs
+
+```
+
+<!-- changelog-commit:cb2ba5ca375a176d9aca4ba9caaf215a47327fcd -->
+### Commit [`cb2ba5c`](https://github.com/superhero/operations.superduper.solutions/commit/cb2ba5ca375a176d9aca4ba9caaf215a47327fcd)
+
+```text
+style(workflows): match submission to start controls
+
+```
+
+<!-- changelog-commit:cd7563f26eec784e1be0e48435b1fc6fd27701ac -->
+### Commit [`cd7563f`](https://github.com/superhero/operations.superduper.solutions/commit/cd7563f26eec784e1be0e48435b1fc6fd27701ac)
+
+```text
+style(schemas): group upload control and format guidance in a pane
+
+```
+
+<!-- changelog-commit:c2a4978eb517453f1697370a42d6e38f516524dd -->
+### Commit [`c2a4978`](https://github.com/superhero/operations.superduper.solutions/commit/c2a4978eb517453f1697370a42d6e38f516524dd)
+
+```text
+chore(integration): include current develop changes
+
+```
+
+<!-- changelog-commit:9c377d8970e9e4a4400301b2fdabb3c6fee3d683 -->
+### Commit [`9c377d8`](https://github.com/superhero/operations.superduper.solutions/commit/9c377d8970e9e4a4400301b2fdabb3c6fee3d683)
+
+```text
+chore(integration): include curve settings from PR 228
+
+```
+
+<!-- changelog-commit:c8817a6d376beb4370a07f1113fd14181a53d836 -->
+### Commit [`c8817a6`](https://github.com/superhero/operations.superduper.solutions/commit/c8817a6d376beb4370a07f1113fd14181a53d836)
+
+```text
+chore(integration): include histogram defaults from PR 230
+
+```
+
+<!-- changelog-commit:1fdb5f4ef5f4bd232fd6b9ba513c2bfc8273abf7 -->
+### Commit [`1fdb5f4`](https://github.com/superhero/operations.superduper.solutions/commit/1fdb5f4ef5f4bd232fd6b9ba513c2bfc8273abf7)
+
+```text
+chore(integration): include Logs settings from PR 231
+
+```
+
+<!-- changelog-commit:bd04e6dff812bc6194c24ede4aad14762be5c11a -->
+### Commit [`bd04e6d`](https://github.com/superhero/operations.superduper.solutions/commit/bd04e6dff812bc6194c24ede4aad14762be5c11a)
+
+```text
+chore(integration): preserve Edit properties tooltip preference
+
+```
+
+<!-- changelog-commit:e0701975deb8a88bd60df51c201b7cfb49515fca -->
+### Commit [`e070197`](https://github.com/superhero/operations.superduper.solutions/commit/e0701975deb8a88bd60df51c201b7cfb49515fca)
+
+```text
+fix(workflows): keep connection ports above selected edges
+
+Selecting a node raised its connected edge above the opposite output port.
+The edge's invisible hit area intercepted the next drag and panned the canvas.
+Keep edges below node controls and use the shared connection gesture check
+so the routing scenario verifies the source hit and live connection preview.
+
+Refresh the scenario badge for the combined workflow and settings changes.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.45

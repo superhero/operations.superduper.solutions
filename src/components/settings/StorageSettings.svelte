@@ -10,7 +10,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { RecorderState } from "$lib/metrics-recorder-types.ts";
   import { metricSeries } from "$lib/metrics-series.ts";
   import MetricsHistoryChart from "./MetricsHistoryChart.svelte";
-  import ErrorHistory from "./ErrorHistory.svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import { formatLocalDate } from "$lib/datetime.ts";
 
@@ -61,8 +60,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <section class="storage-card" aria-label="Usage history">
     <MetricsHistoryChart bars={recorder.bars} activeBar={recorder.activeBar} {series} />
   </section>
-
-  <ErrorHistory />
 
   {#if report}
     <section class="storage-card" aria-label="Processing" aria-busy={busy}>

@@ -1,0 +1,26 @@
+/*
+Copyright (C) 2026 Erik Landvall
+SPDX-License-Identifier: AGPL-3.0-only
+See LICENSE and LICENSE-ADDITIONAL-TERMS.
+*/
+
+.workflow-owner-node { position: relative; width: max-content; min-width: 160px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); box-shadow: none; transition: border-color 180ms ease-in, box-shadow 180ms ease-in; }
+.workflow-owner-node .operation-title-row { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 12px; white-space: nowrap; }
+.workflow-owner-node .operation-title-row strong { flex: 1 0 auto; }
+.workflow-owner-node .operation-ports { display: grid; min-height: 12px; }
+.workflow-owner-node .operation-ports.inputs { border-bottom: 1px solid var(--color-border); }
+.workflow-owner-node .operation-ports.outputs { border-top: 1px solid var(--color-border); }
+.workflow-owner-node .operation-port { position: relative; display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 34px; padding: 6px 14px; text-align: left; }
+.workflow-owner-node .port-label { min-width: 0; flex: 1; font-size: 11px; overflow-wrap: anywhere; }
+.workflow-owner-node .port-type { flex-shrink: 0; padding: 0 5px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); font-size: 10px; line-height: 18px; }
+.workflow-owner-node .port-code { white-space: nowrap; }
+.workflow-owner-node:hover:not(.selected) { border-color: var(--color-foreground); }
+.svelte-flow__node:focus-visible .workflow-owner-node { border-color: var(--color-emphasis); box-shadow: 0 0 0 1px var(--color-emphasis); }
+.workflow-owner-node .instance-pill { flex-shrink: 0; min-width: 18px; padding: 0 5px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); font: 12px/18px Rationale, sans-serif; font-variant-numeric: tabular-nums; text-align: center; }
+.workflow-owner-node.selected { border-color: var(--color-emphasis); box-shadow: 0 0 0 1px var(--color-emphasis); }
+.workflow-owner-node strong { font-size: 13px; font-weight: 600; }
+.workflow-owner-node .material-symbols-rounded { font-variation-settings: "FILL" 1; }
+.workflow-owner-node .svelte-flow__handle { width: 12px; height: 12px; border: 2px solid var(--color-surface); background: var(--color-emphasis); }
+.workflow-owner-node .svelte-flow__handle.target { background: var(--color-foreground); }
+.workflow-owner-node .owner-port { pointer-events: auto; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .workflow-owner-node { transition: none; } }

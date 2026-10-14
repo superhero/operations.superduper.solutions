@@ -7,6 +7,8 @@ import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { closeCatalog, connections, openCatalog, readExport, setMode, workflow } from "./workspace.steps.mjs";
+import { expectHoverHint } from "./workflow-fields.steps.mjs";
+import { gesture as connect } from "./workflow-single-input.steps.mjs";
 
 const node = (page, type) => workflow(page).locator(`.svelte-flow__node-${type}`);
 const descriptionDialog = page => page.getByRole("dialog", { name: "Workflow details", exact: true });
@@ -19,16 +21,6 @@ async function choose(page, control, option) {
   await control.click();
   await page.getByRole("listbox").getByRole("option", { name: option, exact: true }).click();
   await expect(page.getByRole("listbox")).toHaveCount(0);
-}
-
-async function connect(page, source, target) {
-  const start = await source.boundingBox();
-  const end = await target.boundingBox();
-  assert.ok(start && end, "Routing handles must be visible.");
-  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2, { steps: 16 });
-  await page.mouse.up();
 }
 
 const recoverStorage = restoreWorkflowSaving;
@@ -113,9 +105,13 @@ When("I write a safely formatted workflow comment", async function () {
   await expect(comment.locator(".comment-markdown strong")).toHaveText("Ready");
   await expect(comment.getByRole("link", { name: "Docs", exact: true })).toHaveAttribute("rel", "noopener noreferrer");
   await expect(comment.getByRole("link", { name: "Docs", exact: true })).toHaveAttribute("target", "_blank");
+  await expect(comment.getByRole("link", { name: "Docs", exact: true })).toHaveAttribute("href", "https://example.com/guide");
   await expect(comment.locator("script, img")).toHaveCount(0);
   assert.equal(await this.page.evaluate(() => window.commentUnsafe), undefined);
-  await comment.getByRole("button", { name: "Edit comment text", exact: true }).click();
+  const preview = comment.getByRole("button", { name: "Edit comment text", exact: true });
+  await expectHoverHint(preview, 'Click or press Enter to edit');
+  await expect(preview).toHaveAttribute('tabindex', '0');
+  await preview.click();
   await expect(input).toHaveValue(controlComment);
   await input.press("Escape");
   await expect(input).toHaveCount(0);
@@ -178,17 +174,126 @@ When("I insert the saved project workflow from the catalog", async function () {
 });
 
 Then("the reusable workflow keeps its ports and embedded definition", async function () {
-  await expect(node(this.page, "workflow").locator("[data-workflow-name]")).toHaveAttribute("data-workflow-name", this.reusableFixture.name);
-  const document = (await readExport(this.page)).document;
+  const page = this.page;
+  const referenceNode = node(page, "workflow");
+  await expect(referenceNode.locator("[data-workflow-name]")).toHaveAttribute("data-workflow-name", this.reusableFixture.name);
+  await expect(referenceNode.locator('[title]')).toHaveCount(0);
+  const title = referenceNode.locator('.operation-title-row');
+  await expect(title.locator('strong')).toHaveText(this.reusableFixture.name);
+  await expect(title.locator('.material-symbols-rounded')).toHaveText('flowsheet');
+  await expectHoverHint(title, this.reusableFixture.description);
+  await expect(referenceNode.locator('.operation-ports.inputs .port-label')).toHaveText('Get project · Path parameters');
+  await expect(referenceNode.locator('.operation-ports.outputs .port-label')).toHaveText('Get project · Response · 200');
+  await expect(referenceNode.locator('.operation-port .port-type')).toHaveText(['Object', 'Object']);
+  const inputPort = referenceNode.getByLabel('Get project · Path parameters input', { exact: true });
+  const outputPort = referenceNode.getByLabel('Get project · Response · 200 output', { exact: true });
+  await expectHoverHint(inputPort, 'Get project · Path parameters');
+  for (const port of [inputPort, outputPort]) {
+    await expect(port).toHaveAttribute('tabindex', '-1');
+    await expect(port).toHaveAttribute('aria-disabled', 'true');
+    await expect(port).not.toHaveClass(/\bconnectablestart\b|\bconnectableend\b/);
+  }
+  const layout = await referenceNode.evaluate(element => {
+    const title = element.querySelector('.operation-title-row').getBoundingClientRect();
+    const row = direction => {
+      const connection = element.querySelector(`.operation-ports.${direction} .operation-port`);
+      const row = connection.getBoundingClientRect();
+      const port = connection.querySelector('.svelte-flow__handle').getBoundingClientRect();
+      return { top: row.top, bottom: row.bottom, side: direction === 'inputs' ? row.left : row.right,
+        center: row.y + row.height / 2, portX: port.x + port.width / 2, portY: port.y + port.height / 2 };
+    };
+    return { title: { top: title.top, bottom: title.bottom }, inputs: row('inputs'), outputs: row('outputs') };
+  });
+  assert.ok(layout.inputs.bottom <= layout.title.top && layout.title.bottom <= layout.outputs.top,
+    'Reusable workflow input rows appear above the title and output rows below it.');
+  for (const row of [layout.inputs, layout.outputs])
+    assert.ok(Math.abs(row.portY - row.center) < 1 && Math.abs(row.portX - row.side) < 1,
+      'Each schema handle remains centered on its own connection row.');
+  const document = (await readExport(page)).document;
   const reference = document.nodes.find(item => item.type === "workflow");
   assert.equal(reference.data.workflowId, this.reusableFixture.id);
   assert.equal(reference.data.description, this.reusableFixture.description);
   assert.deepEqual(reference.data.snapshot, this.reusableFixture);
   assert.equal(document.nodes.filter(item => item.type === "data").length, 2);
-  await expect(workflow(this.page).getByLabel("Project ID input", { exact: true })).toHaveCount(1);
-  await expect(workflow(this.page).getByLabel("Project ID output", { exact: true })).toHaveCount(1);
-  const saved = await storedWorkflows(this.page);
+  for (const [direction, port] of [['inputs', inputPort], ['outputs', outputPort]]) {
+    const panel = document.nodes.find(item => item.type === 'data' && item.data.direction === direction);
+    const id = `schema:${panel.id}`;
+    await expect(port).toHaveAttribute('data-handleid', id);
+    assert.equal(document.edges.find(edge => edge.id === id)[direction === 'inputs' ? 'targetHandle' : 'sourceHandle'], id);
+  }
+  await expect(workflow(page).getByLabel("Project ID input", { exact: true })).toHaveCount(1);
+  await expect(workflow(page).getByLabel("Project ID output", { exact: true })).toHaveCount(1);
+  const inputPanel = workflow(page).locator('.workflow-data-node[data-direction="inputs"]');
+  await inputPanel.locator('.data-title strong').click();
+  await page.getByRole('button', { name: 'Remove selected', exact: true }).click();
+  await expect(inputPanel).toHaveCount(0);
+  await expect(inputPort).toBeHidden();
+  const restore = referenceNode.getByRole('button', { name: 'Restore Get project · Path parameters', exact: true });
+  await expect(restore).toHaveAttribute('data-side', 'left');
+  await expectHoverHint(restore, 'Restore Get project · Path parameters');
+  await restore.focus();
+  await page.keyboard.press('Enter');
+  await expect(inputPanel).toBeVisible();
+  await expect(inputPort).toBeVisible();
+  await expect(restore).toHaveCount(0);
+  const restored = (await readExport(page)).document;
+  assert.deepEqual(restored.nodes, document.nodes, 'Restoration preserves the embedded snapshot, interface fields, and node identities.');
+  assert.deepEqual(restored.edges, document.edges, 'Restoration preserves the schema connection identities and endpoints.');
+  await expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
+  const saved = await storedWorkflows(page);
   assert.deepEqual(saved.find(item => item.id === this.reusableFixture.id), this.reusableFixture);
+});
+
+function embeddedWorkflow(id, snapshot, x = 0) {
+  return { id, type: "workflow", position: { x, y: 0 }, data: {
+    workflowId: snapshot.id, name: snapshot.name, description: snapshot.description, snapshot,
+  } };
+}
+
+Given("a saved workflow containing a reference to itself", async function () {
+  this.referenceSource = emptyDocument("self-reference", "Original self-reference");
+  await loadDocuments(this.page, [{ ...this.referenceSource,
+    nodes: [embeddedWorkflow("embedded-self", this.referenceSource)],
+  }]);
+  await expect(node(this.page, "workflow")).toHaveCount(1);
+});
+
+Then("the self-reference shows {string} with its original snapshot", async function (name) {
+  const reference = node(this.page, "workflow");
+  await expect(reference.locator(".operation-title-row strong")).toHaveText(name);
+  await expect(reference.locator("[data-workflow-name]")).toHaveAttribute("data-workflow-name", name);
+  const { document } = await readExport(this.page);
+  assert.equal(document.name, name);
+  assert.deepEqual(document.nodes[0].data.snapshot, this.referenceSource);
+});
+
+Given("a parent workflow containing two copies of a saved workflow", async function () {
+  this.referenceSource = emptyDocument("rename-source", "Original source workflow");
+  const parent = { ...emptyDocument("rename-parent", "Parent of renamed references"), nodes: [
+    embeddedWorkflow("first-reference", this.referenceSource),
+    embeddedWorkflow("second-reference", this.referenceSource, 360),
+  ] };
+  await loadDocuments(this.page, [this.referenceSource, parent]);
+  await expect(node(this.page, "workflow")).toHaveCount(2);
+  this.referenceParent = await repository(this.page, "load", parent.id);
+});
+
+When("the saved source workflow is renamed to {string}", async function (name) {
+  const source = await repository(this.page, "load", this.referenceSource.id);
+  await repository(this.page, "save", { ...source.document, name }, source.revision);
+});
+
+When("the saved source workflow is removed", async function () {
+  await repository(this.page, "remove", [this.referenceSource.id]);
+});
+
+Then("both references show {string} without changing their saved definitions", async function (name) {
+  await expect(node(this.page, "workflow").locator(".operation-title-row strong")).toHaveText([name, name]);
+  const { document } = await readExport(this.page);
+  assert.deepEqual(document.nodes, this.referenceParent.document.nodes);
+  const parent = await repository(this.page, "load", this.referenceParent.document.id);
+  assert.equal(parent.revision, this.referenceParent.revision, "A source-name update must not create a parent revision.");
+  assert.deepEqual(parent.document.nodes, this.referenceParent.document.nodes);
 });
 
 Given("three saved workflow control examples", async function () {

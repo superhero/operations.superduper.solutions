@@ -30,7 +30,7 @@ Retry saved settings** available.
 
 ## Retained errors
 
-**Settings → Browser → Errors** exposes a browser-local history of reported,
+**Settings → Logs → Errors** exposes a browser-local history of reported,
 uncaught, rejected-promise and managed-worker failures. Snapshots retain bounded
 types, messages, codes, stacks and causes, excluding arbitrary logger context and
 request arguments. Existing console and development displays remain independent.

@@ -8,9 +8,9 @@ import { readExport, setMode, workflow } from './workspace.steps.mjs';
 import { closeWorkflowDetails, workflowNameInput } from './workflow-details.fixture.mjs';
 import { repository, storedWorkflows } from './workflow-storage.fixture.mjs';
 
-const freshDefaults = { dashed: true, curved: false, snap: true, nodeSymbols: true, gridSize: 8, dashLength: 8, dashGap: 16, dashSpeed: 64, curveStrength: 50, nodeClearance: 16 };
+const freshDefaults = { dashed: true, curved: true, snap: true, nodeSymbols: true, gridSize: 8, dashLength: 8, dashGap: 16, dashSpeed: 64, curveStrength: 100, nodeClearance: 16 };
 const disabledDefaults = { dashed: false, curved: false, snap: false, gridSize: 12, dashLength: 6, dashGap: 4, dashSpeed: 20, curveStrength: 50, nodeClearance: 12, nodeSymbols: true };
-const enabledDefaults = { dashed: true, curved: true, snap: true, gridSize: 12, dashLength: 6, dashGap: 4, dashSpeed: 20, curveStrength: 50, nodeClearance: 12, nodeSymbols: true };
+const enabledDefaults = { dashed: true, curved: true, snap: true, gridSize: 12, dashLength: 6, dashGap: 4, dashSpeed: 20, curveStrength: 200, nodeClearance: 12, nodeSymbols: true };
 const settingLabels = { dashed: 'Dashed lines', curved: 'Curved lines', snap: 'Snap to grid', nodeSymbols: 'Node symbols' };
 const toolbarLabels = { dashed: 'Dashed connections', curved: 'Curved connections', snap: 'Snap to grid' };
 const settings = page => page.getByRole('region', { name: 'Settings workspace', exact: true });

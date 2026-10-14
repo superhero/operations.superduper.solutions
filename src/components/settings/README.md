@@ -10,9 +10,9 @@ the single-open-section behavior, appearance and workflow defaults.
 | --- | --- |
 | [LocaleSettings.svelte](LocaleSettings.svelte) | Receives preferences and change/retry callbacks; uses the shared locale formatter for its preview |
 | [SchemaSettings.svelte](SchemaSettings.svelte) | Receives library records and callbacks for upload, replacement, rename, ordering, enablement, deletion and download |
-| [StorageSettings.svelte](StorageSettings.svelte) | Subscribes to the existing metrics recorder and presents resource availability and errors |
+| [StorageSettings.svelte](StorageSettings.svelte) | Presents browser resource metrics, availability and collection errors |
 | [MetricsHistoryChart.svelte](MetricsHistoryChart.svelte) | Renders supplied series and intervals, with local metric/range selection |
-| [ErrorHistory.svelte](ErrorHistory.svelte) | Pages retained error diagnostics, expands causes and stacks, and exposes recorder recovery independently of resource sampling |
+| [ErrorHistory.svelte](ErrorHistory.svelte) | Supplies the Logs section with retained errors, cause chains, stacks, pagination and recorder recovery independently of resource sampling |
 
 Keep persistence and collection in the existing library services. Closing the
 resource section must not stop background collection. Settings remain outside

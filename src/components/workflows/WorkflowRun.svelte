@@ -8,12 +8,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { onMount, tick } from "svelte";
   import OperationFieldControl from "$lib/components/OperationFieldControl.svelte";
   import JsonView from "$lib/components/JsonView.svelte";
+  import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import { InputValidationError, prepareRequest } from "$lib/operation-input.ts";
   import type { WorkflowDocument } from "$lib/workflow-document.ts";
   import { createWorkflowRunner, type WorkflowStep, type WorkflowExecution } from "$lib/workflow-runner.ts";
   import { workflowExecutionForOperation, workflowRequestUrl } from "$lib/workflow-execution.ts";
 
   let { document, onClose, startingNodeId }: { document: WorkflowDocument; onClose: () => void; startingNodeId?: string } = $props();
+  const operationFormId = $props.id();
   let runner: ReturnType<typeof createWorkflowRunner> | undefined;
   let view = $state<WorkflowStep>();
   let values = $state<Record<string, string>>({});
@@ -107,14 +109,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <label><input type="radio" name="workflow-start" value={choice.id} bind:group={selected} />{choice.label}</label>
         {/each}
       </div>
-      <button class="run-primary" type="button" onclick={start} disabled={!selected}>Continue</button>
     </section>
   {:else if view?.kind === "operation" && !fatal}
     <section aria-label="Current workflow operation">
       <h3 bind:this={heading} tabindex="-1">{view.step}. {view.operation.name}</h3>
       <p class="hint">{view.workflowName} · {view.operation.description}</p>
       <p class="run-request"><strong>{view.operation.method}</strong> <code>{requestUrl}</code></p>
-      <form onsubmit={execute} novalidate>
+      <form id={operationFormId} onsubmit={execute} novalidate>
         <div class="run-fields">
           {#each view.operation.fields as field (field.key)}
             {@const connected = view.mappedFields.includes(field.key)}
@@ -134,8 +135,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {#if executed}
           <p class="run-success" role="status">Operation completed.</p>
           <button class="run-primary" type="button" onclick={advance}>Next operation</button>
-        {:else}
-          <button class="run-primary" type="submit" disabled={busy}>{busy ? "Sending request…" : retry ? "Retry operation" : history.length ? "Run operation" : "Start workflow"}</button>
         {/if}
       </form>
     </section>
@@ -155,7 +154,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/each}
     </section>
   {/if}
-  <footer><button type="button" onclick={end}>{view?.kind === "complete" ? "Close run" : "End run"}</button></footer>
+  <footer>
+    {#if view?.kind === "choice" && !fatal}
+      <button type="button" class="run-primary run-action" onclick={start} disabled={!selected}>
+        <span>Start</span><MaterialIcon name="start" size={20} />
+      </button>
+    {:else if view?.kind === "operation" && !fatal && !executed}
+      <button type="submit" form={operationFormId} class="run-primary run-action" disabled={busy}>
+        <span>{busy ? "Sending request…" : retry ? "Retry operation" : history.length ? "Run operation" : "Start workflow"}</span><MaterialIcon name="start" size={20} />
+      </button>
+    {/if}
+    <button type="button" class="run-primary run-action" onclick={end}>
+      <MaterialIcon name="exit_to_app" size={20} /><span>Quit</span>
+    </button>
+  </footer>
 </div>
 
 <style>
@@ -163,19 +175,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .run-endpoint { margin: 0; padding: 12px; border-left: 3px solid var(--color-emphasis); background: var(--color-report-card); font-size: 12px; line-height: 1.6; }
   .run-request { font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
   h3 { margin: 0 0 8px; font-size: 16px; }
-  h3:focus { outline: none; }
+  h3[tabindex="-1"] { outline: none; }
   .run-choices { display: grid; gap: 8px; margin: 12px 0; }
-  .run-choices label { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--color-report-card); }
+  .run-choices label { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 4px; background: var(--color-report-card); }
   .run-fields { display: grid; gap: 16px; margin: 16px 0; }
   .run-field { display: grid; gap: 6px; }
   .run-field > label { font-size: 12px; font-weight: 700; }
   .run-field small { font-size: 11px; line-height: 1.5; color: var(--color-muted-foreground); }
-  .joined-field { display: block; overflow: hidden; border-radius: 4px; --field-background: var(--color-foreground); --field-foreground: var(--color-background); }
+  .joined-field { display: block; overflow: hidden; border-radius: 4px; --field-background: var(--color-background); --field-foreground: var(--color-foreground); }
   button { border: 1px solid var(--color-surface); border-radius: 4px; padding: 9px 14px; color: var(--color-foreground); background: transparent; }
   button.run-primary { background: var(--color-foreground); color: var(--color-background); }
+  button.run-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; }
   .run-success { font-size: 12px; }
   .run-error { margin: 0; padding: 12px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; line-height: 1.6; }
   .run-results { min-width: 0; display: grid; gap: 12px; }
   summary { cursor: pointer; padding: 10px 0; font-size: 12px; font-weight: 700; }
-  footer { display: flex; justify-content: flex-end; padding-top: 8px; border-top: 1px solid var(--color-surface); }
+  footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 8px; border-top: 1px solid var(--color-surface); }
 </style>

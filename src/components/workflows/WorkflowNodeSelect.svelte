@@ -5,8 +5,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
-  import { Select } from "bits-ui";
+  import { Select, mergeProps } from "bits-ui";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
+  import HintButton from "$lib/components/HintButton.svelte";
 
   let { label, value, choices, disabled = false, active = true, onchange }: {
     label: string; value: string; choices: { value: string; label: string; symbol?: string }[];
@@ -18,8 +19,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <Select.Root type="single" {value} {disabled} items={choices} onValueChange={onchange} bind:open>
-  <Select.Trigger class="workflow-node-select nodrag nopan nokey" role="combobox" aria-label={label} title={selected?.label}>
-    <span>{selected?.symbol ?? selected?.label ?? value}</span><MaterialIcon name="expand_more" size={16} />
+  <Select.Trigger class="workflow-node-select nodrag nopan nokey" role="combobox" aria-label={label}>
+    {#snippet child({ props: selectProps })}
+      <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={selected?.label ?? value} labelAsName={false} tooltipEnabled={!open}>
+        {#snippet child({ props: hintProps })}
+          <button {...mergeProps(hintProps, selectProps)}>
+            <span>{selected?.symbol ?? selected?.label ?? value}</span><MaterialIcon name="expand_more" size={16} />
+          </button>
+        {/snippet}
+      </HintButton>
+    {/snippet}
   </Select.Trigger>
   <Select.Portal>
     <Select.Content class="workflow-node-select-options nodrag nopan nokey nowheel" aria-label={label} sideOffset={5} collisionPadding={10} preventScroll={false}>
@@ -39,7 +48,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <style>
   :global(.workflow-node-select) { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; min-width: 0; min-height: 30px; padding: 5px 8px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font-size: 11px; text-align: left; }
   :global(.workflow-node-select:disabled) { background: var(--color-disabled); color: var(--color-disabled-foreground); }
-  :global(.workflow-node-select-options) { z-index: 60; min-width: max(140px, var(--bits-select-anchor-width)); max-width: calc(100vw - 20px); max-height: min(320px, var(--bits-select-content-available-height)); overflow: auto; padding: 4px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); box-shadow: 0 4px 16px color-mix(in srgb, var(--color-foreground) 16%, transparent); }
+  :global(.workflow-node-select-options) { z-index: 60; min-width: max(140px, var(--bits-select-anchor-width)); max-width: calc(100vw - 20px); max-height: min(320px, var(--bits-select-content-available-height)); overflow: auto; padding: 4px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
   :global(.workflow-node-select-option) { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 32px; padding: 6px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; outline: none; transition: background-color 180ms ease-in, color 180ms ease-in; }
   :global(.workflow-node-select-option[data-highlighted]) { background: var(--color-secondary-hover); color: var(--color-secondary-hover-foreground); }
   .check { display: grid; place-items: center; width: 16px; height: 16px; }

@@ -6,6 +6,9 @@ Feature: Run workflows through the example HTTP endpoint
   Scenario: Open a saved workflow and choose its starting operation
     Then a saved workflow opens a request run with starting choices and an end control
 
+  Scenario: Leaving a run heading does not flash an outline
+    Then moving focus from a run heading keeps it unoutlined and preserves control focus rings
+
   Scenario: Validate inputs and continue with connected task results
     Then the workflow run dialog validates inputs and passes task results to the next operation
 
