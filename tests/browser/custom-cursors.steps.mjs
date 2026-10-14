@@ -69,6 +69,17 @@ async function expectCursor(locator, role, enabled) {
   await expect(locator).toHaveCSS('cursor', expected);
 }
 
+async function hoverEmptySurface(page, locator, enabled, point) {
+  const bounds = await locator.boundingBox();
+  assert.ok(bounds, 'The empty layout surface must be visible.');
+  point ??= { x: bounds.x + 6, y: bounds.y + 6 };
+  await page.mouse.move(point.x, point.y);
+  await expect.poll(() => locator.evaluate((element, point) => document.elementFromPoint(point.x, point.y) === element, point),
+    { message: 'The pointer must hit the empty surface itself, not a descendant or overlay.' }).toBe(true);
+  if (enabled) await expectCursor(locator, 'default', true);
+  else await expect(locator).toHaveCSS('cursor', 'auto');
+}
+
 async function theme(page, dark) {
   await openCatalog(page);
   const control = page.getByRole('switch', { name: 'Dark theme', exact: true });
@@ -134,6 +145,7 @@ Then('turning custom cursors off preserves native text behavior and unrelated st
   for (const enabled of [true, false]) {
     await enableCursors(page, enabled);
     await setMode(page, 'operations');
+    await page.locator('.site-header .brand').hover();
     await expect(page.locator('html')).toHaveCSS('cursor', 'auto');
     await expect(page.locator('body')).toHaveCSS('cursor', 'auto');
     await expect(page.locator('.site-header .brand')).toHaveCSS('cursor', 'auto');
@@ -185,6 +197,51 @@ Then('cursor artwork follows the current foreground and background in both theme
     await page.mouse.move(40, 40);
     await page.mouse.move(80, 80, { steps: 3 });
     assert.deepEqual(await cursorValues(page), current, 'Pointer movement must leave the rendered cursor palette intact.');
+  }
+});
+
+Then('hovering empty navigation and page space follows the cursor preference without changing controls or text', async function () {
+  const page = this.page;
+  const navigation = page.locator('#side-navigation');
+  const catalog = page.getByRole('navigation', { name: 'Operation catalog', exact: true });
+  const project = catalog.locator('[data-catalog-group="projects"] > .catalog-group');
+  const summary = project.locator(':scope > summary');
+  const children = project.locator(':scope > .disclosure-panel > .catalog-children');
+  const saved = page.getByRole('navigation', { name: 'Saved workflow catalog', exact: true });
+  const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
+  let nativePrompt;
+  for (const enabled of [false, true]) {
+    await enableCursors(page, enabled);
+    await setMode(page, 'operations');
+    await openCatalog(page);
+    await navigation.evaluate(element => { element.scrollTop = 0; });
+    await hoverEmptySurface(page, navigation, enabled);
+    if (await summary.getAttribute('aria-expanded') !== 'true') await summary.click();
+    const first = await children.locator(':scope > .catalog-branch').nth(0).boundingBox();
+    const second = await children.locator(':scope > .catalog-branch').nth(1).boundingBox();
+    assert.ok(first && second && second.y > first.y + first.height, 'Catalog groups must expose a real spacing gap.');
+    await hoverEmptySurface(page, children, enabled,
+      { x: first.x + first.width / 2, y: (first.y + first.height + second.y) / 2 });
+    const modeButton = navigation.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Operations', exact: true });
+    for (const target of [modeButton, summary, summary.locator('.material-symbols-rounded')]) {
+      const point = await center(target);
+      await page.mouse.move(point.x, point.y);
+      await expectCursor(target, 'pointer', enabled);
+    }
+    const savedSummary = saved.locator(':scope > .catalog-group > summary');
+    if (await savedSummary.getAttribute('aria-expanded') !== 'true') await savedSummary.click();
+    const prose = saved.getByText('Save a workflow to use it here.', { exact: true });
+    await prose.hover();
+    await expect(prose).toHaveCSS('cursor', 'auto');
+    await closeCatalog(page);
+    await hoverEmptySurface(page, page.locator('.site-header'), enabled);
+    await hoverEmptySurface(page, page.locator('.shell'), enabled);
+    await page.locator('.site-header .brand').hover();
+    await expect(page.locator('.site-header .brand')).toHaveCSS('cursor', 'auto');
+    await prompt.hover();
+    nativePrompt ??= await prompt.evaluate(element => getComputedStyle(element).cursor);
+    assert.match(nativePrompt, /^(auto|text)$/);
+    await expect(prompt).toHaveCSS('cursor', nativePrompt);
   }
 });
 
@@ -441,9 +498,12 @@ Then('{string} renders and disables cursor artwork at density {int} and CSS zoom
       await theme(page, dark);
       await expectEmbeddedArtwork(page);
       await expectCursor(toggle(page), 'pointer', true);
+      await hoverEmptySurface(page, page.locator('.site-header'), true);
       await enableCursors(page, false);
       await expectCursor(toggle(page), 'pointer', false);
+      await hoverEmptySurface(page, page.locator('.site-header'), false);
       await setMode(page, 'operations');
+      await page.locator('.site-header .brand').hover();
       await expect(page.locator('.site-header .brand')).toHaveCSS('cursor', 'auto');
       await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toHaveCSS('cursor', /^(auto|text)$/);
     }

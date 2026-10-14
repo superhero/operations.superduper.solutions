@@ -11,8 +11,10 @@ by default; disabling removes these values and restores native CSS fallbacks.
 Call `syncCursorTheme` after applying appearance settings. Rendering is cached
 per root and palette; invalid colors retain native cursors and report an error.
 Only foreground/outline placeholders change. Masks, geometry and the light-mode
-hand weight remain intact. Do not apply a universal cursor or replace native
-`auto`, drag/drop feedback, text selection or textarea resize grips.
+hand weight remain intact. Empty navigation and page surfaces use the custom
+arrow only when hovered directly; their descendants keep their own cursors.
+Do not apply a universal cursor or replace native `auto` on text, drag/drop
+feedback, text selection or textarea resize grips.
 
 ## Artwork
 

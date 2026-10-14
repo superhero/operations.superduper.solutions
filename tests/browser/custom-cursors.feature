@@ -11,6 +11,16 @@ Feature: Optional custom cursors preserve interaction feedback
   Scenario: Cursor artwork follows light dark and palette changes
     Then cursor artwork follows the current foreground and background in both theme modes
 
+  @cursor-surfaces
+  Scenario Outline: Empty navigation and page surfaces use the custom arrow at <width> pixels
+    Given I use a viewport of <width> by 900 pixels
+    Then hovering empty navigation and page space follows the cursor preference without changing controls or text
+
+    Examples:
+      | width |
+      | 1280  |
+      | 390   |
+
   Scenario Outline: Startup reconciles a <cache> cursor cache with a <stored> database value
     Given I reload with a "<cache>" cursor cache and a "<stored>" database value
     Then the first cursor preference is "<first>" and the confirmed preference is "<confirmed>"

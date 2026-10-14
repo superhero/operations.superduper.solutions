@@ -163,6 +163,16 @@ button, input, select, textarea { font: inherit; }
 /* Keep input values bold even when a component uses a font shorthand. */
 input, textarea { font-weight: 700 !important; }
 button, summary, select, :where(a:any-link) { cursor: var(--cursor-pointer, pointer); }
+/* Theme empty layout surfaces only while the pointer is directly over them.
+   Descendant text and controls retain their own cursor and native auto behavior. */
+:where(:is(
+  body, #app, .page-content, .shell, .shell > main, .workspace,
+  .site-header, .header-content, .brand-controls, .brand-copy,
+  #side-navigation, .catalog-menu-header, .operation-catalog, .catalog-reorder,
+  .catalog-branch, .catalog-children, .catalog-operations, .catalog-operations > li,
+  .catalog-group, .catalog-operation-detail, .disclosure-panel, .settings-sections,
+  .modal-overlay, .modal-content, .modal-content > header, .modal-actions
+):hover:not(:has(:hover))) { cursor: var(--cursor-default, auto); }
 button:disabled, [data-slot="button"][aria-disabled="true"] { cursor: var(--cursor-not-allowed, not-allowed); background: var(--color-disabled); color: var(--color-disabled-foreground); opacity: 1; box-shadow: none; }
 button, a, textarea { -webkit-tap-highlight-color: transparent; }
 :where(button, a[href], summary, input, select, textarea, [tabindex]) { outline: 3px solid transparent; outline-offset: 3px; transition: background-color 180ms ease-in, border-color 180ms ease-in, color 180ms ease-in, transform 180ms ease-in, opacity 180ms ease-in, outline-color 180ms ease-in; }
