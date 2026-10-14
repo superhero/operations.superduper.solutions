@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.44
+
 <!-- changelog-commit:6ef72c23fa2daf336ed692ee0748c8dccbdb2f78 -->
 ### Commit [`6ef72c2`](https://github.com/superhero/operations.superduper.solutions/commit/6ef72c23fa2daf336ed692ee0748c8dccbdb2f78)
 
@@ -24,8 +28,6 @@ Keep release gates, retry protection, regression scenarios, documentation
 and the scenario badge aligned with the new lifecycle.
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.43
 
