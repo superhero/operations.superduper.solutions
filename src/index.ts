@@ -6,8 +6,11 @@ import { finishStartup, reportStartup } from "./lib/startup-progress.ts";
 import { requestPersistentStorage } from "./lib/storage-persistence.ts";
 import { startMetricsRecorder } from "./lib/metrics-recorder.ts";
 import { prepareSavedStorage, loadSchemaLibrary } from "./lib/schema-library.ts";
+import { syncCursorTheme } from "./lib/cursors/cursor-theme.ts";
 
 reportStartup("application");
+// Module startup follows the stylesheet, so cached colors can render immediately.
+syncCursorTheme(document.documentElement, document.documentElement.dataset.customCursors !== "false");
 // Keep the CSS loader visible while developing it; remove the query to start.
 if (import.meta.env.DEV && new URLSearchParams(location.search).get("dev-loading") === "1") {
   await new Promise<never>(() => {});
@@ -29,6 +32,8 @@ try {
   document.documentElement.dataset.theme = settings.theme;
   document.documentElement.dataset.palette = settings.palette;
   document.documentElement.classList.toggle("dark", settings.theme === "dark");
+  document.documentElement.dataset.customCursors = String(settings.customCursors);
+  syncCursorTheme(document.documentElement, settings.customCursors);
   applyLocaleSettings(settings.locale);
   reportStartup("schemas");
   await loadSchemaLibrary();
@@ -36,6 +41,7 @@ try {
   startApplication(document, App, (component, options) => mount(component, { ...options, props: {
     initialWorkflowDefaults: settings.workflowDefaults,
     initialDeveloperToolbar: settings.developerToolbar,
+    initialCustomCursors: settings.customCursors,
     initialLocale: settings.locale,
     initialSettingsError: settings.storageError,
   } }));

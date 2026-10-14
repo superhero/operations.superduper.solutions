@@ -155,7 +155,7 @@ try {
         const expected = scenario === 'empty-settings' ? defaults : authoritative;
         await appearance(page, expected);
         if (scenario !== 'unavailable-storage') await expect.poll(() => holder.evaluate(key => JSON.parse(localStorage.getItem(key)), cacheKey))
-          .toEqual({ version: 1, theme: expected.theme, palette: expected.palette });
+          .toEqual({ version: 1, theme: expected.theme, palette: expected.palette, customCursors: true });
         await expect.poll(() => settingsValues(holder)).toEqual(expected);
       }
       if (scenario === 'unavailable-storage') {
@@ -190,18 +190,18 @@ try {
         });
         assert.equal(failure, 'QuotaExceededError');
         assert.deepEqual(await holder.evaluate(key => JSON.parse(localStorage.getItem(key)), cacheKey),
-          { version: 1, theme: authoritative.theme, palette: authoritative.palette },
+          { version: 1, theme: authoritative.theme, palette: authoritative.palette, customCursors: true },
           'A rejected IndexedDB write must not update the appearance cache');
         assert.deepEqual(await settingsValues(holder), authoritative);
         await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
         await page.getByRole('switch', { name: 'Dark theme', exact: true }).click();
         await expect.poll(() => holder.evaluate(key => JSON.parse(localStorage.getItem(key)), cacheKey))
-          .toEqual({ version: 1, theme: 'dark', palette: 'alpine' });
+          .toEqual({ version: 1, theme: 'dark', palette: 'alpine', customCursors: true });
         await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Settings', exact: true }).click();
         await page.getByRole('button', { name: 'Close navigation', exact: true }).click();
         await page.locator('summary[aria-label="Theme"]').click();
         await page.getByRole('radio', { name: 'Sunset', exact: true }).check();
-        await expect.poll(() => holder.evaluate(key => JSON.parse(localStorage.getItem(key)), cacheKey)).toEqual(cached);
+        await expect.poll(() => holder.evaluate(key => JSON.parse(localStorage.getItem(key)), cacheKey)).toEqual({ ...cached, customCursors: true });
         assert.deepEqual(await settingsValues(holder), { ...authoritative, theme: 'dark', palette: 'sunset' });
         entryGate = new Promise(resolve => { releaseEntry = resolve; });
         await page.reload({ waitUntil: 'commit' });

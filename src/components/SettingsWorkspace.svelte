@@ -46,6 +46,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let { palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
     locale = defaultLocaleSettings, localeError = "", onLocaleChange = () => {}, onRetryLocale = () => {},
     developerToolbar, developerToolbarError = "", onDeveloperToolbarChange,
+    customCursors = true, customCursorsError = "", onCustomCursorsChange,
     settingsUnavailable, settingsRetrying, onRetrySettings }: {
     palette: PaletteId;
     onPaletteChange: (palette: PaletteId) => void;
@@ -60,6 +61,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     developerToolbar: boolean;
     developerToolbarError?: string;
     onDeveloperToolbarChange: (enabled: boolean) => void;
+    customCursors?: boolean;
+    customCursorsError?: string;
+    onCustomCursorsChange: (enabled: boolean) => void;
     settingsUnavailable: boolean;
     settingsRetrying: boolean;
     onRetrySettings: () => void;
@@ -209,6 +213,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <div class="section-heading"><h2>Theme</h2><span class="section-subtitle">Decide what color the webpage will use</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
       {/snippet}
+      <fieldset class="workflow-settings" aria-label="Cursor appearance">
+        <div class="workflow-defaults">
+          <div class="workflow-default-pair">
+            <button class="workflow-default" type="button" role="switch" aria-checked={customCursors}
+              onclick={() => onCustomCursorsChange(!customCursors)}>
+              <span>Custom cursors</span><span class="default-switch" aria-hidden="true"><span></span></span>
+            </button>
+          </div>
+        </div>
+        {#if customCursorsError}
+          <div class="defaults-error"><p role="alert">{customCursorsError}</p><button class="defaults-retry" type="button" onclick={() => onCustomCursorsChange(customCursors)}>Retry saving</button></div>
+        {/if}
+      </fieldset>
       <fieldset aria-label="Color palette">
         <div class="palette-options">
           {#each palettes as option (option.id)}
@@ -360,8 +377,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .defaults-retry { padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; }
   .settings-retry { padding: 16px 16px 0; }
   .palette-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 16px; }
-  .palette-choice { position: relative; min-width: 0; cursor: pointer; }
-  .palette-choice input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .palette-choice { position: relative; min-width: 0; cursor: var(--cursor-pointer, pointer); }
+  .palette-choice input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: var(--cursor-pointer, pointer); }
   .palette-card { display: grid; padding: 0; border: 4px solid var(--color-muted); border-radius: 4px; background: var(--color-muted); color: var(--color-catalog-foreground); outline: 3px solid transparent; outline-offset: 3px; transition: border-color 180ms ease-in, background-color 180ms ease-in, color 180ms ease-in, outline-color 180ms ease-in; }
   input:checked + .palette-card { color: var(--color-catalog-active-foreground); }
   input:checked + .palette-card .palette-heading { background: var(--color-catalog-active); }

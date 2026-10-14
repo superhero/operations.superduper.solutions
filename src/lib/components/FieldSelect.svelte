@@ -46,7 +46,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   :global(.field-select-trigger) { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 0; background: var(--field-background, var(--color-foreground)); color: var(--field-foreground, var(--color-background)); text-align: left; }
-  :global(.field-select-trigger:disabled) { cursor: not-allowed; opacity: 1; }
+  :global(.field-select-trigger:disabled) { cursor: var(--cursor-not-allowed, not-allowed); opacity: 1; }
   .field-select-value, .field-select-option-label { min-width: 0; overflow-wrap: anywhere; font-weight: 700; }
   .field-select-value.placeholder, .field-select-option-label.placeholder { color: var(--color-surface); font-weight: 400; font-style: italic; }
   :global(.field-select-trigger > .material-symbols-rounded) { flex-shrink: 0; }
@@ -55,7 +55,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.field-select-content[data-state="open"]) { animation: select-slide-in 200ms ease-in both; }
   :global(.field-select-content[data-state="closed"]) { animation: select-slide-out 200ms ease-in both; pointer-events: none; }
   :global(.field-select-viewport) { min-height: 0; overscroll-behavior: contain; }
-  :global(.field-select-option) { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; padding: 8px; border-radius: 3px; color: inherit; cursor: pointer; outline: none; transition: background-color 180ms ease-in, color 180ms ease-in; }
+  :global(.field-select-option) { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; padding: 8px; border-radius: 3px; color: inherit; cursor: var(--cursor-pointer, pointer); outline: none; transition: background-color 180ms ease-in, color 180ms ease-in; }
   :global(.field-select-option[data-highlighted]) { background: var(--color-primary); color: var(--color-primary-foreground); }
   .field-select-check { display: grid; place-items: center; flex: 0 0 18px; width: 18px; height: 18px; }
   @keyframes select-slide-in { from { opacity: 0; translate: 0 var(--select-slide-y); } to { opacity: 1; translate: 0 0; } }

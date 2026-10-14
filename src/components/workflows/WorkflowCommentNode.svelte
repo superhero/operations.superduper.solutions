@@ -71,7 +71,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <style>
   .workflow-comment-node { width: 300px; }
   .comment-editor, .comment-preview { padding: 10px 12px; border-top: 1px solid var(--color-border); }
-  .comment-preview { min-height: 60px; cursor: text; }
+  .comment-preview { min-height: 60px; cursor: var(--cursor-text, text); }
   textarea { display: block; width: 100%; min-height: 112px; max-height: 420px; padding: 8px; border: 0; border-radius: 4px; resize: vertical; background: var(--color-background); color: var(--color-foreground); font: 12px/1.6 ui-monospace, monospace; }
   @media (prefers-reduced-motion: reduce) { textarea, .comment-preview { transition: none; } }
 </style>

@@ -313,15 +313,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-heading { --schema-control-size: calc(var(--spacing) * 8); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
   .schema-name { display: flex; flex: 1; min-width: min(100%, 180px); height: var(--schema-control-size); border-radius: 4px; background: var(--color-background); color: var(--color-foreground); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
   .schema-name:focus-within { outline-color: var(--color-ring); }
-  .schema-name-icon { display: grid; place-items: center; flex: 0 0 var(--schema-control-size); width: var(--schema-control-size); height: 100%; cursor: text; }
+  .schema-name-icon { display: grid; place-items: center; flex: 0 0 var(--schema-control-size); width: var(--schema-control-size); height: 100%; cursor: var(--cursor-text, text); }
   .schema-name-input { box-sizing: border-box; min-width: 0; width: 100%; height: 100%; padding: 6px 10px; border: 0; border-radius: 0 4px 4px 0; outline: none; background: transparent; color: inherit; font-size: 14px; }
   .schema-empty h3 { margin: 0; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
   .schema-empty p, .schema-note { margin: 6px 0 0; color: var(--color-muted-foreground); font-size: 12px; overflow-wrap: anywhere; }
   .schema-actions { --schema-action-gap: 6px; display: flex; align-items: center; flex-wrap: wrap; gap: var(--schema-action-gap); }
   .schema-card { position: relative; }
   .schema-card.dragging { opacity: 0.5; }
-  .schema-actions :global(.schema-drag-handle) { cursor: grab; }
-  .schema-actions :global(.schema-drag-handle:active) { cursor: grabbing; }
+  .schema-actions :global(.schema-drag-handle) { cursor: var(--cursor-grab, grab); }
+  .schema-actions :global(.schema-drag-handle:active) { cursor: var(--cursor-grabbing, grabbing); }
   .schema-metadata { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: 12px; margin: 18px 0; }
   .schema-metadata > div { min-width: 0; padding: 8px 10px; border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-background); }
   .schema-metadata dt { margin-bottom: 5px; font-size: 11px; font-weight: 400; color: var(--color-muted-foreground); }

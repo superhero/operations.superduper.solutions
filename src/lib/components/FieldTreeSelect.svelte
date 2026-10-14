@@ -158,7 +158,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .field-tree-select-trigger { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; width: 100%; min-height: 34px; padding: 6px 10px; border: 0; border-radius: 4px; background: var(--field-background, var(--color-foreground)); color: var(--field-foreground, var(--color-background)); text-align: left; }
-  .field-tree-select-trigger:disabled { cursor: not-allowed; opacity: 1; }
+  .field-tree-select-trigger:disabled { cursor: var(--cursor-not-allowed, not-allowed); opacity: 1; }
   .field-tree-select-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
   .field-tree-select-trigger :global(.material-symbols-rounded) { flex-shrink: 0; }
   :global(.field-tree-select-content) { --tree-slide-y: -8px; z-index: 40; box-sizing: border-box; min-width: 0; width: var(--bits-popover-anchor-width); max-width: min(var(--bits-popover-anchor-width), calc(100vw - 24px)); max-height: min(320px, var(--bits-popover-content-available-height)); padding: 4px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; border: 0; border-radius: 4px; background: var(--color-foreground); color: var(--color-background); box-shadow: none; }
@@ -166,8 +166,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.field-tree-select-content[data-state="open"]) { animation: tree-slide-in 200ms ease-in both; }
   :global(.field-tree-select-content[data-state="closed"]) { animation: tree-slide-out 200ms ease-in both; pointer-events: none; }
   .field-tree-select-node { min-width: 0; position: relative; outline: none; }
-  .field-tree-select-row { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 8px; border-radius: 3px; cursor: default; transition: background-color 180ms ease-in, color 180ms ease-in; }
-  .field-tree-select-row.selectable { cursor: pointer; }
+  .field-tree-select-row { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 8px; border-radius: 3px; cursor: var(--cursor-default, default); transition: background-color 180ms ease-in, color 180ms ease-in; }
+  .field-tree-select-row.selectable { cursor: var(--cursor-pointer, pointer); }
   .field-tree-select-row.selectable:hover, .field-tree-select-node:focus > .field-tree-select-row { background: var(--color-primary); color: var(--color-primary-foreground); }
   .field-tree-select-caption { flex: 1; min-width: 0; overflow-wrap: anywhere; font-weight: 700; }
   .field-tree-select-row:not(.selectable) > .field-tree-select-caption { color: var(--color-badge-background); font-weight: 400; }

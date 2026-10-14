@@ -201,10 +201,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .field-name { min-width: 0; flex: 1; overflow-wrap: anywhere; }
   .required { color: var(--color-foreground); font-weight: 700; text-decoration: none; }
   .field-type { flex-shrink: 0; padding: 0 5px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); font-size: 10px; line-height: 18px; }
-  .editable-field { display: flex; align-items: center; flex: 1; gap: 10px; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+  .editable-field { display: flex; align-items: center; flex: 1; gap: 10px; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: var(--cursor-pointer, pointer); }
   .editable-field:hover, .editable-field[aria-pressed="true"] { color: var(--color-emphasis); }
   .editable-field:focus-visible { outline: 2px solid var(--color-emphasis); outline-offset: 3px; }
-  .editable-field:disabled { color: var(--color-muted-foreground); cursor: default; }
+  .editable-field:disabled { color: var(--color-muted-foreground); cursor: var(--cursor-default, default); }
   .deferred .field-type { background: var(--color-background); color: var(--color-muted-foreground); }
   .data-notice { display: flex; align-items: flex-start; gap: 7px; padding: 10px 12px; border-top: 1px solid var(--color-border); color: var(--color-muted-foreground); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
   .data-notice.no-fields { color: var(--color-badge-background); }
@@ -225,6 +225,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .property-error { grid-column: 1 / -1; max-width: 300px; color: var(--color-badge-background); font-size: 11px; overflow-wrap: anywhere; }
   .workflow-data-node :global(.svelte-flow__handle) { width: 12px; height: 12px; border: 2px solid var(--color-surface); background: var(--color-emphasis); }
   .workflow-data-node :global(.svelte-flow__handle.target) { background: var(--color-foreground); }
-  .workflow-data-node :global(.structural-port) { pointer-events: auto; cursor: default; }
+  .workflow-data-node :global(.structural-port) { pointer-events: auto; cursor: var(--cursor-default, default); }
   @media (prefers-reduced-motion: reduce) { .workflow-data-node { transition: none; } }
 </style>

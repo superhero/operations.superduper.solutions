@@ -51,8 +51,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <style>
   :global(.workflow-minimap) { margin: 0 1rem 2rem; border: 1px solid var(--color-border); border-radius: 4px; overflow: hidden; }
   :global(.workflow-minimap:focus-visible) { outline: 2px solid var(--color-emphasis); outline-offset: 3px; }
-  :global(.workflow-minimap .svelte-flow__minimap-svg) { display: block; cursor: grab; }
-  :global(.workflow-minimap .svelte-flow__minimap-svg:active) { cursor: grabbing; }
+  :global(.workflow-minimap .svelte-flow__minimap-svg) { display: block; cursor: var(--cursor-grab, grab); }
+  :global(.workflow-minimap .svelte-flow__minimap-svg:active) { cursor: var(--cursor-grabbing, grabbing); }
   :global(.workflow-minimap[aria-disabled="true"]) { pointer-events: none; }
   @media (prefers-reduced-motion: no-preference) {
     :global(.workflow-minimap .svelte-flow__minimap-node) { transition: fill 180ms ease-in; }

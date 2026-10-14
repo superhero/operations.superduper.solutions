@@ -9,6 +9,7 @@
   import { defaultLocaleSettings, normalizeLocaleSettings, type LocaleSettings } from "$lib/locale-settings.ts";
   import { applyLocaleSettings } from "$lib/datetime-state.ts";
   import { logger } from "$lib/logger.ts";
+  import { syncCursorTheme } from "$lib/cursors/cursor-theme.ts";
   import Header from "./components/Header.svelte";
   import SideNavigation from "./components/SideNavigation.svelte";
   import OperationsWorkspace from "./components/OperationsWorkspace.svelte";
@@ -17,9 +18,10 @@
   import BackgroundWave from "./components/BackgroundWave.svelte";
   import NativeScrollbars from "./components/NativeScrollbars.svelte";
 
-  let { initialWorkflowDefaults, initialDeveloperToolbar = false, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
+  let { initialWorkflowDefaults, initialDeveloperToolbar = false, initialCustomCursors = true, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
     initialWorkflowDefaults: WorkflowDefaults;
     initialDeveloperToolbar?: boolean;
+    initialCustomCursors?: boolean;
     initialLocale?: LocaleSettings;
     initialSettingsError?: Error | null;
   } = $props();
@@ -27,12 +29,15 @@
   let developerToolbar = $state(untrack(() => initialDeveloperToolbar));
   let developerToolbarError = $state("");
   let developerToolbarSave = 0;
+  let customCursors = $state(untrack(() => initialCustomCursors));
+  let customCursorsError = $state("");
+  let customCursorsSave = 0;
   let locale = $state<LocaleSettings>(untrack(() => normalizeLocaleSettings(initialLocale)));
   let localeError = $state("");
   let localeSave = 0;
   let settingsError = $state(untrack(() => initialSettingsError));
   let settingsRetrying = $state(false);
-  const settingsEdits = { theme: 0, palette: 0, workflowDefaults: 0, developerToolbar: 0, locale: 0 };
+  const settingsEdits = { theme: 0, palette: 0, customCursors: 0, workflowDefaults: 0, developerToolbar: 0, locale: 0 };
   let workflowDefaultsError = $state("");
   let workflowDefaultsSave = 0;
   let navigationOpen = $state(false);
@@ -87,6 +92,9 @@
   $effect(() => {
     document.documentElement.dataset.theme = dark ? "dark" : "light";
     document.documentElement.classList.toggle("dark", dark);
+    document.documentElement.dataset.palette = palette;
+    document.documentElement.dataset.customCursors = String(customCursors);
+    syncCursorTheme(document.documentElement, customCursors);
   });
 
   function toggleTheme() {
@@ -94,10 +102,6 @@
     dark = !dark;
     void saveSetting("theme", dark ? "dark" : "light").catch(reportSettingsError);
   }
-
-  $effect(() => {
-    document.documentElement.dataset.palette = palette;
-  });
 
   function selectPalette(next: typeof palette) {
     settingsEdits.palette += 1;
@@ -166,6 +170,19 @@
     });
   }
 
+  function selectCustomCursors(next: boolean) {
+    settingsEdits.customCursors += 1;
+    customCursors = next;
+    customCursorsError = "";
+    const request = ++customCursorsSave;
+    void saveSetting("customCursors", next).catch(error => {
+      if (request === customCursorsSave) {
+        customCursorsError = "Could not save this setting. It applies only to this session until saving succeeds.";
+        void reportSettingsError(error);
+      }
+    });
+  }
+
   async function reportSettingsError(error: unknown) {
     const failure = error instanceof Error ? error : new Error("Could not access saved settings.", { cause: error });
     // Keep the recovered app usable behind the overlay, with its palette applied.
@@ -185,6 +202,7 @@
         // A retry must not replace a choice made while the read was pending.
         if (edits.theme === settingsEdits.theme) dark = settings.theme === "dark";
         if (edits.palette === settingsEdits.palette) palette = palettes.find(option => option.id === settings.palette)?.id ?? palettes[0].id;
+        if (edits.customCursors === settingsEdits.customCursors) customCursors = settings.customCursors;
         if (edits.workflowDefaults === settingsEdits.workflowDefaults) workflowDefaults = settings.workflowDefaults;
         if (edits.developerToolbar === settingsEdits.developerToolbar) developerToolbar = settings.developerToolbar;
         if (edits.locale === settingsEdits.locale) locale = settings.locale;
@@ -277,6 +295,7 @@
           {locale} {localeError} onLocaleChange={selectLocale} onRetryLocale={() => selectLocale(locale)}
           settingsUnavailable={Boolean(settingsError)} {settingsRetrying} onRetrySettings={retrySettings}
           {developerToolbar} {developerToolbarError} onDeveloperToolbarChange={selectDeveloperToolbar}
+          {customCursors} {customCursorsError} onCustomCursorsChange={selectCustomCursors}
           onWorkflowDefaultsChange={selectWorkflowDefaults} onRetryWorkflowDefaults={() => selectWorkflowDefaults(workflowDefaults)} />
       </div>
     </main>

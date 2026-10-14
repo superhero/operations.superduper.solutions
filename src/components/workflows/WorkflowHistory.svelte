@@ -190,14 +190,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .version-graph circle.current { fill: var(--color-primary); }
   .version-list { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0 0 0 calc(var(--graph-width) + 4px); }
   .version-list li { min-width: 0; }
-  .version-card { display: block; width: 100%; padding: 10px; border: 0; border-left: 2px solid transparent; border-radius: 4px; background: var(--color-report-card); color: inherit; font: inherit; text-align: left; cursor: pointer; transition: transform 180ms ease-in; }
-  .version-card[aria-current="true"] { border-left-color: var(--color-badge-background); cursor: default; }
+  .version-card { display: block; width: 100%; padding: 10px; border: 0; border-left: 2px solid transparent; border-radius: 4px; background: var(--color-report-card); color: inherit; font: inherit; text-align: left; cursor: var(--cursor-pointer, pointer); transition: transform 180ms ease-in; }
+  .version-card[aria-current="true"] { border-left-color: var(--color-badge-background); cursor: var(--cursor-default, default); }
   .version-description { display: grid; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
   .version-description strong { white-space: pre-line; }
   .version-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; color: var(--color-muted-foreground); font-size: 11px; }
   .current-version { color: var(--color-badge-background); font-size: 11px; font-weight: 700; }
   button:focus-visible { outline: 2px solid var(--color-foreground); outline-offset: 2px; }
-  button:disabled { color: var(--color-muted-foreground); cursor: not-allowed; }
+  button:disabled { color: var(--color-muted-foreground); cursor: var(--cursor-not-allowed, not-allowed); }
   p { margin: 0; line-height: 1.6; }
   [role="alert"] { padding: 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); }
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {

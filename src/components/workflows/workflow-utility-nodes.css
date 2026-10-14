@@ -18,6 +18,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 .workflow-utility-node .svelte-flow__handle { width: 12px; height: 12px; border: 2px solid var(--color-surface); background: var(--color-emphasis); }
 .workflow-utility-node .svelte-flow__handle.target { background: var(--color-foreground); }
 .workflow-utility-node .utility-value { min-width: 0; width: 100%; min-height: 30px; padding: 6px 8px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font: inherit; }
-.workflow-utility-node .utility-value:disabled { background: var(--color-disabled); color: var(--color-disabled-foreground); opacity: 1; cursor: not-allowed; }
+.workflow-utility-node .utility-value:disabled { background: var(--color-disabled); color: var(--color-disabled-foreground); opacity: 1; cursor: var(--cursor-not-allowed, not-allowed); }
 .workflow-utility-node .utility-value:disabled::placeholder { color: var(--color-disabled-foreground); }
 @media (prefers-reduced-motion: reduce) { .workflow-utility-node, .workflow-utility-node .utility-action, .workflow-utility-node .utility-value { transition: none; } }

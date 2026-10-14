@@ -1037,6 +1037,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     .saved-documents :global(.document-remove:hover .material-symbols-rounded) { transform: scale(1.4); }
   }
   :global(.workflow-workspace .svelte-flow) { --xy-edge-stroke-default: var(--color-graph-line); --xy-edge-stroke-width: 2; --xy-edge-stroke-selected-default: var(--color-emphasis); --xy-connectionline-stroke-default: var(--color-emphasis); --xy-connectionline-stroke-width: 2; --xy-background-pattern-dots-color-default: color-mix(in srgb, var(--color-foreground) var(--workspace-dot-opacity), transparent); --xy-background-color-default: transparent; --xy-selection-background-color: color-mix(in srgb, var(--color-accent) 8%, transparent); --xy-selection-border: 1px dashed var(--color-accent); background: transparent; }
+  /* Mirror XYFlow's cursor states, order and specificity. Only eligible handles
+     receive connectionindicator; structural-port and field exceptions still win. */
+  :global(:where(.workflow-workspace) .svelte-flow__pane.draggable) { cursor: var(--cursor-grab, grab); }
+  :global(:where(.workflow-workspace) .svelte-flow__pane.dragging) { cursor: var(--cursor-grabbing, grabbing); }
+  :global(:where(.workflow-workspace) .svelte-flow__pane.selection) { cursor: var(--cursor-pointer, pointer); }
+  :global(:where(.workflow-workspace) .svelte-flow__edge.selectable) { cursor: var(--cursor-pointer, pointer); }
+  :global(:where(.workflow-workspace) .svelte-flow__node) { cursor: var(--cursor-default, default); }
+  :global(:where(.workflow-workspace) .svelte-flow__node.selectable) { cursor: var(--cursor-pointer, pointer); }
+  :global(:where(.workflow-workspace) .svelte-flow__node.draggable) { cursor: var(--cursor-grab, grab); }
+  :global(:where(.workflow-workspace) .svelte-flow__node.draggable.dragging) { cursor: var(--cursor-grabbing, grabbing); }
+  :global(:where(.workflow-workspace) .svelte-flow__nodesselection-rect) { cursor: var(--cursor-grab, grab); }
+  :global(:where(.workflow-workspace) .svelte-flow__handle.connectionindicator) { cursor: var(--cursor-crosshair, crosshair); }
+  :global(:where(.workflow-workspace) .svelte-flow__controls-button) { cursor: var(--cursor-pointer, pointer); }
   /* Node contents provide focus feedback; wrapper outlines flash on blur. */
   .workflow-workspace,
   :global(.workflow-workspace :is(.svelte-flow, .svelte-flow__renderer, .svelte-flow__pane, .svelte-flow__background)) { outline: none; }

@@ -103,6 +103,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .operation-node :global(.material-symbols-rounded) { font-variation-settings: "FILL" 1; }
   .operation-node :global(.svelte-flow__handle) { width: 12px; height: 12px; border: 2px solid var(--color-surface); background: var(--color-emphasis); }
   .operation-node :global(.svelte-flow__handle.target) { background: var(--color-foreground); }
-  .operation-node :global(.owner-port) { pointer-events: auto; cursor: default; }
+  .operation-node :global(.owner-port) { pointer-events: auto; cursor: var(--cursor-default, default); }
   @media (prefers-reduced-motion: reduce) { .operation-node { transition: none; } }
 </style>

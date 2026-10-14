@@ -17,6 +17,7 @@ unrelated behavior to `utils.ts`.
 | `workflow-repository*`, `workflow-change-message` | Autosave, recovery, history navigation and commit descriptions |
 | `metrics-*`, `storage-metrics`, `page-memory`, `processing-metrics` | Resource measurement, aggregation and display data |
 | `app-settings`, locale/date helpers, `storage-*`, `startup-*` | Preferences, storage lifecycle and startup coordination |
+| [`cursors`](cursors/README.md) | Embedded cursor artwork, theme colors and native cursor fallbacks |
 
 ## Persistence
 

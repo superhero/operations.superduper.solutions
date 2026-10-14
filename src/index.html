@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="light" data-palette="default">
+<html lang="en" data-theme="light" data-palette="default" data-custom-cursors="true">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,9 +13,11 @@
     try {
       const cached = JSON.parse(localStorage.getItem("v1/settings/appearance-cache") || "null");
       if (cached?.version === 1 && (cached.theme === "light" || cached.theme === "dark")
-        && typeof cached.palette === "string" && /^[a-z][a-z0-9-]{0,63}$/.test(cached.palette)) {
+        && typeof cached.palette === "string" && /^[a-z][a-z0-9-]{0,63}$/.test(cached.palette)
+        && (!("customCursors" in cached) || typeof cached.customCursors === "boolean")) {
         document.documentElement.dataset.theme = cached.theme;
         document.documentElement.dataset.palette = cached.palette;
+        document.documentElement.dataset.customCursors = String(cached.customCursors ?? true);
         document.documentElement.classList.toggle("dark", cached.theme === "dark");
       }
     } catch { /* Continue with the default appearance when the cache is unavailable. */ }

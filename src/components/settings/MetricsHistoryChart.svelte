@@ -141,7 +141,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .chart-surface { margin-top: 14px; overflow-x: auto; border-radius: 4px; background: var(--color-background); }
   svg { display: block; width: 100%; min-width: 600px; }
   .grid-line { stroke: var(--color-surface); stroke-width: 1; }
-  .candle { color: var(--color-foreground); cursor: pointer; outline: none; }
+  .candle { color: var(--color-foreground); cursor: var(--cursor-pointer, pointer); outline: none; }
   .candle.rising { color: var(--color-muted-foreground); }
   .candle.falling { color: var(--color-foreground); }
   .wick, .body { stroke: currentColor; stroke-width: 1.5; vector-effect: non-scaling-stroke; }

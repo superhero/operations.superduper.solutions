@@ -7,6 +7,14 @@ import toolbarTheme from "./toolbar-theme.css?inline";
 /** Keep the dev toolbar's open shadow roots on the application's active palette. */
 export function initToolbarTheme(): () => void {
   const roots = new Map<ShadowRoot, { observer: MutationObserver; style: HTMLStyleElement }>();
+  // The toolbar writes body.style.cursor while dragging outside its shadow root.
+  // Observe the existing inline state in CSS without taking over its cleanup.
+  const dragStyle = document.createElement("style");
+  dragStyle.dataset.operationsToolbarCursor = "";
+  dragStyle.textContent = `body:has(> dev-toolbar):is([style*="cursor: grabbing"], [style*="cursor:grabbing"]) {
+    cursor: var(--cursor-grabbing, grabbing) !important;
+  }`;
+  document.head.append(dragStyle);
 
   function prune(): void {
     for (const [root, entry] of roots) {
@@ -76,6 +84,7 @@ export function initToolbarTheme(): () => void {
 
   const dispose = () => {
     observer.disconnect();
+    dragStyle.remove();
     for (const [root, { observer: rootObserver, style }] of roots) {
       rootObserver.disconnect();
       style.remove();

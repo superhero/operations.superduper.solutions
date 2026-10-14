@@ -162,8 +162,8 @@ body { background: var(--color-background); color: var(--color-foreground); font
 button, input, select, textarea { font: inherit; }
 /* Keep input values bold even when a component uses a font shorthand. */
 input, textarea { font-weight: 700 !important; }
-button, summary, select { cursor: pointer; }
-button:disabled, [data-slot="button"][aria-disabled="true"] { cursor: not-allowed; background: var(--color-disabled); color: var(--color-disabled-foreground); opacity: 1; box-shadow: none; }
+button, summary, select, :where(a:any-link) { cursor: var(--cursor-pointer, pointer); }
+button:disabled, [data-slot="button"][aria-disabled="true"] { cursor: var(--cursor-not-allowed, not-allowed); background: var(--color-disabled); color: var(--color-disabled-foreground); opacity: 1; box-shadow: none; }
 button, a, textarea { -webkit-tap-highlight-color: transparent; }
 :where(button, a[href], summary, input, select, textarea, [tabindex]) { outline: 3px solid transparent; outline-offset: 3px; transition: background-color 180ms ease-in, border-color 180ms ease-in, color 180ms ease-in, transform 180ms ease-in, opacity 180ms ease-in, outline-color 180ms ease-in; }
 :focus-visible { outline: 3px solid var(--color-ring); outline-offset: 3px; }
@@ -257,7 +257,7 @@ h2 { margin: 5px 0 0; font-size: 23px; font-weight: 650; letter-spacing: -0.6px;
 .joined-field label { display: flex; align-items: center; justify-content: flex-end; min-width: 0; margin: 0; padding: 6px 10px; font-size: 13px; font-weight: 600; text-align: right; overflow-wrap: anywhere; background: var(--control-addon); color: var(--control-label); }
 .joined-field :is(.field-input,.field-select-trigger) { min-width: 0; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 0; outline: none; background: transparent; color: inherit; }
 .joined-field input.field-input { padding-top: 10px; padding-bottom: 6px; }
-.joined-field :is(.field-input,.field-select-trigger):disabled { cursor: not-allowed; opacity: 1; }
+.joined-field :is(.field-input,.field-select-trigger):disabled { cursor: var(--cursor-not-allowed, not-allowed); opacity: 1; }
 .field-actions { display: flex; align-items: stretch; background: var(--field-addon); }
 .operation-field > .hint { margin-top: 7px; }
 .error { margin: 16px 0; padding: 12px 14px; border-radius: 4px; color: var(--color-error-foreground); background: var(--color-error-background); font-size: 13px; font-weight: 700; overflow-wrap: anywhere; }

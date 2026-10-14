@@ -54,7 +54,7 @@ export function isValidWorkflowNodeClearance(value: unknown): value is number
   return typeof value === "number" && Number.isSafeInteger(value)
     && value >= workflowNodeClearanceLimits.min && value <= workflowNodeClearanceLimits.max;
 }
-type SettingValues = { theme: string; palette: string; workflowDefaults: WorkflowDefaults; developerToolbar: boolean; locale: LocaleSettings };
+type SettingValues = { theme: string; palette: string; customCursors: boolean; workflowDefaults: WorkflowDefaults; developerToolbar: boolean; locale: LocaleSettings };
 
 interface SettingsDatabase extends DBSchema
 {
@@ -70,6 +70,7 @@ type LegacySettings = { theme: string | null; palette: string | null };
 const storageTimeout = 2500;
 let connection: Promise<IDBPDatabase<SettingsDatabase>> | undefined;
 let pending: Promise<void> = Promise.resolve();
+let appearanceWrites = 0;
 
 type SettingsStorageStage = "open" | "read" | "write";
 
@@ -178,10 +179,10 @@ async function inStore<Mode extends "readonly" | "readwrite", T>(mode: Mode,
 
 async function readSettings(store: Pick<SettingsStore, "get">): Promise<SavedSettings>
 {
-  const [theme, palette, workflowDefaults, developerToolbar, locale] = await Promise.all([
-    store.get("theme"), store.get("palette"), store.get("workflowDefaults"), store.get("developerToolbar"), store.get("locale"),
+  const [theme, palette, customCursors, workflowDefaults, developerToolbar, locale] = await Promise.all([
+    store.get("theme"), store.get("palette"), store.get("customCursors"), store.get("workflowDefaults"), store.get("developerToolbar"), store.get("locale"),
   ]);
-  return { theme, palette, workflowDefaults, developerToolbar, locale };
+  return { theme, palette, customCursors, workflowDefaults, developerToolbar, locale };
 }
 
 function normalize(saved: SavedSettings, legacy: LegacySettings, paletteIds: readonly string[]): SettingValues
@@ -191,7 +192,8 @@ function normalize(saved: SavedSettings, legacy: LegacySettings, paletteIds: rea
   const palette = typeof candidate === "string" && paletteIds.includes(candidate) ? candidate : "default";
   const workflow = saved.workflowDefaults && typeof saved.workflowDefaults === "object"
     ? saved.workflowDefaults as Partial<WorkflowDefaults> : defaultWorkflowSettings;
-  return { theme, palette, developerToolbar: saved.developerToolbar === true, locale: normalizeLocaleSettings(saved.locale), workflowDefaults: {
+  return { theme, palette, customCursors: typeof saved.customCursors === "boolean" ? saved.customCursors : true,
+    developerToolbar: saved.developerToolbar === true, locale: normalizeLocaleSettings(saved.locale), workflowDefaults: {
     dashed: typeof workflow.dashed === "boolean" ? workflow.dashed : defaultWorkflowSettings.dashed,
     curved: typeof workflow.curved === "boolean" ? workflow.curved : defaultWorkflowSettings.curved,
     snap: typeof workflow.snap === "boolean" ? workflow.snap : defaultWorkflowSettings.snap,
@@ -239,6 +241,7 @@ function migrateSettings(legacy: LegacySettings, paletteIds: readonly string[]):
 /** Read saved settings without waiting for schema changes or migration writes. */
 export async function loadSettings(paletteIds: readonly string[]): Promise<SettingValues & { storageError: Error | null }>
 {
+  const writesBeforeRead = appearanceWrites;
   const legacy: LegacySettings = { theme: null, palette: null };
   try
   {
@@ -256,7 +259,8 @@ export async function loadSettings(paletteIds: readonly string[]): Promise<Setti
     if (saved.theme !== settings.theme || saved.palette !== settings.palette
       || !matchesWorkflowDefaults(saved.workflowDefaults, settings.workflowDefaults)
       || legacy.theme !== null || legacy.palette !== null) migrateSettings(legacy, paletteIds);
-    writeAppearanceCache(settings);
+    // A retry may finish after a newer save. Keep that committed cache snapshot.
+    if (writesBeforeRead === appearanceWrites) writeAppearanceCache(settings);
     return { ...settings, storageError: null };
   }
   catch (error)
@@ -272,11 +276,14 @@ export function saveSetting<Key extends keyof SettingValues>(key: Key, value: Se
   pending = pending.catch(() => {}).then(async () => {
     const appearance = await inStore("readwrite", async store => {
       await store.put(snapshot, key);
-      if (key !== "theme" && key !== "palette") return null;
-      const [theme, palette] = await Promise.all([store.get("theme"), store.get("palette")]);
-      return { theme, palette };
+      if (key !== "theme" && key !== "palette" && key !== "customCursors") return null;
+      const [theme, palette, customCursors] = await Promise.all([store.get("theme"), store.get("palette"), store.get("customCursors")]);
+      return { theme, palette, customCursors: typeof customCursors === "boolean" ? customCursors : true };
     });
-    if (appearance) writeAppearanceCache(appearance);
+    if (appearance) {
+      appearanceWrites += 1;
+      writeAppearanceCache(appearance);
+    }
   });
   return pending;
 }

@@ -153,11 +153,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     padding: 0; border: 0; border-radius: 50%; background: transparent; touch-action: none;
     color: var(--color-foreground); user-select: none;
   }
-  :global(.flow-routing-segment-handle[data-axis="x"]) { cursor: ew-resize; }
-  :global(.flow-routing-segment-handle[data-axis="y"]) { cursor: ns-resize; }
+  :global(.flow-routing-segment-handle[data-axis="x"]) { cursor: var(--cursor-ew-resize, ew-resize); }
+  :global(.flow-routing-segment-handle[data-axis="y"]) { cursor: var(--cursor-ns-resize, ns-resize); }
   .segment-dot { width: 10px; height: 10px; border: 1px solid var(--color-graph-line); border-radius: 50%; background: var(--color-accent); }
   :global(.flow-routing-segment-handle:is(:hover, :focus-visible)) .segment-dot { background: var(--color-foreground); border-color: var(--color-foreground); }
-  :global(.flow-routing-reset) { background: var(--color-background); cursor: pointer; }
+  :global(.flow-routing-reset) { background: var(--color-background); cursor: var(--cursor-pointer, pointer); }
   @media (prefers-reduced-motion: no-preference) {
     .segment-dot { transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease; }
     :global(.flow-routing-segment-handle:is(:hover, :focus-visible)) .segment-dot { transform: scale(1.25); }

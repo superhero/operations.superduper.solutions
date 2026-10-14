@@ -67,6 +67,14 @@ palettes, role bindings and contrast without duplicating shipped hex values.
 
 ## Settings and startup
 
+### Cursor appearance
+
+Custom SVG cursors follow the shared foreground and background colors and are
+enabled by default. Theme settings offer an immediate opt-out to native cursors.
+Artwork changes preserve interaction states, eligibility, hotspots and native
+fallbacks. Native text selection, drag/drop feedback and resize grips remain
+browser-controlled; no global cursor overlay replaces them.
+
 ### Storage and recovery
 
 Only one Settings section opens at a time. Settings live outside workflow Git
@@ -89,8 +97,9 @@ retry; recovered values must not overwrite edits made during retry.
 ### Appearance cache
 
 The localStorage entry `v1/settings/appearance-cache` holds the last successfully
-read or saved palette and mode. A synchronous head script and shared stylesheet
-apply them before first paint, including the loading screen.
+read or saved palette, mode and custom-cursor preference. A synchronous head
+script and shared stylesheet apply the colors before first paint, including the
+loading screen; cursor rendering uses the cached preference at module startup.
 
 IndexedDB remains authoritative. Successful reads replace cached choices,
 including defaults for missing settings; failed reads retain valid cached

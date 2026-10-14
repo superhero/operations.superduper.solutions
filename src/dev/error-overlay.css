@@ -65,6 +65,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   font-family: Montserrat, ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Preserve the overlay's existing button, utility and history-drag states.
+   Its customCSS injection inherits the application's cursor variables. */
+button:not(:disabled), .cursor-pointer { cursor: var(--cursor-pointer, pointer); }
+.disabled\:cursor-not-allowed:disabled { cursor: var(--cursor-not-allowed, not-allowed); }
+#__v_o__root.scrolling-history { cursor: var(--cursor-grab, grab); }
+#__v_o__root.scrolling-history:active { cursor: var(--cursor-grabbing, grabbing); }
+
 /* Mirror NativeScrollbars inside the overlay's shadow root. */
 :host, :host * {
   scrollbar-width: thin;
@@ -251,7 +258,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   font-weight: 700;
   text-align: left;
   overflow-wrap: anywhere;
-  cursor: pointer;
+  cursor: var(--cursor-pointer, pointer);
   transition: background-color 160ms ease, color 160ms ease;
 }
 #operations-error-context button:not([aria-current]):hover {

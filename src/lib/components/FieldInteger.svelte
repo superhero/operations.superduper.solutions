@@ -75,7 +75,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .field-integer { display: flex; align-items: center; gap: 10px; min-width: 0; width: 100%; min-height: 40px; height: 100%; padding: 6px 10px; background: transparent; color: inherit; }
-  .integer-range { flex: 1; min-width: 40px; width: 100%; height: 24px; padding: 0; margin: 0; border: 0; border-radius: 4px; appearance: none; background: transparent; color: inherit; cursor: pointer; }
+  .integer-range { flex: 1; min-width: 40px; width: 100%; height: 24px; padding: 0; margin: 0; border: 0; border-radius: 4px; appearance: none; background: transparent; color: inherit; cursor: var(--cursor-pointer, pointer); }
   .integer-range::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(to right, var(--color-primary) var(--slider-position), var(--color-muted-foreground) var(--slider-position)); }
   .integer-range::-moz-range-track { height: 4px; border-radius: 4px; background: linear-gradient(to right, var(--color-primary) var(--slider-position), var(--color-muted-foreground) var(--slider-position)); }
   .integer-range::-webkit-slider-thumb { width: 14px; height: 14px; margin-top: -5px; border: 0; border-radius: 4px; appearance: none; background: var(--color-primary); }
@@ -84,6 +84,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .integer-value { flex: 0 1 var(--value-width); width: var(--value-width); min-width: 4ch; max-width: 50%; padding: 3px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; font-variant-numeric: tabular-nums; text-align: right; }
   .integer-value::placeholder { color: var(--color-muted-foreground); font-style: italic; opacity: 1; }
   .disabled { color: var(--color-muted-foreground); }
-  .integer-range:disabled { cursor: default; opacity: 0.5; }
+  .integer-range:disabled { cursor: var(--cursor-default, default); opacity: 0.5; }
   .unset .integer-range { opacity: 0.6; }
 </style>

@@ -92,6 +92,23 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   color-scheme: inherit;
 }
 
+/* Match the vendor's explicit utility states, including disabled exceptions.
+   The extra host specificity wins over its later adopted stylesheet. */
+:host .cursor-default { cursor: var(--cursor-default, default); }
+:host .cursor-ew-resize { cursor: var(--cursor-ew-resize, ew-resize); }
+:host .cursor-grab { cursor: var(--cursor-grab, grab); }
+:host .cursor-grabbing { cursor: var(--cursor-grabbing, grabbing); }
+:host .cursor-not-allowed { cursor: var(--cursor-not-allowed, not-allowed); }
+:host .cursor-ns-resize { cursor: var(--cursor-ns-resize, ns-resize); }
+:host .cursor-pointer { cursor: var(--cursor-pointer, pointer); }
+:host .peer-disabled\:cursor-not-allowed:is(:where(.peer):disabled ~ *),
+:host .disabled\:cursor-not-allowed:disabled { cursor: var(--cursor-not-allowed, not-allowed); }
+/* The pinned card header's vendor handler owns this inline state and clears it
+   on mouseup. Keep that lifecycle and its native fallback when opted out. */
+:host [aria-label$=" pinned tooltip"] > .cursor-grab:is([style*="cursor: grabbing"], [style*="cursor:grabbing"]) {
+  cursor: var(--cursor-grabbing, grabbing) !important;
+}
+
 :host, :host * {
   scrollbar-color: var(--color-border) transparent;
 }

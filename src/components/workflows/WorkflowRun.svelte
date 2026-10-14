@@ -176,6 +176,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .run-success { font-size: 12px; }
   .run-error { margin: 0; padding: 12px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; line-height: 1.6; }
   .run-results { min-width: 0; display: grid; gap: 12px; }
-  summary { cursor: pointer; padding: 10px 0; font-size: 12px; font-weight: 700; }
+  summary { cursor: var(--cursor-pointer, pointer); padding: 10px 0; font-size: 12px; font-weight: 700; }
   footer { display: flex; justify-content: flex-end; padding-top: 8px; border-top: 1px solid var(--color-surface); }
 </style>
