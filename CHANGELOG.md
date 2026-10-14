@@ -28,6 +28,16 @@ Double wave opacity and workspace dot opacity in light mode so both remain visib
 
 ```
 
+<!-- changelog-commit:402bda81fe6465e5d615334032c64a8128770218 -->
+### Commit [`402bda8`](https://github.com/superhero/operations.superduper.solutions/commit/402bda81fe6465e5d615334032c64a8128770218)
+
+```text
+feat(ui): add an embedded workflow favicon
+
+Add original connected-node artwork using the default palette and the project license notice. Inline the SVG through Vite so releases retain the single application page and hosting metadata layout, and document the asset location.
+
+```
+
 <!-- changelog-staging-end -->
 
 ## 0.0.42

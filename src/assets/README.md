@@ -1,9 +1,14 @@
 # Bundled assets
 
-Store binary resources imported by application code or styles here. The current
-assets are local [fonts](fonts/README.md), referenced by `@font-face` declarations
-in [app.css](../app.css). Preserve license notices and provenance alongside
-the assets.
+Store artwork and resources bundled into the application here. Local
+[fonts](fonts/README.md) are referenced by `@font-face` declarations in
+[app.css](../app.css). Preserve license notices and provenance alongside assets.
+
+[`favicon.svg`](favicon.svg) is original project artwork: connected workflow
+nodes on an amber rounded square, using the default palette colors. Its source
+notice records the project license; `index.html` references it with Vite's
+explicit `?inline` option so the production favicon stays embedded in the
+standalone page.
 
 ## Adding or replacing resources
 
