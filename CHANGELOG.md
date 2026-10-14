@@ -56,6 +56,23 @@ fix(ui): use Spring colors for the favicon
 
 ```
 
+<!-- changelog-commit:d068f6bf3a3a8a6cdb5342cb124bd2552e5ef6fb -->
+### Commit [`d068f6b`](https://github.com/superhero/operations.superduper.solutions/commit/d068f6bf3a3a8a6cdb5342cb124bd2552e5ef6fb)
+
+```text
+feat(ci): support explicit documentation merge targets
+
+Allow Markdown-only PRs into active releases as well as main and develop,
+with independent full-diff validation and the existing main freshness guard.
+Serialize release documentation against production merges and keep
+Markdown-only release advances from resuming publication.
+
+Provide explicit recovery of a merged documentation PR's original source
+head so squash merges and branch deletion do not broaden later targets.
+Document reuse, rollout and retry behavior with Cucumber regression coverage.
+
+```
+
 <!-- changelog-staging-end -->
 
 ## 0.0.42
