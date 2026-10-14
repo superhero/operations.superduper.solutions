@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.46
+
 <!-- changelog-commit:d7bff6aee256717b40eedec93f26c5f857ef24ab -->
 ### Commit [`d7bff6a`](https://github.com/superhero/operations.superduper.solutions/commit/d7bff6aee256717b40eedec93f26c5f857ef24ab)
 
@@ -287,8 +291,6 @@ so the routing scenario verifies the source hit and live connection preview.
 Refresh the scenario badge for the combined workflow and settings changes.
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.45
 
