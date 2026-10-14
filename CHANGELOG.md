@@ -2,6 +2,31 @@
 
 ## Latest
 
+<!-- changelog-commit:58bebe05eea9512142065372084bd7d819cc4c06 -->
+### Commit [`58bebe0`](https://github.com/superhero/operations.superduper.solutions/commit/58bebe05eea9512142065372084bd7d819cc4c06)
+
+```text
+fix(ci): reuse validation proofs with bounded network retries
+
+Rely on the original successful run and complete manifest instead of
+listing its jobs again. Preserve input, provenance and artifact checks
+while allowing transient reads and downloads two retries with 30-second
+attempts inside the existing 120-second lookup budget.
+
+Clear partial downloads before retrying and report safe failure categories.
+Cover subprocess timeouts, retry exhaustion, cleanup and the workflow
+gates that ensure only complete fresh validation can publish proof.
+
+```
+
+<!-- changelog-commit:364d8bd6d1630f25833ea2471df77506aa62703c -->
+### Commit [`364d8bd`](https://github.com/superhero/operations.superduper.solutions/commit/364d8bd6d1630f25833ea2471df77506aa62703c)
+
+```text
+chore: merge develop after release changelog synchronization
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.44

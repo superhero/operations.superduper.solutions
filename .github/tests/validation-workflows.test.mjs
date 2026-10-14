@@ -6,25 +6,75 @@ import { readFileSync } from "node:fs";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { parseDocument } from "yaml";
 
-function enabled(step, reused, ready = true)
+const requiredSuites = [
+  "test:automation", "typecheck", "test:source:coverage", "test:coverage",
+  "build", "test:acceptance", "test:browser"
+];
+const reportChecks = ["report:tests", "badges:scenarios", "badges:coverage"];
+const validationArtifacts = ["bundle", "coverage", "test-report"];
+
+function enabled(step, reused, ready = true, status = "success", outcomes = {})
 {
-  if (step.if === undefined) return true;
-  const expression = step.if.replace(/^\s*\$\{\{([\s\S]*)\}\}\s*$/, "$1")
-    .replace(/needs\.([\w-]+)/g, 'needs["$1"]');
+  const condition = step.if ?? "true";
+  // GitHub applies success() implicitly unless the condition uses a status function.
+  if (status !== "success" && !/\b(?:success|always|failure|cancelled)\s*\(/.test(condition)) return false;
+  const expression = condition.replace(/^\s*\$\{\{([\s\S]*)\}\}\s*$/, "$1")
+    .replace(/\b(needs|steps)\.([\w-]+)/g, '$1["$2"]');
   const needs = {
     validation: { outputs: { reused: String(reused) } },
     "release-changelog": { outputs: { ready: String(ready) } },
     "prepare-changelog": { outputs: { updated: "false" } }
   };
   const github = { head_ref: "release/1.2.3" };
-  return new Function("needs", "github", "startsWith", `return (${expression});`)(
-    needs, github, (value, prefix) => value.startsWith(prefix));
+  const steps = Object.fromEntries(["automation", "source", "browser", "failure-report"]
+    .map(id => [id, { outcome: outcomes[id] ?? status }]));
+  return new Function("needs", "github", "steps", "startsWith", "success", "always", "failure", "cancelled", `return (${expression});`)(
+    needs, github, steps, (value, prefix) => value.startsWith(prefix),
+    () => status === "success", () => true, () => status === "failure", () => status === "cancelled");
+}
+
+function npmScripts(step)
+{
+  return [...(step.run ?? "").matchAll(/(?:^|[;&|])[ \t]*npm(?:[ \t]+--[^\s]+)*[ \t]+run[ \t]+([^\s;&|]+)/gm)]
+    .map(([, command]) => command);
+}
+
+function npmCommands(jobs)
+{
+  return ["workflow-checks", "application"].flatMap(job => jobs[job].steps.flatMap(step =>
+    npmScripts(step).map(command => ({ job, step, command }))));
 }
 
 function suiteSteps(jobs)
 {
-  return [...jobs["workflow-checks"].steps, ...jobs.application.steps]
-    .filter(step => /npm .*run (?:typecheck|test:automation|test:source:coverage|test:coverage|build|test:acceptance|test:browser)\b/.test(step.run ?? ""));
+  return npmCommands(jobs).filter(({ command }) => requiredSuites.includes(command)).map(({ step }) => step);
+}
+
+function uniqueStep(steps, predicate, description)
+{
+  const matching = steps.filter(predicate);
+  assert.equal(matching.length, 1, `${description} must have exactly one producer`);
+  return matching[0];
+}
+
+function validationProof(jobs)
+{
+  const steps = Object.values(jobs).flatMap(job => job.steps ?? []);
+  const create = uniqueStep(steps, step => /validation-artifacts\.mjs\s+create\b/.test(step.run ?? ""), "Validation proof");
+  assert.equal([...create.run.matchAll(/validation-artifacts\.mjs\s+create\b/g)].length, 1);
+  const upload = uniqueStep(steps, step => step.with?.name === "validation-manifest", "Validation proof upload");
+  assert.ok(jobs.application.steps.includes(create));
+  assert.ok(jobs.application.steps.includes(upload));
+  return { create, upload };
+}
+
+function requiresSuccess(step)
+{
+  assert.equal(step["continue-on-error"], undefined, `${step.name} must propagate failure`);
+  assert.doesNotMatch(step.if ?? "", /\b(?:always|failure|cancelled)\s*\(/, `${step.name} must retain its success gate`);
+  for (const status of ["failure", "cancelled"])
+    for (const reused of [false, true])
+      assert.equal(enabled(step, reused, true, status), false, `${step.name} cannot run after ${status}`);
 }
 
 Given("the validation workflow for {string}", function (target)
@@ -43,19 +93,46 @@ When("matching validation is {string}", function (state)
 Then("all validation suites run before a new proof is published", function ()
 {
   const { jobs } = this.validationWorkflow;
-  const suites = suiteSteps(jobs);
-  assert.equal(suites.length, 7, "Automation, typecheck, source coverage, coverage gate, build, acceptance and browser checks are mandatory");
-  for (const step of suites) assert.equal(enabled(step, this.validationAvailable), true);
+  const suites = npmCommands(jobs).filter(({ command }) => requiredSuites.includes(command));
+  assert.deepEqual(suites.map(({ command }) => command).sort(), [...requiredSuites].sort(), "Every required suite must run exactly once");
   const steps = jobs.application.steps;
-  const proof = steps.findIndex(step => step.run?.includes("validation-artifacts.mjs create"));
-  assert.ok(proof > 0);
-  for (const check of ["report:tests", "badges:scenarios", "badges:coverage", "test:browser"])
+  const { create } = validationProof(jobs);
+  const proof = steps.indexOf(create);
+  for (const { job, step, command } of suites)
   {
-    const index = steps.findIndex(step => step.run?.includes(check));
-    assert.ok(index >= 0 && index < proof, `${check} must succeed before a reusable proof is created`);
+    assert.equal(job, command === "test:automation" ? "workflow-checks" : "application");
+    assert.equal(enabled(step, this.validationAvailable), true, `${command} must run on a cache miss`);
+    if (job === "application") assert.ok(steps.indexOf(step) < proof, `${command} must finish before proof creation`);
   }
-  assert.equal(enabled(steps[proof], false), true);
-  assert.equal(enabled(steps.find(step => step.with?.name === "validation-manifest"), false), true);
+  for (const command of reportChecks)
+  {
+    const step = uniqueStep(steps, candidate => npmScripts(candidate).includes(command), command);
+    assert.ok(steps.indexOf(step) < proof, `${command} must succeed before a reusable proof is created`);
+    assert.equal(enabled(step, false), true);
+  }
+});
+
+Then("exactly one fresh proof is published after all validation artifacts", function ()
+{
+  const { jobs } = this.validationWorkflow;
+  const steps = jobs.application.steps;
+  const { create, upload } = validationProof(jobs);
+  for (const step of [create, upload])
+  {
+    assert.equal(enabled(step, false), true);
+    assert.equal(enabled(step, true), false, "Only fresh validation can publish new proof");
+    requiresSuccess(step);
+  }
+  assert.match(upload.uses, /^actions\/upload-artifact@/);
+  assert.equal(upload.with.path, "tmp/validation/validation-manifest.json");
+  assert.equal(upload.with["if-no-files-found"], "error");
+  for (const name of validationArtifacts)
+  {
+    const artifact = uniqueStep(steps, step => step.with?.name === name, `${name} upload`);
+    assert.ok(steps.indexOf(create) < steps.indexOf(artifact), `${name} must contain the newly validated files`);
+    assert.ok(steps.indexOf(artifact) < steps.indexOf(upload), `${name} must upload successfully before proof publication`);
+    requiresSuccess(artifact);
+  }
 });
 
 Then("release artifacts remain bound to the exact tested checkout", function ()
@@ -64,9 +141,13 @@ Then("release artifacts remain bound to the exact tested checkout", function ()
   const expected = this.validationTarget === "main"
     ? "${{ github.event.pull_request.head.sha }}" : "${{ github.sha }}";
   const checkout = jobs.application.steps.find(step => step.uses?.startsWith("actions/checkout@"));
+  const automationCheckout = uniqueStep(jobs["workflow-checks"].steps,
+    step => step.uses?.startsWith("actions/checkout@"), "Automation checkout");
   const proof = jobs.application.steps.find(step => step.run?.includes("validation-artifacts.mjs create"));
   const report = jobs.application.steps.find(step => step.id === "report");
   assert.equal(checkout.with.ref, expected);
+  assert.equal(automationCheckout.with?.ref ?? "${{ github.sha }}", expected, "Automation and application must test the same revision");
+  assert.equal(enabled(automationCheckout, false), true);
   assert.equal(proof.env.TESTED_SHA, expected);
   assert.equal(report.env.REPORT_COMMIT, expected);
   assert.equal(proof.env.PR_HEAD_SHA, "${{ github.event.pull_request.head.sha }}");
@@ -116,18 +197,38 @@ Then("reuse has read-only access and publication requires successful validation"
   assert.deepEqual(jobs.application.permissions, { actions: "read", contents: "read" });
   for (const name of ["workflow-checks", "application"])
     assert.ok([jobs[name].needs].flat().includes("validation"), `${name} cannot run after failed evidence verification`);
-  assert.ok([jobs.application.needs].flat().includes("workflow-checks"));
+  for (const required of ["workflow-checks", "validate-pr", "validation"])
+    assert.ok([jobs.application.needs].flat().includes(required), `Proof production must wait for ${required}`);
   assert.ok([jobs["auto-merge"].needs].flat().includes("application"));
-  for (const job of [jobs.validation, jobs["workflow-checks"], jobs.application, jobs["auto-merge"], jobs.preview])
+  for (const job of [jobs.validation, jobs["workflow-checks"], jobs["validate-pr"], jobs.application, jobs["auto-merge"], jobs.preview])
   {
     assert.equal(job["continue-on-error"], undefined);
     assert.doesNotMatch(job.if ?? "", /\b(?:always|failure|cancelled)\s*\(/);
   }
-  for (const step of [...suiteSteps(jobs), ...jobs.application.steps.filter(step => step.run?.includes("validation-artifacts.mjs"))])
+  const { create, upload } = validationProof(jobs);
+  const reports = npmCommands(jobs).filter(({ command }) => reportChecks.includes(command)).map(({ step }) => step);
+  for (const step of [...suiteSteps(jobs), ...reports, create, upload]) requiresSuccess(step);
+});
+
+Then("failure diagnostics cannot substitute for successful validation proof", function ()
+{
+  const { jobs } = this.validationWorkflow;
+  const steps = jobs.application.steps;
+  const report = uniqueStep(steps, step => step.id === "failure-report", "Failure report");
+  const upload = uniqueStep(steps, step => step.with?.name === "validation-diagnostics", "Failure diagnostics upload");
+  assert.match(report.run, /does not certify a successful build/);
+  assert.doesNotMatch(report.run, /validation-artifacts\.mjs|tmp\/validation\//);
+  assert.match(upload.uses, /^actions\/upload-artifact@/);
+  assert.doesNotMatch(upload.with.path, /validation-manifest|tmp\/validation\//);
+  for (const step of [report, upload])
   {
-    assert.equal(step["continue-on-error"], undefined);
-    assert.doesNotMatch(step.if ?? "", /\b(?:always|failure|cancelled)\s*\(/);
+    assert.equal(enabled(step, false), false, `${step.name} is reserved for failed validation`);
+    assert.equal(enabled(step, false, true, "failure", { "failure-report": "success" }), true);
   }
+  const proof = validationProof(jobs);
+  for (const step of [proof.create, proof.upload, ...steps.filter(step => validationArtifacts.includes(step.with?.name))])
+    assert.equal(enabled(step, false, true, "failure", { "failure-report": "success" }), false,
+      "Successful diagnostics cannot make failed validation publish reusable artifacts or proof");
 });
 
 Then("the release application job waits for the changelog documentation PR", function ()

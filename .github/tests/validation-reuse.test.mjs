@@ -9,6 +9,7 @@ import { dirname, join } from "node:path";
 import { After, Before, Given, Then, When } from "@cucumber/cucumber";
 import { findValidation } from "../scripts/find-validation.mjs";
 import { ARTIFACT_NAMES, BUNDLE_FILES, MANIFEST_NAME, createManifest } from "../scripts/validation-artifacts.mjs";
+import { ValidationRequestError } from "../scripts/validation-request.mjs";
 
 const repository = "superhero/operations.superduper.solutions";
 const apiRoot = `repos/${repository}`;
@@ -68,8 +69,6 @@ Given("a completed validation run with {string}", function (condition)
   state.run = { id: 123, run_attempt: 1, head_sha: state.sourceSha, status: "completed", conclusion: "success",
     event: "pull_request", path: ".github/workflows/ci-develop.yml", repository: { id: 456, full_name: repository },
     head_repository: { id: 456, full_name: repository } };
-  state.jobs = ["Automation Checks", "Test and Build"].map((name, index) => ({ id: index + 1000, run_id: state.run.id,
-    head_sha: state.sourceSha, name, status: "completed", conclusion: "success" }));
   state.artifacts = ARTIFACT_NAMES.map((name, index) => ({ id: index + 2000, name, expired: false, size_in_bytes: 100,
     expires_at: "2099-01-01T00:00:00Z", workflow_run: { id: state.run.id, repository_id: 456,
       head_repository_id: 456, head_sha: state.sourceSha } }));
@@ -105,8 +104,7 @@ Given("a completed validation run with {string}", function (condition)
     case "a successful release workflow":
       state.workflow = "ci-release.yml"; state.run.path = ".github/workflows/ci-release.yml"; break;
     case "a successful main workflow":
-      state.workflow = "ci-main.yml"; state.run.path = ".github/workflows/ci-main.yml";
-      state.jobs[1].name = "Test and Build Release"; break;
+      state.workflow = "ci-main.yml"; state.run.path = ".github/workflows/ci-main.yml"; break;
     case "paginated validation artifacts":
       state.artifacts.unshift(...Array.from({ length: 99 }, (_, index) => ({ name: `unrelated-${index}` }))); break;
     case "an older complete validation": state.newerCandidate = true; break;
@@ -119,11 +117,7 @@ Given("a completed validation run with {string}", function (condition)
     case "another workflow": state.run.path = ".github/workflows/ci-docs.yml"; break;
     case "another event": state.run.event = "workflow_dispatch"; break;
     case "a failed run": state.run.conclusion = "failure"; break;
-    case "a missing application job": state.jobs.pop(); break;
-    case "a failed application job": state.jobs[1].conclusion = "failure"; break;
-    case "a skipped automation job": state.jobs[0].conclusion = "skipped"; break;
-    case "a duplicate application job": state.jobs.push({ ...state.jobs[1], id: 9000 }); break;
-    case "incomplete job pagination": state.extraJobs = 1; break;
+    case "incomplete artifact pagination": state.extraArtifacts = 1; break;
     case "a missing bundle artifact": state.artifacts = state.artifacts.filter(artifact => artifact.name !== "bundle"); break;
     case "a missing manifest artifact": state.artifacts.pop(); break;
     case "an expired coverage artifact": state.artifacts[1].expired = true; break;
@@ -156,6 +150,42 @@ Given("a completed validation run with {string}", function (condition)
   write(join(state.artifactRoot, "validation-manifest", MANIFEST_NAME), JSON.stringify(state.manifest));
 });
 
+Given("validation remote reads encounter {string}", function (failure)
+{
+  const state = this.validationReuse;
+  state.remoteFailure = failure;
+  state.elapsed = 0;
+  state.waits = [];
+  state.retryTimeouts = [];
+  state.failureEndpoint = `${apiRoot}/actions/artifacts?name=validation-manifest&per_page=100`;
+  const fixtures = {
+    "two API timeouts": ["timeout", 2, 3],
+    "one API network interruption": ["network", 1, 2],
+    "repeated API server failures": ["server", 3, 3],
+    "API authorization failure": ["authorization", 1, 1],
+    "missing API resource": ["not_found", 1, 1],
+    "API rate limit": ["rate_limit", 1, 1],
+    "malformed API response": ["invalid_response", 1, 1],
+    "invalid proof after API recovery": ["timeout", 1, 2],
+    "shrinking budget after two timeouts": ["timeout", 2, 3],
+    "retry wait exhausts the budget": ["network", 1, 1]
+  };
+  if (fixtures[failure]) [state.failureKind, state.failuresRemaining, state.expectedAttempts] = fixtures[failure];
+  else if (failure === "interrupted artifact download" || failure === "repeated artifact interruptions")
+  {
+    state.downloadFailures = failure === "interrupted artifact download" ? 1 : 3;
+    state.expectedAttempts = failure === "interrupted artifact download" ? 2 : 3;
+  }
+  else assert.fail(`Unknown remote read fixture: ${failure}`);
+  if (failure === "shrinking budget after two timeouts")
+    state.failureEndpoint = `${apiRoot}/actions/runs/123/artifacts?per_page=100&page=1`;
+  if (failure === "invalid proof after API recovery")
+  {
+    state.manifest.inputFingerprint = "f".repeat(64);
+    write(join(state.artifactRoot, "validation-manifest", MANIFEST_NAME), JSON.stringify(state.manifest));
+  }
+});
+
 When("matching validation artifacts are requested", async function ()
 {
   const state = this.validationReuse;
@@ -164,18 +194,27 @@ When("matching validation artifacts are requested", async function ()
     state.calls.push(endpoint);
     if (state.elapsed !== undefined) state.timeouts ??= [];
     state.timeouts?.push(options.timeoutMs);
+    if (state.remoteFailure === "shrinking budget after two timeouts" && state.calls.length <= 2) state.elapsed += 20000;
+    if (state.remoteFailure && endpoint === state.failureEndpoint && !state.downloadFailures)
+    {
+      state.retryTimeouts.push(options.timeoutMs);
+      if (state.failuresRemaining-- > 0)
+      {
+        if (state.remoteFailure === "shrinking budget after two timeouts") state.elapsed += options.timeoutMs;
+        if (state.remoteFailure === "retry wait exhausts the budget") state.elapsed = 119500;
+        throw new ValidationRequestError(state.failureKind, state.failureKind === "server" ? 503 : undefined);
+      }
+    }
     if (state.failApi) throw new Error("GitHub unavailable");
     if (endpoint === `${apiRoot}/actions/artifacts?name=validation-manifest&per_page=100`)
       return { artifacts: [...state.artifacts.filter(artifact => artifact.name === "validation-manifest"),
         ...(state.newerCandidate ? [{ name: "validation-manifest", expired: false, workflow_run: { id: 124 } }] : []),
         ...(state.excessCandidates ? Array.from({ length: 25 }, (_, index) => ({ name: "validation-manifest", expired: false,
           workflow_run: { id: 124 + index } })) : [])] };
-    if (endpoint === `${apiRoot}/actions/runs/123/attempts/1/jobs?per_page=100&page=1`)
-      return { total_count: state.jobs.length + (state.extraJobs ?? 0), jobs: state.jobs };
     if (endpoint.startsWith(`${apiRoot}/actions/runs/123/artifacts?per_page=100&page=`))
     {
       const page = Number(endpoint.split("page=").at(-1));
-      return { total_count: state.artifacts.length, artifacts: state.artifacts.slice((page - 1) * 100, page * 100) };
+      return { total_count: state.artifacts.length + (state.extraArtifacts ?? 0), artifacts: state.artifacts.slice((page - 1) * 100, page * 100) };
     }
     if (endpoint === `${apiRoot}/git/commits/${state.manifest.testedSha}`) return state.commit;
     if (endpoint === `${apiRoot}/git/trees/${state.manifest.testedTree}`)
@@ -199,11 +238,24 @@ When("matching validation artifacts are requested", async function ()
   {
     state.result = await findValidation({ repository, targetSha: state.targetSha, destination: state.destination, cwd: state.cwd,
       ...(state.elapsed !== undefined ? { now: () => state.elapsed } : {}),
+      ...(state.remoteFailure ? { wait: async milliseconds => { state.waits.push(milliseconds); state.elapsed += milliseconds; } } : {}),
       api, download: async (ownerRepo, runId, name, directory, options) =>
       {
         assert.equal(ownerRepo, repository);
         assert.equal(runId, 123);
         state.downloads.push(name);
+        state.transferDirectories ??= [];
+        state.transferDirectories.push(directory);
+        if (state.remoteFailure?.includes("artifact") && name === "bundle")
+        {
+          assert.ok(!existsSync(directory), "A retry must remove the previous partial artifact directory.");
+          state.cleanedAttempts = (state.cleanedAttempts ?? 0) + 1;
+          if (state.downloadFailures-- > 0)
+          {
+            write(join(directory, "partial-download"), "must not survive the retry");
+            throw new ValidationRequestError("network");
+          }
+        }
         if (state.slowDownload && name === "bundle")
         {
           state.timeouts.push(options.timeoutMs);
@@ -215,6 +267,7 @@ When("matching validation artifacts are requested", async function ()
   }
   catch (error) { state.error = error; }
   assert.equal(state.unexpected, undefined, state.unexpected);
+  assert.ok(state.calls.every(endpoint => !/\/jobs(?:\?|$)/.test(endpoint)), "The trusted manifest must not require a redundant jobs API request.");
 });
 
 When("complete validation provenance is recorded", function ()
@@ -276,4 +329,28 @@ Then("the lookup stops safely at its runtime bound", function ()
     assert.ok(state.timeouts.every(value => Number.isSafeInteger(value) && value > 0 && value <= 30000));
     assert.ok(state.notes.some(note => note.includes("time budget exhausted")));
   }
+});
+
+Then("remote retries preserve the shared budget and clean artifacts", function ()
+{
+  const state = this.validationReuse;
+  const attempts = state.remoteFailure.includes("artifact")
+    ? state.downloads.filter(name => name === "bundle").length : state.retryTimeouts.length;
+  assert.equal(attempts, state.expectedAttempts);
+  assert.deepEqual(state.waits, Array.from({ length: attempts - 1 }, (_, index) => (index + 1) * 1000));
+  if (state.remoteFailure === "shrinking budget after two timeouts") assert.deepEqual(state.retryTimeouts, [30000, 30000, 17000]);
+  if (state.remoteFailure === "retry wait exhausts the budget")
+  {
+    assert.deepEqual(state.waits, []);
+    assert.ok(state.notes.some(note => note.includes("time budget exhausted")));
+  }
+  if (state.remoteFailure.includes("artifact"))
+  {
+    assert.equal(state.cleanedAttempts, state.expectedAttempts);
+    assert.ok(!existsSync(join(state.destination, "bundle", "partial-download")));
+    for (const directory of state.transferDirectories)
+      assert.ok(!existsSync(directory), "Every temporary transfer directory must be removed after lookup completes.");
+  }
+  if (state.result.reused) assert.equal(state.result.source_run_id, "123");
+  assert.ok(state.notes.some(note => note.includes("attempt=1/3") && note.includes("timeout_ms=")));
 });
