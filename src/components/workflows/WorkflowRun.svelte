@@ -172,7 +172,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   h3 { margin: 0 0 8px; font-size: 16px; }
   h3:focus { outline: none; }
   .run-choices { display: grid; gap: 8px; margin: 12px 0; }
-  .run-choices label { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--color-report-card); }
+  .run-choices label { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 4px; background: var(--color-report-card); }
   .run-fields { display: grid; gap: 16px; margin: 16px 0; }
   .run-field { display: grid; gap: 6px; }
   .run-field > label { font-size: 12px; font-weight: 700; }
