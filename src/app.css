@@ -42,10 +42,12 @@
   user-select: none;
 }
 
-/* Palette order never changes. Mode only reverses these six active slots.
-   All component roles below are defined once and follow that same reversal. */
+/* Palette order never changes. Mode reverses these six active slots.
+   Component colors follow that reversal; decorative opacity is tuned per mode. */
 :root {
   color-scheme: light;
+  --background-wave-strength: 2;
+  --workspace-dot-opacity: 26%;
   --tone-1: var(--palette-1);
   --tone-2: var(--palette-2);
   --tone-3: var(--palette-3);
@@ -55,6 +57,8 @@
 }
 :root[data-theme="dark"] {
   color-scheme: dark;
+  --background-wave-strength: 1;
+  --workspace-dot-opacity: 13%;
   --tone-1: var(--palette-6);
   --tone-2: var(--palette-5);
   --tone-3: var(--palette-4);

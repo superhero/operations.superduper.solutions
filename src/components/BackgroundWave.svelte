@@ -102,6 +102,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     }
 
     let colors = { background: '', foreground: '' };
+    let opacityMultiplier = 1;
 
     function draw(time: number) {
       const scrollY = window.scrollY;
@@ -120,7 +121,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           else ctx.lineTo(x, y);
         }
         ctx.strokeStyle = colors.foreground;
-        ctx.globalAlpha = wave.accent ? 0.05 : wave.alpha;
+        ctx.globalAlpha = (wave.accent ? 0.05 : wave.alpha) * opacityMultiplier;
         ctx.lineWidth = wave.accent ? 1.15 : 0.9;
         ctx.stroke();
       }
@@ -141,6 +142,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       if (state.colorsDirty) {
         const style = getComputedStyle(document.documentElement);
         colors = { background: style.getPropertyValue('--color-background'), foreground: style.getPropertyValue('--color-foreground') };
+        opacityMultiplier = Number(style.getPropertyValue('--background-wave-strength')) || 1;
         state.colorsDirty = false;
       }
       const time = reducedMotion.matches ? 0 : now * 0.001;

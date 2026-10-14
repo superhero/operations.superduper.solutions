@@ -1036,7 +1036,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     .saved-documents :global(.document-remove .material-symbols-rounded) { transition: transform 180ms ease-in; }
     .saved-documents :global(.document-remove:hover .material-symbols-rounded) { transform: scale(1.4); }
   }
-  :global(.workflow-workspace .svelte-flow) { --xy-edge-stroke-default: var(--color-graph-line); --xy-edge-stroke-width: 2; --xy-edge-stroke-selected-default: var(--color-emphasis); --xy-connectionline-stroke-default: var(--color-emphasis); --xy-connectionline-stroke-width: 2; --xy-background-pattern-dots-color-default: color-mix(in srgb, var(--color-foreground) 13%, transparent); --xy-background-color-default: transparent; --xy-selection-background-color: color-mix(in srgb, var(--color-accent) 8%, transparent); --xy-selection-border: 1px dashed var(--color-accent); background: transparent; }
+  :global(.workflow-workspace .svelte-flow) { --xy-edge-stroke-default: var(--color-graph-line); --xy-edge-stroke-width: 2; --xy-edge-stroke-selected-default: var(--color-emphasis); --xy-connectionline-stroke-default: var(--color-emphasis); --xy-connectionline-stroke-width: 2; --xy-background-pattern-dots-color-default: color-mix(in srgb, var(--color-foreground) var(--workspace-dot-opacity), transparent); --xy-background-color-default: transparent; --xy-selection-background-color: color-mix(in srgb, var(--color-accent) 8%, transparent); --xy-selection-border: 1px dashed var(--color-accent); background: transparent; }
   /* Node contents provide focus feedback; wrapper outlines flash on blur. */
   .workflow-workspace,
   :global(.workflow-workspace :is(.svelte-flow, .svelte-flow__renderer, .svelte-flow__pane, .svelte-flow__background)) { outline: none; }

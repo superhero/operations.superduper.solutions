@@ -18,6 +18,16 @@ first appear in the confirmed 0.0.22 tag.
 
 ```
 
+<!-- changelog-commit:e951e34e860c477fcd33a05809c8e1745adfabd4 -->
+### Commit [`e951e34`](https://github.com/superhero/operations.superduper.solutions/commit/e951e34e860c477fcd33a05809c8e1745adfabd4)
+
+```text
+fix(ui): improve light-theme background contrast
+
+Double wave opacity and workspace dot opacity in light mode so both remain visible across palettes. Keep dark-mode opacity unchanged and update wave strength when the theme changes.
+
+```
+
 <!-- changelog-staging-end -->
 
 ## 0.0.42
