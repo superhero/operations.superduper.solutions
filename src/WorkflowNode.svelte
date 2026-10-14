@@ -11,6 +11,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { OperationData } from "$lib/workflow-document.ts";
   import WorkflowRestoreBranch from "./components/workflows/WorkflowRestoreBranch.svelte";
+  import "./components/workflows/workflow-owner-nodes.css";
 
   type Branch = { id: string; childId: string; direction: "inputs" | "outputs"; label: string; hidden: boolean };
   const { getNodes } = useSvelteFlow();
@@ -82,7 +83,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </div>
 {/snippet}
 
-<div class="operation-node" class:selected data-operation-name={data.name}>
+<div class="operation-node workflow-owner-node" class:selected data-operation-name={data.name}>
   {@render portRow("inputs")}
   <HintButton label={`${data.method} ${data.path}\n${data.description}`} labelAsName={false} tabindex={-1}>
     {#snippet child({ props })}
@@ -97,26 +98,3 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <span class="sr-only">{data.method} {data.path}. {data.description}</span>
   {@render portRow("outputs")}
 </div>
-
-<style>
-  .operation-node { position: relative; width: max-content; min-width: 160px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); box-shadow: none; transition: border-color 180ms ease-in, box-shadow 180ms ease-in; }
-  .operation-title-row { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 12px; white-space: nowrap; }
-  .operation-title-row strong { flex: 1 0 auto; }
-  .operation-ports { display: grid; min-height: 12px; }
-  .operation-ports.inputs { border-bottom: 1px solid var(--color-border); }
-  .operation-ports.outputs { border-top: 1px solid var(--color-border); }
-  .operation-port { position: relative; display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 34px; padding: 6px 14px; text-align: left; }
-  .port-label { min-width: 0; flex: 1; font-size: 11px; overflow-wrap: anywhere; }
-  .port-type { flex-shrink: 0; padding: 0 5px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); font-size: 10px; line-height: 18px; }
-  .port-code { white-space: nowrap; }
-  .operation-node:hover:not(.selected) { border-color: var(--color-foreground); }
-  :global(.svelte-flow__node:focus-visible) .operation-node { border-color: var(--color-emphasis); box-shadow: 0 0 0 1px var(--color-emphasis); }
-  .instance-pill { flex-shrink: 0; min-width: 18px; padding: 0 5px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); font: 12px/18px Rationale, sans-serif; font-variant-numeric: tabular-nums; text-align: center; }
-  .selected { border-color: var(--color-emphasis); box-shadow: 0 0 0 1px var(--color-emphasis); }
-  strong { font-size: 13px; font-weight: 600; }
-  .operation-node :global(.material-symbols-rounded) { font-variation-settings: "FILL" 1; }
-  .operation-node :global(.svelte-flow__handle) { width: 12px; height: 12px; border: 2px solid var(--color-surface); background: var(--color-emphasis); }
-  .operation-node :global(.svelte-flow__handle.target) { background: var(--color-foreground); }
-  .operation-node :global(.owner-port) { pointer-events: auto; cursor: default; }
-  @media (prefers-reduced-motion: reduce) { .operation-node { transition: none; } }
-</style>

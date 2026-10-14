@@ -183,23 +183,73 @@ When("I insert the saved project workflow from the catalog", async function () {
 });
 
 Then("the reusable workflow keeps its ports and embedded definition", async function () {
-  const referenceNode = node(this.page, "workflow");
+  const page = this.page;
+  const referenceNode = node(page, "workflow");
   await expect(referenceNode.locator("[data-workflow-name]")).toHaveAttribute("data-workflow-name", this.reusableFixture.name);
   await expect(referenceNode.locator('[title]')).toHaveCount(0);
-  await expectHoverHint(referenceNode.locator('.workflow-reference-node > strong'), this.reusableFixture.description);
+  const title = referenceNode.locator('.operation-title-row');
+  await expect(title.locator('strong')).toHaveText(this.reusableFixture.name);
+  await expect(title.locator('.material-symbols-rounded')).toHaveText('flowsheet');
+  await expectHoverHint(title, this.reusableFixture.description);
+  await expect(referenceNode.locator('.operation-ports.inputs .port-label')).toHaveText('Get project · Path parameters');
+  await expect(referenceNode.locator('.operation-ports.outputs .port-label')).toHaveText('Get project · Response · 200');
+  await expect(referenceNode.locator('.operation-port .port-type')).toHaveText(['Object', 'Object']);
   const inputPort = referenceNode.getByLabel('Get project · Path parameters input', { exact: true });
+  const outputPort = referenceNode.getByLabel('Get project · Response · 200 output', { exact: true });
   await expectHoverHint(inputPort, 'Get project · Path parameters');
-  await expect(inputPort).toHaveAttribute('tabindex', '-1');
-  await expect(inputPort).toHaveAttribute('aria-disabled', 'true');
-  const document = (await readExport(this.page)).document;
+  for (const port of [inputPort, outputPort]) {
+    await expect(port).toHaveAttribute('tabindex', '-1');
+    await expect(port).toHaveAttribute('aria-disabled', 'true');
+    await expect(port).not.toHaveClass(/\bconnectablestart\b|\bconnectableend\b/);
+  }
+  const layout = await referenceNode.evaluate(element => {
+    const title = element.querySelector('.operation-title-row').getBoundingClientRect();
+    const row = direction => {
+      const connection = element.querySelector(`.operation-ports.${direction} .operation-port`);
+      const row = connection.getBoundingClientRect();
+      const port = connection.querySelector('.svelte-flow__handle').getBoundingClientRect();
+      return { top: row.top, bottom: row.bottom, side: direction === 'inputs' ? row.left : row.right,
+        center: row.y + row.height / 2, portX: port.x + port.width / 2, portY: port.y + port.height / 2 };
+    };
+    return { title: { top: title.top, bottom: title.bottom }, inputs: row('inputs'), outputs: row('outputs') };
+  });
+  assert.ok(layout.inputs.bottom <= layout.title.top && layout.title.bottom <= layout.outputs.top,
+    'Reusable workflow input rows appear above the title and output rows below it.');
+  for (const row of [layout.inputs, layout.outputs])
+    assert.ok(Math.abs(row.portY - row.center) < 1 && Math.abs(row.portX - row.side) < 1,
+      'Each schema handle remains centered on its own connection row.');
+  const document = (await readExport(page)).document;
   const reference = document.nodes.find(item => item.type === "workflow");
   assert.equal(reference.data.workflowId, this.reusableFixture.id);
   assert.equal(reference.data.description, this.reusableFixture.description);
   assert.deepEqual(reference.data.snapshot, this.reusableFixture);
   assert.equal(document.nodes.filter(item => item.type === "data").length, 2);
-  await expect(workflow(this.page).getByLabel("Project ID input", { exact: true })).toHaveCount(1);
-  await expect(workflow(this.page).getByLabel("Project ID output", { exact: true })).toHaveCount(1);
-  const saved = await storedWorkflows(this.page);
+  for (const [direction, port] of [['inputs', inputPort], ['outputs', outputPort]]) {
+    const panel = document.nodes.find(item => item.type === 'data' && item.data.direction === direction);
+    const id = `schema:${panel.id}`;
+    await expect(port).toHaveAttribute('data-handleid', id);
+    assert.equal(document.edges.find(edge => edge.id === id)[direction === 'inputs' ? 'targetHandle' : 'sourceHandle'], id);
+  }
+  await expect(workflow(page).getByLabel("Project ID input", { exact: true })).toHaveCount(1);
+  await expect(workflow(page).getByLabel("Project ID output", { exact: true })).toHaveCount(1);
+  const inputPanel = workflow(page).locator('.workflow-data-node[data-direction="inputs"]');
+  await inputPanel.locator('.data-title strong').click();
+  await page.getByRole('button', { name: 'Remove selected', exact: true }).click();
+  await expect(inputPanel).toHaveCount(0);
+  await expect(inputPort).toBeHidden();
+  const restore = referenceNode.getByRole('button', { name: 'Restore Get project · Path parameters', exact: true });
+  await expect(restore).toHaveAttribute('data-side', 'left');
+  await expectHoverHint(restore, 'Restore Get project · Path parameters');
+  await restore.focus();
+  await page.keyboard.press('Enter');
+  await expect(inputPanel).toBeVisible();
+  await expect(inputPort).toBeVisible();
+  await expect(restore).toHaveCount(0);
+  const restored = (await readExport(page)).document;
+  assert.deepEqual(restored.nodes, document.nodes, 'Restoration preserves the embedded snapshot, interface fields, and node identities.');
+  assert.deepEqual(restored.edges, document.edges, 'Restoration preserves the schema connection identities and endpoints.');
+  await expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
+  const saved = await storedWorkflows(page);
   assert.deepEqual(saved.find(item => item.id === this.reusableFixture.id), this.reusableFixture);
 });
 
