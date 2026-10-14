@@ -2,6 +2,29 @@
 
 ## Latest
 
+<!-- changelog-commit:6ef72c23fa2daf336ed692ee0748c8dccbdb2f78 -->
+### Commit [`6ef72c2`](https://github.com/superhero/operations.superduper.solutions/commit/6ef72c23fa2daf336ed692ee0748c8dccbdb2f78)
+
+```text
+ci(release): version changelogs by PR and reuse complete validation
+
+Collect unreleased commit messages under Latest and preserve the source
+snapshot when creating a release. Open a separate Markdown-only PR into
+the release branch to assign its version before publication. Resume the
+release only for that exact canonical changelog transition, including an
+empty Latest section, and retain compatibility with existing Staging data.
+
+Produce complete test, coverage and build evidence during integration.
+Reuse it across later merges only when every tracked input except the root
+changelog matches and the successful original run and artifact hashes
+verify. Bound lookup time, fall back to fresh validation when evidence is
+unavailable, and retain the original report provenance.
+
+Keep release gates, retry protection, regression scenarios, documentation
+and the scenario badge aligned with the new lifecycle.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.43
