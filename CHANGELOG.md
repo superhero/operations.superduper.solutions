@@ -123,6 +123,16 @@ Remove the checkmark text shadow and its shadow transition while preserving the 
 
 ```
 
+<!-- changelog-commit:6c9d41a02e9045f91afcf661a4f8cf62da6475ff -->
+### Commit [`6c9d41a`](https://github.com/superhero/operations.superduper.solutions/commit/6c9d41a02e9045f91afcf661a4f8cf62da6475ff)
+
+```text
+Merge develop into bugfix/theme-checkmark-shadow
+
+Preserve the integrated error history, Cucumber suites, and staged changelog while retaining the theme checkmark shadow removal.
+
+```
+
 <!-- changelog-staging-end -->
 
 ## 0.0.42
