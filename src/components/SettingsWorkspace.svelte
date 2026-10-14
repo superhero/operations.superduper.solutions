@@ -36,6 +36,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import FieldInteger from "$lib/components/FieldInteger.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import StorageSettings from "./settings/StorageSettings.svelte";
+  import ErrorHistory from "./settings/ErrorHistory.svelte";
   import LocaleSettings from "./settings/LocaleSettings.svelte";
   import SchemaSettings from "./settings/SchemaSettings.svelte";
   import { getSchemaLibrary, loadSchemaLibrary, uploadSchema, replaceSchema, renameSchema, moveSchema, setSchemaEnabled, deleteSchema, downloadSchema } from "$lib/schema-library.ts";
@@ -65,7 +66,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     onRetrySettings: () => void;
   } = $props();
   let workspace: HTMLElement;
-  let openSection = $state<"theme" | "locale" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
+  let openSection = $state<"theme" | "locale" | "logs" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
   const schemaLibrary = $derived(getSchemaLibrary());
   let gridSizeDraft = $state("");
   let gridSizeInvalid = $state(false);
@@ -194,6 +195,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <MaterialIcon name="chevron_forward" size={17} />
       {/snippet}
       <LocaleSettings value={locale} onValueChange={onLocaleChange} error={localeError} onRetry={onRetryLocale} />
+    </Disclosure>
+    <Disclosure class="catalog-group settings-section" label="Logs" tooltipEnabled={false} lazy animateSize open={openSection === "logs"} onToggle={(next) => openSection = next ? "logs" : null}>
+      {#snippet summary()}
+        <div class="section-heading"><h2>Logs</h2><span class="section-subtitle">Review recorded application errors</span></div>
+        <MaterialIcon name="chevron_forward" size={17} />
+      {/snippet}
+      <div class="logs-settings"><ErrorHistory /></div>
     </Disclosure>
     <Disclosure class="catalog-group settings-section" label="Schemas" tooltipEnabled={false} open={openSection === "schemas"} onToggle={(next) => openSection = next ? "schemas" : null}>
       {#snippet summary()}
@@ -338,6 +346,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .section-heading { display: grid; gap: 2px; }
   .section-heading h2 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: normal; }
   .section-subtitle { font-size: 12px; font-weight: 400; }
+  .logs-settings { min-width: 0; padding: 4px 16px 16px; font-size: 12px; }
   fieldset { min-width: 0; margin: 0; padding: 16px; border: 0; }
   .workflow-settings { container-type: inline-size; }
   .workflow-defaults { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
@@ -376,5 +385,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     .palette-choice { z-index: 0; will-change: transform; transition: transform 180ms ease-in, z-index 0s linear 180ms; }
     .palette-choice:hover { z-index: 2; transform: scale(min(1.10, var(--hover-scale, 1.10))); transition-delay: 0s; }
   }
+  @media (max-width: 600px) { .logs-settings { padding: 4px 10px 12px; } }
   @media (prefers-reduced-motion: reduce) { .palette-card, .palette-heading, .default-switch, .default-switch > span { transition: none; } }
 </style>

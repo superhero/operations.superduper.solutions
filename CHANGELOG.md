@@ -36,6 +36,14 @@ fix(settings): default histogram to used JavaScript heap
 
 ```
 
+<!-- changelog-commit:1a73ea7441bc702cf971c9e09e7dbed038a017dd -->
+### Commit [`1a73ea7`](https://github.com/superhero/operations.superduper.solutions/commit/1a73ea7441bc702cf971c9e09e7dbed038a017dd)
+
+```text
+feat(settings): move error history into Logs
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.45
