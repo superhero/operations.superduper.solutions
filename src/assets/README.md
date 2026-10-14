@@ -5,8 +5,8 @@ Store artwork and resources bundled into the application here. Local
 [app.css](../app.css). Preserve license notices and provenance alongside assets.
 
 [`favicon.svg`](favicon.svg) is original project artwork representing connected
-API schemas: one square on the left connects to two squares on the right. The navy geometry sits
-on an amber rounded square, using the default palette colors. Its source notice
+API schemas: one square on the left connects to two squares on the right. Spring's
+fourth color (`#00804c`) draws the geometry on its second color (`#dbe64c`). Its source notice
 records the project license; `index.html` references it with Vite's
 explicit `?inline` option so the production favicon stays embedded in the
 standalone page.
