@@ -38,6 +38,16 @@ Add original connected-node artwork using the default palette and the project li
 
 ```
 
+<!-- changelog-commit:437e2904f73d5283daffe30ba6734b2fd2d7975e -->
+### Commit [`437e290`](https://github.com/superhero/operations.superduper.solutions/commit/437e2904f73d5283daffe30ba6734b2fd2d7975e)
+
+```text
+feat(ui): publish favicon formats with attribution metadata
+
+Generate browser and compatibility icons from the schema artwork with a\nshared title, creator and license notice in supported metadata fields.\nKeep BMP and DIB-based ICO compatible without nonstandard metadata.\n\nValidate generated freshness and the complete deployment file set, with\nCucumber coverage for packaging, image decoding and attribution.
+
+```
+
 <!-- changelog-staging-end -->
 
 ## 0.0.42
