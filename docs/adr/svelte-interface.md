@@ -105,7 +105,7 @@ Selection animation respects reduced motion.
 
 `workflowDefaults` stores connection styling, grid snapping and node-symbol
 preferences. Missing or invalid values fall back independently: dashed lines,
-snapping and node symbols start enabled; curved lines start disabled.
+curved lines, snapping and node symbols start enabled.
 Load defaults before the editor mounts and apply them to
 new workflows and the untouched initial canvas. Existing, edited and imported
 workflows retain their flags; toolbar changes do not alter application defaults.

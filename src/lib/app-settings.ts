@@ -17,7 +17,7 @@ export const workflowDashGapLimits = { min: 1, max: 128 } as const;
 export const workflowDashSpeedLimits = { min: 0, max: 512 } as const;
 export const workflowCurveStrengthLimits = { min: 0, max: 200 } as const;
 export const workflowNodeClearanceLimits = { min: 0, max: 128 } as const;
-export const defaultWorkflowSettings: Readonly<WorkflowDefaults> = { dashed: true, curved: false, snap: true, nodeSymbols: true, gridSize: 8, dashLength: 8, dashGap: 16, dashSpeed: 64, curveStrength: 100, nodeClearance: 16 };
+export const defaultWorkflowSettings: Readonly<WorkflowDefaults> = { dashed: true, curved: true, snap: true, nodeSymbols: true, gridSize: 8, dashLength: 8, dashGap: 16, dashSpeed: 64, curveStrength: 100, nodeClearance: 16 };
 
 export function isValidWorkflowGridSize(value: unknown): value is number
 {
