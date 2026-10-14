@@ -11,6 +11,8 @@ Separate workers handle:
   The page reuses prepared results instead of repeating this work.
 - **Workflows:** initialization, loading, autosave and Git history.
 - **Resources:** measurements, aggregation and history persistence.
+- **Errors:** bounded IndexedDB history, independent of resource sampling and
+  isolated from its own failure-reporting path.
 - **Connections:** bounded orthogonal route searches while an active workflow
   uses straight connections; rendering remains on the page.
 

@@ -7,6 +7,7 @@ import { collectStorageReport } from "./storage-metrics.ts";
 import { MetricsAggregator } from "./metrics-history.ts";
 import { metricsHistoryRepository } from "./metrics-history-repository.ts";
 import { metricValues } from "./metrics-series.ts";
+import { describeApplicationError } from "./error-diagnostics.ts";
 import type { MetricsBar } from "./metrics-history.ts";
 import type { RecorderMessage, RecorderReply, RecorderSnapshot } from "./metrics-recorder-types.ts";
 
@@ -23,6 +24,11 @@ let answer: { id: number; resolve: (value: RecorderReply) => void } | null = nul
 let aggregateQueue: Promise<void> = Promise.resolve();
 const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
 const errorMessage = (error: unknown) => error instanceof Error ? error.message : String(error);
+
+// Only the owning tab records this failure; resource broadcasts carry no error details.
+function reportFailure(error: unknown, operation: string) {
+  scope.postMessage({ type: "diagnostic", error: describeApplicationError(error, { source: "worker" }).error, operation });
+}
 
 function publish(message: Exclude<RecorderMessage, { type: "measure" }>)
 {
@@ -89,6 +95,7 @@ async function saveCompleted(bars: MetricsBar[])
     publish({ type: "saved", bars: saved });
     if (snapshot.historyError) update({ historyError: null });
   } catch (error) {
+    reportFailure(error, "save history");
     const message = `Could not save metric history: ${errorMessage(error)}`;
     if (snapshot.historyError !== message) log.warn(message);
     update({ historyError: message });
@@ -108,7 +115,7 @@ function scheduleMinute()
       const completed = aggregation.flush(Date.now());
       update({ activeBar: aggregation.activeBar() });
       await saveCompleted(completed);
-    }).catch(error => update({ historyError: errorMessage(error) })).finally(scheduleMinute);
+    }).catch(error => { reportFailure(error, "aggregate history"); update({ historyError: errorMessage(error) }); }).finally(scheduleMinute);
   }, 60000 - Date.now() % 60000);
 }
 
@@ -116,7 +123,7 @@ async function record()
 {
   leader = true;
   try { history = await metricsHistoryRepository.load(); publish({ type: "history", bars: history }); }
-  catch (error) { update({ historyError: `Could not read metric history: ${errorMessage(error)}` }); }
+  catch (error) { reportFailure(error, "read history"); update({ historyError: `Could not read metric history: ${errorMessage(error)}` }); }
   // Other open tabs keep only the live aggregate in RAM, allowing ownership to
   // move without losing its open/high/low/count or persisting detailed samples.
   const live = snapshot.activeBar;
@@ -145,6 +152,7 @@ async function record()
       // Unsupported/failed native APIs must not turn this into a busy collection loop.
       if (measurement.pageMemory.total === null) interval = 30000;
     } catch (error) {
+      reportFailure(error, "collect resources");
       const message = errorMessage(error);
       log.warn(message);
       update({ phase: "waiting", error: message });
@@ -159,6 +167,7 @@ async function record()
 if (navigator.locks && channel) {
   channel.postMessage({ type: "hello" });
   void navigator.locks.request("operations-metrics-recorder-v1", record).catch(error => {
+    reportFailure(error, "start recorder");
     update({ phase: "unavailable", error: errorMessage(error) });
   });
 } else {

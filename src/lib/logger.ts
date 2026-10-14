@@ -4,13 +4,18 @@
 import { createPail } from "@visulima/pail/browser";
 import { PrettyReporter } from "@visulima/pail/browser/reporter/pretty";
 import { rememberErrorChain } from "../dev/error-chain.ts";
+import { reportApplicationError } from "./error-diagnostics.ts";
 
 class BrowserReporter extends PrettyReporter
 {
   override log(meta: Parameters<PrettyReporter["log"]>[0]): void
   {
     const error = meta.error ?? meta.context?.find(value => value instanceof Error);
-    if (error && ["error", "critical", "alert", "emergency"].includes(meta.type.level)) {
+    const failure = ["error", "critical", "alert", "emergency"].includes(meta.type.level);
+    if (failure || (meta.type.level === "warning" && error)) {
+      reportApplicationError(error ?? meta.message, { source: "application", scope: meta.scope?.join(" > ") });
+    }
+    if (error && failure) {
       /* c8 ignore start -- Vite-only overlay bridge, exercised by tests/dev-overlay.smoke.mjs. */
       if (import.meta.env?.DEV) {
         rememberErrorChain(error);

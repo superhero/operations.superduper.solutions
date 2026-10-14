@@ -4,6 +4,7 @@
 import type { MetricsBar } from "./metrics-history.ts";
 import type { PageMemoryReport } from "./page-memory.ts";
 import type { StorageReport } from "./storage-metrics-types.d.ts";
+import type { ErrorDetail } from "./error-history-types.ts";
 import type { WindowMetrics } from "./storage-metrics.ts";
 
 export type RecorderPhase = "starting" | "measuring" | "collecting" | "waiting" | "unavailable";
@@ -17,6 +18,7 @@ export type RecorderSnapshot = {
 };
 export type RecorderState = RecorderSnapshot & { bars: MetricsBar[] };
 export type RecorderMessage =
+  | { type: "diagnostic"; error: ErrorDetail; operation: string }
   | { type: "measure"; id: number }
   | { type: "snapshot"; snapshot: RecorderSnapshot }
   | { type: "history"; bars: MetricsBar[] }

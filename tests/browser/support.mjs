@@ -35,6 +35,11 @@ BeforeAll(async function () {
       lib: { entry: resolve('tests/browser/workflow-repository.fixture.ts'), formats: ['es'] } } });
   const fixtureOutput = Array.isArray(fixtureBuild) ? fixtureBuild[0] : fixtureBuild;
   const repositoryFixture = fixtureOutput.output.find(item => item.type === 'chunk' && item.isEntry).code;
+  const errorFixtureBuild = await build({ configFile: false, logLevel: 'error',
+    build: { write: false, target: 'es2024', minify: false,
+      lib: { entry: resolve('tests/browser/error-history-storage.fixture.ts'), formats: ['es'] } } });
+  const errorFixtureOutput = Array.isArray(errorFixtureBuild) ? errorFixtureBuild[0] : errorFixtureBuild;
+  const errorHistoryFixture = errorFixtureOutput.output.find(item => item.type === 'chunk' && item.isEntry).code;
   server = createServer((request, response) => {
     if (request.url === '/') {
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8',
@@ -43,13 +48,19 @@ BeforeAll(async function () {
     } else if (request.url === '/workflow-repository-fixture.js') {
       response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
       response.end(repositoryFixture);
+    } else if (request.url === '/error-history-storage-fixture.js') {
+      response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
+      response.end(errorHistoryFixture);
+    } else if (request.url === '/error-history-fixture.html') {
+      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      response.end('<!doctype html><title>Error history persistence fixture</title>');
     } else if (icons.has(request.url)) {
       const icon = icons.get(request.url);
       response.writeHead(200, { 'content-type': icon.type });
       response.end(icon.bytes);
     } else {
       response.writeHead(404);
-      response.end('This test server serves only the standalone application, its favicon files and the repository fixture.');
+      response.end('This test server serves only the standalone application, its favicon files and test fixtures.');
     }
   });
   await new Promise((resolveListen, reject) => {

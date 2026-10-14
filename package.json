@@ -17,10 +17,9 @@
     "test:automation": "cucumber-js --config cucumber.config.mjs --profile automation",
     "test:browser": "bash .github/scripts/test-browser.sh",
     "test:coverage": "c8 report --check-coverage",
-    "test:source": "cucumber-js --config cucumber.config.mjs --profile source && npm --loglevel=error run test:unit",
+    "test:source": "cucumber-js --config cucumber.config.mjs --profile source",
     "test:source:coverage": "c8 --reporter=none npm --loglevel=error run test:source",
     "typecheck": "svelte-check --tsconfig ./tsconfig.json",
-    "test:unit": "node --test tests/*.test.mjs",
     "icons:generate": "node build/favicons.mjs",
     "icons:check": "node build/favicons.mjs --check"
   },

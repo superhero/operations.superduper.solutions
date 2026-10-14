@@ -27,6 +27,8 @@ export const source = {
     "src/metrics-history.test.mjs",
     "src/metrics-series.test.mjs",
     "src/logging.test.mjs",
+    "src/error-diagnostics.test.mjs",
+    "src/error-capture.test.mjs",
     "src/operation-report.test.mjs",
     "src/workflow-document.test.mjs",
     "src/workflow-input-occupancy.test.mjs",
@@ -45,7 +47,19 @@ export const source = {
     "src/flow-routing-worker-lifecycle.test.mjs",
     "src/flow-routing-handoff.test.mjs",
     "src/flow-routing-manual.test.mjs",
-    "src/lib/flow-routing/coverage-regressions.test.mjs"
+    "src/lib/flow-routing/coverage-regressions.test.mjs",
+    "src/locale-settings.test.mjs",
+    "src/metrics-cache.test.mjs",
+    "src/processing-metrics.test.mjs",
+    "src/resource-core.test.mjs",
+    "src/schema-documents.test.mjs",
+    "src/schema-runtime.test.mjs",
+    "src/worker-rpc.test.mjs",
+    "src/workflow-curve.test.mjs",
+    "src/workflow-graph-coverage.test.mjs",
+    "src/workflow-graph-guards.test.mjs",
+    "src/workflow-layout.test.mjs",
+    "src/workflow-response.test.mjs"
   ],
   paths: [
     "src/application.feature",
@@ -54,6 +68,8 @@ export const source = {
     "src/metrics-history.feature",
     "src/metrics-series.feature",
     "src/logging.feature",
+    "src/error-diagnostics.feature",
+    "src/error-capture.feature",
     "src/operation-report.feature",
     "src/workflow-document.feature",
     "src/workflow-input-occupancy.feature",
@@ -72,7 +88,19 @@ export const source = {
     "src/flow-routing-worker-lifecycle.feature",
     "src/flow-routing-handoff.feature",
     "src/flow-routing-manual.feature",
-    "src/lib/flow-routing/coverage-regressions.feature"
+    "src/lib/flow-routing/coverage-regressions.feature",
+    "src/locale-settings.feature",
+    "src/metrics-cache.feature",
+    "src/processing-metrics.feature",
+    "src/resource-core.feature",
+    "src/schema-documents.feature",
+    "src/schema-runtime.feature",
+    "src/worker-rpc.feature",
+    "src/workflow-curve.feature",
+    "src/workflow-graph-coverage.feature",
+    "src/workflow-graph-guards.feature",
+    "src/workflow-layout.feature",
+    "src/workflow-response.feature"
   ]
 };
 

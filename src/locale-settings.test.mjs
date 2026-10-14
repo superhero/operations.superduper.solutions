@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { Then } from "@cucumber/cucumber";
 import { defaultLocaleSettings, formatCalendarDate, formatDateTime, getTimeZoneOptions, normalizeLocaleSettings }
-  from "../src/lib/locale-settings.ts";
-import { applyLocaleSettings, getLocaleSettings } from "../src/lib/datetime-state.ts";
-import { formatLocalDate, formatLocalDateTime } from "../src/lib/datetime.ts";
+  from "./lib/locale-settings.ts";
+import { applyLocaleSettings, getLocaleSettings } from "./lib/datetime-state.ts";
+import { formatLocalDate, formatLocalDateTime } from "./lib/datetime.ts";
 
 const settings = patch => ({ ...defaultLocaleSettings, ...patch });
 const at = (value, patch, locale = "en-US") => formatDateTime(Date.parse(value), settings(patch), locale);
 
-test("public date helpers load in Node and use the current normalized preferences", () => {
+Then("public date helpers load in Node and use the current normalized preferences", () => {
   try
   {
     const selected = settings({ dateFormat: "ymd", timeFormat: "24h", timeZone: "America/New_York" });
@@ -27,7 +27,7 @@ test("public date helpers load in Node and use the current normalized preference
   finally { applyLocaleSettings(defaultLocaleSettings); }
 });
 
-test("normalization restores defaults for invalid fields and keeps supported preferences", () => {
+Then("normalization restores defaults for invalid fields and keeps supported preferences", () => {
   for (const value of [undefined, null, true, 42, "long", [], {}])
     assert.deepEqual(normalizeLocaleSettings(value), defaultLocaleSettings);
   assert.deepEqual(normalizeLocaleSettings({ dateFormat: "invalid", timeFormat: "13h", timeZone: "Mars/Olympus" }), defaultLocaleSettings);
@@ -40,13 +40,13 @@ test("normalization restores defaults for invalid fields and keeps supported pre
   assert.equal(normalizeLocaleSettings({ timeZone: 2 }).timeZone, "system");
 });
 
-test("system formatting preserves the browser's default date, clock, and zone", () => {
+Then("system formatting preserves the browser's default date, clock, and zone", () => {
   const date = new Date("2026-01-02T00:04:05Z");
   for (const locale of ["en-US", "en-GB", "de-DE", "ar-EG"])
     assert.equal(formatDateTime(date.getTime(), defaultLocaleSettings, locale), date.toLocaleString(locale));
 });
 
-test("fixed date patterns preserve their order, padding, and Gregorian year across locales", () => {
+Then("fixed date patterns preserve their order, padding, and Gregorian year across locales", () => {
   for (const [dateFormat, expected] of [["dmy", "02/01/2026"], ["mdy", "01/02/2026"], ["ymd", "2026-01-02"]])
   {
     for (const locale of ["en-US", "en-GB", "th-TH", "ar-EG"])
@@ -56,14 +56,14 @@ test("fixed date patterns preserve their order, padding, and Gregorian year acro
   assert.equal(formatCalendarDate("0099-01-02", settings({ dateFormat: "ymd" }), "en-US"), "0099-01-02");
 });
 
-test("instant dates roll forward and backward with their selected timezone", () => {
+Then("instant dates roll forward and backward with their selected timezone", () => {
   const instant = "2026-01-02T00:04:05Z";
   assert.equal(at(instant, { dateFormat: "ymd", timeFormat: "24h", timeZone: "UTC" }), "2026-01-02, 00:04:05");
   assert.equal(at(instant, { dateFormat: "ymd", timeFormat: "24h", timeZone: "America/Los_Angeles" }), "2026-01-01, 16:04:05");
   assert.equal(at("2026-01-02T20:04:05Z", { dateFormat: "ymd", timeFormat: "24h", timeZone: "Asia/Tokyo" }), "2026-01-03, 05:04:05");
 });
 
-test("clock choices retain seconds and render midnight and noon correctly", () => {
+Then("clock choices retain seconds and render midnight and noon correctly", () => {
   for (const locale of ["en-US", "en-GB"])
   {
     assert.equal(at("2026-01-02T00:00:00Z", { dateFormat: "ymd", timeFormat: "24h", timeZone: "UTC" }, locale), "2026-01-02, 00:00:00");
@@ -72,7 +72,7 @@ test("clock choices retain seconds and render midnight and noon correctly", () =
   }
 });
 
-test("named zones apply daylight-saving transitions to historical instants", () => {
+Then("named zones apply daylight-saving transitions to historical instants", () => {
   const patch = { dateFormat: "ymd", timeFormat: "24h", timeZone: "America/New_York" };
   assert.equal(at("2026-03-08T06:59:59Z", patch), "2026-03-08, 01:59:59");
   assert.equal(at("2026-03-08T07:00:00Z", patch), "2026-03-08, 03:00:00");
@@ -80,7 +80,7 @@ test("named zones apply daylight-saving transitions to historical instants", () 
   assert.equal(at("2026-11-01T06:00:00Z", patch), "2026-11-01, 01:00:00");
 });
 
-test("calendar dates stay on their own day across zones, skipped days, and leap days", () => {
+Then("calendar dates stay on their own day across zones, skipped days, and leap days", () => {
   for (const timeZone of ["system", "UTC", "America/Los_Angeles", "Pacific/Kiritimati", "Pacific/Apia"])
     for (const date of ["2024-02-29", "2026-01-01", "2011-12-30"])
       assert.equal(formatCalendarDate(date, settings({ dateFormat: "ymd", timeZone }), "en-US"), date);
@@ -89,14 +89,14 @@ test("calendar dates stay on their own day across zones, skipped days, and leap 
   assert.equal(formatCalendarDate("2026-01-02", defaultLocaleSettings, "en-US"), "1/2/2026");
 });
 
-test("malformed timestamps and calendar dates display a graceful placeholder", () => {
+Then("malformed timestamps and calendar dates display a graceful placeholder", () => {
   for (const timestamp of [NaN, Infinity, -Infinity, 9e20])
     assert.equal(formatDateTime(timestamp), "Unavailable");
   for (const date of ["", "not-a-date", "2026-2-01", "2026-02-30", "2025-02-29", "2026-13-01", "2026-01-00", "2026-01-02T00:00:00Z"])
     assert.equal(formatCalendarDate(date), "Unavailable");
 });
 
-test("timezone options include UTC, the system zone, and supported named zones", () => {
+Then("timezone options include UTC, the system zone, and supported named zones", () => {
   const zones = getTimeZoneOptions();
   assert.ok(zones.includes("UTC"));
   assert.ok(zones.includes(new Intl.DateTimeFormat().resolvedOptions().timeZone));

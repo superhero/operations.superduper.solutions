@@ -12,6 +12,7 @@ the single-open-section behavior, appearance and workflow defaults.
 | [SchemaSettings.svelte](SchemaSettings.svelte) | Receives library records and callbacks for upload, replacement, rename, ordering, enablement, deletion and download |
 | [StorageSettings.svelte](StorageSettings.svelte) | Subscribes to the existing metrics recorder and presents resource availability and errors |
 | [MetricsHistoryChart.svelte](MetricsHistoryChart.svelte) | Renders supplied series and intervals, with local metric/range selection |
+| [ErrorHistory.svelte](ErrorHistory.svelte) | Pages retained error diagnostics, expands causes and stacks, and exposes recorder recovery independently of resource sampling |
 
 Keep persistence and collection in the existing library services. Closing the
 resource section must not stop background collection. Settings remain outside

@@ -18,13 +18,13 @@ example that appears in the combined report.
 The default source glob does not replace the explicit named profiles used by
 npm and CI.
 
-## Existing tests and migration
+## Remaining smoke-test migration
 
-Root `*.test.mjs` files are legacy standalone Node tests run by `test:unit`
-within `test:source`. Root `*.smoke.mjs` scripts also await migration; neither
-format appears in the combined Cucumber report. Preserve their assertions and
-coverage while migrating, and verify each case's report inclusion before
-removing its old execution path.
+Root `*.smoke.mjs` scripts await migration into browser Cucumber scenarios;
+they do not appear in the combined report. Preserve their assertions and verify
+each case's report inclusion before removing its old execution path.
+
+Source unit tests live under `src/` and run through the source Cucumber profile.
 
 ## Results and procedures
 

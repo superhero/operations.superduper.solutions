@@ -10,6 +10,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { RecorderState } from "$lib/metrics-recorder-types.ts";
   import { metricSeries } from "$lib/metrics-series.ts";
   import MetricsHistoryChart from "./MetricsHistoryChart.svelte";
+  import ErrorHistory from "./ErrorHistory.svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import { formatLocalDate } from "$lib/datetime.ts";
 
@@ -52,7 +53,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   onMount(() => subscribeMetricsRecorder(value => { recorder = value; }));
 </script>
 
-<section class="storage-dashboard" aria-label="Storage dashboard" aria-busy={busy}>
+<section class="storage-dashboard" aria-label="Storage dashboard">
   {#if busy}<p class="loading" role="status">{recorder.phase === "collecting" ? "Collecting storage information…" : "Measuring application memory before collecting storage information…"}</p>{/if}
   {#if error}<p class="storage-error" role="alert">{error}</p>{/if}
   {#if recorder.historyError}<p class="storage-error" role="alert">{recorder.historyError}</p>{/if}
@@ -61,8 +62,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <MetricsHistoryChart bars={recorder.bars} activeBar={recorder.activeBar} {series} />
   </section>
 
+  <ErrorHistory />
+
   {#if report}
-    <section class="storage-card" aria-label="Processing">
+    <section class="storage-card" aria-label="Processing" aria-busy={busy}>
       <div class="card-heading"><h3>Processing</h3></div>
       <dl class="metric-grid">
         <div><dt>Threads</dt><dd>{report.execution.threads == null ? "Unavailable" : number(report.execution.threads)}</dd></div>
@@ -73,7 +76,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {#if processing?.error}<p class="unavailable">{processing.error}</p>{/if}
     </section>
 
-    <section class="storage-card" aria-label="Memory">
+    <section class="storage-card" aria-label="Memory" aria-busy={busy}>
       <div class="card-heading"><h3>Memory</h3></div>
       <dl class="metric-grid">
         <div><dt>Used heap</dt><dd>{bytes(report.memory.used)}</dd></div>
@@ -111,7 +114,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/if}
     </section>
 
-    <section class="storage-card" aria-label="Storage">
+    <section class="storage-card" aria-label="Storage" aria-busy={busy}>
       <div class="card-heading"><h3>Storage</h3></div>
       <dl class="metric-grid browser-metrics">
         <div><dt>Used</dt><dd>{bytes(report.browser.usage)}</dd></div>
@@ -156,7 +159,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {#if !report.indexedDB.databases.length && report.indexedDB.enumeration !== "unavailable"}<p class="empty-state">No databases found.</p>{/if}
     </section>
 
-    <section class="storage-card" aria-label="Git filesystem">
+    <section class="storage-card" aria-label="Git filesystem" aria-busy={busy}>
       <div class="card-heading"><h3>Git filesystem</h3></div>
       <dl class="metric-grid compact-metrics">
         <div><dt>Repositories</dt><dd>{report.repositories.error && !report.repositories.items.length ? "Unavailable" : number(report.repositories.items.length)}</dd></div>

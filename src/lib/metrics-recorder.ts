@@ -5,6 +5,7 @@ import MetricsWorker from "./metrics-recorder.worker.ts?worker&inline";
 import { collectPageMemory } from "./page-memory.ts";
 import { collectWindowMetrics } from "./storage-metrics.ts";
 import { logger } from "./logger.ts";
+import { reportApplicationError } from "./error-diagnostics.ts";
 import { trackApplicationWorker, applicationExecutionMetrics } from "./application-workers.ts";
 import { startProcessingMetrics, stopProcessingMetrics } from "./processing-metrics.ts";
 import { readMetricsCache, writeMetricsCache } from "./metrics-cache.ts";
@@ -42,10 +43,14 @@ export function startMetricsRecorder(): void
     startProcessingMetrics();
     const current = new MetricsWorker({ name: "operations-metrics-recorder" });
     worker = current;
-    releaseWorker = trackApplicationWorker(current);
+    releaseWorker = trackApplicationWorker(current, { scope: "metrics-recorder" });
     current.onmessage = (event: MessageEvent<RecorderMessage>) => {
       if (worker !== current) return;
       const message = event.data;
+      if (message.type === "diagnostic") {
+        reportApplicationError(message.error, { source: "worker", scope: "metrics-recorder", operation: message.operation });
+        return;
+      }
       if (message.type === "measure") {
         // These APIs are Window-only. Waiting is asynchronous; no scan or Git work happens here.
         void collectPageMemory().then(pageMemory => {

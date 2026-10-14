@@ -73,6 +73,46 @@ Document reuse, rollout and retry behavior with Cucumber regression coverage.
 
 ```
 
+<!-- changelog-commit:6108eb9a9c03c5a625c0b99e516b4cd4b4cbe904 -->
+### Commit [`6108eb9`](https://github.com/superhero/operations.superduper.solutions/commit/6108eb9a9c03c5a625c0b99e516b4cd4b4cbe904)
+
+```text
+feat(errors): retain bounded browser error history
+
+Capture application, runtime, rejection and worker diagnostics without changing their existing console and UI reporting. Keep 1,000 unique errors in IndexedDB with occurrence counts and atomic FIFO eviction across tabs.
+
+Record through a dedicated worker with bounded pending work, guarded failures and explicit retry. Expose paginated history, stacks and causes in Browser settings. Cover capture, persistence, concurrency and recovery with Cucumber scenarios.
+
+```
+
+<!-- changelog-commit:df6803cb23e9799f255859c8b7a595775ee444d4 -->
+### Commit [`df6803c`](https://github.com/superhero/operations.superduper.solutions/commit/df6803cb23e9799f255859c8b7a595775ee444d4)
+
+```text
+test: migrate standalone source tests to Cucumber
+
+Report all 78 existing Node test cases as individual source scenarios while
+preserving their assertions and restoring shared state after each case.
+Remove the separate test:unit path so source execution, coverage, reports
+and scenario badges use the same Cucumber results.
+
+Verify explicit source registration and real runner failure propagation,
+including cleanup-hook failures, through generated HTML and badge outputs.
+Update contributor guidance while retaining the separate browser smoke
+migration gap.
+
+```
+
+<!-- changelog-commit:efd5d7114ecd15749e9eb58a996614570fc179da -->
+### Commit [`efd5d71`](https://github.com/superhero/operations.superduper.solutions/commit/efd5d7114ecd15749e9eb58a996614570fc179da)
+
+```text
+Merge develop into feature/cucumber-test-reporting
+
+Reconcile the error-monitoring worker fixture with Cucumber cleanup and retain the new error namespace. Regenerate scenario totals for the combined reporting and documentation-target changes.
+
+```
+
 <!-- changelog-commit:62eb4215e0b77559172107f5dd69c8becd1ab0c7 -->
 ### Commit [`62eb421`](https://github.com/superhero/operations.superduper.solutions/commit/62eb4215e0b77559172107f5dd69c8becd1ab0c7)
 

@@ -4,14 +4,14 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { afterEach, test } from "node:test";
-import { extractOperations, operations, publishPreparedCatalogs, updateCatalogs } from "../src/lib/catalog.ts";
-import { bundledCatalogs, catalogs, catalogForOperation } from "../src/lib/catalog-registry.ts";
-import { getOperationReport } from "../src/lib/operation-report.ts";
-import { validateSchemaDocument } from "../src/lib/schema-documents.ts";
-import { createWorkflowRequestExecution, workflowExecutionForOperation, workflowRequestUrl } from "../src/lib/workflow-execution.ts";
-import { createOperationGraph } from "../src/lib/workflow-graph.ts";
-import { createWorkflowRunner } from "../src/lib/workflow-runner.ts";
+import { After, Before, Then } from "@cucumber/cucumber";
+import { extractOperations, operations, publishPreparedCatalogs, updateCatalogs } from "./lib/catalog.ts";
+import { bundledCatalogs, catalogs, catalogForOperation } from "./lib/catalog-registry.ts";
+import { getOperationReport } from "./lib/operation-report.ts";
+import { validateSchemaDocument } from "./lib/schema-documents.ts";
+import { createWorkflowRequestExecution, workflowExecutionForOperation, workflowRequestUrl } from "./lib/workflow-execution.ts";
+import { createOperationGraph } from "./lib/workflow-graph.ts";
+import { createWorkflowRunner } from "./lib/workflow-runner.ts";
 
 const response = { description: "Success", content: { "application/json": { schema: { type: "object" } } } };
 const fixture = (operation = {}, item = {}) => ({
@@ -38,16 +38,22 @@ function workflow(operation, source) {
     viewport: { x: 0, y: 0, zoom: 1 }, snap: true, curved: true, dashed: false };
 }
 
-afterEach(() => updateCatalogs(bundledCatalogs));
+Before({ tags: "@schema-runtime" }, function () {
+  this.schemaRuntimeCatalogs = catalogs;
+});
 
-test("schema validation normalizes a non-Error failure from operation extraction", () => {
+After({ tags: "@schema-runtime" }, function () {
+  updateCatalogs(this.schemaRuntimeCatalogs);
+});
+
+Then("schema validation normalizes a non-Error failure from operation extraction", () => {
   // Isolate the replacement module so live catalog tests keep their real registry.
   const script = `
     import assert from "node:assert/strict";
     import { registerHooks } from "node:module";
     registerHooks({
       resolve(specifier, context, next) {
-        return specifier === "./catalog.ts" && context.parentURL === ${JSON.stringify(new URL("../src/lib/schema-documents.ts", import.meta.url).href)}
+        return specifier === "./catalog.ts" && context.parentURL === ${JSON.stringify(new URL("./lib/schema-documents.ts", import.meta.url).href)}
           ? { url: "test:failed-extractor", shortCircuit: true } : next(specifier, context);
       },
       load(url, context, next) {
@@ -56,7 +62,7 @@ test("schema validation normalizes a non-Error failure from operation extraction
           : next(url, context);
       }
     });
-    const { validateSchemaDocument } = await import(${JSON.stringify(new URL("../src/lib/schema-documents.ts", import.meta.url).href)});
+    const { validateSchemaDocument } = await import(${JSON.stringify(new URL("./lib/schema-documents.ts", import.meta.url).href)});
     assert.throws(() => validateSchemaDocument(${JSON.stringify(fixture())}, "test"),
       { message: "Invalid OpenAPI document: Operation extraction failed" });
   `;
@@ -65,7 +71,7 @@ test("schema validation normalizes a non-Error failure from operation extraction
   assert.equal(result.status, 0, result.stderr);
 });
 
-test("HTTP execution retains server base paths and resolves operation and path server overrides", async () => {
+Then("HTTP execution retains server base paths and resolves operation and path server overrides", async () => {
   const requests = [];
   const executor = createWorkflowRequestExecution(async (url, options) => {
     requests.push({ url, options });
@@ -91,7 +97,7 @@ test("HTTP execution retains server base paths and resolves operation and path s
   assert.ok(requests.every(request => request.options.credentials === "omit" && request.options.redirect === "error"));
 });
 
-test("request URLs reject host changes and traversal, retain encoded path values, and omit undefined queries", () => {
+Then("request URLs reject host changes and traversal, retain encoded path values, and omit undefined queries", () => {
   const request = { method: "GET", path: "/items/a%2Fb", query: {
     omitted: undefined, repeated: ["one", undefined, "two"], empty: null, disabled: false,
   } };
@@ -104,7 +110,7 @@ test("request URLs reject host changes and traversal, retain encoded path values
     assert.throws(() => workflowRequestUrl(request, server), /HTTP or HTTPS URL without credentials/);
 });
 
-test("reports support generated identifiers and referenced path items without leaking other operations", async () => {
+Then("reports support generated identifiers and referenced path items without leaking other operations", async () => {
   const document = fixture();
   document.paths["/items"] = { $ref: "#/components/pathItems/Items" };
   document.components = { pathItems: { Items: {
@@ -132,7 +138,7 @@ test("reports support generated identifiers and referenced path items without le
   assert.deepEqual(requests, ["https://referenced.example.test/service/items?limit=2"]);
 });
 
-test("catalog changes immediately update reports, runners, and existing executors", async () => {
+Then("catalog changes immediately update reports, runners, and existing executors", async () => {
   const requests = [];
   const executor = createWorkflowRequestExecution(async url => { requests.push(url); return Response.json({}); });
   const source = register();
@@ -169,7 +175,7 @@ test("catalog changes immediately update reports, runners, and existing executor
   assert.equal(requests.length, 2);
 });
 
-test("unchanged sources retain operation identity while source-only changes replace it", () => {
+Then("unchanged sources retain operation identity while source-only changes replace it", () => {
   const source = register();
   const original = operations.find(operation => operation.id === "registered:read");
   const bundled = operations.find(operation => operation.id === "demo:listProjects");
@@ -193,7 +199,7 @@ test("unchanged sources retain operation identity while source-only changes repl
   assert.notEqual(operations.find(operation => operation.id === original.id), replacement);
 });
 
-test("failed catalog replacements preserve both live indices", () => {
+Then("failed catalog replacements preserve both live indices", () => {
   register();
   const previousCatalogs = catalogs;
   const previousOperations = operations;
@@ -207,7 +213,7 @@ test("failed catalog replacements preserve both live indices", () => {
   assert.equal(operations, previousOperations);
 });
 
-test("worker-prepared catalogs publish without reprocessing documents and retain unchanged operation identities", () => {
+Then("worker-prepared catalogs publish without reprocessing documents and retain unchanged operation identities", () => {
   const source = register();
   const original = operations.find(operation => operation.id === "registered:read");
   const prepare = value => ({ catalog: structuredClone(value), operations: extractOperations(value.document, value.id),

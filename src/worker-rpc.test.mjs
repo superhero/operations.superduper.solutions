@@ -2,8 +2,41 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
-import test from 'node:test';
-import { createWorkerClient, emitWorkerEvent, serveWorkerRpc } from '../src/lib/worker-rpc.ts';
+import { After, Before, Then } from '@cucumber/cucumber';
+import { createWorkerClient as createRpcClient, emitWorkerEvent, serveWorkerRpc } from './lib/worker-rpc.ts';
+
+const clients = new Set();
+
+Before({ tags: '@worker-rpc' }, function () {
+  this.workerRpcGlobals = ['addEventListener', 'postMessage']
+    .map(name => ({ name, descriptor: Object.getOwnPropertyDescriptor(globalThis, name) }));
+});
+
+After({ tags: '@worker-rpc' }, function () {
+  try {
+    for (const client of clients) client.dispose(true);
+  } finally {
+    clients.clear();
+    for (const { name, descriptor } of this.workerRpcGlobals) {
+      if (descriptor) Object.defineProperty(globalThis, name, descriptor);
+      else delete globalThis[name];
+    }
+  }
+});
+
+function createWorkerClient(factory) {
+  const client = createRpcClient(factory);
+  clients.add(client);
+  const call = client.call;
+  client.call = (...args) => {
+    const pending = call(...args);
+    // Teardown can cancel a pending request after an earlier assertion fails.
+    // Keep the original promise for assertions while handling that cancellation.
+    pending.catch(() => {});
+    return pending;
+  };
+  return client;
+}
 
 class FakeWorker extends EventTarget {
   messages = [];
@@ -13,7 +46,7 @@ class FakeWorker extends EventTarget {
   reply(data) { this.dispatchEvent(new MessageEvent('message', { data })); }
 }
 
-test('worker calls start lazily, correlate responses, forward events, and preserve error chains', async () => {
+Then('worker calls start lazily, correlate responses, forward events, and preserve error chains', async () => {
   let instance;
   const client = createWorkerClient(() => instance = new FakeWorker());
   const events = [];
@@ -39,7 +72,7 @@ test('worker calls start lazily, correlate responses, forward events, and preser
   assert.equal(instance.terminated, true);
 });
 
-test('disposing a worker drains an accepted write before termination', async () => {
+Then('disposing a worker drains an accepted write before termination', async () => {
   const instance = new FakeWorker();
   const client = createWorkerClient(() => instance);
   const saving = client.call('save');
@@ -51,7 +84,7 @@ test('disposing a worker drains an accepted write before termination', async () 
   assert.equal(instance.terminated, true);
 });
 
-test('worker crashes reject pending calls and a later explicit call can retry', async () => {
+Then('worker crashes reject pending calls and a later explicit call can retry', async () => {
   const instances = [];
   const client = createWorkerClient(() => { const worker = new FakeWorker(); instances.push(worker); return worker; });
   const pending = client.call('read');
@@ -64,7 +97,7 @@ test('worker crashes reject pending calls and a later explicit call can retry', 
   client.dispose();
 });
 
-test('worker transport failures without diagnostics reject pending calls and terminate the worker', async () => {
+Then('worker transport failures without diagnostics reject pending calls and terminate the worker', async () => {
   for (const [event, message] of [
     [new Event('error'), /background worker failed to start or stopped unexpectedly/],
     [new Event('messageerror'), /Could not read the background worker's response/],
@@ -79,7 +112,7 @@ test('worker transport failures without diagnostics reject pending calls and ter
   }
 });
 
-test('worker server preserves native error diagnostics and rejects unlisted methods', async () => {
+Then('worker server preserves native error diagnostics and rejects unlisted methods', async () => {
   const originalAdd = globalThis.addEventListener, originalPost = globalThis.postMessage;
   let handler;
   const replies = [];
@@ -100,7 +133,7 @@ test('worker server preserves native error diagnostics and rejects unlisted meth
   }
 });
 
-test('worker messages round-trip results, aggregate failures, and bounded circular causes', async () => {
+Then('worker messages round-trip results, aggregate failures, and bounded circular causes', async () => {
   const originalAdd = globalThis.addEventListener, originalPost = globalThis.postMessage;
   let handler;
   const replies = [];

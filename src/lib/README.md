@@ -16,6 +16,7 @@ unrelated behavior to `utils.ts`.
 | `workflow-runner`, `workflow-execution`, `workflow-response`, `operation-*` | Execution, typed inputs, response mappings and reports |
 | `workflow-repository*`, `workflow-change-message` | Autosave, recovery, history navigation and commit descriptions |
 | `metrics-*`, `storage-metrics`, `page-memory`, `processing-metrics` | Resource measurement, aggregation and display data |
+| `error-diagnostics`, `error-capture`, `error-history*` | Bounded diagnostic snapshots, runtime observation, queued recording and atomic error retention |
 | `app-settings`, locale/date helpers, `storage-*`, `startup-*` | Preferences, storage lifecycle and startup coordination |
 
 ## Persistence
@@ -35,6 +36,11 @@ from successful settings operations. `metrics-cache.ts` supplies display preview
 never new measurements or persisted history. Neither cache authorizes restoring
 content into authoritative stores after a failure.
 
+Error history lives outside Git in `v1/errors`: keep the 1,000-entry FIFO bound
+and deduplication in the same transaction. The recorder must never report its
+own failures through the diagnostics it subscribes to. Worker failure capture
+can be disabled only for that recorder; UI and console reporting stay separate.
+
 ## Worker boundaries
 
 Page code reaches persistence through `schema-library.ts`,
@@ -53,5 +59,5 @@ operations. See [OpenAPI adaptation](../../docs/adr/openapi-adaptation.md).
 ## Verification
 
 Add new domain scenarios alongside [source](../README.md) using Cucumber.
-[tests](../../tests/README.md) contains browser scenarios and remaining standalone
-checks.
+[tests](../../tests/README.md) contains browser scenarios and smoke scripts
+awaiting migration into browser reporting.
