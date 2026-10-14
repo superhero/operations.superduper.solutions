@@ -15,6 +15,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { workflowExecutionForOperation, workflowRequestUrl } from "$lib/workflow-execution.ts";
 
   let { document, onClose, startingNodeId }: { document: WorkflowDocument; onClose: () => void; startingNodeId?: string } = $props();
+  const operationFormId = $props.id();
   let runner: ReturnType<typeof createWorkflowRunner> | undefined;
   let view = $state<WorkflowStep>();
   let values = $state<Record<string, string>>({});
@@ -114,7 +115,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <h3 bind:this={heading} tabindex="-1">{view.step}. {view.operation.name}</h3>
       <p class="hint">{view.workflowName} · {view.operation.description}</p>
       <p class="run-request"><strong>{view.operation.method}</strong> <code>{requestUrl}</code></p>
-      <form onsubmit={execute} novalidate>
+      <form id={operationFormId} onsubmit={execute} novalidate>
         <div class="run-fields">
           {#each view.operation.fields as field (field.key)}
             {@const connected = view.mappedFields.includes(field.key)}
@@ -134,8 +135,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {#if executed}
           <p class="run-success" role="status">Operation completed.</p>
           <button class="run-primary" type="button" onclick={advance}>Next operation</button>
-        {:else}
-          <button class="run-primary" type="submit" disabled={busy}>{busy ? "Sending request…" : retry ? "Retry operation" : history.length ? "Run operation" : "Start workflow"}</button>
         {/if}
       </form>
     </section>
@@ -159,6 +158,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if view?.kind === "choice" && !fatal}
       <button type="button" class="run-primary run-action" onclick={start} disabled={!selected}>
         <span>Start</span><MaterialIcon name="start" size={20} />
+      </button>
+    {:else if view?.kind === "operation" && !fatal && !executed}
+      <button type="submit" form={operationFormId} class="run-primary run-action" disabled={busy}>
+        <span>{busy ? "Sending request…" : retry ? "Retry operation" : history.length ? "Run operation" : "Start workflow"}</span><MaterialIcon name="start" size={20} />
       </button>
     {/if}
     <button type="button" class="run-primary run-action" onclick={end}>
