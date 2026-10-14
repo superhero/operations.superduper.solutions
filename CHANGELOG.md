@@ -2,6 +2,14 @@
 
 ## Latest
 
+<!-- changelog-commit:ada61ebf8b82a16e4b9afb8178692fde9f1b0ccc -->
+### Commit [`ada61eb`](https://github.com/superhero/operations.superduper.solutions/commit/ada61ebf8b82a16e4b9afb8178692fde9f1b0ccc)
+
+```text
+fix(workflows): remove Edit properties tooltip
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.45
