@@ -105,7 +105,7 @@ Selection animation respects reduced motion.
 
 `workflowDefaults` stores connection styling, grid snapping and node-symbol
 preferences. Missing or invalid values fall back independently: dashed lines,
-snapping and node symbols start enabled; curved lines start disabled.
+curved lines, snapping and node symbols start enabled.
 Load defaults before the editor mounts and apply them to
 new workflows and the untouched initial canvas. Existing, edited and imported
 workflows retain their flags; toolbar changes do not alter application defaults.
@@ -115,7 +115,7 @@ to placement and center snapping on every canvas without repositioning nodes or
 changing workflow documents. Decorative dots retain independent 24px spacing.
 Dash length and gap accept 1–128 px, defaulting to 8 and 16 respectively.
 Dash speed accepts 0–512 px/s, defaulting to 64; zero pauses motion.
-Curve strength accepts 0–100, defaulting to 50. Node clearance accepts
+Curve strength accepts 0–200%, defaulting to 100%. Node clearance accepts
 0–128 diagram units, defaulting to 16, and applies to orthogonal routing and
 manual segment adjustments.
 

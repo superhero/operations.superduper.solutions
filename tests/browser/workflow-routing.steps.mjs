@@ -488,7 +488,7 @@ Then('changing curve strength changes its control points without changing its en
   const page = this.page;
   await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
   const values = [];
-  for (const strength of [20, 80]) {
+  for (const strength of [50, 200]) {
     await changeCurveStrength(page, strength);
     await expect(route(page)).toHaveAttribute('d', / C/);
     values.push((await route(page).getAttribute('d')).match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi).map(Number));

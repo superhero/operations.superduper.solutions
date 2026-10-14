@@ -10,6 +10,24 @@ fix(settings): remove page memory isolation notice
 
 ```
 
+<!-- changelog-commit:8f791350cb0607d2c5a5fb288e1f1a1e7c45fa02 -->
+### Commit [`8f79135`](https://github.com/superhero/operations.superduper.solutions/commit/8f791350cb0607d2c5a5fb288e1f1a1e7c45fa02)
+
+```text
+feat(workflows): extend curve strength to 200 percent
+
+Default new settings and connection previews to 100 percent while preserving saved curve strengths. Update the documented range and existing browser checks for persistence and rendering at the new maximum.
+
+```
+
+<!-- changelog-commit:fafda940fe7be6927f6d95533e0d5a2eb4ae10a4 -->
+### Commit [`fafda94`](https://github.com/superhero/operations.superduper.solutions/commit/fafda940fe7be6927f6d95533e0d5a2eb4ae10a4)
+
+```text
+feat(workflows): enable curved lines by default
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.45
