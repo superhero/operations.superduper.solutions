@@ -5,8 +5,10 @@ import { applyLocaleSettings } from "./lib/datetime-state.ts";
 import { finishStartup, reportStartup } from "./lib/startup-progress.ts";
 import { requestPersistentStorage } from "./lib/storage-persistence.ts";
 import { startMetricsRecorder } from "./lib/metrics-recorder.ts";
+import { startErrorHistory } from "./lib/error-history.ts";
 import { prepareSavedStorage, loadSchemaLibrary } from "./lib/schema-library.ts";
 
+startErrorHistory();
 reportStartup("application");
 // Keep the CSS loader visible while developing it; remove the query to start.
 if (import.meta.env.DEV && new URLSearchParams(location.search).get("dev-loading") === "1") {

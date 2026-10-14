@@ -23,6 +23,11 @@ creates a fresh browser context for each scenario, and rejects
 unexpected external requests. Simulate endpoint responses through test routes;
 keep test hooks out of the shipped application.
 
+The error-history fixture runs the real IndexedDB store and recording worker on
+an isolated test page. Its scenarios cover multi-tab deduplication, FIFO eviction,
+transaction rollback, blocked storage and bounded recording; UI cases also open
+the Errors view in the built application. Fixture routes are test-server-only.
+
 Playwright aborts routed requests whose URL ends in `/favicon.ico` before its
 route callback runs. Favicon scenarios therefore fetch that exact hosted URL
 through Playwright's HTTP client, then give the returned bytes to Chromium's

@@ -10,6 +10,10 @@ Histogram views backed by browser and library APIs. Collection runs independentl
 of Settings in a dedicated worker. The dashboard shows the latest observations;
 browser-local history retains completed 15-minute aggregates.
 
+The Errors view retains individual failures separately from numeric resource
+history. Its dedicated recorder runs without waiting for memory sampling; error
+records use bounded IndexedDB retention rather than Git aggregates.
+
 ## Measurement boundaries
 
 ### Processing

@@ -8,7 +8,7 @@ import type { workflowRepository as repository } from "./workflow-repository.ts"
 
 type Repository = typeof repository;
 type RemoteMethod = Exclude<keyof Repository, "subscribe" | "storageMetrics">;
-const client = createWorkerClient(() => new WorkflowWorker({ name: "operations-workflows" }));
+const client = createWorkerClient(() => new WorkflowWorker({ name: "operations-workflows" }), { scope: "workflows" });
 const listeners = new Set<() => void>();
 
 client.subscribe(event => {

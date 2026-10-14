@@ -11,7 +11,7 @@ import { logger } from "./logger.ts";
 
 const state = writable({ records: [] as SchemaLibraryRecord[], operations, busy: false, initialized: false, error: "" });
 const current = fromStore(state);
-const worker = createWorkerClient(() => new SchemaLibraryWorker({ name: "operations-schema-library" }));
+const worker = createWorkerClient(() => new SchemaLibraryWorker({ name: "operations-schema-library" }), { scope: "schema-library" });
 import.meta.hot?.dispose(() => worker.dispose());
 let pending: Promise<void> = Promise.resolve();
 
