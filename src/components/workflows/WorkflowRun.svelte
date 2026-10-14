@@ -109,7 +109,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <label><input type="radio" name="workflow-start" value={choice.id} bind:group={selected} />{choice.label}</label>
         {/each}
       </div>
-      <button class="run-primary" type="button" onclick={start} disabled={!selected}>Continue</button>
+      <HintButton type="button" label="Continue" onclick={start} disabled={!selected}>
+        {#snippet child({ props })}
+          <button {...props} class="run-primary run-icon"><MaterialIcon name="start" size={20} /></button>
+        {/snippet}
+      </HintButton>
     </section>
   {:else if view?.kind === "operation" && !fatal}
     <section aria-label="Current workflow operation">
@@ -160,7 +164,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <footer>
     <HintButton type="button" label="Quit" onclick={end}>
       {#snippet child({ props })}
-        <button {...props} class="run-quit"><MaterialIcon name="exit_to_app" size={20} /></button>
+        <button {...props} class="run-icon"><MaterialIcon name="exit_to_app" size={20} /></button>
       {/snippet}
     </HintButton>
   </footer>
@@ -181,7 +185,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .joined-field { display: block; overflow: hidden; border-radius: 4px; --field-background: var(--color-foreground); --field-foreground: var(--color-background); }
   button { border: 1px solid var(--color-surface); border-radius: 4px; padding: 9px 14px; color: var(--color-foreground); background: transparent; }
   button.run-primary { background: var(--color-foreground); color: var(--color-background); }
-  button.run-quit { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; }
+  button.run-icon { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; }
   .run-success { font-size: 12px; }
   .run-error { margin: 0; padding: 12px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; line-height: 1.6; }
   .run-results { min-width: 0; display: grid; gap: 12px; }
