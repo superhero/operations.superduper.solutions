@@ -44,7 +44,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         isConnectableEnd={!connected && !operator?.unary} aria-disabled={connected || !!operator?.unary}
         aria-label={`Gate ${index + 1} value input`} />
       <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="button" class="remove-gate" label={`Remove gate ${index + 1}`} disabled={data.gates.length === 1}
-        onclick={() => gates.remove(id, gate.id)}><MaterialIcon name="close" size={16} /></HintButton>
+        onclick={() => gates.remove(id, gate.id)}><MaterialIcon name="close_small" size={24} /></HintButton>
       <div class="gate-operator">
         <WorkflowNodeSelect label={`Gate ${index + 1} operator`} value={gate.operator} choices={operators} {active}
           onchange={operator => gates.edit(id, gate.id, { operator: operator as SwitchGate["operator"] })} />
