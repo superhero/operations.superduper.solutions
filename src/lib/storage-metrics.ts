@@ -3,13 +3,14 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { openDB, type IDBPDatabase } from "idb";
 import { appSettingsDatabaseName, catalogsDatabaseName, catalogsIndexDatabaseName, errorHistoryDatabaseName, legacyStorageNames } from "./storage-names.ts";
+import { vaultDatabaseName } from "./secrets/types.ts";
 import { workflowFilesystemName, workflowRepositoryDatabaseName, workflowRepository } from "./workflow-repository.ts";
 import { metricsFilesystemName } from "./metrics-history-repository.ts";
 import { applicationExecutionMetrics } from "./application-workers.ts";
 import { collectProcessingMetrics } from "./processing-metrics.ts";
 import type { DatabaseMetrics, DatabaseStoreMetrics, StorageReport } from "./storage-metrics-types.d.ts";
 
-const knownDatabases = [appSettingsDatabaseName, errorHistoryDatabaseName, catalogsDatabaseName, catalogsIndexDatabaseName, `${catalogsDatabaseName}_lock`, workflowRepositoryDatabaseName, workflowFilesystemName, `${workflowFilesystemName}_lock`, metricsFilesystemName, `${metricsFilesystemName}_lock`, ...Object.values(legacyStorageNames)];
+const knownDatabases = [vaultDatabaseName, appSettingsDatabaseName, errorHistoryDatabaseName, catalogsDatabaseName, catalogsIndexDatabaseName, `${catalogsDatabaseName}_lock`, workflowRepositoryDatabaseName, workflowFilesystemName, `${workflowFilesystemName}_lock`, metricsFilesystemName, `${metricsFilesystemName}_lock`, ...Object.values(legacyStorageNames)];
 let pending: Promise<StorageReport> | undefined;
 
 function message(error: unknown): string

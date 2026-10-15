@@ -1,0 +1,118 @@
+// Copyright (C) 2026 Erik Landvall
+// SPDX-License-Identifier: AGPL-3.0-only
+// See LICENSE and LICENSE-ADDITIONAL-TERMS.
+
+export type OperationSecurityScheme = { name: string; kind: "bearer" | "apiKey"; header: string };
+/** Alternatives are OR; every scheme within an alternative is required (AND). */
+export type OperationSecurity = OperationSecurityScheme[][];
+
+type ObjectValue = Record<string, unknown>;
+const invalidHeaderName = /[^!#$%&'*+.^_`|~0-9A-Za-z-]/;
+// Fetch-controlled headers cannot carry credentials. Media types belong to the
+// request serializer; method overrides must not change an approved operation.
+const unavailableHeaders = new Set([
+  "accept", "accept-charset", "accept-encoding", "access-control-request-headers", "access-control-request-method",
+  "connection", "content-length", "content-type", "cookie", "cookie2", "date", "dnt", "expect", "host", "keep-alive",
+  "origin", "referer", "set-cookie", "te", "trailer", "transfer-encoding", "upgrade", "via",
+  "x-http-method", "x-http-method-override", "x-method-override",
+]);
+
+function object(value: unknown, context: string): ObjectValue
+{
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error(`${context}: expected an object.`);
+  return value as ObjectValue;
+}
+
+function resolve(value: unknown, document: ObjectValue, context: string): ObjectValue
+{
+  let result = object(value, context);
+  const seen = new Set<string>();
+  while (Object.hasOwn(result, "$ref"))
+  {
+    const reference = result.$ref;
+    if (typeof reference !== "string" || !reference.startsWith("#/") || Object.keys(result).length !== 1)
+      throw new Error(`${context}: references must be local JSON pointers without sibling fields.`);
+    let pointer: string;
+    try { pointer = decodeURIComponent(reference.slice(1)); }
+    catch { throw new Error(`${context}: malformed security scheme reference.`); }
+    if (seen.has(pointer) || /~(?:[^01]|$)/.test(pointer))
+      throw new Error(`${context}: cyclic or malformed security scheme reference.`);
+    seen.add(pointer);
+    let target: unknown = document;
+    for (const part of pointer.slice(1).split("/"))
+    {
+      const key = part.replace(/~1/g, "/").replace(/~0/g, "~");
+      const parent = object(target, `${context}: reference target`);
+      target = Object.hasOwn(parent, key) ? parent[key] : undefined;
+    }
+    result = object(target, `${context}: reference target`);
+  }
+  return result;
+}
+
+function scheme(document: ObjectValue, name: string): OperationSecurityScheme
+{
+  const context = `Security scheme ${JSON.stringify(name)}`;
+  if (!name.trim()) throw new Error("Security requirement names must be nonempty strings.");
+  const components = document.components === undefined ? {} : object(document.components, "components");
+  const schemes = components.securitySchemes === undefined ? {} : object(components.securitySchemes, "securitySchemes");
+  if (!Object.hasOwn(schemes, name)) throw new Error(`${context}: unsupported security requirement without a declared scheme.`);
+  const definition = resolve(schemes[name], document, context);
+  let result: OperationSecurityScheme;
+  let keys: string[];
+  if (definition.type === "http")
+  {
+    if (typeof definition.scheme !== "string" || definition.scheme.toLowerCase() !== "bearer")
+      throw new Error(`${context}: only HTTP bearer authentication is supported.`);
+    result = { name, kind: "bearer", header: "Authorization" };
+    keys = ["type", "scheme", "description", "bearerFormat"];
+    if (definition.bearerFormat !== undefined && typeof definition.bearerFormat !== "string")
+      throw new Error(`${context}: bearerFormat must be a string.`);
+  }
+  else if (definition.type === "apiKey")
+  {
+    if (definition.in !== "header") throw new Error(`${context}: only header API keys are supported.`);
+    const header = definition.name;
+    if (typeof header !== "string" || !header || invalidHeaderName.test(header)) throw new Error(`${context}: invalid credential header name.`);
+    const normalized = header.toLowerCase();
+    if (unavailableHeaders.has(normalized) || normalized.startsWith("proxy-") || normalized.startsWith("sec-"))
+      throw new Error(`${context}: unsupported credential header ${JSON.stringify(header)}.`);
+    result = { name, kind: "apiKey", header };
+    keys = ["type", "in", "name", "description"];
+  }
+  else throw new Error(`${context}: only HTTP bearer and header API key security schemes are supported.`);
+  if (definition.description !== undefined && typeof definition.description !== "string")
+    throw new Error(`${context}: description must be a string.`);
+  if (Object.keys(definition).some(key => !keys.includes(key) && !key.startsWith("x-")))
+    throw new Error(`${context}: unsupported security scheme fields.`);
+  return result;
+}
+
+/** Normalize the effective declaration without adding authentication to anonymous operations. */
+export function extractOperationSecurity(document: ObjectValue, operation: ObjectValue): OperationSecurity | undefined
+{
+  const declaration = operation.security === undefined ? document.security : operation.security;
+  if (declaration === undefined) return undefined;
+  if (!Array.isArray(declaration)) throw new Error("Security requirements must be an array.");
+  return declaration.map((value, index) =>
+  {
+    const requirement = object(value, `Security alternative ${index + 1}`);
+    const headers = new Set<string>();
+    return Object.entries(requirement).map(([name, scopes]) =>
+    {
+      if (!Array.isArray(scopes) || scopes.length)
+        throw new Error(`Security scheme ${JSON.stringify(name)}: only empty scope arrays are supported for bearer and API key requirements.`);
+      const resolved = scheme(document, name);
+      const header = resolved.header.toLowerCase();
+      if (headers.has(header)) throw new Error(`Security alternative ${index + 1}: duplicate credential header ${JSON.stringify(resolved.header)}.`);
+      headers.add(header);
+      return resolved;
+    });
+  });
+}
+
+/** An absent declaration, [] or an empty alternative permits anonymous execution. */
+export function securityRequiresCredentials(security: OperationSecurity | undefined): boolean
+{
+  return !!security?.length && security.every(alternative => alternative.length > 0);
+}

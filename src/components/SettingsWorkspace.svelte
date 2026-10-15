@@ -35,6 +35,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import Disclosure from "$lib/components/Disclosure.svelte";
   import FieldInteger from "$lib/components/FieldInteger.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
+  import SecretsSettings from "./settings/SecretsSettings.svelte";
   import StorageSettings from "./settings/StorageSettings.svelte";
   import ErrorHistory from "./settings/ErrorHistory.svelte";
   import LocaleSettings from "./settings/LocaleSettings.svelte";
@@ -66,7 +67,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     onRetrySettings: () => void;
   } = $props();
   let workspace: HTMLElement;
-  let openSection = $state<"theme" | "locale" | "logs" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
+  let openSection = $state<"secrets" | "theme" | "locale" | "logs" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
   const schemaLibrary = $derived(getSchemaLibrary());
   let gridSizeDraft = $state("");
   let gridSizeInvalid = $state(false);
@@ -211,6 +212,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <SchemaSettings records={schemaLibrary.records} busy={schemaLibrary.busy} ready={schemaLibrary.initialized} error={schemaLibrary.error}
         onUpload={uploadSchema} onReplace={replaceSchema} onRename={renameSchema} onMove={moveSchema} onEnabledChange={setSchemaEnabled} onDelete={deleteSchema}
         onDownload={downloadSchema} onRetry={loadSchemaLibrary} />
+    </Disclosure>
+    <Disclosure class="catalog-group settings-section" label="Secrets" tooltipEnabled={false} lazy animateSize open={openSection === "secrets"} onToggle={(next) => openSection = next ? "secrets" : null}>
+      {#snippet summary()}
+        <div class="section-heading"><h2>Secrets</h2><span class="section-subtitle">Protect credentials and approve their use</span></div>
+        <MaterialIcon name="chevron_forward" size={17} />
+      {/snippet}
+      <SecretsSettings />
     </Disclosure>
     <Disclosure class="catalog-group settings-section" label="Theme" tooltipEnabled={false} open={openSection === "theme"} onToggle={(next) => openSection = next ? "theme" : null}>
       {#snippet summary()}

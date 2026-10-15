@@ -13,7 +13,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { Operation } from "$lib/catalog.ts";
   import { catalogForOperation } from "$lib/catalog-registry.ts";
-  import { parseWorkflowDocument, validateWorkflowDocument, maxWorkflowFileSize, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowDocumentEdge, type WorkflowField, type SwitchGate, type CastData } from "$lib/workflow-document.ts";
+  import { portableWorkflowDocument, parseWorkflowDocument, validateWorkflowDocument, maxWorkflowFileSize, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowDocumentEdge, type WorkflowField, type SwitchGate, type CastData } from "$lib/workflow-document.ts";
   import { workflowRepository } from "$lib/workflow-repository-client.ts";
   import type { WorkflowRepositoryState, WorkflowRevision } from "$lib/workflow-repository.ts";
   import { finishStartup, reportStartup } from "$lib/startup-progress.ts";
@@ -42,6 +42,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowCommentNode from "./workflows/WorkflowCommentNode.svelte";
   import WorkflowReferenceNode from "./workflows/WorkflowReferenceNode.svelte";
   import WorkflowRun from "./workflows/WorkflowRun.svelte";
+  import type { CredentialBinding } from "$lib/secrets/types.ts";
   import Modal from "$lib/components/Modal.svelte";
 
   let { active, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
@@ -540,6 +541,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   function describeWorkflow() { descriptionError = ""; descriptionOpen = true; }
 
+  function bindRunCredential(path: string[], binding: CredentialBinding) {
+    const update = <T extends { id: string; data: unknown }>(items: T[], trail: string[]): T[] => items.map(node => {
+      if (node.id !== trail[0]) return node;
+      const data = node.data as Record<string, unknown>;
+      if (trail.length === 1) return { ...node, data: { ...data, credentialBinding: structuredClone(binding) } };
+      const snapshot = data.snapshot as WorkflowDocument | undefined;
+      return snapshot ? { ...node, data: { ...data, snapshot: { ...snapshot, nodes: update(snapshot.nodes, trail.slice(1)) } } } : node;
+    });
+    if (runDocument?.id === id) nodes = update(nodes, path);
+  }
+
   async function saveWorkflowDetails() {
     version = 3;
     if (await flushAutosave()) { descriptionOpen = false; descriptionError = ""; }
@@ -787,7 +799,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   function exportDocument() {
     try {
-      const document = validateWorkflowDocument(documentValue());
+      const document = portableWorkflowDocument(documentValue());
       const file = new Blob([JSON.stringify(document)], { type: "application/json" });
       if (file.size > maxWorkflowFileSize) throw new Error("Workflow documents must be smaller than 2 MB. Reduce this plan before exporting it.");
       const url = URL.createObjectURL(file);
@@ -980,7 +992,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <Modal bind:open={runOpen} title={`Run workflow: ${runDocument?.name ?? name}`} description="Review each step before running it. The operation's catalog determines whether its response is mocked or requested from a live service."
   onCloseAutoFocus={(event) => { event.preventDefault(); void tick().then(focusCanvas); }}>
-  {#if runOpen && runDocument}<WorkflowRun document={runDocument} onClose={() => runOpen = false} />{/if}
+  {#if runOpen && runDocument}<WorkflowRun document={runDocument} onClose={() => runOpen = false} onBindingChange={bindRunCredential} />{/if}
 </Modal>
 
 <Modal bind:open={replacementOpen} title="Unsaved changes" description={`“${name}” has unsaved changes. Save them before replacing this workflow?`} initialFocus={() => cancelReplacement} onCloseAutoFocus={restoreReplacementFocus}>

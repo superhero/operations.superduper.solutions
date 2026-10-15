@@ -7,6 +7,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import OperationFieldControl from "$lib/components/OperationFieldControl.svelte";
+  import CredentialBindingSelector from "$lib/components/CredentialBindingSelector.svelte";
+  import type { CredentialBinding } from "$lib/secrets/types.ts";
   import JsonView from "$lib/components/JsonView.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import { InputValidationError, prepareRequest } from "$lib/operation-input.ts";
@@ -14,11 +16,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { createWorkflowRunner, type WorkflowStep, type WorkflowExecution } from "$lib/workflow-runner.ts";
   import { workflowExecutionForOperation, workflowRequestUrl } from "$lib/workflow-execution.ts";
 
-  let { document, onClose, startingNodeId }: { document: WorkflowDocument; onClose: () => void; startingNodeId?: string } = $props();
+  let { document, onClose, startingNodeId, onBindingChange = () => {} }: { document: WorkflowDocument; onClose: () => void;
+    startingNodeId?: string; onBindingChange?: (path: string[], binding: CredentialBinding) => void } = $props();
   const operationFormId = $props.id();
   let runner: ReturnType<typeof createWorkflowRunner> | undefined;
   let view = $state<WorkflowStep>();
   let values = $state<Record<string, string>>({});
+  let credentialBinding = $state<CredentialBinding>();
   let selected = $state("");
   let error = $state("");
   let fieldError = $state("");
@@ -45,6 +49,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try
     {
       view = runner!.next();
+      credentialBinding = view.kind === "operation" ? view.credentialBinding : undefined;
       values = view.kind === "operation" ? { ...view.values } : {};
       selected = view.kind === "choice" ? view.choices[0]?.id ?? "" : "";
       void tick().then(() => heading?.focus());
@@ -67,7 +72,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     busy = true;
     try
     {
-      const result = await runner!.submit(values);
+      const result = await runner!.submit(values, credentialBinding ?? null);
       if (!disposed) { history = [...history, result]; executed = true; retry = false; }
     }
     catch (cause)
@@ -116,6 +121,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <p class="hint">{view.workflowName} · {view.operation.description}</p>
       <p class="run-request"><strong>{view.operation.method}</strong> <code>{requestUrl}</code></p>
       <form id={operationFormId} onsubmit={execute} novalidate>
+        {#if view.operation.security?.length}
+          {#key view.id}
+            <CredentialBindingSelector operation={view.operation} initial={view.credentialBinding} disabled={busy || executed}
+              onChange={binding => {
+                credentialBinding = binding;
+                if (binding && view?.kind === "operation") onBindingChange(view.bindingPath, binding);
+              }} />
+          {/key}
+        {/if}
         <div class="run-fields">
           {#each view.operation.fields as field (field.key)}
             {@const connected = view.mappedFields.includes(field.key)}

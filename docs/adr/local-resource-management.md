@@ -141,6 +141,11 @@ JSON import/export and nested workflow snapshots remain supported.
 Palette and light/dark settings belong to `v1/settings`, outside Git; their legacy
 localStorage keys migrate separately on startup.
 
+API credentials use encrypted snapshots in `v1/secrets`, outside the Git
+filesystems. Workflow documents contain only local credential references;
+portable imports and exports remove those references recursively. Resource
+inspection may count vault records but must not read their contents.
+
 ### Pending writes
 
 The editor awaits saves before changing workflows or workspace. Hiding the page

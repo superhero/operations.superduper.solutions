@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 import { catalogs, replaceCatalogs, type Catalog } from "./catalog-registry.ts";
+import { extractOperationSecurity, type OperationSecurity } from "./operation-security.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type InputSchema = {
@@ -43,6 +44,7 @@ export type Operation = {
   bodySchema?: InputSchema;
   responseExample?: unknown;
   responseMediaType?: string;
+  security?: OperationSecurity;
 };
 
 type RecordValue = Record<string, unknown>;
@@ -290,6 +292,8 @@ export function extractOperations(value: unknown, source: string): Operation[]
       if (bodyMediaType) extracted.bodyMediaType = bodyMediaType;
       if (bodyValue) extracted.bodyValue = true;
       if (bodySchema) extracted.bodySchema = bodySchema;
+      const security = extractOperationSecurity(document, operation);
+      if (security !== undefined) extracted.security = security;
       result.push(extracted);
     }
   }

@@ -15,6 +15,7 @@ unrelated behavior to `utils.ts`.
 | [`flow-routing`](flow-routing/README.md), `workflow-routing*` | Measured orthogonal edge geometry, synchronized dashes and its dedicated worker adapter |
 | `workflow-runner`, `workflow-execution`, `workflow-response`, `operation-*` | Execution, typed inputs, response mappings and reports |
 | `workflow-repository*`, `workflow-change-message` | Autosave, recovery, history navigation and commit descriptions |
+| [`secrets`](secrets/README.md), `operation-security` | Encrypted credentials, approved execution, unlock methods and OpenAPI authentication requirements |
 | `metrics-*`, `storage-metrics`, `page-memory`, `processing-metrics` | Resource measurement, aggregation and display data |
 | `error-diagnostics`, `error-capture`, `error-history*` | Bounded diagnostic snapshots, runtime observation, queued recording and atomic error retention |
 | `app-settings`, locale/date helpers, `storage-*`, `startup-*` | Preferences, storage lifecycle and startup coordination |
@@ -39,7 +40,9 @@ content into authoritative stores after a failure.
 Error history lives outside Git in `v1/errors`: keep the 1,000-entry FIFO bound
 and deduplication in the same transaction. The recorder must never report its
 own failures through the diagnostics it subscribes to. Worker failure capture
-can be disabled only for that recorder; UI and console reporting stay separate.
+is disabled for that recorder to prevent recursion. The secret worker also uses
+its own safe error protocol to prevent credential-bearing native errors from
+entering diagnostics; useful unrelated UI and console errors remain intact.
 
 ## Worker boundaries
 

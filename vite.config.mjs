@@ -69,6 +69,16 @@ export default defineConfig({
     }
   },
   plugins: [
+    {
+      name: "operations-vault-notices",
+      transformIndexHtml: {
+        order: "post",
+        handler(html) {
+          const notice = readFileSync(new URL("./src/lib/secrets/NOTICES.md", import.meta.url), "utf8");
+          return html.replace("</head>", `<!--\n${notice.replaceAll("--", "—")}\n-->\n</head>`);
+        }
+      }
+    },
     tailwindcss(),
     svelte(),
     {

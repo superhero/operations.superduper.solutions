@@ -15,6 +15,9 @@ Separate workers handle:
   isolated from its own failure-reporting path.
 - **Connections:** bounded orthogonal route searches while an active workflow
   uses straight connections; rendering remains on the page.
+- **Secrets:** password derivation, encrypted vault changes and approved
+  credentialed requests. Window-only passkey ceremonies pass temporary PRF
+  material to this worker.
 
 Workers are bundled inline to retain a single HTML application. Themes, small
 settings reads and rendering remain on the main thread. Window-only APIs use an
@@ -27,6 +30,8 @@ Persistence retains existing locks, IndexedDB stores and recovery journals.
 Failed calls reject with native error details and cause chains; no fallback
 storage copy is created. Development hot replacement drains accepted calls
 before terminating workers.
+Secret workers instead terminate immediately on lock or cancellation, reject
+late results and report safe typed errors without credential-bearing causes.
 Disposable routing calculations cancel immediately when their canvas closes or
 changes mode. Only the latest pending scene is retained, and obsolete scene or
 drag replies cannot replace current geometry.

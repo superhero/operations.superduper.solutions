@@ -7,8 +7,11 @@ import { Buffer } from "buffer";
 import * as git from "isomorphic-git";
 import { openDB, type DBSchema, type IDBPDatabase, type IDBPTransaction } from "idb";
 import { bundledCatalogs } from "./catalog-registry.ts";
-import { validateSchemaDocument, validateSchemaDocumentId, type SchemaDocumentRecord } from "./schema-documents.ts";
+import { operationServerUrl, validateSchemaDocument, validateSchemaDocumentId, type SchemaDocumentRecord } from "./schema-documents.ts";
 import { catalogsDatabaseName, catalogsIndexDatabaseName } from "./storage-names.ts";
+import { approvedOperation } from "./secrets/policy.ts";
+import { VaultError } from "./secrets/types.ts";
+import type { SchemaCredentialPolicies } from "./secrets/schema-policy-storage.ts";
 
 if (!("Buffer" in globalThis)) Object.defineProperty(globalThis, "Buffer", { value: Buffer, configurable: true, writable: true });
 
@@ -19,7 +22,7 @@ interface SchemaDatabase extends DBSchema
   catalog: { key: string; value: SchemaMetadata };
   pending: { key: string; value: PendingSchema };
   removed: { key: string; value: true };
-  state: { key: "seeded" | "order"; value: boolean | string[] };
+  state: { key: "seeded" | "order" | "vaultPolicy"; value: boolean | string[] | SchemaCredentialPolicies };
 }
 type StoreName = "catalog" | "pending" | "removed" | "state";
 type Database = IDBPDatabase<SchemaDatabase>;
@@ -94,7 +97,7 @@ function readMetadata(database: Database, id: string): Promise<SchemaMetadata | 
   return transaction(database, ["catalog"], "readonly", active => active.objectStore("catalog").get(id));
 }
 
-function orderedMetadata(records: SchemaMetadata[], order: boolean | string[] | undefined): SchemaMetadata[]
+function orderedMetadata(records: SchemaMetadata[], order: boolean | string[] | SchemaCredentialPolicies | undefined): SchemaMetadata[]
 {
   records.sort((left, right) => left.createdAt - right.createdAt || left.id.localeCompare(right.id));
   const remaining = new Map(records.map(record => [record.id, record]));
@@ -168,6 +171,66 @@ async function versionText(id: string, oid: string): Promise<string>
   return new TextDecoder().decode(blob);
 }
 
+function policyMap(value: SchemaDatabase["state"]["value"] | undefined): SchemaCredentialPolicies
+{
+  return value && typeof value === "object" && !Array.isArray(value) ? value : {};
+}
+
+async function credentialPolicy(record: SchemaDocumentRecord, revision: string): Promise<SchemaCredentialPolicies[string]>
+{
+  const validated = validateSchemaDocument(record.document, record.id);
+  const fingerprints: string[] = [];
+  if (record.enabled)
+    for (const operation of validated.operations)
+    {
+      if (!operation.security?.some(alternative => alternative.length)) continue;
+      try { fingerprints.push((await approvedOperation(operation, operationServerUrl(validated.document, operation))).fingerprint); }
+      catch (error)
+      {
+        // A schema may describe destinations unavailable to credential execution,
+        // such as public HTTP. Keeping it importable grants no credential access.
+        if (!(error instanceof VaultError) || error.code !== "PERMISSION") throw error;
+      }
+    }
+  return { revision, fingerprints };
+}
+
+async function storeCredentialPolicy(active: IDBPTransaction<SchemaDatabase, StoreName[], "readwrite">,
+  id: string, policy: SchemaCredentialPolicies[string] | undefined): Promise<void>
+{
+  const previous = policyMap(await active.objectStore("state").get("vaultPolicy"));
+  const next = { ...previous };
+  if (policy) Object.defineProperty(next, id, { value: policy, enumerable: true, configurable: true });
+  else delete next[id];
+  await active.objectStore("state").put(next, "vaultPolicy");
+}
+
+/** Upgrade existing catalogs under their repository lock before they are published. */
+async function backfillCredentialPolicies(database: Database): Promise<void>
+{
+  const [records, saved] = await transaction(database, ["catalog", "state"], "readonly", active => Promise.all([
+    active.objectStore("catalog").getAll(), active.objectStore("state").get("vaultPolicy"),
+  ]));
+  const previous = policyMap(saved);
+  const policies: SchemaCredentialPolicies = {};
+  let changed = Object.keys(previous).length !== records.length || saved === undefined;
+  for (const metadata of records)
+  {
+    const revision = await head(metadata.id);
+    if (!revision) throw new Error(`Schema ${metadata.id} has no committed revision for credential policy.`);
+    const existing = Object.hasOwn(previous, metadata.id) ? previous[metadata.id] : undefined;
+    if (existing?.revision === revision && Array.isArray(existing.fingerprints) && (metadata.enabled || !existing.fingerprints.length))
+      Object.defineProperty(policies, metadata.id, { value: existing, enumerable: true });
+    else
+    {
+      const policy = await credentialPolicy(await readRecord(metadata), revision);
+      Object.defineProperty(policies, metadata.id, { value: policy, enumerable: true });
+      changed = true;
+    }
+  }
+  if (changed) await transaction(database, ["state"], "readwrite", async active => { await active.objectStore("state").put(policies, "vaultPolicy"); });
+}
+
 async function finishPending(database: Database, pending: PendingSchema): Promise<void>
 {
   const metadata = validateMetadata(pending.metadata);
@@ -176,7 +239,8 @@ async function finishPending(database: Database, pending: PendingSchema): Promis
   if (current !== pending.previousRevision && current !== pending.revision)
     throw new Error(`Schema ${id} changed while a previous save was unfinished. Its repository has been preserved.`);
   const text = await versionText(id, pending.revision);
-  validateSchemaDocument(JSON.parse(text), id);
+  const document = validateSchemaDocument(JSON.parse(text), id).document;
+  const policy = await credentialPolicy({ ...metadata, document }, pending.revision);
   const dir = metadata.repositoryPath;
   await fs().promises.writeFile(`${dir}/${filepath}`, text, "utf8");
   await git.add({ fs: fs(), dir, filepath });
@@ -192,6 +256,7 @@ async function finishPending(database: Database, pending: PendingSchema): Promis
       await active.objectStore("state").put([...orderedMetadata(records, order).map(record => record.id), id], "order");
     }
     await active.objectStore("catalog").put(metadata, id);
+    await storeCredentialPolicy(active, id, policy);
     await active.objectStore("pending").delete(id);
   });
 }
@@ -223,7 +288,11 @@ async function writeRecord(database: Database, record: SchemaDocumentRecord, com
   // Metadata (including enablement) is deliberately outside Git. Identical documents add no revision.
   if (unchanged)
   {
-    await transaction(database, ["catalog"], "readwrite", async active => { await active.objectStore("catalog").put(metadata, record.id); });
+    const policy = await credentialPolicy({ ...record, enabled: metadata.enabled }, previousRevision);
+    await transaction(database, ["catalog", "state"], "readwrite", async active => {
+      await active.objectStore("catalog").put(metadata, record.id);
+      await storeCredentialPolicy(active, record.id, policy);
+    });
     return readRecord(metadata);
   }
   await mkdir("/repositories");
@@ -251,7 +320,7 @@ async function initialize(database: Database): Promise<void>
 {
   await recover(database);
   const seeded = await transaction(database, ["state"], "readonly", active => active.objectStore("state").get("seeded"));
-  if (seeded) return;
+  if (seeded) { await backfillCredentialPolicies(database); return; }
   // The marker survives deleting every catalog; an interrupted first seed can safely resume.
   const now = Date.now();
   for (const catalog of bundledCatalogs)
@@ -262,6 +331,7 @@ async function initialize(database: Database): Promise<void>
       groups: catalog.groups, createdAt: now, updatedAt: now });
   }
   await transaction(database, ["state"], "readwrite", async active => { await active.objectStore("state").put(true, "seeded"); });
+  await backfillCredentialPolicies(database);
 }
 
 function serialized<T>(task: (database: Database) => Promise<T>): Promise<T>
@@ -351,8 +421,12 @@ export function setSchemaDocumentEnabled(id: string, enabled: boolean): Promise<
     const metadata = await readMetadata(database, id);
     if (!metadata) throw new Error("This schema could not be found in this browser.");
     const record = await readRecord(metadata);
-    await transaction(database, ["catalog"], "readwrite", async active => {
+    const revision = await head(id);
+    if (!revision) throw new Error(`Schema ${id} has no committed revision for credential policy.`);
+    const policy = await credentialPolicy({ ...record, enabled }, revision);
+    await transaction(database, ["catalog", "state"], "readwrite", async active => {
       await active.objectStore("catalog").put({ ...metadata, enabled }, id);
+      await storeCredentialPolicy(active, id, policy);
     });
     return { ...record, enabled };
   });
@@ -366,6 +440,7 @@ export function deleteSchemaDocument(id: string): Promise<void>
       await active.objectStore("removed").put(true, id);
       await active.objectStore("catalog").delete(id);
       await active.objectStore("pending").delete(id);
+      await storeCredentialPolicy(active, id, undefined);
       const order = await active.objectStore("state").get("order");
       if (Array.isArray(order)) await active.objectStore("state").put(order.filter(entry => entry !== id), "order");
     });

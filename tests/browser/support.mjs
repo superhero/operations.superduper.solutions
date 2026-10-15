@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { After, AfterAll, Before, BeforeAll, Status, World, setDefaultTimeout, setWorldConstructor } from '@cucumber/cucumber';
-import { chromium } from '@playwright/test';
+import { chromium, firefox, webkit } from '@playwright/test';
 import { createServer } from 'node:http';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
@@ -10,6 +10,7 @@ import { resolve } from 'node:path';
 import { createExampleEndpoint } from './example-endpoint.fixture.mjs';
 import { build } from 'vite';
 import { pail } from '@visulima/pail';
+import { createVaultEndpoint } from './vault-endpoint.fixture.mjs';
 
 setDefaultTimeout(30_000);
 let browser;
@@ -40,7 +41,24 @@ BeforeAll(async function () {
       lib: { entry: resolve('tests/browser/error-history-storage.fixture.ts'), formats: ['es'] } } });
   const errorFixtureOutput = Array.isArray(errorFixtureBuild) ? errorFixtureBuild[0] : errorFixtureBuild;
   const errorHistoryFixture = errorFixtureOutput.output.find(item => item.type === 'chunk' && item.isEntry).code;
+  const vaultFixtureBuild = await build({ configFile: false, logLevel: 'error',
+    build: { write: false, target: 'es2024', minify: false,
+      lib: { entry: resolve('tests/browser/vault-storage.fixture.ts'), formats: ['es'] } } });
+  const vaultFixtureOutput = Array.isArray(vaultFixtureBuild) ? vaultFixtureBuild[0] : vaultFixtureBuild;
+  const vaultFixture = vaultFixtureOutput.output.find(item => item.type === 'chunk' && item.isEntry).code;
+  const policyFixtureBuild = await build({ configFile: false, logLevel: 'error',
+    build: { write: false, target: 'es2024', minify: false,
+      lib: { entry: resolve('tests/browser/vault-policy.fixture.ts'), formats: ['es'] } } });
+  const policyFixtureOutput = Array.isArray(policyFixtureBuild) ? policyFixtureBuild[0] : policyFixtureBuild;
+  const policyFixture = policyFixtureOutput.output.find(item => item.type === 'chunk' && item.isEntry).code;
+  const kdfFixtureBuild = await build({ configFile: false, logLevel: 'error',
+    build: { write: false, target: 'es2024', minify: false,
+      lib: { entry: resolve('tests/browser/vault-kdf.fixture.ts'), formats: ['es'] } } });
+  const kdfFixtureOutput = Array.isArray(kdfFixtureBuild) ? kdfFixtureBuild[0] : kdfFixtureBuild;
+  const kdfFixture = kdfFixtureOutput.output.find(item => item.type === 'chunk' && item.isEntry).code;
+  const vaultEndpoint = createVaultEndpoint();
   server = createServer((request, response) => {
+    if (vaultEndpoint(request, response)) return;
     if (request.url === '/') {
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8',
         'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'credentialless' });
@@ -54,6 +72,22 @@ BeforeAll(async function () {
     } else if (request.url === '/error-history-fixture.html') {
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       response.end('<!doctype html><title>Error history persistence fixture</title>');
+    } else if (request.url === '/vault-storage-fixture.js') {
+      response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
+      response.end(vaultFixture);
+    } else if (request.url === '/vault-policy-fixture.js') {
+      response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
+      response.end(policyFixture);
+    } else if (request.url === '/vault-kdf-fixture.js') {
+      response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
+      response.end(kdfFixture);
+    } else if (request.url === '/vault-kdf-fixture.html') {
+      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8',
+        'Content-Security-Policy': "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; img-src 'self'" });
+      response.end('<!doctype html><title>Vault KDF worker qualification</title>');
+    } else if (request.url === '/vault-fixture.html') {
+      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      response.end('<!doctype html><title>Vault persistence and execution fixture</title>');
     } else if (icons.has(request.url)) {
       const icon = icons.get(request.url);
       response.writeHead(200, { 'content-type': icon.type });
@@ -69,11 +103,14 @@ BeforeAll(async function () {
   });
   baseURL = `http://127.0.0.1:${server.address().port}`;
   try {
+    const name = process.env.BROWSER_ENGINE ?? 'chromium';
+    const engine = { chromium, firefox, webkit }[name];
+    if (!engine) throw new Error(`Unsupported BROWSER_ENGINE: ${name}`);
     // Exercise native scrollbars as users see them; Chromium's headless default hides them.
-    browser = await chromium.launch({ ignoreDefaultArgs: ['--hide-scrollbars'] });
+    browser = await engine.launch(name === 'chromium' ? { ignoreDefaultArgs: ['--hide-scrollbars'] } : {});
   } catch (error) {
     server.close();
-    throw new Error(`Cannot start Chromium with ${process.env.BROWSER_TEST_IMAGE ?? 'an unspecified image'}. Run npm run test:browser to use the matching Docker image.`, { cause: error });
+    throw new Error(`Cannot start ${process.env.BROWSER_ENGINE ?? 'chromium'} with ${process.env.BROWSER_TEST_IMAGE ?? 'an unspecified image'}. Run npm run test:browser to use the matching Docker image.`, { cause: error });
   }
 });
 
@@ -140,7 +177,7 @@ After(async function ({ pickle, result }) {
       const diagnostics = {
         scenario: pickle.name, result: { status: result?.status, message: result?.message }, diagnostics: this.diagnostics,
         image: process.env.BROWSER_TEST_IMAGE,
-        node: process.version, chromium: browser?.version(), url: this.page?.url(),
+        node: process.version, browser: browser ? { name: browser.browserType().name(), version: browser.version() } : undefined, url: this.page?.url(),
       };
       await writeFile(`${this.artifactDirectory}/diagnostics.json`, `${JSON.stringify(diagnostics, null, 2)}\n`);
       await this.attach(JSON.stringify(diagnostics, null, 2), 'application/json');

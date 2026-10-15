@@ -34,7 +34,13 @@
     "src/lib/workflow-repository-client.ts",
     "src/lib/workflow-repository.worker.ts",
     "src/lib/workflow-routing-client.ts",
-    "src/lib/workflow-routing.worker.ts"
+    "src/lib/workflow-routing.worker.ts",
+    "src/lib/secrets/storage.ts",
+    "src/lib/secrets/protocol.ts",
+    "src/lib/secrets/client.ts",
+    "src/lib/secrets/vault.worker.ts",
+    "src/lib/secrets/vault-executor.ts",
+    "src/lib/secrets/schema-policy-storage.ts"
   ],
   "extension": [".ts", ".js"],
   "reporter": ["html", "json", "json-summary", "text-summary"],

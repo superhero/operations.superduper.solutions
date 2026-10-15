@@ -8,6 +8,7 @@ import type { SchemaDownload, SchemaLibraryRecord, SchemaLibrarySnapshot } from 
 import SchemaLibraryWorker from "./schema-library.worker.ts?worker&inline";
 import { createWorkerClient } from "./worker-rpc.ts";
 import { logger } from "./logger.ts";
+import { invalidateVaultExecution } from "./secrets/client.ts";
 
 const state = writable({ records: [] as SchemaLibraryRecord[], operations, busy: false, initialized: false, error: "" });
 const current = fromStore(state);
@@ -21,7 +22,9 @@ export function prepareSavedStorage(): Promise<void> { return worker.call("prepa
 
 function applySnapshot({ records, catalogs }: SchemaLibrarySnapshot): void
 {
+  const previous = JSON.stringify(operations);
   publishPreparedCatalogs(catalogs);
+  if (current.current.initialized && previous !== JSON.stringify(operations)) invalidateVaultExecution();
   state.update(value => ({ ...value, records, operations, initialized: true }));
 }
 

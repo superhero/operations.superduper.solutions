@@ -33,6 +33,10 @@ version="$(node --input-type=module -e '
   process.stdout.write(declared);
 ')" || fail 'Cannot resolve the pinned Playwright package. Check the error above and run npm ci.'
 image="mcr.microsoft.com/playwright:v${version}-noble"
+engine_arguments=()
+if [[ "${BROWSER_ENGINE:-chromium}" != chromium ]]; then
+  engine_arguments+=(--tags 'not @chromium-only')
+fi
 echo "Browser tests: image=$image, bundle=dist/index.html, profile=browser, output=tmp/test."
 
 # Only the test output is writable; the app needs no network access. All test
@@ -42,12 +46,13 @@ docker run --rm --init --network=none --read-only --shm-size=1g \
   --user "$(id -u):$(id -g)" --env HOME=/tmp --env CI=true \
   --env TMPDIR=/workspace/tmp/test/browser/.runtime \
   --env "BROWSER_TEST_IMAGE=$image" \
+  --env "BROWSER_ENGINE=${BROWSER_ENGINE:-chromium}" \
   --tmpfs /tmp:rw,nosuid,nodev,size=512m \
   --mount "type=bind,source=$PWD,target=/workspace,readonly" \
   --mount "type=bind,source=$PWD/tmp/test,target=/workspace/tmp/test" \
   --workdir /workspace "$image" \
   node node_modules/@cucumber/cucumber/bin/cucumber.js \
-  --config cucumber.config.mjs --profile browser "$@" \
+  --config cucumber.config.mjs --profile browser "${engine_arguments[@]}" "$@" \
   2>&1 | tee tmp/test/browser/runner.log
 
 node --input-type=module -e '
