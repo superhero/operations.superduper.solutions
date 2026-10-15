@@ -2,6 +2,30 @@
 
 ## Latest
 
+<!-- changelog-commit:9cffa93ec0b07a7807f96fa706a9989f21c81953 -->
+### Commit [`9cffa93`](https://github.com/superhero/operations.superduper.solutions/commit/9cffa93ec0b07a7807f96fa706a9989f21c81953)
+
+```text
+feat(secrets): add an encrypted browser credential vault
+
+Keep saved API credentials outside workflow and schema history. Encrypt the
+local vault with AES-GCM, protect password unlock with pinned Argon2id, and
+provide independent recovery and PRF-capable passkey methods.
+
+Execute credentialed requests in a dedicated worker under explicit operation
+and destination approvals. Reject stale schema grants, redirects and header
+collisions; bound responses and diagnostics and sanitize known secret echoes.
+
+Add Secrets settings, opaque local workflow bindings, atomic encrypted
+backup/restore and key rotation. Lock on hidden-page and lifecycle events,
+cancel late work and enforce optional idle deadlines across worker requests.
+
+Cover crypto, policy, persistence, lifecycle and native browser behavior through
+Cucumber. Document the origin-local trust boundary and unverified physical
+mobile and passkey-provider compatibility.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.46
