@@ -227,11 +227,16 @@ Then("develop changelog preparation is isolated from heavy tests and safely gate
   assert.deepEqual(document.errors, []);
   const { jobs } = document.toJS();
   const prepare = jobs["prepare-changelog"];
-  assert.deepEqual(prepare.needs, ["workflow-checks", "validate-pr"]);
-  for (const prerequisite of ["validate-pr", "prepare-changelog"])
+  assert.deepEqual(prepare.needs, ["integration", "workflow-checks", "validate-pr"]);
+  for (const prerequisite of ["integration", "validate-pr", "prepare-changelog"])
     assert.ok(jobs.application.needs.includes(prerequisite));
   assert.match(jobs.application.if, /needs\.prepare-changelog\.outputs\.updated != 'true'/);
-  assert.equal(prepare.if, "!startsWith(github.head_ref, 'docs/')", "Other valid routes must keep application CI");
+  const prepareEnabled = new Function("github", "needs", "startsWith", `return (${prepare.if});`);
+  for (const source of ["feature/topic", "bugfix/topic", "main", "release/1.2.3", "docs/topic"])
+    for (const ready of ["true", "false", ""])
+      assert.equal(prepareEnabled({ head_ref: source }, { integration: { outputs: { ready } } },
+        (value, prefix) => value.startsWith(prefix)), ready === "true" && !source.startsWith("docs/"),
+      "Only prepared non-documentation routes may prepare the changelog");
   const eligibility = prepare.env.PREPARE_LATEST;
   for (const source of ["feature/topic", "bugfix/topic", "main", "release/1.2.3"])
     for (const fork of [false, true])
@@ -244,7 +249,8 @@ Then("develop changelog preparation is isolated from heavy tests and safely gate
           !fork && !draft && /^(feature|bugfix)\//.test(source));
       }
   assert.ok(prepare.steps.every(step => step.if === "env.PREPARE_LATEST == 'true'"));
-  assert.deepEqual(prepare.steps[0].with, { ref: "${{ github.event.pull_request.base.sha }}", "fetch-depth": 0, "persist-credentials": false });
+  assert.deepEqual(prepare.steps[0].with, { ref: "${{ needs.integration.outputs.base_sha }}", "fetch-depth": 0, "persist-credentials": false });
+  assert.equal(prepare.steps[1].env.TESTED_SHA, "${{ needs.integration.outputs.tested_sha }}");
   assert.match(prepare.steps[1].run, /git show "\$TESTED_SHA:\.github\/scripts\/\$file"/);
   assert.equal(prepare.steps[2].with["permission-contents"], "write");
   assert.equal(prepare.steps[2].with["permission-pull-requests"], "read");

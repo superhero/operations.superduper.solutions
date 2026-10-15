@@ -11,6 +11,7 @@ recovery procedures.
 | --- | --- |
 | Branch, version and content validation | `validate-pr.sh`, `validate-semver.sh`, `validate-badge-only-advance.sh`, `validate-released-content.sh`, `validate-release-tree.sh`, `validate-current-release.sh` |
 | Documentation integration | `validate-documentation-changes.sh` checks each target's full diff; `validate-documentation-merge.sh` coordinates publication with an optional bounded wait; `restore-documentation-branch.sh` recovers an explicitly identified merged PR's source |
+| Integration queue | `prepare-integration.mjs` skips obsolete events, requests candidate refreshes and pins current validation inputs before the queued workflow starts |
 | Release update routing | `classify-release-update.sh` pauses publication for ordinary Markdown-only advances; `check-release-changelog-update.mjs` recognizes canonical changelog versioning that resumes the release |
 | Merge and release lifecycle | `auto-merge.sh`, `preview-merge.sh`, `create-release-pr.sh`, `validate-release-pr.sh`, `merge-release-pr.sh`, `synchronize-release.sh` |
 | Changelog preservation | `changelog.mjs` manages Latest entries and version sections; `prepare-changelog.*` captures commit messages before integration; `prepare-release-changelog.mjs` preserves release source snapshots; `create-release-changelog-pr.*` opens the separate docs PR that versions the changelog before release |

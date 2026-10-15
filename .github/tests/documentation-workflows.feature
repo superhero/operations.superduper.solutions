@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Erik Landvall
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
-@automation
+@automation @documentation-workflows
 Feature: Lightweight documentation workflow routing
   Documentation changes use trusted validation without running application code.
   The selected destination receives the change without a release or synchronization.
@@ -31,4 +31,4 @@ Feature: Lightweight documentation workflow routing
   Scenario: Documentation writes require successful validation and a trusted pull request
     Given the documentation workflow configuration
     Then documentation writes follow validation with restricted credentials
-    And documentation merging shares the destination merge lock
+    And documentation merging shares the global integration queue and destination merge lock

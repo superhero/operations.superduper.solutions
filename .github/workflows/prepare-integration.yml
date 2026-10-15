@@ -1,0 +1,183 @@
+# Copyright (C) 2026 Erik Landvall
+# SPDX-License-Identifier: AGPL-3.0-only
+# See LICENSE and LICENSE-ADDITIONAL-TERMS.
+name: Prepare queued integration
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+      workflow-file:
+        required: true
+        type: string
+    secrets:
+      app-private-key:
+        required: true
+    outputs:
+      ready:
+        value: ${{ jobs.inspect.outputs.ready }}
+      recovery:
+        value: ${{ jobs.inspect.outputs.recovery }}
+      head_sha:
+        value: ${{ jobs.inspect.outputs.head_sha }}
+      base_sha:
+        value: ${{ jobs.inspect.outputs.base_sha }}
+      tested_sha:
+        value: ${{ jobs.inspect.outputs.tested_sha }}
+
+# The caller holds integration-ci across preparation, validation and publication.
+# Acquiring that same group here would deadlock the caller.
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  inspect:
+    name: Resolve current integration inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    outputs:
+      ready: ${{ steps.prepare.outputs.ready }}
+      recovery: ${{ steps.prepare.outputs.recovery }}
+      refresh: ${{ steps.prepare.outputs.refresh }}
+      head_sha: ${{ steps.prepare.outputs.head_sha }}
+      base_sha: ${{ steps.prepare.outputs.base_sha }}
+      tested_sha: ${{ steps.prepare.outputs.tested_sha }}
+    steps:
+      - name: Checkout trusted inspection code
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.sha || github.event.pull_request.base.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Select read-only inspection code
+        id: scripts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_SHA: ${{ github.sha }}
+          ALLOW_BOOTSTRAP: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        run: |
+          set -euo pipefail
+          scripts="$GITHUB_WORKSPACE/.github/scripts"
+          if [[ ! -f "$scripts/prepare-integration.mjs" ]]; then
+            [[ "$ALLOW_BOOTSTRAP" == true && "$EVENT_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+              echo '::error::Trusted integration preparation is not installed on the target branch.'
+              exit 1
+            }
+            # First rollout only. This job has no write token or App private key;
+            # a separate runner performs the fixed, expected-head API update.
+            authorization="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w 0)"
+            echo "::add-mask::$authorization"
+            GIT_CONFIG_COUNT=1 \
+              GIT_CONFIG_KEY_0="http.${GITHUB_SERVER_URL}/.extraheader" \
+              GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $authorization" \
+              git fetch --no-tags origin "$EVENT_SHA"
+            scripts="$(mktemp -d "$RUNNER_TEMP/integration-inspection.XXXXXX")"
+            for file in prepare-integration.mjs validation-request.mjs; do
+              git show "$EVENT_SHA:.github/scripts/$file" > "$scripts/$file"
+            done
+          fi
+          echo "path=$scripts" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve queued pull request
+        id: prepare
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_BRANCH: ${{ github.base_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          EVENT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          EVENT_SHA: ${{ github.sha }}
+          WORKFLOW_FILE: ${{ inputs.workflow-file }}
+          EVENT_ACTION: ${{ github.event.action }}
+          EVENT_BASE_CHANGED: ${{ github.event.changes.base.ref.from != '' }}
+          INTEGRATION_MODE: ${{ inputs.mode }}
+          SCRIPTS: ${{ steps.scripts.outputs.path }}
+        run: node "$SCRIPTS/prepare-integration.mjs"
+
+  refresh:
+    name: Update candidate and hand off to fresh CI
+    needs: inspect
+    if: >-
+      needs.inspect.outputs.refresh == 'true'
+      && github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && !github.event.pull_request.draft
+      && (startsWith(github.head_ref, 'feature/') || startsWith(github.head_ref, 'bugfix/'))
+      && (github.base_ref == 'develop' || startsWith(github.base_ref, 'release/'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Create candidate-update token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.GH_APP_CLIENT_ID }}
+          private-key: ${{ secrets.app-private-key }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Merge latest target into the expected candidate
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_BRANCH: ${{ github.head_ref }}
+          BASE_BRANCH: ${{ github.base_ref }}
+        shell: bash
+        run: |
+          node --input-type=module <<'JS'
+          import { execFileSync } from 'node:child_process';
+          const { REPOSITORY: repository, PR_NUMBER: number, HEAD_SHA: head, HEAD_BRANCH: source, BASE_BRANCH: target } = process.env;
+          if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository) || !/^[1-9][0-9]*$/.test(number)
+            || !/^[0-9a-f]{40}$/.test(head) || !/^(feature|bugfix)\//.test(source)
+            || !(target === 'develop' || target.startsWith('release/'))) throw new Error('Invalid candidate update route.');
+          const endpoint = `repos/${repository}/pulls/${number}`;
+          const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+          const transient = error => error.code === 'ETIMEDOUT'
+            || /HTTP (500|502|503|504)|i\/o timeout|TLS handshake timeout|connection reset|unexpected EOF/.test(String(error.stderr ?? ''));
+          const call = args => JSON.parse(execFileSync('gh', ['api', ...args], {
+            encoding: 'utf8', timeout: 30000, killSignal: 'SIGKILL', maxBuffer: 1024 * 1024,
+            stdio: ['ignore', 'pipe', 'pipe']
+          }));
+          async function read() {
+            for (let attempt = 0; ; attempt++) {
+              try { return call([endpoint]); }
+              catch (error) {
+                if (attempt === 2 || !transient(error)) throw new Error('Cannot verify the current pull request; no further update attempted.');
+                await sleep(1000 * (attempt + 1));
+              }
+            }
+          }
+          function isCurrent(pr) {
+            if (pr.number !== Number(number) || pr.head?.repo?.full_name !== repository || pr.base?.repo?.full_name !== repository
+              || pr.head.ref !== source || pr.base.ref !== target) throw new Error('Pull request route changed; no update attempted.');
+            if (pr.state !== 'open' || pr.merged || pr.draft || pr.head.sha !== head) {
+              console.log('Candidate changed or closed; its current event owns integration.');
+              return false;
+            }
+            return true;
+          }
+          for (let attempt = 0; attempt < 3; attempt++) {
+            if (!isCurrent(await read())) break;
+            try {
+              call(['--method', 'PUT', `${endpoint}/update-branch`, '-f', `expected_head_sha=${head}`]);
+              console.log('Candidate update accepted. Its synchronize event will validate the new revision; this run holds no validation proof.');
+              break;
+            } catch (error) {
+              // A rejected lease or timeout may mean the head already advanced.
+              // Re-read even after a nonretryable or final error before failing.
+              if (!isCurrent(await read())) break;
+              if (attempt === 2 || !transient(error)) throw new Error('Candidate update failed; inspect conflicts or a concurrent change.');
+              await sleep(1000 * (attempt + 1));
+            }
+          }
+          JS

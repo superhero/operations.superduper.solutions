@@ -13,7 +13,7 @@ const requiredSuites = [
 const reportChecks = ["report:tests", "badges:scenarios", "badges:coverage"];
 const validationArtifacts = ["bundle", "coverage", "test-report"];
 
-function enabled(step, reused, ready = true, status = "success", outcomes = {})
+function enabled(step, reused, ready = true, status = "success", outcomes = {}, integration = {})
 {
   const condition = step.if ?? "true";
   // GitHub applies success() implicitly unless the condition uses a status function.
@@ -21,11 +21,16 @@ function enabled(step, reused, ready = true, status = "success", outcomes = {})
   const expression = condition.replace(/^\s*\$\{\{([\s\S]*)\}\}\s*$/, "$1")
     .replace(/\b(needs|steps)\.([\w-]+)/g, '$1["$2"]');
   const needs = {
+    integration: { outputs: { ready: String(integration.ready ?? true), recovery: String(integration.recovery ?? false) } },
     validation: { outputs: { reused: String(reused) } },
+    "release-route": { outputs: { run_release: "true" } },
     "release-changelog": { outputs: { ready: String(ready) } },
     "prepare-changelog": { outputs: { updated: "false" } }
   };
-  const github = { head_ref: "release/1.2.3" };
+  const github = {
+    head_ref: integration.source ?? "release/1.2.3", base_ref: "main", repository: "owner/project",
+    event: { pull_request: { draft: false, head: { repo: { full_name: "owner/project" } } } }
+  };
   const steps = Object.fromEntries(["automation", "source", "browser", "failure-report"]
     .map(id => [id, { outcome: outcomes[id] ?? status }]));
   return new Function("needs", "github", "steps", "startsWith", "success", "always", "failure", "cancelled", `return (${expression});`)(
@@ -85,6 +90,85 @@ Given("the validation workflow for {string}", function (target)
   this.validationTarget = target;
 });
 
+Then("integration workflows share one retained queue without acquiring their own lock twice", function ()
+{
+  const queue = { group: "integration-ci", "cancel-in-progress": false, queue: "max" };
+  const preparation = parseDocument(readFileSync(new URL("../workflows/prepare-integration.yml", import.meta.url), "utf8"));
+  assert.deepEqual(preparation.errors, []);
+  const reusable = preparation.toJS();
+  assert.equal(reusable.concurrency, undefined, "The reusable preparation must not wait on its caller's integration lock");
+  for (const [name, job] of Object.entries(reusable.jobs))
+    assert.notEqual(job.concurrency?.group, queue.group, `${name} cannot acquire the caller's integration lock`);
+  for (const name of ["ci-develop", "ci-release", "ci-main", "ci-support", "ci-docs", "cron-outdated"])
+  {
+    const document = parseDocument(readFileSync(new URL(`../workflows/${name}.yml`, import.meta.url), "utf8"));
+    assert.deepEqual(document.errors, []);
+    const workflow = document.toJS();
+    assert.deepEqual(workflow.concurrency, queue, `${name} must queue every integration and dependency update without cancellation`);
+    for (const [id, job] of Object.entries(workflow.jobs))
+      assert.notEqual(job.concurrency?.group, queue.group, `${name}/${id} cannot acquire its own workflow lock`);
+  }
+});
+
+Then("queued preparation separates proposed inspection code from branch update credentials", function ()
+{
+  const document = parseDocument(readFileSync(new URL("../workflows/prepare-integration.yml", import.meta.url), "utf8"));
+  assert.deepEqual(document.errors, []);
+  const workflow = document.toJS();
+  assert.deepEqual(workflow.permissions, { contents: "read", "pull-requests": "read" });
+  const { inspect, refresh } = workflow.jobs;
+  assert.equal(inspect.permissions, undefined, "Inspection cannot elevate its read-only token");
+  assert.doesNotMatch(JSON.stringify(inspect), /secrets\.|create-github-app-token|permission-contents|permission-pull-requests/,
+    "Bootstrap code must never receive App credentials");
+  const checkout = uniqueStep(inspect.steps, step => step.uses?.startsWith("actions/checkout@"), "Trusted preparation checkout");
+  assert.equal(checkout.with.ref, "${{ github.event_name == 'pull_request_target' && github.sha || github.event.pull_request.base.sha }}");
+  assert.equal(checkout.with["persist-credentials"], false);
+  assert.deepEqual([refresh.needs].flat(), ["inspect"]);
+  assert.match(refresh.if, /needs\.inspect\.outputs\.refresh == 'true'/);
+  assert.match(refresh.if, /github\.event_name == 'pull_request'/,
+    "Documentation events cannot take the branch mutation route");
+  assert.deepEqual(refresh.steps.filter(step => step.uses).map(step => step.uses), ["actions/create-github-app-token@v3"],
+    "The write job must not check out or execute proposed repository actions");
+  const update = uniqueStep(refresh.steps, step => step.run?.includes("/update-branch"), "Candidate update");
+  assert.equal(update.env.HEAD_SHA, "${{ github.event.pull_request.head.sha }}");
+  assert.match(update.run, /expected_head_sha=/, "The update must retain the original source-head lease");
+  assert.doesNotMatch(update.run, /\.github\/scripts|git (?:checkout|show|switch)|\b(?:npm|npx)\b/,
+    "The credentialed job must execute only its fixed API update");
+  const inspection = inspect.steps.find(step => step.id === "prepare");
+  assert.equal(inspection.env.RUN_ATTEMPT, "${{ github.run_attempt }}");
+  assert.equal(inspection.env.EVENT_BASE_SHA, "${{ github.event.pull_request.base.sha }}");
+  assert.equal(inspection.env.EVENT_SHA, "${{ github.sha }}");
+  assert.equal(inspection.env.WORKFLOW_FILE, "${{ inputs.workflow-file }}");
+  for (const output of ["ready", "recovery", "head_sha", "base_sha", "tested_sha"])
+    assert.equal(workflow.on.workflow_call.outputs[output].value, `\${{ jobs.inspect.outputs.${output} }}`,
+      "Updating a candidate cannot produce new validation evidence in the old run");
+});
+
+Then("an unprepared candidate cannot start any downstream integration job", function ()
+{
+  const { jobs } = this.validationWorkflow;
+  assert.equal(jobs.integration.uses, "./.github/workflows/prepare-integration.yml");
+  assert.equal(jobs.integration.with["workflow-file"], `.github/workflows/ci-${this.validationTarget}.yml`);
+  assert.equal(jobs.integration.needs, undefined, "Preparation must precede every test and write job");
+  for (const [name, job] of Object.entries(jobs))
+  {
+    if (name === "integration") continue;
+    assert.ok([job.needs].flat().includes("integration"), `${name} must wait directly for the prepared candidate`);
+    assert.equal(job["continue-on-error"], undefined);
+    assert.doesNotMatch(job.if ?? "", /\b(?:always|failure|cancelled)\s*\(/, `${name} cannot bypass failed preparation`);
+    assert.doesNotMatch(JSON.stringify(job), /github\.event\.pull_request\.base\.sha/,
+      `${name} must not use the stale event base after preparation`);
+    for (const source of ["feature/editor", "bugfix/editor", "docs/readme", "release/1.2.3", "develop"])
+      for (const ready of [false, ""])
+        assert.equal(enabled(job, false, true, "success", {}, { source, ready }), false,
+          `${name} must stay blocked for ${source} when integration.ready is ${JSON.stringify(ready)}`);
+    if (this.validationTarget === "support")
+      for (const checkout of (job.steps ?? []).filter(step => step.uses?.startsWith("actions/checkout@")))
+        assert.equal(checkout.with?.ref, "${{ needs.integration.outputs.tested_sha }}",
+          `${name} must test and merge the prepared support candidate`);
+  }
+});
+
 When("matching validation is {string}", function (state)
 {
   this.validationAvailable = state === "available";
@@ -139,18 +223,26 @@ Then("release artifacts remain bound to the exact tested checkout", function ()
 {
   const { jobs } = this.validationWorkflow;
   const expected = this.validationTarget === "main"
-    ? "${{ github.event.pull_request.head.sha }}" : "${{ github.sha }}";
+    ? "${{ github.event.pull_request.head.sha }}" : "${{ needs.integration.outputs.tested_sha }}";
   const checkout = jobs.application.steps.find(step => step.uses?.startsWith("actions/checkout@"));
   const automationCheckout = uniqueStep(jobs["workflow-checks"].steps,
     step => step.uses?.startsWith("actions/checkout@"), "Automation checkout");
   const proof = jobs.application.steps.find(step => step.run?.includes("validation-artifacts.mjs create"));
   const report = jobs.application.steps.find(step => step.id === "report");
   assert.equal(checkout.with.ref, expected);
-  assert.equal(automationCheckout.with?.ref ?? "${{ github.sha }}", expected, "Automation and application must test the same revision");
+  assert.equal(automationCheckout.with?.ref, expected, "Automation and application must test the same prepared revision");
+  const lookupCheckout = uniqueStep(jobs.validation.steps,
+    step => step.uses?.startsWith("actions/checkout@"), "Validation lookup checkout");
+  assert.equal(lookupCheckout.with.ref, expected, "Validation lookup must fingerprint the candidate that will actually run");
+  assert.equal(jobs.validation.steps.find(step => step.id === "find").env.TARGET_SHA, expected);
   assert.equal(enabled(automationCheckout, false), true);
   assert.equal(proof.env.TESTED_SHA, expected);
   assert.equal(report.env.REPORT_COMMIT, expected);
   assert.equal(proof.env.PR_HEAD_SHA, "${{ github.event.pull_request.head.sha }}");
+  for (const [name, job] of Object.entries(jobs))
+    for (const step of job.steps ?? [])
+      if (Object.hasOwn(step.env ?? {}, "BASE_SHA"))
+        assert.equal(step.env.BASE_SHA, "${{ needs.integration.outputs.base_sha }}", `${name}/${step.name} must retain the fresh target pin`);
   assert.match(proof.run, /"\$GITHUB_RUN_ID" "\$GITHUB_RUN_ATTEMPT"/);
   for (const [name, path] of Object.entries({ bundle: "tmp/validation/bundle", coverage: "tmp/validation/coverage", "test-report": "tmp/validation/test-report/test-report.html" }))
   {
@@ -243,4 +335,11 @@ Then("the release application job waits for the changelog documentation PR", fun
   assert.ok(prepare.needs.includes("validate-pr"));
   assert.equal(prepare.outputs.ready, "${{ steps.prepare.outputs.ready }}");
   assert.match(prepare.steps.find(step => step.id === "prepare").run, /create-release-changelog-pr\.sh/);
+  const token = uniqueStep(prepare.steps, step => step.uses?.startsWith("actions/create-github-app-token@"), "Release changelog token");
+  assert.equal(enabled(token, false, true, "success", {}, { source: "release/1.2.3", recovery: false }), true);
+  assert.equal(enabled(token, false, true, "success", {}, { source: "release/1.2.3", recovery: true }), false,
+    "Exact merged release recovery must not obtain write credentials");
+  for (const recovery of [false, true])
+    assert.equal(enabled(token, false, true, "success", {}, { source: "hotfix/1.2.4", recovery }), false);
+  assert.equal(prepare.steps.find(step => step.id === "prepare").env.RECOVER_MERGED, "${{ needs.integration.outputs.recovery }}");
 });
