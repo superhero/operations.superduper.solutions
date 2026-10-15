@@ -30,11 +30,18 @@
     html[data-error-overlay-open] .background-wave { width: calc(100% - var(--error-scrollbar-gutter, 0px)); }
     @property --startup-length { syntax: "<number>"; inherits: false; initial-value: 1; }
     @property --startup-gap { syntax: "<number>"; inherits: false; initial-value: 0; }
-    #startup-status { position: fixed; inset: 0; width: 100vw; height: 100dvh; z-index: 2147483647; display: grid; place-items: center; background: var(--color-background, #eee9df); color: var(--color-primary, #a35139); transition: background-color 200ms ease; }
+    #startup-status { position: fixed; inset: 0; width: 100vw; height: 100dvh; z-index: 2147483645; display: grid; place-items: center; background: var(--color-background, #eee9df); color: var(--color-primary, #a35139); transition: background-color 200ms ease; }
     #startup-progress { position: absolute; top: calc(50% + min(28vh, 180px)); left: 24px; right: 24px; margin: 0; text-align: center; white-space: pre-line; color: var(--color-muted-foreground, #2c3b4d); font: 500 14px/1.5 Montserrat, sans-serif; }
     #startup-count { color: var(--color-foreground, #1b2632); font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
     #startup-step { display: inline-block; width: 2ch; text-align: right; }
     #startup-stage { opacity: 0; animation: startup-stage-in 200ms ease 400ms forwards; }
+    #startup-recovery { max-height: 30vh; overflow: auto; text-align: center; color: var(--color-foreground, #1b2632); font: 500 14px/1.5 Montserrat, sans-serif; }
+    #startup-recovery p { margin: 0 auto 12px; max-width: 60ch; overflow-wrap: anywhere; }
+    #startup-recovery button { padding: 10px 18px; border: 0; border-radius: 4px; background: var(--color-primary, #a35139); color: var(--color-primary-foreground, #ffb162); font: inherit; font-weight: 700; cursor: pointer; }
+    #startup-recovery button:focus-visible { outline: 2px solid var(--color-foreground, #1b2632); outline-offset: 4px; }
+    #startup-status:has(#startup-recovery) { align-content: center; gap: 24px; padding: 24px; overflow: auto; }
+    #startup-status:has(#startup-recovery) > span { display: none; }
+    #startup-status:has(#startup-recovery) #startup-progress { position: static; }
     @keyframes startup-stage-in { from { opacity: 0; } to { opacity: 1; } }
     #startup-status > span { position: relative; width: 108px; height: 108px; animation: startup-sway 7s ease-in-out infinite; }
     #startup-status i { --angle: 0deg; position: absolute; inset: 0; color: var(--tone-1, #eee9df); border: 1px solid color-mix(in srgb, currentColor 35%, transparent); border-radius: 64% 36% 38% 62%; background: color-mix(in srgb, currentColor 4%, transparent); animation: startup-shape 4.8s ease-in-out infinite alternate, startup-pulse 3s ease-in-out infinite, startup-colors 18s linear infinite; }

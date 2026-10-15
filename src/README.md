@@ -1,8 +1,10 @@
 # Application source
 
-This is Vite's source root. `index.html` provides the loading page; `index.ts`
-prepares browser storage, loads settings and schemas, mounts `App.svelte`, then
-starts resource recording. `bootstrap.ts` owns the small mounting boundary.
+This is Vite's source root. `index.html` provides the loading page; the small
+`index.ts` entry catches module-loading failures and offers recovery. In development,
+it retries a failed module fetch once before showing the error and a Reload button.
+`application.ts` prepares browser storage, loads settings and schemas, mounts
+`App.svelte`, then starts resource recording. `bootstrap.ts` owns the mounting boundary.
 Preserve that startup order: saved workflows depend on the active schema library.
 
 ## Place a change
