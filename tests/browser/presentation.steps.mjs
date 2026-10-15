@@ -100,13 +100,13 @@ Then('operations controls retain their complete keyboard focus outline', async f
     assert.ok(ring.width >= 3 && ring.offset > 0 && ring.radius > 0, 'The prompt needs a separated focus ring around rounded corners.');
     await expectThemeColors(prompt, { backgroundColor: '--color-foreground', color: '--color-background', outlineColor: '--color-ring' });
     await expectThemeColors(prompt, { color: '--color-surface' }, '::placeholder');
-    await expectThemeColors(page.locator('.catalog-prompt .operation-toolbar'), {
+    await expectThemeColors(page.locator('.catalog-prompt .prompt-actions'), {
       backgroundColor: '--color-badge-background', color: '--color-badge-foreground'
     });
     const examples = page.locator('.prompt-suggestion-list button:visible');
     for (const example of await examples.all())
       await expectThemeColors(example, { backgroundColor: '--color-muted', color: '--color-chip-foreground' });
-    const contrasts = await controlContrasts(page.locator('.catalog-prompt textarea, .catalog-prompt label, .prompt-suggestion-list button:visible'));
+    const contrasts = await controlContrasts(page.locator('.catalog-prompt textarea, .prompt-suggestion-list button:visible'));
     for (const { label, minimum, ratio } of contrasts)
       assert.ok(ratio >= minimum, `${theme} ${label} needs readable contrast: ${ratio.toFixed(2)}:1.`);
     await examples.first().hover();

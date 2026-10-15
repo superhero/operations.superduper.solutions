@@ -91,14 +91,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <section class="catalog-prompt" aria-label="Find operations" aria-busy={pending} data-evaluated-prompt={evaluation?.prompt ?? ""}>
-  <div class="operation-toolbar report-pill context-label">
-    <h2 class="operation-title"><label for="operation-prompt">Prompt</label></h2>
-    <HintButton class="report-toggle" type="button" label="Commonly used operations" aria-expanded={examplesOpen}
-      aria-controls="prompt-examples" onclick={onExamplesToggle}><MaterialIcon name="quick_phrases" size={16} /></HintButton>
-    {#if evaluation}
-      <HintButton class="report-toggle" type="button" label="Details" aria-label="Review matching details" aria-expanded={matchingOpen}
-        aria-controls="matching-help" onclick={onMatchingToggle}><MaterialIcon name="article" size={16} /></HintButton>
-    {/if}
+  <div class="prompt-input">
+    <textarea id="operation-prompt" bind:this={input} value={value} use:fitTextarea={value} rows="1" maxlength="240"
+      placeholder="Prompt" aria-label="Prompt" aria-describedby="prompt-help" oninput={(event) => onChange(event.currentTarget.value, event instanceof InputEvent && event.isComposing)}
+      oncompositionstart={() => onChange(value, true)} oncompositionend={(event) => onChange(event.currentTarget.value, false)}></textarea>
+    <div class="prompt-actions report-pill context-label">
+      <HintButton class="report-toggle" type="button" label="Commonly used operations" aria-expanded={examplesOpen}
+        aria-controls="prompt-examples" onclick={onExamplesToggle}><MaterialIcon name="quick_phrases" size={16} /></HintButton>
+      {#if evaluation}
+        <HintButton class="report-toggle" type="button" label="Details" aria-label="Review matching details" aria-expanded={matchingOpen}
+          aria-controls="matching-help" onclick={onMatchingToggle}><MaterialIcon name="article" size={16} /></HintButton>
+      {/if}
+    </div>
   </div>
   <Reveal open={examplesOpen} id="prompt-examples">
     <div class="prompt-suggestion-list" use:fitExamples={operations}>
@@ -107,9 +111,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/each}
     </div>
   </Reveal>
-  <textarea id="operation-prompt" bind:this={input} value={value} use:fitTextarea={value} rows="3" maxlength="240"
-    placeholder="For example, list projects…" aria-describedby="prompt-help" oninput={(event) => onChange(event.currentTarget.value, event instanceof InputEvent && event.isComposing)}
-    oncompositionstart={() => onChange(value, true)} oncompositionend={(event) => onChange(event.currentTarget.value, false)}></textarea>
   <p id="prompt-help" class="sr-only">Find operations by name or identifier. Matching operations appear automatically as you type. Clear the prompt to browse all operations.</p>
   <p class="matching-status" role="status" aria-live="polite">
     {#if pending}Finding operations…{:else if evaluation && !evaluation.results.length}No matching operations.{/if}
@@ -128,11 +129,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .catalog-prompt { min-width: 0; margin-bottom: 16px; }
-  .operation-toolbar { margin-bottom: 12px; }
-  #operation-prompt { --field-background: var(--color-foreground); --field-foreground: var(--color-background); display: block; box-sizing: border-box; width: 100%; min-height: calc(3 * 1.5em + 24px); field-sizing: fixed; padding: 12px; border: 0; border-radius: 4px; background: var(--field-background); color: var(--field-foreground); font-size: 13px; line-height: 1.5; resize: none; overflow: hidden; scrollbar-gutter: auto; }
+  .prompt-input { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; }
+  .prompt-actions { margin-top: 6px; }
+  .prompt-actions :global(.report-toggle) { height: 32px; padding: 4px; }
+  .prompt-actions :global(.report-toggle:first-child) { border-radius: 4px 0 0 4px; }
+  .prompt-actions :global(.report-toggle:only-child) { border-radius: 4px; }
+  #operation-prompt { --field-background: var(--color-foreground); --field-foreground: var(--color-background); display: block; box-sizing: border-box; width: 100%; min-width: 0; min-height: calc(1.5em + 24px); field-sizing: fixed; padding: 12px; border: 0; border-radius: 4px; background: var(--field-background); color: var(--field-foreground); font-size: 13px; line-height: 1.5; resize: none; overflow: hidden; scrollbar-gutter: auto; }
   #operation-prompt:focus { outline: 3px solid var(--color-ring); outline-offset: 3px; }
   #operation-prompt::placeholder { color: var(--color-surface); opacity: 1; }
-  .prompt-suggestion-list { margin: 0 0 12px; }
+  .prompt-suggestion-list { margin: 12px 0 0; }
   .matching-status { margin: 0; color: var(--color-muted-foreground); font-size: 12px; }
   .matching-status:not(:empty) { margin-top: 8px; }
   .matching-error { margin: 8px 0; color: var(--color-foreground); font-size: 12px; }
