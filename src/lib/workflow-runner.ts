@@ -8,6 +8,7 @@ import { validateWorkflowDocument, type WorkflowDocument, type WorkflowDocumentN
 import { castValue, matchingSwitchGates } from "./workflow-utilities.ts";
 import { createWorkflowExecution, type WorkflowExecutionResult, type WorkflowResponse, type WorkflowExecutor } from "./workflow-execution.ts";
 import { responseHeaderReader } from "./workflow-response.ts";
+import { VaultError, type CredentialBinding } from "./secrets/types.ts";
 
 type Node = WorkflowDocumentNode;
 type DataNode = Extract<Node, { type: "data" }>;
@@ -24,6 +25,8 @@ type Frame = {
 export type WorkflowVisit = {
   kind: "operation"; id: string; nodeId: string; workflowName: string; operation: Operation;
   values: Record<string, string>; mappedFields: string[]; step: number;
+  credentialBinding?: CredentialBinding;
+  bindingPath: string[];
 };
 export type WorkflowStep = WorkflowVisit | { kind: "choice"; workflowName: string; choices: { id: string; label: string }[] }
   | { kind: "complete"; message: string };
@@ -184,6 +187,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
   execution: WorkflowExecutor = createWorkflowExecution())
 {
   const document = validateWorkflowDocument(value);
+  const runId = crypto.randomUUID();
   const stack: Frame[] = [createFrame(document)];
   let current: { frame: Frame; node: Owner; visit: WorkflowVisit } | undefined;
   let choice: { frame: Frame; ids: string[] } | undefined;
@@ -340,8 +344,11 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         enumerable: true, writable: true, configurable: true });
       mappedFields.push(input.key);
     }
-    return { kind: "operation", id: `${++step}:${node.id}`, nodeId: node.id, workflowName: frame.document.name,
-      operation, values, mappedFields, step };
+    const bindingPath = [node.id];
+    for (let ancestor = frame; ancestor.parent && ancestor.call; ancestor = ancestor.parent) bindingPath.unshift(ancestor.call.id);
+    return { kind: "operation", id: `${++step}:${node.id}`, nodeId: node.id, workflowName: frame.document.name, bindingPath,
+      operation, values, mappedFields, step,
+      ...(node.data.credentialBinding ? { credentialBinding: structuredClone(node.data.credentialBinding) } : {}) };
   }
 
   function choose(id: string)
@@ -434,7 +441,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
 
   return {
     next, choose,
-    async submit(values: Record<string, string>): Promise<WorkflowExecution>
+    async submit(values: Record<string, string>, binding?: CredentialBinding | null): Promise<WorkflowExecution>
     {
       if (!current || stopped || terminalError) throw new Error("There is no operation ready to run.");
       if (pending) throw new Error("This operation already has a request in progress.");
@@ -443,14 +450,20 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       const completed = current;
       pending = new AbortController();
       let result: WorkflowExecutionResult;
-      try { result = await execution.execute(completed.visit.operation, values, pending.signal); }
+      // An explicit UI clear must not fall back to a previously saved credential.
+      const selectedBinding = binding === null ? undefined : binding ?? completed.visit.credentialBinding;
+      try { result = await execution.execute(completed.visit.operation, values, pending.signal,
+        selectedBinding ? { binding: selectedBinding, runId, nodeId: completed.visit.id } : undefined); }
       finally { pending = undefined; }
       if (stopped || current !== completed) throw new Error("This run has ended.");
       current = undefined;
       completed.frame.states.set(completed.node.id, "complete");
       // Output routing happens after a successful response. A routing error
       // must never make the completed operation available for an accidental retry.
-      try { outputs(completed.frame, completed.node, result.response); }
+      try {
+        if (result.response.redacted) throw new VaultError("REDACTED");
+        outputs(completed.frame, completed.node, result.response);
+      }
       catch (error) { terminalError = (error as Error).message; }
       return { ...result, operation: completed.visit.operation, step: completed.visit.step, workflowName: completed.visit.workflowName };
     },

@@ -6,12 +6,18 @@ import { operations, type Operation } from "./catalog.ts";
 import { catalogForOperation } from "./catalog-registry.ts";
 import { prepareRequest, type PreparedRequest } from "./operation-input.ts";
 import { operationServerUrl } from "./schema-documents.ts";
+import { VaultError, type ApprovedOperation, type CredentialExecutionContext } from "./secrets/types.ts";
+import { approvedOperation } from "./secrets/policy.ts";
+import { validateCredentialContext } from "./secrets/bindings.ts";
+import { executeVaultOperation } from "./secrets/vault-executor.ts";
 
-export type WorkflowResponse = { status: number; statusText: string; headers: Record<string, string>; body: unknown };
+export type WorkflowResponse = { status: number; statusText: string; headers: Record<string, string>; body: unknown; redacted?: boolean };
 export type WorkflowExecutionResult = { request: PreparedRequest; response: WorkflowResponse };
 export type WorkflowExecutor = {
-  execute(operation: Operation, values: Record<string, string>, signal?: AbortSignal): WorkflowExecutionResult | Promise<WorkflowExecutionResult>;
+  execute(operation: Operation, values: Record<string, string>, signal?: AbortSignal, context?: CredentialExecutionContext): WorkflowExecutionResult | Promise<WorkflowExecutionResult>;
 };
+export type CredentialWorkflowExecutor = (descriptor: ApprovedOperation, values: Record<string, string>,
+  context: CredentialExecutionContext, signal?: AbortSignal) => Promise<WorkflowExecutionResult>;
 
 export class WorkflowResponseError extends Error
 {
@@ -74,13 +80,21 @@ function requestFailure(signal: AbortSignal | undefined, timeout: AbortSignal, m
 export function createWorkflowRequestExecution(fetchRequest: typeof fetch = globalThis.fetch): WorkflowExecutor
 {
   return {
-    async execute(operation, values, signal)
+    async execute(operation, values, signal, context)
     {
       const canonical = operations.find(item => item.id === operation.id);
       if (!canonical || canonical.method !== operation.method || canonical.path !== operation.path)
         throw new Error("This operation is not available in the registered schemas.");
       const request = prepareRequest(canonical, values, operation.fields);
       const { origin } = workflowExecutionForOperation(canonical);
+      if (canonical.security?.length) {
+        if (!context) throw new VaultError("PERMISSION");
+        const { binding } = validateCredentialContext(context);
+        const descriptor = await approvedOperation(canonical, origin);
+        if (!operations.includes(canonical) || workflowExecutionForOperation(canonical).origin !== origin || binding.fingerprint !== descriptor.fingerprint
+          || canonical.security[binding.alternative]?.length !== 0 || Object.keys(binding.credentials).length)
+          throw new VaultError("PERMISSION");
+      }
       const url = workflowRequestUrl(request, origin);
       if (request.method === "TRACE") throw new Error("Browsers do not permit TRACE requests.");
       const timeout = AbortSignal.timeout(15_000);
@@ -133,7 +147,28 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
 }
 
 /** Every registered schema sends requests to the operation's effective server. */
-export function createWorkflowExecution(): WorkflowExecutor
+export function createWorkflowExecution(credentialExecution: CredentialWorkflowExecutor = executeVaultOperation): WorkflowExecutor
 {
-  return createWorkflowRequestExecution();
+  const anonymous = createWorkflowRequestExecution();
+  return {
+    async execute(operation, values, signal, context) {
+      const canonical = operations.find(item => item.id === operation.id);
+      if (!canonical || canonical.method !== operation.method || canonical.path !== operation.path)
+        throw new Error("This operation is not available in the registered schemas.");
+      if (!canonical.security?.length) return anonymous.execute(operation, values, signal);
+      if (!context) throw new VaultError("PERMISSION");
+      const invocation = validateCredentialContext(context);
+      const submitted = { ...values };
+      const { origin } = workflowExecutionForOperation(canonical);
+      const descriptor = await approvedOperation(canonical, origin);
+      if (!operations.includes(canonical) || workflowExecutionForOperation(canonical).origin !== origin
+        || invocation.binding.fingerprint !== descriptor.fingerprint) throw new VaultError("PERMISSION");
+      const alternative = canonical.security[invocation.binding.alternative];
+      if (!alternative) throw new VaultError("PERMISSION");
+      if (!alternative.length) return anonymous.execute(operation, submitted, signal, invocation);
+      if (Object.keys(invocation.binding.credentials).length !== alternative.length
+        || alternative.some(scheme => !Object.hasOwn(invocation.binding.credentials, scheme.name))) throw new VaultError("PERMISSION");
+      return credentialExecution(descriptor, submitted, invocation, signal);
+    }
+  };
 }

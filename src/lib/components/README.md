@@ -13,10 +13,16 @@ adapters such as `OperationFieldControl`, not just generic widgets.
 | Expandable content | [Disclosure.svelte](Disclosure.svelte) for a heading and panel; [Reveal.svelte](Reveal.svelte) for an externally controlled panel |
 | Dialog or explanatory tooltip | [Modal.svelte](Modal.svelte), [HintButton.svelte](HintButton.svelte) |
 | Structured data inspection | [JsonView.svelte](JsonView.svelte), [JsonSchemaView.svelte](JsonSchemaView.svelte) |
+| Vault unlocking and operation credentials | [VaultAuthentication.svelte](VaultAuthentication.svelte), [CredentialBindingSelector.svelte](CredentialBindingSelector.svelte) |
 
 Field controls accept editable values and callbacks; request validation remains in
 [operation-input.ts](../operation-input.ts). Objects and arrays retain JSON text
 drafts, while integer inputs reuse [integer-scale.ts](../integer-scale.ts).
+
+Vault controls keep temporary passwords in DOM inputs, clear them on use or
+teardown, and pass only opaque bindings into operation/workflow state. Transfer
+plain descriptors to workers; Svelte state proxies cannot be structured-cloned.
+Cryptography and destination authorization belong in [secrets](../secrets/README.md).
 
 ## Preserve shared behavior
 

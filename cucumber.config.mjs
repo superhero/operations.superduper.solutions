@@ -21,6 +21,13 @@ export const source = {
     "json:tmp/test/cucumber-source.json"
   ],
   import: [
+    "src/operation-security.test.mjs",
+    "src/vault-crypto.test.mjs",
+    "src/vault-session.test.mjs",
+    "src/vault-execution.test.mjs",
+    "src/vault-lifecycle.test.mjs",
+    "src/vault-passkeys.test.mjs",
+    "src/vault-integration.test.mjs",
     "src/application.test.mjs",
     "src/operations.test.mjs",
     "src/integer-scale.test.mjs",
@@ -62,6 +69,13 @@ export const source = {
     "src/workflow-response.test.mjs"
   ],
   paths: [
+    "src/operation-security.feature",
+    "src/vault-crypto.feature",
+    "src/vault-session.feature",
+    "src/vault-execution.feature",
+    "src/vault-lifecycle.feature",
+    "src/vault-passkeys.feature",
+    "src/vault-integration.feature",
     "src/application.feature",
     "src/operations.feature",
     "src/integer-scale.feature",

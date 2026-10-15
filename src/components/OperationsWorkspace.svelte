@@ -8,6 +8,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { onMount, tick, untrack } from "svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import OperationFieldControl from "$lib/components/OperationFieldControl.svelte";
+  import CredentialBindingSelector from "$lib/components/CredentialBindingSelector.svelte";
+  import type { CredentialBinding } from "$lib/secrets/types.ts";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import Reveal from "$lib/components/Reveal.svelte";
   import JsonView from "$lib/components/JsonView.svelte";
@@ -37,6 +39,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let selected = $state<Operation | null>(null);
   let drafts = $state<Record<string, Record<string, string>>>({});
   let prepared = $state<ReturnType<typeof prepareRequest> | null>(null);
+  let credentialBinding = $state<CredentialBinding>();
   const executor = createWorkflowExecution();
   let requestController: AbortController | undefined;
   let executing = $state(false);
@@ -191,6 +194,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
   export function selectOperation(operation: Operation) {
     resetExecution();
+    credentialBinding = undefined;
     if (selected?.id !== operation.id) { operationDetails = false; operationDescription = false; fieldHelp = []; }
     selected = operation; drafts[operation.id] ??= Object.fromEntries(operation.fields.map(field => [field.key, ""]));
     onOperationSelect?.(operation);
@@ -225,7 +229,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     executing = true; response = null; requestError = "";
     void goTo(3);
     try {
-      const result = await executor.execute(operation, submittedValues, controller.signal);
+      const result = await executor.execute(operation, submittedValues, controller.signal,
+        credentialBinding ? { binding: credentialBinding, runId: crypto.randomUUID(), nodeId: operation.id } : undefined);
       if (requestController === controller) response = result.response;
     } catch (cause) {
       if (requestController !== controller) return;
@@ -410,6 +415,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           {#if selected.description}<Reveal open={operationDescription} id="operation-description"><p class="hint field-description">{selected.description}</p></Reveal>{/if}
           <Reveal open={operationDetails} id="operation-details">{#key selected.id}<OperationReport operation={selected} />{/key}</Reveal>
           <form onsubmit={execute}>
+            {#if selected.security?.length}
+              {#key selected.id}<CredentialBindingSelector operation={selected} disabled={executing}
+                onChange={binding => credentialBinding = binding} />{/key}
+            {/if}
             <div class="operation-fields">
               {#each locations as location}
                 {@const fields = selected.fields.filter(field => field.location === location.key)}

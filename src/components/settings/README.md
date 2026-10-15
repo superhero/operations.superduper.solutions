@@ -10,6 +10,7 @@ the single-open-section behavior, appearance and workflow defaults.
 | --- | --- |
 | [LocaleSettings.svelte](LocaleSettings.svelte) | Receives preferences and change/retry callbacks; uses the shared locale formatter for its preview |
 | [SchemaSettings.svelte](SchemaSettings.svelte) | Receives library records and callbacks for upload, replacement, rename, ordering, enablement, deletion and download |
+| [SecretsSettings.svelte](SecretsSettings.svelte) | Manages encrypted credentials, destination approvals, unlock methods, backups and locking through the dedicated vault worker |
 | [StorageSettings.svelte](StorageSettings.svelte) | Presents browser resource metrics, availability and collection errors |
 | [MetricsHistoryChart.svelte](MetricsHistoryChart.svelte) | Renders supplied series and intervals, with local metric/range selection |
 | [ErrorHistory.svelte](ErrorHistory.svelte) | Supplies the Logs section with retained errors, cause chains, stacks, pagination and recorder recovery independently of resource sampling |
@@ -28,3 +29,7 @@ shared locale helpers without changing stored timestamps or aggregation boundari
 Preserve busy/disabled states, save errors and explicit retry paths. Reuse
 [shared controls](../../lib/components/README.md) for consistent keyboard access
 and theme behavior.
+
+Secrets management clears temporary input on cancellation and teardown. Its lock
+action must remain available during pending work. Unlike resource recording,
+accepted secret operations are cancelled immediately when their UI closes.

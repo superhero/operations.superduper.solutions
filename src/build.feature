@@ -21,3 +21,7 @@ Feature: Production build
     Given the production build has completed
     Then the production page contains inline CSS
     And the production page has no external stylesheet
+
+  Scenario: Embedded vault dependency retains its distribution notices
+    Given the production build has completed
+    Then the production page contains the vault cryptography license notices

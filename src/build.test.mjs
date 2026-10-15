@@ -69,3 +69,11 @@ Then("the production page has no external stylesheet", function ()
 {
   assert.doesNotMatch(html, /<link[^>]+rel=["']stylesheet["']/i);
 });
+
+Then("the production page contains the vault cryptography license notices", function ()
+{
+  assert.match(html, /Vault dependency notices/);
+  assert.match(html, /Copyright \(c\) 2020 Dani Biró/);
+  assert.match(html, /Permission is hereby granted, free of charge/);
+  assert.match(html, /Copyright 2012, Samuel Neves/);
+});

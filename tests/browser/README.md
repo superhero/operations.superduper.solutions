@@ -23,10 +23,38 @@ creates a fresh browser context for each scenario, and rejects
 unexpected external requests. Simulate endpoint responses through test routes;
 keep test hooks out of the shipped application.
 
+Chromium remains the default. Use `BROWSER_ENGINE=firefox` or
+`BROWSER_ENGINE=webkit` for an opt-in run with the same pinned image. Additional
+Cucumber arguments pass through, for example
+`BROWSER_ENGINE=firefox npm run test:browser -- --tags @vault-browser-kdf --parallel 1`.
+Non-Chromium runs exclude `@chromium-only` scenarios. Each invocation replaces
+the browser report and failure artifacts; copy evidence before starting another
+run when comparing engines.
+
 The error-history fixture runs the real IndexedDB store and recording worker on
 an isolated test page. Its scenarios cover multi-tab deduplication, FIFO eviction,
 transaction rollback, blocked storage and bounded recording; UI cases also open
 the Errors view in the built application. Fixture routes are test-server-only.
+
+Vault fixtures exercise the real IndexedDB/Web Locks adapters, worker schema
+policy and bounded Fetch responses against isolated loopback endpoints. The KDF
+worker checks pinned reference bytes and the application's nonextractable key
+under a restrictive CSP. Vault UI cases use the built application, including
+recovery verification, lock/unlock and encrypted backup restore. Native WebAuthn
+cases use Chromium's CDP virtual authenticator on `localhost`; these cover native
+ceremonies and worker wrapping. The different-RP restore case adds bounded
+cancellation to the native call without fabricating credentials or PRF output.
+They do not qualify physical authenticators, synced providers, mobile devices
+or cross-provider portability. The non-PRF virtual authenticator is a separate
+failure case and must preserve existing unlock methods.
+
+The CORS-denied case disables request interception only in its fresh isolated
+fixture context so the browser performs its real preflight; the container still
+has external networking disabled. Diagnostic-copy coverage uses native Chromium
+selection and keyboard copying with clipboard permission. Persistence canary
+checks inspect local/session storage, IndexedDB values and keys, and Cache API
+entries; they do not claim to decompress arbitrary Git packfiles or inspect
+browser process memory.
 
 Playwright aborts routed requests whose URL ends in `/favicon.ico` before its
 route callback runs. Favicon scenarios therefore fetch that exact hosted URL

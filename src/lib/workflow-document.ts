@@ -5,6 +5,8 @@
 import { commentTextLimit, isValueConnection, switchGateLimit, switchOperators, switchValueLimit,
   workflowDescriptionLimit, workflowInterface } from "./workflow-utilities.ts";
 import { normalizeManualRoute } from "./flow-routing/manual.js";
+import { validateCredentialBinding } from "./secrets/bindings.ts";
+import type { CredentialBinding } from "./secrets/types.ts";
 
 export type OperationData = {
   operationId: string;
@@ -12,6 +14,8 @@ export type OperationData = {
   description: string;
   method: string;
   path: string;
+  /** Optional local references in supported versions; portable documents omit them. No authorization is stored here. */
+  credentialBinding?: CredentialBinding;
 };
 
 export type WorkflowField = {
@@ -112,7 +116,8 @@ function operationData(value: Record<string, unknown>): OperationData
     name: text(value.name, "Operation name", 200),
     description: text(value.description, "Operation description", 4000, true),
     method,
-    path: text(value.path, "Operation path", 2048)
+    path: text(value.path, "Operation path", 2048),
+    ...(value.credentialBinding === undefined ? {} : { credentialBinding: validateCredentialBinding(value.credentialBinding) })
   };
 }
 
@@ -367,5 +372,15 @@ export function migrateWorkflowDocument(value: unknown): WorkflowDocument
 export function parseWorkflowDocument(json: string): WorkflowDocument
 {
   if (json.length > maxWorkflowFileSize) throw new Error("Workflow documents must be smaller than 2 MB.");
-  return migrateWorkflowDocument(JSON.parse(json));
+  return portableWorkflowDocument(migrateWorkflowDocument(JSON.parse(json)));
+}
+
+/** Imports/exports cannot transfer locally approved credential selections, including nested snapshots. */
+export function portableWorkflowDocument(value: WorkflowDocument): WorkflowDocument {
+  const document = validateWorkflowDocument(value);
+  for (const node of document.nodes) {
+    if (node.type === "workflow") node.data.snapshot = portableWorkflowDocument(node.data.snapshot);
+    else if (node.type === "operation" || node.type === undefined) delete node.data.credentialBinding;
+  }
+  return document;
 }

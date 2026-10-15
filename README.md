@@ -235,6 +235,14 @@ combined test report.
 
 ---
 
+<a href="https://www.npmjs.com/package/hash-wasm"><img src=".github/badges/version-dependency-hash-wasm.svg" alt="hash-wasm declared version"></a>
+
+Derives password wrapping keys with Argon2id inside the dedicated secrets
+worker. Web Crypto encrypts the browser-local vault; the password and derived
+key are never persisted.
+
+---
+
 <a href="https://www.npmjs.com/package/idb"><img src=".github/badges/version-dependency-idb.svg" alt="idb declared version"></a>
 
 Provides promise-based IndexedDB access for settings, workflow and schema

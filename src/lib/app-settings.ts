@@ -6,6 +6,7 @@ import { logger } from "./logger.ts";
 import { reportStartup } from "./startup-progress.ts";
 import { normalizeLocaleSettings, type LocaleSettings } from "./locale-settings.ts";
 import { readAppearanceCache, writeAppearanceCache } from "./appearance-cache.ts";
+import { defaultVaultPreferences, VaultError, type VaultPreferences } from "./secrets/types.ts";
 
 import { appSettingsDatabaseName } from "./storage-names.ts";
 export { appSettingsDatabaseName } from "./storage-names.ts";
@@ -54,7 +55,7 @@ export function isValidWorkflowNodeClearance(value: unknown): value is number
   return typeof value === "number" && Number.isSafeInteger(value)
     && value >= workflowNodeClearanceLimits.min && value <= workflowNodeClearanceLimits.max;
 }
-type SettingValues = { theme: string; palette: string; workflowDefaults: WorkflowDefaults; developerToolbar: boolean; locale: LocaleSettings };
+type SettingValues = { theme: string; palette: string; workflowDefaults: WorkflowDefaults; developerToolbar: boolean; locale: LocaleSettings; vaultPreferences?: VaultPreferences };
 
 interface SettingsDatabase extends DBSchema
 {
@@ -279,4 +280,17 @@ export function saveSetting<Key extends keyof SettingValues>(key: Key, value: Se
     if (appearance) writeAppearanceCache(appearance);
   });
   return pending;
+}
+
+/** Independent lazy read: secret access does not make general startup depend on the vault. */
+export async function readVaultPreferences(): Promise<VaultPreferences> {
+  const value = await inStore("readonly", store => store.get("vaultPreferences"));
+  return validateVaultPreferences(value ?? defaultVaultPreferences);
+}
+export function validateVaultPreferences(value: unknown): VaultPreferences {
+  if (!value || typeof value !== "object") throw new VaultError("INVALID");
+  const prefs = value as VaultPreferences;
+  if (typeof prefs.idleLockEnabled !== "boolean" || !Number.isInteger(prefs.idleLockMinutes)
+    || prefs.idleLockMinutes < 1 || prefs.idleLockMinutes > 1440) throw new VaultError("INVALID");
+  return { idleLockEnabled: prefs.idleLockEnabled, idleLockMinutes: prefs.idleLockMinutes };
 }

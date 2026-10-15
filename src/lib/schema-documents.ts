@@ -221,9 +221,6 @@ export function validateSchemaDocument(value: unknown, id: string): {
         const response = resolve(rawResponse, document, `${method} ${path}: response ${status}`);
         if (typeof response.description !== "string") invalid(`${method} ${path}: response ${status} requires a description.`);
       }
-      const security = operation.security ?? document.security;
-      if (security !== undefined && (!Array.isArray(security) || security.some(requirement => Object.keys(object(requirement, "security requirement")).length)))
-        unsupported(`${method} ${path}: automatic security schemes are not supported; use explicit supported header/query inputs.`);
       if (operation.callbacks !== undefined && Object.keys(object(operation.callbacks, "callbacks")).length)
         unsupported(`${method} ${path}: callbacks are not supported.`);
     }
