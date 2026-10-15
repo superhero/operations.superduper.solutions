@@ -13,8 +13,8 @@
   import { catalogs, type CatalogGroup } from "$lib/catalog-registry.ts";
   import { evaluateOperationsAsync } from "$lib/operation-matching-client.ts";
   import type { OperationMatch } from "$lib/matching.ts";
-  let { open = $bindable(false), modal = $bindable(false), documentModal = false, operations, mode, dark, workflows, workflowError, onWorkflowSelect, onWorkflowRetry, onSelect, onMode, onTheme }:
-    { open: boolean; modal?: boolean; documentModal?: boolean; operations: Operation[]; mode: WorkspaceMode; dark: boolean;
+  let { open = $bindable(false), modal = $bindable(false), documentModal = false, operations, mode, dark, evaluationDetails = false, workflows, workflowError, onWorkflowSelect, onWorkflowRetry, onSelect, onMode, onTheme }:
+    { open: boolean; modal?: boolean; documentModal?: boolean; operations: Operation[]; mode: WorkspaceMode; dark: boolean; evaluationDetails?: boolean;
       workflows: WorkflowDocument[]; workflowError: string; onWorkflowSelect: (document: WorkflowDocument) => void; onWorkflowRetry: () => void;
       onSelect: (operation: Operation) => void; onMode: (mode: WorkspaceMode) => void; onTheme: () => void } = $props();
   let mobile = $state(false);
@@ -27,6 +27,7 @@
   let prompt = $state("");
   let composing = $state(false);
   let matchingOpen = $state(false);
+  $effect(() => { if (!evaluationDetails) matchingOpen = false; });
   let matchingPending = $state(false);
   let matchingError = $state("");
   let evaluation = $state<{ prompt: string; candidates: OperationMatch[]; results: OperationMatch[]; durationMs: number } | null>(null);
@@ -231,7 +232,7 @@
     </HintButton>
   </div>
   <CatalogPrompt bind:this={promptEditor} value={prompt} pending={matchingPending} error={matchingError} {evaluation}
-    {matchingOpen} onChange={changePrompt}
+    {matchingOpen} {evaluationDetails} onChange={changePrompt}
     onMatchingToggle={() => matchingOpen = !matchingOpen} onRetry={() => retryMatching += 1} />
   <nav class="operation-catalog" aria-label="Operation catalog">
     {#each groups.filter(group => groupCount(group, true) > 0) as group (group.id)}

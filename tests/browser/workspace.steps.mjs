@@ -111,6 +111,29 @@ async function setMode(page, mode) {
   await expect(target).toBeVisible();
 }
 
+export async function setEvaluationDetails(page, enabled = true) {
+  await setMode(page, "settings");
+  const settings = page.getByRole("region", { name: "Settings workspace", exact: true });
+  const developer = settings.locator('summary[aria-label="Developer"]');
+  if (await developer.getAttribute("aria-expanded") !== "true") await developer.click();
+  const toggle = settings.getByRole("switch", { name: "Evaluation details", exact: true });
+  if (await toggle.getAttribute("aria-checked") !== String(enabled)) await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-checked", String(enabled));
+  await expect.poll(() => page.evaluate(() => new Promise((resolve, reject) => {
+    const request = indexedDB.open("v1/settings");
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const database = request.result;
+      const transaction = database.transaction("settings", "readonly");
+      const value = transaction.objectStore("settings").get("evaluationDetails");
+      transaction.oncomplete = () => { database.close(); resolve(value.result); };
+      transaction.onabort = transaction.onerror = () => { database.close(); reject(transaction.error); };
+    };
+  }))).toBe(enabled);
+  await setMode(page, "workflow");
+  await openCatalog(page);
+}
+
 async function field(page, label) {
   const options = { name: label, exact: true };
   const input = workspace(page).getByRole("textbox", options)
@@ -177,6 +200,7 @@ Then("the results offer the {string} form", async function (name) {
   await expect(this.page.getByRole("navigation", { name: "Operation catalog", exact: true }).getByRole("button", { name: `Add to workflow: ${name}`, exact: true })).toBeVisible();
 });
 When("I review the matching details", async function () {
+  await setEvaluationDetails(this.page);
   await this.page.getByLabel("Review matching details", { exact: true }).click();
 });
 Then("the matching details show ranked operation comparisons", async function () {

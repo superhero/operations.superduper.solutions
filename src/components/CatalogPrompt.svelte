@@ -12,12 +12,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import EvaluationReport from "./reports/EvaluationReport.svelte";
   import "./reports/reports.css";
 
-  let { value, pending, error, evaluation, matchingOpen, onChange, onMatchingToggle, onRetry }: {
+  let { value, pending, error, evaluation, matchingOpen, evaluationDetails = false, onChange, onMatchingToggle, onRetry }: {
     value: string;
     pending: boolean;
     error: string;
     evaluation: { prompt: string; candidates: OperationMatch[]; results: OperationMatch[]; durationMs: number } | null;
     matchingOpen: boolean;
+    evaluationDetails?: boolean;
     onChange: (value: string, composing?: boolean) => void;
     onMatchingToggle: () => void;
     onRetry: () => void;
@@ -54,11 +55,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <section class="catalog-prompt" aria-label="Find operations" aria-busy={pending} data-evaluated-prompt={evaluation?.prompt ?? ""}>
-  <div class="prompt-input" class:has-details={Boolean(evaluation)}>
+  <div class="prompt-input" class:has-details={evaluationDetails && Boolean(evaluation)}>
     <textarea id="operation-prompt" bind:this={input} value={value} use:fitTextarea={value} rows="1" maxlength="240"
       placeholder="Prompt" aria-label="Prompt" aria-describedby="prompt-help" oninput={(event) => onChange(event.currentTarget.value, event instanceof InputEvent && event.isComposing)}
       oncompositionstart={() => onChange(value, true)} oncompositionend={(event) => onChange(event.currentTarget.value, false)}></textarea>
-    {#if evaluation}
+    {#if evaluationDetails && evaluation}
       <div class="prompt-actions report-pill context-label">
         <HintButton class="report-toggle" type="button" label="Details" aria-label="Review matching details" aria-expanded={matchingOpen}
           aria-controls="matching-help" onclick={onMatchingToggle}><MaterialIcon name="keyboard_arrow_down" size={16} /></HintButton>
@@ -73,12 +74,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <p class="matching-error" role="alert">{error}</p>
     <button type="button" class="text-button" onclick={onRetry}>Retry matching</button>
   {/if}
+  {#if evaluationDetails}
   <Reveal open={matchingOpen && Boolean(evaluation)} id="matching-help">
     {#if evaluation}
       <EvaluationReport prompt={evaluation.prompt} durationMs={evaluation.durationMs} candidates={evaluation.candidates}
         results={evaluation.results} considered={evaluation.candidates.length} />
     {/if}
   </Reveal>
+  {/if}
 </section>
 
 <style>

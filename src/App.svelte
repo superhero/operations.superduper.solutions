@@ -16,9 +16,10 @@
   import BackgroundWave from "./components/BackgroundWave.svelte";
   import NativeScrollbars from "./components/NativeScrollbars.svelte";
 
-  let { initialWorkflowDefaults, initialDeveloperToolbar = false, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
+  let { initialWorkflowDefaults, initialDeveloperToolbar = false, initialEvaluationDetails = false, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
     initialWorkflowDefaults: WorkflowDefaults;
     initialDeveloperToolbar?: boolean;
+    initialEvaluationDetails?: boolean;
     initialLocale?: LocaleSettings;
     initialSettingsError?: Error | null;
   } = $props();
@@ -26,12 +27,15 @@
   let developerToolbar = $state(untrack(() => initialDeveloperToolbar));
   let developerToolbarError = $state("");
   let developerToolbarSave = 0;
+  let evaluationDetails = $state(untrack(() => initialEvaluationDetails));
+  let evaluationDetailsError = $state("");
+  let evaluationDetailsSave = 0;
   let locale = $state<LocaleSettings>(untrack(() => normalizeLocaleSettings(initialLocale)));
   let localeError = $state("");
   let localeSave = 0;
   let settingsError = $state(untrack(() => initialSettingsError));
   let settingsRetrying = $state(false);
-  const settingsEdits = { theme: 0, palette: 0, workflowDefaults: 0, developerToolbar: 0, locale: 0 };
+  const settingsEdits = { theme: 0, palette: 0, workflowDefaults: 0, developerToolbar: 0, evaluationDetails: 0, locale: 0 };
   let workflowDefaultsError = $state("");
   let workflowDefaultsSave = 0;
   let navigationOpen = $state(!matchMedia("(max-width: 899px)").matches);
@@ -151,6 +155,19 @@
     });
   }
 
+  function selectEvaluationDetails(next: boolean) {
+    settingsEdits.evaluationDetails += 1;
+    evaluationDetails = next;
+    evaluationDetailsError = "";
+    const request = ++evaluationDetailsSave;
+    void saveSetting("evaluationDetails", next).catch(error => {
+      if (request === evaluationDetailsSave) {
+        evaluationDetailsError = "Could not save this setting. It applies only to this session until saving succeeds.";
+        void reportSettingsError(error);
+      }
+    });
+  }
+
   async function reportSettingsError(error: unknown) {
     const failure = error instanceof Error ? error : new Error("Could not access saved settings.", { cause: error });
     // Keep the recovered app usable behind the overlay, with its palette applied.
@@ -172,6 +189,7 @@
         if (edits.palette === settingsEdits.palette) palette = palettes.find(option => option.id === settings.palette)?.id ?? palettes[0].id;
         if (edits.workflowDefaults === settingsEdits.workflowDefaults) workflowDefaults = settings.workflowDefaults;
         if (edits.developerToolbar === settingsEdits.developerToolbar) developerToolbar = settings.developerToolbar;
+        if (edits.evaluationDetails === settingsEdits.evaluationDetails) evaluationDetails = settings.evaluationDetails;
         if (edits.locale === settingsEdits.locale) locale = settings.locale;
       }
     } finally {
@@ -228,7 +246,7 @@
 <Tooltip.Provider delayDuration={400} ignoreNonKeyboardFocus disableHoverableContent>
 <BackgroundWave />
 <NativeScrollbars />
-<SideNavigation bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {mode} {dark}
+<SideNavigation bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {mode} {dark} {evaluationDetails}
   workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
   onSelect={selectOperation} onMode={setMode} onTheme={toggleTheme} />
 <div class="page-content" class:catalog-open={navigationOpen} class:workflow-mode={mode === "workflow"}>
@@ -252,6 +270,7 @@
           {locale} {localeError} onLocaleChange={selectLocale} onRetryLocale={() => selectLocale(locale)}
           settingsUnavailable={Boolean(settingsError)} {settingsRetrying} onRetrySettings={retrySettings}
           {developerToolbar} {developerToolbarError} onDeveloperToolbarChange={selectDeveloperToolbar}
+          {evaluationDetails} {evaluationDetailsError} onEvaluationDetailsChange={selectEvaluationDetails}
           onWorkflowDefaultsChange={selectWorkflowDefaults} onRetryWorkflowDefaults={() => selectWorkflowDefaults(workflowDefaults)} />
       </div>
     </main>

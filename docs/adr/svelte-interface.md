@@ -69,6 +69,8 @@ palettes, role bindings and contrast without duplicating shipped hex values.
 The prompt sits below the navigation buttons and filters operation leaves as the
 user types. Empty categories are hidden, with matching paths expanded.
 Clearing the prompt restores ordinary browsing and its saved expansion state.
+The evaluation report is opt-in through **Settings → Developer → Evaluation
+details**, off by default. This preference does not affect operation matching.
 
 Evaluation runs in a dedicated worker after a short typing delay. Further edits
 abort the previous calculation; only results for the current prompt and catalog

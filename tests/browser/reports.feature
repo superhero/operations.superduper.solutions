@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 Feature: Local evaluation and operation reports
+  Scenario: Evaluation details are an optional saved developer preference
+    Then evaluation details stay hidden until enabled and the saved choice survives reload
+
   Scenario Outline: Evaluation reports explain the actual local comparison
     When I search for the operation "<prompt>"
     And I review the matching details

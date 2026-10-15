@@ -4,6 +4,7 @@ These components explain an operation or a completed matching evaluation inside
 [Run workflow](../workflows/WorkflowRun.svelte) and the
 [catalog prompt](../CatalogPrompt.svelte). They present data;
 they do not submit requests or choose the active operation.
+Evaluation details are disabled by default; enable them in **Settings → Developer**.
 
 ## Data boundaries
 

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { Then, When } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { closeCatalog, openCatalog, setMode, searchOperations } from './workspace.steps.mjs';
+import { closeCatalog, openCatalog, setMode, searchOperations, setEvaluationDetails } from './workspace.steps.mjs';
 
 const paletteNames = Array.from({ length: 6 }, (_, index) => `--palette-${index + 1}`);
 const toneNames = Array.from({ length: 6 }, (_, index) => `--tone-${index + 1}`);
@@ -420,6 +420,7 @@ async function expectReadable(control, palette) {
 
 Then('prompt fields and badges remain readable while primary actions use the label foreground in both modes', async function () {
   const page = this.page;
+  await setEvaluationDetails(page);
   for (const theme of ['light', 'dark']) {
     await selectTheme(page, theme);
     const palette = Object.values(await resolvedColors(page, paletteNames));

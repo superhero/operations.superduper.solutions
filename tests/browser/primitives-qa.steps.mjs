@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, closeCatalog, workspace, searchOperations } from './workspace.steps.mjs';
+import { openCatalog, closeCatalog, workspace, searchOperations, setEvaluationDetails } from './workspace.steps.mjs';
 import { holdHeightAnimations, resumeHeightAnimations, seekHeightAnimation } from './height-animation.fixture.mjs';
 
 Then('navigation focus follows normal-motion opening and breakpoint changes', async function () {
@@ -99,6 +99,7 @@ Then('hovering another control replaces keyboard help', async function () {
 
 Then('prompt matching details preserve keyboard navigation', async function () {
   const page = this.page;
+  await setEvaluationDetails(page);
   await page.setViewportSize({ width: 280, height: 844 });
   await openCatalog(page);
   const tooltip = page.getByRole('tooltip');

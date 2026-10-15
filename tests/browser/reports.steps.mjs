@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { chooseCatalogOperation, closeCatalog, field, expectFieldValue, openCatalog, workspace, searchOperations } from "./workspace.steps.mjs";
+import { chooseCatalogOperation, closeCatalog, field, expectFieldValue, openCatalog, workspace, searchOperations, setMode, setEvaluationDetails } from "./workspace.steps.mjs";
 import { expectThemeColors } from "./theme-colors.mjs";
 import { operations } from "../../src/lib/catalog.ts";
 import { catalogForOperation } from "../../src/lib/catalog-registry.ts";
@@ -19,6 +19,43 @@ const fact = (region, label) => region.locator("dt").filter({ hasText: new RegEx
 const metric = (region, label) => region.locator(".report-metric").filter({ hasText: label })
   .locator(".report-metric-value");
 const expectReportColor = (element, property, role) => expectThemeColors(element, { [property]: role });
+
+Then("evaluation details stay hidden until enabled and the saved choice survives reload", async function () {
+  const page = this.page;
+  const toggle = page.getByRole("button", { name: "Review matching details", exact: true });
+  const preference = page.getByRole("switch", { name: "Evaluation details", exact: true });
+  await searchOperations(page, "List projects");
+  await expect(toggle).toHaveCount(0);
+  await expect(evaluationReport(page)).toBeHidden();
+  await expect(page.locator(".catalog-prompt .prompt-actions")).toHaveCount(0);
+  await setMode(page, "settings");
+  await page.locator('summary[aria-label="Developer"]').click();
+  await expect(preference).toHaveAttribute("aria-checked", "false");
+
+  await setEvaluationDetails(page);
+  await expect(toggle).toBeVisible();
+  await toggle.click();
+  await expect(evaluationReport(page)).toBeVisible();
+  await expect(evaluationReport(page).locator(".evaluation-prompt p")).toHaveText("List projects");
+  await setEvaluationDetails(page, false);
+  await expect(toggle).toHaveCount(0);
+  await expect(evaluationReport(page)).toBeHidden();
+
+  await setEvaluationDetails(page);
+  await page.reload();
+  await searchOperations(page, "List projects");
+  await expect(toggle).toBeVisible();
+  await toggle.click();
+  await expect(evaluationReport(page)).toBeVisible();
+  await setEvaluationDetails(page, false);
+  await page.reload();
+  await searchOperations(page, "List projects");
+  await expect(toggle).toHaveCount(0);
+  await expect(evaluationReport(page)).toBeHidden();
+  await setMode(page, "settings");
+  await page.locator('summary[aria-label="Developer"]').click();
+  await expect(preference).toHaveAttribute("aria-checked", "false");
+});
 
 async function expectRejectedSummary(list, proposedCount) {
   const rejectedCount = operations.length - proposedCount;
@@ -281,6 +318,7 @@ Then("both reports fit a {int} pixel viewport in the {string} theme", async func
     header: "--color-json-header-hover-background", headerText: "--color-json-header-hover-foreground",
     text: "--color-foreground", key: "--color-json-key", string: "--color-json-string", value: "--color-json-value"
   };
+  await setEvaluationDetails(this.page);
   await this.page.setViewportSize({ width, height: 844 });
   await openCatalog(this.page);
   const toggle = this.page.getByRole("switch", { name: "Dark theme", exact: true });

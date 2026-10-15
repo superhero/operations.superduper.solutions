@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { chooseCatalogOperation, closeCatalog, field, fillField, expectFieldValue, openCatalog, workspace, searchOperations,
-  workflow, workflowAction, operationNodes, restartRun, quitRun, executeOperation, applyDisplayedTheme } from './workspace.steps.mjs';
+  workflow, workflowAction, operationNodes, restartRun, quitRun, executeOperation, applyDisplayedTheme, setEvaluationDetails } from './workspace.steps.mjs';
 import { expectThemeColors } from './theme-colors.mjs';
 
 async function expectUnclippedFocus(control) {
@@ -88,6 +88,7 @@ async function controlContrasts(controls) {
 
 Then('operations controls retain their complete keyboard focus outline', async function () {
   const page = this.page;
+  await setEvaluationDetails(page);
   await openCatalog(page);
   const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
   await searchOperations(page, 'Get project');
