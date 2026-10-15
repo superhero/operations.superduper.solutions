@@ -61,7 +61,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if evaluation}
       <div class="prompt-actions report-pill context-label">
         <HintButton class="report-toggle" type="button" label="Details" aria-label="Review matching details" aria-expanded={matchingOpen}
-          aria-controls="matching-help" onclick={onMatchingToggle}><MaterialIcon name="article" size={16} /></HintButton>
+          aria-controls="matching-help" onclick={onMatchingToggle}><MaterialIcon name="keyboard_arrow_down" size={16} /></HintButton>
       </div>
     {/if}
   </div>
