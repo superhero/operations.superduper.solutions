@@ -144,30 +144,3 @@ Then('native scrollbars expand on hover and settle without changing the reading 
   await expect.poll(inset).toBe(0);
   await expect.poll(() => root.evaluate(element => element.getAnimations().length)).toBe(0);
 });
-
-Then('prompt examples remain one full row while navigation resizes', async function () {
-  const page = this.page;
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await openCatalog(page);
-  const toggle = page.getByRole('button', { name: 'Commonly used operations', exact: true });
-  await toggle.click();
-  await page.evaluate(() => document.fonts.ready);
-  for (const width of [1280, 500, 320, 390, 1280]) {
-    await page.setViewportSize({ width, height: 844 });
-    await openCatalog(page);
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    await toggle.hover();
-    const examples = page.locator('.prompt-suggestion-list button:visible');
-    await expect.poll(() => examples.count()).toBeGreaterThan(0);
-    await expect.poll(() => examples.evaluateAll(buttons => {
-      const list = buttons[0].parentElement.getBoundingClientRect();
-      const first = buttons[0].getBoundingClientRect();
-      return buttons.every(button => {
-        const box = button.getBoundingClientRect();
-        return Math.abs(box.top - first.top) <= 1 && box.left >= list.left - 1 && box.right <= list.right + 1 && button.scrollWidth <= button.clientWidth + 1;
-      }) && document.documentElement.scrollWidth <= innerWidth;
-    })).toBe(true);
-    await page.mouse.move(0, 0);
-    await expect(examples.first()).toBeVisible();
-  }
-});

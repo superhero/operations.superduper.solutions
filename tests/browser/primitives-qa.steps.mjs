@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, closeCatalog, workspace } from './workspace.steps.mjs';
+import { openCatalog, closeCatalog, workspace, searchOperations } from './workspace.steps.mjs';
 import { holdHeightAnimations, resumeHeightAnimations, seekHeightAnimation } from './height-animation.fixture.mjs';
 
 Then('navigation focus follows normal-motion opening and breakpoint changes', async function () {
@@ -97,31 +97,28 @@ Then('hovering another control replaces keyboard help', async function () {
   await expect(page.getByRole('button', { name: 'Open navigation', exact: true })).toBeFocused();
 });
 
-Then('prompt hints and examples preserve keyboard navigation', async function () {
+Then('prompt matching details preserve keyboard navigation', async function () {
   const page = this.page;
   await page.setViewportSize({ width: 280, height: 844 });
   await openCatalog(page);
   const tooltip = page.getByRole('tooltip');
   const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
-  const toggle = page.getByRole('button', { name: 'Commonly used operations', exact: true });
+  const toggle = page.getByRole('button', { name: 'Review matching details', exact: true });
+  await expect(toggle).toHaveCount(0);
+  await searchOperations(page, 'List projects');
+  await expect(prompt).toBeFocused();
+  await prompt.press('Tab');
+  await expect(toggle).toBeFocused();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await toggle.focus();
-  await expect(tooltip).toHaveText('Commonly used operations');
+  await expect(tooltip).toHaveText('Details');
   await expect(toggle).not.toHaveAttribute('title');
-  await expect(toggle.locator('.material-symbols-rounded')).toHaveText('quick_phrases');
   await toggle.press('Enter');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  const example = page.locator('.prompt-suggestion-list button:visible').first();
-  await expect(example).toBeVisible();
-  await toggle.press('Tab');
-  await expect(example).toBeFocused();
-  await example.hover();
-  await page.waitForTimeout(450);
-  await expect(tooltip).toHaveCount(0);
-  await example.press('Enter');
+  await expect(page.locator('#matching-help')).toBeVisible();
+  await toggle.press('Enter');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await prompt.focus();
   await expect(prompt).toHaveValue('List projects');
-  await expect(prompt).toBeFocused();
-  await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', 'List projects');
   await expect(page.getByRole('button', { name: 'Add to workflow: List projects', exact: true })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Progress', exact: true })).toHaveCount(0);
   await page.keyboard.press('Escape');

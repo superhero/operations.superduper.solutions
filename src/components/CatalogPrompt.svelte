@@ -5,25 +5,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
-  import { tick } from "svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import Reveal from "$lib/components/Reveal.svelte";
-  import type { Operation } from "$lib/catalog.ts";
   import type { OperationMatch } from "$lib/matching.ts";
   import EvaluationReport from "./reports/EvaluationReport.svelte";
   import "./reports/reports.css";
 
-  let { value, operations, pending, error, evaluation, examplesOpen, matchingOpen, onChange, onExamplesToggle, onMatchingToggle, onRetry }: {
+  let { value, pending, error, evaluation, matchingOpen, onChange, onMatchingToggle, onRetry }: {
     value: string;
-    operations: Operation[];
     pending: boolean;
     error: string;
     evaluation: { prompt: string; candidates: OperationMatch[]; results: OperationMatch[]; durationMs: number } | null;
-    examplesOpen: boolean;
     matchingOpen: boolean;
     onChange: (value: string, composing?: boolean) => void;
-    onExamplesToggle: () => void;
     onMatchingToggle: () => void;
     onRetry: () => void;
   } = $props();
@@ -33,12 +28,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (!input?.isConnected || input.closest("[hidden],[inert]")) return;
     input.focus({ preventScroll: true });
     return input;
-  }
-
-  async function chooseExample(name: string) {
-    onChange(name);
-    await tick();
-    focus();
   }
 
   function fitTextarea(node: HTMLTextAreaElement, _value: string) {
@@ -62,32 +51,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     fit();
     return { update: schedule, destroy: () => { disposed = true; observer.disconnect(); cancelAnimationFrame(frame); } };
   }
-
-  function fitExamples(list: HTMLElement, _operations: Operation[]) {
-    let frame = 0;
-    let disposed = false;
-    const fit = () => {
-      frame = 0;
-      const buttons = [...list.querySelectorAll<HTMLButtonElement>("button")];
-      buttons.forEach(button => button.hidden = false);
-      const widths = buttons.map(button => button.offsetWidth);
-      const available = list.clientWidth;
-      const gap = parseFloat(getComputedStyle(list).columnGap) || 0;
-      let used = 0;
-      buttons.forEach((button, index) => {
-        const width = widths[index]! + (used ? gap : 0);
-        button.hidden = used + width > available;
-        if (!button.hidden) used += width;
-        else if (button === document.activeElement) focus();
-      });
-    };
-    const schedule = () => { if (!disposed && !frame) frame = requestAnimationFrame(fit); };
-    const observer = new ResizeObserver(schedule);
-    observer.observe(list);
-    void document.fonts.ready.then(schedule);
-    fit();
-    return { update: schedule, destroy: () => { disposed = true; observer.disconnect(); cancelAnimationFrame(frame); } };
-  }
 </script>
 
 <section class="catalog-prompt" aria-label="Find operations" aria-busy={pending} data-evaluated-prompt={evaluation?.prompt ?? ""}>
@@ -95,22 +58,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <textarea id="operation-prompt" bind:this={input} value={value} use:fitTextarea={value} rows="1" maxlength="240"
       placeholder="Prompt" aria-label="Prompt" aria-describedby="prompt-help" oninput={(event) => onChange(event.currentTarget.value, event instanceof InputEvent && event.isComposing)}
       oncompositionstart={() => onChange(value, true)} oncompositionend={(event) => onChange(event.currentTarget.value, false)}></textarea>
-    <div class="prompt-actions report-pill context-label">
-      <HintButton class="report-toggle" type="button" label="Commonly used operations" aria-expanded={examplesOpen}
-        aria-controls="prompt-examples" onclick={onExamplesToggle}><MaterialIcon name="quick_phrases" size={16} /></HintButton>
-      {#if evaluation}
+    {#if evaluation}
+      <div class="prompt-actions report-pill context-label">
         <HintButton class="report-toggle" type="button" label="Details" aria-label="Review matching details" aria-expanded={matchingOpen}
           aria-controls="matching-help" onclick={onMatchingToggle}><MaterialIcon name="article" size={16} /></HintButton>
-      {/if}
-    </div>
+      </div>
+    {/if}
   </div>
-  <Reveal open={examplesOpen} id="prompt-examples">
-    <div class="prompt-suggestion-list" use:fitExamples={operations}>
-      {#each operations as operation (operation.id)}
-        <button type="button" onclick={() => chooseExample(operation.name)}><span class="button-content">{operation.name}</span></button>
-      {/each}
-    </div>
-  </Reveal>
   <p id="prompt-help" class="sr-only">Find operations by name or identifier. Matching operations appear automatically as you type. Clear the prompt to browse all operations.</p>
   <p class="matching-status" role="status" aria-live="polite">
     {#if pending}Finding operations…{:else if evaluation && !evaluation.results.length}No matching operations.{/if}
@@ -129,15 +83,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .catalog-prompt { min-width: 0; margin-bottom: 16px; }
-  .prompt-input { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 12px; }
-  .prompt-actions { margin-top: 6px; }
-  .prompt-actions :global(.report-toggle) { height: 32px; padding: 4px; }
-  .prompt-actions :global(.report-toggle:first-child) { border-radius: 4px 0 0 4px; }
-  .prompt-actions :global(.report-toggle:only-child) { border-radius: 4px; }
-  #operation-prompt { --field-background: var(--color-foreground); --field-foreground: var(--color-background); display: block; box-sizing: border-box; width: 100%; min-width: 0; min-height: calc(1.5em + 24px); field-sizing: fixed; padding: 12px; border: 0; border-radius: 4px; background: var(--field-background); color: var(--field-foreground); font-size: 13px; line-height: 1.5; resize: none; overflow: hidden; scrollbar-gutter: auto; }
+  .prompt-input { display: flex; align-items: flex-start; gap: 12px; }
+  .prompt-actions { flex-shrink: 0; margin-top: 6px; }
+  .prompt-actions :global(.report-toggle) { height: 32px; padding: 4px; border-radius: 4px; }
+  #operation-prompt { --field-background: var(--color-foreground); --field-foreground: var(--color-background); display: block; flex: 1; box-sizing: border-box; width: 100%; min-width: 0; min-height: calc(1.5em + 24px); field-sizing: fixed; padding: 12px; border: 0; border-radius: 4px; background: var(--field-background); color: var(--field-foreground); font-size: 13px; line-height: 1.5; resize: none; overflow: hidden; scrollbar-gutter: auto; }
   #operation-prompt:focus { outline: 3px solid var(--color-ring); outline-offset: 3px; }
   #operation-prompt::placeholder { color: var(--color-surface); opacity: 1; }
-  .prompt-suggestion-list { margin: 12px 0 0; }
   .matching-status { margin: 0; color: var(--color-muted-foreground); font-size: 12px; }
   .matching-status:not(:empty) { margin-top: 8px; }
   .matching-error { margin: 8px 0; color: var(--color-foreground); font-size: 12px; }

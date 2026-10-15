@@ -26,7 +26,6 @@
   let sheetAutoFocused = false;
   let prompt = $state("");
   let composing = $state(false);
-  let examplesOpen = $state(false);
   let matchingOpen = $state(false);
   let matchingPending = $state(false);
   let matchingError = $state("");
@@ -231,8 +230,8 @@
       <span class="switch-thumb"></span><span><MaterialIcon name="light_mode" /></span><span><MaterialIcon name="dark_mode" /></span>
     </HintButton>
   </div>
-  <CatalogPrompt bind:this={promptEditor} value={prompt} {operations} pending={matchingPending} error={matchingError} {evaluation}
-    {examplesOpen} {matchingOpen} onChange={changePrompt} onExamplesToggle={() => examplesOpen = !examplesOpen}
+  <CatalogPrompt bind:this={promptEditor} value={prompt} pending={matchingPending} error={matchingError} {evaluation}
+    {matchingOpen} onChange={changePrompt}
     onMatchingToggle={() => matchingOpen = !matchingOpen} onRetry={() => retryMatching += 1} />
   <nav class="operation-catalog" aria-label="Operation catalog">
     {#each groups.filter(group => groupCount(group) > 0) as group (group.id)}

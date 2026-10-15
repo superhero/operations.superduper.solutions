@@ -90,8 +90,8 @@ Then('operations controls retain their complete keyboard focus outline', async f
   const page = this.page;
   await openCatalog(page);
   const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
-  const toggle = page.getByRole('button', { name: 'Commonly used operations', exact: true });
-  await toggle.click();
+  await searchOperations(page, 'Get project');
+  const toggle = page.getByRole('button', { name: 'Review matching details', exact: true });
   for (const theme of ['light', 'dark']) {
     await selectTheme(page, theme);
     await openCatalog(page);
@@ -103,25 +103,19 @@ Then('operations controls retain their complete keyboard focus outline', async f
     await expectThemeColors(page.locator('.catalog-prompt .prompt-actions'), {
       backgroundColor: '--color-badge-background', color: '--color-badge-foreground'
     });
-    const examples = page.locator('.prompt-suggestion-list button:visible');
-    for (const example of await examples.all())
-      await expectThemeColors(example, { backgroundColor: '--color-muted', color: '--color-chip-foreground' });
-    const contrasts = await controlContrasts(page.locator('.catalog-prompt textarea, .prompt-suggestion-list button:visible'));
+    const contrasts = await controlContrasts(page.locator('.catalog-prompt textarea'));
     for (const { label, minimum, ratio } of contrasts)
       assert.ok(ratio >= minimum, `${theme} ${label} needs readable contrast: ${ratio.toFixed(2)}:1.`);
-    await examples.first().hover();
-    await expectThemeColors(examples.first(), { backgroundColor: '--color-muted', color: '--color-chip-foreground' });
   }
+  await prompt.focus();
+  await prompt.press('Tab');
+  await expect(toggle).toBeFocused();
   await expectUnclippedFocus(toggle);
-  await toggle.press('Tab');
-  const example = page.locator('.prompt-suggestion-list button:visible').first();
-  await expect(example).toBeFocused();
-  await expectUnclippedFocus(example);
-  const suggested = await example.innerText();
-  await example.press('Enter');
-  await expect(prompt).toHaveValue(suggested);
-  await expect(prompt).toBeFocused();
-  await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', suggested);
+  await toggle.press('Enter');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await toggle.press('Enter');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  const suggested = 'Get project';
   const action = page.getByRole('button', { name: `Add to workflow: ${suggested}`, exact: true });
   await expectUnclippedFocus(action);
   await action.press('Enter');

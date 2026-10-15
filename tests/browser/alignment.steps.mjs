@@ -8,7 +8,6 @@ import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { openCatalog, closeCatalog, chooseCatalogOperation, field, fillField, workflow, workflowAction, workspace, operationNodes, connections, searchOperations } from './workspace.steps.mjs';
 import { expectThemeColors } from './theme-colors.mjs';
-import { operations } from '../../src/lib/catalog.ts';
 
 // Capture before input so a busy browser cannot finish short motion before
 // Playwright sees it. Keep the real animation running with only its clock held.
@@ -78,12 +77,7 @@ Then('prompt keyboard controls preserve editing and search deliberately', async 
   await searchOperations(page, '   \n ');
   await expect(page.getByRole('alert')).toHaveCount(0);
   await expect(page.getByRole('navigation', { name: 'Progress', exact: true })).toHaveCount(0);
-  const toggle = page.getByRole('button', { name: 'Commonly used operations', exact: true });
-  await toggle.click();
-  const examples = page.locator('.prompt-suggestion-list button');
-  await expect(examples).toHaveText(operations.map(operation => operation.name));
-  const example = page.locator('.prompt-suggestion-list button:visible').first();
-  await example.click();
+  await searchOperations(page, 'List projects');
   await expect(prompt).toHaveValue('List projects');
   await expect(prompt).toBeFocused();
   await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', 'List projects');

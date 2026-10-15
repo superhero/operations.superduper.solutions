@@ -89,13 +89,6 @@ try {
     await page.goto(baseURL, { waitUntil: 'networkidle', timeout: 60_000 });
     await expect(page.locator('#startup-status')).toHaveCount(0);
     await settled();
-    phase = `${motion}: prompt examples`;
-    await openCatalog();
-    await toggle('Commonly used operations');
-    await page.setViewportSize({ width: 360, height: 720 });
-    await openCatalog();
-    await toggle('Commonly used operations', 2);
-    await page.setViewportSize({ width: 1280, height: 720 });
     phase = `${motion}: evaluation`;
     await openCatalog();
     await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('Get example page');
@@ -104,6 +97,11 @@ try {
     await settled();
     phase = `${motion}: evaluation report`;
     await toggle('Review matching details');
+    await page.setViewportSize({ width: 360, height: 720 });
+    await openCatalog();
+    await toggle('Review matching details', 2);
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await openCatalog();
     phase = `${motion}: operation`;
     await page.getByRole('button', { name: /^Add to workflow:/ }).first().click();
     await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(1);

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { Then, When } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { closeCatalog, openCatalog, setMode } from './workspace.steps.mjs';
+import { closeCatalog, openCatalog, setMode, searchOperations } from './workspace.steps.mjs';
 
 const paletteNames = Array.from({ length: 6 }, (_, index) => `--palette-${index + 1}`);
 const toneNames = Array.from({ length: 6 }, (_, index) => `--tone-${index + 1}`);
@@ -426,7 +426,8 @@ Then('prompt fields and badges remain readable while primary actions use the lab
     await setMode(page, 'workflow');
     await openCatalog(page);
     await expectReadable(page.getByRole('textbox', { name: 'Prompt', exact: true }), palette);
-    await expectReadable(page.getByRole('button', { name: 'Commonly used operations', exact: true }), palette);
+    await searchOperations(page, 'Get project');
+    await expectReadable(page.getByRole('button', { name: 'Review matching details', exact: true }), palette);
     await setMode(page, 'workflow');
     const primary = page.locator('.workflow-empty').getByRole('button', { name: 'Browse operations', exact: true })
       .and(page.locator('[data-slot="button"]'));

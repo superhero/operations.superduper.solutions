@@ -11,8 +11,8 @@ Feature: Navigation and help primitives
   Scenario: Keyboard and pointer help share one active tooltip
     Then hovering another control replaces keyboard help
 
-  Scenario: Prompt examples expose one keyboard-accessible row with styled help
-    Then prompt hints and examples preserve keyboard navigation
+  Scenario: Prompt matching details expose keyboard-accessible styled help
+    Then prompt matching details preserve keyboard navigation
 
   Scenario: Nested schema actions keep their own help and disclosure state
     Given I open the "Get project" operation from the catalog

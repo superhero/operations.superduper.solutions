@@ -186,10 +186,6 @@ p { margin: 0; }
 .field-heading { display: inline-block; margin-bottom: 10px; font-size: 14px; font-weight: 650; }
 .operation-fields .field-input::placeholder { color: var(--color-surface); opacity: 1; }
 input::placeholder, textarea::placeholder { color: var(--color-muted-foreground); font-weight: 400; font-style: italic; }
-.prompt-suggestion-list { display: flex; min-width: 0; gap: 8px; margin-bottom: 20px; }
-/* Keep hover room above/beside examples, but clip at the sliding bottom edge. */
-#prompt-examples > .reveal-panel-inner { overflow: visible; clip-path: inset(-12px -12px 0); }
-.prompt-suggestion-list button { min-height: 32px; padding: 4px 11px; border: 0; border-radius: 4px; background: var(--color-muted); color: var(--color-chip-foreground); font-size: 12px; font-weight: 700; text-align: left; }
 .empty-state { display: grid; justify-items: start; gap: 12px; padding: 24px 0; }
 h2 { margin: 5px 0 0; font-size: 23px; font-weight: 650; letter-spacing: -0.6px; }
 .operation-description { margin: 14px 0 20px; }
@@ -289,8 +285,8 @@ summary::-webkit-details-marker { display: none; }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   /* Keep scaling controls composited at rest too: Brave otherwise changes text
      rasterization on the last frame. Do not promote their nested text/icons. */
-  :is(.icon-switch, .info-button:not(.field-info), .prompt-suggestion-list button, [data-slot="button"]:not(.document-entry), .menu-button):not(:disabled):not([aria-disabled="true"]):not([inert] *) { will-change: transform; }
-  :is(.icon-switch, .info-button:not(.field-info), .prompt-suggestion-list button, [data-slot="button"]):hover:not(:disabled):not([aria-disabled="true"]) { transform: scale(min(1.10, var(--hover-scale, 1.10))); }
+  :is(.icon-switch, .info-button:not(.field-info), [data-slot="button"]:not(.document-entry), .menu-button):not(:disabled):not([aria-disabled="true"]):not([inert] *) { will-change: transform; }
+  :is(.icon-switch, .info-button:not(.field-info), [data-slot="button"]):hover:not(:disabled):not([aria-disabled="true"]) { transform: scale(min(1.10, var(--hover-scale, 1.10))); }
   .menu-button:hover:not(:disabled):not([aria-disabled="true"]) { transform: scale(min(1.16, var(--hover-scale, 1.16))); }
   :is(.field-info, .report-pill .report-toggle):not(:disabled):not([inert] *) .material-symbols-rounded { will-change: transform; transition: transform 180ms ease-in; }
   :is(.field-info, .report-pill .report-toggle):hover:not(:disabled) .material-symbols-rounded { transform: scale(1.4); }
@@ -343,7 +339,6 @@ html { scroll-padding-top: calc(var(--app-header-height) + 12px); }
 .field-description { margin: 8px 0; }
 #operation-description .field-description { margin: 0; padding: 0 0 20px; }
 #operation-details .detail-report, #matching-help .detail-report { margin-top: 0; }
-.prompt-suggestion-list button { flex: 0 0 auto; white-space: nowrap; }
 @media (max-width: 599px) {
   .operation-heading { flex-wrap: wrap; }
   .joined-field { grid-template-columns: minmax(0,1fr) auto; }
