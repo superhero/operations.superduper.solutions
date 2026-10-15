@@ -208,19 +208,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </section>
   {/if}
   <footer>
+    <button type="button" class="run-primary run-action run-quit" onclick={end}>
+      <MaterialIcon name="exit_to_app" size={20} /><span>Quit</span>
+    </button>
     {#if busy}<button type="button" class="run-primary" onclick={() => runner?.cancelPending()}>Cancel request</button>{/if}
     {#if view?.kind === "choice" && !fatal}
       <button type="button" class="run-primary run-action" onclick={start} disabled={!selected}>
-        <span>Start</span><MaterialIcon name="start" size={20} />
+        <span>Proceed</span><MaterialIcon name="start" size={20} />
       </button>
     {:else if view?.kind === "operation" && !fatal && !executed}
       <button type="submit" form={operationFormId} class="run-primary run-action" disabled={busy}>
         <span>{busy ? "Sending request…" : retry ? "Retry operation" : history.length ? "Run operation" : "Start workflow"}</span><MaterialIcon name="start" size={20} />
       </button>
     {/if}
-    <button type="button" class="run-primary run-action" onclick={end}>
-      <MaterialIcon name="exit_to_app" size={20} /><span>Quit</span>
-    </button>
   </footer>
 </div>
 
@@ -244,6 +244,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   button { border: 1px solid var(--color-surface); border-radius: 4px; padding: 9px 14px; color: var(--color-foreground); background: transparent; }
   button.run-primary { background: var(--color-foreground); color: var(--color-background); }
   button.run-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; }
+  .run-quit { margin-right: auto; }
   .run-success { font-size: 12px; }
   .run-error { margin: 0; padding: 12px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; line-height: 1.6; }
   .run-results { min-width: 0; display: grid; gap: 12px; }
