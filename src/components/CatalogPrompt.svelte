@@ -54,7 +54,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <section class="catalog-prompt" aria-label="Find operations" aria-busy={pending} data-evaluated-prompt={evaluation?.prompt ?? ""}>
-  <div class="prompt-input">
+  <div class="prompt-input" class:has-details={Boolean(evaluation)}>
     <textarea id="operation-prompt" bind:this={input} value={value} use:fitTextarea={value} rows="1" maxlength="240"
       placeholder="Prompt" aria-label="Prompt" aria-describedby="prompt-help" oninput={(event) => onChange(event.currentTarget.value, event instanceof InputEvent && event.isComposing)}
       oncompositionstart={() => onChange(value, true)} oncompositionend={(event) => onChange(event.currentTarget.value, false)}></textarea>
@@ -83,16 +83,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .catalog-prompt { min-width: 0; margin-bottom: 16px; }
-  .prompt-input { display: flex; align-items: flex-start; gap: 12px; }
-  .prompt-actions { flex-shrink: 0; margin-top: 6px; }
-  .prompt-actions :global(.report-toggle) { height: 32px; padding: 4px; border-radius: 4px; }
+  .prompt-input { display: flex; flex-direction: column; }
+  .prompt-actions { width: 100%; border-radius: 0 0 4px 4px; }
+  .prompt-actions :global(.report-toggle) { width: 100%; min-height: 24px; height: 24px; padding: 4px; border-radius: 0 0 4px 4px; }
   #operation-prompt { --field-background: var(--color-foreground); --field-foreground: var(--color-background); display: block; flex: 1; box-sizing: border-box; width: 100%; min-width: 0; min-height: var(--navigation-control-size); field-sizing: fixed; padding: calc((var(--navigation-control-size) - 1.5em) / 2) 12px; border: 0; border-radius: 4px; background: var(--field-background); color: var(--field-foreground); font-size: 13px; line-height: 1.5; resize: none; overflow: hidden; scrollbar-gutter: auto; }
   #operation-prompt:focus { outline: 3px solid var(--color-ring); outline-offset: 3px; }
+  .has-details #operation-prompt { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
   #operation-prompt::placeholder { color: var(--color-surface); opacity: 1; }
   .matching-status { margin: 0; color: var(--color-muted-foreground); font-size: 12px; }
   .matching-status:not(:empty) { margin-top: 8px; }
   .matching-error { margin: 8px 0; color: var(--color-foreground); font-size: 12px; }
-  .catalog-prompt :global(.detail-report) { margin: 12px 0 0; padding: 12px; }
+  .catalog-prompt :global(.detail-report) { margin: 12px 0 0; padding: 12px 0; }
   .catalog-prompt :global(.report-metrics) { grid-template-columns: minmax(0, 1fr); }
   .catalog-prompt :global(.report-metric) { min-height: 72px; padding: 10px; gap: 4px; }
 </style>
