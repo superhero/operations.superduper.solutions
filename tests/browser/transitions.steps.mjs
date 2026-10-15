@@ -48,14 +48,15 @@ Then('prompt focus and navigation hover animate and settle with the motion prefe
   const page = this.page;
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
+  const promptRing = page.locator('.catalog-prompt .prompt-input');
   await openCatalog(page);
   const menu = page.getByRole('button', { name: 'Close navigation', exact: true });
   await menu.focus();
-  await expect.poll(() => prompt.evaluate(element => element.getAnimations().length)).toBe(0);
-  const focusing = await pauseNextAnimation(page, '#operation-prompt', 'outlineColor');
+  await expect.poll(() => promptRing.evaluate(element => element.getAnimations().length)).toBe(0);
+  const focusing = await pauseNextAnimation(page, '.catalog-prompt .prompt-input', 'outlineColor');
   await prompt.focus();
   await focusing();
-  const focusMotion = await prompt.evaluate(element => {
+  const focusMotion = await promptRing.evaluate(element => {
     const animation = element.getAnimations().find(item => item.transitionProperty === 'outline-color');
     if (!animation) return null;
     animation.pause();
@@ -70,9 +71,9 @@ Then('prompt focus and navigation hover animate and settle with the motion prefe
   await expect.poll(() => menu.evaluate(element => element.getAnimations({ subtree: true }).length)).toBeGreaterThan(0);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect.poll(() => menu.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
-  await expect.poll(() => prompt.evaluate(element => element.getAnimations().length)).toBe(0);
+  await expect.poll(() => promptRing.evaluate(element => element.getAnimations().length)).toBe(0);
   await expect(prompt).toBeFocused();
-  await expect(prompt).toHaveCSS('outline-style', 'solid');
+  await expect(promptRing).toHaveCSS('outline-style', 'solid');
   await expect(menu).toHaveCSS('transform', 'none');
 });
 

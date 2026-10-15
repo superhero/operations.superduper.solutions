@@ -12,7 +12,7 @@ async function expectUnclippedFocus(control) {
   await control.focus();
   await expect(control).toBeFocused();
   const result = await control.evaluate(element => {
-    const ring = element.closest('.joined-field') ?? element;
+    const ring = (element.matches('#operation-prompt') ? element.closest('.prompt-input') : element.closest('.joined-field')) ?? element;
     const style = getComputedStyle(ring);
     const extent = parseFloat(style.outlineWidth) + parseFloat(style.outlineOffset);
     const bounds = ring.getBoundingClientRect();
@@ -98,7 +98,8 @@ Then('operations controls retain their complete keyboard focus outline', async f
     await page.mouse.move(0, 0);
     const ring = await expectUnclippedFocus(prompt);
     assert.ok(ring.width >= 3 && ring.offset > 0 && ring.radius > 0, 'The prompt needs a separated focus ring around rounded corners.');
-    await expectThemeColors(prompt, { backgroundColor: '--color-foreground', color: '--color-background', outlineColor: '--color-ring' });
+    await expectThemeColors(prompt, { backgroundColor: '--color-foreground', color: '--color-background' });
+    await expectThemeColors(page.locator('.catalog-prompt .prompt-input'), { outlineColor: '--color-ring' });
     await expectThemeColors(prompt, { color: '--color-surface' }, '::placeholder');
     await expectThemeColors(page.locator('.catalog-prompt .prompt-actions'), {
       backgroundColor: '--color-badge-background', color: '--color-badge-foreground'

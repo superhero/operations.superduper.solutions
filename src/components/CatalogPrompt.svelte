@@ -83,11 +83,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .catalog-prompt { min-width: 0; margin-bottom: 16px; }
-  .prompt-input { display: flex; flex-direction: column; }
+  .prompt-input { display: flex; flex-direction: column; border-radius: 4px; outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
+  .prompt-input:has(#operation-prompt:focus) { outline-color: var(--color-ring); }
   .prompt-actions { width: 100%; border-radius: 0 0 4px 4px; }
   .prompt-actions :global(.report-toggle) { width: 100%; min-height: 24px; height: 24px; padding: 4px; border-radius: 0 0 4px 4px; }
   #operation-prompt { --field-background: var(--color-foreground); --field-foreground: var(--color-background); display: block; flex: 1; box-sizing: border-box; width: 100%; min-width: 0; min-height: var(--navigation-control-size); field-sizing: fixed; padding: calc((var(--navigation-control-size) - 1.5em) / 2) 12px; border: 0; border-radius: 4px; background: var(--field-background); color: var(--field-foreground); font-size: 13px; line-height: 1.5; resize: none; overflow: hidden; scrollbar-gutter: auto; }
-  #operation-prompt:focus { outline: 3px solid var(--color-ring); outline-offset: 3px; }
+  #operation-prompt { outline: none; }
   .has-details #operation-prompt { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
   #operation-prompt::placeholder { color: var(--color-surface); opacity: 1; }
   .matching-status { margin: 0; color: var(--color-muted-foreground); font-size: 12px; }
@@ -96,4 +97,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .catalog-prompt :global(.detail-report) { margin: 12px 0 0; padding: 12px 0; }
   .catalog-prompt :global(.report-metrics) { grid-template-columns: minmax(0, 1fr); }
   .catalog-prompt :global(.report-metric) { min-height: 72px; padding: 10px; gap: 4px; }
+  @media (forced-colors: active) {
+    .prompt-input:not(:has(#operation-prompt:focus)) { outline-style: none; }
+  }
 </style>
