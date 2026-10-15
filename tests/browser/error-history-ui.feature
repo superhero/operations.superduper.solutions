@@ -4,12 +4,13 @@
 Feature: Recorded errors in Logs settings
   Error history stays available independently of resource sampling and survives reloads.
 
-  Scenario: Error details preserve cause chains and paginate saved history
+  Scenario: Error details preserve unique diagnostics, cause chains and saved history
     Given 26 saved errors including a repeated failure with a cause
     When I open the recorded errors in Logs settings
     Then the error history shows 26 unique errors and 25 entries
     When I expand the newest recorded error
-    Then its saved cause, stack, occurrence count and observation times are visible
+    Then its diagnostic text appears once with codes, nested causes and related errors
+    And saved stack formats retain their messages and missing-trace notices
     When I open the older recorded errors
     Then the error history shows the oldest saved error
     When I reload and open the recorded errors

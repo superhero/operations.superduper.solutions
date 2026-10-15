@@ -15,6 +15,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const origin = (entry: ErrorHistoryRecord) => [entry.origin.source, entry.origin.scope, entry.origin.operation].filter(Boolean).join(" · ");
   const number = (value: number) => value.toLocaleString();
   const location = (entry: ErrorHistoryRecord) => [entry.origin.filename, entry.origin.line, entry.origin.column].filter(value => value !== undefined).join(":");
+  function diagnosticText(detail: ErrorDetail): { text: string; hasStack: boolean } {
+    const header = (detail.message ? `${detail.name}: ${detail.message}` : detail.name).replace(/\r\n?/g, "\n");
+    let stack = detail.stack?.replace(/\r\n?/g, "\n") ?? "";
+    const repeatedHeader = [header, detail.name].find(value => stack === value || stack.startsWith(`${value}\n`));
+    if (repeatedHeader !== undefined) stack = stack.slice(repeatedHeader.length).replace(/^\n/, "");
+    else {
+      // Recovery guidance can extend the message after its native stack was captured.
+      const firstLine = stack.split("\n", 1)[0];
+      if (firstLine && header.startsWith(`${firstLine}\n`)) stack = stack.slice(firstLine.length + 1);
+    }
+    const hasStack = Boolean(stack.trim());
+    return { text: `${header}${detail.code !== undefined ? `\nCode: ${detail.code}` : ""}${hasStack ? `\n${stack}` : ""}`, hasStack };
+  }
   function toggle(id: number, open: boolean): void {
     const next = new Set(expanded);
     if (open) next.add(id); else next.delete(id);
@@ -24,10 +37,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 {#snippet diagnostic(detail: ErrorDetail)}
+  {@const formatted = diagnosticText(detail)}
   <div class="diagnostic">
-    <p><strong>{detail.name}</strong>{#if detail.code !== undefined} <code>{detail.code}</code>{/if}</p>
-    <p class="message">{detail.message}</p>
-    {#if detail.stack}<pre>{detail.stack}</pre>{:else}<p class="muted">No stack trace available.</p>{/if}
+    <pre>{formatted.text}</pre>
+    {#if !formatted.hasStack}<p class="muted">No stack trace available.</p>{/if}
     {#if detail.cause}<div class="cause"><h5>Caused by</h5>{@render diagnostic(detail.cause)}</div>{/if}
     {#if detail.errors?.length}
       <div class="cause"><h5>Related errors</h5>{#each detail.errors as child}{@render diagnostic(child)}{/each}</div>
@@ -99,8 +112,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .entry-content { min-width: 0; padding: 0 12px 12px; }
   .timestamps { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 0 0 12px; font-size: 12px; }
   .diagnostic { min-width: 0; margin-top: 12px; font-size: 12px; }
-  .diagnostic code { margin-left: 8px; color: var(--color-muted-foreground); font-size: 11px; }
-  .message, .source { overflow-wrap: anywhere; white-space: pre-wrap; }
+  .source { overflow-wrap: anywhere; white-space: pre-wrap; }
   pre { max-width: 100%; margin: 8px 0; overflow: auto; font-size: 11px; }
   .cause { margin-top: 12px; padding-left: 12px; border-left: 2px solid var(--color-surface); }
   h5 { margin: 0; font-size: 12px; }
