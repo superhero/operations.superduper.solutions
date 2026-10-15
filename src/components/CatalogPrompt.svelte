@@ -86,7 +86,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .prompt-input { display: flex; align-items: flex-start; gap: 12px; }
   .prompt-actions { flex-shrink: 0; margin-top: 6px; }
   .prompt-actions :global(.report-toggle) { height: 32px; padding: 4px; border-radius: 4px; }
-  #operation-prompt { --field-background: var(--color-foreground); --field-foreground: var(--color-background); display: block; flex: 1; box-sizing: border-box; width: 100%; min-width: 0; min-height: calc(1.5em + 24px); field-sizing: fixed; padding: 12px; border: 0; border-radius: 4px; background: var(--field-background); color: var(--field-foreground); font-size: 13px; line-height: 1.5; resize: none; overflow: hidden; scrollbar-gutter: auto; }
+  #operation-prompt { --field-background: var(--color-foreground); --field-foreground: var(--color-background); display: block; flex: 1; box-sizing: border-box; width: 100%; min-width: 0; min-height: var(--navigation-control-size); field-sizing: fixed; padding: calc((var(--navigation-control-size) - 1.5em) / 2) 12px; border: 0; border-radius: 4px; background: var(--field-background); color: var(--field-foreground); font-size: 13px; line-height: 1.5; resize: none; overflow: hidden; scrollbar-gutter: auto; }
   #operation-prompt:focus { outline: 3px solid var(--color-ring); outline-offset: 3px; }
   #operation-prompt::placeholder { color: var(--color-surface); opacity: 1; }
   .matching-status { margin: 0; color: var(--color-muted-foreground); font-size: 12px; }

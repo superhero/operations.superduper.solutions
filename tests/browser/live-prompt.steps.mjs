@@ -127,12 +127,9 @@ Then('a long prompt grows inside navigation while its buttons and menu remain us
   await expect(page.locator('.catalog-prompt').getByRole('heading')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Commonly used operations', exact: true })).toHaveCount(0);
   await expect(page.locator('.catalog-prompt .prompt-actions')).toHaveCount(0);
-  const initial = await prompt(page).evaluate(input => {
-    const style = getComputedStyle(input);
-    return { height: input.getBoundingClientRect().height,
-      singleLine: parseFloat(style.lineHeight) + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) };
-  });
-  assert.ok(Math.abs(initial.height - initial.singleLine) <= 1, 'The empty prompt starts at one text row.');
+  const menuHeight = await catalog(page).locator('.catalog-group > summary').first().evaluate(option => option.offsetHeight);
+  assert.ok(before);
+  assert.equal(before.height, menuHeight, 'The empty prompt matches the menu option height.');
   await searchOperations(page, 'List projects\nGet project\nCreate task\nUpdate task\nHTTPBin request\nExample request');
   await expect.poll(() => prompt(page).evaluate(input => input.clientHeight >= input.scrollHeight)).toBe(true);
   const after = await prompt(page).boundingBox();
