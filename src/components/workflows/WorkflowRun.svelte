@@ -245,6 +245,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   button.run-primary { background: var(--color-primary); color: var(--color-primary-foreground); }
   button.run-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; }
   button.run-quit { margin-right: auto; background: var(--color-badge-background); color: var(--color-badge-foreground); }
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .run-primary:not(:disabled) { will-change: transform; }
+    .run-primary:hover:not(:disabled) { transform: scale(min(1.10, var(--hover-scale, 1.10))); }
+  }
   .run-success { font-size: 12px; }
   .run-error { margin: 0; padding: 12px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; line-height: 1.6; }
   .run-results { min-width: 0; display: grid; gap: 12px; }
