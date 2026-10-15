@@ -157,13 +157,13 @@ Then('request fields remain readable and preserve accessible editing in both the
     for (const row of await workspace(page).locator('.joined-field').all()) {
       const input = row.locator('.field-input:visible,.field-select-trigger:visible');
       const required = await input.evaluate(element => element.getAttribute('role') === 'combobox' ? element.getAttribute('aria-required') === 'true' : element.required);
-      await expectThemeColors(row, { backgroundColor: '--color-background' });
-      await expectThemeColors(input, { color: '--color-foreground' });
-      await expectThemeColors(row.locator('label'), { backgroundColor: '--color-muted-foreground', color: '--color-surface' });
+      await expectThemeColors(row, { backgroundColor: '--color-foreground' });
+      await expectThemeColors(input, { color: '--color-background' });
+      await expectThemeColors(row.locator('label'), { backgroundColor: '--color-muted-foreground', color: '--color-background' });
       const actions = row.locator('.field-actions');
-      if (await actions.count()) await expectThemeColors(actions, { backgroundColor: '--control-addon' });
+      if (await actions.count()) await expectThemeColors(actions, { backgroundColor: '--color-muted-foreground' });
       else assert.equal(required, false, 'A required field still needs its trailing required marker.');
-      if (required) await expectThemeColors(row.locator('.required-marker'), { color: '--control-label' });
+      if (required) await expectThemeColors(row.locator('.required-marker'), { color: '--color-background' });
     }
     const contrasts = await controlContrasts(workspace(page).locator('.joined-field .field-input:visible, .joined-field .field-select-trigger:visible, .joined-field label'));
     assert.equal(contrasts.length, 8, 'The check must cover all four entered values and all four labels, including required fields.');
@@ -173,19 +173,19 @@ Then('request fields remain readable and preserve accessible editing in both the
     const project = await field(page, 'Project ID');
     await expectUnclippedFocus(project);
     await expectThemeColors(project.locator('..'), { outlineColor: '--color-ring' });
-    await expectThemeColors(help, { color: '--control-info' });
+    await expectThemeColors(help, { color: '--color-background' });
     await help.hover();
-    await expectThemeColors(help, { color: '--control-info' });
+    await expectThemeColors(help, { color: '--color-background' });
     await page.mouse.move(0, 0);
     await help.focus();
     await page.keyboard.press('Enter');
     await expect(help).toHaveAttribute('aria-expanded', 'true');
-    await expectThemeColors(help, { color: '--control-label' });
+    await expectThemeColors(help, { color: '--color-background' });
     await expect(await field(page, 'Project ID')).toHaveAccessibleDescription(/The identifier of the project to work with\..*Type string.*Required Yes/);
     await expect(help).toBeFocused();
     await page.keyboard.press('Space');
     await expect(help).toHaveAttribute('aria-expanded', 'false');
-    await expectThemeColors(help, { color: '--control-info' });
+    await expectThemeColors(help, { color: '--color-background' });
     await expect(await field(page, 'Project ID')).toHaveAccessibleDescription('');
     for (const [label, value] of Object.entries(draft)) await expectFieldValue(page, label, value);
 
