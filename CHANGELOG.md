@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.47
+
 <!-- changelog-commit:819912ae378090707b77d540e6b0494736481017 -->
 ### Commit [`819912a`](https://github.com/superhero/operations.superduper.solutions/commit/819912ae378090707b77d540e6b0494736481017)
 
@@ -81,8 +85,6 @@ chore: synchronize browser vault with develop
 Bring in the validated integration queue before publishing the vault update. Preserve both changelog histories and regenerate the combined 2,087-scenario badge from actual vault application and queue automation CI reports. Application inputs match the vault run, and automation tests and workflows match develop.
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.46
 
