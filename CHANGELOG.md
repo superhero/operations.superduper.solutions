@@ -2,30 +2,6 @@
 
 ## Latest
 
-<!-- changelog-commit:9cffa93ec0b07a7807f96fa706a9989f21c81953 -->
-### Commit [`9cffa93`](https://github.com/superhero/operations.superduper.solutions/commit/9cffa93ec0b07a7807f96fa706a9989f21c81953)
-
-```text
-feat(secrets): add an encrypted browser credential vault
-
-Keep saved API credentials outside workflow and schema history. Encrypt the
-local vault with AES-GCM, protect password unlock with pinned Argon2id, and
-provide independent recovery and PRF-capable passkey methods.
-
-Execute credentialed requests in a dedicated worker under explicit operation
-and destination approvals. Reject stale schema grants, redirects and header
-collisions; bound responses and diagnostics and sanitize known secret echoes.
-
-Add Secrets settings, opaque local workflow bindings, atomic encrypted
-backup/restore and key rotation. Lock on hidden-page and lifecycle events,
-cancel late work and enforce optional idle deadlines across worker requests.
-
-Cover crypto, policy, persistence, lifecycle and native browser behavior through
-Cucumber. Document the origin-local trust boundary and unverified physical
-mobile and passkey-provider compatibility.
-
-```
-
 <!-- changelog-commit:819912ae378090707b77d540e6b0494736481017 -->
 ### Commit [`819912a`](https://github.com/superhero/operations.superduper.solutions/commit/819912ae378090707b77d540e6b0494736481017)
 
@@ -59,6 +35,50 @@ Render the 1,774-scenario badge from unchanged application reports in run
 its one corrected assertion. Preserve the original reports; this combined
 evidence is not a new full-run validation proof. CI still validates the
 complete corrected revision.
+
+```
+
+<!-- changelog-commit:9cffa93ec0b07a7807f96fa706a9989f21c81953 -->
+### Commit [`9cffa93`](https://github.com/superhero/operations.superduper.solutions/commit/9cffa93ec0b07a7807f96fa706a9989f21c81953)
+
+```text
+feat(secrets): add an encrypted browser credential vault
+
+Keep saved API credentials outside workflow and schema history. Encrypt the
+local vault with AES-GCM, protect password unlock with pinned Argon2id, and
+provide independent recovery and PRF-capable passkey methods.
+
+Execute credentialed requests in a dedicated worker under explicit operation
+and destination approvals. Reject stale schema grants, redirects and header
+collisions; bound responses and diagnostics and sanitize known secret echoes.
+
+Add Secrets settings, opaque local workflow bindings, atomic encrypted
+backup/restore and key rotation. Lock on hidden-page and lifecycle events,
+cancel late work and enforce optional idle deadlines across worker requests.
+
+Cover crypto, policy, persistence, lifecycle and native browser behavior through
+Cucumber. Document the origin-local trust boundary and unverified physical
+mobile and passkey-provider compatibility.
+
+```
+
+<!-- changelog-commit:cbbd09bbf0c7384102d18fc22e277f7955babc17 -->
+### Commit [`cbbd09b`](https://github.com/superhero/operations.superduper.solutions/commit/cbbd09bbf0c7384102d18fc22e277f7955babc17)
+
+```text
+fix(ci): refresh vault scenario badges from completed CI
+
+Regenerate both badge formats from the four Cucumber reports produced by run 38751508134 for 7c493a8. All 1,972 reported scenarios passed; no test results are synthesized or suites rerun locally.
+
+```
+
+<!-- changelog-commit:79f9a6d6ddb0508017a4ba68ac3112e2f0c4cfe2 -->
+### Commit [`79f9a6d`](https://github.com/superhero/operations.superduper.solutions/commit/79f9a6d6ddb0508017a4ba68ac3112e2f0c4cfe2)
+
+```text
+chore: synchronize browser vault with develop
+
+Bring in the validated integration queue before publishing the vault update. Preserve both changelog histories and regenerate the combined 2,087-scenario badge from actual vault application and queue automation CI reports. Application inputs match the vault run, and automation tests and workflows match develop.
 
 ```
 
