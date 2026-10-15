@@ -171,7 +171,7 @@ Then('keyboard credential selection approves only the displayed destination and 
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
   if (await menu.isVisible()) await activate(page, menu);
   await activate(page, page.getByRole('group', { name: 'Workspace', exact: true })
-    .getByRole('button', { name: 'Operations', exact: true }));
+    .getByRole('button', { name: 'Workflows', exact: true }));
   const catalog = page.getByRole('navigation', { name: 'Operation catalog', exact: true });
   const entry = catalog.locator('[data-operation-name]').filter({ hasText: operationName });
   const ancestors = catalog.locator('[data-catalog-group]').filter({
@@ -180,8 +180,9 @@ Then('keyboard credential selection approves only the displayed destination and 
     const heading = group.locator(':scope > .catalog-group > summary');
     if (await heading.getAttribute('aria-expanded') !== 'true') await activate(page, heading);
   }
-  await activate(page, entry.getByRole('button', { name: `Open form: ${operationName}`, exact: true }));
+  await activate(page, entry.getByRole('button', { name: `Add to workflow: ${operationName}`, exact: true }));
   await page.keyboard.press('Escape');
+  await activate(page, page.getByRole('button', { name: 'Run workflow', exact: true }));
   const chooseLast = async name => {
     await activate(page, page.getByRole('combobox', { name, exact: true }));
     await page.keyboard.press('End'); await page.keyboard.press('Enter');
@@ -197,9 +198,12 @@ Then('keyboard credential selection approves only the displayed destination and 
   await activate(page, page.getByRole('button', { name: 'Approve credential use', exact: true }));
   await expect(page.getByRole('button', { name: 'Approve credential use', exact: true })).toHaveCount(0);
   await expect(page.getByLabel('Authenticate to approve changes password', { exact: true })).toHaveValue('');
-  await activate(page, page.getByRole('button', { name: 'Execute operation', exact: true }));
-  const response = page.getByRole('region', { name: 'Operation response', exact: true });
+  await activate(page, page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }));
+  const response = page.getByRole('region', { name: 'Step 1 response', exact: true });
   await expect(response).toContainText('HTTP 200');
+  await expect(page.getByRole('combobox', { name: 'Authentication alternative', exact: true })).toBeDisabled();
+  await expect(page.getByRole('combobox', { name: 'Credential for Key', exact: true })).toBeDisabled();
+  await expect(page.getByRole('listbox')).toHaveCount(0);
   assert.ok(!(await response.innerText()).includes(replacementSecret));
   const observed = await (await this.context.request.get(`${this.baseURL}/vault-api/${run}/observations`)).json();
   assert.equal(observed.length, 1);

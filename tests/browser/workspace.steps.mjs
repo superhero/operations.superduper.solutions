@@ -7,7 +7,7 @@ import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 
 const workflow = page => page.getByRole("region", { name: "Workflow canvas", exact: true });
-const workspace = page => page.getByRole("region", { name: "Operations workspace", exact: true });
+const workspace = page => page.getByRole("dialog", { name: /^Run workflow:/ });
 const operationNodes = (page, name) => workflow(page).locator(".svelte-flow__node-operation").filter({
   has: page.locator(`[data-operation-name=${JSON.stringify(name)}]`)
 });
@@ -37,6 +37,8 @@ export async function revealCatalogOperation(page, name) {
   await openCatalog(page);
   const catalog = page.getByRole("navigation", { name: "Operation catalog", exact: true });
   const entry = catalog.locator("[data-operation-name]").filter({ has: page.getByText(name, { exact: true }) });
+  if (!await entry.count() && await page.getByRole("textbox", { name: "Prompt", exact: true }).inputValue())
+    await searchOperations(page, "");
   await expect(entry).toHaveCount(1);
   const ancestors = catalog.locator("[data-catalog-group]").filter({
     has: page.locator("[data-operation-name]").filter({ has: page.getByText(name, { exact: true }) })
@@ -48,22 +50,54 @@ export async function revealCatalogOperation(page, name) {
   return entry;
 }
 
-async function chooseCatalogOperation(page, name, mode = "operations") {
+async function chooseCatalogOperation(page, name, mode = "run") {
+  await quitRun(page);
+  if (mode !== "workflow") {
+    await setMode(page, "workflow");
+    await workflowAction(page, "New");
+    await closeWorkflowDetails(page);
+  }
   const entry = await revealCatalogOperation(page, name);
-  const action = entry.getByRole("button", {
-    name: `${mode === "workflow" ? "Add to workflow" : "Open form"}: ${name}`,
-    exact: true
-  });
-  await action.click();
-  const catalog = page.getByRole("navigation", { name: "Operation catalog", exact: true });
-  if (await page.evaluate(() => matchMedia("(max-width: 899px)").matches)) await expect(catalog).toBeHidden();
-  else await expect(catalog).toBeVisible();
+  await entry.getByRole("button", { name: `Add to workflow: ${name}`, exact: true }).click();
+  await expect(operationNodes(page, name).last()).toBeVisible();
   await closeCatalog(page);
+  if (mode !== "workflow") {
+    await workflowAction(page, "Run");
+    await expect(workspace(page).getByRole("heading", { name: `1. ${name}`, exact: true })).toBeVisible();
+  }
 }
 
+export async function quitRun(page) {
+  const run = workspace(page);
+  if (await run.isVisible()) {
+    await run.getByRole("button", { name: "Quit", exact: true }).click();
+    await expect(run).toHaveCount(0);
+  }
+}
+
+export async function restartRun(page, restoreInputs = false) {
+  const drafts = restoreInputs ? await workspace(page).locator('.operation-fields .joined-field').evaluateAll(rows => rows.map(row => {
+    const control = row.querySelector('.field-input, .field-select-trigger');
+    const label = row.querySelector('label').textContent;
+    const value = control?.getAttribute('role') === 'combobox' ? row.querySelector('input[name][aria-hidden="true"]').value : control?.value;
+    return { label, value: value ?? '' };
+  })) : [];
+  await quitRun(page);
+  await workflowAction(page, "Run");
+  await expect(workspace(page)).toBeVisible();
+  for (const { label, value } of drafts) await fillField(page, label, value);
+}
+
+export const executeOperation = page => workspace(page).getByRole("button", { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+export const preparedRequest = page => workspace(page).getByRole("region", { name: /^(Prepared request|Step \d+ prepared request)$/ });
+export async function applyDisplayedTheme(page, theme) {
+  await page.evaluate(value => { document.documentElement.dataset.theme = value; document.documentElement.classList.toggle("dark", value === "dark"); }, theme);
+}
 async function setMode(page, mode) {
+  await quitRun(page);
   await openCatalog(page);
-  const name = { operations: "Operations", workflow: "Workflows", settings: "Settings" }[mode];
+  const name = { workflow: "Workflows", settings: "Settings" }[mode];
+  if (!name) throw new Error(`Unsupported workspace: ${mode}`);
   const button = page.getByRole("group", { name: "Workspace", exact: true }).getByRole("button", { name, exact: true });
   if (await button.getAttribute("aria-pressed") !== "true") {
     await button.click();
@@ -73,7 +107,7 @@ async function setMode(page, mode) {
       await expect(page.getByRole("region", { name: "Settings workspace", exact: true })).toBeFocused();
   }
   await closeCatalog(page);
-  const target = mode === "workflow" ? workflow(page) : mode === "settings" ? page.getByRole("region", { name: "Settings workspace", exact: true }) : workspace(page);
+  const target = mode === "workflow" ? workflow(page) : mode === "settings" ? page.getByRole("region", { name: "Settings workspace", exact: true }) : workflow(page);
   await expect(target).toBeVisible();
 }
 
@@ -130,12 +164,17 @@ async function visibleNodeCount(page, name) {
   }).length, canvas);
 }
 
+export async function searchOperations(page, prompt) {
+  await openCatalog(page);
+  await page.getByRole("textbox", { name: "Prompt", exact: true }).fill(prompt);
+  await expect(page.locator(".catalog-prompt")).toHaveAttribute("data-evaluated-prompt", prompt.trim() ? prompt : "");
+  await expect(page.locator(".catalog-prompt")).toHaveAttribute("aria-busy", "false");
+}
 When("I search for the operation {string}", async function (prompt) {
-  await this.page.getByRole("textbox", { name: "Prompt", exact: true }).fill(prompt);
-  await this.page.getByRole("button", { name: "Find operations", exact: true }).click();
+  await searchOperations(this.page, prompt);
 });
 Then("the results offer the {string} form", async function (name) {
-  await expect(workspace(this.page).getByRole("button", { name: `Go to operation: ${name}`, exact: true })).toBeVisible();
+  await expect(this.page.getByRole("navigation", { name: "Operation catalog", exact: true }).getByRole("button", { name: `Add to workflow: ${name}`, exact: true })).toBeVisible();
 });
 When("I review the matching details", async function () {
   await this.page.getByLabel("Review matching details", { exact: true }).click();
@@ -151,19 +190,21 @@ When("I close the matching details", async function () {
   await expect(this.page.getByRole("region", { name: "Evaluation report", exact: true })).toBeHidden();
 });
 When("I open the {string} result", async function (name) {
-  await workspace(this.page).getByRole("button", { name: `Go to operation: ${name}`, exact: true }).click();
+  await chooseCatalogOperation(this.page, name);
 });
 Then("the {string} form is displayed", async function (name) {
-  await expect(workspace(this.page).getByRole("heading", { name: `Operation: ${name}`, exact: true })).toBeVisible();
-  await expect(this.page.getByRole("button", { name: "Execute operation", exact: true })).toBeVisible();
+  await expect(workspace(this.page).getByRole("heading", { name: `1. ${name}`, exact: true })).toBeVisible();
+  await expect(this.page.getByRole("button", { name: "Start workflow", exact: true })).toBeVisible();
 });
 Then("the five nearest operations are shown", async function () {
-  const results = workspace(this.page).getByRole("button", { name: /^Go to operation:/ });
+  const results = this.page.getByRole("navigation", { name: "Operation catalog", exact: true })
+    .getByRole("button", { name: /^Add to workflow:/ });
   await expect(results).toHaveCount(5);
-  await expect(results.first()).toHaveAccessibleName("Go to operation: Create task");
+  await expect(results.filter({ hasText: "Create task" })).toBeVisible();
 });
 When("I choose to edit the prompt", async function () {
-  await this.page.getByRole("navigation", { name: "Progress", exact: true }).getByRole("button", { name: "1. Prompt", exact: true }).click();
+  await openCatalog(this.page);
+  await this.page.getByRole("textbox", { name: "Prompt", exact: true }).focus();
 });
 Then("the prompt still contains {string}", async function (prompt) {
   await expect(this.page.getByRole("textbox", { name: "Prompt", exact: true })).toHaveValue(prompt);
@@ -175,7 +216,7 @@ When("I choose the {string} operation from the catalog", async function (name) {
   await chooseCatalogOperation(this.page, name);
 });
 When("I try to prepare the request", async function () {
-  await this.page.getByRole("button", { name: "Execute operation", exact: true }).click();
+  await executeOperation(this.page);
 });
 Then("{string} is an invalid required input", async function (label) {
   await expect.poll(async () => (await field(this.page, label)).evaluate(input => {
@@ -184,21 +225,21 @@ Then("{string} is an invalid required input", async function (label) {
   })).toBe(true);
 });
 Then("no prepared request is displayed", async function () {
-  await expect(this.page.getByRole("region", { name: "Prepared request", exact: true })).toHaveCount(0);
+  await expect(preparedRequest(this.page)).toHaveCount(0);
 });
 When("I enter these operation inputs:", async function (table) {
   for (const { label, value } of table.hashes()) await fillField(this.page, label, value);
 });
 When("I prepare the request", async function () {
-  await this.page.getByRole("button", { name: "Execute operation", exact: true }).click();
-  await expect(this.page.getByRole("region", { name: "Prepared request", exact: true })).toBeVisible();
+  await executeOperation(this.page);
+  await expect(preparedRequest(this.page)).toBeVisible();
 });
 Then("the prepared request is:", async function (json) {
-  const preview = this.page.getByRole("region", { name: "Prepared request", exact: true });
+  const preview = preparedRequest(this.page);
   await expect.poll(async () => JSON.parse(await preview.innerText())).toEqual(JSON.parse(json));
 });
 Then("operation metadata identifies server URL {string}", async function (url) {
-  await this.page.getByRole("button", { name: "Edit inputs", exact: true }).click();
+  await restartRun(this.page, true);
   await this.page.getByRole("button", { name: "Review operation details", exact: true }).click();
   const metadata = this.page.getByRole("region", { name: "Operation metadata", exact: true });
   await expect(metadata.locator("dt").filter({ hasText: /^Server URL$/ }).locator("xpath=following-sibling::dd[1]")).toHaveText(url);
@@ -213,15 +254,14 @@ Then("{string} is outside its allowed numeric range", async function (label) {
     assert.equal(await input.evaluate(control => control.validity.valid), false);
   } else await expect.poll(() => input.evaluate(control => control.validity.rangeOverflow)).toBe(true);
 });
-When("I edit the inputs and change {string} to {string}", async function (label, value) {
-  await this.page.getByRole("button", { name: "Edit inputs", exact: true }).click();
+When("I restart with the same inputs and change {string} to {string}", async function (label, value) {
+  await restartRun(this.page, true);
   await fillField(this.page, label, value);
 });
 Then("the previous request preview cannot be reopened", async function () {
-  const progress = this.page.getByRole("navigation", { name: "Progress", exact: true });
-  await expect(progress.getByRole("button", { name: /Request$/ })).toHaveCount(0);
-  await progress.getByRole("button", { name: "3. Operation", exact: true }).click();
-  await expect(this.page.getByRole("region", { name: "Prepared request", exact: true })).toHaveCount(0);
+  await expect(preparedRequest(this.page)).toHaveCount(0);
+  await expect(this.page.getByRole("button", { name: "Edit inputs", exact: true })).toHaveCount(0);
+  await expect(this.page.getByRole("button", { name: "Start workflow", exact: true })).toBeVisible();
 });
 When("I expand the operation details", async function () {
   await this.page.getByRole("button", { name: "Review operation details", exact: true }).click();
@@ -266,8 +306,7 @@ Then("the mobile catalog is a visible dialog", async function () {
   await expect(this.page.getByRole("dialog").filter({ has: this.page.getByRole("navigation", { name: "Operation catalog" }) })).toBeVisible();
 });
 Then("the mobile catalog is closed", async function () {
-  await expect(this.page.getByRole("dialog")).toHaveCount(0);
-  await expect(this.page.getByRole("button", { name: "Open navigation", exact: true })).toBeVisible();
+  await expect(this.page.locator('[data-slot="sheet-content"]')).toHaveCount(0);
 });
 Then("the page fits the viewport horizontally", async function () {
   await expect.poll(() => this.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -349,16 +388,11 @@ When("I add {string} through the workflow catalog", async function (name) {
   await expect(workflow(this.page)).toBeVisible();
   await expect(operationNodes(this.page, name)).toHaveCount(1);
 });
-When("I switch to operations and press Delete", async function () {
-  await setMode(this.page, "operations");
-  await this.page.getByRole("button", { name: "Open navigation", exact: true }).focus();
-  await this.page.keyboard.press("Delete");
-});
+
 Then("the input {string} still contains {string}", async function (label, value) {
   await expectFieldValue(this.page, label, value);
 });
 When("I switch to the workflow workspace", async function () { await setMode(this.page, "workflow"); });
-When("I switch to the operations workspace", async function () { await setMode(this.page, "operations"); });
 When("I switch to the settings workspace", async function () { await setMode(this.page, "settings"); });
 When("I press Delete in Settings", async function () {
   await this.page.keyboard.press("Delete");
@@ -367,8 +401,8 @@ Then("Settings is the only selected workspace", async function () {
   const page = this.page;
   await openCatalog(page);
   const controls = page.getByRole("group", { name: "Workspace", exact: true });
-  await expect(controls.getByRole("button")).toHaveCount(3);
-  for (const name of ["Operations", "Workflows", "Settings"])
+  await expect(controls.getByRole("button")).toHaveCount(2);
+  for (const name of ["Workflows", "Settings"])
     await expect(controls.getByRole("button", { name, exact: true })).toHaveAttribute("aria-pressed", String(name === "Settings"));
   await expect(controls.getByRole("button", { name: "Settings", exact: true })).toBeFocused();
   await closeCatalog(page);
@@ -380,7 +414,7 @@ When("I start a new workflow", async function () {
   await closeWorkflowDetails(this.page);
 });
 Then("the new workflow is empty and not saved", async function () {
-  await expect(workflow(this.page).getByRole("button", { name: "Add nodes by selecting workflow operations from the left menu", exact: true })).toBeVisible();
+  await expect(workflow(this.page).locator(".workflow-empty").getByRole("button", { name: "Browse operations", exact: true })).toBeVisible();
   await expect(this.page.locator(".site-header .document-meta").getByText("Not saved", { exact: true })).toBeVisible();
 });
 When("I import the exported workflow", async function () {
@@ -411,3 +445,8 @@ Then("at least one complete operation node is visible inside the canvas", async 
 });
 
 export { openCatalog, closeCatalog, chooseCatalogOperation, setMode, field, fillField, expectFieldValue, workflow, workflowAction, workspace, operationNodes, connections, readExport };
+
+When("I add {string} from the settings catalog", async function (name) {
+  await chooseCatalogOperation(this.page, name, "workflow");
+  await expect(workflow(this.page)).toBeVisible();
+});

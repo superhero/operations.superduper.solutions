@@ -53,3 +53,14 @@ browser settings and applies immediately to existing workflows.
 Use shared semantic colors and reduced-motion behavior. The
 [workflow canvas contract](../../../docs/adr/svelte-interface.md#workflow-canvas)
 records selection, placement, history and execution expectations.
+
+## Running operations
+
+`WorkflowRun` is the execution view for every operation. It composes shared
+`OperationFields`, operation reports and credential controls, while
+`workflow-runner` owns mapped inputs, branching and request execution. Selecting
+an operation in navigation adds a node; it never sends a request.
+
+Keep connected inputs read-only. Cancelling a pending request retains the step
+for retry; quitting ends the run. Completed steps remain read-only and their
+actual responses and prepared requests remain available in run history.

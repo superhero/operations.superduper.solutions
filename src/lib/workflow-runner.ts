@@ -448,14 +448,16 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       for (const key of current.visit.mappedFields)
         if (values[key] !== current.visit.values[key]) throw new InputValidationError(key, "Connected values cannot be changed during a run. Update the workflow connection first.");
       const completed = current;
-      pending = new AbortController();
+      const controller = new AbortController();
+      pending = controller;
       let result: WorkflowExecutionResult;
       // An explicit UI clear must not fall back to a previously saved credential.
       const selectedBinding = binding === null ? undefined : binding ?? completed.visit.credentialBinding;
-      try { result = await execution.execute(completed.visit.operation, values, pending.signal,
+      try { result = await execution.execute(completed.visit.operation, values, controller.signal,
         selectedBinding ? { binding: selectedBinding, runId, nodeId: completed.visit.id } : undefined); }
       finally { pending = undefined; }
       if (stopped || current !== completed) throw new Error("This run has ended.");
+      if (controller.signal.aborted) throw new Error("The request was cancelled.");
       current = undefined;
       completed.frame.states.set(completed.node.id, "complete");
       // Output routing happens after a successful response. A routing error
@@ -467,6 +469,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       catch (error) { terminalError = (error as Error).message; }
       return { ...result, operation: completed.visit.operation, step: completed.visit.step, workflowName: completed.visit.workflowName };
     },
+    cancelPending() { pending?.abort(); },
     end() { stopped = true; pending?.abort(); current = undefined; choice = undefined; terminalError = undefined; stack.length = 0; message = "Run ended."; },
     get done() { return stopped; }
   };

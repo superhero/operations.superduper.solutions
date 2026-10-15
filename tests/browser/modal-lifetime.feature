@@ -21,7 +21,7 @@ Feature: Navigation modal lifetime
       | Unsaved changes  |
 
   Scenario Outline: Dismissing mobile navigation preserves the reading position
-    Given I open the "Create task" operation from the catalog
+    Given I switch to the settings workspace
     Then dismissing mobile navigation preserves reading position with "<motion>" motion
 
     Examples:

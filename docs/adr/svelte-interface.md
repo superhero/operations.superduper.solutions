@@ -37,9 +37,9 @@ The animated background follows both palette and mode changes.
 | Page / panels | 1 / 2 | 6; secondary text 5 |
 | Inputs | 6 | 1 |
 | Field labels | 5 | 2 |
-| Primary actions, including available progress steps | 4 | 3 |
+| Primary actions | 4 | 3 |
 | Label badges | 3 | 6 |
-| Current/completed steps, opened catalog items, selected switches | 6 | 1 |
+| Opened catalog items, selected switches | 6 | 1 |
 | Disabled controls | 5 | 2 |
 
 Idle catalog items retain their secondary text color on hover. Ordinary frames
@@ -48,9 +48,8 @@ operation separators use the page background. Library borders must not inherit
 `currentColor`; focus, validation, selection and graph connections retain
 separate semantic roles.
 
-Progress buttons meet without gaps, with pane-colored chevron boundaries
-separate from focus outlines. Disabled controls remain fully opaque, use native
-disabled semantics, and neither activate nor scale on hover.
+Disabled controls remain fully opaque, use native disabled semantics, and
+neither activate nor scale on hover.
 
 ### Contrast and effects
 
@@ -64,6 +63,17 @@ states. Required, selected and error states also use text, icons or structure.
 Validate every palette in both modes, correcting palette values or shared roles
 rather than adding mode-specific exceptions. Checks cover reversal, replacement
 palettes, role bindings and contrast without duplicating shipped hex values.
+
+## Operation discovery
+
+The prompt sits below the navigation buttons and filters operation leaves as the
+user types. Category structure remains visible, with matching paths expanded.
+Clearing the prompt restores ordinary browsing and its saved expansion state.
+
+Evaluation runs in a dedicated worker after a short typing delay. Further edits
+abort the previous calculation; only results for the current prompt and catalog
+may be displayed. Matching never moves focus or changes the workflow. Selecting
+a match adds an operation to the canvas; execution happens in Run workflow.
 
 ## Settings and startup
 
@@ -146,19 +156,14 @@ including portal content. Controls scale once with their text and icons;
 native chevron rotation and switch-thumb movement stay independent.
 
 Layout decisions use untransformed dimensions so hover cannot create a
-resize/overflow feedback loop. Operation views ease discrete height changes but
-follow animated disclosures directly, without restarting an outer transition
-every frame. Apply the final height before restoring easing; reversals and
-navigation discard stale animation completions.
+resize/overflow feedback loop. Disclosures animate their own size; parent views
+do not restart that animation every frame. Navigation discards stale animation
+completions.
 
 On fine-pointer devices with hover support, enabled controls that scale retain
 a composited layer through entry and exit to prevent text-rendering flashes.
 Scope this to small controls and headings: enlarged text may soften and layers
 consume memory. Touch-only and reduced-motion layouts do not request these layers.
-
-Progress buttons stay above idle neighbors through hover-out; a newly hovered
-or focused neighbor takes priority. Disabled controls and reduced-motion layouts
-reset stacking immediately.
 
 ### Integer inputs
 
@@ -282,8 +287,10 @@ permissions from their operation schema without a format migration.
 
 ### Shared validation
 
-Standalone operations and workflow runs share typed controls, the catalog
-registry and an injectable HTTP executor. Object and array drafts use JSON text.
+Run workflow uses schema-derived controls, the catalog registry and an injectable
+HTTP executor. Fields are grouped by request location, with optional field help,
+operation details and inline validation. Connected inputs stay read-only. Object
+and array drafts use JSON text.
 Validate complete inputs against canonical schemas, including nested fields,
 additional properties, array items, required values and supported bounds.
 Unsupported input shapes, encodings and constraints produce explicit errors.
@@ -308,7 +315,7 @@ responses. Test fixtures are injected outside production execution. Show progres
 and actual status/body, retaining prepared inputs and error response bodies for
 inspection and explicit retry. Browser-forbidden methods fail explicitly.
 
-Prevent duplicate submissions, support cancellation, and cancel pending requests
-on operation changes, response/workspace exit or run closure. Ignore stale
-completions. Neither execution path fabricates responses or stores a local
-substitute for server state.
+Prevent duplicate submissions. Cancelling a request preserves its step and draft
+for explicit retry; quitting the run aborts pending requests and ends execution.
+Ignore stale completions, including late responses to cancelled requests. No
+execution path fabricates responses or stores a local substitute for server state.

@@ -293,7 +293,7 @@ Then('an approved operation shows and copies only scrubbed diagnostics and persi
     name: 'vault-diagnostic.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)),
   });
   await expect(page.getByRole('switch', { name: 'Enable Vault diagnostic browser fixture', exact: true })).toHaveAttribute('aria-checked', 'true');
-  await setMode(page, 'operations');
+  await setMode(page, 'workflow');
   await chooseCatalogOperation(page, 'Vault diagnostic request');
   await page.getByRole('combobox', { name: 'Authentication alternative', exact: true }).click();
   await page.getByRole('option', { name: 'Bearer', exact: true }).click();
@@ -305,7 +305,7 @@ Then('an approved operation shows and copies only scrubbed diagnostics and persi
   await page.getByRole('button', { name: 'Approve credential use', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Approve credential use', exact: true })).toHaveCount(0);
   await expect(page.getByLabel('Authenticate to approve changes password', { exact: true })).toHaveValue('');
-  await page.getByRole('button', { name: 'Execute operation', exact: true }).click();
+  await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
   const response = page.getByRole('region', { name: 'Operation response', exact: true });
   await expect(response).toContainText('HTTP 422');
   await expect(response).toContainText('Synthetic endpoint refusal');

@@ -73,3 +73,12 @@ Feature: Step through workflow requests with explicit test responses
 
   Scenario: Legacy response fields keep their original body paths
     Then legacy response body properties remain unambiguous beside envelope fields
+
+  @workflow-request-cancellation
+  Scenario Outline: Cancelling a request preserves the current workflow step for retry
+    Then a workflow request that <behavior> cancellation can be cancelled without ending its run
+
+    Examples:
+      | behavior |
+      | honors   |
+      | ignores  |

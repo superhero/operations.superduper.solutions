@@ -10,6 +10,7 @@ adapters such as `OperationFieldControl`, not just generic widgets.
 | Need | Entry point |
 | --- | --- |
 | Schema-derived operation input | [OperationFieldControl.svelte](OperationFieldControl.svelte), backed by the `Field*` controls |
+| Grouped operation forms | [OperationFields.svelte](OperationFields.svelte), including field help, validation, optional bodies and connected inputs |
 | Expandable content | [Disclosure.svelte](Disclosure.svelte) for a heading and panel; [Reveal.svelte](Reveal.svelte) for an externally controlled panel |
 | Dialog or explanatory tooltip | [Modal.svelte](Modal.svelte), [HintButton.svelte](HintButton.svelte) |
 | Structured data inspection | [JsonView.svelte](JsonView.svelte), [JsonSchemaView.svelte](JsonSchemaView.svelte) |

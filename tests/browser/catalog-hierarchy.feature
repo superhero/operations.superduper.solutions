@@ -5,9 +5,9 @@ Feature: Nested operation catalog
   Scenario: Nested paths close siblings and clear descendants
     Then catalog groups count their operations and keep one open descendant path
 
-  Scenario Outline: Nested operation rows directly open their destinations
+  Scenario Outline: Nested operation rows add nodes with useful focus
     When I use a viewport of <width> by 844 pixels
-    Then nested catalog entries open a form and add an operation to the workflow
+    Then nested catalog entries add operations to the workflow with useful focus
 
     Examples:
       | width |

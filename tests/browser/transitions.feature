@@ -12,5 +12,5 @@ Feature: Reference motion and interruption behavior
   Scenario: Native scrollbar feedback preserves scrolling and responds to reduced motion
     Then native scrollbars expand on hover and settle without changing the reading position
 
-  Scenario: Hovering the prompt arrow cannot hide expanded examples or toggle page overflow
-    Then prompt examples and page overflow remain stable when resizing under a hovered arrow
+  Scenario: Prompt examples retain one full row across navigation breakpoints
+    Then prompt examples remain one full row while navigation resizes

@@ -854,3 +854,35 @@ Then("legacy response body properties remain unambiguous beside envelope fields"
   await submit(runner, task);
   assert.equal(runner.next().kind, "complete");
 });
+
+Then(/^a workflow request that (honors|ignores) cancellation can be cancelled without ending its run$/, async function (behavior) {
+  let settle;
+  let signal;
+  let calls = 0;
+  const response = { request: { method: "GET", path: "/projects/project-1", query: {} },
+    response: { status: 200, statusText: "OK", headers: {}, body: { id: "project-1" } } };
+  const runner = createRequestRunner(document(graph("getProject")), undefined, {
+    execute(_operation, _values, pendingSignal) {
+      signal = pendingSignal;
+      if (++calls > 1) return response;
+      return new Promise((resolve, reject) => {
+        settle = () => behavior === "honors" && signal.aborted
+          ? reject(new Error("The request was cancelled.")) : resolve(response);
+      });
+    }
+  });
+  runner.cancelPending();
+  const visit = runner.next();
+  const pendingRequest = runner.submit(project);
+  runner.cancelPending();
+  assert.equal(signal.aborted, true);
+  assert.equal(runner.done, false);
+  await assert.rejects(() => runner.submit(project), /already has a request in progress/);
+  settle();
+  await assert.rejects(pendingRequest, /request was cancelled/);
+  assert.equal(runner.next(), visit);
+  assert.equal((await runner.submit(project)).response.body.id, "project-1");
+  assert.equal(signal.aborted, false);
+  runner.cancelPending();
+  assert.equal(runner.next().kind, "complete");
+});

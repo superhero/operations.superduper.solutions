@@ -423,11 +423,12 @@ Then('prompt fields and badges remain readable while primary actions use the lab
   for (const theme of ['light', 'dark']) {
     await selectTheme(page, theme);
     const palette = Object.values(await resolvedColors(page, paletteNames));
-    await setMode(page, 'operations');
+    await setMode(page, 'workflow');
+    await openCatalog(page);
     await expectReadable(page.getByRole('textbox', { name: 'Prompt', exact: true }), palette);
     await expectReadable(page.locator('label[for="operation-prompt"]'), palette);
     await setMode(page, 'workflow');
-    const primary = page.getByRole('button', { name: 'Add nodes by selecting workflow operations from the left menu', exact: true })
+    const primary = page.locator('.workflow-empty').getByRole('button', { name: 'Browse operations', exact: true })
       .and(page.locator('[data-slot="button"]'));
     // Primary action labels intentionally use the label color selected by the theme.
     const roles = await resolvedColors(page, ['--color-primary', '--color-badge-background']);

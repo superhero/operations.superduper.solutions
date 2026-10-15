@@ -13,8 +13,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { lockVaultLocally, readVaultStatus, subscribeVaultLock, vaultCall } from "../secrets/client.ts";
   import { VaultError, type ApprovedOperation, type CredentialBinding, type CredentialSummary, type VaultStatus } from "../secrets/types.ts";
 
-  let { operation, initial, disabled = false, onChange }: { operation: Operation; initial?: CredentialBinding | undefined;
-    disabled?: boolean; onChange: (binding: CredentialBinding | undefined) => void } = $props();
+  let { operation, initial, disabled = false, portalZIndex = 40, onChange }: { operation: Operation; initial?: CredentialBinding | undefined;
+    disabled?: boolean; portalZIndex?: number; onChange: (binding: CredentialBinding | undefined) => void } = $props();
   let status = $state<VaultStatus>({ exists: false, unlocked: false, revision: 0, epoch: 0, methods: [] });
   let credentials = $state<CredentialSummary[]>([]);
   let descriptor = $state.raw<ApprovedOperation>();
@@ -103,6 +103,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <fieldset class="credential-selection" disabled={disabled || busy}>
   <legend>Credentials</legend>
   <FieldSelect id={`${fieldId}-alternative`} label="Authentication alternative" value={alternative} options={options}
+    disabled={disabled || busy} {portalZIndex}
     onValueChange={value => { alternative = value; choices = {}; changed(); }} />
   {#if selected?.length}
     {#if descriptor}<p class="destination"><strong>{operation.method}</strong> {descriptor.origin}{operation.path}</p>{/if}
@@ -114,6 +115,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <div class="credential-choice">
             <label for={`${fieldId}-${scheme.name}`}>{scheme.name} · {scheme.header}</label>
             <FieldSelect id={`${fieldId}-${scheme.name}`} label={`Credential for ${scheme.name}`} value={choices[scheme.name] ?? ""}
+              disabled={disabled || busy} {portalZIndex}
               options={credentials.filter(item => item.kind === scheme.kind).map(item => ({ value: item.id, label: item.label }))}
               onValueChange={value => { choices = { ...choices, [scheme.name]: value }; changed(); }} />
             {#if chosen && !permitted(chosen, scheme.name)}
@@ -123,7 +125,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           </div>
         {/each}
       {/if}
-      <VaultAuthentication bind:this={authentication} {status} disabled={disabled || busy}
+      <VaultAuthentication bind:this={authentication} {status} disabled={disabled || busy} {portalZIndex}
         label={status.unlocked ? "Authenticate to approve changes" : "Unlock the vault"} />
       {#if !status.unlocked}<button type="button" onclick={unlock}>Unlock</button>{/if}
     {/if}
@@ -133,7 +135,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </fieldset>
 
 <style>
-  .credential-selection { display: grid; gap: 12px; min-width: 0; margin: 12px 0; padding: 14px; border: 0; border-radius: 4px; background: var(--color-surface); --field-background: var(--color-background); }
+  .credential-selection { display: grid; gap: 12px; min-width: 0; margin: 12px 0; padding: 14px; border: 0; border-radius: 4px; background: var(--color-surface); --field-background: var(--color-background); --field-foreground: var(--color-foreground); }
+  .credential-selection :global(.field-select-value.placeholder) { color: var(--color-muted-foreground); }
   legend { font-weight: 700; padding: 0; }
   p { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .credential-choice { display: grid; gap: 8px; }

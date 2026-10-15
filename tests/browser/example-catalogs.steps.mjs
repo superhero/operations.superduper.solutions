@@ -61,8 +61,8 @@ Then("both example catalogs prepare typed query and header values", async functi
   for (const [label, value] of Object.entries({ "Sample ID": "space / value", Label: "blue", Count: "3", Ratio: "0.5",
     Enabled: "false", Priority: "high", Tags: '["one","two"]', "Example header": "header value" }))
     await fillField(page, label, value);
-  await page.getByRole("button", { name: "Execute operation", exact: true }).click();
-  const preview = JSON.parse(await workspace(page).getByRole("region", { name: "Prepared request", exact: true }).textContent());
+  await page.getByRole("button", { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+  const preview = JSON.parse(await workspace(page).getByRole("region", { name: /^(Prepared request|Step \d+ prepared request)$/ }).textContent());
   assert.equal(preview.path, "/anything/parameters/space%20%2F%20value");
   assert.deepEqual(preview.query, { label: "blue", count: 3, ratio: 0.5, enabled: false, priority: "high", tags: ["one", "two"] });
   assert.deepEqual(preview.headers, { "X-Example-Label": "header value" });
@@ -73,7 +73,7 @@ Then("structured example fields validate JSON and preserve nested types", async 
   await interceptHttpbin(page);
   await chooseCatalogOperation(page, "HTTPBin JSON object");
   await fillField(page, "Profile", '{"name":');
-  await page.getByRole("button", { name: "Execute operation", exact: true }).click();
+  await page.getByRole("button", { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
   await expect(workspace(page).getByRole("alert")).toContainText("enter valid JSON");
   await expect(workspace(page).getByRole("textbox", { name: "Profile", exact: true })).toBeFocused();
   await fillField(page, "Profile", '{"name":"Ada","count":3}');
@@ -81,8 +81,8 @@ Then("structured example fields validate JSON and preserve nested types", async 
   await fillField(page, "Null value", "null");
   await fillField(page, "Count", "2");
   await fillField(page, "Enabled", "false");
-  await page.getByRole("button", { name: "Execute operation", exact: true }).click();
-  const preview = JSON.parse(await workspace(page).getByRole("region", { name: "Prepared request", exact: true }).textContent());
+  await page.getByRole("button", { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+  const preview = JSON.parse(await workspace(page).getByRole("region", { name: /^(Prepared request|Step \d+ prepared request)$/ }).textContent());
   assert.deepEqual(preview.body, { profile: { name: "Ada", count: 3 }, tags: ["docs", "api"], note: null, count: 2, enabled: false });
 });
 
@@ -91,13 +91,13 @@ Then("the live example sends a {string} request", async function (method) {
   const requests = await interceptHttpbin(page);
   const op = operations.find(item => item.id.startsWith("httpbin:echo") && item.method === method);
   const run = await openRun(page, [graph(op.id)]);
-  await expect(run).toContainText("Live example: https://httpbin.org");
+  await expect(run).toContainText("Server: https://httpbin.org");
   await submitRun(page);
   assert.equal(requests.length, 1);
   assert.equal(requests[0].method, method);
   assert.equal(requests[0].url, `https://httpbin.org${op.path}`);
   await expect(run.getByRole("region", { name: "Step 1 response", exact: true }))
-    .toContainText(["HEAD", "OPTIONS"].includes(method) ? "null" : "received");
+    .toContainText(["HEAD", "OPTIONS"].includes(method) ? "No response body." : "received");
 });
 
 Then("the live example encodes a {string} body", async function (kind) {
@@ -150,7 +150,7 @@ Then("a mixed workflow passes an HTTP response array to the next schema", async 
   assert.equal(this.exampleRequests[0].method, "POST");
   assert.deepEqual(JSON.parse(this.exampleRequests[0].body), ["shared", "values"]);
   await run.getByRole("button", { name: "Next operation", exact: true }).click();
-  await expect(run).toContainText("Live example: https://httpbin.org");
+  await expect(run).toContainText("Server: https://httpbin.org");
   await expect(run.getByRole("textbox", { name: "Example array", exact: true })).toBeDisabled();
   await submitRun(page, "Run operation");
   assert.equal(requests.length, 1);

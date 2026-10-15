@@ -11,7 +11,6 @@
   import { logger } from "$lib/logger.ts";
   import Header from "./components/Header.svelte";
   import SideNavigation from "./components/SideNavigation.svelte";
-  import OperationsWorkspace from "./components/OperationsWorkspace.svelte";
   import WorkflowWorkspace from "./components/WorkflowWorkspace.svelte";
   import SettingsWorkspace, { palettes } from "./components/SettingsWorkspace.svelte";
   import BackgroundWave from "./components/BackgroundWave.svelte";
@@ -35,38 +34,28 @@
   const settingsEdits = { theme: 0, palette: 0, workflowDefaults: 0, developerToolbar: 0, locale: 0 };
   let workflowDefaultsError = $state("");
   let workflowDefaultsSave = 0;
-  let navigationOpen = $state(false);
+  let navigationOpen = $state(!matchMedia("(max-width: 899px)").matches);
   let navigationModal = $state(false);
   let documentModal = $state(false);
   let workflowSaveStatus = $state<WorkflowSaveStatus>("loading");
   let savedWorkflows = $state<WorkflowDocument[]>([]);
   let workflowLibraryError = $state("");
-  let mode = $state<WorkspaceMode>("operations");
+  let mode = $state<WorkspaceMode>("workflow");
   let modeRequest = 0;
   let dark = $state(document.documentElement.dataset.theme === "dark");
   let palette = $state(palettes.find(option => option.id === document.documentElement.dataset.palette)?.id ?? palettes[0].id);
-  let operationsWorkspace: OperationsWorkspace;
   const operations = $derived(getSchemaLibrary().operations);
   let sideNavigation: SideNavigation;
   let workflowWorkspace: WorkflowWorkspace;
   let settingsWorkspace: SettingsWorkspace;
 
-  let operationsHost: HTMLDivElement;
-  let lastOperationsFocus: HTMLElement | undefined;
-  let operationsScroll = 0;
-
   async function focusDestination() {
     await tick();
     if (navigationModal) return;
     if (mode === "workflow") workflowWorkspace.focusCanvas();
-    else if (mode === "settings") {
+    else {
       window.scrollTo({ top: 0, behavior: "instant" });
       settingsWorkspace.focusActive();
-    }
-    else {
-      window.scrollTo({ top: operationsScroll, behavior: "instant" });
-      if (lastOperationsFocus?.isConnected && lastOperationsFocus.getClientRects().length && !lastOperationsFocus.closest('[inert],[hidden]') && !lastOperationsFocus.matches(':disabled')) lastOperationsFocus.focus({ preventScroll: true });
-      else operationsWorkspace.focusActive();
     }
   }
 
@@ -75,10 +64,6 @@
     if (next === mode) return;
     if (mode === "workflow" && !await workflowWorkspace.flushPendingChanges()) return;
     if (request !== modeRequest) return;
-    if (mode === "operations") {
-      operationsWorkspace.cancelStepScroll();
-      operationsScroll = window.scrollY;
-    }
     mode = next;
     if (matchMedia("(max-width: 899px)").matches) navigationOpen = false;
     await focusDestination();
@@ -194,28 +179,21 @@
     }
   }
 
-  function selectOperation(operation: Operation) {
-    modeRequest += 1;
-    if (mode === "workflow") workflowWorkspace.addOperation(operation);
-    else {
-      mode = "operations";
-      lastOperationsFocus = undefined;
-      operationsWorkspace.selectOperation(operation);
-    }
-    if (window.matchMedia("(max-width: 899px)").matches) navigationOpen = false;
+  async function browseOperations() {
+    navigationOpen = true;
+    await tick();
+    await sideNavigation.focusPrompt();
   }
-
-  async function addToWorkflow(operation: Operation) {
+  async function selectOperation(operation: Operation) {
     await setMode("workflow");
     await workflowWorkspace.addOperation(operation);
+    if (matchMedia("(max-width: 899px)").matches) navigationOpen = false;
   }
 
   async function selectWorkflow(document: WorkflowDocument) {
-    if (mode === "workflow") await workflowWorkspace.addWorkflow(document);
-    else {
-      await setMode("workflow");
-      workflowWorkspace.startRun(document);
-    }
+    await setMode("workflow");
+    await workflowWorkspace.addWorkflow(document);
+    if (matchMedia("(max-width: 899px)").matches) navigationOpen = false;
   }
 
   /** Limit hover growth using layout dimensions unaffected by transforms. */
@@ -223,7 +201,7 @@
     if (!(event.target instanceof Element)) return;
     const surfaces = new Set<HTMLElement>();
     for (let element: Element | null = event.target; element; element = element.parentElement) {
-      if (element instanceof HTMLElement && element.matches('button, summary, .result-card, .saved-documents li, .palette-choice'))
+      if (element instanceof HTMLElement && element.matches('button, summary, .saved-documents li, .palette-choice'))
         surfaces.add(element);
     }
     // The operation description also animates its action button.
@@ -266,11 +244,8 @@
           </div>
         </div>
       {/if}
-      <div bind:this={operationsHost} hidden={mode !== "operations"} onfocusin={(event) => { if (event.target instanceof HTMLElement) lastOperationsFocus = event.target; }}>
-        <OperationsWorkspace bind:this={operationsWorkspace} {operations} active={mode === "operations"} onAddToWorkflow={addToWorkflow} onOperationSelect={(operation) => sideNavigation.revealOperation(operation)} />
-      </div>
       <div class="workflow-host" hidden={mode !== "workflow"}>
-        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={mode === "workflow"} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={() => navigationOpen = !navigationOpen} />
+        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={mode === "workflow"} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={browseOperations} />
       </div>
       <div hidden={mode !== "settings"}>
         <SettingsWorkspace bind:this={settingsWorkspace} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
