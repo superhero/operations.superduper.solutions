@@ -28,7 +28,9 @@ reuse scenarios verify matching inputs, complete artifact hashes and original
 run provenance, plus bounded retries and fresh-validation fallback. Request
 tests exercise the GitHub CLI adapter with a local fake command. Workflow
 scenarios ensure manifests follow successful checks from all four suites and
-that publication waits for the versioned release changelog.
+that publication waits for the versioned release changelog. Queue scenarios
+exercise live revision checks, bounded API retries, candidate updates and
+merged-release recovery without real GitHub writes.
 
 ## Reporting and validation
 

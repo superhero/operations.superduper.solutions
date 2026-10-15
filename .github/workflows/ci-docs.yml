@@ -11,11 +11,10 @@ on:
     branches: [main, develop, 'release/**']
     types: [opened, synchronize, reopened, edited, ready_for_review]
 
-# Release documentation also holds the production merge lock. The job retains
-# the destination lock below, so neither release stabilization nor publication
-# can merge concurrently with this update.
+# Hold the same queue slot as code integrations until documentation is merged.
 concurrency:
-  group: ${{ startsWith(github.head_ref, 'docs/') && startsWith(github.base_ref, 'release/') && 'merge-main' || format('documentation-pr-{0}', github.event.pull_request.number) }}
+  group: integration-ci
+  queue: max
   cancel-in-progress: false
 
 permissions:
@@ -24,9 +23,23 @@ permissions:
   pull-requests: read
 
 jobs:
+  integration:
+    name: Prepare queued integration
+    if: "startsWith(github.head_ref, 'docs/')"
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: ./.github/workflows/prepare-integration.yml
+    with:
+      mode: docs
+      workflow-file: .github/workflows/ci-docs.yml
+    secrets:
+      app-private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
   documentation:
+    needs: integration
     name: Validate and Merge Documentation
-    if: startsWith(github.head_ref, 'docs/')
+    if: "needs.integration.outputs.ready == 'true' && (startsWith(github.head_ref, 'docs/'))"
     concurrency:
       group: merge-${{ github.base_ref }}
       cancel-in-progress: false
@@ -43,7 +56,7 @@ jobs:
       - name: Fetch proposed documentation objects
         env:
           GH_TOKEN: ${{ github.token }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ needs.integration.outputs.base_sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
@@ -65,7 +78,7 @@ jobs:
           HEAD_BRANCH: ${{ github.head_ref }}
           BASE_BRANCH: ${{ github.base_ref }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ needs.integration.outputs.base_sha }}
         run: |
           bash .github/scripts/validate-pr.sh "$REPOSITORY" "$HEAD_BRANCH" "$BASE_BRANCH" "$HEAD_SHA"
           bash .github/scripts/validate-documentation-changes.sh "$BASE_SHA" "$HEAD_SHA"
@@ -105,7 +118,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BASE_BRANCH: ${{ github.base_ref }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ needs.integration.outputs.base_sha }}
           HEAD_BRANCH: ${{ github.head_ref }}
         run: bash .github/scripts/prepare-changelog.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA" "$BASE_BRANCH" "$BASE_SHA" "$HEAD_BRANCH"
 
@@ -120,6 +133,6 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BASE_BRANCH: ${{ github.base_ref }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ needs.integration.outputs.base_sha }}
           HEAD_BRANCH: ${{ github.head_ref }}
         run: bash .github/scripts/auto-merge.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA" "$BASE_BRANCH" "$BASE_SHA" "$HEAD_BRANCH"

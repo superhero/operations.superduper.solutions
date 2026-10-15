@@ -10,17 +10,31 @@ on:
     types: [opened, synchronize, reopened, edited, ready_for_review]
 
 concurrency:
-  # A PR update must not interrupt tagging or deployment after the merge.
-  group: main-pr-${{ github.event.pull_request.number }}
+  group: integration-ci
+  queue: max
   cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
-  release-route:
-    name: Classify Release Update
+  integration:
+    name: Prepare queued integration
     if: "!startsWith(github.head_ref, 'docs/')"
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: ./.github/workflows/prepare-integration.yml
+    with:
+      mode: head
+      workflow-file: .github/workflows/ci-main.yml
+    secrets:
+      app-private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
+  release-route:
+    needs: integration
+    name: Classify Release Update
+    if: "needs.integration.outputs.ready == 'true' && (!startsWith(github.head_ref, 'docs/'))"
     permissions:
       contents: read
     outputs:
@@ -31,7 +45,7 @@ jobs:
       - name: Checkout trusted event base automation
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.base.sha }}
+          ref: ${{ needs.integration.outputs.base_sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -78,9 +92,10 @@ jobs:
 
   validation:
     name: Find Previous Validation
-    needs: release-route
+    needs: [integration, release-route]
     if: >-
-      !startsWith(github.head_ref, 'docs/')
+      needs.integration.outputs.ready == 'true'
+      && !startsWith(github.head_ref, 'docs/')
       && needs.release-route.outputs.run_release == 'true'
     permissions:
       actions: read
@@ -123,9 +138,10 @@ jobs:
 
   workflow-checks:
     name: Automation Checks
-    needs: [release-route, validation]
+    needs: [integration, release-route, validation]
     if: >-
-      !startsWith(github.head_ref, 'docs/')
+      needs.integration.outputs.ready == 'true'
+      && !startsWith(github.head_ref, 'docs/')
       && needs.release-route.outputs.run_release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -179,12 +195,13 @@ jobs:
 
   validate-pr:
     name: Validate Gitflow
-    needs: release-route
+    needs: [integration, release-route]
     permissions:
       contents: read
       pull-requests: read
     if: >-
-      !startsWith(github.head_ref, 'docs/')
+      needs.integration.outputs.ready == 'true'
+      && !startsWith(github.head_ref, 'docs/')
       && needs.release-route.outputs.run_release == 'true'
       && (github.head_ref != 'develop')
     runs-on: ubuntu-latest
@@ -203,14 +220,15 @@ jobs:
           HEAD_BRANCH: ${{ github.head_ref }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ needs.integration.outputs.base_sha }}
         run: bash .github/scripts/validate-release-pr.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_BRANCH" "$HEAD_SHA" "$BASE_SHA"
 
   create-release:
     name: Create Release
-    needs: workflow-checks
+    needs: [integration, workflow-checks]
     if: >-
-      !startsWith(github.head_ref, 'docs/')
+      needs.integration.outputs.ready == 'true'
+      && !startsWith(github.head_ref, 'docs/')
       && github.head_ref == 'develop'
       && github.event.pull_request.head.repo.full_name == github.repository
       && !github.event.pull_request.draft
@@ -251,9 +269,10 @@ jobs:
 
   release-changelog:
     name: Prepare Release Changelog
-    needs: [workflow-checks, validate-pr]
+    needs: [integration, workflow-checks, validate-pr]
     if: >-
-      !startsWith(github.head_ref, 'docs/')
+      needs.integration.outputs.ready == 'true'
+      && !startsWith(github.head_ref, 'docs/')
       && github.head_ref != 'develop'
       && github.event.pull_request.head.repo.full_name == github.repository
       && !github.event.pull_request.draft
@@ -278,7 +297,7 @@ jobs:
           node-version-file: .node-version
 
       - name: Create GitHub App token
-        if: startsWith(github.head_ref, 'release/')
+        if: startsWith(github.head_ref, 'release/') && needs.integration.outputs.recovery != 'true'
         id: app-token
         uses: actions/create-github-app-token@v3
         with:
@@ -295,8 +314,24 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_BRANCH: ${{ github.head_ref }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          RECOVER_MERGED: ${{ needs.integration.outputs.recovery }}
         run: |
-          if [[ "$HEAD_BRANCH" == release/* ]]; then
+          if [[ "$RECOVER_MERGED" == true && "$HEAD_BRANCH" == release/* ]]; then
+            # validate-pr already confirmed this exact merged release tree.
+            # Recovery may follow branch deletion: inspect its pinned changelog
+            # without creating another docs PR or obtaining write credentials.
+            node --input-type=module <<'JS'
+          import { execFileSync } from 'node:child_process';
+          import { appendFileSync } from 'node:fs';
+          import { releaseChangelog } from './.github/scripts/changelog.mjs';
+          const entry = execFileSync('git', ['ls-tree', process.env.HEAD_SHA, '--', 'CHANGELOG.md'], { encoding: 'utf8' });
+          if (!/^100644 blob [0-9a-f]{40}\tCHANGELOG\.md\n$/.test(entry)) throw new Error('Release recovery requires a regular versioned changelog.');
+          const document = execFileSync('git', ['show', `${process.env.HEAD_SHA}:CHANGELOG.md`], { encoding: 'utf8' });
+          if (releaseChangelog(document, process.env.HEAD_BRANCH.slice('release/'.length)) !== document)
+            throw new Error('The merged release changelog is not versioned; recovery cannot change published content.');
+          appendFileSync(process.env.GITHUB_OUTPUT, 'ready=true\n');
+          JS
+          elif [[ "$HEAD_BRANCH" == release/* ]]; then
             bash .github/scripts/create-release-changelog-pr.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_BRANCH" "$HEAD_SHA"
           else
             echo 'ready=true' >> "$GITHUB_OUTPUT"
@@ -304,9 +339,10 @@ jobs:
 
   application:
     name: Test and Build Release
-    needs: [validate-pr, workflow-checks, validation, release-changelog]
+    needs: [integration, validate-pr, workflow-checks, validation, release-changelog]
     if: >-
-      !startsWith(github.head_ref, 'docs/')
+      needs.integration.outputs.ready == 'true'
+      && !startsWith(github.head_ref, 'docs/')
       && github.head_ref != 'develop'
       && needs.release-changelog.outputs.ready == 'true'
     permissions:
@@ -500,9 +536,10 @@ jobs:
 
   preview:
     name: Deploy Preview
-    needs: application
+    needs: [integration, application]
     if: >-
-      !startsWith(github.head_ref, 'docs/')
+      needs.integration.outputs.ready == 'true'
+      && !startsWith(github.head_ref, 'docs/')
       && github.event.pull_request.head.repo.full_name == github.repository
       && !github.event.pull_request.draft
     concurrency:
@@ -578,9 +615,10 @@ jobs:
     concurrency:
       group: merge-${{ github.base_ref }}
       cancel-in-progress: false
-    needs: [workflow-checks, validate-pr, application, preview]
+    needs: [integration, workflow-checks, validate-pr, application, preview]
     if: >-
-      !startsWith(github.head_ref, 'docs/')
+      needs.integration.outputs.ready == 'true'
+      && !startsWith(github.head_ref, 'docs/')
       && github.event.pull_request.head.repo.full_name == github.repository
       && !github.event.pull_request.draft
     outputs:
@@ -613,13 +651,13 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           HEAD_BRANCH: ${{ github.head_ref }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ needs.integration.outputs.base_sha }}
         run: bash .github/scripts/merge-release-pr.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_BRANCH" "$HEAD_SHA" "$BASE_SHA"
 
   create-release-tag:
     name: Create Release Tag
-    if: "!startsWith(github.head_ref, 'docs/')"
-    needs: auto-merge
+    if: "needs.integration.outputs.ready == 'true' && (!startsWith(github.head_ref, 'docs/'))"
+    needs: [integration, auto-merge]
     permissions:
       contents: read
       pull-requests: read
@@ -700,8 +738,8 @@ jobs:
 
   backmerge-develop:
     name: Synchronize Released Code
-    if: "!startsWith(github.head_ref, 'docs/')"
-    needs: create-release-tag
+    if: "needs.integration.outputs.ready == 'true' && (!startsWith(github.head_ref, 'docs/'))"
+    needs: [integration, create-release-tag]
     concurrency:
       group: post-release-backmerge
       cancel-in-progress: false
@@ -735,8 +773,8 @@ jobs:
 
   promote-release:
     name: Promote Release
-    if: "!startsWith(github.head_ref, 'docs/')"
-    needs: create-release-tag
+    if: "needs.integration.outputs.ready == 'true' && (!startsWith(github.head_ref, 'docs/'))"
+    needs: [integration, create-release-tag]
     # Keep all production writes in one serialized job. Tagging remains independent.
     concurrency:
       group: production-release

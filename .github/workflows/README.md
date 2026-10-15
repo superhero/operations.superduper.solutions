@@ -40,13 +40,46 @@ external requests fail the scenario.
 
 ### Automation changes
 
+Run the Cucumber tags covering the affected automation. Full regression runs
+belong to CI unless explicitly requested.
+
 ```sh
-npm run test:automation
+npm run test:automation -- --tags '@integration-queue or @validation-workflows' --parallel 1
 npm run badges:dependencies -- --check
 shellcheck .github/scripts/*.sh
 ```
 
 The [npm command reference](../../README.md#npm-commands) covers individual commands.
+
+### Integration queue
+
+All integration workflows and scheduled dependency updates share the
+`integration-ci` concurrency group, with `queue: max` and cancellation disabled.
+One workflow runs at a time, including its merge and publication jobs. GitHub
+allows up to 100 pending runs in this queue; additional runs are cancelled.
+
+`prepare-integration.yml` resolves the live PR and target when the queue slot
+starts. Closed PRs, superseded source revisions, drafts and title/description
+edits stop before validation. Retargeting still triggers preparation. An explicit
+release-workflow retry can recover publication after its exact PR was merged;
+the existing release identity and tree checks still apply.
+
+- Repository-owned feature/bugfix candidates behind `develop` or a release
+  receive the latest target through an expected-head update. The current run ends; the App's
+  resulting `synchronize` event owns validation of the new source revision.
+- Other routes preserve their source. Development/release synchronization tests
+  a proposed merge whose parents match the current target and event source;
+  main releases retain their existing source-snapshot validation. If the queued
+  merge changes the executing workflow definition, preparation requires a fresh
+  event before validation can produce reusable evidence.
+- Documentation keeps trusted default-branch code and validates pinned Git
+  objects against the live target. It never executes proposed documentation.
+- Merge conflicts stop with an actionable failure. The final merge guard still
+  rejects unexpected changes made outside the queue.
+
+The queue covers the full caller workflow. The reusable preparation must never
+acquire the same concurrency group or wait for its queued successor. A failed
+candidate releases the slot so later PRs can proceed.
 
 ## Test reports
 
