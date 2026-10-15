@@ -4,6 +4,15 @@
 
 import type { BodyMediaType, InputField, InputSchema, JsonValue, Operation } from "./catalog.ts";
 
+export type InputValue = string | null | undefined;
+export type InputValues = Record<string, InputValue>;
+
+export function inputAllowsNull(input: InputSchema | InputField): boolean
+{
+  const schema = "schema" in input && input.schema ? input.schema : input;
+  return (schema.type === "null" || schema.nullable === true) && (!schema.enum || schema.enum.includes(null));
+}
+
 export type PreparedRequest = {
   method: string;
   path: string;
@@ -35,6 +44,11 @@ function validateJson(input: InputField, value: JsonValue, path: string): void
 function validate(input: InputField, schema: InputSchema, value: JsonValue, path: string): void
 {
   const type = schema.type;
+  if (value === null && (type === "null" || schema.nullable))
+  {
+    if (!inputAllowsNull(schema)) fail(input, `${path} choose one of the allowed values.`);
+    return;
+  }
   const matches = type === "null" ? value === null : type === "array" ? Array.isArray(value)
     : type === "object" ? value !== null && typeof value === "object" && !Array.isArray(value)
     : type === "integer" ? Number.isInteger(value) : typeof value === type;
@@ -71,8 +85,13 @@ export function validateInputValue(input: InputField, value: JsonValue): void
   validate(input, input.schema ?? { ...input, required: [] }, value, "value");
 }
 
-function convert(input: InputField, raw: string): JsonValue
+function convert(input: InputField, raw: string | null): JsonValue
 {
+  if (raw === null)
+  {
+    validateInputValue(input, null);
+    return null;
+  }
   let value: JsonValue = raw;
   if (input.type === "object" || input.type === "array" || input.type === "null")
   {
@@ -109,14 +128,14 @@ function set(target: object, name: string, value: JsonValue)
 export function additionalBodyField(operation: Operation, name: string, type: InputSchema["type"]): InputField | undefined
 {
   const root = operation.bodySchema;
-  if (root?.type !== "object" || root.additionalProperties === false || Object.hasOwn(root.properties ?? {}, name)) return;
+  if (operation.bodyValue || root?.type !== "object" || root.additionalProperties === false || Object.hasOwn(root.properties ?? {}, name)) return;
   const schema: InputSchema = typeof root.additionalProperties === "object" ? root.additionalProperties : { type };
   if (!["string", "number", "integer", "boolean", "object", "array", "null"].includes(schema.type)) return;
   return { ...schema, key: `body:${name}`, name, label: name || "(empty name)", description: "", location: "body",
     required: root.required?.includes(name) ?? false, schema };
 }
 
-export function prepareRequest(operation: Operation, values: Record<string, string>, workflowFields: InputField[] = operation.fields): PreparedRequest
+export function prepareRequest(operation: Operation, values: InputValues, workflowFields: InputField[] = operation.fields): PreparedRequest
 {
   const request: PreparedRequest = { method: operation.method, path: operation.path, query: {} };
   const body: Record<string, JsonValue> = {};
@@ -128,23 +147,23 @@ export function prepareRequest(operation: Operation, values: Record<string, stri
     if (!input) fail(candidate, "this body property is not allowed by the operation schema.");
     fields.push(input);
   }
-  const supplied = (input: InputField) => Boolean((values[input.key] ?? "").trim()
+  const supplied = (input: InputField) => values[input.key] === null || Boolean((values[input.key] ?? "").trim()
     || input.location === "body" && input.type === "string" && operation.bodySchema?.type === "object"
-      && !Object.hasOwn(operation.bodySchema.properties ?? {}, input.name) && Object.hasOwn(values, input.key));
+      && !operation.bodyValue && !Object.hasOwn(operation.bodySchema.properties ?? {}, input.name) && values[input.key] !== undefined);
   const hasBody = operation.bodyRequired || fields.some(input => input.location === "body" && supplied(input));
   for (const input of fields)
   {
-    const raw = values[input.key] ?? "";
+    const raw = values[input.key];
     if (!supplied(input))
     {
       if (input.required && (input.location !== "body" || hasBody)) fail(input, "this field is required.");
       continue;
     }
-    const value = convert(input, raw);
+    const value = convert(input, raw!);
     if (input.location === "path") request.path = request.path.replaceAll(`{${input.name}}`, encodeURIComponent(String(value)));
     else if (input.location === "query")
     {
-      if (input.type === "object") for (const [name, item] of Object.entries(value as Record<string, JsonValue>))
+      if (input.type === "object" && value !== null) for (const [name, item] of Object.entries(value as Record<string, JsonValue>))
       {
         if (item !== null && typeof item === "object") fail(input, "deepObject query values must be primitive values.");
         set(request.query, `${input.name}[${name}]`, item);

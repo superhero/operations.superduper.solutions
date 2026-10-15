@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 import { operations, type InputField, type InputSchema, type JsonValue, type Operation } from "./catalog.ts";
-import { additionalBodyField, InputValidationError, validateInputValue } from "./operation-input.ts";
+import { additionalBodyField, inputAllowsNull, InputValidationError, validateInputValue, type InputValues } from "./operation-input.ts";
 import { validateWorkflowDocument, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
 import { castValue, matchingSwitchGates } from "./workflow-utilities.ts";
 import { createWorkflowExecution, type WorkflowExecutionResult, type WorkflowResponse, type WorkflowExecutor } from "./workflow-execution.ts";
@@ -24,7 +24,7 @@ type Frame = {
 };
 export type WorkflowVisit = {
   kind: "operation"; id: string; nodeId: string; workflowName: string; operation: Operation;
-  values: Record<string, string>; mappedFields: string[]; step: number;
+  values: InputValues; mappedFields: string[]; step: number;
   credentialBinding?: CredentialBinding;
   bindingPath: string[];
 };
@@ -288,7 +288,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       && operation.method === node.data.method && operation.path === node.data.path);
     if (!canonical) throw new Error(`“${node.data.name}” is unavailable in the registered schemas. Add an available operation before running it.`);
     const operation = { ...canonical, fields: [...canonical.fields] };
-    const values: Record<string, string> = {};
+    const values: InputValues = {};
     const mappedFields: string[] = [];
     const mapped = new Map<InputField, unknown>();
     const arrayPaths = new Map<string, Set<string>>();
@@ -335,12 +335,12 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     for (const [input, value] of mapped)
     {
       const expected = input.type === "integer" ? "number" : input.type;
-      const matches = expected === "null" ? value === null : expected === "array" ? Array.isArray(value)
+      const matches = value === null ? inputAllowsNull(input) : expected === "array" ? Array.isArray(value)
         : typeof value === expected && (expected !== "object" || value !== null && !Array.isArray(value));
       if (!matches || typeof value === "number" && (!Number.isFinite(value) || input.type === "integer" && !Number.isInteger(value)))
         throw new Error(`“${input.label}” needs ${input.type === "integer" ? "an integer" : `a ${input.type}`} value. Check its connection or add a Cast.`);
       validateInputValue(input, value as JsonValue);
-      Object.defineProperty(values, input.key, { value: typeof value === "object" ? JSON.stringify(value) : String(value),
+      Object.defineProperty(values, input.key, { value: value === null ? null : typeof value === "object" ? JSON.stringify(value) : String(value),
         enumerable: true, writable: true, configurable: true });
       mappedFields.push(input.key);
     }
@@ -441,7 +441,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
 
   return {
     next, choose,
-    async submit(values: Record<string, string>, binding?: CredentialBinding | null): Promise<WorkflowExecution>
+    async submit(values: InputValues, binding?: CredentialBinding | null): Promise<WorkflowExecution>
     {
       if (!current || stopped || terminalError) throw new Error("There is no operation ready to run.");
       if (pending) throw new Error("This operation already has a request in progress.");

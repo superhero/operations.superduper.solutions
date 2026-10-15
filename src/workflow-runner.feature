@@ -57,6 +57,10 @@ Feature: Step through workflow requests with explicit test responses
   Scenario: Structured workflow mappings retain their schema types
     Then structured values root bodies and nested fields flow between example operations
 
+  @explicit-input-values
+  Scenario: Nullable mapped values remain distinct from omitted fields and text
+    Then nullable workflow mappings preserve null lock connected values and send exact JSON
+
   Scenario: Structured mappings reject incompatible or conflicting values
     Then invalid structured connections stop before the next request
 

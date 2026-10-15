@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { When, Then } from "@cucumber/cucumber";
 import { extractOperations, operations } from "./lib/catalog.ts";
 import { evaluateOperations, rankOperations } from "./lib/matching.ts";
-import { additionalBodyField, InputValidationError, prepareRequest, validateInputValue } from "./lib/operation-input.ts";
+import { additionalBodyField, inputAllowsNull, InputValidationError, prepareRequest, validateInputValue } from "./lib/operation-input.ts";
 
 const parameter = (schema = { type: "string" }, extra = {}) => ({ name: "value", in: "query", schema, ...extra });
 const document = (operation = {}, item = {}) => ({ openapi: "3.1.0", paths: { "/items": { ...item, get: operation } } });
@@ -375,7 +375,11 @@ Then("unsupported structures and serializations fail during catalog loading", fu
     [{ type: "null", enum: ["null"] }, /enum values/],
     [{ type: "number", enum: [Infinity] }, /enum values/],
     [{ type: "array", items: { type: "string", format: "binary" } }, /unsupported schema fields/],
-    [{ type: ["string", "null"] }, /unsupported input type/]
+    [{ type: ["string", "integer"] }, /unsupported input type/],
+    [{ type: ["string", "integer", "null"] }, /unsupported input type/],
+    [{ type: ["null", "null"] }, /unsupported input type/],
+    [{ type: ["missing", "null"] }, /unsupported input type/],
+    [{ type: "string", nullable: "true" }, /nullable must be Boolean/]
   ];
   for (const [schema, reason] of badSchemas) assert.throws(() => bodyOperation(schema), reason);
   const recursive = withBody({ type: "object", properties: { child: { $ref: "#/node" } } });
@@ -398,6 +402,108 @@ Then("unsupported structures and serializations fail during catalog loading", fu
       assert.throws(() => bodyOperation(schema, type), /primitive text fields/);
   assert.throws(() => extractOperations(withBody(undefined, { content: { "application/json": {}, "text/plain": {} } }), "fixture"), /choose one supported/);
   assert.throws(() => extractOperations(withBody(undefined, { content: { "multipart/form-data": { schema: { type: "object", properties: {} }, encoding: {} } } }), "fixture"), /unsupported schema fields/);
+});
+
+Then("nullable request inputs preserve explicit omission null and the text null", function ()
+{
+  const operation = bodyOperation({ type: "object", properties: { value: { type: ["string", "null"] } } }, "application/json", false);
+  for (const values of [{}, { "body:value": undefined }, { "body:value": "" }, { "body:value": "  " }])
+    assert.equal(Object.hasOwn(prepareRequest(operation, values), "body"), false);
+  assert.deepEqual(prepareRequest(operation, { "body:value": null }).body, { value: null });
+  assert.deepEqual(prepareRequest(operation, { "body:value": "null" }).body, { value: "null" });
+  const dynamic = additionalBodyField(operation, "extra", "string");
+  assert.equal(Object.hasOwn(prepareRequest(operation, { "body:extra": undefined }, [dynamic]), "body"), false);
+  assert.deepEqual(prepareRequest(operation, { "body:extra": "" }, [dynamic]).body, { extra: "" });
+  assert.throws(() => prepareRequest(operation, { "body:extra": null }, [dynamic]), /valid string/);
+  const constrained = bodyOperation({ type: "object", additionalProperties: { type: "string", nullable: true } });
+  assert.deepEqual(prepareRequest(constrained, { "body:extra": null }, [additionalBodyField(constrained, "extra", "string")]).body, { extra: null });
+});
+
+Then("both OpenAPI nullable representations enforce their remaining constraints", function ()
+{
+  for (const type of ["string", "integer", "number", "boolean", "object", "array"])
+    for (const version of ["3.0.3", "3.1.0"])
+    {
+      const shape = { type, ...(type === "array" ? { items: { type: "integer" } } : {}),
+        ...(version === "3.0.3" ? { nullable: true } : { type: ["null", type] }) };
+      const doc = withBody(shape);
+      doc.openapi = version;
+      const operation = extractOperations(doc, "nullable")[0];
+      assert.equal(operation.bodySchema.type, type);
+      assert.equal(operation.bodySchema.nullable, true);
+      assert.equal(inputAllowsNull(operation.fields[0]), true);
+      assert.equal(prepareRequest(operation, { "body:$": null }).body, null);
+      const strict = bodyOperation({ ...shape, type, nullable: false });
+      const key = strict.bodyValue ? "body:$" : "body:value";
+      if (strict.bodyValue) assert.throws(() => prepareRequest(strict, { [key]: null }), new RegExp(`valid ${type}`));
+    }
+  const allowed = inputOperation({ type: "string", nullable: true, enum: [null, "null", "yes"] });
+  assert.equal(inputAllowsNull(allowed.fields[0]), true);
+  assert.equal(prepareRequest(allowed, { "query:value": null }).query.value, null);
+  assert.equal(prepareRequest(allowed, { "query:value": "null" }).query.value, "null");
+  const restricted = inputOperation({ type: ["string", "null"], enum: ["yes"] });
+  assert.equal(inputAllowsNull(restricted.fields[0]), false);
+  assert.throws(() => prepareRequest(restricted, { "query:value": null }), /allowed values/);
+  assert.throws(() => inputOperation({ type: "string", enum: [null] }), /enum values/);
+  assert.equal(inputAllowsNull({ type: "null", enum: [null] }), true);
+  const nested = bodyOperation({ type: "object", properties: {
+    item: { type: ["object", "null"], required: ["count"], additionalProperties: false,
+      properties: { count: { type: "integer", nullable: true, minimum: 1 } } },
+    list: { type: ["array", "null"], minItems: 1, items: { type: ["string", "null"], minLength: 2 } }
+  } });
+  assert.deepEqual(prepareRequest(nested, { "body:item": null, "body:list": null }).body, { item: null, list: null });
+  assert.deepEqual(prepareRequest(nested, { "body:item": '{"count":null}', "body:list": '[null,"ok"]' }).body,
+    { item: { count: null }, list: [null, "ok"] });
+  for (const values of [{ "body:item": "{}" }, { "body:item": '{"count":0}' }, { "body:list": "[]" }, { "body:list": '["x"]' }])
+    assert.throws(() => prepareRequest(nested, values), InputValidationError);
+});
+
+Then("required and optional nullable fields and root bodies enforce presence independently", function ()
+{
+  for (const required of [false, true])
+  {
+    const query = inputOperation({ type: ["string", "null"] }, { required });
+    assert.equal(prepareRequest(query, { "query:value": null }).query.value, null);
+    if (required) assert.throws(() => prepareRequest(query, { "query:value": undefined }), /required/);
+    else assert.deepEqual(prepareRequest(query, { "query:value": undefined }).query, {});
+    const object = bodyOperation({ type: "object", required: ["value"], properties: { value: { type: "string", nullable: true } } }, "application/json", required);
+    assert.deepEqual(prepareRequest(object, { "body:value": null }).body, { value: null });
+    if (required) assert.throws(() => prepareRequest(object, { "body:value": undefined }), /required/);
+    else assert.equal(prepareRequest(object, { "body:value": undefined }).body, undefined);
+    for (const type of ["string", "object"])
+    {
+      const root = bodyOperation({ type, nullable: true, ...(type === "object" ? {
+        required: ["name"], properties: { name: { type: "string" } }, additionalProperties: false
+      } : {}) }, "application/json", required);
+      assert.equal(root.bodyValue, true);
+      assert.deepEqual(root.fields.map(field => field.key), ["body:$"]);
+      assert.equal(prepareRequest(root, { "body:$": null }).body, null);
+      if (required) assert.throws(() => prepareRequest(root, { "body:$": undefined }), /required/);
+      else assert.equal(Object.hasOwn(prepareRequest(root, { "body:$": undefined }), "body"), false);
+      if (type === "object")
+      {
+        assert.deepEqual(prepareRequest(root, { "body:$": '{"name":"present"}' }).body, { name: "present" });
+        assert.throws(() => prepareRequest(root, { "body:$": "{}" }), /required/);
+        assert.equal(additionalBodyField(root, "extra", "string"), undefined);
+      }
+    }
+  }
+});
+
+Then("nullable query collections serialize safely and form bodies reject null schemas", function ()
+{
+  const query = extractOperations(document({ parameters: [
+    parameter({ type: ["object", "null"], properties: { value: { type: ["string", "null"] } } }, { name: "filter", style: "deepObject" }),
+    parameter({ type: ["array", "null"], items: { type: ["string", "null"] } }, { name: "tags" }),
+    parameter({ type: ["string", "null"] }, { name: "X-Nullable", in: "header" })
+  ] }), "fixture")[0];
+  assert.deepEqual(prepareRequest(query, { "query:filter": null, "query:tags": null, "header:X-Nullable": null }),
+    { method: "GET", path: "/items", query: { filter: null, tags: null }, headers: { "X-Nullable": "null" } });
+  assert.deepEqual(prepareRequest(query, { "query:filter": '{"value":null}', "query:tags": '[null,"null"]' }).query,
+    { "filter[value]": null, tags: [null, "null"] });
+  for (const media of ["application/x-www-form-urlencoded", "multipart/form-data"])
+    for (const schema of [{ type: "object", nullable: true }, { type: "object", properties: { value: { type: ["string", "null"] } } }])
+      assert.throws(() => bodyOperation(schema, media), /primitive text fields/);
 });
 
 Then("nested values enforce declared types, required fields and bounds", function ()

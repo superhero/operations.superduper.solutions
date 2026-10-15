@@ -7,6 +7,7 @@ import { Then } from "@cucumber/cucumber";
 import { approvedOperation, canonicalPolicyValue, normalizeCredentialOrigin, validateApprovedOperation } from "./lib/secrets/policy.ts";
 import { CredentialResponseError, executeCredentialed } from "./lib/secrets/execution.ts";
 import { InputValidationError } from "./lib/operation-input.ts";
+import { extractOperations } from "./lib/catalog.ts";
 import { VaultError, vaultLimits } from "./lib/secrets/types.ts";
 
 const canary = "credential-CANARY-17";
@@ -197,6 +198,31 @@ Then("credential execution preserves sanitized public field validation errors", 
     assert.doesNotMatch(error.message + error.fieldKey, new RegExp(canary));
     return true;
   });
+});
+
+Then("credentialed requests distinguish omitted null and literal null inputs before dispatch", async () => {
+  const operation = extractOperations({ openapi: "3.1.0", components: {
+    securitySchemes: { Bearer: { type: "http", scheme: "bearer" } }
+  }, security: [{ Bearer: [] }], paths: { "/items": { post: { requestBody: { required: true,
+    content: { "application/json": { schema: { type: "object", required: ["value"], properties: {
+      value: { type: ["string", "null"] }, literal: { type: "string", nullable: true },
+      omitted: { type: "string", nullable: true }, strict: { type: "string" },
+      choice: { type: ["string", "null"], enum: ["yes"] }
+    } } } } } } } } }, "nullable")[0];
+  const state = await fixture(operation);
+  const requests = [];
+  const fetchRequest = async (_url, options) => { requests.push(options); return response(); };
+  const values = { "body:value": null, "body:literal": "null", "body:omitted": undefined };
+  const result = await execute(state, { values, fetchRequest });
+  assert.deepEqual(result.request.body, { value: null, literal: "null" });
+  assert.equal(requests[0].body, '{"value":null,"literal":"null"}');
+  assert.equal(requests[0].headers.get("Authorization"), `Bearer ${canary}`);
+  assert.equal(requests[0].headers.get("Content-Type"), "application/json");
+  for (const invalid of [{ "body:value": undefined }, { ...values, "body:strict": null }, { ...values, "body:choice": null }])
+    await assert.rejects(() => execute(state, { values: invalid, fetchRequest }), InputValidationError);
+  for (const invalid of [null, [], new Date(), "text", { "body:value": 1 }, { "body:value": true }, { "body:value": [] }, { "body:value": {} }])
+    await assert.rejects(() => execute(state, { values: invalid, fetchRequest }), error => error instanceof VaultError && error.code === "INVALID");
+  assert.equal(requests.length, 1);
 });
 
 Then("credentialed requests preserve {string} body serialization", async media => {

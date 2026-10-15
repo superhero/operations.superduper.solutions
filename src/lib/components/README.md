@@ -10,7 +10,8 @@ adapters such as `OperationFieldControl`, not just generic widgets.
 | Need | Entry point |
 | --- | --- |
 | Schema-derived operation input | [OperationFieldControl.svelte](OperationFieldControl.svelte), backed by the `Field*` controls |
-| Grouped operation forms | [OperationFields.svelte](OperationFields.svelte), including field help, validation, optional bodies and connected inputs |
+| Grouped operation forms | [OperationFields.svelte](OperationFields.svelte), including field information, validation, optional bodies and connected inputs |
+| Omitted and nullable field controls | [OperationFieldToggle.svelte](OperationFieldToggle.svelte), preserving drafts while selecting request presence |
 | Expandable content | [Disclosure.svelte](Disclosure.svelte) for a heading and panel; [Reveal.svelte](Reveal.svelte) for an externally controlled panel |
 | Dialog or explanatory tooltip | [Modal.svelte](Modal.svelte), [HintButton.svelte](HintButton.svelte) |
 | Structured data inspection | [JsonView.svelte](JsonView.svelte), [JsonSchemaView.svelte](JsonSchemaView.svelte) |
@@ -19,6 +20,8 @@ adapters such as `OperationFieldControl`, not just generic widgets.
 Field controls accept editable values and callbacks; request validation remains in
 [operation-input.ts](../operation-input.ts). Objects and arrays retain JSON text
 drafts, while integer inputs reuse [integer-scale.ts](../integer-scale.ts).
+Request values distinguish omitted fields (`undefined`), explicit `null` and text.
+Required and nullable are independent; connected values cannot be overridden.
 
 Vault controls keep temporary passwords in DOM inputs, clear them on use or
 teardown, and pass only opaque bindings into operation/workflow state. Transfer

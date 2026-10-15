@@ -142,7 +142,7 @@ Then('request fields remain readable and preserve accessible editing in both the
 
   const help = workspace(page).getByRole('button', { name: 'About Project ID', exact: true });
   for (const label of ['Title', 'Priority', 'Estimated hours'])
-    await expect(workspace(page).getByRole('button', { name: `About ${label}`, exact: true })).toHaveCount(0);
+    await expect(workspace(page).getByRole('button', { name: `About ${label}`, exact: true })).toBeVisible();
   for (const theme of ['light', 'dark']) {
     await applyDisplayedTheme(page, theme);
     await fillField(page, 'Priority', '');
@@ -179,7 +179,7 @@ Then('request fields remain readable and preserve accessible editing in both the
     await page.keyboard.press('Enter');
     await expect(help).toHaveAttribute('aria-expanded', 'true');
     await expectThemeColors(help, { color: '--control-label' });
-    await expect(await field(page, 'Project ID')).toHaveAccessibleDescription('The identifier of the project to work with.');
+    await expect(await field(page, 'Project ID')).toHaveAccessibleDescription(/The identifier of the project to work with\..*Type string.*Required Yes/);
     await expect(help).toBeFocused();
     await page.keyboard.press('Space');
     await expect(help).toHaveAttribute('aria-expanded', 'false');

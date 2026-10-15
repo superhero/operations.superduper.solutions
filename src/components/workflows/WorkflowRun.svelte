@@ -16,7 +16,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import OperationReport from "../reports/OperationReport.svelte";
   import "../reports/reports.css";
   import type { InputField } from "$lib/catalog.ts";
-  import { InputValidationError, prepareRequest } from "$lib/operation-input.ts";
+  import { InputValidationError, prepareRequest, type InputValues } from "$lib/operation-input.ts";
   import type { WorkflowDocument } from "$lib/workflow-document.ts";
   import { createWorkflowRunner, type WorkflowStep, type WorkflowExecution } from "$lib/workflow-runner.ts";
   import { WorkflowResponseError, workflowExecutionForOperation, workflowRequestUrl, type WorkflowResponse } from "$lib/workflow-execution.ts";
@@ -26,7 +26,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const operationFormId = $props.id();
   let runner: ReturnType<typeof createWorkflowRunner> | undefined;
   let view = $state<WorkflowStep>();
-  let values = $state<Record<string, string>>({});
+  let values = $state<InputValues>({});
   let credentialBinding = $state<CredentialBinding>();
   let selected = $state("");
   let error = $state("");
@@ -109,7 +109,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     finally { busy = false; }
   }
 
-  function edit(field: InputField, value: string) {
+  function edit(field: InputField, value: string | null | undefined) {
     values[field.key] = value; error = ""; prepared = null; failedResponse = null;
     if (fieldError?.fieldKey === field.key) fieldError = null;
   }

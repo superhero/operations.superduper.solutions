@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import type { InputValues } from "../operation-input.ts";
 import { decryptJSON, encryptJSON, newVaultKey, passwordKey, recoveryKey, passkeyKey, randomBase64,
   runtimeKey, unwrapVaultKey, wrapVaultKey, validId, canonicalJSON, ownObject } from "./crypto.ts";
 import { authenticateManifest, sealSnapshot, validateSnapshot } from "./format.ts";
@@ -244,7 +245,7 @@ export class VaultSession {
     await this.save(values); return this.list();
   }
 
-  async execute(descriptor: ApprovedOperation, values: Record<string, string>, binding: CredentialBinding, signal?: AbortSignal) {
+  async execute(descriptor: ApprovedOperation, values: InputValues, binding: CredentialBinding, signal?: AbortSignal) {
     return executeCredentialed(descriptor, values, binding, await this.records(), {
       ...(signal ? { signal } : {}), assertCurrent: async () => {
         await this.assertSchema(descriptor);

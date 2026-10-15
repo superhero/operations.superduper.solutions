@@ -568,7 +568,7 @@ Then("structured values root bodies and nested fields flow between example opera
   const runner = createWorkflowRunner(doc);
   await submit(runner, jsonValues);
   assert.equal(runner.next().nodeId, "target");
-  assert.deepEqual(runner.next().values, { "body:note": "null", "body:profile": '{"name":"Ada","count":3}', "body:tags": '["one","two"]' });
+  assert.deepEqual(runner.next().values, { "body:note": null, "body:profile": '{"name":"Ada","count":3}', "body:tags": '["one","two"]' });
   await submit(runner);
   assert.equal(runner.next().nodeId, "scalar");
   await submit(runner);
@@ -647,6 +647,51 @@ const registerDynamicFixture = source => {
     document: source, groups: [], execution: { kind: "http", origin: "https://example.com" } }]);
   return () => updateCatalogs(previous);
 };
+
+Then("nullable workflow mappings preserve null lock connected values and send exact JSON", async function () {
+  for (const [schema, response, paths, expected] of [
+    [{ type: "object", properties: { value: { type: ["string", "null"] }, literal: { type: "string", nullable: true },
+      omitted: { type: "string", nullable: true } }, required: ["value"] }, { value: null, literal: "null" },
+      ["/value", "/literal", "/omitted"], { "body:value": null, "body:literal": "null" }],
+    [{ type: ["string", "null"] }, null, [""], { "body:$": null }]
+  ]) {
+    const { source, doc } = dynamicFixture(schema);
+    for (const path of paths) mapping(doc, atPath(doc, "source", "outputs", path), atPath(doc, "target", "inputs", path));
+    const requests = [];
+    const restore = registerDynamicFixture(source);
+    try {
+      const runner = createRequestRunner(doc, undefined, createWorkflowRequestExecution(async (_url, options) => {
+        requests.push(options);
+        return Response.json(options.method === "GET" ? response : JSON.parse(options.body));
+      }));
+      await submit(runner);
+      const visit = runner.next();
+      assert.deepEqual(visit.values, expected);
+      assert.deepEqual(new Set(visit.mappedFields), new Set(Object.keys(expected)));
+      const key = Object.keys(expected)[0];
+      for (const replacement of [undefined, "null", "changed"])
+        await assert.rejects(() => runner.submit({ ...visit.values, [key]: replacement }), /Connected values cannot be changed/);
+      assert.equal(requests.length, 1);
+      const completed = await runner.submit({ ...visit.values, "body:omitted": undefined });
+      assert.deepEqual(completed.request.body, response);
+      assert.equal(requests[1].body, JSON.stringify(response));
+      assert.equal(requests[1].headers["Content-Type"], "application/json");
+      assert.equal(runner.next().kind, "complete");
+    } finally { restore(); }
+  }
+  const { source, added } = dynamicFixture({ type: ["object", "null"], required: ["value"],
+    properties: { value: { type: "string" } }, additionalProperties: false });
+  const restore = registerDynamicFixture(source);
+  const requests = [];
+  try {
+    const executor = createWorkflowRequestExecution(async (_url, options) => { requests.push(options); return Response.json({}); });
+    const result = await executor.execute(added[1], { "body:$": null });
+    assert.equal(result.request.body, null);
+    assert.equal(requests[0].body, "null");
+    await assert.rejects(() => executor.execute(added[1], { "body:$": undefined }), /required/);
+    assert.equal(requests.length, 1);
+  } finally { restore(); }
+});
 
 Then("added root and nested properties retain unusual names and selected types in requests", async function () {
   for (const policy of [{}, { additionalProperties: true }]) {
