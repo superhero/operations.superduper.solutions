@@ -188,7 +188,7 @@ async function openSecrets(page) {
   const disclosure = page.locator('summary[aria-label="Secrets"]');
   if (await disclosure.getAttribute('aria-expanded') !== 'true') await disclosure.click();
   await expect(settings(page)).toBeVisible();
-  await expect(settings(page).getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled();
+  await expect(settings(page).getByRole('button', { name: 'Choose backup to restore', exact: true })).toBeEnabled();
 }
 async function unlockUI(page, password = canaries[0]) {
   await settings(page).getByLabel('Unlock password', { exact: true }).fill(password);
@@ -369,11 +369,11 @@ Then('optional idle locking expires before a delayed trusted interaction can ext
   await idle.check();
   const minutes = settings(this.page).getByLabel('Minutes of inactivity', { exact: true });
   await expect(minutes).toBeEnabled(); await minutes.fill('1'); await minutes.press('Tab');
-  await expect(settings(this.page).getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled();
+  await expect(minutes).toBeEnabled();
   // Advance the page wall clock to simulate suspension while keeping the real
   // worker and browser timers; the next trusted event must check before reset.
   await this.page.clock.setFixedTime(new Date(Date.now() + 61_000));
-  await settings(this.page).getByRole('button', { name: 'Refresh', exact: true }).click();
+  await this.page.keyboard.press('Shift');
   await expect(settings(this.page).getByText('Vault locked', { exact: true })).toBeVisible();
   await expect(settings(this.page).getByLabel('Unlock password', { exact: true })).toHaveValue('');
 });
