@@ -67,7 +67,7 @@ palettes, role bindings and contrast without duplicating shipped hex values.
 ## Operation discovery
 
 The prompt sits below the navigation buttons and filters operation leaves as the
-user types. Category structure remains visible, with matching paths expanded.
+user types. Empty categories are hidden, with matching paths expanded.
 Clearing the prompt restores ordinary browsing and its saved expansion state.
 
 Evaluation runs in a dedicated worker after a short typing delay. Further edits

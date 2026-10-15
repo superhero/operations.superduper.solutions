@@ -11,7 +11,7 @@ const prompt = page => page.getByRole('textbox', { name: 'Prompt', exact: true }
 const group = (page, id) => catalog(page).locator(`[data-catalog-group="${id}"] > .catalog-group > summary`);
 const matchingNames = page => catalog(page).locator('[data-operation-name]').evaluateAll(items => items.map(item => item.dataset.operationName).sort());
 
-Then('the sidebar prompt filters operations while retaining their catalog groups', async function () {
+Then('the sidebar prompt filters operations and hides empty catalog groups', async function () {
   const page = this.page;
   await openCatalog(page);
   const initialGroups = await catalog(page).locator('[data-catalog-group]').evaluateAll(items => items.map(item => item.dataset.catalogGroup));
@@ -23,25 +23,35 @@ Then('the sidebar prompt filters operations while retaining their catalog groups
   await searchOperations(page, 'List projects');
   await expect(prompt(page)).toBeFocused();
   assert.deepEqual(await matchingNames(page), ['List projects', 'Get project', 'Example query and header inputs', 'HTTPBin query and header inputs', 'Create task'].sort());
-  assert.deepEqual(await catalog(page).locator('[data-catalog-group]').evaluateAll(items => items.map(item => item.dataset.catalogGroup)), initialGroups);
+  const filteredGroups = await catalog(page).locator('[data-catalog-group]').evaluateAll(items => items.map(item => ({
+    id: item.dataset.catalogGroup, matches: item.querySelectorAll('[data-operation-name]').length
+  })));
+  assert.ok(filteredGroups.length < initialGroups.length, 'Empty nested categories must be removed.');
+  assert.ok(filteredGroups.every(item => item.matches > 0), 'Each remaining category must contain a matching descendant.');
   await expect(group(page, 'projects')).toHaveAttribute('aria-expanded', 'true');
   await expect(group(page, 'overview')).toHaveAttribute('aria-expanded', 'true');
   await expect(group(page, 'tasks')).toHaveAttribute('aria-expanded', 'true');
   await expect(group(page, 'httpbin')).toHaveAttribute('aria-expanded', 'true');
   for (const action of await catalog(page).getByRole('button', { name: /^Add to workflow:/ }).all()) await expect(action).toBeVisible();
   await expect(operationNodes(page, 'List projects')).toHaveCount(0);
+  await searchOperations(page, '!!!');
+  await expect(page.getByText('No matching operations.', { exact: true })).toBeVisible();
+  await expect(catalog(page).locator('[data-catalog-group]')).toHaveCount(0);
+  await expect(catalog(page).locator('.catalog-reorder')).toHaveCount(0);
 });
 
 Then('clearing live matching restores the unfiltered catalog and its previous expansion', async function () {
   const page = this.page;
   await openCatalog(page);
   const initialNames = await matchingNames(page);
+  const initialGroups = await catalog(page).locator('[data-catalog-group]').evaluateAll(items => items.map(item => item.dataset.catalogGroup));
   await group(page, 'projects').click();
   await group(page, 'tasks').click();
   await searchOperations(page, 'List projects');
   await expect(group(page, 'overview')).toHaveAttribute('aria-expanded', 'true');
   await searchOperations(page, '');
   assert.deepEqual(await matchingNames(page), initialNames);
+  assert.deepEqual(await catalog(page).locator('[data-catalog-group]').evaluateAll(items => items.map(item => item.dataset.catalogGroup)), initialGroups);
   await expect(group(page, 'projects')).toHaveAttribute('aria-expanded', 'true');
   await expect(group(page, 'tasks')).toHaveAttribute('aria-expanded', 'true');
   await expect(group(page, 'overview')).toHaveAttribute('aria-expanded', 'false');

@@ -189,7 +189,7 @@
   {@const count = groupCount(group)}
   {@const path = [...parents, group.id]}
   {@const expanded = parentOpen && (matchingIds ? (searchExpansion[JSON.stringify(path)] ?? groupCount(group, true) > 0) : catalogPath[depth] === group.id)}
-  {#if count}
+  {#if groupCount(group, true) > 0}
     <div class="catalog-branch" data-catalog-group={group.id}>
       <Disclosure class="catalog-group" label={`${group.name} group, ${count} operations`} tooltipEnabled={false} open={expanded} onToggle={(next) => toggleGroup(depth, path, next)}>
         {#snippet summary()}<span class="catalog-name">{group.name}</span><span class="catalog-count" aria-label={`${count} operations`}><span class="catalog-count-value">{count}</span></span><MaterialIcon name="chevron_forward" size={17} />{/snippet}
@@ -234,7 +234,7 @@
     {matchingOpen} onChange={changePrompt}
     onMatchingToggle={() => matchingOpen = !matchingOpen} onRetry={() => retryMatching += 1} />
   <nav class="operation-catalog" aria-label="Operation catalog">
-    {#each groups.filter(group => groupCount(group) > 0) as group (group.id)}
+    {#each groups.filter(group => groupCount(group, true) > 0) as group (group.id)}
       <div class="catalog-reorder" animate:flip={{ duration: () => matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 180 }}>
         {@render branch(group, 0, true)}
       </div>

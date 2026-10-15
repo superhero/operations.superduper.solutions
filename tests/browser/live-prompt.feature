@@ -3,8 +3,8 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @live-prompt
 Feature: Automatic operation discovery in navigation
-  Scenario: Matching keeps the catalog groups and opens every matching path
-    Then the sidebar prompt filters operations while retaining their catalog groups
+  Scenario: Matching hides empty catalog groups and opens every matching path
+    Then the sidebar prompt filters operations and hides empty catalog groups
 
   Scenario: Clearing the prompt restores the manual browsing path
     Then clearing live matching restores the unfiltered catalog and its previous expansion
