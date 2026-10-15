@@ -990,7 +990,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     tooltip={descriptionError ? "Try again" : "Save workflow details"} onclick={saveWorkflowDetails}><MaterialIcon name="save" size={20} /></Button></div>
 </Modal>
 
-<Modal bind:open={runOpen} title={`Run workflow: ${runDocument?.name ?? name}`} description="Review each operation before sending its request to the schema’s server."
+<Modal bind:open={runOpen} size="wide" title={`Run workflow: ${runDocument?.name ?? name}`} description="Review each operation before sending its request to the schema’s server."
   onCloseAutoFocus={(event) => { event.preventDefault(); void tick().then(focusCanvas); }}>
   {#if runOpen && runDocument}<WorkflowRun document={runDocument} onClose={() => runOpen = false} onBindingChange={bindRunCredential} />{/if}
 </Modal>

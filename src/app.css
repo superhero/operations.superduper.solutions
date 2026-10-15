@@ -266,6 +266,7 @@ summary::-webkit-details-marker { display: none; }
 
 .modal-overlay { position: fixed; inset: 0; z-index: 80; background: color-mix(in srgb, var(--color-background) 65%, transparent); }
 .modal-content { position: fixed; z-index: 81; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(500px, calc(100vw - 2rem)); max-height: 80dvh; padding: 0 24px 24px; overflow-y: auto; overscroll-behavior: contain; scroll-padding-top: 80px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
+.modal-content.modal-wide { width: min(800px, calc(100vw - 2rem)); }
 .modal-content header { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 0 12px; background: var(--color-surface); }
 .modal-content > header { margin-inline: -24px; padding-inline: 24px; }
 .modal-title { font-size: 18px; font-weight: 650; }
