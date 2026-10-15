@@ -242,9 +242,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .run-response-body pre { margin: 0; padding: 12px; background: var(--color-report-card); white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.7 ui-monospace, monospace; }
   .json-report { margin-bottom: 0; }
   button { border: 1px solid var(--color-surface); border-radius: 4px; padding: 9px 14px; color: var(--color-foreground); background: transparent; }
-  button.run-primary { background: var(--color-foreground); color: var(--color-background); }
+  button.run-primary { background: var(--color-primary); color: var(--color-primary-foreground); }
   button.run-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-weight: 700; }
-  .run-quit { margin-right: auto; }
+  button.run-quit { margin-right: auto; background: var(--color-badge-background); color: var(--color-badge-foreground); }
   .run-success { font-size: 12px; }
   .run-error { margin: 0; padding: 12px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; line-height: 1.6; }
   .run-results { min-width: 0; display: grid; gap: 12px; }
