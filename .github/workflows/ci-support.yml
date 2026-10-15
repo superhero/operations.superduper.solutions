@@ -10,14 +10,30 @@ on:
     types: [opened, synchronize, reopened, edited, ready_for_review]
 
 concurrency:
-  group: support-ci-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: integration-ci
+  queue: max
+  cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
+  integration:
+    name: Prepare queued integration
+    if: "!startsWith(github.head_ref, 'docs/')"
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: ./.github/workflows/prepare-integration.yml
+    with:
+      mode: merge
+      workflow-file: .github/workflows/ci-support.yml
+    secrets:
+      app-private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
   workflow-checks:
+    if: "needs.integration.outputs.ready == 'true'"
+    needs: integration
     name: Automation Checks
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -25,6 +41,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          ref: ${{ needs.integration.outputs.tested_sha }}
           persist-credentials: false
 
       - name: Lint standalone scripts
@@ -57,6 +74,8 @@ jobs:
           retention-days: 7
 
   validate-pr:
+    if: "needs.integration.outputs.ready == 'true'"
+    needs: integration
     name: Validate Gitflow
     permissions:
       contents: read
@@ -67,6 +86,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          ref: ${{ needs.integration.outputs.tested_sha }}
           persist-credentials: false
 
       - name: Validate pull request
@@ -79,14 +99,16 @@ jobs:
         run: bash .github/scripts/validate-pr.sh "$REPOSITORY" "$HEAD_BRANCH" "$BASE_BRANCH" "$HEAD_SHA"
 
   application:
+    if: "needs.integration.outputs.ready == 'true'"
     name: Test and Build
-    needs: validate-pr
+    needs: [integration, validate-pr]
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
       - name: Checkout proposed merge
         uses: actions/checkout@v7
         with:
+          ref: ${{ needs.integration.outputs.tested_sha }}
           persist-credentials: false
 
       - name: Set up Node.js
@@ -144,9 +166,10 @@ jobs:
     concurrency:
       group: merge-${{ github.base_ref }}
       cancel-in-progress: false
-    needs: [workflow-checks, validate-pr, application]
+    needs: [integration, workflow-checks, validate-pr, application]
     if: >-
-      github.event.pull_request.head.repo.full_name == github.repository
+      needs.integration.outputs.ready == 'true'
+      && github.event.pull_request.head.repo.full_name == github.repository
       && !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -163,7 +186,7 @@ jobs:
       - name: Checkout validated merge
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.integration.outputs.tested_sha }}
           persist-credentials: false
 
       - name: Merge validated pull request
@@ -173,6 +196,6 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BASE_BRANCH: ${{ github.base_ref }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ needs.integration.outputs.base_sha }}
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: bash .github/scripts/auto-merge.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA" "$BASE_BRANCH" "$BASE_SHA" "$HEAD_BRANCH"

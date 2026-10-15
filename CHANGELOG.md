@@ -26,6 +26,42 @@ mobile and passkey-provider compatibility.
 
 ```
 
+<!-- changelog-commit:819912ae378090707b77d540e6b0494736481017 -->
+### Commit [`819912a`](https://github.com/superhero/operations.superduper.solutions/commit/819912ae378090707b77d540e6b0494736481017)
+
+```text
+fix(ci): serialize integrations and refresh queued candidates
+
+Hold one retained queue across integration validation, merging and
+publication so concurrent candidates cannot invalidate each other's base.
+Resolve live target revisions before testing, refresh topic branches with
+an expected-head update, and let their new event validate the new source.
+
+Skip obsolete queued events, retain source-preserving synchronization and
+bind reusable validation to the executing workflow definitions. Preserve
+explicit merged-release publication retries without requiring deleted
+source branches or reopening changelog work.
+
+```
+
+<!-- changelog-commit:58e7706de0867a1a9daa6a661c8a00fb5ce3e9ab -->
+### Commit [`58e7706`](https://github.com/superhero/operations.superduper.solutions/commit/58e7706de0867a1a9daa6a661c8a00fb5ce3e9ab)
+
+```text
+fix(ci): align changelog checks and refresh scenario badges
+
+Require prepared integration inputs in the older changelog workflow test,
+including its live target and tested revision. Preserve its route and
+heavy-test isolation checks.
+
+Render the 1,774-scenario badge from unchanged application reports in run
+38639551443, automation run 38760044368 and the actual focused retest of
+its one corrected assertion. Preserve the original reports; this combined
+evidence is not a new full-run validation proof. CI still validates the
+complete corrected revision.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.46

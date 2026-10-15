@@ -5,6 +5,23 @@
 Feature: Carry complete validation through integration and release
   Reusing validation must retain its original evidence and publication gates.
 
+  Scenario: Integration and dependency writes retain one global queue
+    Then integration workflows share one retained queue without acquiring their own lock twice
+
+  Scenario: Candidate inspection cannot obtain branch update credentials
+    Then queued preparation separates proposed inspection code from branch update credentials
+
+  Scenario Outline: Preparation gates every integration job
+    Given the validation workflow for "<target>"
+    Then an unprepared candidate cannot start any downstream integration job
+    Examples:
+      | target  |
+      | develop |
+      | release |
+      | main    |
+      | support |
+      | docs    |
+
   Scenario Outline: A cache miss requires every suite before publishing proof
     Given the validation workflow for "<target>"
     When matching validation is "missing"

@@ -103,6 +103,12 @@ The fix is validated before merging into the release. After release validation,
 
 ### Validation and release
 
+Integration workflows share one queue across development, release, main and
+documentation changes. A run resolves current branch revisions when its turn
+starts. Feature and bugfix candidates incorporate their latest target before
+validation; source updates receive a fresh CI run. Synchronization preserves
+the source branch and validates the current proposed merge.
+
 Releases, including hotfixes, require a fully passing test suite and all required
 checks. Protected branches enforce checks tied to the tested revision. GitHub
 Actions merges and tags the verified revision, then opens a `main` → `develop`

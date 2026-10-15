@@ -10,19 +10,34 @@ on:
     types: [opened, synchronize, reopened, edited, ready_for_review]
 
 concurrency:
-  group: release-ci-${{ github.event.pull_request.number }}
-  # Keep post-merge publication running when a PR is edited.
+  group: integration-ci
+  queue: max
   cancel-in-progress: false
 
 permissions:
   contents: read
 
 jobs:
+  integration:
+    name: Prepare queued integration
+    if: "!startsWith(github.head_ref, 'docs/')"
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: ./.github/workflows/prepare-integration.yml
+    with:
+      mode: merge
+      workflow-file: .github/workflows/ci-release.yml
+    secrets:
+      app-private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+
   validation:
+    needs: integration
     name: Find Previous Validation
 
     if: >-
-      !startsWith(github.head_ref, 'docs/')
+      needs.integration.outputs.ready == 'true'
+      && !startsWith(github.head_ref, 'docs/')
     permissions:
       actions: read
       contents: read
@@ -35,7 +50,7 @@ jobs:
       - name: Checkout validation inputs
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.integration.outputs.tested_sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -49,7 +64,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
-          TARGET_SHA: ${{ github.sha }}
+          TARGET_SHA: ${{ needs.integration.outputs.tested_sha }}
         run: node .github/scripts/find-validation.mjs "$REPOSITORY" "$TARGET_SHA" tmp/reused-validation
 
       - name: Retain verified artifacts for this run
@@ -64,8 +79,8 @@ jobs:
 
   workflow-checks:
     name: Automation Checks
-    needs: validation
-    if: "!startsWith(github.head_ref, 'docs/')"
+    needs: [integration, validation]
+    if: "needs.integration.outputs.ready == 'true' && (!startsWith(github.head_ref, 'docs/'))"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -73,6 +88,7 @@ jobs:
         if: needs.validation.outputs.reused != 'true'
         uses: actions/checkout@v7
         with:
+          ref: ${{ needs.integration.outputs.tested_sha }}
           persist-credentials: false
 
       - name: Lint standalone scripts
@@ -116,8 +132,9 @@ jobs:
         run: echo "Automation already passed in validated run $SOURCE_RUN_ID."
 
   validate-pr:
+    needs: integration
     name: Validate Gitflow
-    if: "!startsWith(github.head_ref, 'docs/')"
+    if: "needs.integration.outputs.ready == 'true' && (!startsWith(github.head_ref, 'docs/'))"
     permissions:
       contents: read
       pull-requests: read
@@ -127,6 +144,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          ref: ${{ needs.integration.outputs.tested_sha }}
           persist-credentials: false
 
       - name: Validate pull request
@@ -140,9 +158,10 @@ jobs:
 
   application:
     name: Test and Build
-    needs: [validate-pr, workflow-checks, validation]
+    needs: [integration, validate-pr, workflow-checks, validation]
     if: >-
-      !startsWith(github.head_ref, 'docs/')
+      needs.integration.outputs.ready == 'true'
+      && !startsWith(github.head_ref, 'docs/')
     permissions:
       actions: read
       contents: read
@@ -152,7 +171,7 @@ jobs:
       - name: Checkout validation inputs
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.integration.outputs.tested_sha }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -243,7 +262,7 @@ jobs:
         if: needs.validation.outputs.reused != 'true'
         id: report
         env:
-          REPORT_COMMIT: ${{ github.sha }}
+          REPORT_COMMIT: ${{ needs.integration.outputs.tested_sha }}
           REPORT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: npm --loglevel=error run report:tests
 
@@ -251,7 +270,7 @@ jobs:
         id: failure-report
         if: failure() && !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure')
         env:
-          REPORT_COMMIT: ${{ github.sha }}
+          REPORT_COMMIT: ${{ needs.integration.outputs.tested_sha }}
           REPORT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           reports=()
@@ -286,7 +305,7 @@ jobs:
         env:
           REPOSITORY: ${{ github.repository }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          TESTED_SHA: ${{ github.sha }}
+          TESTED_SHA: ${{ needs.integration.outputs.tested_sha }}
         run: |
           mkdir -p tmp/validation/bundle tmp/validation/coverage tmp/validation/test-report
           cp -a dist/. tmp/validation/bundle/
@@ -339,9 +358,10 @@ jobs:
     concurrency:
       group: merge-${{ github.base_ref }}
       cancel-in-progress: false
-    needs: [workflow-checks, validate-pr, application]
+    needs: [integration, workflow-checks, validate-pr, application]
     if: >-
-      !startsWith(github.head_ref, 'docs/')
+      needs.integration.outputs.ready == 'true'
+      && !startsWith(github.head_ref, 'docs/')
       && github.event.pull_request.head.repo.full_name == github.repository
       && !github.event.pull_request.draft
     runs-on: ubuntu-latest
@@ -359,7 +379,7 @@ jobs:
       - name: Checkout validated merge
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.integration.outputs.tested_sha }}
           persist-credentials: false
 
       - name: Merge validated pull request
@@ -370,15 +390,16 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BASE_BRANCH: ${{ github.base_ref }}
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ needs.integration.outputs.base_sha }}
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: bash .github/scripts/auto-merge.sh "$REPOSITORY" "$PR_NUMBER" "$HEAD_SHA" "$BASE_BRANCH" "$BASE_SHA" "$HEAD_BRANCH"
 
   preview:
     name: Deploy Preview
-    needs: auto-merge
+    needs: [integration, auto-merge]
     if: >-
-      !startsWith(github.head_ref, 'docs/')
+      needs.integration.outputs.ready == 'true'
+      && !startsWith(github.head_ref, 'docs/')
       && github.event.pull_request.head.repo.full_name == github.repository
       && !github.event.pull_request.draft
     concurrency:
@@ -400,13 +421,13 @@ jobs:
       - name: Checkout tested automation
         uses: actions/checkout@v7
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.integration.outputs.tested_sha }}
           fetch-depth: 0
           persist-credentials: false
 
       - name: Verify merged content matches tested bundle
         env:
-          TESTED_SHA: ${{ github.sha }}
+          TESTED_SHA: ${{ needs.integration.outputs.tested_sha }}
         run: bash .github/scripts/validate-release-tree.sh "$TESTED_SHA" "$DEPLOY_SHA"
 
       - name: Set up Node.js
