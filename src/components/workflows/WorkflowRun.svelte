@@ -19,7 +19,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { InputValidationError, prepareRequest, type InputValues } from "$lib/operation-input.ts";
   import type { WorkflowDocument } from "$lib/workflow-document.ts";
   import { createWorkflowRunner, type WorkflowStep, type WorkflowExecution } from "$lib/workflow-runner.ts";
-  import { WorkflowResponseError, workflowExecutionForOperation, workflowRequestUrl, type WorkflowResponse } from "$lib/workflow-execution.ts";
+  import { WorkflowResponseError, workflowExecutionForOperation, type WorkflowResponse } from "$lib/workflow-execution.ts";
 
   let { document, onClose, startingNodeId, onBindingChange = () => {} }: { document: WorkflowDocument; onClose: () => void;
     startingNodeId?: string; onBindingChange?: (path: string[], binding: CredentialBinding) => void } = $props();
@@ -43,11 +43,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let history = $state<WorkflowExecution[]>([]);
   let heading = $state<HTMLHeadingElement>();
   const destination = $derived(view?.kind === "operation" ? workflowExecutionForOperation(view.operation) : undefined);
-  const requestUrl = $derived.by(() => {
-    if (view?.kind !== "operation" || !destination) return "";
-    try { return workflowRequestUrl(prepareRequest(view.operation, values), destination.origin); }
-    catch { return `${destination.origin}${view.operation.path}`; }
-  });
 
   function advance()
   {
@@ -167,7 +162,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/if}
       <Reveal open={operationDetails} id="run-operation-details">{#key view.id}<OperationReport operation={view.operation} />{/key}</Reveal>
       <p class="hint">{view.workflowName}</p>
-      <p class="run-request"><strong>{view.operation.method}</strong> <code>{requestUrl}</code></p>
       <form id={operationFormId} onsubmit={execute} novalidate>
         {#if view.operation.security?.length}
           {#key view.id}
@@ -227,7 +221,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <style>
   .workflow-run { display: grid; gap: 20px; min-width: 0; }
   .run-endpoint { margin: 0; padding: 12px; border-left: 3px solid var(--color-emphasis); background: var(--color-report-card); font-size: 12px; line-height: 1.6; }
-  .run-request { font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
   h3 { margin: 0 0 8px; font-size: 16px; }
   h3[tabindex="-1"] { outline: none; }
   .run-choices { display: grid; gap: 8px; margin: 12px 0; }
