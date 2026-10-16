@@ -451,7 +451,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if ready && status.exists && status.unlocked}
     <div class="card">
       <div class="vault-export-row">
-        <button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}>Export vault</button>
+        <button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}><MaterialIcon name="file_export" size={18} />Export vault</button>
         <p class="help">Exported vault data remains encrypted at rest and during transfer.</p>
       </div>
     </div>
@@ -459,7 +459,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if ready && status.exists}
     <div class="card">
       <div class="vault-replace-row">
-        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}>Replace vault</button>
+        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}><MaterialIcon name="file_import" size={18} />Replace vault</button>
         <p class="help">Importing replaces any existing vault in this browser and removes imported destination approvals. Exports are encrypted; keep their password, recovery key or passkey available.</p>
       </div>
       {@render vaultImport()}
@@ -497,7 +497,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .recovery-key pre { margin: 0; padding: 8px 40px 8px 8px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: monospace; font-size: 12px; }
   .recovery-copy { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; background: transparent; color: inherit; }
   .vault-replace-row, .vault-export-row { display: flex; align-items: center; gap: 12px; }
-  .vault-replace-row > button, .vault-export-row > button { flex: 0 0 120px; width: 120px; min-height: 40px; }
+  .vault-replace-row > button, .vault-export-row > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 136px; width: 136px; min-height: 40px; }
   .vault-replace-row > p, .vault-export-row > p { min-width: 0; }
   .creation-actions, .recovery-actions { justify-content: flex-end; }
   .unlock-vault { display: grid; place-items: center; justify-self: end; flex-shrink: 0; align-self: stretch; min-width: 40px; border-radius: 0 4px 4px 0; }
