@@ -501,7 +501,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .recovery-key pre { margin: 0; padding: 8px 40px 8px 8px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: monospace; font-size: 12px; }
   .recovery-copy { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; background: transparent; color: inherit; }
   .vault-replace-row, .vault-export-row, .vault-rotate-row { display: flex; align-items: center; gap: 12px; }
-  .vault-replace-row > button, .vault-export-row > button, .vault-rotate-row > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 136px; width: 136px; min-height: 40px; }
+  .vault-replace-row > button, .vault-export-row > button, .vault-rotate-row > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 136px; width: 136px; }
   .vault-replace-row > p, .vault-export-row > p, .vault-rotate-row > p { min-width: 0; }
   .creation-actions, .recovery-actions { justify-content: flex-end; }
   .unlock-vault { display: grid; place-items: center; justify-self: end; flex-shrink: 0; align-self: stretch; min-width: 40px; border-radius: 0 4px 4px 0; }
