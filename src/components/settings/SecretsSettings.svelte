@@ -292,7 +292,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <p class="help"><strong>Automatic locking:</strong> Closing or reloading this page locks the vault.</p>
   </div>
   <div class="vault-info" role="note">
-    <p class="help"><strong>Exports:</strong> Keep an encrypted export and your recovery key in a safe place outside this browser.</p>
+    <p class="help"><strong>Exports:</strong> Exported vault files are also encrypted.</p>
   </div>
   <div class="vault-info" role="note">
     <p class="help"><strong>Lost unlock methods can not be recovered:</strong> the vault storage is managed locally in the user’s browser.</p>
