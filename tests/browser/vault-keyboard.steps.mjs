@@ -67,7 +67,7 @@ Given('I open Secrets settings using only the keyboard', async function () {
   await page.keyboard.press('Escape');
   const secrets = page.locator('summary[aria-label="Secrets"]');
   if (await secrets.getAttribute('aria-expanded') !== 'true') await activate(page, secrets);
-  await expect(panel(page).getByText('No vault created', { exact: true })).toBeVisible();
+  await expect(panel(page).getByText('No vault has been created', { exact: true })).toBeVisible();
 });
 
 When('I create and replace a vault credential using only the keyboard', { timeout: 90_000 }, async function () {

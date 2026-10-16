@@ -73,7 +73,7 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       await openSecrets(page);
       assert.deepEqual(await page.evaluate(() => ({ secure: isSecureContext, host: location.hostname })),
         { secure: true, host: 'restore.localhost' });
-      await expect(panel(page).getByText('No vault created', { exact: true })).toBeVisible();
+      await expect(panel(page).getByText('No vault has been created', { exact: true })).toBeVisible();
       const emptyDestination = await readStorage(page);
       assert.equal(emptyDestination.snapshot, null);
       await panel(page).getByLabel('Encrypted vault backup', { exact: true }).setInputFiles({
