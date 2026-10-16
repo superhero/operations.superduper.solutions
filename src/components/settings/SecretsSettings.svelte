@@ -471,7 +471,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="card rotation-card">
       <div class="vault-passkey-row">
         <button type="button" disabled={busy} aria-expanded={showPasskey} aria-controls={`${createFormId}-passkey`}
-          onclick={() => { passkeyAuthentication?.clear(); passkeyError = ""; showPasskey = !showPasskey; }}>{showPasskey ? "Cancel passkey" : "Add passkey"}<MaterialIcon name={showPasskey ? "backspace" : "passkey"} size={18} /></button>
+          onclick={() => { passkeyAuthentication?.clear(); passkeyError = ""; showPasskey = !showPasskey; }}>{showPasskey ? "Cancel" : "Add passkey"}<MaterialIcon name={showPasskey ? "backspace" : "passkey"} size={18} /></button>
         <p class="help">Add a passkey to unlock this vault. Your provider must support passkey encryption.</p>
       </div>
       {#if showPasskey}
@@ -493,7 +493,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
     <div class="card rotation-card">
       <div class="vault-rotate-row">
-        <button type="button" disabled={busy || !status.methods.some(method => method.kind !== "recovery")} aria-expanded={showRotation} aria-controls={`${createFormId}-rotation`} onclick={() => { if (showRotation) clearInputs(); showRotation = !showRotation; }}>{showRotation ? "Cancel rotation" : "Rotate key"}<MaterialIcon name={showRotation ? "backspace" : "lock_reset"} size={18} /></button>
+        <button type="button" disabled={busy || !status.methods.some(method => method.kind !== "recovery")} aria-expanded={showRotation} aria-controls={`${createFormId}-rotation`} onclick={() => { if (showRotation) clearInputs(); showRotation = !showRotation; }}>{showRotation ? "Cancel" : "Rotate key"}<MaterialIcon name={showRotation ? "backspace" : "lock_reset"} size={18} /></button>
         <p class="help">{status.methods.some(method => method.kind !== "recovery") ? "Rotate the vault’s encryption key and generate a new recovery key. Your password remains unchanged." : "Add a password or passkey before rotating keys."}</p>
       </div>
         {#if showRotation}
