@@ -422,7 +422,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <div class="credential-fields">
           <label>Credential label<input bind:value={credentialLabel} maxlength="120" required disabled={busy} /></label>
           <label>{credentialId ? "Replacement value" : "Credential value"}<input name="credential-value" type="password" required autocomplete="off" spellcheck="false" data-vault-sensitive disabled={busy} /></label>
-          <button class="credential-save" type="submit" aria-label="Save credential" disabled={busy}><MaterialIcon name="save" size={20} /></button>
+          <button class="credential-save" type="submit" aria-label="Save credential" disabled={busy}><MaterialIcon name="save" size={20} /><span class="credential-save-label">Save</span></button>
         </div>
         {#if credentialId}<div class="actions"><button type="button" disabled={busy} onclick={() => { clearInputs(); credentialId = ""; credentialLabel = ""; }}>Cancel</button></div>{/if}
       </form>
@@ -594,8 +594,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .vault-info, .vault-status { padding: 14px; border-radius: 4px; background: var(--color-emphasis); color: var(--color-background); }
   .credential-fields { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 7fr) auto; align-items: end; gap: 12px; }
   .credential-fields > label { min-width: 0; }
-  .credential-save { display: flex; align-items: center; justify-content: center; height: 40px; }
-  @media (max-width: 640px) { .credential-fields { grid-template-columns: minmax(0, 1fr); } .credential-save { width: 100%; } }
+  .credential-save { display: flex; align-items: center; justify-content: center; gap: 6px; height: 40px; }
+  .credential-save-label { display: none; }
+  @media (max-width: 640px) { .credential-fields { grid-template-columns: minmax(0, 1fr); } .credential-save { width: 100%; } .credential-save-label { display: inline; } }
   .subform { padding-top: 12px; border-top: 1px solid var(--color-background); }
   h3, h4, p { margin: 0; }
   h3 { font-size: 14px; } h4, label, strong { font-size: 12px; }
@@ -628,6 +629,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     .unlock-vault :global(.material-symbols-rounded) { transition: transform 180ms ease-in; }
     .unlock-vault:hover:enabled :global(.material-symbols-rounded), .unlock-vault:focus :global(.material-symbols-rounded) { transform: scale(1.2); }
     .idle-toggle:hover:enabled .default-switch { transform: scale(1.10); }
+    .credential-save { transition: transform 180ms ease-in-out; }
+    .credential-save:hover:enabled { transform: scale(1.05); }
     .recovery-copy:hover:enabled { transform: scale(1.10); }
     :is(.creation-actions, .recovery-actions, .vault-replace-row, .vault-export-row, .vault-rotate-row, .vault-passkey-row, .vault-password-row) button:hover:enabled { transform: scale(1.05); }
   }
