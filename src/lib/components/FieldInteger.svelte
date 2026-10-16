@@ -80,7 +80,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .integer-range::-moz-range-track { height: 4px; border-radius: 4px; background: linear-gradient(to right, var(--color-primary) var(--slider-position), var(--color-muted-foreground) var(--slider-position)); }
   .integer-range::-webkit-slider-thumb { width: 14px; height: 14px; margin-top: -5px; border: 0; border-radius: 4px; appearance: none; background: var(--color-primary); }
   .integer-range::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 4px; background: var(--color-primary); }
-  .integer-range:focus-visible, .integer-value:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+  .integer-range:focus-visible, .integer-value:focus-visible, .integer-range:hover:enabled, .integer-value:hover:enabled { outline: 2px solid var(--color-ring); outline-offset: 2px; }
   .integer-value { flex: 0 1 var(--value-width); width: var(--value-width); min-width: 4ch; max-width: 50%; padding: 3px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; font-variant-numeric: tabular-nums; text-align: right; }
   .integer-value::placeholder { color: var(--color-muted-foreground); font-style: italic; opacity: 1; }
   .disabled { color: var(--color-muted-foreground); }

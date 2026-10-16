@@ -416,7 +416,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .palette-card { display: grid; padding: 0; border: 4px solid var(--color-muted); border-radius: 4px; background: var(--color-muted); color: var(--color-catalog-foreground); outline: 3px solid transparent; outline-offset: 3px; transition: border-color 180ms ease-in, background-color 180ms ease-in, color 180ms ease-in, outline-color 180ms ease-in; }
   input:checked + .palette-card { color: var(--color-catalog-active-foreground); }
   input:checked + .palette-card .palette-heading { background: var(--color-catalog-active); }
-  input:focus-visible + .palette-card { outline-color: var(--color-ring); }
+  input:focus-visible + .palette-card, input:hover:enabled + .palette-card { outline-color: var(--color-ring); }
   .palette-heading { position: relative; display: grid; place-items: center; height: 37px; margin-top: -1px; padding: 1px 8px 0; background: var(--color-muted); text-align: center; transition: background-color 180ms ease-in; }
   .palette-heading strong { font-size: 13px; font-weight: 700; }
   .palette-swatches { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); overflow: hidden; }

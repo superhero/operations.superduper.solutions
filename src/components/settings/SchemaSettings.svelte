@@ -315,7 +315,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-toolbar, .schema-card, .schema-empty { min-width: 0; padding: 16px; border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
   .schema-heading { --schema-control-size: calc(var(--spacing) * 8); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
   .schema-name { display: flex; flex: 1; min-width: min(100%, 180px); height: var(--schema-control-size); border-radius: 4px; background: var(--color-background); color: var(--color-foreground); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
-  .schema-name:focus-within { outline-color: var(--color-ring); }
+  .schema-name:focus-within, .schema-name:hover:has(input:enabled) { outline-color: var(--color-ring); }
   .schema-name-icon { display: grid; place-items: center; flex: 0 0 var(--schema-control-size); width: var(--schema-control-size); height: 100%; cursor: text; }
   .schema-name-input { box-sizing: border-box; min-width: 0; width: 100%; height: 100%; padding: 6px 10px; border: 0; border-radius: 0 4px 4px 0; outline: none; background: transparent; color: inherit; font-size: 14px; }
   .schema-empty h3 { margin: 0; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
@@ -350,5 +350,5 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     .schema-enabled:hover:enabled .default-switch { transform: scale(1.10); }
   }
   @media (prefers-reduced-motion: reduce) { .schema-name, .default-switch, .default-switch > span { transition: none; } }
-  @media (forced-colors: active) { .schema-name:not(:focus-within) { outline-style: none; } }
+  @media (forced-colors: active) { .schema-name:not(:focus-within):not(:hover) { outline-style: none; } }
 </style>

@@ -1059,7 +1059,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.workflow-workspace.hide-node-symbols .svelte-flow__node :is(.operation-title-row, .data-title, .utility-title, .workflow-kind) > .material-symbols-rounded) { display: none; }
   /* Remove inactive outlines immediately instead of fading from currentColor. */
   :global(.workflow-workspace:not(:focus-visible)),
-  :global(.workflow-workspace :where(button, a[href], summary, input, select, textarea, [tabindex]):not(:focus-visible)) { outline-style: none; }
+  :global(.workflow-workspace :where(button, a[href], summary, input, select, textarea, [tabindex]):not(:focus-visible):not(:is(input, select, textarea):hover:enabled)) { outline-style: none; }
   :global(.workflow-workspace .svelte-flow__arrowhead polyline) { stroke: context-stroke; }
   :global(.workflow-workspace .svelte-flow__arrowhead polyline.arrowclosed) { fill: context-stroke; }
   :global(.workflow-workspace .svelte-flow__edge-path) { transition: stroke 120ms ease-in, stroke-width 120ms ease-in; }
