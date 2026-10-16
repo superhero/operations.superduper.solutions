@@ -457,7 +457,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="card rotation-card">
       <div class="vault-password-row">
         <button type="button" disabled={busy} aria-expanded={showPassword} aria-controls={`${createFormId}-password`}
-          onclick={() => { clearInputs(); passwordError = ""; if (!showPassword) passwordReplacement = status.methods.find(method => method.kind === "password")?.id ?? ""; showPassword = !showPassword; }}>{showPassword ? "Cancel" : status.methods.some(method => method.kind === "password") ? "Replace password" : "Add password"}<MaterialIcon name={showPassword ? "backspace" : "password"} size={18} /></button>
+          onclick={() => { clearInputs(); passwordError = ""; if (!showPassword) passwordReplacement = status.methods.find(method => method.kind === "password")?.id ?? ""; showPassword = !showPassword; }}><MaterialIcon name={showPassword ? "backspace" : "password"} size={18} />{showPassword ? "Cancel" : status.methods.some(method => method.kind === "password") ? "Replace password" : "Add password"}</button>
         <p class="help">Change the vault password. Your stored data and recovery key remain unchanged.</p>
       </div>
       {#if showPassword}
@@ -489,7 +489,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="card rotation-card">
       <div class="vault-passkey-row">
         <button type="button" disabled={busy} aria-expanded={showPasskey} aria-controls={`${createFormId}-passkey`}
-          onclick={() => { passkeyAuthentication?.clear(); passkeyError = ""; showPasskey = !showPasskey; }}>{showPasskey ? "Cancel" : "Add passkey"}<MaterialIcon name={showPasskey ? "backspace" : "passkey"} size={18} /></button>
+          onclick={() => { passkeyAuthentication?.clear(); passkeyError = ""; showPasskey = !showPasskey; }}><MaterialIcon name={showPasskey ? "backspace" : "passkey"} size={18} />{showPasskey ? "Cancel" : "Add passkey"}</button>
         <p class="help">Add a passkey to unlock this vault. Your provider must support passkey encryption.</p>
       </div>
       {#if showPasskey}
@@ -511,7 +511,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
     <div class="card rotation-card">
       <div class="vault-rotate-row">
-        <button type="button" disabled={busy || !status.methods.some(method => method.kind !== "recovery")} aria-expanded={showRotation} aria-controls={`${createFormId}-rotation`} onclick={() => { if (showRotation) clearInputs(); showRotation = !showRotation; }}>{showRotation ? "Cancel" : "Rotate key"}<MaterialIcon name={showRotation ? "backspace" : "lock_reset"} size={18} /></button>
+        <button type="button" disabled={busy || !status.methods.some(method => method.kind !== "recovery")} aria-expanded={showRotation} aria-controls={`${createFormId}-rotation`} onclick={() => { if (showRotation) clearInputs(); showRotation = !showRotation; }}><MaterialIcon name={showRotation ? "backspace" : "lock_reset"} size={18} />{showRotation ? "Cancel" : "Rotate key"}</button>
         <p class="help">{status.methods.some(method => method.kind !== "recovery") ? "Rotate the vault’s encryption key and generate a new recovery key. Your password remains unchanged." : "Add a password or passkey before rotating keys."}</p>
       </div>
         {#if showRotation}
@@ -535,7 +535,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if ready && status.exists}
     <div class="card">
       <div class="vault-export-row">
-        <button type="button" disabled={busy} onclick={() => run("", exportVault)}>Export vault<MaterialIcon name="download" size={18} /></button>
+        <button type="button" disabled={busy} onclick={() => run("", exportVault)}><MaterialIcon name="download" size={18} />Export vault</button>
         <p class="help">Exported vault data remains encrypted at rest and during transfer.</p>
       </div>
     </div>
@@ -543,7 +543,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if ready && status.exists}
     <div class="card">
       <div class="vault-replace-row">
-        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}>Replace vault<MaterialIcon name="sync" size={18} /></button>
+        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}><MaterialIcon name="sync" size={18} />Replace vault</button>
         <p class="help">Importing replaces any existing vault in this browser and removes imported destination approvals. Exports are encrypted; keep their password, recovery key or passkey available.</p>
       </div>
       {@render vaultImport()}
@@ -581,7 +581,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .recovery-key pre { margin: 0; padding: 8px 40px 8px 8px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: monospace; font-size: 12px; }
   .recovery-copy { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; background: transparent; color: inherit; }
   .vault-replace-row, .vault-export-row, .vault-rotate-row, .vault-passkey-row, .vault-password-row { display: flex; align-items: center; gap: 12px; }
-  .vault-replace-row > button, .vault-export-row > button, .vault-rotate-row > button, .vault-passkey-row > button, .vault-password-row > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 160px; width: 160px; white-space: nowrap; }
+  .vault-replace-row > button, .vault-export-row > button, .vault-rotate-row > button, .vault-passkey-row > button, .vault-password-row > button { display: inline-flex; align-items: center; justify-content: flex-start; text-align: left; gap: 6px; flex: 0 0 160px; width: 160px; white-space: nowrap; }
   .vault-replace-row > p, .vault-export-row > p, .vault-rotate-row > p, .vault-passkey-row > p, .vault-password-row > p { min-width: 0; }
   .creation-actions, .recovery-actions { justify-content: flex-end; }
   .unlock-vault { display: grid; place-items: center; justify-self: end; flex-shrink: 0; align-self: stretch; min-width: 40px; border-radius: 0 4px 4px 0; }
