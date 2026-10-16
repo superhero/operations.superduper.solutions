@@ -298,7 +298,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </div>
   <div class="vault-info" role="note">
     <MaterialIcon name="brightness_alert" size={18} />
-    <p class="help"><strong>Exports:</strong> Exported vault files remain encrypted. Importing one requires its password, recovery key or passkey.</p>
+    <p class="help"><strong>Encrypted exports:</strong> Exported vault files remain encrypted. Importing one requires its password, recovery key or passkey.</p>
   </div>
   <div class="vault-info" role="note">
     <MaterialIcon name="brightness_alert" size={18} />
