@@ -24,8 +24,11 @@ Then("evaluation details stay hidden until enabled and the saved choice survives
   const page = this.page;
   const toggle = page.getByRole("button", { name: "Review matching details", exact: true });
   const preference = page.getByRole("switch", { name: "Evaluation details", exact: true });
-  await searchOperations(page, "List projects");
+  const symbol = page.locator(".catalog-prompt .prompt-symbol");
+  await openCatalog(page);
   await expect(toggle).toHaveCount(0);
+  await expect(symbol).toHaveText("search");
+  await expect(symbol).toHaveAttribute("aria-hidden", "true");
   await expect(evaluationReport(page)).toBeHidden();
   await expect(page.locator(".catalog-prompt .prompt-actions")).toHaveCount(0);
   await setMode(page, "settings");
@@ -34,23 +37,48 @@ Then("evaluation details stay hidden until enabled and the saved choice survives
 
   await setEvaluationDetails(page);
   await expect(toggle).toBeVisible();
+  await expect(toggle).toBeDisabled();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(symbol).toHaveCount(1);
+  await expect(symbol).toHaveText("manage_search");
+  await expect(toggle).toHaveClass(/\bprompt-symbol\b/);
+  await expect(page.locator(".catalog-prompt label.prompt-symbol")).toHaveCount(0);
+  await expect(page.locator(".catalog-prompt .prompt-actions")).toHaveCount(0);
+  await searchOperations(page, "List projects");
+  await expect(toggle).toBeEnabled();
   await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
   await expect(evaluationReport(page)).toBeVisible();
-  await expect(evaluationReport(page).locator(".evaluation-prompt p")).toHaveText("List projects");
+  await expect(evaluationReport(page).locator(".evaluation-prompt")).toHaveCount(0);
+  await expect(page.locator(".catalog-prompt")).toHaveAttribute("data-evaluated-prompt", "List projects");
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(evaluationReport(page)).toBeHidden();
+  await toggle.click();
+  await searchOperations(page, "");
+  await expect(toggle).toBeVisible();
+  await expect(toggle).toBeDisabled();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(evaluationReport(page)).toBeHidden();
   await setEvaluationDetails(page, false);
   await expect(toggle).toHaveCount(0);
+  await expect(symbol).toHaveText("search");
   await expect(evaluationReport(page)).toBeHidden();
 
   await setEvaluationDetails(page);
   await page.reload();
   await searchOperations(page, "List projects");
   await expect(toggle).toBeVisible();
+  await expect(symbol).toHaveText("manage_search");
   await toggle.click();
   await expect(evaluationReport(page)).toBeVisible();
   await setEvaluationDetails(page, false);
+  await expect(toggle).toHaveCount(0);
+  await expect(evaluationReport(page)).toBeHidden();
   await page.reload();
   await searchOperations(page, "List projects");
   await expect(toggle).toHaveCount(0);
+  await expect(symbol).toHaveText("search");
   await expect(evaluationReport(page)).toBeHidden();
   await setMode(page, "settings");
   await page.locator('summary[aria-label="Developer"]').click();
@@ -88,10 +116,11 @@ async function expectInputTables(report, groups) {
   }
 }
 
-Then("the evaluation report records {string} with top similarity {string}", async function (prompt, similarity) {
+Then("the evaluation report reflects {string} with top similarity {string}", async function (prompt, similarity) {
   const report = evaluationReport(this.page);
   await expect(report).toBeVisible();
-  await expect(report.locator(".evaluation-prompt p")).toHaveText(prompt);
+  await expect(report.locator(".evaluation-prompt")).toHaveCount(0);
+  await expect(this.page.locator(".catalog-prompt")).toHaveAttribute("data-evaluated-prompt", prompt);
   await expect(metric(report, "Considered operations")).toHaveText(String(operations.length));
   await expect(metric(report, "Top similarity")).toHaveText(similarity);
   await expect(metric(report, "Evaluation time")).toHaveText(/^<?\d+(?:\.\d+)? (?:ms|s)$/);
@@ -189,7 +218,8 @@ When("I edit the report prompt to {string}", async function (prompt) {
 Then("the open report follows the latest prompt automatically", async function () {
   await expect(this.page.getByRole("button", { name: "Review matching details", exact: true })).toHaveAttribute("aria-expanded", "true");
   await expect(evaluationReport(this.page)).toBeVisible();
-  await expect(evaluationReport(this.page).locator(".evaluation-prompt p")).toHaveText(
+  await expect(evaluationReport(this.page).locator(".evaluation-prompt")).toHaveCount(0);
+  await expect(this.page.locator(".catalog-prompt")).toHaveAttribute("data-evaluated-prompt",
     await this.page.getByRole("textbox", { name: "Prompt", exact: true }).inputValue());
 });
 

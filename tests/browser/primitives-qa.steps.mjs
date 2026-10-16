@@ -105,10 +105,11 @@ Then('prompt matching details preserve keyboard navigation', async function () {
   const tooltip = page.getByRole('tooltip');
   const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
   const toggle = page.getByRole('button', { name: 'Review matching details', exact: true });
-  await expect(toggle).toHaveCount(0);
+  await expect(toggle).toBeDisabled();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await searchOperations(page, 'List projects');
   await expect(prompt).toBeFocused();
-  await prompt.press('Tab');
+  await prompt.press('Shift+Tab');
   await expect(toggle).toBeFocused();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await expect(tooltip).toHaveText('Details');
@@ -118,7 +119,8 @@ Then('prompt matching details preserve keyboard navigation', async function () {
   await expect(page.locator('#matching-help')).toBeVisible();
   await toggle.press('Enter');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await prompt.focus();
+  await toggle.press('Tab');
+  await expect(prompt).toBeFocused();
   await expect(prompt).toHaveValue('List projects');
   await expect(page.getByRole('button', { name: 'Add to workflow: List projects', exact: true })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Progress', exact: true })).toHaveCount(0);

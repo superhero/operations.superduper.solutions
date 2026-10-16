@@ -12,7 +12,7 @@ async function expectUnclippedFocus(control) {
   await control.focus();
   await expect(control).toBeFocused();
   const result = await control.evaluate(element => {
-    const ring = (element.matches('#operation-prompt') ? element.closest('.prompt-input') : element.closest('.joined-field')) ?? element;
+    const ring = element.closest('.prompt-input') ?? element.closest('.joined-field') ?? element;
     const style = getComputedStyle(ring);
     const extent = parseFloat(style.outlineWidth) + parseFloat(style.outlineOffset);
     const bounds = ring.getBoundingClientRect();
@@ -102,15 +102,15 @@ Then('operations controls retain their complete keyboard focus outline', async f
     await expectThemeColors(prompt, { backgroundColor: '--color-background', color: '--color-foreground' });
     await expectThemeColors(page.locator('.catalog-prompt .prompt-input'), { outlineColor: '--color-ring' });
     await expectThemeColors(prompt, { color: '--color-muted-foreground' }, '::placeholder');
-    await expectThemeColors(page.locator('.catalog-prompt .prompt-actions'), {
-      backgroundColor: '--color-badge-background', color: '--color-badge-foreground'
-    });
+    await expectUnclippedFocus(toggle);
+    await expectThemeColors(page.locator('.catalog-prompt .prompt-input'), { outlineColor: '--color-ring' });
+    await expectThemeColors(toggle, { backgroundColor: '--color-background', color: '--color-foreground' });
     const contrasts = await controlContrasts(page.locator('.catalog-prompt textarea'));
     for (const { label, minimum, ratio } of contrasts)
       assert.ok(ratio >= minimum, `${theme} ${label} needs readable contrast: ${ratio.toFixed(2)}:1.`);
   }
   await prompt.focus();
-  await prompt.press('Tab');
+  await prompt.press('Shift+Tab');
   await expect(toggle).toBeFocused();
   await expectUnclippedFocus(toggle);
   await toggle.press('Enter');

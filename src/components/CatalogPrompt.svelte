@@ -55,19 +55,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <section class="catalog-prompt" aria-label="Find operations" aria-busy={pending} data-evaluated-prompt={evaluation?.prompt ?? ""}>
-  <div class="prompt-input" class:has-details={evaluationDetails && Boolean(evaluation)}>
+  <div class="prompt-input">
     <div class="prompt-entry">
-      <label class="prompt-symbol" for="operation-prompt" aria-hidden="true"><MaterialIcon name="search" size={20} /></label>
+      {#if evaluationDetails}
+        <HintButton class="prompt-symbol" type="button" label="Details" aria-label="Review matching details"
+          disabled={!evaluation} aria-expanded={matchingOpen && Boolean(evaluation)} aria-controls="matching-help"
+          onclick={onMatchingToggle}><MaterialIcon name="manage_search" size={20} /></HintButton>
+      {:else}
+        <label class="prompt-symbol" for="operation-prompt" aria-hidden="true"><MaterialIcon name="search" size={20} /></label>
+      {/if}
       <textarea id="operation-prompt" bind:this={input} value={value} use:fitTextarea={value} rows="1" maxlength="240"
         placeholder="Search" aria-label="Prompt" aria-describedby="prompt-help" oninput={(event) => onChange(event.currentTarget.value, event instanceof InputEvent && event.isComposing)}
         oncompositionstart={() => onChange(value, true)} oncompositionend={(event) => onChange(event.currentTarget.value, false)}></textarea>
     </div>
-    {#if evaluationDetails && evaluation}
-      <div class="prompt-actions report-pill context-label">
-        <HintButton class="report-toggle" type="button" label="Details" aria-label="Review matching details" aria-expanded={matchingOpen}
-          aria-controls="matching-help" onclick={onMatchingToggle}><MaterialIcon name="keyboard_arrow_down" size={16} /></HintButton>
-      </div>
-    {/if}
   </div>
   <p id="prompt-help" class="sr-only">Find operations by name or identifier. Matching operations appear automatically as you type. Clear the prompt to browse all operations.</p>
   <p class="matching-status" role="status" aria-live="polite">
@@ -80,7 +80,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if evaluationDetails}
   <Reveal open={matchingOpen && Boolean(evaluation)} id="matching-help">
     {#if evaluation}
-      <EvaluationReport prompt={evaluation.prompt} durationMs={evaluation.durationMs} candidates={evaluation.candidates}
+      <EvaluationReport durationMs={evaluation.durationMs} candidates={evaluation.candidates}
         results={evaluation.results} considered={evaluation.candidates.length} />
     {/if}
   </Reveal>
@@ -90,16 +90,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <style>
   .catalog-prompt { min-width: 0; margin-bottom: 16px; }
   .prompt-input { --prompt-cap-radius: calc(var(--navigation-control-size) / 2); display: flex; flex-direction: column; border-radius: var(--prompt-cap-radius) 4px 4px var(--prompt-cap-radius); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
-  .prompt-input:has(#operation-prompt:focus) { outline-color: var(--color-ring); }
-  .prompt-input.has-details { border-bottom-left-radius: 4px; }
+  .prompt-input:focus-within { outline-color: var(--color-ring); }
   .prompt-entry { display: grid; grid-template-columns: var(--navigation-control-size) minmax(0, 1fr); }
-  .prompt-symbol { display: grid; place-items: center; border-radius: var(--prompt-cap-radius) 0 0 var(--prompt-cap-radius); background: var(--color-background); color: var(--color-foreground); cursor: text; }
-  .has-details .prompt-symbol { border-bottom-left-radius: 0; }
-  .prompt-actions { width: 100%; border-radius: 0 0 4px 4px; }
-  .prompt-actions :global(.report-toggle) { width: 100%; min-height: 24px; height: 24px; padding: 4px; border-radius: 0 0 4px 4px; }
+  .prompt-entry :global(.prompt-symbol) { display: grid; place-items: center; min-height: var(--navigation-control-size); padding: 0; border: 0; border-radius: var(--prompt-cap-radius) 0 0 var(--prompt-cap-radius); background: var(--color-background); color: var(--color-foreground); transition: background-color 180ms ease-in, color 180ms ease-in; }
+  label.prompt-symbol { cursor: text; }
+  .prompt-entry :global(button.prompt-symbol) { outline: none; }
   #operation-prompt { --field-background: var(--color-background); --field-foreground: var(--color-foreground); display: block; box-sizing: border-box; width: 100%; min-width: 0; min-height: var(--navigation-control-size); field-sizing: fixed; padding: calc((var(--navigation-control-size) - 1.5em) / 2) 12px calc((var(--navigation-control-size) - 1.5em) / 2) 0; border: 0; border-radius: 0 4px 4px 0; background: var(--field-background); color: var(--field-foreground); font-size: 13px; line-height: 1.5; resize: none; overflow: hidden; scrollbar-gutter: auto; }
   #operation-prompt { outline: none; }
-  .has-details #operation-prompt { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
   #operation-prompt::placeholder { color: var(--color-muted-foreground); opacity: 1; }
   .matching-status { margin: 0; color: var(--color-muted-foreground); font-size: 12px; }
   .matching-status:not(:empty) { margin-top: 8px; }
@@ -107,7 +104,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .catalog-prompt :global(.detail-report) { margin: 12px 0 0; padding: 12px 0; }
   .catalog-prompt :global(.report-metrics) { grid-template-columns: minmax(0, 1fr); }
   .catalog-prompt :global(.report-metric) { min-height: 72px; padding: 10px; gap: 4px; }
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .prompt-entry :global(button.prompt-symbol:not(:disabled) .material-symbols-rounded) { transition: transform 180ms ease-in; }
+    .prompt-entry :global(button.prompt-symbol:not(:disabled):hover .material-symbols-rounded) { transform: scale(1.4); }
+  }
   @media (forced-colors: active) {
-    .prompt-input:not(:has(#operation-prompt:focus)) { outline-style: none; }
+    .prompt-input:not(:focus-within) { outline-style: none; }
   }
 </style>
