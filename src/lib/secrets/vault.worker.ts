@@ -10,7 +10,7 @@ import { assertCurrentSchema } from "./schema-policy-storage.ts";
 import type { VaultFailure, VaultMethod, VaultReply } from "./protocol.ts";
 
 const send = (reply: VaultReply) => self.postMessage(reply);
-const methods = new Set<VaultMethod>(["status", "unlock", "prepareCreate", "confirmCreate", "list", "put", "remove",
+const methods = new Set<VaultMethod>(["status", "unlock", "prepareCreate", "confirmCreate", "list", "copyCredential", "put", "remove",
   "grant", "revoke", "execute", "backup", "restore", "addMethod", "removeMethod", "rotate"]);
 let busy = false;
 let controller: AbortController | undefined;

@@ -138,9 +138,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     finally { input.value = ""; }
     credentialId = ""; credentialLabel = ""; await refresh(); notice = "Credential saved.";
   }
-  function editCredential(item: CredentialSummary): void {
-    clearInputs(); credentialId = item.id; credentialLabel = item.label;
-    panel.querySelector<HTMLInputElement>('input[name="credential-value"]')?.focus();
+  async function copyCredential(id: string): Promise<void> {
+    let value = await vaultCall("copyCredential", [id]);
+    try { await navigator.clipboard.writeText(value); }
+    finally { value = ""; }
   }
   async function changePassword(): Promise<void> {
     const current = generation;
@@ -371,8 +372,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <ul class="records">
         {#each records as item (item.id)}
           <li><div class="record-heading"><div><strong>{item.label}</strong></div>
-            <div class="actions"><button type="button" disabled={busy} onclick={() => editCredential(item)}>Replace</button>
-              <button type="button" disabled={busy} onclick={() => run("Removing credential…", async () => { await vaultCall("remove", [null, item.id]); await refresh(); })}>Remove</button></div></div>
+            <div class="actions"><button type="button" disabled={busy} onclick={() => run("", () => copyCredential(item.id))}><MaterialIcon name="content_copy" size={18} />Copy</button>
+              <button type="button" disabled={busy} onclick={() => run("Removing credential…", async () => { await vaultCall("remove", [null, item.id]); await refresh(); })}><MaterialIcon name="delete" size={18} />Remove</button></div></div>
 
           </li>
         {/each}
@@ -516,6 +517,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <style>
   .secrets-settings { display: grid; gap: 12px; min-width: 0; padding: 16px; color: var(--color-foreground); --field-background: var(--color-background); --field-foreground: var(--color-foreground); }
   .toolbar, .record-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .actions > button { display: inline-flex; align-items: center; gap: 6px; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .recovery-label { font-size: 12px; font-weight: 700; }
   .recovery-key { position: relative; min-width: 0; border-radius: 4px; background: var(--color-background); }

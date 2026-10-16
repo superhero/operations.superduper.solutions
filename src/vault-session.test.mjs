@@ -618,3 +618,13 @@ Then('credential changes use the unlocked session and fail after it locks', kdfS
   await assert.rejects(session.revoke(null, item.id, 'missing'), code('LOCKED'));
   assert.equal(storage.writes, writes);
 });
+
+Then('credential copying rejects missing records and locked sessions', kdfStep, async () => {
+  const {session, storage, id} = await populated();
+  const before = clone(storage.state);
+  assert.equal(await session.copyCredential(id), 'SYNTHETIC-PRIVATE-TOKEN');
+  await assert.rejects(session.copyCredential('missing'), code('INVALID'));
+  assert.deepEqual(storage.state, before);
+  session.lock();
+  await assert.rejects(session.copyCredential(id), code('LOCKED'));
+});

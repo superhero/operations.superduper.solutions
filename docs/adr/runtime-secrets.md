@@ -46,7 +46,8 @@ retain their own authentication.
 
 A dedicated worker decrypts credentials, validates the current operation, destination and
 authentication placement, then sends
-the request. Its interface has no credential getter. The initial scope supports
+the request. Only an explicit Copy action returns a selected value to the page for the clipboard;
+normal workflow execution keeps plaintext in the worker. The initial scope supports
 Bearer tokens and header API keys; unsupported requirements fail closed.
 Credential destinations require HTTPS. HTTP is permitted only for literal
 `localhost`, `127.0.0.1` or `[::1]` destinations when the application's own

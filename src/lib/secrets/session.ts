@@ -196,6 +196,13 @@ export class VaultSession {
     return (await this.records()).map(({ value: _value, ...summary }) => summary);
   }
 
+  async copyCredential(id: string): Promise<string> {
+    const record = (await this.records()).find(item => item.id === id);
+    if (!record) throw new VaultError("INVALID");
+    await this.assertCurrent();
+    return record.value;
+  }
+
   private async save(values: VaultCredential[], envelopes = this.state!.snapshot!.envelopes,
     key = this.key!, epoch = this.state!.snapshot!.epoch): Promise<void> {
     await this.assertCurrent();

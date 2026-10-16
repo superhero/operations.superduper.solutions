@@ -19,8 +19,9 @@ The decision and threat boundary are described in
 
 ## Adding capabilities
 
-Add operations to the reviewed RPC allowlist, never a generic decrypt or secret
-getter. Credential changes use the unlocked session. Unlock-method
+Add operations to the reviewed RPC allowlist, never a generic decrypt interface.
+The explicit copy action returns only the selected value for clipboard use;
+keep it out of stores and clear the temporary reference afterward. Credential changes use the unlocked session. Unlock-method
 changes require fresh authentication. Preserve independent
 passwords and passkeys by authenticating each before key rotation. Generate a new
 128-byte recovery key automatically during rotation; never request the old one.

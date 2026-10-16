@@ -70,3 +70,6 @@ Feature: Browser vault session lifecycle
 
   Scenario: Unlocked credential changes need no additional proof
     Then credential changes use the unlocked session and fail after it locks
+
+  Scenario: Copy returns only the selected unlocked credential
+    Then credential copying rejects missing records and locked sessions
