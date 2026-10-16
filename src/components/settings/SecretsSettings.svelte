@@ -451,7 +451,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if ready && status.exists && status.unlocked}
     <div class="card">
       <div class="vault-export-row">
-        <button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}>Export vault<MaterialIcon name="file_export" size={18} /></button>
+        <button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}>Export vault<MaterialIcon name="download" size={18} /></button>
         <p class="help">Exported vault data remains encrypted at rest and during transfer.</p>
       </div>
     </div>
