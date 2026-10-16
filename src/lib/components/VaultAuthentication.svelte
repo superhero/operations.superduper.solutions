@@ -64,7 +64,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if automatic}
     {#if !usePasskey}
       <input type="hidden" name="username" autocomplete="username" value="Operations vault" />
-      <label for={`${id}-automatic-secret`}>Password or recovery key</label>
+      <label for={`${id}-automatic-secret`}>Password or recovery key to unlock vault</label>
       <div class="unlock-field">
       <input bind:this={secretInput} id={`${id}-automatic-secret`} type="password" name="vault-password"
         aria-label="Unlock password or recovery key" autocomplete={automaticRecovery ? "off" : "current-password"}
