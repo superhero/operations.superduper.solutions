@@ -12,7 +12,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   let history = $state<ErrorHistoryState>({ phase: "idle", entries: [], total: 0, offset: 0, error: null, queued: 0, dropped: 0, unconfirmed: 0 });
   let expanded = $state(new Set<number>());
-  const origin = (entry: ErrorHistoryRecord) => [entry.origin.source, entry.origin.scope, entry.origin.operation].filter(Boolean).join(" · ");
+  const origin = (entry: ErrorHistoryRecord) => [entry.origin.source, [entry.origin.scope, entry.origin.operation].filter(Boolean).join(" > ")].filter(Boolean).join(" · ");
   const number = (value: number) => value.toLocaleString();
   const location = (entry: ErrorHistoryRecord) => [entry.origin.filename, entry.origin.line, entry.origin.column].filter(value => value !== undefined).join(":");
   function toggle(id: number, open: boolean): void {
@@ -50,7 +50,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {#each history.entries as entry (entry.id)}
         <details class="entry" ontoggle={event => toggle(entry.id, event.currentTarget.open)}>
           <summary>
-            <span class="summary-text"><strong>{entry.error.name}: {entry.error.message}</strong><span class="muted">{origin(entry)}</span></span>
+            <span class="summary-text"><strong>{origin(entry)}</strong></span>
             <span class="occurrences">{number(entry.occurrences)} {entry.occurrences === 1 ? "occurrence" : "occurrences"}</span>
           </summary>
           {#if expanded.has(entry.id)}
