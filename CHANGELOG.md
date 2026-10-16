@@ -224,6 +224,39 @@ badge with the combined inventory; full regression remains with CI.
 
 ```
 
+<!-- changelog-commit:71fa57fb4e464d557554b811037e230e6bb3aca7 -->
+### Commit [`71fa57f`](https://github.com/superhero/operations.superduper.solutions/commit/71fa57fb4e464d557554b811037e230e6bb3aca7)
+
+```text
+fix(forms): use theme backgrounds for search and request fields
+
+Show Search in the sidebar prompt and use the first background color for
+its input and Run workflow fields, with readable foreground text. Preserve
+the contrasting labels and action areas.
+
+Remove the prompt's zero flex basis so its measured multiline height takes
+effect inside the joined column layout.
+
+```
+
+<!-- changelog-commit:2a7bcb60193d9cd2d1311a5289c33d99e088ed90 -->
+### Commit [`2a7bcb6`](https://github.com/superhero/operations.superduper.solutions/commit/2a7bcb60193d9cd2d1311a5289c33d99e088ed90)
+
+```text
+Merge remote changelog update into feature/live-catalog-prompt
+
+```
+
+<!-- changelog-commit:248e4283ce2ee637f2afdef82aca5f5c8be560e1 -->
+### Commit [`248e428`](https://github.com/superhero/operations.superduper.solutions/commit/248e4283ce2ee637f2afdef82aca5f5c8be560e1)
+
+```text
+feat(search): join a search icon to the prompt input
+
+Add a rounded left cap using the input background while preserving multiline sizing and the shared focus outline.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.47
