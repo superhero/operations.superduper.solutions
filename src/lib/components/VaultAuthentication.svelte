@@ -4,14 +4,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
-  import { onDestroy, onMount } from "svelte";
+  import { onDestroy, onMount, type Snippet } from "svelte";
   import FieldSelect from "./FieldSelect.svelte";
   import { lockVaultLocally, subscribeVaultLock, vaultCeremony } from "../secrets/client.ts";
   import { unlockPasskey } from "../secrets/passkeys.ts";
   import { VaultError, type UnlockProof, type VaultStatus } from "../secrets/types.ts";
 
-  let { status, disabled = false, label = "Authenticate", portalZIndex = 40 }: {
-    status: VaultStatus; disabled?: boolean; label?: string; portalZIndex?: number;
+  let { status, disabled = false, label = "Authenticate", portalZIndex = 40, action }: {
+    status: VaultStatus; disabled?: boolean; label?: string; portalZIndex?: number; action?: Snippet;
   } = $props();
   const id = $props.id();
   let methodId = $state("");
@@ -65,16 +65,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if !usePasskey}
       <input type="hidden" name="username" autocomplete="username" value="Operations vault" />
       <label for={`${id}-automatic-secret`}>Password or recovery key</label>
+      <div class="unlock-field">
       <input bind:this={secretInput} id={`${id}-automatic-secret`} type="password" name="vault-password"
         aria-label="Unlock password or recovery key" autocomplete={automaticRecovery ? "off" : "current-password"}
         data-1p-ignore={automaticRecovery ? true : undefined} data-lpignore={automaticRecovery ? "true" : undefined}
         oninput={event => { automaticRecovery = event.currentTarget.value.length === 172; }}
         data-vault-sensitive spellcheck="false" autocapitalize="off" {disabled} />
+      {@render action?.()}
+      </div>
       {#each status.methods.filter(item => item.kind === "passkey") as passkey, index}
         <button type="button" {disabled} onclick={() => { clear(); methodId = passkey.id; usePasskey = true; }}>Use passkey{index > 0 ? ` ${index + 1}` : ""}</button>
       {/each}
     {:else}
       <p>Your authenticator will ask you to verify this action.</p>
+      {@render action?.()}
       <button type="button" {disabled} onclick={() => { clear(); usePasskey = false; }}>Use password or recovery key</button>
     {/if}
   {:else}
@@ -103,6 +107,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .vault-authentication { display: grid; gap: 8px; min-width: 0; --field-background: var(--color-background); --field-foreground: var(--color-foreground); }
+  .unlock-field { display: flex; min-width: 0; border-radius: 4px; background: var(--color-background); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
+  .unlock-field:focus-within, .unlock-field:hover:has(:enabled) { outline-color: var(--color-ring); }
+  .unlock-field > input { flex: 1; width: 0; border-radius: 4px 0 0 4px; outline: none; }
+  .unlock-field :global(.unlock-vault) { outline: none; }
   label { font-size: 12px; font-weight: 700; }
   input { min-width: 0; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
   :global(.vault-authentication .field-select-trigger) { border-radius: 4px; font-size: 12px; }

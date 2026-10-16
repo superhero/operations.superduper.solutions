@@ -445,6 +445,11 @@ Then('a downloaded vault backup restores with recovery in a fresh application co
     const unlockInput = settings(page).getByLabel('Unlock password or recovery key', { exact: true });
     await unlockInput.fill(this.uiRecovery);
     await expect(unlockInput).toHaveAttribute('autocomplete', 'off');
+    const inputBox = await unlockInput.boundingBox();
+    const unlockBox = await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).boundingBox();
+    assert.ok(Math.abs(unlockBox.x - inputBox.x - inputBox.width) < 1);
+    assert.equal(unlockBox.y, inputBox.y);
+    assert.equal(unlockBox.height, inputBox.height);
     await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
     await expect(settings(page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
     const previousSnapshot = (await storage(page, 'read')).snapshot;
