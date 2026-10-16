@@ -186,9 +186,7 @@ async function hkdfKey(material: Uint8Array<ArrayBuffer>, salt: string, purpose:
 
 export async function recoveryKey(recoveryBase64: string, salt: string): Promise<CryptoKey> {
   if (typeof recoveryBase64 !== "string") throw new VaultError("INVALID");
-  // Retain support for keys issued before recovery keys were lengthened.
-  const length = recoveryBase64.length === 44 ? 32 : 128;
-  return hkdfKey(decodeBase64(recoveryBase64, length), salt, "recovery");
+  return hkdfKey(decodeBase64(recoveryBase64, 128), salt, "recovery");
 }
 export async function passkeyKey(prfBytes: Uint8Array, salt: string): Promise<CryptoKey> {
   if (!(prfBytes instanceof Uint8Array) || prfBytes.byteLength !== 32) throw new VaultError("INVALID");

@@ -106,21 +106,16 @@ Then('vault password derivation rejects unsupported profiles and invalid input b
 });
 
 Then('vault recovery and passkey wrapping keys are separated by HKDF purpose and salt', async () => {
-  const material = decodeBase64(randomBase64(32)), salt = randomBase64(16), aad = context('recovery');
-  const recovery = await recoveryKey(encodeBase64(material), salt), passkey = await passkeyKey(material, salt);
+  const material = decodeBase64(randomBase64(32)), recoverySecret = randomBase64(128), salt = randomBase64(16), aad = context('recovery');
+  const recovery = await recoveryKey(recoverySecret, salt), passkey = await passkeyKey(material, salt);
   assert.equal(recovery.extractable, false);
   assert.equal(passkey.extractable, false);
   assert.ok(material.some(byte => byte !== 0), 'the caller owns the supplied PRF buffer');
   const box = await encryptJSON(recovery, { protected: true }, aad);
-  assert.deepEqual(await decryptJSON(await recoveryKey(encodeBase64(material), salt), box, aad), { protected: true });
+  assert.deepEqual(await decryptJSON(await recoveryKey(recoverySecret, salt), box, aad), { protected: true });
   await assert.rejects(decryptJSON(passkey, box, aad), code('AUTHENTICATION'));
-  await assert.rejects(decryptJSON(await recoveryKey(encodeBase64(material), randomBase64(16)), box, aad), code('AUTHENTICATION'));
-  const longer = randomBase64(128);
-  const longerKey = await recoveryKey(longer, salt);
-  const longerBox = await encryptJSON(longerKey, { protected: true }, aad);
-  assert.deepEqual(await decryptJSON(await recoveryKey(longer, salt), longerBox, aad), { protected: true });
-  await assert.rejects(recoveryKey(randomBase64(127), salt), code('INVALID'));
-  await assert.rejects(recoveryKey(randomBase64(31), salt), code('INVALID'));
+  await assert.rejects(decryptJSON(await recoveryKey(recoverySecret, randomBase64(16)), box, aad), code('AUTHENTICATION'));
+  for (const length of [31, 32, 127, 129]) await assert.rejects(recoveryKey(randomBase64(length), salt), code('INVALID'));
   await assert.rejects(passkeyKey(new Uint8Array(31), salt), code('INVALID'));
   await assert.rejects(passkeyKey(material, randomBase64(15)), code('INVALID'));
 });
@@ -262,7 +257,7 @@ Then('vault cryptographic provider failures return safe unavailable errors', { t
     await assert.rejects(newVaultKey(), code('UNAVAILABLE'));
     await assert.rejects(encryptJSON(key, { value: 'private' }, aad), code('UNAVAILABLE'));
     await assert.rejects(digest({ value: 'private' }), code('UNAVAILABLE'));
-    await assert.rejects(recoveryKey(encodeBase64(new Uint8Array(32)), encodeBase64(new Uint8Array(16))), code('UNAVAILABLE'));
+    await assert.rejects(recoveryKey(encodeBase64(new Uint8Array(128)), encodeBase64(new Uint8Array(16))), code('UNAVAILABLE'));
     await assert.rejects(passwordKey('valid synthetic password', encodeBase64(new Uint8Array(16))), code('UNAVAILABLE'));
   } finally { Object.defineProperty(globalThis, 'crypto', original); }
 });

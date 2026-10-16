@@ -188,7 +188,7 @@ Then('vault restore authenticates both vaults and clears imported grants before 
   assert.ok(!backup.includes('SYNTHETIC-PRIVATE-TOKEN'));
   assert.ok(!backup.includes('Private account'));
   await assert.rejects(destination.session.restore(backup, source.proof), code('AUTHENTICATION'));
-  await assert.rejects(destination.session.restore(backup, source.proof, { ...destination.proof, secret: randomBase64(32) }), code('AUTHENTICATION'));
+  await assert.rejects(destination.session.restore(backup, source.proof, { ...destination.proof, secret: randomBase64(128) }), code('AUTHENTICATION'));
   const status = await destination.session.restore(backup, source.proof, destination.proof);
   assert.equal(status.unlocked, true);
   const list = await destination.session.list();
@@ -229,7 +229,7 @@ Then('corrupt and unauthenticated vault backups never replace the current encryp
   for (const invalid of [null, 'a'.repeat(vaultLimits.backupBytes + 1)]) {
     await assert.rejects(destination.session.restore(invalid, source.proof, destination.proof), code('LIMIT'));
   }
-  await assert.rejects(destination.session.restore(backup, { ...source.proof, secret: randomBase64(32) }, destination.proof), code('AUTHENTICATION'));
+  await assert.rejects(destination.session.restore(backup, { ...source.proof, secret: randomBase64(128) }, destination.proof), code('AUTHENTICATION'));
   const broken = JSON.parse(backup); broken.records[0].revision++;
   await assert.rejects(destination.session.restore(JSON.stringify(broken), source.proof, destination.proof), code('AUTHENTICATION'));
   const mismatched = await tamperedRecord(source, value => { value.id = crypto.randomUUID(); });
@@ -247,9 +247,9 @@ Then('vault sessions confirm recovery changes and independently enroll replace a
   assert.equal((await session.unlock(passkeyProof)).unlocked, true);
   await assert.rejects(session.unlock({ methodId: passkey.id, secret: 'not a PRF' }), code('AUTHENTICATION'));
   await session.unlock(proof);
-  await assert.rejects(session.addMethod(proof, { kind: 'recovery', secret: randomBase64(32) }), code('AUTHENTICATION'));
+  await assert.rejects(session.addMethod(proof, { kind: 'recovery', secret: randomBase64(128) }), code('AUTHENTICATION'));
   const recovery = await session.prepareRecovery(proof);
-  await assert.rejects(session.addMethod(proof, { kind: 'recovery', secret: randomBase64(32) }), code('AUTHENTICATION'));
+  await assert.rejects(session.addMethod(proof, { kind: 'recovery', secret: randomBase64(128) }), code('AUTHENTICATION'));
   status = await session.addMethod(proof, { kind: 'recovery', secret: recovery }, proof.methodId);
   const nextProof = { methodId: status.methods.find(method => method.kind === 'recovery').id, secret: recovery };
   await assert.rejects(session.unlock(proof), code('AUTHENTICATION'));
