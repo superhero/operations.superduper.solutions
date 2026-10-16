@@ -448,9 +448,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
   {/if}
 
+  {#if ready && status.exists && status.unlocked}
+    <div class="card">
+      <div class="actions"><button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}>Export encrypted vault</button></div>
+    </div>
+  {/if}
   {#if ready && status.exists}
     <div class="card">
-      {#if status.unlocked}<div class="actions"><button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}>Export encrypted vault</button></div>{/if}
       <div class="vault-replace-row">
         <button type="button" disabled={busy} onclick={() => restoreInput?.click()}>Replace vault</button>
         <p class="help">Importing replaces any existing vault in this browser and removes imported destination approvals. Exports are encrypted; keep their password, recovery key or passkey available.</p>
