@@ -464,7 +464,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .idle-control { display: flex; flex: 1; align-items: stretch; min-width: 0; border-radius: 4px; background: var(--color-background); outline: 2px solid transparent; outline-offset: 2px; transition: outline-color 180ms ease-in; }
   .idle-control:focus-within, .idle-control:hover:has(:enabled) { outline-color: var(--color-ring); }
   .idle-control :global(.field-integer) { flex: 1; min-width: 0; padding-right: 4px; }
-  .idle-control :global(.field-integer :is(.integer-range, .integer-value):is(:hover, :focus-visible)) { outline: none; }
+  .idle-control :global(.field-integer :is(.integer-range, .integer-value)) { outline: none; }
   .idle-control > span { display: flex; align-items: center; padding: 0 8px; }
   @media (prefers-reduced-motion: no-preference) {
     .idle-control :global(.integer-range) { transition: transform 180ms ease-in; }
