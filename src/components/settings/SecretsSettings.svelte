@@ -290,7 +290,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </div>
   <div class="vault-info" role="note">
     <MaterialIcon name="brightness_alert" size={18} />
-    <p class="help"><strong>Credentials provided are encrypted:</strong> Managed by the browser profile for this site.</p>
+    <p class="help"><strong>Stored credentials are encrypted:</strong> API keys and tokens are stored locally in this browser profile for this site.</p>
   </div>
   <div class="vault-info" role="note">
     <MaterialIcon name="brightness_alert" size={18} />
