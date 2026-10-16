@@ -96,7 +96,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   summary:focus-visible { outline: 2px solid var(--color-foreground); outline-offset: 2px; border-radius: 4px; }
   .summary-text { display: grid; gap: 4px; flex: 1; min-width: 0; }
   .summary-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-  .summary-text .muted { overflow-wrap: anywhere; }
   .occurrences { flex: 0 0 auto; color: var(--color-muted-foreground); font-size: 11px; }
   .entry-content { min-width: 0; padding: 0 12px 12px; }
   .entry-divider { height: 1px; margin: 8px 0; background: repeating-linear-gradient(to right, var(--color-surface) 0 8px, transparent 8px 14px); }
