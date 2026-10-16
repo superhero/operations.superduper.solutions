@@ -524,7 +524,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .creation-actions button, .recovery-actions button { display: inline-flex; align-items: center; gap: 6px; }
   .card, .subform, .vault-create-form { display: grid; gap: 10px; min-width: 0; }
   .rotation-card { gap: 0; }
-  .rotation-body { display: grid; gap: 10px; margin-top: 10px; padding-top: 12px; background: repeating-linear-gradient(to right, var(--color-background) 0 8px, transparent 8px 14px) top / 100% 1px no-repeat; }
+  .rotation-body { display: grid; gap: 10px; margin-top: 16px; padding-top: 12px; background: repeating-linear-gradient(to right, var(--color-background) 0 8px, transparent 8px 14px) top / 100% 1px no-repeat; }
   .card { padding: 14px; border-radius: 4px; background: var(--color-surface); }
   .vault-info, .vault-status-message { display: flex; align-items: flex-start; gap: 10px; }
   .vault-status-message { flex: 1; min-width: 0; }
