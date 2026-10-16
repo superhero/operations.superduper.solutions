@@ -8,6 +8,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { subscribeErrorHistory, showErrorHistoryPage, retryErrorHistory, type ErrorHistoryState } from "$lib/error-history.ts";
   import { errorHistoryPageSize, type ErrorDetail, type ErrorHistoryRecord } from "$lib/error-history-types.ts";
   import { formatLocalDateTime } from "$lib/datetime.ts";
+  import Disclosure from "$lib/components/Disclosure.svelte";
   import HintButton from "$lib/components/HintButton.svelte";
 
   let history = $state<ErrorHistoryState>({ phase: "idle", entries: [], total: 0, offset: 0, error: null, queued: 0, dropped: 0, unconfirmed: 0 });
@@ -62,21 +63,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if history.entries.length}
     <div class="entries">
       {#each history.entries as entry (entry.id)}
-        <details class="entry" ontoggle={event => toggle(entry.id, event.currentTarget.open)}>
-          <summary>
+        <Disclosure class="entry" label={origin(entry)} tooltipEnabled={false} lazy
+          open={expanded.has(entry.id)} onToggle={(next) => toggle(entry.id, next)}>
+          {#snippet summary()}
             <span class="summary-text"><strong>{origin(entry)}</strong></span>
             <span class="occurrences">{number(entry.occurrences)} {entry.occurrences === 1 ? "occurrence" : "occurrences"}</span>
-          </summary>
-          {#if expanded.has(entry.id)}
-            <div class="entry-content">
-              <div class="entry-divider" aria-hidden="true"></div>
-              <dl class="timestamps"><div><dt>First seen</dt><dd>{formatLocalDateTime(entry.firstSeen)}</dd></div><div><dt>Last seen</dt><dd>{formatLocalDateTime(entry.lastSeen)}</dd></div></dl>
-              <div class="entry-divider" aria-hidden="true"></div>
-              {#if entry.origin.filename}<p class="source">{location(entry)}</p>{/if}
-              {@render diagnostic(entry.error)}
-            </div>
-          {/if}
-        </details>
+          {/snippet}
+          <div class="entry-content">
+            <div class="entry-divider" aria-hidden="true"></div>
+            <dl class="timestamps"><div><dt>First seen</dt><dd>{formatLocalDateTime(entry.firstSeen)}</dd></div><div><dt>Last seen</dt><dd>{formatLocalDateTime(entry.lastSeen)}</dd></div></dl>
+            <div class="entry-divider" aria-hidden="true"></div>
+            {#if entry.origin.filename}<p class="source">{location(entry)}</p>{/if}
+            {@render diagnostic(entry.error)}
+          </div>
+        </Disclosure>
       {/each}
     </div>
     {#if history.total > errorHistoryPageSize}
@@ -102,19 +102,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .metrics dd { font-size: clamp(16px, 2vw, 21px); font-weight: 700; }
   .muted { color: var(--color-muted-foreground); font-size: 12px; }
   .entries { display: grid; gap: 8px; min-width: 0; }
-  .entry { min-width: 0; border-radius: 4px; background: var(--color-background); }
-  summary { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 12px; cursor: pointer; }
-  summary::before { content: "›"; flex: 0 0 auto; transition: transform 200ms ease; }
-  .entry[open] > summary::before { transform: rotate(90deg); }
-  summary::-webkit-details-marker { display: none; }
-  summary:focus-visible { outline: 2px solid var(--color-foreground); outline-offset: 2px; border-radius: 4px; }
+  .entries :global(.entry) { min-width: 0; border-radius: 4px; background: var(--color-background); }
+  .entries :global(.entry > summary) { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 12px; cursor: pointer; }
+  .entries :global(.entry > summary::before) { content: "›"; flex: 0 0 auto; transition: transform 200ms ease; }
+  .entries :global(.entry > summary[aria-expanded="true"]::before) { transform: rotate(90deg); }
+  .entries :global(.entry > summary::-webkit-details-marker) { display: none; }
+  .entries :global(.entry > summary:focus-visible) { outline: 2px solid var(--color-foreground); outline-offset: 2px; border-radius: 4px; }
   .summary-text { display: grid; gap: 4px; flex: 1; min-width: 0; }
   .summary-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
   .occurrences { flex: 0 0 auto; color: var(--color-muted-foreground); font-size: 11px; }
-  .entry-content { min-width: 0; padding: 0 12px 12px; }
+  .entry-content { display: flow-root; min-width: 0; padding: 0 12px 12px; }
   .entry-divider { height: 1px; margin: 8px 0; background: repeating-linear-gradient(to right, var(--color-surface) 0 8px, transparent 8px 14px); }
+  .entry-content > .entry-divider:first-child { margin-top: 0; }
   .timestamps { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 0 0 12px; font-size: 12px; }
   .diagnostic { min-width: 0; margin-top: 12px; font-size: 12px; }
+  .diagnostic > :last-child { margin-bottom: 0; }
   .source { overflow-wrap: anywhere; white-space: pre-wrap; }
   pre { max-width: 100%; margin: 8px 0; overflow: auto; font-size: 11px; }
   .cause { margin-top: 12px; padding-left: 12px; border-left: 2px solid var(--color-surface); }
@@ -122,6 +124,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .failure { padding: 10px 12px; border-left: 2px solid currentColor; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); overflow-wrap: anywhere; }
   nav { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 12px; color: var(--color-muted-foreground); font-size: 11px; }
   :global(.error-history .retry), :global(.error-history .page-button) { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
-  @media (max-width: 600px) { .error-history { padding: 12px; } .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } summary { gap: 8px; } .occurrences { max-width: 80px; text-align: right; } }
-  @media (prefers-reduced-motion: reduce) { summary::before { transition: none; } }
+  @media (max-width: 600px) { .error-history { padding: 12px; } .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .entries :global(.entry > summary) { gap: 8px; } .occurrences { max-width: 80px; text-align: right; } }
+  @media (prefers-reduced-motion: reduce) { .entries :global(.entry > summary::before) { transition: none; } }
 </style>
