@@ -492,6 +492,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .default-switch > span { display: block; width: 18px; height: 18px; border-radius: 2px; background: var(--color-surface); transform: translateX(0); transition: transform 180ms ease-in, background-color 180ms ease-in; }
   .idle-toggle[aria-checked="true"] .default-switch { background: var(--color-catalog-active); }
   .idle-toggle[aria-checked="true"] .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
-  @media (prefers-reduced-motion: no-preference) { .idle-toggle:hover:enabled .default-switch { transform: scale(1.10); } }
+  @media (prefers-reduced-motion: no-preference) {
+    .idle-toggle:hover:enabled .default-switch { transform: scale(1.10); }
+    .creation-actions button:hover:enabled { transform: scale(1.05); }
+  }
   @media (prefers-reduced-motion: reduce) { .default-switch, .default-switch > span { transition: none; } }
 </style>
