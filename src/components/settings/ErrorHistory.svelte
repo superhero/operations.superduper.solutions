@@ -10,6 +10,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { formatLocalDateTime } from "$lib/datetime.ts";
   import Disclosure from "$lib/components/Disclosure.svelte";
   import HintButton from "$lib/components/HintButton.svelte";
+  import MaterialIcon from "$lib/components/MaterialIcon.svelte";
 
   let history = $state<ErrorHistoryState>({ phase: "idle", entries: [], total: 0, offset: 0, error: null, queued: 0, dropped: 0, unconfirmed: 0 });
   let expanded = $state(new Set<number>());
@@ -66,7 +67,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <Disclosure class="entry" label={origin(entry)} tooltipEnabled={false} lazy
           open={expanded.has(entry.id)} onToggle={(next) => toggle(entry.id, next)}>
           {#snippet summary()}
-            <span class="summary-text"><strong>{origin(entry)}</strong></span>
+            <span class="summary-text"><strong>{entry.origin.source}{#if entry.origin.scope || entry.origin.operation}{" · "}{/if}{entry.origin.scope ?? ""}{#if entry.origin.scope && entry.origin.operation}<span class="origin-separator"><MaterialIcon name="keyboard_arrow_right" size={16} /></span>{/if}{entry.origin.operation ?? ""}</strong></span>
             <span class="occurrences">{number(entry.occurrences)} {entry.occurrences === 1 ? "occurrence" : "occurrences"}</span>
           {/snippet}
           <div class="entry-content">
@@ -110,6 +111,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .entries :global(.entry > summary:focus-visible) { outline: 2px solid var(--color-foreground); outline-offset: 2px; border-radius: 4px; }
   .summary-text { display: grid; gap: 4px; flex: 1; min-width: 0; }
   .summary-text strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+  .origin-separator { display: inline-block; margin: 0 2px; line-height: 0; vertical-align: middle; }
   .occurrences { flex: 0 0 auto; color: var(--color-muted-foreground); font-size: 11px; }
   .entry-content { display: flow-root; min-width: 0; padding: 0 12px 12px; }
   .entry-divider { height: 1px; margin: 8px 0; background: repeating-linear-gradient(to right, var(--color-surface) 0 8px, transparent 8px 14px); }

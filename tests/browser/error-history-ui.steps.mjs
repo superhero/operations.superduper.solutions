@@ -91,7 +91,9 @@ async function expectDiagnosticOnce(diagnostic, { name, message, frames = [], co
 Then('its diagnostic text appears once with codes, nested causes and related errors', async function () {
   const entry = history(this.page).locator('details.entry').first();
   const diagnostic = entry.locator('.entry-content > .diagnostic');
-  await expect(entry.locator('summary .summary-text')).toHaveText('application · example > startup');
+  await expect(entry.locator('summary')).toHaveAttribute('aria-label', 'application · example > startup');
+  await expect(entry.locator('summary .summary-text')).toHaveText('application · examplekeyboard_arrow_rightstartup');
+  await expect(entry.locator('summary .origin-separator .material-symbols-rounded')).toHaveText('keyboard_arrow_right');
   await expect(entry.locator('summary')).not.toContainText('Saved error 26');
   await expect(entry.getByText('3 occurrences', { exact: true })).toBeVisible();
   await expectDiagnosticOnce(diagnostic, { name: 'AggregateError', message: 'Saved error 26', code: 'SAVE_FAILED', frames: ['at saved-operation.ts:10:2'] });
