@@ -472,6 +472,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <label>New password<input name="new-password" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
           <label for={`${createFormId}-new-password-confirm`}>Confirm new password</label>
           <input id={`${createFormId}-new-password-confirm`} name="new-password-confirm" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} />
+          <div class="password-verification-divider" role="separator"></div>
           <VaultAuthentication bind:this={passwordAuthentication}
             {status} detectMethod disabled={busy} label="Authorize password change" inputLabel="Password or recovery key">
             {#snippet action()}
@@ -588,6 +589,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .creation-actions button, .recovery-actions button { display: inline-flex; align-items: center; gap: 6px; }
   .card, .subform, .vault-create-form { display: grid; gap: 10px; min-width: 0; }
   .rotation-card { gap: 0; }
+  .password-verification-divider { height: 1px; margin: 6px 0; background: repeating-linear-gradient(to right, var(--color-background) 0 8px, transparent 8px 14px); }
   .rotation-body { display: grid; gap: 10px; margin-top: 16px; padding-top: 12px; background: repeating-linear-gradient(to right, var(--color-background) 0 8px, transparent 8px 14px) top / 100% 1px no-repeat; }
   .card { padding: 14px; border-radius: 4px; background: var(--color-surface); }
   .vault-info, .vault-status-message { display: flex; align-items: flex-start; gap: 10px; }
