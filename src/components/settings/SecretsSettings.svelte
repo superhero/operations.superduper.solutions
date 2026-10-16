@@ -531,6 +531,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .idle-toggle[aria-checked="true"] .default-switch { background: var(--color-catalog-active); }
   .idle-toggle[aria-checked="true"] .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
   @media (prefers-reduced-motion: no-preference) {
+    .unlock-vault :global(.material-symbols-rounded) { transition: transform 180ms ease-in; }
+    .unlock-vault:hover:enabled :global(.material-symbols-rounded), .unlock-vault:focus :global(.material-symbols-rounded) { transform: scale(1.2); }
     .idle-toggle:hover:enabled .default-switch { transform: scale(1.10); }
     .recovery-copy:hover:enabled { transform: scale(1.10); }
     :is(.creation-actions, .recovery-actions, .vault-replace-row) button:hover:enabled { transform: scale(1.05); }
