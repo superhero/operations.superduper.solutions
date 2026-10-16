@@ -12,7 +12,7 @@ The decision and threat boundary are described in
 | `types`, `crypto`, `format` | Bounded format, Argon2/HKDF, AES-GCM and authenticated inventories |
 | `storage`, `schema-policy-storage` | Atomic vault snapshots, expected revisions and durable checks of current schema approvals |
 | `session` | Worker-private unlocking, credential management, independent methods, restore and key rotation |
-| `policy`, `execution` | Immutable destination approvals, request construction, credential injection and bounded sanitized responses |
+| `policy`, `execution` | Immutable operation descriptors, request construction, credential injection and bounded sanitized responses |
 | `protocol`, `vault.worker`, `client`, `vault-executor` | Narrow RPC, cancellation, safe errors and application execution bridge |
 | `lifecycle`, `passkeys` | Activity deadlines and the window-only WebAuthn PRF ceremony |
 | `bindings` | Strict opaque workflow references, without credential values or grants |
@@ -20,16 +20,16 @@ The decision and threat boundary are described in
 ## Adding capabilities
 
 Add operations to the reviewed RPC allowlist, never a generic decrypt or secret
-getter. Credential and destination changes use the unlocked session. Unlock-method
+getter. Credential changes use the unlocked session. Unlock-method
 changes require fresh authentication. Preserve independent
 passwords and passkeys by authenticating each before key rotation. Generate a new
 128-byte recovery key automatically during rotation; never request the old one.
 Validate untrusted format and KDF bounds before allocation or expensive work.
 
-Credentialed requests originate in the worker from an approved descriptor.
-Changing destination, authentication placement or schema behavior requires local
-approval. A workflow import cannot approve its own references. Anonymous and
-credentialed alternatives must be selected explicitly.
+Credentialed requests originate in the worker from a validated operation descriptor.
+Any compatible saved credential can be selected without destination approval.
+Changed operations invalidate stale bindings. Anonymous and credentialed
+alternatives must be selected explicitly.
 
 ## Persistence
 

@@ -12,12 +12,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import FieldSelect from "$lib/components/FieldSelect.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import VaultAuthentication from "$lib/components/VaultAuthentication.svelte";
-  import { operations } from "$lib/catalog.ts";
-  import { workflowExecutionForOperation } from "$lib/workflow-execution.ts";
-  import { approvedOperation } from "$lib/secrets/policy.ts";
   import { enrollPasskey } from "$lib/secrets/passkeys.ts";
   import { loadVaultPreferences, lockVault, lockVaultLocally, readVaultStatus, saveVaultPreferences, subscribeVaultLock, vaultCall, vaultCeremony } from "$lib/secrets/client.ts";
-  import { defaultVaultPreferences, safeVaultError, VaultError, vaultLimits, type ApprovedOperation, type CredentialSummary,
+  import { defaultVaultPreferences, safeVaultError, VaultError, vaultLimits, type CredentialSummary,
     type Enrollment, type UnlockProof, type VaultStatus } from "$lib/secrets/types.ts";
 
   type Authentication = { proof: () => Promise<UnlockProof>; clear: () => void };
@@ -49,11 +46,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let recoveryMode = $state<"create" | "rotate" | null>(null);
   let credentialId = $state("");
   let credentialLabel = $state("");
-  let grantCredential = $state("");
-  let grantOperation = $state("");
-  let grantScheme = $state("");
-  let grantDescriptor = $state.raw<ApprovedOperation | null>(null);
-  let operationOptions = $state<{ value: string; label: string }[]>([]);
   let passwordReplacement = $state("");
   let showRotation = $state(false);
   let restoreStatus = $state<VaultStatus | null>(null);
@@ -61,15 +53,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let restoreInput = $state.raw<HTMLInputElement>();
   let restorePayload = "";
   let generation = 0;
-  let reviewGeneration = 0;
   let disposed = false;
   const rotationAuthentication: Record<string, Authentication> = {};
-  const selectedCredential = $derived(records.find(item => item.id === grantCredential));
-  const schemeOptions = $derived([...new Map((grantDescriptor?.operation.security?.flat() ?? [])
-    .filter(scheme => (selectedCredential?.kind === "secret" || scheme.kind === selectedCredential?.kind)).map(scheme => [scheme.name,
-      { value: scheme.name, label: `${scheme.name} · ${scheme.header}` }])).values()]);
-  const selectedScheme = $derived(grantDescriptor?.operation.security?.flat().find(scheme => scheme.name === grantScheme));
-
   function wipe(proof: UnlockProof): void { if ("prf" in proof) proof.prf.fill(0); else proof.secret = ""; }
   function clearInputs(): void {
     panel?.querySelectorAll<HTMLInputElement>("input[data-vault-sensitive]").forEach(input => { input.value = ""; });
@@ -85,8 +70,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     return value;
   }
   function locked(): void {
-    generation++; reviewGeneration++; clearInputs(); clearRecovery(); clearRestore();
-    records = []; grantDescriptor = null; status = { ...status, unlocked: false }; showRotation = false; showPassword = false; passwordError = ""; showPasskey = false; passkeyError = ""; busy = false; progress = "";
+    generation++; clearInputs(); clearRecovery(); clearRestore();
+    records = []; status = { ...status, unlocked: false }; showRotation = false; showPassword = false; passwordError = ""; showPasskey = false; passkeyError = ""; busy = false; progress = "";
   }
   async function refresh(): Promise<void> {
     const current = generation;
@@ -94,9 +79,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const items = next.unlocked ? await vaultCall("list", []) : [];
     if (current !== generation || disposed) return;
     status = next; records = items;
-    operationOptions = operations.filter(operation => operation.security?.some(option => option.length))
-      .map(operation => ({ value: operation.id, label: `${operation.name} · ${operation.method} ${operation.path}` }));
-    if (!items.some(item => item.id === grantCredential)) grantCredential = items[0]?.id ?? "";
+
   }
   async function run(message: string, action: () => Promise<void>): Promise<void> {
     if (busy) return;
@@ -158,27 +141,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function editCredential(item: CredentialSummary): void {
     clearInputs(); credentialId = item.id; credentialLabel = item.label;
     panel.querySelector<HTMLInputElement>('input[name="credential-value"]')?.focus();
-  }
-  async function reviewGrant(id: string): Promise<void> {
-    grantOperation = id; grantDescriptor = null; grantScheme = "";
-    const revision = ++reviewGeneration;
-    const operation = operations.find(item => item.id === id);
-    if (!operation) return;
-    try {
-      const descriptor = await approvedOperation(operation, workflowExecutionForOperation(operation).origin);
-      if (revision === reviewGeneration && !disposed) {
-        grantDescriptor = descriptor;
-        grantScheme = descriptor.operation.security?.flat().find(scheme => (selectedCredential?.kind === "secret" || scheme.kind === selectedCredential?.kind))?.name ?? "";
-      }
-    } catch (failure) { if (revision === reviewGeneration) error = safeVaultError(failure).message; }
-  }
-  async function approveGrant(): Promise<void> {
-    const operation = operations.find(item => item.id === grantOperation);
-    if (!operation || !grantDescriptor || !grantScheme) throw new VaultError("PERMISSION");
-    const current = await approvedOperation(operation, workflowExecutionForOperation(operation).origin);
-    if (current.fingerprint !== grantDescriptor.fingerprint) throw new VaultError("PERMISSION");
-    await vaultCall("grant", [null, grantCredential, grantScheme, current]);
-    await refresh(); notice = "Destination approved for this credential.";
   }
   async function changePassword(): Promise<void> {
     const current = generation;
@@ -298,7 +260,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           downloadVault(previousExport, "operations-secrets-vault-before-replacement.json");
       }
       await vaultCall("restore", [restorePayload, proof, currentProof, previousExport]);
-      clearRestore(); await refresh(); notice = "Vault imported. Approve destinations again before using its credentials.";
+      clearRestore(); await refresh(); notice = "Vault imported.";
     } finally { wipe(proof); if (currentProof) wipe(currentProof); }
   }
   async function saveIdle(enabled: boolean, minutes: number): Promise<void> {
@@ -407,13 +369,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="card">
       <ul class="records">
         {#each records as item (item.id)}
-          <li><div class="record-heading"><div><strong>{item.label}</strong><small>{item.grants.length} approved destinations</small></div>
+          <li><div class="record-heading"><div><strong>{item.label}</strong></div>
             <div class="actions"><button type="button" disabled={busy} onclick={() => editCredential(item)}>Replace</button>
               <button type="button" disabled={busy} onclick={() => run("Removing credential…", async () => { await vaultCall("remove", [null, item.id]); await refresh(); })}>Remove</button></div></div>
-            {#each item.grants as grant (grant.id)}
-              <div class="grant"><span>{grant.descriptor.operation.method} {grant.descriptor.origin}{grant.descriptor.operation.path}<small>{grant.scheme}</small></span>
-                <button type="button" disabled={busy} onclick={() => run("Revoking destination…", async () => { await vaultCall("revoke", [null, item.id, grant.id]); await refresh(); })}>Revoke</button></div>
-            {/each}
+
           </li>
         {/each}
       </ul>
@@ -428,24 +387,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </form>
     </div>
 
-    {#if records.length}
-      <form class="card" onsubmit={event => { event.preventDefault(); void run("Approving destination…", approveGrant); }}>
-        <h3>Approve a destination</h3>
-        <label for="vault-grant-credential">Credential</label>
-        <FieldSelect id="vault-grant-credential" label="Approval credential" value={grantCredential} options={records.map(item => ({ value: item.id, label: item.label }))}
-          includePlaceholder={false} disabled={busy} onValueChange={value => { grantCredential = value; grantScheme = ""; void reviewGrant(grantOperation); }} />
-        <label for="vault-grant-operation">Operation</label>
-        <FieldSelect id="vault-grant-operation" label="Approval operation" value={grantOperation} options={operationOptions} disabled={busy} onValueChange={value => void reviewGrant(value)} />
-        {#if grantDescriptor}
-          <p class="destination"><strong>{grantDescriptor.operation.method}</strong> {grantDescriptor.origin}{grantDescriptor.operation.path}</p>
-          <label for="vault-grant-scheme">Authentication scheme</label>
-          <FieldSelect id="vault-grant-scheme" label="Approval authentication scheme" value={grantScheme} options={schemeOptions} disabled={busy} onValueChange={value => grantScheme = value} />
-          {#if selectedScheme}<p class="help">This credential may be sent in the {selectedScheme.header} header for this operation. Approval expires when the operation definition or destination changes.</p>{/if}
-        {/if}
-        <button disabled={busy || !grantDescriptor || !grantScheme}>Approve destination</button>
-        <p class="help">Revocation stops future use in this vault. It cannot undo a request already received by an API or invalidate copies held elsewhere.</p>
-      </form>
-    {/if}
 
   {/if}
   {#if ready && status.exists}
@@ -560,7 +501,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="card">
       <div class="vault-replace-row">
         <button type="button" disabled={busy} onclick={() => restoreInput?.click()}><MaterialIcon name="sync" size={18} />Replace vault</button>
-        <p class="help">Importing replaces any existing vault in this browser and removes imported destination approvals. Exports are encrypted; keep their password, recovery key or passkey available.</p>
+        <p class="help">Importing replaces any existing vault in this browser. Exports are encrypted; keep their password, recovery key or passkey available.</p>
       </div>
       {@render vaultImport()}
     </div>
@@ -570,7 +511,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .secrets-settings { display: grid; gap: 12px; min-width: 0; padding: 16px; color: var(--color-foreground); --field-background: var(--color-background); --field-foreground: var(--color-foreground); }
-  .toolbar, .record-heading, .grant { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .toolbar, .record-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .recovery-label { font-size: 12px; font-weight: 700; }
   .recovery-key { position: relative; min-width: 0; border-radius: 4px; background: var(--color-background); }
@@ -597,8 +538,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .credential-save-label { display: none; }
   @media (max-width: 640px) { .credential-fields { grid-template-columns: minmax(0, 1fr); } .credential-save { width: 100%; } .credential-save-label { display: inline; } }
   .subform { padding-top: 12px; border-top: 1px solid var(--color-background); }
-  h3, h4, p { margin: 0; }
-  h3 { font-size: 14px; } h4, label, strong { font-size: 12px; }
+  h4, p { margin: 0; }
+  h4, label, strong { font-size: 12px; }
   label { display: grid; gap: 8px; font-weight: 700; }
   input:not([type="checkbox"]) { box-sizing: border-box; min-width: 0; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
   .idle-settings { display: flex; align-items: center; gap: 10px; border-radius: 4px; background: var(--color-background); }
@@ -612,11 +553,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.secrets-settings .field-select-trigger) { border-radius: 4px; font-size: 12px; }
   button { width: fit-content; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; cursor: pointer; }
   button:disabled { opacity: .55; cursor: not-allowed; }
-  .help, .notice, .destination, small { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+  .help, .notice, .destination { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
   .records { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
   .records li { display: grid; gap: 10px; padding: 10px; border: 1px solid var(--color-background); border-radius: 4px; }
-  small { display: block; font-weight: 400; }
-  .grant > span { min-width: 0; flex: 1; font-size: 12px; overflow-wrap: anywhere; }
   .destination { padding: 10px; border-radius: 4px; background: var(--color-background); }
   .error { padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; overflow-wrap: anywhere; }
   .idle-toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; min-height: 44px; padding: 10px 12px; background: var(--color-background); color: var(--color-catalog-foreground); text-align: left; }

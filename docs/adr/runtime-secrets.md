@@ -40,13 +40,12 @@ recovery remain independent choices when a provider cannot supply it.
 
 ### Credential use
 
-Saving, replacing and removing credentials, and changing destination approvals,
-use the unlocked vault session without another password prompt. Locked or stale
+Saving, replacing and removing credentials use the unlocked vault session without another password prompt. Locked or stale
 sessions cannot modify vault data. Unlock-method changes and vault replacement
 retain their own authentication.
 
-A dedicated worker decrypts credentials, applies an explicitly approved origin,
-base path, method, operation definition and authentication placement, then sends
+A dedicated worker decrypts credentials, validates the current operation, destination and
+authentication placement, then sends
 the request. Its interface has no credential getter. The initial scope supports
 Bearer tokens and header API keys; unsupported requirements fail closed.
 Credential destinations require HTTPS. HTTP is permitted only for literal
@@ -55,8 +54,9 @@ origin is also loopback, to support local development. A hosted application or
 an unavailable application origin cannot enable this exception.
 
 Requests reject redirects, omit browser cookies and referrers, and disable
-caching. Public inputs cannot overwrite credential headers. Schema changes
-invalidate affected approvals. Known credential echoes and authentication
+caching. Public inputs cannot overwrite credential headers. Credentials selected
+for an operation require no separate destination approval. Schema changes
+invalidate stale operation bindings. Known credential echoes and authentication
 headers are removed before results leave the worker. A redacted result stops
 dependent workflow execution without repeating the successful upstream request.
 Decoded responses are limited to 8 MiB and diagnostic responses to 16 KiB.

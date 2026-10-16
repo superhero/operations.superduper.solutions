@@ -105,7 +105,7 @@ Then("invalid approval case {string} fails closed", async name => {
   }
 });
 
-Then("credential grants reject operation drift in {string} before dispatch", async part => {
+Then("credential bindings reject operation drift in {string} before dispatch", async part => {
   const state = await fixture();
   const operation = structuredClone(state.descriptor.operation);
   let origin = state.descriptor.origin;
@@ -117,13 +117,12 @@ Then("credential grants reject operation drift in {string} before dispatch", asy
   if (part === "response") operation.responseMediaType = "text/plain";
   if (part === "header") operation.security = [[{ ...key, name: "Bearer" }]];
   state.descriptor = await approvedOperation(operation, origin);
-  state.binding.fingerprint = state.descriptor.fingerprint;
   let calls = 0;
   await assert.rejects(() => execute(state, { fetchRequest: async () => { calls++; return response(); } }), denied);
   assert.equal(calls, 0);
 });
 
-Then("selected alternatives require all grants and keep node credentials independent", async () => {
+Then("selected alternatives use selected credentials without destination approval", async () => {
   const operation = baseOperation();
   operation.fields = [field("path", "id", { required: true }), field("query", "tags", { type: "array", schema: { type: "array", items: { type: "string" } } })];
   operation.path = "/items/{id}";
@@ -152,8 +151,9 @@ Then("selected alternatives require all grants and keep node credentials indepen
   assert.equal(seen[2].init.headers.get("authorization"), `Bearer ${canary}`);
   assert.equal(seen[2].init.headers.get("x-api-key"), "second-secret");
   state.credentials[1].grants = [];
-  await assert.rejects(execute(state, { values: { "path:id": "45" }, fetchRequest }), error => error instanceof VaultError && error.code === "PERMISSION");
-  assert.equal(seen.length, 3);
+  state.credentials[0].grants = [];
+  await execute(state, { values: { "path:id": "45" }, fetchRequest });
+  assert.equal(seen.length, 4);
 });
 
 Then("credential binding case {string} fails before dispatch", async name => {

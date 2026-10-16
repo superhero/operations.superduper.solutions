@@ -30,7 +30,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     label: option.length ? option.map(item => item.name).join(" + ") : "Without credentials" })) ?? []);
   const selected = $derived(alternative === "" ? undefined : operation.security?.[Number(alternative)]);
   function permitted(item: CredentialSummary, scheme: string): boolean {
-    return item.grants.some(grant => grant.scheme === scheme && grant.descriptor.fingerprint === descriptor?.fingerprint);
+    const kind = selected?.find(item => item.name === scheme)?.kind;
+    return item.kind === "secret" || item.kind === kind;
   }
   function changed() {
     error = "";
@@ -70,23 +71,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     } catch (cause) { if (mounted && request === revision) error = cause instanceof VaultError ? cause.message : "The vault could not be unlocked."; }
     finally { if (mounted && request === revision) busy = false; }
   }
-  async function approve(id: string, scheme: string) {
-    if (!authentication || !descriptor) return;
-    const request = revision;
-    busy = true; error = "";
-    try {
-      const proof = await authentication.proof();
-      try {
-        if (!mounted || request !== revision) throw new VaultError("CANCELLED");
-        const list = await vaultCall("grant", [proof, id, scheme, descriptor]);
-        if (!mounted || request !== revision) return;
-        credentials = list;
-      }
-      finally { if ("prf" in proof) proof.prf.fill(0); }
-      changed();
-    } catch (cause) { if (mounted && request === revision) error = cause instanceof VaultError ? cause.message : "Credential access could not be approved."; }
-    finally { if (mounted && request === revision) busy = false; }
-  }
   onMount(() => {
     mounted = true; void refresh();
     const stop = subscribeVaultLock(() => {
@@ -111,22 +95,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {:else}
       {#if status.unlocked}
         {#each selected as scheme (scheme.name)}
-          {@const chosen = credentials.find(item => item.id === choices[scheme.name])}
           <div class="credential-choice">
             <label for={`${fieldId}-${scheme.name}`}>{scheme.name} · {scheme.header}</label>
             <FieldSelect id={`${fieldId}-${scheme.name}`} label={`Credential for ${scheme.name}`} value={choices[scheme.name] ?? ""}
               disabled={disabled || busy} {portalZIndex}
               options={credentials.filter(item => (item.kind === "secret" || item.kind === scheme.kind)).map(item => ({ value: item.id, label: item.label }))}
               onValueChange={value => { choices = { ...choices, [scheme.name]: value }; changed(); }} />
-            {#if chosen && !permitted(chosen, scheme.name)}
-              <p>This credential needs approval for the destination and operation shown above.</p>
-              <button type="button" onclick={() => approve(chosen.id, scheme.name)}>Approve credential use</button>
-            {/if}
+
           </div>
         {/each}
       {/if}
-      <VaultAuthentication bind:this={authentication} {status} disabled={disabled || busy} {portalZIndex}
-        label={status.unlocked ? "Authenticate to approve changes" : "Unlock the vault"} />
+      {#if !status.unlocked}<VaultAuthentication bind:this={authentication} {status} disabled={disabled || busy} {portalZIndex}
+        label="Unlock the vault" />{/if}
       {#if !status.unlocked}<button type="button" onclick={unlock}>Unlock</button>{/if}
     {/if}
   {/if}

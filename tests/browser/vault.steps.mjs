@@ -354,10 +354,7 @@ Then('an approved operation shows and copies only scrubbed diagnostics and persi
   await page.getByRole('button', { name: 'Unlock', exact: true }).click();
   await page.getByRole('combobox', { name: 'Credential for Bearer', exact: true }).click();
   await page.getByRole('option', { name: canaries[3], exact: true }).click();
-  await page.getByLabel('Authenticate to approve changes password', { exact: true }).fill(canaries[0]);
-  await page.getByRole('button', { name: 'Approve credential use', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Approve credential use', exact: true })).toHaveCount(0);
-  await expect(page.getByLabel('Authenticate to approve changes password', { exact: true })).toHaveValue('');
   await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
   const response = page.getByRole('region', { name: 'Operation response', exact: true });
   await expect(response).toContainText('HTTP 422');
@@ -478,7 +475,7 @@ Then('a downloaded vault backup restores with recovery in a fresh application co
     await settings(page).getByRole('button', { name: 'Authenticate and import vault', exact: true }).click();
     await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
     await expect(settings(page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
-    await expect(settings(page).getByRole('status')).toContainText('Approve destinations again');
+    await expect(settings(page).getByRole('status')).toContainText('Vault imported.');
     noCanaries(await storage(page, 'read'));
     await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
     await expect(settings(page).getByRole('combobox', { name: 'Unlock method', exact: true })).toHaveCount(0);
@@ -507,7 +504,7 @@ Then('a downloaded vault backup restores with recovery in a fresh application co
     const previousContent = Buffer.concat(previousChunks).toString('utf8');
     assert.deepEqual(JSON.parse(previousContent), previousSnapshot);
     noCanaries(previousContent);
-    await expect(settings(page).getByRole('status')).toContainText('Approve destinations again');
+    await expect(settings(page).getByRole('status')).toContainText('Vault imported.');
 
   } finally { await context.close(); }
 });

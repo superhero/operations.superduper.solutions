@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { InputValidationError, prepareRequest, type InputValues, type PreparedRequest } from "../operation-input.ts";
 import type { WorkflowExecutionResult, WorkflowResponse } from "../workflow-execution.ts";
-import { canonicalPolicyValue, validateApprovedOperation, validateCredentialPath } from "./policy.ts";
+import { validateApprovedOperation, validateCredentialPath } from "./policy.ts";
 import { VaultError, vaultLimits, type ApprovedOperation, type CredentialBinding, type VaultCredential } from "./types.ts";
 
 export type CredentialResponse = WorkflowResponse & { redacted?: boolean };
@@ -127,8 +127,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       const matches = credentialSnapshot.filter(credential => credential.id === id);
       if (matches.length !== 1) throw new VaultError("PERMISSION");
       const credential = matches[0]!;
-      if ((credential.kind !== "secret" && credential.kind !== scheme.kind) || !credential.grants.some(grant => grant.scheme === scheme.name
-        && canonicalPolicyValue(grant.descriptor) === canonicalPolicyValue(approved))) throw new VaultError("PERMISSION");
+      if (credential.kind !== "secret" && credential.kind !== scheme.kind) throw new VaultError("PERMISSION");
       if (typeof credential.value !== "string" || !credential.value.length || credential.value !== credential.value.trim()
         || /[^\u0020-\u007e]/.test(credential.value) || new TextEncoder().encode(credential.value).byteLength > vaultLimits.secretBytes)
         throw new VaultError("INVALID");

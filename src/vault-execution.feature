@@ -85,8 +85,8 @@ Feature: Approved credential execution
       | changed stored origin       |
       | extra descriptor properties |
 
-  Scenario Outline: Stored grants reject operation drift in <part>
-    Then credential grants reject operation drift in "<part>" before dispatch
+  Scenario Outline: Stale bindings reject operation drift in <part>
+    Then credential bindings reject operation drift in "<part>" before dispatch
     Examples:
       | part          |
       | origin        |
@@ -97,8 +97,8 @@ Feature: Approved credential execution
       | response      |
       | header        |
 
-  Scenario: Selected alternatives require all grants and keep node credentials independent
-    Then selected alternatives require all grants and keep node credentials independent
+  Scenario: Selected credentials work without destination approval
+    Then selected alternatives use selected credentials without destination approval
 
   Scenario Outline: Invalid credential bindings reject <case>
     Then credential binding case "<case>" fails before dispatch
@@ -115,8 +115,6 @@ Feature: Approved credential execution
       | missing credential    |
       | duplicate credential  |
       | wrong credential kind |
-      | wrong grant scheme    |
-      | wrong grant descriptor |
       | empty credential      |
       | padded credential     |
       | newline credential    |
