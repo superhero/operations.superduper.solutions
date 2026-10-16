@@ -448,7 +448,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <span aria-hidden="true">min</span>
       </div>
       </div>
-      <p class="help">Idle locking is optional. Closing or reloading this page always locks the vault.</p>
     </div>
   {/if}
 </section>
