@@ -334,7 +334,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-metadata dt { margin-bottom: 5px; font-size: 11px; font-weight: 400; color: var(--color-muted-foreground); }
   .schema-metadata dd { min-width: 0; margin: 0; font-size: clamp(16px, 2vw, 21px); font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
   .schema-enabled { box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 0 0 auto; height: var(--schema-control-size); width: calc(var(--schema-control-size) * 4 + var(--schema-action-gap) * 3); padding: 4px 8px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font-size: 12px; font-weight: 700; text-align: left; }
-  .default-switch { box-sizing: border-box; flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-muted-foreground); transition: background-color 180ms ease-in; }
+  .default-switch { box-sizing: border-box; flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-muted-foreground); transition: background-color 180ms ease-in, transform 180ms ease-in; }
   .default-switch > span { display: block; width: 18px; height: 18px; border-radius: 2px; background: var(--color-surface); transform: translateX(0); transition: transform 180ms ease-in, background-color 180ms ease-in; }
   .schema-enabled[aria-checked="true"] .default-switch { background: var(--color-catalog-active); }
   .schema-enabled[aria-checked="true"] .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
@@ -345,7 +345,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .confirmation-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
   @container (max-width: 430px) { .schema-metadata { grid-template-columns: 1fr; } }
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-    .schema-settings :global(.schema-action:hover:enabled), .schema-enabled:hover:enabled { transform: scale(min(1.10, var(--hover-scale, 1.10))); }
+    .schema-settings :global(.schema-action:hover:enabled) { transform: scale(min(1.10, var(--hover-scale, 1.10))); }
+    .schema-enabled:hover:enabled .default-switch { transform: scale(1.10); }
   }
   @media (prefers-reduced-motion: reduce) { .schema-name, .default-switch, .default-switch > span { transition: none; } }
   @media (forced-colors: active) { .schema-name:not(:focus-within) { outline-style: none; } }
