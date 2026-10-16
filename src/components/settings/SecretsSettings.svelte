@@ -440,7 +440,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="card">
       <div class="vault-rotate-row">
         <button type="button" disabled={busy} onclick={() => { if (showRotation) clearInputs(); showRotation = !showRotation; }}>{showRotation ? "Cancel rotation" : "Rotate keys"}<MaterialIcon name={showRotation ? "backspace" : "lock_reset"} size={18} /></button>
-        <p class="help">Verify every retained unlock method to re-encrypt the current vault. Older exports keep their original keys and methods.</p>
+        <p class="help">Verify every retained unlock method to re-encrypt the current vault.</p>
       </div>
         {#if showRotation}
           {#each status.methods as method, index (method.id)}
