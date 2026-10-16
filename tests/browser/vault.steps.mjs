@@ -193,7 +193,7 @@ async function openSecrets(page) {
 async function unlockUI(page, password = canaries[0]) {
   await settings(page).getByLabel('Unlock password', { exact: true }).fill(password);
   await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
-  await expect(settings(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+  await expect(settings(page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
 }
 async function vaultWorkerCount(page) {
   return (await Promise.all(page.workers().map(worker => worker.evaluate(() => globalThis.name).catch(() => 'closed'))))
@@ -224,7 +224,7 @@ async function createUIVault() {
   const recoveryDownload = page.waitForEvent('download');
   await settings(page).getByRole('button', { name: 'Save recovery key', exact: true }).click();
   assert.equal((await recoveryDownload).suggestedFilename(), 'operations-vault-recovery-key.txt');
-  await expect(settings(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+  await expect(settings(page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
   await settings(page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
   await settings(page).getByLabel('Credential label', { exact: true }).fill(canaries[3]);
   await settings(page).getByLabel('Credential value', { exact: true }).fill(canaries[1]);
@@ -257,7 +257,7 @@ Then('its registered secret is encrypted and a reload requires unlocking again',
 
 Then('a vault worker constructor failure remains safe and a later unlock recovers', async function () {
   const page = this.page;
-  await settings(page).getByRole('button', { name: 'Lock vault', exact: true }).click();
+  await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   const before = await storage(page, 'read');
   await page.evaluate(canary => {
     globalThis.vaultOriginalWorker = Worker;
@@ -339,7 +339,7 @@ Then('manually locking the vault clears inputs and password unlocking restores t
   await settings(this.page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
   await settings(this.page).getByLabel('Credential value', { exact: true }).fill(canaries[1]);
   const before = await storage(this.page, 'read');
-  await settings(this.page).getByRole('button', { name: 'Lock vault', exact: true }).click();
+  await this.page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   await expect(settings(this.page).getByText('Vault locked', { exact: true })).toBeVisible();
   await expect(settings(this.page).getByLabel('Unlock password', { exact: true })).toHaveValue('');
   await expect.poll(() => vaultWorkerCount(this.page)).toBe(0);
@@ -350,7 +350,7 @@ Then('manually locking the vault clears inputs and password unlocking restores t
 
 Then('a {string} notification terminates the vault worker and returning visible leaves it locked', async function (event) {
   await this.page.evaluate(() => window.dispatchEvent(new Event('blur')));
-  await expect(settings(this.page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+  await expect(settings(this.page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
   await expect.poll(() => vaultWorkerCount(this.page)).toBe(1);
   await settings(this.page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
   await this.page.evaluate(event => {
@@ -379,7 +379,7 @@ Then('hiding and restoring the page preserves the vault worker and pending opera
     window.dispatchEvent(new Event('blur'));
   });
   try {
-    await expect(settings(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+    await expect(settings(page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
     await expect.poll(() => vaultWorkerCount(page)).toBe(1);
     await settings(page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
     await settings(page).getByLabel('Credential label', { exact: true }).fill('Saved while backgrounded');
@@ -394,7 +394,7 @@ Then('hiding and restoring the page preserves the vault worker and pending opera
       document.dispatchEvent(new Event('visibilitychange'));
     });
   }
-  await expect(settings(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+  await expect(settings(page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
   await expect.poll(() => vaultWorkerCount(page)).toBe(1);
 });
 
@@ -431,7 +431,7 @@ Then('a downloaded vault backup restores with recovery in a fresh application co
     await selector.click(); await page.getByRole('option', { name: 'Recovery key', exact: true }).click();
     await settings(page).getByLabel('Export recovery key', { exact: true }).fill(this.uiRecovery);
     await settings(page).getByRole('button', { name: 'Authenticate and import vault', exact: true }).click();
-    await expect(settings(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+    await expect(settings(page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
     await expect(settings(page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
     await expect(settings(page).getByRole('status')).toContainText('Approve destinations again');
     noCanaries(await storage(page, 'read'));
@@ -533,12 +533,12 @@ Then('the native PRF virtual authenticator enrolls and unlocks the vault without
     const credentials = await cdp.send('WebAuthn.getCredentials', { authenticatorId });
     assert.equal(credentials.credentials.length, 1);
     assert.equal(credentials.credentials[0].rpId, 'localhost');
-    await settings(page).getByRole('button', { name: 'Lock vault', exact: true }).click();
+    await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
     await settings(page).getByRole('combobox', { name: 'Unlock method', exact: true }).click();
     await page.getByRole('option', { name: 'Passkey', exact: true }).click();
     await expect(settings(page).getByLabel('Unlock password', { exact: true })).toHaveCount(0);
     await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
-    await expect(settings(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+    await expect(settings(page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
     await expect(settings(page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
     noCanaries(await storage(page, 'read'));
     await page.screenshot({ path: 'tmp/test/vault-settings.png', fullPage: true });
@@ -553,14 +553,14 @@ Then('a native virtual authenticator without PRF leaves password and recovery me
     await settings(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
     await expect(settings(page).getByRole('alert')).toContainText('unavailable');
     assert.deepEqual(await storage(page, 'read'), before);
-    await settings(page).getByRole('button', { name: 'Lock vault', exact: true }).click();
+    await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
     await unlockUI(page);
-    await settings(page).getByRole('button', { name: 'Lock vault', exact: true }).click();
+    await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
     await settings(page).getByRole('combobox', { name: 'Unlock method', exact: true }).click();
     await page.getByRole('option', { name: 'Recovery key', exact: true }).click();
     await settings(page).getByLabel('Unlock recovery key', { exact: true }).fill(this.uiRecovery);
     await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
-    await expect(settings(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+    await expect(settings(page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
   });
 });
 
@@ -574,7 +574,7 @@ Then('a pending native passkey enrollment is cancelled by {string} and clears re
     try {
       await settings(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
       await expect(settings(page).getByRole('status')).toContainText('Verifying passkey');
-      if (action === 'manual lock') await settings(page).getByRole('button', { name: 'Lock vault', exact: true }).click();
+      if (action === 'manual lock') await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
       else if (action === 'settings teardown') { await page.locator('summary[aria-label="Secrets"]').click(); await expect(settings(page)).toHaveCount(0); }
       else throw new Error('Unknown cancellation action');
       for (const handle of handles) assert.equal(await handle.evaluate(input => input.value), '', 'detached sensitive inputs must also be cleared');

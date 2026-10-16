@@ -54,7 +54,7 @@ async function enter(page, target, value) {
 async function unlock(page) {
   await enter(page, panel(page).getByLabel('Unlock password', { exact: true }), password);
   await activate(page, panel(page).getByRole('button', { name: 'Unlock vault', exact: true }));
-  await expect(panel(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+  await expect(panel(page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
 }
 
 Given('I open Secrets settings using only the keyboard', async function () {
@@ -81,7 +81,7 @@ When('I create and replace a vault credential using only the keyboard', { timeou
   const recoveryHandle = await recovery.elementHandle();
   assert.equal((await readStorage(page)).snapshot, null);
   await activate(page, settings.getByRole('button', { name: 'Save recovery key', exact: true }));
-  await expect(settings.getByText('Vault unlocked', { exact: true })).toBeVisible();
+  await expect(settings.getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
   assert.equal(await recoveryHandle.evaluate(element => element.textContent), '');
 
   await enter(page, settings.getByLabel('Confirm action password', { exact: true }), password);
@@ -130,13 +130,13 @@ Then('keyboard cancellation clears credential and recovery inputs without saving
   const recovery = settings.locator('pre[aria-label="Generated recovery key"]');
   await expect(recovery).toHaveText(/^[A-Za-z0-9+/]{171}=$/);
   const pendingRecovery = await recovery.textContent(), recoveryHandle = await recovery.elementHandle();
-  await activate(page, settings.getByRole('button', { name: 'Lock vault', exact: true }));
+  await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   await expect(settings.getByText('Vault locked', { exact: true })).toBeVisible();
   assert.equal(await recoveryHandle.evaluate(element => element.textContent), '');
   assert.deepEqual(await readStorage(page), this.keyboardSaved);
   await unlock(page);
   await expect(settings.locator('li').filter({ hasText: 'Keyboard replacement' })).toHaveCount(1);
-  await activate(page, settings.getByRole('button', { name: 'Lock vault', exact: true }));
+  await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   await expect(settings.getByText('Vault locked', { exact: true })).toBeVisible();
   await expect(settings.getByLabel('Unlock password', { exact: true })).toHaveValue('');
 

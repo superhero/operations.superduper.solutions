@@ -41,12 +41,12 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       assert.ok(passkey);
       // Positive control with this same authenticator: a functioning original-RP
       // assertion must unlock the real vault before the different-RP attempt.
-      await panel(page).getByRole('button', { name: 'Lock vault', exact: true }).click();
+      await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
       await panel(page).getByRole('combobox', { name: 'Unlock method', exact: true }).click();
       await page.getByRole('option', { name: 'Passkey', exact: true }).click();
       await expect(panel(page).getByLabel('Unlock password', { exact: true })).toHaveCount(0);
       await panel(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
-      await expect(panel(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+      await expect(panel(page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
       await expect(panel(page).locator('li').getByText(label, { exact: true })).toBeVisible();
       const enrolled = (await cdp.send('WebAuthn.getCredentials', { authenticatorId })).credentials;
       assert.equal(enrolled.length, 1); assert.equal(enrolled[0].rpId, 'localhost');
@@ -128,7 +128,7 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       await input.fill(method === 'password' ? password : this.uiRecovery);
       const inputHandle = await input.elementHandle();
       await panel(page).getByRole('button', { name: 'Authenticate and import vault', exact: true }).click();
-      await expect(panel(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+      await expect(panel(page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
       await expect(panel(page).locator('li').getByText(label, { exact: true })).toBeVisible();
       assert.equal(await inputHandle.evaluate(element => element.value), '');
       await inputHandle.dispose();

@@ -287,18 +287,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 {/snippet}
 
 <section bind:this={panel} class="secrets-settings" aria-label="Secrets vault">
+  {#if !status.unlocked}
   <div class="toolbar vault-status">
     <div class="vault-status-message">
       <MaterialIcon name="brightness_alert" size={18} />
-      <p class="help"><strong>{ready ? status.exists ? status.unlocked ? "Vault unlocked" : "Vault locked" : "No vault has been created:" : "Secrets vault"}</strong>{#if ready && !status.exists}{" "}Use a vault to help protect stored data required as input in the workflows.{/if}</p>
+      <p class="help"><strong>{ready ? status.exists ? "Vault locked" : "No vault has been created:" : "Secrets vault"}</strong>{#if ready && !status.exists}{" "}Use a vault to help protect stored data required as input in the workflows.{/if}</p>
     </div>
-    {#if status.unlocked || busy}
+    {#if busy}
       <div class="actions">
-        {#if status.unlocked}<button type="button" onclick={() => void manualLock()}>Lock vault</button>
-        {:else}<button type="button" onclick={() => void manualLock()}>Cancel action</button>{/if}
+        <button type="button" onclick={() => void manualLock()}>Cancel action</button>
       </div>
     {/if}
   </div>
+  {/if}
   <div class="vault-info" role="note">
     <MaterialIcon name="brightness_alert" size={18} />
     <p class="help"><strong>Vault storage is encrypted:</strong> Data in the vault is stored locally in this browser profile for this site, encrypted.</p>
