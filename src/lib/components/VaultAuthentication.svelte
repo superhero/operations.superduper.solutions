@@ -17,14 +17,23 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let methodId = $state("");
   let secretInput = $state.raw<HTMLInputElement>();
   let pendingPasskey = false;
+  const automatic = $derived(label === "Unlock");
+  let usePasskey = $state(false);
+  let automaticRecovery = $state(false);
   const names = { password: "Password", recovery: "Recovery key", passkey: "Passkey" };
   const options = $derived(status.methods.map((method, index) => ({ value: method.id,
     label: `${names[method.kind]}${status.methods.filter(item => item.kind === method.kind).length > 1 ? ` ${index + 1}` : ""}` })));
   const method = $derived(status.methods.find(item => item.id === methodId));
 
-  export function clear(): void { if (secretInput) secretInput.value = ""; }
+  export function clear(): void { if (secretInput) secretInput.value = ""; automaticRecovery = false; }
 
   export async function proof(): Promise<UnlockProof> {
+    if (automatic && !usePasskey) {
+      const secret = secretInput?.value ?? "";
+      clear();
+      if (!secret) throw new VaultError("AUTHENTICATION");
+      return { methodId: "auto", secret };
+    }
     const selected = method;
     if (!selected) throw new VaultError("AUTHENTICATION");
     if (selected.kind === "passkey") {
@@ -52,6 +61,23 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <div class="vault-authentication">
+  {#if automatic}
+    {#if !usePasskey}
+      <input type="hidden" name="username" autocomplete="username" value="Operations vault" />
+      <label for={`${id}-automatic-secret`}>Password or recovery key</label>
+      <input bind:this={secretInput} id={`${id}-automatic-secret`} type="password" name="vault-password"
+        aria-label="Unlock password or recovery key" autocomplete={automaticRecovery ? "off" : "current-password"}
+        data-1p-ignore={automaticRecovery ? true : undefined} data-lpignore={automaticRecovery ? "true" : undefined}
+        oninput={event => { automaticRecovery = event.currentTarget.value.length === 172; }}
+        data-vault-sensitive spellcheck="false" autocapitalize="off" {disabled} />
+      {#each status.methods.filter(item => item.kind === "passkey") as passkey, index}
+        <button type="button" {disabled} onclick={() => { clear(); methodId = passkey.id; usePasskey = true; }}>Use passkey{index > 0 ? ` ${index + 1}` : ""}</button>
+      {/each}
+    {:else}
+      <p>Your authenticator will ask you to verify this action.</p>
+      <button type="button" {disabled} onclick={() => { clear(); usePasskey = false; }}>Use password or recovery key</button>
+    {/if}
+  {:else}
   <label for={`${id}-method`}>{label} method</label>
   <FieldSelect id={`${id}-method`} label={`${label} method`} value={methodId} {options} includePlaceholder={false} {disabled} {portalZIndex}
     onValueChange={value => { clear(); methodId = value; }} />
@@ -72,6 +98,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {:else}
     <p>No unlock method is available.</p>
   {/if}
+  {/if}
 </div>
 
 <style>
@@ -79,5 +106,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   label { font-size: 12px; font-weight: 700; }
   input { min-width: 0; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
   :global(.vault-authentication .field-select-trigger) { border-radius: 4px; font-size: 12px; }
+  button { justify-self: start; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-background); color: inherit; font: inherit; cursor: pointer; }
   p { margin: 0; font-size: 12px; line-height: 1.5; }
 </style>

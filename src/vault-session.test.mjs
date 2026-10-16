@@ -555,3 +555,22 @@ Then('replacement exports authenticate locked vaults and guard against interveni
   await empty.session.restore(incoming, source.proof, empty.proof, emptyExport);
   assert.equal((await empty.session.list()).length, 1);
 });
+
+Then('automatic vault unlocking tries matching saved methods and retains long passwords', kdfStep, async () => {
+  const fixture = await created(), { session } = fixture;
+  await session.addMethod(fixture.proof, { kind: 'password', secret: 'second-password' });
+  const longPassword = 'p'.repeat(172);
+  await session.addMethod(fixture.proof, { kind: 'password', secret: longPassword });
+  const secondRecovery = await session.prepareRecovery(fixture.proof);
+  await session.addMethod(fixture.proof, { kind: 'recovery', secret: secondRecovery });
+  for (const secret of [password, 'second-password', longPassword, fixture.recovery, secondRecovery]) {
+    session.lock();
+    const proof = { methodId: 'auto', secret };
+    assert.equal((await session.unlock(proof)).unlocked, true);
+    assert.notEqual(proof.methodId, 'auto');
+  }
+  session.lock();
+  await assert.rejects(session.unlock({ methodId: 'auto', secret: 'wrong' }), code('AUTHENTICATION'));
+  await assert.rejects(session.unlock({ methodId: 'auto', secret: randomBase64(32) }), code('AUTHENTICATION'));
+  assert.equal((await session.status()).unlocked, false);
+});

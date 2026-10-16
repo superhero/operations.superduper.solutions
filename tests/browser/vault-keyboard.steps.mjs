@@ -52,7 +52,7 @@ async function enter(page, target, value) {
   await expect(target).toHaveValue(value);
 }
 async function unlock(page) {
-  await enter(page, panel(page).getByLabel('Unlock password', { exact: true }), password);
+  await enter(page, panel(page).getByLabel('Unlock password or recovery key', { exact: true }), password);
   await activate(page, panel(page).getByRole('button', { name: 'Unlock vault', exact: true }));
   await expect(panel(page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
 }
@@ -133,7 +133,7 @@ Then('keyboard cancellation clears credential and recovery inputs without saving
   await expect(settings.locator('li').filter({ hasText: 'Keyboard replacement' })).toHaveCount(1);
   await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   await expect(settings.getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
-  await expect(settings.getByLabel('Unlock password', { exact: true })).toHaveValue('');
+  await expect(settings.getByLabel('Unlock password or recovery key', { exact: true })).toHaveValue('');
 
   const canaries = [password, originalSecret, replacementSecret, cancelledSecret, this.keyboardRecovery, pendingRecovery];
   const found = await page.evaluate(async canaries => (await import('/vault-storage-fixture.js')).persistedCanaries(canaries), canaries);

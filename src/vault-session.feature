@@ -61,3 +61,6 @@ Feature: Browser vault session lifecycle
 
   Scenario: Replacement exports preserve the exact current vault
     Then replacement exports authenticate locked vaults and guard against intervening changes
+
+  Scenario: Unlock input selects its method automatically
+    Then automatic vault unlocking tries matching saved methods and retains long passwords

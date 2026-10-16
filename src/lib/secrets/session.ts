@@ -89,11 +89,26 @@ export class VaultSession {
   }
 
   private async authenticate(snapshot: VaultSnapshot, proof: UnlockProof, extractable = false): Promise<CryptoKey> {
-    const envelope = snapshot.envelopes.find(item => item.id === proof.methodId);
-    if (!envelope) throw new VaultError("AUTHENTICATION");
-    const key = await unwrapVaultKey(envelope.wrappedKey, await wrappingKey(envelope, proof), context(snapshot, envelope), extractable);
-    await authenticateManifest(snapshot, key);
-    return key;
+    const automaticSecret = proof.methodId === "auto" && "secret" in proof ? proof.secret : undefined;
+    const automatic = automaticSecret !== undefined;
+    const candidates = automatic ? [
+      ...snapshot.envelopes.filter(item => item.kind === "recovery" && automaticSecret?.length === 172),
+      ...snapshot.envelopes.filter(item => item.kind === "password"),
+    ] : snapshot.envelopes.filter(item => item.id === proof.methodId);
+    const generation = this.generation;
+    for (const envelope of candidates) {
+      this.guard(generation);
+      try {
+        const key = await unwrapVaultKey(envelope.wrappedKey, await wrappingKey(envelope, proof), context(snapshot, envelope), extractable);
+        await authenticateManifest(snapshot, key);
+        this.guard(generation);
+        if (automatic) proof.methodId = envelope.id;
+        return key;
+      } catch (error) {
+        if (!automatic || !(error instanceof VaultError) || !["AUTHENTICATION", "INVALID"].includes(error.code)) throw error;
+      }
+    }
+    throw new VaultError("AUTHENTICATION");
   }
 
   async unlock(proof: UnlockProof): Promise<VaultStatus> {
