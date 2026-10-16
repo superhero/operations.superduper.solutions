@@ -303,7 +303,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </section>
 
 <style>
-  .schema-settings { display: grid; gap: 12px; min-width: 0; padding: 16px; color: var(--color-catalog-active-foreground); container-type: inline-size; }
+  .schema-settings { --color-secondary-hover: var(--color-background); --color-secondary-hover-foreground: var(--color-foreground); display: grid; gap: 12px; min-width: 0; padding: 16px; color: var(--color-catalog-active-foreground); container-type: inline-size; }
   .schema-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
   .schema-upload-guidance { flex: 1 1 240px; min-width: 0; margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .schema-status { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
@@ -323,6 +323,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-card { position: relative; }
   .schema-card :global(.schema-disclosure > summary) { padding-left: 12px; font-size: 12px; }
   .schema-card :global(.schema-disclosure > summary > .schema-chevron) { width: auto; margin-left: 0; }
+  .schema-settings :global(.schema-action:is(:hover,:focus-visible):enabled) { background: transparent; color: inherit; }
   .schema-card.dragging { opacity: 0.5; }
   .schema-actions :global(.schema-drag-handle) { cursor: grab; }
   .schema-actions :global(.schema-drag-handle:active) { cursor: grabbing; }
@@ -341,6 +342,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-delete p { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .confirmation-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
   @container (max-width: 430px) { .schema-metadata { grid-template-columns: 1fr; } }
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .schema-settings :global(.schema-action:hover:enabled), .schema-enabled:hover:enabled { transform: scale(min(1.10, var(--hover-scale, 1.10))); }
+  }
   @media (prefers-reduced-motion: reduce) { .schema-name, .default-switch, .default-switch > span { transition: none; } }
   @media (forced-colors: active) { .schema-name:not(:focus-within) { outline-style: none; } }
 </style>
