@@ -188,7 +188,7 @@ async function openSecrets(page) {
   const disclosure = page.locator('summary[aria-label="Secrets"]');
   if (await disclosure.getAttribute('aria-expanded') !== 'true') await disclosure.click();
   await expect(settings(page)).toBeVisible();
-  await expect(settings(page).getByRole('button', { name: 'Choose export to restore', exact: true })).toBeEnabled();
+  await expect(settings(page).getByRole('button', { name: 'Import vault', exact: true })).toBeEnabled();
 }
 async function unlockUI(page, password = canaries[0]) {
   await settings(page).getByLabel('Unlock password', { exact: true }).fill(password);
@@ -423,7 +423,7 @@ Then('a downloaded vault backup restores with recovery in a fresh application co
     const selector = settings(page).getByRole('combobox', { name: 'Export method', exact: true });
     await selector.click(); await page.getByRole('option', { name: 'Recovery key', exact: true }).click();
     await settings(page).getByLabel('Export recovery key', { exact: true }).fill(this.uiRecovery);
-    await settings(page).getByRole('button', { name: 'Authenticate and replace vault', exact: true }).click();
+    await settings(page).getByRole('button', { name: 'Authenticate and import vault', exact: true }).click();
     await expect(settings(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
     await expect(settings(page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
     await expect(settings(page).getByRole('status')).toContainText('Approve destinations again');

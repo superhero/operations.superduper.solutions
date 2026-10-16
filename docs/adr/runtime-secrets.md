@@ -25,7 +25,7 @@ A random AES-256-GCM key encrypts credentials, labels and destination grants.
 Each encryption uses a fresh 96-bit IV and authenticates its format, vault,
 record, revision and key epoch. An encrypted inventory authenticates the exact
 records and unlock envelopes. Selective rollback fails authentication; a complete
-valid older export cannot be distinguished from an intentional restore locally.
+valid older export cannot be distinguished from an intentional import locally.
 
 Independent password, recovery and optional PRF-capable passkey envelopes wrap
 the same key. Passwords use pinned Argon2id v19: 64 MiB, three iterations,
@@ -78,7 +78,7 @@ the vault unrecoverable, including its encrypted exports. Neither browser storag
 nor a synced passkey synchronizes the vault to another origin or device. Passkeys
 remain tied to their relying-party domain, while browser storage is isolated by
 origin. Password or recovery access is needed when the original passkey's
-relying-party domain is unavailable. Restore authenticates
+relying-party domain is unavailable. Import authenticates
 the complete snapshot before atomic replacement and removes imported grants.
 
 Password replacement rewraps the existing key. Full key rotation re-encrypts

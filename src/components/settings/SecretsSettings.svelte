@@ -234,7 +234,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try {
       if (status.exists) { if (!authentication) throw new VaultError("AUTHENTICATION"); currentProof = await authentication.proof(); }
       await vaultCall("restore", [restorePayload, proof, currentProof]);
-      clearRestore(); await refresh(); notice = "Export restored. Approve destinations again before using its credentials.";
+      clearRestore(); await refresh(); notice = "Vault imported. Approve destinations again before using its credentials.";
     } finally { wipe(proof); if (currentProof) wipe(currentProof); }
   }
   async function saveIdle(enabled: boolean, minutes: number): Promise<void> {
@@ -272,7 +272,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <p class="help"><strong>Lost unlock methods can not be recovered:</strong> the vault storage is managed locally in the user’s browser.</p>
   </div>
   <div class="vault-info" role="note">
-    <p class="help"><strong>Encrypted exports:</strong> you must retain the unlock method to be able to restore an export.</p>
+    <p class="help"><strong>Encrypted exports:</strong> you must retain the unlock method to be able to import a vault.</p>
   </div>
   {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if progress || notice}<p class="notice" role="status">{progress || notice}</p>{/if}
@@ -392,15 +392,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if ready}
     <div class="card">
       <h3>Encrypted vault exports</h3>
-      <p class="help">Restoring replaces this browser's vault and removes restored destination approvals. Exports are encrypted; keep their password, recovery key or passkey available.</p>
+      <p class="help">Importing replaces any existing vault in this browser and removes imported destination approvals. Exports are encrypted; keep their password, recovery key or passkey available.</p>
       <div class="actions">{#if status.unlocked}<button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}>Export encrypted vault</button>{/if}
-        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}>Choose export to restore</button></div>
+        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}>Import vault</button></div>
       <input bind:this={restoreInput} type="file" accept=".json,application/json" aria-label="Encrypted vault export" onchange={event => void selectRestore(event)} hidden />
       {#if restoreStatus}
         <p class="destination">Selected export: {restoreFilename}</p>
         <VaultAuthentication bind:this={restoreAuthentication} status={restoreStatus} disabled={busy} label="Export" />
         {#if status.exists}<p class="help">Also authenticate the current vault using the form above before replacing it.</p>{/if}
-        <div class="actions"><button type="button" disabled={busy} onclick={() => run("Restoring encrypted export…", restore)}>Authenticate and replace vault</button>
+        <div class="actions"><button type="button" disabled={busy} onclick={() => run(status.exists ? "Replacing vault…" : "Importing vault…", restore)}>{status.exists ? "Authenticate and replace vault" : "Authenticate and import vault"}</button>
           <button type="button" disabled={busy} onclick={() => { clearInputs(); clearRestore(); }}>Cancel</button></div>
       {/if}
     </div>

@@ -16,7 +16,7 @@ async function openSecrets(page) {
   await setMode(page, 'settings');
   const disclosure = page.locator('summary[aria-label="Secrets"]');
   if (await disclosure.getAttribute('aria-expanded') !== 'true') await disclosure.click();
-  await expect(panel(page).getByRole('button', { name: 'Choose export to restore', exact: true })).toBeEnabled();
+  await expect(panel(page).getByRole('button', { name: 'Import vault', exact: true })).toBeEnabled();
 }
 
 Then('its native passkey cannot restore on another RP domain before I explicitly choose {string}',
@@ -107,7 +107,7 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       let assertions = 0;
       const asserted = () => { assertions++; };
       cdp.on('WebAuthn.credentialAsserted', asserted);
-      await panel(page).getByRole('button', { name: 'Authenticate and replace vault', exact: true }).click();
+      await panel(page).getByRole('button', { name: 'Authenticate and import vault', exact: true }).click();
       await expect(panel(page).getByRole('alert')).toContainText('cancelled');
       cdp.off('WebAuthn.credentialAsserted', asserted);
       const attempt = await page.evaluate(() => globalThis.vaultOriginAttempt);
@@ -127,7 +127,7 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       const input = panel(page).getByLabel(method === 'password' ? 'Export password' : 'Export recovery key', { exact: true });
       await input.fill(method === 'password' ? password : this.uiRecovery);
       const inputHandle = await input.elementHandle();
-      await panel(page).getByRole('button', { name: 'Authenticate and replace vault', exact: true }).click();
+      await panel(page).getByRole('button', { name: 'Authenticate and import vault', exact: true }).click();
       await expect(panel(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
       await expect(panel(page).locator('li').getByText(label, { exact: true })).toBeVisible();
       assert.equal(await inputHandle.evaluate(element => element.value), '');
