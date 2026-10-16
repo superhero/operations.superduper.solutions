@@ -1818,6 +1818,16 @@ merge: include integrated search refinements in settings branch
 
 ```
 
+<!-- changelog-commit:94da7480379bdb9dbf0ca5de079bee64932db5f0 -->
+### Commit [`94da748`](https://github.com/superhero/operations.superduper.solutions/commit/94da7480379bdb9dbf0ca5de079bee64932db5f0)
+
+```text
+fix(settings): satisfy strict optional component prop types
+
+Omit the tooltip disabled prop when inheriting provider settings, and allow explicit undefined for conditional authentication labels and snippets. This preserves tooltip behavior while fixing the three CI type errors.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.47
