@@ -1828,6 +1828,14 @@ Omit the tooltip disabled prop when inheriting provider settings, and allow expl
 
 ```
 
+<!-- changelog-commit:1255f75470a042f34a403b7b1bbc051507c6737d -->
+### Commit [`1255f75`](https://github.com/superhero/operations.superduper.solutions/commit/1255f75470a042f34a403b7b1bbc051507c6737d)
+
+```text
+test(secrets): cover non-string recovery key rejection
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.47
