@@ -5,6 +5,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
   import { onMount, tick } from "svelte";
+  import FieldInteger from "$lib/components/FieldInteger.svelte";
   import FieldSelect from "$lib/components/FieldSelect.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import VaultAuthentication from "$lib/components/VaultAuthentication.svelte";
@@ -23,7 +24,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let status = $state<VaultStatus>(emptyStatus);
   let records = $state<CredentialSummary[]>([]);
   let preferences = $state({ ...defaultVaultPreferences });
-  let idleMinutes = $state(defaultVaultPreferences.idleLockMinutes);
+  let idleMinutes = $state(String(defaultVaultPreferences.idleLockMinutes));
   const maximumIdleMinutes = 7 * 24 * 60;
   let ready = $state(false);
   let busy = $state(false);
@@ -244,12 +245,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   async function saveIdle(enabled: boolean, minutes: number): Promise<void> {
     await saveVaultPreferences({ idleLockEnabled: enabled, idleLockMinutes: minutes });
     preferences = { idleLockEnabled: enabled, idleLockMinutes: minutes };
-    idleMinutes = minutes;
+    idleMinutes = String(minutes);
   }
 
   onMount(() => {
     const unsubscribe = subscribeVaultLock(locked);
-    void run("Loading secrets vault…", async () => { preferences = await loadVaultPreferences(); idleMinutes = preferences.idleLockMinutes; await refresh(); ready = true; });
+    void run("Loading secrets vault…", async () => { preferences = await loadVaultPreferences(); idleMinutes = String(preferences.idleLockMinutes); await refresh(); ready = true; });
     return () => { disposed = true; generation++; unsubscribe(); if (busy || recoveryMode) lockVaultLocally(); clearInputs(); clearRecovery(); clearRestore(); };
   });
 </script>
@@ -423,14 +424,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="card">
       <label class="checkbox"><input type="checkbox" checked={preferences.idleLockEnabled} disabled={busy}
         onchange={event => void run("Saving lock preference…", () => saveIdle(event.currentTarget.checked, preferences.idleLockMinutes))} />Lock after inactivity</label>
-      <label>{idleMinutes.toLocaleString()} minutes
-        <input class="idle-range" type="range" min="0" max="1" step="any"
-          value={Math.log(idleMinutes) / Math.log(maximumIdleMinutes)}
-          aria-valuemin={1} aria-valuemax={maximumIdleMinutes} aria-valuenow={idleMinutes}
-          aria-valuetext={`${idleMinutes.toLocaleString()} minutes`} disabled={busy || !preferences.idleLockEnabled}
-          oninput={event => { idleMinutes = Math.round(Math.exp(event.currentTarget.valueAsNumber * Math.log(maximumIdleMinutes))); }}
-          onchange={() => void run("Saving lock preference…", () => saveIdle(preferences.idleLockEnabled, idleMinutes))} />
-      </label>
+      <div class="idle-control">
+        <FieldInteger id="vault-idle-minutes" label="Minutes of inactivity" value={idleMinutes}
+          minimum={1} maximum={maximumIdleMinutes} required disabled={busy || !preferences.idleLockEnabled}
+          onValueChange={value => { idleMinutes = value; }}
+          onValueCommit={() => {
+            const minutes = Number(idleMinutes);
+            if (Number.isInteger(minutes) && minutes >= 1 && minutes <= maximumIdleMinutes)
+              void run("Saving lock preference…", () => saveIdle(preferences.idleLockEnabled, minutes));
+          }} />
+        <span aria-hidden="true">min</span>
+      </div>
       <p class="help">Idle locking is optional. Closing or reloading this page always locks the vault.</p>
     </div>
   {/if}
@@ -451,7 +455,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   h3 { font-size: 14px; } h4, label, strong { font-size: 12px; }
   label { display: grid; gap: 8px; font-weight: 700; }
   input:not([type="checkbox"]), textarea { box-sizing: border-box; min-width: 0; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
-  input.idle-range { padding: 0; accent-color: var(--color-primary); cursor: pointer; }
+  .idle-control { display: flex; align-items: stretch; min-width: 0; border-radius: 4px; background: var(--color-background); outline: 2px solid transparent; outline-offset: 2px; transition: outline-color 180ms ease-in; }
+  .idle-control:focus-within, .idle-control:hover:has(:enabled) { outline-color: var(--color-ring); }
+  .idle-control :global(.field-integer) { flex: 1; min-width: 0; padding-right: 4px; }
+  .idle-control :global(.field-integer :is(.integer-range, .integer-value):is(:hover, :focus-visible)) { outline: none; }
+  .idle-control > span { display: flex; align-items: center; padding: 0 8px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .idle-control :global(.integer-range) { transition: transform 180ms ease-in; }
+    .idle-control :global(.integer-range:hover:enabled) { transform: scale(1.10); }
+  }
   textarea { resize: vertical; overflow-wrap: anywhere; font-family: monospace; }
   :global(.secrets-settings .field-select-trigger) { border-radius: 4px; font-size: 12px; }
   button { width: fit-content; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; cursor: pointer; }
