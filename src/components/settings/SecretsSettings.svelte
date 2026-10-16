@@ -366,6 +366,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {/if}
 
   {#if ready && status.unlocked}
+    {#if records.length}
     <div class="card">
       <ul class="records">
         {#each records as item (item.id)}
@@ -376,6 +377,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           </li>
         {/each}
       </ul>
+    </div>
+    {/if}
+    <div class="card">
       <form class="subform" onsubmit={event => { event.preventDefault(); void run("Saving credential…", saveCredential); }}>
         {#if credentialId}<h4>Replace credential</h4>{/if}
         <div class="credential-fields">
@@ -537,7 +541,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .credential-save { display: flex; align-items: center; justify-content: center; gap: 6px; height: 40px; }
   .credential-save-label { display: none; }
   @media (max-width: 640px) { .credential-fields { grid-template-columns: minmax(0, 1fr); } .credential-save { width: 100%; } .credential-save-label { display: inline; } }
-  .subform { padding-top: 12px; border-top: 1px solid var(--color-background); }
+
   h4, p { margin: 0; }
   h4, label, strong { font-size: 12px; }
   label { display: grid; gap: 8px; font-weight: 700; }
