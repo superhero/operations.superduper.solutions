@@ -448,12 +448,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </form>
     {/if}
 
-    <div class="card">
-      <h3>Unlock methods</h3>
-      <ul class="records">{#each status.methods as method, index (method.id)}<li class="record-heading"><span>{methodNames[method.kind]} {index + 1}</span>
-        <button type="button" disabled={busy || status.methods.length < 2} onclick={() => run("Removing unlock method…", async () => { await fresh(proof => vaultCall("removeMethod", [proof, method.id])); await refresh(); })}>Remove method</button></li>{/each}</ul>
-      <p class="help">Use a different retained method to authenticate removal. Removing a method does not change previously downloaded exports.</p>
-    </div>
     <div class="card rotation-card">
       <div class="vault-password-row">
         <button type="button" disabled={busy} aria-expanded={showPassword} aria-controls={`${createFormId}-password`}
