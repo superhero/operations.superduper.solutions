@@ -397,8 +397,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .workflow-default:focus-visible { outline-color: var(--color-ring); }
   .workflow-default-pair > .workflow-default { background: var(--color-background); }
   .grid-size-setting { display: grid; align-content: center; gap: 8px; min-width: 0; padding: 10px 12px; border-radius: 4px; background: var(--color-background); color: var(--color-catalog-foreground); font-size: 12px; font-weight: 700; }
-  .grid-size-control { display: flex; align-items: center; gap: 8px; min-width: 0; --field-background: var(--color-background); --field-foreground: var(--color-catalog-foreground); }
-  .grid-size-control :global(.field-integer) { flex: 1; min-width: 0; }
+  .grid-size-control { display: flex; align-items: stretch; gap: 0; min-width: 0; --field-background: var(--color-background); --field-foreground: var(--color-catalog-foreground); }
+  .grid-size-control :global(.field-integer) { flex: 1; min-width: 0; padding-right: 4px; }
+  .grid-size-control > span { display: flex; align-items: center; flex-shrink: 0; padding: 0 8px; border-radius: 0 4px 4px 0; background: var(--color-muted-foreground); color: var(--color-background); }
   .grid-size-error { color: var(--color-error-foreground); font-weight: 400; }
   .default-switch { flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-muted-foreground); transition: background-color 180ms ease-in, transform 180ms ease-in; }
   .default-switch > span { display: block; width: 18px; height: 18px; border-radius: 2px; background: var(--color-surface); transform: translateX(0); transition: transform 180ms ease-in, background-color 180ms ease-in; }
