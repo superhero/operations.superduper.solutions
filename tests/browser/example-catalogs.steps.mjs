@@ -142,7 +142,7 @@ Then("a mixed workflow passes an HTTP response array to the next schema", async 
   const inputField = input.data.fields.find(field => field.label === "Items");
   const run = await openRun(page, [example, live], [{ id: "array-mapping", kind: "mapping", source: output.id,
     sourceHandle: outputField.id, target: input.id, targetHandle: inputField.id }]);
-  await expect(run).toContainText("Live example: https://example.com");
+  await expect(run).toContainText("Server: https://example.com");
   await fillRun(page, "Example array", '["shared","values"]');
   await submitRun(page);
   assert.equal(requests.length, 0);

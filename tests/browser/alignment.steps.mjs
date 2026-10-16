@@ -125,8 +125,8 @@ Then('Unicode titles and decimal estimates can be corrected inline', async funct
     const action = workspace(page).getByRole('button', { name: 'Quit', exact: true });
     for (const hovered of [false, true]) {
       if (hovered) await action.hover(); else await page.mouse.move(0, 0);
-      // Filled primary actions retain their semantic roles on hover in both themes.
-      await expectThemeColors(action, { backgroundColor: '--color-foreground', color: '--color-background' });
+      // Quit retains its badge palette on hover in both themes.
+      await expectThemeColors(action, { backgroundColor: '--color-badge-background', color: '--color-badge-foreground' });
     }
   }
   await page.setViewportSize({ width: 320, height: 568 });
