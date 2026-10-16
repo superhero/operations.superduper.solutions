@@ -2,6 +2,32 @@
 
 ## Latest
 
+<!-- changelog-commit:90d9b39dcc0a46d623f8dc2b32008320ad923d01 -->
+### Commit [`90d9b39`](https://github.com/superhero/operations.superduper.solutions/commit/90d9b39dcc0a46d623f8dc2b32008320ad923d01)
+
+```text
+fix(startup): recover from failed development module loads
+
+Catch application import failures before the settings, workers and error
+reporter load. Retry recognized development module-fetch failures once per
+page, with a session guard to prevent reload loops; otherwise expose the
+original error and a manual Reload action. Preserve mounted applications.
+
+Keep startup orchestration behind an explicit initializer and let development
+error overlays appear above the loader. Add focused Cucumber coverage for
+storage guards and real Vite module failures. Carry the existing orchestration
+coverage scope forward and update the scenario count using prior CI evidence
+plus the new passing focused cases; full regression remains with CI.
+
+```
+
+<!-- changelog-commit:b86a382e44b03e1736c09bfe3a2c6a47a45fb20d -->
+### Commit [`b86a382`](https://github.com/superhero/operations.superduper.solutions/commit/b86a382e44b03e1736c09bfe3a2c6a47a45fb20d)
+
+```text
+Merge branch 'develop' into bugfix/startup-module-recovery
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.47

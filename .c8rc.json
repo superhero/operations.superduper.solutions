@@ -4,6 +4,7 @@
   "include": ["src/**/*.ts", "src/lib/flow-routing/*.js"],
   "exclude": [
     "src/index.ts",
+    "src/application.ts",
     "src/dev/**",
     "src/**/*.d.ts",
     "src/lib/components/ui/**",

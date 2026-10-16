@@ -1,58 +1,69 @@
-import { mount, tick, unmount } from "svelte";
-import { startApplication } from "./bootstrap.ts";
-import { loadSettings } from "./lib/app-settings.ts";
-import { applyLocaleSettings } from "./lib/datetime-state.ts";
-import { finishStartup, reportStartup } from "./lib/startup-progress.ts";
-import { requestPersistentStorage } from "./lib/storage-persistence.ts";
-import { startMetricsRecorder } from "./lib/metrics-recorder.ts";
-import { startErrorHistory } from "./lib/error-history.ts";
-import { prepareSavedStorage, loadSchemaLibrary } from "./lib/schema-library.ts";
+// Copyright (C) 2026 Erik Landvall
+// SPDX-License-Identifier: AGPL-3.0-only
+// See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-startErrorHistory();
-reportStartup("application");
-// Keep the CSS loader visible while developing it; remove the query to start.
-if (import.meta.env.DEV && new URLSearchParams(location.search).get("dev-loading") === "1") {
-  await new Promise<never>(() => {});
+// Keep this entry free of static imports: a failed dependency must reach the
+// recovery handler before the application or its diagnostics can initialize.
+type StartupHost = {
+  document: Document;
+  location: Pick<Location, "pathname" | "search" | "reload">;
+  readonly sessionStorage: Pick<Storage, "getItem" | "setItem" | "removeItem">;
+  console: Pick<Console, "error">;
+};
+
+export async function loadApplication(load: () => Promise<unknown>, host: StartupHost, development = false): Promise<void> {
+  const retryKey = "v1/startup/module-reload";
+  const clearRetry = () => {
+    try { host.sessionStorage.removeItem(retryKey); }
+    catch { /* Startup also works when browser storage is unavailable. */ }
+  };
+  try {
+    await load();
+    clearRetry();
+  } catch (error) {
+    host.console.error("Application startup failed:", error);
+    const app = host.document.getElementById("app");
+    const moduleFailure = error instanceof TypeError &&
+      /Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed/i.test(error.message);
+    if (development && moduleFailure && !app?.hasChildNodes()) {
+      try {
+        const page = host.location.pathname + host.location.search;
+        if (host.sessionStorage.getItem(retryKey) !== page) {
+          // Record before navigating, so persistent failures cannot reload forever.
+          host.sessionStorage.setItem(retryKey, page);
+          host.location.reload();
+          return;
+        }
+      } catch { /* Without a durable retry guard, offer only a manual reload. */ }
+    }
+
+    const loader = host.document.getElementById("startup-status");
+    if (!loader) return;
+    const label = host.document.getElementById("startup-stage");
+    if (label) {
+      label.getAnimations().forEach(animation => animation.cancel());
+      label.style.animation = "none";
+      label.style.opacity = "1";
+      label.textContent = "Loading failed";
+    }
+    host.document.getElementById("startup-recovery")?.remove();
+    const recovery = host.document.createElement("div");
+    recovery.id = "startup-recovery";
+    recovery.setAttribute("role", "alert");
+    const message = host.document.createElement("p");
+    message.textContent = error instanceof Error ? error.message : String(error);
+    const reload = host.document.createElement("button");
+    reload.type = "button";
+    reload.textContent = "Reload";
+    reload.addEventListener("click", () => { clearRetry(); host.location.reload(); });
+    recovery.append(message, reload);
+    loader.append(recovery);
+  }
 }
 
-try {
-  if (import.meta.env.DEV) {
-    const { initErrorOverlayContext } = await import("./dev/error-overlay-context.ts");
-    initErrorOverlayContext();
-  }
-  void requestPersistentStorage();
-  reportStartup("settings-storage");
-  await prepareSavedStorage();
-  const [{ default: App }, { palettes }] = await Promise.all([
-    import("./App.svelte"), import("./components/SettingsWorkspace.svelte"),
-  ]);
-  const settings = await loadSettings(palettes.map(palette => palette.id));
-  reportStartup("apply-settings");
-  document.documentElement.dataset.theme = settings.theme;
-  document.documentElement.dataset.palette = settings.palette;
-  document.documentElement.classList.toggle("dark", settings.theme === "dark");
-  applyLocaleSettings(settings.locale);
-  reportStartup("schemas");
-  await loadSchemaLibrary();
-  reportStartup("interface");
-  startApplication(document, App, (component, options) => mount(component, { ...options, props: {
-    initialWorkflowDefaults: settings.workflowDefaults,
-    initialDeveloperToolbar: settings.developerToolbar,
-    initialEvaluationDetails: settings.evaluationDetails,
-    initialLocale: settings.locale,
-    initialSettingsError: settings.storageError,
-  } }));
-  await tick();
-  startMetricsRecorder();
-  if (settings.storageError) finishStartup(settings.storageError);
-
-  if (import.meta.env.DEV) {
-    const { initToolbarTheme } = await import("./dev/toolbar-theme.ts");
-    initToolbarTheme();
-    const { default: DevTooltips } = await import("./dev/DevTooltips.svelte");
-    const tooltips = mount(DevTooltips, { target: document.body });
-    import.meta.hot?.dispose(() => { void unmount(tooltips); });
-  }
-} catch (error) {
-  finishStartup(error);
+if (typeof window !== "undefined") {
+  void loadApplication(async () => {
+    const { initializeApplication } = await import("./application.ts");
+    await initializeApplication();
+  }, window, import.meta.env.DEV);
 }
