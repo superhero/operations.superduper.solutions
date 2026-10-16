@@ -405,8 +405,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   {#if ready && status.unlocked}
     <div class="card">
-      <h3>Credentials</h3>
-      {#if !records.length}<p class="help">No credentials saved.</p>{/if}
       <ul class="records">
         {#each records as item (item.id)}
           <li><div class="record-heading"><div><strong>{item.label}</strong><small>{item.grants.length} approved destinations</small></div>
