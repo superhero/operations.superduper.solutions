@@ -451,7 +451,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if ready && status.exists && status.unlocked}
     <div class="card">
       <div class="vault-export-row">
-        <button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}><MaterialIcon name="file_export" size={18} />Export vault</button>
+        <button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}>Export vault<MaterialIcon name="file_export" size={18} /></button>
         <p class="help">Exported vault data remains encrypted at rest and during transfer.</p>
       </div>
     </div>
@@ -459,7 +459,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if ready && status.exists}
     <div class="card">
       <div class="vault-replace-row">
-        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}><MaterialIcon name="upload" size={18} />Replace vault</button>
+        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}>Replace vault<MaterialIcon name="upload" size={18} /></button>
         <p class="help">Importing replaces any existing vault in this browser and removes imported destination approvals. Exports are encrypted; keep their password, recovery key or passkey available.</p>
       </div>
       {@render vaultImport()}
