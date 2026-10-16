@@ -45,7 +45,7 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       // assertion must unlock the real vault before the different-RP attempt.
       await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
       await panel(page).getByRole('button', { name: 'Use passkey', exact: true }).click();
-      await expect(panel(page).getByLabel('Unlock password or recovery key', { exact: true })).toHaveCount(0);
+      await expect(panel(page).getByLabel('Unlock password, or recovery key', { exact: true })).toHaveCount(0);
       await panel(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
       await expect(panel(page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
       await expect(panel(page).locator('li').getByText(label, { exact: true })).toBeVisible();

@@ -474,7 +474,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <input id={`${createFormId}-new-password-confirm`} name="new-password-confirm" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} />
           <div class="password-verification-divider" role="separator"></div>
           <VaultAuthentication bind:this={passwordAuthentication}
-            {status} detectMethod disabled={busy} label="Authorize password change" inputLabel="Password or recovery key">
+            {status} detectMethod disabled={busy} label="Authorize password change" inputLabel="Password, or recovery key">
             {#snippet action()}
               <HintButton label="Verify and replace password" disabled={busy}>
                 {#snippet child({ props })}<button {...props} class="unlock-vault" type="submit"><MaterialIcon name="password" size={20} /></button>{/snippet}

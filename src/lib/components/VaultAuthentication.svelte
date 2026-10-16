@@ -64,10 +64,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if automatic}
     {#if !usePasskey}
       <input type="hidden" name="username" autocomplete="username" value="Operations vault" />
-      <label for={`${id}-automatic-secret`}>{inputLabel ?? "Password or recovery key to unlock vault"}</label>
+      <label for={`${id}-automatic-secret`}>{inputLabel ?? "Password, or recovery key to unlock vault"}</label>
       <div class="unlock-field">
       <input bind:this={secretInput} id={`${id}-automatic-secret`} type="password" name="vault-password"
-        aria-label={inputLabel ?? "Unlock password or recovery key"} autocomplete={automaticRecovery ? "off" : "current-password"}
+        aria-label={inputLabel ?? "Unlock password, or recovery key"} autocomplete={automaticRecovery ? "off" : "current-password"}
         data-1p-ignore={automaticRecovery ? true : undefined} data-lpignore={automaticRecovery ? "true" : undefined}
         oninput={event => { automaticRecovery = event.currentTarget.value.length === recoveryKeyCharacters; }}
         data-vault-sensitive spellcheck="false" autocapitalize="off" {disabled} />
@@ -79,7 +79,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {:else}
       <p>Your authenticator will ask you to verify this action.</p>
       {@render action?.()}
-      <button type="button" {disabled} onclick={() => { clear(); usePasskey = false; }}>Use password or recovery key</button>
+      <button type="button" {disabled} onclick={() => { clear(); usePasskey = false; }}>Use password, or recovery key</button>
     {/if}
   {:else}
   {#if options.length > 1}
