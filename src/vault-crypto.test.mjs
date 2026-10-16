@@ -174,6 +174,7 @@ Then('vault snapshots validate exact password, recovery, and passkey metadata', 
   const passkey = { ...recovery, id: crypto.randomUUID(), kind: 'passkey', credentialId: randomBase64(48), prfSalt: randomBase64(32) };
   const valid = { ...snapshot, envelopes: [password, recovery, passkey] };
   assert.deepEqual(validateSnapshot(valid), valid);
+  assert.throws(() => validateSnapshot({ ...valid, envelopes: [...valid.envelopes, { ...recovery, id: crypto.randomUUID() }] }), code('INVALID'));
   for (const invalid of [{ ...password, profile: undefined }, { ...password, profile: { ...passwordProfile, memoryKiB: 1 } },
     { ...password, prfSalt: randomBase64(32) }, { ...recovery, profile: passwordProfile }, { ...recovery, kind: 'other' },
     { ...passkey, profile: passwordProfile }, { ...passkey, credentialId: '' }, { ...passkey, credentialId: 'A'.repeat(1372) },

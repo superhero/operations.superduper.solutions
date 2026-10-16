@@ -28,7 +28,7 @@ Feature: Browser vault session lifecycle
     Then corrupt and unauthenticated vault backups never replace the current encrypted storage
 
   Scenario: Unlock method replacement is independent
-    Then vault sessions confirm recovery changes and independently enroll replace and remove methods
+    Then vault sessions reject additional recovery keys while independently managing other methods
 
   Scenario: Rotation regenerates recovery after verifying retained methods
     Then vault rotation renews recovery automatically while retaining verified passwords and passkeys

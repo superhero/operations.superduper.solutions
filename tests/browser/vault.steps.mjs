@@ -235,6 +235,8 @@ async function createUIVault() {
   await settings(page).getByLabel('Credential value', { exact: true }).fill(canaries[1]);
   await settings(page).getByRole('button', { name: 'Save credential', exact: true }).click();
   await expect(settings(page).getByRole('status')).toContainText('Credential saved', { timeout: 15_000 });
+  await expect(settings(page).getByRole('button', { name: 'Generate recovery key', exact: true })).toHaveCount(0);
+  await expect(settings(page).getByRole('combobox', { name: 'Recovery method to replace', exact: true })).toHaveCount(0);
   const beforePasskey = await storage(page, 'read');
   await settings(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
   const passkeyForm = settings(page).locator('form[id$="-passkey"]');

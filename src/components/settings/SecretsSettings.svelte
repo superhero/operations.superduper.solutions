@@ -42,7 +42,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let showPasskey = $state(false);
   let passkeyError = $state("");
   let recoveryOutput = $state.raw<HTMLPreElement>();
-  let recoveryMode = $state<"create" | "replace" | "rotate" | null>(null);
+  let recoveryMode = $state<"create" | "rotate" | null>(null);
   let credentialId = $state("");
   let credentialLabel = $state("");
   let grantCredential = $state("");
@@ -51,7 +51,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let grantDescriptor = $state.raw<ApprovedOperation | null>(null);
   let operationOptions = $state<{ value: string; label: string }[]>([]);
   let passwordReplacement = $state("");
-  let recoveryReplacement = $state("");
   let showRotation = $state(false);
   let restoreStatus = $state<VaultStatus | null>(null);
   let restoreFilename = $state("");
@@ -142,7 +141,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try {
       if (!confirmation) throw new VaultError("INVALID");
       if (recoveryMode === "create") await vaultCall("confirmCreate", [confirmation]);
-      else if (recoveryMode === "replace") await fresh(proof => vaultCall("addMethod", [proof, { kind: "recovery", secret: confirmation }, recoveryReplacement || undefined]));
       downloadRecoveryKey(confirmation);
       clearRecovery(); await refresh(); notice = "Recovery key saved. Keep the downloaded key in a safe place.";
     } finally { confirmation = ""; }
@@ -210,13 +208,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       }
     } finally { if (proof) wipe(proof); }
   }
-  async function prepareRecovery(): Promise<void> {
-    const current = generation;
-    let recovery = await fresh(proof => vaultCall("prepareRecovery", [proof]));
-    try { await presentRecovery("replace", recovery, current); }
-    finally { recovery = ""; }
-  }
-  async function presentRecovery(mode: "create" | "replace" | "rotate", value: string, current: number): Promise<void> {
+  async function presentRecovery(mode: "create" | "rotate", value: string, current: number): Promise<void> {
     if (current !== generation || disposed) throw new VaultError("CANCELLED");
     recoveryMode = mode;
     await tick();
@@ -460,13 +452,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <label>Confirm new password<input name="new-password-confirm" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
         <button disabled={busy}>Save password method</button>
       </form>
-      <div class="subform"><h4>Recovery key</h4>
-        <FieldSelect id="vault-recovery-replacement" label="Recovery method to replace" value={recoveryReplacement} disabled={busy || recoveryMode !== null}
-          options={status.methods.filter(method => method.kind === "recovery").map((method, index) => ({ value: method.id, label: `Replace recovery key ${index + 1}` }))}
-          onValueChange={value => recoveryReplacement = value} />
-        <p class="help">Leave the method unselected to add a recovery key. Save the new key before it replaces a method.</p>
-        <button type="button" disabled={busy || recoveryMode !== null} onclick={() => run("Generating recovery key…", prepareRecovery)}>Generate recovery key</button>
-      </div>
+
     </div>
     <div class="card rotation-card">
       <div class="vault-passkey-row">

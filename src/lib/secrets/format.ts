@@ -72,6 +72,7 @@ function record(value: unknown): EncryptedRecord {
 function contents(value: unknown): SnapshotContents {
   const object = ownObject(value, ["id", "epoch", "revision", "envelopes", "records"]);
   const envelopes = array(object.envelopes, maxEnvelopes, 1).map(envelope);
+  if (envelopes.filter(item => item.kind === "recovery").length > 1) throw new VaultError("INVALID");
   const records = array(object.records, vaultLimits.records).map(record);
   const ids = [...envelopes.map(item => item.id), ...records.map(item => item.id)];
   if (new Set(ids).size !== ids.length) throw new VaultError("INVALID");

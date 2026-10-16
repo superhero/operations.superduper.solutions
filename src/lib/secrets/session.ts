@@ -54,13 +54,12 @@ export class VaultSession {
   private key: CryptoKey | undefined;
   private generation = 0;
   private pending: Pending | undefined;
-  private recovery: string | undefined;
 
   constructor(storage: VaultStorage, assertActive: () => void = () => {}, assertSchema: (descriptor: ApprovedOperation) => Promise<void> = async () => {}) {
     this.storage = storage; this.assertActive = assertActive; this.assertSchema = assertSchema;
   }
 
-  lock(): void { this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; this.recovery = undefined; }
+  lock(): void { this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; }
 
   private guard(generation: number): void {
     this.assertActive();
@@ -311,19 +310,13 @@ export class VaultSession {
     return this.status();
   }
 
-  async prepareRecovery(proof: UnlockProof): Promise<string> {
-    await this.fresh(proof);
-    this.recovery = randomBase64(recoveryKeyBytes); return this.recovery;
-  }
-
-  async addMethod(proof: UnlockProof, material: Enrollment, replaceId?: string): Promise<VaultStatus> {
+  async addMethod(proof: UnlockProof, material: Exclude<Enrollment, { kind: "recovery" }>, replaceId?: string): Promise<VaultStatus> {
     const key = await this.fresh(proof);
-    if (material.kind === "recovery" && material.secret !== this.recovery) throw new VaultError("AUTHENTICATION");
+    if (!["password", "passkey"].includes(material.kind)) throw new VaultError("INVALID");
     const snapshot = this.state!.snapshot!;
     if (replaceId && !snapshot.envelopes.some(item => item.id === replaceId && item.kind === material.kind)) throw new VaultError("INVALID");
     const envelope = await this.enroll(key, snapshot, material);
     await this.save(await this.records(), [...snapshot.envelopes.filter(item => item.id !== replaceId), envelope]);
-    this.recovery = undefined;
     return this.status();
   }
 

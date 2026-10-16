@@ -238,8 +238,8 @@ Then('corrupt and unauthenticated vault backups never replace the current encryp
   assert.deepEqual(destination.storage.state, previous);
 });
 
-Then('vault sessions confirm recovery changes and independently enroll replace and remove methods', kdfStep, async () => {
-  const { session, proof, passwordProof } = await created();
+Then('vault sessions reject additional recovery keys while independently managing other methods', kdfStep, async () => {
+  const { session, storage, proof, passwordProof } = await created();
   const prf = new Uint8Array(32).fill(7), material = { kind: 'passkey', prf, credentialId: randomBase64(48), prfSalt: randomBase64(32) };
   let status = await session.addMethod(proof, material);
   const passkey = status.methods.find(method => method.kind === 'passkey'), passkeyProof = { methodId: passkey.id, prf };
@@ -247,13 +247,11 @@ Then('vault sessions confirm recovery changes and independently enroll replace a
   assert.equal((await session.unlock(passkeyProof)).unlocked, true);
   await assert.rejects(session.unlock({ methodId: passkey.id, secret: 'not a PRF' }), code('AUTHENTICATION'));
   await session.unlock(proof);
-  await assert.rejects(session.addMethod(proof, { kind: 'recovery', secret: randomBase64(128) }), code('AUTHENTICATION'));
-  const recovery = await session.prepareRecovery(proof);
-  await assert.rejects(session.addMethod(proof, { kind: 'recovery', secret: randomBase64(128) }), code('AUTHENTICATION'));
-  status = await session.addMethod(proof, { kind: 'recovery', secret: recovery }, proof.methodId);
-  const nextProof = { methodId: status.methods.find(method => method.kind === 'recovery').id, secret: recovery };
-  await assert.rejects(session.unlock(proof), code('AUTHENTICATION'));
-  await session.unlock(nextProof);
+  const beforeRecoveryAttempt = clone(storage.state);
+  await assert.rejects(session.addMethod(proof, { kind: 'recovery', secret: randomBase64(128) }), code('INVALID'));
+  await assert.rejects(session.addMethod(proof, { kind: 'recovery', secret: randomBase64(128) }, proof.methodId), code('INVALID'));
+  assert.deepEqual(storage.state, beforeRecoveryAttempt);
+  const nextProof = proof;
   await assert.rejects(session.addMethod(nextProof, material, passwordProof.methodId), code('INVALID'));
   status = await session.addMethod(nextProof, { kind: 'password', secret: 'replacement synthetic password' }, passwordProof.methodId);
   const nextPassword = { methodId: status.methods.find(method => method.kind === 'password').id, secret: 'replacement synthetic password' };
@@ -570,9 +568,7 @@ Then('automatic vault unlocking tries matching saved methods and retains long pa
   await session.addMethod(fixture.proof, { kind: 'password', secret: 'second-password' });
   const longPassword = 'p'.repeat(172);
   await session.addMethod(fixture.proof, { kind: 'password', secret: longPassword });
-  const secondRecovery = await session.prepareRecovery(fixture.proof);
-  await session.addMethod(fixture.proof, { kind: 'recovery', secret: secondRecovery });
-  for (const secret of [password, 'second-password', longPassword, fixture.recovery, secondRecovery]) {
+  for (const secret of [password, 'second-password', longPassword, fixture.recovery]) {
     session.lock();
     const proof = { methodId: 'auto', secret };
     assert.equal((await session.unlock(proof)).unlocked, true);
