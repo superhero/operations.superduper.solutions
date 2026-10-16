@@ -9,6 +9,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { Button } from "$lib/components/ui/button/index.js";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import JsonSchemaView from "$lib/components/JsonSchemaView.svelte";
+  import Reveal from "$lib/components/Reveal.svelte";
   import type { SchemaLibraryRecord } from "$lib/schema-library-types.ts";
 
   let { records, busy = false, ready = true, error = "", onUpload, onReplace, onRename, onMove, onEnabledChange, onDelete, onDownload, onRetry }: {
@@ -279,7 +280,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <div><dt>Operations</dt><dd>{metadata.operations.toLocaleString()}</dd></div>
           </dl>
 
-          {#if !record.enabled}<p class="schema-note">Operations from this document are unavailable until it is enabled.</p>{/if}
+          <Reveal open={!record.enabled} id={`schema-disabled-${record.id}`}><p class="schema-note">Operations from this document are unavailable until it is enabled.</p></Reveal>
 
           <JsonSchemaView value={record.document} label={`Full OpenAPI JSON: ${metadata.title}`} operationsOnly />
 
@@ -319,6 +320,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-name-input { box-sizing: border-box; min-width: 0; width: 100%; height: 100%; padding: 6px 10px; border: 0; border-radius: 0 4px 4px 0; outline: none; background: transparent; color: inherit; font-size: 14px; }
   .schema-empty h3 { margin: 0; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
   .schema-empty p, .schema-note { margin: 6px 0 0; color: var(--color-muted-foreground); font-size: 12px; overflow-wrap: anywhere; }
+  .schema-note { color: var(--color-accent); }
   .schema-actions { --schema-action-gap: 6px; display: flex; align-items: center; flex-wrap: wrap; gap: var(--schema-action-gap); }
   .schema-card { position: relative; }
   .schema-card :global(.schema-disclosure > summary) { padding-left: 12px; font-size: 12px; }
