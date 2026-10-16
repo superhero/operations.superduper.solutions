@@ -261,7 +261,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </div>
   <div class="vault-info" role="note">
     <p class="help">Your credentials are encrypted and stored in this browser profile for this site.</p>
-    <p class="help"><strong>Automatic locking:</strong> The vault locks when you hide or leave this page.</p>
+    <p class="help"><strong>Automatic locking:</strong> Closing or reloading this page locks the vault. Switching tabs or minimizing the browser keeps it unlocked.</p>
     <p class="help"><strong>Backups:</strong> Keep an encrypted backup and your recovery key in a safe place outside this browser.</p>
   </div>
   <div class="vault-info" role="note">
@@ -403,7 +403,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         onchange={event => void run("Saving lock preference…", () => saveIdle(event.currentTarget.checked, preferences.idleLockMinutes))} />Lock after inactivity</label>
       <label>Minutes of inactivity<input type="number" min="1" max="1440" step="1" value={preferences.idleLockMinutes} disabled={busy || !preferences.idleLockEnabled}
         onchange={event => { const minutes = Number(event.currentTarget.value); void run("Saving lock preference…", () => saveIdle(preferences.idleLockEnabled, minutes)); }} /></label>
-      <p class="help">Idle locking is optional. Hiding or leaving this page always locks the vault.</p>
+      <p class="help">Idle locking is optional. Closing or reloading this page always locks the vault.</p>
     </div>
   {/if}
 </section>

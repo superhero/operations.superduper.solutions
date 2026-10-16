@@ -60,11 +60,12 @@ reliably by this mechanism.
 
 ### Locking and recovery
 
-Reload, hiding the tab, page exit and explicit locking end access. An optional
-idle timeout defaults to ten minutes when enabled; it starts disabled. Only
-trusted foreground activity resets it. Expired deadlines and stale revisions
-cannot be revived by delayed results. Focus loss alone does not lock the vault,
-but an authenticator flow that hides the page is cancelled.
+Reload, page exit and explicit locking end access. Switching tabs or minimizing
+the browser preserves access. An optional idle timeout defaults to ten minutes
+when enabled; it starts disabled. Only trusted foreground activity resets it.
+Expired deadlines and stale revisions cannot be revived by delayed results.
+Returning to a visible tab checks the existing deadline without extending it.
+Visibility changes alone neither lock the vault nor cancel pending operations.
 
 Locking terminates the worker without draining secret operations. Manual locks
 and changes use durable origin-wide counters as well as tab notifications.

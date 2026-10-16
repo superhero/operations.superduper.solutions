@@ -362,6 +362,35 @@ Then('a {string} notification terminates the vault worker and returning visible 
   await expect.poll(() => vaultWorkerCount(this.page)).toBe(0);
 });
 
+Then('hiding and restoring the page preserves the vault worker and pending operations', async function () {
+  const page = this.page;
+  const worker = (await Promise.all(page.workers().map(async worker => ({ worker, name: await worker.evaluate(() => globalThis.name).catch(() => '') }))))
+    .find(item => item.name === 'operations-secret-vault').worker;
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    window.dispatchEvent(new Event('blur'));
+  });
+  try {
+    await expect(settings(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+    await expect.poll(() => vaultWorkerCount(page)).toBe(1);
+    await settings(page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
+    await settings(page).getByLabel('Credential label', { exact: true }).fill('Saved while backgrounded');
+    await settings(page).getByLabel('Credential value', { exact: true }).fill(canaries[2]);
+    await settings(page).getByRole('button', { name: 'Save credential', exact: true }).click();
+    await expect(settings(page).getByRole('status')).toContainText('Credential saved', { timeout: 15_000 });
+    await expect(settings(page).locator('li').filter({ hasText: 'Saved while backgrounded' })).toHaveCount(1);
+    assert.equal(await worker.evaluate(() => globalThis.name), 'operations-secret-vault');
+  } finally {
+    await page.evaluate(() => {
+      Reflect.deleteProperty(document, 'visibilityState');
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+  }
+  await expect(settings(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+  await expect.poll(() => vaultWorkerCount(page)).toBe(1);
+});
+
 Then('optional idle locking expires before a delayed trusted interaction can extend it', async function () {
   const idle = settings(this.page).getByRole('checkbox', { name: 'Lock after inactivity', exact: true });
   await expect(idle).not.toBeChecked();

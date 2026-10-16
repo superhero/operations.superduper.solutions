@@ -52,7 +52,7 @@ behavior is inappropriate here. Keep only fixed vault error codes, bounded safe
 field errors and sanitized HTTP diagnostics at the RPC boundary. Native worker
 failure events must not enter ordinary error recording with sensitive context.
 One-time recovery-key presentation is an intentional exception and must clear
-on confirmation, cancellation, hidden-page locking and unmount.
+on confirmation, cancellation, page-exit locking and unmount.
 
 ## Verification
 

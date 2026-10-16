@@ -4,7 +4,7 @@
 @vault-lifecycle
 Feature: Explicit vault inactivity deadlines
   A delayed interaction cannot revive an expired unlocked session.
-  The client applies hidden-page locking separately from optional idle locking.
+  The client locks on page exit; changing tab visibility does not end access.
 
   Scenario: Idle locking starts disabled
     Then vault inactivity starts disabled and only explicit activation starts a session
