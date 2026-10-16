@@ -450,7 +450,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <p class="help">{status.methods.some(method => method.kind !== "recovery") ? "Verify your passwords and passkeys to re-encrypt the vault and generate a new recovery key." : "Add a password or passkey before rotating keys."}</p>
       </div>
         {#if showRotation}
-          {#snippet rotationAction()}<button class="unlock-vault" type="button" aria-label="Rotate keys" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}><MaterialIcon name="lock_reset" size={20} /></button>{/snippet}
+          {#snippet rotationAction()}
+            <HintButton label="Verify and rotate recovery key" aria-label="Rotate keys" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}>
+              {#snippet child({ props })}<button {...props} class="unlock-vault" type="button"><MaterialIcon name="lock_reset" size={20} /></button>{/snippet}
+            </HintButton>
+          {/snippet}
           <div id={`${createFormId}-rotation`} class="rotation-body" inert={!showRotation}
             transition:slide={{ duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240, easing: cubicInOut }}>
           {#each status.methods.filter(method => method.kind !== "recovery") as method, index (method.id)}
