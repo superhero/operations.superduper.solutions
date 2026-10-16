@@ -436,15 +436,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </div>
       <div class="subform"><h4>Passkey</h4><p class="help">Use an authenticator that supports passkey encryption. A failed enrollment leaves your existing methods intact.</p>
         <button type="button" disabled={busy} onclick={() => run("Verifying passkey…", addPasskey)}>Add passkey</button></div>
-      <div class="subform"><h4>Rotate vault encryption key</h4><p class="help">Verify every retained unlock method to re-encrypt the current vault. Older exports keep their original keys and methods.</p>
+    </div>
+    <div class="card">
+      <div class="vault-rotate-row">
+        <button type="button" disabled={busy || showRotation} onclick={() => showRotation = true}>Rotate keys<MaterialIcon name="lock_reset" size={18} /></button>
+        <p class="help">Verify every retained unlock method to re-encrypt the current vault. Older exports keep their original keys and methods.</p>
+      </div>
         {#if showRotation}
           {#each status.methods as method, index (method.id)}
             <VaultAuthentication bind:this={rotationAuthentication[method.id]} status={{ ...status, methods: [method] }} disabled={busy} label={`Verify ${methodNames[method.kind].toLowerCase()} ${index + 1}`} />
           {/each}
           <div class="actions"><button type="button" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}>Verify all and rotate key</button>
             <button type="button" disabled={busy} onclick={() => { clearInputs(); showRotation = false; }}>Cancel</button></div>
-        {:else}<button class="rotate-keys" type="button" disabled={busy} onclick={() => showRotation = true}>Rotate keys<MaterialIcon name="lock_reset" size={18} /></button>{/if}
-      </div>
+        {/if}
     </div>
   {/if}
 
@@ -496,14 +500,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .recovery-key { position: relative; min-width: 0; border-radius: 4px; background: var(--color-background); }
   .recovery-key pre { margin: 0; padding: 8px 40px 8px 8px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: monospace; font-size: 12px; }
   .recovery-copy { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; background: transparent; color: inherit; }
-  .vault-replace-row, .vault-export-row { display: flex; align-items: center; gap: 12px; }
-  .vault-replace-row > button, .vault-export-row > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 136px; width: 136px; min-height: 40px; }
-  .vault-replace-row > p, .vault-export-row > p { min-width: 0; }
+  .vault-replace-row, .vault-export-row, .vault-rotate-row { display: flex; align-items: center; gap: 12px; }
+  .vault-replace-row > button, .vault-export-row > button, .vault-rotate-row > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 136px; width: 136px; min-height: 40px; }
+  .vault-replace-row > p, .vault-export-row > p, .vault-rotate-row > p { min-width: 0; }
   .creation-actions, .recovery-actions { justify-content: flex-end; }
   .unlock-vault { display: grid; place-items: center; justify-self: end; flex-shrink: 0; align-self: stretch; min-width: 40px; border-radius: 0 4px 4px 0; }
   .unlock-vault:hover:enabled, .unlock-vault:focus { color: var(--color-background); }
   .creation-actions button, .recovery-actions button { display: inline-flex; align-items: center; gap: 6px; }
-  .rotate-keys { display: inline-flex; align-items: center; gap: 6px; }
   .card, .subform, .vault-create-form { display: grid; gap: 10px; min-width: 0; }
   .card { padding: 14px; border-radius: 4px; background: var(--color-surface); }
   .vault-info, .vault-status-message { display: flex; align-items: flex-start; gap: 10px; }
@@ -543,7 +546,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     .unlock-vault:hover:enabled :global(.material-symbols-rounded), .unlock-vault:focus :global(.material-symbols-rounded) { transform: scale(1.2); }
     .idle-toggle:hover:enabled .default-switch { transform: scale(1.10); }
     .recovery-copy:hover:enabled { transform: scale(1.10); }
-    :is(.creation-actions, .recovery-actions, .vault-replace-row, .vault-export-row) button:hover:enabled { transform: scale(1.05); }
+    :is(.creation-actions, .recovery-actions, .vault-replace-row, .vault-export-row, .vault-rotate-row) button:hover:enabled { transform: scale(1.05); }
   }
   @media (prefers-reduced-motion: reduce) { .default-switch, .default-switch > span { transition: none; } }
 </style>
