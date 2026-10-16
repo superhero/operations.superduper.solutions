@@ -242,13 +242,13 @@ async function createUIVault() {
   await expect(passkeyForm.getByRole('combobox')).toHaveCount(0);
   await passkeyForm.getByLabel('Password', { exact: true }).fill(canaries[0]);
   const passkeyInputHandle = await passkeyForm.getByLabel('Password', { exact: true }).elementHandle();
-  await settings(page).getByRole('button', { name: 'Cancel', exact: true }).click();
+  await settings(page).locator('.vault-passkey-row').getByRole('button', { name: 'Cancel', exact: true }).click();
   await expect(passkeyForm).toHaveCount(0);
   assert.equal(await passkeyInputHandle.evaluate(input => input.value), '');
   assert.deepEqual(await storage(page, 'read'), beforePasskey);
   const beforeRotation = await storage(page, 'read');
   await settings(page).getByRole('button', { name: 'Rotate key', exact: true }).click();
-  const cancelRotation = settings(page).getByRole('button', { name: 'Cancel', exact: true });
+  const cancelRotation = settings(page).locator('.vault-rotate-row').getByRole('button', { name: 'Cancel', exact: true });
   await expect(cancelRotation).toHaveAttribute('aria-expanded', 'true');
   await expect(settings(page).locator('.rotation-body')).toBeVisible();
   await expect(settings(page).locator('.rotation-body').getByRole('button', { name: 'Rotate key', exact: true })).toBeVisible();
