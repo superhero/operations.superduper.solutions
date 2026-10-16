@@ -251,7 +251,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <section bind:this={panel} class="secrets-settings" aria-label="Secrets vault">
   <div class="toolbar vault-status">
-    <p class="help"><strong>{ready ? status.exists ? status.unlocked ? "Vault unlocked" : "Vault locked" : "No vault has been created:" : "Secrets vault"}</strong>{#if ready && !status.exists}{" "}Use a vault to help protect stored data required as input in the workflows{/if}</p>
+    <p class="help"><strong>{ready ? status.exists ? status.unlocked ? "Vault unlocked" : "Vault locked" : "No vault has been created:" : "Secrets vault"}</strong>{#if ready && !status.exists}{" "}Use a vault to help protect stored data required as input in the workflows.{/if}</p>
     {#if status.unlocked || busy}
       <div class="actions">
         {#if status.unlocked}<button type="button" onclick={() => void manualLock()}>Lock vault</button>
@@ -269,10 +269,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <p class="help"><strong>Backups:</strong> Keep an encrypted backup and your recovery key in a safe place outside this browser.</p>
   </div>
   <div class="vault-info" role="note">
-    <p class="help"><strong>Lost password and every other unlock method can not be recovered:</strong> the vault is a local persistence that cannot be recovered</p>
+    <p class="help"><strong>Lost password and every other unlock method can not be recovered:</strong> the vault is a local persistence that cannot be recovered.</p>
   </div>
   <div class="vault-info" role="note">
-    <p class="help"><strong>Encrypted backups:</strong> you must retain the unlock method to be able to restore a backup</p>
+    <p class="help"><strong>Encrypted backups:</strong> you must retain the unlock method to be able to restore a backup.</p>
   </div>
   {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if progress || notice}<p class="notice" role="status">{progress || notice}</p>{/if}
