@@ -118,7 +118,7 @@ export class VaultSession {
 
   private async enroll(key: CryptoKey, snapshot: Pick<VaultSnapshot, "id" | "epoch">, material: Enrollment): Promise<KeyEnvelope> {
     const base = { id: crypto.randomUUID(), revision: 1, kind: material.kind, salt: randomBase64(16) };
-    if (material.kind === "password" && material.secret.length < 12) throw new VaultError("INVALID");
+    if (material.kind === "password" && material.secret.length < 4) throw new VaultError("INVALID");
     const kek = material.kind === "password" ? await passwordKey(material.secret, base.salt)
       : material.kind === "recovery" ? await recoveryKey(material.secret, base.salt) : await passkeyKey(material.prf, base.salt);
     const wrappedKey = await wrapVaultKey(key, kek, context(snapshot, base));
