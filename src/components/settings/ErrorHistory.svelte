@@ -67,7 +67,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <Disclosure class="entry" label={origin(entry)} tooltipEnabled={false} lazy
           open={expanded.has(entry.id)} onToggle={(next) => toggle(entry.id, next)}>
           {#snippet summary()}
-            <span class="entry-toggle" class:expanded={expanded.has(entry.id)}><MaterialIcon name="keyboard_arrow_right" size={24} /></span>
+            <span class="entry-toggle" class:expanded={expanded.has(entry.id)}><MaterialIcon name="keyboard_arrow_right" size={18} /></span>
             <span class="summary-text"><strong>{entry.origin.source}{#if entry.origin.scope || entry.origin.operation}{" · "}{/if}{entry.origin.scope ?? ""}{#if entry.origin.scope && entry.origin.operation}<span class="origin-separator"><MaterialIcon name="keyboard_arrow_right" size={16} /></span>{/if}{entry.origin.operation ?? ""}</strong></span>
             <span class="occurrences">{number(entry.occurrences)} {entry.occurrences === 1 ? "occurrence" : "occurrences"}</span>
           {/snippet}
