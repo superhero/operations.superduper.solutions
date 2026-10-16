@@ -81,7 +81,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .locale-option { display: grid; align-content: start; gap: 8px; min-width: 0; padding: 10px; border-radius: 4px; background: var(--color-surface); --field-background: var(--color-background); --field-foreground: var(--color-foreground); }
   .locale-option label { font-size: 12px; font-weight: 700; }
   .locale-option :global(.field-select-trigger) { border-radius: 4px; font-size: 12px; }
-  .locale-preview { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 12px; margin-top: 12px; color: var(--color-catalog-active-foreground); font-size: 12px; }
+  .locale-preview { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 6px 12px; margin-top: 12px; padding: 10px 12px; border-radius: 4px; background: var(--color-emphasis); color: var(--color-foreground); text-align: center; font-size: 12px; }
   .locale-preview > span { font-weight: 700; }
   .locale-preview output { min-width: 0; overflow-wrap: anywhere; }
   .defaults-error { display: grid; justify-items: start; gap: 10px; margin-top: 12px; }
