@@ -242,7 +242,7 @@
     {/each}
   </nav>
   <div class="workflow-separator" aria-hidden="true">
-    <span><MaterialIcon name="stat_minus_1" size={20} /></span>
+    <span><MaterialIcon name="unfold_less_double" size={20} /></span>
   </div>
   <nav class="operation-catalog workflow-catalog" aria-label="Saved workflow catalog">
     <Disclosure class="catalog-group" label={`Workflows, ${workflows.length} saved`} tooltipEnabled={false} open={workflowsOpen} onToggle={(next) => workflowsOpen = next}>
