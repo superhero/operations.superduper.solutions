@@ -27,7 +27,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <div class="diagnostic">
     <p><strong>{detail.name}</strong>{#if detail.code !== undefined} <code>{detail.code}</code>{/if}</p>
     <p class="message">{detail.message}</p>
-    {#if detail.stack}<pre>{detail.stack}</pre>{:else}<p class="muted">No stack trace available.</p>{/if}
+    {#if detail.stack}<div class="entry-divider" aria-hidden="true"></div><pre>{detail.stack}</pre>{:else}<p class="muted">No stack trace available.</p>{/if}
     {#if detail.cause}<div class="cause"><h5>Caused by</h5>{@render diagnostic(detail.cause)}</div>{/if}
     {#if detail.errors?.length}
       <div class="cause"><h5>Related errors</h5>{#each detail.errors as child}{@render diagnostic(child)}{/each}</div>
@@ -55,7 +55,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           </summary>
           {#if expanded.has(entry.id)}
             <div class="entry-content">
+              <div class="entry-divider" aria-hidden="true"></div>
               <dl class="timestamps"><div><dt>First seen</dt><dd>{formatLocalDateTime(entry.firstSeen)}</dd></div><div><dt>Last seen</dt><dd>{formatLocalDateTime(entry.lastSeen)}</dd></div></dl>
+              <div class="entry-divider" aria-hidden="true"></div>
               {#if entry.origin.filename}<p class="source">{location(entry)}</p>{/if}
               {@render diagnostic(entry.error)}
             </div>
@@ -97,6 +99,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .summary-text .muted { overflow-wrap: anywhere; }
   .occurrences { flex: 0 0 auto; color: var(--color-muted-foreground); font-size: 11px; }
   .entry-content { min-width: 0; padding: 0 12px 12px; }
+  .entry-divider { height: 1px; margin: 8px 0; background: repeating-linear-gradient(to right, var(--color-surface) 0 8px, transparent 8px 14px); }
   .timestamps { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 0 0 12px; font-size: 12px; }
   .diagnostic { min-width: 0; margin-top: 12px; font-size: 12px; }
   .diagnostic code { margin-left: 8px; color: var(--color-muted-foreground); font-size: 11px; }
