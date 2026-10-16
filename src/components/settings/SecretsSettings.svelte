@@ -453,7 +453,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <div id={`${createFormId}-rotation`} class="rotation-body" inert={!showRotation}
             transition:slide={{ duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240, easing: cubicInOut }}>
           {#each status.methods.filter(method => method.kind !== "recovery") as method, index (method.id)}
-            <VaultAuthentication bind:this={rotationAuthentication[method.id]} status={{ ...status, methods: [method] }} disabled={busy} label={`Verify ${methodNames[method.kind].toLowerCase()} ${index + 1}`} />
+            <VaultAuthentication bind:this={rotationAuthentication[method.id]} status={{ ...status, methods: [method] }} disabled={busy} label={`Verify ${methodNames[method.kind].toLowerCase()} ${index + 1}`}
+              inputLabel={method.kind === "password" ? `Current password${status.methods.filter(item => item.kind === "password").length > 1 ? ` ${status.methods.filter(item => item.kind === "password").findIndex(item => item.id === method.id) + 1}` : ""}` : undefined} />
           {/each}
           <div class="actions"><button type="button" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}>Verify all and rotate key</button></div>
           </div>

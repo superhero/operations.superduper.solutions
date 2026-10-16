@@ -10,8 +10,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { unlockPasskey } from "../secrets/passkeys.ts";
   import { VaultError, recoveryKeyCharacters, type UnlockProof, type VaultStatus } from "../secrets/types.ts";
 
-  let { status, disabled = false, label = "Authenticate", portalZIndex = 40, action }: {
-    status: VaultStatus; disabled?: boolean; label?: string; portalZIndex?: number; action?: Snippet;
+  let { status, disabled = false, label = "Authenticate", portalZIndex = 40, action, inputLabel }: {
+    status: VaultStatus; disabled?: boolean; label?: string; portalZIndex?: number; action?: Snippet; inputLabel?: string;
   } = $props();
   const id = $props.id();
   let methodId = $state("");
@@ -91,7 +91,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if method.kind === "password"}
       <input type="hidden" name="username" autocomplete="username" value="Operations vault" />
     {/if}
-    <label for={`${id}-secret`}>{label} {method.kind === "password" ? "password" : "recovery key"}</label>
+    <label for={`${id}-secret`}>{inputLabel ?? `${label} ${method.kind === "password" ? "password" : "recovery key"}`}</label>
     {#key methodId}
     <input bind:this={secretInput} id={`${id}-secret`} type="password" data-vault-sensitive spellcheck="false" autocapitalize="off"
       name={method.kind === "password" ? "vault-password" : "vault-recovery-key"}
