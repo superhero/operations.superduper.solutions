@@ -1846,6 +1846,14 @@ Exercise keyboard copy, removal, cancellation and credential selection without r
 
 ```
 
+<!-- changelog-commit:a9b1f647108d4b8fb0c04cbd259b992a681eac73 -->
+### Commit [`a9b1f64`](https://github.com/superhero/operations.superduper.solutions/commit/a9b1f647108d4b8fb0c04cbd259b992a681eac73)
+
+```text
+chore(badges): refresh scenario count from passing CI reports
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.47
