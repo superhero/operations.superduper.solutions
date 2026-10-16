@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.48
+
 <!-- changelog-commit:90d9b39dcc0a46d623f8dc2b32008320ad923d01 -->
 ### Commit [`90d9b39`](https://github.com/superhero/operations.superduper.solutions/commit/90d9b39dcc0a46d623f8dc2b32008320ad923d01)
 
@@ -1853,8 +1857,6 @@ Exercise keyboard copy, removal, cancellation and credential selection without r
 chore(badges): refresh scenario count from passing CI reports
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.47
 
