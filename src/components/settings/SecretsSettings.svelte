@@ -446,12 +446,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
     <div class="card rotation-card">
       <div class="vault-rotate-row">
-        <button type="button" disabled={busy || !status.methods.some(method => method.kind !== "recovery")} aria-expanded={showRotation} aria-controls={`${createFormId}-rotation`} onclick={() => { if (showRotation) clearInputs(); showRotation = !showRotation; }}>{showRotation ? "Cancel rotation" : "Rotate keys"}<MaterialIcon name={showRotation ? "backspace" : "lock_reset"} size={18} /></button>
+        <button type="button" disabled={busy || !status.methods.some(method => method.kind !== "recovery")} aria-expanded={showRotation} aria-controls={`${createFormId}-rotation`} onclick={() => { if (showRotation) clearInputs(); showRotation = !showRotation; }}>{showRotation ? "Cancel rotation" : "Rotate key"}<MaterialIcon name={showRotation ? "backspace" : "lock_reset"} size={18} /></button>
         <p class="help">{status.methods.some(method => method.kind !== "recovery") ? "Verify your passwords and passkeys to re-encrypt the vault and generate a new recovery key." : "Add a password or passkey before rotating keys."}</p>
       </div>
         {#if showRotation}
           {#snippet rotationAction()}
-            <HintButton label="Verify and rotate recovery key" aria-label="Rotate keys" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}>
+            <HintButton label="Verify and rotate recovery key" aria-label="Rotate key" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}>
               {#snippet child({ props })}<button {...props} class="unlock-vault" type="button"><MaterialIcon name="lock_reset" size={20} /></button>{/snippet}
             </HintButton>
           {/snippet}
