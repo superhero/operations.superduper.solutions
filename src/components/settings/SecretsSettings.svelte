@@ -421,8 +421,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </ul>
       <form class="subform" onsubmit={event => { event.preventDefault(); void run("Saving credential…", saveCredential); }}>
         <h4>{credentialId ? "Replace credential" : "Add credential"}</h4>
-        <label>Credential label<input bind:value={credentialLabel} maxlength="120" required disabled={busy} /></label>
-        <label>{credentialId ? "Replacement value" : "Credential value"}<input name="credential-value" type="password" required autocomplete="off" spellcheck="false" data-vault-sensitive disabled={busy} /></label>
+        <div class="credential-fields">
+          <label>Credential label<input bind:value={credentialLabel} maxlength="120" required disabled={busy} /></label>
+          <label>{credentialId ? "Replacement value" : "Credential value"}<input name="credential-value" type="password" required autocomplete="off" spellcheck="false" data-vault-sensitive disabled={busy} /></label>
+        </div>
         <div class="actions"><button disabled={busy}>Save credential</button><button type="button" disabled={busy} onclick={() => { clearInputs(); credentialId = ""; credentialLabel = ""; }}>Cancel</button></div>
       </form>
     </div>
@@ -591,6 +593,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .vault-status-message { flex: 1; min-width: 0; }
   :is(.vault-info, .vault-status-message) :global(.material-symbols-rounded) { flex-shrink: 0; margin-top: 1px; font-weight: 400; font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 20; }
   .vault-info, .vault-status { padding: 14px; border-radius: 4px; background: var(--color-emphasis); color: var(--color-background); }
+  .credential-fields { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 7fr); gap: 12px; }
+  .credential-fields > label { min-width: 0; }
+  @media (max-width: 640px) { .credential-fields { grid-template-columns: minmax(0, 1fr); } }
   .subform { padding-top: 12px; border-top: 1px solid var(--color-background); }
   h3, h4, p { margin: 0; }
   h3 { font-size: 14px; } h4, label, strong { font-size: 12px; }
