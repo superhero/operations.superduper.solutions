@@ -28,6 +28,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const maximumIdleMinutes = 7 * 24 * 60;
   let ready = $state(false);
   let busy = $state(false);
+  let idleSaving = $state(false);
   let progress = $state("");
   let error = $state("");
   let notice = $state("");
@@ -243,9 +244,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     } finally { wipe(proof); if (currentProof) wipe(currentProof); }
   }
   async function saveIdle(enabled: boolean, minutes: number): Promise<void> {
-    await saveVaultPreferences({ idleLockEnabled: enabled, idleLockMinutes: minutes });
-    preferences = { idleLockEnabled: enabled, idleLockMinutes: minutes };
-    idleMinutes = String(minutes);
+    if (idleSaving || busy) return;
+    const current = generation;
+    idleSaving = true;
+    try {
+      await saveVaultPreferences({ idleLockEnabled: enabled, idleLockMinutes: minutes });
+      if (current !== generation || disposed) return;
+      preferences = { idleLockEnabled: enabled, idleLockMinutes: minutes };
+      idleMinutes = String(minutes);
+    } catch (failure) {
+      if (current === generation && !disposed) error = safeVaultError(failure).message;
+    } finally { idleSaving = false; }
   }
 
   onMount(() => {
@@ -423,18 +432,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if ready}
     <div class="card">
       <div class="idle-settings">
-      <button class="idle-toggle" type="button" role="switch" aria-checked={preferences.idleLockEnabled} disabled={busy}
-        onclick={() => void run("Saving lock preference…", () => saveIdle(!preferences.idleLockEnabled, preferences.idleLockMinutes))}>
+      <button class="idle-toggle" type="button" role="switch" aria-checked={preferences.idleLockEnabled} disabled={busy || idleSaving}
+        onclick={() => void saveIdle(!preferences.idleLockEnabled, preferences.idleLockMinutes)}>
         <span>Lock after inactivity</span><span class="default-switch" aria-hidden="true"><span></span></span>
       </button>
       <div class="idle-control">
         <FieldInteger id="vault-idle-minutes" label="Minutes of inactivity" value={idleMinutes}
-          minimum={1} maximum={maximumIdleMinutes} required disabled={busy || !preferences.idleLockEnabled}
+          minimum={1} maximum={maximumIdleMinutes} required disabled={busy || idleSaving || !preferences.idleLockEnabled}
           onValueChange={value => { idleMinutes = value; }}
           onValueCommit={() => {
             const minutes = Number(idleMinutes);
             if (Number.isInteger(minutes) && minutes >= 1 && minutes <= maximumIdleMinutes)
-              void run("Saving lock preference…", () => saveIdle(preferences.idleLockEnabled, minutes));
+              void saveIdle(preferences.idleLockEnabled, minutes);
           }} />
         <span aria-hidden="true">min</span>
       </div>
