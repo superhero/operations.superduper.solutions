@@ -277,7 +277,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <section bind:this={panel} class="secrets-settings" aria-label="Secrets vault">
   <div class="toolbar vault-status">
-    <p class="help"><strong>{ready ? status.exists ? status.unlocked ? "Vault unlocked" : "Vault locked" : "No vault has been created:" : "Secrets vault"}</strong>{#if ready && !status.exists}{" "}Use a vault to help protect stored data required as input in the workflows.{/if}</p>
+    <div class="vault-status-message">
+      <MaterialIcon name="brightness_alert" size={18} />
+      <p class="help"><strong>{ready ? status.exists ? status.unlocked ? "Vault unlocked" : "Vault locked" : "No vault has been created:" : "Secrets vault"}</strong>{#if ready && !status.exists}{" "}Use a vault to help protect stored data required as input in the workflows.{/if}</p>
+    </div>
     {#if status.unlocked || busy}
       <div class="actions">
         {#if status.unlocked}<button type="button" onclick={() => void manualLock()}>Lock vault</button>
@@ -464,8 +467,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .creation-actions button { display: inline-flex; align-items: center; gap: 6px; }
   .card, .subform, .vault-create-form { display: grid; gap: 10px; min-width: 0; }
   .card { padding: 14px; border-radius: 4px; background: var(--color-surface); }
-  .vault-info { display: flex; align-items: flex-start; gap: 10px; }
-  .vault-info :global(.material-symbols-rounded) { flex-shrink: 0; margin-top: 1px; font-weight: 400; font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 20; }
+  .vault-info, .vault-status-message { display: flex; align-items: flex-start; gap: 10px; }
+  .vault-status-message { flex: 1; min-width: 0; }
+  :is(.vault-info, .vault-status-message) :global(.material-symbols-rounded) { flex-shrink: 0; margin-top: 1px; font-weight: 400; font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 20; }
   .vault-info, .vault-status { padding: 14px; border-radius: 4px; background: var(--color-emphasis); color: var(--color-background); }
   .subform { padding-top: 12px; border-top: 1px solid var(--color-background); }
   h3, h4, p { margin: 0; }
