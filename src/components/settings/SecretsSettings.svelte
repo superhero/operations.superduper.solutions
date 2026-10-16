@@ -439,15 +439,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
     <div class="card">
       <div class="vault-rotate-row">
-        <button type="button" disabled={busy || showRotation} onclick={() => showRotation = true}>Rotate keys<MaterialIcon name="lock_reset" size={18} /></button>
+        <button type="button" disabled={busy} onclick={() => { if (showRotation) clearInputs(); showRotation = !showRotation; }}>{showRotation ? "Cancel rotation" : "Rotate keys"}<MaterialIcon name={showRotation ? "backspace" : "lock_reset"} size={18} /></button>
         <p class="help">Verify every retained unlock method to re-encrypt the current vault. Older exports keep their original keys and methods.</p>
       </div>
         {#if showRotation}
           {#each status.methods as method, index (method.id)}
             <VaultAuthentication bind:this={rotationAuthentication[method.id]} status={{ ...status, methods: [method] }} disabled={busy} label={`Verify ${methodNames[method.kind].toLowerCase()} ${index + 1}`} />
           {/each}
-          <div class="actions"><button type="button" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}>Verify all and rotate key</button>
-            <button type="button" disabled={busy} onclick={() => { clearInputs(); showRotation = false; }}>Cancel</button></div>
+          <div class="actions"><button type="button" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}>Verify all and rotate key</button></div>
         {/if}
     </div>
   {/if}
