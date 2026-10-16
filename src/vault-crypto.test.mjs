@@ -262,3 +262,10 @@ Then('vault cryptographic provider failures return safe unavailable errors', { t
     await assert.rejects(passwordKey('valid synthetic password', encodeBase64(new Uint8Array(16))), code('UNAVAILABLE'));
   } finally { Object.defineProperty(globalThis, 'crypto', original); }
 });
+
+Then('vault recovery derivation rejects non-string keys before cryptographic work', async () => {
+  const salt = randomBase64(16);
+  for (const value of [undefined, null, 123, true, {}, [], new Uint8Array(128)]) {
+    await assert.rejects(recoveryKey(value, salt), code('INVALID'));
+  }
+});

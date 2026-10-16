@@ -38,3 +38,6 @@ Feature: Browser vault encryption and authenticated snapshots
 
   Scenario: Browser cryptography can be unavailable
     Then vault cryptographic provider failures return safe unavailable errors
+
+  Scenario: Recovery keys reject non-text input
+    Then vault recovery derivation rejects non-string keys before cryptographic work
