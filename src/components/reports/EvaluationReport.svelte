@@ -117,7 +117,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .evaluation-report :global(.report-metric-value) { color: var(--color-report-metric-value); font-family: Rationale, sans-serif; font-size: 44px; font-weight: 400; line-height: 1.2; }
   .evaluation-connection { display: flex; justify-content: center; padding: 24px 0 14px; color: var(--color-accent); font-size: 10px; font-weight: 600; }
   .evaluation-connection:has(~ .evaluation-connection) { padding-bottom: 24px; }
-  .evaluation-connection:first-child { padding-top: 0; }
+  .evaluation-connection:first-child { padding-top: 12px; }
   .evaluation-connection:last-child { padding-bottom: 0; }
   .evaluation-connection > span { display: flex; align-items: center; gap: 12px; width: 50%; }
   .evaluation-connection > span::before, .evaluation-connection > span::after { content: ""; flex: 1; height: 1px; color: var(--color-border); background: repeating-linear-gradient(to right, currentColor 0 4px, transparent 4px 12px); }
