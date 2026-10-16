@@ -77,7 +77,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.schema-disclosure .schema-chevron) { transition: transform 180ms ease-in; }
   :global(.schema-disclosure > summary[aria-expanded="true"] .schema-chevron) { transform: rotate(90deg); }
   .schema-title { flex: 1; min-width: 0; }
-  .schema-wrap-control { display: inline-flex; flex: 0 0 28px; opacity: 0; visibility: hidden; transition: opacity 180ms ease, visibility 0s linear 180ms; }
+  .schema-wrap-control { display: inline-flex; flex: 0 0 28px; color: var(--color-json-header-hover-foreground); opacity: 0; visibility: hidden; transition: opacity 180ms ease, visibility 0s linear 180ms; }
   .schema-wrap-control.visible { opacity: 1; visibility: visible; transition-delay: 0s; }
   .schema-copy-status { position: absolute; top: calc(100% + 8px); left: 0; max-width: 100%; padding: 6px 10px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-muted-foreground); font-size: 11px; font-weight: 700; pointer-events: none; }
   .schema-copy-status:empty { padding: 0; }
