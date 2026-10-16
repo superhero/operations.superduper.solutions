@@ -261,6 +261,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </div>
   <div class="vault-info" role="note">
     <p class="help">Credentials are encrypted for this site in this browser profile. Hiding this page locks the vault. Keep an encrypted backup and your recovery key outside this browser.</p>
+  </div>
+  <div class="vault-info" role="note">
     <p class="help">If you lose your password and every other unlock method, the vault cannot be recovered. An encrypted backup still needs a valid password, recovery key or passkey.</p>
   </div>
   {#if error}<p class="error" role="alert">{error}</p>{/if}
