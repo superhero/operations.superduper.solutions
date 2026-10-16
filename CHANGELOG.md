@@ -1836,6 +1836,16 @@ test(secrets): cover non-string recovery key rejection
 
 ```
 
+<!-- changelog-commit:629a87704bf7a2ec88d0588f7c8193bfef6fa610 -->
+### Commit [`629a877`](https://github.com/superhero/operations.superduper.solutions/commit/629a87704bf7a2ec88d0588f7c8193bfef6fa610)
+
+```text
+test(settings): update browser regressions for current vault controls
+
+Exercise keyboard copy, removal, cancellation and credential selection without removed replacement or approval controls. Preserve stale bindings in the drift fixture, distinguish page-exit access clearing from durable writes, and await async idle-switch updates. Match schema hover colors and settle settings expansion before measuring mobile scroll. All eight focused browser scenarios pass against the production bundle.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.47
