@@ -429,7 +429,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {@render vaultImport()}
     </div>
   {/if}
-  {#if ready}
+  {#if ready && status.exists}
     <div class="card">
       <div class="idle-settings">
       <button class="idle-toggle" type="button" role="switch" aria-checked={preferences.idleLockEnabled} disabled={busy || idleSaving}
