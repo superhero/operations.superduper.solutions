@@ -289,7 +289,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <p class="help"><strong>Credentials provided are encrypted:</strong> Managed by the browser profile for this site.</p>
   </div>
   <div class="vault-info" role="note">
-    <p class="help"><strong>Automatic locking:</strong> Closing or reloading this page locks the vault. Switching tabs or minimizing the browser keeps it unlocked.</p>
+    <p class="help"><strong>Automatic locking:</strong> Closing or reloading this page locks the vault.</p>
   </div>
   <div class="vault-info" role="note">
     <p class="help"><strong>Exports:</strong> Keep an encrypted export and your recovery key in a safe place outside this browser.</p>
