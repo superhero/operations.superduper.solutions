@@ -6,6 +6,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import FieldSelect from "$lib/components/FieldSelect.svelte";
+  import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import VaultAuthentication from "$lib/components/VaultAuthentication.svelte";
   import { operations } from "$lib/catalog.ts";
   import { workflowExecutionForOperation } from "$lib/workflow-execution.ts";
@@ -297,8 +298,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <label>Confirm vault password<input name="confirm-password" type="password" minlength="12" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
         <p class="help">Use at least 12 characters. You will verify a recovery key before the vault is saved.</p>
       </form>
-      <div class="actions"><button type="submit" form={createFormId} disabled={busy}>Create vault</button>
-        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}>Import vault</button></div>
+      <div class="actions creation-actions">
+        <button type="button" aria-label="Import vault" disabled={busy} onclick={() => restoreInput?.click()}><MaterialIcon name="upload_file" size={18} />Import</button>
+        <button type="submit" form={createFormId} aria-label="Create vault" disabled={busy}><MaterialIcon name="add" size={18} />Create</button>
+      </div>
       {@render vaultImport()}
     </div>
   {/if}
@@ -430,6 +433,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .secrets-settings { display: grid; gap: 12px; min-width: 0; padding: 16px; color: var(--color-foreground); --field-background: var(--color-background); --field-foreground: var(--color-foreground); }
   .toolbar, .record-heading, .grant { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .creation-actions { justify-content: flex-end; }
+  .creation-actions button { display: inline-flex; align-items: center; gap: 6px; }
   .card, .subform, .vault-create-form { display: grid; gap: 10px; min-width: 0; }
   .card { padding: 14px; border-radius: 4px; background: var(--color-surface); }
   .vault-info { display: grid; gap: 10px; }
