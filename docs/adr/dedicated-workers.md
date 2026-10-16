@@ -10,6 +10,8 @@ Separate workers handle:
 - **Schemas:** repository access, parsing, validation and operation extraction.
   The page reuses prepared results instead of repeating this work.
 - **Workflows:** initialization, loading, autosave and Git history.
+- **Matching:** prompt evaluation, cancelled when newer text or schemas replace
+  the pending search.
 - **Resources:** measurements, aggregation and history persistence.
 - **Errors:** bounded IndexedDB history, independent of resource sampling and
   isolated from its own failure-reporting path.

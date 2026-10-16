@@ -4,7 +4,7 @@
 
 import { operations, type Operation } from "./catalog.ts";
 import { catalogForOperation } from "./catalog-registry.ts";
-import { prepareRequest, type PreparedRequest } from "./operation-input.ts";
+import { prepareRequest, type InputValues, type PreparedRequest } from "./operation-input.ts";
 import { operationServerUrl } from "./schema-documents.ts";
 import { VaultError, type ApprovedOperation, type CredentialExecutionContext } from "./secrets/types.ts";
 import { approvedOperation } from "./secrets/policy.ts";
@@ -14,9 +14,9 @@ import { executeVaultOperation } from "./secrets/vault-executor.ts";
 export type WorkflowResponse = { status: number; statusText: string; headers: Record<string, string>; body: unknown; redacted?: boolean };
 export type WorkflowExecutionResult = { request: PreparedRequest; response: WorkflowResponse };
 export type WorkflowExecutor = {
-  execute(operation: Operation, values: Record<string, string>, signal?: AbortSignal, context?: CredentialExecutionContext): WorkflowExecutionResult | Promise<WorkflowExecutionResult>;
+  execute(operation: Operation, values: InputValues, signal?: AbortSignal, context?: CredentialExecutionContext): WorkflowExecutionResult | Promise<WorkflowExecutionResult>;
 };
-export type CredentialWorkflowExecutor = (descriptor: ApprovedOperation, values: Record<string, string>,
+export type CredentialWorkflowExecutor = (descriptor: ApprovedOperation, values: InputValues,
   context: CredentialExecutionContext, signal?: AbortSignal) => Promise<WorkflowExecutionResult>;
 
 export class WorkflowResponseError extends Error

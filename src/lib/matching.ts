@@ -6,7 +6,12 @@ import type { Operation } from "./catalog.ts";
 
 export const minimumSimilarity = 0.5;
 export const topResultCount = 5;
-export type OperationMatch = { operation: Operation; similarity: number };
+export type MatchableOperation = Pick<Operation, "id" | "name">;
+export type OperationMatch<T extends MatchableOperation = Operation> = { operation: T; similarity: number };
+export type OperationEvaluation<T extends MatchableOperation = Operation> = {
+  candidates: OperationMatch<T>[];
+  results: OperationMatch<T>[];
+};
 
 function normalize(value: string): string
 {
@@ -28,7 +33,7 @@ function similarity(left: string, right: string): number
   return 1 - previous[right.length]! / Math.max(left.length, right.length);
 }
 
-export function evaluateOperations(prompt: string, operations: Operation[]): { candidates: OperationMatch[]; results: OperationMatch[] }
+export function evaluateOperations<T extends MatchableOperation>(prompt: string, operations: readonly T[]): OperationEvaluation<T>
 {
   const query = normalize(prompt);
   if (!query || query.length > 256) return { candidates: [], results: [] };
@@ -40,7 +45,7 @@ export function evaluateOperations(prompt: string, operations: Operation[]): { c
   return { candidates, results: candidates.filter((result, index) => index < topResultCount || result.similarity > minimumSimilarity) };
 }
 
-export function rankOperations(prompt: string, operations: Operation[]): OperationMatch[]
+export function rankOperations<T extends MatchableOperation>(prompt: string, operations: readonly T[]): OperationMatch<T>[]
 {
   return evaluateOperations(prompt, operations).results;
 }

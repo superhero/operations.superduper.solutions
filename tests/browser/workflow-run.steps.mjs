@@ -39,7 +39,7 @@ const openRun = async (page, doc) => {
   await setMode(page, "workflow");
   await workflowAction(page, "Run");
   await expect(dialog(page)).toBeVisible();
-  await expect(dialog(page)).toContainText("Live example: https://example.com");
+  await expect(dialog(page)).toContainText("Server: https://example.com");
 };
 const select = async (page, name, value) => {
   await dialog(page).getByRole("combobox", { name, exact: true }).click();
@@ -51,21 +51,16 @@ Then("a saved workflow opens a request run with starting choices and an end cont
   const requests = await recordExampleRequests(page);
   const doc = fixture(graph("getProject"), graph("listProjects"));
   await seed(page, doc);
-  await setMode(page, "operations");
-  await openCatalog(page);
-  const catalog = page.getByRole("navigation", { name: "Saved workflow catalog", exact: true });
-  const group = catalog.locator(":scope > .catalog-group > summary");
-  if (await group.getAttribute("aria-expanded") !== "true") await group.click();
-  const saved = page.getByRole("button", { name: "Open workflow: Runner browser", exact: true });
-  await saved.click();
+  await setMode(page, "workflow");
+  await workflowAction(page, "Run");
   const run = dialog(page);
   await expect(run.getByRole("heading", { name: "Choose a starting operation", exact: true })).toBeVisible();
   await run.getByRole("radio", { name: "Get project", exact: true }).check();
-  const start = run.getByRole("button", { name: "Start", exact: true });
-  await expect(start.locator(".material-symbols-rounded")).toHaveText("start");
-  await expect(start.locator("span").filter({ hasText: /^Start$/ })).toBeVisible();
-  await expect(start).not.toHaveAttribute("title");
-  await start.click();
+  const proceed = run.getByRole("button", { name: "Proceed", exact: true });
+  await expect(proceed.locator(".material-symbols-rounded")).toHaveText("start");
+  await expect(proceed.locator("span").filter({ hasText: /^Proceed$/ })).toBeVisible();
+  await expect(proceed).not.toHaveAttribute("title");
+  await proceed.click();
   await expect(run.getByRole("heading", { name: "1. Get project", exact: true })).toBeVisible();
   await run.getByRole("textbox", { name: "Project ID", exact: true }).fill("project-2");
   await run.getByRole("button", { name: "Start workflow", exact: true }).click();

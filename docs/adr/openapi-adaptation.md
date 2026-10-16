@@ -10,6 +10,13 @@ reports and workflow execution. HTTP operation nodes and their connected data
 panels derive inputs and responses from the same document, preserving the API
 contract. Utility nodes retain application-defined models.
 
+Run forms expose field information and separate omission from explicit `null`.
+Optional fields can be excluded without losing their drafts. Null is available
+only when the schema allows it, independently of whether the field is required;
+connected workflow values remain authoritative. OpenAPI 3.0 `nullable` and 3.1
+types containing `null` retain that distinction through request validation.
+Form-encoded bodies continue to require primitive non-null values.
+
 Users choose which documents are enabled. Changes update the active registry
 without rewriting saved workflows. Compatibility is checked before operations
 become available; parsing, validation and repository work run in dedicated workers.

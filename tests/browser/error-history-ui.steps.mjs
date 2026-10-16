@@ -38,12 +38,30 @@ async function errorWorker(page) {
 Given('26 saved errors including a repeated failure with a cause', async function () {
   await this.page.evaluate(async fixture => {
     const { recordErrors } = await import(fixture);
-    await recordErrors(Array.from({ length: 26 }, (_, index) => ({
-      identity: `saved-${index + 1}`, origin: { source: 'application', scope: 'example' },
-      error: { name: 'ExampleError', message: `Saved error ${index + 1}`, stack: 'ExampleError\n    at saved-operation.ts:10:2',
-        ...(index === 25 ? { code: 'SAVE_FAILED', cause: { name: 'CauseError', message: 'Underlying storage issue', stack: 'CauseError\n    at storage.ts:4:3' } } : {}) },
-      firstSeen: Date.UTC(2026, 0, 1, 10, 0), lastSeen: Date.UTC(2026, 0, 1, 10, 1), occurrences: index === 25 ? 3 : 1,
-    })));
+    await recordErrors(Array.from({ length: 26 }, (_, index) => {
+      let error = { name: 'ExampleError', message: `Saved error ${index + 1}`,
+        stack: `ExampleError: Saved error ${index + 1}\n    at saved-operation.ts:10:2` };
+      if (index === 25) error = {
+        name: 'AggregateError', message: 'Saved error 26', code: 'SAVE_FAILED',
+        stack: 'AggregateError: Saved error 26\n    at saved-operation.ts:10:2',
+        cause: { name: 'CauseError', message: 'Underlying storage issue', code: 'STORE_FAILED',
+          stack: 'CauseError: Underlying storage issue\n    at storage.ts:4:3',
+          cause: { name: 'BackendError', message: 'Underlying backend issue', code: 0,
+            stack: 'BackendError: Underlying backend issue\n    at backend.ts:7:6' } },
+        errors: [
+          { name: 'RetryError', message: 'Retry was exhausted', stack: 'RetryError\n    at retry.ts:8:2' },
+          { name: 'ValidationError', message: 'Related record was invalid', code: 'INVALID_RECORD' },
+        ],
+      };
+      if (index === 24) error = { name: 'FirefoxError', message: 'Saved error 25',
+        stack: 'save@https://example.com/firefox.js:12:4\n@https://example.com/main.js:3:1' };
+      if (index === 23) error = { name: 'NoStackError', message: 'Saved error 24' };
+      if (index === 22) error = { name: 'HeaderOnlyError', message: 'Saved error 23', stack: 'HeaderOnlyError: Saved error 23' };
+      if (index === 21) error = { name: 'SettingsStorageError', message: 'Saved error 22\nCheck browser storage, then retry saving.',
+        stack: 'SettingsStorageError: Saved error 22\n    at recovery.ts:6:2' };
+      return { identity: `saved-${index + 1}`, origin: { source: 'application', scope: 'example' }, error,
+        firstSeen: Date.UTC(2026, 0, 1, 10, 0), lastSeen: Date.UTC(2026, 0, 1, 10, 1), occurrences: index === 25 ? 3 : 1 };
+    }));
   }, fixture);
 });
 
@@ -53,15 +71,58 @@ Then('the error history shows {int} unique errors and {int} entries', async func
   await expect(history(this.page).locator('details.entry')).toHaveCount(entries);
 });
 When('I expand the newest recorded error', async function () { await history(this.page).locator('summary').first().click(); });
-Then('its saved cause, stack, occurrence count and observation times are visible', async function () {
+async function expectDiagnosticOnce(diagnostic, { name, message, frames = [], code, missingStack = false }) {
+  const representation = diagnostic.locator(':scope > pre');
+  await expect(representation).toHaveCount(1);
+  await expect(representation).toContainText(`${name}: ${message}`);
+  for (const frame of frames) await expect(representation).toContainText(frame);
+  if (code !== undefined) await expect(representation).toContainText(`Code: ${code}`);
+  // Count only this diagnostic's own text; the summary and nested errors have
+  // their own representations and must not be mistaken for duplicate panels.
+  const ownText = await diagnostic.evaluate(element => [...element.childNodes]
+    .filter(node => !(node instanceof Element && node.classList.contains('cause')))
+    .map(node => node.textContent).join('\n'));
+  for (const text of [name, message, ...frames, ...(code !== undefined ? [`Code: ${code}`] : [])])
+    assert.equal(ownText.split(text).length - 1, 1, `${text} must appear once in its detail panel.`);
+  assert.equal(ownText.includes('No stack trace available.'), missingStack,
+    'The missing-stack notice must distinguish actual frames from a header alone.');
+}
+
+Then('its diagnostic text appears once with codes, nested causes and related errors', async function () {
   const entry = history(this.page).locator('details.entry').first();
+  const diagnostic = entry.locator('.entry-content > .diagnostic');
   await expect(entry.getByText('3 occurrences', { exact: true })).toBeVisible();
-  await expect(entry.getByText('Caused by', { exact: true })).toBeVisible();
-  await expect(entry.getByText('Underlying storage issue', { exact: true })).toBeVisible();
-  await expect(entry.getByText('SAVE_FAILED', { exact: true })).toBeVisible();
-  await expect(entry.locator('pre').first()).toContainText('saved-operation.ts:10:2');
+  await expectDiagnosticOnce(diagnostic, { name: 'AggregateError', message: 'Saved error 26', code: 'SAVE_FAILED', frames: ['at saved-operation.ts:10:2'] });
+  const cause = diagnostic.locator(':scope > .cause').filter({ has: this.page.locator(':scope > h5', { hasText: 'Caused by' }) });
+  await expect(entry.getByRole('heading', { name: 'Caused by', exact: true })).toHaveCount(2);
+  const nested = cause.locator(':scope > .diagnostic');
+  await expectDiagnosticOnce(nested, { name: 'CauseError', message: 'Underlying storage issue', code: 'STORE_FAILED', frames: ['at storage.ts:4:3'] });
+  await expectDiagnosticOnce(nested.locator(':scope > .cause > .diagnostic'), {
+    name: 'BackendError', message: 'Underlying backend issue', code: 0, frames: ['at backend.ts:7:6'],
+  });
+  const related = diagnostic.locator(':scope > .cause').filter({ has: this.page.getByRole('heading', { name: 'Related errors', exact: true }) });
+  await expect(related.getByRole('heading', { name: 'Related errors', exact: true })).toBeVisible();
+  await expect(related.locator(':scope > .diagnostic')).toHaveCount(2);
+  await expectDiagnosticOnce(related.locator(':scope > .diagnostic').nth(0), {
+    name: 'RetryError', message: 'Retry was exhausted', frames: ['at retry.ts:8:2'],
+  });
+  await expectDiagnosticOnce(related.locator(':scope > .diagnostic').nth(1), {
+    name: 'ValidationError', message: 'Related record was invalid', code: 'INVALID_RECORD', missingStack: true,
+  });
   await expect(entry.locator('.timestamps dt')).toHaveText(['First seen', 'Last seen']);
   assert.equal((await entry.locator('.timestamps dd').allTextContents()).every(Boolean), true);
+});
+Then('saved stack formats retain their messages and missing-trace notices', async function () {
+  for (const detail of [
+    { name: 'FirefoxError', message: 'Saved error 25', frames: ['save@https://example.com/firefox.js:12:4', '@https://example.com/main.js:3:1'] },
+    { name: 'NoStackError', message: 'Saved error 24', missingStack: true },
+    { name: 'HeaderOnlyError', message: 'Saved error 23', missingStack: true },
+    { name: 'SettingsStorageError', message: 'Saved error 22\nCheck browser storage, then retry saving.', frames: ['at recovery.ts:6:2'] },
+  ]) {
+    const entry = history(this.page).locator('details.entry').filter({ has: this.page.locator('summary', { hasText: `${detail.name}: ${detail.message}` }) });
+    await entry.locator('summary').click();
+    await expectDiagnosticOnce(entry.locator('.entry-content > .diagnostic'), detail);
+  }
 });
 When('I open the older recorded errors', async function () { await history(this.page).getByRole('button', { name: 'Older errors', exact: true }).click(); });
 Then('the error history shows the oldest saved error', async function () {

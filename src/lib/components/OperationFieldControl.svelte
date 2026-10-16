@@ -21,9 +21,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 {#if field.type === "integer"}
   <FieldInteger {id} label={field.label} {value} minimum={field.minimum} maximum={field.maximum}
-    options={field.enum as number[] | undefined} {onValueChange} {required} {disabled} {invalid} {describedBy} />
+    options={field.enum?.filter((value): value is number => typeof value === "number")} {onValueChange} {required} {disabled} {invalid} {describedBy} />
 {:else if field.enum || field.type === "boolean"}
-  <FieldSelect {id} label={field.label} {value} options={field.enum ?? [true, false]} {active} {disabled}
+  <FieldSelect {id} label={field.label} {value} options={field.enum?.filter(value => value !== null) ?? [true, false]} {active} {disabled}
     {onValueChange} {required} {invalid} {describedBy} {portalZIndex} />
 {:else if field.type === "number"}
   <FieldNumber {id} label={field.label} {value} minimum={field.minimum}

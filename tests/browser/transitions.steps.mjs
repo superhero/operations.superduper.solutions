@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
+import { openCatalog, setMode, workspace } from './workspace.steps.mjs';
 
 async function pauseNextAnimation(page, selector, property) {
   // Observe before the input action: transport and locator waits can otherwise
@@ -47,13 +48,15 @@ Then('prompt focus and navigation hover animate and settle with the motion prefe
   const page = this.page;
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
-  const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
+  const promptRing = page.locator('.catalog-prompt .prompt-input');
+  await openCatalog(page);
+  const menu = page.getByRole('button', { name: 'Close navigation', exact: true });
   await menu.focus();
-  await expect.poll(() => prompt.evaluate(element => element.getAnimations().length)).toBe(0);
-  const focusing = await pauseNextAnimation(page, '#operation-prompt', 'outlineColor');
+  await expect.poll(() => promptRing.evaluate(element => element.getAnimations().length)).toBe(0);
+  const focusing = await pauseNextAnimation(page, '.catalog-prompt .prompt-input', 'outlineColor');
   await prompt.focus();
   await focusing();
-  const focusMotion = await prompt.evaluate(element => {
+  const focusMotion = await promptRing.evaluate(element => {
     const animation = element.getAnimations().find(item => item.transitionProperty === 'outline-color');
     if (!animation) return null;
     animation.pause();
@@ -68,9 +71,9 @@ Then('prompt focus and navigation hover animate and settle with the motion prefe
   await expect.poll(() => menu.evaluate(element => element.getAnimations({ subtree: true }).length)).toBeGreaterThan(0);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect.poll(() => menu.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
-  await expect.poll(() => prompt.evaluate(element => element.getAnimations().length)).toBe(0);
+  await expect.poll(() => promptRing.evaluate(element => element.getAnimations().length)).toBe(0);
   await expect(prompt).toBeFocused();
-  await expect(prompt).toHaveCSS('outline-style', 'solid');
+  await expect(promptRing).toHaveCSS('outline-style', 'solid');
   await expect(menu).toHaveCSS('transform', 'none');
 });
 
@@ -105,15 +108,20 @@ Then('report and schema transitions retain content through interruption', async 
   await reportButton.click();
   await expect(report).toBeVisible();
   await expect.poll(() => report.evaluate(element => element.parentElement.getAnimations({ subtree: true }).length)).toBe(0);
-  await expect(page.locator('.step-viewport')).not.toHaveClass(/\bfollowing-content-size\b/);
+  await expect(workspace(page)).toBeVisible();
+  await expect.poll(() => workspace(page).evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await expect(page.locator('.step-viewport')).toHaveCSS('transition-property', 'height');
-  await expect.poll(() => page.locator('.step-viewport').evaluate(element => parseFloat(getComputedStyle(element).transitionDuration))).toBeGreaterThan(0);
+  await expect(page.locator('#run-operation-details')).toHaveCSS('transition-property', 'grid-template-rows, visibility');
+  await expect.poll(() => page.locator('#run-operation-details').evaluate(element => parseFloat(getComputedStyle(element).transitionDuration))).toBeGreaterThan(0);
 });
 
 Then('native scrollbars expand on hover and settle without changing the reading position', async function () {
   const page = this.page;
+  await setMode(page, 'settings');
   await page.setViewportSize({ width: 1280, height: 360 });
+  const heading = page.getByRole('region', { name: 'Settings workspace', exact: true }).locator('summary[aria-label="Workflows"]');
+  if (await heading.getAttribute('aria-expanded') !== 'true') await heading.click();
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const root = page.locator('html');
   const inset = () => root.evaluate(element => parseFloat(getComputedStyle(element).getPropertyValue('--scrollbar-y-inset')));
@@ -136,56 +144,4 @@ Then('native scrollbars expand on hover and settle without changing the reading 
   await page.mouse.move(1280 - metrics.width / 2, 160);
   await expect.poll(inset).toBe(0);
   await expect.poll(() => root.evaluate(element => element.getAnimations().length)).toBe(0);
-});
-
-Then('prompt examples and page overflow remain stable when resizing under a hovered arrow', async function () {
-  const page = this.page;
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await page.setViewportSize({ width: 500, height: 900 });
-  const arrow = page.getByRole('button', { name: 'Find operations', exact: true });
-  await page.getByRole('button', { name: 'Commonly used operations', exact: true }).click();
-  const firstExample = page.locator('.prompt-suggestion-list button:not([hidden])').first();
-  await expect(firstExample).toBeVisible();
-  await page.evaluate(() => document.fonts.ready);
-  await page.mouse.move(0, 0);
-  await expect.poll(() => page.locator('#prompt-examples').evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
-  const thresholdHeight = await page.evaluate(() => Math.floor(document.body.getBoundingClientRect().height) - 1);
-  await page.setViewportSize({ width: 500, height: thresholdHeight });
-  const before = await page.locator('.prompt-footer').evaluate(element => ({ height: element.offsetHeight,
-    overflow: document.documentElement.scrollHeight > document.documentElement.clientHeight,
-    gutter: innerWidth - document.documentElement.clientWidth }));
-  assert.ok(before.overflow && before.gutter > 0, 'The fixture must start just beyond page overflow with a real native scrollbar.');
-  const bounds = await arrow.boundingBox();
-  await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height - 3);
-  await expect.poll(() => arrow.evaluate(element => element.getBoundingClientRect().width - element.offsetWidth)).toBeGreaterThan(3);
-  // Fitting may change the visible count, but must retain one complete row
-  // without changing footer height or toggling page overflow under hover.
-  await page.setViewportSize({ width: 499, height: thresholdHeight });
-  const samples = await page.locator('.prompt-footer').evaluate(async element => {
-    const result = [];
-    for (let frame = 0; frame < 90; frame += 1) {
-      await new Promise(resolve => requestAnimationFrame(resolve));
-      const list = document.querySelector('.prompt-suggestion-list');
-      const bounds = list.getBoundingClientRect();
-      const examples = [...list.querySelectorAll('button:not([hidden])')];
-      const top = examples[0]?.getBoundingClientRect().top;
-      const fits = examples.length > 0 && examples.every(button => {
-        const box = button.getBoundingClientRect();
-        return button.checkVisibility() && Math.abs(box.top - top) <= 1 &&
-          box.left >= bounds.left - 1 && box.right <= bounds.right + 1 &&
-          button.scrollWidth <= button.clientWidth + 1;
-      }) && document.documentElement.scrollWidth <= innerWidth;
-      result.push({ visible: examples.length, fits, height: element.offsetHeight,
-        overflow: document.documentElement.scrollHeight > document.documentElement.clientHeight });
-    }
-    return result;
-  });
-  assert.ok(samples.every(sample => sample.fits && sample.height === before.height && sample.overflow === before.overflow),
-    `Hover feedback must preserve one complete example row, footer height, and page overflow: ${[...new Set(samples.map(sample => JSON.stringify(sample)))].join(', ')}`);
-  await page.mouse.move(0, 0);
-  await expect.poll(() => arrow.evaluate(element => element.getBoundingClientRect().width - element.offsetWidth)).toBe(0);
-  await expect(firstExample).toBeVisible();
-  assert.deepEqual(await page.locator('.prompt-footer').evaluate(element => ({ height: element.offsetHeight,
-    overflow: document.documentElement.scrollHeight > document.documentElement.clientHeight })),
-  { height: before.height, overflow: before.overflow }, 'Leaving the arrow must retain the same example layout and overflow.');
 });

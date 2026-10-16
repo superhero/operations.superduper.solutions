@@ -53,7 +53,7 @@ Feature: Browser operations workspace
       """
       {"method":"GET","path":"/projects","query":{"name":"Design & review","limit":5}}
       """
-    When I edit the inputs and change "Result limit" to "8"
+    When I restart with the same inputs and change "Result limit" to "8"
     Then the previous request preview cannot be reopened
     When I prepare the request
     Then the prepared request is:
@@ -77,7 +77,7 @@ Feature: Browser operations workspace
       """
       {"method":"PATCH","path":"/tasks/task%2Fone","query":{},"body":{"priority":"normal","completed":false}}
       """
-    When I edit the inputs and change "Completed" to ""
+    When I restart with the same inputs and change "Completed" to ""
     And I prepare the request
     Then the prepared request is:
       """
@@ -111,28 +111,18 @@ Feature: Browser operations workspace
     And it contains one connection
     And grid snapping and curved dashed connections remain enabled
 
-  Scenario Outline: Switching all three workspaces preserves drafts and protects the hidden graph
+  Scenario Outline: Switching workspaces preserves the graph and protects hidden shortcuts
     Given I use a viewport of <width> by 844 pixels
-    And I open the "List projects" operation from the catalog
-    When I enter these operation inputs:
-      | label        | value       |
-      | Project name | Draft query |
-      | Result limit | 7           |
-    And I add "List projects" through the workflow catalog
-    And I switch to the settings workspace
+    And a workflow with 1 instances of "List projects"
+    When I switch to the settings workspace
     And I press Delete in Settings
     Then Settings is the only selected workspace
-    When I switch to operations and press Delete
-    Then the "List projects" form is displayed
-    And the input "Project name" still contains "Draft query"
-    And the input "Result limit" still contains "7"
     When I switch to the workflow workspace
     Then the workflow still contains 1 instance of "List projects"
     When I switch to the settings workspace
-    And I choose the "Get project" operation from the catalog
-    Then the "Get project" form is displayed
-    When I switch to the workflow workspace
+    And I add "Get project" from the settings catalog
     Then the workflow still contains 1 instance of "List projects"
+    And the workflow still contains 1 instance of "Get project"
 
     Examples:
       | width |
@@ -163,7 +153,7 @@ Feature: Browser operations workspace
 
   Scenario: A graph remains visible after switching to a narrow viewport
     Given a workflow with 2 instances of "List projects"
-    When I switch to the operations workspace
+    When I switch to the settings workspace
     And I use a viewport of 390 by 844 pixels
     And I switch to the workflow workspace
     Then at least one complete operation node is visible inside the canvas

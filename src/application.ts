@@ -41,6 +41,7 @@ export async function initializeApplication(): Promise<void> {
     startApplication(document, App, (component, options) => mount(component, { ...options, props: {
       initialWorkflowDefaults: settings.workflowDefaults,
       initialDeveloperToolbar: settings.developerToolbar,
+      initialEvaluationDetails: settings.evaluationDetails,
       initialLocale: settings.locale,
       initialSettingsError: settings.storageError,
     } }));

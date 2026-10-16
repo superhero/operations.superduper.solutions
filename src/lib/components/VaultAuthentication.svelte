@@ -10,7 +10,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { unlockPasskey } from "../secrets/passkeys.ts";
   import { VaultError, type UnlockProof, type VaultStatus } from "../secrets/types.ts";
 
-  let { status, disabled = false, label = "Authenticate" }: { status: VaultStatus; disabled?: boolean; label?: string } = $props();
+  let { status, disabled = false, label = "Authenticate", portalZIndex = 40 }: {
+    status: VaultStatus; disabled?: boolean; label?: string; portalZIndex?: number;
+  } = $props();
   const id = $props.id();
   let methodId = $state("");
   let secretInput = $state.raw<HTMLInputElement>();
@@ -51,7 +53,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <div class="vault-authentication">
   <label for={`${id}-method`}>{label} method</label>
-  <FieldSelect id={`${id}-method`} label={`${label} method`} value={methodId} {options} includePlaceholder={false} {disabled}
+  <FieldSelect id={`${id}-method`} label={`${label} method`} value={methodId} {options} includePlaceholder={false} {disabled} {portalZIndex}
     onValueChange={value => { clear(); methodId = value; }} />
   {#if method && method.kind !== "passkey"}
     <label for={`${id}-secret`}>{label} {method.kind === "password" ? "password" : "recovery key"}</label>

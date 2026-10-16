@@ -952,7 +952,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {/key}
   {/if}
   {#if !nodes.length}
-    <div class="workflow-empty"><Button onclick={onBrowse}><span>Add nodes<br />by selecting workflow operations<br />from the left menu</span></Button></div>
+    <div class="workflow-empty"><Button aria-label="Browse operations" onclick={onBrowse}><span>Add nodes<br />by selecting workflow operations<br />from the left menu</span></Button></div>
   {/if}
   <div class="workflow-message" aria-live="polite">
     {#if saveError}<p role="alert">{saveError}</p><Button size="sm" onclick={() => save()}>Retry saving</Button>{/if}
@@ -990,7 +990,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     tooltip={descriptionError ? "Try again" : "Save workflow details"} onclick={saveWorkflowDetails}><MaterialIcon name="save" size={20} /></Button></div>
 </Modal>
 
-<Modal bind:open={runOpen} title={`Run workflow: ${runDocument?.name ?? name}`} description="Review each step before running it. The operation's catalog determines whether its response is mocked or requested from a live service."
+<Modal bind:open={runOpen} size="wide" title={`Run workflow: ${runDocument?.name ?? name}`}
   onCloseAutoFocus={(event) => { event.preventDefault(); void tick().then(focusCanvas); }}>
   {#if runOpen && runDocument}<WorkflowRun document={runDocument} onClose={() => runOpen = false} onBindingChange={bindRunCredential} />{/if}
 </Modal>

@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, setMode } from './workspace.steps.mjs';
+import { openCatalog } from './workspace.steps.mjs';
 import { operations } from '../../src/lib/catalog.ts';
 import { catalogs } from '../../src/lib/catalog-registry.ts';
 
@@ -64,26 +64,27 @@ Then('catalog groups count their operations and keep one open descendant path', 
   await expand(page, 'projects');
   for (const id of ['overview', 'tasks']) await expect(heading(page, id)).toHaveAttribute('aria-expanded', 'false');
   for (const id of ids) await expect(operation(page, id)).toBeHidden();
-  await expect(catalog(page).getByRole('button', { name: /^Open form:/ })).toHaveCount(0);
+  await expect(catalog(page).getByRole('button', { name: /^Add to workflow:/ })).toHaveCount(0);
 });
 
-Then('nested catalog entries open a form and add an operation to the workflow', async function () {
+Then('nested catalog entries add operations to the workflow with useful focus', async function () {
   const page = this.page;
   await openCatalog(page);
   await expand(page, 'projects');
   await expand(page, 'tasks');
-  await expect(operation(page, 'demo:createTask')).toHaveAccessibleName('Open form: Create task');
+  await expect(operation(page, 'demo:createTask')).toHaveAccessibleName('Add to workflow: Create task');
   await operation(page, 'demo:createTask').press('Enter');
-  await expect(page.getByRole('heading', { name: 'Operation: Create task', exact: true })).toBeVisible();
-  await expect(page.getByRole('textbox', { name: 'Project ID', exact: true })).toBeFocused();
-  await setMode(page, 'workflow');
+  const nodes = page.locator('.svelte-flow__node-operation');
+  await expect(nodes).toHaveCount(1);
+  await expect(nodes).toContainText('Create task');
+  await expect(nodes).toBeFocused();
   await openCatalog(page);
   await expand(page, 'projects');
   await expand(page, 'overview');
   await expect(operation(page, 'demo:listProjects')).toHaveAccessibleName('Add to workflow: List projects');
   await operation(page, 'demo:listProjects').press('Space');
-  const node = page.locator('.svelte-flow__node-operation');
-  await expect(node).toHaveCount(1);
+  await expect(nodes).toHaveCount(2);
+  const node = nodes.filter({ has: page.locator('[data-operation-name="List projects"]') });
   await expect(node).toContainText('List projects');
   await expect(node).toBeFocused();
 });

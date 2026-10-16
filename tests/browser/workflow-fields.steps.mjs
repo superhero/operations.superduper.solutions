@@ -6,7 +6,7 @@ import { expectWorkflowName, renameWorkflow } from './workflow-details.fixture.m
 import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { chooseCatalogOperation, connections, operationNodes, readExport, setMode, workflow } from "./workspace.steps.mjs";
+import { closeCatalog, revealCatalogOperation, chooseCatalogOperation, connections, operationNodes, readExport, setMode, workflow } from "./workspace.steps.mjs";
 import { operations } from "../../src/lib/catalog.ts";
 import { createOperationGraph } from "../../src/lib/workflow-graph.ts";
 
@@ -360,7 +360,7 @@ Then("its schema panels and connections are removed", async function () {
   await expect(operationNodes(this.page, "List projects")).toHaveCount(0);
   await expect(panels(this.page, this.branchOwnerId)).toHaveCount(0);
   await expect(workflow(this.page).locator(".svelte-flow__edge")).toHaveCount(0);
-  await expect(workflow(this.page).getByRole("button", { name: "Add nodes by selecting workflow operations from the left menu", exact: true })).toBeVisible();
+  await expect(workflow(this.page).locator(".workflow-empty").getByRole("button", { name: "Browse operations", exact: true })).toBeVisible();
 });
 
 When("I drag the project identifier over the target panel body", async function () {
@@ -456,7 +456,9 @@ Given("an imported legacy workflow near the coordinate limit", async function ()
 });
 
 When("I try to add Create task beyond the coordinate limit", async function () {
-  await chooseCatalogOperation(this.page, "Create task", "workflow");
+  const entry = await revealCatalogOperation(this.page, "Create task");
+  await entry.getByRole("button", { name: "Add to workflow: Create task", exact: true }).click();
+  await closeCatalog(this.page);
 });
 
 Then("the refused addition explains the limit and preserves the original graph", async function () {

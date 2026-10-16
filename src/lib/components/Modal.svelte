@@ -9,8 +9,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { Snippet } from "svelte";
   import HintButton from "./HintButton.svelte";
   import MaterialIcon from "./MaterialIcon.svelte";
-  let { open = $bindable(false), title, description, children, initialFocus, onCloseAutoFocus, onEscapeKeydown }:
-    { open: boolean; title: string; description?: string; children: Snippet;
+  let { open = $bindable(false), title, description, children, size = "default", initialFocus, onCloseAutoFocus, onEscapeKeydown }:
+    { open: boolean; title: string; description?: string; children: Snippet; size?: "default" | "wide";
       initialFocus?: () => HTMLElement | null | undefined; onCloseAutoFocus?: (event: Event) => void;
       onEscapeKeydown?: (event: KeyboardEvent) => void } = $props();
 </script>
@@ -18,7 +18,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <Dialog.Root bind:open>
   <Dialog.Portal>
     <Dialog.Overlay class="modal-overlay" />
-    <Dialog.Content class="modal-content" onOpenAutoFocus={(event) => {
+    <Dialog.Content class={size === "wide" ? "modal-content modal-wide" : "modal-content"} onOpenAutoFocus={(event) => {
       const target = initialFocus?.();
       if (target) { event.preventDefault(); target.focus(); }
     }} onCloseAutoFocus={(event) => onCloseAutoFocus?.(event)} onEscapeKeydown={(event) => onEscapeKeydown?.(event)}>

@@ -252,14 +252,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <section bind:this={panel} class="secrets-settings" aria-label="Secrets vault">
   <div class="toolbar">
     <strong>{ready ? status.exists ? status.unlocked ? "Vault unlocked" : "Vault locked" : "No vault created" : "Secrets vault"}</strong>
-    <div class="actions">
-      <button type="button" disabled={busy} onclick={() => run("Refreshing vault…", async () => { await refresh(); ready = true; })}>Refresh</button>
-      {#if status.unlocked}<button type="button" onclick={() => void manualLock()}>Lock vault</button>
-      {:else if busy}<button type="button" onclick={() => void manualLock()}>Cancel action</button>{/if}
-    </div>
+    {#if status.unlocked || busy}
+      <div class="actions">
+        {#if status.unlocked}<button type="button" onclick={() => void manualLock()}>Lock vault</button>
+        {:else}<button type="button" onclick={() => void manualLock()}>Cancel action</button>{/if}
+      </div>
+    {/if}
   </div>
-  <p class="help">Credentials are encrypted for this site in this browser profile. Hiding this page locks the vault. Keep an encrypted backup and your recovery key outside this browser.</p>
-  <p class="help">If you lose your password and every other unlock method, the vault cannot be recovered. An encrypted backup still needs a valid password, recovery key or passkey.</p>
+  <div class="vault-info" role="note">
+    <p class="help">Credentials are encrypted for this site in this browser profile. Hiding this page locks the vault. Keep an encrypted backup and your recovery key outside this browser.</p>
+    <p class="help">If you lose your password and every other unlock method, the vault cannot be recovered. An encrypted backup still needs a valid password, recovery key or passkey.</p>
+  </div>
   {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if progress || notice}<p class="notice" role="status">{progress || notice}</p>{/if}
 
@@ -407,6 +410,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .card, .subform { display: grid; gap: 10px; min-width: 0; }
   .card { padding: 14px; border-radius: 4px; background: var(--color-surface); }
+  .vault-info { display: grid; gap: 10px; padding: 14px; border-radius: 4px; background: var(--color-emphasis); color: var(--color-background); }
   .subform { padding-top: 12px; border-top: 1px solid var(--color-background); }
   h3, h4, p { margin: 0; }
   h3 { font-size: 14px; } h4, label, strong { font-size: 12px; }

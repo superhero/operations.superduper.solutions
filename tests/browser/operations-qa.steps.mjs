@@ -4,137 +4,8 @@
 import assert from 'node:assert/strict';
 import { When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { closeCatalog, expectFieldValue, field, openCatalog } from './workspace.steps.mjs';
+import { closeCatalog, expectFieldValue, field, openCatalog, restartRun, applyDisplayedTheme } from './workspace.steps.mjs';
 import { expectThemeColors } from './theme-colors.mjs';
-
-Then('the focused control is visible below the sticky header', async function () {
-  await expect.poll(() => this.page.evaluate(() => {
-    const target = document.activeElement;
-    if (!target || target === document.body || target.closest('[inert],[hidden]')) return false;
-    const bounds = target.getBoundingClientRect();
-    const header = document.querySelector('.site-header').getBoundingClientRect();
-    return bounds.top >= header.bottom && bounds.bottom <= innerHeight && bounds.left >= 0 && bounds.right <= innerWidth;
-  })).toBe(true);
-});
-When('I return to the form without editing', async function () {
-  await this.page.getByRole('button', { name: 'Edit inputs', exact: true }).click();
-});
-When('I return to the prompt through progress', async function () {
-  await this.page.getByRole('navigation', { name: 'Progress' }).getByRole('button', { name: /Prompt$/ }).click();
-});
-Then('animated form details keep the active panel contained', async function () {
-  await this.page.emulateMedia({ reducedMotion: 'no-preference' });
-  const samples = await this.page.evaluate(async () => {
-    // Reveal also observes the media event in JavaScript; deliver it before opening.
-    await new Promise(requestAnimationFrame);
-    const panel = document.querySelector('.step-panel[aria-hidden="false"]');
-    const viewport = document.querySelector('.step-viewport');
-    const control = panel.querySelector('[aria-label="Review operation details"]');
-    const details = panel.querySelector('#operation-details');
-    const measure = () => {
-      const content = panel.getBoundingClientRect();
-      const clip = viewport.getBoundingClientRect();
-      return { height: content.height, clipped: Math.max(0, content.bottom - clip.bottom) };
-    };
-    const frame = () => new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)));
-    const measurements = [measure()];
-    let animation;
-    let timer;
-    let captured;
-    const ready = new Promise((resolve, reject) => {
-      captured = resolve;
-      timer = setTimeout(() => reject(new Error('The details grid transition did not start.')), 5000);
-    });
-    const started = event => {
-      if (event.target !== details || event.propertyName !== 'grid-template-rows') return;
-      animation = details.getAnimations().find(item =>
-        item instanceof CSSTransition && item.transitionProperty === 'grid-template-rows');
-      if (!animation) return;
-      // Keep the real transition running so the app follows its changing size.
-      // Freeze only its clock: CI may otherwise skip the whole 240ms animation.
-      animation.playbackRate = 0;
-      captured();
-    };
-    panel.addEventListener('transitionrun', started);
-    try {
-      control.click();
-      await ready;
-      clearTimeout(timer);
-      await animation.ready;
-      const { delay, duration } = animation.effect.getTiming();
-      if (!(Number(duration) > 0)) throw new Error('The details transition must have a positive duration.');
-      for (const progress of [0, 0.15, 0.35, 0.55, 0.75, 0.95]) {
-        animation.currentTime = delay + Number(duration) * progress;
-        await frame();
-        if (animation.playState !== 'running') throw new Error('The details transition must remain running while sampled.');
-        measurements.push(measure());
-      }
-      animation.playbackRate = 1;
-      animation.finish();
-      await animation.finished;
-      await frame();
-      measurements.push(measure());
-      return measurements;
-    } finally {
-      clearTimeout(timer);
-      panel.removeEventListener('transitionrun', started);
-      if (animation) animation.playbackRate = 1;
-    }
-  });
-  assert.ok(Math.max(...samples.map(sample => sample.height)) - Math.min(...samples.map(sample => sample.height)) > 40,
-    'The check must observe an actual animated expansion.');
-  assert.ok(samples.slice(1, -1).some(sample => sample.height > samples[0].height + 1 && sample.height < samples.at(-1).height - 1),
-    'The check must observe intermediate expanded heights, not only the endpoints.');
-  assert.ok(samples.every(sample => sample.clipped <= 2), `Active controls were clipped during expansion: ${JSON.stringify(samples)}`);
-});
-When('I return to the form through progress', async function () {
-  await this.page.getByRole('navigation', { name: 'Progress' }).getByRole('button', { name: /Operation$/ }).click();
-});
-Then('changing motion preference settles visible details immediately', async function () {
-  const page = this.page;
-  const details = page.locator('#operation-details');
-  for (const opening of [true, false]) {
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await details.evaluate(async element => {
-      await new Promise(requestAnimationFrame);
-      const started = event => {
-        if (event.target !== element || event.propertyName !== 'grid-template-rows') return;
-        for (const animation of element.getAnimations()) {
-          if (animation.transitionProperty !== 'grid-template-rows') continue;
-          // Hold real motion before another browser command can miss it.
-          animation.playbackRate = 0;
-          animation.currentTime = Number(animation.effect.getTiming().duration) / 2;
-        }
-        element.removeEventListener('transitionrun', started);
-      };
-      element.addEventListener('transitionrun', started);
-    });
-    await page.getByRole('button', { name: 'Review operation details', exact: true }).click();
-    await expect.poll(() => details.evaluate(element => {
-      const animations = element.getAnimations().filter(animation =>
-        animation.transitionProperty === 'grid-template-rows' && animation.playState === 'running' &&
-        animation.effect.getComputedTiming().progress > 0 && animation.effect.getComputedTiming().progress < 1);
-      return animations.length;
-    })).toBeGreaterThan(0);
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    const moving = await page.evaluate(async () => {
-      await new Promise(requestAnimationFrame);
-      await new Promise(requestAnimationFrame);
-      return (document.getElementById('operation-details')?.getAnimations() ?? [])
-        .some(animation => animation.playState === 'running');
-    });
-    assert.equal(moving, false, 'Existing disclosure motion must finish when reduced motion is enabled.');
-    if (opening) await expect(details).toBeVisible();
-    else {
-      await expect(details).toBeHidden();
-      await expect(details.locator('.detail-report')).toHaveCount(0);
-    }
-    await expect(page.locator('.step-viewport')).not.toHaveClass(/\bfollowing-content-size\b/);
-  }
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await expect(page.locator('.step-viewport')).toHaveCSS('transition-property', 'height');
-  await expect.poll(() => page.locator('.step-viewport').evaluate(element => parseFloat(getComputedStyle(element).transitionDuration))).toBeGreaterThan(0);
-});
 
 Then('the required Priority dropdown supports keyboard choice and cancellation', async function () {
   const page = this.page;
@@ -164,9 +35,9 @@ Then('the required Priority dropdown supports keyboard choice and cancellation',
   await priority.press('Home');
   await priority.press('Enter');
   await expectFieldValue(page, 'Priority', '');
-  await page.getByRole('button', { name: 'Execute operation', exact: true }).click();
+  await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
   await expect(priority).toBeFocused();
-  await expect(page.getByRole('region', { name: 'Prepared request', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: /^(Prepared request|Step \d+ prepared request)$/ })).toHaveCount(0);
   await priority.press('Space');
   await priority.press('End');
   await priority.press('Enter');
@@ -178,10 +49,7 @@ Then('the Priority dropdown uses themed animated choices without overflowing', a
   const priority = await field(page, 'Priority');
   const list = page.getByRole('listbox');
   for (const theme of ['light', 'dark']) {
-    await openCatalog(page);
-    const toggle = page.getByRole('switch', { name: 'Dark theme', exact: true });
-    if (await toggle.getAttribute('aria-checked') !== String(theme === 'dark')) await toggle.click();
-    await closeCatalog(page);
+    await applyDisplayedTheme(page, theme);
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.evaluate(() => {
       const started = event => {
@@ -243,7 +111,7 @@ Then('the Result limit slider preserves bounds and keyboard focus', async functi
     await expect(slider).toHaveAttribute('aria-valuenow', String(value));
     await expect(slider).toBeFocused();
   }
-  await expect(page.getByRole('region', { name: 'Prepared request', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('region', { name: /^(Prepared request|Step \d+ prepared request)$/ })).toHaveCount(0);
 });
 
 Then('the optional Count slider preserves large signed integers and clears without a default', async function () {
@@ -262,11 +130,11 @@ Then('the optional Count slider preserves large signed integers and clears witho
     else await expect(slider).toHaveAttribute('aria-valuetext', 'Not set');
     assert.equal(await input.evaluate(control => control.validity.valid), true);
     await page.screenshot({ path: `tmp/test/integer-slider-${value ? Number(value) < 0 ? 'minimum' : 'maximum' : 'empty'}.png` });
-    await page.getByRole('button', { name: 'Execute operation', exact: true }).click();
-    const preview = page.getByRole('region', { name: 'Prepared request', exact: true });
+    await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+    const preview = page.getByRole('region', { name: /^(Prepared request|Step \d+ prepared request)$/ });
     await expect(preview).toBeVisible();
     assert.deepEqual(JSON.parse(await preview.innerText()).query, value ? { count: Number(value) } : {});
-    await page.getByRole('button', { name: 'Edit inputs', exact: true }).click();
+    await restartRun(page, true);
   }
 });
 
@@ -276,7 +144,7 @@ for (const [verb, action] of [['increase', 'Increase'], ['decrease', 'Decrease']
     await input.focus();
     await this.page.getByRole('button', { name: `${action} Estimated hours`, exact: true }).click();
     await expect(input).toBeFocused();
-    await expect(this.page.getByRole('region', { name: 'Prepared request', exact: true })).toHaveCount(0);
+    await expect(this.page.getByRole('region', { name: /^(Prepared request|Step \d+ prepared request)$/ })).toHaveCount(0);
   });
 }
 
@@ -318,4 +186,8 @@ Then('number arrows reveal through hover and focus with the selected motion pref
   await input.focus();
   await expect(arrows).toBeVisible();
   assert.equal(await arrows.evaluate(element => element.getAnimations().length), 0, 'Reduced-motion focus must reveal arrows without sliding.');
+});
+
+When('I restart the run with the same inputs', async function () {
+  await restartRun(this.page, true);
 });

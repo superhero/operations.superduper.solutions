@@ -9,7 +9,8 @@ reused across those views.
 
 | Concern | Entry point |
 | --- | --- |
-| Prompt matching, operation input and execution | [OperationsWorkspace.svelte](OperationsWorkspace.svelte) |
+| Live prompt matching and catalog filtering | [SideNavigation.svelte](SideNavigation.svelte), [CatalogPrompt.svelte](CatalogPrompt.svelte) |
+| Operation input and execution | [workflows/WorkflowRun.svelte](workflows/WorkflowRun.svelte), [OperationFields.svelte](../lib/components/OperationFields.svelte) |
 | Canvas editing, autosave and history coordination | [WorkflowWorkspace.svelte](WorkflowWorkspace.svelte), then [workflows](workflows/README.md) |
 | Appearance, defaults and browser resources | [SettingsWorkspace.svelte](SettingsWorkspace.svelte), then [settings](settings/README.md) |
 | Catalog navigation and workspace switching | [SideNavigation.svelte](SideNavigation.svelte) |

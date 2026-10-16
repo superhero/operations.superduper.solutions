@@ -129,3 +129,19 @@ Feature: Explore operations from a local OpenAPI catalog
     Then omitted and true additional properties preserve arbitrary JSON names and values
     And additional property schemas retain references required names and value constraints
     And dynamic body fields respect canonical policies and transport restrictions
+
+  @explicit-input-values
+  Scenario: Request fields distinguish omission null and literal text
+    Then nullable request inputs preserve explicit omission null and the text null
+
+  @explicit-input-values
+  Scenario: Nullable schemas retain type enum and nested constraints
+    Then both OpenAPI nullable representations enforce their remaining constraints
+
+  @explicit-input-values
+  Scenario: Required fields and bodies distinguish absent values from null
+    Then required and optional nullable fields and root bodies enforce presence independently
+
+  @explicit-input-values
+  Scenario: Nullable collections preserve supported transport restrictions
+    Then nullable query collections serialize safely and form bodies reject null schemas

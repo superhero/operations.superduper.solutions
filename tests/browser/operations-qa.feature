@@ -2,45 +2,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 Feature: Operations navigation quality
-  Scenario: Step destinations remain visible below the sticky header
-    When I use a viewport of 320 by 568 pixels
-    And I choose the "Create task" operation from the catalog
-    And I enter these operation inputs:
-      | label           | value                     |
-      | Project ID      | qa-project                |
-      | Title           | Keep the next step visible |
-      | Priority        | normal                    |
-      | Estimated hours | 5                         |
-    And I prepare the request
-    Then the focused control is visible below the sticky header
-    When I return to the form without editing
-    Then the focused control is visible below the sticky header
-    When I return to the prompt through progress
-    Then the focused control is visible below the sticky header
-
-  Scenario: Expanding form details does not clip the remaining controls
-    When I use a viewport of 390 by 844 pixels
-    And I choose the "Create task" operation from the catalog
-    Then animated form details keep the active panel contained
-
-  Scenario Outline: Retained details do not hide the focused field on short screens
-    When I use a viewport of <width> by <height> pixels
-    And I choose the "Create task" operation from the catalog
-    And I expand the operation details
-    And I return to the prompt through progress
-    And I return to the form through progress
-    Then the focused control is visible below the sticky header
-
-    Examples:
-      | width | height |
-      | 568   | 320    |
-      | 900   | 390    |
-      | 320   | 480    |
-
-  Scenario: Live reduced motion finishes an in-progress details disclosure
-    Given I open the "Create task" operation from the catalog
-    Then changing motion preference settles visible details immediately
-
   Scenario: Required dropdowns preserve validation and keyboard editing
     Given I open the "Create task" operation from the catalog
     When I enter these operation inputs:
@@ -90,7 +51,7 @@ Feature: Operations navigation quality
       """
       {"method":"POST","path":"/projects/numeric-review/tasks","query":{},"body":{"title":"Adjust hours","priority":"normal","estimate":1.5}}
       """
-    When I return to the form without editing
+    When I restart the run with the same inputs
     And I decrease Estimated hours with its arrow
     Then the input "Estimated hours" still contains "0.5"
     When I prepare the request

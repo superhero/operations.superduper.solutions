@@ -4,16 +4,17 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, closeCatalog } from './workspace.steps.mjs';
+import { openCatalog, closeCatalog, workspace, searchOperations, setEvaluationDetails } from './workspace.steps.mjs';
 import { holdHeightAnimations, resumeHeightAnimations, seekHeightAnimation } from './height-animation.fixture.mjs';
 
 Then('navigation focus follows normal-motion opening and breakpoint changes', async function () {
   const page = this.page;
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await closeCatalog(page);
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
   await menu.focus();
   await page.keyboard.press('Enter');
-  const mode = page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Operations', exact: true });
+  const mode = page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Workflows', exact: true });
   await expect(mode).toBeFocused();
   await closeCatalog(page);
   await expect(menu).toBeFocused();
@@ -96,97 +97,34 @@ Then('hovering another control replaces keyboard help', async function () {
   await expect(page.getByRole('button', { name: 'Open navigation', exact: true })).toBeFocused();
 });
 
-Then('progress hints and examples preserve navigation and disabled states', async function () {
+Then('prompt matching details preserve keyboard navigation', async function () {
   const page = this.page;
-  const tooltip = page.getByRole('tooltip');
-  const progress = page.getByRole('navigation', { name: 'Progress', exact: true });
-  const promptStep = progress.getByRole('button', { name: '1. Prompt', exact: true });
-  const evaluation = progress.getByRole('button', { name: '2. Evaluation', exact: true });
-  const operation = progress.getByRole('button', { name: '3. Operation', exact: true });
-  const input = page.getByRole('textbox', { name: 'Prompt', exact: true });
-  const examplesToggle = page.getByRole('button', { name: 'Commonly used operations', exact: true });
-  await expect(examplesToggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(progress.locator('.step-label:visible')).toHaveCount(3);
-  await promptStep.hover();
-  // Observe beyond the provider's hover delay: visible labels need no tooltip.
-  await page.waitForTimeout(450);
-  await expect(tooltip).toHaveCount(0);
-  await page.mouse.move(0, 0);
-  await input.focus();
-  await input.press('Shift+Tab');
-  await expect(examplesToggle).toBeFocused();
-  await examplesToggle.press('Shift+Tab');
-  await expect(promptStep).toBeFocused();
-  await expect(tooltip).toHaveCount(0);
-
+  await setEvaluationDetails(page);
   await page.setViewportSize({ width: 280, height: 844 });
-  await expect(progress.locator('.step-number:visible')).toHaveCount(3);
-  await promptStep.hover();
-  await expect(tooltip).toHaveText('Prompt');
-  await page.mouse.move(0, 0);
-  await input.focus();
-  await input.press('Shift+Tab');
-  await expect(examplesToggle).toBeFocused();
-  await examplesToggle.press('Shift+Tab');
-  await expect(promptStep).toBeFocused();
-  await expect(tooltip).toHaveText('Prompt');
+  await openCatalog(page);
+  const tooltip = page.getByRole('tooltip');
+  const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
+  const toggle = page.getByRole('button', { name: 'Review matching details', exact: true });
+  await expect(toggle).toHaveCount(0);
+  await searchOperations(page, 'List projects');
+  await expect(prompt).toBeFocused();
+  await prompt.press('Tab');
+  await expect(toggle).toBeFocused();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(tooltip).toHaveText('Details');
+  await expect(toggle).not.toHaveAttribute('title');
+  await toggle.press('Enter');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.locator('#matching-help')).toBeVisible();
+  await toggle.press('Enter');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await prompt.focus();
+  await expect(prompt).toHaveValue('List projects');
+  await expect(page.getByRole('button', { name: 'Add to workflow: List projects', exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Progress', exact: true })).toHaveCount(0);
   await page.keyboard.press('Escape');
-  await expect(tooltip).toHaveCount(0);
-
-  for (const [button, hint] of [[evaluation, 'Search for operations to view the evaluation'], [operation, 'Select an operation to open its inputs']]) {
-    await expect(button).toBeDisabled();
-    assert.equal(await button.evaluate(element => element.disabled), true, 'Unavailable steps must retain native disabled behavior.');
-    await button.hover();
-    await expect(tooltip).toHaveText(hint);
-    assert.equal(await button.getAttribute('title'), null, 'Custom help must not duplicate a native title tooltip.');
-    const bounds = await button.boundingBox();
-    assert.ok(bounds);
-    await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
-    await expect(promptStep).toHaveAttribute('aria-current', 'step');
-    await promptStep.focus();
-    await button.evaluate(element => element.focus());
-    await expect(promptStep).toBeFocused();
-  }
-  await page.mouse.move(0, 0);
-  await promptStep.press('Tab');
-  await expect(examplesToggle).toBeFocused();
-  await expect(tooltip).toHaveText('Commonly used operations');
-  await expect(examplesToggle.locator('.material-symbols-rounded')).toHaveText('quick_phrases');
-  await examplesToggle.press('Tab');
-  await expect(input).toBeFocused();
-  await input.press('Shift+Tab');
-  await examplesToggle.press('Enter');
-  await expect(examplesToggle).toHaveAttribute('aria-expanded', 'true');
-  await expect(page.locator('.prompt-suggestion-list button:visible')).toHaveCount(1);
-
-  const example = page.locator('.prompt-suggestion-list').getByRole('button', { name: 'List projects', exact: true });
-  await examplesToggle.press('Tab');
-  await expect(example).toBeFocused();
-  await example.hover();
-  await page.waitForTimeout(450);
-  await expect(tooltip).toHaveCount(0);
-  await expect(example).toHaveAccessibleName('List projects');
-  await example.click();
-  await expect(input).toHaveValue('List projects');
-  await expect(input).toBeFocused();
-  await expect(evaluation).toBeDisabled();
-  await input.press('Enter');
-  await expect(page.getByRole('heading', { name: 'Evaluation: Listed operations', exact: true })).toBeFocused();
-  await evaluation.focus();
-  await expect(tooltip).toHaveText('Evaluation');
-  await expect(evaluation).toHaveAttribute('aria-current', 'step');
-  await page.getByRole('button', { name: 'Go to operation: List projects', exact: true }).click();
-  await expect(page.getByRole('textbox', { name: 'Project name', exact: true })).toBeFocused();
-  await evaluation.focus();
-  await evaluation.press('Tab');
-  await expect(operation).toBeFocused();
-  await expect(tooltip).toHaveText('Operation');
-  await expect(operation).toHaveAttribute('aria-current', 'step');
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await expect(progress.locator('.step-label:visible')).toHaveCount(3);
-  await expect(tooltip).toHaveCount(0);
-  await expect(operation).toBeEnabled();
-  await expect(operation).toHaveAttribute('aria-current', 'step');
+  if (await page.getByRole('dialog').filter({ has: page.getByRole('navigation', { name: 'Operation catalog', exact: true }) }).isVisible()) await page.keyboard.press('Escape');
+  await expect(page.getByRole('button', { name: 'Open navigation', exact: true })).toBeFocused();
 });
 
 Then('schema action hints take priority over the disclosure hint', async function () {
@@ -233,21 +171,22 @@ Then('schema action hints take priority over the disclosure hint', async functio
 Then('scrolling cancels a pending operation tooltip', async function () {
   const page = this.page;
   await page.setViewportSize({ width: 1280, height: 400 });
+  const dialog = workspace(page);
   const help = page.getByRole('button', { name: 'Review operation details', exact: true });
   await help.scrollIntoViewIfNeeded();
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await help.hover();
   await expect(page.getByRole('tooltip')).toHaveText('Details');
   await page.mouse.move(600, 300);
-  await page.keyboard.press('Escape');
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
   // Let the shared provider's skip-delay grace period expire before the hover.
   await page.waitForTimeout(400);
   await help.hover();
   await page.waitForTimeout(100);
   await expect(page.getByRole('tooltip')).toHaveCount(0);
-  const before = await page.evaluate(() => scrollY);
+  const before = await dialog.evaluate(element => element.scrollTop);
   await page.mouse.wheel(0, 150);
-  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before);
+  await expect.poll(() => dialog.evaluate(element => element.scrollTop)).toBeGreaterThan(before);
   // Observe beyond the 400ms hover delay; an immediate absence would miss this bug.
   await page.waitForTimeout(450);
   await expect(page.getByRole('tooltip')).toHaveCount(0);
@@ -256,6 +195,8 @@ Then('scrolling cancels a pending operation tooltip', async function () {
 Then('the header shadow follows the reading position', async function () {
   const page = this.page;
   await page.setViewportSize({ width: 1280, height: 400 });
+  const section = page.getByRole('region', { name: 'Settings workspace', exact: true }).locator('summary[aria-label="Workflows"]');
+  if (await section.getAttribute('aria-expanded') !== 'true') await section.click();
   const header = page.locator('.site-header');
   const strength = () => header.evaluate(element => Number(getComputedStyle(element).getPropertyValue('--header-scroll-strength')));
   const opacity = () => header.evaluate(element => {
