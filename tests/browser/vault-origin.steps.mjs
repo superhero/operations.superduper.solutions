@@ -54,7 +54,7 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       await page.getByRole('option', { name: 'Password', exact: true }).click();
       await panel(page).getByLabel('Confirm action password', { exact: true }).fill(password);
       const downloadEvent = page.waitForEvent('download');
-      await panel(page).getByRole('button', { name: 'Export encrypted vault', exact: true }).click();
+      await panel(page).getByRole('button', { name: 'Export vault', exact: true }).click();
       const stream = await (await downloadEvent).createReadStream(), chunks = [];
       for await (const chunk of stream) chunks.push(chunk);
       const backup = Buffer.concat(chunks);

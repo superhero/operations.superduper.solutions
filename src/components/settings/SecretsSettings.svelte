@@ -450,7 +450,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   {#if ready && status.exists && status.unlocked}
     <div class="card">
-      <div class="actions"><button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}>Export encrypted vault</button></div>
+      <div class="vault-export-row">
+        <button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}>Export vault</button>
+        <p class="help">Exported vault data remains encrypted at rest and during transfer.</p>
+      </div>
     </div>
   {/if}
   {#if ready && status.exists}
@@ -493,9 +496,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .recovery-key { position: relative; min-width: 0; border-radius: 4px; background: var(--color-background); }
   .recovery-key pre { margin: 0; padding: 8px 40px 8px 8px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: monospace; font-size: 12px; }
   .recovery-copy { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; background: transparent; color: inherit; }
-  .vault-replace-row { display: flex; align-items: center; gap: 12px; }
-  .vault-replace-row > button { flex-shrink: 0; }
-  .vault-replace-row > p { min-width: 0; }
+  .vault-replace-row, .vault-export-row { display: flex; align-items: center; gap: 12px; }
+  .vault-replace-row > button, .vault-export-row > button { flex-shrink: 0; }
+  .vault-replace-row > p, .vault-export-row > p { min-width: 0; }
   .creation-actions, .recovery-actions { justify-content: flex-end; }
   .unlock-vault { display: grid; place-items: center; justify-self: end; flex-shrink: 0; align-self: stretch; min-width: 40px; border-radius: 0 4px 4px 0; }
   .unlock-vault:hover:enabled, .unlock-vault:focus { color: var(--color-background); }
@@ -539,7 +542,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     .unlock-vault:hover:enabled :global(.material-symbols-rounded), .unlock-vault:focus :global(.material-symbols-rounded) { transform: scale(1.2); }
     .idle-toggle:hover:enabled .default-switch { transform: scale(1.10); }
     .recovery-copy:hover:enabled { transform: scale(1.10); }
-    :is(.creation-actions, .recovery-actions, .vault-replace-row) button:hover:enabled { transform: scale(1.05); }
+    :is(.creation-actions, .recovery-actions, .vault-replace-row, .vault-export-row) button:hover:enabled { transform: scale(1.05); }
   }
   @media (prefers-reduced-motion: reduce) { .default-switch, .default-switch > span { transition: none; } }
 </style>
