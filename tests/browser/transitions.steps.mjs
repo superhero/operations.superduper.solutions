@@ -119,7 +119,7 @@ Then('native scrollbars expand on hover and settle without changing the reading 
   const page = this.page;
   await setMode(page, 'settings');
   await page.setViewportSize({ width: 1280, height: 360 });
-  const heading = page.getByRole('region', { name: 'Settings workspace', exact: true }).locator('summary[aria-label="Workflows"]');
+  const heading = page.getByRole('region', { name: 'Settings workspace', exact: true }).locator('summary[aria-label="Application"]');
   if (await heading.getAttribute('aria-expanded') !== 'true') await heading.click();
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.emulateMedia({ reducedMotion: 'no-preference' });

@@ -35,8 +35,8 @@ export async function storedDefaults(page, change) {
 
 async function openDefaults(page) {
   await setMode(page, 'settings');
-  if (await summary(page, 'Workflows').getAttribute('aria-expanded') !== 'true') await summary(page, 'Workflows').click();
-  await expect(summary(page, 'Workflows')).toHaveAttribute('aria-expanded', 'true');
+  if (await summary(page, 'Application').getAttribute('aria-expanded') !== 'true') await summary(page, 'Application').click();
+  await expect(summary(page, 'Application')).toHaveAttribute('aria-expanded', 'true');
 }
 
 async function expectDefaultSwitches(page, defaults) {
@@ -118,9 +118,9 @@ async function newWorkflow(page) {
 Then('Settings sections open exclusively with the current workflow defaults in a fresh browser', async function () {
   const page = this.page;
   await setMode(page, 'settings');
-  for (const name of ['Theme', 'Workflows', 'Browser', 'Workflows']) {
+  for (const name of ['Theme', 'Application', 'Browser', 'Application']) {
     await summary(page, name).click();
-    for (const section of ['Theme', 'Workflows', 'Browser'])
+    for (const section of ['Theme', 'Application', 'Browser'])
       await expect(summary(page, section)).toHaveAttribute('aria-expanded', String(section === name));
   }
   await expectDefaultSwitches(page, freshDefaults);
