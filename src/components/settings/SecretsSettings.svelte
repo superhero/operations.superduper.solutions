@@ -475,10 +475,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .idle-control :global(.field-integer) { flex: 1; min-width: 0; padding-right: 4px; }
   .idle-control :global(.field-integer :is(.integer-range, .integer-value)) { outline: none; }
   .idle-control > span { display: flex; align-items: center; padding: 0 8px; }
-  @media (prefers-reduced-motion: no-preference) {
-    .idle-control :global(.integer-range) { transition: transform 180ms ease-in; }
-    .idle-control :global(.integer-range:hover:enabled) { transform: scale(1.02, 1.10); }
-  }
   textarea { resize: vertical; overflow-wrap: anywhere; font-family: monospace; }
   :global(.secrets-settings .field-select-trigger) { border-radius: 4px; font-size: 12px; }
   button { width: fit-content; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; cursor: pointer; }

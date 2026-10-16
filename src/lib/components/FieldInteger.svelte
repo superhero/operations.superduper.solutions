@@ -28,6 +28,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     : allowed ? "Choose one of the allowed integers."
     : `Enter a whole number between ${scale.minimum} and ${scale.maximum}.`);
   let exactInput = $state<HTMLInputElement>();
+  let rangeWidth = $state(0);
+  let rangeHeight = $state(0);
 
   $effect(() => { exactInput?.setCustomValidity(badValue || unavailable && required ? validationMessage : ""); });
 
@@ -61,7 +63,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <div class="field-integer" class:disabled class:unset style:--slider-position={`${position * 100}%`}>
-  <input class="integer-range" {id} type="range" min="0" max="1" step="any" value={position}
+  <input class="integer-range" bind:clientWidth={rangeWidth} bind:clientHeight={rangeHeight}
+    style:--slider-hover-x={rangeWidth > 0 ? 1 + 8 / rangeWidth : 1}
+    style:--slider-hover-y={rangeHeight > 0 ? 1 + 2 / rangeHeight : 1} {id} type="range" min="0" max="1" step="any" value={position}
     disabled={disabled || unavailable} aria-label={label} aria-valuemin={scale.minimum} aria-valuemax={scale.maximum}
     aria-valuenow={current} aria-valuetext={unset ? "Not set" : valid ? number.toLocaleString() : "Invalid value"}
     aria-invalid={invalid || badValue || undefined} aria-describedby={describedBy}
@@ -86,4 +90,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .disabled { color: var(--color-muted-foreground); }
   .integer-range:disabled { cursor: default; opacity: 0.5; }
   .unset .integer-range { opacity: 0.6; }
+  @media (prefers-reduced-motion: no-preference) {
+    .integer-range { transition: transform 180ms ease-in; }
+    .integer-range:hover:enabled { transform: scale(var(--slider-hover-x), var(--slider-hover-y)); }
+  }
 </style>
