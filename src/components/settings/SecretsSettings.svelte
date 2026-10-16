@@ -23,6 +23,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let status = $state<VaultStatus>(emptyStatus);
   let records = $state<CredentialSummary[]>([]);
   let preferences = $state({ ...defaultVaultPreferences });
+  let idleMinutes = $state(defaultVaultPreferences.idleLockMinutes);
+  const maximumIdleMinutes = 7 * 24 * 60;
   let ready = $state(false);
   let busy = $state(false);
   let progress = $state("");
@@ -242,11 +244,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   async function saveIdle(enabled: boolean, minutes: number): Promise<void> {
     await saveVaultPreferences({ idleLockEnabled: enabled, idleLockMinutes: minutes });
     preferences = { idleLockEnabled: enabled, idleLockMinutes: minutes };
+    idleMinutes = minutes;
   }
 
   onMount(() => {
     const unsubscribe = subscribeVaultLock(locked);
-    void run("Loading secrets vault…", async () => { preferences = await loadVaultPreferences(); await refresh(); ready = true; });
+    void run("Loading secrets vault…", async () => { preferences = await loadVaultPreferences(); idleMinutes = preferences.idleLockMinutes; await refresh(); ready = true; });
     return () => { disposed = true; generation++; unsubscribe(); if (busy || recoveryMode) lockVaultLocally(); clearInputs(); clearRecovery(); clearRestore(); };
   });
 </script>
@@ -418,11 +421,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {/if}
   {#if ready}
     <div class="card">
-      <h3>Automatic locking</h3>
       <label class="checkbox"><input type="checkbox" checked={preferences.idleLockEnabled} disabled={busy}
         onchange={event => void run("Saving lock preference…", () => saveIdle(event.currentTarget.checked, preferences.idleLockMinutes))} />Lock after inactivity</label>
-      <label>Minutes of inactivity<input type="number" min="1" max="1440" step="1" value={preferences.idleLockMinutes} disabled={busy || !preferences.idleLockEnabled}
-        onchange={event => { const minutes = Number(event.currentTarget.value); void run("Saving lock preference…", () => saveIdle(preferences.idleLockEnabled, minutes)); }} /></label>
+      <label>Minutes of inactivity: {idleMinutes.toLocaleString()}
+        <input class="idle-range" type="range" min="0" max="1" step="any"
+          value={Math.log(idleMinutes) / Math.log(maximumIdleMinutes)}
+          aria-valuemin={1} aria-valuemax={maximumIdleMinutes} aria-valuenow={idleMinutes}
+          aria-valuetext={`${idleMinutes.toLocaleString()} minutes`} disabled={busy || !preferences.idleLockEnabled}
+          oninput={event => { idleMinutes = Math.round(Math.exp(event.currentTarget.valueAsNumber * Math.log(maximumIdleMinutes))); }}
+          onchange={() => void run("Saving lock preference…", () => saveIdle(preferences.idleLockEnabled, idleMinutes))} />
+      </label>
       <p class="help">Idle locking is optional. Closing or reloading this page always locks the vault.</p>
     </div>
   {/if}
@@ -443,6 +451,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   h3 { font-size: 14px; } h4, label, strong { font-size: 12px; }
   label { display: grid; gap: 8px; font-weight: 700; }
   input:not([type="checkbox"]), textarea { box-sizing: border-box; min-width: 0; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
+  input.idle-range { padding: 0; accent-color: var(--color-primary); cursor: pointer; }
   textarea { resize: vertical; overflow-wrap: anywhere; font-family: monospace; }
   :global(.secrets-settings .field-select-trigger) { border-radius: 4px; font-size: 12px; }
   button { width: fit-content; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; cursor: pointer; }

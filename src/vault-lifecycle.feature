@@ -19,7 +19,7 @@ Feature: Explicit vault inactivity deadlines
     Then changing vault inactivity preferences uses the previous activity time
 
   Scenario: Invalid durations cannot weaken the policy
-    Then vault inactivity accepts only whole minutes from one through fourteen forty
+    Then vault inactivity accepts only whole minutes from one through one week
 
   Scenario: Clock discontinuity and stale checks fail closed
     Then vault inactivity locks on a backward or invalid clock and remains inactive until unlock

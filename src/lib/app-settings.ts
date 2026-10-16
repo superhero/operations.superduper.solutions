@@ -291,6 +291,6 @@ export function validateVaultPreferences(value: unknown): VaultPreferences {
   if (!value || typeof value !== "object") throw new VaultError("INVALID");
   const prefs = value as VaultPreferences;
   if (typeof prefs.idleLockEnabled !== "boolean" || !Number.isInteger(prefs.idleLockMinutes)
-    || prefs.idleLockMinutes < 1 || prefs.idleLockMinutes > 1440) throw new VaultError("INVALID");
+    || prefs.idleLockMinutes < 1 || prefs.idleLockMinutes > 10080) throw new VaultError("INVALID");
   return { idleLockEnabled: prefs.idleLockEnabled, idleLockMinutes: prefs.idleLockMinutes };
 }
