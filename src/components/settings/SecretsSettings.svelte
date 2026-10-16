@@ -422,6 +422,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {/if}
   {#if ready}
     <div class="card">
+      <div class="idle-settings">
       <button class="idle-toggle" type="button" role="switch" aria-checked={preferences.idleLockEnabled} disabled={busy}
         onclick={() => void run("Saving lock preference…", () => saveIdle(!preferences.idleLockEnabled, preferences.idleLockMinutes))}>
         <span>Lock after inactivity</span><span class="default-switch" aria-hidden="true"><span></span></span>
@@ -436,6 +437,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
               void run("Saving lock preference…", () => saveIdle(preferences.idleLockEnabled, minutes));
           }} />
         <span aria-hidden="true">min</span>
+      </div>
       </div>
       <p class="help">Idle locking is optional. Closing or reloading this page always locks the vault.</p>
     </div>
@@ -457,7 +459,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   h3 { font-size: 14px; } h4, label, strong { font-size: 12px; }
   label { display: grid; gap: 8px; font-weight: 700; }
   input:not([type="checkbox"]), textarea { box-sizing: border-box; min-width: 0; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
-  .idle-control { display: flex; align-items: stretch; min-width: 0; border-radius: 4px; background: var(--color-background); outline: 2px solid transparent; outline-offset: 2px; transition: outline-color 180ms ease-in; }
+  .idle-settings { display: flex; align-items: center; gap: 10px; }
+  .idle-settings > .idle-toggle { flex: 0 0 auto; width: auto; }
+  .idle-control { display: flex; flex: 1; align-items: stretch; min-width: 0; border-radius: 4px; background: var(--color-background); outline: 2px solid transparent; outline-offset: 2px; transition: outline-color 180ms ease-in; }
   .idle-control:focus-within, .idle-control:hover:has(:enabled) { outline-color: var(--color-ring); }
   .idle-control :global(.field-integer) { flex: 1; min-width: 0; padding-right: 4px; }
   .idle-control :global(.field-integer :is(.integer-range, .integer-value):is(:hover, :focus-visible)) { outline: none; }
