@@ -531,3 +531,27 @@ Then('vault sessions reject stale schemas before approval and dispatch and befor
     assert.ok(checked.every(value => value.fingerprint === approval.fingerprint));
   } finally { globalThis.fetch = original; }
 });
+
+Then('replacement exports authenticate locked vaults and guard against intervening changes', kdfStep, async () => {
+  const source = await populated(), destination = await populated();
+  const incoming = await source.session.backup(source.proof);
+  destination.session.lock();
+  await assert.rejects(destination.session.backup({ ...destination.proof, secret: randomBase64(128) }, true), code('AUTHENTICATION'));
+  const previous = await destination.session.backup(destination.proof, true);
+  assert.equal(JSON.parse(previous).records.length, 1);
+  assert.ok(!previous.includes('SYNTHETIC-PRIVATE-TOKEN'));
+  await destination.session.unlock(destination.proof);
+  await destination.session.put(destination.proof, { label: 'Newer', kind: 'secret', value: 'NEWER-VALUE' });
+  const changed = structuredClone(destination.storage.state);
+  await assert.rejects(destination.session.restore(incoming, source.proof, destination.proof, previous), code('CONFLICT'));
+  assert.deepEqual(destination.storage.state, changed);
+  const latest = await destination.session.backup(destination.proof, true);
+  await destination.session.restore(incoming, source.proof, destination.proof, latest);
+  assert.equal((await destination.session.list()).length, 1);
+  const empty = await created();
+  empty.session.lock();
+  const emptyExport = await empty.session.backup(empty.proof, true);
+  assert.equal(JSON.parse(emptyExport).records.length, 0);
+  await empty.session.restore(incoming, source.proof, empty.proof, emptyExport);
+  assert.equal((await empty.session.list()).length, 1);
+});

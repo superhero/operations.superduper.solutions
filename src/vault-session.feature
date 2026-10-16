@@ -58,3 +58,6 @@ Feature: Browser vault session lifecycle
 
   Scenario: Current schema policy guards approval and execution
     Then vault sessions reject stale schemas before approval and dispatch and before accepting a response
+
+  Scenario: Replacement exports preserve the exact current vault
+    Then replacement exports authenticate locked vaults and guard against intervening changes

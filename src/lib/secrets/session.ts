@@ -254,15 +254,26 @@ export class VaultSession {
     });
   }
 
-  async backup(proof: UnlockProof): Promise<string> {
-    await this.fresh(proof);
-    return canonicalJSON(this.state!.snapshot!);
+  async backup(proof: UnlockProof, forReplacement = false): Promise<string> {
+    if (!forReplacement) {
+      await this.fresh(proof);
+      return canonicalJSON(this.state!.snapshot!);
+    }
+    const generation = this.generation;
+    const state = await this.storage.read();
+    if (!state.snapshot) throw new VaultError("LOCKED");
+    const snapshot = validateSnapshot(state.snapshot);
+    await this.authenticate(snapshot, proof);
+    this.guard(generation);
+    return canonicalJSON(snapshot);
   }
 
-  async restore(input: string, proof: UnlockProof, currentProof?: UnlockProof): Promise<VaultStatus> {
+  async restore(input: string, proof: UnlockProof, currentProof?: UnlockProof, expectedExport?: string): Promise<VaultStatus> {
     if (typeof input !== "string" || new TextEncoder().encode(input).byteLength > vaultLimits.backupBytes) throw new VaultError("LIMIT");
     const generation = this.generation;
     const expected = await this.storage.read();
+    if (expectedExport !== undefined && (!expected.snapshot || canonicalJSON(expected.snapshot) !== expectedExport))
+      throw new VaultError("CONFLICT");
     if (expected.snapshot) {
       if (!currentProof) throw new VaultError("AUTHENTICATION");
       await this.authenticate(validateSnapshot(expected.snapshot), currentProof);

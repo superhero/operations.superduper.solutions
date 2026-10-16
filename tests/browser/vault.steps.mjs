@@ -440,6 +440,21 @@ Then('a downloaded vault backup restores with recovery in a fresh application co
     await expect(settings(page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
     await expect(settings(page).getByRole('status')).toContainText('Approve destinations again');
     noCanaries(await storage(page, 'read'));
+    const previousSnapshot = (await storage(page, 'read')).snapshot;
+    await settings(page).getByLabel('Encrypted vault export', { exact: true }).setInputFiles({ name: 'replacement.json', mimeType: 'application/json', buffer });
+    await settings(page).getByLabel('Export password', { exact: true }).fill(canaries[0]);
+    await settings(page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
+    const beforeReplacement = page.waitForEvent('download');
+    await settings(page).getByRole('button', { name: 'Authenticate and replace vault', exact: true }).click();
+    const previousDownload = await beforeReplacement;
+    assert.equal(previousDownload.suggestedFilename(), 'operations-secrets-vault-before-replacement.json');
+    const previousStream = await previousDownload.createReadStream();
+    const previousChunks = []; for await (const chunk of previousStream) previousChunks.push(chunk);
+    const previousContent = Buffer.concat(previousChunks).toString('utf8');
+    assert.deepEqual(JSON.parse(previousContent), previousSnapshot);
+    noCanaries(previousContent);
+    await expect(settings(page).getByRole('status')).toContainText('Approve destinations again');
+
   } finally { await context.close(); }
 });
 

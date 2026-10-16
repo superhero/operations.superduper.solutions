@@ -209,11 +209,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       await vaultCall("rotate", [proofs]); showRotation = false; await refresh(); notice = "Vault encryption key rotated. Save a new encrypted export.";
     } finally { proofs.forEach(wipe); }
   }
+  function downloadVault(content: string, filename = "operations-secrets-vault.json"): void {
+    const url = URL.createObjectURL(new Blob([content], { type: "application/json" }));
+    const link = document.createElement("a"); link.href = url; link.download = filename; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
   async function exportVault(): Promise<void> {
     const content = await fresh(proof => vaultCall("backup", [proof]));
-    const url = URL.createObjectURL(new Blob([content], { type: "application/json" }));
-    const link = document.createElement("a"); link.href = url; link.download = "operations-secrets-vault.json"; link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 0); notice = "Encrypted export downloaded. Its unlock methods are those saved in that export.";
+    downloadVault(content);
+    notice = "Encrypted export downloaded. Its unlock methods are those saved in that export.";
   }
   async function selectRestore(event: Event): Promise<void> {
     const input = event.currentTarget as HTMLInputElement;
@@ -249,7 +253,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     let currentProof: UnlockProof | undefined;
     try {
       if (status.exists) { if (!authentication) throw new VaultError("AUTHENTICATION"); currentProof = await authentication.proof(); }
-      await vaultCall("restore", [restorePayload, proof, currentProof]);
+      let previousExport: string | undefined;
+      if (currentProof) {
+        previousExport = await vaultCall("backup", [currentProof, true]);
+        if (JSON.parse(previousExport).records.length > 0)
+          downloadVault(previousExport, "operations-secrets-vault-before-replacement.json");
+      }
+      await vaultCall("restore", [restorePayload, proof, currentProof, previousExport]);
       clearRestore(); await refresh(); notice = "Vault imported. Approve destinations again before using its credentials.";
     } finally { wipe(proof); if (currentProof) wipe(currentProof); }
   }
