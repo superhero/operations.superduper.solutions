@@ -49,7 +49,8 @@ Then("evaluation details stay hidden until enabled and the saved choice survives
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
   await expect(evaluationReport(page)).toBeVisible();
-  await expect(evaluationReport(page).locator(".evaluation-prompt p")).toHaveText("List projects");
+  await expect(evaluationReport(page).locator(".evaluation-prompt")).toHaveCount(0);
+  await expect(page.locator(".catalog-prompt")).toHaveAttribute("data-evaluated-prompt", "List projects");
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
   await expect(evaluationReport(page)).toBeHidden();
@@ -115,10 +116,11 @@ async function expectInputTables(report, groups) {
   }
 }
 
-Then("the evaluation report records {string} with top similarity {string}", async function (prompt, similarity) {
+Then("the evaluation report reflects {string} with top similarity {string}", async function (prompt, similarity) {
   const report = evaluationReport(this.page);
   await expect(report).toBeVisible();
-  await expect(report.locator(".evaluation-prompt p")).toHaveText(prompt);
+  await expect(report.locator(".evaluation-prompt")).toHaveCount(0);
+  await expect(this.page.locator(".catalog-prompt")).toHaveAttribute("data-evaluated-prompt", prompt);
   await expect(metric(report, "Considered operations")).toHaveText(String(operations.length));
   await expect(metric(report, "Top similarity")).toHaveText(similarity);
   await expect(metric(report, "Evaluation time")).toHaveText(/^<?\d+(?:\.\d+)? (?:ms|s)$/);
@@ -216,7 +218,8 @@ When("I edit the report prompt to {string}", async function (prompt) {
 Then("the open report follows the latest prompt automatically", async function () {
   await expect(this.page.getByRole("button", { name: "Review matching details", exact: true })).toHaveAttribute("aria-expanded", "true");
   await expect(evaluationReport(this.page)).toBeVisible();
-  await expect(evaluationReport(this.page).locator(".evaluation-prompt p")).toHaveText(
+  await expect(evaluationReport(this.page).locator(".evaluation-prompt")).toHaveCount(0);
+  await expect(this.page.locator(".catalog-prompt")).toHaveAttribute("data-evaluated-prompt",
     await this.page.getByRole("textbox", { name: "Prompt", exact: true }).inputValue());
 });
 

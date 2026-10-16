@@ -11,8 +11,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { minimumSimilarity, topResultCount } from "$lib/matching.ts";
 
   type Candidate = { operation: Operation; similarity: number };
-  let { prompt, durationMs, candidates, results, considered }:
-    { prompt: string; durationMs: number; candidates: Candidate[]; results: Candidate[]; considered: number } = $props();
+  let { durationMs, candidates, results, considered }:
+    { durationMs: number; candidates: Candidate[]; results: Candidate[]; considered: number } = $props();
 
   const ranked = $derived([...candidates].sort((left, right) =>
     right.similarity - left.similarity || left.operation.id.localeCompare(right.operation.id)));
@@ -37,13 +37,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 </script>
 
-{#snippet separator(label?: string)}
-  <div class="evaluation-connection" aria-hidden={label ? undefined : true}>
-    <span>{#if label}{label}{:else}<MaterialIcon name="stat_minus_2" size={20} />{/if}</span>
+{#snippet separator()}
+  <div class="evaluation-connection" aria-hidden="true">
+    <span><MaterialIcon name="stat_minus_2" size={20} /></span>
   </div>
 {/snippet}
 
 <section class="detail-report evaluation-report" aria-label="Evaluation report">
+  {@render separator()}
   <div class="report-metrics">
     <div class="report-metric"><span class="report-metric-value">{elapsed}</span><span class="report-metric-label">Evaluation time</span></div>
     <div class="report-metric">
@@ -58,9 +59,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
     <div class="report-metric"><span class="report-metric-value">{considered}</span><span class="report-metric-label">Considered operations</span></div>
   </div>
-
-  {@render separator("Prompt")}
-  <div class="evaluation-prompt"><p>{prompt}</p><MaterialIcon name="keyboard" size={20} /></div>
 
   {@render separator()}
   {#if proposedCandidates.length}
@@ -123,9 +121,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .evaluation-connection > span { display: flex; align-items: center; gap: 12px; width: 50%; }
   .evaluation-connection > span::before, .evaluation-connection > span::after { content: ""; flex: 1; height: 1px; color: var(--color-border); background: repeating-linear-gradient(to right, currentColor 0 4px, transparent 4px 12px); }
   .evaluation-connection > span::before { background-image: repeating-linear-gradient(to left, currentColor 0 4px, transparent 4px 12px); }
-  .evaluation-prompt { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 12px 14px; border-left: 2px solid var(--color-border); border-radius: 4px; background: var(--color-report-card); }
-  .evaluation-prompt p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.6; }
-  .evaluation-prompt :global(.material-symbols-rounded) { color: var(--color-report-background); }
   .evaluation-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .evaluation-columns.single { grid-template-columns: minmax(0, 1fr); }
   .evaluation-candidates { min-width: 0; margin: 0; padding: 0; list-style: none; }

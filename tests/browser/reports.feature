@@ -8,7 +8,7 @@ Feature: Local evaluation and operation reports
   Scenario Outline: Evaluation reports explain the actual local comparison
     When I search for the operation "<prompt>"
     And I review the matching details
-    Then the evaluation report records "<prompt>" with top similarity "<similarity>"
+    Then the evaluation report reflects "<prompt>" with top similarity "<similarity>"
     And the evaluation columns show "<proposed>" opposite "<not_proposed>"
 
     Examples:
@@ -29,7 +29,7 @@ Feature: Local evaluation and operation reports
     And I review the matching details
     And I edit the report prompt to "zzzzzzzzzzzz"
     Then the open report follows the latest prompt automatically
-    And the evaluation report records "zzzzzzzzzzzz" with top similarity "0%"
+    And the evaluation report reflects "zzzzzzzzzzzz" with top similarity "0%"
 
   Scenario: Run reports separate catalog sources and input locations between executions
     Given I open the "Create task" operation from the catalog

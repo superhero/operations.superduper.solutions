@@ -80,7 +80,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if evaluationDetails}
   <Reveal open={matchingOpen && Boolean(evaluation)} id="matching-help">
     {#if evaluation}
-      <EvaluationReport prompt={evaluation.prompt} durationMs={evaluation.durationMs} candidates={evaluation.candidates}
+      <EvaluationReport durationMs={evaluation.durationMs} candidates={evaluation.candidates}
         results={evaluation.results} considered={evaluation.candidates.length} />
     {/if}
   </Reveal>
