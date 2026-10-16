@@ -82,8 +82,10 @@ relying-party domain is unavailable. Import authenticates
 the complete snapshot before atomic replacement and removes imported grants.
 
 Password replacement rewraps the existing key. Full key rotation re-encrypts
-records and requires authentication for every retained unlock method. It does
-not revoke stolen exports or API tokens already exposed; those credentials must
+records after verifying each retained password and passkey. Recovery keys are
+replaced automatically with one new 128-byte key (172 Base64 characters), shown
+for copying or download. Rotation never asks for the previous recovery key. It
+does not revoke stolen exports or API tokens already exposed; those credentials must
 also be rotated at their providers. Deleting old records is logical deletion,
 not guaranteed physical erasure.
 

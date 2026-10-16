@@ -244,6 +244,22 @@ async function createUIVault() {
   await cancelRotation.click();
   await expect(settings(page).locator('.rotation-body')).toHaveCount(0);
   assert.deepEqual(await storage(page, 'read'), beforeRotation);
+  await settings(page).getByRole('button', { name: 'Rotate keys', exact: true }).click();
+  const rotationFields = settings(page).locator('.rotation-body');
+  await expect(rotationFields.getByRole('combobox')).toHaveCount(0);
+  await expect(rotationFields.locator('input[type="password"]')).toHaveCount(1);
+  await rotationFields.locator('input[type="password"]').fill(canaries[0]);
+  await rotationFields.getByRole('button', { name: 'Verify all and rotate key', exact: true }).click();
+  const rotatedRecovery = settings(page).locator('pre[aria-label="Generated recovery key"]');
+  await expect(rotatedRecovery).toHaveText(/^[A-Za-z0-9+/]{171}=$/);
+  const oldRecovery = this.uiRecovery;
+  this.uiRecovery = await rotatedRecovery.textContent();
+  assert.notEqual(this.uiRecovery, oldRecovery);
+  const rotatedKeyDownload = page.waitForEvent('download');
+  await settings(page).getByRole('button', { name: 'Save recovery key', exact: true }).click();
+  await rotatedKeyDownload;
+  await expect(rotatedRecovery).toHaveCount(0);
+
 
   await expect(settings(page).getByLabel('Credential value', { exact: true })).toHaveValue('');
   await expect(settings(page).getByLabel('Confirm action password', { exact: true })).toHaveValue('');

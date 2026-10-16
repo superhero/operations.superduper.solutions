@@ -39,7 +39,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let authentication = $state.raw<Authentication>();
   let restoreAuthentication = $state.raw<Authentication>();
   let recoveryOutput = $state.raw<HTMLPreElement>();
-  let recoveryMode = $state<"create" | "replace" | null>(null);
+  let recoveryMode = $state<"create" | "replace" | "rotate" | null>(null);
   let credentialId = $state("");
   let credentialLabel = $state("");
   let grantCredential = $state("");
@@ -134,7 +134,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try {
       if (!confirmation) throw new VaultError("INVALID");
       if (recoveryMode === "create") await vaultCall("confirmCreate", [confirmation]);
-      else await fresh(proof => vaultCall("addMethod", [proof, { kind: "recovery", secret: confirmation }, recoveryReplacement || undefined]));
+      else if (recoveryMode === "replace") await fresh(proof => vaultCall("addMethod", [proof, { kind: "recovery", secret: confirmation }, recoveryReplacement || undefined]));
       const url = URL.createObjectURL(new Blob([confirmation + "\n"], { type: "text/plain" }));
       const link = document.createElement("a"); link.href = url; link.download = "operations-vault-recovery-key.txt"; link.click();
       setTimeout(() => URL.revokeObjectURL(url), 0);
@@ -193,7 +193,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try { await presentRecovery("replace", recovery, current); }
     finally { recovery = ""; }
   }
-  async function presentRecovery(mode: "create" | "replace", value: string, current: number): Promise<void> {
+  async function presentRecovery(mode: "create" | "replace" | "rotate", value: string, current: number): Promise<void> {
     if (current !== generation || disposed) throw new VaultError("CANCELLED");
     recoveryMode = mode;
     await tick();
@@ -201,14 +201,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (recoveryOutput) recoveryOutput.textContent = value;
   }
   async function rotate(): Promise<void> {
+    const current = generation;
     const proofs: UnlockProof[] = [];
     try {
-      for (const method of status.methods) {
+      for (const method of status.methods.filter(method => method.kind !== "recovery")) {
         const component = rotationAuthentication[method.id];
         if (!component) throw new VaultError("AUTHENTICATION");
         proofs.push(await component.proof());
       }
-      await vaultCall("rotate", [proofs]); showRotation = false; await refresh(); notice = "Vault encryption key rotated. Save a new encrypted export.";
+      let result = await vaultCall("rotate", [proofs]);
+      showRotation = false;
+      try { await refresh(); await presentRecovery("rotate", result.recovery, current); }
+      finally { result.recovery = ""; }
+      notice = "Vault encryption key rotated. Save the new recovery key and a new encrypted export.";
     } finally { proofs.forEach(wipe); }
   }
   function downloadVault(content: string, filename = "operations-secrets-vault.json"): void {
@@ -441,13 +446,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
     <div class="card rotation-card">
       <div class="vault-rotate-row">
-        <button type="button" disabled={busy} aria-expanded={showRotation} aria-controls={`${createFormId}-rotation`} onclick={() => { if (showRotation) clearInputs(); showRotation = !showRotation; }}>{showRotation ? "Cancel rotation" : "Rotate keys"}<MaterialIcon name={showRotation ? "backspace" : "lock_reset"} size={18} /></button>
-        <p class="help">Verify every retained unlock method to re-encrypt the current vault.</p>
+        <button type="button" disabled={busy || !status.methods.some(method => method.kind !== "recovery")} aria-expanded={showRotation} aria-controls={`${createFormId}-rotation`} onclick={() => { if (showRotation) clearInputs(); showRotation = !showRotation; }}>{showRotation ? "Cancel rotation" : "Rotate keys"}<MaterialIcon name={showRotation ? "backspace" : "lock_reset"} size={18} /></button>
+        <p class="help">{status.methods.some(method => method.kind !== "recovery") ? "Verify your passwords and passkeys to re-encrypt the vault and generate a new recovery key." : "Add a password or passkey before rotating keys."}</p>
       </div>
         {#if showRotation}
           <div id={`${createFormId}-rotation`} class="rotation-body" inert={!showRotation}
             transition:slide={{ duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240, easing: cubicInOut }}>
-          {#each status.methods as method, index (method.id)}
+          {#each status.methods.filter(method => method.kind !== "recovery") as method, index (method.id)}
             <VaultAuthentication bind:this={rotationAuthentication[method.id]} status={{ ...status, methods: [method] }} disabled={busy} label={`Verify ${methodNames[method.kind].toLowerCase()} ${index + 1}`} />
           {/each}
           <div class="actions"><button type="button" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}>Verify all and rotate key</button></div>

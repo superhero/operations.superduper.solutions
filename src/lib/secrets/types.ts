@@ -39,6 +39,8 @@ export type CredentialBinding = {
 export type CredentialExecutionContext = {
   binding: CredentialBinding; runId: string; nodeId: string;
 };
+export const recoveryKeyBytes = 128;
+export const recoveryKeyCharacters = Math.ceil(recoveryKeyBytes / 3) * 4;
 export type UnlockProof = { methodId: string; secret: string } | { methodId: string; prf: Uint8Array };
 export type Enrollment = { kind: "password"; secret: string } | { kind: "recovery"; secret: string }
   | { kind: "passkey"; prf: Uint8Array; credentialId: string; prfSalt: string };

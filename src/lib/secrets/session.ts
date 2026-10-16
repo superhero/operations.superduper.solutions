@@ -7,7 +7,7 @@ import { decryptJSON, encryptJSON, newVaultKey, passwordKey, recoveryKey, passke
 import { authenticateManifest, sealSnapshot, validateSnapshot } from "./format.ts";
 import { approvedOperation } from "./policy.ts";
 import { executeCredentialed } from "./execution.ts";
-import { VaultError, passwordProfile, vaultLimits } from "./types.ts";
+import { VaultError, passwordProfile, vaultLimits, recoveryKeyBytes, recoveryKeyCharacters } from "./types.ts";
 import type { ApprovedOperation, CredentialBinding, CredentialSummary, CryptoContext, Enrollment,
   KeyEnvelope, UnlockProof, VaultCredential, VaultSnapshot, VaultStatus } from "./types.ts";
 import type { VaultState, VaultStorage } from "./storage.ts";
@@ -92,7 +92,7 @@ export class VaultSession {
     const automaticSecret = proof.methodId === "auto" && "secret" in proof ? proof.secret : undefined;
     const automatic = automaticSecret !== undefined;
     const candidates = automatic ? [
-      ...snapshot.envelopes.filter(item => item.kind === "recovery" && automaticSecret?.length === 172),
+      ...snapshot.envelopes.filter(item => item.kind === "recovery" && automaticSecret?.length === recoveryKeyCharacters),
       ...snapshot.envelopes.filter(item => item.kind === "password"),
     ] : snapshot.envelopes.filter(item => item.id === proof.methodId);
     const generation = this.generation;
@@ -150,7 +150,7 @@ export class VaultSession {
     const state = await this.storage.read();
     if (state.snapshot) throw new VaultError("CONFLICT");
     const key = await newVaultKey();
-    const recovery = randomBase64(128);
+    const recovery = randomBase64(recoveryKeyBytes);
     const base = { id: crypto.randomUUID(), epoch: 1, revision: 1, records: [] };
     const envelopes = [await this.enroll(key, base, { kind: "password", secret: password }),
       await this.enroll(key, base, { kind: "recovery", secret: recovery })];
@@ -313,7 +313,7 @@ export class VaultSession {
 
   async prepareRecovery(proof: UnlockProof): Promise<string> {
     await this.fresh(proof);
-    this.recovery = randomBase64(128); return this.recovery;
+    this.recovery = randomBase64(recoveryKeyBytes); return this.recovery;
   }
 
   async addMethod(proof: UnlockProof, material: Enrollment, replaceId?: string): Promise<VaultStatus> {
@@ -335,15 +335,16 @@ export class VaultSession {
     return this.status();
   }
 
-  async rotate(proofs: UnlockProof[]): Promise<VaultStatus> {
+  async rotate(proofs: UnlockProof[]): Promise<VaultStatus & { recovery: string }> {
     await this.assertCurrent();
     const snapshot = this.state!.snapshot!;
-    if (proofs.length !== snapshot.envelopes.length || new Set(proofs.map(item => item.methodId)).size !== proofs.length) throw new VaultError("AUTHENTICATION");
+    const retained = snapshot.envelopes.filter(envelope => envelope.kind !== "recovery");
+    if (!retained.length || proofs.length !== retained.length || new Set(proofs.map(item => item.methodId)).size !== proofs.length) throw new VaultError("AUTHENTICATION");
     const generation = this.generation;
     const newKey = await newVaultKey();
     const epoch = snapshot.epoch + 1;
     const envelopes: KeyEnvelope[] = [];
-    for (const envelope of snapshot.envelopes) {
+    for (const envelope of retained) {
       const proof = proofs.find(item => item.methodId === envelope.id);
       if (!proof) throw new VaultError("AUTHENTICATION");
       await this.fresh(proof);
@@ -353,8 +354,10 @@ export class VaultSession {
       await unwrapVaultKey(wrappedKey, kek, context({ ...snapshot, epoch }, next));
       envelopes.push({ ...next, wrappedKey });
     }
+    const recovery = randomBase64(recoveryKeyBytes);
+    envelopes.push(await this.enroll(newKey, { ...snapshot, epoch }, { kind: "recovery", secret: recovery }));
     this.guard(generation);
     await this.save(await this.records(), envelopes, await runtimeKey(newKey), epoch);
-    return this.status();
+    return { ...await this.status(), recovery };
   }
 }

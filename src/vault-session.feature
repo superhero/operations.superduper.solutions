@@ -30,8 +30,8 @@ Feature: Browser vault session lifecycle
   Scenario: Unlock method replacement is independent
     Then vault sessions confirm recovery changes and independently enroll replace and remove methods
 
-  Scenario: Rotation requires proof for every retained method
-    Then vault rotation changes the key epoch while every retained method and complete old backup remain independently usable
+  Scenario: Rotation regenerates recovery after verifying retained methods
+    Then vault rotation renews recovery automatically while retaining verified passwords and passkeys
 
   Scenario: Rotated backups restore through every retained method
     Then a rotated vault backup restores into fresh storage with every retained unlock method

@@ -8,7 +8,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import FieldSelect from "./FieldSelect.svelte";
   import { lockVaultLocally, subscribeVaultLock, vaultCeremony } from "../secrets/client.ts";
   import { unlockPasskey } from "../secrets/passkeys.ts";
-  import { VaultError, type UnlockProof, type VaultStatus } from "../secrets/types.ts";
+  import { VaultError, recoveryKeyCharacters, type UnlockProof, type VaultStatus } from "../secrets/types.ts";
 
   let { status, disabled = false, label = "Authenticate", portalZIndex = 40, action }: {
     status: VaultStatus; disabled?: boolean; label?: string; portalZIndex?: number; action?: Snippet;
@@ -69,7 +69,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <input bind:this={secretInput} id={`${id}-automatic-secret`} type="password" name="vault-password"
         aria-label="Unlock password or recovery key" autocomplete={automaticRecovery ? "off" : "current-password"}
         data-1p-ignore={automaticRecovery ? true : undefined} data-lpignore={automaticRecovery ? "true" : undefined}
-        oninput={event => { automaticRecovery = event.currentTarget.value.length === 172; }}
+        oninput={event => { automaticRecovery = event.currentTarget.value.length === recoveryKeyCharacters; }}
         data-vault-sensitive spellcheck="false" autocapitalize="off" {disabled} />
       {@render action?.()}
       </div>
@@ -82,9 +82,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <button type="button" {disabled} onclick={() => { clear(); usePasskey = false; }}>Use password or recovery key</button>
     {/if}
   {:else}
+  {#if options.length > 1}
   <label for={`${id}-method`}>{label} method</label>
   <FieldSelect id={`${id}-method`} label={`${label} method`} value={methodId} {options} includePlaceholder={false} {disabled} {portalZIndex}
     onValueChange={value => { clear(); methodId = value; }} />
+  {/if}
   {#if method && method.kind !== "passkey"}
     {#if method.kind === "password"}
       <input type="hidden" name="username" autocomplete="username" value="Operations vault" />

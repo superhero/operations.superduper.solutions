@@ -269,16 +269,22 @@ Then('vault sessions confirm recovery changes and independently enroll replace a
   await assert.rejects(session.removeMethod(nextPassword, nextPassword.methodId), code('INVALID'));
 });
 
-Then('vault rotation changes the key epoch while every retained method and complete old backup remain independently usable', kdfStep, async () => {
+Then('vault rotation renews recovery automatically while retaining verified passwords and passkeys', kdfStep, async () => {
   const fixture = await populated(), { session, storage, proof, passwordProof } = fixture;
   const proofs = await retainedProofs(fixture), passkeyProof = proofs[2], prf = passkeyProof.prf;
   const backup = await session.backup(proof), previous = clone(storage.state.snapshot), writes = storage.writes;
-  for (const invalid of [[proof], [proof, proof, passkeyProof], [proof, passwordProof, { methodId: crypto.randomUUID(), prf }],
-    [proof, passwordProof, { ...passkeyProof, prf: new Uint8Array(32) }]]) {
+  for (const invalid of [[passwordProof], [passwordProof, passwordProof], [passwordProof, { methodId: crypto.randomUUID(), prf }],
+    [passwordProof, { ...passkeyProof, prf: new Uint8Array(32) }], proofs]) {
     await assert.rejects(session.rotate(invalid), code('AUTHENTICATION'));
     assert.equal(storage.writes, writes);
   }
-  assert.equal((await session.rotate(proofs)).unlocked, true);
+  const result = await session.rotate(proofs.slice(1));
+  assert.equal(result.unlocked, true);
+  assert.equal(result.recovery.length, 172);
+  assert.equal(Buffer.from(result.recovery, 'base64').length, 128);
+  assert.notEqual(result.recovery, fixture.recovery);
+  const renewedProof = { methodId: result.methods.find(method => method.kind === 'recovery').id, secret: result.recovery };
+  assert.notEqual(renewedProof.methodId, proof.methodId);
   const current = storage.state.snapshot;
   assert.equal(current.epoch, previous.epoch + 1);
   assert.notEqual(current.records[0].ciphertext.data, previous.records[0].ciphertext.data);
@@ -286,7 +292,9 @@ Then('vault rotation changes the key epoch while every retained method and compl
   const oldKey = await rawKey(previous, proof), currentRecord = current.records[0];
   await assert.rejects(decryptJSON(oldKey, currentRecord.ciphertext, { vaultId: current.id, epoch: current.epoch,
     kind: 'credential', id: currentRecord.id, revision: currentRecord.revision }), code('AUTHENTICATION'));
-  for (const retained of proofs) {
+  session.lock();
+  await assert.rejects(session.unlock(proof), code('AUTHENTICATION'));
+  for (const retained of [...proofs.slice(1), renewedProof]) {
     session.lock();
     assert.equal((await session.unlock(retained)).unlocked, true);
     assert.equal((await session.list())[0].id, fixture.id);
@@ -298,8 +306,9 @@ Then('vault rotation changes the key epoch while every retained method and compl
 
 Then('a rotated vault backup restores into fresh storage with every retained unlock method', kdfStep, async () => {
   const fixture = await populated(), proofs = await retainedProofs(fixture);
-  await fixture.session.rotate(proofs);
-  const backup = await fixture.session.backup(fixture.proof), rotated = clone(fixture.storage.state);
+  const result = await fixture.session.rotate(proofs.slice(1));
+  proofs[0] = { methodId: result.methods.find(method => method.kind === 'recovery').id, secret: result.recovery };
+  const backup = await fixture.session.backup(proofs[0]), rotated = clone(fixture.storage.state);
   const expected = (await fixture.session.list()).map(credential => ({ ...credential, grants: [] }));
   fixture.session.lock();
   for (const proof of proofs) {
@@ -345,7 +354,7 @@ Then('rotation interrupted {string} the atomic commit restarts with one complete
     };
   }
   try {
-    const rotation = session.rotate(proofs);
+    const rotation = session.rotate(proofs.slice(1));
     await Promise.race([reached.promise, rotation]);
     session.lock(); release.resolve();
     await assert.rejects(rotation, code('CANCELLED'));
@@ -366,7 +375,7 @@ Then('rotation interrupted {string} the atomic commit restarts with one complete
     assert.equal(storage.state.snapshot.revision, previous.snapshot.revision + 1);
     assert.notDeepEqual(storage.state.snapshot.manifest, previous.snapshot.manifest);
   }
-  for (const proof of proofs) {
+  for (const proof of proofs.slice(1)) {
     const restartedStorage = new MemoryStorage();
     restartedStorage.state = clone(storage.state);
     const restarted = new VaultSession(restartedStorage);
