@@ -10,14 +10,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { unlockPasskey } from "../secrets/passkeys.ts";
   import { VaultError, recoveryKeyCharacters, type UnlockProof, type VaultStatus } from "../secrets/types.ts";
 
-  let { status, disabled = false, label = "Authenticate", portalZIndex = 40, action, inputLabel }: {
-    status: VaultStatus; disabled?: boolean; label?: string; portalZIndex?: number; action?: Snippet; inputLabel?: string;
+  let { status, disabled = false, label = "Authenticate", portalZIndex = 40, action, inputLabel, detectMethod = false }: {
+    status: VaultStatus; disabled?: boolean; label?: string; portalZIndex?: number; action?: Snippet; inputLabel?: string; detectMethod?: boolean;
   } = $props();
   const id = $props.id();
   let methodId = $state("");
   let secretInput = $state.raw<HTMLInputElement>();
   let pendingPasskey = false;
-  const automatic = $derived(label === "Unlock");
+  const automatic = $derived(detectMethod || label === "Unlock");
   let usePasskey = $state(false);
   let automaticRecovery = $state(false);
   const names = { password: "Password", recovery: "Recovery key", passkey: "Passkey" };
@@ -64,10 +64,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if automatic}
     {#if !usePasskey}
       <input type="hidden" name="username" autocomplete="username" value="Operations vault" />
-      <label for={`${id}-automatic-secret`}>Password or recovery key to unlock vault</label>
+      <label for={`${id}-automatic-secret`}>{inputLabel ?? "Password or recovery key to unlock vault"}</label>
       <div class="unlock-field">
       <input bind:this={secretInput} id={`${id}-automatic-secret`} type="password" name="vault-password"
-        aria-label="Unlock password or recovery key" autocomplete={automaticRecovery ? "off" : "current-password"}
+        aria-label={inputLabel ?? "Unlock password or recovery key"} autocomplete={automaticRecovery ? "off" : "current-password"}
         data-1p-ignore={automaticRecovery ? true : undefined} data-lpignore={automaticRecovery ? "true" : undefined}
         oninput={event => { automaticRecovery = event.currentTarget.value.length === recoveryKeyCharacters; }}
         data-vault-sensitive spellcheck="false" autocapitalize="off" {disabled} />

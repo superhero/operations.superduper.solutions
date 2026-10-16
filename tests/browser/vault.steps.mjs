@@ -671,3 +671,38 @@ Then('a pending native passkey enrollment is cancelled by {string} and clears re
     } finally { for (const handle of handles) await handle.dispose(); }
   }, false);
 });
+
+Then('the password replacement pane validates matching values and preserves recovery access', async function () {
+  const page = this.page, vault = settings(page), replacement = 'browser-CHANGED-password-9182';
+  const before = await storage(page, 'read');
+  const previousRecovery = before.snapshot.envelopes.find(envelope => envelope.kind === 'recovery');
+  await expect(vault.getByLabel('Confirm action password', { exact: true })).toHaveValue('');
+  await vault.getByRole('button', { name: 'Replace password', exact: true }).click();
+  const form = vault.locator('form[id$="-password"]');
+  await expect(form.getByRole('combobox')).toHaveCount(0);
+  await form.getByLabel('Password or recovery key', { exact: true }).fill(canaries[0]);
+  await form.getByLabel('New password', { exact: true }).fill(replacement);
+  await form.getByLabel('Confirm new password', { exact: true }).fill('does-not-match');
+  await form.getByRole('button', { name: 'Verify and replace password', exact: true }).click();
+  await expect(form.getByRole('alert')).toContainText('matching passwords');
+  assert.deepEqual(await storage(page, 'read'), before);
+  await form.getByLabel('Password or recovery key', { exact: true }).fill(this.uiRecovery);
+  await form.getByLabel('New password', { exact: true }).fill(replacement);
+  await form.getByLabel('Confirm new password', { exact: true }).fill(replacement);
+  await form.getByRole('button', { name: 'Verify and replace password', exact: true }).click();
+  await expect(form).toHaveCount(0);
+  await expect(vault.getByRole('status')).toHaveText('Password replaced.');
+  const saved = await storage(page, 'read');
+  assert.deepEqual(saved.snapshot.envelopes.find(envelope => envelope.kind === 'recovery'), previousRecovery);
+  assert.equal(saved.snapshot.envelopes.filter(envelope => envelope.kind === 'password').length, 1);
+  assert.ok(!JSON.stringify(saved).includes(replacement));
+  await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+  await vault.getByLabel('Unlock password or recovery key', { exact: true }).fill(canaries[0]);
+  await vault.getByRole('button', { name: 'Unlock vault', exact: true }).click();
+  await expect(vault.getByRole('alert')).toBeVisible();
+  await expect(vault.getByRole('heading', { name: 'Confirm management actions', exact: true })).toHaveCount(0);
+  await unlockUI(page, replacement);
+  await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+  await unlockUI(page, this.uiRecovery);
+  await expect(vault.locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
+});

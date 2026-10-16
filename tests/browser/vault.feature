@@ -171,3 +171,7 @@ Feature: Browser vault persistence and controlled credential execution
       | action            |
       | manual lock       |
       | settings teardown |
+
+  Scenario: Password replacement uses its own expandable authentication pane
+    Given I create a vault in the Secrets settings and save a synthetic credential
+    Then the password replacement pane validates matching values and preserves recovery access

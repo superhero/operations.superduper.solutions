@@ -39,6 +39,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let authentication = $state.raw<Authentication>();
   let restoreAuthentication = $state.raw<Authentication>();
   let passkeyAuthentication = $state.raw<Authentication>();
+  let passwordAuthentication = $state.raw<Authentication>();
+  let showPassword = $state(false);
+  let passwordError = $state("");
   let showPasskey = $state(false);
   let passkeyError = $state("");
   let recoveryOutput = $state.raw<HTMLPreElement>();
@@ -69,7 +72,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function wipe(proof: UnlockProof): void { if ("prf" in proof) proof.prf.fill(0); else proof.secret = ""; }
   function clearInputs(): void {
     panel?.querySelectorAll<HTMLInputElement>("input[data-vault-sensitive]").forEach(input => { input.value = ""; });
-    authentication?.clear(); restoreAuthentication?.clear(); passkeyAuthentication?.clear();
+    authentication?.clear(); restoreAuthentication?.clear(); passkeyAuthentication?.clear(); passwordAuthentication?.clear();
     for (const component of Object.values(rotationAuthentication)) component?.clear();
   }
   function clearRecovery(): void { if (recoveryOutput) recoveryOutput.textContent = ""; recoveryMode = null; }
@@ -82,7 +85,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
   function locked(): void {
     generation++; reviewGeneration++; clearInputs(); clearRecovery(); clearRestore();
-    records = []; grantDescriptor = null; status = { ...status, unlocked: false }; showRotation = false; showPasskey = false; passkeyError = ""; busy = false; progress = "";
+    records = []; grantDescriptor = null; status = { ...status, unlocked: false }; showRotation = false; showPassword = false; passwordError = ""; showPasskey = false; passkeyError = ""; busy = false; progress = "";
   }
   async function refresh(): Promise<void> {
     const current = generation;
@@ -177,12 +180,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     await refresh(); notice = "Destination approved for this credential.";
   }
   async function changePassword(): Promise<void> {
+    const current = generation;
+    passwordError = "";
     const material: Enrollment = { kind: "password", secret: take("new-password") };
+    let proof: UnlockProof | undefined;
     try {
-      if (material.secret.length < 3 || material.secret !== take("new-password-confirm")) { error = "Enter matching passwords with at least 3 characters."; return; }
-      await fresh(proof => vaultCall("addMethod", [proof, material, passwordReplacement || undefined]));
-      await refresh(); notice = "Password method saved. Other unlock methods remain available.";
-    } finally { material.secret = ""; }
+      if (material.secret.length < 3 || material.secret !== take("new-password-confirm")) { passwordError = "Enter matching passwords with at least 3 characters."; return; }
+      if (!passwordAuthentication) throw new VaultError("AUTHENTICATION");
+      proof = await passwordAuthentication.proof();
+      await vaultCall("addMethod", [proof, material, passwordReplacement || undefined]);
+      await refresh();
+      if (current !== generation || disposed) return;
+      showPassword = false; notice = passwordReplacement ? "Password replaced." : "Password added.";
+    } catch (failure) {
+      if (current === generation && !disposed) passwordError = safeVaultError(failure).message;
+    } finally { material.secret = ""; if (proof) wipe(proof); }
   }
   async function addPasskey(): Promise<void> {
     const current = generation;
@@ -441,18 +453,36 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <ul class="records">{#each status.methods as method, index (method.id)}<li class="record-heading"><span>{methodNames[method.kind]} {index + 1}</span>
         <button type="button" disabled={busy || status.methods.length < 2} onclick={() => run("Removing unlock method…", async () => { await fresh(proof => vaultCall("removeMethod", [proof, method.id])); await refresh(); })}>Remove method</button></li>{/each}</ul>
       <p class="help">Use a different retained method to authenticate removal. Removing a method does not change previously downloaded exports.</p>
-      <form class="subform" onsubmit={event => { event.preventDefault(); void run("Saving password method…", changePassword); }}>
-        <h4>Password</h4>
-        <input type="hidden" name="username" autocomplete="username" value="Operations vault" />
-        <FieldSelect id="vault-password-replacement" label="Password method to replace" value={passwordReplacement} disabled={busy}
-          options={status.methods.filter(method => method.kind === "password").map((method, index) => ({ value: method.id, label: `Replace password ${index + 1}` }))}
-          onValueChange={value => passwordReplacement = value} />
-        <p class="help">Leave the method unselected to add another password.</p>
-        <label>New password<input name="new-password" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
-        <label>Confirm new password<input name="new-password-confirm" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
-        <button disabled={busy}>Save password method</button>
-      </form>
-
+    </div>
+    <div class="card rotation-card">
+      <div class="vault-password-row">
+        <button type="button" disabled={busy} aria-expanded={showPassword} aria-controls={`${createFormId}-password`}
+          onclick={() => { clearInputs(); passwordError = ""; if (!showPassword) passwordReplacement = status.methods.find(method => method.kind === "password")?.id ?? ""; showPassword = !showPassword; }}>{showPassword ? "Cancel" : status.methods.some(method => method.kind === "password") ? "Replace password" : "Add password"}<MaterialIcon name={showPassword ? "backspace" : "password"} size={18} /></button>
+        <p class="help">Change the vault password. Your stored data and recovery key remain unchanged.</p>
+      </div>
+      {#if showPassword}
+        <form id={`${createFormId}-password`} class="rotation-body" inert={!showPassword}
+          onsubmit={event => { event.preventDefault(); void run("", changePassword); }}
+          transition:slide={{ duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240, easing: cubicInOut }}>
+          {#if status.methods.filter(method => method.kind === "password").length > 1}
+            <FieldSelect id="vault-password-replacement" label="Password to replace" value={passwordReplacement} disabled={busy} includePlaceholder={false}
+              options={status.methods.filter(method => method.kind === "password").map((method, index) => ({ value: method.id, label: `Password ${index + 1}` }))}
+              onValueChange={value => { passwordAuthentication?.clear(); passwordReplacement = value; }} />
+          {/if}
+          <VaultAuthentication bind:this={passwordAuthentication}
+            {status} detectMethod disabled={busy} label="Authorize password change" inputLabel="Password or recovery key" />
+          <label>New password<input name="new-password" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
+          <label for={`${createFormId}-new-password-confirm`}>Confirm new password</label>
+            <span class="password-confirm-field">
+              <input id={`${createFormId}-new-password-confirm`} name="new-password-confirm" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} />
+              <HintButton label="Verify and replace password" disabled={busy}>
+                {#snippet child({ props })}<button {...props} class="unlock-vault" type="submit"><MaterialIcon name="password" size={20} /></button>{/snippet}
+              </HintButton>
+            </span>
+          {#if passwordError}<p class="error" role="alert"
+            transition:slide={{ duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240, easing: cubicInOut }}>{passwordError}</p>{/if}
+        </form>
+      {/if}
     </div>
     <div class="card rotation-card">
       <div class="vault-passkey-row">
@@ -548,10 +578,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .recovery-key { position: relative; min-width: 0; border-radius: 4px; background: var(--color-background); }
   .recovery-key pre { margin: 0; padding: 8px 40px 8px 8px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: monospace; font-size: 12px; }
   .recovery-copy { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; background: transparent; color: inherit; }
-  .vault-replace-row, .vault-export-row, .vault-rotate-row, .vault-passkey-row { display: flex; align-items: center; gap: 12px; }
-  .vault-replace-row > button, .vault-export-row > button, .vault-rotate-row > button, .vault-passkey-row > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 160px; width: 160px; white-space: nowrap; }
-  .vault-replace-row > p, .vault-export-row > p, .vault-rotate-row > p, .vault-passkey-row > p { min-width: 0; }
+  .vault-replace-row, .vault-export-row, .vault-rotate-row, .vault-passkey-row, .vault-password-row { display: flex; align-items: center; gap: 12px; }
+  .vault-replace-row > button, .vault-export-row > button, .vault-rotate-row > button, .vault-passkey-row > button, .vault-password-row > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 160px; width: 160px; white-space: nowrap; }
+  .vault-replace-row > p, .vault-export-row > p, .vault-rotate-row > p, .vault-passkey-row > p, .vault-password-row > p { min-width: 0; }
   .creation-actions, .recovery-actions { justify-content: flex-end; }
+  .password-confirm-field { display: flex; min-width: 0; border-radius: 4px; background: var(--color-background); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
+  .password-confirm-field:focus-within, .password-confirm-field:hover:has(:enabled) { outline-color: var(--color-ring); }
+  .password-confirm-field > input[name] { flex: 1; width: 0; border-radius: 4px 0 0 4px; outline: none; }
+  .password-confirm-field > .unlock-vault { outline: none; }
   .unlock-vault { display: grid; place-items: center; justify-self: end; flex-shrink: 0; align-self: stretch; min-width: 40px; border-radius: 0 4px 4px 0; }
   .unlock-vault:hover:enabled, .unlock-vault:focus { color: var(--color-background); }
   .creation-actions button, .recovery-actions button { display: inline-flex; align-items: center; gap: 6px; }
@@ -596,7 +630,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     .unlock-vault:hover:enabled :global(.material-symbols-rounded), .unlock-vault:focus :global(.material-symbols-rounded) { transform: scale(1.2); }
     .idle-toggle:hover:enabled .default-switch { transform: scale(1.10); }
     .recovery-copy:hover:enabled { transform: scale(1.10); }
-    :is(.creation-actions, .recovery-actions, .vault-replace-row, .vault-export-row, .vault-rotate-row, .vault-passkey-row) button:hover:enabled { transform: scale(1.05); }
+    :is(.creation-actions, .recovery-actions, .vault-replace-row, .vault-export-row, .vault-rotate-row, .vault-passkey-row, .vault-password-row) button:hover:enabled { transform: scale(1.05); }
   }
   @media (prefers-reduced-motion: reduce) { .default-switch, .default-switch > span { transition: none; } }
 </style>
