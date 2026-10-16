@@ -37,14 +37,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 </script>
 
-{#snippet separator()}
+{#snippet separator(stage: 1 | 2 | 3)}
   <div class="evaluation-connection" aria-hidden="true">
-    <span><MaterialIcon name="stat_minus_2" size={20} /></span>
+    <span><MaterialIcon name={`stat_minus_${stage}`} size={20} /></span>
   </div>
 {/snippet}
 
 <section class="detail-report evaluation-report" aria-label="Evaluation report">
-  {@render separator()}
+  {@render separator(1)}
   <div class="report-metrics">
     <div class="report-metric"><span class="report-metric-value">{elapsed}</span><span class="report-metric-label">Evaluation time</span></div>
     <div class="report-metric">
@@ -60,7 +60,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="report-metric"><span class="report-metric-value">{considered}</span><span class="report-metric-label">Considered operations</span></div>
   </div>
 
-  {@render separator()}
+  {@render separator(2)}
   {#if proposedCandidates.length}
     <div class="evaluation-columns" class:single={notProposedCandidates.length === 0}>
       {#each [
@@ -108,7 +108,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/each}
     </div>
   {/if}
-  {@render separator()}
+  {@render separator(3)}
   {#if !results.length}<p class="hint evaluation-outcome">No operations to propose.</p>{/if}
 </section>
 
