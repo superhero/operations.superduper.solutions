@@ -448,6 +448,29 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </form>
     {/if}
 
+  {/if}
+  {#if ready && status.exists}
+    <div class="card">
+      <div class="idle-settings">
+      <button class="idle-toggle" type="button" role="switch" aria-checked={preferences.idleLockEnabled} disabled={busy || idleSaving}
+        onclick={() => void saveIdle(!preferences.idleLockEnabled, preferences.idleLockMinutes)}>
+        <span>Lock after inactivity</span><span class="default-switch" aria-hidden="true"><span></span></span>
+      </button>
+      <div class="idle-control">
+        <FieldInteger id="vault-idle-minutes" label="Minutes of inactivity" value={idleMinutes}
+          minimum={1} maximum={maximumIdleMinutes} required disabled={busy || idleSaving || !preferences.idleLockEnabled}
+          onValueChange={value => { idleMinutes = value; }}
+          onValueCommit={() => {
+            const minutes = Number(idleMinutes);
+            if (Number.isInteger(minutes) && minutes >= 1 && minutes <= maximumIdleMinutes)
+              void saveIdle(preferences.idleLockEnabled, minutes);
+          }} />
+        <span aria-hidden="true">min</span>
+      </div>
+      </div>
+    </div>
+  {/if}
+  {#if ready && status.unlocked}
     <div class="card rotation-card">
       <div class="vault-password-row">
         <button type="button" disabled={busy} aria-expanded={showPassword} aria-controls={`${createFormId}-password`}
@@ -543,27 +566,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {@render vaultImport()}
     </div>
   {/if}
-  {#if ready && status.exists}
-    <div class="card">
-      <div class="idle-settings">
-      <button class="idle-toggle" type="button" role="switch" aria-checked={preferences.idleLockEnabled} disabled={busy || idleSaving}
-        onclick={() => void saveIdle(!preferences.idleLockEnabled, preferences.idleLockMinutes)}>
-        <span>Lock after inactivity</span><span class="default-switch" aria-hidden="true"><span></span></span>
-      </button>
-      <div class="idle-control">
-        <FieldInteger id="vault-idle-minutes" label="Minutes of inactivity" value={idleMinutes}
-          minimum={1} maximum={maximumIdleMinutes} required disabled={busy || idleSaving || !preferences.idleLockEnabled}
-          onValueChange={value => { idleMinutes = value; }}
-          onValueCommit={() => {
-            const minutes = Number(idleMinutes);
-            if (Number.isInteger(minutes) && minutes >= 1 && minutes <= maximumIdleMinutes)
-              void saveIdle(preferences.idleLockEnabled, minutes);
-          }} />
-        <span aria-hidden="true">min</span>
-      </div>
-      </div>
-    </div>
-  {/if}
+
 </section>
 
 <style>
