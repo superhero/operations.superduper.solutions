@@ -459,7 +459,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if ready && status.exists}
     <div class="card">
       <div class="vault-replace-row">
-        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}><MaterialIcon name="file_import" size={18} />Replace vault</button>
+        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}><MaterialIcon name="upload" size={18} />Replace vault</button>
         <p class="help">Importing replaces any existing vault in this browser and removes imported destination approvals. Exports are encrypted; keep their password, recovery key or passkey available.</p>
       </div>
       {@render vaultImport()}
