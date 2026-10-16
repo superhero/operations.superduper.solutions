@@ -438,10 +438,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   {#if ready && status.exists}
     <div class="card">
-      <h3>Encrypted vault exports</h3>
-      <p class="help">Importing replaces any existing vault in this browser and removes imported destination approvals. Exports are encrypted; keep their password, recovery key or passkey available.</p>
-      <div class="actions">{#if status.unlocked}<button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}>Export encrypted vault</button>{/if}
-        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}>Import vault</button></div>
+      {#if status.unlocked}<div class="actions"><button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}>Export encrypted vault</button></div>{/if}
+      <div class="vault-replace-row">
+        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}>Replace vault</button>
+        <p class="help">Importing replaces any existing vault in this browser and removes imported destination approvals. Exports are encrypted; keep their password, recovery key or passkey available.</p>
+      </div>
       {@render vaultImport()}
     </div>
   {/if}
@@ -476,6 +477,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .recovery-key { position: relative; min-width: 0; border-radius: 4px; background: var(--color-background); }
   .recovery-key pre { margin: 0; padding: 8px 40px 8px 8px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: monospace; font-size: 12px; }
   .recovery-copy { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; background: transparent; color: inherit; }
+  .vault-replace-row { display: flex; align-items: center; gap: 12px; }
+  .vault-replace-row > button { flex-shrink: 0; }
+  .vault-replace-row > p { min-width: 0; }
   .creation-actions, .recovery-actions { justify-content: flex-end; }
   .creation-actions button, .recovery-actions button { display: inline-flex; align-items: center; gap: 6px; }
   .card, .subform, .vault-create-form { display: grid; gap: 10px; min-width: 0; }

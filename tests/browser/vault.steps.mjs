@@ -188,7 +188,7 @@ async function openSecrets(page) {
   const disclosure = page.locator('summary[aria-label="Secrets"]');
   if (await disclosure.getAttribute('aria-expanded') !== 'true') await disclosure.click();
   await expect(settings(page)).toBeVisible();
-  await expect(settings(page).getByRole('button', { name: 'Import vault', exact: true })).toBeEnabled();
+  await expect(settings(page).getByRole('button', { name: /^(?:Import|Replace) vault$/ })).toBeEnabled();
 }
 async function unlockUI(page, password = canaries[0]) {
   await settings(page).getByLabel('Unlock password', { exact: true }).fill(password);
