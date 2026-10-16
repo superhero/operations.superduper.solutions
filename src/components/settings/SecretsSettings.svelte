@@ -447,7 +447,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="card rotation-card">
       <div class="vault-rotate-row">
         <button type="button" disabled={busy || !status.methods.some(method => method.kind !== "recovery")} aria-expanded={showRotation} aria-controls={`${createFormId}-rotation`} onclick={() => { if (showRotation) clearInputs(); showRotation = !showRotation; }}>{showRotation ? "Cancel rotation" : "Rotate key"}<MaterialIcon name={showRotation ? "backspace" : "lock_reset"} size={18} /></button>
-        <p class="help">{status.methods.some(method => method.kind !== "recovery") ? "Rotate the vault’s encryption key and generate a new recovery key." : "Add a password or passkey before rotating keys."}</p>
+        <p class="help">{status.methods.some(method => method.kind !== "recovery") ? "Rotate the vault’s encryption key and generate a new recovery key. Your password remains unchanged." : "Add a password or passkey before rotating keys."}</p>
       </div>
         {#if showRotation}
           {#snippet rotationAction()}
