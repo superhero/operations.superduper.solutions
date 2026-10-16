@@ -11,6 +11,7 @@ unrelated behavior to `utils.ts`.
 | Module group | Owns |
 | --- | --- |
 | `catalog*`, `schema-documents`, `schema-library*`, `schema-storage` | OpenAPI compatibility, active operations, schema management and persistence |
+| `matching`, `operation-matching*` | Local operation ranking and cancellable background evaluation for the catalog prompt |
 | `workflow-document`, `workflow-graph`, `workflow-layout`, connection helpers | Persisted graph validation and editor projection |
 | [`flow-routing`](flow-routing/README.md), `workflow-routing*` | Measured orthogonal edge geometry, synchronized dashes and its dedicated worker adapter |
 | `workflow-runner`, `workflow-execution`, `workflow-response`, `operation-*` | Execution, typed inputs, response mappings and reports |
@@ -51,6 +52,10 @@ Page code reaches persistence through `schema-library.ts`,
 use inline bundling; keep heavy parsing, repository work and aggregation there.
 Window-only measurements cross an asynchronous bridge. Preserve native error
 causes and worker cleanup when changing [worker boundaries](../../docs/adr/dedicated-workers.md).
+
+Operation matching sends only operation names and identifiers to its disposable
+worker. Each new prompt aborts the previous calculation, including its worker;
+completed scores are paired with the original operations on the page.
 
 ## Operation registry
 

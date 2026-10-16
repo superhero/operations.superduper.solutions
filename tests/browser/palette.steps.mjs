@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { Then, When } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { closeCatalog, openCatalog, setMode } from './workspace.steps.mjs';
+import { closeCatalog, openCatalog, setMode, searchOperations, setEvaluationDetails } from './workspace.steps.mjs';
 
 const paletteNames = Array.from({ length: 6 }, (_, index) => `--palette-${index + 1}`);
 const toneNames = Array.from({ length: 6 }, (_, index) => `--tone-${index + 1}`);
@@ -420,14 +420,17 @@ async function expectReadable(control, palette) {
 
 Then('prompt fields and badges remain readable while primary actions use the label foreground in both modes', async function () {
   const page = this.page;
+  await setEvaluationDetails(page);
   for (const theme of ['light', 'dark']) {
     await selectTheme(page, theme);
     const palette = Object.values(await resolvedColors(page, paletteNames));
-    await setMode(page, 'operations');
-    await expectReadable(page.getByRole('textbox', { name: 'Prompt', exact: true }), palette);
-    await expectReadable(page.locator('label[for="operation-prompt"]'), palette);
     await setMode(page, 'workflow');
-    const primary = page.getByRole('button', { name: 'Add nodes by selecting workflow operations from the left menu', exact: true })
+    await openCatalog(page);
+    await expectReadable(page.getByRole('textbox', { name: 'Prompt', exact: true }), palette);
+    await searchOperations(page, 'Get project');
+    await expectReadable(page.getByRole('button', { name: 'Review matching details', exact: true }), palette);
+    await setMode(page, 'workflow');
+    const primary = page.locator('.workflow-empty').getByRole('button', { name: 'Browse operations', exact: true })
       .and(page.locator('[data-slot="button"]'));
     // Primary action labels intentionally use the label color selected by the theme.
     const roles = await resolvedColors(page, ['--color-primary', '--color-badge-background']);

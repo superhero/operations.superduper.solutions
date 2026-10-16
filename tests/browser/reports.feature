@@ -2,10 +2,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 Feature: Local evaluation and operation reports
+  Scenario: Evaluation details are an optional saved developer preference
+    Then evaluation details stay hidden until enabled and the saved choice survives reload
+
   Scenario Outline: Evaluation reports explain the actual local comparison
     When I search for the operation "<prompt>"
     And I review the matching details
-    Then the evaluation report records "<prompt>" with top similarity "<similarity>"
+    Then the evaluation report reflects "<prompt>" with top similarity "<similarity>"
     And the evaluation columns show "<proposed>" opposite "<not_proposed>"
 
     Examples:
@@ -21,17 +24,14 @@ Feature: Local evaluation and operation reports
     And I review the matching details
     Then evaluation values and statuses show styled hints on hover and keyboard focus
 
-  Scenario: Editing the prompt leaves the submitted report intact until a new search
+  Scenario: Editing the prompt updates an open report automatically
     When I search for the operation "List projects"
     And I review the matching details
-    And I edit the report prompt to "zzzzzzzzzzzz" without submitting
-    Then the previous evaluation report remains unchanged
-    When I submit the edited report prompt
-    Then the new evaluation starts with its report closed
-    When I review the matching details
-    Then the evaluation report records "zzzzzzzzzzzz" with top similarity "0%"
+    And I edit the report prompt to "zzzzzzzzzzzz"
+    Then the open report follows the latest prompt automatically
+    And the evaluation report reflects "zzzzzzzzzzzz" with top similarity "0%"
 
-  Scenario: Operation reports separate catalog sources and input locations while retaining drafts
+  Scenario: Run reports separate catalog sources and input locations between executions
     Given I open the "Create task" operation from the catalog
     When I enter these operation inputs:
       | label      | value                 |
@@ -40,7 +40,7 @@ Feature: Local evaluation and operation reports
       | Priority   | normal                |
     And I expand the operation details
     Then the operation report describes the demo Create task source and inputs
-    And changing the reported operation resets its schema view without losing the draft
+    And changing the reported operation resets its schema view and run inputs
 
   Scenario Outline: Expanded reports fit the available space in both themes
     Then both reports fit a <width> pixel viewport in the "<theme>" theme

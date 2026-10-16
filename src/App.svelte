@@ -11,15 +11,15 @@
   import { logger } from "$lib/logger.ts";
   import Header from "./components/Header.svelte";
   import SideNavigation from "./components/SideNavigation.svelte";
-  import OperationsWorkspace from "./components/OperationsWorkspace.svelte";
   import WorkflowWorkspace from "./components/WorkflowWorkspace.svelte";
   import SettingsWorkspace, { palettes } from "./components/SettingsWorkspace.svelte";
   import BackgroundWave from "./components/BackgroundWave.svelte";
   import NativeScrollbars from "./components/NativeScrollbars.svelte";
 
-  let { initialWorkflowDefaults, initialDeveloperToolbar = false, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
+  let { initialWorkflowDefaults, initialDeveloperToolbar = false, initialEvaluationDetails = false, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
     initialWorkflowDefaults: WorkflowDefaults;
     initialDeveloperToolbar?: boolean;
+    initialEvaluationDetails?: boolean;
     initialLocale?: LocaleSettings;
     initialSettingsError?: Error | null;
   } = $props();
@@ -27,46 +27,39 @@
   let developerToolbar = $state(untrack(() => initialDeveloperToolbar));
   let developerToolbarError = $state("");
   let developerToolbarSave = 0;
+  let evaluationDetails = $state(untrack(() => initialEvaluationDetails));
+  let evaluationDetailsError = $state("");
+  let evaluationDetailsSave = 0;
   let locale = $state<LocaleSettings>(untrack(() => normalizeLocaleSettings(initialLocale)));
   let localeError = $state("");
   let localeSave = 0;
   let settingsError = $state(untrack(() => initialSettingsError));
   let settingsRetrying = $state(false);
-  const settingsEdits = { theme: 0, palette: 0, workflowDefaults: 0, developerToolbar: 0, locale: 0 };
+  const settingsEdits = { theme: 0, palette: 0, workflowDefaults: 0, developerToolbar: 0, evaluationDetails: 0, locale: 0 };
   let workflowDefaultsError = $state("");
   let workflowDefaultsSave = 0;
-  let navigationOpen = $state(false);
+  let navigationOpen = $state(!matchMedia("(max-width: 899px)").matches);
   let navigationModal = $state(false);
   let documentModal = $state(false);
   let workflowSaveStatus = $state<WorkflowSaveStatus>("loading");
   let savedWorkflows = $state<WorkflowDocument[]>([]);
   let workflowLibraryError = $state("");
-  let mode = $state<WorkspaceMode>("operations");
+  let mode = $state<WorkspaceMode>("workflow");
   let modeRequest = 0;
   let dark = $state(document.documentElement.dataset.theme === "dark");
   let palette = $state(palettes.find(option => option.id === document.documentElement.dataset.palette)?.id ?? palettes[0].id);
-  let operationsWorkspace: OperationsWorkspace;
   const operations = $derived(getSchemaLibrary().operations);
   let sideNavigation: SideNavigation;
   let workflowWorkspace: WorkflowWorkspace;
   let settingsWorkspace: SettingsWorkspace;
 
-  let operationsHost: HTMLDivElement;
-  let lastOperationsFocus: HTMLElement | undefined;
-  let operationsScroll = 0;
-
   async function focusDestination() {
     await tick();
     if (navigationModal) return;
     if (mode === "workflow") workflowWorkspace.focusCanvas();
-    else if (mode === "settings") {
+    else {
       window.scrollTo({ top: 0, behavior: "instant" });
       settingsWorkspace.focusActive();
-    }
-    else {
-      window.scrollTo({ top: operationsScroll, behavior: "instant" });
-      if (lastOperationsFocus?.isConnected && lastOperationsFocus.getClientRects().length && !lastOperationsFocus.closest('[inert],[hidden]') && !lastOperationsFocus.matches(':disabled')) lastOperationsFocus.focus({ preventScroll: true });
-      else operationsWorkspace.focusActive();
     }
   }
 
@@ -75,10 +68,6 @@
     if (next === mode) return;
     if (mode === "workflow" && !await workflowWorkspace.flushPendingChanges()) return;
     if (request !== modeRequest) return;
-    if (mode === "operations") {
-      operationsWorkspace.cancelStepScroll();
-      operationsScroll = window.scrollY;
-    }
     mode = next;
     if (matchMedia("(max-width: 899px)").matches) navigationOpen = false;
     await focusDestination();
@@ -166,6 +155,19 @@
     });
   }
 
+  function selectEvaluationDetails(next: boolean) {
+    settingsEdits.evaluationDetails += 1;
+    evaluationDetails = next;
+    evaluationDetailsError = "";
+    const request = ++evaluationDetailsSave;
+    void saveSetting("evaluationDetails", next).catch(error => {
+      if (request === evaluationDetailsSave) {
+        evaluationDetailsError = "Could not save this setting. It applies only to this session until saving succeeds.";
+        void reportSettingsError(error);
+      }
+    });
+  }
+
   async function reportSettingsError(error: unknown) {
     const failure = error instanceof Error ? error : new Error("Could not access saved settings.", { cause: error });
     // Keep the recovered app usable behind the overlay, with its palette applied.
@@ -187,6 +189,7 @@
         if (edits.palette === settingsEdits.palette) palette = palettes.find(option => option.id === settings.palette)?.id ?? palettes[0].id;
         if (edits.workflowDefaults === settingsEdits.workflowDefaults) workflowDefaults = settings.workflowDefaults;
         if (edits.developerToolbar === settingsEdits.developerToolbar) developerToolbar = settings.developerToolbar;
+        if (edits.evaluationDetails === settingsEdits.evaluationDetails) evaluationDetails = settings.evaluationDetails;
         if (edits.locale === settingsEdits.locale) locale = settings.locale;
       }
     } finally {
@@ -194,28 +197,21 @@
     }
   }
 
-  function selectOperation(operation: Operation) {
-    modeRequest += 1;
-    if (mode === "workflow") workflowWorkspace.addOperation(operation);
-    else {
-      mode = "operations";
-      lastOperationsFocus = undefined;
-      operationsWorkspace.selectOperation(operation);
-    }
-    if (window.matchMedia("(max-width: 899px)").matches) navigationOpen = false;
+  async function browseOperations() {
+    navigationOpen = true;
+    await tick();
+    await sideNavigation.focusPrompt();
   }
-
-  async function addToWorkflow(operation: Operation) {
+  async function selectOperation(operation: Operation) {
     await setMode("workflow");
     await workflowWorkspace.addOperation(operation);
+    if (matchMedia("(max-width: 899px)").matches) navigationOpen = false;
   }
 
   async function selectWorkflow(document: WorkflowDocument) {
-    if (mode === "workflow") await workflowWorkspace.addWorkflow(document);
-    else {
-      await setMode("workflow");
-      workflowWorkspace.startRun(document);
-    }
+    await setMode("workflow");
+    await workflowWorkspace.addWorkflow(document);
+    if (matchMedia("(max-width: 899px)").matches) navigationOpen = false;
   }
 
   /** Limit hover growth using layout dimensions unaffected by transforms. */
@@ -223,7 +219,7 @@
     if (!(event.target instanceof Element)) return;
     const surfaces = new Set<HTMLElement>();
     for (let element: Element | null = event.target; element; element = element.parentElement) {
-      if (element instanceof HTMLElement && element.matches('button, summary, .result-card, .saved-documents li, .palette-choice'))
+      if (element instanceof HTMLElement && element.matches('button, summary, .saved-documents li, .palette-choice'))
         surfaces.add(element);
     }
     // The operation description also animates its action button.
@@ -250,7 +246,7 @@
 <Tooltip.Provider delayDuration={400} ignoreNonKeyboardFocus disableHoverableContent>
 <BackgroundWave />
 <NativeScrollbars />
-<SideNavigation bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {mode} {dark}
+<SideNavigation bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {mode} {dark} {evaluationDetails}
   workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
   onSelect={selectOperation} onMode={setMode} onTheme={toggleTheme} />
 <div class="page-content" class:catalog-open={navigationOpen} class:workflow-mode={mode === "workflow"}>
@@ -266,17 +262,15 @@
           </div>
         </div>
       {/if}
-      <div bind:this={operationsHost} hidden={mode !== "operations"} onfocusin={(event) => { if (event.target instanceof HTMLElement) lastOperationsFocus = event.target; }}>
-        <OperationsWorkspace bind:this={operationsWorkspace} {operations} active={mode === "operations"} onAddToWorkflow={addToWorkflow} onOperationSelect={(operation) => sideNavigation.revealOperation(operation)} />
-      </div>
       <div class="workflow-host" hidden={mode !== "workflow"}>
-        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={mode === "workflow"} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={() => navigationOpen = !navigationOpen} />
+        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={mode === "workflow"} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={browseOperations} />
       </div>
       <div hidden={mode !== "settings"}>
         <SettingsWorkspace bind:this={settingsWorkspace} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
           {locale} {localeError} onLocaleChange={selectLocale} onRetryLocale={() => selectLocale(locale)}
           settingsUnavailable={Boolean(settingsError)} {settingsRetrying} onRetrySettings={retrySettings}
           {developerToolbar} {developerToolbarError} onDeveloperToolbarChange={selectDeveloperToolbar}
+          {evaluationDetails} {evaluationDetailsError} onEvaluationDetailsChange={selectEvaluationDetails}
           onWorkflowDefaultsChange={selectWorkflowDefaults} onRetryWorkflowDefaults={() => selectWorkflowDefaults(workflowDefaults)} />
       </div>
     </main>

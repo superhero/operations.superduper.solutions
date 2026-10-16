@@ -55,7 +55,7 @@ export function isValidWorkflowNodeClearance(value: unknown): value is number
   return typeof value === "number" && Number.isSafeInteger(value)
     && value >= workflowNodeClearanceLimits.min && value <= workflowNodeClearanceLimits.max;
 }
-type SettingValues = { theme: string; palette: string; workflowDefaults: WorkflowDefaults; developerToolbar: boolean; locale: LocaleSettings; vaultPreferences?: VaultPreferences };
+type SettingValues = { theme: string; palette: string; workflowDefaults: WorkflowDefaults; developerToolbar: boolean; evaluationDetails: boolean; locale: LocaleSettings; vaultPreferences?: VaultPreferences };
 
 interface SettingsDatabase extends DBSchema
 {
@@ -179,10 +179,10 @@ async function inStore<Mode extends "readonly" | "readwrite", T>(mode: Mode,
 
 async function readSettings(store: Pick<SettingsStore, "get">): Promise<SavedSettings>
 {
-  const [theme, palette, workflowDefaults, developerToolbar, locale] = await Promise.all([
-    store.get("theme"), store.get("palette"), store.get("workflowDefaults"), store.get("developerToolbar"), store.get("locale"),
+  const [theme, palette, workflowDefaults, developerToolbar, evaluationDetails, locale] = await Promise.all([
+    store.get("theme"), store.get("palette"), store.get("workflowDefaults"), store.get("developerToolbar"), store.get("evaluationDetails"), store.get("locale"),
   ]);
-  return { theme, palette, workflowDefaults, developerToolbar, locale };
+  return { theme, palette, workflowDefaults, developerToolbar, evaluationDetails, locale };
 }
 
 function normalize(saved: SavedSettings, legacy: LegacySettings, paletteIds: readonly string[]): SettingValues
@@ -192,7 +192,7 @@ function normalize(saved: SavedSettings, legacy: LegacySettings, paletteIds: rea
   const palette = typeof candidate === "string" && paletteIds.includes(candidate) ? candidate : "default";
   const workflow = saved.workflowDefaults && typeof saved.workflowDefaults === "object"
     ? saved.workflowDefaults as Partial<WorkflowDefaults> : defaultWorkflowSettings;
-  return { theme, palette, developerToolbar: saved.developerToolbar === true, locale: normalizeLocaleSettings(saved.locale), workflowDefaults: {
+  return { theme, palette, developerToolbar: saved.developerToolbar === true, evaluationDetails: saved.evaluationDetails === true, locale: normalizeLocaleSettings(saved.locale), workflowDefaults: {
     dashed: typeof workflow.dashed === "boolean" ? workflow.dashed : defaultWorkflowSettings.dashed,
     curved: typeof workflow.curved === "boolean" ? workflow.curved : defaultWorkflowSettings.curved,
     snap: typeof workflow.snap === "boolean" ? workflow.snap : defaultWorkflowSettings.snap,

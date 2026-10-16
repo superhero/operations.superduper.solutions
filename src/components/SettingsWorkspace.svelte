@@ -48,6 +48,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let { palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
     locale = defaultLocaleSettings, localeError = "", onLocaleChange = () => {}, onRetryLocale = () => {},
     developerToolbar, developerToolbarError = "", onDeveloperToolbarChange,
+    evaluationDetails, evaluationDetailsError = "", onEvaluationDetailsChange,
     settingsUnavailable, settingsRetrying, onRetrySettings }: {
     palette: PaletteId;
     onPaletteChange: (palette: PaletteId) => void;
@@ -62,6 +63,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     developerToolbar: boolean;
     developerToolbarError?: string;
     onDeveloperToolbarChange: (enabled: boolean) => void;
+    evaluationDetails: boolean;
+    evaluationDetailsError?: string;
+    onEvaluationDetailsChange: (enabled: boolean) => void;
     settingsUnavailable: boolean;
     settingsRetrying: boolean;
     onRetrySettings: () => void;
@@ -169,27 +173,36 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/if}
       <StorageSettings />
     </Disclosure>
-    {#if import.meta.env.DEV}
-      <Disclosure class="catalog-group settings-section" label="Developer" tooltipEnabled={false} open={openSection === "developer"} onToggle={(next) => openSection = next ? "developer" : null}>
-        {#snippet summary()}
-          <div class="section-heading"><h2>Developer</h2><span class="section-subtitle">Choose whether to show the developer toolbar</span></div>
-          <MaterialIcon name="chevron_forward" size={17} />
-        {/snippet}
-        <fieldset class="workflow-settings" aria-label="Developer">
-          <div class="workflow-defaults">
+    <Disclosure class="catalog-group settings-section" label="Developer" tooltipEnabled={false} open={openSection === "developer"} onToggle={(next) => openSection = next ? "developer" : null}>
+      {#snippet summary()}
+        <div class="section-heading"><h2>Developer</h2><span class="section-subtitle">Choose diagnostic tools and reports</span></div>
+        <MaterialIcon name="chevron_forward" size={17} />
+      {/snippet}
+      <fieldset class="workflow-settings" aria-label="Developer">
+        <div class="workflow-defaults">
+          {#if import.meta.env.DEV}
             <div class="workflow-default-pair">
               <button class="workflow-default" type="button" role="switch" aria-checked={developerToolbar}
                 onclick={() => onDeveloperToolbarChange(!developerToolbar)}>
                 <span>Developer toolbar</span><span class="default-switch" aria-hidden="true"><span></span></span>
               </button>
             </div>
-          </div>
-          {#if developerToolbarError}
-            <div class="defaults-error"><p role="alert">{developerToolbarError}</p><button class="defaults-retry" type="button" onclick={() => onDeveloperToolbarChange(developerToolbar)}>Retry saving</button></div>
           {/if}
-        </fieldset>
-      </Disclosure>
-    {/if}
+          <div class="workflow-default-pair">
+            <button class="workflow-default" type="button" role="switch" aria-checked={evaluationDetails}
+              onclick={() => onEvaluationDetailsChange(!evaluationDetails)}>
+              <span>Evaluation details</span><span class="default-switch" aria-hidden="true"><span></span></span>
+            </button>
+          </div>
+        </div>
+        {#if import.meta.env.DEV && developerToolbarError}
+          <div class="defaults-error"><p role="alert">{developerToolbarError}</p><button class="defaults-retry" type="button" onclick={() => onDeveloperToolbarChange(developerToolbar)}>Retry saving</button></div>
+        {/if}
+        {#if evaluationDetailsError}
+          <div class="defaults-error"><p role="alert">{evaluationDetailsError}</p><button class="defaults-retry" type="button" onclick={() => onEvaluationDetailsChange(evaluationDetails)}>Retry saving</button></div>
+        {/if}
+      </fieldset>
+    </Disclosure>
     <Disclosure class="catalog-group settings-section" label="Locale" tooltipEnabled={false} open={openSection === "locale"} onToggle={(next) => openSection = next ? "locale" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Locale</h2><span class="section-subtitle">Choose date, time and timezone preferences</span></div>

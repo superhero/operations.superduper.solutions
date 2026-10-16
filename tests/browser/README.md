@@ -13,6 +13,17 @@ consumers and import them from steps or support. Fixtures prepare data or inspec
 state; each independent assertion case still needs its own reportable scenario
 under the [testing standard](../../docs/adr/test-suite-reports.md).
 
+## Discovery and execution
+
+`live-prompt.feature` covers automatic sidebar matching, cancellation, catalog
+expansion and mobile selection. Matches add nodes to the workflow; operation
+inputs, reports and HTTP execution belong to the **Run workflow** dialog.
+
+The shared `chooseCatalogOperation` helper creates a single-node workflow and
+opens its run. Pass `"workflow"` when a scenario only needs to add a node.
+`restartRun` starts a new execution; its optional input restoration represents
+re-entering values, not persisted run state.
+
 ## Execution boundary
 
 Run `npm run build` before `npm run test:browser`. The

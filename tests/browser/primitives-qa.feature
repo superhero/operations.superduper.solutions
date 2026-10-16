@@ -11,8 +11,8 @@ Feature: Navigation and help primitives
   Scenario: Keyboard and pointer help share one active tooltip
     Then hovering another control replaces keyboard help
 
-  Scenario: Progress help explains unavailable steps without making them interactive
-    Then progress hints and examples preserve navigation and disabled states
+  Scenario: Prompt matching details expose keyboard-accessible styled help
+    Then prompt matching details preserve keyboard navigation
 
   Scenario: Nested schema actions keep their own help and disclosure state
     Given I open the "Get project" operation from the catalog
@@ -23,5 +23,5 @@ Feature: Navigation and help primitives
     Then scrolling cancels a pending operation tooltip
 
   Scenario: Header shadow strengthens over the first eighty pixels
-    Given I open the "Create task" operation from the catalog
+    Given I switch to the settings workspace
     Then the header shadow follows the reading position

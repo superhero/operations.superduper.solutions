@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, revealCatalogOperation, workflow, workspace } from './workspace.steps.mjs';
+import { openCatalog, revealCatalogOperation, workflow, setMode } from './workspace.steps.mjs';
 import { blockWorkflowSaving } from './workflow-storage.fixture.mjs';
 
 const sheet = page => page.locator('[data-slot="sheet-content"]');
@@ -129,7 +129,9 @@ Then('dismissing mobile navigation preserves reading position with {string} moti
   const page = this.page;
   await page.setViewportSize({ width: 390, height: 568 });
   await page.emulateMedia({ reducedMotion: motion });
-  await page.getByRole('textbox', { name: 'Title', exact: true }).focus();
+  const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
+  const heading = settings.locator('summary[aria-label="Workflows"]');
+  if (await heading.getAttribute('aria-expanded') !== 'true') await heading.click();
   const readingPosition = await page.evaluate(() => Math.min(250, document.documentElement.scrollHeight - window.innerHeight));
   assert.ok(readingPosition > 0, 'The fixture must provide a nonzero reading position to preserve.');
   await page.evaluate(top => window.scrollTo({ top, behavior: 'instant' }), readingPosition);
@@ -151,14 +153,15 @@ Then('animated navigation completes dismissal before changing workspace or addin
   const page = this.page;
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  for (const destination of ['operations', 'workflow']) {
+  const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
+  for (const destination of ['settings', 'workflow']) {
     await openCatalog(page);
     await settleOpening(page);
     await pauseDismissal(page, () => page.getByRole('group', { name: 'Workspace', exact: true })
-      .getByRole('button', { name: destination === 'operations' ? 'Operations' : 'Workflows', exact: true }).click());
-    await expect(destination === 'operations' ? page.locator('.workflow-workspace') : workspace(page)).toBeVisible();
+      .getByRole('button', { name: destination === 'settings' ? 'Settings' : 'Workflows', exact: true }).click());
+    await expect(destination === 'settings' ? page.locator('.workflow-workspace') : settings).toBeVisible();
     await finishDismissal(page);
-    const target = destination === 'operations' ? workspace(page) : workflow(page);
+    const target = destination === 'settings' ? settings : workflow(page);
     await expect(target).toBeVisible();
     await expect.poll(() => target.evaluate(element => element.contains(document.activeElement))).toBe(true);
   }
@@ -177,17 +180,20 @@ Then('reopening navigation during a keyboard mode change cancels that destinatio
   const page = this.page;
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await setMode(page, 'settings');
   await openCatalog(page);
   const modes = page.getByRole('group', { name: 'Workspace', exact: true });
-  const selected = modes.getByRole('button', { name: 'Workflows', exact: true });
-  const destination = modes.getByRole('button', { name: 'Operations', exact: true });
+  const selected = modes.getByRole('button', { name: 'Settings', exact: true });
+  const destination = modes.getByRole('button', { name: 'Workflows', exact: true });
   await expect(selected).toBeFocused();
   await settleOpening(page);
   await page.keyboard.press('Shift+Tab');
   await expect(destination).toBeFocused();
   await pauseDismissal(page, () => page.keyboard.press('Space'));
-  await page.keyboard.press('Shift+Tab');
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
+  // Settings has its own tab stops behind the closing Sheet; focus the trigger
+  // directly so this checks interrupted navigation, not that incidental order.
+  await menu.focus();
   await expect(menu).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(sheet(page)).toHaveAttribute('data-state', 'open');
@@ -202,13 +208,15 @@ Then('reopening navigation during a keyboard mode change cancels that destinatio
     await page.keyboard.press('Escape');
   }
   await expect(sheet(page)).toHaveCount(0);
-  await expect(workflow(page)).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Settings workspace', exact: true })).toBeVisible();
   await expect(menu).toBeFocused();
   await openCatalog(page);
   await page.keyboard.press('Shift+Tab');
   await expect(destination).toBeFocused();
   await page.keyboard.press('Space');
   await expect(sheet(page)).toHaveCount(0);
-  await expect(workspace(page)).toBeVisible();
-  await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toBeFocused();
+  await expect(workflow(page)).toBeVisible();
+  // Returning to a populated workflow restores its selected node, not the
+  // canvas fallback used when no node is selected.
+  await expect(nodes(page).and(page.locator('.selected'))).toBeFocused();
 });

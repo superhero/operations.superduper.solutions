@@ -71,6 +71,11 @@ async function openContext(base, name) {
 }
 
 async function navigate(page, mode) {
+  const run = page.getByRole('dialog', { name: /^Run workflow:/ });
+  if (await run.isVisible()) {
+    await run.getByRole('button', { name: 'Quit', exact: true }).click();
+    await expect(run).toHaveCount(0);
+  }
   const open = page.getByRole('button', { name: 'Open navigation', exact: true });
   if (await open.isVisible()) await open.click();
   await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: mode, exact: true }).click();
@@ -207,7 +212,7 @@ try {
     assert.equal(await panel(page).locator('input[aria-label="Upload OpenAPI document"]').inputValue(), '');
     results.upload = { id: first.id, repository: `/repositories/${first.id}` };
 
-    await navigate(page, 'Operations');
+    await navigate(page, 'Workflows');
     await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
     const operationEntry = page.locator(`[data-operation-id="${operationId}"]`);
     const catalogBranches = await operationEntry.locator('xpath=ancestor::details').all();
@@ -215,10 +220,14 @@ try {
       const summary = branch.locator(':scope > summary');
       if (await summary.getAttribute('aria-expanded') !== 'true') await summary.click();
     }
-    await page.getByRole('button', { name: `Open form: List ${title} inventory`, exact: true }).click();
+    await page.getByRole('button', { name: `Add to workflow: List ${title} inventory`, exact: true }).click();
+    const operationNode = page.locator('.svelte-flow__node-operation').filter({ has: page.locator(`[data-operation-name=${JSON.stringify(`List ${title} inventory`)}]`) });
+    await expect(operationNode).toBeVisible();
+    const operationNodeId = await operationNode.getAttribute('data-id');
     const close = page.getByRole('button', { name: 'Close navigation', exact: true });
     if (await close.isVisible()) await close.click();
-    await page.getByRole('button', { name: 'Execute operation', exact: true }).click();
+    await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+    await page.getByRole('button', { name: 'Start workflow', exact: true }).click();
     await expect.poll(() => requests.length).toBe(1);
     assert.deepEqual(requests[0], { method: 'GET', url: 'https://schema-smoke.invalid/v1/items' });
     const responseBody = page.getByRole('region', { name: 'Response body', exact: true });
@@ -236,11 +245,13 @@ try {
     const siblingHistory = await history(page, sibling.id);
     await page.evaluate(async () => (await import('/lib/schema-library.ts')).loadSchemaLibrary());
     await idle(page);
-    await navigate(page, 'Operations');
-    await expect(responseBody).toBeVisible();
-    await expect(responseBody).toContainText('"one"');
-    await expect(page.getByRole('region', { name: 'Prepared request', exact: true })).toContainText('/items');
-    assert.equal(requests.length, 1, 'Unrelated uploads and reloads must preserve the existing response without executing again');
+    await navigate(page, 'Workflows');
+    await expect(operationNode).toBeVisible();
+    await expect(operationNode).toHaveAttribute('data-id', operationNodeId);
+    assert.equal(requests.length, 1, 'Unrelated uploads and reloads must preserve the workflow without executing it again');
+    await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+    await expect(responseBody).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Start workflow', exact: true })).toBeVisible();
 
     await enterSchemas(page);
     const revised = { ...makeDocument(title, '2.0.0'), servers: [{ url: 'https://schema-smoke.invalid/v2' }] };
@@ -252,11 +263,13 @@ try {
     assert.deepEqual(await page.evaluate(async ({ id, oid }) => (await import('/lib/schema-storage.ts')).readSchemaVersion(id, oid),
       { id: first.id, oid: versions[1].oid }), original);
     results.replace = { id: first.id, commits: versions.map(version => version.oid) };
-    await navigate(page, 'Operations');
+    await navigate(page, 'Workflows');
     await expect(responseBody).toHaveCount(0);
     await expect(page.getByRole('region', { name: 'Prepared request', exact: true })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Execute operation', exact: true })).toBeVisible();
-    results.responseRetainedUntilSourceChanges = true;
+    await expect(operationNode).toHaveAttribute('data-id', operationNodeId);
+    await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Start workflow', exact: true })).toBeVisible();
+    results.workflowRetainedAcrossSchemaChanges = true;
 
     await enterSchemas(page);
     await card(page, first.id).getByRole('switch').click();
@@ -467,7 +480,10 @@ try {
       const summary = branch.locator(':scope > summary');
       if (await summary.getAttribute('aria-expanded') !== 'true') await summary.click();
     }
-    await selectedCatalogOperation.getByRole('button', { name: 'Open form: Check YAML schema health', exact: true }).click();
+    await selectedCatalogOperation.getByRole('button', { name: 'Add to workflow: Check YAML schema health', exact: true }).click();
+    const yamlNode = page.locator('.svelte-flow__node-operation').filter({ has: page.locator('[data-operation-name="Check YAML schema health"]') });
+    await expect(yamlNode).toBeVisible();
+    const yamlNodeId = await yamlNode.getAttribute('data-id');
     await enterSchemas(page);
     await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
     const expandedCatalogGroups = await page.locator('.catalog-branch').evaluateAll(branches => branches
@@ -500,7 +516,8 @@ try {
     const catalogAnimations = await page.evaluate(() => window.schemaCatalogAnimations);
     assert.ok(expandedCatalogGroups.length > 0);
     for (const id of expandedCatalogGroups) await expect(page.locator(`[data-catalog-group="${id}"] > details > summary`)).toHaveAttribute('aria-expanded', 'true');
-    await expect(selectedCatalogOperation.getByRole('button', { name: 'Open form: Check YAML schema health', exact: true })).toHaveAttribute('aria-current', 'page');
+    await expect(selectedCatalogOperation.getByRole('button', { name: 'Add to workflow: Check YAML schema health', exact: true })).toBeVisible();
+    await expect(yamlNode).toHaveAttribute('data-id', yamlNodeId);
     await page.getByRole('button', { name: 'Close navigation', exact: true }).click();
     await page.emulateMedia({ reducedMotion: 'reduce' });
     assert.deepEqual(await page.evaluate(() => window.schemaDragImages), [beforeOrder[0], beforeOrder[0], beforeOrder[0], beforeOrder.at(-1)]
@@ -512,7 +529,7 @@ try {
     assert.deepEqual((await records(page)).map(record => record.id), savedOrder);
     for (const id of beforeOrder) assert.deepEqual(await history(page, id), beforeMoveHistory[id], 'Reordering does not change schema Git history');
     results.reorder = { order: savedOrder, nativeDrag: true, livePreview: true, cardAnimations: cardAnimations.length,
-      catalogAnimations: catalogAnimations.length, catalogSelectionPreserved: true,
+      catalogAnimations: catalogAnimations.length, workflowNodePreserved: true,
       escapeCancels: true, keyboardMoves: true, historiesUnchanged: true };
     await page.setViewportSize({ width: 1280, height: 1000 });
 
@@ -567,7 +584,7 @@ try {
     results.initialLoadRetry = true;
   } finally { await retry.context.close(); }
   assert.deepEqual(errors, []);
-  console.log('PASS: Schemas upload JSON/YAML, execute in the live catalog, preserve responses across unrelated schema updates, invalidate responses when their source changes, persist across reload, toggle, replace with Git history, download normalized JSON, isolate duplicate filenames, reject invalid changes, delete only the selected repository, retain saved workflows, rename on blur, reorder without changing history, and recover from initial storage failure.');
+  console.log('PASS: Schemas upload JSON/YAML, execute catalog operations through Run workflow, preserve workflow nodes across schema updates, start new runs without stale responses, persist across reload, toggle, replace with Git history, download normalized JSON, isolate duplicate filenames, reject invalid changes, delete only the selected repository, retain saved workflows, rename on blur, reorder without changing history, and recover from initial storage failure.');
 } finally {
   await writeFile(resolve(directory, 'results.json'), JSON.stringify({ results, errors, requests }, null, 2));
   await browser?.close();

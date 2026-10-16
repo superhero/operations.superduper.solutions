@@ -57,6 +57,10 @@ Feature: Step through workflow requests with explicit test responses
   Scenario: Structured workflow mappings retain their schema types
     Then structured values root bodies and nested fields flow between example operations
 
+  @explicit-input-values
+  Scenario: Nullable mapped values remain distinct from omitted fields and text
+    Then nullable workflow mappings preserve null lock connected values and send exact JSON
+
   Scenario: Structured mappings reject incompatible or conflicting values
     Then invalid structured connections stop before the next request
 
@@ -73,3 +77,12 @@ Feature: Step through workflow requests with explicit test responses
 
   Scenario: Legacy response fields keep their original body paths
     Then legacy response body properties remain unambiguous beside envelope fields
+
+  @workflow-request-cancellation
+  Scenario Outline: Cancelling a request preserves the current workflow step for retry
+    Then a workflow request that <behavior> cancellation can be cancelled without ending its run
+
+    Examples:
+      | behavior |
+      | honors   |
+      | ignores  |

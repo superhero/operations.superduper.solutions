@@ -6,9 +6,9 @@ import { Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { chooseCatalogOperation, fillField, workspace } from "./workspace.steps.mjs";
 
-const responsePanel = page => page.getByRole("region", { name: "Operation response", exact: true });
+const responsePanel = workspace;
 const responseBody = page => page.getByRole("region", { name: "Response body", exact: true });
-const execute = page => page.getByRole("button", { name: "Execute operation", exact: true }).click();
+const execute = page => page.getByRole("button", { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
 const reply = (route, body, status = 200) => route.fulfill({ status,
   headers: { "access-control-allow-origin": "*" }, contentType: "application/json", body: JSON.stringify(body) });
 const readBody = async page => JSON.parse(await responseBody(page).locator(".json-tree").evaluate(element => {
@@ -19,7 +19,6 @@ const readBody = async page => JSON.parse(await responseBody(page).locator(".jso
 
 async function expectServerMetadata(page, url) {
   await expect(workspace(page).getByText(/^Live request/)).toHaveCount(0);
-  await page.getByRole("button", { name: "Edit inputs", exact: true }).click();
   await page.getByRole("button", { name: "Review operation details", exact: true }).click();
   const metadata = page.getByRole("region", { name: "Operation metadata", exact: true });
   await expect(metadata.locator("dt").filter({ hasText: /^Server URL$/ }).locator("xpath=following-sibling::dd[1]")).toHaveText(url);
@@ -43,7 +42,7 @@ function removeExpectedFailureDiagnostics(world, kind) {
     : item.type === "console-error" && /Failed to load resource: net::ERR_CONNECTION_REFUSED/.test(item.message)));
 }
 
-Then("direct execution sends the encoded query and headers and displays the received response", async function () {
+Then("workflow operation execution sends the encoded query and headers and displays the received response", async function () {
   const page = this.page;
   const received = { server: "actual request result", nested: { count: 9, enabled: false } };
   const requests = await intercept(page, route => reply(route, received));
@@ -67,7 +66,7 @@ Then("direct execution sends the encoded query and headers and displays the rece
   await expectServerMetadata(page, "https://httpbin.org");
 });
 
-Then("direct execution sends structured JSON and displays the received response", async function () {
+Then("workflow operation execution sends structured JSON and displays the received response", async function () {
   const page = this.page;
   const received = { saved: true, identifier: "server-assigned-42" };
   const requests = await intercept(page, route => reply(route, received, 201));
@@ -85,7 +84,7 @@ Then("direct execution sends structured JSON and displays the received response"
   await expect(responsePanel(page)).toContainText("HTTP 201");
 });
 
-Then("direct execution displays an HTTP error body and can retry successfully", async function () {
+Then("workflow operation execution displays an HTTP error body and can retry successfully", async function () {
   const page = this.page;
   const failure = { error: "The server rejected this request", code: "invalid-example" };
   const requests = await intercept(page, (route, count) => reply(route, count === 1 ? failure : { retried: true }, count === 1 ? 422 : 200));
@@ -94,7 +93,7 @@ Then("direct execution displays an HTTP error body and can retry successfully", 
   await expect(responsePanel(page).getByRole("alert")).toContainText("422");
   await expect(responsePanel(page)).toContainText("HTTP 422");
   assert.deepEqual(await readBody(page), failure);
-  await responsePanel(page).getByRole("button", { name: "Retry request", exact: true }).click();
+  await responsePanel(page).getByRole("button", { name: "Retry operation", exact: true }).click();
   await expect(responseBody(page)).toContainText("retried");
   await expect(responsePanel(page).getByRole("alert")).toHaveCount(0);
   await expect(responsePanel(page)).toContainText("HTTP 200");
@@ -102,21 +101,21 @@ Then("direct execution displays an HTTP error body and can retry successfully", 
   removeExpectedFailureDiagnostics(this, "http");
 });
 
-Then("direct execution reports connection failure and can retry successfully", async function () {
+Then("workflow operation execution reports connection failure and can retry successfully", async function () {
   const page = this.page;
   const requests = await intercept(page, (route, count) => count === 1 ? route.abort("connectionrefused") : reply(route, { connected: true }));
   await chooseCatalogOperation(page, "HTTPBin GET request");
   await execute(page);
   await expect(responsePanel(page).getByRole("alert")).toContainText("could not reach https://httpbin.org");
   await expect(responseBody(page)).toHaveCount(0);
-  await responsePanel(page).getByRole("button", { name: "Retry request", exact: true }).click();
+  await responsePanel(page).getByRole("button", { name: "Retry operation", exact: true }).click();
   await expect(responseBody(page)).toContainText("connected");
   await expect(responsePanel(page).getByRole("alert")).toHaveCount(0);
   assert.equal(requests.length, 2);
   removeExpectedFailureDiagnostics(this, "network");
 });
 
-Then("pending direct execution prevents duplicates and supports cancellation and retry", async function () {
+Then("pending workflow operation execution prevents duplicates and supports cancellation and retry", async function () {
   const page = this.page;
   let pendingRoute;
   const requests = await intercept(page, async (route, count) => {
@@ -126,20 +125,20 @@ Then("pending direct execution prevents duplicates and supports cancellation and
   await chooseCatalogOperation(page, "HTTPBin GET request");
   await execute(page);
   await expect.poll(() => requests.length).toBe(1);
-  await expect(responsePanel(page).getByRole("status")).toContainText("Request in progress");
+  await expect(responsePanel(page).getByRole("button", { name: "Sending request…", exact: true })).toBeDisabled();
   // A second submit from the still-mounted form must not start a concurrent request.
-  await workspace(page).locator('[aria-label="Operation step"] form').dispatchEvent("submit");
+  await workspace(page).locator('[aria-label="Current workflow operation"] form').dispatchEvent("submit");
   await responsePanel(page).getByRole("button", { name: "Cancel request", exact: true }).click();
   await expect(responsePanel(page)).toContainText("cancelled");
   await expect(responsePanel(page).getByRole("button", { name: "Cancel request", exact: true })).toHaveCount(0);
   assert.equal(requests.length, 1);
   await pendingRoute.abort("aborted");
-  await responsePanel(page).getByRole("button", { name: "Retry request", exact: true }).click();
+  await responsePanel(page).getByRole("button", { name: "Retry operation", exact: true }).click();
   await expect(responseBody(page)).toContainText("retried");
   assert.equal(requests.length, 2);
 });
 
-Then("switching operation ignores a late direct response", async function () {
+Then("switching operation ignores a late response", async function () {
   const page = this.page;
   let pendingRoute;
   const requests = await intercept(page, async (route, count) => {
@@ -154,13 +153,13 @@ Then("switching operation ignores a late direct response", async function () {
   await execute(page);
   await expect(responseBody(page)).toContainText("second operation");
   await reply(pendingRoute, { obsolete: "first operation" });
-  await expect(responsePanel(page).getByRole("heading", { name: "HTTPBin POST request", exact: true })).toBeVisible();
+  await expect(responsePanel(page).getByRole("heading", { name: "1. HTTPBin POST request", exact: true })).toBeVisible();
   assert.deepEqual(await readBody(page), { current: "second operation" });
   await expect(responsePanel(page).getByRole("alert")).toHaveCount(0);
   assert.equal(requests.length, 2);
 });
 
-Then("direct example execution displays server data from an actual request", async function () {
+Then("workflow example execution displays server data from an actual request", async function () {
   const page = this.page;
   const requests = [];
   const received = { id: "server-project", name: "Data from the HTTP endpoint", status: "received" };

@@ -8,6 +8,7 @@ import { extractOperationSecurity, type OperationSecurity } from "./operation-se
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type InputSchema = {
   type: "string" | "number" | "integer" | "boolean" | "object" | "array" | "null";
+  nullable?: boolean;
   enum?: (string | number | boolean | null)[];
   minimum?: number;
   maximum?: number;
@@ -97,9 +98,14 @@ function inputSchema(value: unknown, document: RecordValue, context: string, dep
 {
   if (depth > 12) throw new Error(`${context}: schema nesting exceeds 12 levels or contains a recursive reference.`);
   const shape = resolve(value, document, context);
-  const type = shape.type as InputSchema["type"];
+  const union = Array.isArray(shape.type) ? shape.type : undefined;
+  if (union && (union.length !== 2 || !union.includes("null") || new Set(union).size !== 2))
+    throw new Error(`${context}: unsupported input type union.`);
+  const type = (union ? union.find(type => type !== "null") : shape.type) as InputSchema["type"];
   if (![...primitiveTypes, "object", "array"].includes(type)) throw new Error(`${context}: unsupported input type.`);
-  const keys = ["type", ...annotations];
+  if (shape.nullable !== undefined && typeof shape.nullable !== "boolean") throw new Error(`${context}: nullable must be Boolean.`);
+  const nullable = !!union || shape.nullable === true;
+  const keys = ["type", "nullable", ...annotations];
   if (primitiveTypes.includes(type)) keys.push("enum");
   if (type === "number" || type === "integer") keys.push("minimum", "maximum");
   if (type === "string") keys.push("minLength", "maxLength");
@@ -107,11 +113,11 @@ function inputSchema(value: unknown, document: RecordValue, context: string, dep
   if (type === "object") keys.push("properties", "required", "additionalProperties");
   // Validate misplaced numeric constraints explicitly, keeping useful diagnostics.
   supported(shape, [...keys, "minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems"], context);
-  const result: InputSchema = { type };
+  const result: InputSchema = { type, ...(nullable ? { nullable: true } : {}) };
   if (shape.enum !== undefined)
   {
     if (!Array.isArray(shape.enum) || !shape.enum.length || shape.enum.some(value =>
-      type === "null" ? value !== null : typeof value !== (type === "integer" ? "number" : type)
+      value === null ? type !== "null" && !nullable : type === "null" || typeof value !== (type === "integer" ? "number" : type)
       || typeof value === "number" && !Number.isFinite(value) || type === "integer" && !Number.isInteger(value)))
       throw new Error(`${context}: enum values must match the input type.`);
     result.enum = shape.enum;
@@ -170,7 +176,11 @@ function field(value: unknown, document: RecordValue, location: InputField["loca
   const schema = inputSchema(shape, document, context);
   const result: InputField = { key: context, name, label: text(shape.title, name),
     description: text(shape.description, ""), location, type: schema.type, required };
-  if (schema.type === "object" || schema.type === "array") result.schema = schema;
+  if (schema.type === "object" || schema.type === "array")
+  {
+    result.schema = schema;
+    if (schema.nullable) result.nullable = true;
+  }
   else Object.assign(result, schema);
   return result;
 }
@@ -267,9 +277,9 @@ export function extractOperations(value: unknown, source: string): Operation[]
         bodySchema = schema;
         if (bodyMediaType === "text/plain" && schema.type !== "string") throw new Error(`${id}: text/plain requires a string schema.`);
         if (bodyMediaType === "application/x-www-form-urlencoded" || bodyMediaType === "multipart/form-data")
-          if (schema.type !== "object" || objectSchemas(schema).some(property => !["string", "number", "integer", "boolean"].includes(property.type)))
+          if (schema.type !== "object" || schema.nullable || objectSchemas(schema).some(property => property.nullable || !["string", "number", "integer", "boolean"].includes(property.type)))
             throw new Error(`${id}: form bodies require named primitive text fields; files and structured fields are unsupported.`);
-        if (schema.type === "object")
+        if (schema.type === "object" && !schema.nullable)
           for (const [name, property] of Object.entries((shape.properties ?? {}) as RecordValue)) fields.push(field(property, document, "body", name, schema.required!.includes(name)));
         else
         {

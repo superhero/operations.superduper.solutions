@@ -5,7 +5,7 @@ Feature: Frontend alignment interactions
   Scenario: Direct catalog selection and keyboard help preserve navigation context
     Then catalog paths, focus and tooltip dismissal behave consistently
 
-  Scenario: Prompt keyboard submission respects composition and modifiers
+  Scenario: Prompt keyboard editing evaluates without submitting or stealing focus
     Then prompt keyboard controls preserve editing and search deliberately
 
   Scenario: Unicode validation identifies the field without losing valid decimal input
@@ -32,20 +32,8 @@ Feature: Frontend alignment interactions
     Given a workflow with 2 instances of "List projects"
     Then repeated nodes and short viewports remain usable
 
-  Scenario: Step navigation retargets transitions without exposing inactive controls
-    Then step motion preserves focus and inactive-panel isolation
-
-  Scenario: Operation navigation preserves expanded details at the top
-    When I search for the operation "List projects"
-    And I open the "List projects" result
-    Then returning to Operation preserves expanded details and the page top with either motion preference
-
   Scenario: Dashed connections respond to live motion preferences
     Given a workflow with 2 instances of "List projects"
     When I connect the first operation to the second
     And I enable grid snapping and curved dashed connections
     Then connection movement responds without changing the saved plan
-
-  Scenario: Workspace switching restores the draft reading position
-    Given I open the "Create task" operation from the catalog
-    Then a workspace round trip preserves input focus and scroll

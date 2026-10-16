@@ -132,6 +132,10 @@ Feature: Approved credential execution
   Scenario: Public field validation preserves safe field identity and diagnostics
     Then credential execution preserves sanitized public field validation errors
 
+  @explicit-input-values
+  Scenario: Credentialed nullable inputs retain presence and validation
+    Then credentialed requests distinguish omitted null and literal null inputs before dispatch
+
   Scenario Outline: Credentialed request bodies preserve <media>
     Then credentialed requests preserve "<media>" body serialization
     Examples:

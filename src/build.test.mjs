@@ -34,9 +34,10 @@ Then("the production page contains the workflow canvas", function ()
 Then("the production page contains the operation catalog and execution results", function ()
 {
   assert.match(html, /Operation catalog/);
-  assert.match(html, /Find operations/);
-  assert.match(html, /Execute operation/);
-  assert.match(html, /Operation response/);
+  assert.match(html, /Browse operations/);
+  assert.match(html, /operation-prompt/);
+  assert.match(html, /Start workflow/);
+  assert.match(html, /Operation results/);
 });
 
 Then("the production page contains the separate example catalogs", function ()

@@ -28,6 +28,235 @@ plus the new passing focused cases; full regression remains with CI.
 Merge branch 'develop' into bugfix/startup-module-recovery
 ```
 
+<!-- changelog-commit:4321c396526a390e46f725f204dbe8c2766e37d9 -->
+### Commit [`4321c39`](https://github.com/superhero/operations.superduper.solutions/commit/4321c396526a390e46f725f204dbe8c2766e37d9)
+
+```text
+feat(workflows): unify operation discovery and execution
+
+Move prompt matching into navigation with cancellable worker evaluation
+and retained catalog groups. Menu selections add nodes, and HTTP
+execution runs through Run workflow.
+
+Share typed forms, field help, request previews, credential controls and
+actual response handling. Preserve mapped inputs and allow cancelling a
+pending request without ending the run.
+
+Replace obsolete wizard checks with Cucumber coverage for live discovery
+and adapt execution, navigation and documentation to the unified flow.
+
+```
+
+<!-- changelog-commit:8f882b4c6d0941d27be9cf85156720e1ae595671 -->
+### Commit [`8f882b4`](https://github.com/superhero/operations.superduper.solutions/commit/8f882b4c6d0941d27be9cf85156720e1ae595671)
+
+```text
+fix(navigation): compact the prompt into one initial row
+
+Replace the visible heading with an accessible Prompt placeholder and move discovery actions beside the field. Preserve multiline growth, shrink-on-clear behavior and keyboard access.
+
+```
+
+<!-- changelog-commit:3dcd9df05d3f8dd4a7b48837b735665f4e4fdcbf -->
+### Commit [`3dcd9df`](https://github.com/superhero/operations.superduper.solutions/commit/3dcd9df05d3f8dd4a7b48837b735665f4e4fdcbf)
+
+```text
+fix(navigation): remove prompt example shortcuts
+
+Remove the Commonly used operations control, example list and unused state and styles. Let the empty prompt occupy the available width and retain matching details after evaluation.
+
+Adapt focused keyboard and presentation checks, and retire the scenario for the removed examples row.
+
+```
+
+<!-- changelog-commit:11bcabfc6248157c3026c080e2b9d915884e4c5a -->
+### Commit [`11bcabf`](https://github.com/superhero/operations.superduper.solutions/commit/11bcabfc6248157c3026c080e2b9d915884e4c5a)
+
+```text
+fix(navigation): match prompt height to menu options
+
+```
+
+<!-- changelog-commit:8431da205a21982415a0c6ce59a17a7e4a455504 -->
+### Commit [`8431da2`](https://github.com/superhero/operations.superduper.solutions/commit/8431da205a21982415a0c6ce59a17a7e4a455504)
+
+```text
+fix(secrets): simplify the vault information header
+
+Remove the manual refresh button and group vault guidance in a themed pane.
+Keep automatic refresh behavior and update browser checks to await vault
+readiness without relying on the removed button.
+
+```
+
+<!-- changelog-commit:9073bb5557a845fd6b5d53bbcd8eb7375da3e3b3 -->
+### Commit [`9073bb5`](https://github.com/superhero/operations.superduper.solutions/commit/9073bb5557a845fd6b5d53bbcd8eb7375da3e3b3)
+
+```text
+fix(workflows): align run actions and rename start to proceed
+
+```
+
+<!-- changelog-commit:6162ddd5516f2627da6ca39761ca798ea0aba666 -->
+### Commit [`6162ddd`](https://github.com/superhero/operations.superduper.solutions/commit/6162ddd5516f2627da6ca39761ca798ea0aba666)
+
+```text
+fix(workflows): widen the run pane by default
+
+```
+
+<!-- changelog-commit:cd2f48fb653454cd2cd3ccbf5107f83e59d09745 -->
+### Commit [`cd2f48f`](https://github.com/superhero/operations.superduper.solutions/commit/cd2f48fb653454cd2cd3ccbf5107f83e59d09745)
+
+```text
+fix(workflows): use palette colors for run buttons
+
+```
+
+<!-- changelog-commit:fbf84eba387c331ae92117fbffd091091cc91b30 -->
+### Commit [`fbf84eb`](https://github.com/superhero/operations.superduper.solutions/commit/fbf84eba387c331ae92117fbffd091091cc91b30)
+
+```text
+feat(workflows): add field information and value presence controls
+
+Expose schema details for every run field and inline controls to omit
+optional values or send an allowed null without discarding input drafts.
+
+Preserve explicit null and omission through OpenAPI normalization, request
+validation, workflow mappings and credential execution. Connected inputs
+remain immutable, and nullable enum and required constraints still apply.
+
+```
+
+<!-- changelog-commit:b326586bfad53878d0f5e9c0d4ad6668da200191 -->
+### Commit [`b326586`](https://github.com/superhero/operations.superduper.solutions/commit/b326586bfad53878d0f5e9c0d4ad6668da200191)
+
+```text
+fix(navigation): hide empty categories in prompt matches
+
+Prune catalog branches without matching operations and restore all categories when the prompt is cleared. Cover nested pruning, empty results and restoration in the live prompt scenarios.
+
+```
+
+<!-- changelog-commit:0c108966c7e3566aaec756025573988a8b37325f -->
+### Commit [`0c10896`](https://github.com/superhero/operations.superduper.solutions/commit/0c108966c7e3566aaec756025573988a8b37325f)
+
+```text
+style(navigation): join matching details to prompt input
+
+Place the details toggle in a slim full-width strip beneath the prompt and remove the report's horizontal padding.
+
+```
+
+<!-- changelog-commit:513cc2fac8b6d6d49cf3aeec72614d1f8e44c2a9 -->
+### Commit [`513cc2f`](https://github.com/superhero/operations.superduper.solutions/commit/513cc2fac8b6d6d49cf3aeec72614d1f8e44c2a9)
+
+```text
+fix(navigation): outline the complete joined prompt
+
+Draw textarea focus around both the prompt and its details strip, preserving rounded corners and focus transitions. Keep the details button's keyboard focus indicator independent.
+
+```
+
+<!-- changelog-commit:6e2528a570c6750488563fe1a8296973d1ba5399 -->
+### Commit [`6e2528a`](https://github.com/superhero/operations.superduper.solutions/commit/6e2528a570c6750488563fe1a8296973d1ba5399)
+
+```text
+fix(navigation): use down arrow for matching details
+
+```
+
+<!-- changelog-commit:c45c0309f8992512c0ce9aabc476460a2b275631 -->
+### Commit [`c45c030`](https://github.com/superhero/operations.superduper.solutions/commit/c45c0309f8992512c0ce9aabc476460a2b275631)
+
+```text
+feat(settings): make evaluation details opt-in
+
+Add a saved Evaluation details switch under Developer, disabled by default. Apply changes immediately to the prompt control and report, with persistence and retry handling. Keep operation matching active and the developer toolbar limited to development builds.
+
+```
+
+<!-- changelog-commit:45b14a43fa0ffaff6ba91b851077316fbf6fe1e3 -->
+### Commit [`45b14a4`](https://github.com/superhero/operations.superduper.solutions/commit/45b14a43fa0ffaff6ba91b851077316fbf6fe1e3)
+
+```text
+fix(workflows): scale run actions on hover
+
+```
+
+<!-- changelog-commit:70a89f61870ac11c12c809eee1118a237b28e943 -->
+### Commit [`70a89f6`](https://github.com/superhero/operations.superduper.solutions/commit/70a89f61870ac11c12c809eee1118a237b28e943)
+
+```text
+fix(workflows): apply foreground palette to run fields
+
+Use the first foreground for input surfaces, retain the second foreground for labels and inline controls, and render their text and icons in the first background color. Align credential selectors and placeholders with the field palette.
+
+```
+
+<!-- changelog-commit:87f0660c2a8b42f4c2cea9f5fba2ca9aa3b3cf49 -->
+### Commit [`87f0660`](https://github.com/superhero/operations.superduper.solutions/commit/87f0660c2a8b42f4c2cea9f5fba2ca9aa3b3cf49)
+
+```text
+fix(workflows): remove introductory run text and request URL
+
+```
+
+<!-- changelog-commit:3700766285841f4a04d16e01679265358d626a21 -->
+### Commit [`3700766`](https://github.com/superhero/operations.superduper.solutions/commit/3700766285841f4a04d16e01679265358d626a21)
+
+```text
+fix(logs): display each error diagnostic once
+
+Consolidate names, messages, codes and stack traces into one preformatted block per error. Remove repeated stack headers while preserving recovery guidance, nested causes and related errors. Distinguish header-only stacks from available traces.
+
+```
+
+<!-- changelog-commit:68400675250842c1105a1aa38bb6d6f423680778 -->
+### Commit [`6840067`](https://github.com/superhero/operations.superduper.solutions/commit/68400675250842c1105a1aa38bb6d6f423680778)
+
+```text
+Merge develop into feature/live-catalog-prompt
+
+Preserve startup module recovery while passing the saved evaluation-details
+preference through the new application initializer. Reconcile the scenario
+badge with the combined inventory; full regression remains with CI.
+
+```
+
+<!-- changelog-commit:71fa57fb4e464d557554b811037e230e6bb3aca7 -->
+### Commit [`71fa57f`](https://github.com/superhero/operations.superduper.solutions/commit/71fa57fb4e464d557554b811037e230e6bb3aca7)
+
+```text
+fix(forms): use theme backgrounds for search and request fields
+
+Show Search in the sidebar prompt and use the first background color for
+its input and Run workflow fields, with readable foreground text. Preserve
+the contrasting labels and action areas.
+
+Remove the prompt's zero flex basis so its measured multiline height takes
+effect inside the joined column layout.
+
+```
+
+<!-- changelog-commit:2a7bcb60193d9cd2d1311a5289c33d99e088ed90 -->
+### Commit [`2a7bcb6`](https://github.com/superhero/operations.superduper.solutions/commit/2a7bcb60193d9cd2d1311a5289c33d99e088ed90)
+
+```text
+Merge remote changelog update into feature/live-catalog-prompt
+
+```
+
+<!-- changelog-commit:248e4283ce2ee637f2afdef82aca5f5c8be560e1 -->
+### Commit [`248e428`](https://github.com/superhero/operations.superduper.solutions/commit/248e4283ce2ee637f2afdef82aca5f5c8be560e1)
+
+```text
+feat(search): join a search icon to the prompt input
+
+Add a rounded left cap using the input background while preserving multiline sizing and the shared focus outline.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.47

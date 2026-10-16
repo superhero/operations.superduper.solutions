@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { InputValidationError, prepareRequest, type PreparedRequest } from "../operation-input.ts";
+import { InputValidationError, prepareRequest, type InputValues, type PreparedRequest } from "../operation-input.ts";
 import type { WorkflowExecutionResult, WorkflowResponse } from "../workflow-execution.ts";
 import { canonicalPolicyValue, validateApprovedOperation, validateCredentialPath } from "./policy.ts";
 import { VaultError, vaultLimits, type ApprovedOperation, type CredentialBinding, type VaultCredential } from "./types.ts";
@@ -97,7 +97,7 @@ async function readBounded(response: Response, signal: AbortSignal): Promise<str
 }
 
 /** Secrets are selected and injected only here; callers receive a separate scrubbed preview. */
-export async function executeCredentialed(descriptor: ApprovedOperation, values: Record<string, string>, binding: CredentialBinding,
+export async function executeCredentialed(descriptor: ApprovedOperation, values: InputValues, binding: CredentialBinding,
   credentials: readonly VaultCredential[], options: CredentialExecutionOptions): Promise<CredentialExecutionResult>
 {
   let secrets: string[] = [];
@@ -109,6 +109,10 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     const credentialSnapshot = structuredClone(credentials);
     const bindingSnapshot = structuredClone(binding);
     const inputSnapshot = structuredClone(values);
+    if (!inputSnapshot || typeof inputSnapshot !== "object" || Array.isArray(inputSnapshot)
+      || ![Object.prototype, null].includes(Object.getPrototypeOf(inputSnapshot))
+      || Object.values(inputSnapshot).some(value => value !== null && value !== undefined && typeof value !== "string"))
+      throw new VaultError("INVALID");
     secrets = credentialSnapshot.map(credential => credential.value).filter(value => typeof value === "string" && value.length > 0)
       .sort((a, b) => b.length - a.length);
     const approved = await validateApprovedOperation(descriptor);

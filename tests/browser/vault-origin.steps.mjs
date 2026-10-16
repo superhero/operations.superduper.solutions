@@ -16,7 +16,7 @@ async function openSecrets(page) {
   await setMode(page, 'settings');
   const disclosure = page.locator('summary[aria-label="Secrets"]');
   if (await disclosure.getAttribute('aria-expanded') !== 'true') await disclosure.click();
-  await expect(panel(page).getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled();
+  await expect(panel(page).getByRole('button', { name: 'Choose backup to restore', exact: true })).toBeEnabled();
 }
 
 Then('its native passkey cannot restore on another RP domain before I explicitly choose {string}',

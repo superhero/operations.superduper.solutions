@@ -4,7 +4,7 @@
 
 import { operations, type JsonValue, type Operation } from "./catalog.ts";
 import { catalogForOperation } from "./catalog-registry.ts";
-import { prepareRequest, type PreparedRequest } from "./operation-input.ts";
+import { prepareRequest, type InputValues, type PreparedRequest } from "./operation-input.ts";
 import type { WorkflowResponse } from "./workflow-execution.ts";
 
 export type DemoResult = { request: PreparedRequest; response: WorkflowResponse };
@@ -23,7 +23,7 @@ export function createWorkflowDemo()
   }]]);
   let serial = 1;
   return {
-    execute(operation: Operation, values: Record<string, string>): DemoResult
+    execute(operation: Operation, values: InputValues): DemoResult
     {
       const canonical = operations.find(item => item.id === operation.id);
       if (!canonical || canonical.method !== operation.method || canonical.path !== operation.path

@@ -1,7 +1,7 @@
 # Copyright (C) 2026 Erik Landvall
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
-Feature: Operations presentation
+Feature: Discovery and workflow run presentation
   Scenario Outline: Keyboard focus remains visible at panel and result boundaries
     When I use a viewport of <width> by 844 pixels
     Then operations controls retain their complete keyboard focus outline
@@ -13,23 +13,23 @@ Feature: Operations presentation
       | 390   |
       | 1280  |
 
-  Scenario: Evaluation rows open their operation without swallowing help controls
+  Scenario: Matching menu rows add operations with pointer and keyboard
     When I search for the operation "Get project"
-    Then result row padding opens the operation while help and keyboard actions remain independent
+    Then matching menu rows add operations with pointer and keyboard
 
-  Scenario: Progress distinguishes available actions while preserving selected menu colors
-    Then progress colors and navigation states match their roles in both themes
+  Scenario: Matching menu actions retain their idle colors across evaluations
+    Then matching menu actions retain their theme colors across evaluations
 
-  Scenario: Progress adapts to available space without losing the operation draft
-    Given I open the "Get project" operation from the catalog
-    Then progress switches between labels and numbers without losing the operation draft
+  Scenario: Prompt navigation adapts without changing the composed workflow
+    Given I add "Get project" through the workflow catalog
+    Then responsive prompt navigation preserves the workflow and its prompt
 
-  Scenario: Progress stays above adjacent steps until its hover animation settles
+  Scenario: Returning to discovery leaves the workflow unchanged and new runs start fresh
     When I search for the operation "Get project"
     And I open the "Get project" result
-    Then progress hover layering follows its animation through exit and re-entry
+    Then returning to discovery preserves the graph and a new run starts without stale results
 
-  Scenario Outline: Actual responses reset on editing with either motion preference
+  Scenario Outline: New runs clear earlier responses with either motion preference
     Given I open the "Get project" operation from the catalog
     When I enter these operation inputs:
       | label      | value        |
