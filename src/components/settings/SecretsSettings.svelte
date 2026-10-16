@@ -443,7 +443,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           {/each}
           <div class="actions"><button type="button" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}>Verify all and rotate key</button>
             <button type="button" disabled={busy} onclick={() => { clearInputs(); showRotation = false; }}>Cancel</button></div>
-        {:else}<button type="button" disabled={busy} onclick={() => showRotation = true}>Prepare key rotation</button>{/if}
+        {:else}<button class="rotate-keys" type="button" disabled={busy} onclick={() => showRotation = true}>Rotate keys<MaterialIcon name="lock_reset" size={18} /></button>{/if}
       </div>
     </div>
   {/if}
@@ -503,6 +503,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .unlock-vault { display: grid; place-items: center; justify-self: end; flex-shrink: 0; align-self: stretch; min-width: 40px; border-radius: 0 4px 4px 0; }
   .unlock-vault:hover:enabled, .unlock-vault:focus { color: var(--color-background); }
   .creation-actions button, .recovery-actions button { display: inline-flex; align-items: center; gap: 6px; }
+  .rotate-keys { display: inline-flex; align-items: center; gap: 6px; }
   .card, .subform, .vault-create-form { display: grid; gap: 10px; min-width: 0; }
   .card { padding: 14px; border-radius: 4px; background: var(--color-surface); }
   .vault-info, .vault-status-message { display: flex; align-items: flex-start; gap: 10px; }
