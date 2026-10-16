@@ -532,7 +532,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   @media (prefers-reduced-motion: no-preference) {
     .idle-toggle:hover:enabled .default-switch { transform: scale(1.10); }
     .recovery-copy:hover:enabled { transform: scale(1.10); }
-    :is(.creation-actions, .recovery-actions) button:hover:enabled { transform: scale(1.05); }
+    :is(.creation-actions, .recovery-actions, .vault-replace-row) button:hover:enabled { transform: scale(1.05); }
   }
   @media (prefers-reduced-motion: reduce) { .default-switch, .default-switch > span { transition: none; } }
 </style>
