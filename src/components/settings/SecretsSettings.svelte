@@ -5,6 +5,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
   import { onMount, tick } from "svelte";
+  import { slide } from "svelte/transition";
+  import { cubicInOut } from "svelte/easing";
   import HintButton from "$lib/components/HintButton.svelte";
   import FieldInteger from "$lib/components/FieldInteger.svelte";
   import FieldSelect from "$lib/components/FieldSelect.svelte";
@@ -437,16 +439,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <div class="subform"><h4>Passkey</h4><p class="help">Use an authenticator that supports passkey encryption. A failed enrollment leaves your existing methods intact.</p>
         <button type="button" disabled={busy} onclick={() => run("Verifying passkey…", addPasskey)}>Add passkey</button></div>
     </div>
-    <div class="card">
+    <div class="card rotation-card">
       <div class="vault-rotate-row">
-        <button type="button" disabled={busy} onclick={() => { if (showRotation) clearInputs(); showRotation = !showRotation; }}>{showRotation ? "Cancel rotation" : "Rotate keys"}<MaterialIcon name={showRotation ? "backspace" : "lock_reset"} size={18} /></button>
+        <button type="button" disabled={busy} aria-expanded={showRotation} aria-controls={`${createFormId}-rotation`} onclick={() => { if (showRotation) clearInputs(); showRotation = !showRotation; }}>{showRotation ? "Cancel rotation" : "Rotate keys"}<MaterialIcon name={showRotation ? "backspace" : "lock_reset"} size={18} /></button>
         <p class="help">Verify every retained unlock method to re-encrypt the current vault.</p>
       </div>
         {#if showRotation}
+          <div id={`${createFormId}-rotation`} class="rotation-body" inert={!showRotation}
+            transition:slide={{ duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240, easing: cubicInOut }}>
           {#each status.methods as method, index (method.id)}
             <VaultAuthentication bind:this={rotationAuthentication[method.id]} status={{ ...status, methods: [method] }} disabled={busy} label={`Verify ${methodNames[method.kind].toLowerCase()} ${index + 1}`} />
           {/each}
           <div class="actions"><button type="button" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}>Verify all and rotate key</button></div>
+          </div>
         {/if}
     </div>
   {/if}
@@ -507,6 +512,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .unlock-vault:hover:enabled, .unlock-vault:focus { color: var(--color-background); }
   .creation-actions button, .recovery-actions button { display: inline-flex; align-items: center; gap: 6px; }
   .card, .subform, .vault-create-form { display: grid; gap: 10px; min-width: 0; }
+  .rotation-card { gap: 0; }
+  .rotation-body { display: grid; gap: 10px; margin-top: 10px; padding-top: 12px; background: repeating-linear-gradient(to right, var(--color-background) 0 8px, transparent 8px 14px) top / 100% 1px no-repeat; }
   .card { padding: 14px; border-radius: 4px; background: var(--color-surface); }
   .vault-info, .vault-status-message { display: flex; align-items: flex-start; gap: 10px; }
   .vault-status-message { flex: 1; min-width: 0; }

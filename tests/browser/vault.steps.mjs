@@ -235,6 +235,16 @@ async function createUIVault() {
   await settings(page).getByLabel('Credential value', { exact: true }).fill(canaries[1]);
   await settings(page).getByRole('button', { name: 'Save credential', exact: true }).click();
   await expect(settings(page).getByRole('status')).toContainText('Credential saved', { timeout: 15_000 });
+  const beforeRotation = await storage(page, 'read');
+  await settings(page).getByRole('button', { name: 'Rotate keys', exact: true }).click();
+  const cancelRotation = settings(page).getByRole('button', { name: 'Cancel rotation', exact: true });
+  await expect(cancelRotation).toHaveAttribute('aria-expanded', 'true');
+  await expect(settings(page).locator('.rotation-body')).toBeVisible();
+  await expect(settings(page).getByRole('button', { name: 'Verify all and rotate key', exact: true })).toBeVisible();
+  await cancelRotation.click();
+  await expect(settings(page).locator('.rotation-body')).toHaveCount(0);
+  assert.deepEqual(await storage(page, 'read'), beforeRotation);
+
   await expect(settings(page).getByLabel('Credential value', { exact: true })).toHaveValue('');
   await expect(settings(page).getByLabel('Confirm action password', { exact: true })).toHaveValue('');
   await expect(settings(page).locator('li').filter({ hasText: canaries[3] })).toHaveCount(1);
