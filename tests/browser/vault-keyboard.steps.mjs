@@ -87,7 +87,7 @@ When('I create and replace a vault credential using only the keyboard', { timeou
   await enter(page, settings.getByLabel('Credential label', { exact: true }), 'Keyboard credential');
   await enter(page, settings.getByLabel('Credential value', { exact: true }), originalSecret);
   await activate(page, settings.getByRole('button', { name: 'Save credential', exact: true }));
-  await expect(settings.getByRole('status')).toContainText('Credential saved');
+  await expect(settings.getByLabel('Credential label', { exact: true })).toHaveValue('');
   await expect(settings.getByLabel('Credential value', { exact: true })).toHaveValue('');
 
   await activate(page, settings.getByRole('button', { name: 'Replace', exact: true }));
@@ -95,7 +95,7 @@ When('I create and replace a vault credential using only the keyboard', { timeou
   await expect(settings.getByRole('combobox', { name: 'Credential type', exact: true })).toHaveCount(0);
   await enter(page, settings.getByLabel('Replacement value', { exact: true }), replacementSecret);
   await activate(page, settings.getByRole('button', { name: 'Save credential', exact: true }));
-  await expect(settings.getByRole('status')).toContainText('Credential saved');
+  await expect(settings.getByLabel('Credential label', { exact: true })).toHaveValue('');
   const row = settings.locator('li').filter({ hasText: 'Keyboard replacement' });
   await expect(row).toHaveCount(1);
   await expect(settings.getByLabel('Credential value', { exact: true })).toHaveValue('');

@@ -231,7 +231,7 @@ async function createUIVault() {
   await settings(page).getByLabel('Credential label', { exact: true }).fill(canaries[3]);
   await settings(page).getByLabel('Credential value', { exact: true }).fill(canaries[1]);
   await settings(page).getByRole('button', { name: 'Save credential', exact: true }).click();
-  await expect(settings(page).getByRole('status')).toContainText('Credential saved', { timeout: 15_000 });
+  await expect(settings(page).getByLabel('Credential label', { exact: true })).toHaveValue('', { timeout: 15_000 });
   const savedRow = settings(page).locator('li').filter({ hasText: canaries[3] });
   await expect(savedRow.getByRole('button', { name: 'Replace', exact: true })).toHaveCount(0);
   await page.evaluate(() => { navigator.clipboard.writeText = async value => { window.__credentialClipboard = value; }; });
@@ -435,7 +435,7 @@ Then('hiding and restoring the page preserves the vault worker and pending opera
     await settings(page).getByLabel('Credential label', { exact: true }).fill('Saved while backgrounded');
     await settings(page).getByLabel('Credential value', { exact: true }).fill(canaries[2]);
     await settings(page).getByRole('button', { name: 'Save credential', exact: true }).click();
-    await expect(settings(page).getByRole('status')).toContainText('Credential saved', { timeout: 15_000 });
+    await expect(settings(page).getByLabel('Credential label', { exact: true })).toHaveValue('', { timeout: 15_000 });
     await expect(settings(page).locator('li').filter({ hasText: 'Saved while backgrounded' })).toHaveCount(1);
     assert.equal(await worker.evaluate(() => globalThis.name), 'operations-secret-vault');
   } finally {

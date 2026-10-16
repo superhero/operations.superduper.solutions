@@ -136,7 +136,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const input = { ...(credentialId ? { id: credentialId } : {}), label: credentialLabel, kind: credentialId ? records.find(item => item.id === credentialId)!.kind : "secret" as const, value: take("credential-value") };
     try { await vaultCall("put", [null, input]); }
     finally { input.value = ""; }
-    credentialId = ""; credentialLabel = ""; await refresh(); notice = "Credential saved.";
+    credentialId = ""; credentialLabel = ""; await refresh();
   }
   async function copyCredential(id: string): Promise<void> {
     let value = await vaultCall("copyCredential", [id]);
