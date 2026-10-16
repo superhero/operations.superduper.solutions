@@ -235,6 +235,17 @@ async function createUIVault() {
   await settings(page).getByLabel('Credential value', { exact: true }).fill(canaries[1]);
   await settings(page).getByRole('button', { name: 'Save credential', exact: true }).click();
   await expect(settings(page).getByRole('status')).toContainText('Credential saved', { timeout: 15_000 });
+  const beforePasskey = await storage(page, 'read');
+  await settings(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
+  const passkeyForm = settings(page).locator('form[id$="-passkey"]');
+  await expect(passkeyForm.getByLabel('Password', { exact: true })).toBeVisible();
+  await expect(passkeyForm.getByRole('combobox')).toHaveCount(0);
+  await passkeyForm.getByLabel('Password', { exact: true }).fill(canaries[0]);
+  const passkeyInputHandle = await passkeyForm.getByLabel('Password', { exact: true }).elementHandle();
+  await settings(page).getByRole('button', { name: 'Cancel passkey', exact: true }).click();
+  await expect(passkeyForm).toHaveCount(0);
+  assert.equal(await passkeyInputHandle.evaluate(input => input.value), '');
+  assert.deepEqual(await storage(page, 'read'), beforePasskey);
   const beforeRotation = await storage(page, 'read');
   await settings(page).getByRole('button', { name: 'Rotate key', exact: true }).click();
   const cancelRotation = settings(page).getByRole('button', { name: 'Cancel rotation', exact: true });
@@ -591,8 +602,9 @@ async function virtualAuthenticator(world, prf, run, automaticPresenceSimulation
 Then('the native PRF virtual authenticator enrolls and unlocks the vault without password input', async function () {
   await virtualAuthenticator(this, true, async (cdp, authenticatorId) => {
     const page = this.page;
-    await settings(page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
     await settings(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
+      await settings(page).locator('form[id$="-passkey"]').getByLabel('Password', { exact: true }).fill(canaries[0]);
+      await settings(page).locator('form[id$="-passkey"]').getByRole('button', { name: 'Verify and add passkey', exact: true }).click();
     await expect(settings(page).getByRole('status')).toContainText('Passkey verified and added');
     const saved = (await storage(page, 'read')).snapshot;
     assert.equal(saved.envelopes.filter(item => item.kind === 'passkey').length, 1);
@@ -614,8 +626,9 @@ Then('the native PRF virtual authenticator enrolls and unlocks the vault without
 Then('a native virtual authenticator without PRF leaves password and recovery methods usable', async function () {
   await virtualAuthenticator(this, false, async () => {
     const page = this.page, before = await storage(page, 'read');
-    await settings(page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
     await settings(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
+      await settings(page).locator('form[id$="-passkey"]').getByLabel('Password', { exact: true }).fill(canaries[0]);
+      await settings(page).locator('form[id$="-passkey"]').getByRole('button', { name: 'Verify and add passkey', exact: true }).click();
     await expect(settings(page).getByRole('alert')).toContainText('unavailable');
     assert.deepEqual(await storage(page, 'read'), before);
     await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
@@ -636,7 +649,9 @@ Then('a pending native passkey enrollment is cancelled by {string} and clears re
     const handles = await Promise.all([password.elementHandle(), value.elementHandle()]);
     try {
       await settings(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
-      await expect(settings(page).getByRole('status')).toContainText('Verifying passkey');
+      await settings(page).locator('form[id$="-passkey"]').getByLabel('Password', { exact: true }).fill(canaries[0]);
+      await settings(page).locator('form[id$="-passkey"]').getByRole('button', { name: 'Verify and add passkey', exact: true }).click();
+      await expect(settings(page).locator('form[id$="-passkey"]').getByRole('button', { name: 'Verify and add passkey', exact: true })).toBeDisabled();
       if (action === 'manual lock') await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
       else if (action === 'settings teardown') { await page.locator('summary[aria-label="Secrets"]').click(); await expect(settings(page)).toHaveCount(0); }
       else throw new Error('Unknown cancellation action');

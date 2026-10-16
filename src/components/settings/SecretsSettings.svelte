@@ -38,6 +38,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let panel: HTMLElement;
   let authentication = $state.raw<Authentication>();
   let restoreAuthentication = $state.raw<Authentication>();
+  let passkeyAuthentication = $state.raw<Authentication>();
+  let showPasskey = $state(false);
+  let passkeyError = $state("");
   let recoveryOutput = $state.raw<HTMLPreElement>();
   let recoveryMode = $state<"create" | "replace" | "rotate" | null>(null);
   let credentialId = $state("");
@@ -67,7 +70,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function wipe(proof: UnlockProof): void { if ("prf" in proof) proof.prf.fill(0); else proof.secret = ""; }
   function clearInputs(): void {
     panel?.querySelectorAll<HTMLInputElement>("input[data-vault-sensitive]").forEach(input => { input.value = ""; });
-    authentication?.clear(); restoreAuthentication?.clear();
+    authentication?.clear(); restoreAuthentication?.clear(); passkeyAuthentication?.clear();
     for (const component of Object.values(rotationAuthentication)) component?.clear();
   }
   function clearRecovery(): void { if (recoveryOutput) recoveryOutput.textContent = ""; recoveryMode = null; }
@@ -80,7 +83,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
   function locked(): void {
     generation++; reviewGeneration++; clearInputs(); clearRecovery(); clearRestore();
-    records = []; grantDescriptor = null; status = { ...status, unlocked: false }; showRotation = false; busy = false; progress = "";
+    records = []; grantDescriptor = null; status = { ...status, unlocked: false }; showRotation = false; showPasskey = false; passkeyError = ""; busy = false; progress = "";
   }
   async function refresh(): Promise<void> {
     const current = generation;
@@ -184,11 +187,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     } finally { material.secret = ""; }
   }
   async function addPasskey(): Promise<void> {
-    await fresh(async proof => {
+    const current = generation;
+    passkeyError = "";
+    let proof: UnlockProof | undefined;
+    try {
+      if (!passkeyAuthentication) throw new VaultError("AUTHENTICATION");
+      proof = await passkeyAuthentication.proof();
       const material = await vaultCeremony(signal => enrollPasskey(signal));
       try { await vaultCall("addMethod", [proof, material]); } finally { material.prf.fill(0); }
-    });
-    await refresh(); notice = "Passkey verified and added.";
+      await refresh();
+      if (current !== generation || disposed) return;
+      showPasskey = false; notice = "Passkey verified and added.";
+    } catch (failure) {
+      if (current === generation && !disposed) passkeyError = safeVaultError(failure).message;
+    } finally { if (proof) wipe(proof); }
   }
   async function prepareRecovery(): Promise<void> {
     const current = generation;
@@ -447,8 +459,28 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <p class="help">Leave the method unselected to add a recovery key. Save the new key before it replaces a method.</p>
         <button type="button" disabled={busy || recoveryMode !== null} onclick={() => run("Generating recovery key…", prepareRecovery)}>Generate recovery key</button>
       </div>
-      <div class="subform"><h4>Passkey</h4><p class="help">Use an authenticator that supports passkey encryption. A failed enrollment leaves your existing methods intact.</p>
-        <button type="button" disabled={busy} onclick={() => run("Verifying passkey…", addPasskey)}>Add passkey</button></div>
+    </div>
+    <div class="card rotation-card">
+      <div class="vault-passkey-row">
+        <button type="button" disabled={busy} aria-expanded={showPasskey} aria-controls={`${createFormId}-passkey`}
+          onclick={() => { passkeyAuthentication?.clear(); passkeyError = ""; showPasskey = !showPasskey; }}>{showPasskey ? "Cancel passkey" : "Add passkey"}<MaterialIcon name={showPasskey ? "backspace" : "passkey"} size={18} /></button>
+        <p class="help">Add a passkey to unlock this vault. Your provider must support passkey encryption.</p>
+      </div>
+      {#if showPasskey}
+        {#snippet passkeyAction()}
+          <HintButton label="Verify and add passkey" disabled={busy}>
+            {#snippet child({ props })}<button {...props} class="unlock-vault" type="submit"><MaterialIcon name="passkey" size={20} /></button>{/snippet}
+          </HintButton>
+        {/snippet}
+        <form id={`${createFormId}-passkey`} class="rotation-body" inert={!showPasskey}
+          onsubmit={event => { event.preventDefault(); void run("", addPasskey); }}
+          transition:slide={{ duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240, easing: cubicInOut }}>
+          <VaultAuthentication bind:this={passkeyAuthentication}
+            status={{ ...status, methods: status.methods.some(method => method.kind === "password") ? status.methods.filter(method => method.kind === "password") : status.methods }}
+            disabled={busy} label="Authorize passkey" inputLabel={status.methods.some(method => method.kind === "password") ? "Password" : undefined} action={passkeyAction} />
+          {#if passkeyError}<p class="error" role="alert">{passkeyError}</p>{/if}
+        </form>
+      {/if}
     </div>
     <div class="card rotation-card">
       <div class="vault-rotate-row">
@@ -521,9 +553,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .recovery-key { position: relative; min-width: 0; border-radius: 4px; background: var(--color-background); }
   .recovery-key pre { margin: 0; padding: 8px 40px 8px 8px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: monospace; font-size: 12px; }
   .recovery-copy { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; background: transparent; color: inherit; }
-  .vault-replace-row, .vault-export-row, .vault-rotate-row { display: flex; align-items: center; gap: 12px; }
-  .vault-replace-row > button, .vault-export-row > button, .vault-rotate-row > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 160px; width: 160px; white-space: nowrap; }
-  .vault-replace-row > p, .vault-export-row > p, .vault-rotate-row > p { min-width: 0; }
+  .vault-replace-row, .vault-export-row, .vault-rotate-row, .vault-passkey-row { display: flex; align-items: center; gap: 12px; }
+  .vault-replace-row > button, .vault-export-row > button, .vault-rotate-row > button, .vault-passkey-row > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 160px; width: 160px; white-space: nowrap; }
+  .vault-replace-row > p, .vault-export-row > p, .vault-rotate-row > p, .vault-passkey-row > p { min-width: 0; }
   .creation-actions, .recovery-actions { justify-content: flex-end; }
   .unlock-vault { display: grid; place-items: center; justify-self: end; flex-shrink: 0; align-self: stretch; min-width: 40px; border-radius: 0 4px 4px 0; }
   .unlock-vault:hover:enabled, .unlock-vault:focus { color: var(--color-background); }
@@ -569,7 +601,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     .unlock-vault:hover:enabled :global(.material-symbols-rounded), .unlock-vault:focus :global(.material-symbols-rounded) { transform: scale(1.2); }
     .idle-toggle:hover:enabled .default-switch { transform: scale(1.10); }
     .recovery-copy:hover:enabled { transform: scale(1.10); }
-    :is(.creation-actions, .recovery-actions, .vault-replace-row, .vault-export-row, .vault-rotate-row) button:hover:enabled { transform: scale(1.05); }
+    :is(.creation-actions, .recovery-actions, .vault-replace-row, .vault-export-row, .vault-rotate-row, .vault-passkey-row) button:hover:enabled { transform: scale(1.05); }
   }
   @media (prefers-reduced-motion: reduce) { .default-switch, .default-switch > span { transition: none; } }
 </style>

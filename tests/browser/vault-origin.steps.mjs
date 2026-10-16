@@ -33,8 +33,10 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       hasPrf: true, hasHmacSecret: true,
     } });
     try {
-      await panel(page).getByLabel('Confirm action password', { exact: true }).fill(password);
       await panel(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
+      const passkeyForm = panel(page).locator('form[id$="-passkey"]');
+      await passkeyForm.getByLabel('Password', { exact: true }).fill(password);
+      await passkeyForm.getByRole('button', { name: 'Verify and add passkey', exact: true }).click();
       await expect(panel(page).getByRole('status')).toContainText('Passkey verified and added');
       const original = await readStorage(page);
       const passkey = original.snapshot.envelopes.find(envelope => envelope.kind === 'passkey');
