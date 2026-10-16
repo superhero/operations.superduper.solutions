@@ -629,7 +629,7 @@ Then('a native virtual authenticator without PRF leaves password and recovery me
     await settings(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
       await settings(page).locator('form[id$="-passkey"]').getByLabel('Password', { exact: true }).fill(canaries[0]);
       await settings(page).locator('form[id$="-passkey"]').getByRole('button', { name: 'Verify and add passkey', exact: true }).click();
-    await expect(settings(page).getByRole('alert')).toContainText('unavailable');
+    await expect(settings(page).locator('form[id$="-passkey"]').getByRole('alert')).toHaveText('Passkey encryption (WebAuthn PRF) is unavailable in this browser or passkey provider. Your existing vault is unchanged.');
     assert.deepEqual(await storage(page, 'read'), before);
     await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
     await unlockUI(page);

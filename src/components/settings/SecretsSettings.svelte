@@ -189,17 +189,25 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   async function addPasskey(): Promise<void> {
     const current = generation;
     passkeyError = "";
+    let enrolling = false;
     let proof: UnlockProof | undefined;
     try {
       if (!passkeyAuthentication) throw new VaultError("AUTHENTICATION");
       proof = await passkeyAuthentication.proof();
+      enrolling = true;
       const material = await vaultCeremony(signal => enrollPasskey(signal));
+      enrolling = false;
       try { await vaultCall("addMethod", [proof, material]); } finally { material.prf.fill(0); }
       await refresh();
       if (current !== generation || disposed) return;
       showPasskey = false; notice = "Passkey verified and added.";
     } catch (failure) {
-      if (current === generation && !disposed) passkeyError = safeVaultError(failure).message;
+      if (current === generation && !disposed) {
+        const safe = safeVaultError(failure);
+        passkeyError = enrolling && safe.code === "UNAVAILABLE"
+          ? "Passkey encryption (WebAuthn PRF) is unavailable in this browser or passkey provider. Your existing vault is unchanged."
+          : safe.message;
+      }
     } finally { if (proof) wipe(proof); }
   }
   async function prepareRecovery(): Promise<void> {
@@ -478,7 +486,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <VaultAuthentication bind:this={passkeyAuthentication}
             status={{ ...status, methods: status.methods.some(method => method.kind === "password") ? status.methods.filter(method => method.kind === "password") : status.methods }}
             disabled={busy} label="Authorize passkey" inputLabel={status.methods.some(method => method.kind === "password") ? "Password" : undefined} action={passkeyAction} />
-          {#if passkeyError}<p class="error" role="alert">{passkeyError}</p>{/if}
+          {#if passkeyError}<p class="error" role="alert"
+            transition:slide={{ duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240, easing: cubicInOut }}>{passkeyError}</p>{/if}
         </form>
       {/if}
     </div>
