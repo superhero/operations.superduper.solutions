@@ -321,6 +321,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-empty p, .schema-note { margin: 6px 0 0; color: var(--color-muted-foreground); font-size: 12px; overflow-wrap: anywhere; }
   .schema-actions { --schema-action-gap: 6px; display: flex; align-items: center; flex-wrap: wrap; gap: var(--schema-action-gap); }
   .schema-card { position: relative; }
+  .schema-card :global(.schema-disclosure > summary) { font-size: 12px; }
   .schema-card.dragging { opacity: 0.5; }
   .schema-actions :global(.schema-drag-handle) { cursor: grab; }
   .schema-actions :global(.schema-drag-handle:active) { cursor: grabbing; }
