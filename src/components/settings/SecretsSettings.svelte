@@ -348,7 +348,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {#if status.unlocked}<h3>Confirm management actions</h3>{/if}
       <VaultAuthentication bind:this={authentication} {status} disabled={busy} label={status.unlocked ? "Confirm action" : "Unlock"} />
       {#if status.unlocked}<p class="help">Enter fresh authentication before each credential, destination, unlock-method or export change below.</p>
-      {:else}<button disabled={busy}>Unlock vault</button>{/if}
+      {:else}<button class="unlock-vault" disabled={busy}>Unlock vault</button>{/if}
     </form>
   {/if}
 
@@ -491,6 +491,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .vault-replace-row > button { flex-shrink: 0; }
   .vault-replace-row > p { min-width: 0; }
   .creation-actions, .recovery-actions { justify-content: flex-end; }
+  .unlock-vault { justify-self: end; }
   .creation-actions button, .recovery-actions button { display: inline-flex; align-items: center; gap: 6px; }
   .card, .subform, .vault-create-form { display: grid; gap: 10px; min-width: 0; }
   .card { padding: 14px; border-radius: 4px; background: var(--color-surface); }
