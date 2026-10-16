@@ -423,7 +423,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="card">
       <label class="checkbox"><input type="checkbox" checked={preferences.idleLockEnabled} disabled={busy}
         onchange={event => void run("Saving lock preference…", () => saveIdle(event.currentTarget.checked, preferences.idleLockMinutes))} />Lock after inactivity</label>
-      <label>Minutes of inactivity: {idleMinutes.toLocaleString()}
+      <label>{idleMinutes.toLocaleString()} minutes
         <input class="idle-range" type="range" min="0" max="1" step="any"
           value={Math.log(idleMinutes) / Math.log(maximumIdleMinutes)}
           aria-valuemin={1} aria-valuemax={maximumIdleMinutes} aria-valuenow={idleMinutes}
