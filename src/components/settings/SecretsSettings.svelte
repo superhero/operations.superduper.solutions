@@ -608,7 +608,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .help, .notice, .destination, small { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
   .records { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
   .records li { display: grid; gap: 10px; padding: 10px; border: 1px solid var(--color-background); border-radius: 4px; }
-  .records li.record-heading { display: flex; }
   small { display: block; font-weight: 400; }
   .grant > span { min-width: 0; flex: 1; font-size: 12px; overflow-wrap: anywhere; }
   .destination { padding: 10px; border-radius: 4px; background: var(--color-background); }
