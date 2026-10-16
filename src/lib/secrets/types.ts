@@ -49,11 +49,12 @@ export const defaultVaultPreferences: Readonly<VaultPreferences> = { idleLockEna
 export type VaultStatus = { exists: boolean; unlocked: boolean; revision: number; epoch: number;
   methods: { id: string; kind: UnlockKind; credentialId?: string; prfSalt?: string }[] };
 export type VaultErrorCode = "LOCKED" | "AUTHENTICATION" | "INVALID" | "UNAVAILABLE" | "CONFLICT"
-  | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED";
+  | "DUPLICATE_KEY" | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED";
 const messages: Record<VaultErrorCode, string> = {
   LOCKED: "Unlock the secrets vault to continue.",
   AUTHENTICATION: "The vault could not be unlocked. Check the unlock method and saved data.",
   INVALID: "The vault data or request is invalid or unsupported.",
+  DUPLICATE_KEY: "A value is already saved with this key. Choose a different key.",
   UNAVAILABLE: "The secrets vault is unavailable. No plaintext fallback was created.",
   CONFLICT: "The vault changed in another tab. Unlock it again before continuing.",
   PERMISSION: "This credential has not been approved for the requested operation.",

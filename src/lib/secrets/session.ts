@@ -231,6 +231,9 @@ export class VaultSession {
     if (input.id && !previous) throw new VaultError("INVALID");
     const value = credential({ id: previous?.id ?? crypto.randomUUID(), label: input.label, kind: input.kind,
       value: input.value, grants: previous?.kind === input.kind ? previous.grants : [] });
+    const key = value.label.trim().normalize("NFC").toLowerCase();
+    if (records.some(item => item.id !== value.id && item.label.trim().normalize("NFC").toLowerCase() === key))
+      throw new VaultError("DUPLICATE_KEY");
     await this.save([...records.filter(item => item.id !== value.id), value]);
     return this.list();
   }

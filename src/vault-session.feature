@@ -73,3 +73,6 @@ Feature: Browser vault session lifecycle
 
   Scenario: Copy returns only the selected unlocked credential
     Then credential copying rejects missing records and locked sessions
+
+  Scenario: Duplicate keys cannot overwrite saved values
+    Then duplicate credential keys are rejected without changing saved values

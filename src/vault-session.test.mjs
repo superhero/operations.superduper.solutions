@@ -628,3 +628,21 @@ Then('credential copying rejects missing records and locked sessions', kdfStep, 
   session.lock();
   await assert.rejects(session.copyCredential(id), code('LOCKED'));
 });
+
+Then('duplicate credential keys are rejected without changing saved values', kdfStep, async () => {
+  const {session, storage} = await created();
+  const [saved] = await session.put(null, {label: 'Original key', kind: 'secret', value: 'ORIGINAL'});
+  const before = clone(storage.state), writes = storage.writes;
+  for (const label of ['Original key', 'original KEY', ' Original key ']) {
+    await assert.rejects(session.put(null, {label, kind: 'secret', value: 'REPLACEMENT'}), code('DUPLICATE_KEY'));
+    assert.deepEqual(storage.state, before);
+    assert.equal(storage.writes, writes);
+    assert.equal(await session.copyCredential(saved.id), 'ORIGINAL');
+  }
+  const values = await session.put(null, {label: 'Different key', kind: 'secret', value: 'SECOND'});
+  assert.equal(values.length, 2);
+  const other = values.find(item => item.id !== saved.id);
+  const updated = clone(storage.state);
+  await assert.rejects(session.put(null, {id: other.id, label: 'original key', kind: 'secret', value: 'REPLACEMENT'}), code('DUPLICATE_KEY'));
+  assert.deepEqual(storage.state, updated);
+});
