@@ -476,7 +476,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .recovery-label { font-size: 12px; font-weight: 700; }
   .recovery-key { position: relative; min-width: 0; border-radius: 4px; background: var(--color-background); }
-  .recovery-key pre { margin: 0; min-height: 80px; padding: 12px 44px 12px 12px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: monospace; font-size: 12px; }
+  .recovery-key pre { margin: 0; padding: 8px 40px 8px 8px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: monospace; font-size: 12px; }
   .recovery-copy { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; background: transparent; color: inherit; }
   .creation-actions, .recovery-actions { justify-content: flex-end; }
   .creation-actions button, .recovery-actions button { display: inline-flex; align-items: center; gap: 6px; }
