@@ -347,7 +347,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <form class="card" onsubmit={event => { event.preventDefault(); if (!status.unlocked) void run("Unlocking vault…", async () => { await fresh(proof => vaultCall("unlock", [proof])); await refresh(); }); }}>
       {#if status.unlocked}<h3>Confirm management actions</h3>{/if}
       <VaultAuthentication bind:this={authentication} {status} disabled={busy} label={status.unlocked ? "Confirm action" : "Unlock"}>
-        {#snippet action()}{#if !status.unlocked}<button class="unlock-vault" type="submit" disabled={busy}>Unlock vault</button>{/if}{/snippet}
+        {#snippet action()}{#if !status.unlocked}<button class="unlock-vault" type="submit" aria-label="Unlock vault" disabled={busy}><MaterialIcon name="passkey" size={20} /></button>{/if}{/snippet}
       </VaultAuthentication>
       {#if status.unlocked}<p class="help">Enter fresh authentication before each credential, destination, unlock-method or export change below.</p>
       {/if}
@@ -493,7 +493,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .vault-replace-row > button { flex-shrink: 0; }
   .vault-replace-row > p { min-width: 0; }
   .creation-actions, .recovery-actions { justify-content: flex-end; }
-  .unlock-vault { justify-self: end; flex-shrink: 0; align-self: stretch; border-radius: 0 4px 4px 0; }
+  .unlock-vault { display: grid; place-items: center; justify-self: end; flex-shrink: 0; align-self: stretch; min-width: 40px; border-radius: 0 4px 4px 0; }
   .creation-actions button, .recovery-actions button { display: inline-flex; align-items: center; gap: 6px; }
   .card, .subform, .vault-create-form { display: grid; gap: 10px; min-width: 0; }
   .card { padding: 14px; border-radius: 4px; background: var(--color-surface); }
