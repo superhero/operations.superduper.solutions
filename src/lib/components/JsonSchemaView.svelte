@@ -82,8 +82,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-copy-status { position: absolute; top: calc(100% + 8px); left: 0; max-width: 100%; padding: 6px 10px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-muted-foreground); font-size: 11px; font-weight: 700; pointer-events: none; }
   .schema-copy-status:empty { padding: 0; }
   :global(.schema-disclosure .schema-action) { display: inline-grid; place-items: center; flex: 0 0 28px; width: 28px; height: 32px; padding: 0; border: 0; border-radius: 3px; background: transparent; color: inherit; }
-  :global(.schema-disclosure .schema-action:is(:hover,:focus-visible):enabled:not([aria-pressed])) { background: var(--color-json-header-hover-foreground); color: var(--color-json-header-hover-background); }
-  :global(.schema-disclosure .schema-action[aria-pressed="true"]) { background: var(--color-catalog-active); color: var(--color-catalog-active-foreground); }
+  :global(.schema-disclosure .schema-action:is(:hover,:focus-visible):enabled) { background: var(--color-json-header-hover-foreground); color: var(--color-json-header-hover-background); }
   :global(.schema-disclosure .schema-action:focus-visible) { outline-color: var(--color-json-header-hover-foreground); }
   :global(.schema-disclosure .json-view) { margin-top: 4px; }
   @media (prefers-reduced-motion: reduce) { .schema-wrap-control { transition: none; } }
