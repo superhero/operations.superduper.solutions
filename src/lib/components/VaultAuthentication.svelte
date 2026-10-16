@@ -11,7 +11,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { VaultError, recoveryKeyCharacters, type UnlockProof, type VaultStatus } from "../secrets/types.ts";
 
   let { status, disabled = false, label = "Authenticate", portalZIndex = 40, action, inputLabel, detectMethod = false }: {
-    status: VaultStatus; disabled?: boolean; label?: string; portalZIndex?: number; action?: Snippet; inputLabel?: string; detectMethod?: boolean;
+    status: VaultStatus; disabled?: boolean; label?: string; portalZIndex?: number; action?: Snippet | undefined; inputLabel?: string | undefined; detectMethod?: boolean;
   } = $props();
   const id = $props.id();
   let methodId = $state("");
