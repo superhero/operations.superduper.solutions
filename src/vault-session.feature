@@ -67,3 +67,6 @@ Feature: Browser vault session lifecycle
 
   Scenario: Encrypted export needs no unlock proof
     Then a locked vault exports its ciphertext without unlocking or changing storage
+
+  Scenario: Unlocked credential changes need no additional proof
+    Then credential changes use the unlocked session and fail after it locks

@@ -40,6 +40,11 @@ recovery remain independent choices when a provider cannot supply it.
 
 ### Credential use
 
+Saving, replacing and removing credentials, and changing destination approvals,
+use the unlocked vault session without another password prompt. Locked or stale
+sessions cannot modify vault data. Unlock-method changes and vault replacement
+retain their own authentication.
+
 A dedicated worker decrypts credentials, applies an explicitly approved origin,
 base path, method, operation definition and authentication placement, then sends
 the request. Its interface has no credential getter. The initial scope supports

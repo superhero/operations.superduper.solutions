@@ -37,6 +37,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let notice = $state("");
   let panel: HTMLElement;
   let authentication = $state.raw<Authentication>();
+  let replacementAuthentication = $state.raw<Authentication>();
   let restoreAuthentication = $state.raw<Authentication>();
   let passkeyAuthentication = $state.raw<Authentication>();
   let passwordAuthentication = $state.raw<Authentication>();
@@ -72,7 +73,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function wipe(proof: UnlockProof): void { if ("prf" in proof) proof.prf.fill(0); else proof.secret = ""; }
   function clearInputs(): void {
     panel?.querySelectorAll<HTMLInputElement>("input[data-vault-sensitive]").forEach(input => { input.value = ""; });
-    authentication?.clear(); restoreAuthentication?.clear(); passkeyAuthentication?.clear(); passwordAuthentication?.clear();
+    authentication?.clear(); replacementAuthentication?.clear(); restoreAuthentication?.clear(); passkeyAuthentication?.clear(); passwordAuthentication?.clear();
     for (const component of Object.values(rotationAuthentication)) component?.clear();
   }
   function clearRecovery(): void { if (recoveryOutput) recoveryOutput.textContent = ""; recoveryMode = null; }
@@ -150,7 +151,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
   async function saveCredential(): Promise<void> {
     const input = { ...(credentialId ? { id: credentialId } : {}), label: credentialLabel, kind: credentialId ? records.find(item => item.id === credentialId)!.kind : "secret" as const, value: take("credential-value") };
-    try { await fresh(proof => vaultCall("put", [proof, input])); }
+    try { await vaultCall("put", [null, input]); }
     finally { input.value = ""; }
     credentialId = ""; credentialLabel = ""; await refresh(); notice = "Credential saved.";
   }
@@ -176,7 +177,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (!operation || !grantDescriptor || !grantScheme) throw new VaultError("PERMISSION");
     const current = await approvedOperation(operation, workflowExecutionForOperation(operation).origin);
     if (current.fingerprint !== grantDescriptor.fingerprint) throw new VaultError("PERMISSION");
-    await fresh(proof => vaultCall("grant", [proof, grantCredential, grantScheme, current]));
+    await vaultCall("grant", [null, grantCredential, grantScheme, current]);
     await refresh(); notice = "Destination approved for this credential.";
   }
   async function changePassword(): Promise<void> {
@@ -289,7 +290,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const proof = await restoreAuthentication.proof();
     let currentProof: UnlockProof | undefined;
     try {
-      if (status.exists) { if (!authentication) throw new VaultError("AUTHENTICATION"); currentProof = await authentication.proof(); }
+      if (status.exists) { if (!replacementAuthentication) throw new VaultError("AUTHENTICATION"); currentProof = await replacementAuthentication.proof(); }
       let previousExport: string | undefined;
       if (currentProof) {
         previousExport = await vaultCall("backup", [currentProof, true]);
@@ -326,7 +327,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if restoreStatus}
     <p class="destination">Selected export: {restoreFilename}</p>
     <VaultAuthentication bind:this={restoreAuthentication} status={restoreStatus} disabled={busy} label="Export" />
-    {#if status.exists}<p class="help">Also authenticate the current vault using the form above before replacing it.</p>{/if}
+    {#if status.exists}<VaultAuthentication bind:this={replacementAuthentication} {status} disabled={busy} label="Current vault" detectMethod inputLabel="Password, or recovery key for the current vault" />{/if}
     <div class="actions"><button type="button" disabled={busy} onclick={() => run(status.exists ? "Replacing vault…" : "Importing vault…", restore)}>{status.exists ? "Authenticate and replace vault" : "Authenticate and import vault"}</button>
       <button type="button" disabled={busy} onclick={() => { clearInputs(); clearRestore(); }}>Cancel</button></div>
   {/if}
@@ -380,14 +381,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
   {/if}
 
-  {#if ready && status.exists}
+  {#if ready && status.exists && !status.unlocked}
     <form class="card" onsubmit={event => { event.preventDefault(); if (!status.unlocked) void run("", async () => { await fresh(proof => vaultCall("unlock", [proof])); await refresh(); }); }}>
-      {#if status.unlocked}<h3>Confirm management actions</h3>{/if}
-      <VaultAuthentication bind:this={authentication} {status} disabled={busy} label={status.unlocked ? "Confirm action" : "Unlock"}>
+      <VaultAuthentication bind:this={authentication} {status} disabled={busy} label="Unlock">
         {#snippet action()}{#if !status.unlocked}<button class="unlock-vault" type="submit" aria-label="Unlock vault" disabled={busy}><MaterialIcon name="password" size={20} /></button>{/if}{/snippet}
       </VaultAuthentication>
-      {#if status.unlocked}<p class="help">Authenticate here before changing credentials, destination approvals or removing unlock methods.</p>
-      {/if}
     </form>
   {/if}
 
@@ -413,10 +411,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {#each records as item (item.id)}
           <li><div class="record-heading"><div><strong>{item.label}</strong><small>{item.grants.length} approved destinations</small></div>
             <div class="actions"><button type="button" disabled={busy} onclick={() => editCredential(item)}>Replace</button>
-              <button type="button" disabled={busy} onclick={() => run("Removing credential…", async () => { await fresh(proof => vaultCall("remove", [proof, item.id])); await refresh(); })}>Remove</button></div></div>
+              <button type="button" disabled={busy} onclick={() => run("Removing credential…", async () => { await vaultCall("remove", [null, item.id]); await refresh(); })}>Remove</button></div></div>
             {#each item.grants as grant (grant.id)}
               <div class="grant"><span>{grant.descriptor.operation.method} {grant.descriptor.origin}{grant.descriptor.operation.path}<small>{grant.scheme}</small></span>
-                <button type="button" disabled={busy} onclick={() => run("Revoking destination…", async () => { await fresh(proof => vaultCall("revoke", [proof, item.id, grant.id])); await refresh(); })}>Revoke</button></div>
+                <button type="button" disabled={busy} onclick={() => run("Revoking destination…", async () => { await vaultCall("revoke", [null, item.id, grant.id]); await refresh(); })}>Revoke</button></div>
             {/each}
           </li>
         {/each}

@@ -54,7 +54,7 @@ async function enter(page, target, value) {
 async function unlock(page) {
   await enter(page, panel(page).getByLabel('Unlock password, or recovery key', { exact: true }), password);
   await activate(page, panel(page).getByRole('button', { name: 'Unlock vault', exact: true }));
-  await expect(panel(page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
+  await expect(panel(page).getByRole('heading', { name: 'Add credential', exact: true })).toBeVisible();
 }
 
 Given('I open Secrets settings using only the keyboard', async function () {
@@ -81,19 +81,16 @@ When('I create and replace a vault credential using only the keyboard', { timeou
   const recoveryHandle = await recovery.elementHandle();
   assert.equal((await readStorage(page)).snapshot, null);
   await activate(page, settings.getByRole('button', { name: 'Save recovery key', exact: true }));
-  await expect(settings.getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
+  await expect(settings.getByRole('heading', { name: 'Add credential', exact: true })).toBeVisible();
   assert.equal(await recoveryHandle.evaluate(element => element.textContent), '');
 
-  await enter(page, settings.getByLabel('Confirm action password', { exact: true }), password);
   await enter(page, settings.getByLabel('Credential label', { exact: true }), 'Keyboard credential');
   await enter(page, settings.getByLabel('Credential value', { exact: true }), originalSecret);
   await activate(page, settings.getByRole('button', { name: 'Save credential', exact: true }));
   await expect(settings.getByRole('status')).toContainText('Credential saved');
-  await expect(settings.getByLabel('Confirm action password', { exact: true })).toHaveValue('');
   await expect(settings.getByLabel('Credential value', { exact: true })).toHaveValue('');
 
   await activate(page, settings.getByRole('button', { name: 'Replace', exact: true }));
-  await enter(page, settings.getByLabel('Confirm action password', { exact: true }), password);
   await enter(page, settings.getByLabel('Credential label', { exact: true }), 'Keyboard replacement');
   await expect(settings.getByRole('combobox', { name: 'Credential type', exact: true })).toHaveCount(0);
   await enter(page, settings.getByLabel('Replacement value', { exact: true }), replacementSecret);
@@ -108,19 +105,15 @@ When('I create and replace a vault credential using only the keyboard', { timeou
 Then('keyboard cancellation clears credential and recovery inputs without saving them', { timeout: 90_000 }, async function () {
   const page = this.page, settings = panel(page);
   await activate(page, settings.getByRole('button', { name: 'Replace', exact: true }));
-  const authentication = settings.getByLabel('Confirm action password', { exact: true });
   const replacement = settings.getByLabel('Replacement value', { exact: true });
-  await enter(page, authentication, password);
   await enter(page, replacement, cancelledSecret);
-  const authenticationHandle = await authentication.elementHandle(), replacementHandle = await replacement.elementHandle();
+  const replacementHandle = await replacement.elementHandle();
   const edit = settings.locator('form').filter({ has: page.getByRole('heading', { name: 'Replace credential', exact: true }) });
   await activate(page, edit.getByRole('button', { name: 'Cancel', exact: true }));
-  assert.equal(await authenticationHandle.evaluate(element => element.value), '');
   assert.equal(await replacementHandle.evaluate(element => element.value), '');
   await expect(settings.getByRole('heading', { name: 'Add credential', exact: true })).toBeVisible();
   assert.deepEqual(await readStorage(page), this.keyboardSaved);
 
-  await enter(page, authentication, password);
   await activate(page, settings.getByRole('button', { name: 'Generate recovery key', exact: true }));
   const recovery = settings.locator('pre[aria-label="Generated recovery key"]');
   await expect(recovery).toHaveText(/^[A-Za-z0-9+/]{171}=$/);

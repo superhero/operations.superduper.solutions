@@ -20,7 +20,8 @@ The decision and threat boundary are described in
 ## Adding capabilities
 
 Add operations to the reviewed RPC allowlist, never a generic decrypt or secret
-getter. Management changes require fresh authentication. Preserve independent
+getter. Credential and destination changes use the unlocked session. Unlock-method
+changes require fresh authentication. Preserve independent
 passwords and passkeys by authenticating each before key rotation. Generate a new
 128-byte recovery key automatically during rotation; never request the old one.
 Validate untrusted format and KDF bounds before allocation or expensive work.

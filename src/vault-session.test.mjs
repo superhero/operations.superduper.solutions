@@ -599,3 +599,22 @@ Then('a locked vault exports its ciphertext without unlocking or changing storag
   await assert.rejects(absent.backup(), code('LOCKED'));
   assert.equal(absentStorage.writes, 0);
 });
+
+Then('credential changes use the unlocked session and fail after it locks', kdfStep, async () => {
+  const {session, storage} = await created();
+  const [item] = await session.put(null, {label: 'Session credential', kind: 'bearer', value: 'SYNTHETIC-SESSION-TOKEN'});
+  const approval = await descriptor();
+  await session.grant(null, item.id, 'service', approval);
+  const [approved] = await session.list();
+  await session.revoke(null, item.id, approved.grants[0].id);
+  await session.put(null, {id: item.id, label: 'Updated', kind: 'bearer', value: 'SYNTHETIC-UPDATED'});
+  await session.remove(null, item.id);
+  assert.deepEqual(await session.list(), []);
+  session.lock();
+  const writes = storage.writes;
+  await assert.rejects(session.put(null, {label: 'Locked', kind: 'bearer', value: 'SYNTHETIC'}), code('LOCKED'));
+  await assert.rejects(session.remove(null, item.id), code('LOCKED'));
+  await assert.rejects(session.grant(null, item.id, 'service', approval), code('LOCKED'));
+  await assert.rejects(session.revoke(null, item.id, 'missing'), code('LOCKED'));
+  assert.equal(storage.writes, writes);
+});

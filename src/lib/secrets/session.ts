@@ -217,8 +217,8 @@ export class VaultSession {
     this.guard(generation); this.state = state; this.key = key;
   }
 
-  async put(proof: UnlockProof, input: { id?: string; label: string; kind: VaultCredential["kind"]; value: string }): Promise<CredentialSummary[]> {
-    await this.fresh(proof);
+  async put(proof: UnlockProof | null, input: { id?: string; label: string; kind: VaultCredential["kind"]; value: string }): Promise<CredentialSummary[]> {
+    if (proof) await this.fresh(proof); else await this.assertCurrent();
     const records = await this.records();
     const previous = input.id ? records.find(item => item.id === input.id) : undefined;
     if (input.id && !previous) throw new VaultError("INVALID");
@@ -228,16 +228,16 @@ export class VaultSession {
     return this.list();
   }
 
-  async remove(proof: UnlockProof, id: string): Promise<CredentialSummary[]> {
-    await this.fresh(proof);
+  async remove(proof: UnlockProof | null, id: string): Promise<CredentialSummary[]> {
+    if (proof) await this.fresh(proof); else await this.assertCurrent();
     const values = await this.records();
     if (!values.some(item => item.id === id)) throw new VaultError("INVALID");
     await this.save(values.filter(item => item.id !== id));
     return this.list();
   }
 
-  async grant(proof: UnlockProof, id: string, scheme: string, input: ApprovedOperation): Promise<CredentialSummary[]> {
-    await this.fresh(proof);
+  async grant(proof: UnlockProof | null, id: string, scheme: string, input: ApprovedOperation): Promise<CredentialSummary[]> {
+    if (proof) await this.fresh(proof); else await this.assertCurrent();
     const descriptor = await approvedOperation(input.operation, input.origin);
     if (descriptor.fingerprint !== input.fingerprint) throw new VaultError("PERMISSION");
     await this.assertSchema(descriptor);
@@ -250,8 +250,8 @@ export class VaultSession {
     await this.save(values); return this.list();
   }
 
-  async revoke(proof: UnlockProof, id: string, grantId: string): Promise<CredentialSummary[]> {
-    await this.fresh(proof);
+  async revoke(proof: UnlockProof | null, id: string, grantId: string): Promise<CredentialSummary[]> {
+    if (proof) await this.fresh(proof); else await this.assertCurrent();
     const values = await this.records();
     const value = values.find(item => item.id === id);
     if (!value || !value.grants.some(item => item.id === grantId)) throw new VaultError("INVALID");
