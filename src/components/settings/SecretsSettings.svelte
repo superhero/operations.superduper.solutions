@@ -373,7 +373,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <div class="credential-fields">
           <input aria-label="Credential label" placeholder="Key" bind:value={credentialLabel} maxlength="120" required disabled={busy} />
           <input aria-label={credentialId ? "Replacement value" : "Credential value"} placeholder="Value" name="credential-value" type="password" required autocomplete="off" spellcheck="false" data-vault-sensitive disabled={busy} />
-          <button class="credential-save" type="submit" aria-label="Save credential" disabled={busy}><MaterialIcon name="save" size={20} /><span class="credential-save-label">Save</span></button>
+          <button class="credential-save" type="submit" aria-label="Save credential" disabled={busy}><MaterialIcon name="save" size={20} /><span>Save</span></button>
         </div>
         {#if credentialId}<div class="actions"><button type="button" disabled={busy} onclick={() => { clearInputs(); credentialId = ""; credentialLabel = ""; }}>Cancel</button></div>{/if}
       </form>
@@ -541,8 +541,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .vault-info, .vault-status { padding: 14px; border-radius: 4px; background: var(--color-emphasis); color: var(--color-background); }
   .credential-fields { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 7fr) auto; align-items: end; gap: 12px; }
   .credential-save { display: flex; align-items: center; justify-content: center; gap: 6px; height: 40px; }
-  .credential-save-label { display: none; }
-  @media (max-width: 640px) { .credential-fields { grid-template-columns: minmax(0, 1fr); } .credential-save { width: 100%; } .credential-save-label { display: inline; } }
+  @media (max-width: 640px) { .credential-fields { grid-template-columns: minmax(0, 1fr); } .credential-save { width: 100%; } }
 
   h4, p { margin: 0; }
   h4, label, strong { font-size: 12px; }
