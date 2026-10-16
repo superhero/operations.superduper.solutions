@@ -367,6 +367,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {/if}
 
   {#if ready && status.unlocked}
+    <div class="card">
+      <form class="subform" onsubmit={event => { event.preventDefault(); void run("Saving credential…", saveCredential); }}>
+        {#if credentialId}<h4>Replace credential</h4>{/if}
+        <div class="credential-fields">
+          <input aria-label="Credential label" placeholder="Key" bind:value={credentialLabel} maxlength="120" required disabled={busy} />
+          <input aria-label={credentialId ? "Replacement value" : "Credential value"} placeholder="Value" name="credential-value" type="password" required autocomplete="off" spellcheck="false" data-vault-sensitive disabled={busy} />
+          <button class="credential-save" type="submit" aria-label="Save credential" disabled={busy}><MaterialIcon name="save" size={20} /><span class="credential-save-label">Save</span></button>
+        </div>
+        {#if credentialId}<div class="actions"><button type="button" disabled={busy} onclick={() => { clearInputs(); credentialId = ""; credentialLabel = ""; }}>Cancel</button></div>{/if}
+      </form>
+    </div>
     {#if records.length}
     <div class="card">
       <ul class="records">
@@ -380,17 +391,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </ul>
     </div>
     {/if}
-    <div class="card">
-      <form class="subform" onsubmit={event => { event.preventDefault(); void run("Saving credential…", saveCredential); }}>
-        {#if credentialId}<h4>Replace credential</h4>{/if}
-        <div class="credential-fields">
-          <input aria-label="Credential label" placeholder="Key" bind:value={credentialLabel} maxlength="120" required disabled={busy} />
-          <input aria-label={credentialId ? "Replacement value" : "Credential value"} placeholder="Value" name="credential-value" type="password" required autocomplete="off" spellcheck="false" data-vault-sensitive disabled={busy} />
-          <button class="credential-save" type="submit" aria-label="Save credential" disabled={busy}><MaterialIcon name="save" size={20} /><span class="credential-save-label">Save</span></button>
-        </div>
-        {#if credentialId}<div class="actions"><button type="button" disabled={busy} onclick={() => { clearInputs(); credentialId = ""; credentialLabel = ""; }}>Cancel</button></div>{/if}
-      </form>
-    </div>
 
 
   {/if}
