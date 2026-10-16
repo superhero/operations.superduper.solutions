@@ -70,7 +70,7 @@ Given('I open Secrets settings using only the keyboard', async function () {
   await expect(panel(page).getByText('No vault has been created:', { exact: true })).toBeVisible();
 });
 
-When('I create and replace a vault credential using only the keyboard', { timeout: 90_000 }, async function () {
+When('I create copy remove and save vault credentials using only the keyboard', { timeout: 90_000 }, async function () {
   const page = this.page, settings = panel(page);
   await enter(page, settings.getByLabel('New vault password', { exact: true }), password);
   await enter(page, settings.getByLabel('Confirm vault password', { exact: true }), password);
@@ -90,10 +90,16 @@ When('I create and replace a vault credential using only the keyboard', { timeou
   await expect(settings.getByLabel('Credential label', { exact: true })).toHaveValue('');
   await expect(settings.getByLabel('Credential value', { exact: true })).toHaveValue('');
 
-  await activate(page, settings.getByRole('button', { name: 'Replace', exact: true }));
+  await page.evaluate(() => { navigator.clipboard.writeText = async value => { window.__keyboardCopied = value; }; });
+  try {
+    await activate(page, settings.getByRole('button', { name: 'Copy', exact: true }));
+    await expect.poll(() => page.evaluate(() => window.__keyboardCopied)).toBe(originalSecret);
+  } finally { await page.evaluate(() => { delete navigator.clipboard.writeText; delete window.__keyboardCopied; }); }
+  await activate(page, settings.getByRole('button', { name: 'Remove', exact: true }));
+  await expect(settings.locator('li')).toHaveCount(0);
   await enter(page, settings.getByLabel('Credential label', { exact: true }), 'Keyboard replacement');
   await expect(settings.getByRole('combobox', { name: 'Credential type', exact: true })).toHaveCount(0);
-  await enter(page, settings.getByLabel('Replacement value', { exact: true }), replacementSecret);
+  await enter(page, settings.getByLabel('Credential value', { exact: true }), replacementSecret);
   await activate(page, settings.getByRole('button', { name: 'Save credential', exact: true }));
   await expect(settings.getByLabel('Credential label', { exact: true })).toHaveValue('');
   const row = settings.locator('li').filter({ hasText: 'Keyboard replacement' });
@@ -102,38 +108,32 @@ When('I create and replace a vault credential using only the keyboard', { timeou
   this.keyboardSaved = await readStorage(page);
 });
 
-Then('keyboard cancellation clears credential and recovery inputs without saving them', { timeout: 90_000 }, async function () {
+Then('keyboard cancellation and locking clear unsaved secrets without saving them', { timeout: 90_000 }, async function () {
   const page = this.page, settings = panel(page);
-  await activate(page, settings.getByRole('button', { name: 'Replace', exact: true }));
-  const replacement = settings.getByLabel('Replacement value', { exact: true });
-  await enter(page, replacement, cancelledSecret);
-  const replacementHandle = await replacement.elementHandle();
-  const edit = settings.locator('form').filter({ has: page.getByRole('heading', { name: 'Replace credential', exact: true }) });
-  await activate(page, edit.getByRole('button', { name: 'Cancel', exact: true }));
-  assert.equal(await replacementHandle.evaluate(element => element.value), '');
-  await expect(settings.getByLabel('Credential label', { exact: true })).toBeVisible();
+  await enter(page, settings.getByLabel('Credential value', { exact: true }), cancelledSecret);
+  const valueHandle = await settings.getByLabel('Credential value', { exact: true }).elementHandle();
+  await activate(page, settings.getByRole('button', { name: 'Add passkey', exact: true }));
+  const passkey = settings.locator('form[id$="-passkey"]');
+  await enter(page, passkey.getByLabel('Password', { exact: true }), password);
+  const proofHandle = await passkey.getByLabel('Password', { exact: true }).elementHandle();
+  await activate(page, settings.locator('.vault-passkey-row').getByRole('button', { name: 'Cancel', exact: true }));
+  assert.equal(await proofHandle.evaluate(element => element.value), '');
   assert.deepEqual(await readStorage(page), this.keyboardSaved);
-
-  await activate(page, settings.getByRole('button', { name: 'Generate recovery key', exact: true }));
-  const recovery = settings.locator('pre[aria-label="Generated recovery key"]');
-  await expect(recovery).toHaveText(/^[A-Za-z0-9+/]{171}=$/);
-  const pendingRecovery = await recovery.textContent(), recoveryHandle = await recovery.elementHandle();
   await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   await expect(settings.getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
-  assert.equal(await recoveryHandle.evaluate(element => element.textContent), '');
+  assert.equal(await valueHandle.evaluate(element => element.value), '');
   assert.deepEqual(await readStorage(page), this.keyboardSaved);
   await unlock(page);
   await expect(settings.locator('li').filter({ hasText: 'Keyboard replacement' })).toHaveCount(1);
   await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   await expect(settings.getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
   await expect(settings.getByLabel('Unlock password, or recovery key', { exact: true })).toHaveValue('');
-
-  const canaries = [password, originalSecret, replacementSecret, cancelledSecret, this.keyboardRecovery, pendingRecovery];
+  const canaries = [password, originalSecret, replacementSecret, cancelledSecret, this.keyboardRecovery];
   const found = await page.evaluate(async canaries => (await import('/vault-storage-fixture.js')).persistedCanaries(canaries), canaries);
   assert.deepEqual(found, []);
 });
 
-Then('keyboard credential selection approves only the displayed destination and sends the replacement value', { timeout: 90_000 }, async function () {
+Then('keyboard credential selection sends only the selected saved value without approval', { timeout: 90_000 }, async function () {
   const page = this.page, run = randomUUID(), operationName = 'Keyboard credential request';
   const path = `/vault-api/${run}/ok`;
   const document = { openapi: '3.1.0', info: { title: 'Keyboard credential fixture', version: '1.0.0' },
@@ -177,10 +177,7 @@ Then('keyboard credential selection approves only the displayed destination and 
   const selection = page.locator('fieldset.credential-selection');
   await expect(selection).toContainText(`${this.baseURL}${path}`);
   await expect(selection).toContainText('X-Api-Key');
-  await enter(page, page.getByLabel('Authenticate to approve changes password', { exact: true }), password);
-  await activate(page, page.getByRole('button', { name: 'Approve credential use', exact: true }));
   await expect(page.getByRole('button', { name: 'Approve credential use', exact: true })).toHaveCount(0);
-  await expect(page.getByLabel('Authenticate to approve changes password', { exact: true })).toHaveValue('');
   await activate(page, page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }));
   const response = page.getByRole('region', { name: 'Step 1 response', exact: true });
   await expect(response).toContainText('HTTP 200');

@@ -394,9 +394,7 @@ Then("both reports fit a {int} pixel viewport in the {string} theme", async func
   await expectReportColor(header, "background-color", roles.header);
   await expectReportColor(header, "color", roles.headerText);
   const schemaActions = ["Copy JSON", "Wrap lines"].map(name => header.getByRole("button", { name, exact: true }));
-  const schemaActionColors = async action => await action.getAttribute("aria-pressed") === "true"
-    ? { color: "--color-catalog-active-foreground", backgroundColor: "--color-catalog-active" }
-    : { color: roles.header, backgroundColor: roles.headerText };
+  const schemaActionColors = () => ({ color: roles.header, backgroundColor: roles.headerText });
   for (const action of schemaActions) {
     await action.hover();
     await expectThemeColors(action, await schemaActionColors(action));

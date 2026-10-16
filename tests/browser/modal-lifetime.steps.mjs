@@ -132,6 +132,12 @@ Then('dismissing mobile navigation preserves reading position with {string} moti
   const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
   const heading = settings.locator('summary[aria-label="Application"]');
   if (await heading.getAttribute('aria-expanded') !== 'true') await heading.click();
+  await heading.evaluate(async element => {
+    const panel = document.getElementById(element.getAttribute('aria-controls'));
+    await Promise.all((panel?.getAnimations({ subtree: true }) ?? [])
+      .filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity)
+      .map(animation => animation.finished.catch(() => {})));
+  });
   const readingPosition = await page.evaluate(() => Math.min(250, document.documentElement.scrollHeight - window.innerHeight));
   assert.ok(readingPosition > 0, 'The fixture must provide a nonzero reading position to preserve.');
   await page.evaluate(top => window.scrollTo({ top, behavior: 'instant' }), readingPosition);

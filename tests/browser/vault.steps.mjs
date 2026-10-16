@@ -395,7 +395,7 @@ Then('manually locking the vault clears inputs and password unlocking restores t
   await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
   await expect(settings(this.page).getByLabel('Unlock password, or recovery key', { exact: true })).toHaveValue('');
   await expect.poll(() => vaultWorkerCount(this.page)).toBe(0);
-  await expect.poll(async () => (await storage(this.page, 'read')).lockEpoch).toBe(before.lockEpoch + 1);
+  assert.deepEqual(await storage(this.page, 'read'), before, 'Page exit discards access without writing vault data.');
   await unlockUI(this.page);
   await expect(settings(this.page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
 });
@@ -452,7 +452,8 @@ Then('optional idle locking expires before a delayed trusted interaction can ext
   const idle = settings(this.page).getByRole('switch', { name: 'Lock after inactivity', exact: true });
   await expect(idle).not.toBeChecked();
   await expect(settings(this.page).getByRole('textbox', { name: 'Minutes of inactivity value', exact: true })).toHaveValue('10');
-  await idle.check();
+  await idle.click();
+  await expect(idle).toBeChecked();
   const minutes = settings(this.page).getByRole('textbox', { name: 'Minutes of inactivity value', exact: true });
   await expect(minutes).toBeEnabled(); await minutes.fill('1'); await minutes.press('Tab');
   await expect(minutes).toBeEnabled();

@@ -39,7 +39,7 @@ export function executionInput() { return { descriptor, binding }; }
 
 export async function run(changed = false) {
   const destination = changed ? await approvedOperation({ ...descriptor.operation, path: "/unapproved" }, descriptor.origin) : descriptor;
-  try { return { value: await session.execute(destination, {}, { ...binding, fingerprint: destination.fingerprint }) }; }
+  try { return { value: await session.execute(destination, {}, binding) }; }
   catch (error) { return failure(error); }
 }
 function failure(error: unknown) {

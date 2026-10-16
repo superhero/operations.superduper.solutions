@@ -6,8 +6,8 @@ Feature: Keyboard access to encrypted credential management
   Secret management remains reachable without pointer interaction, and cancelling
   unfinished edits clears the actual DOM values without changing the saved vault.
 
-  Scenario: Keyboard users create replace cancel lock and bind a credential
+  Scenario: Keyboard users create copy remove cancel lock and bind a credential
     Given I open Secrets settings using only the keyboard
-    When I create and replace a vault credential using only the keyboard
-    Then keyboard cancellation clears credential and recovery inputs without saving them
-    And keyboard credential selection approves only the displayed destination and sends the replacement value
+    When I create copy remove and save vault credentials using only the keyboard
+    Then keyboard cancellation and locking clear unsaved secrets without saving them
+    And keyboard credential selection sends only the selected saved value without approval
