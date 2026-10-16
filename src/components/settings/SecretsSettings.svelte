@@ -78,7 +78,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const next = await readVaultStatus();
     const items = next.unlocked ? await vaultCall("list", []) : [];
     if (current !== generation || disposed) return;
-    status = next; records = items;
+    status = next; records = items.toSorted((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }) || a.label.localeCompare(b.label));
 
   }
   async function run(message: string, action: () => Promise<void>): Promise<void> {
