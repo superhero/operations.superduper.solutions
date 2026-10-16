@@ -305,9 +305,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <style>
   .schema-settings { display: grid; gap: 12px; min-width: 0; padding: 16px; color: var(--color-catalog-active-foreground); container-type: inline-size; }
   .schema-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
-  .schema-upload-guidance { flex: 1 1 240px; min-width: 0; margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+  .schema-upload-guidance { flex: 1 1 240px; min-width: 0; margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .schema-status { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
-  .schema-toolbar :global(.upload-action) { height: auto; min-height: 44px; max-width: 100%; padding-block: 12px; white-space: normal; text-align: left; background: var(--color-background); color: var(--color-foreground); }
+  .schema-toolbar :global(.upload-action) { height: auto; min-height: 44px; max-width: 100%; padding-block: 12px; white-space: normal; text-align: left; font-weight: 700; background: var(--color-background); color: var(--color-foreground); }
   .schema-list { position: relative; display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
   .schema-drag-area { position: relative; min-width: 0; }
   .schema-drag-surface { position: absolute; inset: 0; z-index: 3; }
