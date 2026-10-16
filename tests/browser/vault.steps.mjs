@@ -240,7 +240,7 @@ async function createUIVault() {
   const cancelRotation = settings(page).getByRole('button', { name: 'Cancel rotation', exact: true });
   await expect(cancelRotation).toHaveAttribute('aria-expanded', 'true');
   await expect(settings(page).locator('.rotation-body')).toBeVisible();
-  await expect(settings(page).getByRole('button', { name: 'Verify all and rotate key', exact: true })).toBeVisible();
+  await expect(settings(page).locator('.rotation-body').getByRole('button', { name: 'Rotate keys', exact: true })).toBeVisible();
   await cancelRotation.click();
   await expect(settings(page).locator('.rotation-body')).toHaveCount(0);
   assert.deepEqual(await storage(page, 'read'), beforeRotation);
@@ -249,7 +249,7 @@ async function createUIVault() {
   await expect(rotationFields.getByRole('combobox')).toHaveCount(0);
   await expect(rotationFields.locator('input[type="password"]')).toHaveCount(1);
   await rotationFields.locator('input[type="password"]').fill(canaries[0]);
-  await rotationFields.getByRole('button', { name: 'Verify all and rotate key', exact: true }).click();
+  await rotationFields.getByRole('button', { name: 'Rotate keys', exact: true }).click();
   const rotatedRecovery = settings(page).locator('pre[aria-label="Generated recovery key"]');
   await expect(rotatedRecovery).toHaveText(/^[A-Za-z0-9+/]{171}=$/);
   const oldRecovery = this.uiRecovery;

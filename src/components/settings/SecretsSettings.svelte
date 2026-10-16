@@ -450,13 +450,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <p class="help">{status.methods.some(method => method.kind !== "recovery") ? "Verify your passwords and passkeys to re-encrypt the vault and generate a new recovery key." : "Add a password or passkey before rotating keys."}</p>
       </div>
         {#if showRotation}
+          {#snippet rotationAction()}<button class="unlock-vault" type="button" aria-label="Rotate keys" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}><MaterialIcon name="lock_reset" size={20} /></button>{/snippet}
           <div id={`${createFormId}-rotation`} class="rotation-body" inert={!showRotation}
             transition:slide={{ duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240, easing: cubicInOut }}>
           {#each status.methods.filter(method => method.kind !== "recovery") as method, index (method.id)}
             <VaultAuthentication bind:this={rotationAuthentication[method.id]} status={{ ...status, methods: [method] }} disabled={busy} label={`Verify ${methodNames[method.kind].toLowerCase()} ${index + 1}`}
+              action={index === status.methods.filter(item => item.kind !== "recovery").length - 1 ? rotationAction : undefined}
               inputLabel={method.kind === "password" ? `Current password${status.methods.filter(item => item.kind === "password").length > 1 ? ` ${status.methods.filter(item => item.kind === "password").findIndex(item => item.id === method.id) + 1}` : ""}` : undefined} />
           {/each}
-          <div class="actions"><button type="button" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}>Verify all and rotate key</button></div>
           </div>
         {/if}
     </div>

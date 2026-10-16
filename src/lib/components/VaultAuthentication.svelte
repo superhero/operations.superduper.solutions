@@ -92,6 +92,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <input type="hidden" name="username" autocomplete="username" value="Operations vault" />
     {/if}
     <label for={`${id}-secret`}>{inputLabel ?? `${label} ${method.kind === "password" ? "password" : "recovery key"}`}</label>
+    <div class={action ? "unlock-field" : "authentication-input"}>
     {#key methodId}
     <input bind:this={secretInput} id={`${id}-secret`} type="password" data-vault-sensitive spellcheck="false" autocapitalize="off"
       name={method.kind === "password" ? "vault-password" : "vault-recovery-key"}
@@ -99,8 +100,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       data-1p-ignore={method.kind === "recovery" ? true : undefined}
       data-lpignore={method.kind === "recovery" ? "true" : undefined} {disabled} />
     {/key}
+    {@render action?.()}
+    </div>
   {:else if method}
     <p>Your authenticator will ask you to verify this action.</p>
+    {@render action?.()}
   {:else}
     <p>No unlock method is available.</p>
   {/if}
@@ -109,6 +113,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .vault-authentication { display: grid; gap: 8px; min-width: 0; --field-background: var(--color-background); --field-foreground: var(--color-foreground); }
+  .authentication-input { display: contents; }
   .unlock-field { display: flex; min-width: 0; border-radius: 4px; background: var(--color-background); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
   .unlock-field:focus-within, .unlock-field:hover:has(:enabled) { outline-color: var(--color-ring); }
   .unlock-field > input { flex: 1; width: 0; border-radius: 4px 0 0 4px; outline: none; }
