@@ -465,12 +465,14 @@ Then('optional idle locking expires before a delayed trusted interaction can ext
 });
 
 Then('a downloaded vault backup restores with recovery in a fresh application context', async function () {
-  await settings(this.page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
+  await this.page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+  await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
   const downloadPromise = this.page.waitForEvent('download');
   await settings(this.page).getByRole('button', { name: 'Export vault', exact: true }).click();
   const download = await downloadPromise, stream = await download.createReadStream();
   const chunks = []; for await (const chunk of stream) chunks.push(chunk);
   const buffer = Buffer.concat(chunks); noCanaries(buffer.toString('utf8'));
+  await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
   const context = await this.browser.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
   const page = await context.newPage();
   try {

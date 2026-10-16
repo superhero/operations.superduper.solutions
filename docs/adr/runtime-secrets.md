@@ -72,7 +72,9 @@ and changes use durable origin-wide counters as well as tab notifications.
 An already dispatched API request may have taken effect; cancellation does not
 undo it and never causes automatic resubmission.
 
-Encrypted export protects against storage loss. A separately saved recovery key
+Encrypted export protects against storage loss. Export copies encrypted storage
+without requiring a password or unlocking the vault; importing still requires
+a valid unlock method. A separately saved recovery key
 protects against a forgotten password. Losing every valid unlock method makes
 the vault unrecoverable, including its encrypted exports. Neither browser storage
 nor a synced passkey synchronizes the vault to another origin or device. Passkeys

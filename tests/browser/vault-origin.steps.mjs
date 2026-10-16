@@ -52,9 +52,6 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       const enrolled = (await cdp.send('WebAuthn.getCredentials', { authenticatorId })).credentials;
       assert.equal(enrolled.length, 1); assert.equal(enrolled[0].rpId, 'localhost');
 
-      await panel(page).getByRole('combobox', { name: 'Confirm action method', exact: true }).click();
-      await page.getByRole('option', { name: 'Password', exact: true }).click();
-      await panel(page).getByLabel('Confirm action password', { exact: true }).fill(password);
       const downloadEvent = page.waitForEvent('download');
       await panel(page).getByRole('button', { name: 'Export vault', exact: true }).click();
       const stream = await (await downloadEvent).createReadStream(), chunks = [];

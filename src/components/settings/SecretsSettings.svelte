@@ -252,7 +252,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     setTimeout(() => URL.revokeObjectURL(url), 0);
   }
   async function exportVault(): Promise<void> {
-    const content = await fresh(proof => vaultCall("backup", [proof]));
+    const content = await vaultCall("backup", []);
     downloadVault(content);
     notice = "Encrypted export downloaded. Its unlock methods are those saved in that export.";
   }
@@ -386,7 +386,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <VaultAuthentication bind:this={authentication} {status} disabled={busy} label={status.unlocked ? "Confirm action" : "Unlock"}>
         {#snippet action()}{#if !status.unlocked}<button class="unlock-vault" type="submit" aria-label="Unlock vault" disabled={busy}><MaterialIcon name="passkey" size={20} /></button>{/if}{/snippet}
       </VaultAuthentication>
-      {#if status.unlocked}<p class="help">Enter fresh authentication before each credential, destination, unlock-method or export change below.</p>
+      {#if status.unlocked}<p class="help">Authenticate here before changing credentials, destination approvals or removing unlock methods.</p>
       {/if}
     </form>
   {/if}
@@ -530,10 +530,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
   {/if}
 
-  {#if ready && status.exists && status.unlocked}
+  {#if ready && status.exists}
     <div class="card">
       <div class="vault-export-row">
-        <button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}>Export vault<MaterialIcon name="download" size={18} /></button>
+        <button type="button" disabled={busy} onclick={() => run("", exportVault)}>Export vault<MaterialIcon name="download" size={18} /></button>
         <p class="help">Exported vault data remains encrypted at rest and during transfer.</p>
       </div>
     </div>

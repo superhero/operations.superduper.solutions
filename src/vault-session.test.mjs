@@ -579,3 +579,23 @@ Then('automatic vault unlocking tries matching saved methods and retains long pa
   await assert.rejects(session.unlock({ methodId: 'auto', secret: randomBase64(32) }), code('AUTHENTICATION'));
   assert.equal((await session.status()).unlocked, false);
 });
+
+Then('a locked vault exports its ciphertext without unlocking or changing storage', kdfStep, async () => {
+  const fixture = await populated(), { session, storage } = fixture;
+  session.lock();
+  const before = clone(storage.state), writes = storage.writes;
+  const exported = await session.backup();
+  assert.deepEqual(JSON.parse(exported), before.snapshot);
+  assert.ok(!exported.includes('SYNTHETIC-PRIVATE-TOKEN'));
+  assert.ok(!exported.includes('Private account'));
+  assert.equal((await session.status()).unlocked, false);
+  assert.deepEqual(storage.state, before);
+  assert.equal(storage.writes, writes);
+  await assert.rejects(session.backup(undefined, true), code('AUTHENTICATION'));
+  const restored = new VaultSession(new MemoryStorage());
+  await restored.restore(exported, fixture.proof);
+  assert.equal((await restored.list())[0].id, fixture.id);
+  const absentStorage = new MemoryStorage(), absent = new VaultSession(absentStorage);
+  await assert.rejects(absent.backup(), code('LOCKED'));
+  assert.equal(absentStorage.writes, 0);
+});

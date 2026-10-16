@@ -64,3 +64,6 @@ Feature: Browser vault session lifecycle
 
   Scenario: Unlock input selects its method automatically
     Then automatic vault unlocking tries matching saved methods and retains long passwords
+
+  Scenario: Encrypted export needs no unlock proof
+    Then a locked vault exports its ciphertext without unlocking or changing storage

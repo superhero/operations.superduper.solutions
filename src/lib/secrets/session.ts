@@ -268,8 +268,8 @@ export class VaultSession {
     });
   }
 
-  async backup(proof: UnlockProof, forReplacement = false): Promise<string> {
-    if (!forReplacement) {
+  async backup(proof?: UnlockProof, forReplacement = false): Promise<string> {
+    if (proof && !forReplacement) {
       await this.fresh(proof);
       return canonicalJSON(this.state!.snapshot!);
     }
@@ -277,7 +277,8 @@ export class VaultSession {
     const state = await this.storage.read();
     if (!state.snapshot) throw new VaultError("LOCKED");
     const snapshot = validateSnapshot(state.snapshot);
-    await this.authenticate(snapshot, proof);
+    if (forReplacement && !proof) throw new VaultError("AUTHENTICATION");
+    if (proof) await this.authenticate(snapshot, proof);
     this.guard(generation);
     return canonicalJSON(snapshot);
   }
