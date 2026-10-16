@@ -267,6 +267,1557 @@ Expect the Quit button badge palette and the unified server description. Trigger
 
 ```
 
+<!-- changelog-commit:f5549b05e2926980b0a72066792448e03685105d -->
+### Commit [`f5549b0`](https://github.com/superhero/operations.superduper.solutions/commit/f5549b05e2926980b0a72066792448e03685105d)
+
+```text
+style(logs): add dashed error history dividers
+
+```
+
+<!-- changelog-commit:a348c2108a31f451c14229e551aaaf9cf61555a6 -->
+### Commit [`a348c21`](https://github.com/superhero/operations.superduper.solutions/commit/a348c2108a31f451c14229e551aaaf9cf61555a6)
+
+```text
+style(logs): show error origin in collapsed rows
+
+```
+
+<!-- changelog-commit:119770426fc27ebd67d25c97547eab62cfeeb861 -->
+### Commit [`1197704`](https://github.com/superhero/operations.superduper.solutions/commit/119770426fc27ebd67d25c97547eab62cfeeb861)
+
+```text
+style(logs): remove obsolete header selector
+
+```
+
+<!-- changelog-commit:a1be3de0263ec31b00264e2cecd1d1a9f37c58d1 -->
+### Commit [`a1be3de`](https://github.com/superhero/operations.superduper.solutions/commit/a1be3de0263ec31b00264e2cecd1d1a9f37c58d1)
+
+```text
+fix(search): toggle evaluation details from the search icon
+
+Replace the details strip with Manage Search when the saved Developer
+preference is enabled. Keep the existing report below Search, disable the
+icon until an evaluation is available, and preserve the shared focus ring.
+
+```
+
+<!-- changelog-commit:8666419e686ca19229f16900617555ea9e5f19e5 -->
+### Commit [`8666419`](https://github.com/superhero/operations.superduper.solutions/commit/8666419e686ca19229f16900617555ea9e5f19e5)
+
+```text
+fix(search): match icon and input theme transitions
+
+```
+
+<!-- changelog-commit:ae2bb3a05b0204da4b520be711528533c403d8ad -->
+### Commit [`ae2bb3a`](https://github.com/superhero/operations.superduper.solutions/commit/ae2bb3a05b0204da4b520be711528533c403d8ad)
+
+```text
+fix(reports): replace prompt block with leading arrow divider
+
+```
+
+<!-- changelog-commit:89435e7b8813090d6cb2076ab2cefb9af5538880 -->
+### Commit [`89435e7`](https://github.com/superhero/operations.superduper.solutions/commit/89435e7b8813090d6cb2076ab2cefb9af5538880)
+
+```text
+fix(reports): balance outer divider spacing
+
+```
+
+<!-- changelog-commit:04835abc704121a595076e345696b36775dae197 -->
+### Commit [`04835ab`](https://github.com/superhero/operations.superduper.solutions/commit/04835abc704121a595076e345696b36775dae197)
+
+```text
+fix(reports): soften the top divider spacing
+
+```
+
+<!-- changelog-commit:ca4dc8622af827f703b9c452cd7c4b3700d9f146 -->
+### Commit [`ca4dc86`](https://github.com/superhero/operations.superduper.solutions/commit/ca4dc8622af827f703b9c452cd7c4b3700d9f146)
+
+```text
+style(reports): progress divider symbols through three stages
+
+```
+
+<!-- changelog-commit:2cedfe090f3326b96b50c4e8080a1a40fbb9c5ca -->
+### Commit [`2cedfe0`](https://github.com/superhero/operations.superduper.solutions/commit/2cedfe090f3326b96b50c4e8080a1a40fbb9c5ca)
+
+```text
+style(navigation): add a divider above saved workflows
+
+```
+
+<!-- changelog-commit:a7a2a4017284d48470b13260e73b9d29631a0afb -->
+### Commit [`a7a2a40`](https://github.com/superhero/operations.superduper.solutions/commit/a7a2a4017284d48470b13260e73b9d29631a0afb)
+
+```text
+style(navigation): use unfold less double for workflow divider
+
+```
+
+<!-- changelog-commit:cf702e46676389f6ad83bafe701629f222a4ba91 -->
+### Commit [`cf702e4`](https://github.com/superhero/operations.superduper.solutions/commit/cf702e46676389f6ad83bafe701629f222a4ba91)
+
+```text
+style(navigation): use go to line for workflow divider
+
+```
+
+<!-- changelog-commit:e09f99cd75413e75cda6bc8997736466d80fa1f3 -->
+### Commit [`e09f99c`](https://github.com/superhero/operations.superduper.solutions/commit/e09f99cd75413e75cda6bc8997736466d80fa1f3)
+
+```text
+style(navigation): use more horizontals for workflow divider
+
+```
+
+<!-- changelog-commit:81bd151eeeb5d78f730438bd44ca9e893c453160 -->
+### Commit [`81bd151`](https://github.com/superhero/operations.superduper.solutions/commit/81bd151eeeb5d78f730438bd44ca9e893c453160)
+
+```text
+style(navigation): use page control for workflow divider
+
+```
+
+<!-- changelog-commit:418c8b87323d788ebdbdda3e1bfc61e1035c08e6 -->
+### Commit [`418c8b8`](https://github.com/superhero/operations.superduper.solutions/commit/418c8b87323d788ebdbdda3e1bfc61e1035c08e6)
+
+```text
+fix(ui): restore latest layout on error history branch
+
+Bring the newer search and workflow layout into the error-history branch, which was started from an older develop revision. Preserve origin-only headers and dashed dividers while retaining deduplicated diagnostics, codes and cause chains.
+
+```
+
+<!-- changelog-commit:099b1160c1ceaa66801d5c34d38356360b38fc00 -->
+### Commit [`099b116`](https://github.com/superhero/operations.superduper.solutions/commit/099b1160c1ceaa66801d5c34d38356360b38fc00)
+
+```text
+fix(logs): animate error details and remove excess spacing
+
+Use the shared disclosure transition for error entries, retaining content
+until closing finishes and respecting reduced motion. Remove margins that
+stacked with the header and bottom padding.
+
+```
+
+<!-- changelog-commit:4ecbbacbe59121314897edd33611d3f558a3c6e1 -->
+### Commit [`4ecbbac`](https://github.com/superhero/operations.superduper.solutions/commit/4ecbbacbe59121314897edd33611d3f558a3c6e1)
+
+```text
+fix(logs): use arrow icon in error origin headers
+
+```
+
+<!-- changelog-commit:772bdad426726a4c7d9e08676b5fdea7e9030552 -->
+### Commit [`772bdad`](https://github.com/superhero/operations.superduper.solutions/commit/772bdad426726a4c7d9e08676b5fdea7e9030552)
+
+```text
+fix(logs): enlarge error disclosure arrow
+
+```
+
+<!-- changelog-commit:cd3c1cfb6e7afd09f42708ec218cc93307cd9d86 -->
+### Commit [`cd3c1cf`](https://github.com/superhero/operations.superduper.solutions/commit/cd3c1cfb6e7afd09f42708ec218cc93307cd9d86)
+
+```text
+fix(settings): keep open section headers visible while scrolling
+
+```
+
+<!-- changelog-commit:5ed3d7d29c53f36de8b45423906b753d979f96ed -->
+### Commit [`5ed3d7d`](https://github.com/superhero/operations.superduper.solutions/commit/5ed3d7d29c53f36de8b45423906b753d979f96ed)
+
+```text
+style(logs): reduce disclosure arrows to 18px
+
+```
+
+<!-- changelog-commit:2e600c5a46d9b0d1d0416f9da4794503c2563ce7 -->
+### Commit [`2e600c5`](https://github.com/superhero/operations.superduper.solutions/commit/2e600c5a46d9b0d1d0416f9da4794503c2563ce7)
+
+```text
+style(schemas): refine upload button and guidance typography
+
+```
+
+<!-- changelog-commit:66b04f1ac4adfd0c6734e9085b37b739caa11b3e -->
+### Commit [`66b04f1`](https://github.com/superhero/operations.superduper.solutions/commit/66b04f1ac4adfd0c6734e9085b37b739caa11b3e)
+
+```text
+style(schemas): reduce schema view button text
+
+```
+
+<!-- changelog-commit:2f8b97ad0da99d70de3b69bdff724420b85c34fb -->
+### Commit [`2f8b97a`](https://github.com/superhero/operations.superduper.solutions/commit/2f8b97ad0da99d70de3b69bdff724420b85c34fb)
+
+```text
+style(schemas): place disclosure arrow before copy icon
+
+```
+
+<!-- changelog-commit:ba7ca979e533192393b80d43d0c47b2d29d703de -->
+### Commit [`ba7ca97`](https://github.com/superhero/operations.superduper.solutions/commit/ba7ca979e533192393b80d43d0c47b2d29d703de)
+
+```text
+style(schemas): align disclosure arrow padding with error items
+
+```
+
+<!-- changelog-commit:99981a65815c1761ab5d2bfc58ee5ccb96351d03 -->
+### Commit [`99981a6`](https://github.com/superhero/operations.superduper.solutions/commit/99981a65815c1761ab5d2bfc58ee5ccb96351d03)
+
+```text
+style(schemas): match disclosure arrow size to error items
+
+```
+
+<!-- changelog-commit:04272fd65dec154cddb7dc6b075f0b1318bddfa6 -->
+### Commit [`04272fd`](https://github.com/superhero/operations.superduper.solutions/commit/04272fd65dec154cddb7dc6b075f0b1318bddfa6)
+
+```text
+style(schemas): match copy icon size to disclosure arrow
+
+```
+
+<!-- changelog-commit:6dde2a703478ef96ea7c27968eea662039c7a436 -->
+### Commit [`6dde2a7`](https://github.com/superhero/operations.superduper.solutions/commit/6dde2a703478ef96ea7c27968eea662039c7a436)
+
+```text
+style(schemas): keep inactive wrap control transparent
+
+```
+
+<!-- changelog-commit:4e2845dc0640e8ef641e0fdb39a01b45b7555205 -->
+### Commit [`4e2845d`](https://github.com/superhero/operations.superduper.solutions/commit/4e2845dc0640e8ef641e0fdb39a01b45b7555205)
+
+```text
+style(schemas): match wrap button hover to copy action
+
+```
+
+<!-- changelog-commit:14db9b16961e6ee63357b33260dac6d7471556e1 -->
+### Commit [`14db9b1`](https://github.com/superhero/operations.superduper.solutions/commit/14db9b16961e6ee63357b33260dac6d7471556e1)
+
+```text
+fix(schemas): keep wrap icon color steady while opening
+
+```
+
+<!-- changelog-commit:b9be150ddef8d19206554f8279c3361935d80f0c -->
+### Commit [`b9be150`](https://github.com/superhero/operations.superduper.solutions/commit/b9be150ddef8d19206554f8279c3361935d80f0c)
+
+```text
+style(schemas): scale buttons without hover color changes
+
+```
+
+<!-- changelog-commit:458b8cc363019a746b1635866b0276d588dfa66b -->
+### Commit [`458b8cc`](https://github.com/superhero/operations.superduper.solutions/commit/458b8cc363019a746b1635866b0276d588dfa66b)
+
+```text
+feat(schemas): slide disabled-schema guidance open and closed
+
+```
+
+<!-- changelog-commit:c7137fe92c6f90fbd8d3bd5d567f373feb8da505 -->
+### Commit [`c7137fe`](https://github.com/superhero/operations.superduper.solutions/commit/c7137fe92c6f90fbd8d3bd5d567f373feb8da505)
+
+```text
+style(schemas): scale only the enable switch on hover
+
+```
+
+<!-- changelog-commit:59c3543dac69116da46dc7e7f9fe68e47dd80d5a -->
+### Commit [`59c3543`](https://github.com/superhero/operations.superduper.solutions/commit/59c3543dac69116da46dc7e7f9fe68e47dd80d5a)
+
+```text
+style(schemas): scale schema disclosure on hover
+
+```
+
+<!-- changelog-commit:b89bdc4c7a63e69de7ed6c661f5e645dcfc2cce2 -->
+### Commit [`b89bdc4`](https://github.com/superhero/operations.superduper.solutions/commit/b89bdc4c7a63e69de7ed6c661f5e645dcfc2cce2)
+
+```text
+fix(settings): stack schema header below active section header
+
+Measure the active settings heading as its layout changes and include
+that height in the nested schema heading offset. This keeps both sticky
+headings visible when viewport changes wrap their text.
+
+```
+
+<!-- changelog-commit:2759d02c2b3b15cbe8f4b456daed925041d9d537 -->
+### Commit [`2759d02`](https://github.com/superhero/operations.superduper.solutions/commit/2759d02c2b3b15cbe8f4b456daed925041d9d537)
+
+```text
+refactor(settings): rename workflow defaults section to Application
+
+Present UI defaults under Application and retain alphabetical section
+ordering. Update browser selectors to the new accessible section name.
+
+```
+
+<!-- changelog-commit:0640fe2560061aa3ae16d7ef20d39199c5d6b228 -->
+### Commit [`0640fe2`](https://github.com/superhero/operations.superduper.solutions/commit/0640fe2560061aa3ae16d7ef20d39199c5d6b228)
+
+```text
+feat(settings): add persistent application tooltip preference
+
+Allow application tooltips to be disabled immediately and restore the
+saved preference at startup. Keep tooltips enabled for existing users
+without a saved choice, and let shared hint controls inherit the provider
+preference without disabling their underlying actions.
+
+```
+
+<!-- changelog-commit:ad776aee88d803a98fc95b41bd22846a2345964e -->
+### Commit [`ad776ae`](https://github.com/superhero/operations.superduper.solutions/commit/ad776aee88d803a98fc95b41bd22846a2345964e)
+
+```text
+style(settings): scale sliders and switch controls on hover
+
+```
+
+<!-- changelog-commit:b77b8c167ef4b6b6741c8c5b18610d18b7b735af -->
+### Commit [`b77b8c1`](https://github.com/superhero/operations.superduper.solutions/commit/b77b8c167ef4b6b6741c8c5b18610d18b7b735af)
+
+```text
+style(settings): alphabetize Application controls
+
+Render Application groups in name order while keeping switches and their
+related controls together. Alphabetize the dash controls within their card
+and preserve the same DOM order for keyboard navigation.
+
+```
+
+<!-- changelog-commit:863ddbe5d3c6fa0aa71d798d0891d768117ceb0c -->
+### Commit [`863ddbe`](https://github.com/superhero/operations.superduper.solutions/commit/863ddbe5d3c6fa0aa71d798d0891d768117ceb0c)
+
+```text
+style(forms): show focus outlines when hovering inputs
+
+Reuse field focus outlines for hover, including joined fields, search,
+schema names, numeric controls and custom checkbox/radio wrappers. Keep
+disabled fields excluded and preserve existing outline sizes and offsets.
+
+```
+
+<!-- changelog-commit:d79523f59870e57addb4338cbbdee04818517962 -->
+### Commit [`d79523f`](https://github.com/superhero/operations.superduper.solutions/commit/d79523f59870e57addb4338cbbdee04818517962)
+
+```text
+style(settings): join units to inputs as right-hand caps
+
+```
+
+<!-- changelog-commit:a54f44e0c2e09b499cdd8481fb2ab3664f857194 -->
+### Commit [`a54f44e`](https://github.com/superhero/operations.superduper.solutions/commit/a54f44e0c2e09b499cdd8481fb2ab3664f857194)
+
+```text
+style(settings): slide sections without color fading
+
+```
+
+<!-- changelog-commit:a33cddb872646a72548f2cc801a72bbd83f24f33 -->
+### Commit [`a33cddb`](https://github.com/superhero/operations.superduper.solutions/commit/a33cddb872646a72548f2cc801a72bbd83f24f33)
+
+```text
+style(settings): match unit caps to input colors
+
+```
+
+<!-- changelog-commit:96aba64eb2726e563535a7d2296c39f0577e6367 -->
+### Commit [`96aba64`](https://github.com/superhero/operations.superduper.solutions/commit/96aba64eb2726e563535a7d2296c39f0577e6367)
+
+```text
+style(settings): outline inputs together with their unit caps
+
+```
+
+<!-- changelog-commit:049a1109402722ac20859c9f70e003a7436dbc84 -->
+### Commit [`049a110`](https://github.com/superhero/operations.superduper.solutions/commit/049a1109402722ac20859c9f70e003a7436dbc84)
+
+```text
+style(settings): restore section color transitions
+
+```
+
+<!-- changelog-commit:5513423830b663e12c66da618cdd9a98f17e3cc9 -->
+### Commit [`5513423`](https://github.com/superhero/operations.superduper.solutions/commit/5513423830b663e12c66da618cdd9a98f17e3cc9)
+
+```text
+fix(settings): synchronize header and section background transitions
+
+```
+
+<!-- changelog-commit:6b1d2da8190ce1134369c081f4b8c44640f76ccc -->
+### Commit [`6b1d2da`](https://github.com/superhero/operations.superduper.solutions/commit/6b1d2da8190ce1134369c081f4b8c44640f76ccc)
+
+```text
+style(disclosures): ease slides in and out
+
+```
+
+<!-- changelog-commit:978d7aa2320cc127007fdbb0d4e066227885466c -->
+### Commit [`978d7aa`](https://github.com/superhero/operations.superduper.solutions/commit/978d7aa2320cc127007fdbb0d4e066227885466c)
+
+```text
+docs(adr): define startup readiness and preparation boundaries
+
+```
+
+<!-- changelog-commit:82318d344aa9dbf74b49c3d4a62f210cc202b3d8 -->
+### Commit [`82318d3`](https://github.com/superhero/operations.superduper.solutions/commit/82318d344aa9dbf74b49c3d4a62f210cc202b3d8)
+
+```text
+style(secrets): present vault status in a matching information card
+
+```
+
+<!-- changelog-commit:9deb7ba811bfb729c28ba2bf467b1c8dee6c20e4 -->
+### Commit [`9deb7ba`](https://github.com/superhero/operations.superduper.solutions/commit/9deb7ba811bfb729c28ba2bf467b1c8dee6c20e4)
+
+```text
+style(secrets): separate recovery warning into its own pane
+
+```
+
+<!-- changelog-commit:b9317af8f24273b36dd6d1f9f7e77e06b05dfc81 -->
+### Commit [`b9317af`](https://github.com/superhero/operations.superduper.solutions/commit/b9317af8f24273b36dd6d1f9f7e77e06b05dfc81)
+
+```text
+docs(secrets): clarify vault storage and backup guidance
+
+```
+
+<!-- changelog-commit:3ffa30b92baa51dcac64677352fa665becd04ad4 -->
+### Commit [`3ffa30b`](https://github.com/superhero/operations.superduper.solutions/commit/3ffa30b92baa51dcac64677352fa665becd04ad4)
+
+```text
+fix(secrets): retain vault access when switching tabs
+
+Keep the vault worker and pending operations alive across visibility
+changes. Page exit and reload still discard access; manual locks and
+optional inactivity deadlines remain effective. Update lifecycle coverage
+and the UI and ADR wording to reflect this policy.
+
+```
+
+<!-- changelog-commit:1b39347ed83b18ec735f87f403fbf7411378f9f7 -->
+### Commit [`1b39347`](https://github.com/superhero/operations.superduper.solutions/commit/1b39347ed83b18ec735f87f403fbf7411378f9f7)
+
+```text
+docs(secrets): clarify empty vault status wording
+
+```
+
+<!-- changelog-commit:a32af2b275c60fc1858df5a9db88b5605da6035f -->
+### Commit [`a32af2b`](https://github.com/superhero/operations.superduper.solutions/commit/a32af2b275c60fc1858df5a9db88b5605da6035f)
+
+```text
+test(secrets): align remaining empty vault status assertions
+
+```
+
+<!-- changelog-commit:2c386e86125a2ae879f852ea524c05912626a30c -->
+### Commit [`2c386e8`](https://github.com/superhero/operations.superduper.solutions/commit/2c386e86125a2ae879f852ea524c05912626a30c)
+
+```text
+docs(secrets): refine credential storage description
+
+```
+
+<!-- changelog-commit:546dd0943e638045281ff39a75b139d5f2ae528d -->
+### Commit [`546dd09`](https://github.com/superhero/operations.superduper.solutions/commit/546dd0943e638045281ff39a75b139d5f2ae528d)
+
+```text
+docs(secrets): explain the purpose of creating a vault
+
+```
+
+<!-- changelog-commit:edd5525918cb6cc79edcfb442872aba692e8296b -->
+### Commit [`edd5525`](https://github.com/superhero/operations.superduper.solutions/commit/edd5525918cb6cc79edcfb442872aba692e8296b)
+
+```text
+style(secrets): separate storage locking and backup guidance panes
+
+```
+
+<!-- changelog-commit:aa715c73657c9ffe8c56b7163f865db1790ac37b -->
+### Commit [`aa715c7`](https://github.com/superhero/operations.superduper.solutions/commit/aa715c73657c9ffe8c56b7163f865db1790ac37b)
+
+```text
+docs(secrets): separate lost-access and encrypted-backup guidance
+
+```
+
+<!-- changelog-commit:1cd18c6170c5d27a713b318ebd0af39fd390b941 -->
+### Commit [`1cd18c6`](https://github.com/superhero/operations.superduper.solutions/commit/1cd18c6170c5d27a713b318ebd0af39fd390b941)
+
+```text
+docs(secrets): end guidance panes with periods
+
+```
+
+<!-- changelog-commit:c0fef4ccee57c09bbc5c04d34d61d0e19e708900 -->
+### Commit [`c0fef4c`](https://github.com/superhero/operations.superduper.solutions/commit/c0fef4ccee57c09bbc5c04d34d61d0e19e708900)
+
+```text
+docs(secrets): shorten lost unlock methods heading
+
+```
+
+<!-- changelog-commit:76f55f750a826975df82258a5e019a412c578037 -->
+### Commit [`76f55f7`](https://github.com/superhero/operations.superduper.solutions/commit/76f55f750a826975df82258a5e019a412c578037)
+
+```text
+docs(secrets): describe vault persistence as local storage
+
+```
+
+<!-- changelog-commit:43b1b38e089c281a306558029c3af7c7043471be -->
+### Commit [`43b1b38`](https://github.com/superhero/operations.superduper.solutions/commit/43b1b38e089c281a306558029c3af7c7043471be)
+
+```text
+docs(secrets): clarify local browser vault management
+
+```
+
+<!-- changelog-commit:2a440d9690630c87906d8e6b25c3a918c8dbb226 -->
+### Commit [`2a440d9`](https://github.com/superhero/operations.superduper.solutions/commit/2a440d9690630c87906d8e6b25c3a918c8dbb226)
+
+```text
+refactor(secrets): use vault export terminology in the interface
+
+Rename vault backup guidance, download actions and restore labels to
+exports. Align documentation and browser selectors while retaining the
+existing encrypted snapshot format and worker protocol.
+
+```
+
+<!-- changelog-commit:62ca162fe3250ebdc979dc35bcb6810664792ea1 -->
+### Commit [`62ca162`](https://github.com/superhero/operations.superduper.solutions/commit/62ca162fe3250ebdc979dc35bcb6810664792ea1)
+
+```text
+refactor(secrets): describe vault imports and replacements
+
+```
+
+<!-- changelog-commit:5e24b5d0b245f96074af7cf288a8ea3db4e4163f -->
+### Commit [`5e24b5d`](https://github.com/superhero/operations.superduper.solutions/commit/5e24b5d0b245f96074af7cf288a8ea3db4e4163f)
+
+```text
+refactor(secrets): place initial vault import with creation
+
+Show encrypted export management only for an existing vault. Offer the
+initial import beside Create vault and reuse its authentication controls
+outside the creation form so import does not require creation passwords.
+
+```
+
+<!-- changelog-commit:5915138c5e0df34715584f4b639d83e2c544a226 -->
+### Commit [`5915138`](https://github.com/superhero/operations.superduper.solutions/commit/5915138c5e0df34715584f4b639d83e2c544a226)
+
+```text
+style(secrets): align icon-based import and create actions
+
+```
+
+<!-- changelog-commit:13f5722039e47e408c141ee8db4bf16f5eb1c6a7 -->
+### Commit [`13f5722`](https://github.com/superhero/operations.superduper.solutions/commit/13f5722039e47e408c141ee8db4bf16f5eb1c6a7)
+
+```text
+style(secrets): use file-open icon for vault import
+
+```
+
+<!-- changelog-commit:45a6419ea2193e8399680fc6c9db9ea10790fdbb -->
+### Commit [`45a6419`](https://github.com/superhero/operations.superduper.solutions/commit/45a6419ea2193e8399680fc6c9db9ea10790fdbb)
+
+```text
+style(secrets): use upload icon for vault import
+
+```
+
+<!-- changelog-commit:08a5f5e162174b7770d1c6f3a6afb276089cdd88 -->
+### Commit [`08a5f5e`](https://github.com/superhero/operations.superduper.solutions/commit/08a5f5e162174b7770d1c6f3a6afb276089cdd88)
+
+```text
+feat(secrets): allow vault passwords from four characters
+
+Apply the four-character minimum to creation and password enrollment in\nboth the form and worker. Remove the length guidance beneath creation\nfields while retaining matching-password validation and recovery checks.
+
+```
+
+<!-- changelog-commit:5c63cbfee9e37407ceacf1010434645382766af0 -->
+### Commit [`5c63cbf`](https://github.com/superhero/operations.superduper.solutions/commit/5c63cbfee9e37407ceacf1010434645382766af0)
+
+```text
+style(secrets): remove vault creation heading
+
+```
+
+<!-- changelog-commit:cf0ce7bd7466a8940120a697fa72fac0bef71830 -->
+### Commit [`cf0ce7b`](https://github.com/superhero/operations.superduper.solutions/commit/cf0ce7bd7466a8940120a697fa72fac0bef71830)
+
+```text
+feat(secrets): set inactivity with a logarithmic weekly slider
+
+Replace the duration input with a logarithmic slider from one minute to one week and remove the locking heading. Extend persisted preference and session validation to the same limit.
+
+```
+
+<!-- changelog-commit:21e70466fc0dd756acf503c1a30edd4636e39ade -->
+### Commit [`21e7046`](https://github.com/superhero/operations.superduper.solutions/commit/21e70466fc0dd756acf503c1a30edd4636e39ade)
+
+```text
+style(secrets): remove inactivity slider label
+
+```
+
+<!-- changelog-commit:888bdb727f6a3d5170baa4723bba00f06e0ed8f9 -->
+### Commit [`888bdb7`](https://github.com/superhero/operations.superduper.solutions/commit/888bdb727f6a3d5170baa4723bba00f06e0ed8f9)
+
+```text
+fix(secrets): reuse the shared application slider
+
+Use FieldInteger for inactivity with the same unit integration, hover outline and scaling as Application controls. Keep the one-week bound and an accessible label without a visible heading.
+
+```
+
+<!-- changelog-commit:fa581b9ba88f864bd6236035e8b2bcc266e9c866 -->
+### Commit [`fa581b9`](https://github.com/superhero/operations.superduper.solutions/commit/fa581b9ba88f864bd6236035e8b2bcc266e9c866)
+
+```text
+style(secrets): match inactivity toggle to settings switches
+
+Use the same switch dimensions, colors and control-only hover scaling as Application settings. Adapt the idle-lock browser scenario to the switch and shared slider value field.
+
+```
+
+<!-- changelog-commit:6b122ba68b0b48a56b94682cff3a41b92b8e0afc -->
+### Commit [`6b122ba`](https://github.com/superhero/operations.superduper.solutions/commit/6b122ba68b0b48a56b94682cff3a41b92b8e0afc)
+
+```text
+style(secrets): align inactivity controls on one row
+
+```
+
+<!-- changelog-commit:c0635cf82d6bc257bf768ab750fc63eb7520fe2b -->
+### Commit [`c0635cf`](https://github.com/superhero/operations.superduper.solutions/commit/c0635cf82d6bc257bf768ab750fc63eb7520fe2b)
+
+```text
+fix(settings): prevent slider input outline flash on blur
+
+Keep inner slider and value outlines suppressed in every state when their enclosing control owns the focus ring. This avoids a transient default outline on blur while preserving the combined hover and focus outline.
+
+```
+
+<!-- changelog-commit:7fe7a3fd250c02e220ed355dfb792f37d84d0cce -->
+### Commit [`7fe7a3f`](https://github.com/superhero/operations.superduper.solutions/commit/7fe7a3fd250c02e220ed355dfb792f37d84d0cce)
+
+```text
+style(secrets): share one pane for inactivity controls
+
+```
+
+<!-- changelog-commit:248a514b2a70c13adc03cc5d97894b6fd93ac24a -->
+### Commit [`248a514`](https://github.com/superhero/operations.superduper.solutions/commit/248a514b2a70c13adc03cc5d97894b6fd93ac24a)
+
+```text
+fix(secrets): avoid layout shifts when saving idle preferences
+
+Save inactivity preferences independently of vault operations so toggles and slider commits do not insert progress text or cancellation controls. Retain guarded error handling and prevent overlapping preference writes without clearing credential inputs.
+
+```
+
+<!-- changelog-commit:dd590c85c4e50cb7e6a72a31dc6f1356a08c3f10 -->
+### Commit [`dd590c8`](https://github.com/superhero/operations.superduper.solutions/commit/dd590c85c4e50cb7e6a72a31dc6f1356a08c3f10)
+
+```text
+style(secrets): reduce wide slider hover expansion
+
+```
+
+<!-- changelog-commit:0931c1c0349c50399fbd229b83b0053567f95650 -->
+### Commit [`0931c1c`](https://github.com/superhero/operations.superduper.solutions/commit/0931c1c0349c50399fbd229b83b0053567f95650)
+
+```text
+fix(sliders): derive hover scaling from measured dimensions
+
+Centralize hover scaling in FieldInteger and derive each scale factor from its live untransformed dimensions. Sliders expand by eight pixels horizontally and two vertically at every responsive width. Remove per-section percentage overrides and preserve reduced-motion behavior.
+
+```
+
+<!-- changelog-commit:d7df12fa9bf26b2a400a76f9881e707eb089e65a -->
+### Commit [`d7df12f`](https://github.com/superhero/operations.superduper.solutions/commit/d7df12fa9bf26b2a400a76f9881e707eb089e65a)
+
+```text
+style(secrets): scale import and create buttons on hover
+
+```
+
+<!-- changelog-commit:420234b2e8e747e887f596d27f2cea95ccf96a98 -->
+### Commit [`420234b`](https://github.com/superhero/operations.superduper.solutions/commit/420234b2e8e747e887f596d27f2cea95ccf96a98)
+
+```text
+style(secrets): remove idle locking guidance
+
+```
+
+<!-- changelog-commit:56e1cb1e2e40f08b5819fa6f825001f26c19f995 -->
+### Commit [`56e1cb1`](https://github.com/superhero/operations.superduper.solutions/commit/56e1cb1e2e40f08b5819fa6f825001f26c19f995)
+
+```text
+fix(secrets): hide inactivity settings without a vault
+
+```
+
+<!-- changelog-commit:6b128bb2df55e060b3dde86f6cedceaffa5b2a48 -->
+### Commit [`6b128bb`](https://github.com/superhero/operations.superduper.solutions/commit/6b128bb2df55e060b3dde86f6cedceaffa5b2a48)
+
+```text
+style(secrets): remove recovery verification guidance
+
+```
+
+<!-- changelog-commit:cd67ca1df5132d9b8f3a2ce421a3bea49f389f22 -->
+### Commit [`cd67ca1`](https://github.com/superhero/operations.superduper.solutions/commit/cd67ca1df5132d9b8f3a2ce421a3bea49f389f22)
+
+```text
+style(secrets): shorten automatic locking guidance
+
+```
+
+<!-- changelog-commit:fe854110b0ec81e9f90d9296776f97f9b67daf22 -->
+### Commit [`fe85411`](https://github.com/superhero/operations.superduper.solutions/commit/fe854110b0ec81e9f90d9296776f97f9b67daf22)
+
+```text
+style(secrets): clarify vault exports remain encrypted
+
+```
+
+<!-- changelog-commit:854263134a14653a73f089c3049ac426f5930f8c -->
+### Commit [`8542631`](https://github.com/superhero/operations.superduper.solutions/commit/854263134a14653a73f089c3049ac426f5930f8c)
+
+```text
+style(secrets): add icons to vault information panes
+
+```
+
+<!-- changelog-commit:15bc3a3a23d58ef6bfd9cfc55c7e06f3a10d492c -->
+### Commit [`15bc3a3`](https://github.com/superhero/operations.superduper.solutions/commit/15bc3a3a23d58ef6bfd9cfc55c7e06f3a10d492c)
+
+```text
+style(secrets): use regular weight brightness alert icons
+
+```
+
+<!-- changelog-commit:995761d5e1f1381cc2d4c1d4486e90e1de520d40 -->
+### Commit [`995761d`](https://github.com/superhero/operations.superduper.solutions/commit/995761d5e1f1381cc2d4c1d4486e90e1de520d40)
+
+```text
+style(secrets): add alert icon to vault status
+
+```
+
+<!-- changelog-commit:fdb28a6aa98dbb10545a0fae98f165c6f2d13012 -->
+### Commit [`fdb28a6`](https://github.com/superhero/operations.superduper.solutions/commit/fdb28a6aa98dbb10545a0fae98f165c6f2d13012)
+
+```text
+style(secrets): consolidate encrypted export guidance
+
+```
+
+<!-- changelog-commit:238d267cdb62c27fd16dda54c9ca5837dc956758 -->
+### Commit [`238d267`](https://github.com/superhero/operations.superduper.solutions/commit/238d267cdb62c27fd16dda54c9ca5837dc956758)
+
+```text
+style(secrets): retain encrypted exports heading
+
+```
+
+<!-- changelog-commit:394efac80bf48ae4614916712dfbad529dafae4a -->
+### Commit [`394efac`](https://github.com/superhero/operations.superduper.solutions/commit/394efac80bf48ae4614916712dfbad529dafae4a)
+
+```text
+style(secrets): clarify encrypted credential storage
+
+```
+
+<!-- changelog-commit:7e0cede60d85543e89e23fb796c6adc879ca317e -->
+### Commit [`7e0cede`](https://github.com/superhero/operations.superduper.solutions/commit/7e0cede60d85543e89e23fb796c6adc879ca317e)
+
+```text
+style(secrets): describe encrypted vault storage generally
+
+```
+
+<!-- changelog-commit:4e08fac9d7b38d50617b8a46e85ea7ad295ca4c2 -->
+### Commit [`4e08fac`](https://github.com/superhero/operations.superduper.solutions/commit/4e08fac9d7b38d50617b8a46e85ea7ad295ca4c2)
+
+```text
+style(secrets): clarify data in the vault is encrypted
+
+```
+
+<!-- changelog-commit:13351b55de9b1bfcad48bb19f027e9b169eab5df -->
+### Commit [`13351b5`](https://github.com/superhero/operations.superduper.solutions/commit/13351b55de9b1bfcad48bb19f027e9b169eab5df)
+
+```text
+style(secrets): restore vault storage wording
+
+```
+
+<!-- changelog-commit:5cb91ca87859a96fea212143d79b3a646f685f0b -->
+### Commit [`5cb91ca`](https://github.com/superhero/operations.superduper.solutions/commit/5cb91ca87859a96fea212143d79b3a646f685f0b)
+
+```text
+style(secrets): refine local vault data description
+
+```
+
+<!-- changelog-commit:da5369889c0efe20f1c8010b98803f3fa4a74c5b -->
+### Commit [`da53698`](https://github.com/superhero/operations.superduper.solutions/commit/da5369889c0efe20f1c8010b98803f3fa4a74c5b)
+
+```text
+feat(secrets): allow vault passwords from three characters
+
+Apply the three-character minimum to vault creation and password enrollment in both the form and worker. Update the focused recovery-confirmation scenario to accept three characters and reject shorter passwords.
+
+```
+
+<!-- changelog-commit:1240db52842245ca06f9e65583310c74d674b5b1 -->
+### Commit [`1240db5`](https://github.com/superhero/operations.superduper.solutions/commit/1240db52842245ca06f9e65583310c74d674b5b1)
+
+```text
+feat(secrets): simplify recovery saving and lengthen new keys
+
+Remove the recovery re-entry requirement and save through a right-aligned download action. Move guidance below the key and remove the pane heading and cancellation button. Generate 128-byte recovery keys while accepting legacy 32-byte keys. Update focused crypto and browser scenarios for direct saving and downloads.
+
+```
+
+<!-- changelog-commit:b21e1b0f46659d66fd1fc470e14ef0f2bdc1fe09 -->
+### Commit [`b21e1b0`](https://github.com/superhero/operations.superduper.solutions/commit/b21e1b0f46659d66fd1fc470e14ef0f2bdc1fe09)
+
+```text
+feat(secrets): display recovery key with a copy action
+
+Render the recovery key in a wrapping pre block with a Content Copy action in its upper-right corner. Clear its DOM text when the recovery pane closes and adapt focused browser coverage to verify copying and export/import with the new presentation.
+
+```
+
+<!-- changelog-commit:4832a41ab11ec4df27b46126ea13f98a6b93129e -->
+### Commit [`4832a41`](https://github.com/superhero/operations.superduper.solutions/commit/4832a41ab11ec4df27b46126ea13f98a6b93129e)
+
+```text
+style(secrets): add Copy tooltip to recovery key action
+
+```
+
+<!-- changelog-commit:6110750bbc4108de1ac8a533b951b1dee4e9d423 -->
+### Commit [`6110750`](https://github.com/superhero/operations.superduper.solutions/commit/6110750bbc4108de1ac8a533b951b1dee4e9d423)
+
+```text
+style(secrets): tighten recovery key spacing
+
+```
+
+<!-- changelog-commit:375cba7575d9e83974aaf1440e4257734b4f9e5c -->
+### Commit [`375cba7`](https://github.com/superhero/operations.superduper.solutions/commit/375cba7575d9e83974aaf1440e4257734b4f9e5c)
+
+```text
+style(secrets): remove unlocked status and manual lock button
+
+Hide the status pane while the vault is unlocked and remove its manual lock action. Retain locked and absent-vault guidance and cancellation for pending locked operations. Adapt browser checks to management readiness and page-exit locking.
+
+```
+
+<!-- changelog-commit:023cc990ec04259e53565bbe7fcf70da59fd3b1f -->
+### Commit [`023cc99`](https://github.com/superhero/operations.superduper.solutions/commit/023cc990ec04259e53565bbe7fcf70da59fd3b1f)
+
+```text
+feat(secrets): store new values without choosing a credential type
+
+Remove the type selector and type badges. New generic secrets use the approved OpenAPI security scheme for request formatting; legacy typed entries retain their compatibility restrictions. Preserve exact destination grants and cover generic persistence, both header formats and refusal without approval.
+
+```
+
+<!-- changelog-commit:7167ad76a2119a07554dd6a78f384da92af36072 -->
+### Commit [`7167ad7`](https://github.com/superhero/operations.superduper.solutions/commit/7167ad76a2119a07554dd6a78f384da92af36072)
+
+```text
+fix(secrets): separate recovery keys from password saving
+
+Give vault password forms an explicit non-secret username instead of leaving password managers to infer one. Keep recovery saving outside form submission, distinguish recovery authentication inputs and recreate them when switching methods. Verify the username metadata, recovery isolation and vault export/import in a focused browser scenario.
+
+```
+
+<!-- changelog-commit:623849653acd28474e40698e4d3ac8edde23a96d -->
+### Commit [`6238496`](https://github.com/superhero/operations.superduper.solutions/commit/623849653acd28474e40698e4d3ac8edde23a96d)
+
+```text
+style(secrets): remove locked vault status pane
+
+Show the introductory status pane only before a vault exists. Update browser assertions to recognize the unlock form instead of the removed locked status.
+
+```
+
+<!-- changelog-commit:f0e2643d33a5047e628db1d5e37aa5a792a17c6e -->
+### Commit [`f0e2643`](https://github.com/superhero/operations.superduper.solutions/commit/f0e2643d33a5047e628db1d5e37aa5a792a17c6e)
+
+```text
+style(secrets): place vault replacement guidance beside its action
+
+Remove the exports pane heading and label existing-vault imports as Replace vault. Align the explanation to the right of that button while retaining export access and no-vault import wording.
+
+```
+
+<!-- changelog-commit:407b149ccc7d82060698625aadf8299396e0bc00 -->
+### Commit [`407b149`](https://github.com/superhero/operations.superduper.solutions/commit/407b149ccc7d82060698625aadf8299396e0bc00)
+
+```text
+feat(secrets): export nonempty vaults before replacement
+
+Authenticate and download the current encrypted snapshot before replacing a vault containing records. Skip downloads for empty vaults and support current-vault authentication while locked. Bind replacement to the exported snapshot so intervening changes abort instead of losing unexported data. Cover the worker guards and actual replacement download with focused Cucumber scenarios.
+
+```
+
+<!-- changelog-commit:bc72eba7f2113e443d702e27a424c2a51b62b08e -->
+### Commit [`bc72eba`](https://github.com/superhero/operations.superduper.solutions/commit/bc72eba7f2113e443d702e27a424c2a51b62b08e)
+
+```text
+style(secrets): remove vault unlock heading
+
+```
+
+<!-- changelog-commit:5ef2f53bdab367f0f415b46ef2aab30abc7f1874 -->
+### Commit [`5ef2f53`](https://github.com/superhero/operations.superduper.solutions/commit/5ef2f53bdab367f0f415b46ef2aab30abc7f1874)
+
+```text
+style(secrets): right align vault unlock button
+
+```
+
+<!-- changelog-commit:a4759d48b69c337bddc796df95fc0aefbf6e1a0e -->
+### Commit [`a4759d4`](https://github.com/superhero/operations.superduper.solutions/commit/a4759d48b69c337bddc796df95fc0aefbf6e1a0e)
+
+```text
+fix(secrets)!: accept only 128-byte recovery keys
+
+Remove the legacy 32-byte recovery-key path. Require exactly 128 decoded bytes and cover rejection of former keys and adjacent sizes alongside current unlock, import and enrollment behavior.
+
+BREAKING CHANGE: Recovery keys issued in the former 32-byte format no longer unlock vaults or exports.
+
+```
+
+<!-- changelog-commit:8d078b74b57380484597e714fb0d0c19a93ce788 -->
+### Commit [`8d078b7`](https://github.com/superhero/operations.superduper.solutions/commit/8d078b74b57380484597e714fb0d0c19a93ce788)
+
+```text
+feat(secrets): infer unlock methods from the provided input
+
+Replace the unlock-method dropdown with one password-or-recovery field and separate passkey access. Try 172-character inputs against registered recovery methods first, then saved passwords, preserving long passwords and multiple methods. Retain authenticated envelope and manifest checks and cover automatic recovery unlocking through the browser.
+
+```
+
+<!-- changelog-commit:d5d1b6d304bd15fca32cdf44d0d2db51e6a552c0 -->
+### Commit [`d5d1b6d`](https://github.com/superhero/operations.superduper.solutions/commit/d5d1b6d304bd15fca32cdf44d0d2db51e6a552c0)
+
+```text
+style(secrets): join unlock action to the authentication field
+
+Place the unlock submit button against the right edge of the password-or-recovery input with shared height, joined corners and an enclosing focus outline. Preserve passkey submission and verify adjacency alongside successful browser unlocking.
+
+```
+
+<!-- changelog-commit:0d16acd1ea5a469384b5cf879abcd77f0d3627a0 -->
+### Commit [`0d16acd`](https://github.com/superhero/operations.superduper.solutions/commit/0d16acd1ea5a469384b5cf879abcd77f0d3627a0)
+
+```text
+style(secrets): use passkey icon for vault unlock action
+
+```
+
+<!-- changelog-commit:67785e3170a97dde7f75329c4f8f1ffc28f15f95 -->
+### Commit [`67785e3`](https://github.com/superhero/operations.superduper.solutions/commit/67785e3170a97dde7f75329c4f8f1ffc28f15f95)
+
+```text
+style(secrets): scale vault replacement button on hover
+
+```
+
+<!-- changelog-commit:7bc36772f2f0c6d908397972334be3b1aa109206 -->
+### Commit [`7bc3677`](https://github.com/superhero/operations.superduper.solutions/commit/7bc36772f2f0c6d908397972334be3b1aa109206)
+
+```text
+style(secrets): clarify vault unlock input label
+
+```
+
+<!-- changelog-commit:4979b0f9f5c71e92bf2f1f5cd17c453122010b59 -->
+### Commit [`4979b0f`](https://github.com/superhero/operations.superduper.solutions/commit/4979b0f9f5c71e92bf2f1f5cd17c453122010b59)
+
+```text
+style(secrets): change unlock icon color on hover and focus
+
+```
+
+<!-- changelog-commit:d4024eb8e27db32225a9a5211939854802737f92 -->
+### Commit [`d4024eb`](https://github.com/superhero/operations.superduper.solutions/commit/d4024eb8e27db32225a9a5211939854802737f92)
+
+```text
+style(secrets): scale only the unlock icon on interaction
+
+```
+
+<!-- changelog-commit:a74485a47b7a3087cc95e594418724a17f2d6602 -->
+### Commit [`a74485a`](https://github.com/superhero/operations.superduper.solutions/commit/a74485a47b7a3087cc95e594418724a17f2d6602)
+
+```text
+style(secrets): separate vault export and replacement panes
+
+```
+
+<!-- changelog-commit:450696b3b9db24a872b13bc825b4cf782e3db0fb -->
+### Commit [`450696b`](https://github.com/superhero/operations.superduper.solutions/commit/450696b3b9db24a872b13bc825b4cf782e3db0fb)
+
+```text
+style(secrets): describe encryption beside vault export action
+
+```
+
+<!-- changelog-commit:a526aa138f5753f86a007e044dda351d554f16c5 -->
+### Commit [`a526aa1`](https://github.com/superhero/operations.superduper.solutions/commit/a526aa138f5753f86a007e044dda351d554f16c5)
+
+```text
+style(secrets): match vault export and replacement button sizes
+
+```
+
+<!-- changelog-commit:54e2a7514d9cddda33dea58390292699165d7a1d -->
+### Commit [`54e2a75`](https://github.com/superhero/operations.superduper.solutions/commit/54e2a7514d9cddda33dea58390292699165d7a1d)
+
+```text
+style(secrets): add vault export and import icons
+
+```
+
+<!-- changelog-commit:ca6c03665a065a8bf9f8287dca7ae5bffc0e0aeb -->
+### Commit [`ca6c036`](https://github.com/superhero/operations.superduper.solutions/commit/ca6c03665a065a8bf9f8287dca7ae5bffc0e0aeb)
+
+```text
+fix(secrets): use a supported icon for vault replacement
+
+The bundled Material Symbols font lacks file_import and renders its name as text, overflowing the button. Use the verified upload glyph while retaining the export icon and matched button dimensions.
+
+```
+
+<!-- changelog-commit:bc156c7a0237923b3b50b207344a91dee670b6af -->
+### Commit [`bc156c7`](https://github.com/superhero/operations.superduper.solutions/commit/bc156c7a0237923b3b50b207344a91dee670b6af)
+
+```text
+style(secrets): place vault action icons after their labels
+
+```
+
+<!-- changelog-commit:c7cd6bd28b4bb45db505303b6b33c50610cb2065 -->
+### Commit [`c7cd6bd`](https://github.com/superhero/operations.superduper.solutions/commit/c7cd6bd28b4bb45db505303b6b33c50610cb2065)
+
+```text
+style(secrets): use download icon for vault export
+
+```
+
+<!-- changelog-commit:dc775ed5e60fe6471feec174156164f24c5a4f17 -->
+### Commit [`dc775ed`](https://github.com/superhero/operations.superduper.solutions/commit/dc775ed5e60fe6471feec174156164f24c5a4f17)
+
+```text
+style(secrets): use published with changes for vault replacement
+
+```
+
+<!-- changelog-commit:4bba261c663c7225b26d8596fd422c98dd571477 -->
+### Commit [`4bba261`](https://github.com/superhero/operations.superduper.solutions/commit/4bba261c663c7225b26d8596fd422c98dd571477)
+
+```text
+style(secrets): use swap horiz icon for vault replacement
+
+```
+
+<!-- changelog-commit:d68fb98f96a543b2776493799793f68e1d34fd0d -->
+### Commit [`d68fb98`](https://github.com/superhero/operations.superduper.solutions/commit/d68fb98f96a543b2776493799793f68e1d34fd0d)
+
+```text
+style(secrets): use sync icon for vault replacement
+
+```
+
+<!-- changelog-commit:2f5e31970de1f262af3c95638011712a14fc52a0 -->
+### Commit [`2f5e319`](https://github.com/superhero/operations.superduper.solutions/commit/2f5e31970de1f262af3c95638011712a14fc52a0)
+
+```text
+style(secrets): label key rotation with lock reset icon
+
+```
+
+<!-- changelog-commit:07fd589f6ae1f6a2bcaccd8f2a1f176531530e5a -->
+### Commit [`07fd589`](https://github.com/superhero/operations.superduper.solutions/commit/07fd589f6ae1f6a2bcaccd8f2a1f176531530e5a)
+
+```text
+style(secrets): match key rotation to vault action panes
+
+Give rotation its own pane above export and replacement with the same button dimensions, trailing icon, adjacent guidance and hover scaling. Keep verification controls inside the rotation pane.
+
+```
+
+<!-- changelog-commit:b68b68399da6608a293b91bc6f895184b9328094 -->
+### Commit [`b68b683`](https://github.com/superhero/operations.superduper.solutions/commit/b68b68399da6608a293b91bc6f895184b9328094)
+
+```text
+style(secrets): use normal height for vault action buttons
+
+```
+
+<!-- changelog-commit:48def682225098cbd8ab8f9fe04ef985b88d90a3 -->
+### Commit [`48def68`](https://github.com/superhero/operations.superduper.solutions/commit/48def682225098cbd8ab8f9fe04ef985b88d90a3)
+
+```text
+style(secrets): toggle rotation action into cancel rotation
+
+Show Cancel rotation with a Backspace icon while verification is open. Cancel through the same action and clear sensitive inputs, replacing the redundant secondary cancel button.
+
+```
+
+<!-- changelog-commit:40aaa351ecc6e2e3daf4acedbbd7f0688622b9e9 -->
+### Commit [`40aaa35`](https://github.com/superhero/operations.superduper.solutions/commit/40aaa351ecc6e2e3daf4acedbbd7f0688622b9e9)
+
+```text
+style(secrets): shorten key rotation guidance
+
+```
+
+<!-- changelog-commit:c12ed58e21bc674a469694625c7d2f5d2e40b24e -->
+### Commit [`c12ed58`](https://github.com/superhero/operations.superduper.solutions/commit/c12ed58e21bc674a469694625c7d2f5d2e40b24e)
+
+```text
+style(secrets): widen vault actions for cancel rotation label
+
+```
+
+<!-- changelog-commit:8146ad4ebcc96508dd4c159b0beee7f508cbb58c -->
+### Commit [`8146ad4`](https://github.com/superhero/operations.superduper.solutions/commit/8146ad4ebcc96508dd4c159b0beee7f508cbb58c)
+
+```text
+style(secrets): slide rotation controls below a dashed divider
+
+Animate rotation fields open and closed over 240ms with ease-in-out and respect reduced motion. Separate the expanding content from its header with eight-pixel dashes and six-pixel gaps. Verify opening and cancellation preserve saved vault data.
+
+```
+
+<!-- changelog-commit:fca601b4af210dccb01ffdec9d8f7a6fe06ab046 -->
+### Commit [`fca601b`](https://github.com/superhero/operations.superduper.solutions/commit/fca601b4af210dccb01ffdec9d8f7a6fe06ab046)
+
+```text
+feat(secrets): regenerate recovery keys automatically during rotation
+
+Verify retained passwords and passkeys without requesting old recovery keys or displaying single-option selectors. Replace recovery envelopes with one automatically generated 128-byte key and present it for copying or download after rotation. Share the fixed key size across generation, validation and unlock inference. Cover retained access, renewed recovery, atomic interruption and the browser rotation/export/import flow.
+
+```
+
+<!-- changelog-commit:20c43f3553ceb66cb79877967c8cfad5f03169d6 -->
+### Commit [`20c43f3`](https://github.com/superhero/operations.superduper.solutions/commit/20c43f3553ceb66cb79877967c8cfad5f03169d6)
+
+```text
+style(secrets): clarify current password labels during rotation
+
+```
+
+<!-- changelog-commit:e023d939a97dd6df299fabd913c3261819906bb5 -->
+### Commit [`e023d93`](https://github.com/superhero/operations.superduper.solutions/commit/e023d939a97dd6df299fabd913c3261819906bb5)
+
+```text
+style(secrets): join rotation action to its authentication field
+
+Replace the separate verification button with a Lock Reset icon in the same joined control used for unlocking. Attach the action to the final verification field and retain accessible naming and icon interaction styling.
+
+```
+
+<!-- changelog-commit:41f764900337d19c73979cf561b478931f965602 -->
+### Commit [`41f7649`](https://github.com/superhero/operations.superduper.solutions/commit/41f764900337d19c73979cf561b478931f965602)
+
+```text
+style(secrets): shorten rotation password label
+
+```
+
+<!-- changelog-commit:b1071607847feaae738f06412a86ef0fda48ec82 -->
+### Commit [`b107160`](https://github.com/superhero/operations.superduper.solutions/commit/b1071607847feaae738f06412a86ef0fda48ec82)
+
+```text
+style(secrets): add recovery rotation verification tooltip
+
+```
+
+<!-- changelog-commit:3e27c64af8b4883a3e962f43ad1c382c07869680 -->
+### Commit [`3e27c64`](https://github.com/superhero/operations.superduper.solutions/commit/3e27c64af8b4883a3e962f43ad1c382c07869680)
+
+```text
+style(secrets): use singular rotate key labels
+
+```
+
+<!-- changelog-commit:3bf892399f64eff3d045e2cc2963cedc88faacc4 -->
+### Commit [`3bf8923`](https://github.com/superhero/operations.superduper.solutions/commit/3bf892399f64eff3d045e2cc2963cedc88faacc4)
+
+```text
+style(secrets): increase space above rotation divider
+
+```
+
+<!-- changelog-commit:8fbd47f9680c01272c466339e2cbae1eb7ce19cb -->
+### Commit [`8fbd47f`](https://github.com/superhero/operations.superduper.solutions/commit/8fbd47f9680c01272c466339e2cbae1eb7ce19cb)
+
+```text
+style(secrets): clarify rotation action description
+
+```
+
+<!-- changelog-commit:b87716af2d2f322feb88137697b19788d76c572a -->
+### Commit [`b87716a`](https://github.com/superhero/operations.superduper.solutions/commit/b87716af2d2f322feb88137697b19788d76c572a)
+
+```text
+style(secrets): clarify rotation preserves the password
+
+```
+
+<!-- changelog-commit:3b4f2f48d9fee513d7535778b3bc2b71dc0675bc -->
+### Commit [`3b4f2f4`](https://github.com/superhero/operations.superduper.solutions/commit/3b4f2f48d9fee513d7535778b3bc2b71dc0675bc)
+
+```text
+fix(secrets): download new recovery keys after rotation
+
+Trigger the recovery-key download immediately after successful rotation and keep its presentation available for copying or another download. Reuse the same download helper as recovery saving and verify the automatic file contains exactly the generated key. Measure joined-control alignment in one frame to avoid scroll timing differences.
+
+```
+
+<!-- changelog-commit:8642c21981ca658acc8a4a34d3939a6ac3d11db7 -->
+### Commit [`8642c21`](https://github.com/superhero/operations.superduper.solutions/commit/8642c21981ca658acc8a4a34d3939a6ac3d11db7)
+
+```text
+fix(secrets): keep vault unlocking free of progress layout shifts
+
+Run unlocking without inserting a temporary status message. Preserve existing notices during silent operations instead of removing their layout space while authentication is pending. Keep busy-state protection and error reporting.
+
+```
+
+<!-- changelog-commit:9c76bc402f806cc6e246d6fdaa93d4414f9eb73c -->
+### Commit [`9c76bc4`](https://github.com/superhero/operations.superduper.solutions/commit/9c76bc402f806cc6e246d6fdaa93d4414f9eb73c)
+
+```text
+feat(secrets): give passkey enrollment its own authentication pane
+
+Make Add passkey open a sliding pane with local authentication and a joined verification action, matching rotation controls. Support cancellation and clear local secrets on closure or locking. Show enrollment failures beside the action without temporary loading messages. Update browser scenarios and verify supported and unsupported native PRF authenticator flows.
+
+```
+
+<!-- changelog-commit:43c59e9a3c9cfd6e31b481842154c599faf22bcb -->
+### Commit [`43c59e9`](https://github.com/superhero/operations.superduper.solutions/commit/43c59e9a3c9cfd6e31b481842154c599faf22bcb)
+
+```text
+fix(secrets): explain unavailable passkey encryption accurately
+
+Distinguish unavailable browser or provider PRF support during enrollment from vault failures. State that the existing vault is unchanged and slide the inline error open and closed with reduced-motion support. Verify the exact message against a native authenticator without PRF.
+
+```
+
+<!-- changelog-commit:d12ae99ad386d98e0f634542772085e62744ab90 -->
+### Commit [`d12ae99`](https://github.com/superhero/operations.superduper.solutions/commit/d12ae99ad386d98e0f634542772085e62744ab90)
+
+```text
+style(secrets): shorten passkey and rotation cancel labels
+
+```
+
+<!-- changelog-commit:a51e16565dd142c51012257af4e4646e68e2caff -->
+### Commit [`a51e165`](https://github.com/superhero/operations.superduper.solutions/commit/a51e16565dd142c51012257af4e4646e68e2caff)
+
+```text
+test(secrets): scope cancellation actions to their panes
+
+```
+
+<!-- changelog-commit:4d6dec40adac3563af1076d3973da8664799ead9 -->
+### Commit [`4d6dec4`](https://github.com/superhero/operations.superduper.solutions/commit/4d6dec40adac3563af1076d3973da8664799ead9)
+
+```text
+fix(secrets): limit vaults to one generated recovery key
+
+Remove the recovery add-or-replace controls and preparation RPC. Recovery keys are generated only during creation or rotation; public method enrollment rejects them. Reject snapshots with multiple recovery envelopes and cover the invariant alongside rotation, unlocking and the browser settings flow.
+
+```
+
+<!-- changelog-commit:eee4258acaea1c37f8f3af4e31c664b0493b57ab -->
+### Commit [`eee4258`](https://github.com/superhero/operations.superduper.solutions/commit/eee4258acaea1c37f8f3af4e31c664b0493b57ab)
+
+```text
+feat(secrets): replace passwords in a dedicated expandable pane
+
+Match password replacement to the other vault actions with a sliding pane, cancellation, local authentication and new-password confirmation. Join the submit icon to the confirmation field and show validation errors locally without loading text. Allow current-password or recovery authentication so forgotten passwords remain replaceable, and replace the existing method instead of adding another by default. Verify mismatch safety, old-password rejection and unchanged recovery access in a focused browser scenario.
+
+```
+
+<!-- changelog-commit:702439cee795436181baa4ec8e0f43447538ef62 -->
+### Commit [`702439c`](https://github.com/superhero/operations.superduper.solutions/commit/702439cee795436181baa4ec8e0f43447538ef62)
+
+```text
+fix(secrets): export encrypted vaults without password verification
+
+Allow direct ciphertext downloads without unlocking, decrypting or changing storage. Keep export available while locked and avoid temporary progress messages. Preserve authentication for replacement and import, and verify locked exports remain encrypted and restore through a valid recovery key.
+
+```
+
+<!-- changelog-commit:e0d1b72c24efcbd84a890f74a1981b0001a12ad0 -->
+### Commit [`e0d1b72`](https://github.com/superhero/operations.superduper.solutions/commit/e0d1b72c24efcbd84a890f74a1981b0001a12ad0)
+
+```text
+style(secrets): use key icons beside authentication fields
+
+```
+
+<!-- changelog-commit:19facb0610a28d5d7ab430007c5a8782ec1e2fda -->
+### Commit [`19facb0`](https://github.com/superhero/operations.superduper.solutions/commit/19facb0610a28d5d7ab430007c5a8782ec1e2fda)
+
+```text
+style(secrets): standardize verification and unlock password icons
+
+```
+
+<!-- changelog-commit:1393b6115741893b2a5390bd0fc149b1f7860721 -->
+### Commit [`1393b61`](https://github.com/superhero/operations.superduper.solutions/commit/1393b6115741893b2a5390bd0fc149b1f7860721)
+
+```text
+style(secrets): place password verification last with its action
+
+Order replacement fields as new password, confirmation and current password or recovery key. Join the verification action to the authentication field through the shared control and remove the separate confirmation-field styling.
+
+```
+
+<!-- changelog-commit:8440d7f83d1b0aa56e84e88e878f390a120792e2 -->
+### Commit [`8440d7f`](https://github.com/superhero/operations.superduper.solutions/commit/8440d7f83d1b0aa56e84e88e878f390a120792e2)
+
+```text
+style(secrets): separate password verification with dashed divider
+
+```
+
+<!-- changelog-commit:4cfca865752e335dddea7b392a042e38a316b34d -->
+### Commit [`4cfca86`](https://github.com/superhero/operations.superduper.solutions/commit/4cfca865752e335dddea7b392a042e38a316b34d)
+
+```text
+style(secrets): adjust password or recovery key field wording
+
+```
+
+<!-- changelog-commit:3f7f0dbfbedda52219880fe65b07510dc556ba6d -->
+### Commit [`3f7f0db`](https://github.com/superhero/operations.superduper.solutions/commit/3f7f0dbfbedda52219880fe65b07510dc556ba6d)
+
+```text
+style(secrets): left-align vault action icons and labels
+
+```
+
+<!-- changelog-commit:c9ee838b7a5f8dbc9a915d6126eff6120fa1d94d -->
+### Commit [`c9ee838`](https://github.com/superhero/operations.superduper.solutions/commit/c9ee838b7a5f8dbc9a915d6126eff6120fa1d94d)
+
+```text
+style(secrets): remove unlock methods pane
+
+```
+
+<!-- changelog-commit:504e95b34a5b57e69f2bcd84391fc9ac5a75bb59 -->
+### Commit [`504e95b`](https://github.com/superhero/operations.superduper.solutions/commit/504e95b34a5b57e69f2bcd84391fc9ac5a75bb59)
+
+```text
+style(secrets): remove unused unlock method layout rule
+
+```
+
+<!-- changelog-commit:c7bdff75d5d31c719260664af98e9645b36ea6aa -->
+### Commit [`c7bdff7`](https://github.com/superhero/operations.superduper.solutions/commit/c7bdff75d5d31c719260664af98e9645b36ea6aa)
+
+```text
+style(secrets): place inactivity lock above password replacement
+
+```
+
+<!-- changelog-commit:741684441b0a66bc550a964a17dd1308f761e57d -->
+### Commit [`7416844`](https://github.com/superhero/operations.superduper.solutions/commit/741684441b0a66bc550a964a17dd1308f761e57d)
+
+```text
+feat(secrets): use unlocked session for credential changes
+
+Remove shared management authentication for credential writes, removals and destination approvals. Keep session and storage revision guards, with local authentication for unlock-method changes and vault replacement. Update focused Cucumber coverage and document the session policy.
+
+```
+
+<!-- changelog-commit:0dae420d0c7a715aeb4910cb9814538dac865740 -->
+### Commit [`0dae420`](https://github.com/superhero/operations.superduper.solutions/commit/0dae420d0c7a715aeb4910cb9814538dac865740)
+
+```text
+style(secrets): mute inactivity unit when disabled
+
+```
+
+<!-- changelog-commit:b6c1fb9afe6ebecba0837c571e25548f4511e027 -->
+### Commit [`b6c1fb9`](https://github.com/superhero/operations.superduper.solutions/commit/b6c1fb9afe6ebecba0837c571e25548f4511e027)
+
+```text
+style(secrets): arrange credential fields in responsive 30/70 row
+
+```
+
+<!-- changelog-commit:a90849b479e5c03d978d896547ce73c4d4769b84 -->
+### Commit [`a90849b`](https://github.com/superhero/operations.superduper.solutions/commit/a90849b479e5c03d978d896547ce73c4d4769b84)
+
+```text
+style(secrets): remove redundant credentials heading and empty message
+
+```
+
+<!-- changelog-commit:37278a4987d9e5bc12cc6ba4b93caf281f2c77d7 -->
+### Commit [`37278a4`](https://github.com/superhero/operations.superduper.solutions/commit/37278a4987d9e5bc12cc6ba4b93caf281f2c77d7)
+
+```text
+style(secrets): integrate save icon into credential fields row
+
+```
+
+<!-- changelog-commit:5f49e401c17ef6ccff034a9c74b0797591c34ab3 -->
+### Commit [`5f49e40`](https://github.com/superhero/operations.superduper.solutions/commit/5f49e401c17ef6ccff034a9c74b0797591c34ab3)
+
+```text
+style(secrets): animate save button and label stacked layout
+
+```
+
+<!-- changelog-commit:01dcf0507332195854efd750fb35284f7d87e078 -->
+### Commit [`01dcf05`](https://github.com/superhero/operations.superduper.solutions/commit/01dcf0507332195854efd750fb35284f7d87e078)
+
+```text
+style(secrets): replace credential labels with key value placeholders
+
+```
+
+<!-- changelog-commit:6ba0ff6d1fd9913f3aa2c361021d327e6a0a41ef -->
+### Commit [`6ba0ff6`](https://github.com/superhero/operations.superduper.solutions/commit/6ba0ff6d1fd9913f3aa2c361021d327e6a0a41ef)
+
+```text
+feat(secrets): allow selected credentials without destination approval
+
+Remove approval panes and credential-use prompts. Allow compatible credentials wherever explicitly selected, preserving unlocked-session checks, current operation bindings, header validation and redirect blocking. Retain legacy encrypted grant metadata for snapshot compatibility.
+
+```
+
+<!-- changelog-commit:964b66187d5f106f8ee43f75248a26c53bccabae -->
+### Commit [`964b661`](https://github.com/superhero/operations.superduper.solutions/commit/964b66187d5f106f8ee43f75248a26c53bccabae)
+
+```text
+style(secrets): separate saved credentials into conditional pane
+
+```
+
+<!-- changelog-commit:6917011eb6559d1c2ae6b025b35aa924df337e35 -->
+### Commit [`6917011`](https://github.com/superhero/operations.superduper.solutions/commit/6917011eb6559d1c2ae6b025b35aa924df337e35)
+
+```text
+feat(secrets): replace credential editing with clipboard action
+
+Add Copy and Remove icons to saved entries. Allow an explicit copy action to retrieve one value from an unlocked current session for clipboard use, without storing it in application state. Document the boundary exception and cover copying, missing entries and locked sessions with focused Cucumber checks.
+
+```
+
+<!-- changelog-commit:fe190934a08e866c59e2d3f4de1276baccc539d7 -->
+### Commit [`fe19093`](https://github.com/superhero/operations.superduper.solutions/commit/fe190934a08e866c59e2d3f4de1276baccc539d7)
+
+```text
+style(secrets): use label colors and animate saved entry actions
+
+```
+
+<!-- changelog-commit:71b10ae90e481d3205f2f8018d88029b599b9e50 -->
+### Commit [`71b10ae`](https://github.com/superhero/operations.superduper.solutions/commit/71b10ae90e481d3205f2f8018d88029b599b9e50)
+
+```text
+style(secrets): remove credential saved notice
+
+```
+
+<!-- changelog-commit:d87ee4753aa3d47954829f7bd28116fbe510ceaf -->
+### Commit [`d87ee47`](https://github.com/superhero/operations.superduper.solutions/commit/d87ee4753aa3d47954829f7bd28116fbe510ceaf)
+
+```text
+style(secrets): sort saved credentials alphabetically by key
+
+```
+
+<!-- changelog-commit:c21192c1988620fba839c4d44779992731110f25 -->
+### Commit [`c21192c`](https://github.com/superhero/operations.superduper.solutions/commit/c21192c1988620fba839c4d44779992731110f25)
+
+```text
+style(secrets): place credential entry form above saved entries
+
+```
+
+<!-- changelog-commit:e7e2b1ab0a07f39b22c419097d64e9331c78a2ad -->
+### Commit [`e7e2b1a`](https://github.com/superhero/operations.superduper.solutions/commit/e7e2b1ab0a07f39b22c419097d64e9331c78a2ad)
+
+```text
+fix(secrets): reject duplicate keys before saving credentials
+
+Compare trimmed, Unicode-normalized keys without case differences inside the worker. Reject duplicates with a clear message and preserve the existing encrypted snapshot and value. Cover duplicate creation and rename collisions with focused Cucumber checks.
+
+```
+
+<!-- changelog-commit:0866beb980aff88e2cee0bf0a0bb7635c355b834 -->
+### Commit [`0866beb`](https://github.com/superhero/operations.superduper.solutions/commit/0866beb980aff88e2cee0bf0a0bb7635c355b834)
+
+```text
+style(secrets): always show save button label
+
+```
+
+<!-- changelog-commit:56f7437cef980053c7bf9021a7a23c49993a4f43 -->
+### Commit [`56f7437`](https://github.com/superhero/operations.superduper.solutions/commit/56f7437cef980053c7bf9021a7a23c49993a4f43)
+
+```text
+style(locale): center preview with palette background
+
+```
+
+<!-- changelog-commit:d8850a86dec7607e7cafe6e6884b31080536514c -->
+### Commit [`d8850a8`](https://github.com/superhero/operations.superduper.solutions/commit/d8850a86dec7607e7cafe6e6884b31080536514c)
+
+```text
+merge: synchronize develop before settings integration
+
+```
+
+<!-- changelog-commit:b534c723bb02b43527ede7cd2866168e88cf378e -->
+### Commit [`b534c72`](https://github.com/superhero/operations.superduper.solutions/commit/b534c723bb02b43527ede7cd2866168e88cf378e)
+
+```text
+merge: include integrated search refinements in settings branch
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.47
