@@ -56,9 +56,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <section class="catalog-prompt" aria-label="Find operations" aria-busy={pending} data-evaluated-prompt={evaluation?.prompt ?? ""}>
   <div class="prompt-input" class:has-details={evaluationDetails && Boolean(evaluation)}>
-    <textarea id="operation-prompt" bind:this={input} value={value} use:fitTextarea={value} rows="1" maxlength="240"
-      placeholder="Search" aria-label="Prompt" aria-describedby="prompt-help" oninput={(event) => onChange(event.currentTarget.value, event instanceof InputEvent && event.isComposing)}
-      oncompositionstart={() => onChange(value, true)} oncompositionend={(event) => onChange(event.currentTarget.value, false)}></textarea>
+    <div class="prompt-entry">
+      <label class="prompt-symbol" for="operation-prompt" aria-hidden="true"><MaterialIcon name="search" size={20} /></label>
+      <textarea id="operation-prompt" bind:this={input} value={value} use:fitTextarea={value} rows="1" maxlength="240"
+        placeholder="Search" aria-label="Prompt" aria-describedby="prompt-help" oninput={(event) => onChange(event.currentTarget.value, event instanceof InputEvent && event.isComposing)}
+        oncompositionstart={() => onChange(value, true)} oncompositionend={(event) => onChange(event.currentTarget.value, false)}></textarea>
+    </div>
     {#if evaluationDetails && evaluation}
       <div class="prompt-actions report-pill context-label">
         <HintButton class="report-toggle" type="button" label="Details" aria-label="Review matching details" aria-expanded={matchingOpen}
@@ -86,11 +89,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .catalog-prompt { min-width: 0; margin-bottom: 16px; }
-  .prompt-input { display: flex; flex-direction: column; border-radius: 4px; outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
+  .prompt-input { --prompt-cap-radius: calc(var(--navigation-control-size) / 2); display: flex; flex-direction: column; border-radius: var(--prompt-cap-radius) 4px 4px var(--prompt-cap-radius); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
   .prompt-input:has(#operation-prompt:focus) { outline-color: var(--color-ring); }
+  .prompt-input.has-details { border-bottom-left-radius: 4px; }
+  .prompt-entry { display: grid; grid-template-columns: var(--navigation-control-size) minmax(0, 1fr); }
+  .prompt-symbol { display: grid; place-items: center; border-radius: var(--prompt-cap-radius) 0 0 var(--prompt-cap-radius); background: var(--color-background); color: var(--color-foreground); cursor: text; }
+  .has-details .prompt-symbol { border-bottom-left-radius: 0; }
   .prompt-actions { width: 100%; border-radius: 0 0 4px 4px; }
   .prompt-actions :global(.report-toggle) { width: 100%; min-height: 24px; height: 24px; padding: 4px; border-radius: 0 0 4px 4px; }
-  #operation-prompt { --field-background: var(--color-background); --field-foreground: var(--color-foreground); display: block; box-sizing: border-box; width: 100%; min-width: 0; min-height: var(--navigation-control-size); field-sizing: fixed; padding: calc((var(--navigation-control-size) - 1.5em) / 2) 12px; border: 0; border-radius: 4px; background: var(--field-background); color: var(--field-foreground); font-size: 13px; line-height: 1.5; resize: none; overflow: hidden; scrollbar-gutter: auto; }
+  #operation-prompt { --field-background: var(--color-background); --field-foreground: var(--color-foreground); display: block; box-sizing: border-box; width: 100%; min-width: 0; min-height: var(--navigation-control-size); field-sizing: fixed; padding: calc((var(--navigation-control-size) - 1.5em) / 2) 12px calc((var(--navigation-control-size) - 1.5em) / 2) 0; border: 0; border-radius: 0 4px 4px 0; background: var(--field-background); color: var(--field-foreground); font-size: 13px; line-height: 1.5; resize: none; overflow: hidden; scrollbar-gutter: auto; }
   #operation-prompt { outline: none; }
   .has-details #operation-prompt { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
   #operation-prompt::placeholder { color: var(--color-muted-foreground); opacity: 1; }
