@@ -241,6 +241,9 @@
       </div>
     {/each}
   </nav>
+  <div class="workflow-separator" aria-hidden="true">
+    <span><MaterialIcon name="stat_minus_1" size={20} /></span>
+  </div>
   <nav class="operation-catalog workflow-catalog" aria-label="Saved workflow catalog">
     <Disclosure class="catalog-group" label={`Workflows, ${workflows.length} saved`} tooltipEnabled={false} open={workflowsOpen} onToggle={(next) => workflowsOpen = next}>
       {#snippet summary()}<span class="catalog-name">Workflows</span><span class="catalog-count" aria-label={`${workflows.length} workflows`}><span class="catalog-count-value">{workflows.length}</span></span><MaterialIcon name="chevron_forward" size={17} />{/snippet}
@@ -298,7 +301,10 @@
   .catalog-menu.open { transition-delay: 0s; }
   .operation-catalog { isolation: isolate; }
   .catalog-reorder + .catalog-reorder { margin-top: 12px; }
-  .workflow-catalog { margin-top: 12px; }
+  .workflow-separator { display: flex; flex-shrink: 0; justify-content: center; padding: 12px 0; color: var(--color-accent); }
+  .workflow-separator > span { display: flex; align-items: center; gap: 12px; width: 50%; }
+  .workflow-separator > span::before, .workflow-separator > span::after { content: ""; flex: 1; height: 1px; color: var(--color-border); background: repeating-linear-gradient(to right, currentColor 0 4px, transparent 4px 12px); }
+  .workflow-separator > span::before { background-image: repeating-linear-gradient(to left, currentColor 0 4px, transparent 4px 12px); }
   /* Keep headings above ancestor and sibling connectors throughout hover exit too. */
   .operation-catalog :global(summary), .operation-catalog :global(.catalog-operation-action) { position: relative; z-index: 1; }
   .operation-catalog :global(summary),
