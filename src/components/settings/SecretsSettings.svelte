@@ -299,7 +299,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <p class="help">Use at least 12 characters. You will verify a recovery key before the vault is saved.</p>
       </form>
       <div class="actions creation-actions">
-        <button type="button" aria-label="Import vault" disabled={busy} onclick={() => restoreInput?.click()}><MaterialIcon name="upload_file" size={18} />Import</button>
+        <button type="button" aria-label="Import vault" disabled={busy} onclick={() => restoreInput?.click()}><MaterialIcon name="file_open" size={18} />Import</button>
         <button type="submit" form={createFormId} aria-label="Create vault" disabled={busy}><MaterialIcon name="add" size={18} />Create</button>
       </div>
       {@render vaultImport()}
