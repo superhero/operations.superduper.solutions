@@ -561,7 +561,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   button:disabled { opacity: .55; cursor: not-allowed; }
   .help, .notice, .destination { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
   .records { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
-  .records li { display: grid; gap: 10px; padding: 10px; border: 1px solid var(--color-background); border-radius: 4px; }
+  .records li { display: grid; gap: 10px; padding: 10px; border: 0; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); }
   .destination { padding: 10px; border-radius: 4px; background: var(--color-background); }
   .error { padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; overflow-wrap: anywhere; }
   .idle-toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; min-height: 44px; padding: 10px 12px; background: var(--color-background); color: var(--color-catalog-foreground); text-align: left; }
@@ -573,6 +573,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     .unlock-vault :global(.material-symbols-rounded) { transition: transform 180ms ease-in; }
     .unlock-vault:hover:enabled :global(.material-symbols-rounded), .unlock-vault:focus :global(.material-symbols-rounded) { transform: scale(1.2); }
     .idle-toggle:hover:enabled .default-switch { transform: scale(1.10); }
+    .records .actions > button { transition: transform 180ms ease-in-out; }
+    .records .actions > button:hover:enabled { transform: scale(1.05); }
     .credential-save { transition: transform 180ms ease-in-out; }
     .credential-save:hover:enabled { transform: scale(1.05); }
     .recovery-copy:hover:enabled { transform: scale(1.10); }
