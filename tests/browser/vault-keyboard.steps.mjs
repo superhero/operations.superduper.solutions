@@ -126,13 +126,13 @@ Then('keyboard cancellation clears credential and recovery inputs without saving
   await expect(recovery).toHaveText(/^[A-Za-z0-9+/]{171}=$/);
   const pendingRecovery = await recovery.textContent(), recoveryHandle = await recovery.elementHandle();
   await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
-  await expect(settings.getByText('Vault locked', { exact: true })).toBeVisible();
+  await expect(settings.getByRole('heading', { name: 'Unlock the vault', exact: true })).toBeVisible();
   assert.equal(await recoveryHandle.evaluate(element => element.textContent), '');
   assert.deepEqual(await readStorage(page), this.keyboardSaved);
   await unlock(page);
   await expect(settings.locator('li').filter({ hasText: 'Keyboard replacement' })).toHaveCount(1);
   await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
-  await expect(settings.getByText('Vault locked', { exact: true })).toBeVisible();
+  await expect(settings.getByRole('heading', { name: 'Unlock the vault', exact: true })).toBeVisible();
   await expect(settings.getByLabel('Unlock password', { exact: true })).toHaveValue('');
 
   const canaries = [password, originalSecret, replacementSecret, cancelledSecret, this.keyboardRecovery, pendingRecovery];

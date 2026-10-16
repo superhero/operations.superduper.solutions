@@ -286,11 +286,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 {/snippet}
 
 <section bind:this={panel} class="secrets-settings" aria-label="Secrets vault">
-  {#if !status.unlocked}
+  {#if !status.exists}
   <div class="toolbar vault-status">
     <div class="vault-status-message">
       <MaterialIcon name="brightness_alert" size={18} />
-      <p class="help"><strong>{ready ? status.exists ? "Vault locked" : "No vault has been created:" : "Secrets vault"}</strong>{#if ready && !status.exists}{" "}Use a vault to help protect stored data required as input in the workflows.{/if}</p>
+      <p class="help"><strong>{ready ? "No vault has been created:" : "Secrets vault"}</strong>{#if ready && !status.exists}{" "}Use a vault to help protect stored data required as input in the workflows.{/if}</p>
     </div>
     {#if busy}
       <div class="actions">
