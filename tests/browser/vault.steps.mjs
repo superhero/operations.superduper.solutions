@@ -254,7 +254,7 @@ Then('its registered secret is encrypted and a reload requires unlocking again',
   await this.page.reload();
   await this.page.locator('#startup-status').waitFor({ state: 'detached' });
   await openSecrets(this.page);
-  await expect(settings(this.page).getByRole('heading', { name: 'Unlock the vault', exact: true })).toBeVisible();
+  await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
   await expect(settings(this.page).getByText(canaries[3], { exact: true })).toHaveCount(0);
   await unlockUI(this.page);
   await expect(settings(this.page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
@@ -278,7 +278,7 @@ Then('a vault worker constructor failure remains safe and a later unlock recover
     await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
     await expect(settings(page).getByRole('alert')).toContainText('unavailable');
     await expect(settings(page).getByLabel('Unlock password', { exact: true })).toHaveValue('');
-    await expect(settings(page).getByRole('heading', { name: 'Unlock the vault', exact: true })).toBeVisible();
+    await expect(settings(page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
     assert.equal(await vaultWorkerCount(page), 0);
     assert.deepEqual(await storage(page, 'read'), before);
     noCanaries(await settings(page).innerText());
@@ -345,7 +345,7 @@ Then('manually locking the vault clears inputs and password unlocking restores t
   await settings(this.page).getByLabel('Credential value', { exact: true }).fill(canaries[1]);
   const before = await storage(this.page, 'read');
   await this.page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
-  await expect(settings(this.page).getByRole('heading', { name: 'Unlock the vault', exact: true })).toBeVisible();
+  await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
   await expect(settings(this.page).getByLabel('Unlock password', { exact: true })).toHaveValue('');
   await expect.poll(() => vaultWorkerCount(this.page)).toBe(0);
   await expect.poll(async () => (await storage(this.page, 'read')).lockEpoch).toBe(before.lockEpoch + 1);
@@ -364,13 +364,13 @@ Then('a {string} notification terminates the vault worker and returning visible 
       document.dispatchEvent(new Event(event));
     } else window.dispatchEvent(new Event('pagehide'));
   }, event);
-  await expect(settings(this.page).getByRole('heading', { name: 'Unlock the vault', exact: true })).toBeVisible();
+  await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
   await expect.poll(() => vaultWorkerCount(this.page)).toBe(0);
   await this.page.evaluate(() => {
     Reflect.deleteProperty(document, 'visibilityState'); document.dispatchEvent(new Event('visibilitychange'));
   });
   await expect(settings(this.page).getByLabel('Unlock password', { exact: true })).toHaveValue('');
-  await expect(settings(this.page).getByRole('heading', { name: 'Unlock the vault', exact: true })).toBeVisible();
+  await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
   await expect.poll(() => vaultWorkerCount(this.page)).toBe(0);
 });
 
@@ -415,7 +415,7 @@ Then('optional idle locking expires before a delayed trusted interaction can ext
   // worker and browser timers; the next trusted event must check before reset.
   await this.page.clock.setFixedTime(new Date(Date.now() + 61_000));
   await this.page.keyboard.press('Shift');
-  await expect(settings(this.page).getByRole('heading', { name: 'Unlock the vault', exact: true })).toBeVisible();
+  await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
   await expect(settings(this.page).getByLabel('Unlock password', { exact: true })).toHaveValue('');
 });
 
@@ -603,7 +603,7 @@ Then('a pending native passkey enrollment is cancelled by {string} and clears re
       // neither create a credential nor add a vault method afterward.
       await cdp.send('WebAuthn.setAutomaticPresenceSimulation', { authenticatorId, enabled: true });
       await openSecrets(page);
-      await expect(settings(page).getByRole('heading', { name: 'Unlock the vault', exact: true })).toBeVisible();
+      await expect(settings(page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
       await unlockUI(page);
       assert.deepEqual((await storage(page, 'read')).snapshot, before.snapshot);
       assert.equal((await cdp.send('WebAuthn.getCredentials', { authenticatorId })).credentials.length, 0);

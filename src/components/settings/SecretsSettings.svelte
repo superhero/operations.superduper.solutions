@@ -345,7 +345,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   {#if ready && status.exists}
     <form class="card" onsubmit={event => { event.preventDefault(); if (!status.unlocked) void run("Unlocking vault…", async () => { await fresh(proof => vaultCall("unlock", [proof])); await refresh(); }); }}>
-      <h3>{status.unlocked ? "Confirm management actions" : "Unlock the vault"}</h3>
+      {#if status.unlocked}<h3>Confirm management actions</h3>{/if}
       <VaultAuthentication bind:this={authentication} {status} disabled={busy} label={status.unlocked ? "Confirm action" : "Unlock"} />
       {#if status.unlocked}<p class="help">Enter fresh authentication before each credential, destination, unlock-method or export change below.</p>
       {:else}<button disabled={busy}>Unlock vault</button>{/if}
