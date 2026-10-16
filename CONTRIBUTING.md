@@ -8,6 +8,7 @@ Thank you for considering contributing to `operations.superduper.solutions`.
 ## Architectural decision records
 
 - [Application content is versioned in separate browser-local Git repositories to preserve independent change histories](docs/adr/local-resource-management.md)
+- [Application preparation belongs in the loading phase, so startup completion marks a responsive interface](docs/adr/startup-readiness.md)
 - [Architectural decision records are maintained to preserve reasoning and guide future changes](docs/adr/decision-records.md)
 - [Artifacts with distinct purposes are kept separate wherever practical](docs/adr/responsibility-segregation.md)
 - [Continuous deployment publishes tested artifacts to Cloudflare, preserving traceability to validated revisions.](docs/adr/continuous-deployment.md)

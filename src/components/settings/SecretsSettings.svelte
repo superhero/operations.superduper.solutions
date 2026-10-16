@@ -5,65 +5,63 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
   import { onMount, tick } from "svelte";
+  import { slide } from "svelte/transition";
+  import { cubicInOut } from "svelte/easing";
+  import HintButton from "$lib/components/HintButton.svelte";
+  import FieldInteger from "$lib/components/FieldInteger.svelte";
   import FieldSelect from "$lib/components/FieldSelect.svelte";
+  import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import VaultAuthentication from "$lib/components/VaultAuthentication.svelte";
-  import { operations } from "$lib/catalog.ts";
-  import { workflowExecutionForOperation } from "$lib/workflow-execution.ts";
-  import { approvedOperation } from "$lib/secrets/policy.ts";
   import { enrollPasskey } from "$lib/secrets/passkeys.ts";
   import { loadVaultPreferences, lockVault, lockVaultLocally, readVaultStatus, saveVaultPreferences, subscribeVaultLock, vaultCall, vaultCeremony } from "$lib/secrets/client.ts";
-  import { defaultVaultPreferences, safeVaultError, VaultError, vaultLimits, type ApprovedOperation, type CredentialSummary,
+  import { defaultVaultPreferences, safeVaultError, VaultError, vaultLimits, type CredentialSummary,
     type Enrollment, type UnlockProof, type VaultStatus } from "$lib/secrets/types.ts";
 
   type Authentication = { proof: () => Promise<UnlockProof>; clear: () => void };
   const emptyStatus: VaultStatus = { exists: false, unlocked: false, revision: 0, epoch: 0, methods: [] };
   const methodNames = { password: "Password", recovery: "Recovery key", passkey: "Passkey" };
+  const createFormId = $props.id();
   let status = $state<VaultStatus>(emptyStatus);
   let records = $state<CredentialSummary[]>([]);
   let preferences = $state({ ...defaultVaultPreferences });
+  let idleMinutes = $state(String(defaultVaultPreferences.idleLockMinutes));
+  const maximumIdleMinutes = 7 * 24 * 60;
   let ready = $state(false);
   let busy = $state(false);
+  let idleSaving = $state(false);
   let progress = $state("");
   let error = $state("");
   let notice = $state("");
   let panel: HTMLElement;
   let authentication = $state.raw<Authentication>();
+  let replacementAuthentication = $state.raw<Authentication>();
   let restoreAuthentication = $state.raw<Authentication>();
-  let recoveryOutput = $state.raw<HTMLTextAreaElement>();
-  let recoveryMode = $state<"create" | "replace" | null>(null);
+  let passkeyAuthentication = $state.raw<Authentication>();
+  let passwordAuthentication = $state.raw<Authentication>();
+  let showPassword = $state(false);
+  let passwordError = $state("");
+  let showPasskey = $state(false);
+  let passkeyError = $state("");
+  let recoveryOutput = $state.raw<HTMLPreElement>();
+  let recoveryMode = $state<"create" | "rotate" | null>(null);
   let credentialId = $state("");
   let credentialLabel = $state("");
-  let credentialKind = $state<"bearer" | "apiKey">("bearer");
-  let grantCredential = $state("");
-  let grantOperation = $state("");
-  let grantScheme = $state("");
-  let grantDescriptor = $state.raw<ApprovedOperation | null>(null);
-  let operationOptions = $state<{ value: string; label: string }[]>([]);
   let passwordReplacement = $state("");
-  let recoveryReplacement = $state("");
   let showRotation = $state(false);
   let restoreStatus = $state<VaultStatus | null>(null);
   let restoreFilename = $state("");
   let restoreInput = $state.raw<HTMLInputElement>();
   let restorePayload = "";
   let generation = 0;
-  let reviewGeneration = 0;
   let disposed = false;
   const rotationAuthentication: Record<string, Authentication> = {};
-  const selectedCredential = $derived(records.find(item => item.id === grantCredential));
-  const schemeOptions = $derived([...new Map((grantDescriptor?.operation.security?.flat() ?? [])
-    .filter(scheme => scheme.kind === selectedCredential?.kind).map(scheme => [scheme.name,
-      { value: scheme.name, label: `${scheme.name} · ${scheme.header}` }])).values()]);
-  const selectedScheme = $derived(grantDescriptor?.operation.security?.flat().find(scheme => scheme.name === grantScheme));
-
   function wipe(proof: UnlockProof): void { if ("prf" in proof) proof.prf.fill(0); else proof.secret = ""; }
   function clearInputs(): void {
     panel?.querySelectorAll<HTMLInputElement>("input[data-vault-sensitive]").forEach(input => { input.value = ""; });
-    authentication?.clear(); restoreAuthentication?.clear();
+    authentication?.clear(); replacementAuthentication?.clear(); restoreAuthentication?.clear(); passkeyAuthentication?.clear(); passwordAuthentication?.clear();
     for (const component of Object.values(rotationAuthentication)) component?.clear();
   }
-  function clearRecovery(): void { if (recoveryOutput) recoveryOutput.value = ""; recoveryMode = null; }
-  function cancelRecovery(): void { clearInputs(); clearRecovery(); lockVaultLocally(); }
+  function clearRecovery(): void { if (recoveryOutput) recoveryOutput.textContent = ""; recoveryMode = null; }
   function clearRestore(): void { restorePayload = ""; restoreStatus = null; restoreFilename = ""; if (restoreInput) restoreInput.value = ""; }
   function take(name: string): string {
     const input = panel.querySelector<HTMLInputElement>(`input[name="${name}"]`);
@@ -72,23 +70,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     return value;
   }
   function locked(): void {
-    generation++; reviewGeneration++; clearInputs(); clearRecovery(); clearRestore();
-    records = []; grantDescriptor = null; status = { ...status, unlocked: false }; showRotation = false; busy = false; progress = "";
+    generation++; clearInputs(); clearRecovery(); clearRestore();
+    records = []; status = { ...status, unlocked: false }; showRotation = false; showPassword = false; passwordError = ""; showPasskey = false; passkeyError = ""; busy = false; progress = "";
   }
   async function refresh(): Promise<void> {
     const current = generation;
     const next = await readVaultStatus();
     const items = next.unlocked ? await vaultCall("list", []) : [];
     if (current !== generation || disposed) return;
-    status = next; records = items;
-    operationOptions = operations.filter(operation => operation.security?.some(option => option.length))
-      .map(operation => ({ value: operation.id, label: `${operation.name} · ${operation.method} ${operation.path}` }));
-    if (!items.some(item => item.id === grantCredential)) grantCredential = items[0]?.id ?? "";
+    status = next; records = items.toSorted((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }) || a.label.localeCompare(b.label));
+
   }
   async function run(message: string, action: () => Promise<void>): Promise<void> {
     if (busy) return;
     const current = generation;
-    busy = true; progress = message; error = ""; notice = "";
+    busy = true; progress = message; error = ""; if (message) notice = "";
     try { await action(); }
     catch (failure) { if (current === generation && !disposed) error = safeVaultError(failure).message; }
     finally { clearInputs(); if (current === generation && !disposed) { busy = false; progress = ""; } }
@@ -106,7 +102,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const current = generation;
     let password = take("create-password");
     const matches = password === take("confirm-password");
-    if (!matches || password.length < 12) { password = ""; error = "Enter matching passwords with at least 12 characters."; return; }
+    if (!matches || password.length < 3) { password = ""; error = "Enter matching passwords with at least 3 characters."; return; }
     let recovery = "";
     try {
       recovery = await vaultCall("prepareCreate", [password]);
@@ -114,96 +110,121 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       await presentRecovery("create", recovery, current);
     } finally { password = ""; recovery = ""; }
   }
-  async function confirmRecovery(): Promise<void> {
-    let confirmation = take("confirm-recovery");
+  async function copyRecovery(): Promise<void> {
+    const current = generation;
     try {
-      if (!confirmation || confirmation !== recoveryOutput?.value) { error = "The recovery keys do not match. Enter the saved key to verify it."; return; }
+      if (recoveryOutput?.textContent) await navigator.clipboard.writeText(recoveryOutput.textContent);
+    } catch (failure) {
+      if (current === generation && !disposed) error = "Could not copy the recovery key. Select and copy it manually.";
+    }
+  }
+  function downloadRecoveryKey(value: string): void {
+    const url = URL.createObjectURL(new Blob([value + "\n"], { type: "text/plain" }));
+    const link = document.createElement("a"); link.href = url; link.download = "operations-vault-recovery-key.txt"; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+  async function confirmRecovery(): Promise<void> {
+    let confirmation = recoveryOutput?.textContent ?? "";
+    try {
+      if (!confirmation) throw new VaultError("INVALID");
       if (recoveryMode === "create") await vaultCall("confirmCreate", [confirmation]);
-      else await fresh(proof => vaultCall("addMethod", [proof, { kind: "recovery", secret: confirmation }, recoveryReplacement || undefined]));
-      clearRecovery(); await refresh(); notice = "Recovery key verified and saved. Keep your copy outside this browser.";
+      downloadRecoveryKey(confirmation);
+      clearRecovery(); await refresh(); notice = "Recovery key saved. Keep the downloaded key in a safe place.";
     } finally { confirmation = ""; }
   }
   async function saveCredential(): Promise<void> {
-    const input = { ...(credentialId ? { id: credentialId } : {}), label: credentialLabel, kind: credentialKind, value: take("credential-value") };
-    try { await fresh(proof => vaultCall("put", [proof, input])); }
+    const input = { ...(credentialId ? { id: credentialId } : {}), label: credentialLabel, kind: credentialId ? records.find(item => item.id === credentialId)!.kind : "secret" as const, value: take("credential-value") };
+    try { await vaultCall("put", [null, input]); }
     finally { input.value = ""; }
-    credentialId = ""; credentialLabel = ""; await refresh(); notice = "Credential saved.";
+    credentialId = ""; credentialLabel = ""; await refresh();
   }
-  function editCredential(item: CredentialSummary): void {
-    clearInputs(); credentialId = item.id; credentialLabel = item.label; credentialKind = item.kind;
-    panel.querySelector<HTMLInputElement>('input[name="credential-value"]')?.focus();
-  }
-  async function reviewGrant(id: string): Promise<void> {
-    grantOperation = id; grantDescriptor = null; grantScheme = "";
-    const revision = ++reviewGeneration;
-    const operation = operations.find(item => item.id === id);
-    if (!operation) return;
-    try {
-      const descriptor = await approvedOperation(operation, workflowExecutionForOperation(operation).origin);
-      if (revision === reviewGeneration && !disposed) {
-        grantDescriptor = descriptor;
-        grantScheme = descriptor.operation.security?.flat().find(scheme => scheme.kind === selectedCredential?.kind)?.name ?? "";
-      }
-    } catch (failure) { if (revision === reviewGeneration) error = safeVaultError(failure).message; }
-  }
-  async function approveGrant(): Promise<void> {
-    const operation = operations.find(item => item.id === grantOperation);
-    if (!operation || !grantDescriptor || !grantScheme) throw new VaultError("PERMISSION");
-    const current = await approvedOperation(operation, workflowExecutionForOperation(operation).origin);
-    if (current.fingerprint !== grantDescriptor.fingerprint) throw new VaultError("PERMISSION");
-    await fresh(proof => vaultCall("grant", [proof, grantCredential, grantScheme, current]));
-    await refresh(); notice = "Destination approved for this credential.";
+  async function copyCredential(id: string): Promise<void> {
+    let value = await vaultCall("copyCredential", [id]);
+    try { await navigator.clipboard.writeText(value); }
+    finally { value = ""; }
   }
   async function changePassword(): Promise<void> {
+    const current = generation;
+    passwordError = "";
     const material: Enrollment = { kind: "password", secret: take("new-password") };
+    let proof: UnlockProof | undefined;
     try {
-      if (material.secret.length < 12 || material.secret !== take("new-password-confirm")) { error = "Enter matching passwords with at least 12 characters."; return; }
-      await fresh(proof => vaultCall("addMethod", [proof, material, passwordReplacement || undefined]));
-      await refresh(); notice = "Password method saved. Other unlock methods remain available.";
-    } finally { material.secret = ""; }
+      if (material.secret.length < 3 || material.secret !== take("new-password-confirm")) { passwordError = "Enter matching passwords with at least 3 characters."; return; }
+      if (!passwordAuthentication) throw new VaultError("AUTHENTICATION");
+      proof = await passwordAuthentication.proof();
+      await vaultCall("addMethod", [proof, material, passwordReplacement || undefined]);
+      await refresh();
+      if (current !== generation || disposed) return;
+      showPassword = false; notice = passwordReplacement ? "Password replaced." : "Password added.";
+    } catch (failure) {
+      if (current === generation && !disposed) passwordError = safeVaultError(failure).message;
+    } finally { material.secret = ""; if (proof) wipe(proof); }
   }
   async function addPasskey(): Promise<void> {
-    await fresh(async proof => {
-      const material = await vaultCeremony(signal => enrollPasskey(signal));
-      try { await vaultCall("addMethod", [proof, material]); } finally { material.prf.fill(0); }
-    });
-    await refresh(); notice = "Passkey verified and added.";
-  }
-  async function prepareRecovery(): Promise<void> {
     const current = generation;
-    let recovery = await fresh(proof => vaultCall("prepareRecovery", [proof]));
-    try { await presentRecovery("replace", recovery, current); }
-    finally { recovery = ""; }
+    passkeyError = "";
+    let enrolling = false;
+    let proof: UnlockProof | undefined;
+    try {
+      if (!passkeyAuthentication) throw new VaultError("AUTHENTICATION");
+      proof = await passkeyAuthentication.proof();
+      enrolling = true;
+      const material = await vaultCeremony(signal => enrollPasskey(signal));
+      enrolling = false;
+      try { await vaultCall("addMethod", [proof, material]); } finally { material.prf.fill(0); }
+      await refresh();
+      if (current !== generation || disposed) return;
+      showPasskey = false; notice = "Passkey verified and added.";
+    } catch (failure) {
+      if (current === generation && !disposed) {
+        const safe = safeVaultError(failure);
+        passkeyError = enrolling && safe.code === "UNAVAILABLE"
+          ? "Passkey encryption (WebAuthn PRF) is unavailable in this browser or passkey provider. Your existing vault is unchanged."
+          : safe.message;
+      }
+    } finally { if (proof) wipe(proof); }
   }
-  async function presentRecovery(mode: "create" | "replace", value: string, current: number): Promise<void> {
+  async function presentRecovery(mode: "create" | "rotate", value: string, current: number): Promise<void> {
     if (current !== generation || disposed) throw new VaultError("CANCELLED");
     recoveryMode = mode;
     await tick();
     if (current !== generation || disposed) throw new VaultError("CANCELLED");
-    if (recoveryOutput) recoveryOutput.value = value;
+    if (recoveryOutput) recoveryOutput.textContent = value;
   }
   async function rotate(): Promise<void> {
+    const current = generation;
     const proofs: UnlockProof[] = [];
     try {
-      for (const method of status.methods) {
+      for (const method of status.methods.filter(method => method.kind !== "recovery")) {
         const component = rotationAuthentication[method.id];
         if (!component) throw new VaultError("AUTHENTICATION");
         proofs.push(await component.proof());
       }
-      await vaultCall("rotate", [proofs]); showRotation = false; await refresh(); notice = "Vault encryption key rotated. Save a new encrypted backup.";
+      let result = await vaultCall("rotate", [proofs]);
+      showRotation = false;
+      try {
+        downloadRecoveryKey(result.recovery);
+        await refresh(); await presentRecovery("rotate", result.recovery, current);
+      }
+      finally { result.recovery = ""; }
+      notice = "Vault encryption key rotated. Your new recovery key was downloaded. Save a new encrypted export.";
     } finally { proofs.forEach(wipe); }
   }
-  async function backup(): Promise<void> {
-    const content = await fresh(proof => vaultCall("backup", [proof]));
+  function downloadVault(content: string, filename = "operations-secrets-vault.json"): void {
     const url = URL.createObjectURL(new Blob([content], { type: "application/json" }));
-    const link = document.createElement("a"); link.href = url; link.download = "operations-secrets-vault.json"; link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 0); notice = "Encrypted backup downloaded. Its unlock methods are those saved in that backup.";
+    const link = document.createElement("a"); link.href = url; link.download = filename; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+  async function exportVault(): Promise<void> {
+    const content = await vaultCall("backup", []);
+    downloadVault(content);
+    notice = "Encrypted export downloaded. Its unlock methods are those saved in that export.";
   }
   async function selectRestore(event: Event): Promise<void> {
     const input = event.currentTarget as HTMLInputElement;
     const file = input.files?.[0]; input.value = "";
     if (!file) return;
-    await run("Reading encrypted backup…", async () => {
+    await run("Reading encrypted export…", async () => {
       const current = generation;
       clearRestore();
       if (file.size > vaultLimits.backupBytes) throw new VaultError("LIMIT");
@@ -232,201 +253,331 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const proof = await restoreAuthentication.proof();
     let currentProof: UnlockProof | undefined;
     try {
-      if (status.exists) { if (!authentication) throw new VaultError("AUTHENTICATION"); currentProof = await authentication.proof(); }
-      await vaultCall("restore", [restorePayload, proof, currentProof]);
-      clearRestore(); await refresh(); notice = "Backup restored. Approve destinations again before using its credentials.";
+      if (status.exists) { if (!replacementAuthentication) throw new VaultError("AUTHENTICATION"); currentProof = await replacementAuthentication.proof(); }
+      let previousExport: string | undefined;
+      if (currentProof) {
+        previousExport = await vaultCall("backup", [currentProof, true]);
+        if (JSON.parse(previousExport).records.length > 0)
+          downloadVault(previousExport, "operations-secrets-vault-before-replacement.json");
+      }
+      await vaultCall("restore", [restorePayload, proof, currentProof, previousExport]);
+      clearRestore(); await refresh(); notice = "Vault imported.";
     } finally { wipe(proof); if (currentProof) wipe(currentProof); }
   }
   async function saveIdle(enabled: boolean, minutes: number): Promise<void> {
-    await saveVaultPreferences({ idleLockEnabled: enabled, idleLockMinutes: minutes });
-    preferences = { idleLockEnabled: enabled, idleLockMinutes: minutes };
+    if (idleSaving || busy) return;
+    const current = generation;
+    idleSaving = true;
+    try {
+      await saveVaultPreferences({ idleLockEnabled: enabled, idleLockMinutes: minutes });
+      if (current !== generation || disposed) return;
+      preferences = { idleLockEnabled: enabled, idleLockMinutes: minutes };
+      idleMinutes = String(minutes);
+    } catch (failure) {
+      if (current === generation && !disposed) error = safeVaultError(failure).message;
+    } finally { idleSaving = false; }
   }
 
   onMount(() => {
     const unsubscribe = subscribeVaultLock(locked);
-    void run("Loading secrets vault…", async () => { preferences = await loadVaultPreferences(); await refresh(); ready = true; });
+    void run("Loading secrets vault…", async () => { preferences = await loadVaultPreferences(); idleMinutes = String(preferences.idleLockMinutes); await refresh(); ready = true; });
     return () => { disposed = true; generation++; unsubscribe(); if (busy || recoveryMode) lockVaultLocally(); clearInputs(); clearRecovery(); clearRestore(); };
   });
 </script>
 
+{#snippet vaultImport()}
+  <input bind:this={restoreInput} type="file" accept=".json,application/json" aria-label="Encrypted vault export" onchange={event => void selectRestore(event)} hidden />
+  {#if restoreStatus}
+    <p class="destination">Selected export: {restoreFilename}</p>
+    <VaultAuthentication bind:this={restoreAuthentication} status={restoreStatus} disabled={busy} label="Export" />
+    {#if status.exists}<VaultAuthentication bind:this={replacementAuthentication} {status} disabled={busy} label="Current vault" detectMethod inputLabel="Password, or recovery key for the current vault" />{/if}
+    <div class="actions"><button type="button" disabled={busy} onclick={() => run(status.exists ? "Replacing vault…" : "Importing vault…", restore)}>{status.exists ? "Authenticate and replace vault" : "Authenticate and import vault"}</button>
+      <button type="button" disabled={busy} onclick={() => { clearInputs(); clearRestore(); }}>Cancel</button></div>
+  {/if}
+{/snippet}
+
 <section bind:this={panel} class="secrets-settings" aria-label="Secrets vault">
-  <div class="toolbar">
-    <strong>{ready ? status.exists ? status.unlocked ? "Vault unlocked" : "Vault locked" : "No vault created" : "Secrets vault"}</strong>
-    {#if status.unlocked || busy}
+  {#if !status.exists}
+  <div class="toolbar vault-status">
+    <div class="vault-status-message">
+      <MaterialIcon name="brightness_alert" size={18} />
+      <p class="help"><strong>{ready ? "No vault has been created:" : "Secrets vault"}</strong>{#if ready && !status.exists}{" "}Use a vault to help protect stored data required as input in the workflows.{/if}</p>
+    </div>
+    {#if busy}
       <div class="actions">
-        {#if status.unlocked}<button type="button" onclick={() => void manualLock()}>Lock vault</button>
-        {:else}<button type="button" onclick={() => void manualLock()}>Cancel action</button>{/if}
+        <button type="button" onclick={() => void manualLock()}>Cancel action</button>
       </div>
     {/if}
   </div>
+  {/if}
   <div class="vault-info" role="note">
-    <p class="help">Credentials are encrypted for this site in this browser profile. Hiding this page locks the vault. Keep an encrypted backup and your recovery key outside this browser.</p>
-    <p class="help">If you lose your password and every other unlock method, the vault cannot be recovered. An encrypted backup still needs a valid password, recovery key or passkey.</p>
+    <MaterialIcon name="brightness_alert" size={18} />
+    <p class="help"><strong>Vault storage is encrypted:</strong> Data in the vault is stored locally in this browser profile for this site, encrypted.</p>
+  </div>
+  <div class="vault-info" role="note">
+    <MaterialIcon name="brightness_alert" size={18} />
+    <p class="help"><strong>Automatic locking:</strong> Closing or reloading this page locks the vault.</p>
+  </div>
+  <div class="vault-info" role="note">
+    <MaterialIcon name="brightness_alert" size={18} />
+    <p class="help"><strong>Encrypted exports:</strong> Exported vault files remain encrypted. Importing one requires its password, recovery key or passkey.</p>
+  </div>
+  <div class="vault-info" role="note">
+    <MaterialIcon name="brightness_alert" size={18} />
+    <p class="help"><strong>Lost unlock methods can not be recovered:</strong> the vault storage is managed locally in the user’s browser.</p>
   </div>
   {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if progress || notice}<p class="notice" role="status">{progress || notice}</p>{/if}
 
   {#if ready && !status.exists && recoveryMode !== "create"}
-    <form class="card" onsubmit={event => { event.preventDefault(); void run("Preparing vault…", create); }}>
-      <h3>Create a vault</h3>
-      <label>New vault password<input name="create-password" type="password" minlength="12" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
-      <label>Confirm vault password<input name="confirm-password" type="password" minlength="12" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
-      <p class="help">Use at least 12 characters. You will verify a recovery key before the vault is saved.</p>
-      <button disabled={busy}>Create vault</button>
-    </form>
+    <div class="card">
+      <form id={createFormId} class="vault-create-form" onsubmit={event => { event.preventDefault(); void run("Preparing vault…", create); }}>
+        <input type="hidden" name="username" autocomplete="username" value="Operations vault" />
+        <label>New vault password<input name="create-password" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
+        <label>Confirm vault password<input name="confirm-password" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
+      </form>
+      <div class="actions creation-actions">
+        <button type="button" aria-label="Import vault" disabled={busy} onclick={() => restoreInput?.click()}><MaterialIcon name="upload" size={18} />Import</button>
+        <button type="submit" form={createFormId} aria-label="Create vault" disabled={busy}><MaterialIcon name="add" size={18} />Create</button>
+      </div>
+      {@render vaultImport()}
+    </div>
   {/if}
 
-  {#if ready && status.exists}
-    <form class="card" onsubmit={event => { event.preventDefault(); if (!status.unlocked) void run("Unlocking vault…", async () => { await fresh(proof => vaultCall("unlock", [proof])); await refresh(); }); }}>
-      <h3>{status.unlocked ? "Confirm management actions" : "Unlock the vault"}</h3>
-      <VaultAuthentication bind:this={authentication} {status} disabled={busy} label={status.unlocked ? "Confirm action" : "Unlock"} />
-      {#if status.unlocked}<p class="help">Enter fresh authentication before each credential, destination, unlock-method or backup change below.</p>
-      {:else}<button disabled={busy}>Unlock vault</button>{/if}
+  {#if ready && status.exists && !status.unlocked}
+    <form class="card" onsubmit={event => { event.preventDefault(); if (!status.unlocked) void run("", async () => { await fresh(proof => vaultCall("unlock", [proof])); await refresh(); }); }}>
+      <VaultAuthentication bind:this={authentication} {status} disabled={busy} label="Unlock">
+        {#snippet action()}{#if !status.unlocked}<button class="unlock-vault" type="submit" aria-label="Unlock vault" disabled={busy}><MaterialIcon name="password" size={20} /></button>{/if}{/snippet}
+      </VaultAuthentication>
     </form>
   {/if}
 
   {#if recoveryMode}
-    <form class="card recovery" onsubmit={event => { event.preventDefault(); void run("Verifying recovery key…", confirmRecovery); }}>
-      <h3>Save and verify your recovery key</h3>
-      <p class="help">This is its only presentation. Save it securely, then enter the saved key below. Anyone with this key and an encrypted backup can unlock that backup.</p>
-      <label>Recovery key<textarea bind:this={recoveryOutput} readonly rows="2" spellcheck="false" aria-label="Generated recovery key"></textarea></label>
-      <label>Verify saved recovery key<input name="confirm-recovery" type="password" required autocomplete="off" spellcheck="false" data-vault-sensitive disabled={busy} /></label>
-      <div class="actions"><button disabled={busy}>Verify and save recovery key</button><button type="button" disabled={busy} onclick={cancelRecovery}>Cancel and lock</button></div>
-    </form>
+    <div class="card recovery" data-1p-ignore data-lpignore="true">
+      <span class="recovery-label">Recovery key</span>
+      <div class="recovery-key">
+        <pre bind:this={recoveryOutput} aria-label="Generated recovery key"></pre>
+        <HintButton label="Copy" aria-label="Copy recovery key" disabled={busy} onclick={() => void copyRecovery()}>
+          {#snippet child({ props })}<button {...props} class="recovery-copy" type="button"><MaterialIcon name="content_copy" size={18} /></button>{/snippet}
+        </HintButton>
+      </div>
+      <p class="help">This is its only presentation. Save it securely. Anyone with this key and an encrypted export can unlock that export.</p>
+      <div class="actions recovery-actions"><button type="button" disabled={busy} onclick={() => void run("Saving recovery key…", confirmRecovery)}><MaterialIcon name="download" size={18} />Save recovery key</button></div>
+    </div>
   {/if}
 
   {#if ready && status.unlocked}
     <div class="card">
-      <h3>Credentials</h3>
-      {#if !records.length}<p class="help">No credentials saved.</p>{/if}
+      <form class="subform" onsubmit={event => { event.preventDefault(); void run("Saving credential…", saveCredential); }}>
+        {#if credentialId}<h4>Replace credential</h4>{/if}
+        <div class="credential-fields">
+          <input aria-label="Credential label" placeholder="Key" bind:value={credentialLabel} maxlength="120" required disabled={busy} />
+          <input aria-label={credentialId ? "Replacement value" : "Credential value"} placeholder="Value" name="credential-value" type="password" required autocomplete="off" spellcheck="false" data-vault-sensitive disabled={busy} />
+          <button class="credential-save" type="submit" aria-label="Save credential" disabled={busy}><MaterialIcon name="save" size={20} /><span>Save</span></button>
+        </div>
+        {#if credentialId}<div class="actions"><button type="button" disabled={busy} onclick={() => { clearInputs(); credentialId = ""; credentialLabel = ""; }}>Cancel</button></div>{/if}
+      </form>
+    </div>
+    {#if records.length}
+    <div class="card">
       <ul class="records">
         {#each records as item (item.id)}
-          <li><div class="record-heading"><div><strong>{item.label}</strong><small>{item.kind === "bearer" ? "Bearer token" : "Header API key"} · {item.grants.length} approved destinations</small></div>
-            <div class="actions"><button type="button" disabled={busy} onclick={() => editCredential(item)}>Replace</button>
-              <button type="button" disabled={busy} onclick={() => run("Removing credential…", async () => { await fresh(proof => vaultCall("remove", [proof, item.id])); await refresh(); })}>Remove</button></div></div>
-            {#each item.grants as grant (grant.id)}
-              <div class="grant"><span>{grant.descriptor.operation.method} {grant.descriptor.origin}{grant.descriptor.operation.path}<small>{grant.scheme}</small></span>
-                <button type="button" disabled={busy} onclick={() => run("Revoking destination…", async () => { await fresh(proof => vaultCall("revoke", [proof, item.id, grant.id])); await refresh(); })}>Revoke</button></div>
-            {/each}
+          <li><div class="record-heading"><div><strong>{item.label}</strong></div>
+            <div class="actions"><button type="button" disabled={busy} onclick={() => run("", () => copyCredential(item.id))}><MaterialIcon name="content_copy" size={18} />Copy</button>
+              <button type="button" disabled={busy} onclick={() => run("Removing credential…", async () => { await vaultCall("remove", [null, item.id]); await refresh(); })}><MaterialIcon name="delete" size={18} />Remove</button></div></div>
+
           </li>
         {/each}
       </ul>
-      <form class="subform" onsubmit={event => { event.preventDefault(); void run("Saving credential…", saveCredential); }}>
-        <h4>{credentialId ? "Replace credential" : "Add credential"}</h4>
-        <label>Credential label<input bind:value={credentialLabel} maxlength="120" required disabled={busy} /></label>
-        <label for="vault-credential-kind">Credential type</label>
-        <FieldSelect id="vault-credential-kind" label="Credential type" value={credentialKind} includePlaceholder={false} disabled={busy}
-          options={[{ value: "bearer", label: "Bearer token" }, { value: "apiKey", label: "Header API key" }]}
-          onValueChange={value => credentialKind = value as "bearer" | "apiKey"} />
-        <label>{credentialId ? "Replacement value" : "Credential value"}<input name="credential-value" type="password" required autocomplete="off" spellcheck="false" data-vault-sensitive disabled={busy} /></label>
-        <div class="actions"><button disabled={busy}>Save credential</button><button type="button" disabled={busy} onclick={() => { clearInputs(); credentialId = ""; credentialLabel = ""; }}>Cancel</button></div>
-      </form>
     </div>
-
-    {#if records.length}
-      <form class="card" onsubmit={event => { event.preventDefault(); void run("Approving destination…", approveGrant); }}>
-        <h3>Approve a destination</h3>
-        <label for="vault-grant-credential">Credential</label>
-        <FieldSelect id="vault-grant-credential" label="Approval credential" value={grantCredential} options={records.map(item => ({ value: item.id, label: item.label }))}
-          includePlaceholder={false} disabled={busy} onValueChange={value => { grantCredential = value; grantScheme = ""; void reviewGrant(grantOperation); }} />
-        <label for="vault-grant-operation">Operation</label>
-        <FieldSelect id="vault-grant-operation" label="Approval operation" value={grantOperation} options={operationOptions} disabled={busy} onValueChange={value => void reviewGrant(value)} />
-        {#if grantDescriptor}
-          <p class="destination"><strong>{grantDescriptor.operation.method}</strong> {grantDescriptor.origin}{grantDescriptor.operation.path}</p>
-          <label for="vault-grant-scheme">Authentication scheme</label>
-          <FieldSelect id="vault-grant-scheme" label="Approval authentication scheme" value={grantScheme} options={schemeOptions} disabled={busy} onValueChange={value => grantScheme = value} />
-          {#if selectedScheme}<p class="help">This credential may be sent in the {selectedScheme.header} header for this operation. Approval expires when the operation definition or destination changes.</p>{/if}
-        {/if}
-        <button disabled={busy || !grantDescriptor || !grantScheme}>Approve destination</button>
-        <p class="help">Revocation stops future use in this vault. It cannot undo a request already received by an API or invalidate copies held elsewhere.</p>
-      </form>
     {/if}
 
+
+  {/if}
+  {#if ready && status.exists}
     <div class="card">
-      <h3>Unlock methods</h3>
-      <ul class="records">{#each status.methods as method, index (method.id)}<li class="record-heading"><span>{methodNames[method.kind]} {index + 1}</span>
-        <button type="button" disabled={busy || status.methods.length < 2} onclick={() => run("Removing unlock method…", async () => { await fresh(proof => vaultCall("removeMethod", [proof, method.id])); await refresh(); })}>Remove method</button></li>{/each}</ul>
-      <p class="help">Use a different retained method to authenticate removal. Removing a method does not change previously downloaded backups.</p>
-      <form class="subform" onsubmit={event => { event.preventDefault(); void run("Saving password method…", changePassword); }}>
-        <h4>Password</h4>
-        <FieldSelect id="vault-password-replacement" label="Password method to replace" value={passwordReplacement} disabled={busy}
-          options={status.methods.filter(method => method.kind === "password").map((method, index) => ({ value: method.id, label: `Replace password ${index + 1}` }))}
-          onValueChange={value => passwordReplacement = value} />
-        <p class="help">Leave the method unselected to add another password.</p>
-        <label>New password<input name="new-password" type="password" minlength="12" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
-        <label>Confirm new password<input name="new-password-confirm" type="password" minlength="12" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
-        <button disabled={busy}>Save password method</button>
-      </form>
-      <div class="subform"><h4>Recovery key</h4>
-        <FieldSelect id="vault-recovery-replacement" label="Recovery method to replace" value={recoveryReplacement} disabled={busy || recoveryMode !== null}
-          options={status.methods.filter(method => method.kind === "recovery").map((method, index) => ({ value: method.id, label: `Replace recovery key ${index + 1}` }))}
-          onValueChange={value => recoveryReplacement = value} />
-        <p class="help">Leave the method unselected to add a recovery key. The new key must be saved and verified before it replaces a method.</p>
-        <button type="button" disabled={busy || recoveryMode !== null} onclick={() => run("Generating recovery key…", prepareRecovery)}>Generate recovery key</button>
+      <div class="idle-settings">
+      <button class="idle-toggle" type="button" role="switch" aria-checked={preferences.idleLockEnabled} disabled={busy || idleSaving}
+        onclick={() => void saveIdle(!preferences.idleLockEnabled, preferences.idleLockMinutes)}>
+        <span>Lock after inactivity</span><span class="default-switch" aria-hidden="true"><span></span></span>
+      </button>
+      <div class="idle-control" class:disabled={busy || idleSaving || !preferences.idleLockEnabled}>
+        <FieldInteger id="vault-idle-minutes" label="Minutes of inactivity" value={idleMinutes}
+          minimum={1} maximum={maximumIdleMinutes} required disabled={busy || idleSaving || !preferences.idleLockEnabled}
+          onValueChange={value => { idleMinutes = value; }}
+          onValueCommit={() => {
+            const minutes = Number(idleMinutes);
+            if (Number.isInteger(minutes) && minutes >= 1 && minutes <= maximumIdleMinutes)
+              void saveIdle(preferences.idleLockEnabled, minutes);
+          }} />
+        <span aria-hidden="true">min</span>
       </div>
-      <div class="subform"><h4>Passkey</h4><p class="help">Use an authenticator that supports passkey encryption. A failed enrollment leaves your existing methods intact.</p>
-        <button type="button" disabled={busy} onclick={() => run("Verifying passkey…", addPasskey)}>Add passkey</button></div>
-      <div class="subform"><h4>Rotate vault encryption key</h4><p class="help">Verify every retained unlock method to re-encrypt the current vault. Older backups keep their original keys and methods.</p>
+      </div>
+    </div>
+  {/if}
+  {#if ready && status.unlocked}
+    <div class="card rotation-card">
+      <div class="vault-password-row">
+        <button type="button" disabled={busy} aria-expanded={showPassword} aria-controls={`${createFormId}-password`}
+          onclick={() => { clearInputs(); passwordError = ""; if (!showPassword) passwordReplacement = status.methods.find(method => method.kind === "password")?.id ?? ""; showPassword = !showPassword; }}><MaterialIcon name={showPassword ? "backspace" : "password"} size={18} />{showPassword ? "Cancel" : status.methods.some(method => method.kind === "password") ? "Replace password" : "Add password"}</button>
+        <p class="help">Change the vault password. Your stored data and recovery key remain unchanged.</p>
+      </div>
+      {#if showPassword}
+        <form id={`${createFormId}-password`} class="rotation-body" inert={!showPassword}
+          onsubmit={event => { event.preventDefault(); void run("", changePassword); }}
+          transition:slide={{ duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240, easing: cubicInOut }}>
+          {#if status.methods.filter(method => method.kind === "password").length > 1}
+            <FieldSelect id="vault-password-replacement" label="Password to replace" value={passwordReplacement} disabled={busy} includePlaceholder={false}
+              options={status.methods.filter(method => method.kind === "password").map((method, index) => ({ value: method.id, label: `Password ${index + 1}` }))}
+              onValueChange={value => { passwordAuthentication?.clear(); passwordReplacement = value; }} />
+          {/if}
+          <label>New password<input name="new-password" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
+          <label for={`${createFormId}-new-password-confirm`}>Confirm new password</label>
+          <input id={`${createFormId}-new-password-confirm`} name="new-password-confirm" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} />
+          <div class="password-verification-divider" role="separator"></div>
+          <VaultAuthentication bind:this={passwordAuthentication}
+            {status} detectMethod disabled={busy} label="Authorize password change" inputLabel="Password, or recovery key">
+            {#snippet action()}
+              <HintButton label="Verify and replace password" disabled={busy}>
+                {#snippet child({ props })}<button {...props} class="unlock-vault" type="submit"><MaterialIcon name="password" size={20} /></button>{/snippet}
+              </HintButton>
+            {/snippet}
+          </VaultAuthentication>
+          {#if passwordError}<p class="error" role="alert"
+            transition:slide={{ duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240, easing: cubicInOut }}>{passwordError}</p>{/if}
+        </form>
+      {/if}
+    </div>
+    <div class="card rotation-card">
+      <div class="vault-passkey-row">
+        <button type="button" disabled={busy} aria-expanded={showPasskey} aria-controls={`${createFormId}-passkey`}
+          onclick={() => { passkeyAuthentication?.clear(); passkeyError = ""; showPasskey = !showPasskey; }}><MaterialIcon name={showPasskey ? "backspace" : "passkey"} size={18} />{showPasskey ? "Cancel" : "Add passkey"}</button>
+        <p class="help">Add a passkey to unlock this vault. Your provider must support passkey encryption.</p>
+      </div>
+      {#if showPasskey}
+        {#snippet passkeyAction()}
+          <HintButton label="Verify and add passkey" disabled={busy}>
+            {#snippet child({ props })}<button {...props} class="unlock-vault" type="submit"><MaterialIcon name="password" size={20} /></button>{/snippet}
+          </HintButton>
+        {/snippet}
+        <form id={`${createFormId}-passkey`} class="rotation-body" inert={!showPasskey}
+          onsubmit={event => { event.preventDefault(); void run("", addPasskey); }}
+          transition:slide={{ duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240, easing: cubicInOut }}>
+          <VaultAuthentication bind:this={passkeyAuthentication}
+            status={{ ...status, methods: status.methods.some(method => method.kind === "password") ? status.methods.filter(method => method.kind === "password") : status.methods }}
+            disabled={busy} label="Authorize passkey" inputLabel={status.methods.some(method => method.kind === "password") ? "Password" : undefined} action={passkeyAction} />
+          {#if passkeyError}<p class="error" role="alert"
+            transition:slide={{ duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240, easing: cubicInOut }}>{passkeyError}</p>{/if}
+        </form>
+      {/if}
+    </div>
+    <div class="card rotation-card">
+      <div class="vault-rotate-row">
+        <button type="button" disabled={busy || !status.methods.some(method => method.kind !== "recovery")} aria-expanded={showRotation} aria-controls={`${createFormId}-rotation`} onclick={() => { if (showRotation) clearInputs(); showRotation = !showRotation; }}><MaterialIcon name={showRotation ? "backspace" : "lock_reset"} size={18} />{showRotation ? "Cancel" : "Rotate key"}</button>
+        <p class="help">{status.methods.some(method => method.kind !== "recovery") ? "Rotate the vault’s encryption key and generate a new recovery key. Your password remains unchanged." : "Add a password or passkey before rotating keys."}</p>
+      </div>
         {#if showRotation}
-          {#each status.methods as method, index (method.id)}
-            <VaultAuthentication bind:this={rotationAuthentication[method.id]} status={{ ...status, methods: [method] }} disabled={busy} label={`Verify ${methodNames[method.kind].toLowerCase()} ${index + 1}`} />
+          {#snippet rotationAction()}
+            <HintButton label="Verify and rotate recovery key" aria-label="Rotate key" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}>
+              {#snippet child({ props })}<button {...props} class="unlock-vault" type="button"><MaterialIcon name="password" size={20} /></button>{/snippet}
+            </HintButton>
+          {/snippet}
+          <div id={`${createFormId}-rotation`} class="rotation-body" inert={!showRotation}
+            transition:slide={{ duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240, easing: cubicInOut }}>
+          {#each status.methods.filter(method => method.kind !== "recovery") as method, index (method.id)}
+            <VaultAuthentication bind:this={rotationAuthentication[method.id]} status={{ ...status, methods: [method] }} disabled={busy} label={`Verify ${methodNames[method.kind].toLowerCase()} ${index + 1}`}
+              action={index === status.methods.filter(item => item.kind !== "recovery").length - 1 ? rotationAction : undefined}
+              inputLabel={method.kind === "password" ? `Password${status.methods.filter(item => item.kind === "password").length > 1 ? ` ${status.methods.filter(item => item.kind === "password").findIndex(item => item.id === method.id) + 1}` : ""}` : undefined} />
           {/each}
-          <div class="actions"><button type="button" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}>Verify all and rotate key</button>
-            <button type="button" disabled={busy} onclick={() => { clearInputs(); showRotation = false; }}>Cancel</button></div>
-        {:else}<button type="button" disabled={busy} onclick={() => showRotation = true}>Prepare key rotation</button>{/if}
-      </div>
+          </div>
+        {/if}
     </div>
   {/if}
 
-  {#if ready}
+  {#if ready && status.exists}
     <div class="card">
-      <h3>Encrypted backups</h3>
-      <p class="help">Restoring replaces this browser's vault and removes restored destination approvals. Backups are encrypted; keep their password, recovery key or passkey available.</p>
-      <div class="actions">{#if status.unlocked}<button type="button" disabled={busy} onclick={() => run("Preparing encrypted backup…", backup)}>Download encrypted backup</button>{/if}
-        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}>Choose backup to restore</button></div>
-      <input bind:this={restoreInput} type="file" accept=".json,application/json" aria-label="Encrypted vault backup" onchange={event => void selectRestore(event)} hidden />
-      {#if restoreStatus}
-        <p class="destination">Selected backup: {restoreFilename}</p>
-        <VaultAuthentication bind:this={restoreAuthentication} status={restoreStatus} disabled={busy} label="Backup" />
-        {#if status.exists}<p class="help">Also authenticate the current vault using the form above before replacing it.</p>{/if}
-        <div class="actions"><button type="button" disabled={busy} onclick={() => run("Restoring encrypted backup…", restore)}>Authenticate and replace vault</button>
-          <button type="button" disabled={busy} onclick={() => { clearInputs(); clearRestore(); }}>Cancel</button></div>
-      {/if}
-    </div>
-    <div class="card">
-      <h3>Automatic locking</h3>
-      <label class="checkbox"><input type="checkbox" checked={preferences.idleLockEnabled} disabled={busy}
-        onchange={event => void run("Saving lock preference…", () => saveIdle(event.currentTarget.checked, preferences.idleLockMinutes))} />Lock after inactivity</label>
-      <label>Minutes of inactivity<input type="number" min="1" max="1440" step="1" value={preferences.idleLockMinutes} disabled={busy || !preferences.idleLockEnabled}
-        onchange={event => { const minutes = Number(event.currentTarget.value); void run("Saving lock preference…", () => saveIdle(preferences.idleLockEnabled, minutes)); }} /></label>
-      <p class="help">Idle locking is optional. Hiding or leaving this page always locks the vault.</p>
+      <div class="vault-export-row">
+        <button type="button" disabled={busy} onclick={() => run("", exportVault)}><MaterialIcon name="download" size={18} />Export vault</button>
+        <p class="help">Exported vault data remains encrypted at rest and during transfer.</p>
+      </div>
     </div>
   {/if}
+  {#if ready && status.exists}
+    <div class="card">
+      <div class="vault-replace-row">
+        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}><MaterialIcon name="sync" size={18} />Replace vault</button>
+        <p class="help">Importing replaces any existing vault in this browser. Exports are encrypted; keep their password, recovery key or passkey available.</p>
+      </div>
+      {@render vaultImport()}
+    </div>
+  {/if}
+
 </section>
 
 <style>
   .secrets-settings { display: grid; gap: 12px; min-width: 0; padding: 16px; color: var(--color-foreground); --field-background: var(--color-background); --field-foreground: var(--color-foreground); }
-  .toolbar, .record-heading, .grant { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .toolbar, .record-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .actions > button { display: inline-flex; align-items: center; gap: 6px; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .card, .subform { display: grid; gap: 10px; min-width: 0; }
+  .recovery-label { font-size: 12px; font-weight: 700; }
+  .recovery-key { position: relative; min-width: 0; border-radius: 4px; background: var(--color-background); }
+  .recovery-key pre { margin: 0; padding: 8px 40px 8px 8px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: monospace; font-size: 12px; }
+  .recovery-copy { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; background: transparent; color: inherit; }
+  .vault-replace-row, .vault-export-row, .vault-rotate-row, .vault-passkey-row, .vault-password-row { display: flex; align-items: center; gap: 12px; }
+  .vault-replace-row > button, .vault-export-row > button, .vault-rotate-row > button, .vault-passkey-row > button, .vault-password-row > button { display: inline-flex; align-items: center; justify-content: flex-start; text-align: left; gap: 6px; flex: 0 0 160px; width: 160px; white-space: nowrap; }
+  .vault-replace-row > p, .vault-export-row > p, .vault-rotate-row > p, .vault-passkey-row > p, .vault-password-row > p { min-width: 0; }
+  .creation-actions, .recovery-actions { justify-content: flex-end; }
+  .unlock-vault { display: grid; place-items: center; justify-self: end; flex-shrink: 0; align-self: stretch; min-width: 40px; border-radius: 0 4px 4px 0; }
+  .unlock-vault:hover:enabled, .unlock-vault:focus { color: var(--color-background); }
+  .creation-actions button, .recovery-actions button { display: inline-flex; align-items: center; gap: 6px; }
+  .card, .subform, .vault-create-form { display: grid; gap: 10px; min-width: 0; }
+  .rotation-card { gap: 0; }
+  .password-verification-divider { height: 1px; margin: 6px 0; background: repeating-linear-gradient(to right, var(--color-background) 0 8px, transparent 8px 14px); }
+  .rotation-body { display: grid; gap: 10px; margin-top: 16px; padding-top: 12px; background: repeating-linear-gradient(to right, var(--color-background) 0 8px, transparent 8px 14px) top / 100% 1px no-repeat; }
   .card { padding: 14px; border-radius: 4px; background: var(--color-surface); }
-  .vault-info { display: grid; gap: 10px; padding: 14px; border-radius: 4px; background: var(--color-emphasis); color: var(--color-background); }
-  .subform { padding-top: 12px; border-top: 1px solid var(--color-background); }
-  h3, h4, p { margin: 0; }
-  h3 { font-size: 14px; } h4, label, strong { font-size: 12px; }
+  .vault-info, .vault-status-message { display: flex; align-items: flex-start; gap: 10px; }
+  .vault-status-message { flex: 1; min-width: 0; }
+  :is(.vault-info, .vault-status-message) :global(.material-symbols-rounded) { flex-shrink: 0; margin-top: 1px; font-weight: 400; font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 20; }
+  .vault-info, .vault-status { padding: 14px; border-radius: 4px; background: var(--color-emphasis); color: var(--color-background); }
+  .credential-fields { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 7fr) auto; align-items: end; gap: 12px; }
+  .credential-save { display: flex; align-items: center; justify-content: center; gap: 6px; height: 40px; }
+  @media (max-width: 640px) { .credential-fields { grid-template-columns: minmax(0, 1fr); } .credential-save { width: 100%; } }
+
+  h4, p { margin: 0; }
+  h4, label, strong { font-size: 12px; }
   label { display: grid; gap: 8px; font-weight: 700; }
-  input:not([type="checkbox"]), textarea { box-sizing: border-box; min-width: 0; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
-  textarea { resize: vertical; overflow-wrap: anywhere; font-family: monospace; }
+  input:not([type="checkbox"]) { box-sizing: border-box; min-width: 0; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
+  .idle-settings { display: flex; align-items: center; gap: 10px; border-radius: 4px; background: var(--color-background); }
+  .idle-settings > .idle-toggle { flex: 0 0 auto; width: auto; background: transparent; }
+  .idle-control { display: flex; flex: 1; align-items: stretch; min-width: 0; border-radius: 4px; background: transparent; outline: 2px solid transparent; outline-offset: 2px; transition: outline-color 180ms ease-in; }
+  .idle-control:focus-within, .idle-control:hover:has(:enabled) { outline-color: var(--color-ring); }
+  .idle-control :global(.field-integer) { flex: 1; min-width: 0; padding-right: 4px; }
+  .idle-control :global(.field-integer :is(.integer-range, .integer-value)) { outline: none; }
+  .idle-control > span { display: flex; align-items: center; padding: 0 8px; }
+  .idle-control.disabled > span { color: var(--color-muted-foreground); }
   :global(.secrets-settings .field-select-trigger) { border-radius: 4px; font-size: 12px; }
   button { width: fit-content; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; cursor: pointer; }
   button:disabled { opacity: .55; cursor: not-allowed; }
-  .help, .notice, .destination, small { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+  .help, .notice, .destination { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
   .records { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
-  .records li { display: grid; gap: 10px; padding: 10px; border: 1px solid var(--color-background); border-radius: 4px; }
-  .records li.record-heading { display: flex; }
-  small { display: block; font-weight: 400; }
-  .grant > span { min-width: 0; flex: 1; font-size: 12px; overflow-wrap: anywhere; }
+  .records li { display: grid; gap: 10px; padding: 10px; border: 0; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); }
   .destination { padding: 10px; border-radius: 4px; background: var(--color-background); }
   .error { padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; overflow-wrap: anywhere; }
-  .checkbox { display: flex; align-items: center; gap: 8px; }
+  .idle-toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; min-height: 44px; padding: 10px 12px; background: var(--color-background); color: var(--color-catalog-foreground); text-align: left; }
+  .default-switch { box-sizing: border-box; flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-muted-foreground); transition: background-color 180ms ease-in, transform 180ms ease-in; }
+  .default-switch > span { display: block; width: 18px; height: 18px; border-radius: 2px; background: var(--color-surface); transform: translateX(0); transition: transform 180ms ease-in, background-color 180ms ease-in; }
+  .idle-toggle[aria-checked="true"] .default-switch { background: var(--color-catalog-active); }
+  .idle-toggle[aria-checked="true"] .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
+  @media (prefers-reduced-motion: no-preference) {
+    .unlock-vault :global(.material-symbols-rounded) { transition: transform 180ms ease-in; }
+    .unlock-vault:hover:enabled :global(.material-symbols-rounded), .unlock-vault:focus :global(.material-symbols-rounded) { transform: scale(1.2); }
+    .idle-toggle:hover:enabled .default-switch { transform: scale(1.10); }
+    .records .actions > button { transition: transform 180ms ease-in-out; }
+    .records .actions > button:hover:enabled { transform: scale(1.05); }
+    .credential-save { transition: transform 180ms ease-in-out; }
+    .credential-save:hover:enabled { transform: scale(1.05); }
+    .recovery-copy:hover:enabled { transform: scale(1.10); }
+    :is(.creation-actions, .recovery-actions, .vault-replace-row, .vault-export-row, .vault-rotate-row, .vault-passkey-row, .vault-password-row) button:hover:enabled { transform: scale(1.05); }
+  }
+  @media (prefers-reduced-motion: reduce) { .default-switch, .default-switch > span { transition: none; } }
 </style>

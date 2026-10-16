@@ -55,7 +55,7 @@ export function isValidWorkflowNodeClearance(value: unknown): value is number
   return typeof value === "number" && Number.isSafeInteger(value)
     && value >= workflowNodeClearanceLimits.min && value <= workflowNodeClearanceLimits.max;
 }
-type SettingValues = { theme: string; palette: string; workflowDefaults: WorkflowDefaults; developerToolbar: boolean; evaluationDetails: boolean; locale: LocaleSettings; vaultPreferences?: VaultPreferences };
+type SettingValues = { theme: string; palette: string; workflowDefaults: WorkflowDefaults; developerToolbar: boolean; evaluationDetails: boolean; tooltips: boolean; locale: LocaleSettings; vaultPreferences?: VaultPreferences };
 
 interface SettingsDatabase extends DBSchema
 {
@@ -179,10 +179,10 @@ async function inStore<Mode extends "readonly" | "readwrite", T>(mode: Mode,
 
 async function readSettings(store: Pick<SettingsStore, "get">): Promise<SavedSettings>
 {
-  const [theme, palette, workflowDefaults, developerToolbar, evaluationDetails, locale] = await Promise.all([
-    store.get("theme"), store.get("palette"), store.get("workflowDefaults"), store.get("developerToolbar"), store.get("evaluationDetails"), store.get("locale"),
+  const [theme, palette, workflowDefaults, developerToolbar, evaluationDetails, tooltips, locale] = await Promise.all([
+    store.get("theme"), store.get("palette"), store.get("workflowDefaults"), store.get("developerToolbar"), store.get("evaluationDetails"), store.get("tooltips"), store.get("locale"),
   ]);
-  return { theme, palette, workflowDefaults, developerToolbar, evaluationDetails, locale };
+  return { theme, palette, workflowDefaults, developerToolbar, evaluationDetails, tooltips, locale };
 }
 
 function normalize(saved: SavedSettings, legacy: LegacySettings, paletteIds: readonly string[]): SettingValues
@@ -192,7 +192,7 @@ function normalize(saved: SavedSettings, legacy: LegacySettings, paletteIds: rea
   const palette = typeof candidate === "string" && paletteIds.includes(candidate) ? candidate : "default";
   const workflow = saved.workflowDefaults && typeof saved.workflowDefaults === "object"
     ? saved.workflowDefaults as Partial<WorkflowDefaults> : defaultWorkflowSettings;
-  return { theme, palette, developerToolbar: saved.developerToolbar === true, evaluationDetails: saved.evaluationDetails === true, locale: normalizeLocaleSettings(saved.locale), workflowDefaults: {
+  return { theme, palette, developerToolbar: saved.developerToolbar === true, evaluationDetails: saved.evaluationDetails === true, tooltips: saved.tooltips !== false, locale: normalizeLocaleSettings(saved.locale), workflowDefaults: {
     dashed: typeof workflow.dashed === "boolean" ? workflow.dashed : defaultWorkflowSettings.dashed,
     curved: typeof workflow.curved === "boolean" ? workflow.curved : defaultWorkflowSettings.curved,
     snap: typeof workflow.snap === "boolean" ? workflow.snap : defaultWorkflowSettings.snap,
@@ -291,6 +291,6 @@ export function validateVaultPreferences(value: unknown): VaultPreferences {
   if (!value || typeof value !== "object") throw new VaultError("INVALID");
   const prefs = value as VaultPreferences;
   if (typeof prefs.idleLockEnabled !== "boolean" || !Number.isInteger(prefs.idleLockMinutes)
-    || prefs.idleLockMinutes < 1 || prefs.idleLockMinutes > 1440) throw new VaultError("INVALID");
+    || prefs.idleLockMinutes < 1 || prefs.idleLockMinutes > 10080) throw new VaultError("INVALID");
   return { idleLockEnabled: prefs.idleLockEnabled, idleLockMinutes: prefs.idleLockMinutes };
 }

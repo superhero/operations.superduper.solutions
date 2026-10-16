@@ -25,7 +25,7 @@ A random AES-256-GCM key encrypts credentials, labels and destination grants.
 Each encryption uses a fresh 96-bit IV and authenticates its format, vault,
 record, revision and key epoch. An encrypted inventory authenticates the exact
 records and unlock envelopes. Selective rollback fails authentication; a complete
-valid older backup cannot be distinguished from an intentional restore locally.
+valid older export cannot be distinguished from an intentional import locally.
 
 Independent password, recovery and optional PRF-capable passkey envelopes wrap
 the same key. Passwords use pinned Argon2id v19: 64 MiB, three iterations,
@@ -40,9 +40,14 @@ recovery remain independent choices when a provider cannot supply it.
 
 ### Credential use
 
-A dedicated worker decrypts credentials, applies an explicitly approved origin,
-base path, method, operation definition and authentication placement, then sends
-the request. Its interface has no credential getter. The initial scope supports
+Saving, replacing and removing credentials use the unlocked vault session without another password prompt. Locked or stale
+sessions cannot modify vault data. Unlock-method changes and vault replacement
+retain their own authentication.
+
+A dedicated worker decrypts credentials, validates the current operation, destination and
+authentication placement, then sends
+the request. Only an explicit Copy action returns a selected value to the page for the clipboard;
+normal workflow execution keeps plaintext in the worker. The initial scope supports
 Bearer tokens and header API keys; unsupported requirements fail closed.
 Credential destinations require HTTPS. HTTP is permitted only for literal
 `localhost`, `127.0.0.1` or `[::1]` destinations when the application's own
@@ -50,8 +55,9 @@ origin is also loopback, to support local development. A hosted application or
 an unavailable application origin cannot enable this exception.
 
 Requests reject redirects, omit browser cookies and referrers, and disable
-caching. Public inputs cannot overwrite credential headers. Schema changes
-invalidate affected approvals. Known credential echoes and authentication
+caching. Public inputs cannot overwrite credential headers. Credentials selected
+for an operation require no separate destination approval. Schema changes
+invalidate stale operation bindings. Known credential echoes and authentication
 headers are removed before results leave the worker. A redacted result stops
 dependent workflow execution without repeating the successful upstream request.
 Decoded responses are limited to 8 MiB and diagnostic responses to 16 KiB.
@@ -60,31 +66,39 @@ reliably by this mechanism.
 
 ### Locking and recovery
 
-Reload, hiding the tab, page exit and explicit locking end access. An optional
-idle timeout defaults to ten minutes when enabled; it starts disabled. Only
-trusted foreground activity resets it. Expired deadlines and stale revisions
-cannot be revived by delayed results. Focus loss alone does not lock the vault,
-but an authenticator flow that hides the page is cancelled.
+Reload, page exit and explicit locking end access. Switching tabs or minimizing
+the browser preserves access. An optional idle timeout defaults to ten minutes
+when enabled; it starts disabled. Only trusted foreground activity resets it.
+Expired deadlines and stale revisions cannot be revived by delayed results.
+Returning to a visible tab checks the existing deadline without extending it.
+Visibility changes alone neither lock the vault nor cancel pending operations.
 
 Locking terminates the worker without draining secret operations. Manual locks
 and changes use durable origin-wide counters as well as tab notifications.
 An already dispatched API request may have taken effect; cancellation does not
 undo it and never causes automatic resubmission.
 
-Encrypted export protects against storage loss. A separately saved recovery key
+Encrypted export protects against storage loss. Export copies encrypted storage
+without requiring a password or unlocking the vault; importing still requires
+a valid unlock method. A separately saved recovery key
 protects against a forgotten password. Losing every valid unlock method makes
-the vault unrecoverable, including its encrypted backups. Neither browser storage
+the vault unrecoverable, including its encrypted exports. Neither browser storage
 nor a synced passkey synchronizes the vault to another origin or device. Passkeys
 remain tied to their relying-party domain, while browser storage is isolated by
 origin. Password or recovery access is needed when the original passkey's
-relying-party domain is unavailable. Restore authenticates
+relying-party domain is unavailable. Import authenticates
 the complete snapshot before atomic replacement and removes imported grants.
 
 Password replacement rewraps the existing key. Full key rotation re-encrypts
-records and requires authentication for every retained unlock method. It does
-not revoke stolen backups or API tokens already exposed; those credentials must
-also be rotated at their providers. Deleting old records is logical deletion,
-not guaranteed physical erasure.
+records after verifying each retained password and passkey. Recovery keys are
+replaced automatically with one new 128-byte key (172 Base64 characters),
+downloaded automatically and shown for copying. Rotation never asks for the
+previous recovery key. A vault supports at most one recovery key; additional
+keys and multi-recovery-key imports are rejected.
+
+Rotation does not revoke stolen exports or API tokens already exposed; those
+credentials must also be rotated at their providers. Deleting old records is
+logical deletion, not guaranteed physical erasure.
 
 ### Trust boundary
 

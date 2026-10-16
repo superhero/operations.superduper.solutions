@@ -59,7 +59,7 @@ Given('26 saved errors including a repeated failure with a cause', async functio
       if (index === 22) error = { name: 'HeaderOnlyError', message: 'Saved error 23', stack: 'HeaderOnlyError: Saved error 23' };
       if (index === 21) error = { name: 'SettingsStorageError', message: 'Saved error 22\nCheck browser storage, then retry saving.',
         stack: 'SettingsStorageError: Saved error 22\n    at recovery.ts:6:2' };
-      return { identity: `saved-${index + 1}`, origin: { source: 'application', scope: 'example' }, error,
+      return { identity: `saved-${index + 1}`, origin: { source: 'application', scope: 'example', operation: 'startup' }, error,
         firstSeen: Date.UTC(2026, 0, 1, 10, 0), lastSeen: Date.UTC(2026, 0, 1, 10, 1), occurrences: index === 25 ? 3 : 1 };
     }));
   }, fixture);
@@ -73,12 +73,12 @@ Then('the error history shows {int} unique errors and {int} entries', async func
 When('I expand the newest recorded error', async function () { await history(this.page).locator('summary').first().click(); });
 async function expectDiagnosticOnce(diagnostic, { name, message, frames = [], code, missingStack = false }) {
   const representation = diagnostic.locator(':scope > pre');
-  await expect(representation).toHaveCount(1);
-  await expect(representation).toContainText(`${name}: ${message}`);
-  for (const frame of frames) await expect(representation).toContainText(frame);
-  if (code !== undefined) await expect(representation).toContainText(`Code: ${code}`);
-  // Count only this diagnostic's own text; the summary and nested errors have
-  // their own representations and must not be mistaken for duplicate panels.
+  await expect(representation).toHaveCount(missingStack ? 1 : 2);
+  await expect(representation.first()).toContainText(`${name}: ${message}`);
+  for (const frame of frames) await expect(representation.last()).toContainText(frame);
+  if (code !== undefined) await expect(representation.first()).toContainText(`Code: ${code}`);
+  // Count only this diagnostic's own text; nested errors have their own
+  // representations and must not be mistaken for duplicate panels.
   const ownText = await diagnostic.evaluate(element => [...element.childNodes]
     .filter(node => !(node instanceof Element && node.classList.contains('cause')))
     .map(node => node.textContent).join('\n'));
@@ -91,6 +91,10 @@ async function expectDiagnosticOnce(diagnostic, { name, message, frames = [], co
 Then('its diagnostic text appears once with codes, nested causes and related errors', async function () {
   const entry = history(this.page).locator('details.entry').first();
   const diagnostic = entry.locator('.entry-content > .diagnostic');
+  await expect(entry.locator('summary')).toHaveAttribute('aria-label', 'application · example > startup');
+  await expect(entry.locator('summary .summary-text')).toHaveText('application · examplekeyboard_arrow_rightstartup');
+  await expect(entry.locator('summary .origin-separator .material-symbols-rounded')).toHaveText('keyboard_arrow_right');
+  await expect(entry.locator('summary')).not.toContainText('Saved error 26');
   await expect(entry.getByText('3 occurrences', { exact: true })).toBeVisible();
   await expectDiagnosticOnce(diagnostic, { name: 'AggregateError', message: 'Saved error 26', code: 'SAVE_FAILED', frames: ['at saved-operation.ts:10:2'] });
   const cause = diagnostic.locator(':scope > .cause').filter({ has: this.page.locator(':scope > h5', { hasText: 'Caused by' }) });
@@ -113,13 +117,13 @@ Then('its diagnostic text appears once with codes, nested causes and related err
   assert.equal((await entry.locator('.timestamps dd').allTextContents()).every(Boolean), true);
 });
 Then('saved stack formats retain their messages and missing-trace notices', async function () {
-  for (const detail of [
+  for (const [index, detail] of [
     { name: 'FirefoxError', message: 'Saved error 25', frames: ['save@https://example.com/firefox.js:12:4', '@https://example.com/main.js:3:1'] },
     { name: 'NoStackError', message: 'Saved error 24', missingStack: true },
     { name: 'HeaderOnlyError', message: 'Saved error 23', missingStack: true },
     { name: 'SettingsStorageError', message: 'Saved error 22\nCheck browser storage, then retry saving.', frames: ['at recovery.ts:6:2'] },
-  ]) {
-    const entry = history(this.page).locator('details.entry').filter({ has: this.page.locator('summary', { hasText: `${detail.name}: ${detail.message}` }) });
+  ].entries()) {
+    const entry = history(this.page).locator('details.entry').nth(index + 1);
     await entry.locator('summary').click();
     await expectDiagnosticOnce(entry.locator('.entry-content > .diagnostic'), detail);
   }
@@ -127,7 +131,8 @@ Then('saved stack formats retain their messages and missing-trace notices', asyn
 When('I open the older recorded errors', async function () { await history(this.page).getByRole('button', { name: 'Older errors', exact: true }).click(); });
 Then('the error history shows the oldest saved error', async function () {
   await expect(history(this.page).locator('details.entry')).toHaveCount(1);
-  await expect(history(this.page).locator('summary')).toContainText('Saved error 1');
+  await history(this.page).locator('summary').click();
+  await expect(history(this.page).locator('.diagnostic > pre').first()).toContainText('Saved error 1');
 });
 When('I reload and open the recorded errors', async function () {
   await this.page.reload();
@@ -146,7 +151,9 @@ When('another tab records a failure', async function () {
       channel.postMessage('updated');
       channel.close();
     }, fixture);
-    await expect(history(this.page).locator('summary')).toContainText('From another tab');
+    await expect(history(this.page).locator('summary .summary-text')).toHaveText('runtime');
+    await history(this.page).locator('summary').click();
+    await expect(history(this.page).locator('.diagnostic > pre').first()).toContainText('From another tab');
   } finally { await tab.close(); }
 });
 
@@ -254,7 +261,9 @@ const runtimeFailureMessages = ['Error history uncaught runtime fixture', 'Error
 async function assertRuntimeHistory(page) {
   await expect(history(page).locator('.metrics dd')).toHaveText('2');
   await expect(history(page).locator('details.entry')).toHaveCount(2);
-  for (const message of runtimeFailureMessages) await expect(history(page).locator('summary').filter({ hasText: message })).toHaveCount(1);
+  for (const entry of await history(page).locator('details.entry').all()) await entry.locator('summary').click();
+  for (const message of runtimeFailureMessages)
+    await expect(history(page).locator('.entry-content > .diagnostic > pre').filter({ hasText: message })).toHaveCount(1);
 }
 When('the built application throws an error and rejects an unhandled promise', async function () {
   await this.page.evaluate(messages => {

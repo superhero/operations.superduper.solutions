@@ -90,7 +90,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <style>
   .catalog-prompt { min-width: 0; margin-bottom: 16px; }
   .prompt-input { --prompt-cap-radius: calc(var(--navigation-control-size) / 2); display: flex; flex-direction: column; border-radius: var(--prompt-cap-radius) 4px 4px var(--prompt-cap-radius); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
-  .prompt-input:focus-within { outline-color: var(--color-ring); }
+  .prompt-input:focus-within, .prompt-input:hover:has(textarea:enabled) { outline-color: var(--color-ring); }
   .prompt-entry { display: grid; grid-template-columns: var(--navigation-control-size) minmax(0, 1fr); }
   .prompt-entry :global(.prompt-symbol) { display: grid; place-items: center; min-height: var(--navigation-control-size); padding: 0; border: 0; border-radius: var(--prompt-cap-radius) 0 0 var(--prompt-cap-radius); background: var(--color-background); color: var(--color-foreground); transition: background-color 180ms ease-in, color 180ms ease-in; }
   label.prompt-symbol { cursor: text; }
@@ -109,6 +109,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     .prompt-entry :global(button.prompt-symbol:not(:disabled):hover .material-symbols-rounded) { transform: scale(1.4); }
   }
   @media (forced-colors: active) {
-    .prompt-input:not(:focus-within) { outline-style: none; }
+    .prompt-input:not(:focus-within):not(:hover) { outline-style: none; }
   }
 </style>

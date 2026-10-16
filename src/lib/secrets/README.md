@@ -12,22 +12,25 @@ The decision and threat boundary are described in
 | `types`, `crypto`, `format` | Bounded format, Argon2/HKDF, AES-GCM and authenticated inventories |
 | `storage`, `schema-policy-storage` | Atomic vault snapshots, expected revisions and durable checks of current schema approvals |
 | `session` | Worker-private unlocking, credential management, independent methods, restore and key rotation |
-| `policy`, `execution` | Immutable destination approvals, request construction, credential injection and bounded sanitized responses |
+| `policy`, `execution` | Immutable operation descriptors, request construction, credential injection and bounded sanitized responses |
 | `protocol`, `vault.worker`, `client`, `vault-executor` | Narrow RPC, cancellation, safe errors and application execution bridge |
 | `lifecycle`, `passkeys` | Activity deadlines and the window-only WebAuthn PRF ceremony |
 | `bindings` | Strict opaque workflow references, without credential values or grants |
 
 ## Adding capabilities
 
-Add operations to the reviewed RPC allowlist, never a generic decrypt or secret
-getter. Management changes require fresh authentication. Preserve independent
-unlock methods and authenticate every retained method before key rotation.
+Add operations to the reviewed RPC allowlist, never a generic decrypt interface.
+The explicit copy action returns only the selected value for clipboard use;
+keep it out of stores and clear the temporary reference afterward. Credential changes use the unlocked session. Unlock-method
+changes require fresh authentication. Preserve independent
+passwords and passkeys by authenticating each before key rotation. Generate a new
+128-byte recovery key automatically during rotation; never request the old one.
 Validate untrusted format and KDF bounds before allocation or expensive work.
 
-Credentialed requests originate in the worker from an approved descriptor.
-Changing destination, authentication placement or schema behavior requires local
-approval. A workflow import cannot approve its own references. Anonymous and
-credentialed alternatives must be selected explicitly.
+Credentialed requests originate in the worker from a validated operation descriptor.
+Any compatible saved credential can be selected without destination approval.
+Changed operations invalidate stale bindings. Anonymous and credentialed
+alternatives must be selected explicitly.
 
 ## Persistence
 
@@ -42,7 +45,7 @@ history retains them; portable exports and imports remove them, and older reader
 may discard them. Bindings never contain credentials or authorize a destination.
 
 Replacing an existing vault requires its current authentication as well as the
-backup's. If local data cannot authenticate, restore the backup in a fresh browser
+export's. If local data cannot authenticate, import the export in a fresh browser
 profile and verify access before removing any damaged copy.
 
 ## Cancellation and diagnostics
@@ -52,7 +55,7 @@ behavior is inappropriate here. Keep only fixed vault error codes, bounded safe
 field errors and sanitized HTTP diagnostics at the RPC boundary. Native worker
 failure events must not enter ordinary error recording with sensitive context.
 One-time recovery-key presentation is an intentional exception and must clear
-on confirmation, cancellation, hidden-page locking and unmount.
+on confirmation, cancellation, page-exit locking and unmount.
 
 ## Verification
 

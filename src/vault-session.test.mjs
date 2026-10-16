@@ -85,13 +85,14 @@ async function tamperedRecord(fixture, mutate) {
 }
 
 Then('a vault session persists creation only after the exact recovery key is confirmed', kdfStep, async () => {
+  const password = 'tri';
   const storage = new MemoryStorage(), session = new VaultSession(storage);
   assert.deepEqual(await session.status(), { exists: false, unlocked: false, revision: 0, epoch: 0, methods: [] });
   await assert.rejects(session.unlock({ methodId: crypto.randomUUID(), secret: password }), code('LOCKED'));
   await assert.rejects(session.confirmCreate('not prepared'), code('AUTHENTICATION'));
-  await assert.rejects(session.prepareCreate('short'), code('INVALID'));
+  for (const tooShort of ['', 'a', 'ab']) await assert.rejects(session.prepareCreate(tooShort), code('INVALID'));
   const recovery = await session.prepareCreate(password);
-  assert.equal(Buffer.from(recovery, 'base64').length, 32);
+  assert.equal(Buffer.from(recovery, 'base64').length, 128);
   assert.equal(storage.writes, 0);
   assert.equal((await session.status()).exists, false);
   await assert.rejects(session.confirmCreate('not the recovery key'), code('AUTHENTICATION'));
@@ -149,6 +150,12 @@ Then('vault sessions edit credentials and approve or revoke exact destinations w
   await assert.rejects(session.put(proof, { id: crypto.randomUUID(), label: 'Missing', kind: 'bearer', value: 'VALUE' }), code('INVALID'));
   await assert.rejects(session.remove(proof, crypto.randomUUID()), code('INVALID'));
   assert.deepEqual(await session.remove(proof, id), []);
+  const generic = (await session.put(proof, { label: 'Generic secret', kind: 'secret', value: 'GENERIC-VALUE' }))[0];
+  const genericApproved = await session.grant(proof, generic.id, 'service', approval);
+  assert.equal(genericApproved[0].grants.length, 1);
+  session.lock();
+  await session.unlock(proof);
+  assert.equal((await session.list())[0].kind, 'secret');
 });
 
 Then('vault sessions reject invalid credential input and malformed authenticated plaintext', kdfStep, async () => {
@@ -181,7 +188,7 @@ Then('vault restore authenticates both vaults and clears imported grants before 
   assert.ok(!backup.includes('SYNTHETIC-PRIVATE-TOKEN'));
   assert.ok(!backup.includes('Private account'));
   await assert.rejects(destination.session.restore(backup, source.proof), code('AUTHENTICATION'));
-  await assert.rejects(destination.session.restore(backup, source.proof, { ...destination.proof, secret: randomBase64(32) }), code('AUTHENTICATION'));
+  await assert.rejects(destination.session.restore(backup, source.proof, { ...destination.proof, secret: randomBase64(128) }), code('AUTHENTICATION'));
   const status = await destination.session.restore(backup, source.proof, destination.proof);
   assert.equal(status.unlocked, true);
   const list = await destination.session.list();
@@ -222,7 +229,7 @@ Then('corrupt and unauthenticated vault backups never replace the current encryp
   for (const invalid of [null, 'a'.repeat(vaultLimits.backupBytes + 1)]) {
     await assert.rejects(destination.session.restore(invalid, source.proof, destination.proof), code('LIMIT'));
   }
-  await assert.rejects(destination.session.restore(backup, { ...source.proof, secret: randomBase64(32) }, destination.proof), code('AUTHENTICATION'));
+  await assert.rejects(destination.session.restore(backup, { ...source.proof, secret: randomBase64(128) }, destination.proof), code('AUTHENTICATION'));
   const broken = JSON.parse(backup); broken.records[0].revision++;
   await assert.rejects(destination.session.restore(JSON.stringify(broken), source.proof, destination.proof), code('AUTHENTICATION'));
   const mismatched = await tamperedRecord(source, value => { value.id = crypto.randomUUID(); });
@@ -231,8 +238,8 @@ Then('corrupt and unauthenticated vault backups never replace the current encryp
   assert.deepEqual(destination.storage.state, previous);
 });
 
-Then('vault sessions confirm recovery changes and independently enroll replace and remove methods', kdfStep, async () => {
-  const { session, proof, passwordProof } = await created();
+Then('vault sessions reject additional recovery keys while independently managing other methods', kdfStep, async () => {
+  const { session, storage, proof, passwordProof } = await created();
   const prf = new Uint8Array(32).fill(7), material = { kind: 'passkey', prf, credentialId: randomBase64(48), prfSalt: randomBase64(32) };
   let status = await session.addMethod(proof, material);
   const passkey = status.methods.find(method => method.kind === 'passkey'), passkeyProof = { methodId: passkey.id, prf };
@@ -240,13 +247,11 @@ Then('vault sessions confirm recovery changes and independently enroll replace a
   assert.equal((await session.unlock(passkeyProof)).unlocked, true);
   await assert.rejects(session.unlock({ methodId: passkey.id, secret: 'not a PRF' }), code('AUTHENTICATION'));
   await session.unlock(proof);
-  await assert.rejects(session.addMethod(proof, { kind: 'recovery', secret: randomBase64(32) }), code('AUTHENTICATION'));
-  const recovery = await session.prepareRecovery(proof);
-  await assert.rejects(session.addMethod(proof, { kind: 'recovery', secret: randomBase64(32) }), code('AUTHENTICATION'));
-  status = await session.addMethod(proof, { kind: 'recovery', secret: recovery }, proof.methodId);
-  const nextProof = { methodId: status.methods.find(method => method.kind === 'recovery').id, secret: recovery };
-  await assert.rejects(session.unlock(proof), code('AUTHENTICATION'));
-  await session.unlock(nextProof);
+  const beforeRecoveryAttempt = clone(storage.state);
+  await assert.rejects(session.addMethod(proof, { kind: 'recovery', secret: randomBase64(128) }), code('INVALID'));
+  await assert.rejects(session.addMethod(proof, { kind: 'recovery', secret: randomBase64(128) }, proof.methodId), code('INVALID'));
+  assert.deepEqual(storage.state, beforeRecoveryAttempt);
+  const nextProof = proof;
   await assert.rejects(session.addMethod(nextProof, material, passwordProof.methodId), code('INVALID'));
   status = await session.addMethod(nextProof, { kind: 'password', secret: 'replacement synthetic password' }, passwordProof.methodId);
   const nextPassword = { methodId: status.methods.find(method => method.kind === 'password').id, secret: 'replacement synthetic password' };
@@ -262,16 +267,22 @@ Then('vault sessions confirm recovery changes and independently enroll replace a
   await assert.rejects(session.removeMethod(nextPassword, nextPassword.methodId), code('INVALID'));
 });
 
-Then('vault rotation changes the key epoch while every retained method and complete old backup remain independently usable', kdfStep, async () => {
+Then('vault rotation renews recovery automatically while retaining verified passwords and passkeys', kdfStep, async () => {
   const fixture = await populated(), { session, storage, proof, passwordProof } = fixture;
   const proofs = await retainedProofs(fixture), passkeyProof = proofs[2], prf = passkeyProof.prf;
   const backup = await session.backup(proof), previous = clone(storage.state.snapshot), writes = storage.writes;
-  for (const invalid of [[proof], [proof, proof, passkeyProof], [proof, passwordProof, { methodId: crypto.randomUUID(), prf }],
-    [proof, passwordProof, { ...passkeyProof, prf: new Uint8Array(32) }]]) {
+  for (const invalid of [[passwordProof], [passwordProof, passwordProof], [passwordProof, { methodId: crypto.randomUUID(), prf }],
+    [passwordProof, { ...passkeyProof, prf: new Uint8Array(32) }], proofs]) {
     await assert.rejects(session.rotate(invalid), code('AUTHENTICATION'));
     assert.equal(storage.writes, writes);
   }
-  assert.equal((await session.rotate(proofs)).unlocked, true);
+  const result = await session.rotate(proofs.slice(1));
+  assert.equal(result.unlocked, true);
+  assert.equal(result.recovery.length, 172);
+  assert.equal(Buffer.from(result.recovery, 'base64').length, 128);
+  assert.notEqual(result.recovery, fixture.recovery);
+  const renewedProof = { methodId: result.methods.find(method => method.kind === 'recovery').id, secret: result.recovery };
+  assert.notEqual(renewedProof.methodId, proof.methodId);
   const current = storage.state.snapshot;
   assert.equal(current.epoch, previous.epoch + 1);
   assert.notEqual(current.records[0].ciphertext.data, previous.records[0].ciphertext.data);
@@ -279,7 +290,9 @@ Then('vault rotation changes the key epoch while every retained method and compl
   const oldKey = await rawKey(previous, proof), currentRecord = current.records[0];
   await assert.rejects(decryptJSON(oldKey, currentRecord.ciphertext, { vaultId: current.id, epoch: current.epoch,
     kind: 'credential', id: currentRecord.id, revision: currentRecord.revision }), code('AUTHENTICATION'));
-  for (const retained of proofs) {
+  session.lock();
+  await assert.rejects(session.unlock(proof), code('AUTHENTICATION'));
+  for (const retained of [...proofs.slice(1), renewedProof]) {
     session.lock();
     assert.equal((await session.unlock(retained)).unlocked, true);
     assert.equal((await session.list())[0].id, fixture.id);
@@ -291,8 +304,9 @@ Then('vault rotation changes the key epoch while every retained method and compl
 
 Then('a rotated vault backup restores into fresh storage with every retained unlock method', kdfStep, async () => {
   const fixture = await populated(), proofs = await retainedProofs(fixture);
-  await fixture.session.rotate(proofs);
-  const backup = await fixture.session.backup(fixture.proof), rotated = clone(fixture.storage.state);
+  const result = await fixture.session.rotate(proofs.slice(1));
+  proofs[0] = { methodId: result.methods.find(method => method.kind === 'recovery').id, secret: result.recovery };
+  const backup = await fixture.session.backup(proofs[0]), rotated = clone(fixture.storage.state);
   const expected = (await fixture.session.list()).map(credential => ({ ...credential, grants: [] }));
   fixture.session.lock();
   for (const proof of proofs) {
@@ -338,7 +352,7 @@ Then('rotation interrupted {string} the atomic commit restarts with one complete
     };
   }
   try {
-    const rotation = session.rotate(proofs);
+    const rotation = session.rotate(proofs.slice(1));
     await Promise.race([reached.promise, rotation]);
     session.lock(); release.resolve();
     await assert.rejects(rotation, code('CANCELLED'));
@@ -359,7 +373,7 @@ Then('rotation interrupted {string} the atomic commit restarts with one complete
     assert.equal(storage.state.snapshot.revision, previous.snapshot.revision + 1);
     assert.notDeepEqual(storage.state.snapshot.manifest, previous.snapshot.manifest);
   }
-  for (const proof of proofs) {
+  for (const proof of proofs.slice(1)) {
     const restartedStorage = new MemoryStorage();
     restartedStorage.state = clone(storage.state);
     const restarted = new VaultSession(restartedStorage);
@@ -523,4 +537,112 @@ Then('vault sessions reject stale schemas before approval and dispatch and befor
     assert.equal(requests, 2, 'a request already dispatched is not retried after the schema changes');
     assert.ok(checked.every(value => value.fingerprint === approval.fingerprint));
   } finally { globalThis.fetch = original; }
+});
+
+Then('replacement exports authenticate locked vaults and guard against intervening changes', kdfStep, async () => {
+  const source = await populated(), destination = await populated();
+  const incoming = await source.session.backup(source.proof);
+  destination.session.lock();
+  await assert.rejects(destination.session.backup({ ...destination.proof, secret: randomBase64(128) }, true), code('AUTHENTICATION'));
+  const previous = await destination.session.backup(destination.proof, true);
+  assert.equal(JSON.parse(previous).records.length, 1);
+  assert.ok(!previous.includes('SYNTHETIC-PRIVATE-TOKEN'));
+  await destination.session.unlock(destination.proof);
+  await destination.session.put(destination.proof, { label: 'Newer', kind: 'secret', value: 'NEWER-VALUE' });
+  const changed = structuredClone(destination.storage.state);
+  await assert.rejects(destination.session.restore(incoming, source.proof, destination.proof, previous), code('CONFLICT'));
+  assert.deepEqual(destination.storage.state, changed);
+  const latest = await destination.session.backup(destination.proof, true);
+  await destination.session.restore(incoming, source.proof, destination.proof, latest);
+  assert.equal((await destination.session.list()).length, 1);
+  const empty = await created();
+  empty.session.lock();
+  const emptyExport = await empty.session.backup(empty.proof, true);
+  assert.equal(JSON.parse(emptyExport).records.length, 0);
+  await empty.session.restore(incoming, source.proof, empty.proof, emptyExport);
+  assert.equal((await empty.session.list()).length, 1);
+});
+
+Then('automatic vault unlocking tries matching saved methods and retains long passwords', kdfStep, async () => {
+  const fixture = await created(), { session } = fixture;
+  await session.addMethod(fixture.proof, { kind: 'password', secret: 'second-password' });
+  const longPassword = 'p'.repeat(172);
+  await session.addMethod(fixture.proof, { kind: 'password', secret: longPassword });
+  for (const secret of [password, 'second-password', longPassword, fixture.recovery]) {
+    session.lock();
+    const proof = { methodId: 'auto', secret };
+    assert.equal((await session.unlock(proof)).unlocked, true);
+    assert.notEqual(proof.methodId, 'auto');
+  }
+  session.lock();
+  await assert.rejects(session.unlock({ methodId: 'auto', secret: 'wrong' }), code('AUTHENTICATION'));
+  await assert.rejects(session.unlock({ methodId: 'auto', secret: randomBase64(32) }), code('AUTHENTICATION'));
+  assert.equal((await session.status()).unlocked, false);
+});
+
+Then('a locked vault exports its ciphertext without unlocking or changing storage', kdfStep, async () => {
+  const fixture = await populated(), { session, storage } = fixture;
+  session.lock();
+  const before = clone(storage.state), writes = storage.writes;
+  const exported = await session.backup();
+  assert.deepEqual(JSON.parse(exported), before.snapshot);
+  assert.ok(!exported.includes('SYNTHETIC-PRIVATE-TOKEN'));
+  assert.ok(!exported.includes('Private account'));
+  assert.equal((await session.status()).unlocked, false);
+  assert.deepEqual(storage.state, before);
+  assert.equal(storage.writes, writes);
+  await assert.rejects(session.backup(undefined, true), code('AUTHENTICATION'));
+  const restored = new VaultSession(new MemoryStorage());
+  await restored.restore(exported, fixture.proof);
+  assert.equal((await restored.list())[0].id, fixture.id);
+  const absentStorage = new MemoryStorage(), absent = new VaultSession(absentStorage);
+  await assert.rejects(absent.backup(), code('LOCKED'));
+  assert.equal(absentStorage.writes, 0);
+});
+
+Then('credential changes use the unlocked session and fail after it locks', kdfStep, async () => {
+  const {session, storage} = await created();
+  const [item] = await session.put(null, {label: 'Session credential', kind: 'bearer', value: 'SYNTHETIC-SESSION-TOKEN'});
+  const approval = await descriptor();
+  await session.grant(null, item.id, 'service', approval);
+  const [approved] = await session.list();
+  await session.revoke(null, item.id, approved.grants[0].id);
+  await session.put(null, {id: item.id, label: 'Updated', kind: 'bearer', value: 'SYNTHETIC-UPDATED'});
+  await session.remove(null, item.id);
+  assert.deepEqual(await session.list(), []);
+  session.lock();
+  const writes = storage.writes;
+  await assert.rejects(session.put(null, {label: 'Locked', kind: 'bearer', value: 'SYNTHETIC'}), code('LOCKED'));
+  await assert.rejects(session.remove(null, item.id), code('LOCKED'));
+  await assert.rejects(session.grant(null, item.id, 'service', approval), code('LOCKED'));
+  await assert.rejects(session.revoke(null, item.id, 'missing'), code('LOCKED'));
+  assert.equal(storage.writes, writes);
+});
+
+Then('credential copying rejects missing records and locked sessions', kdfStep, async () => {
+  const {session, storage, id} = await populated();
+  const before = clone(storage.state);
+  assert.equal(await session.copyCredential(id), 'SYNTHETIC-PRIVATE-TOKEN');
+  await assert.rejects(session.copyCredential('missing'), code('INVALID'));
+  assert.deepEqual(storage.state, before);
+  session.lock();
+  await assert.rejects(session.copyCredential(id), code('LOCKED'));
+});
+
+Then('duplicate credential keys are rejected without changing saved values', kdfStep, async () => {
+  const {session, storage} = await created();
+  const [saved] = await session.put(null, {label: 'Original key', kind: 'secret', value: 'ORIGINAL'});
+  const before = clone(storage.state), writes = storage.writes;
+  for (const label of ['Original key', 'original KEY', ' Original key ']) {
+    await assert.rejects(session.put(null, {label, kind: 'secret', value: 'REPLACEMENT'}), code('DUPLICATE_KEY'));
+    assert.deepEqual(storage.state, before);
+    assert.equal(storage.writes, writes);
+    assert.equal(await session.copyCredential(saved.id), 'ORIGINAL');
+  }
+  const values = await session.put(null, {label: 'Different key', kind: 'secret', value: 'SECOND'});
+  assert.equal(values.length, 2);
+  const other = values.find(item => item.id !== saved.id);
+  const updated = clone(storage.state);
+  await assert.rejects(session.put(null, {id: other.id, label: 'original key', kind: 'secret', value: 'REPLACEMENT'}), code('DUPLICATE_KEY'));
+  assert.deepEqual(storage.state, updated);
 });

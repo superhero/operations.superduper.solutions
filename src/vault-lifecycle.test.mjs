@@ -80,9 +80,9 @@ Then("changing vault inactivity preferences uses the previous activity time", ()
   assert.equal(shorter.locks(), 1, "shorter preference can already be expired");
 });
 
-Then("vault inactivity accepts only whole minutes from one through fourteen forty", () => {
+Then("vault inactivity accepts only whole minutes from one through one week", () => {
   const invalid = error => error instanceof VaultError && error.code === "INVALID" && !Object.hasOwn(error, "cause");
-  for (const value of [0, -1, 1441, 1.5, NaN, Infinity, "10", undefined]) {
+  for (const value of [0, -1, 10081, 1.5, NaN, Infinity, "10", undefined]) {
     assert.throws(() => fixture({ idleLockEnabled: true, idleLockMinutes: value }), invalid);
     const f = fixture(prefs(1)); f.controller.activate();
     assert.throws(() => f.controller.configure({ idleLockEnabled: false, idleLockMinutes: value }), invalid);
@@ -91,7 +91,7 @@ Then("vault inactivity accepts only whole minutes from one through fourteen fort
   for (const value of [null, {}, { idleLockEnabled: "false", idleLockMinutes: 10 }]) {
     const f = fixture(); assert.throws(() => f.controller.configure(value), invalid);
   }
-  for (const minutes of [1, 1440]) {
+  for (const minutes of [1, 1440, 10080]) {
     const input = prefs(minutes), f = fixture(input);
     input.idleLockMinutes = 0;
     f.controller.activate(); assert.equal(f.controller.deadline(), 1000 + minutes * 60_000);

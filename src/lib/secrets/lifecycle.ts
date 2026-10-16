@@ -13,7 +13,7 @@ type Options = {
 
 function preferences(value: VaultPreferences): VaultPreferences {
   if (!value || typeof value.idleLockEnabled !== "boolean" || !Number.isInteger(value.idleLockMinutes)
-    || value.idleLockMinutes < 1 || value.idleLockMinutes > 1440) throw new VaultError("INVALID");
+    || value.idleLockMinutes < 1 || value.idleLockMinutes > 10080) throw new VaultError("INVALID");
   return { idleLockEnabled: value.idleLockEnabled, idleLockMinutes: value.idleLockMinutes };
 }
 

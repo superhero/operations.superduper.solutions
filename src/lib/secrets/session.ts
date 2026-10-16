@@ -7,7 +7,7 @@ import { decryptJSON, encryptJSON, newVaultKey, passwordKey, recoveryKey, passke
 import { authenticateManifest, sealSnapshot, validateSnapshot } from "./format.ts";
 import { approvedOperation } from "./policy.ts";
 import { executeCredentialed } from "./execution.ts";
-import { VaultError, passwordProfile, vaultLimits } from "./types.ts";
+import { VaultError, passwordProfile, vaultLimits, recoveryKeyBytes, recoveryKeyCharacters } from "./types.ts";
 import type { ApprovedOperation, CredentialBinding, CredentialSummary, CryptoContext, Enrollment,
   KeyEnvelope, UnlockProof, VaultCredential, VaultSnapshot, VaultStatus } from "./types.ts";
 import type { VaultState, VaultStorage } from "./storage.ts";
@@ -19,7 +19,7 @@ const context = (snapshot: Pick<VaultSnapshot, "id" | "epoch">, item: { id: stri
 function credential(value: VaultCredential): VaultCredential {
   ownObject(value, ["id", "label", "kind", "value", "grants"]);
   if (!validId(value.id) || typeof value.label !== "string" || !value.label.trim() || value.label.length > 120
-    || !["bearer", "apiKey"].includes(value.kind) || typeof value.value !== "string" || !value.value
+    || !["bearer", "apiKey", "secret"].includes(value.kind) || typeof value.value !== "string" || !value.value
     || /[^\x21-\x7e]/.test(value.value) || value.value.length > vaultLimits.secretBytes
     || !Array.isArray(value.grants) || value.grants.length > 256) throw new VaultError("INVALID");
   canonicalJSON(value, vaultLimits.recordBytes);
@@ -54,13 +54,12 @@ export class VaultSession {
   private key: CryptoKey | undefined;
   private generation = 0;
   private pending: Pending | undefined;
-  private recovery: string | undefined;
 
   constructor(storage: VaultStorage, assertActive: () => void = () => {}, assertSchema: (descriptor: ApprovedOperation) => Promise<void> = async () => {}) {
     this.storage = storage; this.assertActive = assertActive; this.assertSchema = assertSchema;
   }
 
-  lock(): void { this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; this.recovery = undefined; }
+  lock(): void { this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; }
 
   private guard(generation: number): void {
     this.assertActive();
@@ -89,11 +88,26 @@ export class VaultSession {
   }
 
   private async authenticate(snapshot: VaultSnapshot, proof: UnlockProof, extractable = false): Promise<CryptoKey> {
-    const envelope = snapshot.envelopes.find(item => item.id === proof.methodId);
-    if (!envelope) throw new VaultError("AUTHENTICATION");
-    const key = await unwrapVaultKey(envelope.wrappedKey, await wrappingKey(envelope, proof), context(snapshot, envelope), extractable);
-    await authenticateManifest(snapshot, key);
-    return key;
+    const automaticSecret = proof.methodId === "auto" && "secret" in proof ? proof.secret : undefined;
+    const automatic = automaticSecret !== undefined;
+    const candidates = automatic ? [
+      ...snapshot.envelopes.filter(item => item.kind === "recovery" && automaticSecret?.length === recoveryKeyCharacters),
+      ...snapshot.envelopes.filter(item => item.kind === "password"),
+    ] : snapshot.envelopes.filter(item => item.id === proof.methodId);
+    const generation = this.generation;
+    for (const envelope of candidates) {
+      this.guard(generation);
+      try {
+        const key = await unwrapVaultKey(envelope.wrappedKey, await wrappingKey(envelope, proof), context(snapshot, envelope), extractable);
+        await authenticateManifest(snapshot, key);
+        this.guard(generation);
+        if (automatic) proof.methodId = envelope.id;
+        return key;
+      } catch (error) {
+        if (!automatic || !(error instanceof VaultError) || !["AUTHENTICATION", "INVALID"].includes(error.code)) throw error;
+      }
+    }
+    throw new VaultError("AUTHENTICATION");
   }
 
   async unlock(proof: UnlockProof): Promise<VaultStatus> {
@@ -118,7 +132,7 @@ export class VaultSession {
 
   private async enroll(key: CryptoKey, snapshot: Pick<VaultSnapshot, "id" | "epoch">, material: Enrollment): Promise<KeyEnvelope> {
     const base = { id: crypto.randomUUID(), revision: 1, kind: material.kind, salt: randomBase64(16) };
-    if (material.kind === "password" && material.secret.length < 12) throw new VaultError("INVALID");
+    if (material.kind === "password" && material.secret.length < 3) throw new VaultError("INVALID");
     const kek = material.kind === "password" ? await passwordKey(material.secret, base.salt)
       : material.kind === "recovery" ? await recoveryKey(material.secret, base.salt) : await passkeyKey(material.prf, base.salt);
     const wrappedKey = await wrapVaultKey(key, kek, context(snapshot, base));
@@ -135,7 +149,7 @@ export class VaultSession {
     const state = await this.storage.read();
     if (state.snapshot) throw new VaultError("CONFLICT");
     const key = await newVaultKey();
-    const recovery = randomBase64(32);
+    const recovery = randomBase64(recoveryKeyBytes);
     const base = { id: crypto.randomUUID(), epoch: 1, revision: 1, records: [] };
     const envelopes = [await this.enroll(key, base, { kind: "password", secret: password }),
       await this.enroll(key, base, { kind: "recovery", secret: recovery })];
@@ -182,6 +196,13 @@ export class VaultSession {
     return (await this.records()).map(({ value: _value, ...summary }) => summary);
   }
 
+  async copyCredential(id: string): Promise<string> {
+    const record = (await this.records()).find(item => item.id === id);
+    if (!record) throw new VaultError("INVALID");
+    await this.assertCurrent();
+    return record.value;
+  }
+
   private async save(values: VaultCredential[], envelopes = this.state!.snapshot!.envelopes,
     key = this.key!, epoch = this.state!.snapshot!.epoch): Promise<void> {
     await this.assertCurrent();
@@ -203,41 +224,44 @@ export class VaultSession {
     this.guard(generation); this.state = state; this.key = key;
   }
 
-  async put(proof: UnlockProof, input: { id?: string; label: string; kind: "bearer" | "apiKey"; value: string }): Promise<CredentialSummary[]> {
-    await this.fresh(proof);
+  async put(proof: UnlockProof | null, input: { id?: string; label: string; kind: VaultCredential["kind"]; value: string }): Promise<CredentialSummary[]> {
+    if (proof) await this.fresh(proof); else await this.assertCurrent();
     const records = await this.records();
     const previous = input.id ? records.find(item => item.id === input.id) : undefined;
     if (input.id && !previous) throw new VaultError("INVALID");
     const value = credential({ id: previous?.id ?? crypto.randomUUID(), label: input.label, kind: input.kind,
       value: input.value, grants: previous?.kind === input.kind ? previous.grants : [] });
+    const key = value.label.trim().normalize("NFC").toLowerCase();
+    if (records.some(item => item.id !== value.id && item.label.trim().normalize("NFC").toLowerCase() === key))
+      throw new VaultError("DUPLICATE_KEY");
     await this.save([...records.filter(item => item.id !== value.id), value]);
     return this.list();
   }
 
-  async remove(proof: UnlockProof, id: string): Promise<CredentialSummary[]> {
-    await this.fresh(proof);
+  async remove(proof: UnlockProof | null, id: string): Promise<CredentialSummary[]> {
+    if (proof) await this.fresh(proof); else await this.assertCurrent();
     const values = await this.records();
     if (!values.some(item => item.id === id)) throw new VaultError("INVALID");
     await this.save(values.filter(item => item.id !== id));
     return this.list();
   }
 
-  async grant(proof: UnlockProof, id: string, scheme: string, input: ApprovedOperation): Promise<CredentialSummary[]> {
-    await this.fresh(proof);
+  async grant(proof: UnlockProof | null, id: string, scheme: string, input: ApprovedOperation): Promise<CredentialSummary[]> {
+    if (proof) await this.fresh(proof); else await this.assertCurrent();
     const descriptor = await approvedOperation(input.operation, input.origin);
     if (descriptor.fingerprint !== input.fingerprint) throw new VaultError("PERMISSION");
     await this.assertSchema(descriptor);
     const values = await this.records();
     const value = values.find(item => item.id === id);
-    if (!value || !descriptor.operation.security?.some(option => option.some(item => item.name === scheme && item.kind === value.kind)))
+    if (!value || !descriptor.operation.security?.some(option => option.some(item => item.name === scheme && (value.kind === "secret" || item.kind === value.kind))))
       throw new VaultError("PERMISSION");
     value.grants = [...value.grants.filter(item => !(item.scheme === scheme && item.descriptor.operation.id === descriptor.operation.id)),
       { id: crypto.randomUUID(), scheme, descriptor }];
     await this.save(values); return this.list();
   }
 
-  async revoke(proof: UnlockProof, id: string, grantId: string): Promise<CredentialSummary[]> {
-    await this.fresh(proof);
+  async revoke(proof: UnlockProof | null, id: string, grantId: string): Promise<CredentialSummary[]> {
+    if (proof) await this.fresh(proof); else await this.assertCurrent();
     const values = await this.records();
     const value = values.find(item => item.id === id);
     if (!value || !value.grants.some(item => item.id === grantId)) throw new VaultError("INVALID");
@@ -254,15 +278,27 @@ export class VaultSession {
     });
   }
 
-  async backup(proof: UnlockProof): Promise<string> {
-    await this.fresh(proof);
-    return canonicalJSON(this.state!.snapshot!);
+  async backup(proof?: UnlockProof, forReplacement = false): Promise<string> {
+    if (proof && !forReplacement) {
+      await this.fresh(proof);
+      return canonicalJSON(this.state!.snapshot!);
+    }
+    const generation = this.generation;
+    const state = await this.storage.read();
+    if (!state.snapshot) throw new VaultError("LOCKED");
+    const snapshot = validateSnapshot(state.snapshot);
+    if (forReplacement && !proof) throw new VaultError("AUTHENTICATION");
+    if (proof) await this.authenticate(snapshot, proof);
+    this.guard(generation);
+    return canonicalJSON(snapshot);
   }
 
-  async restore(input: string, proof: UnlockProof, currentProof?: UnlockProof): Promise<VaultStatus> {
+  async restore(input: string, proof: UnlockProof, currentProof?: UnlockProof, expectedExport?: string): Promise<VaultStatus> {
     if (typeof input !== "string" || new TextEncoder().encode(input).byteLength > vaultLimits.backupBytes) throw new VaultError("LIMIT");
     const generation = this.generation;
     const expected = await this.storage.read();
+    if (expectedExport !== undefined && (!expected.snapshot || canonicalJSON(expected.snapshot) !== expectedExport))
+      throw new VaultError("CONFLICT");
     if (expected.snapshot) {
       if (!currentProof) throw new VaultError("AUTHENTICATION");
       await this.authenticate(validateSnapshot(expected.snapshot), currentProof);
@@ -285,19 +321,13 @@ export class VaultSession {
     return this.status();
   }
 
-  async prepareRecovery(proof: UnlockProof): Promise<string> {
-    await this.fresh(proof);
-    this.recovery = randomBase64(32); return this.recovery;
-  }
-
-  async addMethod(proof: UnlockProof, material: Enrollment, replaceId?: string): Promise<VaultStatus> {
+  async addMethod(proof: UnlockProof, material: Exclude<Enrollment, { kind: "recovery" }>, replaceId?: string): Promise<VaultStatus> {
     const key = await this.fresh(proof);
-    if (material.kind === "recovery" && material.secret !== this.recovery) throw new VaultError("AUTHENTICATION");
+    if (!["password", "passkey"].includes(material.kind)) throw new VaultError("INVALID");
     const snapshot = this.state!.snapshot!;
     if (replaceId && !snapshot.envelopes.some(item => item.id === replaceId && item.kind === material.kind)) throw new VaultError("INVALID");
     const envelope = await this.enroll(key, snapshot, material);
     await this.save(await this.records(), [...snapshot.envelopes.filter(item => item.id !== replaceId), envelope]);
-    this.recovery = undefined;
     return this.status();
   }
 
@@ -309,15 +339,16 @@ export class VaultSession {
     return this.status();
   }
 
-  async rotate(proofs: UnlockProof[]): Promise<VaultStatus> {
+  async rotate(proofs: UnlockProof[]): Promise<VaultStatus & { recovery: string }> {
     await this.assertCurrent();
     const snapshot = this.state!.snapshot!;
-    if (proofs.length !== snapshot.envelopes.length || new Set(proofs.map(item => item.methodId)).size !== proofs.length) throw new VaultError("AUTHENTICATION");
+    const retained = snapshot.envelopes.filter(envelope => envelope.kind !== "recovery");
+    if (!retained.length || proofs.length !== retained.length || new Set(proofs.map(item => item.methodId)).size !== proofs.length) throw new VaultError("AUTHENTICATION");
     const generation = this.generation;
     const newKey = await newVaultKey();
     const epoch = snapshot.epoch + 1;
     const envelopes: KeyEnvelope[] = [];
-    for (const envelope of snapshot.envelopes) {
+    for (const envelope of retained) {
       const proof = proofs.find(item => item.methodId === envelope.id);
       if (!proof) throw new VaultError("AUTHENTICATION");
       await this.fresh(proof);
@@ -327,8 +358,10 @@ export class VaultSession {
       await unwrapVaultKey(wrappedKey, kek, context({ ...snapshot, epoch }, next));
       envelopes.push({ ...next, wrappedKey });
     }
+    const recovery = randomBase64(recoveryKeyBytes);
+    envelopes.push(await this.enroll(newKey, { ...snapshot, epoch }, { kind: "recovery", secret: recovery }));
     this.guard(generation);
     await this.save(await this.records(), envelopes, await runtimeKey(newKey), epoch);
-    return this.status();
+    return { ...await this.status(), recovery };
   }
 }

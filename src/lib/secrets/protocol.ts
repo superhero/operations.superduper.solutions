@@ -5,8 +5,8 @@ import type { VaultSession } from "./session.ts";
 import type { VaultErrorCode } from "./types.ts";
 import type { WorkflowResponse } from "../workflow-execution.ts";
 
-export type VaultMethod = "status" | "unlock" | "prepareCreate" | "confirmCreate" | "list" | "put" | "remove"
-  | "grant" | "revoke" | "execute" | "backup" | "restore" | "prepareRecovery" | "addMethod" | "removeMethod" | "rotate";
+export type VaultMethod = "status" | "unlock" | "prepareCreate" | "confirmCreate" | "list" | "copyCredential" | "put" | "remove"
+  | "grant" | "revoke" | "execute" | "backup" | "restore" | "addMethod" | "removeMethod" | "rotate";
 export type VaultArguments<M extends VaultMethod> = Parameters<VaultSession[M]>;
 export type VaultResult<M extends VaultMethod> = Awaited<ReturnType<VaultSession[M]>>;
 export type VaultFailure = { kind: "vault"; code: VaultErrorCode }

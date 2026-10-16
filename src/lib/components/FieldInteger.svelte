@@ -28,6 +28,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     : allowed ? "Choose one of the allowed integers."
     : `Enter a whole number between ${scale.minimum} and ${scale.maximum}.`);
   let exactInput = $state<HTMLInputElement>();
+  let rangeWidth = $state(0);
+  let rangeHeight = $state(0);
 
   $effect(() => { exactInput?.setCustomValidity(badValue || unavailable && required ? validationMessage : ""); });
 
@@ -61,7 +63,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <div class="field-integer" class:disabled class:unset style:--slider-position={`${position * 100}%`}>
-  <input class="integer-range" {id} type="range" min="0" max="1" step="any" value={position}
+  <input class="integer-range" bind:clientWidth={rangeWidth} bind:clientHeight={rangeHeight}
+    style:--slider-hover-x={rangeWidth > 0 ? 1 + 8 / rangeWidth : 1}
+    style:--slider-hover-y={rangeHeight > 0 ? 1 + 2 / rangeHeight : 1} {id} type="range" min="0" max="1" step="any" value={position}
     disabled={disabled || unavailable} aria-label={label} aria-valuemin={scale.minimum} aria-valuemax={scale.maximum}
     aria-valuenow={current} aria-valuetext={unset ? "Not set" : valid ? number.toLocaleString() : "Invalid value"}
     aria-invalid={invalid || badValue || undefined} aria-describedby={describedBy}
@@ -80,10 +84,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .integer-range::-moz-range-track { height: 4px; border-radius: 4px; background: linear-gradient(to right, var(--color-primary) var(--slider-position), var(--color-muted-foreground) var(--slider-position)); }
   .integer-range::-webkit-slider-thumb { width: 14px; height: 14px; margin-top: -5px; border: 0; border-radius: 4px; appearance: none; background: var(--color-primary); }
   .integer-range::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 4px; background: var(--color-primary); }
-  .integer-range:focus-visible, .integer-value:focus-visible { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+  .integer-range:focus-visible, .integer-value:focus-visible, .integer-range:hover:enabled, .integer-value:hover:enabled { outline: 2px solid var(--color-ring); outline-offset: 2px; }
   .integer-value { flex: 0 1 var(--value-width); width: var(--value-width); min-width: 4ch; max-width: 50%; padding: 3px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; font-variant-numeric: tabular-nums; text-align: right; }
   .integer-value::placeholder { color: var(--color-muted-foreground); font-style: italic; opacity: 1; }
   .disabled { color: var(--color-muted-foreground); }
   .integer-range:disabled { cursor: default; opacity: 0.5; }
   .unset .integer-range { opacity: 0.6; }
+  @media (prefers-reduced-motion: no-preference) {
+    .integer-range { transition: transform 180ms ease-in; }
+    .integer-range:hover:enabled { transform: scale(var(--slider-hover-x), var(--slider-hover-y)); }
+  }
 </style>

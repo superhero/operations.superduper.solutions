@@ -30,7 +30,7 @@ export type VaultManifest = {
 export type ApprovedOperation = { fingerprint: string; origin: string; operation: Operation };
 export type CredentialGrant = { id: string; scheme: string; descriptor: ApprovedOperation };
 export type VaultCredential = {
-  id: string; label: string; kind: "bearer" | "apiKey"; value: string; grants: CredentialGrant[];
+  id: string; label: string; kind: "bearer" | "apiKey" | "secret"; value: string; grants: CredentialGrant[];
 };
 export type CredentialSummary = Omit<VaultCredential, "value">;
 export type CredentialBinding = {
@@ -39,6 +39,8 @@ export type CredentialBinding = {
 export type CredentialExecutionContext = {
   binding: CredentialBinding; runId: string; nodeId: string;
 };
+export const recoveryKeyBytes = 128;
+export const recoveryKeyCharacters = Math.ceil(recoveryKeyBytes / 3) * 4;
 export type UnlockProof = { methodId: string; secret: string } | { methodId: string; prf: Uint8Array };
 export type Enrollment = { kind: "password"; secret: string } | { kind: "recovery"; secret: string }
   | { kind: "passkey"; prf: Uint8Array; credentialId: string; prfSalt: string };
@@ -47,11 +49,12 @@ export const defaultVaultPreferences: Readonly<VaultPreferences> = { idleLockEna
 export type VaultStatus = { exists: boolean; unlocked: boolean; revision: number; epoch: number;
   methods: { id: string; kind: UnlockKind; credentialId?: string; prfSalt?: string }[] };
 export type VaultErrorCode = "LOCKED" | "AUTHENTICATION" | "INVALID" | "UNAVAILABLE" | "CONFLICT"
-  | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED";
+  | "DUPLICATE_KEY" | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED";
 const messages: Record<VaultErrorCode, string> = {
   LOCKED: "Unlock the secrets vault to continue.",
   AUTHENTICATION: "The vault could not be unlocked. Check the unlock method and saved data.",
   INVALID: "The vault data or request is invalid or unsupported.",
+  DUPLICATE_KEY: "A value is already saved with this key. Choose a different key.",
   UNAVAILABLE: "The secrets vault is unavailable. No plaintext fallback was created.",
   CONFLICT: "The vault changed in another tab. Unlock it again before continuing.",
   PERMISSION: "This credential has not been approved for the requested operation.",

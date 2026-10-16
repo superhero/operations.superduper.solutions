@@ -28,10 +28,10 @@ Feature: Browser vault session lifecycle
     Then corrupt and unauthenticated vault backups never replace the current encrypted storage
 
   Scenario: Unlock method replacement is independent
-    Then vault sessions confirm recovery changes and independently enroll replace and remove methods
+    Then vault sessions reject additional recovery keys while independently managing other methods
 
-  Scenario: Rotation requires proof for every retained method
-    Then vault rotation changes the key epoch while every retained method and complete old backup remain independently usable
+  Scenario: Rotation regenerates recovery after verifying retained methods
+    Then vault rotation renews recovery automatically while retaining verified passwords and passkeys
 
   Scenario: Rotated backups restore through every retained method
     Then a rotated vault backup restores into fresh storage with every retained unlock method
@@ -58,3 +58,21 @@ Feature: Browser vault session lifecycle
 
   Scenario: Current schema policy guards approval and execution
     Then vault sessions reject stale schemas before approval and dispatch and before accepting a response
+
+  Scenario: Replacement exports preserve the exact current vault
+    Then replacement exports authenticate locked vaults and guard against intervening changes
+
+  Scenario: Unlock input selects its method automatically
+    Then automatic vault unlocking tries matching saved methods and retains long passwords
+
+  Scenario: Encrypted export needs no unlock proof
+    Then a locked vault exports its ciphertext without unlocking or changing storage
+
+  Scenario: Unlocked credential changes need no additional proof
+    Then credential changes use the unlocked session and fail after it locks
+
+  Scenario: Copy returns only the selected unlocked credential
+    Then credential copying rejects missing records and locked sessions
+
+  Scenario: Duplicate keys cannot overwrite saved values
+    Then duplicate credential keys are rejected without changing saved values

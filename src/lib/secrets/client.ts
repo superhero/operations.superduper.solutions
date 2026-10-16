@@ -68,7 +68,6 @@ export async function loadVaultPreferences(): Promise<VaultPreferences> {
 }
 
 function ensureWorker(): Worker {
-  if (!visible()) throw new VaultError("LOCKED");
   if (worker) {
     if (accessActive && !lifecycle.check()) throw new VaultError("LOCKED");
     return worker;
@@ -90,7 +89,7 @@ function ensureWorker(): Worker {
     const item = pending.get(data.id);
     if (!item) return;
     pending.delete(data.id); item.cleanup();
-    if (item.generation !== generation || !visible()) { item.reject(new VaultError("CANCELLED")); return; }
+    if (item.generation !== generation) { item.reject(new VaultError("CANCELLED")); return; }
     if (accessActive && !lifecycle.check()) { item.reject(new VaultError("LOCKED")); return; }
     if (data.ok) item.resolve(data.value);
     else if (data.error.kind === "field") item.reject(new InputValidationError(data.error.field, data.error.message));
@@ -130,20 +129,19 @@ export async function vaultCall<M extends VaultMethod>(method: M, args: VaultArg
 
 /** The caller gets PRF material only for immediate transfer to the worker; never a reusable store. */
 export async function vaultCeremony<T>(run: (signal: AbortSignal) => Promise<T>): Promise<T> {
-  if (!visible()) throw new VaultError("LOCKED");
   ceremony?.abort();
   const controller = new AbortController(); ceremony = controller;
   const requestGeneration = generation;
   const timer = setTimeout(() => controller.abort(), 60_000);
   try {
     const value = await run(controller.signal);
-    if (controller.signal.aborted || requestGeneration !== generation || !visible()) throw new VaultError("CANCELLED");
+    if (controller.signal.aborted || requestGeneration !== generation) throw new VaultError("CANCELLED");
     return value;
   } finally { clearTimeout(timer); if (ceremony === controller) ceremony = undefined; }
 }
 
 if (typeof document !== "undefined") {
-  const visibility = () => { if (!visible()) lockVaultLocally(); else lifecycle.check(); };
+  const visibility = () => { if (visible()) lifecycle.check(); };
   const activity = (event: Event) => lifecycle.activity(event.isTrusted, visible());
   document.addEventListener("visibilitychange", visibility);
   window.addEventListener("pagehide", lockVaultLocally);

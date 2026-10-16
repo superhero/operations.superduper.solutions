@@ -58,8 +58,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   if (next) { schemaLoaded = true; if (operationsOnly) resetKey += 1; }
 }}>
   {#snippet summary()}
-    <HintButton class="schema-action" label="Copy JSON" aria-label="Copy JSON" aria-disabled={copying} aria-busy={copying} onclick={copySchema}><MaterialIcon name="file_copy" size={20} /></HintButton>
-    <MaterialIcon name="chevron_forward" class="schema-chevron" size={20} />
+    <MaterialIcon name="keyboard_arrow_right" class="schema-chevron" size={18} />
+    <HintButton class="schema-action" label="Copy JSON" aria-label="Copy JSON" aria-disabled={copying} aria-busy={copying} onclick={copySchema}><MaterialIcon name="file_copy" size={18} /></HintButton>
     <span class="schema-title">OpenAPI schema<span class="schema-copy-status" role="status">{copyStatus}</span></span>
     <span class="schema-wrap-control" class:visible={schemaOpen} inert={!schemaOpen} aria-hidden={!schemaOpen}>
       <HintButton class="schema-action" label="Wrap lines" aria-label="Wrap lines" aria-pressed={schemaWrap} tooltipEnabled={schemaOpen}
@@ -71,19 +71,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   :global(.schema-disclosure) { margin-top: 16px; }
-  :global(.schema-disclosure > summary) { position: sticky; top: calc(var(--app-header-height) + 8px); z-index: 2; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 14px; border-radius: 4px; list-style: none; background: var(--color-report-card); color: var(--color-foreground); font-size: 14px; font-weight: 650; transition: background-color 180ms ease-in, color 180ms ease-in, transform 180ms ease-in, outline-color 180ms ease-in; }
+  :global(.schema-disclosure > summary) { position: sticky; top: calc(var(--app-header-height) + var(--settings-header-height, 0px) + 8px); z-index: 2; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 14px; border-radius: 4px; list-style: none; background: var(--color-report-card); color: var(--color-foreground); font-size: 14px; font-weight: 650; transition: background-color 180ms ease-in, color 180ms ease-in, transform 180ms ease-in, outline-color 180ms ease-in; }
   :global(.schema-disclosure > summary[aria-expanded="true"]) { background: var(--color-json-header-hover-background); color: var(--color-json-header-hover-foreground); }
   :global(.schema-disclosure > summary:focus-visible) { outline-color: var(--color-foreground); }
   :global(.schema-disclosure .schema-chevron) { transition: transform 180ms ease-in; }
   :global(.schema-disclosure > summary[aria-expanded="true"] .schema-chevron) { transform: rotate(90deg); }
   .schema-title { flex: 1; min-width: 0; }
-  .schema-wrap-control { display: inline-flex; flex: 0 0 28px; opacity: 0; visibility: hidden; transition: opacity 180ms ease, visibility 0s linear 180ms; }
+  .schema-wrap-control { display: inline-flex; flex: 0 0 28px; color: var(--color-json-header-hover-foreground); opacity: 0; visibility: hidden; transition: opacity 180ms ease, visibility 0s linear 180ms; }
   .schema-wrap-control.visible { opacity: 1; visibility: visible; transition-delay: 0s; }
   .schema-copy-status { position: absolute; top: calc(100% + 8px); left: 0; max-width: 100%; padding: 6px 10px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-muted-foreground); font-size: 11px; font-weight: 700; pointer-events: none; }
   .schema-copy-status:empty { padding: 0; }
   :global(.schema-disclosure .schema-action) { display: inline-grid; place-items: center; flex: 0 0 28px; width: 28px; height: 32px; padding: 0; border: 0; border-radius: 3px; background: transparent; color: inherit; }
-  :global(.schema-disclosure .schema-action:is(:hover,:focus-visible):enabled:not([aria-pressed="true"])) { background: var(--color-json-header-hover-foreground); color: var(--color-json-header-hover-background); }
-  :global(.schema-disclosure .schema-action[aria-pressed="true"]) { background: var(--color-catalog-active); color: var(--color-catalog-active-foreground); }
+  :global(.schema-disclosure .schema-action:is(:hover,:focus-visible):enabled) { background: var(--color-json-header-hover-foreground); color: var(--color-json-header-hover-background); }
   :global(.schema-disclosure .schema-action:focus-visible) { outline-color: var(--color-json-header-hover-foreground); }
   :global(.schema-disclosure .json-view) { margin-top: 4px; }
   @media (prefers-reduced-motion: reduce) { .schema-wrap-control { transition: none; } }

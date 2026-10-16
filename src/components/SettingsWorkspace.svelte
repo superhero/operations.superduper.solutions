@@ -45,11 +45,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { isValidWorkflowCurveStrength, isValidWorkflowDashLength, isValidWorkflowDashGap, isValidWorkflowDashSpeed, isValidWorkflowGridSize, isValidWorkflowNodeClearance,
     workflowCurveStrengthLimits, workflowDashLengthLimits, workflowDashGapLimits, workflowDashSpeedLimits, workflowGridSizeLimits, workflowNodeClearanceLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
 
-  let { palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
+  let { tooltips = true, tooltipsError = "", onTooltipsChange = () => {}, palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
     locale = defaultLocaleSettings, localeError = "", onLocaleChange = () => {}, onRetryLocale = () => {},
     developerToolbar, developerToolbarError = "", onDeveloperToolbarChange,
     evaluationDetails, evaluationDetailsError = "", onEvaluationDetailsChange,
     settingsUnavailable, settingsRetrying, onRetrySettings }: {
+    tooltips?: boolean;
+    tooltipsError?: string;
+    onTooltipsChange?: (enabled: boolean) => void;
     palette: PaletteId;
     onPaletteChange: (palette: PaletteId) => void;
     workflowDefaults: WorkflowDefaults;
@@ -72,6 +75,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   } = $props();
   let workspace: HTMLElement;
   let openSection = $state<"secrets" | "theme" | "locale" | "logs" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
+  $effect(() => {
+    if (!openSection || !workspace) return;
+    const header = workspace.querySelector<HTMLElement>('.settings-section > summary[aria-expanded="true"]');
+    if (!header) return;
+    const update = () => workspace.style.setProperty("--settings-header-height", `${header.getBoundingClientRect().height}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(header);
+    return () => { observer.disconnect(); workspace.style.removeProperty("--settings-header-height"); };
+  });
   const schemaLibrary = $derived(getSchemaLibrary());
   let gridSizeDraft = $state("");
   let gridSizeInvalid = $state(false);
@@ -91,11 +104,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let nodeClearanceDraft = $state("");
   let nodeClearanceInvalid = $state(false);
   const savedNodeClearance = $derived(workflowDefaults.nodeClearance);
-  const workflowOptions: { key: "dashed" | "curved" | "snap"; label: string }[] = [
-    { key: "dashed", label: "Dashed lines" },
+  const applicationOptions = [
     { key: "curved", label: "Curved lines" },
-    { key: "snap", label: "Snap to grid" }
-  ];
+    { key: "dashed", label: "Dashed lines" },
+    { key: "nodeClearance", label: "Node clearance" },
+    { key: "nodeSymbols", label: "Node symbols" },
+    { key: "snap", label: "Snap to grid" },
+    { key: "tooltips", label: "Tooltips" }
+  ] as const;
 
   $effect(() => { gridSizeDraft = String(savedGridSize); gridSizeInvalid = false; });
   $effect(() => { dashLengthDraft = String(savedDashLength); dashLengthInvalid = false; });
@@ -159,6 +175,110 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <section class="workspace" aria-label="Settings workspace" bind:this={workspace} tabindex="-1">
   <div class="settings-sections">
+    <Disclosure class="catalog-group settings-section" label="Application" tooltipEnabled={false} open={openSection === "workflow"} onToggle={(next) => openSection = next ? "workflow" : null}>
+      {#snippet summary()}
+        <div class="section-heading"><h2>Application</h2><span class="section-subtitle">Configure UI defaults</span></div>
+        <MaterialIcon name="chevron_forward" size={17} />
+      {/snippet}
+      <fieldset class="workflow-settings" aria-label="UI defaults">
+        <div class="workflow-defaults">
+          {#each applicationOptions as option (option.key)}
+            <div class="workflow-default-pair">
+              {#if option.key === "tooltips"}
+                <button class="workflow-default" type="button" role="switch" aria-checked={tooltips} onclick={() => onTooltipsChange(!tooltips)}>
+                  <span>Tooltips</span><span class="default-switch" aria-hidden="true"><span></span></span>
+                </button>
+                {#if tooltipsError}<div class="defaults-error"><p role="alert">{tooltipsError}</p><button class="defaults-retry" type="button" onclick={() => onTooltipsChange(tooltips)}>Retry saving</button></div>{/if}
+              {:else if option.key === "nodeClearance"}
+                <div class="grid-size-setting">
+                  <span>Node clearance</span>
+                  <div class="grid-size-control">
+                    <FieldInteger id="workflow-node-clearance" label="Node clearance" value={nodeClearanceDraft}
+                      minimum={workflowNodeClearanceLimits.min} maximum={workflowNodeClearanceLimits.max} required invalid={nodeClearanceInvalid}
+                      describedBy={nodeClearanceInvalid ? "workflow-node-clearance-error" : undefined}
+                      onValueChange={value => { nodeClearanceDraft = value; nodeClearanceInvalid = false; }} onValueCommit={commitNodeClearance} />
+                    <span aria-hidden="true">px</span>
+                  </div>
+                  {#if nodeClearanceInvalid}<span class="grid-size-error" id="workflow-node-clearance-error" role="alert">Node clearance must be a whole number from {workflowNodeClearanceLimits.min} to {workflowNodeClearanceLimits.max}.</span>{/if}
+                </div>
+              {:else if option.key === "nodeSymbols"}
+                <button class="workflow-default" type="button" role="switch" aria-checked={workflowDefaults.nodeSymbols}
+                  onclick={() => onWorkflowDefaultsChange({ ...workflowDefaults, nodeSymbols: !workflowDefaults.nodeSymbols })}>
+                  <span>Node symbols</span><span class="default-switch" aria-hidden="true"><span></span></span>
+                </button>
+              {:else}
+                <button class="workflow-default" type="button" role="switch" aria-checked={workflowDefaults[option.key]}
+                  onclick={() => onWorkflowDefaultsChange({ ...workflowDefaults, [option.key]: !workflowDefaults[option.key] })}>
+                  <span>{option.label}</span><span class="default-switch" aria-hidden="true"><span></span></span>
+                </button>
+                {#if option.key === "snap"}
+                  <div class="grid-size-setting">
+                    <span>Grid size</span>
+                    <div class="grid-size-control">
+                      <FieldInteger id="workflow-grid-size" label="Grid size" value={gridSizeDraft}
+                        minimum={workflowGridSizeLimits.min} maximum={workflowGridSizeLimits.max} required invalid={gridSizeInvalid}
+                        describedBy={gridSizeInvalid ? "workflow-grid-size-error" : undefined}
+                        onValueChange={value => { gridSizeDraft = value; gridSizeInvalid = false; }} onValueCommit={commitGridSize} />
+                      <span aria-hidden="true">px</span>
+                    </div>
+                    {#if gridSizeInvalid}<span class="grid-size-error" id="workflow-grid-size-error" role="alert">Grid size must be a whole number from {workflowGridSizeLimits.min} to {workflowGridSizeLimits.max}.</span>{/if}
+                  </div>
+                {:else if option.key === "dashed"}
+                  <div class="grid-size-setting">
+                    <span>Dash gap</span>
+                    <div class="grid-size-control">
+                      <FieldInteger id="workflow-dash-gap" label="Dash gap" value={dashGapDraft}
+                        minimum={workflowDashGapLimits.min} maximum={workflowDashGapLimits.max} required invalid={dashGapInvalid}
+                        describedBy={dashGapInvalid ? "workflow-dash-gap-error" : undefined}
+                        onValueChange={value => { dashGapDraft = value; dashGapInvalid = false; }} onValueCommit={commitDashGap} />
+                      <span aria-hidden="true">px</span>
+                    </div>
+                    {#if dashGapInvalid}<span class="grid-size-error" id="workflow-dash-gap-error" role="alert">Dash gap must be a whole number from {workflowDashGapLimits.min} to {workflowDashGapLimits.max}.</span>{/if}
+                  </div>
+                  <div class="grid-size-setting">
+                    <span>Dash length</span>
+                    <div class="grid-size-control">
+                      <FieldInteger id="workflow-dash-length" label="Dash length" value={dashLengthDraft}
+                        minimum={workflowDashLengthLimits.min} maximum={workflowDashLengthLimits.max} required invalid={dashLengthInvalid}
+                        describedBy={dashLengthInvalid ? "workflow-dash-length-error" : undefined}
+                        onValueChange={value => { dashLengthDraft = value; dashLengthInvalid = false; }} onValueCommit={commitDashLength} />
+                      <span aria-hidden="true">px</span>
+                    </div>
+                    {#if dashLengthInvalid}<span class="grid-size-error" id="workflow-dash-length-error" role="alert">Dash length must be a whole number from {workflowDashLengthLimits.min} to {workflowDashLengthLimits.max}.</span>{/if}
+                  </div>
+                  <div class="grid-size-setting">
+                    <span>Dash speed</span>
+                    <div class="grid-size-control">
+                      <FieldInteger id="workflow-dash-speed" label="Dash speed" value={dashSpeedDraft}
+                        minimum={workflowDashSpeedLimits.min} maximum={workflowDashSpeedLimits.max} required invalid={dashSpeedInvalid}
+                        describedBy={dashSpeedInvalid ? "workflow-dash-speed-error" : undefined}
+                        onValueChange={value => { dashSpeedDraft = value; dashSpeedInvalid = false; }} onValueCommit={commitDashSpeed} />
+                      <span aria-hidden="true">px/s</span>
+                    </div>
+                    {#if dashSpeedInvalid}<span class="grid-size-error" id="workflow-dash-speed-error" role="alert">Dash speed must be a whole number from {workflowDashSpeedLimits.min} to {workflowDashSpeedLimits.max}.</span>{/if}
+                  </div>
+                {:else}
+                  <div class="grid-size-setting">
+                    <span>Curve strength</span>
+                    <div class="grid-size-control">
+                      <FieldInteger id="workflow-curve-strength" label="Curve strength" value={curveStrengthDraft}
+                        minimum={workflowCurveStrengthLimits.min} maximum={workflowCurveStrengthLimits.max} required invalid={curveStrengthInvalid}
+                        describedBy={curveStrengthInvalid ? "workflow-curve-strength-error" : undefined}
+                        onValueChange={value => { curveStrengthDraft = value; curveStrengthInvalid = false; }} onValueCommit={commitCurveStrength} />
+                      <span aria-hidden="true">%</span>
+                    </div>
+                    {#if curveStrengthInvalid}<span class="grid-size-error" id="workflow-curve-strength-error" role="alert">Curve strength must be a whole number from {workflowCurveStrengthLimits.min} to {workflowCurveStrengthLimits.max}.</span>{/if}
+                  </div>
+                {/if}
+              {/if}
+            </div>
+          {/each}
+        </div>
+        {#if workflowDefaultsError}
+          <div class="defaults-error"><p role="alert">{workflowDefaultsError}</p><button class="defaults-retry" type="button" onclick={onRetryWorkflowDefaults}>Retry saving</button></div>
+        {/if}
+      </fieldset>
+    </Disclosure>
     <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} lazy animateSize open={openSection === "storage"} onToggle={(next) => openSection = next ? "storage" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Browser</h2><span class="section-subtitle">Monitor browser resource usage</span></div>
@@ -256,105 +376,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         </div>
       </fieldset>
     </Disclosure>
-    <Disclosure class="catalog-group settings-section" label="Workflows" tooltipEnabled={false} open={openSection === "workflow"} onToggle={(next) => openSection = next ? "workflow" : null}>
-      {#snippet summary()}
-        <div class="section-heading"><h2>Workflows</h2><span class="section-subtitle">Configure workflow defaults</span></div>
-        <MaterialIcon name="chevron_forward" size={17} />
-      {/snippet}
-      <fieldset class="workflow-settings" aria-label="Workflow defaults">
-        <div class="workflow-defaults">
-          {#each workflowOptions as option (option.key)}
-            <div class="workflow-default-pair">
-              <button class="workflow-default" type="button" role="switch" aria-checked={workflowDefaults[option.key]}
-                onclick={() => onWorkflowDefaultsChange({ ...workflowDefaults, [option.key]: !workflowDefaults[option.key] })}>
-                <span>{option.label}</span><span class="default-switch" aria-hidden="true"><span></span></span>
-              </button>
-              {#if option.key === "snap"}
-                <div class="grid-size-setting">
-                  <span>Grid size</span>
-                  <div class="grid-size-control">
-                    <FieldInteger id="workflow-grid-size" label="Grid size" value={gridSizeDraft}
-                      minimum={workflowGridSizeLimits.min} maximum={workflowGridSizeLimits.max} required invalid={gridSizeInvalid}
-                      describedBy={gridSizeInvalid ? "workflow-grid-size-error" : undefined}
-                      onValueChange={value => { gridSizeDraft = value; gridSizeInvalid = false; }} onValueCommit={commitGridSize} />
-                    <span aria-hidden="true">px</span>
-                  </div>
-                  {#if gridSizeInvalid}<span class="grid-size-error" id="workflow-grid-size-error" role="alert">Grid size must be a whole number from {workflowGridSizeLimits.min} to {workflowGridSizeLimits.max}.</span>{/if}
-                </div>
-              {:else if option.key === "dashed"}
-                <div class="grid-size-setting">
-                  <span>Dash length</span>
-                  <div class="grid-size-control">
-                    <FieldInteger id="workflow-dash-length" label="Dash length" value={dashLengthDraft}
-                      minimum={workflowDashLengthLimits.min} maximum={workflowDashLengthLimits.max} required invalid={dashLengthInvalid}
-                      describedBy={dashLengthInvalid ? "workflow-dash-length-error" : undefined}
-                      onValueChange={value => { dashLengthDraft = value; dashLengthInvalid = false; }} onValueCommit={commitDashLength} />
-                    <span aria-hidden="true">px</span>
-                  </div>
-                  {#if dashLengthInvalid}<span class="grid-size-error" id="workflow-dash-length-error" role="alert">Dash length must be a whole number from {workflowDashLengthLimits.min} to {workflowDashLengthLimits.max}.</span>{/if}
-                </div>
-                <div class="grid-size-setting">
-                  <span>Dash gap</span>
-                  <div class="grid-size-control">
-                    <FieldInteger id="workflow-dash-gap" label="Dash gap" value={dashGapDraft}
-                      minimum={workflowDashGapLimits.min} maximum={workflowDashGapLimits.max} required invalid={dashGapInvalid}
-                      describedBy={dashGapInvalid ? "workflow-dash-gap-error" : undefined}
-                      onValueChange={value => { dashGapDraft = value; dashGapInvalid = false; }} onValueCommit={commitDashGap} />
-                    <span aria-hidden="true">px</span>
-                  </div>
-                  {#if dashGapInvalid}<span class="grid-size-error" id="workflow-dash-gap-error" role="alert">Dash gap must be a whole number from {workflowDashGapLimits.min} to {workflowDashGapLimits.max}.</span>{/if}
-                </div>
-                <div class="grid-size-setting">
-                  <span>Dash speed</span>
-                  <div class="grid-size-control">
-                    <FieldInteger id="workflow-dash-speed" label="Dash speed" value={dashSpeedDraft}
-                      minimum={workflowDashSpeedLimits.min} maximum={workflowDashSpeedLimits.max} required invalid={dashSpeedInvalid}
-                      describedBy={dashSpeedInvalid ? "workflow-dash-speed-error" : undefined}
-                      onValueChange={value => { dashSpeedDraft = value; dashSpeedInvalid = false; }} onValueCommit={commitDashSpeed} />
-                    <span aria-hidden="true">px/s</span>
-                  </div>
-                  {#if dashSpeedInvalid}<span class="grid-size-error" id="workflow-dash-speed-error" role="alert">Dash speed must be a whole number from {workflowDashSpeedLimits.min} to {workflowDashSpeedLimits.max}.</span>{/if}
-                </div>
-              {:else}
-                <div class="grid-size-setting">
-                  <span>Curve strength</span>
-                  <div class="grid-size-control">
-                    <FieldInteger id="workflow-curve-strength" label="Curve strength" value={curveStrengthDraft}
-                      minimum={workflowCurveStrengthLimits.min} maximum={workflowCurveStrengthLimits.max} required invalid={curveStrengthInvalid}
-                      describedBy={curveStrengthInvalid ? "workflow-curve-strength-error" : undefined}
-                      onValueChange={value => { curveStrengthDraft = value; curveStrengthInvalid = false; }} onValueCommit={commitCurveStrength} />
-                    <span aria-hidden="true">%</span>
-                  </div>
-                  {#if curveStrengthInvalid}<span class="grid-size-error" id="workflow-curve-strength-error" role="alert">Curve strength must be a whole number from {workflowCurveStrengthLimits.min} to {workflowCurveStrengthLimits.max}.</span>{/if}
-                </div>
-              {/if}
-            </div>
-          {/each}
-          <div class="workflow-default-pair">
-            <div class="grid-size-setting">
-              <span>Node clearance</span>
-              <div class="grid-size-control">
-                <FieldInteger id="workflow-node-clearance" label="Node clearance" value={nodeClearanceDraft}
-                  minimum={workflowNodeClearanceLimits.min} maximum={workflowNodeClearanceLimits.max} required invalid={nodeClearanceInvalid}
-                  describedBy={nodeClearanceInvalid ? "workflow-node-clearance-error" : undefined}
-                  onValueChange={value => { nodeClearanceDraft = value; nodeClearanceInvalid = false; }} onValueCommit={commitNodeClearance} />
-                <span aria-hidden="true">px</span>
-              </div>
-              {#if nodeClearanceInvalid}<span class="grid-size-error" id="workflow-node-clearance-error" role="alert">Node clearance must be a whole number from {workflowNodeClearanceLimits.min} to {workflowNodeClearanceLimits.max}.</span>{/if}
-            </div>
-          </div>
-          <div class="workflow-default-pair">
-            <button class="workflow-default" type="button" role="switch" aria-checked={workflowDefaults.nodeSymbols}
-              onclick={() => onWorkflowDefaultsChange({ ...workflowDefaults, nodeSymbols: !workflowDefaults.nodeSymbols })}>
-              <span>Node symbols</span><span class="default-switch" aria-hidden="true"><span></span></span>
-            </button>
-          </div>
-        </div>
-        {#if workflowDefaultsError}
-          <div class="defaults-error"><p role="alert">{workflowDefaultsError}</p><button class="defaults-retry" type="button" onclick={onRetryWorkflowDefaults}>Retry saving</button></div>
-        {/if}
-      </fieldset>
-    </Disclosure>
   </div>
 </section>
 
@@ -362,8 +383,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .settings-sections { display: grid; gap: 12px; }
   .settings-sections :global(.settings-section) { border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-muted); transition: background-color 180ms ease-in; }
   .settings-sections :global(.settings-section:has(> summary[aria-expanded="true"])) { background: var(--color-catalog-active); }
-  .settings-sections :global(.settings-section > summary) { background: transparent; color: var(--color-catalog-foreground); }
-  .settings-sections :global(.settings-section > summary[aria-expanded="true"]) { color: var(--color-catalog-active-foreground); }
+  .settings-sections :global(.settings-section > summary) { background: var(--color-muted); color: var(--color-catalog-foreground); transition: background-color 180ms ease-in, color 180ms ease-in, transform 180ms ease-in, outline-color 180ms ease-in; }
+  .settings-sections :global(.settings-section > summary[aria-expanded="true"]) { position: sticky; top: var(--app-header-height); z-index: 10; background: var(--color-catalog-active); color: var(--color-catalog-active-foreground); }
   .section-heading { display: grid; gap: 2px; }
   .section-heading h2 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: normal; }
   .section-subtitle { font-size: 12px; font-weight: 400; }
@@ -376,10 +397,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .workflow-default:focus-visible { outline-color: var(--color-ring); }
   .workflow-default-pair > .workflow-default { background: var(--color-background); }
   .grid-size-setting { display: grid; align-content: center; gap: 8px; min-width: 0; padding: 10px 12px; border-radius: 4px; background: var(--color-background); color: var(--color-catalog-foreground); font-size: 12px; font-weight: 700; }
-  .grid-size-control { display: flex; align-items: center; gap: 8px; min-width: 0; --field-background: var(--color-background); --field-foreground: var(--color-catalog-foreground); }
-  .grid-size-control :global(.field-integer) { flex: 1; min-width: 0; }
+  .grid-size-control { display: flex; align-items: stretch; gap: 0; min-width: 0; border-radius: 4px; outline: 2px solid transparent; outline-offset: 2px; transition: outline-color 180ms ease-in; --field-background: var(--color-background); --field-foreground: var(--color-catalog-foreground); }
+  .grid-size-control:focus-within, .grid-size-control:hover:has(:enabled) { outline-color: var(--color-ring); }
+  .grid-size-control :global(.field-integer) { flex: 1; min-width: 0; padding-right: 4px; }
+  .grid-size-control :global(.field-integer :is(.integer-range, .integer-value)) { outline: none; }
+  .grid-size-control > span { display: flex; align-items: center; flex-shrink: 0; padding: 0 8px; border-radius: 0 4px 4px 0; background: var(--field-background); color: var(--field-foreground); }
   .grid-size-error { color: var(--color-error-foreground); font-weight: 400; }
-  .default-switch { flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-muted-foreground); transition: background-color 180ms ease-in; }
+  .default-switch { flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-muted-foreground); transition: background-color 180ms ease-in, transform 180ms ease-in; }
   .default-switch > span { display: block; width: 18px; height: 18px; border-radius: 2px; background: var(--color-surface); transform: translateX(0); transition: transform 180ms ease-in, background-color 180ms ease-in; }
   .workflow-default[aria-checked="true"] .default-switch { background: var(--color-catalog-active); }
   .workflow-default[aria-checked="true"] .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
@@ -395,7 +419,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .palette-card { display: grid; padding: 0; border: 4px solid var(--color-muted); border-radius: 4px; background: var(--color-muted); color: var(--color-catalog-foreground); outline: 3px solid transparent; outline-offset: 3px; transition: border-color 180ms ease-in, background-color 180ms ease-in, color 180ms ease-in, outline-color 180ms ease-in; }
   input:checked + .palette-card { color: var(--color-catalog-active-foreground); }
   input:checked + .palette-card .palette-heading { background: var(--color-catalog-active); }
-  input:focus-visible + .palette-card { outline-color: var(--color-ring); }
+  input:focus-visible + .palette-card, input:hover:enabled + .palette-card { outline-color: var(--color-ring); }
   .palette-heading { position: relative; display: grid; place-items: center; height: 37px; margin-top: -1px; padding: 1px 8px 0; background: var(--color-muted); text-align: center; transition: background-color 180ms ease-in; }
   .palette-heading strong { font-size: 13px; font-weight: 700; }
   .palette-swatches { position: relative; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); overflow: hidden; }
@@ -403,6 +427,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .palette-swatches :global(.palette-selected-icon) { position: absolute; top: 50%; left: 50%; width: 64px; height: 64px; transform: translate(-50%, -50%) scale(0); color: var(--color-catalog-active); font-variation-settings: "FILL" 1; transition: transform 180ms ease-in, color 180ms ease-in; pointer-events: none; }
   input:checked + .palette-card :global(.palette-selected-icon) { transform: translate(-50%, -50%) scale(1); transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), color 180ms ease-in; }
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .workflow-default:hover:enabled .default-switch { transform: scale(1.10); }
     .palette-choice { z-index: 0; will-change: transform; transition: transform 180ms ease-in, z-index 0s linear 180ms; }
     .palette-choice:hover { z-index: 2; transform: scale(min(1.10, var(--hover-scale, 1.10))); transition-delay: 0s; }
   }

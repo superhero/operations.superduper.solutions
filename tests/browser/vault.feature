@@ -98,15 +98,15 @@ Feature: Browser vault persistence and controlled credential execution
     Given I create a vault in the Secrets settings and save a synthetic credential
     Then manually locking the vault clears inputs and password unlocking restores the credential list
 
-  @vault-browser-ui
-  Scenario Outline: Page lifecycle lock discards active worker access
+  @vault-browser-ui @vault-page-lifecycle
+  Scenario: Page exit discards active worker access
     Given I create a vault in the Secrets settings and save a synthetic credential
-    Then a "<event>" notification terminates the vault worker and returning visible leaves it locked
+    Then a "pagehide" notification terminates the vault worker and returning visible leaves it locked
 
-    Examples:
-      | event            |
-      | visibilitychange |
-      | pagehide         |
+  @vault-browser-ui @vault-page-lifecycle
+  Scenario: Hidden tabs retain access and complete pending vault operations
+    Given I create a vault in the Secrets settings and save a synthetic credential
+    Then hiding and restoring the page preserves the vault worker and pending operations
 
   @vault-browser-ui
   Scenario: A delayed event cannot reset the idle deadline
@@ -171,3 +171,7 @@ Feature: Browser vault persistence and controlled credential execution
       | action            |
       | manual lock       |
       | settings teardown |
+
+  Scenario: Password replacement uses its own expandable authentication pane
+    Given I create a vault in the Secrets settings and save a synthetic credential
+    Then the password replacement pane validates matching values and preserves recovery access

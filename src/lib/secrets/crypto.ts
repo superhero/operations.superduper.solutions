@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { argon2id } from "hash-wasm";
-import { passwordProfile, VaultError, vaultLimits } from "./types.ts";
+import { passwordProfile, VaultError, vaultLimits, recoveryKeyBytes } from "./types.ts";
 import type { Ciphertext, CryptoContext, PasswordProfile } from "./types.ts";
 
 const encoder = new TextEncoder();
@@ -185,7 +185,8 @@ async function hkdfKey(material: Uint8Array<ArrayBuffer>, salt: string, purpose:
 }
 
 export async function recoveryKey(recoveryBase64: string, salt: string): Promise<CryptoKey> {
-  return hkdfKey(decodeBase64(recoveryBase64, 32), salt, "recovery");
+  if (typeof recoveryBase64 !== "string") throw new VaultError("INVALID");
+  return hkdfKey(decodeBase64(recoveryBase64, recoveryKeyBytes), salt, "recovery");
 }
 export async function passkeyKey(prfBytes: Uint8Array, salt: string): Promise<CryptoKey> {
   if (!(prfBytes instanceof Uint8Array) || prfBytes.byteLength !== 32) throw new VaultError("INVALID");

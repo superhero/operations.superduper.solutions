@@ -167,6 +167,7 @@ button:disabled, [data-slot="button"][aria-disabled="true"] { cursor: not-allowe
 button, a, textarea { -webkit-tap-highlight-color: transparent; }
 :where(button, a[href], summary, input, select, textarea, [tabindex]) { outline: 3px solid transparent; outline-offset: 3px; transition: background-color 180ms ease-in, border-color 180ms ease-in, color 180ms ease-in, transform 180ms ease-in, opacity 180ms ease-in, outline-color 180ms ease-in; }
 :focus-visible { outline: 3px solid var(--color-ring); outline-offset: 3px; }
+:where(input, select, textarea):hover:enabled { outline-color: var(--color-ring); }
 [hidden] { display: none !important; }
 p { margin: 0; }
 ::selection { color: var(--color-selection-foreground); background: var(--color-selection-background); }
@@ -197,7 +198,7 @@ h2 { margin: 5px 0 0; font-size: 23px; font-weight: 650; letter-spacing: -0.6px;
 .operation-fields { display: grid; gap: 18px; padding: 0; }
 .joined-field { display: grid; grid-template-columns: minmax(0,25%) minmax(0,1fr) auto; min-height: 40px; background: var(--field-background); color: var(--field-foreground); border: 0; border-radius: 4px; overflow: hidden; outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
 .joined-field:has(:is(.field-input,.field-select-trigger,.integer-value):disabled) { --field-background: var(--color-disabled); --field-foreground: var(--color-disabled-foreground); }
-.joined-field:focus-within { outline: 3px solid var(--color-ring); outline-offset: 3px; }
+.joined-field:focus-within, .joined-field:hover:has(:enabled) { outline: 3px solid var(--color-ring); outline-offset: 3px; }
 .joined-field label { display: flex; align-items: center; justify-content: flex-end; min-width: 0; margin: 0; padding: 6px 10px; font-size: 13px; font-weight: 600; text-align: right; overflow-wrap: anywhere; background: var(--control-addon); color: var(--control-label); }
 .joined-field :is(.field-input,.field-select-trigger) { min-width: 0; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 0; outline: none; background: transparent; color: inherit; }
 .joined-field input.field-input { padding-top: 10px; padding-bottom: 6px; }
@@ -349,7 +350,7 @@ html { scroll-padding-top: calc(var(--app-header-height) + 12px); }
   .request-input-group { padding: 12px 0 0 12px; }
 }
 @media (forced-colors: active) {
-  :where(button, a[href], summary, input, select, textarea, [tabindex]):not(:focus-visible), .joined-field:not(:focus-within) { outline-style: none; }
+  :where(button, a[href], summary, input, select, textarea, [tabindex]):not(:focus-visible):not(:is(input, select, textarea):hover:enabled), .joined-field:not(:focus-within):not(:hover) { outline-style: none; }
 }
 
 .app-tooltip { z-index: 100; max-width: min(280px, calc(100vw - 16px)); padding: 6px 10px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-muted-foreground); font-size: 11px; font-weight: 700; overflow-wrap: anywhere; }

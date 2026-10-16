@@ -9,6 +9,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { Button } from "$lib/components/ui/button/index.js";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import JsonSchemaView from "$lib/components/JsonSchemaView.svelte";
+  import Reveal from "$lib/components/Reveal.svelte";
   import type { SchemaLibraryRecord } from "$lib/schema-library-types.ts";
 
   let { records, busy = false, ready = true, error = "", onUpload, onReplace, onRename, onMove, onEnabledChange, onDelete, onDownload, onRetry }: {
@@ -279,7 +280,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <div><dt>Operations</dt><dd>{metadata.operations.toLocaleString()}</dd></div>
           </dl>
 
-          {#if !record.enabled}<p class="schema-note">Operations from this document are unavailable until it is enabled.</p>{/if}
+          <Reveal open={!record.enabled} id={`schema-disabled-${record.id}`}><p class="schema-note">Operations from this document are unavailable until it is enabled.</p></Reveal>
 
           <JsonSchemaView value={record.document} label={`Full OpenAPI JSON: ${metadata.title}`} operationsOnly />
 
@@ -303,24 +304,28 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </section>
 
 <style>
-  .schema-settings { display: grid; gap: 12px; min-width: 0; padding: 16px; color: var(--color-catalog-active-foreground); container-type: inline-size; }
+  .schema-settings { --color-secondary-hover: var(--color-background); --color-secondary-hover-foreground: var(--color-foreground); display: grid; gap: 12px; min-width: 0; padding: 16px; color: var(--color-catalog-active-foreground); container-type: inline-size; }
   .schema-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
-  .schema-upload-guidance { flex: 1 1 240px; min-width: 0; margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+  .schema-upload-guidance { flex: 1 1 240px; min-width: 0; margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .schema-status { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
-  .schema-toolbar :global(.upload-action) { height: auto; min-height: 44px; max-width: 100%; padding-block: 12px; white-space: normal; text-align: left; background: var(--color-background); color: var(--color-foreground); }
+  .schema-toolbar :global(.upload-action) { height: auto; min-height: 44px; max-width: 100%; padding-block: 12px; white-space: normal; text-align: left; font-weight: 700; background: var(--color-background); color: var(--color-foreground); }
   .schema-list { position: relative; display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
   .schema-drag-area { position: relative; min-width: 0; }
   .schema-drag-surface { position: absolute; inset: 0; z-index: 3; }
   .schema-toolbar, .schema-card, .schema-empty { min-width: 0; padding: 16px; border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
   .schema-heading { --schema-control-size: calc(var(--spacing) * 8); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
   .schema-name { display: flex; flex: 1; min-width: min(100%, 180px); height: var(--schema-control-size); border-radius: 4px; background: var(--color-background); color: var(--color-foreground); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
-  .schema-name:focus-within { outline-color: var(--color-ring); }
+  .schema-name:focus-within, .schema-name:hover:has(input:enabled) { outline-color: var(--color-ring); }
   .schema-name-icon { display: grid; place-items: center; flex: 0 0 var(--schema-control-size); width: var(--schema-control-size); height: 100%; cursor: text; }
   .schema-name-input { box-sizing: border-box; min-width: 0; width: 100%; height: 100%; padding: 6px 10px; border: 0; border-radius: 0 4px 4px 0; outline: none; background: transparent; color: inherit; font-size: 14px; }
   .schema-empty h3 { margin: 0; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
   .schema-empty p, .schema-note { margin: 6px 0 0; color: var(--color-muted-foreground); font-size: 12px; overflow-wrap: anywhere; }
+  .schema-note { color: var(--color-accent); }
   .schema-actions { --schema-action-gap: 6px; display: flex; align-items: center; flex-wrap: wrap; gap: var(--schema-action-gap); }
   .schema-card { position: relative; }
+  .schema-card :global(.schema-disclosure > summary) { padding-left: 12px; font-size: 12px; }
+  .schema-card :global(.schema-disclosure > summary > .schema-chevron) { width: auto; margin-left: 0; }
+  .schema-settings :global(.schema-action:is(:hover,:focus-visible):enabled) { background: transparent; color: inherit; }
   .schema-card.dragging { opacity: 0.5; }
   .schema-actions :global(.schema-drag-handle) { cursor: grab; }
   .schema-actions :global(.schema-drag-handle:active) { cursor: grabbing; }
@@ -329,7 +334,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-metadata dt { margin-bottom: 5px; font-size: 11px; font-weight: 400; color: var(--color-muted-foreground); }
   .schema-metadata dd { min-width: 0; margin: 0; font-size: clamp(16px, 2vw, 21px); font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
   .schema-enabled { box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 0 0 auto; height: var(--schema-control-size); width: calc(var(--schema-control-size) * 4 + var(--schema-action-gap) * 3); padding: 4px 8px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font-size: 12px; font-weight: 700; text-align: left; }
-  .default-switch { box-sizing: border-box; flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-muted-foreground); transition: background-color 180ms ease-in; }
+  .default-switch { box-sizing: border-box; flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-muted-foreground); transition: background-color 180ms ease-in, transform 180ms ease-in; }
   .default-switch > span { display: block; width: 18px; height: 18px; border-radius: 2px; background: var(--color-surface); transform: translateX(0); transition: transform 180ms ease-in, background-color 180ms ease-in; }
   .schema-enabled[aria-checked="true"] .default-switch { background: var(--color-catalog-active); }
   .schema-enabled[aria-checked="true"] .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
@@ -339,6 +344,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-delete p { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .confirmation-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
   @container (max-width: 430px) { .schema-metadata { grid-template-columns: 1fr; } }
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .schema-card :global(.schema-disclosure > summary:hover) { transform: scale(min(1.06, var(--hover-scale, 1.06))); }
+    .schema-settings :global(.schema-action:hover:enabled) { transform: scale(min(1.10, var(--hover-scale, 1.10))); }
+    .schema-enabled:hover:enabled .default-switch { transform: scale(1.10); }
+  }
   @media (prefers-reduced-motion: reduce) { .schema-name, .default-switch, .default-switch > span { transition: none; } }
-  @media (forced-colors: active) { .schema-name:not(:focus-within) { outline-style: none; } }
+  @media (forced-colors: active) { .schema-name:not(:focus-within):not(:hover) { outline-style: none; } }
 </style>

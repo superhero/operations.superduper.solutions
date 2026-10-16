@@ -16,10 +16,11 @@
   import BackgroundWave from "./components/BackgroundWave.svelte";
   import NativeScrollbars from "./components/NativeScrollbars.svelte";
 
-  let { initialWorkflowDefaults, initialDeveloperToolbar = false, initialEvaluationDetails = false, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
+  let { initialWorkflowDefaults, initialDeveloperToolbar = false, initialEvaluationDetails = false, initialTooltips = true, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
     initialWorkflowDefaults: WorkflowDefaults;
     initialDeveloperToolbar?: boolean;
     initialEvaluationDetails?: boolean;
+    initialTooltips?: boolean;
     initialLocale?: LocaleSettings;
     initialSettingsError?: Error | null;
   } = $props();
@@ -27,6 +28,9 @@
   let developerToolbar = $state(untrack(() => initialDeveloperToolbar));
   let developerToolbarError = $state("");
   let developerToolbarSave = 0;
+  let tooltips = $state(untrack(() => initialTooltips));
+  let tooltipsError = $state("");
+  let tooltipsSave = 0;
   let evaluationDetails = $state(untrack(() => initialEvaluationDetails));
   let evaluationDetailsError = $state("");
   let evaluationDetailsSave = 0;
@@ -35,7 +39,7 @@
   let localeSave = 0;
   let settingsError = $state(untrack(() => initialSettingsError));
   let settingsRetrying = $state(false);
-  const settingsEdits = { theme: 0, palette: 0, workflowDefaults: 0, developerToolbar: 0, evaluationDetails: 0, locale: 0 };
+  const settingsEdits = { theme: 0, palette: 0, workflowDefaults: 0, developerToolbar: 0, evaluationDetails: 0, tooltips: 0, locale: 0 };
   let workflowDefaultsError = $state("");
   let workflowDefaultsSave = 0;
   let navigationOpen = $state(!matchMedia("(max-width: 899px)").matches);
@@ -168,6 +172,19 @@
     });
   }
 
+  function selectTooltips(next: boolean) {
+    settingsEdits.tooltips += 1;
+    tooltips = next;
+    tooltipsError = "";
+    const request = ++tooltipsSave;
+    void saveSetting("tooltips", next).catch(error => {
+      if (request === tooltipsSave) {
+        tooltipsError = "Could not save this setting. It applies only to this session until saving succeeds.";
+        void reportSettingsError(error);
+      }
+    });
+  }
+
   async function reportSettingsError(error: unknown) {
     const failure = error instanceof Error ? error : new Error("Could not access saved settings.", { cause: error });
     // Keep the recovered app usable behind the overlay, with its palette applied.
@@ -190,6 +207,7 @@
         if (edits.workflowDefaults === settingsEdits.workflowDefaults) workflowDefaults = settings.workflowDefaults;
         if (edits.developerToolbar === settingsEdits.developerToolbar) developerToolbar = settings.developerToolbar;
         if (edits.evaluationDetails === settingsEdits.evaluationDetails) evaluationDetails = settings.evaluationDetails;
+        if (edits.tooltips === settingsEdits.tooltips) tooltips = settings.tooltips;
         if (edits.locale === settingsEdits.locale) locale = settings.locale;
       }
     } finally {
@@ -243,7 +261,7 @@
   <meta name="description" content="Discover OpenAPI operations and compose reusable workflows in your browser." />
 </svelte:head>
 
-<Tooltip.Provider delayDuration={400} ignoreNonKeyboardFocus disableHoverableContent>
+<Tooltip.Provider disabled={!tooltips} delayDuration={400} ignoreNonKeyboardFocus disableHoverableContent>
 <BackgroundWave />
 <NativeScrollbars />
 <SideNavigation bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {mode} {dark} {evaluationDetails}
@@ -266,7 +284,7 @@
         <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={mode === "workflow"} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={browseOperations} />
       </div>
       <div hidden={mode !== "settings"}>
-        <SettingsWorkspace bind:this={settingsWorkspace} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
+        <SettingsWorkspace bind:this={settingsWorkspace} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
           {locale} {localeError} onLocaleChange={selectLocale} onRetryLocale={() => selectLocale(locale)}
           settingsUnavailable={Boolean(settingsError)} {settingsRetrying} onRetrySettings={retrySettings}
           {developerToolbar} {developerToolbarError} onDeveloperToolbarChange={selectDeveloperToolbar}

@@ -475,7 +475,7 @@ Then('dash length gap and speed update existing routes and previews and pause bo
 async function changeCurveStrength(page, value) {
   await setMode(page, 'settings');
   const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
-  const group = settings.locator('summary[aria-label="Workflows"]');
+  const group = settings.locator('summary[aria-label="Application"]');
   if (await group.getAttribute('aria-expanded') !== 'true') await group.click();
   const input = settings.getByRole('textbox', { name: 'Curve strength value', exact: true });
   await input.fill(String(value));

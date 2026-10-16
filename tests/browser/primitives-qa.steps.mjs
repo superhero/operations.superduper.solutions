@@ -197,7 +197,7 @@ Then('scrolling cancels a pending operation tooltip', async function () {
 Then('the header shadow follows the reading position', async function () {
   const page = this.page;
   await page.setViewportSize({ width: 1280, height: 400 });
-  const section = page.getByRole('region', { name: 'Settings workspace', exact: true }).locator('summary[aria-label="Workflows"]');
+  const section = page.getByRole('region', { name: 'Settings workspace', exact: true }).locator('summary[aria-label="Application"]');
   if (await section.getAttribute('aria-expanded') !== 'true') await section.click();
   const header = page.locator('.site-header');
   const strength = () => header.evaluate(element => Number(getComputedStyle(element).getPropertyValue('--header-scroll-strength')));

@@ -16,7 +16,7 @@ async function openSecrets(page) {
   await setMode(page, 'settings');
   const disclosure = page.locator('summary[aria-label="Secrets"]');
   if (await disclosure.getAttribute('aria-expanded') !== 'true') await disclosure.click();
-  await expect(panel(page).getByRole('button', { name: 'Choose backup to restore', exact: true })).toBeEnabled();
+  await expect(panel(page).getByRole('button', { name: /^(?:Import|Replace) vault$/ })).toBeEnabled();
 }
 
 Then('its native passkey cannot restore on another RP domain before I explicitly choose {string}',
@@ -33,29 +33,27 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       hasPrf: true, hasHmacSecret: true,
     } });
     try {
-      await panel(page).getByLabel('Confirm action password', { exact: true }).fill(password);
       await panel(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
+      const passkeyForm = panel(page).locator('form[id$="-passkey"]');
+      await passkeyForm.getByLabel('Password', { exact: true }).fill(password);
+      await passkeyForm.getByRole('button', { name: 'Verify and add passkey', exact: true }).click();
       await expect(panel(page).getByRole('status')).toContainText('Passkey verified and added');
       const original = await readStorage(page);
       const passkey = original.snapshot.envelopes.find(envelope => envelope.kind === 'passkey');
       assert.ok(passkey);
       // Positive control with this same authenticator: a functioning original-RP
       // assertion must unlock the real vault before the different-RP attempt.
-      await panel(page).getByRole('button', { name: 'Lock vault', exact: true }).click();
-      await panel(page).getByRole('combobox', { name: 'Unlock method', exact: true }).click();
-      await page.getByRole('option', { name: 'Passkey', exact: true }).click();
-      await expect(panel(page).getByLabel('Unlock password', { exact: true })).toHaveCount(0);
+      await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+      await panel(page).getByRole('button', { name: 'Use passkey', exact: true }).click();
+      await expect(panel(page).getByLabel('Unlock password, or recovery key', { exact: true })).toHaveCount(0);
       await panel(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
-      await expect(panel(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+      await expect(panel(page).getByLabel('Credential label', { exact: true })).toBeVisible();
       await expect(panel(page).locator('li').getByText(label, { exact: true })).toBeVisible();
       const enrolled = (await cdp.send('WebAuthn.getCredentials', { authenticatorId })).credentials;
       assert.equal(enrolled.length, 1); assert.equal(enrolled[0].rpId, 'localhost');
 
-      await panel(page).getByRole('combobox', { name: 'Confirm action method', exact: true }).click();
-      await page.getByRole('option', { name: 'Password', exact: true }).click();
-      await panel(page).getByLabel('Confirm action password', { exact: true }).fill(password);
       const downloadEvent = page.waitForEvent('download');
-      await panel(page).getByRole('button', { name: 'Download encrypted backup', exact: true }).click();
+      await panel(page).getByRole('button', { name: 'Export vault', exact: true }).click();
       const stream = await (await downloadEvent).createReadStream(), chunks = [];
       for await (const chunk of stream) chunks.push(chunk);
       const backup = Buffer.concat(chunks);
@@ -73,15 +71,15 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       await openSecrets(page);
       assert.deepEqual(await page.evaluate(() => ({ secure: isSecureContext, host: location.hostname })),
         { secure: true, host: 'restore.localhost' });
-      await expect(panel(page).getByText('No vault created', { exact: true })).toBeVisible();
+      await expect(panel(page).getByText('No vault has been created:', { exact: true })).toBeVisible();
       const emptyDestination = await readStorage(page);
       assert.equal(emptyDestination.snapshot, null);
-      await panel(page).getByLabel('Encrypted vault backup', { exact: true }).setInputFiles({
+      await panel(page).getByLabel('Encrypted vault export', { exact: true }).setInputFiles({
         name: 'other-domain-vault.json', mimeType: 'application/json', buffer: backup,
       });
-      await panel(page).getByRole('combobox', { name: 'Backup method', exact: true }).click();
+      await panel(page).getByRole('combobox', { name: 'Export method', exact: true }).click();
       await page.getByRole('option', { name: 'Passkey', exact: true }).click();
-      await expect(panel(page).getByLabel('Backup password', { exact: true })).toHaveCount(0);
+      await expect(panel(page).getByLabel('Export password', { exact: true })).toHaveCount(0);
 
       // A provider may wait indefinitely when its credential belongs to another
       // RP. Bound only that native wait with cancellation; do not replace the
@@ -107,7 +105,7 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       let assertions = 0;
       const asserted = () => { assertions++; };
       cdp.on('WebAuthn.credentialAsserted', asserted);
-      await panel(page).getByRole('button', { name: 'Authenticate and replace vault', exact: true }).click();
+      await panel(page).getByRole('button', { name: 'Authenticate and import vault', exact: true }).click();
       await expect(panel(page).getByRole('alert')).toContainText('cancelled');
       cdp.off('WebAuthn.credentialAsserted', asserted);
       const attempt = await page.evaluate(() => globalThis.vaultOriginAttempt);
@@ -116,19 +114,19 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       assert.ok(['AbortError', 'NotAllowedError'].includes(attempt.error));
       assert.equal(assertions, 0, 'The original RP credential must not assert for the destination RP');
       assert.deepEqual(await readStorage(page), emptyDestination);
-      await expect(panel(page).getByRole('combobox', { name: 'Backup method', exact: true })).toContainText('Passkey');
-      await expect(panel(page).getByLabel('Backup password', { exact: true })).toHaveCount(0);
+      await expect(panel(page).getByRole('combobox', { name: 'Export method', exact: true })).toContainText('Passkey');
+      await expect(panel(page).getByLabel('Export password', { exact: true })).toHaveCount(0);
       const retained = (await cdp.send('WebAuthn.getCredentials', { authenticatorId })).credentials;
       assert.equal(retained.length, 1); assert.equal(retained[0].rpId, 'localhost');
       assert.equal(retained[0].signCount, enrolled[0].signCount);
 
-      await panel(page).getByRole('combobox', { name: 'Backup method', exact: true }).click();
+      await panel(page).getByRole('combobox', { name: 'Export method', exact: true }).click();
       await page.getByRole('option', { name: method === 'password' ? 'Password' : 'Recovery key', exact: true }).click();
-      const input = panel(page).getByLabel(method === 'password' ? 'Backup password' : 'Backup recovery key', { exact: true });
+      const input = panel(page).getByLabel(method === 'password' ? 'Export password' : 'Export recovery key', { exact: true });
       await input.fill(method === 'password' ? password : this.uiRecovery);
       const inputHandle = await input.elementHandle();
-      await panel(page).getByRole('button', { name: 'Authenticate and replace vault', exact: true }).click();
-      await expect(panel(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+      await panel(page).getByRole('button', { name: 'Authenticate and import vault', exact: true }).click();
+      await expect(panel(page).getByLabel('Credential label', { exact: true })).toBeVisible();
       await expect(panel(page).locator('li').getByText(label, { exact: true })).toBeVisible();
       assert.equal(await inputHandle.evaluate(element => element.value), '');
       await inputHandle.dispose();

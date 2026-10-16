@@ -188,12 +188,12 @@ async function openSecrets(page) {
   const disclosure = page.locator('summary[aria-label="Secrets"]');
   if (await disclosure.getAttribute('aria-expanded') !== 'true') await disclosure.click();
   await expect(settings(page)).toBeVisible();
-  await expect(settings(page).getByRole('button', { name: 'Choose backup to restore', exact: true })).toBeEnabled();
+  await expect(settings(page).getByRole('button', { name: /^(?:Import|Replace) vault$/ })).toBeEnabled();
 }
 async function unlockUI(page, password = canaries[0]) {
-  await settings(page).getByLabel('Unlock password', { exact: true }).fill(password);
+  await settings(page).getByLabel('Unlock password, or recovery key', { exact: true }).fill(password);
   await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
-  await expect(settings(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+  await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
 }
 async function vaultWorkerCount(page) {
   return (await Promise.all(page.workers().map(worker => worker.evaluate(() => globalThis.name).catch(() => 'closed'))))
@@ -203,28 +203,91 @@ async function vaultWorkerCount(page) {
 async function createUIVault() {
   const page = this.page;
   await openSecrets(page);
-  await expect(settings(page).getByText('No vault created', { exact: true })).toBeVisible();
+  await expect(settings(page).getByText('No vault has been created:', { exact: true })).toBeVisible();
+  await expect(settings(page).getByRole('heading', { name: 'Encrypted vault exports', exact: true })).toHaveCount(0);
+  await expect(settings(page).getByRole('button', { name: 'Import vault', exact: true })).toBeVisible();
+  await expect(settings(page).locator('form input[autocomplete="username"]')).toHaveValue('Operations vault');
   await settings(page).getByLabel('New vault password', { exact: true }).fill(canaries[0]);
   await settings(page).getByLabel('Confirm vault password', { exact: true }).fill(canaries[0]);
   await settings(page).getByRole('button', { name: 'Create vault', exact: true }).click();
-  const recovery = settings(page).getByRole('textbox', { name: 'Generated recovery key', exact: true });
-  await expect(recovery).toHaveValue(/^[A-Za-z0-9+/]{43}=$/);
-  this.uiRecovery = await recovery.inputValue();
-  assert.equal((await storage(page, 'read')).snapshot, null, 'creation is not durable before recovery verification');
-  await settings(page).getByLabel('Verify saved recovery key', { exact: true }).fill('incorrect-saved-key');
-  await settings(page).getByRole('button', { name: 'Verify and save recovery key', exact: true }).click();
-  await expect(settings(page).getByRole('alert')).toContainText('do not match');
-  assert.equal((await storage(page, 'read')).snapshot, null);
-  await settings(page).getByLabel('Verify saved recovery key', { exact: true }).fill(this.uiRecovery);
-  await settings(page).getByRole('button', { name: 'Verify and save recovery key', exact: true }).click();
-  await expect(settings(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
-  await settings(page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
+  const recovery = settings(page).locator('pre[aria-label="Generated recovery key"]');
+  await expect(recovery).toHaveText(/^[A-Za-z0-9+/]{171}=$/);
+  assert.equal(await recovery.evaluate(element => element.closest('form')), null);
+  await expect(settings(page).getByRole('button', { name: 'Save recovery key', exact: true })).toHaveAttribute('type', 'button');
+  this.uiRecovery = await recovery.textContent();
+  await page.evaluate(() => {
+    window.__recoveryClipboard = "";
+    navigator.clipboard.writeText = async value => { window.__recoveryClipboard = value; };
+  });
+  await settings(page).getByRole('button', { name: 'Copy recovery key', exact: true }).click();
+  assert.equal(await page.evaluate(() => window.__recoveryClipboard), this.uiRecovery);
+  await page.evaluate(() => { delete navigator.clipboard.writeText; delete window.__recoveryClipboard; });
+  assert.equal((await storage(page, 'read')).snapshot, null, 'creation waits for saving the recovery key');
+  await expect(settings(page).getByLabel('Verify saved recovery key', { exact: true })).toHaveCount(0);
+  const recoveryDownload = page.waitForEvent('download');
+  await settings(page).getByRole('button', { name: 'Save recovery key', exact: true }).click();
+  assert.equal((await recoveryDownload).suggestedFilename(), 'operations-vault-recovery-key.txt');
+  await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
   await settings(page).getByLabel('Credential label', { exact: true }).fill(canaries[3]);
   await settings(page).getByLabel('Credential value', { exact: true }).fill(canaries[1]);
   await settings(page).getByRole('button', { name: 'Save credential', exact: true }).click();
-  await expect(settings(page).getByRole('status')).toContainText('Credential saved', { timeout: 15_000 });
+  await expect(settings(page).getByLabel('Credential label', { exact: true })).toHaveValue('', { timeout: 15_000 });
+  const savedRow = settings(page).locator('li').filter({ hasText: canaries[3] });
+  await expect(savedRow.getByRole('button', { name: 'Replace', exact: true })).toHaveCount(0);
+  await page.evaluate(() => { navigator.clipboard.writeText = async value => { window.__credentialClipboard = value; }; });
+  try {
+    await savedRow.getByRole('button', { name: 'Copy', exact: true }).click();
+    await expect.poll(() => page.evaluate(() => window.__credentialClipboard)).toBe(canaries[1]);
+  } finally {
+    await page.evaluate(() => { delete navigator.clipboard.writeText; delete window.__credentialClipboard; });
+  }
+
+  await expect(settings(page).getByRole('button', { name: 'Generate recovery key', exact: true })).toHaveCount(0);
+  await expect(settings(page).getByRole('combobox', { name: 'Recovery method to replace', exact: true })).toHaveCount(0);
+  const beforePasskey = await storage(page, 'read');
+  await settings(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
+  const passkeyForm = settings(page).locator('form[id$="-passkey"]');
+  await expect(passkeyForm.getByLabel('Password', { exact: true })).toBeVisible();
+  await expect(passkeyForm.getByRole('combobox')).toHaveCount(0);
+  await passkeyForm.getByLabel('Password', { exact: true }).fill(canaries[0]);
+  const passkeyInputHandle = await passkeyForm.getByLabel('Password', { exact: true }).elementHandle();
+  await settings(page).locator('.vault-passkey-row').getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(passkeyForm).toHaveCount(0);
+  assert.equal(await passkeyInputHandle.evaluate(input => input.value), '');
+  assert.deepEqual(await storage(page, 'read'), beforePasskey);
+  const beforeRotation = await storage(page, 'read');
+  await settings(page).getByRole('button', { name: 'Rotate key', exact: true }).click();
+  const cancelRotation = settings(page).locator('.vault-rotate-row').getByRole('button', { name: 'Cancel', exact: true });
+  await expect(cancelRotation).toHaveAttribute('aria-expanded', 'true');
+  await expect(settings(page).locator('.rotation-body')).toBeVisible();
+  await expect(settings(page).locator('.rotation-body').getByRole('button', { name: 'Rotate key', exact: true })).toBeVisible();
+  await cancelRotation.click();
+  await expect(settings(page).locator('.rotation-body')).toHaveCount(0);
+  assert.deepEqual(await storage(page, 'read'), beforeRotation);
+  await settings(page).getByRole('button', { name: 'Rotate key', exact: true }).click();
+  const rotationFields = settings(page).locator('.rotation-body');
+  await expect(rotationFields.getByRole('combobox')).toHaveCount(0);
+  await expect(rotationFields.locator('input[type="password"]')).toHaveCount(1);
+  await rotationFields.locator('input[type="password"]').fill(canaries[0]);
+  const automaticRecoveryDownload = page.waitForEvent('download');
+  await rotationFields.getByRole('button', { name: 'Rotate key', exact: true }).click();
+  const automaticDownload = await automaticRecoveryDownload;
+  assert.equal(automaticDownload.suggestedFilename(), 'operations-vault-recovery-key.txt');
+  const rotatedRecovery = settings(page).locator('pre[aria-label="Generated recovery key"]');
+  await expect(rotatedRecovery).toHaveText(/^[A-Za-z0-9+/]{171}=$/);
+  const oldRecovery = this.uiRecovery;
+  this.uiRecovery = await rotatedRecovery.textContent();
+  assert.notEqual(this.uiRecovery, oldRecovery);
+  const recoveryStream = await automaticDownload.createReadStream();
+  const recoveryChunks = []; for await (const chunk of recoveryStream) recoveryChunks.push(chunk);
+  assert.equal(Buffer.concat(recoveryChunks).toString('utf8'), this.uiRecovery + '\n');
+  const rotatedKeyDownload = page.waitForEvent('download');
+  await settings(page).getByRole('button', { name: 'Save recovery key', exact: true }).click();
+  await rotatedKeyDownload;
+  await expect(rotatedRecovery).toHaveCount(0);
+
+
   await expect(settings(page).getByLabel('Credential value', { exact: true })).toHaveValue('');
-  await expect(settings(page).getByLabel('Confirm action password', { exact: true })).toHaveValue('');
   await expect(settings(page).locator('li').filter({ hasText: canaries[3] })).toHaveCount(1);
 }
 Given('I create a vault in the Secrets settings and save a synthetic credential', { timeout: 60_000 }, createUIVault);
@@ -242,7 +305,7 @@ Then('its registered secret is encrypted and a reload requires unlocking again',
   await this.page.reload();
   await this.page.locator('#startup-status').waitFor({ state: 'detached' });
   await openSecrets(this.page);
-  await expect(settings(this.page).getByText('Vault locked', { exact: true })).toBeVisible();
+  await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
   await expect(settings(this.page).getByText(canaries[3], { exact: true })).toHaveCount(0);
   await unlockUI(this.page);
   await expect(settings(this.page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
@@ -250,7 +313,7 @@ Then('its registered secret is encrypted and a reload requires unlocking again',
 
 Then('a vault worker constructor failure remains safe and a later unlock recovers', async function () {
   const page = this.page;
-  await settings(page).getByRole('button', { name: 'Lock vault', exact: true }).click();
+  await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   const before = await storage(page, 'read');
   await page.evaluate(canary => {
     globalThis.vaultOriginalWorker = Worker;
@@ -262,11 +325,11 @@ Then('a vault worker constructor failure remains safe and a later unlock recover
     };
   }, canaries[1]);
   try {
-    await settings(page).getByLabel('Unlock password', { exact: true }).fill(canaries[0]);
+    await settings(page).getByLabel('Unlock password, or recovery key', { exact: true }).fill(canaries[0]);
     await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
     await expect(settings(page).getByRole('alert')).toContainText('unavailable');
-    await expect(settings(page).getByLabel('Unlock password', { exact: true })).toHaveValue('');
-    await expect(settings(page).getByText('Vault locked', { exact: true })).toBeVisible();
+    await expect(settings(page).getByLabel('Unlock password, or recovery key', { exact: true })).toHaveValue('');
+    await expect(settings(page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
     assert.equal(await vaultWorkerCount(page), 0);
     assert.deepEqual(await storage(page, 'read'), before);
     noCanaries(await settings(page).innerText());
@@ -301,10 +364,7 @@ Then('an approved operation shows and copies only scrubbed diagnostics and persi
   await page.getByRole('button', { name: 'Unlock', exact: true }).click();
   await page.getByRole('combobox', { name: 'Credential for Bearer', exact: true }).click();
   await page.getByRole('option', { name: canaries[3], exact: true }).click();
-  await page.getByLabel('Authenticate to approve changes password', { exact: true }).fill(canaries[0]);
-  await page.getByRole('button', { name: 'Approve credential use', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Approve credential use', exact: true })).toHaveCount(0);
-  await expect(page.getByLabel('Authenticate to approve changes password', { exact: true })).toHaveValue('');
   await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
   const response = page.getByRole('region', { name: 'Operation response', exact: true });
   await expect(response).toContainText('HTTP 422');
@@ -329,76 +389,134 @@ Then('an approved operation shows and copies only scrubbed diagnostics and persi
 });
 
 Then('manually locking the vault clears inputs and password unlocking restores the credential list', async function () {
-  await settings(this.page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
   await settings(this.page).getByLabel('Credential value', { exact: true }).fill(canaries[1]);
   const before = await storage(this.page, 'read');
-  await settings(this.page).getByRole('button', { name: 'Lock vault', exact: true }).click();
-  await expect(settings(this.page).getByText('Vault locked', { exact: true })).toBeVisible();
-  await expect(settings(this.page).getByLabel('Unlock password', { exact: true })).toHaveValue('');
+  await this.page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+  await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
+  await expect(settings(this.page).getByLabel('Unlock password, or recovery key', { exact: true })).toHaveValue('');
   await expect.poll(() => vaultWorkerCount(this.page)).toBe(0);
-  await expect.poll(async () => (await storage(this.page, 'read')).lockEpoch).toBe(before.lockEpoch + 1);
+  assert.deepEqual(await storage(this.page, 'read'), before, 'Page exit discards access without writing vault data.');
   await unlockUI(this.page);
   await expect(settings(this.page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
 });
 
 Then('a {string} notification terminates the vault worker and returning visible leaves it locked', async function (event) {
   await this.page.evaluate(() => window.dispatchEvent(new Event('blur')));
-  await expect(settings(this.page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+  await expect(settings(this.page).getByLabel('Credential label', { exact: true })).toBeVisible();
   await expect.poll(() => vaultWorkerCount(this.page)).toBe(1);
-  await settings(this.page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
   await this.page.evaluate(event => {
     if (event === 'visibilitychange') {
       Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
       document.dispatchEvent(new Event(event));
     } else window.dispatchEvent(new Event('pagehide'));
   }, event);
-  await expect(settings(this.page).getByText('Vault locked', { exact: true })).toBeVisible();
+  await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
   await expect.poll(() => vaultWorkerCount(this.page)).toBe(0);
   await this.page.evaluate(() => {
     Reflect.deleteProperty(document, 'visibilityState'); document.dispatchEvent(new Event('visibilitychange'));
   });
-  await expect(settings(this.page).getByLabel('Unlock password', { exact: true })).toHaveValue('');
-  await expect(settings(this.page).getByText('Vault locked', { exact: true })).toBeVisible();
+  await expect(settings(this.page).getByLabel('Unlock password, or recovery key', { exact: true })).toHaveValue('');
+  await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
   await expect.poll(() => vaultWorkerCount(this.page)).toBe(0);
 });
 
+Then('hiding and restoring the page preserves the vault worker and pending operations', async function () {
+  const page = this.page;
+  const worker = (await Promise.all(page.workers().map(async worker => ({ worker, name: await worker.evaluate(() => globalThis.name).catch(() => '') }))))
+    .find(item => item.name === 'operations-secret-vault').worker;
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    window.dispatchEvent(new Event('blur'));
+  });
+  try {
+    await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
+    await expect.poll(() => vaultWorkerCount(page)).toBe(1);
+    await settings(page).getByLabel('Credential label', { exact: true }).fill('Saved while backgrounded');
+    await settings(page).getByLabel('Credential value', { exact: true }).fill(canaries[2]);
+    await settings(page).getByRole('button', { name: 'Save credential', exact: true }).click();
+    await expect(settings(page).getByLabel('Credential label', { exact: true })).toHaveValue('', { timeout: 15_000 });
+    await expect(settings(page).locator('li').filter({ hasText: 'Saved while backgrounded' })).toHaveCount(1);
+    assert.equal(await worker.evaluate(() => globalThis.name), 'operations-secret-vault');
+  } finally {
+    await page.evaluate(() => {
+      Reflect.deleteProperty(document, 'visibilityState');
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+  }
+  await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
+  await expect.poll(() => vaultWorkerCount(page)).toBe(1);
+});
+
 Then('optional idle locking expires before a delayed trusted interaction can extend it', async function () {
-  const idle = settings(this.page).getByRole('checkbox', { name: 'Lock after inactivity', exact: true });
+  const idle = settings(this.page).getByRole('switch', { name: 'Lock after inactivity', exact: true });
   await expect(idle).not.toBeChecked();
-  await expect(settings(this.page).getByLabel('Minutes of inactivity', { exact: true })).toHaveValue('10');
-  await idle.check();
-  const minutes = settings(this.page).getByLabel('Minutes of inactivity', { exact: true });
+  await expect(settings(this.page).getByRole('textbox', { name: 'Minutes of inactivity value', exact: true })).toHaveValue('10');
+  await idle.click();
+  await expect(idle).toBeChecked();
+  const minutes = settings(this.page).getByRole('textbox', { name: 'Minutes of inactivity value', exact: true });
   await expect(minutes).toBeEnabled(); await minutes.fill('1'); await minutes.press('Tab');
   await expect(minutes).toBeEnabled();
   // Advance the page wall clock to simulate suspension while keeping the real
   // worker and browser timers; the next trusted event must check before reset.
   await this.page.clock.setFixedTime(new Date(Date.now() + 61_000));
   await this.page.keyboard.press('Shift');
-  await expect(settings(this.page).getByText('Vault locked', { exact: true })).toBeVisible();
-  await expect(settings(this.page).getByLabel('Unlock password', { exact: true })).toHaveValue('');
+  await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
+  await expect(settings(this.page).getByLabel('Unlock password, or recovery key', { exact: true })).toHaveValue('');
 });
 
 Then('a downloaded vault backup restores with recovery in a fresh application context', async function () {
-  await settings(this.page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
+  await this.page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+  await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
   const downloadPromise = this.page.waitForEvent('download');
-  await settings(this.page).getByRole('button', { name: 'Download encrypted backup', exact: true }).click();
+  await settings(this.page).getByRole('button', { name: 'Export vault', exact: true }).click();
   const download = await downloadPromise, stream = await download.createReadStream();
   const chunks = []; for await (const chunk of stream) chunks.push(chunk);
   const buffer = Buffer.concat(chunks); noCanaries(buffer.toString('utf8'));
+  await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
   const context = await this.browser.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
   const page = await context.newPage();
   try {
     await page.goto(this.baseURL); await page.locator('#startup-status').waitFor({ state: 'detached' });
     await openSecrets(page);
-    await settings(page).getByLabel('Encrypted vault backup', { exact: true }).setInputFiles({ name: 'vault.json', mimeType: 'application/json', buffer });
-    const selector = settings(page).getByRole('combobox', { name: 'Backup method', exact: true });
+    await settings(page).getByLabel('Encrypted vault export', { exact: true }).setInputFiles({ name: 'vault.json', mimeType: 'application/json', buffer });
+    const selector = settings(page).getByRole('combobox', { name: 'Export method', exact: true });
     await selector.click(); await page.getByRole('option', { name: 'Recovery key', exact: true }).click();
-    await settings(page).getByLabel('Backup recovery key', { exact: true }).fill(this.uiRecovery);
-    await settings(page).getByRole('button', { name: 'Authenticate and replace vault', exact: true }).click();
-    await expect(settings(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+    await settings(page).getByLabel('Export recovery key', { exact: true }).fill(this.uiRecovery);
+    await settings(page).getByRole('button', { name: 'Authenticate and import vault', exact: true }).click();
+    await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
     await expect(settings(page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
-    await expect(settings(page).getByRole('status')).toContainText('Approve destinations again');
+    await expect(settings(page).getByRole('status')).toContainText('Vault imported.');
     noCanaries(await storage(page, 'read'));
+    await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+    await expect(settings(page).getByRole('combobox', { name: 'Unlock method', exact: true })).toHaveCount(0);
+    const unlockInput = settings(page).getByLabel('Unlock password, or recovery key', { exact: true });
+    await unlockInput.fill(this.uiRecovery);
+    await expect(unlockInput).toHaveAttribute('autocomplete', 'off');
+    const { inputBox, unlockBox } = await unlockInput.evaluate(input => {
+      const box = element => { const { x, y, width, height } = element.getBoundingClientRect(); return { x, y, width, height }; };
+      return { inputBox: box(input), unlockBox: box(input.parentElement.querySelector('button')) };
+    });
+    assert.ok(Math.abs(unlockBox.x - inputBox.x - inputBox.width) < 1);
+    assert.equal(unlockBox.y, inputBox.y);
+    assert.equal(unlockBox.height, inputBox.height);
+    await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
+    await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
+    const previousSnapshot = (await storage(page, 'read')).snapshot;
+    await settings(page).getByLabel('Encrypted vault export', { exact: true }).setInputFiles({ name: 'replacement.json', mimeType: 'application/json', buffer });
+    await settings(page).getByLabel('Export password', { exact: true }).fill(canaries[0]);
+    await settings(page).getByLabel('Password, or recovery key for the current vault', { exact: true }).fill(canaries[0]);
+    const beforeReplacement = page.waitForEvent('download');
+    await settings(page).getByRole('button', { name: 'Authenticate and replace vault', exact: true }).click();
+    const previousDownload = await beforeReplacement;
+    assert.equal(previousDownload.suggestedFilename(), 'operations-secrets-vault-before-replacement.json');
+    const previousStream = await previousDownload.createReadStream();
+    const previousChunks = []; for await (const chunk of previousStream) previousChunks.push(chunk);
+    const previousContent = Buffer.concat(previousChunks).toString('utf8');
+    assert.deepEqual(JSON.parse(previousContent), previousSnapshot);
+    noCanaries(previousContent);
+    await expect(settings(page).getByRole('status')).toContainText('Vault imported.');
+
   } finally { await context.close(); }
 });
 
@@ -489,20 +607,20 @@ async function virtualAuthenticator(world, prf, run, automaticPresenceSimulation
 Then('the native PRF virtual authenticator enrolls and unlocks the vault without password input', async function () {
   await virtualAuthenticator(this, true, async (cdp, authenticatorId) => {
     const page = this.page;
-    await settings(page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
     await settings(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
+      await settings(page).locator('form[id$="-passkey"]').getByLabel('Password', { exact: true }).fill(canaries[0]);
+      await settings(page).locator('form[id$="-passkey"]').getByRole('button', { name: 'Verify and add passkey', exact: true }).click();
     await expect(settings(page).getByRole('status')).toContainText('Passkey verified and added');
     const saved = (await storage(page, 'read')).snapshot;
     assert.equal(saved.envelopes.filter(item => item.kind === 'passkey').length, 1);
     const credentials = await cdp.send('WebAuthn.getCredentials', { authenticatorId });
     assert.equal(credentials.credentials.length, 1);
     assert.equal(credentials.credentials[0].rpId, 'localhost');
-    await settings(page).getByRole('button', { name: 'Lock vault', exact: true }).click();
-    await settings(page).getByRole('combobox', { name: 'Unlock method', exact: true }).click();
-    await page.getByRole('option', { name: 'Passkey', exact: true }).click();
-    await expect(settings(page).getByLabel('Unlock password', { exact: true })).toHaveCount(0);
+    await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+    await settings(page).getByRole('button', { name: 'Use passkey', exact: true }).click();
+    await expect(settings(page).getByLabel('Unlock password, or recovery key', { exact: true })).toHaveCount(0);
     await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
-    await expect(settings(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+    await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
     await expect(settings(page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
     noCanaries(await storage(page, 'read'));
     await page.screenshot({ path: 'tmp/test/vault-settings.png', fullPage: true });
@@ -513,32 +631,33 @@ Then('the native PRF virtual authenticator enrolls and unlocks the vault without
 Then('a native virtual authenticator without PRF leaves password and recovery methods usable', async function () {
   await virtualAuthenticator(this, false, async () => {
     const page = this.page, before = await storage(page, 'read');
-    await settings(page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
     await settings(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
-    await expect(settings(page).getByRole('alert')).toContainText('unavailable');
+      await settings(page).locator('form[id$="-passkey"]').getByLabel('Password', { exact: true }).fill(canaries[0]);
+      await settings(page).locator('form[id$="-passkey"]').getByRole('button', { name: 'Verify and add passkey', exact: true }).click();
+    await expect(settings(page).locator('form[id$="-passkey"]').getByRole('alert')).toHaveText('Passkey encryption (WebAuthn PRF) is unavailable in this browser or passkey provider. Your existing vault is unchanged.');
     assert.deepEqual(await storage(page, 'read'), before);
-    await settings(page).getByRole('button', { name: 'Lock vault', exact: true }).click();
+    await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
     await unlockUI(page);
-    await settings(page).getByRole('button', { name: 'Lock vault', exact: true }).click();
-    await settings(page).getByRole('combobox', { name: 'Unlock method', exact: true }).click();
-    await page.getByRole('option', { name: 'Recovery key', exact: true }).click();
-    await settings(page).getByLabel('Unlock recovery key', { exact: true }).fill(this.uiRecovery);
+    await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+    await settings(page).getByLabel('Unlock password, or recovery key', { exact: true }).fill(this.uiRecovery);
     await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
-    await expect(settings(page).getByText('Vault unlocked', { exact: true })).toBeVisible();
+    await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
   });
 });
 
 Then('a pending native passkey enrollment is cancelled by {string} and clears retained input elements', async function (action) {
   await virtualAuthenticator(this, true, async (cdp, authenticatorId) => {
     const page = this.page, before = await storage(page, 'read');
-    const password = settings(page).getByLabel('Confirm action password', { exact: true });
+    await settings(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
+    const password = settings(page).locator('form[id$="-passkey"]').getByLabel('Password', { exact: true });
     const value = settings(page).getByLabel('Credential value', { exact: true });
     await password.fill(canaries[0]); await value.fill(canaries[1]);
     const handles = await Promise.all([password.elementHandle(), value.elementHandle()]);
     try {
-      await settings(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
-      await expect(settings(page).getByRole('status')).toContainText('Verifying passkey');
-      if (action === 'manual lock') await settings(page).getByRole('button', { name: 'Lock vault', exact: true }).click();
+      await settings(page).locator('form[id$="-passkey"]').getByLabel('Password', { exact: true }).fill(canaries[0]);
+      await settings(page).locator('form[id$="-passkey"]').getByRole('button', { name: 'Verify and add passkey', exact: true }).click();
+      await expect(settings(page).locator('form[id$="-passkey"]').getByRole('button', { name: 'Verify and add passkey', exact: true })).toBeDisabled();
+      if (action === 'manual lock') await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
       else if (action === 'settings teardown') { await page.locator('summary[aria-label="Secrets"]').click(); await expect(settings(page)).toHaveCount(0); }
       else throw new Error('Unknown cancellation action');
       for (const handle of handles) assert.equal(await handle.evaluate(input => input.value), '', 'detached sensitive inputs must also be cleared');
@@ -547,11 +666,45 @@ Then('a pending native passkey enrollment is cancelled by {string} and clears re
       // neither create a credential nor add a vault method afterward.
       await cdp.send('WebAuthn.setAutomaticPresenceSimulation', { authenticatorId, enabled: true });
       await openSecrets(page);
-      await expect(settings(page).getByText('Vault locked', { exact: true })).toBeVisible();
+      await expect(settings(page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
       await unlockUI(page);
       assert.deepEqual((await storage(page, 'read')).snapshot, before.snapshot);
       assert.equal((await cdp.send('WebAuthn.getCredentials', { authenticatorId })).credentials.length, 0);
       await expect(settings(page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
     } finally { for (const handle of handles) await handle.dispose(); }
   }, false);
+});
+
+Then('the password replacement pane validates matching values and preserves recovery access', async function () {
+  const page = this.page, vault = settings(page), replacement = 'browser-CHANGED-password-9182';
+  const before = await storage(page, 'read');
+  const previousRecovery = before.snapshot.envelopes.find(envelope => envelope.kind === 'recovery');
+  await vault.getByRole('button', { name: 'Replace password', exact: true }).click();
+  const form = vault.locator('form[id$="-password"]');
+  await expect(form.getByRole('combobox')).toHaveCount(0);
+  await form.getByLabel('Password, or recovery key', { exact: true }).fill(canaries[0]);
+  await form.getByLabel('New password', { exact: true }).fill(replacement);
+  await form.getByLabel('Confirm new password', { exact: true }).fill('does-not-match');
+  await form.getByRole('button', { name: 'Verify and replace password', exact: true }).click();
+  await expect(form.getByRole('alert')).toContainText('matching passwords');
+  assert.deepEqual(await storage(page, 'read'), before);
+  await form.getByLabel('Password, or recovery key', { exact: true }).fill(this.uiRecovery);
+  await form.getByLabel('New password', { exact: true }).fill(replacement);
+  await form.getByLabel('Confirm new password', { exact: true }).fill(replacement);
+  await form.getByRole('button', { name: 'Verify and replace password', exact: true }).click();
+  await expect(form).toHaveCount(0);
+  await expect(vault.getByRole('status')).toHaveText('Password replaced.');
+  const saved = await storage(page, 'read');
+  assert.deepEqual(saved.snapshot.envelopes.find(envelope => envelope.kind === 'recovery'), previousRecovery);
+  assert.equal(saved.snapshot.envelopes.filter(envelope => envelope.kind === 'password').length, 1);
+  assert.ok(!JSON.stringify(saved).includes(replacement));
+  await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+  await vault.getByLabel('Unlock password, or recovery key', { exact: true }).fill(canaries[0]);
+  await vault.getByRole('button', { name: 'Unlock vault', exact: true }).click();
+  await expect(vault.getByRole('alert')).toBeVisible();
+  await expect(vault.getByRole('heading', { name: 'Confirm management actions', exact: true })).toHaveCount(0);
+  await unlockUI(page, replacement);
+  await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
+  await unlockUI(page, this.uiRecovery);
+  await expect(vault.locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
 });

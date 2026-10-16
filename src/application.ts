@@ -42,6 +42,7 @@ export async function initializeApplication(): Promise<void> {
       initialWorkflowDefaults: settings.workflowDefaults,
       initialDeveloperToolbar: settings.developerToolbar,
       initialEvaluationDetails: settings.evaluationDetails,
+      initialTooltips: settings.tooltips,
       initialLocale: settings.locale,
       initialSettingsError: settings.storageError,
     } }));

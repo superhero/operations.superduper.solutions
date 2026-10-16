@@ -4,7 +4,7 @@
 @vault-lifecycle
 Feature: Explicit vault inactivity deadlines
   A delayed interaction cannot revive an expired unlocked session.
-  The client applies hidden-page locking separately from optional idle locking.
+  The client locks on page exit; changing tab visibility does not end access.
 
   Scenario: Idle locking starts disabled
     Then vault inactivity starts disabled and only explicit activation starts a session
@@ -19,7 +19,7 @@ Feature: Explicit vault inactivity deadlines
     Then changing vault inactivity preferences uses the previous activity time
 
   Scenario: Invalid durations cannot weaken the policy
-    Then vault inactivity accepts only whole minutes from one through fourteen forty
+    Then vault inactivity accepts only whole minutes from one through one week
 
   Scenario: Clock discontinuity and stale checks fail closed
     Then vault inactivity locks on a backward or invalid clock and remains inactive until unlock
