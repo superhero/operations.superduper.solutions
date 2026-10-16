@@ -398,7 +398,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .grid-size-control { display: flex; align-items: center; gap: 8px; min-width: 0; --field-background: var(--color-background); --field-foreground: var(--color-catalog-foreground); }
   .grid-size-control :global(.field-integer) { flex: 1; min-width: 0; }
   .grid-size-error { color: var(--color-error-foreground); font-weight: 400; }
-  .default-switch { flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-muted-foreground); transition: background-color 180ms ease-in; }
+  .default-switch { flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-muted-foreground); transition: background-color 180ms ease-in, transform 180ms ease-in; }
   .default-switch > span { display: block; width: 18px; height: 18px; border-radius: 2px; background: var(--color-surface); transform: translateX(0); transition: transform 180ms ease-in, background-color 180ms ease-in; }
   .workflow-default[aria-checked="true"] .default-switch { background: var(--color-catalog-active); }
   .workflow-default[aria-checked="true"] .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
@@ -422,6 +422,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .palette-swatches :global(.palette-selected-icon) { position: absolute; top: 50%; left: 50%; width: 64px; height: 64px; transform: translate(-50%, -50%) scale(0); color: var(--color-catalog-active); font-variation-settings: "FILL" 1; transition: transform 180ms ease-in, color 180ms ease-in; pointer-events: none; }
   input:checked + .palette-card :global(.palette-selected-icon) { transform: translate(-50%, -50%) scale(1); transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), color 180ms ease-in; }
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .grid-size-control :global(.integer-range:hover:enabled) { transform: scale(1.10); }
+    .workflow-default:hover:enabled .default-switch { transform: scale(1.10); }
     .palette-choice { z-index: 0; will-change: transform; transition: transform 180ms ease-in, z-index 0s linear 180ms; }
     .palette-choice:hover { z-index: 2; transform: scale(min(1.10, var(--hover-scale, 1.10))); transition-delay: 0s; }
   }
