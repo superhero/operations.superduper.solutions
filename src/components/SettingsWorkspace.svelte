@@ -363,7 +363,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .settings-sections :global(.settings-section) { border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-muted); transition: background-color 180ms ease-in; }
   .settings-sections :global(.settings-section:has(> summary[aria-expanded="true"])) { background: var(--color-catalog-active); }
   .settings-sections :global(.settings-section > summary) { background: transparent; color: var(--color-catalog-foreground); }
-  .settings-sections :global(.settings-section > summary[aria-expanded="true"]) { color: var(--color-catalog-active-foreground); }
+  .settings-sections :global(.settings-section > summary[aria-expanded="true"]) { position: sticky; top: var(--app-header-height); z-index: 10; background: var(--color-catalog-active); color: var(--color-catalog-active-foreground); }
   .section-heading { display: grid; gap: 2px; }
   .section-heading h2 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: normal; }
   .section-subtitle { font-size: 12px; font-weight: 400; }
