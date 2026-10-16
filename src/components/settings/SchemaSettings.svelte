@@ -345,6 +345,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .confirmation-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
   @container (max-width: 430px) { .schema-metadata { grid-template-columns: 1fr; } }
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .schema-card :global(.schema-disclosure > summary:hover) { transform: scale(min(1.06, var(--hover-scale, 1.06))); }
     .schema-settings :global(.schema-action:hover:enabled) { transform: scale(min(1.10, var(--hover-scale, 1.10))); }
     .schema-enabled:hover:enabled .default-switch { transform: scale(1.10); }
   }
