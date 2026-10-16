@@ -477,7 +477,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .idle-control > span { display: flex; align-items: center; padding: 0 8px; }
   @media (prefers-reduced-motion: no-preference) {
     .idle-control :global(.integer-range) { transition: transform 180ms ease-in; }
-    .idle-control :global(.integer-range:hover:enabled) { transform: scale(1.10); }
+    .idle-control :global(.integer-range:hover:enabled) { transform: scale(1.02, 1.10); }
   }
   textarea { resize: vertical; overflow-wrap: anywhere; font-family: monospace; }
   :global(.secrets-settings .field-select-trigger) { border-radius: 4px; font-size: 12px; }
