@@ -47,7 +47,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     targetHeight = to;
     animation?.cancel();
     if (animateSize) panel.style.height = `${to}px`;
-    const current = panel.animate([{ height: `${from}px`, overflow: "visible clip" }, { height: `${to}px`, overflow: "visible clip" }], { duration: 240, easing: "ease-in", fill: "both" });
+    const current = panel.animate([{ height: `${from}px`, overflow: "visible clip" }, { height: `${to}px`, overflow: "visible clip" }], { duration: 240, easing: "ease-in-out", fill: "both" });
     animation = current;
     current.onfinish = () => { if (animation === current) { expanded = open; animation = undefined; current.cancel(); } };
   }
