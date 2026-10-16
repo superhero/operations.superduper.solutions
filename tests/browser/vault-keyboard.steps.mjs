@@ -95,17 +95,12 @@ When('I create and replace a vault credential using only the keyboard', { timeou
   await activate(page, settings.getByRole('button', { name: 'Replace', exact: true }));
   await enter(page, settings.getByLabel('Confirm action password', { exact: true }), password);
   await enter(page, settings.getByLabel('Credential label', { exact: true }), 'Keyboard replacement');
-  const kind = settings.getByRole('combobox', { name: 'Credential type', exact: true });
-  await activate(page, kind);
-  await page.keyboard.press('End');
-  await page.keyboard.press('Enter');
-  await expect(kind).toContainText('Header API key');
+  await expect(settings.getByRole('combobox', { name: 'Credential type', exact: true })).toHaveCount(0);
   await enter(page, settings.getByLabel('Replacement value', { exact: true }), replacementSecret);
   await activate(page, settings.getByRole('button', { name: 'Save credential', exact: true }));
   await expect(settings.getByRole('status')).toContainText('Credential saved');
   const row = settings.locator('li').filter({ hasText: 'Keyboard replacement' });
   await expect(row).toHaveCount(1);
-  await expect(row).toContainText('Header API key');
   await expect(settings.getByLabel('Credential value', { exact: true })).toHaveValue('');
   this.keyboardSaved = await readStorage(page);
 });

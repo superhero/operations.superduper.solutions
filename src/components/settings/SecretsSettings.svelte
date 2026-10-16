@@ -40,7 +40,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let recoveryMode = $state<"create" | "replace" | null>(null);
   let credentialId = $state("");
   let credentialLabel = $state("");
-  let credentialKind = $state<"bearer" | "apiKey">("bearer");
   let grantCredential = $state("");
   let grantOperation = $state("");
   let grantScheme = $state("");
@@ -59,7 +58,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const rotationAuthentication: Record<string, Authentication> = {};
   const selectedCredential = $derived(records.find(item => item.id === grantCredential));
   const schemeOptions = $derived([...new Map((grantDescriptor?.operation.security?.flat() ?? [])
-    .filter(scheme => scheme.kind === selectedCredential?.kind).map(scheme => [scheme.name,
+    .filter(scheme => (selectedCredential?.kind === "secret" || scheme.kind === selectedCredential?.kind)).map(scheme => [scheme.name,
       { value: scheme.name, label: `${scheme.name} · ${scheme.header}` }])).values()]);
   const selectedScheme = $derived(grantDescriptor?.operation.security?.flat().find(scheme => scheme.name === grantScheme));
 
@@ -141,13 +140,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     } finally { confirmation = ""; }
   }
   async function saveCredential(): Promise<void> {
-    const input = { ...(credentialId ? { id: credentialId } : {}), label: credentialLabel, kind: credentialKind, value: take("credential-value") };
+    const input = { ...(credentialId ? { id: credentialId } : {}), label: credentialLabel, kind: credentialId ? records.find(item => item.id === credentialId)!.kind : "secret" as const, value: take("credential-value") };
     try { await fresh(proof => vaultCall("put", [proof, input])); }
     finally { input.value = ""; }
     credentialId = ""; credentialLabel = ""; await refresh(); notice = "Credential saved.";
   }
   function editCredential(item: CredentialSummary): void {
-    clearInputs(); credentialId = item.id; credentialLabel = item.label; credentialKind = item.kind;
+    clearInputs(); credentialId = item.id; credentialLabel = item.label;
     panel.querySelector<HTMLInputElement>('input[name="credential-value"]')?.focus();
   }
   async function reviewGrant(id: string): Promise<void> {
@@ -159,7 +158,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       const descriptor = await approvedOperation(operation, workflowExecutionForOperation(operation).origin);
       if (revision === reviewGeneration && !disposed) {
         grantDescriptor = descriptor;
-        grantScheme = descriptor.operation.security?.flat().find(scheme => scheme.kind === selectedCredential?.kind)?.name ?? "";
+        grantScheme = descriptor.operation.security?.flat().find(scheme => (selectedCredential?.kind === "secret" || scheme.kind === selectedCredential?.kind))?.name ?? "";
       }
     } catch (failure) { if (revision === reviewGeneration) error = safeVaultError(failure).message; }
   }
@@ -362,7 +361,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {#if !records.length}<p class="help">No credentials saved.</p>{/if}
       <ul class="records">
         {#each records as item (item.id)}
-          <li><div class="record-heading"><div><strong>{item.label}</strong><small>{item.kind === "bearer" ? "Bearer token" : "Header API key"} · {item.grants.length} approved destinations</small></div>
+          <li><div class="record-heading"><div><strong>{item.label}</strong><small>{item.grants.length} approved destinations</small></div>
             <div class="actions"><button type="button" disabled={busy} onclick={() => editCredential(item)}>Replace</button>
               <button type="button" disabled={busy} onclick={() => run("Removing credential…", async () => { await fresh(proof => vaultCall("remove", [proof, item.id])); await refresh(); })}>Remove</button></div></div>
             {#each item.grants as grant (grant.id)}
@@ -375,10 +374,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <form class="subform" onsubmit={event => { event.preventDefault(); void run("Saving credential…", saveCredential); }}>
         <h4>{credentialId ? "Replace credential" : "Add credential"}</h4>
         <label>Credential label<input bind:value={credentialLabel} maxlength="120" required disabled={busy} /></label>
-        <label for="vault-credential-kind">Credential type</label>
-        <FieldSelect id="vault-credential-kind" label="Credential type" value={credentialKind} includePlaceholder={false} disabled={busy}
-          options={[{ value: "bearer", label: "Bearer token" }, { value: "apiKey", label: "Header API key" }]}
-          onValueChange={value => credentialKind = value as "bearer" | "apiKey"} />
         <label>{credentialId ? "Replacement value" : "Credential value"}<input name="credential-value" type="password" required autocomplete="off" spellcheck="false" data-vault-sensitive disabled={busy} /></label>
         <div class="actions"><button disabled={busy}>Save credential</button><button type="button" disabled={busy} onclick={() => { clearInputs(); credentialId = ""; credentialLabel = ""; }}>Cancel</button></div>
       </form>

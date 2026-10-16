@@ -146,6 +146,14 @@ Then("selected alternatives require all grants and keep node credentials indepen
   assert.equal(seen[0].init.credentials, "omit");
   assert.equal(seen[0].init.cache, "no-store");
   assert.equal(seen[0].init.referrerPolicy, "no-referrer");
+  state.credentials.forEach(credential => { credential.kind = "secret"; });
+  state.binding = { ...state.binding, alternative: 0, credentials: { Bearer: "credential-one", Key: "credential-two" } };
+  await execute(state, { values: { "path:id": "44" }, fetchRequest });
+  assert.equal(seen[2].init.headers.get("authorization"), `Bearer ${canary}`);
+  assert.equal(seen[2].init.headers.get("x-api-key"), "second-secret");
+  state.credentials[1].grants = [];
+  await assert.rejects(execute(state, { values: { "path:id": "45" }, fetchRequest }), error => error instanceof VaultError && error.code === "PERMISSION");
+  assert.equal(seen.length, 3);
 });
 
 Then("credential binding case {string} fails before dispatch", async name => {

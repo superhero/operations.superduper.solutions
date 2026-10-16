@@ -150,6 +150,12 @@ Then('vault sessions edit credentials and approve or revoke exact destinations w
   await assert.rejects(session.put(proof, { id: crypto.randomUUID(), label: 'Missing', kind: 'bearer', value: 'VALUE' }), code('INVALID'));
   await assert.rejects(session.remove(proof, crypto.randomUUID()), code('INVALID'));
   assert.deepEqual(await session.remove(proof, id), []);
+  const generic = (await session.put(proof, { label: 'Generic secret', kind: 'secret', value: 'GENERIC-VALUE' }))[0];
+  const genericApproved = await session.grant(proof, generic.id, 'service', approval);
+  assert.equal(genericApproved[0].grants.length, 1);
+  session.lock();
+  await session.unlock(proof);
+  assert.equal((await session.list())[0].kind, 'secret');
 });
 
 Then('vault sessions reject invalid credential input and malformed authenticated plaintext', kdfStep, async () => {

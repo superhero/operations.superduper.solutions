@@ -19,7 +19,7 @@ const context = (snapshot: Pick<VaultSnapshot, "id" | "epoch">, item: { id: stri
 function credential(value: VaultCredential): VaultCredential {
   ownObject(value, ["id", "label", "kind", "value", "grants"]);
   if (!validId(value.id) || typeof value.label !== "string" || !value.label.trim() || value.label.length > 120
-    || !["bearer", "apiKey"].includes(value.kind) || typeof value.value !== "string" || !value.value
+    || !["bearer", "apiKey", "secret"].includes(value.kind) || typeof value.value !== "string" || !value.value
     || /[^\x21-\x7e]/.test(value.value) || value.value.length > vaultLimits.secretBytes
     || !Array.isArray(value.grants) || value.grants.length > 256) throw new VaultError("INVALID");
   canonicalJSON(value, vaultLimits.recordBytes);
@@ -203,7 +203,7 @@ export class VaultSession {
     this.guard(generation); this.state = state; this.key = key;
   }
 
-  async put(proof: UnlockProof, input: { id?: string; label: string; kind: "bearer" | "apiKey"; value: string }): Promise<CredentialSummary[]> {
+  async put(proof: UnlockProof, input: { id?: string; label: string; kind: VaultCredential["kind"]; value: string }): Promise<CredentialSummary[]> {
     await this.fresh(proof);
     const records = await this.records();
     const previous = input.id ? records.find(item => item.id === input.id) : undefined;
@@ -229,7 +229,7 @@ export class VaultSession {
     await this.assertSchema(descriptor);
     const values = await this.records();
     const value = values.find(item => item.id === id);
-    if (!value || !descriptor.operation.security?.some(option => option.some(item => item.name === scheme && item.kind === value.kind)))
+    if (!value || !descriptor.operation.security?.some(option => option.some(item => item.name === scheme && (value.kind === "secret" || item.kind === value.kind))))
       throw new VaultError("PERMISSION");
     value.grants = [...value.grants.filter(item => !(item.scheme === scheme && item.descriptor.operation.id === descriptor.operation.id)),
       { id: crypto.randomUUID(), scheme, descriptor }];

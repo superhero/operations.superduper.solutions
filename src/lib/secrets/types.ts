@@ -30,7 +30,7 @@ export type VaultManifest = {
 export type ApprovedOperation = { fingerprint: string; origin: string; operation: Operation };
 export type CredentialGrant = { id: string; scheme: string; descriptor: ApprovedOperation };
 export type VaultCredential = {
-  id: string; label: string; kind: "bearer" | "apiKey"; value: string; grants: CredentialGrant[];
+  id: string; label: string; kind: "bearer" | "apiKey" | "secret"; value: string; grants: CredentialGrant[];
 };
 export type CredentialSummary = Omit<VaultCredential, "value">;
 export type CredentialBinding = {

@@ -116,7 +116,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <label for={`${fieldId}-${scheme.name}`}>{scheme.name} · {scheme.header}</label>
             <FieldSelect id={`${fieldId}-${scheme.name}`} label={`Credential for ${scheme.name}`} value={choices[scheme.name] ?? ""}
               disabled={disabled || busy} {portalZIndex}
-              options={credentials.filter(item => item.kind === scheme.kind).map(item => ({ value: item.id, label: item.label }))}
+              options={credentials.filter(item => (item.kind === "secret" || item.kind === scheme.kind)).map(item => ({ value: item.id, label: item.label }))}
               onValueChange={value => { choices = { ...choices, [scheme.name]: value }; changed(); }} />
             {#if chosen && !permitted(chosen, scheme.name)}
               <p>This credential needs approval for the destination and operation shown above.</p>
