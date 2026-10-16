@@ -250,8 +250,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <section bind:this={panel} class="secrets-settings" aria-label="Secrets vault">
-  <div class="toolbar">
-    <strong>{ready ? status.exists ? status.unlocked ? "Vault unlocked" : "Vault locked" : "No vault created" : "Secrets vault"}</strong>
+  <div class="toolbar vault-status">
+    <strong class="help">{ready ? status.exists ? status.unlocked ? "Vault unlocked" : "Vault locked" : "No vault created" : "Secrets vault"}</strong>
     {#if status.unlocked || busy}
       <div class="actions">
         {#if status.unlocked}<button type="button" onclick={() => void manualLock()}>Lock vault</button>
@@ -410,7 +410,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .card, .subform { display: grid; gap: 10px; min-width: 0; }
   .card { padding: 14px; border-radius: 4px; background: var(--color-surface); }
-  .vault-info { display: grid; gap: 10px; padding: 14px; border-radius: 4px; background: var(--color-emphasis); color: var(--color-background); }
+  .vault-info { display: grid; gap: 10px; }
+  .vault-info, .vault-status { padding: 14px; border-radius: 4px; background: var(--color-emphasis); color: var(--color-background); }
   .subform { padding-top: 12px; border-top: 1px solid var(--color-background); }
   h3, h4, p { margin: 0; }
   h3 { font-size: 14px; } h4, label, strong { font-size: 12px; }
