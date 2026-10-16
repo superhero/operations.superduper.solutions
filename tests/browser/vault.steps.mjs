@@ -203,7 +203,7 @@ async function vaultWorkerCount(page) {
 async function createUIVault() {
   const page = this.page;
   await openSecrets(page);
-  await expect(settings(page).getByText('No vault has been created', { exact: true })).toBeVisible();
+  await expect(settings(page).getByText('No vault has been created:', { exact: true })).toBeVisible();
   await settings(page).getByLabel('New vault password', { exact: true }).fill(canaries[0]);
   await settings(page).getByLabel('Confirm vault password', { exact: true }).fill(canaries[0]);
   await settings(page).getByRole('button', { name: 'Create vault', exact: true }).click();

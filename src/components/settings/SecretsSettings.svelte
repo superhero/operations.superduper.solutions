@@ -251,7 +251,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <section bind:this={panel} class="secrets-settings" aria-label="Secrets vault">
   <div class="toolbar vault-status">
-    <strong class="help">{ready ? status.exists ? status.unlocked ? "Vault unlocked" : "Vault locked" : "No vault has been created" : "Secrets vault"}</strong>
+    <p class="help"><strong>{ready ? status.exists ? status.unlocked ? "Vault unlocked" : "Vault locked" : "No vault has been created:" : "Secrets vault"}</strong>{#if ready && !status.exists}{" "}Use a vault to help protect stored data required as input in the workflows{/if}</p>
     {#if status.unlocked || busy}
       <div class="actions">
         {#if status.unlocked}<button type="button" onclick={() => void manualLock()}>Lock vault</button>
