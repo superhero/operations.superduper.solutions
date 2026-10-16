@@ -67,6 +67,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <Disclosure class="entry" label={origin(entry)} tooltipEnabled={false} lazy
           open={expanded.has(entry.id)} onToggle={(next) => toggle(entry.id, next)}>
           {#snippet summary()}
+            <span class="entry-toggle" class:expanded={expanded.has(entry.id)}><MaterialIcon name="keyboard_arrow_right" size={24} /></span>
             <span class="summary-text"><strong>{entry.origin.source}{#if entry.origin.scope || entry.origin.operation}{" · "}{/if}{entry.origin.scope ?? ""}{#if entry.origin.scope && entry.origin.operation}<span class="origin-separator"><MaterialIcon name="keyboard_arrow_right" size={16} /></span>{/if}{entry.origin.operation ?? ""}</strong></span>
             <span class="occurrences">{number(entry.occurrences)} {entry.occurrences === 1 ? "occurrence" : "occurrences"}</span>
           {/snippet}
@@ -105,8 +106,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .entries { display: grid; gap: 8px; min-width: 0; }
   .entries :global(.entry) { min-width: 0; border-radius: 4px; background: var(--color-background); }
   .entries :global(.entry > summary) { display: flex; align-items: center; gap: 12px; min-width: 0; padding: 12px; cursor: pointer; }
-  .entries :global(.entry > summary::before) { content: "›"; flex: 0 0 auto; transition: transform 200ms ease; }
-  .entries :global(.entry > summary[aria-expanded="true"]::before) { transform: rotate(90deg); }
+  .entry-toggle { display: inline-flex; flex: 0 0 auto; transition: transform 200ms ease; }
+  .entry-toggle.expanded { transform: rotate(90deg); }
   .entries :global(.entry > summary::-webkit-details-marker) { display: none; }
   .entries :global(.entry > summary:focus-visible) { outline: 2px solid var(--color-foreground); outline-offset: 2px; border-radius: 4px; }
   .summary-text { display: grid; gap: 4px; flex: 1; min-width: 0; }
@@ -127,5 +128,5 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   nav { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 12px; color: var(--color-muted-foreground); font-size: 11px; }
   :global(.error-history .retry), :global(.error-history .page-button) { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
   @media (max-width: 600px) { .error-history { padding: 12px; } .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .entries :global(.entry > summary) { gap: 8px; } .occurrences { max-width: 80px; text-align: right; } }
-  @media (prefers-reduced-motion: reduce) { .entries :global(.entry > summary::before) { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .entry-toggle { transition: none; } }
 </style>
