@@ -384,7 +384,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <form class="card" onsubmit={event => { event.preventDefault(); if (!status.unlocked) void run("", async () => { await fresh(proof => vaultCall("unlock", [proof])); await refresh(); }); }}>
       {#if status.unlocked}<h3>Confirm management actions</h3>{/if}
       <VaultAuthentication bind:this={authentication} {status} disabled={busy} label={status.unlocked ? "Confirm action" : "Unlock"}>
-        {#snippet action()}{#if !status.unlocked}<button class="unlock-vault" type="submit" aria-label="Unlock vault" disabled={busy}><MaterialIcon name="passkey" size={20} /></button>{/if}{/snippet}
+        {#snippet action()}{#if !status.unlocked}<button class="unlock-vault" type="submit" aria-label="Unlock vault" disabled={busy}><MaterialIcon name="key" size={20} /></button>{/if}{/snippet}
       </VaultAuthentication>
       {#if status.unlocked}<p class="help">Authenticate here before changing credentials, destination approvals or removing unlock methods.</p>
       {/if}
@@ -476,7 +476,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <span class="password-confirm-field">
               <input id={`${createFormId}-new-password-confirm`} name="new-password-confirm" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} />
               <HintButton label="Verify and replace password" disabled={busy}>
-                {#snippet child({ props })}<button {...props} class="unlock-vault" type="submit"><MaterialIcon name="password" size={20} /></button>{/snippet}
+                {#snippet child({ props })}<button {...props} class="unlock-vault" type="submit"><MaterialIcon name="key" size={20} /></button>{/snippet}
               </HintButton>
             </span>
           {#if passwordError}<p class="error" role="alert"
@@ -493,7 +493,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {#if showPasskey}
         {#snippet passkeyAction()}
           <HintButton label="Verify and add passkey" disabled={busy}>
-            {#snippet child({ props })}<button {...props} class="unlock-vault" type="submit"><MaterialIcon name="passkey" size={20} /></button>{/snippet}
+            {#snippet child({ props })}<button {...props} class="unlock-vault" type="submit"><MaterialIcon name="key" size={20} /></button>{/snippet}
           </HintButton>
         {/snippet}
         <form id={`${createFormId}-passkey`} class="rotation-body" inert={!showPasskey}
@@ -515,7 +515,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {#if showRotation}
           {#snippet rotationAction()}
             <HintButton label="Verify and rotate recovery key" aria-label="Rotate key" disabled={busy} onclick={() => run("Rotating vault key…", rotate)}>
-              {#snippet child({ props })}<button {...props} class="unlock-vault" type="button"><MaterialIcon name="lock_reset" size={20} /></button>{/snippet}
+              {#snippet child({ props })}<button {...props} class="unlock-vault" type="button"><MaterialIcon name="key" size={20} /></button>{/snippet}
             </HintButton>
           {/snippet}
           <div id={`${createFormId}-rotation`} class="rotation-body" inert={!showRotation}
