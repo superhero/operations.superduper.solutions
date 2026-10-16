@@ -193,7 +193,7 @@ async function openSecrets(page) {
 async function unlockUI(page, password = canaries[0]) {
   await settings(page).getByLabel('Unlock password, or recovery key', { exact: true }).fill(password);
   await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
-  await expect(settings(page).getByRole('heading', { name: 'Add credential', exact: true })).toBeVisible();
+  await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
 }
 async function vaultWorkerCount(page) {
   return (await Promise.all(page.workers().map(worker => worker.evaluate(() => globalThis.name).catch(() => 'closed'))))
@@ -227,7 +227,7 @@ async function createUIVault() {
   const recoveryDownload = page.waitForEvent('download');
   await settings(page).getByRole('button', { name: 'Save recovery key', exact: true }).click();
   assert.equal((await recoveryDownload).suggestedFilename(), 'operations-vault-recovery-key.txt');
-  await expect(settings(page).getByRole('heading', { name: 'Add credential', exact: true })).toBeVisible();
+  await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
   await settings(page).getByLabel('Credential label', { exact: true }).fill(canaries[3]);
   await settings(page).getByLabel('Credential value', { exact: true }).fill(canaries[1]);
   await settings(page).getByRole('button', { name: 'Save credential', exact: true }).click();
@@ -395,7 +395,7 @@ Then('manually locking the vault clears inputs and password unlocking restores t
 
 Then('a {string} notification terminates the vault worker and returning visible leaves it locked', async function (event) {
   await this.page.evaluate(() => window.dispatchEvent(new Event('blur')));
-  await expect(settings(this.page).getByRole('heading', { name: 'Add credential', exact: true })).toBeVisible();
+  await expect(settings(this.page).getByLabel('Credential label', { exact: true })).toBeVisible();
   await expect.poll(() => vaultWorkerCount(this.page)).toBe(1);
   await this.page.evaluate(event => {
     if (event === 'visibilitychange') {
@@ -423,7 +423,7 @@ Then('hiding and restoring the page preserves the vault worker and pending opera
     window.dispatchEvent(new Event('blur'));
   });
   try {
-    await expect(settings(page).getByRole('heading', { name: 'Add credential', exact: true })).toBeVisible();
+    await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
     await expect.poll(() => vaultWorkerCount(page)).toBe(1);
     await settings(page).getByLabel('Credential label', { exact: true }).fill('Saved while backgrounded');
     await settings(page).getByLabel('Credential value', { exact: true }).fill(canaries[2]);
@@ -437,7 +437,7 @@ Then('hiding and restoring the page preserves the vault worker and pending opera
       document.dispatchEvent(new Event('visibilitychange'));
     });
   }
-  await expect(settings(page).getByRole('heading', { name: 'Add credential', exact: true })).toBeVisible();
+  await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
   await expect.poll(() => vaultWorkerCount(page)).toBe(1);
 });
 
@@ -476,7 +476,7 @@ Then('a downloaded vault backup restores with recovery in a fresh application co
     await selector.click(); await page.getByRole('option', { name: 'Recovery key', exact: true }).click();
     await settings(page).getByLabel('Export recovery key', { exact: true }).fill(this.uiRecovery);
     await settings(page).getByRole('button', { name: 'Authenticate and import vault', exact: true }).click();
-    await expect(settings(page).getByRole('heading', { name: 'Add credential', exact: true })).toBeVisible();
+    await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
     await expect(settings(page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
     await expect(settings(page).getByRole('status')).toContainText('Approve destinations again');
     noCanaries(await storage(page, 'read'));
@@ -493,7 +493,7 @@ Then('a downloaded vault backup restores with recovery in a fresh application co
     assert.equal(unlockBox.y, inputBox.y);
     assert.equal(unlockBox.height, inputBox.height);
     await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
-    await expect(settings(page).getByRole('heading', { name: 'Add credential', exact: true })).toBeVisible();
+    await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
     const previousSnapshot = (await storage(page, 'read')).snapshot;
     await settings(page).getByLabel('Encrypted vault export', { exact: true }).setInputFiles({ name: 'replacement.json', mimeType: 'application/json', buffer });
     await settings(page).getByLabel('Export password', { exact: true }).fill(canaries[0]);
@@ -612,7 +612,7 @@ Then('the native PRF virtual authenticator enrolls and unlocks the vault without
     await settings(page).getByRole('button', { name: 'Use passkey', exact: true }).click();
     await expect(settings(page).getByLabel('Unlock password, or recovery key', { exact: true })).toHaveCount(0);
     await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
-    await expect(settings(page).getByRole('heading', { name: 'Add credential', exact: true })).toBeVisible();
+    await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
     await expect(settings(page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
     noCanaries(await storage(page, 'read'));
     await page.screenshot({ path: 'tmp/test/vault-settings.png', fullPage: true });
@@ -633,7 +633,7 @@ Then('a native virtual authenticator without PRF leaves password and recovery me
     await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
     await settings(page).getByLabel('Unlock password, or recovery key', { exact: true }).fill(this.uiRecovery);
     await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
-    await expect(settings(page).getByRole('heading', { name: 'Add credential', exact: true })).toBeVisible();
+    await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
   });
 });
 

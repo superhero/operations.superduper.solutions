@@ -47,7 +47,7 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       await panel(page).getByRole('button', { name: 'Use passkey', exact: true }).click();
       await expect(panel(page).getByLabel('Unlock password, or recovery key', { exact: true })).toHaveCount(0);
       await panel(page).getByRole('button', { name: 'Unlock vault', exact: true }).click();
-      await expect(panel(page).getByRole('heading', { name: 'Add credential', exact: true })).toBeVisible();
+      await expect(panel(page).getByLabel('Credential label', { exact: true })).toBeVisible();
       await expect(panel(page).locator('li').getByText(label, { exact: true })).toBeVisible();
       const enrolled = (await cdp.send('WebAuthn.getCredentials', { authenticatorId })).credentials;
       assert.equal(enrolled.length, 1); assert.equal(enrolled[0].rpId, 'localhost');
@@ -126,7 +126,7 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       await input.fill(method === 'password' ? password : this.uiRecovery);
       const inputHandle = await input.elementHandle();
       await panel(page).getByRole('button', { name: 'Authenticate and import vault', exact: true }).click();
-      await expect(panel(page).getByRole('heading', { name: 'Add credential', exact: true })).toBeVisible();
+      await expect(panel(page).getByLabel('Credential label', { exact: true })).toBeVisible();
       await expect(panel(page).locator('li').getByText(label, { exact: true })).toBeVisible();
       assert.equal(await inputHandle.evaluate(element => element.value), '');
       await inputHandle.dispose();
