@@ -58,8 +58,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   if (next) { schemaLoaded = true; if (operationsOnly) resetKey += 1; }
 }}>
   {#snippet summary()}
-    <HintButton class="schema-action" label="Copy JSON" aria-label="Copy JSON" aria-disabled={copying} aria-busy={copying} onclick={copySchema}><MaterialIcon name="file_copy" size={20} /></HintButton>
     <MaterialIcon name="chevron_forward" class="schema-chevron" size={20} />
+    <HintButton class="schema-action" label="Copy JSON" aria-label="Copy JSON" aria-disabled={copying} aria-busy={copying} onclick={copySchema}><MaterialIcon name="file_copy" size={20} /></HintButton>
     <span class="schema-title">OpenAPI schema<span class="schema-copy-status" role="status">{copyStatus}</span></span>
     <span class="schema-wrap-control" class:visible={schemaOpen} inert={!schemaOpen} aria-hidden={!schemaOpen}>
       <HintButton class="schema-action" label="Wrap lines" aria-label="Wrap lines" aria-pressed={schemaWrap} tooltipEnabled={schemaOpen}
