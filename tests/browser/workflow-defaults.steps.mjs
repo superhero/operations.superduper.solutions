@@ -468,3 +468,46 @@ Then('the Node symbols preference hides existing node headings and footers acros
   assert.deepEqual((await readExport(page)).document, baseline, 'Node symbol visibility must remain a browser preference, preserving the existing workflow.');
   assert.deepEqual(await repository(page, 'history', baseline.id), versions, 'Hiding and restoring node symbols must not create workflow revisions.');
 });
+
+Then('the Tooltips preference applies immediately and persists while controls remain usable', async function () {
+  const page = this.page;
+  const control = () => workflow(page).getByRole('button', { name: 'Workflow details', exact: true });
+  const tooltip = () => page.getByRole('tooltip', { name: 'Workflow details', exact: true });
+  const saved = () => page.evaluate(() => new Promise((resolve, reject) => {
+    const opening = indexedDB.open('v1/settings');
+    opening.onerror = () => reject(opening.error);
+    opening.onsuccess = () => {
+      const database = opening.result;
+      const transaction = database.transaction('settings', 'readonly');
+      const request = transaction.objectStore('settings').get('tooltips');
+      transaction.oncomplete = () => { database.close(); resolve(request.result); };
+      transaction.onabort = () => { database.close(); reject(transaction.error); };
+    };
+  }));
+  await control().hover();
+  await expect(tooltip()).toBeVisible();
+  await openDefaults(page);
+  const toggle = settings(page).getByRole('switch', { name: 'Tooltips', exact: true });
+  await expect(toggle).toHaveAttribute('aria-checked', 'true');
+  await toggle.click();
+  await expect.poll(saved).toBe(false);
+  await setMode(page, 'workflow');
+  await control().hover();
+  await expect(control()).toHaveAttribute('data-disabled', '');
+  await expect(tooltip()).toHaveCount(0);
+  await page.reload();
+  await expect(control()).toBeVisible();
+  await control().hover();
+  await expect(control()).toHaveAttribute('data-disabled', '');
+  await expect(tooltip()).toHaveCount(0);
+  await control().click();
+  await expect(page.getByRole('dialog', { name: 'Workflow details', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await openDefaults(page);
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await toggle.click();
+  await expect.poll(saved).toBe(true);
+  await setMode(page, 'workflow');
+  await control().hover();
+  await expect(tooltip()).toBeVisible();
+});

@@ -52,3 +52,7 @@ Feature: Browser-local workflow defaults
   @workflow-node-symbols
   Scenario: Node symbols change immediately and persist without hiding workflow actions
     Then the Node symbols preference hides existing node headings and footers across reload and restores them independently of actions
+
+  @application-tooltips
+  Scenario: Tooltips can be disabled without disabling their controls and the preference survives reload
+    Then the Tooltips preference applies immediately and persists while controls remain usable

@@ -45,11 +45,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { isValidWorkflowCurveStrength, isValidWorkflowDashLength, isValidWorkflowDashGap, isValidWorkflowDashSpeed, isValidWorkflowGridSize, isValidWorkflowNodeClearance,
     workflowCurveStrengthLimits, workflowDashLengthLimits, workflowDashGapLimits, workflowDashSpeedLimits, workflowGridSizeLimits, workflowNodeClearanceLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
 
-  let { palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
+  let { tooltips = true, tooltipsError = "", onTooltipsChange = () => {}, palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
     locale = defaultLocaleSettings, localeError = "", onLocaleChange = () => {}, onRetryLocale = () => {},
     developerToolbar, developerToolbarError = "", onDeveloperToolbarChange,
     evaluationDetails, evaluationDetailsError = "", onEvaluationDetailsChange,
     settingsUnavailable, settingsRetrying, onRetrySettings }: {
+    tooltips?: boolean;
+    tooltipsError?: string;
+    onTooltipsChange?: (enabled: boolean) => void;
     palette: PaletteId;
     onPaletteChange: (palette: PaletteId) => void;
     workflowDefaults: WorkflowDefaults;
@@ -176,6 +179,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/snippet}
       <fieldset class="workflow-settings" aria-label="UI defaults">
         <div class="workflow-defaults">
+          <div class="workflow-default-pair">
+            <button class="workflow-default" type="button" role="switch" aria-checked={tooltips} onclick={() => onTooltipsChange(!tooltips)}>
+              <span>Tooltips</span><span class="default-switch" aria-hidden="true"><span></span></span>
+            </button>
+            {#if tooltipsError}<div class="defaults-error"><p role="alert">{tooltipsError}</p><button class="defaults-retry" type="button" onclick={() => onTooltipsChange(tooltips)}>Retry saving</button></div>{/if}
+          </div>
           {#each workflowOptions as option (option.key)}
             <div class="workflow-default-pair">
               <button class="workflow-default" type="button" role="switch" aria-checked={workflowDefaults[option.key]}

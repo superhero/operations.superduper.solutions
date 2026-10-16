@@ -37,7 +37,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     };
   });
 </script>
-  <Tooltip.Root {tether} bind:open disabled={!tooltipEnabled}>
+  <Tooltip.Root {tether} bind:open disabled={tooltipEnabled ? undefined : true}>
     {#if disabled && !child}
       <Tooltip.Trigger bind:ref {...props} tabindex={-1} aria-label={props["aria-label"] ?? (labelAsName ? label : undefined)}>
         {#snippet child({ props: triggerProps })}
