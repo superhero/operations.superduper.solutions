@@ -129,15 +129,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       if (current === generation && !disposed) error = "Could not copy the recovery key. Select and copy it manually.";
     }
   }
+  function downloadRecoveryKey(value: string): void {
+    const url = URL.createObjectURL(new Blob([value + "\n"], { type: "text/plain" }));
+    const link = document.createElement("a"); link.href = url; link.download = "operations-vault-recovery-key.txt"; link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
   async function confirmRecovery(): Promise<void> {
     let confirmation = recoveryOutput?.textContent ?? "";
     try {
       if (!confirmation) throw new VaultError("INVALID");
       if (recoveryMode === "create") await vaultCall("confirmCreate", [confirmation]);
       else if (recoveryMode === "replace") await fresh(proof => vaultCall("addMethod", [proof, { kind: "recovery", secret: confirmation }, recoveryReplacement || undefined]));
-      const url = URL.createObjectURL(new Blob([confirmation + "\n"], { type: "text/plain" }));
-      const link = document.createElement("a"); link.href = url; link.download = "operations-vault-recovery-key.txt"; link.click();
-      setTimeout(() => URL.revokeObjectURL(url), 0);
+      downloadRecoveryKey(confirmation);
       clearRecovery(); await refresh(); notice = "Recovery key saved. Keep the downloaded key in a safe place.";
     } finally { confirmation = ""; }
   }
@@ -211,9 +214,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       }
       let result = await vaultCall("rotate", [proofs]);
       showRotation = false;
-      try { await refresh(); await presentRecovery("rotate", result.recovery, current); }
+      try {
+        downloadRecoveryKey(result.recovery);
+        await refresh(); await presentRecovery("rotate", result.recovery, current);
+      }
       finally { result.recovery = ""; }
-      notice = "Vault encryption key rotated. Save the new recovery key and a new encrypted export.";
+      notice = "Vault encryption key rotated. Your new recovery key was downloaded. Save a new encrypted export.";
     } finally { proofs.forEach(wipe); }
   }
   function downloadVault(content: string, filename = "operations-secrets-vault.json"): void {

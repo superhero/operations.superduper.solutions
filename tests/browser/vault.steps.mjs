@@ -249,12 +249,18 @@ async function createUIVault() {
   await expect(rotationFields.getByRole('combobox')).toHaveCount(0);
   await expect(rotationFields.locator('input[type="password"]')).toHaveCount(1);
   await rotationFields.locator('input[type="password"]').fill(canaries[0]);
+  const automaticRecoveryDownload = page.waitForEvent('download');
   await rotationFields.getByRole('button', { name: 'Rotate key', exact: true }).click();
+  const automaticDownload = await automaticRecoveryDownload;
+  assert.equal(automaticDownload.suggestedFilename(), 'operations-vault-recovery-key.txt');
   const rotatedRecovery = settings(page).locator('pre[aria-label="Generated recovery key"]');
   await expect(rotatedRecovery).toHaveText(/^[A-Za-z0-9+/]{171}=$/);
   const oldRecovery = this.uiRecovery;
   this.uiRecovery = await rotatedRecovery.textContent();
   assert.notEqual(this.uiRecovery, oldRecovery);
+  const recoveryStream = await automaticDownload.createReadStream();
+  const recoveryChunks = []; for await (const chunk of recoveryStream) recoveryChunks.push(chunk);
+  assert.equal(Buffer.concat(recoveryChunks).toString('utf8'), this.uiRecovery + '\n');
   const rotatedKeyDownload = page.waitForEvent('download');
   await settings(page).getByRole('button', { name: 'Save recovery key', exact: true }).click();
   await rotatedKeyDownload;
@@ -471,8 +477,10 @@ Then('a downloaded vault backup restores with recovery in a fresh application co
     const unlockInput = settings(page).getByLabel('Unlock password or recovery key', { exact: true });
     await unlockInput.fill(this.uiRecovery);
     await expect(unlockInput).toHaveAttribute('autocomplete', 'off');
-    const inputBox = await unlockInput.boundingBox();
-    const unlockBox = await settings(page).getByRole('button', { name: 'Unlock vault', exact: true }).boundingBox();
+    const { inputBox, unlockBox } = await unlockInput.evaluate(input => {
+      const box = element => { const { x, y, width, height } = element.getBoundingClientRect(); return { x, y, width, height }; };
+      return { inputBox: box(input), unlockBox: box(input.parentElement.querySelector('button')) };
+    });
     assert.ok(Math.abs(unlockBox.x - inputBox.x - inputBox.width) < 1);
     assert.equal(unlockBox.y, inputBox.y);
     assert.equal(unlockBox.height, inputBox.height);
