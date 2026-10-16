@@ -75,14 +75,14 @@ When('I create and replace a vault credential using only the keyboard', { timeou
   await enter(page, settings.getByLabel('New vault password', { exact: true }), password);
   await enter(page, settings.getByLabel('Confirm vault password', { exact: true }), password);
   await activate(page, settings.getByRole('button', { name: 'Create vault', exact: true }));
-  const recovery = settings.getByRole('textbox', { name: 'Generated recovery key', exact: true });
-  await expect(recovery).toHaveValue(/^[A-Za-z0-9+/]{171}=$/);
-  this.keyboardRecovery = await recovery.inputValue();
+  const recovery = settings.locator('pre[aria-label="Generated recovery key"]');
+  await expect(recovery).toHaveText(/^[A-Za-z0-9+/]{171}=$/);
+  this.keyboardRecovery = await recovery.textContent();
   const recoveryHandle = await recovery.elementHandle();
   assert.equal((await readStorage(page)).snapshot, null);
   await activate(page, settings.getByRole('button', { name: 'Save recovery key', exact: true }));
   await expect(settings.getByText('Vault unlocked', { exact: true })).toBeVisible();
-  assert.equal(await recoveryHandle.evaluate(element => element.value), '');
+  assert.equal(await recoveryHandle.evaluate(element => element.textContent), '');
 
   await enter(page, settings.getByLabel('Confirm action password', { exact: true }), password);
   await enter(page, settings.getByLabel('Credential label', { exact: true }), 'Keyboard credential');
@@ -127,12 +127,12 @@ Then('keyboard cancellation clears credential and recovery inputs without saving
 
   await enter(page, authentication, password);
   await activate(page, settings.getByRole('button', { name: 'Generate recovery key', exact: true }));
-  const recovery = settings.getByRole('textbox', { name: 'Generated recovery key', exact: true });
-  await expect(recovery).toHaveValue(/^[A-Za-z0-9+/]{171}=$/);
-  const pendingRecovery = await recovery.inputValue(), recoveryHandle = await recovery.elementHandle();
+  const recovery = settings.locator('pre[aria-label="Generated recovery key"]');
+  await expect(recovery).toHaveText(/^[A-Za-z0-9+/]{171}=$/);
+  const pendingRecovery = await recovery.textContent(), recoveryHandle = await recovery.elementHandle();
   await activate(page, settings.getByRole('button', { name: 'Lock vault', exact: true }));
   await expect(settings.getByText('Vault locked', { exact: true })).toBeVisible();
-  assert.equal(await recoveryHandle.evaluate(element => element.value), '');
+  assert.equal(await recoveryHandle.evaluate(element => element.textContent), '');
   assert.deepEqual(await readStorage(page), this.keyboardSaved);
   await unlock(page);
   await expect(settings.locator('li').filter({ hasText: 'Keyboard replacement' })).toHaveCount(1);

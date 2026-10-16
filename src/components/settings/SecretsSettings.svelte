@@ -35,7 +35,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let panel: HTMLElement;
   let authentication = $state.raw<Authentication>();
   let restoreAuthentication = $state.raw<Authentication>();
-  let recoveryOutput = $state.raw<HTMLTextAreaElement>();
+  let recoveryOutput = $state.raw<HTMLPreElement>();
   let recoveryMode = $state<"create" | "replace" | null>(null);
   let credentialId = $state("");
   let credentialLabel = $state("");
@@ -68,7 +68,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     authentication?.clear(); restoreAuthentication?.clear();
     for (const component of Object.values(rotationAuthentication)) component?.clear();
   }
-  function clearRecovery(): void { if (recoveryOutput) recoveryOutput.value = ""; recoveryMode = null; }
+  function clearRecovery(): void { if (recoveryOutput) recoveryOutput.textContent = ""; recoveryMode = null; }
   function clearRestore(): void { restorePayload = ""; restoreStatus = null; restoreFilename = ""; if (restoreInput) restoreInput.value = ""; }
   function take(name: string): string {
     const input = panel.querySelector<HTMLInputElement>(`input[name="${name}"]`);
@@ -119,8 +119,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       await presentRecovery("create", recovery, current);
     } finally { password = ""; recovery = ""; }
   }
+  async function copyRecovery(): Promise<void> {
+    const current = generation;
+    try {
+      if (recoveryOutput?.textContent) await navigator.clipboard.writeText(recoveryOutput.textContent);
+    } catch (failure) {
+      if (current === generation && !disposed) error = "Could not copy the recovery key. Select and copy it manually.";
+    }
+  }
   async function confirmRecovery(): Promise<void> {
-    let confirmation = recoveryOutput?.value ?? "";
+    let confirmation = recoveryOutput?.textContent ?? "";
     try {
       if (!confirmation) throw new VaultError("INVALID");
       if (recoveryMode === "create") await vaultCall("confirmCreate", [confirmation]);
@@ -188,7 +196,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     recoveryMode = mode;
     await tick();
     if (current !== generation || disposed) throw new VaultError("CANCELLED");
-    if (recoveryOutput) recoveryOutput.value = value;
+    if (recoveryOutput) recoveryOutput.textContent = value;
   }
   async function rotate(): Promise<void> {
     const proofs: UnlockProof[] = [];
@@ -334,7 +342,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   {#if recoveryMode}
     <form class="card recovery" onsubmit={event => { event.preventDefault(); void run("Saving recovery key…", confirmRecovery); }}>
-      <label>Recovery key<textarea bind:this={recoveryOutput} readonly rows="4" spellcheck="false" aria-label="Generated recovery key"></textarea></label>
+      <span class="recovery-label">Recovery key</span>
+      <div class="recovery-key">
+        <pre bind:this={recoveryOutput} aria-label="Generated recovery key"></pre>
+        <button class="recovery-copy" type="button" aria-label="Copy recovery key" disabled={busy} onclick={() => void copyRecovery()}><MaterialIcon name="content_copy" size={18} /></button>
+      </div>
       <p class="help">This is its only presentation. Save it securely. Anyone with this key and an encrypted export can unlock that export.</p>
       <div class="actions recovery-actions"><button disabled={busy}><MaterialIcon name="download" size={18} />Save recovery key</button></div>
     </form>
@@ -459,6 +471,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .secrets-settings { display: grid; gap: 12px; min-width: 0; padding: 16px; color: var(--color-foreground); --field-background: var(--color-background); --field-foreground: var(--color-foreground); }
   .toolbar, .record-heading, .grant { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .recovery-label { font-size: 12px; font-weight: 700; }
+  .recovery-key { position: relative; min-width: 0; border-radius: 4px; background: var(--color-background); }
+  .recovery-key pre { margin: 0; min-height: 80px; padding: 12px 44px 12px 12px; white-space: pre-wrap; overflow-wrap: anywhere; font-family: monospace; font-size: 12px; }
+  .recovery-copy { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 32px; height: 32px; padding: 0; background: transparent; color: inherit; }
   .creation-actions, .recovery-actions { justify-content: flex-end; }
   .creation-actions button, .recovery-actions button { display: inline-flex; align-items: center; gap: 6px; }
   .card, .subform, .vault-create-form { display: grid; gap: 10px; min-width: 0; }
@@ -471,7 +487,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   h3, h4, p { margin: 0; }
   h3 { font-size: 14px; } h4, label, strong { font-size: 12px; }
   label { display: grid; gap: 8px; font-weight: 700; }
-  input:not([type="checkbox"]), textarea { box-sizing: border-box; min-width: 0; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
+  input:not([type="checkbox"]) { box-sizing: border-box; min-width: 0; width: 100%; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
   .idle-settings { display: flex; align-items: center; gap: 10px; border-radius: 4px; background: var(--color-background); }
   .idle-settings > .idle-toggle { flex: 0 0 auto; width: auto; background: transparent; }
   .idle-control { display: flex; flex: 1; align-items: stretch; min-width: 0; border-radius: 4px; background: transparent; outline: 2px solid transparent; outline-offset: 2px; transition: outline-color 180ms ease-in; }
@@ -479,7 +495,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .idle-control :global(.field-integer) { flex: 1; min-width: 0; padding-right: 4px; }
   .idle-control :global(.field-integer :is(.integer-range, .integer-value)) { outline: none; }
   .idle-control > span { display: flex; align-items: center; padding: 0 8px; }
-  textarea { resize: vertical; overflow-wrap: anywhere; font-family: monospace; }
   :global(.secrets-settings .field-select-trigger) { border-radius: 4px; font-size: 12px; }
   button { width: fit-content; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; cursor: pointer; }
   button:disabled { opacity: .55; cursor: not-allowed; }
@@ -498,6 +513,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .idle-toggle[aria-checked="true"] .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
   @media (prefers-reduced-motion: no-preference) {
     .idle-toggle:hover:enabled .default-switch { transform: scale(1.10); }
+    .recovery-copy:hover:enabled { transform: scale(1.10); }
     :is(.creation-actions, .recovery-actions) button:hover:enabled { transform: scale(1.05); }
   }
   @media (prefers-reduced-motion: reduce) { .default-switch, .default-switch > span { transition: none; } }

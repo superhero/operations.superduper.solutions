@@ -209,9 +209,16 @@ async function createUIVault() {
   await settings(page).getByLabel('New vault password', { exact: true }).fill(canaries[0]);
   await settings(page).getByLabel('Confirm vault password', { exact: true }).fill(canaries[0]);
   await settings(page).getByRole('button', { name: 'Create vault', exact: true }).click();
-  const recovery = settings(page).getByRole('textbox', { name: 'Generated recovery key', exact: true });
-  await expect(recovery).toHaveValue(/^[A-Za-z0-9+/]{171}=$/);
-  this.uiRecovery = await recovery.inputValue();
+  const recovery = settings(page).locator('pre[aria-label="Generated recovery key"]');
+  await expect(recovery).toHaveText(/^[A-Za-z0-9+/]{171}=$/);
+  this.uiRecovery = await recovery.textContent();
+  await page.evaluate(() => {
+    window.__recoveryClipboard = "";
+    navigator.clipboard.writeText = async value => { window.__recoveryClipboard = value; };
+  });
+  await settings(page).getByRole('button', { name: 'Copy recovery key', exact: true }).click();
+  assert.equal(await page.evaluate(() => window.__recoveryClipboard), this.uiRecovery);
+  await page.evaluate(() => { delete navigator.clipboard.writeText; delete window.__recoveryClipboard; });
   assert.equal((await storage(page, 'read')).snapshot, null, 'creation waits for saving the recovery key');
   await expect(settings(page).getByLabel('Verify saved recovery key', { exact: true })).toHaveCount(0);
   const recoveryDownload = page.waitForEvent('download');
