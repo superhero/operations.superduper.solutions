@@ -5,6 +5,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
   import { onMount, tick } from "svelte";
+  import HintButton from "$lib/components/HintButton.svelte";
   import FieldInteger from "$lib/components/FieldInteger.svelte";
   import FieldSelect from "$lib/components/FieldSelect.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
@@ -345,7 +346,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <span class="recovery-label">Recovery key</span>
       <div class="recovery-key">
         <pre bind:this={recoveryOutput} aria-label="Generated recovery key"></pre>
-        <button class="recovery-copy" type="button" aria-label="Copy recovery key" disabled={busy} onclick={() => void copyRecovery()}><MaterialIcon name="content_copy" size={18} /></button>
+        <HintButton label="Copy" aria-label="Copy recovery key" disabled={busy} onclick={() => void copyRecovery()}>
+          {#snippet child({ props })}<button {...props} class="recovery-copy" type="button"><MaterialIcon name="content_copy" size={18} /></button>{/snippet}
+        </HintButton>
       </div>
       <p class="help">This is its only presentation. Save it securely. Anyone with this key and an encrypted export can unlock that export.</p>
       <div class="actions recovery-actions"><button disabled={busy}><MaterialIcon name="download" size={18} />Save recovery key</button></div>
