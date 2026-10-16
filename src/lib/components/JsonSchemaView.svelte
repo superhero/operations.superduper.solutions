@@ -71,7 +71,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   :global(.schema-disclosure) { margin-top: 16px; }
-  :global(.schema-disclosure > summary) { position: sticky; top: calc(var(--app-header-height) + 8px); z-index: 2; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 14px; border-radius: 4px; list-style: none; background: var(--color-report-card); color: var(--color-foreground); font-size: 14px; font-weight: 650; transition: background-color 180ms ease-in, color 180ms ease-in, transform 180ms ease-in, outline-color 180ms ease-in; }
+  :global(.schema-disclosure > summary) { position: sticky; top: calc(var(--app-header-height) + var(--settings-header-height, 0px) + 8px); z-index: 2; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 14px; border-radius: 4px; list-style: none; background: var(--color-report-card); color: var(--color-foreground); font-size: 14px; font-weight: 650; transition: background-color 180ms ease-in, color 180ms ease-in, transform 180ms ease-in, outline-color 180ms ease-in; }
   :global(.schema-disclosure > summary[aria-expanded="true"]) { background: var(--color-json-header-hover-background); color: var(--color-json-header-hover-foreground); }
   :global(.schema-disclosure > summary:focus-visible) { outline-color: var(--color-foreground); }
   :global(.schema-disclosure .schema-chevron) { transition: transform 180ms ease-in; }

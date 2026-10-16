@@ -72,6 +72,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   } = $props();
   let workspace: HTMLElement;
   let openSection = $state<"secrets" | "theme" | "locale" | "logs" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
+  $effect(() => {
+    if (!openSection || !workspace) return;
+    const header = workspace.querySelector<HTMLElement>('.settings-section > summary[aria-expanded="true"]');
+    if (!header) return;
+    const update = () => workspace.style.setProperty("--settings-header-height", `${header.getBoundingClientRect().height}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(header);
+    return () => { observer.disconnect(); workspace.style.removeProperty("--settings-header-height"); };
+  });
   const schemaLibrary = $derived(getSchemaLibrary());
   let gridSizeDraft = $state("");
   let gridSizeInvalid = $state(false);
