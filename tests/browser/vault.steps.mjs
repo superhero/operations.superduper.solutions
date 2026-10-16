@@ -394,11 +394,11 @@ Then('hiding and restoring the page preserves the vault worker and pending opera
 });
 
 Then('optional idle locking expires before a delayed trusted interaction can extend it', async function () {
-  const idle = settings(this.page).getByRole('checkbox', { name: 'Lock after inactivity', exact: true });
+  const idle = settings(this.page).getByRole('switch', { name: 'Lock after inactivity', exact: true });
   await expect(idle).not.toBeChecked();
-  await expect(settings(this.page).getByLabel('Minutes of inactivity', { exact: true })).toHaveValue('10');
+  await expect(settings(this.page).getByRole('textbox', { name: 'Minutes of inactivity value', exact: true })).toHaveValue('10');
   await idle.check();
-  const minutes = settings(this.page).getByLabel('Minutes of inactivity', { exact: true });
+  const minutes = settings(this.page).getByRole('textbox', { name: 'Minutes of inactivity value', exact: true });
   await expect(minutes).toBeEnabled(); await minutes.fill('1'); await minutes.press('Tab');
   await expect(minutes).toBeEnabled();
   // Advance the page wall clock to simulate suspension while keeping the real

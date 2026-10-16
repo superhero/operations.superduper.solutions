@@ -422,8 +422,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {/if}
   {#if ready}
     <div class="card">
-      <label class="checkbox"><input type="checkbox" checked={preferences.idleLockEnabled} disabled={busy}
-        onchange={event => void run("Saving lock preference…", () => saveIdle(event.currentTarget.checked, preferences.idleLockMinutes))} />Lock after inactivity</label>
+      <button class="idle-toggle" type="button" role="switch" aria-checked={preferences.idleLockEnabled} disabled={busy}
+        onclick={() => void run("Saving lock preference…", () => saveIdle(!preferences.idleLockEnabled, preferences.idleLockMinutes))}>
+        <span>Lock after inactivity</span><span class="default-switch" aria-hidden="true"><span></span></span>
+      </button>
       <div class="idle-control">
         <FieldInteger id="vault-idle-minutes" label="Minutes of inactivity" value={idleMinutes}
           minimum={1} maximum={maximumIdleMinutes} required disabled={busy || !preferences.idleLockEnabled}
@@ -476,5 +478,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .grant > span { min-width: 0; flex: 1; font-size: 12px; overflow-wrap: anywhere; }
   .destination { padding: 10px; border-radius: 4px; background: var(--color-background); }
   .error { padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; overflow-wrap: anywhere; }
-  .checkbox { display: flex; align-items: center; gap: 8px; }
+  .idle-toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; min-height: 44px; padding: 10px 12px; background: var(--color-background); color: var(--color-catalog-foreground); text-align: left; }
+  .default-switch { box-sizing: border-box; flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-muted-foreground); transition: background-color 180ms ease-in, transform 180ms ease-in; }
+  .default-switch > span { display: block; width: 18px; height: 18px; border-radius: 2px; background: var(--color-surface); transform: translateX(0); transition: transform 180ms ease-in, background-color 180ms ease-in; }
+  .idle-toggle[aria-checked="true"] .default-switch { background: var(--color-catalog-active); }
+  .idle-toggle[aria-checked="true"] .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
+  @media (prefers-reduced-motion: no-preference) { .idle-toggle:hover:enabled .default-switch { transform: scale(1.10); } }
+  @media (prefers-reduced-motion: reduce) { .default-switch, .default-switch > span { transition: none; } }
 </style>
