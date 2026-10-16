@@ -420,8 +420,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <form class="subform" onsubmit={event => { event.preventDefault(); void run("Saving credential…", saveCredential); }}>
         {#if credentialId}<h4>Replace credential</h4>{/if}
         <div class="credential-fields">
-          <label>Credential label<input bind:value={credentialLabel} maxlength="120" required disabled={busy} /></label>
-          <label>{credentialId ? "Replacement value" : "Credential value"}<input name="credential-value" type="password" required autocomplete="off" spellcheck="false" data-vault-sensitive disabled={busy} /></label>
+          <input aria-label="Credential label" placeholder="Key" bind:value={credentialLabel} maxlength="120" required disabled={busy} />
+          <input aria-label={credentialId ? "Replacement value" : "Credential value"} placeholder="Value" name="credential-value" type="password" required autocomplete="off" spellcheck="false" data-vault-sensitive disabled={busy} />
           <button class="credential-save" type="submit" aria-label="Save credential" disabled={busy}><MaterialIcon name="save" size={20} /><span class="credential-save-label">Save</span></button>
         </div>
         {#if credentialId}<div class="actions"><button type="button" disabled={busy} onclick={() => { clearInputs(); credentialId = ""; credentialLabel = ""; }}>Cancel</button></div>{/if}
@@ -593,7 +593,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :is(.vault-info, .vault-status-message) :global(.material-symbols-rounded) { flex-shrink: 0; margin-top: 1px; font-weight: 400; font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 20; }
   .vault-info, .vault-status { padding: 14px; border-radius: 4px; background: var(--color-emphasis); color: var(--color-background); }
   .credential-fields { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 7fr) auto; align-items: end; gap: 12px; }
-  .credential-fields > label { min-width: 0; }
   .credential-save { display: flex; align-items: center; justify-content: center; gap: 6px; height: 40px; }
   .credential-save-label { display: none; }
   @media (max-width: 640px) { .credential-fields { grid-template-columns: minmax(0, 1fr); } .credential-save { width: 100%; } .credential-save-label { display: inline; } }
