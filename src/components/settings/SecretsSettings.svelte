@@ -95,7 +95,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   async function run(message: string, action: () => Promise<void>): Promise<void> {
     if (busy) return;
     const current = generation;
-    busy = true; progress = message; error = ""; notice = "";
+    busy = true; progress = message; error = ""; if (message) notice = "";
     try { await action(); }
     catch (failure) { if (current === generation && !disposed) error = safeVaultError(failure).message; }
     finally { clearInputs(); if (current === generation && !disposed) { busy = false; progress = ""; } }
@@ -357,7 +357,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {/if}
 
   {#if ready && status.exists}
-    <form class="card" onsubmit={event => { event.preventDefault(); if (!status.unlocked) void run("Unlocking vault…", async () => { await fresh(proof => vaultCall("unlock", [proof])); await refresh(); }); }}>
+    <form class="card" onsubmit={event => { event.preventDefault(); if (!status.unlocked) void run("", async () => { await fresh(proof => vaultCall("unlock", [proof])); await refresh(); }); }}>
       {#if status.unlocked}<h3>Confirm management actions</h3>{/if}
       <VaultAuthentication bind:this={authentication} {status} disabled={busy} label={status.unlocked ? "Confirm action" : "Unlock"}>
         {#snippet action()}{#if !status.unlocked}<button class="unlock-vault" type="submit" aria-label="Unlock vault" disabled={busy}><MaterialIcon name="passkey" size={20} /></button>{/if}{/snippet}
