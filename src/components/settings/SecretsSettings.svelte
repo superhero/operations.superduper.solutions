@@ -308,7 +308,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <form id={createFormId} class="vault-create-form" onsubmit={event => { event.preventDefault(); void run("Preparing vault…", create); }}>
         <label>New vault password<input name="create-password" type="password" minlength="4" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
         <label>Confirm vault password<input name="confirm-password" type="password" minlength="4" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
-        <p class="help">You will verify a recovery key before the vault is saved.</p>
       </form>
       <div class="actions creation-actions">
         <button type="button" aria-label="Import vault" disabled={busy} onclick={() => restoreInput?.click()}><MaterialIcon name="upload" size={18} />Import</button>
