@@ -286,23 +286,23 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {/if}
   </div>
   <div class="vault-info" role="note">
-    <MaterialIcon name="info" size={18} />
+    <MaterialIcon name="brightness_alert" size={18} />
     <p class="help"><strong>Credentials provided are encrypted:</strong> Managed by the browser profile for this site.</p>
   </div>
   <div class="vault-info" role="note">
-    <MaterialIcon name="info" size={18} />
+    <MaterialIcon name="brightness_alert" size={18} />
     <p class="help"><strong>Automatic locking:</strong> Closing or reloading this page locks the vault.</p>
   </div>
   <div class="vault-info" role="note">
-    <MaterialIcon name="info" size={18} />
+    <MaterialIcon name="brightness_alert" size={18} />
     <p class="help"><strong>Exports:</strong> Exported vault files are also encrypted.</p>
   </div>
   <div class="vault-info" role="note">
-    <MaterialIcon name="info" size={18} />
+    <MaterialIcon name="brightness_alert" size={18} />
     <p class="help"><strong>Lost unlock methods can not be recovered:</strong> the vault storage is managed locally in the user’s browser.</p>
   </div>
   <div class="vault-info" role="note">
-    <MaterialIcon name="info" size={18} />
+    <MaterialIcon name="brightness_alert" size={18} />
     <p class="help"><strong>Encrypted exports:</strong> you must retain the unlock method to be able to import a vault.</p>
   </div>
   {#if error}<p class="error" role="alert">{error}</p>{/if}
@@ -465,7 +465,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .card, .subform, .vault-create-form { display: grid; gap: 10px; min-width: 0; }
   .card { padding: 14px; border-radius: 4px; background: var(--color-surface); }
   .vault-info { display: flex; align-items: flex-start; gap: 10px; }
-  .vault-info :global(.material-symbols-rounded) { flex-shrink: 0; margin-top: 1px; }
+  .vault-info :global(.material-symbols-rounded) { flex-shrink: 0; margin-top: 1px; font-weight: 400; font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 20; }
   .vault-info, .vault-status { padding: 14px; border-radius: 4px; background: var(--color-emphasis); color: var(--color-background); }
   .subform { padding-top: 12px; border-top: 1px solid var(--color-background); }
   h3, h4, p { margin: 0; }
