@@ -190,20 +190,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         if (!component) throw new VaultError("AUTHENTICATION");
         proofs.push(await component.proof());
       }
-      await vaultCall("rotate", [proofs]); showRotation = false; await refresh(); notice = "Vault encryption key rotated. Save a new encrypted backup.";
+      await vaultCall("rotate", [proofs]); showRotation = false; await refresh(); notice = "Vault encryption key rotated. Save a new encrypted export.";
     } finally { proofs.forEach(wipe); }
   }
-  async function backup(): Promise<void> {
+  async function exportVault(): Promise<void> {
     const content = await fresh(proof => vaultCall("backup", [proof]));
     const url = URL.createObjectURL(new Blob([content], { type: "application/json" }));
     const link = document.createElement("a"); link.href = url; link.download = "operations-secrets-vault.json"; link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 0); notice = "Encrypted backup downloaded. Its unlock methods are those saved in that backup.";
+    setTimeout(() => URL.revokeObjectURL(url), 0); notice = "Encrypted export downloaded. Its unlock methods are those saved in that export.";
   }
   async function selectRestore(event: Event): Promise<void> {
     const input = event.currentTarget as HTMLInputElement;
     const file = input.files?.[0]; input.value = "";
     if (!file) return;
-    await run("Reading encrypted backup…", async () => {
+    await run("Reading encrypted export…", async () => {
       const current = generation;
       clearRestore();
       if (file.size > vaultLimits.backupBytes) throw new VaultError("LIMIT");
@@ -234,7 +234,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try {
       if (status.exists) { if (!authentication) throw new VaultError("AUTHENTICATION"); currentProof = await authentication.proof(); }
       await vaultCall("restore", [restorePayload, proof, currentProof]);
-      clearRestore(); await refresh(); notice = "Backup restored. Approve destinations again before using its credentials.";
+      clearRestore(); await refresh(); notice = "Export restored. Approve destinations again before using its credentials.";
     } finally { wipe(proof); if (currentProof) wipe(currentProof); }
   }
   async function saveIdle(enabled: boolean, minutes: number): Promise<void> {
@@ -266,13 +266,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <p class="help"><strong>Automatic locking:</strong> Closing or reloading this page locks the vault. Switching tabs or minimizing the browser keeps it unlocked.</p>
   </div>
   <div class="vault-info" role="note">
-    <p class="help"><strong>Backups:</strong> Keep an encrypted backup and your recovery key in a safe place outside this browser.</p>
+    <p class="help"><strong>Exports:</strong> Keep an encrypted export and your recovery key in a safe place outside this browser.</p>
   </div>
   <div class="vault-info" role="note">
     <p class="help"><strong>Lost unlock methods can not be recovered:</strong> the vault storage is managed locally in the user’s browser.</p>
   </div>
   <div class="vault-info" role="note">
-    <p class="help"><strong>Encrypted backups:</strong> you must retain the unlock method to be able to restore a backup.</p>
+    <p class="help"><strong>Encrypted exports:</strong> you must retain the unlock method to be able to restore an export.</p>
   </div>
   {#if error}<p class="error" role="alert">{error}</p>{/if}
   {#if progress || notice}<p class="notice" role="status">{progress || notice}</p>{/if}
@@ -291,7 +291,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <form class="card" onsubmit={event => { event.preventDefault(); if (!status.unlocked) void run("Unlocking vault…", async () => { await fresh(proof => vaultCall("unlock", [proof])); await refresh(); }); }}>
       <h3>{status.unlocked ? "Confirm management actions" : "Unlock the vault"}</h3>
       <VaultAuthentication bind:this={authentication} {status} disabled={busy} label={status.unlocked ? "Confirm action" : "Unlock"} />
-      {#if status.unlocked}<p class="help">Enter fresh authentication before each credential, destination, unlock-method or backup change below.</p>
+      {#if status.unlocked}<p class="help">Enter fresh authentication before each credential, destination, unlock-method or export change below.</p>
       {:else}<button disabled={busy}>Unlock vault</button>{/if}
     </form>
   {/if}
@@ -299,7 +299,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if recoveryMode}
     <form class="card recovery" onsubmit={event => { event.preventDefault(); void run("Verifying recovery key…", confirmRecovery); }}>
       <h3>Save and verify your recovery key</h3>
-      <p class="help">This is its only presentation. Save it securely, then enter the saved key below. Anyone with this key and an encrypted backup can unlock that backup.</p>
+      <p class="help">This is its only presentation. Save it securely, then enter the saved key below. Anyone with this key and an encrypted export can unlock that export.</p>
       <label>Recovery key<textarea bind:this={recoveryOutput} readonly rows="2" spellcheck="false" aria-label="Generated recovery key"></textarea></label>
       <label>Verify saved recovery key<input name="confirm-recovery" type="password" required autocomplete="off" spellcheck="false" data-vault-sensitive disabled={busy} /></label>
       <div class="actions"><button disabled={busy}>Verify and save recovery key</button><button type="button" disabled={busy} onclick={cancelRecovery}>Cancel and lock</button></div>
@@ -357,7 +357,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <h3>Unlock methods</h3>
       <ul class="records">{#each status.methods as method, index (method.id)}<li class="record-heading"><span>{methodNames[method.kind]} {index + 1}</span>
         <button type="button" disabled={busy || status.methods.length < 2} onclick={() => run("Removing unlock method…", async () => { await fresh(proof => vaultCall("removeMethod", [proof, method.id])); await refresh(); })}>Remove method</button></li>{/each}</ul>
-      <p class="help">Use a different retained method to authenticate removal. Removing a method does not change previously downloaded backups.</p>
+      <p class="help">Use a different retained method to authenticate removal. Removing a method does not change previously downloaded exports.</p>
       <form class="subform" onsubmit={event => { event.preventDefault(); void run("Saving password method…", changePassword); }}>
         <h4>Password</h4>
         <FieldSelect id="vault-password-replacement" label="Password method to replace" value={passwordReplacement} disabled={busy}
@@ -377,7 +377,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </div>
       <div class="subform"><h4>Passkey</h4><p class="help">Use an authenticator that supports passkey encryption. A failed enrollment leaves your existing methods intact.</p>
         <button type="button" disabled={busy} onclick={() => run("Verifying passkey…", addPasskey)}>Add passkey</button></div>
-      <div class="subform"><h4>Rotate vault encryption key</h4><p class="help">Verify every retained unlock method to re-encrypt the current vault. Older backups keep their original keys and methods.</p>
+      <div class="subform"><h4>Rotate vault encryption key</h4><p class="help">Verify every retained unlock method to re-encrypt the current vault. Older exports keep their original keys and methods.</p>
         {#if showRotation}
           {#each status.methods as method, index (method.id)}
             <VaultAuthentication bind:this={rotationAuthentication[method.id]} status={{ ...status, methods: [method] }} disabled={busy} label={`Verify ${methodNames[method.kind].toLowerCase()} ${index + 1}`} />
@@ -391,16 +391,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   {#if ready}
     <div class="card">
-      <h3>Encrypted backups</h3>
-      <p class="help">Restoring replaces this browser's vault and removes restored destination approvals. Backups are encrypted; keep their password, recovery key or passkey available.</p>
-      <div class="actions">{#if status.unlocked}<button type="button" disabled={busy} onclick={() => run("Preparing encrypted backup…", backup)}>Download encrypted backup</button>{/if}
-        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}>Choose backup to restore</button></div>
-      <input bind:this={restoreInput} type="file" accept=".json,application/json" aria-label="Encrypted vault backup" onchange={event => void selectRestore(event)} hidden />
+      <h3>Encrypted vault exports</h3>
+      <p class="help">Restoring replaces this browser's vault and removes restored destination approvals. Exports are encrypted; keep their password, recovery key or passkey available.</p>
+      <div class="actions">{#if status.unlocked}<button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}>Export encrypted vault</button>{/if}
+        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}>Choose export to restore</button></div>
+      <input bind:this={restoreInput} type="file" accept=".json,application/json" aria-label="Encrypted vault export" onchange={event => void selectRestore(event)} hidden />
       {#if restoreStatus}
-        <p class="destination">Selected backup: {restoreFilename}</p>
-        <VaultAuthentication bind:this={restoreAuthentication} status={restoreStatus} disabled={busy} label="Backup" />
+        <p class="destination">Selected export: {restoreFilename}</p>
+        <VaultAuthentication bind:this={restoreAuthentication} status={restoreStatus} disabled={busy} label="Export" />
         {#if status.exists}<p class="help">Also authenticate the current vault using the form above before replacing it.</p>{/if}
-        <div class="actions"><button type="button" disabled={busy} onclick={() => run("Restoring encrypted backup…", restore)}>Authenticate and replace vault</button>
+        <div class="actions"><button type="button" disabled={busy} onclick={() => run("Restoring encrypted export…", restore)}>Authenticate and replace vault</button>
           <button type="button" disabled={busy} onclick={() => { clearInputs(); clearRestore(); }}>Cancel</button></div>
       {/if}
     </div>

@@ -42,7 +42,7 @@ history retains them; portable exports and imports remove them, and older reader
 may discard them. Bindings never contain credentials or authorize a destination.
 
 Replacing an existing vault requires its current authentication as well as the
-backup's. If local data cannot authenticate, restore the backup in a fresh browser
+export's. If local data cannot authenticate, restore the export in a fresh browser
 profile and verify access before removing any damaged copy.
 
 ## Cancellation and diagnostics
