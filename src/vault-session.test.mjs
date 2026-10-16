@@ -85,12 +85,12 @@ async function tamperedRecord(fixture, mutate) {
 }
 
 Then('a vault session persists creation only after the exact recovery key is confirmed', kdfStep, async () => {
-  const password = 'four';
+  const password = 'tri';
   const storage = new MemoryStorage(), session = new VaultSession(storage);
   assert.deepEqual(await session.status(), { exists: false, unlocked: false, revision: 0, epoch: 0, methods: [] });
   await assert.rejects(session.unlock({ methodId: crypto.randomUUID(), secret: password }), code('LOCKED'));
   await assert.rejects(session.confirmCreate('not prepared'), code('AUTHENTICATION'));
-  for (const tooShort of ['', 'a', 'ab', 'abc']) await assert.rejects(session.prepareCreate(tooShort), code('INVALID'));
+  for (const tooShort of ['', 'a', 'ab']) await assert.rejects(session.prepareCreate(tooShort), code('INVALID'));
   const recovery = await session.prepareCreate(password);
   assert.equal(Buffer.from(recovery, 'base64').length, 32);
   assert.equal(storage.writes, 0);

@@ -112,7 +112,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const current = generation;
     let password = take("create-password");
     const matches = password === take("confirm-password");
-    if (!matches || password.length < 4) { password = ""; error = "Enter matching passwords with at least 4 characters."; return; }
+    if (!matches || password.length < 3) { password = ""; error = "Enter matching passwords with at least 3 characters."; return; }
     let recovery = "";
     try {
       recovery = await vaultCall("prepareCreate", [password]);
@@ -163,7 +163,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   async function changePassword(): Promise<void> {
     const material: Enrollment = { kind: "password", secret: take("new-password") };
     try {
-      if (material.secret.length < 4 || material.secret !== take("new-password-confirm")) { error = "Enter matching passwords with at least 4 characters."; return; }
+      if (material.secret.length < 3 || material.secret !== take("new-password-confirm")) { error = "Enter matching passwords with at least 3 characters."; return; }
       await fresh(proof => vaultCall("addMethod", [proof, material, passwordReplacement || undefined]));
       await refresh(); notice = "Password method saved. Other unlock methods remain available.";
     } finally { material.secret = ""; }
@@ -310,8 +310,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if ready && !status.exists && recoveryMode !== "create"}
     <div class="card">
       <form id={createFormId} class="vault-create-form" onsubmit={event => { event.preventDefault(); void run("Preparing vault…", create); }}>
-        <label>New vault password<input name="create-password" type="password" minlength="4" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
-        <label>Confirm vault password<input name="confirm-password" type="password" minlength="4" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
+        <label>New vault password<input name="create-password" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
+        <label>Confirm vault password<input name="confirm-password" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
       </form>
       <div class="actions creation-actions">
         <button type="button" aria-label="Import vault" disabled={busy} onclick={() => restoreInput?.click()}><MaterialIcon name="upload" size={18} />Import</button>
@@ -398,8 +398,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           options={status.methods.filter(method => method.kind === "password").map((method, index) => ({ value: method.id, label: `Replace password ${index + 1}` }))}
           onValueChange={value => passwordReplacement = value} />
         <p class="help">Leave the method unselected to add another password.</p>
-        <label>New password<input name="new-password" type="password" minlength="4" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
-        <label>Confirm new password<input name="new-password-confirm" type="password" minlength="4" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
+        <label>New password<input name="new-password" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
+        <label>Confirm new password<input name="new-password-confirm" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
         <button disabled={busy}>Save password method</button>
       </form>
       <div class="subform"><h4>Recovery key</h4>
