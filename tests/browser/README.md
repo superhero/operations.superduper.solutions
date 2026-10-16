@@ -74,6 +74,51 @@ image decoder as a data URL. This verifies both the real endpoint and ICO
 decoding without weakening the external-network boundary. Other icon formats
 use ordinary browser requests.
 
+## Runtime and test boundaries
+
+Use Cucumber step durations to separate expensive assertions from repeated setup.
+Compare the same scenarios, browser image, worker count and resource limits before
+and after a change. Summed scenario time overlaps when workers run in parallel;
+it is not the suite's wall-clock duration.
+
+List the slowest scenarios from a completed report, including their setup:
+
+```sh
+jq '[.[] | .uri as $file | .elements[] | select(.type == "scenario") |
+  {file: $file, name, seconds: ([.steps[].result.duration // 0] | add / 1000000000)}] |
+  sort_by(.seconds) | reverse | .[:10]' tmp/test/cucumber-browser.json
+```
+
+### Palette navigation
+
+Palette checks retain every palette, both themes and desktop/mobile layouts.
+Native keyboard navigation takes the shorter wrapped route in Chromium and
+Firefox; WebKit takes the direct route because its radios stop at group ends.
+Retryable accessibility and DOM snapshots check all computed accessible names,
+enabled states, selections and swatch colors instead of sending one assertion
+per option.
+
+### Resource measurements
+
+Storage scenarios tagged `@immediate-page-memory` supply only the unrelated
+page-memory measurement. Their browser storage estimates, IndexedDB databases,
+Git history, recorder worker and UI remain real. The untagged native-storage
+scenario retains the browser's own memory-measurement path. Do not apply this
+fixture to tests of memory collection, timeouts or recorder scheduling.
+
+### Startup setup
+
+Shared setup waits for real startup and canvas restoration before finishing
+the loader animation. This skips only the presentation delay, runs its native
+removal and gutter-cleanup callback, and leaves startup-specific scenarios alone.
+It does not advance application clocks or bypass initialization.
+
+### Preserved checks
+
+Keep fresh contexts, production password-derivation costs, traces, diagnostic
+checks and durable-storage assertions. Reduce repeated work and irrelevant
+external waits before increasing parallelism or replacing integration behavior.
+
 ## Scenario state and diagnostics
 
 Scenarios run in parallel, so keep mutable state in the scenario World or its
