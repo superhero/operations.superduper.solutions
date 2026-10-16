@@ -92,7 +92,7 @@ Then('a vault session persists creation only after the exact recovery key is con
   await assert.rejects(session.confirmCreate('not prepared'), code('AUTHENTICATION'));
   for (const tooShort of ['', 'a', 'ab']) await assert.rejects(session.prepareCreate(tooShort), code('INVALID'));
   const recovery = await session.prepareCreate(password);
-  assert.equal(Buffer.from(recovery, 'base64').length, 32);
+  assert.equal(Buffer.from(recovery, 'base64').length, 128);
   assert.equal(storage.writes, 0);
   assert.equal((await session.status()).exists, false);
   await assert.rejects(session.confirmCreate('not the recovery key'), code('AUTHENTICATION'));

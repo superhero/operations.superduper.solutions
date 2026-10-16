@@ -69,7 +69,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     for (const component of Object.values(rotationAuthentication)) component?.clear();
   }
   function clearRecovery(): void { if (recoveryOutput) recoveryOutput.value = ""; recoveryMode = null; }
-  function cancelRecovery(): void { clearInputs(); clearRecovery(); lockVaultLocally(); }
   function clearRestore(): void { restorePayload = ""; restoreStatus = null; restoreFilename = ""; if (restoreInput) restoreInput.value = ""; }
   function take(name: string): string {
     const input = panel.querySelector<HTMLInputElement>(`input[name="${name}"]`);
@@ -121,12 +120,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     } finally { password = ""; recovery = ""; }
   }
   async function confirmRecovery(): Promise<void> {
-    let confirmation = take("confirm-recovery");
+    let confirmation = recoveryOutput?.value ?? "";
     try {
-      if (!confirmation || confirmation !== recoveryOutput?.value) { error = "The recovery keys do not match. Enter the saved key to verify it."; return; }
+      if (!confirmation) throw new VaultError("INVALID");
       if (recoveryMode === "create") await vaultCall("confirmCreate", [confirmation]);
       else await fresh(proof => vaultCall("addMethod", [proof, { kind: "recovery", secret: confirmation }, recoveryReplacement || undefined]));
-      clearRecovery(); await refresh(); notice = "Recovery key verified and saved. Keep your copy outside this browser.";
+      const url = URL.createObjectURL(new Blob([confirmation + "\n"], { type: "text/plain" }));
+      const link = document.createElement("a"); link.href = url; link.download = "operations-vault-recovery-key.txt"; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+      clearRecovery(); await refresh(); notice = "Recovery key saved. Keep the downloaded key in a safe place.";
     } finally { confirmation = ""; }
   }
   async function saveCredential(): Promise<void> {
@@ -331,12 +333,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {/if}
 
   {#if recoveryMode}
-    <form class="card recovery" onsubmit={event => { event.preventDefault(); void run("Verifying recovery key…", confirmRecovery); }}>
-      <h3>Save and verify your recovery key</h3>
-      <p class="help">This is its only presentation. Save it securely, then enter the saved key below. Anyone with this key and an encrypted export can unlock that export.</p>
-      <label>Recovery key<textarea bind:this={recoveryOutput} readonly rows="2" spellcheck="false" aria-label="Generated recovery key"></textarea></label>
-      <label>Verify saved recovery key<input name="confirm-recovery" type="password" required autocomplete="off" spellcheck="false" data-vault-sensitive disabled={busy} /></label>
-      <div class="actions"><button disabled={busy}>Verify and save recovery key</button><button type="button" disabled={busy} onclick={cancelRecovery}>Cancel and lock</button></div>
+    <form class="card recovery" onsubmit={event => { event.preventDefault(); void run("Saving recovery key…", confirmRecovery); }}>
+      <label>Recovery key<textarea bind:this={recoveryOutput} readonly rows="4" spellcheck="false" aria-label="Generated recovery key"></textarea></label>
+      <p class="help">This is its only presentation. Save it securely. Anyone with this key and an encrypted export can unlock that export.</p>
+      <div class="actions recovery-actions"><button disabled={busy}><MaterialIcon name="download" size={18} />Save recovery key</button></div>
     </form>
   {/if}
 
@@ -406,7 +406,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <FieldSelect id="vault-recovery-replacement" label="Recovery method to replace" value={recoveryReplacement} disabled={busy || recoveryMode !== null}
           options={status.methods.filter(method => method.kind === "recovery").map((method, index) => ({ value: method.id, label: `Replace recovery key ${index + 1}` }))}
           onValueChange={value => recoveryReplacement = value} />
-        <p class="help">Leave the method unselected to add a recovery key. The new key must be saved and verified before it replaces a method.</p>
+        <p class="help">Leave the method unselected to add a recovery key. Save the new key before it replaces a method.</p>
         <button type="button" disabled={busy || recoveryMode !== null} onclick={() => run("Generating recovery key…", prepareRecovery)}>Generate recovery key</button>
       </div>
       <div class="subform"><h4>Passkey</h4><p class="help">Use an authenticator that supports passkey encryption. A failed enrollment leaves your existing methods intact.</p>
@@ -459,8 +459,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .secrets-settings { display: grid; gap: 12px; min-width: 0; padding: 16px; color: var(--color-foreground); --field-background: var(--color-background); --field-foreground: var(--color-foreground); }
   .toolbar, .record-heading, .grant { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .creation-actions { justify-content: flex-end; }
-  .creation-actions button { display: inline-flex; align-items: center; gap: 6px; }
+  .creation-actions, .recovery-actions { justify-content: flex-end; }
+  .creation-actions button, .recovery-actions button { display: inline-flex; align-items: center; gap: 6px; }
   .card, .subform, .vault-create-form { display: grid; gap: 10px; min-width: 0; }
   .card { padding: 14px; border-radius: 4px; background: var(--color-surface); }
   .vault-info, .vault-status-message { display: flex; align-items: flex-start; gap: 10px; }
@@ -498,7 +498,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .idle-toggle[aria-checked="true"] .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
   @media (prefers-reduced-motion: no-preference) {
     .idle-toggle:hover:enabled .default-switch { transform: scale(1.10); }
-    .creation-actions button:hover:enabled { transform: scale(1.05); }
+    :is(.creation-actions, .recovery-actions) button:hover:enabled { transform: scale(1.05); }
   }
   @media (prefers-reduced-motion: reduce) { .default-switch, .default-switch > span { transition: none; } }
 </style>

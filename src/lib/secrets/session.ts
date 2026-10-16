@@ -135,7 +135,7 @@ export class VaultSession {
     const state = await this.storage.read();
     if (state.snapshot) throw new VaultError("CONFLICT");
     const key = await newVaultKey();
-    const recovery = randomBase64(32);
+    const recovery = randomBase64(128);
     const base = { id: crypto.randomUUID(), epoch: 1, revision: 1, records: [] };
     const envelopes = [await this.enroll(key, base, { kind: "password", secret: password }),
       await this.enroll(key, base, { kind: "recovery", secret: recovery })];
@@ -287,7 +287,7 @@ export class VaultSession {
 
   async prepareRecovery(proof: UnlockProof): Promise<string> {
     await this.fresh(proof);
-    this.recovery = randomBase64(32); return this.recovery;
+    this.recovery = randomBase64(128); return this.recovery;
   }
 
   async addMethod(proof: UnlockProof, material: Enrollment, replaceId?: string): Promise<VaultStatus> {

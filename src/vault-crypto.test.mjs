@@ -115,6 +115,11 @@ Then('vault recovery and passkey wrapping keys are separated by HKDF purpose and
   assert.deepEqual(await decryptJSON(await recoveryKey(encodeBase64(material), salt), box, aad), { protected: true });
   await assert.rejects(decryptJSON(passkey, box, aad), code('AUTHENTICATION'));
   await assert.rejects(decryptJSON(await recoveryKey(encodeBase64(material), randomBase64(16)), box, aad), code('AUTHENTICATION'));
+  const longer = randomBase64(128);
+  const longerKey = await recoveryKey(longer, salt);
+  const longerBox = await encryptJSON(longerKey, { protected: true }, aad);
+  assert.deepEqual(await decryptJSON(await recoveryKey(longer, salt), longerBox, aad), { protected: true });
+  await assert.rejects(recoveryKey(randomBase64(127), salt), code('INVALID'));
   await assert.rejects(recoveryKey(randomBase64(31), salt), code('INVALID'));
   await assert.rejects(passkeyKey(new Uint8Array(31), salt), code('INVALID'));
   await assert.rejects(passkeyKey(material, randomBase64(15)), code('INVALID'));
