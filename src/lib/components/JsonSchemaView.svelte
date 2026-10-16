@@ -58,7 +58,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   if (next) { schemaLoaded = true; if (operationsOnly) resetKey += 1; }
 }}>
   {#snippet summary()}
-    <MaterialIcon name="chevron_forward" class="schema-chevron" size={20} />
+    <MaterialIcon name="keyboard_arrow_right" class="schema-chevron" size={18} />
     <HintButton class="schema-action" label="Copy JSON" aria-label="Copy JSON" aria-disabled={copying} aria-busy={copying} onclick={copySchema}><MaterialIcon name="file_copy" size={20} /></HintButton>
     <span class="schema-title">OpenAPI schema<span class="schema-copy-status" role="status">{copyStatus}</span></span>
     <span class="schema-wrap-control" class:visible={schemaOpen} inert={!schemaOpen} aria-hidden={!schemaOpen}>
