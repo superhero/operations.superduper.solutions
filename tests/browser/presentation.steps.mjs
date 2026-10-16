@@ -99,9 +99,9 @@ Then('operations controls retain their complete keyboard focus outline', async f
     await page.mouse.move(0, 0);
     const ring = await expectUnclippedFocus(prompt);
     assert.ok(ring.width >= 3 && ring.offset > 0 && ring.radius > 0, 'The prompt needs a separated focus ring around rounded corners.');
-    await expectThemeColors(prompt, { backgroundColor: '--color-foreground', color: '--color-background' });
+    await expectThemeColors(prompt, { backgroundColor: '--color-background', color: '--color-foreground' });
     await expectThemeColors(page.locator('.catalog-prompt .prompt-input'), { outlineColor: '--color-ring' });
-    await expectThemeColors(prompt, { color: '--color-surface' }, '::placeholder');
+    await expectThemeColors(prompt, { color: '--color-muted-foreground' }, '::placeholder');
     await expectThemeColors(page.locator('.catalog-prompt .prompt-actions'), {
       backgroundColor: '--color-badge-background', color: '--color-badge-foreground'
     });
@@ -157,8 +157,8 @@ Then('request fields remain readable and preserve accessible editing in both the
     for (const row of await workspace(page).locator('.joined-field').all()) {
       const input = row.locator('.field-input:visible,.field-select-trigger:visible');
       const required = await input.evaluate(element => element.getAttribute('role') === 'combobox' ? element.getAttribute('aria-required') === 'true' : element.required);
-      await expectThemeColors(row, { backgroundColor: '--color-foreground' });
-      await expectThemeColors(input, { color: '--color-background' });
+      await expectThemeColors(row, { backgroundColor: '--color-background' });
+      await expectThemeColors(input, { color: '--color-foreground' });
       await expectThemeColors(row.locator('label'), { backgroundColor: '--color-muted-foreground', color: '--color-background' });
       const actions = row.locator('.field-actions');
       if (await actions.count()) await expectThemeColors(actions, { backgroundColor: '--color-muted-foreground' });

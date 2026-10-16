@@ -225,10 +225,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   h3[tabindex="-1"] { outline: none; }
   .run-choices { display: grid; gap: 8px; margin: 12px 0; }
   .run-choices label { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 4px; background: var(--color-report-card); }
-  .workflow-run :global(.operation-fields) { margin: 16px 0; --field-background: var(--color-foreground); --field-foreground: var(--color-background); --control-label: var(--color-background); --control-info: var(--color-background); }
-  .workflow-run :global(.credential-selection) { --field-background: var(--color-foreground); --field-foreground: var(--color-background); }
-  .workflow-run :global(.operation-fields .field-input::placeholder), .workflow-run :global(.operation-fields .integer-value::placeholder) { color: var(--color-background); }
-  .workflow-run :global(.field-select-value.placeholder) { color: var(--color-background); }
+  .workflow-run :global(.operation-fields) { margin: 16px 0; --field-background: var(--color-background); --field-foreground: var(--color-foreground); --control-label: var(--color-background); --control-info: var(--color-background); }
+  .workflow-run :global(.operation-fields .field-input::placeholder), .workflow-run :global(.operation-fields .integer-value::placeholder) { color: var(--field-foreground); }
+  .workflow-run :global(.field-select-value.placeholder) { color: var(--field-foreground); }
   .workflow-run :global(.operation-title) { margin: 0; font-size: 12px; }
   .workflow-run :global(#run-operation-details .detail-report) { margin-top: 0; }
   .run-response { min-width: 0; }

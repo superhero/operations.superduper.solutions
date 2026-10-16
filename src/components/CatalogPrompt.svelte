@@ -57,7 +57,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <section class="catalog-prompt" aria-label="Find operations" aria-busy={pending} data-evaluated-prompt={evaluation?.prompt ?? ""}>
   <div class="prompt-input" class:has-details={evaluationDetails && Boolean(evaluation)}>
     <textarea id="operation-prompt" bind:this={input} value={value} use:fitTextarea={value} rows="1" maxlength="240"
-      placeholder="Prompt" aria-label="Prompt" aria-describedby="prompt-help" oninput={(event) => onChange(event.currentTarget.value, event instanceof InputEvent && event.isComposing)}
+      placeholder="Search" aria-label="Prompt" aria-describedby="prompt-help" oninput={(event) => onChange(event.currentTarget.value, event instanceof InputEvent && event.isComposing)}
       oncompositionstart={() => onChange(value, true)} oncompositionend={(event) => onChange(event.currentTarget.value, false)}></textarea>
     {#if evaluationDetails && evaluation}
       <div class="prompt-actions report-pill context-label">
@@ -90,10 +90,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .prompt-input:has(#operation-prompt:focus) { outline-color: var(--color-ring); }
   .prompt-actions { width: 100%; border-radius: 0 0 4px 4px; }
   .prompt-actions :global(.report-toggle) { width: 100%; min-height: 24px; height: 24px; padding: 4px; border-radius: 0 0 4px 4px; }
-  #operation-prompt { --field-background: var(--color-foreground); --field-foreground: var(--color-background); display: block; flex: 1; box-sizing: border-box; width: 100%; min-width: 0; min-height: var(--navigation-control-size); field-sizing: fixed; padding: calc((var(--navigation-control-size) - 1.5em) / 2) 12px; border: 0; border-radius: 4px; background: var(--field-background); color: var(--field-foreground); font-size: 13px; line-height: 1.5; resize: none; overflow: hidden; scrollbar-gutter: auto; }
+  #operation-prompt { --field-background: var(--color-background); --field-foreground: var(--color-foreground); display: block; box-sizing: border-box; width: 100%; min-width: 0; min-height: var(--navigation-control-size); field-sizing: fixed; padding: calc((var(--navigation-control-size) - 1.5em) / 2) 12px; border: 0; border-radius: 4px; background: var(--field-background); color: var(--field-foreground); font-size: 13px; line-height: 1.5; resize: none; overflow: hidden; scrollbar-gutter: auto; }
   #operation-prompt { outline: none; }
   .has-details #operation-prompt { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
-  #operation-prompt::placeholder { color: var(--color-surface); opacity: 1; }
+  #operation-prompt::placeholder { color: var(--color-muted-foreground); opacity: 1; }
   .matching-status { margin: 0; color: var(--color-muted-foreground); font-size: 12px; }
   .matching-status:not(:empty) { margin-top: 8px; }
   .matching-error { margin: 8px 0; color: var(--color-foreground); font-size: 12px; }

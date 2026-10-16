@@ -133,7 +133,7 @@ Then('a long prompt grows inside navigation while its buttons and menu remain us
   await openCatalog(page);
   const before = await prompt(page).boundingBox();
   await expect(prompt(page)).toHaveAttribute('rows', '1');
-  await expect(prompt(page)).toHaveAttribute('placeholder', 'Prompt');
+  await expect(prompt(page)).toHaveAttribute('placeholder', 'Search');
   await expect(page.locator('.catalog-prompt').getByRole('heading')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Commonly used operations', exact: true })).toHaveCount(0);
   await expect(page.locator('.catalog-prompt .prompt-actions')).toHaveCount(0);
