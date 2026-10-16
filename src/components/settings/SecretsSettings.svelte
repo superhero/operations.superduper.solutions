@@ -454,7 +454,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         onclick={() => void saveIdle(!preferences.idleLockEnabled, preferences.idleLockMinutes)}>
         <span>Lock after inactivity</span><span class="default-switch" aria-hidden="true"><span></span></span>
       </button>
-      <div class="idle-control">
+      <div class="idle-control" class:disabled={busy || idleSaving || !preferences.idleLockEnabled}>
         <FieldInteger id="vault-idle-minutes" label="Minutes of inactivity" value={idleMinutes}
           minimum={1} maximum={maximumIdleMinutes} required disabled={busy || idleSaving || !preferences.idleLockEnabled}
           onValueChange={value => { idleMinutes = value; }}
@@ -603,6 +603,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .idle-control :global(.field-integer) { flex: 1; min-width: 0; padding-right: 4px; }
   .idle-control :global(.field-integer :is(.integer-range, .integer-value)) { outline: none; }
   .idle-control > span { display: flex; align-items: center; padding: 0 8px; }
+  .idle-control.disabled > span { color: var(--color-muted-foreground); }
   :global(.secrets-settings .field-select-trigger) { border-radius: 4px; font-size: 12px; }
   button { width: fit-content; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; cursor: pointer; }
   button:disabled { opacity: .55; cursor: not-allowed; }
