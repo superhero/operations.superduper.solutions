@@ -469,16 +469,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
               options={status.methods.filter(method => method.kind === "password").map((method, index) => ({ value: method.id, label: `Password ${index + 1}` }))}
               onValueChange={value => { passwordAuthentication?.clear(); passwordReplacement = value; }} />
           {/if}
-          <VaultAuthentication bind:this={passwordAuthentication}
-            {status} detectMethod disabled={busy} label="Authorize password change" inputLabel="Password or recovery key" />
           <label>New password<input name="new-password" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
           <label for={`${createFormId}-new-password-confirm`}>Confirm new password</label>
-            <span class="password-confirm-field">
-              <input id={`${createFormId}-new-password-confirm`} name="new-password-confirm" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} />
+          <input id={`${createFormId}-new-password-confirm`} name="new-password-confirm" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} />
+          <VaultAuthentication bind:this={passwordAuthentication}
+            {status} detectMethod disabled={busy} label="Authorize password change" inputLabel="Password or recovery key">
+            {#snippet action()}
               <HintButton label="Verify and replace password" disabled={busy}>
                 {#snippet child({ props })}<button {...props} class="unlock-vault" type="submit"><MaterialIcon name="password" size={20} /></button>{/snippet}
               </HintButton>
-            </span>
+            {/snippet}
+          </VaultAuthentication>
           {#if passwordError}<p class="error" role="alert"
             transition:slide={{ duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 240, easing: cubicInOut }}>{passwordError}</p>{/if}
         </form>
@@ -582,10 +583,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .vault-replace-row > button, .vault-export-row > button, .vault-rotate-row > button, .vault-passkey-row > button, .vault-password-row > button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: 0 0 160px; width: 160px; white-space: nowrap; }
   .vault-replace-row > p, .vault-export-row > p, .vault-rotate-row > p, .vault-passkey-row > p, .vault-password-row > p { min-width: 0; }
   .creation-actions, .recovery-actions { justify-content: flex-end; }
-  .password-confirm-field { display: flex; min-width: 0; border-radius: 4px; background: var(--color-background); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
-  .password-confirm-field:focus-within, .password-confirm-field:hover:has(:enabled) { outline-color: var(--color-ring); }
-  .password-confirm-field > input[name] { flex: 1; width: 0; border-radius: 4px 0 0 4px; outline: none; }
-  .password-confirm-field > .unlock-vault { outline: none; }
   .unlock-vault { display: grid; place-items: center; justify-self: end; flex-shrink: 0; align-self: stretch; min-width: 40px; border-radius: 0 4px 4px 0; }
   .unlock-vault:hover:enabled, .unlock-vault:focus { color: var(--color-background); }
   .creation-actions button, .recovery-actions button { display: inline-flex; align-items: center; gap: 6px; }
