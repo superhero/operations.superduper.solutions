@@ -257,6 +257,16 @@ Add a rounded left cap using the input background while preserving multiline siz
 
 ```
 
+<!-- changelog-commit:1635eb41408b9094d03062b05c2d297a4e471956 -->
+### Commit [`1635eb4`](https://github.com/superhero/operations.superduper.solutions/commit/1635eb41408b9094d03062b05c2d297a4e471956)
+
+```text
+test(workflows): align discovery regression checks with run view
+
+Expect the Quit button badge palette and the unified server description. Trigger the coordinate-limit addition directly instead of using a helper that waits for a successfully created node. All three previously failing browser scenarios pass against the production build.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.47
