@@ -321,6 +321,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if ready && !status.exists && recoveryMode !== "create"}
     <div class="card">
       <form id={createFormId} class="vault-create-form" onsubmit={event => { event.preventDefault(); void run("Preparing vault…", create); }}>
+        <input type="hidden" name="username" autocomplete="username" value="Operations vault" />
         <label>New vault password<input name="create-password" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
         <label>Confirm vault password<input name="confirm-password" type="password" minlength="3" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
       </form>
@@ -342,7 +343,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {/if}
 
   {#if recoveryMode}
-    <form class="card recovery" onsubmit={event => { event.preventDefault(); void run("Saving recovery key…", confirmRecovery); }}>
+    <div class="card recovery" data-1p-ignore data-lpignore="true">
       <span class="recovery-label">Recovery key</span>
       <div class="recovery-key">
         <pre bind:this={recoveryOutput} aria-label="Generated recovery key"></pre>
@@ -351,8 +352,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         </HintButton>
       </div>
       <p class="help">This is its only presentation. Save it securely. Anyone with this key and an encrypted export can unlock that export.</p>
-      <div class="actions recovery-actions"><button disabled={busy}><MaterialIcon name="download" size={18} />Save recovery key</button></div>
-    </form>
+      <div class="actions recovery-actions"><button type="button" disabled={busy} onclick={() => void run("Saving recovery key…", confirmRecovery)}><MaterialIcon name="download" size={18} />Save recovery key</button></div>
+    </div>
   {/if}
 
   {#if ready && status.unlocked}
@@ -405,6 +406,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <p class="help">Use a different retained method to authenticate removal. Removing a method does not change previously downloaded exports.</p>
       <form class="subform" onsubmit={event => { event.preventDefault(); void run("Saving password method…", changePassword); }}>
         <h4>Password</h4>
+        <input type="hidden" name="username" autocomplete="username" value="Operations vault" />
         <FieldSelect id="vault-password-replacement" label="Password method to replace" value={passwordReplacement} disabled={busy}
           options={status.methods.filter(method => method.kind === "password").map((method, index) => ({ value: method.id, label: `Replace password ${index + 1}` }))}
           onValueChange={value => passwordReplacement = value} />

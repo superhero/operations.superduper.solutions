@@ -206,11 +206,14 @@ async function createUIVault() {
   await expect(settings(page).getByText('No vault has been created:', { exact: true })).toBeVisible();
   await expect(settings(page).getByRole('heading', { name: 'Encrypted vault exports', exact: true })).toHaveCount(0);
   await expect(settings(page).getByRole('button', { name: 'Import vault', exact: true })).toBeVisible();
+  await expect(settings(page).locator('form input[autocomplete="username"]')).toHaveValue('Operations vault');
   await settings(page).getByLabel('New vault password', { exact: true }).fill(canaries[0]);
   await settings(page).getByLabel('Confirm vault password', { exact: true }).fill(canaries[0]);
   await settings(page).getByRole('button', { name: 'Create vault', exact: true }).click();
   const recovery = settings(page).locator('pre[aria-label="Generated recovery key"]');
   await expect(recovery).toHaveText(/^[A-Za-z0-9+/]{171}=$/);
+  assert.equal(await recovery.evaluate(element => element.closest('form')), null);
+  await expect(settings(page).getByRole('button', { name: 'Save recovery key', exact: true })).toHaveAttribute('type', 'button');
   this.uiRecovery = await recovery.textContent();
   await page.evaluate(() => {
     window.__recoveryClipboard = "";
@@ -225,6 +228,8 @@ async function createUIVault() {
   await settings(page).getByRole('button', { name: 'Save recovery key', exact: true }).click();
   assert.equal((await recoveryDownload).suggestedFilename(), 'operations-vault-recovery-key.txt');
   await expect(settings(page).getByRole('heading', { name: 'Confirm management actions', exact: true })).toBeVisible();
+  await expect(settings(page).getByLabel('Confirm action password', { exact: true })).toHaveAttribute('name', 'vault-password');
+  await expect(settings(page).locator('.vault-authentication input[autocomplete="username"]')).toHaveValue('Operations vault');
   await settings(page).getByLabel('Confirm action password', { exact: true }).fill(canaries[0]);
   await settings(page).getByLabel('Credential label', { exact: true }).fill(canaries[3]);
   await settings(page).getByLabel('Credential value', { exact: true }).fill(canaries[1]);

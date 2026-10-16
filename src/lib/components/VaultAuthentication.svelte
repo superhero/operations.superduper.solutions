@@ -56,9 +56,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <FieldSelect id={`${id}-method`} label={`${label} method`} value={methodId} {options} includePlaceholder={false} {disabled} {portalZIndex}
     onValueChange={value => { clear(); methodId = value; }} />
   {#if method && method.kind !== "passkey"}
+    {#if method.kind === "password"}
+      <input type="hidden" name="username" autocomplete="username" value="Operations vault" />
+    {/if}
     <label for={`${id}-secret`}>{label} {method.kind === "password" ? "password" : "recovery key"}</label>
+    {#key methodId}
     <input bind:this={secretInput} id={`${id}-secret`} type="password" data-vault-sensitive spellcheck="false" autocapitalize="off"
-      autocomplete={method.kind === "password" ? "current-password" : "off"} {disabled} />
+      name={method.kind === "password" ? "vault-password" : "vault-recovery-key"}
+      autocomplete={method.kind === "password" ? "current-password" : "off"}
+      data-1p-ignore={method.kind === "recovery" ? true : undefined}
+      data-lpignore={method.kind === "recovery" ? "true" : undefined} {disabled} />
+    {/key}
   {:else if method}
     <p>Your authenticator will ask you to verify this action.</p>
   {:else}
