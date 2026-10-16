@@ -130,11 +130,20 @@ async function expectPaletteChoices(page, selected) {
   const definitions = new Map((await paletteDefinitions()).map(([, selector, body]) =>
     [selector, [...body.matchAll(/--palette-\d\s*:\s*(#[a-f\d]{6});/gi)].map(match => rgbColor(match[1]))]));
   await expect(group).toBeVisible();
-  // Exact role/name locators retain accessible-name and enabled-state checks
-  // without the snapshot matcher, which requires the Playwright test runner.
-  await Promise.all(paletteOptions.map(({ name }) => expect(paletteChoice(page, name)).toBeEnabled()));
-  // Read all 126 swatches together: this helper runs repeatedly for every palette.
-  // Keep retrying the complete DOM state while rendering and styles settle.
+  // Preserve computed accessible-name and enabled-state checks in one browser
+  // snapshot, without Playwright Test's runner-only snapshot matcher.
+  await expect.poll(async () => {
+    const choices = [];
+    const visit = nodes => {
+      for (const node of nodes) {
+        if (node.role === 'radio') choices.push({ name: node.name, disabled: node.disabled ?? false, checked: node.checked ?? false });
+        if (node.children) visit(node.children);
+      }
+    };
+    visit(await group.ariaSnapshotJSON());
+    return choices;
+  }).toEqual(paletteOptions.map(({ name }) => ({ name, disabled: false, checked: name === selected })));
+  // Read all 126 swatches together while rendering and styles settle.
   await expect.poll(() => group.getByRole('radio').evaluateAll(inputs => inputs.map(input => {
     const preview = input.closest('label')?.querySelector('[data-palette-preview]');
     return {
@@ -174,12 +183,25 @@ async function selectPaletteWithKeyboard(page, name) {
   await page.keyboard.press('Tab');
   await expect(paletteGroup(page).getByRole('radio', { checked: true })).toBeFocused();
   const choice = paletteChoice(page, name);
-  for (let step = 0; step < paletteOptions.length && !await choice.isChecked(); step++)
-    await page.keyboard.press('ArrowRight');
+  const wraps = page.context().browser().browserType().name() !== 'webkit';
+  const route = await paletteGroup(page).getByRole('radio').evaluateAll((inputs, { name, wraps }) => {
+    const current = inputs.findIndex(input => input.checked);
+    const target = inputs.findIndex(input => input.getAttribute('aria-label') === name);
+    if (current < 0 || target < 0) throw new Error('The selected and requested palettes must exist.');
+    // WebKit's native radios stop at group ends instead of wrapping.
+    if (!wraps) return { key: target < current ? 'ArrowLeft' : 'ArrowRight', steps: Math.abs(target - current) };
+    const forward = (target - current + inputs.length) % inputs.length;
+    const backward = (current - target + inputs.length) % inputs.length;
+    return forward <= backward ? { key: 'ArrowRight', steps: forward } : { key: 'ArrowLeft', steps: backward };
+  }, { name, wraps });
+  // Keep real keyboard traversal using the engine's native group behavior,
+  // avoiding a full loop when a wrapping engine can move one step left.
+  for (let step = 0; step < route.steps; step++) await page.keyboard.press(route.key);
   await expect(choice).toBeFocused();
-  assert.ok(await choice.evaluate(element => element.matches(':focus-visible')), 'The palette choice must receive keyboard focus.');
   await page.keyboard.press('Space');
   await expect(choice).toBeChecked();
+  // WebKit establishes :focus-visible on Space, not native arrow navigation.
+  assert.ok(await choice.evaluate(element => element.matches(':focus-visible')), 'The activated palette choice must show keyboard focus.');
   await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
 }
 

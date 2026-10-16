@@ -129,6 +129,16 @@ Before(async function ({ pickle }) {
     reducedMotion: 'reduce', deviceScaleFactor: 1,
     serviceWorkers: 'block', acceptDownloads: true,
   });
+  if (pickle.tags.some(tag => tag.name === '@immediate-page-memory')) {
+    // Storage inspection exercises real IndexedDB/Git/Storage APIs, not the
+    // browser's GC schedule. The untagged native scenario keeps that boundary.
+    await this.context.addInitScript(() => {
+      Object.defineProperty(performance, 'measureUserAgentSpecificMemory', {
+        configurable: true,
+        value: async () => ({ bytes: 4096, breakdown: [{ bytes: 4096, types: ['JavaScript'] }] }),
+      });
+    });
+  }
   await this.context.tracing.start({ screenshots: true, snapshots: true, sources: true });
   await this.context.route('**/*', async route => {
     const url = route.request().url();
@@ -165,6 +175,14 @@ Before(async function ({ pickle }) {
     const app = document.getElementById('app');
     return app?.hasChildNodes() && !app.hasAttribute('inert');
   });
+  if (!pickle.tags.some(tag => tag.name === '@startup-modules')) {
+    // Real startup has completed, including canvas restoration. These scenarios
+    // exercise the ready app, not the loader's delayed presentation. Finish only
+    // its animation; keep the real removal callback and gutter cleanup intact.
+    await this.page.locator('#startup-status').evaluateAll(loaders => {
+      for (const loader of loaders) for (const animation of loader.getAnimations()) animation.finish();
+    });
+  }
   await this.page.locator('#startup-status').waitFor({ state: 'detached' });
 });
 

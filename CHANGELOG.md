@@ -2,6 +2,16 @@
 
 ## Latest
 
+<!-- changelog-commit:96275fe830d174c5e91d6a882cddfda1733f0944 -->
+### Commit [`96275fe`](https://github.com/superhero/operations.superduper.solutions/commit/96275fe830d174c5e91d6a882cddfda1733f0944)
+
+```text
+test(browser): reduce setup and resource measurement waits
+
+Batch palette accessibility checks and use bounded native keyboard routes, including WebKit's non-wrapping behavior. Finish only the ready loader's presentation during shared setup, preserving real initialization and cleanup. Supply immediate page-memory responses only to storage inspection cases, retaining native memory coverage, fresh contexts and storage assertions.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.48
