@@ -18,6 +18,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   type Authentication = { proof: () => Promise<UnlockProof>; clear: () => void };
   const emptyStatus: VaultStatus = { exists: false, unlocked: false, revision: 0, epoch: 0, methods: [] };
   const methodNames = { password: "Password", recovery: "Recovery key", passkey: "Passkey" };
+  const createFormId = $props.id();
   let status = $state<VaultStatus>(emptyStatus);
   let records = $state<CredentialSummary[]>([]);
   let preferences = $state({ ...defaultVaultPreferences });
@@ -249,6 +250,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
 </script>
 
+{#snippet vaultImport()}
+  <input bind:this={restoreInput} type="file" accept=".json,application/json" aria-label="Encrypted vault export" onchange={event => void selectRestore(event)} hidden />
+  {#if restoreStatus}
+    <p class="destination">Selected export: {restoreFilename}</p>
+    <VaultAuthentication bind:this={restoreAuthentication} status={restoreStatus} disabled={busy} label="Export" />
+    {#if status.exists}<p class="help">Also authenticate the current vault using the form above before replacing it.</p>{/if}
+    <div class="actions"><button type="button" disabled={busy} onclick={() => run(status.exists ? "Replacing vault…" : "Importing vault…", restore)}>{status.exists ? "Authenticate and replace vault" : "Authenticate and import vault"}</button>
+      <button type="button" disabled={busy} onclick={() => { clearInputs(); clearRestore(); }}>Cancel</button></div>
+  {/if}
+{/snippet}
+
 <section bind:this={panel} class="secrets-settings" aria-label="Secrets vault">
   <div class="toolbar vault-status">
     <p class="help"><strong>{ready ? status.exists ? status.unlocked ? "Vault unlocked" : "Vault locked" : "No vault has been created:" : "Secrets vault"}</strong>{#if ready && !status.exists}{" "}Use a vault to help protect stored data required as input in the workflows.{/if}</p>
@@ -278,13 +290,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if progress || notice}<p class="notice" role="status">{progress || notice}</p>{/if}
 
   {#if ready && !status.exists && recoveryMode !== "create"}
-    <form class="card" onsubmit={event => { event.preventDefault(); void run("Preparing vault…", create); }}>
+    <div class="card">
       <h3>Create a vault</h3>
-      <label>New vault password<input name="create-password" type="password" minlength="12" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
-      <label>Confirm vault password<input name="confirm-password" type="password" minlength="12" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
-      <p class="help">Use at least 12 characters. You will verify a recovery key before the vault is saved.</p>
-      <button disabled={busy}>Create vault</button>
-    </form>
+      <form id={createFormId} class="vault-create-form" onsubmit={event => { event.preventDefault(); void run("Preparing vault…", create); }}>
+        <label>New vault password<input name="create-password" type="password" minlength="12" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
+        <label>Confirm vault password<input name="confirm-password" type="password" minlength="12" required autocomplete="new-password" data-vault-sensitive disabled={busy} /></label>
+        <p class="help">Use at least 12 characters. You will verify a recovery key before the vault is saved.</p>
+      </form>
+      <div class="actions"><button type="submit" form={createFormId} disabled={busy}>Create vault</button>
+        <button type="button" disabled={busy} onclick={() => restoreInput?.click()}>Import vault</button></div>
+      {@render vaultImport()}
+    </div>
   {/if}
 
   {#if ready && status.exists}
@@ -389,21 +405,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
   {/if}
 
-  {#if ready}
+  {#if ready && status.exists}
     <div class="card">
       <h3>Encrypted vault exports</h3>
       <p class="help">Importing replaces any existing vault in this browser and removes imported destination approvals. Exports are encrypted; keep their password, recovery key or passkey available.</p>
       <div class="actions">{#if status.unlocked}<button type="button" disabled={busy} onclick={() => run("Preparing encrypted export…", exportVault)}>Export encrypted vault</button>{/if}
         <button type="button" disabled={busy} onclick={() => restoreInput?.click()}>Import vault</button></div>
-      <input bind:this={restoreInput} type="file" accept=".json,application/json" aria-label="Encrypted vault export" onchange={event => void selectRestore(event)} hidden />
-      {#if restoreStatus}
-        <p class="destination">Selected export: {restoreFilename}</p>
-        <VaultAuthentication bind:this={restoreAuthentication} status={restoreStatus} disabled={busy} label="Export" />
-        {#if status.exists}<p class="help">Also authenticate the current vault using the form above before replacing it.</p>{/if}
-        <div class="actions"><button type="button" disabled={busy} onclick={() => run(status.exists ? "Replacing vault…" : "Importing vault…", restore)}>{status.exists ? "Authenticate and replace vault" : "Authenticate and import vault"}</button>
-          <button type="button" disabled={busy} onclick={() => { clearInputs(); clearRestore(); }}>Cancel</button></div>
-      {/if}
+      {@render vaultImport()}
     </div>
+  {/if}
+  {#if ready}
     <div class="card">
       <h3>Automatic locking</h3>
       <label class="checkbox"><input type="checkbox" checked={preferences.idleLockEnabled} disabled={busy}
@@ -419,7 +430,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .secrets-settings { display: grid; gap: 12px; min-width: 0; padding: 16px; color: var(--color-foreground); --field-background: var(--color-background); --field-foreground: var(--color-foreground); }
   .toolbar, .record-heading, .grant { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-  .card, .subform { display: grid; gap: 10px; min-width: 0; }
+  .card, .subform, .vault-create-form { display: grid; gap: 10px; min-width: 0; }
   .card { padding: 14px; border-radius: 4px; background: var(--color-surface); }
   .vault-info { display: grid; gap: 10px; }
   .vault-info, .vault-status { padding: 14px; border-radius: 4px; background: var(--color-emphasis); color: var(--color-background); }
