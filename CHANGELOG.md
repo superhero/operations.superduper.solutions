@@ -124,6 +124,22 @@ ci: generate and publish test badges with validated reports
 
 ```
 
+<!-- changelog-commit:414f382bec3d38b725cbe638bcb320de5fb4003b -->
+### Commit [`414f382`](https://github.com/superhero/operations.superduper.solutions/commit/414f382bec3d38b725cbe638bcb320de5fb4003b)
+
+```text
+ci: run develop suites manually and validate release candidates
+
+```
+
+<!-- changelog-commit:58769e28aaf76b8703c665c126cdb00f4cc25d9b -->
+### Commit [`58769e2`](https://github.com/superhero/operations.superduper.solutions/commit/58769e28aaf76b8703c665c126cdb00f4cc25d9b)
+
+```text
+merge: align release testing policy with automated report badges
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.48
