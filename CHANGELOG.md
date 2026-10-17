@@ -405,6 +405,83 @@ type checking and production build pass.
 
 ```
 
+<!-- changelog-commit:46df6b037ccea24130411e22c5111d69b095bb48 -->
+### Commit [`46df6b0`](https://github.com/superhero/operations.superduper.solutions/commit/46df6b037ccea24130411e22c5111d69b095bb48)
+
+```text
+fix(workflows): share the top file output with its data structure
+
+```
+
+<!-- changelog-commit:06ac3c36b0bd758e3df28fe31e5379f898fc32c7 -->
+### Commit [`06ac3c3`](https://github.com/superhero/operations.superduper.solutions/commit/06ac3c36b0bd758e3df28fe31e5379f898fc32c7)
+
+```text
+fix(workflows): name uploaded array panels Array and Item
+
+```
+
+<!-- changelog-commit:fd17e66a9ba8562031378567be1ee265241d5931 -->
+### Commit [`fd17e66`](https://github.com/superhero/operations.superduper.solutions/commit/fd17e66a9ba8562031378567be1ee265241d5931)
+
+```text
+fix(workflows): mark uploaded fields optional when values are empty
+
+```
+
+<!-- changelog-commit:b9dbf233275ee15bf1272bfe703fed63f0e80c03 -->
+### Commit [`b9dbf23`](https://github.com/superhero/operations.superduper.solutions/commit/b9dbf233275ee15bf1272bfe703fed63f0e80c03)
+
+```text
+feat(workflows): infer boolean CSV columns from every row
+
+```
+
+<!-- changelog-commit:799c76b38091dd508d35e102d4465413b07f888c -->
+### Commit [`799c76b`](https://github.com/superhero/operations.superduper.solutions/commit/799c76b38091dd508d35e102d4465413b07f888c)
+
+```text
+fix(workflows): show the uploaded filename on its button
+
+```
+
+<!-- changelog-commit:cad1cf57e5539ac78b99f7588d97f7affee97a79 -->
+### Commit [`cad1cf5`](https://github.com/superhero/operations.superduper.solutions/commit/cad1cf57e5539ac78b99f7588d97f7affee97a79)
+
+```text
+fix(workflows): replace the upload button with plain filename text
+
+```
+
+<!-- changelog-commit:d6df1144cb254bf8cb80c26f069526024ce0e6e2 -->
+### Commit [`d6df114`](https://github.com/superhero/operations.superduper.solutions/commit/d6df1144cb254bf8cb80c26f069526024ce0e6e2)
+
+```text
+fix(workflows): left-align uploaded filenames
+
+```
+
+<!-- changelog-commit:6f53822cb4c76a9c09353e1845786c6829eeba9a -->
+### Commit [`6f53822`](https://github.com/superhero/operations.superduper.solutions/commit/6f53822cb4c76a9c09353e1845786c6829eeba9a)
+
+```text
+feat(workflows): execute file Item connections once per aligned row
+
+Match file Item connections by their displayed scalar type and retain whole
+column mappings for array inputs. Execute the selected path sequentially per
+row, including downstream operations and nested calls, without mixing columns
+or repeating unrelated starting paths. Apply the operation guard per row.
+
+Preserve the current row on retry, skip filtered or empty rows and reject unequal
+row counts from combined sources. Cache immutable file projections across row
+frames instead of repeatedly cloning entire columns for scalar requests.
+
+Validate with 21 focused file-source scenarios, selected existing runner checks,
+and three Chromium upload/execution scenarios. Type checking and production
+build pass; full regression remains with CI.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50

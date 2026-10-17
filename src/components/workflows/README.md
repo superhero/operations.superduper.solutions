@@ -90,8 +90,9 @@ their ordered placement after existing content.
 
 File nodes embed parsed JSON or CSV data in the workflow, including exports and
 Git history. JSON retains its native type; CSV produces an array of rows. Columns
-become numbers only when every data cell is numeric and safely representable;
-otherwise the whole column stays text. Automatic delimiter and header detection
+become booleans when every cell is true or false, or numbers when every cell is
+numeric and safely representable. Otherwise the whole column stays text.
+Automatic delimiter and header detection
 can be overridden on the node.
 Quotes default to Auto, detecting double, single or no quoting. Explicit Double,
 Single and None overrides remain available; None preserves quotes literally.
@@ -114,3 +115,18 @@ uploaded arrays use zero through the observed item count. Type badges continue t
 
 Projected array attributes show their item type while connections retain the
 array type needed to carry all projected values.
+
+The file node has one output connector shared by its value and generated
+structure. Older documents normalize separate structure handles to that output.
+
+## Item execution
+
+File Item attributes connect to matching scalar inputs. The selected workflow
+path runs once per row, keeping columns aligned and completing downstream work
+before advancing. A failed request retries the same row; ending the run sends
+no later rows. Empty arrays send no requests. Separate starting paths stay
+independent, and file arrays feeding one path must have equal row counts.
+
+Connections into array inputs retain whole-column mapping, while the file's top
+output supplies the complete parsed value. Switch and Cast inputs can consume
+individual Item values. The operation-step guard applies separately to each row.

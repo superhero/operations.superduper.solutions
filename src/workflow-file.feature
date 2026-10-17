@@ -27,3 +27,21 @@ Feature: Uploaded workflow data
     Then array structures preserve item bounds and validate stored ranges
   Scenario: Numeric inference examines every row and falls back per column
     Then CSV columns become numbers only when every value is numeric
+  Scenario: File structures share the existing output connector
+    Then file structure attachments share one output and normalize older handles
+  Scenario: Empty uploaded values do not mark a field required
+    Then uploaded fields with empty values are optional while zero and false remain required
+  Scenario: Boolean inference examines the entire column
+    Then CSV columns become booleans only when every cell is true or false
+  Scenario: Item fields run once per row with correlated columns and downstream outputs
+    Then CSV item connections run downstream operations once per aligned row
+  Scenario: Row execution retries the same row and stops without sending later requests
+    Then CSV row execution retains failed rows and respects ending the run
+  Scenario: Row execution handles filters empty arrays and independent starting paths
+    Then CSV row execution filters rows and keeps independent roots separate
+  Scenario: Large batches keep the operation limit per row and reject mismatched sources
+    Then CSV row execution supports large batches and rejects unaligned inputs
+  Scenario: Item connections match scalar types without losing whole-array destinations
+    Then Item connection validation distinguishes rows collections and incompatible types
+  Scenario: Each CSV row can execute a nested workflow
+    Then CSV rows supply nested workflow inputs independently

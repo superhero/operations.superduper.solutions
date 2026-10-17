@@ -52,12 +52,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <div class="workflow-utility-node workflow-file-node" class:selected aria-busy={busy}>
   <div class="utility-title"><MaterialIcon name="upload_file" size={20} /><strong>File upload</strong></div>
   <div class="utility-row nodrag nopan nokey">
-    <HintButton label="Upload JSON or CSV" labelAsName={false} tooltipSide="bottom" class="file-upload" onclick={() => input.click()}>
-      <span>Upload file</span>
-    </HintButton>
+    {#if data.file}
+      <span class="file-name">{data.file.name}</span>
+    {:else}
+      <HintButton label="Upload JSON or CSV" labelAsName={false} tooltipSide="bottom" class="file-upload" onclick={() => input.click()}>
+        <span>Upload file</span>
+      </HintButton>
+    {/if}
     <span class="utility-type">{type}</span>
     <Handle id="value" type="source" position={Position.Right} isConnectable={!!data.file}
       isConnectableEnd={false} aria-label={`File output (${type})`} />
+    {#if branch?.hidden}<WorkflowRestoreBranch {branch} position={Position.Right} beside />{/if}
     <input class="file-picker" bind:this={input} type="file" accept=".json,.csv,application/json,text/csv" aria-label="Upload workflow data file"
       onchange={event => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (file) { pending = file; draftOptions = { ...defaultCsvOptions }; void parse(file, draftOptions); } }} />
   </div>
@@ -81,12 +86,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <p>{data.file?.header ? "Header row" : "No header"} · {Array.isArray(data.file?.value) ? data.file.value.length : 0} rows</p>
     </div>
   {/if}
-  {#if branch}
-    <div class="utility-row nodrag nopan nokey"><span>Data structure</span>
-      {#if branch.hidden}<WorkflowRestoreBranch {branch} position={Position.Right} />
-      {:else}<Handle id={branch.id} type="source" position={Position.Right} isConnectable={false} aria-label="File data structure" />{/if}
-    </div>
-  {/if}
   {#if data.file}<div class="file-preview nodrag nopan nokey nowheel"><JsonSchemaView value={data.file.value} label="File data" title="Schema" copyable={false} pageSize={1000} /></div>{/if}
   {#if error}<p class="file-error nodrag nopan nokey" role="alert">{error}</p>{/if}
 </div>
@@ -94,6 +93,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .workflow-file-node { width: 360px; }
   :global(.file-upload) { display: flex; align-items: center; justify-content: center; flex: 1; min-width: 0; padding: 6px 8px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font-size: 11px; font-weight: 700; text-align: center; }
   :global(.file-upload > span:last-child) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-size: 11px; font-weight: 700; }
   .file-picker { display: none; }
   .csv-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 8px 12px 4px; border-top: 1px solid var(--color-border); }
   .csv-options label { display: grid; gap: 4px; min-width: 0; font-size: 10px; }

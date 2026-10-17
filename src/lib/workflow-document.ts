@@ -231,9 +231,15 @@ function validateGraph(nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdg
             !field?.connectable || !["Object", "Array"].includes(field.type))
           throw new Error("Schema connections must use a declared object or array field of the same owner and direction.");
       }
+      else if (parent.type === "file") {
+        if (parent.id !== child.data.ownerId || parentHandle !== "value" && parentHandle !== edge.id)
+          throw new Error("File structures must attach to their owner's output.");
+        // Older file nodes used a separate structure handle. Share the value output now.
+        edge.sourceHandle = "value";
+      }
       else if (parent.id !== child.data.ownerId || parentHandle !== edge.id)
         throw new Error("Root schema connections must use their owner's named schema handle.");
-      const port = JSON.stringify([parent.id, parentHandle]);
+      const port = JSON.stringify([parent.id, parent.type === "file" ? "value" : parentHandle]);
       if (parents.has(child.id) || ports.has(port)) throw new Error("Each schema branch must have one parent and a unique field handle.");
       parents.set(child.id, parent.id);
       ports.add(port);
