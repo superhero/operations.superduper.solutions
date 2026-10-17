@@ -2,6 +2,27 @@
 
 ## Latest
 
+<!-- changelog-commit:be052a07c443177cb2bfaee5329abef33c7ba463 -->
+### Commit [`be052a0`](https://github.com/superhero/operations.superduper.solutions/commit/be052a07c443177cb2bfaee5329abef33c7ba463)
+
+```text
+fix(workflows): retain focus across repeated undo and redo
+
+Do not replay navigation autofocus when a workflow action stops being
+busy. Restore canvas focus if temporary inertness cleared it during a
+history operation, without overriding an intentional move to another
+control. Preserve native text undo in Search.
+
+```
+
+<!-- changelog-commit:b82b4887e0baf3b13f4e17121bb23574cf68194e -->
+### Commit [`b82b488`](https://github.com/superhero/operations.superduper.solutions/commit/b82b4887e0baf3b13f4e17121bb23574cf68194e)
+
+```text
+fix(locale): adjust preview contrast and add a calendar icon
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50
