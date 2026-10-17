@@ -19,8 +19,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const expandedPaths = $derived.by(() => {
     if (!operationsOnly) return undefined;
     const paths = value && typeof value === "object" && "paths" in value ? value.paths : undefined;
-    return ["$", '$["paths"]', ...Object.keys(paths && typeof paths === "object" ? paths : {})
-      .map(path => `$["paths"][${JSON.stringify(path)}]`)];
+    const methods = ["get", "put", "post", "delete", "options", "head", "patch", "trace"];
+    return ["$", '$["paths"]', ...Object.entries(paths && typeof paths === "object" ? paths : {})
+      .flatMap(([path, item]) => {
+        const branch = `$["paths"][${JSON.stringify(path)}]`;
+        return [branch, ...Object.keys(item && typeof item === "object" ? item : {})
+          .filter(key => methods.includes(key)).map(method => `${branch}[${JSON.stringify(method)}]`)];
+      })];
   });
   let copying = $state(false);
   let copyStatus = $state("");

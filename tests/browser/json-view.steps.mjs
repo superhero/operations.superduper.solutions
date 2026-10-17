@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { chooseCatalogOperation, expectFieldValue, fillField } from "./workspace.steps.mjs";
+import { chooseCatalogOperation, expectFieldValue, fillField, setMode } from "./workspace.steps.mjs";
 import { catalogForOperation } from "../../src/lib/catalog-registry.ts";
 import { metricsCacheKey } from "../../src/lib/metrics-cache.ts";
 import { finishHeightAnimations, holdHeightAnimations, seekHeightAnimation } from "./height-animation.fixture.mjs";
@@ -338,4 +338,33 @@ Then("reviewing JSON has left the operation draft and non-metric local storage u
   await expect(this.page.getByRole("region", { name: "Prepared request", exact: true })).toHaveCount(0);
   await expect(viewer(this.page).locator('input, textarea, [contenteditable="true"]')).toHaveCount(0);
   assert.deepEqual(this.diagnostics.filter(item => item.type === "unexpected-network-request"), []);
+});
+
+
+Then('the Settings schema viewer expands HTTP methods but keeps their details folded', async function () {
+  const page = this.page;
+  await setMode(page, 'settings');
+  const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
+  await settings.locator('summary[aria-label="Schemas"]').click();
+  const card = settings.locator('.schema-card[data-schema-id="demo"]');
+  const header = card.locator('summary[aria-label="OpenAPI schema"]');
+  await header.click();
+  const label = `Full OpenAPI JSON: ${sourceCatalog.document.info.title}`;
+  const json = page.getByRole('region', { name: label, exact: true });
+  const heading = path => json.getByRole('group', { name: `${label}: ${path}`, exact: true }).locator(':scope > summary');
+  for (const [path, item] of Object.entries(sourceCatalog.document.paths)) {
+    const root = `$["paths"][${JSON.stringify(path)}]`;
+    await expect(heading(root)).toHaveAttribute('aria-expanded', 'true');
+    for (const method of Object.keys(item).filter(key => ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'].includes(key))) {
+      const operation = `${root}[${JSON.stringify(method)}]`;
+      await expect(heading(operation)).toHaveAttribute('aria-expanded', 'true');
+      await expect(heading(`${operation}["responses"]`)).toHaveAttribute('aria-expanded', 'false');
+    }
+  }
+  const method = '$["paths"]["/projects"]["get"]';
+  await heading(method).click();
+  await expect(heading(method)).toHaveAttribute('aria-expanded', 'false');
+  await header.click(); await header.click();
+  await expect(heading(method)).toHaveAttribute('aria-expanded', 'true');
+  await expect(heading(`${method}["responses"]`)).toHaveAttribute('aria-expanded', 'false');
 });
