@@ -489,9 +489,16 @@ Then('vault session execution injects only an approved credential and returns sa
     assert.equal(requests[0].options.headers.get('Authorization'), 'Bearer SYNTHETIC-PRIVATE-TOKEN');
     assert.ok(!JSON.stringify(result).includes('SYNTHETIC-PRIVATE-TOKEN'));
     assert.equal(result.response.redacted, true);
+    const variableOperation = await approvedOperation({ ...approval.operation, security: [], fields: [{ key: 'header:X-Variable', name: 'X-Variable', label: 'Variable',
+      description: '', type: 'string', location: 'header', required: true }] }, approval.origin);
+    const variableResult = await session.execute(variableOperation, { 'header:X-Variable': '[Vault variable]' },
+      { alternative: 0, credentials: {}, fingerprint: variableOperation.fingerprint }, undefined,
+      [{ key: 'header:X-Variable', path: [], credentialId: id }]);
+    assert.equal(requests[1].options.headers.get('X-Variable'), 'SYNTHETIC-PRIVATE-TOKEN');
+    assert.ok(!JSON.stringify(variableResult).includes('SYNTHETIC-PRIVATE-TOKEN'));
     const controller = new AbortController(); controller.abort();
     await assert.rejects(session.execute(approval, {}, binding, controller.signal), code('CANCELLED'));
-    assert.equal(requests.length, 1);
+    assert.equal(requests.length, 2);
   } finally { globalThis.fetch = original; }
 });
 

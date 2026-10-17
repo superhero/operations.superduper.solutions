@@ -15,7 +15,7 @@ The decision and threat boundary are described in
 | `policy`, `execution` | Immutable operation descriptors, request construction, credential injection and bounded sanitized responses |
 | `protocol`, `vault.worker`, `client`, `vault-executor` | Narrow RPC, cancellation, safe errors and application execution bridge |
 | `lifecycle`, `passkeys` | Activity deadlines and the window-only WebAuthn PRF ceremony |
-| `bindings` | Strict opaque workflow references, without credential values or grants |
+| `bindings`, `variables` | Strict opaque workflow and Text-variable references, without credential values or grants |
 
 ## Adding capabilities
 
@@ -29,6 +29,9 @@ Validate untrusted format and KDF bounds before allocation or expensive work.
 
 Credentialed requests originate in the worker from a validated operation descriptor.
 Any compatible saved credential can be selected without destination approval.
+Vault-variable nodes inject saved values into Text inputs inside the same worker,
+including nested request fields. Saved workflows hold IDs; portable documents
+clear selections. Previews contain placeholders or sanitized values.
 Changed operations invalidate stale bindings. Anonymous and credentialed
 alternatives must be selected explicitly.
 

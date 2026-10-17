@@ -38,6 +38,7 @@ export type CredentialBinding = {
 };
 export type CredentialExecutionContext = {
   binding: CredentialBinding; runId: string; nodeId: string;
+  variables?: import("./variables.ts").VaultVariableInput[];
 };
 export const recoveryKeyBytes = 128;
 export const recoveryKeyCharacters = Math.ceil(recoveryKeyBytes / 3) * 4;

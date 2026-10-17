@@ -37,16 +37,17 @@ export type WorkflowData = {
 export type SwitchGate = { id: string; operator: "==" | "!=" | ">" | ">=" | "<" | "<=" | "is_set" | "is_not_set"; value: string };
 export type SwitchData = { gates: SwitchGate[] };
 export type CastData = { targetType: "Text" | "Number" | "Boolean" };
+export type VaultVariableData = { credentialId?: string };
 export type CommentData = { text: string };
 export type WorkflowReferenceData = { workflowId: string; name: string; description: string; snapshot: WorkflowDocument };
-export type WorkflowNodeData = OperationData | WorkflowData | SwitchData | CastData | CommentData | WorkflowReferenceData;
+export type WorkflowNodeData = OperationData | WorkflowData | SwitchData | CastData | CommentData | VaultVariableData | WorkflowReferenceData;
 export type WorkflowDocumentNode = {
   id: string;
   position: { x: number; y: number };
   hidden?: boolean;
 } & ({ type?: "operation"; data: OperationData } | { type: "data"; data: WorkflowData } |
   { type: "switch"; data: SwitchData } | { type: "cast"; data: CastData } | { type: "comment"; data: CommentData } |
-  { type: "workflow"; data: WorkflowReferenceData });
+  { type: "workflow"; data: WorkflowReferenceData } | { type: "vault"; data: VaultVariableData });
 export type WorkflowDocumentEdge = {
   id: string;
   source: string;
@@ -300,6 +301,11 @@ function validateDocument(value: unknown, context: ValidationContext, depth: num
         throw new Error("A cast target must be Text, Number or Boolean.");
       return { ...common, type: "cast", data: { targetType: data.targetType } };
     }
+    if (extended && node.type === "vault") {
+      if (data.credentialId !== undefined && (typeof data.credentialId !== "string" || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(data.credentialId)))
+        throw new Error("Vault variables require a valid local entry reference.");
+      return { ...common, type: "vault", data: data.credentialId === undefined ? {} : { credentialId: data.credentialId } };
+    }
     if (extended && node.type === "comment")
       return { ...common, type: "comment", data: { text: text(data.text, "Comment", commentTextLimit, true) } };
     if (extended && node.type === "workflow")
@@ -380,6 +386,7 @@ export function portableWorkflowDocument(value: WorkflowDocument): WorkflowDocum
   const document = validateWorkflowDocument(value);
   for (const node of document.nodes) {
     if (node.type === "workflow") node.data.snapshot = portableWorkflowDocument(node.data.snapshot);
+    else if (node.type === "vault") delete node.data.credentialId;
     else if (node.type === "operation" || node.type === undefined) delete node.data.credentialBinding;
   }
   return document;

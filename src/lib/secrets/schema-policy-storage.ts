@@ -5,7 +5,7 @@ import { catalogsIndexDatabaseName } from "../storage-names.ts";
 import { VaultError, type ApprovedOperation } from "./types.ts";
 
 /** Written only by schema-storage together with authoritative catalog metadata. */
-export type SchemaCredentialPolicies = Record<string, { revision: string; fingerprints: string[] }>;
+export type SchemaCredentialPolicies = Record<string, { revision: string; fingerprints: string[]; version?: 2 }>;
 
 /** Read the current schema policy without importing Git, trusting page state or creating storage. */
 export async function assertCurrentSchema(descriptor: ApprovedOperation): Promise<void>

@@ -64,3 +64,13 @@ an operation in navigation adds a node; it never sends a request.
 Keep connected inputs read-only. Cancelling a pending request retains the step
 for retry; quitting ends the run. Completed steps remain read-only and their
 actual responses and prepared requests remain available in run history.
+
+## Vault variables
+
+The toolbar's **Variable Add** icon creates a connectable vault-variable node.
+Select a saved vault entry, then connect its Text output to an operation's Text
+input. Switch and Cast nodes do not consume vault values.
+
+Nodes retain only the local entry ID. The vault worker resolves values when a
+request runs, and validates them against the operation schema. Exporting or
+importing workflows clears these selections, including nested workflows.

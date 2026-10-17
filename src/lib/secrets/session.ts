@@ -269,9 +269,9 @@ export class VaultSession {
     await this.save(values); return this.list();
   }
 
-  async execute(descriptor: ApprovedOperation, values: InputValues, binding: CredentialBinding, signal?: AbortSignal) {
+  async execute(descriptor: ApprovedOperation, values: InputValues, binding: CredentialBinding, signal?: AbortSignal, variables?: import("./variables.ts").VaultVariableInput[]) {
     return executeCredentialed(descriptor, values, binding, await this.records(), {
-      ...(signal ? { signal } : {}), assertCurrent: async () => {
+      ...(signal ? { signal } : {}), ...(variables ? { variables } : {}), assertCurrent: async () => {
         await this.assertSchema(descriptor);
         await this.assertCurrent();
       },

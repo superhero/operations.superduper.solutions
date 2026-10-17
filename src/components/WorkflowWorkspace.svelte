@@ -38,6 +38,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { logger } from "$lib/logger.ts";
   import WorkflowSelection from "./workflows/WorkflowSelection.svelte";
   import WorkflowSwitchNode from "./workflows/WorkflowSwitchNode.svelte";
+  import WorkflowVaultNode from "./workflows/WorkflowVaultNode.svelte";
   import WorkflowCastNode from "./workflows/WorkflowCastNode.svelte";
   import WorkflowCommentNode from "./workflows/WorkflowCommentNode.svelte";
   import WorkflowReferenceNode from "./workflows/WorkflowReferenceNode.svelte";
@@ -47,7 +48,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   let { active, settingsOpen = false, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
     { active: boolean; settingsOpen?: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
-  const nodeTypes = { operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
+  const nodeTypes = { vault: WorkflowVaultNode, operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
   const edgeTypes = { default: WorkflowCurveEdge, smoothstep: RoutedEdge };
   type CanvasNode<T> = T extends WorkflowDocumentNode ? Node<T["data"], NonNullable<T["type"]>> & { type: NonNullable<T["type"]> } : never;
   type GraphNode = CanvasNode<WorkflowDocumentNode>;
@@ -163,6 +164,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
   setContext("workflow-cast-type", (nodeId: string, targetType: CastData["targetType"]) => {
     if (keyboardActive) applyGraph({ nodes: nodes.map(node => node.id === nodeId && node.type === "cast" ? { ...node, data: { targetType } } : node), edges }, true);
+  });
+  setContext("workflow-vault-variable", (nodeId: string, credentialId: string) => {
+    if (keyboardActive) nodes = nodes.map(node => node.id === nodeId && node.type === "vault" ? { ...node, data: { credentialId } } : node);
   });
   setContext("workflow-comment-text", (nodeId: string, text: string) => {
     if (keyboardActive) nodes = nodes.map(node => node.id === nodeId && node.type === "comment" ? { ...node, data: { text } } : node);
@@ -517,7 +521,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     catch (failure) { describeFailure(`Could not add “${operation.name}”`, failure); }
   }
 
-  async function addUtility(type: "switch" | "cast" | "comment") {
+  async function addUtility(type: "switch" | "cast" | "comment" | "vault") {
     if (!keyboardActive) return;
     const nodeId = crypto.randomUUID();
     await appendGraph({ nodes: [createUtilityNode(type, insertionPosition(), nodeId)], edges: [] }, nodeId, type, 3);

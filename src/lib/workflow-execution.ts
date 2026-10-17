@@ -85,6 +85,7 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
       const canonical = operations.find(item => item.id === operation.id);
       if (!canonical || canonical.method !== operation.method || canonical.path !== operation.path)
         throw new Error("This operation is not available in the registered schemas.");
+      if (context?.variables !== undefined) throw new VaultError("PERMISSION");
       const request = prepareRequest(canonical, values, operation.fields);
       const { origin } = workflowExecutionForOperation(canonical);
       if (canonical.security?.length) {
@@ -155,17 +156,22 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
       const canonical = operations.find(item => item.id === operation.id);
       if (!canonical || canonical.method !== operation.method || canonical.path !== operation.path)
         throw new Error("This operation is not available in the registered schemas.");
-      if (!canonical.security?.length) return anonymous.execute(operation, values, signal);
-      if (!context) throw new VaultError("PERMISSION");
-      const invocation = validateCredentialContext(context);
+      const invocation = context ? validateCredentialContext(context) : undefined;
+      const hasVariables = invocation?.variables !== undefined;
+      if (!canonical.security?.length && !hasVariables) return anonymous.execute(operation, values, signal);
+      if (!invocation) throw new VaultError("PERMISSION");
       const submitted = { ...values };
       const { origin } = workflowExecutionForOperation(canonical);
       const descriptor = await approvedOperation(canonical, origin);
       if (!operations.includes(canonical) || workflowExecutionForOperation(canonical).origin !== origin
         || invocation.binding.fingerprint !== descriptor.fingerprint) throw new VaultError("PERMISSION");
+      if (!canonical.security?.length) {
+        if (invocation.binding.alternative !== 0 || Object.keys(invocation.binding.credentials).length) throw new VaultError("PERMISSION");
+        return credentialExecution(descriptor, submitted, invocation, signal);
+      }
       const alternative = canonical.security[invocation.binding.alternative];
       if (!alternative) throw new VaultError("PERMISSION");
-      if (!alternative.length) return anonymous.execute(operation, submitted, signal, invocation);
+      if (!alternative.length) return hasVariables ? credentialExecution(descriptor, submitted, invocation, signal) : anonymous.execute(operation, submitted, signal, invocation);
       if (Object.keys(invocation.binding.credentials).length !== alternative.length
         || alternative.some(scheme => !Object.hasOwn(invocation.binding.credentials, scheme.name))) throw new VaultError("PERMISSION");
       return credentialExecution(descriptor, submitted, invocation, signal);

@@ -175,3 +175,8 @@ Feature: Browser vault persistence and controlled credential execution
   Scenario: Password replacement uses its own expandable authentication pane
     Given I create a vault in the Secrets settings and save a synthetic credential
     Then the password replacement pane validates matching values and preserves recovery access
+
+  @vault-browser-policy
+  Scenario: Public vault variable requests upgrade legacy catalog policies before dispatch
+    Given a browser vault worker has an approved credential request for a saved schema
+    Then a public operation resolves a vault variable only after upgrading its legacy schema policy

@@ -707,3 +707,15 @@ Then('the password replacement pane validates matching values and preserves reco
   await unlockUI(page, this.uiRecovery);
   await expect(vault.locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
 });
+
+
+Then('a public operation resolves a vault variable only after upgrading its legacy schema policy', async function () {
+  const result = await policy(this.page, 'publicVariable', true);
+  assert.equal(result.before, 'PERMISSION');
+  assert.equal(result.value.response.status, 200);
+  noCanaries(result);
+  const sent = await observations(this);
+  assert.equal(sent.length, 2, 'only the baseline request and upgraded variable request may dispatch');
+  assert.equal(sent[1].headers['x-vault-variable'], canaries[1]);
+  assert.equal(sent[1].headers.authorization, undefined);
+});

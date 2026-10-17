@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { VaultError, type CredentialBinding, type CredentialExecutionContext } from "./types.ts";
+import { validateVaultVariableInputs } from "./variables.ts";
 
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 
@@ -30,8 +31,9 @@ export function validateCredentialBinding(value: unknown): CredentialBinding {
 /** Run/node IDs correlate UI invocations; authorization comes from the descriptor and binding. */
 export function validateCredentialContext(value: unknown): CredentialExecutionContext {
   const item = object(value);
-  if (Object.keys(item).length !== 3 || Object.keys(item).some(key => !["binding", "runId", "nodeId"].includes(key))
+  if (Object.keys(item).length !== (item.variables === undefined ? 3 : 4) || Object.keys(item).some(key => !["binding", "runId", "nodeId", "variables"].includes(key))
     || typeof item.runId !== "string" || !uuid.test(item.runId)
     || typeof item.nodeId !== "string" || !item.nodeId || item.nodeId.length > 4096) throw new VaultError("INVALID");
-  return { binding: validateCredentialBinding(item.binding), runId: item.runId, nodeId: item.nodeId };
+  return { binding: validateCredentialBinding(item.binding), runId: item.runId, nodeId: item.nodeId,
+    ...(item.variables === undefined ? {} : { variables: validateVaultVariableInputs(item.variables) }) };
 }
