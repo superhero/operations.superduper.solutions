@@ -562,7 +562,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   button:disabled { opacity: .55; cursor: not-allowed; }
   .help, .notice, .destination { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
   .records { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
-  .records li { display: grid; gap: 10px; padding: 0; border: 0; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); }
+  .records li { display: grid; gap: 10px; padding: 0 0 0 10px; border: 0; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); }
+  .records .actions { gap: 0; flex-wrap: nowrap; }
+  .records .actions > button:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .records .actions > button:last-child { border-top-left-radius: 0; border-bottom-left-radius: 0; }
   .destination { padding: 10px; border-radius: 4px; background: var(--color-background); }
   .error { padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; overflow-wrap: anywhere; }
   .idle-toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; min-height: 44px; padding: 10px 12px; background: var(--color-background); color: var(--color-catalog-foreground); text-align: left; }
