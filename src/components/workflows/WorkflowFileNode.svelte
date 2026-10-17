@@ -47,7 +47,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <div class="utility-title"><MaterialIcon name="upload_file" size={20} /><strong>File upload</strong></div>
   <div class="utility-row nodrag nopan nokey">
     <HintButton label="Upload JSON or CSV" labelAsName={false} tooltipSide="bottom" class="file-upload" onclick={() => input.click()}>
-      <MaterialIcon name="upload_file" size={18} /><span>upload file</span>
+      <span>Upload file</span>
     </HintButton>
     <span class="utility-type">{type}</span>
     <Handle id="value" type="source" position={Position.Right} isConnectable={!!data.file}
@@ -80,7 +80,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </div>
 <style>
   .workflow-file-node { width: 300px; }
-  :global(.file-upload) { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; padding: 6px 8px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font-size: 11px; font-weight: 700; text-align: left; }
+  :global(.file-upload) { display: flex; align-items: center; justify-content: center; flex: 1; min-width: 0; padding: 6px 8px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font-size: 11px; font-weight: 700; text-align: center; }
   :global(.file-upload > span:last-child) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .file-picker { display: none; }
   .csv-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 8px 12px; border-top: 1px solid var(--color-border); }
