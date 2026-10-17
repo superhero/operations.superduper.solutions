@@ -22,6 +22,9 @@ async function openCatalog(page) {
 }
 
 async function closeCatalog(page) {
+  if (await page.evaluate(() => matchMedia('(max-width: 899px)').matches) &&
+      await page.getByRole('button', { name: 'Close navigation', exact: true }).isVisible())
+    await expect(page.locator('#side-navigation')).toHaveAttribute('data-slot', 'sheet-content');
   const dialog = page.getByRole("dialog").filter({
     has: page.getByRole("navigation", { name: "Operation catalog", exact: true })
   });
@@ -502,4 +505,36 @@ Then('header Settings opens directly at viewport width {int}', async function (w
   await settings.click();
   await expect(workflow(page)).toBeVisible();
   await expect(settings).toHaveAttribute('aria-pressed', 'false');
+});
+
+Then('the settings drawer preserves the workflow at width {int} with {string} motion', async function (width, motion) {
+  const page = this.page;
+  await page.setViewportSize({ width, height: 600 });
+  await closeCatalog(page);
+  await page.emulateMedia({ reducedMotion: motion });
+  const canvas = page.locator('.workflow-host');
+  const before = await canvas.boundingBox();
+  const settings = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
+  await settings.click();
+  const drawer = page.locator('.settings-drawer');
+  await expect(drawer).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+  await expect(canvas).toHaveAttribute('inert', '');
+  assert.deepEqual(await canvas.boundingBox(), before, 'Opening Settings must not resize or hide the workflow.');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  const bounds = await drawer.boundingBox();
+  const header = await page.locator('.site-header').boundingBox();
+  assert.equal(Math.round(bounds.x + bounds.width), Math.round(header.x + header.width));
+  assert.equal(await drawer.evaluate(element => getComputedStyle(element).transitionDuration), motion === 'reduce' ? '0s' : '0.2s, 0s');
+  await settings.evaluate(async button => {
+    button.click();
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    button.click();
+  });
+  await expect(drawer).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+  await expect(canvas).toHaveAttribute('inert', '');
+  await page.keyboard.press('Escape');
+  await expect(drawer).toBeHidden();
+  await expect(canvas).not.toHaveAttribute('inert');
+  await expect(settings).toBeFocused();
+  assert.deepEqual(await canvas.boundingBox(), before);
 });

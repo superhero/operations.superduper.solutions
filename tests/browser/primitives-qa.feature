@@ -22,6 +22,6 @@ Feature: Navigation and help primitives
     Given I open the "Create task" operation from the catalog
     Then scrolling cancels a pending operation tooltip
 
-  Scenario: Header shadow strengthens over the first eighty pixels
+  Scenario: Settings scroll below a stationary main header
     Given I switch to the settings workspace
-    Then the header shadow follows the reading position
+    Then settings scroll independently below the main header

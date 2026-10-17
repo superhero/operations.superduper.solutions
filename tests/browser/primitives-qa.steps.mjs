@@ -194,27 +194,17 @@ Then('scrolling cancels a pending operation tooltip', async function () {
   await expect(page.getByRole('tooltip')).toHaveCount(0);
 });
 
-Then('the header shadow follows the reading position', async function () {
+Then('settings scroll independently below the main header', async function () {
   const page = this.page;
   await page.setViewportSize({ width: 1280, height: 400 });
   const section = page.getByRole('region', { name: 'Settings workspace', exact: true }).locator('summary[aria-label="Application"]');
   if (await section.getAttribute('aria-expanded') !== 'true') await section.click();
   const header = page.locator('.site-header');
-  const strength = () => header.evaluate(element => Number(getComputedStyle(element).getPropertyValue('--header-scroll-strength')));
-  const opacity = () => header.evaluate(element => {
-    const context = document.createElement('canvas').getContext('2d');
-    context.fillStyle = getComputedStyle(element).backgroundColor;
-    context.fillRect(0, 0, 1, 1);
-    return context.getImageData(0, 0, 1, 1).data[3] / 255;
-  });
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await expect.poll(strength).toBe(0);
-  await expect.poll(opacity).toBe(0);
-  await page.evaluate(() => window.scrollTo(0, 40));
-  await expect.poll(strength).toBeGreaterThan(0);
-  assert.ok(await strength() < 1, 'The header shadow must strengthen progressively before 80px.');
-  assert.ok(await opacity() > 0 && await opacity() < 1, 'The header surface must fade in without appearing abruptly.');
-  await page.evaluate(() => window.scrollTo(0, 80));
-  await expect.poll(strength).toBe(1);
-  await expect.poll(opacity).toBe(1);
+  const before = await header.boundingBox();
+  const drawer = page.locator('.settings-drawer');
+  await drawer.evaluate(element => element.scrollTo(0, 150));
+  await expect.poll(() => drawer.evaluate(element => element.scrollTop)).toBe(150);
+  assert.deepEqual(await header.boundingBox(), before);
+  assert.equal(await page.evaluate(() => scrollY), 0);
+  await expect.poll(async () => Math.round((await section.boundingBox()).y)).toBe(Math.round(before.y + before.height));
 });
