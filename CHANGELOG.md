@@ -24,6 +24,50 @@ Check full palette structure in both theme modes while using targeted selection 
 
 ```
 
+<!-- changelog-commit:711c124a19f82a34cf129094a00ec0a001189f44 -->
+### Commit [`711c124`](https://github.com/superhero/operations.superduper.solutions/commit/711c124a19f82a34cf129094a00ec0a001189f44)
+
+```text
+test(browser): start isolated scenarios on fixture pages
+
+Route fixture-only vault, error-storage, recorder and coverage scenarios directly to their own entry pages instead of initializing and discarding the application. Remove redundant first-step navigation while preserving explicit reloads and additional-tab setup.
+
+Keep application startup as the default for UI and startup scenarios, along with fresh contexts, request guards, diagnostics, traces and production cryptographic parameters. Document the fixture tag boundaries.
+
+```
+
+<!-- changelog-commit:5e70122f4655d78748184379033a393e5c1f8b03 -->
+### Commit [`5e70122`](https://github.com/superhero/operations.superduper.solutions/commit/5e70122f4655d78748184379033a393e5c1f8b03)
+
+```text
+test(browser): load graph fixtures through native import
+
+Generate schema graphs for shared connection and presentation setup and load them through the real import/autosave path. Reuse that path for drag fixtures instead of restarting the application.
+
+Retain explicit catalog creation and measured insertion scenarios, real pointer gestures, persistence reload assertions, and repository setup for identity/history fixtures. Document the fresh document identity and estimated fixture layout boundaries.
+
+```
+
+<!-- changelog-commit:5f12f5d8df3b11b0bcc62103b77c904d08931290 -->
+### Commit [`5f12f5d`](https://github.com/superhero/operations.superduper.solutions/commit/5f12f5d8df3b11b0bcc62103b77c904d08931290)
+
+```text
+test(browser): prepare fixture bundles once per invocation
+
+Build the five standalone fixtures serially in the browser test coordinator and share one invocation-specific artifact with all Cucumber workers. Keep the existing build settings, native browser behavior and report formats.
+
+Route the Docker runner through the public Cucumber API entry point. Skip preparation for dry runs and remove temporary bundles after success, scenario failure or build failure. Document direct execution and include worker/artifact metadata for verification.
+
+```
+
+<!-- changelog-commit:a90a72d5eb5d185468a1dc0b0055ce69c233989d -->
+### Commit [`a90a72d`](https://github.com/superhero/operations.superduper.solutions/commit/a90a72d5eb5d185468a1dc0b0055ce69c233989d)
+
+```text
+chore: merge develop into browser test optimizations
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.48
