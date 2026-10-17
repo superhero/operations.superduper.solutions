@@ -79,7 +79,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if error}<p class="file-error nodrag nopan nokey" role="alert">{error}</p>{/if}
 </div>
 <style>
-  .workflow-file-node { width: 420px; }
+  .workflow-file-node { width: 360px; }
   :global(.file-upload) { display: flex; align-items: center; justify-content: center; flex: 1; min-width: 0; padding: 6px 8px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font-size: 11px; font-weight: 700; text-align: center; }
   :global(.file-upload > span:last-child) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .file-picker { display: none; }
