@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.50
+
 <!-- changelog-commit:a16b97110421a1af643865eaa4eb430b64a0683d -->
 ### Commit [`a16b971`](https://github.com/superhero/operations.superduper.solutions/commit/a16b97110421a1af643865eaa4eb430b64a0683d)
 
@@ -438,8 +442,6 @@ and preserve toolbar geometry beneath the modal.
 merge: integrate current develop while preserving final layout behavior
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.49
 
