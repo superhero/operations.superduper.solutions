@@ -46,7 +46,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <div class="workflow-utility-node workflow-file-node" class:selected aria-busy={busy}>
   <div class="utility-title"><MaterialIcon name="upload_file" size={20} /><strong>File upload</strong></div>
   <div class="utility-row nodrag nopan nokey">
-    <HintButton label="upload file" tooltipEnabled={false} class="file-upload" onclick={() => input.click()}>
+    <HintButton label="Upload JSON or CSV" labelAsName={false} tooltipSide="bottom" class="file-upload" onclick={() => input.click()}>
       <MaterialIcon name="upload_file" size={18} /><span>upload file</span>
     </HintButton>
     <span class="utility-type">{type}</span>
