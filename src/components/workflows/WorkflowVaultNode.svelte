@@ -44,7 +44,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="vault-selection" onpointerenter={() => { void refresh(); }} onfocusin={() => { void refresh(); }}>
       <WorkflowNodeSelect label="Vault variable" value={data.credentialId ?? ""}
         choices={[{ value: "", label: "Select vault variable", placeholder: true }, ...entries.map(entry => ({ value: entry.id, label: entry.label, bold: true }))]}
-        active={editorActive()} disabled={!editorActive() || !entries.length}
+        active={editorActive()} disabled={!entries.length}
         onchange={credentialId => select(id, credentialId)} />
     </div>
     <span class="utility-type">String</span>

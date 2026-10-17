@@ -46,6 +46,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let hoveredFieldDetail = $state<string>();
   const updateNodeInternals = useUpdateNodeInternals();
   const input = $derived(data.direction === "inputs");
+  const panelLabel = $derived(data.label === "File data" && data.array ? "Array" : data.label === "Items" ? "Item" : data.label);
   const noFields = $derived(!data.fields.length);
   // Older saved panels lost this notice on their first custom field.
   const noNamedProperties = $derived(data.notice === "No named properties documented"
@@ -107,25 +108,25 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <div class="data-title">
     <Handle id="value" type={input ? "source" : "target"} position={input ? Position.Right : Position.Left}
       class="structural-port" isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
-      onmousedown={blockPointer} ontouchstart={blockPointer} aria-disabled="true" aria-label={`${data.label} object`} />
-    <MaterialIcon name="data_object" size={20} />
-    <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={data.label} labelAsName={false}>
+      onmousedown={blockPointer} ontouchstart={blockPointer} aria-disabled="true" aria-label={`${panelLabel} ${data.array ? "array" : "object"}`} />
+    <MaterialIcon name={data.array ? "data_array" : "data_object"} size={20} />
+    <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={panelLabel} labelAsName={false}>
       {#snippet child({ props })}
         {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
-        <strong {...hintProps} data-label={data.label}>{input ? data.label.replace(/ parameters$/i, "") : data.label.replace(/^Response · .+$/, "Response")}</strong>
+        <strong {...hintProps} data-label={panelLabel}>{input ? panelLabel.replace(/ parameters$/i, "") : panelLabel.replace(/^Response · .+$/, "Response")}</strong>
       {/snippet}
     </HintButton>
   </div>
 {/snippet}
 
 {#snippet fieldContent(field: WorkflowField)}
-  <span class="field-name">{field.label}{#if field.required}<HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label="Required" labelAsName={false}>
+  <span class="field-name">{data.array ? `${data.array.min}..${data.array.max ?? "*"}` : field.label}{#if field.required && !data.array}<HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label="Required" labelAsName={false}>
       {#snippet child({ props })}
         {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
         <abbr {...hintProps} class="required" aria-label="Required"> *</abbr>
       {/snippet}
     </HintButton>{/if}</span>
-  <span class="field-type">{field.type}</span>
+  <span class="field-type">{field.itemType ?? field.type}</span>
 {/snippet}
 
 <div class="workflow-data-node" class:selected data-owner-id={data.ownerId} data-direction={data.direction}>

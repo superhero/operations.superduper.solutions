@@ -396,7 +396,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </ul>
     </div>
     {/if}
-  {#if ready && status.exists}
+  {#if ready && status.unlocked}
     <div class="card">
       <div class="idle-settings">
       <button class="idle-toggle" type="button" role="switch" aria-checked={preferences.idleLockEnabled} disabled={busy || idleSaving}
@@ -561,8 +561,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   button { width: fit-content; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; cursor: pointer; }
   button:disabled { opacity: .55; cursor: not-allowed; }
   .help, .notice, .destination { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
-  .records { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
-  .records li { display: grid; gap: 10px; padding: 10px; border: 0; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); }
+  .records { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+  .records li { display: grid; gap: 10px; padding: 2px 2px 2px 10px; border: 0; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); }
+  .records .actions { gap: 1px; flex-wrap: nowrap; }
+  .records .actions > button:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .records .actions > button:last-child { border-top-left-radius: 0; border-bottom-left-radius: 0; }
   .destination { padding: 10px; border-radius: 4px; background: var(--color-background); }
   .error { padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; overflow-wrap: anywhere; }
   .idle-toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; min-height: 44px; padding: 10px 12px; background: var(--color-background); color: var(--color-catalog-foreground); text-align: left; }

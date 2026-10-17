@@ -4,6 +4,504 @@
 
 <!-- changelog-latest-end -->
 
+## 0.0.51
+
+<!-- changelog-commit:be052a07c443177cb2bfaee5329abef33c7ba463 -->
+### Commit [`be052a0`](https://github.com/superhero/operations.superduper.solutions/commit/be052a07c443177cb2bfaee5329abef33c7ba463)
+
+```text
+fix(workflows): retain focus across repeated undo and redo
+
+Do not replay navigation autofocus when a workflow action stops being
+busy. Restore canvas focus if temporary inertness cleared it during a
+history operation, without overriding an intentional move to another
+control. Preserve native text undo in Search.
+
+```
+
+<!-- changelog-commit:b82b4887e0baf3b13f4e17121bb23574cf68194e -->
+### Commit [`b82b488`](https://github.com/superhero/operations.superduper.solutions/commit/b82b4887e0baf3b13f4e17121bb23574cf68194e)
+
+```text
+fix(locale): adjust preview contrast and add a calendar icon
+
+```
+
+<!-- changelog-commit:47d25580047428294f359fcba98c38978d1144f6 -->
+### Commit [`47d2558`](https://github.com/superhero/operations.superduper.solutions/commit/47d25580047428294f359fcba98c38978d1144f6)
+
+```text
+fix(locale): place the calendar after the date and time
+
+```
+
+<!-- changelog-commit:c60026dbb2dd05828864327e923592264fac3eb5 -->
+### Commit [`c60026d`](https://github.com/superhero/operations.superduper.solutions/commit/c60026dbb2dd05828864327e923592264fac3eb5)
+
+```text
+Merge remote-tracking branch 'origin/bugfix/locale-preview-style' into bugfix/locale-preview-style
+
+```
+
+<!-- changelog-commit:7caa877f991859eae8024d223e7b28d14dbbde52 -->
+### Commit [`7caa877`](https://github.com/superhero/operations.superduper.solutions/commit/7caa877f991859eae8024d223e7b28d14dbbde52)
+
+```text
+fix(vault): remove outer padding from saved key rows
+
+```
+
+<!-- changelog-commit:fbc1e6265c177b7c04b21ec19d52bfe2fcbced39 -->
+### Commit [`fbc1e62`](https://github.com/superhero/operations.superduper.solutions/commit/fbc1e6265c177b7c04b21ec19d52bfe2fcbced39)
+
+```text
+fix(vault): join key actions and retain left padding
+
+```
+
+<!-- changelog-commit:74f56db430364faaf64814440c75793cc0ff5a5d -->
+### Commit [`74f56db`](https://github.com/superhero/operations.superduper.solutions/commit/74f56db430364faaf64814440c75793cc0ff5a5d)
+
+```text
+fix(vault): space key action buttons by two pixels
+
+```
+
+<!-- changelog-commit:60d881037876695d983877b70bc48d1d5779fb69 -->
+### Commit [`60d8810`](https://github.com/superhero/operations.superduper.solutions/commit/60d881037876695d983877b70bc48d1d5779fb69)
+
+```text
+fix(vault): reduce key action gap to one pixel
+
+```
+
+<!-- changelog-commit:21eb1f3ab8baae16efb19d06ac267322fa1b071d -->
+### Commit [`21eb1f3`](https://github.com/superhero/operations.superduper.solutions/commit/21eb1f3ab8baae16efb19d06ac267322fa1b071d)
+
+```text
+fix(vault): add one-pixel padding around key actions
+
+```
+
+<!-- changelog-commit:8456bf50e7ae16ce1224a0e5697db22a13d0038c -->
+### Commit [`8456bf5`](https://github.com/superhero/operations.superduper.solutions/commit/8456bf50e7ae16ce1224a0e5697db22a13d0038c)
+
+```text
+fix(vault): use two-pixel key action spacing
+
+```
+
+<!-- changelog-commit:aaf114350e33f076f5163ec72d170cd3aafd8c2a -->
+### Commit [`aaf1143`](https://github.com/superhero/operations.superduper.solutions/commit/aaf114350e33f076f5163ec72d170cd3aafd8c2a)
+
+```text
+fix(vault): restore one-pixel gap between key actions
+
+```
+
+<!-- changelog-commit:9857e4154c0ada2615e94aefb179946ce321ee5c -->
+### Commit [`9857e41`](https://github.com/superhero/operations.superduper.solutions/commit/9857e4154c0ada2615e94aefb179946ce321ee5c)
+
+```text
+fix(vault): reduce saved key row spacing to four pixels
+
+```
+
+<!-- changelog-commit:f935baa8d2014e7125c17d80beccd9d6f8bcf9a0 -->
+### Commit [`f935baa`](https://github.com/superhero/operations.superduper.solutions/commit/f935baa8d2014e7125c17d80beccd9d6f8bcf9a0)
+
+```text
+fix(vault): set saved key row spacing to six pixels
+
+```
+
+<!-- changelog-commit:b132230c079bb1dfeaf2f8afb06a9d07ed46a213 -->
+### Commit [`b132230`](https://github.com/superhero/operations.superduper.solutions/commit/b132230c079bb1dfeaf2f8afb06a9d07ed46a213)
+
+```text
+fix(vault): show inactivity settings only while unlocked
+
+```
+
+<!-- changelog-commit:3783e0b7395c3dc9474aead21de1e3ed98dbe902 -->
+### Commit [`3783e0b`](https://github.com/superhero/operations.superduper.solutions/commit/3783e0b7395c3dc9474aead21de1e3ed98dbe902)
+
+```text
+merge: synchronize develop before vault layout integration
+
+```
+
+<!-- changelog-commit:30002b7af97da09101b1cfbfc416e8fbc8d2e446 -->
+### Commit [`30002b7`](https://github.com/superhero/operations.superduper.solutions/commit/30002b7af97da09101b1cfbfc416e8fbc8d2e446)
+
+```text
+fix(workflows): prevent vault selector flashing during undo
+
+```
+
+<!-- changelog-commit:5904bc08cf2293fe7fbe8b8c7a72d75326a2ba3c -->
+### Commit [`5904bc0`](https://github.com/superhero/operations.superduper.solutions/commit/5904bc08cf2293fe7fbe8b8c7a72d75326a2ba3c)
+
+```text
+fix(workflows): reveal the active checkout when opening history
+
+Scroll the history dialog to the current revision after rendering,
+accounting for its sticky header. Reopening or changing the checkout
+reveals the active card without moving the page or changing focus.
+
+```
+
+<!-- changelog-commit:696a19b8a7ebe5723f0e8cb4986d61d2c409e332 -->
+### Commit [`696a19b`](https://github.com/superhero/operations.superduper.solutions/commit/696a19b8a7ebe5723f0e8cb4986d61d2c409e332)
+
+```text
+merge: synchronize develop before history scroll integration
+
+```
+
+<!-- changelog-commit:0b6cca8705bbd29dab37a0cb92835b7a9b43c717 -->
+### Commit [`0b6cca8`](https://github.com/superhero/operations.superduper.solutions/commit/0b6cca8705bbd29dab37a0cb92835b7a9b43c717)
+
+```text
+feat(workflows): add typed JSON and CSV file upload nodes
+
+Parse bounded uploads in disposable workers and persist their data with the
+workflow. Infer native JSON output types and expose CSV rows as arrays while
+preserving cell text, with editable delimiter, header and quote options.
+
+Reject unsupported or malformed files without replacing existing data, remove
+incompatible mappings after replacement, and include file values in execution.
+Exclude file-picker events from unfinished text-edit tracking so uploads save.
+
+Validate with focused Cucumber source and browser scenarios, complete parser
+coverage, dependency documentation checks, type checking and production build.
+
+```
+
+<!-- changelog-commit:1086a28f243476157252100c595cff4b433f3f17 -->
+### Commit [`1086a28`](https://github.com/superhero/operations.superduper.solutions/commit/1086a28f243476157252100c595cff4b433f3f17)
+
+```text
+fix(workflows): shorten file node tooltip to Add file
+
+```
+
+<!-- changelog-commit:9aecc0a1d5cd33c2d8dfb2909ad8dfc963ff6d1f -->
+### Commit [`9aecc0a`](https://github.com/superhero/operations.superduper.solutions/commit/9aecc0a1d5cd33c2d8dfb2909ad8dfc963ff6d1f)
+
+```text
+fix(workflows): simplify file upload button without tooltip
+
+```
+
+<!-- changelog-commit:ff2b4868b410b054500ef4146e0ceb929b97b8c6 -->
+### Commit [`ff2b486`](https://github.com/superhero/operations.superduper.solutions/commit/ff2b4868b410b054500ef4146e0ceb929b97b8c6)
+
+```text
+fix(workflows): show supported file types below upload button
+
+```
+
+<!-- changelog-commit:d75e540569355a417f8b041870560da1a9b4294c -->
+### Commit [`d75e540`](https://github.com/superhero/operations.superduper.solutions/commit/d75e540569355a417f8b041870560da1a9b4294c)
+
+```text
+fix(workflows): center upload button text without an icon
+
+```
+
+<!-- changelog-commit:b67c5987de732804f137cbfc1f8da61f3a803ba9 -->
+### Commit [`b67c598`](https://github.com/superhero/operations.superduper.solutions/commit/b67c5987de732804f137cbfc1f8da61f3a803ba9)
+
+```text
+feat(workflows): resize comment nodes from side and corner handles
+
+Replace the native textarea grip with eight themed resize controls on selected
+comments. Persist bounded dimensions with the node and retain them across text
+edits, exports, reloads and workflow history. Save each completed resize as a
+single edit rather than recording intermediate pointer movements.
+
+Validate dimensions through Cucumber source coverage and check resize/reload
+and existing comment editing in two focused Chromium scenarios. Type checking
+and the production build pass.
+
+```
+
+<!-- changelog-commit:f0b87840e5b61a1e50723c2ec3f16ec53a167f15 -->
+### Commit [`f0b8784`](https://github.com/superhero/operations.superduper.solutions/commit/f0b87840e5b61a1e50723c2ec3f16ec53a167f15)
+
+```text
+feat(workflows): support CSV without quote processing
+
+```
+
+<!-- changelog-commit:deffbe269723eb8b93d92b8419fde13c24157bac -->
+### Commit [`deffbe2`](https://github.com/superhero/operations.superduper.solutions/commit/deffbe269723eb8b93d92b8419fde13c24157bac)
+
+```text
+fix(workflows): compact CSV options into one row
+
+```
+
+<!-- changelog-commit:d54a0cb0aa83ceb697b7ca861c09d0d9b8cc142c -->
+### Commit [`d54a0cb`](https://github.com/superhero/operations.superduper.solutions/commit/d54a0cb0aa83ceb697b7ca861c09d0d9b8cc142c)
+
+```text
+feat(workflows): detect CSV quoting with an Auto option
+
+```
+
+<!-- changelog-commit:296e1b0849c15d8e20bae0edb2ca0d1aa898ff1a -->
+### Commit [`296e1b0`](https://github.com/superhero/operations.superduper.solutions/commit/296e1b0849c15d8e20bae0edb2ca0d1aa898ff1a)
+
+```text
+fix(workflows): widen file nodes for CSV option labels
+
+```
+
+<!-- changelog-commit:e0fe3bfdf2cf5d154beb79125c1020191bbe1d60 -->
+### Commit [`e0fe3bf`](https://github.com/superhero/operations.superduper.solutions/commit/e0fe3bfdf2cf5d154beb79125c1020191bbe1d60)
+
+```text
+fix(workflows): reduce file node width to 360 pixels
+
+```
+
+<!-- changelog-commit:c15011034c406b62b7716fd162fbe9718eded4a5 -->
+### Commit [`c150110`](https://github.com/superhero/operations.superduper.solutions/commit/c15011034c406b62b7716fd162fbe9718eded4a5)
+
+```text
+fix(workflows): label uploaded file structure as Schema
+
+```
+
+<!-- changelog-commit:51ce6db9a2e48d9e93651b47ce5d645d1dfa7dc3 -->
+### Commit [`51ce6db`](https://github.com/superhero/operations.superduper.solutions/commit/51ce6db9a2e48d9e93651b47ce5d645d1dfa7dc3)
+
+```text
+Merge branch 'feature/csv-no-quotes' of github.com:superhero/operations.superduper.solutions into feature/csv-no-quotes
+
+```
+
+<!-- changelog-commit:60cd46f5e470d8e2aec7b35b04ec4873b5f9a975 -->
+### Commit [`60cd46f`](https://github.com/superhero/operations.superduper.solutions/commit/60cd46f5e470d8e2aec7b35b04ec4873b5f9a975)
+
+```text
+fix(workflows): omit encoding from CSV summary
+
+```
+
+<!-- changelog-commit:d3458127d7fa7f9226c92b9811257c5a50c7f0f7 -->
+### Commit [`d345812`](https://github.com/superhero/operations.superduper.solutions/commit/d3458127d7fa7f9226c92b9811257c5a50c7f0f7)
+
+```text
+Merge branch 'feature/csv-no-quotes' of github.com:superhero/operations.superduper.solutions into feature/csv-no-quotes
+
+```
+
+<!-- changelog-commit:0de371fca3d032045c78b63857a5eb793eb63a0c -->
+### Commit [`0de371f`](https://github.com/superhero/operations.superduper.solutions/commit/0de371fca3d032045c78b63857a5eb793eb63a0c)
+
+```text
+fix(workflows): compact file schema disclosure header
+
+```
+
+<!-- changelog-commit:9e0e0b269e09cb0760fd9cffb38a398075227b93 -->
+### Commit [`9e0e0b2`](https://github.com/superhero/operations.superduper.solutions/commit/9e0e0b269e09cb0760fd9cffb38a398075227b93)
+
+```text
+fix(workflows): remove copy action from file schema header
+
+```
+
+<!-- changelog-commit:ad949965f453ee92cec056914df3badc8b838324 -->
+### Commit [`ad94996`](https://github.com/superhero/operations.superduper.solutions/commit/ad949965f453ee92cec056914df3badc8b838324)
+
+```text
+feat(workflows): bound file schema previews and load more on demand
+
+Limit the file schema scroll area to five visible rows. Render an initial
+1,000-line tree budget shared across expanded branches and expose Load more
+for successive batches. Reset the budget on document replacement and retain
+existing unpaginated behavior for other schema views.
+
+Type checking, production build and two focused Chromium Cucumber scenarios
+pass, covering bounded rendering, pagination, replacement and upload persistence.
+
+```
+
+<!-- changelog-commit:4537d695a764f2ff9a810eea7b383a27881c3523 -->
+### Commit [`4537d69`](https://github.com/superhero/operations.superduper.solutions/commit/4537d695a764f2ff9a810eea7b383a27881c3523)
+
+```text
+fix(workflows): align CSV label sizing and tighten summary spacing
+
+```
+
+<!-- changelog-commit:26277a73c19fecaa890ae51d5c74859ef33b5ef7 -->
+### Commit [`26277a7`](https://github.com/superhero/operations.superduper.solutions/commit/26277a73c19fecaa890ae51d5c74859ef33b5ef7)
+
+```text
+fix(workflows): triple the file preview viewport height
+
+```
+
+<!-- changelog-commit:80467d938367cf9341b19db427dde173f2b99a31 -->
+### Commit [`80467d9`](https://github.com/superhero/operations.superduper.solutions/commit/80467d938367cf9341b19db427dde173f2b99a31)
+
+```text
+feat(workflows): project uploaded data into connected output structures
+
+Infer bounded data shapes from uploaded JSON and CSV and reuse operation output
+panels and placement. Expose nested object fields and array projections as usable
+outputs. Preserve stable field identities, panel positions and compatible mappings
+when replacing files, removing obsolete panels and incompatible connections.
+
+Treat file-owned output fields as static sources during workflow execution,
+including explicit starting operations. Keep array projections typed as arrays.
+
+Ten focused Cucumber source scenarios and two Chromium scenarios pass, covering
+nested execution, CSV column requests, replacement reconciliation and persistence.
+Type checking and production build pass.
+
+```
+
+<!-- changelog-commit:51afee61f0718db5c45ace90b0b959e997a8e58f -->
+### Commit [`51afee6`](https://github.com/superhero/operations.superduper.solutions/commit/51afee61f0718db5c45ace90b0b959e997a8e58f)
+
+```text
+feat(workflows): show array icons and item ranges
+
+Use Data Array for array panels and display cardinality badges with zero as
+the default minimum and an asterisk for unknown maximum. Preserve OpenAPI
+minItems/maxItems and derive uploaded array maxima from their data, including
+array projections such as CSV columns. Save and validate this metadata with
+workflow fields and panels.
+
+Eighteen focused source scenarios, four Chromium scenarios, type checking
+and production build pass.
+
+```
+
+<!-- changelog-commit:4756f2c2fa2edefad0d938f9a4175c3efb00e4f9 -->
+### Commit [`4756f2c`](https://github.com/superhero/operations.superduper.solutions/commit/4756f2c2fa2edefad0d938f9a4175c3efb00e4f9)
+
+```text
+fix(workflows): show array bounds in Items labels and restore type badges
+
+```
+
+<!-- changelog-commit:c8cba91d24dc02af117fe15a6b08d5b3b3b449cd -->
+### Commit [`c8cba91`](https://github.com/superhero/operations.superduper.solutions/commit/c8cba91d24dc02af117fe15a6b08d5b3b3b449cd)
+
+```text
+feat(workflows): infer numeric CSV columns from all data rows
+
+Convert a column to numbers only when every cell is a finite, safely represented
+decimal value. Keep the entire column as text when any cell is nonnumeric or
+empty. Infer Integer or Number item attributes and preserve array-valued output
+connections, including persisted item type metadata.
+
+Update request and persistence checks for actual numeric values. Twelve focused
+source scenarios pass with complete parser coverage; two Chromium scenarios,
+type checking and production build pass.
+
+```
+
+<!-- changelog-commit:46df6b037ccea24130411e22c5111d69b095bb48 -->
+### Commit [`46df6b0`](https://github.com/superhero/operations.superduper.solutions/commit/46df6b037ccea24130411e22c5111d69b095bb48)
+
+```text
+fix(workflows): share the top file output with its data structure
+
+```
+
+<!-- changelog-commit:06ac3c36b0bd758e3df28fe31e5379f898fc32c7 -->
+### Commit [`06ac3c3`](https://github.com/superhero/operations.superduper.solutions/commit/06ac3c36b0bd758e3df28fe31e5379f898fc32c7)
+
+```text
+fix(workflows): name uploaded array panels Array and Item
+
+```
+
+<!-- changelog-commit:fd17e66a9ba8562031378567be1ee265241d5931 -->
+### Commit [`fd17e66`](https://github.com/superhero/operations.superduper.solutions/commit/fd17e66a9ba8562031378567be1ee265241d5931)
+
+```text
+fix(workflows): mark uploaded fields optional when values are empty
+
+```
+
+<!-- changelog-commit:b9dbf233275ee15bf1272bfe703fed63f0e80c03 -->
+### Commit [`b9dbf23`](https://github.com/superhero/operations.superduper.solutions/commit/b9dbf233275ee15bf1272bfe703fed63f0e80c03)
+
+```text
+feat(workflows): infer boolean CSV columns from every row
+
+```
+
+<!-- changelog-commit:799c76b38091dd508d35e102d4465413b07f888c -->
+### Commit [`799c76b`](https://github.com/superhero/operations.superduper.solutions/commit/799c76b38091dd508d35e102d4465413b07f888c)
+
+```text
+fix(workflows): show the uploaded filename on its button
+
+```
+
+<!-- changelog-commit:cad1cf57e5539ac78b99f7588d97f7affee97a79 -->
+### Commit [`cad1cf5`](https://github.com/superhero/operations.superduper.solutions/commit/cad1cf57e5539ac78b99f7588d97f7affee97a79)
+
+```text
+fix(workflows): replace the upload button with plain filename text
+
+```
+
+<!-- changelog-commit:d6df1144cb254bf8cb80c26f069526024ce0e6e2 -->
+### Commit [`d6df114`](https://github.com/superhero/operations.superduper.solutions/commit/d6df1144cb254bf8cb80c26f069526024ce0e6e2)
+
+```text
+fix(workflows): left-align uploaded filenames
+
+```
+
+<!-- changelog-commit:6f53822cb4c76a9c09353e1845786c6829eeba9a -->
+### Commit [`6f53822`](https://github.com/superhero/operations.superduper.solutions/commit/6f53822cb4c76a9c09353e1845786c6829eeba9a)
+
+```text
+feat(workflows): execute file Item connections once per aligned row
+
+Match file Item connections by their displayed scalar type and retain whole
+column mappings for array inputs. Execute the selected path sequentially per
+row, including downstream operations and nested calls, without mixing columns
+or repeating unrelated starting paths. Apply the operation guard per row.
+
+Preserve the current row on retry, skip filtered or empty rows and reject unequal
+row counts from combined sources. Cache immutable file projections across row
+frames instead of repeatedly cloning entire columns for scalar requests.
+
+Validate with 21 focused file-source scenarios, selected existing runner checks,
+and three Chromium upload/execution scenarios. Type checking and production
+build pass; full regression remains with CI.
+
+```
+
+<!-- changelog-commit:3c2cf3f908d93c4c37153c5fe57b25fa60189d32 -->
+### Commit [`3c2cf3f`](https://github.com/superhero/operations.superduper.solutions/commit/3c2cf3f908d93c4c37153c5fe57b25fa60189d32)
+
+```text
+fix(workflows): recover transient file worker startup failures
+
+Prepare Papa Parse during development dependency optimization and retry
+read-only parsing once with a fresh worker after a worker failure. Keep
+parse errors and cancellation immediate, and bound persistent failures.
+
+Exercise actual Vite development workers in Cucumber, including cold
+loading, failed starts, later recovery, JSON/CSV parsing, option changes,
+and the visible file upload node. Production-only checks missed this path.
+
+```
+
 ## 0.0.50
 
 <!-- changelog-commit:a16b97110421a1af643865eaa4eb430b64a0683d -->

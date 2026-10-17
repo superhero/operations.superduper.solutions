@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
   import { flip } from "svelte/animate";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
@@ -122,8 +122,10 @@
     const visible = open;
     const desktop = !mobile;
     const panel = navigation;
+    // Busy workflow actions must not replay menu-opening autofocus.
+    const blocked = untrack(() => documentModal);
     let cancelled = false;
-    if (visible && desktop && panel && !documentModal) {
+    if (visible && desktop && panel && !blocked) {
       const origin = document.activeElement;
       void tick().then(() => {
         if (!cancelled && open && !mobile && !documentModal && navigation === panel && document.activeElement === origin) {
@@ -131,7 +133,7 @@
         }
       });
     }
-    else if (!visible && !documentModal && navigation?.contains(document.activeElement)) focusMenu();
+    else if (!visible && !blocked && panel?.contains(document.activeElement)) focusMenu();
     return () => { cancelled = true; };
   });
   onMount(() => {

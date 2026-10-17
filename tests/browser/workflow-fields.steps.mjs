@@ -149,7 +149,7 @@ Then("List projects exposes its query parameters and nested project response", a
   await expect(response).toBeVisible();
   await expectResponseEnvelope(response, 'Array');
   await expect(body).toBeVisible();
-  await expect(fieldRow(body, "Project").locator(".field-type")).toHaveText("Object");
+  await expect(fieldRow(body, "0..*").locator(".field-type")).toHaveText("Object");
   await expect(headers).toBeVisible();
   await expect(headers.getByRole('button', { name: 'Edit properties', exact: true })).toBeVisible();
   await expect(nested).toBeVisible();

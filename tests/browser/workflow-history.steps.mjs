@@ -645,3 +645,62 @@ Then('an interrupted append-only Undo migrates to real commit navigation', async
   assert.deepEqual(redone.commits, before.commits);
   assert.deepEqual(await repository(page, 'inspect', this.historyOther.id), this.historyOtherBefore);
 });
+
+Then('repeated keyboard undo and redo preserve workflow focus beside the open search', async function () {
+  const page = this.page;
+  for (let index = 0; index < 3; index++) {
+    await workflow(page).getByRole('button', { name: 'Cast', exact: true }).click();
+    await saved(page);
+  }
+  const { openCatalog } = await import('./workspace.steps.mjs');
+  await openCatalog(page);
+  const search = page.getByRole('textbox', { name: 'Prompt', exact: true });
+  await expect(search).toBeFocused();
+  await workflow(page).focus();
+  const graph = () => repository(page, 'inspectGraph', this.historyFirst.id);
+  for (const [key, ready] of [['Control+z', 'Redo'], ['Control+Shift+z', 'Undo']]) {
+    for (let index = 0; index < 4; index++) {
+      const before = (await graph()).head;
+      await page.keyboard.press(key);
+      await expect.poll(async () => (await graph()).head).not.toBe(before);
+      await expect(page.getByRole('button', { name: ready, exact: true })).toBeEnabled();
+      await expect(workflow(page)).toBeFocused();
+      await expect(search).not.toBeFocused();
+    }
+  }
+  const before = (await graph()).head;
+  await search.fill('projects');
+  await page.keyboard.press('Control+z');
+  await expect(search).toBeFocused();
+  assert.equal((await graph()).head, before, 'Search text undo must not change workflow history.');
+});
+
+Then('history opens at the active checkout at width {int}', async function (width) {
+  const page = this.page;
+  await page.setViewportSize({ width, height: 700 });
+  let revision = this.historyLatestOid;
+  for (let index = 0; index < 16; index++) {
+    const state = await repository(page, 'save', { ...this.historyLatest, name: `Later revision ${index}` }, revision);
+    revision = state.revision;
+  }
+  await repository(page, 'checkout', this.historyFirst.id, this.historyFirstOid, revision);
+  await page.reload();
+  await setMode(page, 'workflow');
+  const before = await repository(page, 'inspectGraph', this.historyFirst.id);
+  for (let opening = 0; opening < 2; opening++) {
+    await openHistory(page);
+    const dialog = historyDialog(page);
+    const card = versionCard(page, this.historyFirstOid);
+    await expect(card).toHaveAttribute('aria-current', 'true');
+    await expect.poll(() => dialog.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
+    await expect.poll(async () => {
+      const row = await card.boundingBox(), header = await dialog.locator(':scope > header').boundingBox();
+      const bounds = await dialog.boundingBox();
+      return row.y >= header.y + header.height && row.y + row.height <= bounds.y + bounds.height;
+    }).toBe(true);
+    assert.equal((await repository(page, 'inspectGraph', this.historyFirst.id)).head, before.head);
+    await dialog.evaluate(element => element.scrollTop = 0);
+    await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(dialog).toBeHidden();
+  }
+});
