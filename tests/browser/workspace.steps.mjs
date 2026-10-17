@@ -513,11 +513,12 @@ Then('the settings drawer preserves the workflow at width {int} with {string} mo
   await page.emulateMedia({ reducedMotion: motion });
   const canvas = page.locator('.workflow-host');
   const before = await canvas.boundingBox();
-  const settings = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
+  const settings = page.getByRole('banner', { includeHidden: true }).getByRole('button', { name: 'Settings', exact: true, includeHidden: true });
   await settings.click();
   const drawer = page.locator('.settings-drawer');
   await expect(drawer).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
-  await expect(canvas).not.toHaveAttribute('inert');
+  if (width < 900) await expect.poll(() => canvas.evaluate(element => Boolean(element.closest('[inert]')))).toBe(true);
+  else await expect(canvas).not.toHaveAttribute('inert');
   assert.deepEqual(await canvas.boundingBox(), before, 'Opening Settings must not resize or hide the workflow.');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   const bounds = await drawer.boundingBox();
@@ -531,7 +532,8 @@ Then('the settings drawer preserves the workflow at width {int} with {string} mo
     button.click();
   });
   await expect(drawer).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
-  await expect(canvas).not.toHaveAttribute('inert');
+  if (width < 900) await expect.poll(() => canvas.evaluate(element => Boolean(element.closest('[inert]')))).toBe(true);
+  else await expect(canvas).not.toHaveAttribute('inert');
   await page.keyboard.press('Escape');
   await expect(drawer).toBeHidden();
   await expect(canvas).not.toHaveAttribute('inert');
@@ -738,15 +740,10 @@ Then('Settings disables the workspace when insufficient space remains', async fu
     await expect(node).toHaveAttribute('style', original);
     assert.equal(await node.evaluate(element => { element.focus(); return element.contains(document.activeElement); }), false);
     await expect(settings).toBeVisible();
-    const header = page.getByRole('banner');
-    const menu = header.getByRole('button', { name: 'Open navigation', exact: true });
-    const close = header.getByRole('button', { name: 'Settings', exact: true });
-    await expect(menu).toBeVisible();
+    const close = page.getByRole('button', { name: 'Close settings', exact: true });
     await expect(close).toBeVisible();
-    await expect.poll(async () => {
-      const bounds = await close.boundingBox(), drawer = await page.locator('.settings-drawer').boundingBox();
-      return bounds.x + bounds.width <= drawer.x;
-    }).toBe(true);
+    await expect.poll(async () => Math.round((await page.locator('.settings-drawer').boundingBox()).width)).toBe(width);
+    assert.equal(await page.getByRole('banner', { includeHidden: true }).evaluate(element => Boolean(element.closest('[inert]'))), true);
   }
   for (const width of [900, 1000, 1149, 1150, 1220]) {
     await page.setViewportSize({ width, height: 844 });
@@ -763,7 +760,7 @@ Then('Settings disables the workspace when insufficient space remains', async fu
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(canvas).toHaveAttribute('inert', '');
   const toggle = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
-  await toggle.click();
+  await page.getByRole('button', { name: 'Close settings', exact: true }).click();
   await expect(canvas).not.toHaveAttribute('inert');
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
 });
