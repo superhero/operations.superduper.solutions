@@ -42,6 +42,14 @@ feat(settings): slide settings over the workflow from the right
 
 ```
 
+<!-- changelog-commit:bd95e9548ff36e32e2d9601c39f9ad7bc1a9428c -->
+### Commit [`bd95e95`](https://github.com/superhero/operations.superduper.solutions/commit/bd95e9548ff36e32e2d9601c39f9ad7bc1a9428c)
+
+```text
+feat(settings): move theme mode switch beside palette choices
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.49
