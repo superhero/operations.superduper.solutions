@@ -129,7 +129,6 @@ Then('the optional Count slider preserves large signed integers and clears witho
     if (value) await expect(slider).toHaveAttribute('aria-valuenow', value);
     else await expect(slider).toHaveAttribute('aria-valuetext', 'Not set');
     assert.equal(await input.evaluate(control => control.validity.valid), true);
-    await page.screenshot({ path: `tmp/test/integer-slider-${value ? Number(value) < 0 ? 'minimum' : 'maximum' : 'empty'}.png` });
     await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
     const preview = page.getByRole('region', { name: /^(Prepared request|Step \d+ prepared request)$/ });
     await expect(preview).toBeVisible();

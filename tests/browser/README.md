@@ -48,6 +48,11 @@ removal, and scalar/object creation through nested fields and type changes.
 They reuse the graph while retaining cancellation, duplicate-name, history,
 field-identity and layout assertions at each relevant stage.
 
+Passing scenarios rely on DOM, behavior and persistence assertions rather than
+uncompared screenshot files. Failure hooks retain screenshots, diagnostics and
+full traces; add image comparisons explicitly if a future test needs visual
+regression coverage.
+
 ## Execution boundary
 
 Run `npm run build` before `npm run test:browser`. The

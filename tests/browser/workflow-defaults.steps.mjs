@@ -160,7 +160,6 @@ When('workflow defaults recover after a failed settings save', async function ()
   await expect(settings(page).getByRole('alert')).toHaveCount(0);
   await expect.poll(() => storedDefaults(page)).toEqual({ ...enabledDefaults, dashed: false });
   await setDefaults(page, enabledDefaults);
-  await page.screenshot({ path: 'tmp/test/workflow-defaults.png' });
 });
 
 Then('the defaults survive reload and initialize untouched and new workflows', async function () {
@@ -280,7 +279,6 @@ Then('the grid size slider supports exact keys and saves its nonlinear pointer v
   }
   const selected = samples.at(-1);
   await expect.poll(async () => (await storedDefaults(page)).gridSize).toBe(selected);
-  await page.screenshot({ path: 'tmp/test/integer-slider-grid-size.png' });
   await page.reload();
   await openDefaults(page);
   await expect(input).toHaveValue(String(selected));

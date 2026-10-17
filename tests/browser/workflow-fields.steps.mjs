@@ -188,7 +188,6 @@ Then("Create task separates required path and request-body fields", async functi
     await expect(port).not.toHaveClass(/connectablestart|connectableend/);
   }
   await expectOwnerLayout(operationNodes(this.page, "Create task"), ['Path', 'Body'], ['201']);
-  await this.page.screenshot({ path: 'tmp/test/workflow-operation-ports.png' });
 });
 
 Given('repeated operation nodes with documented response variants', async function () {
@@ -238,7 +237,6 @@ Then('the identity row separates top input and bottom response ports', async fun
     await expect(response).toBeVisible();
     await expectResponseEnvelope(response, label === 'Response · default' ? 'Null' : 'Text');
   }
-  await this.page.screenshot({ path: 'tmp/test/workflow-response-ports.png' });
 });
 
 When("I map the project identifier between those operations", async function () {
@@ -486,7 +484,7 @@ async function editProperties(panel) {
   await expect(panel.getByRole('button', { name: 'Done editing properties', exact: true })).toBeVisible();
 }
 
-async function addResponseProperty(page, panel, name, type, capture = type.toLowerCase()) {
+async function addResponseProperty(page, panel, name, type) {
   await editProperties(panel);
   await panel.getByRole('button', { name: 'Add field', exact: true }).click();
   await expect(panel.getByRole('textbox', { name: 'Property name', exact: true })).toBeFocused();
@@ -496,14 +494,12 @@ async function addResponseProperty(page, panel, name, type, capture = type.toLow
   for (const choice of ['Array', 'Boolean', 'Integer', 'Null', 'Number', 'Object', 'Text'])
     await expect(page.getByRole('listbox').getByRole('option', { name: choice, exact: true })).toHaveCount(1);
   await page.getByRole('listbox').getByRole('option', { name: type, exact: true }).click();
-  await page.screenshot({ path: `tmp/test/workflow-additional-property-${capture}-editor.png` });
   await panel.getByRole('button', { name: 'Add property', exact: true }).click();
   await expect(panel.getByRole('textbox', { name: 'Property name', exact: true })).toHaveCount(0);
   await expect(panel.getByRole('button', { name: 'Add field', exact: true })).toBeFocused();
   await expect(fieldRow(panel, name).locator('.field-type')).toHaveText(type);
   await expect(panel.getByLabel(`${name} output`, { exact: true })).toHaveClass(/connectablestart/);
   if (type === 'Object') await page.getByRole('button', { name: 'Fit View', exact: true }).click();
-  await page.screenshot({ path: `tmp/test/workflow-additional-property-${capture}-added.png` });
 }
 
 Given('a workflow with open HTTPBin response objects and Create task', async function () {
@@ -661,7 +657,7 @@ Then('its child panel accepts a nested property without overlapping its parent',
   const parent = namedPanel(this.page, this.additionalOwnerId, 'outputs', 'Query values');
   const child = namedPanel(this.page, this.additionalOwnerId, 'outputs', this.additionalPropertyName);
   await expect(child.getByRole('button', { name: 'Edit properties', exact: true })).toBeVisible();
-  await addResponseProperty(this.page, child, 'traceId', 'Text', 'nested-text');
+  await addResponseProperty(this.page, child, 'traceId', 'Text');
   const parentBox = await parent.boundingBox();
   const childBox = await child.boundingBox();
   assert.ok(parentBox && childBox && parentBox.x + parentBox.width < childBox.x,
@@ -683,7 +679,6 @@ Then('property edit mode makes only custom names and types editable', async func
   await expect(panel.getByRole('button', { name: 'Edit properties', exact: true })).toBeVisible();
   await expect(panel.getByRole('button', { name: /^Edit property / })).toHaveCount(0);
   await expect(panel.getByRole('button', { name: 'Add field', exact: true })).toHaveCount(0);
-  await this.page.screenshot({ path: 'tmp/test/workflow-properties-default.png' });
   await editProperties(panel);
   const edit = panel.getByRole('button', { name: `Edit property ${this.additionalPropertyName}`, exact: true });
   await expect(edit.locator('.field-name')).toHaveText(this.additionalPropertyName);
@@ -731,7 +726,6 @@ When('I rename the response header property to {string}', async function (name) 
   await editProperties(panel);
   await panel.getByRole('button', { name: `Edit property ${this.additionalPropertyName}`, exact: true }).click();
   await panel.getByRole('textbox', { name: 'Property name', exact: true }).fill(name);
-  await this.page.screenshot({ path: 'tmp/test/workflow-additional-property-edit.png' });
   await panel.getByRole('button', { name: 'Save property', exact: true }).click();
   await expect(panel.getByRole('button', { name: 'Add field', exact: true })).toBeFocused();
   await expect(panel.getByLabel(`${this.additionalPropertyName} output`, { exact: true })).toHaveCount(0);

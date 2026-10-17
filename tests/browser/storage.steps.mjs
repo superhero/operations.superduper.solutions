@@ -202,12 +202,10 @@ Then('Storage reports repository bytes and history without changing either workf
   assert.deepEqual(metrics.remotes, []);
   assert.equal(metrics.activity.reduce((sum, day) => sum + day.count, 0), 2);
   await openStorage(page);
-  await page.screenshot({ path: 'tmp/test/storage-desktop.png' });
   const details = repositoryDetails(page, this.historyLatest.name);
   await expectRepositoryGraphs(details, 2);
   assert.deepEqual(await repository(page, 'inspect', this.historyFirst.id), this.storageBefore);
   assert.deepEqual(await repository(page, 'inspect', this.historyOther.id), this.storageOtherBefore);
-  await page.screenshot({ path: 'tmp/test/storage-repository.png' });
 });
 
 Then('reopening Storage includes the next saved workflow version', { timeout: 90000 }, async function () {
@@ -314,7 +312,6 @@ Given('storage contains a database and workflow with long names', async function
 
 Then('expanded Storage details fit the narrow viewport', { timeout: 90000 }, async function () {
   await openStorage(this.page);
-  await this.page.screenshot({ path: 'tmp/test/storage-mobile.png' });
   const database = databaseDetails(this.page, this.storageDatabaseName);
   const repo = repositoryDetails(this.page, this.storageWorkflowName);
   await expect(database).toContainText(this.storageDatabaseName);
@@ -325,5 +322,4 @@ Then('expanded Storage details fit the narrow viewport', { timeout: 90000 }, asy
       panel: panel.scrollWidth - panel.clientWidth };
   });
   assert.ok(overflow.document <= 1 && overflow.panel <= 1, `Storage must not overflow the viewport: ${JSON.stringify(overflow)}`);
-  await this.page.screenshot({ path: 'tmp/test/storage-mobile-details.png' });
 });
