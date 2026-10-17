@@ -75,7 +75,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <p>{data.file?.header ? "Header row" : "No header"} · {Array.isArray(data.file?.value) ? data.file.value.length : 0} rows</p>
     </div>
   {/if}
-  {#if data.file}<div class="file-preview nodrag nopan nokey nowheel"><JsonSchemaView value={data.file.value} label="File data" title="Schema" /></div>{/if}
+  {#if data.file}<div class="file-preview nodrag nopan nokey nowheel"><JsonSchemaView value={data.file.value} label="File data" title="Schema" copyable={false} /></div>{/if}
   {#if error}<p class="file-error nodrag nopan nokey" role="alert">{error}</p>{/if}
 </div>
 <style>

@@ -11,7 +11,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import HintButton from "./HintButton.svelte";
   import JsonView from "./JsonView.svelte";
 
-  let { value, label = "OpenAPI JSON", title = "OpenAPI schema", operationsOnly = false }: { value: unknown; label?: string; title?: string; operationsOnly?: boolean } = $props();
+  let { value, label = "OpenAPI JSON", title = "OpenAPI schema", copyable = true, operationsOnly = false }: { value: unknown; label?: string; title?: string; copyable?: boolean; operationsOnly?: boolean } = $props();
   let schemaOpen = $state(false);
   let schemaLoaded = $state(false);
   let schemaWrap = $state(true);
@@ -64,7 +64,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 }}>
   {#snippet summary()}
     <MaterialIcon name="keyboard_arrow_right" class="schema-chevron" size={18} />
+    {#if copyable}
     <HintButton class="schema-action" label="Copy JSON" aria-label="Copy JSON" aria-disabled={copying} aria-busy={copying} onclick={copySchema}><MaterialIcon name="file_copy" size={18} /></HintButton>
+    {/if}
     <span class="schema-title">{title}<span class="schema-copy-status" role="status">{copyStatus}</span></span>
     <span class="schema-wrap-control" class:visible={schemaOpen} inert={!schemaOpen} aria-hidden={!schemaOpen}>
       <HintButton class="schema-action" label="Wrap lines" aria-label="Wrap lines" aria-pressed={schemaWrap} tooltipEnabled={schemaOpen}
