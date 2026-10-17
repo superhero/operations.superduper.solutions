@@ -5,8 +5,8 @@ import Papa from "papaparse";
 import type { JsonValue } from "./catalog.ts";
 
 export const maxWorkflowUploadBytes = 500_000;
-export type CsvOptions = { delimiter: "auto" | "," | ";" | "\t" | "|"; header: "auto" | "present" | "absent"; quote: '"' | "'" | "none" };
-export const defaultCsvOptions: CsvOptions = { delimiter: "auto", header: "auto", quote: '"' };
+export type CsvOptions = { delimiter: "auto" | "," | ";" | "\t" | "|"; header: "auto" | "present" | "absent"; quote: '"' | "'" | "none" | "auto" };
+export const defaultCsvOptions: CsvOptions = { delimiter: "auto", header: "auto", quote: "auto" };
 export type UploadedWorkflowFile = { name: string; format: "json" | "csv"; source: string; value: JsonValue;
   options: CsvOptions; delimiter: string; header: boolean; encoding: string };
 export type WorkflowFileData = { file?: UploadedWorkflowFile };
@@ -25,7 +25,7 @@ export function fileValueType(file?: UploadedWorkflowFile): FileValueType {
 export function csvOptions(value: unknown): CsvOptions {
   const options = value as CsvOptions | null;
   if (!options || !["auto", ",", ";", "\t", "|"].includes(options.delimiter) ||
-    !["auto", "present", "absent"].includes(options.header) || !['"', "'", "none"].includes(options.quote))
+    !["auto", "present", "absent"].includes(options.header) || !['"', "'", "none", "auto"].includes(options.quote))
     throw new Error("Unsupported CSV options.");
   return { delimiter: options.delimiter, header: options.header, quote: options.quote };
 }
@@ -65,12 +65,16 @@ export function parseWorkflowFile(name: string, source: string, options: CsvOpti
   const directive = /^sep=([,;\t|])(?:\r\n|\n|\r)/i.exec(source);
   const delimiter = options.delimiter === "auto" ? directive?.[1] : options.delimiter;
   const csv = directive ? source.slice(directive[0].length) : source;
-  const noQuotes = options.quote === "none";
+  // Only quotes at field boundaries indicate quoting; apostrophes inside words do not.
+  const openings = [...csv.matchAll(/(?:^|[,;\t|\r\n])(["'])/g)].map(match => match[1]);
+  const detectedQuote = openings.includes('"') ? '"' : openings.includes("'") ? "'" : "none";
+  const selectedQuote = options.quote === "auto" ? detectedQuote : options.quote;
+  const noQuotes = selectedQuote === "none";
   // Papa's delimiter guesser assumes double quotes. Mask them for literal-quote mode.
   const detectedDelimiter = noQuotes && !delimiter ? Papa.parse(csv.replace(/"/g, "＂"), {
     delimitersToGuess: [",", ";", "\t", "|"], skipEmptyLines: "greedy", preview: 10,
   }).meta.delimiter : delimiter;
-  const quote = noQuotes ? "\0" : options.quote;
+  const quote = noQuotes ? "\0" : selectedQuote;
   const result = Papa.parse<string[]>(csv, {
     delimiter: detectedDelimiter ?? "", quoteChar: quote, escapeChar: quote, fastMode: noQuotes ? true : undefined,
     delimitersToGuess: [",", ";", "\t", "|"], skipEmptyLines: "greedy", dynamicTyping: false,

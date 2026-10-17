@@ -91,7 +91,8 @@ their ordered placement after existing content.
 File nodes embed parsed JSON or CSV data in the workflow, including exports and
 Git history. JSON retains its native type; CSV produces an array with string
 cells. Automatic delimiter and header detection can be overridden on the node.
-Quotes can be double, single or None; None preserves quote characters literally.
+Quotes default to Auto, detecting double, single or no quoting. Explicit Double,
+Single and None overrides remain available; None preserves quotes literally.
 Parsing runs in a disposable worker; replacing a file preserves compatible
 connections and removes connections whose types no longer match. Uploads are
 limited to 500 kB each and remain subject to the document size limit.

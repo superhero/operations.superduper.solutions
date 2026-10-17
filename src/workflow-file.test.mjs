@@ -15,6 +15,9 @@ Then('uploaded JSON preserves native values and types', function () {
   assert.deepEqual(parse('data.json','\uFEFF{"__proto__":{"safe":true}}').value,JSON.parse('{"__proto__":{"safe":true}}'));
 });
 Then('uploaded CSV supports common delimiters quotes headers and line endings', function () {
+  assert.equal(defaults.quote,'auto');
+  assert.deepEqual(parse('auto.csv',"name;note\nAlice;'one;two'").value,[{name:'Alice',note:'one;two'}]);
+  assert.deepEqual(parse('auto.csv',"name,note\nAlice,don't change this").value,[{name:'Alice',note:"don't change this"}]);
   for (const delimiter of [',',';','\t','|']) for (const eol of ['\n','\r\n','\r']) {
     const file=parse('rows.csv',`id${delimiter}name${eol}00123${delimiter}Alice${eol}`);
     assert.equal(file.delimiter,delimiter); assert.deepEqual(file.value,[{id:'00123',name:'Alice'}]);
