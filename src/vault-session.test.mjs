@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
+import { publicVaultKeys } from './lib/secrets/key-index.ts';
 import { VaultSession } from './lib/secrets/session.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
 import { decryptJSON, encryptJSON, passwordKey, randomBase64, recoveryKey, unwrapVaultKey } from './lib/secrets/crypto.ts';
@@ -26,12 +27,17 @@ class MemoryStorage {
     if (hook) await hook();
     return clone(this.state);
   }
-  async replace(expected, snapshot) {
+  async replace(expected, snapshot, keys) {
     const hook = this.replaceHook; this.replaceHook = undefined;
     if (hook) await hook();
     if (expected.revision !== this.state.revision || expected.lockEpoch !== this.state.lockEpoch) throw new VaultError('CONFLICT');
     this.writes++;
-    this.state = { revision: this.state.revision + 1, lockEpoch: this.state.lockEpoch + 1, snapshot: clone(snapshot) };
+    this.state = { revision: this.state.revision + 1, lockEpoch: this.state.lockEpoch + 1, snapshot: clone(snapshot), ...(snapshot && keys ? { keys: clone(keys) } : {}) };
+    return clone(this.state);
+  }
+  async indexKeys(expected, keys) {
+    if (expected.revision !== this.state.revision || expected.lockEpoch !== this.state.lockEpoch) throw new VaultError("CONFLICT");
+    this.state = { ...this.state, keys: clone(keys) };
     return clone(this.state);
   }
   async lock() {
@@ -126,7 +132,8 @@ Then('vault sessions edit credentials and approve or revoke exact destinations w
   const id = list[0].id, approval = await descriptor();
   assert.equal(list[0].label, 'Private account');
   assert.ok(!Object.hasOwn(list[0], 'value'));
-  assert.ok(!JSON.stringify(storage.state).includes('Private account'));
+  assert.equal(storage.state.keys[0].label, 'Private account');
+  assert.ok(!JSON.stringify(storage.state.snapshot).includes('Private account'));
   assert.ok(!JSON.stringify(storage.state).includes('SYNTHETIC-PRIVATE-TOKEN'));
   list = await session.grant(proof, id, 'service', approval);
   assert.equal(list[0].grants.length, 1);
@@ -489,9 +496,16 @@ Then('vault session execution injects only an approved credential and returns sa
     assert.equal(requests[0].options.headers.get('Authorization'), 'Bearer SYNTHETIC-PRIVATE-TOKEN');
     assert.ok(!JSON.stringify(result).includes('SYNTHETIC-PRIVATE-TOKEN'));
     assert.equal(result.response.redacted, true);
+    const variableOperation = await approvedOperation({ ...approval.operation, security: [], fields: [{ key: 'header:X-Variable', name: 'X-Variable', label: 'Variable',
+      description: '', type: 'string', location: 'header', required: true }] }, approval.origin);
+    const variableResult = await session.execute(variableOperation, { 'header:X-Variable': '[Vault variable]' },
+      { alternative: 0, credentials: {}, fingerprint: variableOperation.fingerprint }, undefined,
+      [{ key: 'header:X-Variable', path: [], credentialId: id }]);
+    assert.equal(requests[1].options.headers.get('X-Variable'), 'SYNTHETIC-PRIVATE-TOKEN');
+    assert.ok(!JSON.stringify(variableResult).includes('SYNTHETIC-PRIVATE-TOKEN'));
     const controller = new AbortController(); controller.abort();
     await assert.rejects(session.execute(approval, {}, binding, controller.signal), code('CANCELLED'));
-    assert.equal(requests.length, 1);
+    assert.equal(requests.length, 2);
   } finally { globalThis.fetch = original; }
 });
 
@@ -645,4 +659,45 @@ Then('duplicate credential keys are rejected without changing saved values', kdf
   const updated = clone(storage.state);
   await assert.rejects(session.put(null, {id: other.id, label: 'original key', kind: 'secret', value: 'REPLACEMENT'}), code('DUPLICATE_KEY'));
   assert.deepEqual(storage.state, updated);
+});
+
+
+Then('vault key names remain public across locks updates imports and legacy migration while values stay protected', kdfStep, async () => {
+  const { session, storage, proof } = await created();
+  assert.deepEqual(await session.keys(), { entries: [], needsUnlock: false });
+  const [entry] = await session.put(null, { label: 'Public key', kind: 'secret', value: 'PRIVATE-VALUE' });
+  const backup = await session.backup();
+  assert.ok(!backup.includes('Public key')); assert.ok(!backup.includes('PRIVATE-VALUE'));
+  session.lock();
+  assert.deepEqual(await session.keys(), { entries: [{ id: entry.id, label: 'Public key', kind: 'secret' }], needsUnlock: false });
+  assert.ok(!JSON.stringify(storage.state).includes('PRIVATE-VALUE'));
+  await assert.rejects(session.list(), code('LOCKED'));
+  await assert.rejects(session.copyCredential(entry.id), code('LOCKED'));
+  const epoch = storage.state.lockEpoch, revision = storage.state.revision;
+  delete storage.state.keys;
+  assert.deepEqual(await session.keys(), { entries: [], needsUnlock: true });
+  await session.unlock(proof);
+  assert.equal(storage.state.lockEpoch, epoch); assert.equal(storage.state.revision, revision);
+  session.lock(); assert.equal((await session.keys()).entries[0].label, 'Public key');
+  await session.unlock(proof);
+  await session.put(null, { id: entry.id, label: 'Renamed public key', kind: 'secret', value: 'OTHER-PRIVATE-VALUE' });
+  assert.equal((await session.keys()).entries[0].label, 'Renamed public key');
+  await session.remove(null, entry.id); session.lock(); assert.deepEqual((await session.keys()).entries, []);
+  const restored = new VaultSession(new MemoryStorage());
+  await restored.restore(backup, proof); restored.lock();
+  assert.equal((await restored.keys()).entries[0].label, 'Public key');
+  const fresh = new VaultSession(new MemoryStorage()); assert.deepEqual(await fresh.keys(), { entries: [], needsUnlock: false });
+});
+
+Then('public vault key indexes validate IDs labels kinds and membership and discard extra fields', () => {
+  const id = crypto.randomUUID(), key = { id, label: 'Visible name', kind: 'secret' };
+  const state = keys => ({ snapshot: { records: [{ id }] }, keys });
+  assert.deepEqual(publicVaultKeys(state([{ ...key, value: 'NEVER-RETURN', grants: ['NEVER-RETURN'] }])), { entries: [key], needsUnlock: false });
+  for (const keys of [null, {}, [], [null], ['key'], [{ ...key, id: 'bad' }], [{ ...key, id: crypto.randomUUID() }],
+    [{ ...key, label: '' }], [{ ...key, label: ' ' }], [{ ...key, label: 1 }], [{ ...key, label: 'x'.repeat(121) }],
+    [{ ...key, kind: 'unsupported' }], [{ ...key, id: 3 }], [key, key], Array(1001).fill(key)])
+    assert.throws(() => publicVaultKeys(state(keys)), code('INVALID'));
+  assert.throws(() => publicVaultKeys({ snapshot: { records: [{ id: 'bad' }] }, keys: [{ ...key, id: 'bad' }] }), code('INVALID'));
+  for (const kind of ['bearer', 'apiKey']) assert.equal(publicVaultKeys(state([{ ...key, kind }])).entries[0].kind, kind);
+  assert.deepEqual(publicVaultKeys({ snapshot: { records: [] } }), { entries: [], needsUnlock: false });
 });

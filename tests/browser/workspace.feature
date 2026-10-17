@@ -175,6 +175,8 @@ Feature: Browser operations workspace
       | 1280  | no-preference |
       | 390   | no-preference |
       | 390   | reduce        |
+      | 930   | no-preference |
+      | 1149  | no-preference |
 
   Scenario: Settings and the left menu do not compete for header space
     Then opening Settings closes the left menu and keeps the Operations header left aligned
@@ -199,3 +201,17 @@ Feature: Browser operations workspace
   Scenario: Settings leaves workflow tools and graph editing available
     Given a workflow with 1 instances of "List projects"
     Then the workflow remains editable beside Settings
+
+  Scenario Outline: Desktop navigation overlays the workflow without moving it
+    Given I use a viewport of <width> by 844 pixels
+    And a workflow with 1 instances of "List projects"
+    Then the left menu overlays the workflow without changing its layout
+
+    Examples:
+      | width |
+      | 900   |
+      | 1280  |
+
+  Scenario: Settings blocks a cramped workspace and restores editing as space becomes available
+    Given a workflow with 1 instances of "List projects"
+    Then Settings disables the workspace when insufficient space remains

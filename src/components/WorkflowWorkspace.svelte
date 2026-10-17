@@ -21,7 +21,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { WorkflowSaveStatus } from "$lib/workspace.d.ts";
   import WorkflowHistory from "./workflows/WorkflowHistory.svelte";
   import { createOperationGraph, createUtilityNode, createWorkflowGraph, addAdditionalProperty, getAdditionalPropertyTypes, getEditableAdditionalProperties, updateAdditionalProperty, removeAdditionalProperty, addSwitchGate, updateSwitchGate, removeSwitchGate, schemaBranches, isWorkflowConnection, removeGraphSelection, restoreDataBranch } from "$lib/workflow-graph.ts";
-  import { layoutAddedGraph } from "$lib/workflow-layout.ts";
+  import { layoutAddedGraph, placeUtilityNode } from "$lib/workflow-layout.ts";
   import { orderWorkflowNodes, restoreWorkflowNodeOrder } from "$lib/workflow-focus-order.ts";
   import { adaptRoutingGates, routingInputTypes, workflowDescriptionLimit, workflowInputConnected } from "$lib/workflow-utilities.ts";
   import { getOperationReport } from "$lib/operation-report.ts";
@@ -38,6 +38,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { logger } from "$lib/logger.ts";
   import WorkflowSelection from "./workflows/WorkflowSelection.svelte";
   import WorkflowSwitchNode from "./workflows/WorkflowSwitchNode.svelte";
+  import WorkflowVaultNode from "./workflows/WorkflowVaultNode.svelte";
   import WorkflowCastNode from "./workflows/WorkflowCastNode.svelte";
   import WorkflowCommentNode from "./workflows/WorkflowCommentNode.svelte";
   import WorkflowReferenceNode from "./workflows/WorkflowReferenceNode.svelte";
@@ -47,7 +48,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   let { active, settingsOpen = false, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
     { active: boolean; settingsOpen?: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
-  const nodeTypes = { operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
+  const nodeTypes = { vault: WorkflowVaultNode, operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
   const edgeTypes = { default: WorkflowCurveEdge, smoothstep: RoutedEdge };
   type CanvasNode<T> = T extends WorkflowDocumentNode ? Node<T["data"], NonNullable<T["type"]>> & { type: NonNullable<T["type"]> } : never;
   type GraphNode = CanvasNode<WorkflowDocumentNode>;
@@ -163,6 +164,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
   setContext("workflow-cast-type", (nodeId: string, targetType: CastData["targetType"]) => {
     if (keyboardActive) applyGraph({ nodes: nodes.map(node => node.id === nodeId && node.type === "cast" ? { ...node, data: { targetType } } : node), edges }, true);
+  });
+  setContext("workflow-vault-variable", (nodeId: string, credentialId: string) => {
+    if (keyboardActive) nodes = nodes.map(node => node.id === nodeId && node.type === "vault" ? { ...node, data: credentialId ? { credentialId } : {} } : node);
   });
   setContext("workflow-comment-text", (nodeId: string, text: string) => {
     if (keyboardActive) nodes = nodes.map(node => node.id === nodeId && node.type === "comment" ? { ...node, data: { text } } : node);
@@ -472,7 +476,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   const insertionPosition = () => ({ x: (180 - viewport.x) / viewport.zoom, y: (180 - viewport.y) / viewport.zoom });
 
-  async function appendGraph(graph: Pick<WorkflowDocument, "nodes" | "edges">, nodeId: string, title: string, requiredVersion: 2 | 3) {
+  async function appendGraph(graph: Pick<WorkflowDocument, "nodes" | "edges">, nodeId: string, title: string, requiredVersion: 2 | 3, utility = false) {
     if (placement) await placement;
     try {
       if (nodes.length + graph.nodes.length > 500 || edges.length + graph.edges.length > 1000)
@@ -491,8 +495,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           ? { ...node, measured: { width: element.offsetWidth, height: element.offsetHeight } }
           : node;
       });
-      const positioned = new Map(layoutAddedGraph(measured.filter(node => addedIds.has(node.id)), graph.edges,
-        measured.filter(node => !addedIds.has(node.id)), gridSize, nodeId).map(node => [node.id, node]));
+      const added = measured.filter(node => addedIds.has(node.id));
+      const existing = measured.filter(node => !addedIds.has(node.id));
+      const positioned = new Map((utility && toolbar
+        ? [placeUtilityNode(added[0]!, existing, toolbar.placementViewport(), snap ? gridSize : 0)]
+        : layoutAddedGraph(added, graph.edges, existing, gridSize, nodeId)).map(node => [node.id, node]));
       nodes = nodes.map(node => positioned.get(node.id) ?? node);
     }).finally(() => { placement = null; });
     version = Math.max(version, requiredVersion) as 2 | 3;
@@ -502,7 +509,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     notice = "";
     await placement;
     await tick();
-    await toolbar?.reveal(nodeId);
+    await toolbar?.reveal(nodeId, utility);
     if (active && !navigationModal) focusCanvas();
   }
 
@@ -517,10 +524,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     catch (failure) { describeFailure(`Could not add “${operation.name}”`, failure); }
   }
 
-  async function addUtility(type: "switch" | "cast" | "comment") {
+  async function addUtility(type: "switch" | "cast" | "comment" | "vault") {
     if (!keyboardActive) return;
     const nodeId = crypto.randomUUID();
-    await appendGraph({ nodes: [createUtilityNode(type, insertionPosition(), nodeId)], edges: [] }, nodeId, type, 3);
+    await appendGraph({ nodes: [createUtilityNode(type, insertionPosition(), nodeId)], edges: [] }, nodeId, type, 3, true);
   }
 
   export async function addWorkflow(document: WorkflowDocument) {

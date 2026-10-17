@@ -13,7 +13,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     { canvas: HTMLElement | undefined; active: boolean; settingsOpen?: boolean; placing?: boolean; navigationOpen: boolean; snap: boolean; curved: boolean; dashed: boolean; selected: boolean;
       onsnap: () => void; oncurved: () => void; ondashed: () => void; onremove: () => void;
       onnew: () => void; onopen: () => void; onexport: () => void;
-      onimport: () => void; onbrowse: () => void; onutility: (type: "switch" | "cast" | "comment") => void;
+      onimport: () => void; onbrowse: () => void; onutility: (type: "switch" | "cast" | "comment" | "vault") => void;
       ondescribe: () => void; onrun: () => void; canUndo: boolean; canRedo: boolean; historyBusy: boolean;
       onundo: () => void; onredo: () => void; onhistory: () => void } = $props();
   const { fitView, getInternalNode, getNodes, getViewport, setViewport, zoomIn, zoomOut } = useSvelteFlow();
@@ -71,6 +71,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       const chrome = ['padding-left', 'padding-right', 'border-left-width', 'border-right-width']
         .reduce((sum, property) => sum + (parseFloat(style.getPropertyValue(property)) || 0), 0);
       const available = element.clientWidth - (parseFloat(style.right) || 0) -
+        (parseFloat(style.getPropertyValue("--navigation-inset")) || 0) -
         parseFloat(style.marginLeft) - parseFloat(style.marginRight) - chrome;
       if (available <= 0) return;
       const widths = [...toolbar.querySelectorAll<HTMLElement>('.workflow-control-group')].map(group =>
@@ -111,9 +112,25 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
 
   $effect(() => { if (active) void keepNodesVisible(); compactLayout?.(); });
-  $effect(() => { void settingsOpen; compactLayout?.(); });
+  $effect(() => { void settingsOpen; void navigationOpen; compactLayout?.(); });
 
-  export async function reveal(ids: string | string[]) {
+  function visibleCanvasArea() {
+    const bounds = canvas!.getBoundingClientRect();
+    const toolbar = canvas!.querySelector(".workflow-toolbar");
+    const style = toolbar && getComputedStyle(toolbar);
+    const left = 24 + (style ? parseFloat(style.getPropertyValue("--navigation-inset")) || 0 : 0);
+    const right = 24 + (style ? parseFloat(style.right) || 0 : 0);
+    const top = Math.max(24, (toolbar?.getBoundingClientRect().bottom ?? bounds.top) - bounds.top + 24);
+    return { x: left, y: top, width: Math.max(1, canvas!.clientWidth - left - right), height: Math.max(1, canvas!.clientHeight - top - 24) };
+  }
+
+  export function placementViewport() {
+    const area = visibleCanvasArea(), viewport = getViewport();
+    return { x: (area.x - viewport.x) / viewport.zoom, y: (area.y - viewport.y) / viewport.zoom,
+      width: area.width / viewport.zoom, height: area.height / viewport.zoom };
+  }
+
+  export async function reveal(ids: string | string[], centerVisible = false) {
     const requested = typeof ids === "string" ? [ids] : ids;
     if (!requested.length) return;
     const generation = ++revealGeneration;
@@ -137,12 +154,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         const bounds = canvas.getBoundingClientRect();
         const toolbar = canvas.querySelector(".workflow-toolbar")?.getBoundingClientRect();
         const insetTop = Math.max(padding, (toolbar?.bottom ?? bounds.top) - bounds.top + padding);
-        const width = Math.max(1, canvas.clientWidth - padding * 2);
-        const height = Math.max(1, canvas.clientHeight - insetTop - padding);
+        const area = centerVisible ? visibleCanvasArea() : { x: padding, y: insetTop,
+          width: Math.max(1, canvas.clientWidth - padding * 2), height: Math.max(1, canvas.clientHeight - insetTop - padding) };
+        const { width, height } = area;
         const zoom = Math.max(store.minZoom, Math.min(getViewport().zoom, width / (right - left), height / (bottom - top)));
         const duration = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 280;
-        await Promise.race([cancelled, setViewport({ x: padding + width / 2 - (left + right) / 2 * zoom,
-          y: insetTop + height / 2 - (top + bottom) / 2 * zoom, zoom }, { duration, interpolate: "linear" })]);
+        await Promise.race([cancelled, setViewport({ x: area.x + width / 2 - (left + right) / 2 * zoom,
+          y: area.y + height / 2 - (top + bottom) / 2 * zoom, zoom }, { duration, interpolate: "linear" })]);
         return;
       }
     } finally {
@@ -157,6 +175,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <HintButton class="svelte-flow__controls-button" aria-label="Browse operations" label="Browse operations" aria-pressed={navigationOpen} aria-controls="side-navigation" onclick={onbrowse}><MaterialIcon name="list" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Switch" label="Switch" onclick={() => onutility("switch")}><MaterialIcon name="alt_route" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Cast" label="Cast" onclick={() => onutility("cast")}><MaterialIcon name="transform" size={18} /></HintButton>
+    <HintButton class="svelte-flow__controls-button" aria-label="Add vault variable" label="Add vault variable" onclick={() => onutility("vault")}><MaterialIcon name="variable_add" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Comment" label="Comment" onclick={() => onutility("comment")}><MaterialIcon name="sticky_note" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Remove selected" label="Remove selected" disabled={!selected} onclick={onremove}><MaterialIcon name="delete" size={18} /></HintButton>
     </div><div class="workflow-control-group">

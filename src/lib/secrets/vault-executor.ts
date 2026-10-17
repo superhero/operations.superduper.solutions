@@ -6,5 +6,5 @@ import type { CredentialWorkflowExecutor } from "../workflow-execution.ts";
 /** The worker correlates requests by call ID and authorizes this call's descriptor and binding. */
 export const executeVaultOperation: CredentialWorkflowExecutor = async (descriptor, values, context, signal) => {
   const { vaultCall } = await import("./client.ts");
-  return vaultCall("execute", [descriptor, values, context.binding], signal);
+  return vaultCall("execute", [descriptor, values, context.binding, undefined, context.variables], signal);
 };

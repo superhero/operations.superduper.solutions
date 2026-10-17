@@ -10,7 +10,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import HintButton from "$lib/components/HintButton.svelte";
 
   let { label, value, choices, disabled = false, active = true, onchange }: {
-    label: string; value: string; choices: { value: string; label: string; symbol?: string }[];
+    label: string; value: string; choices: { value: string; label: string; symbol?: string; placeholder?: boolean; bold?: boolean }[];
     disabled?: boolean; active?: boolean; onchange: (value: string) => void;
   } = $props();
   let open = $state(false);
@@ -24,19 +24,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={selected?.label ?? value} labelAsName={false} tooltipEnabled={!open}>
         {#snippet child({ props: hintProps })}
           <button {...mergeProps(hintProps, selectProps)}>
-            <span>{selected?.symbol ?? selected?.label ?? value}</span><MaterialIcon name="expand_more" size={16} />
+            <span class="select-label" class:bold={selected?.bold} class:placeholder={selected?.placeholder}>{selected?.symbol ?? selected?.label ?? value}</span><MaterialIcon name="expand_more" size={16} />
           </button>
         {/snippet}
       </HintButton>
     {/snippet}
   </Select.Trigger>
   <Select.Portal>
-    <Select.Content class="workflow-node-select-options nodrag nopan nokey nowheel" aria-label={label} sideOffset={5} collisionPadding={10} preventScroll={false}>
+    <Select.Content class="workflow-node-select-options nodrag nopan nokey nowheel" aria-label={label} align="start" sideOffset={5} collisionPadding={10} preventScroll={false}>
       <Select.Viewport>
         {#each choices as choice (choice.value)}
           <Select.Item value={choice.value} label={choice.label} class="workflow-node-select-option">
             {#snippet children({ selected })}
-              <span>{choice.label}</span><span class="check" aria-hidden="true">{#if selected}<MaterialIcon name="check" size={16} />{/if}</span>
+              <span class:bold={choice.bold} class:placeholder={choice.placeholder}>{choice.label}</span><span class="check" aria-hidden="true">{#if selected}<MaterialIcon name="check" size={16} />{/if}</span>
             {/snippet}
           </Select.Item>
         {/each}
@@ -51,6 +51,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.workflow-node-select-options) { z-index: 60; min-width: max(140px, var(--bits-select-anchor-width)); max-width: calc(100vw - 20px); max-height: min(320px, var(--bits-select-content-available-height)); overflow: auto; padding: 4px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
   :global(.workflow-node-select-option) { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 32px; padding: 6px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; outline: none; transition: background-color 180ms ease-in, color 180ms ease-in; }
   :global(.workflow-node-select-option[data-highlighted]) { background: var(--color-secondary-hover); color: var(--color-secondary-hover-foreground); }
+  .select-label { min-width: 0; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bold { font-weight: 700; }
+  .placeholder { font-style: italic; font-weight: 400; }
   .check { display: grid; place-items: center; width: 16px; height: 16px; }
   @media (prefers-reduced-motion: reduce) { :global(.workflow-node-select), :global(.workflow-node-select-option) { transition: none; } }
 </style>

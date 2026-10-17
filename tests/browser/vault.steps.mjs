@@ -9,11 +9,12 @@ import { chooseCatalogOperation, setMode } from './workspace.steps.mjs';
 
 const fixture = '/vault-storage-fixture.js';
 const canaries = ['browser-VAULT-password-9182', 'browser-BEARER-canary-9182', 'browser-APIKEY-canary-9182', 'browser-PRIVATE-label-9182'];
+const privateCanaries = canaries.slice(0, 3);
 const invoke = (page, method, ...args) => page.evaluate(async ({ fixture, method, args }) => (await import(fixture))[method](...args), { fixture, method, args });
 const storage = (page, action, ...args) => page.evaluate(async ({ fixture, action, args }) => (await import(fixture)).createVaultStorage()[action](...args), { fixture, action, args });
 const observations = async world => (await world.context.request.get(`${world.baseURL}/vault-api/${world.vaultRun}/observations`)).json();
 function noCanaries(value) {
-  for (const canary of canaries) assert.ok(!JSON.stringify(value).includes(canary), 'A registered private field crossed the inspected boundary');
+  for (const canary of privateCanaries) assert.ok(!JSON.stringify(value).includes(canary), 'A registered private field crossed the inspected boundary');
 }
 async function seed(world, action) {
   world.vaultRun = randomUUID(); world.vaultAction = action;
@@ -42,14 +43,16 @@ Given('a vault whose approved request needs cross-origin credentials without COR
   this.vault = await invoke(this.page, 'seed', this.vaultCrossOrigin, this.vaultRun, 'ok');
 });
 
-Then('its database and backup contain no registered secret or private label', async function () {
+Then('its database exposes key names while stored values and exports remain encrypted', async function () {
   const stored = await storage(this.page, 'read');
   assert.equal(stored.snapshot.version, 1);
   assert.equal(stored.snapshot.records.length, 2);
   assert.equal(stored.snapshot.envelopes.length, 2);
   assert.ok(stored.snapshot.records.every(record => record.ciphertext.data.length > 40));
   noCanaries(stored); noCanaries(this.vault.backup);
-  assert.deepEqual(await invoke(this.page, 'persistedCanaries', [...canaries, this.vault.recovery]), []);
+  assert.ok(stored.keys.some(key => key.label === canaries[3]));
+  assert.ok(!this.vault.backup.includes(canaries[3]));
+  assert.deepEqual(await invoke(this.page, 'persistedCanaries', [...privateCanaries, this.vault.recovery]), []);
   const locked = await invoke(this.page, 'lockedRun');
   assert.equal(locked.error, 'LOCKED');
   await this.page.reload();
@@ -80,7 +83,7 @@ Then('a vault storage {string} failure is safe and leaves ciphertext unchanged',
   assert.equal(result.cause, false);
   assert.ok(!result.message.includes('PRIVATE'));
   assert.equal(unchanged, true);
-  assert.deepEqual(await invoke(this.page, 'persistedCanaries', canaries), []);
+  assert.deepEqual(await invoke(this.page, 'persistedCanaries', privateCanaries), []);
 });
 
 Then('a blocked native database open fails within its deadline without recreating deleted storage', async function () {
@@ -88,7 +91,7 @@ Then('a blocked native database open fails within its deadline without recreatin
   assert.equal(result.result.error, 'UNAVAILABLE'); assert.equal(result.result.cause, false);
   assert.equal(result.unchanged, true); assert.equal(result.recreated, false);
   assert.ok(result.elapsed >= 2000 && result.elapsed < 10_000, 'blocked open must have a bounded failure');
-  assert.deepEqual(await invoke(this.page, 'persistedCanaries', canaries), []);
+  assert.deepEqual(await invoke(this.page, 'persistedCanaries', privateCanaries), []);
 });
 
 Then('another tab durably locks the vault and stale execution never reaches the endpoint', async function () {
@@ -109,7 +112,7 @@ Then('a fresh context restores its encrypted backup using {string} with grants i
     assert.equal(state.status.unlocked, true); assert.equal(state.summaries.length, 2);
     assert.ok(state.summaries.every(record => record.grants.length === 0));
     assert.ok(state.summaries.every(record => !Object.hasOwn(record, 'value')));
-    assert.deepEqual(await invoke(page, 'persistedCanaries', [...canaries, this.vault.recovery]), []);
+    assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, this.vault.recovery]), []);
     noCanaries(await storage(page, 'read'));
   } finally { await context.close(); }
 });
@@ -130,7 +133,7 @@ Then('a browser vault request sends its scoped headers without cookies or referr
   assert.equal(seen[0].headers.referer, undefined);
   assert.equal((await invoke(this.page, 'run', true)).error, 'PERMISSION');
   assert.equal((await observations(this)).length, 1, 'operation drift must fail before dispatch');
-  assert.deepEqual(await invoke(this.page, 'persistedCanaries', canaries), []);
+  assert.deepEqual(await invoke(this.page, 'persistedCanaries', privateCanaries), []);
 });
 
 Then('the browser vault rejects the redirect without contacting its target', async function () {
@@ -147,7 +150,7 @@ Then('a CORS refusal stops at preflight and exposes no credential or native fail
   assert.equal(seen.length, 1); assert.equal(seen[0].method, 'OPTIONS');
   assert.equal(seen[0].headers.origin, this.baseURL);
   assert.equal(seen[0].headers.authorization, undefined); assert.equal(seen[0].headers['x-api-key'], undefined);
-  assert.deepEqual(await invoke(this.page, 'persistedCanaries', canaries), []);
+  assert.deepEqual(await invoke(this.page, 'persistedCanaries', privateCanaries), []);
   const endpoint = `${this.vaultCrossOrigin}/vault-api/${this.vaultRun}/ok`;
   // Match only native messages for the refusal whose real preflight was checked above.
   this.diagnostics = this.diagnostics.filter(item => !(item.type === 'console-error'
@@ -305,12 +308,15 @@ Given('I create a synthetic vault on the localhost relying-party origin', { time
 
 Then('its registered secret is encrypted and a reload requires unlocking again', async function () {
   noCanaries(await storage(this.page, 'read'));
-  assert.deepEqual(await invoke(this.page, 'persistedCanaries', [...canaries, this.uiRecovery]), []);
+  assert.deepEqual(await invoke(this.page, 'persistedCanaries', [...privateCanaries, this.uiRecovery]), []);
   await this.page.reload();
   await this.page.locator('#startup-status').waitFor({ state: 'detached' });
   await openSecrets(this.page);
   await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
-  await expect(settings(this.page).getByText(canaries[3], { exact: true })).toHaveCount(0);
+  await expect(settings(this.page).getByText(canaries[3], { exact: true })).toHaveCount(1);
+  const row = settings(this.page).locator('li').filter({ hasText: canaries[3] });
+  await expect(row.getByRole('button', { name: 'Copy', exact: true })).toBeDisabled();
+  await expect(row.getByRole('button', { name: 'Remove', exact: true })).toBeDisabled();
   await unlockUI(this.page);
   await expect(settings(this.page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
 });
@@ -337,7 +343,7 @@ Then('a vault worker constructor failure remains safe and a later unlock recover
     assert.equal(await vaultWorkerCount(page), 0);
     assert.deepEqual(await storage(page, 'read'), before);
     noCanaries(await settings(page).innerText());
-    assert.deepEqual(await invoke(page, 'persistedCanaries', canaries), []);
+    assert.deepEqual(await invoke(page, 'persistedCanaries', privateCanaries), []);
   } finally { await page.evaluate(() => { globalThis.Worker = globalThis.vaultOriginalWorker; delete globalThis.vaultOriginalWorker; }); }
   await unlockUI(page);
   await expect(settings(page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
@@ -387,7 +393,7 @@ Then('an approved operation shows and copies only scrubbed diagnostics and persi
   await page.evaluate(() => window.getSelection().removeAllRanges());
   const errors = await page.evaluate(async () => (await import('/error-history-storage-fixture.js')).readErrors(0, 100));
   noCanaries(errors);
-  assert.deepEqual(await invoke(page, 'persistedCanaries', [...canaries, this.uiRecovery]), []);
+  assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, this.uiRecovery]), []);
   this.diagnostics = this.diagnostics.filter(item => !(item.type === 'http-error' && item.url === `${this.baseURL}${path}` && item.status === 422)
     && !(item.type === 'console-error' && /Failed to load resource.*422/.test(item.message) && item.location?.url === `${this.baseURL}${path}`));
 });
@@ -706,4 +712,41 @@ Then('the password replacement pane validates matching values and preserves reco
   await page.evaluate(() => window.dispatchEvent(new Event('pagehide')));
   await unlockUI(page, this.uiRecovery);
   await expect(vault.locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
+});
+
+
+Then('a public operation resolves a vault variable only after upgrading its legacy schema policy', async function () {
+  const result = await policy(this.page, 'publicVariable', true);
+  assert.equal(result.before, 'PERMISSION');
+  assert.equal(result.value.response.status, 200);
+  noCanaries(result);
+  const sent = await observations(this);
+  assert.equal(sent.length, 2, 'only the baseline request and upgraded variable request may dispatch');
+  assert.equal(sent[1].headers['x-vault-variable'], canaries[1]);
+  assert.equal(sent[1].headers.authorization, undefined);
+});
+
+
+Then('a legacy vault publishes only key names after unlocking without changing its encrypted snapshot', async function () {
+  const result = await this.page.evaluate(async fixture => {
+    const { VaultSession, createVaultStorage, synthetic } = await import(fixture);
+    const storage = createVaultStorage(), before = await storage.read();
+    const legacy = await storage.replace(before, before.snapshot);
+    const session = new VaultSession(storage);
+    const unavailable = await session.keys();
+    const proof = { methodId: legacy.snapshot.envelopes.find(item => item.kind === 'password').id, secret: synthetic.password };
+    await session.unlock(proof); session.lock();
+    const indexed = await storage.read(), keys = await session.keys();
+    let valueError;
+    try { await session.copyCredential(keys.entries[0].id); } catch (error) { valueError = error.code; }
+    await storage.lock();
+    let conflict;
+    try { await storage.indexKeys(indexed, keys.entries); } catch (error) { conflict = error.code; }
+    return { unavailable, keys, valueError, conflict, sameSnapshot: JSON.stringify(legacy.snapshot) === JSON.stringify(indexed.snapshot),
+      sameCounters: legacy.revision === indexed.revision && legacy.lockEpoch === indexed.lockEpoch };
+  }, fixture);
+  assert.deepEqual(result.unavailable, { entries: [], needsUnlock: true });
+  assert.equal(result.keys.needsUnlock, false); assert.equal(result.keys.entries.length, 2);
+  assert.equal(result.valueError, 'LOCKED'); assert.equal(result.conflict, 'CONFLICT');
+  assert.equal(result.sameSnapshot, true); assert.equal(result.sameCounters, true); noCanaries(result);
 });

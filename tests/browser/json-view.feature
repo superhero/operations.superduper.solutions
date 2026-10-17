@@ -38,3 +38,6 @@ Feature: Read-only operation JSON
     When the cached metrics report refreshes while I review JSON
     And I fold the JSON root and nested operation branches with the keyboard
     Then reviewing JSON has left the operation draft and non-metric local storage unchanged
+
+  Scenario: Settings schema methods are expanded for an operation overview
+    Then the Settings schema viewer expands HTTP methods but keeps their details folded

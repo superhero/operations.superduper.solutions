@@ -32,12 +32,14 @@ export type CredentialGrant = { id: string; scheme: string; descriptor: Approved
 export type VaultCredential = {
   id: string; label: string; kind: "bearer" | "apiKey" | "secret"; value: string; grants: CredentialGrant[];
 };
+export type VaultKey = Pick<VaultCredential, "id" | "label" | "kind">;
 export type CredentialSummary = Omit<VaultCredential, "value">;
 export type CredentialBinding = {
   alternative: number; credentials: Record<string, string>; fingerprint: string;
 };
 export type CredentialExecutionContext = {
   binding: CredentialBinding; runId: string; nodeId: string;
+  variables?: import("./variables.ts").VaultVariableInput[];
 };
 export const recoveryKeyBytes = 128;
 export const recoveryKeyCharacters = Math.ceil(recoveryKeyBytes / 3) * 4;

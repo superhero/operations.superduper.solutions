@@ -182,6 +182,7 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
     const node = byId.get(nodeId)!;
     if (node.type === "data") return node.data.fields.find(field => field.id === handle)!.type;
     if (node.type === "cast") return node.data.targetType;
+    if (node.type === "vault") return "Text";
     if (seen.has(nodeId)) return "Unknown";
     const ancestors = new Set([...seen, nodeId]);
     const types = new Set(mainInputs(nodeId).map(edge => outputType(edge.source, edge.sourceHandle, ancestors)));
@@ -229,6 +230,8 @@ export function isValueConnection(connection: { sourceHandle?: string | null; ta
   if (source.id === target.id || source.hidden || target.hidden) return false;
   const sourceField = source.type === "data" && source.data.direction === "outputs"
     ? source.data.fields.find(field => field.id === connection.sourceHandle && field.connectable) : undefined;
+  if (source.type === "vault") return connection.sourceHandle === "value" && target.type === "data" &&
+    target.data.direction === "inputs" && target.data.fields.some(field => field.id === connection.targetHandle && field.connectable && field.type === "Text");
   const sourceUtility = source.type === "cast" ? connection.sourceHandle === "result" : source.type === "switch" &&
     source.data.gates.some(gate => gate.id === connection.sourceHandle);
   if (!sourceField && !sourceUtility) return false;

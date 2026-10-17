@@ -384,3 +384,95 @@ Then("real credentialed requests reject {string} redirects before a second dispa
     await Promise.all([new Promise(resolve => source.close(resolve)), new Promise(resolve => target.close(resolve))]);
   }
 });
+
+Then('vault variable execution rejects missing entries malformed slots and stale sessions before sending', async () => {
+  const id = crypto.randomUUID(), operation = baseOperation();
+  operation.security = [];
+  operation.fields = [field('query', 'value')];
+  const descriptor = await approvedOperation(operation, 'https://api.example.test');
+  const binding = { alternative: 0, credentials: {}, fingerprint: descriptor.fingerprint };
+  const credentials = [{ id, label: 'hidden', value: canary, kind: 'secret', grants: [] }];
+  const variables = [{ key: 'query:value', path: [], credentialId: id }];
+  const values = { 'query:value': '[Vault variable]' };
+  let sent = 0;
+  const options = { variables, assertCurrent: () => {}, fetchRequest: async () => { sent++; return response(); } };
+  for (const patch of [
+    { credentials: [] }, { variables: [...variables, ...variables] }, { variables: [{ ...variables[0], credentialId: 'invalid' }] },
+    { variables: [{ ...variables[0], key: 'missing' }] }, { variables: [{ ...variables[0], path: ['missing'] }] },
+    { values: { 'query:value': 'public value' } }, { assertCurrent: () => { throw new VaultError('LOCKED'); } },
+    { binding: { ...binding, fingerprint: '0'.repeat(64) } },
+  ]) {
+    await assert.rejects(executeCredentialed(descriptor, patch.values ?? values, patch.binding ?? binding,
+      patch.credentials ?? credentials, { ...options, ...patch }), error => error instanceof VaultError);
+  }
+  assert.equal(sent, 0);
+  const echoed = await executeCredentialed(descriptor, values, binding, credentials,
+    { ...options, fetchRequest: async () => Response.json({ echoed: canary }) });
+  assert.equal(echoed.response.redacted, true); assert.ok(!JSON.stringify(echoed).includes(canary));
+});
+
+Then('vault variables resolve nested object and array leaves without changing public inputs', async () => {
+  const id = crypto.randomUUID(), operation = baseOperation(); operation.method = 'POST'; operation.security = [];
+  operation.fields = [field('body', 'payload', { type: 'object', schema: { type: 'object', properties: { token: { type: 'string' }, values: { type: 'array', items: { type: 'string' } } } } })];
+  const descriptor = await approvedOperation(operation, 'https://api.example.test');
+  const binding = { alternative: 0, credentials: {}, fingerprint: descriptor.fingerprint };
+  const input = { 'body:payload': JSON.stringify({ token: '[Vault variable]', values: ['public', '[Vault variable]'] }) };
+  const before = structuredClone(input);
+  const output = await executeCredentialed(descriptor, input, binding, [{ id, label: 'hidden', value: canary, kind: 'secret', grants: [] }], {
+    variables: [{ key: 'body:payload', path: ['token'], credentialId: id }, { key: 'body:payload', path: ['values', '1'], credentialId: id }],
+    assertCurrent: () => {}, fetchRequest: async (_url, options) => {
+      assert.deepEqual(JSON.parse(options.body), { payload: { token: canary, values: ['public', canary] } });
+      return response();
+    },
+  });
+  assert.deepEqual(input, before); assert.ok(!JSON.stringify(output).includes(canary));
+  assert.equal(output.request.body.payload.values[0], 'public');
+});
+
+
+Then('vault variables respect security alternatives additional properties and decrypted schema constraints', async () => {
+  const id = crypto.randomUUID(), credentials = [{ id, label: 'hidden', value: canary, kind: 'secret', grants: [] }];
+  for (const security of [undefined, [], [[bearer]], [[], [bearer]]]) {
+    const operation = baseOperation(); operation.security = security;
+    operation.method = 'POST'; operation.fields = [];
+    operation.bodySchema = { type: 'object', additionalProperties: { type: 'string', minLength: 2 } };
+    const descriptor = await approvedOperation(operation, 'https://api.example.test');
+    const binding = { alternative: 0, credentials: security?.[0]?.length ? { Bearer: id } : {}, fingerprint: descriptor.fingerprint };
+    const options = { variables: [{ key: 'body:dynamic', path: [], credentialId: id }], assertCurrent: () => {}, fetchRequest: async (_url, options) => {
+      assert.deepEqual(JSON.parse(options.body), { dynamic: canary });
+      assert.equal(new Headers(options.headers).get('Authorization'), security?.[0]?.length ? `Bearer ${canary}` : null);
+      return response();
+    } };
+    const values = { 'body:dynamic': '[Vault variable]' };
+    assert.ok(!JSON.stringify(await executeCredentialed(descriptor, values, binding, credentials, options)).includes(canary));
+    const constrained = await approvedOperation({ ...operation, bodySchema: { ...operation.bodySchema, additionalProperties: false } }, descriptor.origin);
+    await assert.rejects(executeCredentialed(constrained, values, { ...binding, fingerprint: constrained.fingerprint }, credentials, options), denied);
+    const invalid = await approvedOperation({ ...operation, bodySchema: { ...operation.bodySchema, additionalProperties: { type: 'integer' } } }, descriptor.origin);
+    await assert.rejects(executeCredentialed(invalid, values, { ...binding, fingerprint: invalid.fingerprint }, credentials, options), error => error instanceof VaultError);
+  }
+});
+
+
+Then('vault variable path previews remove encoded values and invalid structured slots never dispatch', async () => {
+  const id = crypto.randomUUID(), secret = 'private=value&with+reserved:characters';
+  const credentials = [{ id, label: 'hidden', value: secret, kind: 'secret', grants: [] }];
+  const operation = { ...baseOperation(), security: [], path: '/items/{token}', fields: [field('path', 'token', { required: true })] };
+  const descriptor = await approvedOperation(operation, 'https://api.example.test');
+  const binding = { alternative: 0, credentials: {}, fingerprint: descriptor.fingerprint };
+  const output = await executeCredentialed(descriptor, { 'path:token': '[Vault variable]' }, binding, credentials, {
+    variables: [{ key: 'path:token', path: [], credentialId: id }], assertCurrent: () => {}, fetchRequest: async url => {
+      assert.equal(new URL(url).pathname, `/items/${encodeURIComponent(secret)}`); return response();
+    },
+  });
+  assert.ok(!JSON.stringify(output).includes(secret)); assert.ok(!JSON.stringify(output).includes(encodeURIComponent(secret)));
+  const nested = await approvedOperation({ ...operation, path: '/items', fields: [field('body', 'payload', { type: 'object' })] }, descriptor.origin);
+  let sent = 0;
+  const options = { assertCurrent: () => {}, fetchRequest: async () => { sent++; return response(); } };
+  for (const [value, path] of [
+    ['invalid JSON', ['token']], ['null', ['token']], ['{}', ['missing', 'token']],
+    ['{"nested":null}', ['nested', 'token']], ['{"nested":"public"}', ['nested', 'token']],
+    ['{"nested":{}}', ['nested', 'missing']], ['{"token":"public"}', ['token']],
+  ]) await assert.rejects(executeCredentialed(nested, { 'body:payload': value }, { ...binding, fingerprint: nested.fingerprint }, credentials,
+    { ...options, variables: [{ key: 'body:payload', path, credentialId: id }] }), error => error instanceof VaultError);
+  assert.equal(sent, 0);
+});

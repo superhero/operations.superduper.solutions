@@ -162,6 +162,283 @@ fix(ui): keep Operations header aligned left beside Settings
 
 ```
 
+<!-- changelog-commit:99442254792dccc2952bf14d8b3561765ae1422e -->
+### Commit [`9944225`](https://github.com/superhero/operations.superduper.solutions/commit/99442254792dccc2952bf14d8b3561765ae1422e)
+
+```text
+fix(navigation): overlay the left menu without shifting the workspace
+
+```
+
+<!-- changelog-commit:c8502e4499d2b4b6d53f45e413d41ba5af3df2b5 -->
+### Commit [`c8502e4`](https://github.com/superhero/operations.superduper.solutions/commit/c8502e4499d2b4b6d53f45e413d41ba5af3df2b5)
+
+```text
+feat(workflows): add connectable vault variable nodes
+
+Add a Variable Add toolbar action and a vault-entry picker with Text output\nconnections. Persist only entry IDs and strip local selections from portable\nworkflows, including nested snapshots.\n\nResolve variable values in the vault worker immediately before validated\nrequest dispatch. Keep previews sanitized, including encoded path values,\nand upgrade schema approvals to support operations without authentication.\n\nCover reference validation, connection eligibility, nested and additional\nfields, locked sessions, export cleanup and native worker execution with\nfocused Cucumber scenarios.
+
+```
+
+<!-- changelog-commit:7693d78ffd902a45e9ef3aed3a595cba028606b7 -->
+### Commit [`7693d78`](https://github.com/superhero/operations.superduper.solutions/commit/7693d78ffd902a45e9ef3aed3a595cba028606b7)
+
+```text
+fix(workflows): wrap toolbar beside the open navigation menu
+
+Reserve the desktop navigation width when sizing and packing workflow
+controls. Recompute on menu toggles, including reduced-motion layouts,
+while preserving the overlaid menu and unchanged canvas geometry.
+
+Extend focused browser checks to cover visible toolbar actions and compact
+rows beside navigation at desktop widths, plus existing Settings wrapping.
+
+```
+
+<!-- changelog-commit:7391792ded8aa7d782e01e96a74612e0c5f1bc76 -->
+### Commit [`7391792`](https://github.com/superhero/operations.superduper.solutions/commit/7391792ded8aa7d782e01e96a74612e0c5f1bc76)
+
+```text
+fix(settings): block workspace editing when the drawer leaves little room
+
+Make the workflow inactive while Settings occupies a viewport below
+1220px, leaving desktop editing available when at least 320px remains.
+Keep the guard through the closing animation and update it on resize,
+moving canvas focus into Settings when the available space disappears.
+
+Check narrow and desktop interaction, shortcut isolation, resizing and
+closing with focused browser scenarios.
+
+```
+
+<!-- changelog-commit:8f15038e6de7730361b471bf19b21e788a87f661 -->
+### Commit [`8f15038`](https://github.com/superhero/operations.superduper.solutions/commit/8f15038e6de7730361b471bf19b21e788a87f661)
+
+```text
+fix(schemas): expand operation methods in the Settings viewer
+
+Open HTTP method branches alongside their paths by default so operation
+summaries and identifiers are visible immediately. Keep deeper request
+and response structures collapsed and restore these defaults on reopening.
+
+Verify the method overview and reopen behavior with a focused browser case.
+
+```
+
+<!-- changelog-commit:bf89a4b2eb6085b32d6946e0e1d0b93f65398258 -->
+### Commit [`bf89a4b`](https://github.com/superhero/operations.superduper.solutions/commit/bf89a4b2eb6085b32d6946e0e1d0b93f65398258)
+
+```text
+feat(workflows): place utility nodes near the visible viewport center
+
+Find free space nearest the current visible workspace center for vault
+variables, comments, switches and casts using their rendered dimensions.
+Prefer fully visible placements, then search beyond the viewport when
+needed, respecting grid snapping and preserving existing node positions.
+
+Pan to center the inserted utility beside open panes and below controls.
+Keep operation trees on their existing ordered placement path.
+
+Verify crowded and translated layouts against an exhaustive search and
+exercise all four utility types through the browser toolbar.
+
+```
+
+<!-- changelog-commit:2a76993f6212fd985d6bf79a498f2a0656cfcbb8 -->
+### Commit [`2a76993`](https://github.com/superhero/operations.superduper.solutions/commit/2a76993f6212fd985d6bf79a498f2a0656cfcbb8)
+
+```text
+feat(vault): expose public key names without unlocking values
+
+Persist a bounded public index of entry names, IDs and kinds alongside
+atomic encrypted vault updates. Keep values and grants encrypted and
+resolve workflow references only through authenticated worker records.
+
+Allow locked key browsing in Settings and variable pickers. Require an
+unlocked session for copying, mutations and workflow value use. Rebuild
+the index during import or the next unlock of a legacy vault, without
+rewriting encrypted snapshots just to publish names.
+
+Coalesce concurrent status reads and refresh public metadata without
+restarting secret workers on lock notifications. Update documentation and
+focused Cucumber checks for visibility, value guards and migration.
+
+```
+
+<!-- changelog-commit:c136e054eb64c69ca06dd54785a7cebca109b6bf -->
+### Commit [`c136e05`](https://github.com/superhero/operations.superduper.solutions/commit/c136e054eb64c69ca06dd54785a7cebca109b6bf)
+
+```text
+feat(workflows): select vault variables directly in nodes
+
+Keep public vault keys selectable through an inline dropdown, including
+while locked. Show the String type beside the output connection, and
+preserve the unlock fallback for legacy vault metadata.
+
+```
+
+<!-- changelog-commit:3d640cf1f8cc062a6ca72931eb6dbbb028462036 -->
+### Commit [`3d640cf`](https://github.com/superhero/operations.superduper.solutions/commit/3d640cf1f8cc062a6ca72931eb6dbbb028462036)
+
+```text
+fix(workflows): keep the vault variable title constant
+
+```
+
+<!-- changelog-commit:61c9be03b65a4dc97d6fb4705f00d528dcb9de1c -->
+### Commit [`61c9be0`](https://github.com/superhero/operations.superduper.solutions/commit/61c9be03b65a4dc97d6fb4705f00d528dcb9de1c)
+
+```text
+feat(layout): adapt settings to shared and mobile viewports
+
+Narrow Settings below 1150px while preserving 250px of workflow space.
+Below the navigation modal breakpoint, disable workflow interaction and
+reserve room for both header buttons. Reduce or hide only the brand text
+when the header cannot accommodate it.
+
+```
+
+<!-- changelog-commit:f3a7339c51ab36b6a0bae4a080e75ddbfc828228 -->
+### Commit [`f3a7339`](https://github.com/superhero/operations.superduper.solutions/commit/f3a7339c51ab36b6a0bae4a080e75ddbfc828228)
+
+```text
+fix(layout): let mobile settings take over the viewport
+
+Replace the narrow header strip with a full-width Settings drawer and
+a sticky close cross on small screens. Make the underlying page inert
+until the closing transition completes, while retaining desktop sizing.
+
+```
+
+<!-- changelog-commit:bd9d4187cf9933c9c7b75111fc3755d28489676a -->
+### Commit [`bd9d418`](https://github.com/superhero/operations.superduper.solutions/commit/bd9d4187cf9933c9c7b75111fc3755d28489676a)
+
+```text
+fix(errors): hide possible solution suggestions
+
+```
+
+<!-- changelog-commit:202d5edbd1e1b4d1aca81235bab91968520e8709 -->
+### Commit [`202d5ed`](https://github.com/superhero/operations.superduper.solutions/commit/202d5edbd1e1b4d1aca81235bab91968520e8709)
+
+```text
+fix(workflows): keep vault key selection independent of unlocking
+
+Remove the node picker authentication modal and refresh public metadata
+on interaction, including when its initial list was empty. Keep values
+protected and execution authenticated. Explain the one-time migration
+for older vaults whose key names have not yet been indexed publicly.
+
+```
+
+<!-- changelog-commit:a1008845ba9b9cdd34ed4a53b6584a94445fb837 -->
+### Commit [`a100884`](https://github.com/superhero/operations.superduper.solutions/commit/a1008845ba9b9cdd34ed4a53b6584a94445fb837)
+
+```text
+fix(workflows): left-align node dropdowns with their triggers
+
+```
+
+<!-- changelog-commit:1520e91ea8d42e97ec0d630500037ea74ce53458 -->
+### Commit [`1520e91`](https://github.com/superhero/operations.superduper.solutions/commit/1520e91ea8d42e97ec0d630500037ea74ce53458)
+
+```text
+fix(workflows): style the vault selector placeholder as a hint
+
+```
+
+<!-- changelog-commit:785f068b88cd8c76cd4aea4f20d4963680880be3 -->
+### Commit [`785f068`](https://github.com/superhero/operations.superduper.solutions/commit/785f068b88cd8c76cd4aea4f20d4963680880be3)
+
+```text
+fix(workflows): clear vault references when selecting the placeholder
+
+Accept the empty dropdown selection and remove the stored credential
+reference instead of silently retaining the previous vault key.
+
+```
+
+<!-- changelog-commit:d291c8498599891b59dc75fcb048cbb97c2e427a -->
+### Commit [`d291c84`](https://github.com/superhero/operations.superduper.solutions/commit/d291c8498599891b59dc75fcb048cbb97c2e427a)
+
+```text
+fix(workflows): vertically center node select labels
+
+```
+
+<!-- changelog-commit:c6350bbe0a1f232aeae0b1842372a87948f347d4 -->
+### Commit [`c6350bb`](https://github.com/superhero/operations.superduper.solutions/commit/c6350bbe0a1f232aeae0b1842372a87948f347d4)
+
+```text
+fix(workflows): emphasize vault key names in the selector
+
+```
+
+<!-- changelog-commit:8291f53b006bd77d4b932d52a1b39d3088b1c92a -->
+### Commit [`8291f53`](https://github.com/superhero/operations.superduper.solutions/commit/8291f53b006bd77d4b932d52a1b39d3088b1c92a)
+
+```text
+fix(layout): match menu close button sizes
+
+```
+
+<!-- changelog-commit:1e8240ff62548138bbdbf966d8eba587784f051a -->
+### Commit [`1e8240f`](https://github.com/superhero/operations.superduper.solutions/commit/1e8240ff62548138bbdbf966d8eba587784f051a)
+
+```text
+fix(layout): align menu close buttons within their headers
+
+```
+
+<!-- changelog-commit:fce58252c0b8b092064c4bfbee60d91913035855 -->
+### Commit [`fce5825`](https://github.com/superhero/operations.superduper.solutions/commit/fce58252c0b8b092064c4bfbee60d91913035855)
+
+```text
+fix(layout): remove extra padding below the settings close header
+
+```
+
+<!-- changelog-commit:f5ac78eeeefaa7ee8c5319c22acc03afdd5e3419 -->
+### Commit [`f5ac78e`](https://github.com/superhero/operations.superduper.solutions/commit/f5ac78eeeefaa7ee8c5319c22acc03afdd5e3419)
+
+```text
+fix(layout): place menu close tooltips to the left
+
+```
+
+<!-- changelog-commit:a69fd37976646b697b915ff40335666784d5f484 -->
+### Commit [`a69fd37`](https://github.com/superhero/operations.superduper.solutions/commit/a69fd37976646b697b915ff40335666784d5f484)
+
+```text
+fix(layout): preserve workflow geometry behind mobile settings
+
+Apply the Settings layout inset only in shared desktop layouts. Mobile
+Settings overlays and dims the existing workspace without shrinking its
+header, toolbar or minimap during opening and closing transitions.
+
+```
+
+<!-- changelog-commit:4572148205736d5ed77a052730c4b7e9f9771582 -->
+### Commit [`4572148`](https://github.com/superhero/operations.superduper.solutions/commit/4572148205736d5ed77a052730c4b7e9f9771582)
+
+```text
+fix(layout): use modal settings before workflow controls collapse
+
+Switch Settings to full-width modal behavior below 1150px rather than
+waiting until 900px. Keep desktop sizing, disabled background behavior
+and the close header on the same breakpoint. Cover intermediate widths
+and preserve toolbar geometry beneath the modal.
+
+```
+
+<!-- changelog-commit:94ee3de5e4b48c6b803dc43c5356c0311c9ae9cb -->
+### Commit [`94ee3de`](https://github.com/superhero/operations.superduper.solutions/commit/94ee3de5e4b48c6b803dc43c5356c0311c9ae9cb)
+
+```text
+merge: integrate current develop while preserving final layout behavior
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.49

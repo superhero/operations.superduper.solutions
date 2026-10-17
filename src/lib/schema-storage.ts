@@ -183,7 +183,6 @@ async function credentialPolicy(record: SchemaDocumentRecord, revision: string):
   if (record.enabled)
     for (const operation of validated.operations)
     {
-      if (!operation.security?.some(alternative => alternative.length)) continue;
       try { fingerprints.push((await approvedOperation(operation, operationServerUrl(validated.document, operation))).fingerprint); }
       catch (error)
       {
@@ -192,7 +191,7 @@ async function credentialPolicy(record: SchemaDocumentRecord, revision: string):
         if (!(error instanceof VaultError) || error.code !== "PERMISSION") throw error;
       }
     }
-  return { revision, fingerprints };
+  return { revision, fingerprints, version: 2 };
 }
 
 async function storeCredentialPolicy(active: IDBPTransaction<SchemaDatabase, StoreName[], "readwrite">,
@@ -219,7 +218,7 @@ async function backfillCredentialPolicies(database: Database): Promise<void>
     const revision = await head(metadata.id);
     if (!revision) throw new Error(`Schema ${metadata.id} has no committed revision for credential policy.`);
     const existing = Object.hasOwn(previous, metadata.id) ? previous[metadata.id] : undefined;
-    if (existing?.revision === revision && Array.isArray(existing.fingerprints) && (metadata.enabled || !existing.fingerprints.length))
+    if (existing?.version === 2 && existing.revision === revision && Array.isArray(existing.fingerprints) && (metadata.enabled || !existing.fingerprints.length))
       Object.defineProperty(policies, metadata.id, { value: existing, enumerable: true });
     else
     {

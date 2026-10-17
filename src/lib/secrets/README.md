@@ -1,7 +1,7 @@
 # Browser secrets vault
 
 This directory owns encrypted credential storage and authorized credential use.
-Keep plaintext out of document models, Git, shared stores, caches and diagnostics.
+Keep plaintext values out of document models, Git, shared stores, caches and diagnostics.
 The decision and threat boundary are described in
 [runtime secrets](../../../docs/adr/runtime-secrets.md).
 
@@ -15,7 +15,8 @@ The decision and threat boundary are described in
 | `policy`, `execution` | Immutable operation descriptors, request construction, credential injection and bounded sanitized responses |
 | `protocol`, `vault.worker`, `client`, `vault-executor` | Narrow RPC, cancellation, safe errors and application execution bridge |
 | `lifecycle`, `passkeys` | Activity deadlines and the window-only WebAuthn PRF ceremony |
-| `bindings` | Strict opaque workflow references, without credential values or grants |
+| `key-index` | Bounded public key names and IDs for locked browsing; never an authorization source |
+| `bindings`, `variables` | Strict opaque workflow and Text-variable references, without credential values or grants |
 
 ## Adding capabilities
 
@@ -29,16 +30,24 @@ Validate untrusted format and KDF bounds before allocation or expensive work.
 
 Credentialed requests originate in the worker from a validated operation descriptor.
 Any compatible saved credential can be selected without destination approval.
+Vault-variable nodes inject saved values into Text inputs inside the same worker,
+including nested request fields. Saved workflows hold IDs; portable documents
+clear selections. Previews contain placeholders or sanitized values.
 Changed operations invalidate stale bindings. Anonymous and credentialed
 alternatives must be selected explicitly.
 
 ## Persistence
 
-`v1/secrets` contains encrypted snapshots and public monotonic counters; it is
+`v1/secrets` contains encrypted snapshots, a public key-name index and public monotonic counters; it is
 outside LightningFS. Crypto finishes before one atomic transaction promotes the
 new state. Competing writers use compare-and-swap checks. Lock notifications are
 hints; durable checks reject suspended or stale tabs even after a missed message.
 Idle preferences live separately in `v1/settings`.
+
+Key names can be selected while locked. Values, copying and changes still require
+an unlocked session. Existing vaults publish their key index after one unlock;
+imports rebuild it from authenticated records. Encrypted exports retain their
+existing format.
 
 Workflow document versions 1–3 accept optional opaque credential bindings. Local
 history retains them; portable exports and imports remove them, and older readers

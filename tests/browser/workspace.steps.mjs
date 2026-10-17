@@ -106,6 +106,14 @@ async function setMode(page, mode) {
   await quitRun(page);
   await closeCatalog(page);
   if (!['workflow', 'settings'].includes(mode)) throw new Error(`Unsupported workspace: ${mode}`);
+  const mobileClose = page.getByRole('button', { name: 'Close settings', exact: true });
+  if (await mobileClose.isVisible()) {
+    if (mode === 'workflow') {
+      await mobileClose.click();
+      await expect(mobileClose).toBeHidden();
+    }
+    return;
+  }
   const button = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
   if (await button.getAttribute('aria-pressed') !== String(mode === 'settings')) {
     await button.click();
@@ -513,12 +521,22 @@ Then('the settings drawer preserves the workflow at width {int} with {string} mo
   await page.emulateMedia({ reducedMotion: motion });
   const canvas = page.locator('.workflow-host');
   const before = await canvas.boundingBox();
-  const settings = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
+  const toolbar = page.locator('.workflow-toolbar');
+  const toolbarBefore = await toolbar.boundingBox();
+  const viewport = page.locator('.svelte-flow__viewport');
+  const transformBefore = await viewport.getAttribute('style');
+  const settings = page.getByRole('banner', { includeHidden: true }).getByRole('button', { name: 'Settings', exact: true, includeHidden: true });
   await settings.click();
   const drawer = page.locator('.settings-drawer');
   await expect(drawer).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
-  await expect(canvas).not.toHaveAttribute('inert');
+  if (width < 1150) await expect.poll(() => canvas.evaluate(element => Boolean(element.closest('[inert]')))).toBe(true);
+  else await expect(canvas).not.toHaveAttribute('inert');
   assert.deepEqual(await canvas.boundingBox(), before, 'Opening Settings must not resize or hide the workflow.');
+  if (width < 1150) {
+    assert.deepEqual(await toolbar.boundingBox(), toolbarBefore, 'Modal Settings must not compress workflow controls.');
+    await expect(viewport).toHaveAttribute('style', transformBefore);
+    await expect(page.locator('.settings-backdrop')).toBeVisible();
+  }
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   const bounds = await drawer.boundingBox();
   assert.equal(Math.round(bounds.x + bounds.width), width);
@@ -531,7 +549,8 @@ Then('the settings drawer preserves the workflow at width {int} with {string} mo
     button.click();
   });
   await expect(drawer).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
-  await expect(canvas).not.toHaveAttribute('inert');
+  if (width < 1150) await expect.poll(() => canvas.evaluate(element => Boolean(element.closest('[inert]')))).toBe(true);
+  else await expect(canvas).not.toHaveAttribute('inert');
   await page.keyboard.press('Escape');
   await expect(drawer).toBeHidden();
   await expect(canvas).not.toHaveAttribute('inert');
@@ -614,7 +633,10 @@ Then('Settings pushes the workflow minimap and button groups beside its pane', a
   const before = await Promise.all(controls.map(control => control.boundingBox()));
   await setMode(page, 'settings');
   const drawer = await page.locator('.settings-drawer').boundingBox();
-  for (const control of controls) {
+  if (page.viewportSize().width < 1150) {
+    for (const [index, control] of controls.entries())
+      assert.deepEqual(await control.boundingBox(), before[index], 'Modal Settings preserves control layout.');
+  } else for (const control of controls) {
     await expect.poll(async () => {
       const bounds = await control.boundingBox();
       return bounds.x >= -1 && bounds.x + bounds.width <= drawer.x;
@@ -630,12 +652,13 @@ Then('Settings pushes the workflow minimap and button groups beside its pane', a
 Then('wrapped workflow controls fit their occupied rows', async function () {
   const page = this.page;
   const toolbar = page.locator('.workflow-toolbar');
-  for (const width of [800, 390, 1280]) {
+  for (const width of [800, 390, 900, 1280]) {
     await setMode(page, 'workflow');
     await closeCatalog(page);
     await page.setViewportSize({ width, height: 844 });
-    for (const mode of ['workflow', 'settings']) {
-      await setMode(page, mode);
+    for (const mode of ['workflow', 'settings', ...(width >= 900 ? ['navigation'] : [])]) {
+      await setMode(page, mode === 'navigation' ? 'workflow' : mode);
+      if (mode === 'navigation') await openCatalog(page);
       await expect.poll(() => toolbar.evaluate(element => {
         const style = getComputedStyle(element);
         const groups = [...element.querySelectorAll('.workflow-control-group')].map(group => group.getBoundingClientRect());
@@ -688,4 +711,76 @@ Then('the workflow remains editable beside Settings', async function () {
   await expect(owner).toHaveAttribute('style', moved);
   await expect(operationNodes(page, 'List projects')).toHaveCount(1);
   await expect(drawer).toHaveClass(/open/);
+});
+
+Then('the left menu overlays the workflow without changing its layout', async function () {
+  const page = this.page;
+  await closeCatalog(page);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const canvas = page.locator('.workflow-host');
+  const viewport = page.locator('.svelte-flow__viewport');
+  const before = await canvas.boundingBox();
+  const transform = await viewport.getAttribute('style');
+  await openCatalog(page);
+  const menu = page.locator('#side-navigation');
+  await expect(menu).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+  assert.deepEqual(await canvas.boundingBox(), before);
+  await expect(viewport).toHaveAttribute('style', transform);
+  const toolbar = page.locator('.workflow-toolbar');
+  await expect.poll(async () => {
+    const bounds = await toolbar.boundingBox(), sidebar = await menu.boundingBox();
+    return bounds.x >= sidebar.x + sidebar.width && bounds.x + bounds.width <= before.x + before.width;
+  }).toBe(true);
+  for (const button of await toolbar.getByRole('button').all()) {
+    const bounds = await button.boundingBox(), sidebar = await menu.boundingBox();
+    assert.ok(bounds.x >= sidebar.x + sidebar.width && bounds.x + bounds.width <= before.x + before.width, 'Every toolbar action must remain outside the open menu.');
+  }
+  const close = page.getByRole('button', { name: 'Close navigation', exact: true });
+  await expect.poll(async () => (await close.boundingBox()).x >= (await menu.boundingBox()).x + (await menu.boundingBox()).width).toBe(true);
+  await close.click();
+  await expect(menu).toBeHidden();
+  assert.deepEqual(await canvas.boundingBox(), before);
+  await expect(viewport).toHaveAttribute('style', transform);
+});
+
+
+Then('Settings disables the workspace when insufficient space remains', async function () {
+  const page = this.page, canvas = page.locator('.workflow-workspace');
+  await closeCatalog(page);
+  await setMode(page, 'settings');
+  const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
+  const node = page.locator('.svelte-flow__node-operation').first();
+  const original = await node.getAttribute('style');
+  for (const width of [390, 899, 930, 1000, 1149]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect(canvas).toHaveAttribute('inert', '');
+    await settings.focus();
+    await page.keyboard.press('Delete');
+    await page.keyboard.press('Control+z');
+    await expect(node).toHaveAttribute('style', original);
+    assert.equal(await node.evaluate(element => { element.focus(); return element.contains(document.activeElement); }), false);
+    await expect(settings).toBeVisible();
+    const close = page.getByRole('button', { name: 'Close settings', exact: true });
+    await expect(close).toBeVisible();
+    await expect.poll(async () => Math.round((await page.locator('.settings-drawer').boundingBox()).width)).toBe(width);
+    assert.equal(await page.getByRole('banner', { includeHidden: true }).evaluate(element => Boolean(element.closest('[inert]'))), true);
+  }
+  for (const width of [1150, 1220]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect(canvas).not.toHaveAttribute('inert');
+    await expect.poll(async () => Math.round((await page.locator('.settings-drawer').boundingBox()).x)).toBeGreaterThanOrEqual(250);
+    const header = page.getByRole('banner');
+    const menu = header.getByRole('button', { name: 'Open navigation', exact: true });
+    const settingsButton = header.getByRole('button', { name: 'Settings', exact: true });
+    await expect(menu).toBeVisible();
+    await expect(settingsButton).toBeVisible();
+    const left = await menu.boundingBox(), right = await settingsButton.boundingBox();
+    assert.ok(left.x + left.width <= right.x, 'Both header buttons fit without overlapping.');
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(canvas).toHaveAttribute('inert', '');
+  const toggle = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
+  await page.getByRole('button', { name: 'Close settings', exact: true }).click();
+  await expect(canvas).not.toHaveAttribute('inert');
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
 });

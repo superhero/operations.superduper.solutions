@@ -13,6 +13,10 @@ import { createOperationGraph, createWorkflowGraph } from './lib/workflow-graph.
 import { parseWorkflowDocument, portableWorkflowDocument, validateWorkflowDocument } from './lib/workflow-document.ts';
 import { validateCredentialBinding, validateCredentialContext } from './lib/secrets/bindings.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
+import { describeWorkflowChange } from './lib/workflow-change-message.ts';
+import { addAdditionalProperty, createUtilityNode, isWorkflowConnection } from './lib/workflow-graph.ts';
+import { isVaultVariableReference, validateVaultVariableInputs, vaultVariablePlaceholder } from './lib/secrets/variables.ts';
+import { executeCredentialed } from './lib/secrets/execution.ts';
 import { VaultError } from './lib/secrets/types.ts';
 
 const code = expected => error => error instanceof VaultError && error.code === expected;
@@ -300,4 +304,200 @@ Then('a redacted authenticated response is preserved while downstream routing an
   await assert.rejects(runner.submit({}), /no operation ready/);
   assert.equal(sent, 1);
   runner.end(); assert.equal(runner.next().kind, 'complete');
+});
+
+
+Then('vault variable nodes preserve local references and strip portable selections at every nesting level', () => {
+  register();
+  const entry = crypto.randomUUID();
+  const variable = createUtilityNode('vault', { x: 0, y: 0 }, 'variable');
+  variable.data.credentialId = entry;
+  const blank = createUtilityNode('vault', { x: 0, y: 0 }, 'variable');
+  assert.match(describeWorkflowChange(workflow([]), workflow([blank])), /Add Vault variable/);
+  assert.match(describeWorkflowChange(workflow([blank]), workflow([variable])), /Select vault variable/);
+  const inner = workflow([variable], [], 'inner-variable');
+  const doc = workflow([variable, nested('nested-variable', inner)]);
+  const local = validateWorkflowDocument(doc);
+  assert.equal(local.nodes[0].data.credentialId, entry);
+  const portable = portableWorkflowDocument(local);
+  assert.deepEqual(portable.nodes[0].data, {});
+  assert.deepEqual(portable.nodes[1].data.snapshot.nodes[0].data, {});
+  assert.equal(local.nodes[0].data.credentialId, entry);
+  assert.deepEqual(parseWorkflowDocument(JSON.stringify(doc)), portable);
+  for (const credentialId of ['secret text', 3])
+    assert.throws(() => validateWorkflowDocument(workflow([{ ...variable, data: { credentialId } }])), /local entry reference/);
+});
+
+function variableGraph(name = 'public') {
+  const source = schema();
+  source.paths['/public'].get.parameters = [
+    { name: 'label', in: 'query', required: true, schema: { type: 'string', minLength: 30 } },
+    { name: 'limit', in: 'query', schema: { type: 'integer' } },
+  ];
+  register(source);
+  const graph = createOperationGraph(operation(name), { x: 500, y: 0 }, 'target', source);
+  const entry = crypto.randomUUID();
+  const variable = createUtilityNode('vault', { x: 0, y: 0 }, 'variable');
+  variable.data.credentialId = entry;
+  const panel = graph.nodes.find(node => node.type === 'data' && node.data.direction === 'inputs' && node.data.fields.some(field => field.label === 'label'));
+  const text = panel.data.fields.find(field => field.label === 'label');
+  const connection = { source: variable.id, sourceHandle: 'value', target: panel.id, targetHandle: text.id };
+  const doc = workflow([variable, ...graph.nodes], [...graph.edges, { ...connection, id: 'variable-mapping', kind: 'mapping' }]);
+  return { doc, variable, entry, panel, connection };
+}
+
+Then('vault variables connect only to available text inputs and never become utility operands', () => {
+  const { doc, panel, connection } = variableGraph();
+  const unconnected = doc.edges.filter(edge => edge.id !== 'variable-mapping');
+  assert.equal(isWorkflowConnection(connection, doc.nodes, unconnected), true);
+  assert.equal(isWorkflowConnection(connection, doc.nodes, doc.edges), false);
+  for (const candidate of [
+    { ...connection, sourceHandle: 'wrong' }, { ...connection, targetHandle: 'missing' },
+  ]) assert.equal(isWorkflowConnection(candidate, doc.nodes, unconnected), false);
+  for (const change of [data => ({ ...data, direction: 'outputs' }),
+    data => ({ ...data, fields: data.fields.map(field => ({ ...field, connectable: false })) })]) {
+    const changed = doc.nodes.map(node => node.id === panel.id ? { ...node, data: change(node.data) } : node);
+    assert.equal(isWorkflowConnection(connection, changed, unconnected), false);
+  }
+  const integer = panel.data.fields.find(field => field.type === 'Integer');
+  assert.equal(isWorkflowConnection({ ...connection, targetHandle: integer.id }, doc.nodes, unconnected), false);
+  for (const type of ['cast', 'switch']) {
+    const node = { id: 'utility', type, position: { x: 0, y: 0 }, data: type === 'cast' ? { targetType: 'Text' } : { gates: [{ id: 'gate', operator: 'is_set', value: '' }] } };
+    assert.equal(isWorkflowConnection({ ...connection, target: node.id, targetHandle: 'value' }, [...doc.nodes, node], unconnected), false);
+  }
+});
+
+Then('vault variable inputs reach the worker as references without exposing values or allowing public execution', async () => {
+  const { doc, entry } = variableGraph();
+  const secret = 'private-variable-value-longer-than-thirty-characters';
+  let sent = 0, contextSeen;
+  const executor = createWorkflowExecution(async (descriptor, values, context) => {
+    contextSeen = structuredClone(context);
+    return executeCredentialed(descriptor, values, context.binding,
+      [{ id: entry, label: 'private label', value: secret, kind: 'secret', grants: [] }], {
+        variables: context.variables, assertCurrent: () => {}, fetchRequest: async (url, options) => {
+          sent++; assert.equal(new URL(url).searchParams.get('label'), secret);
+          assert.equal(options.redirect, 'error'); assert.equal(options.cache, 'no-store');
+          return Response.json({ result: 'safe result' });
+        },
+      });
+  });
+  const runner = createWorkflowRunner(doc, undefined, executor);
+  const visit = runner.next();
+  assert.equal(visit.kind, 'operation'); assert.equal(visit.values['query:label'], vaultVariablePlaceholder);
+  assert.deepEqual(visit.vaultVariables, [{ key: 'query:label', path: [], credentialId: entry }]);
+  await assert.rejects(runner.submit({ ...visit.values, 'query:label': 'replacement' }), /Connected values cannot be changed/);
+  const completed = await runner.submit(visit.values);
+  assert.equal(sent, 1); assert.equal(contextSeen.variables[0].credentialId, entry);
+  assert.ok(!JSON.stringify([visit, completed, contextSeen, doc]).includes(secret));
+  assert.equal(runner.next().kind, 'complete');
+  await assert.rejects(createWorkflowRequestExecution().execute(operation('public'), visit.values, undefined, contextSeen), code('PERMISSION'));
+  const missing = structuredClone(doc); delete missing.nodes[0].data.credentialId;
+  assert.throws(() => createWorkflowRunner(missing).next(), /Select a vault entry/);
+  const direct = createWorkflowRunner(doc, 'target', executor);
+  assert.equal(direct.next().values['query:label'], vaultVariablePlaceholder);
+  const nestedDoc = workflow(createWorkflowGraph(doc, { x: 0, y: 0 }, 'outer').nodes, [], 'outer-doc');
+  // Preserve the nested interface's schema connections.
+  nestedDoc.edges = createWorkflowGraph(doc, { x: 0, y: 0 }, 'outer').edges;
+  const nestedRun = createWorkflowRunner(nestedDoc, undefined, executor);
+  assert.equal(nestedRun.next().values['query:label'], vaultVariablePlaceholder);
+  await nestedRun.submit(nestedRun.next().values);
+  assert.equal(nestedRun.next().kind, 'complete');
+});
+
+Then('vault variable dependencies do not execute disconnected operations or duplicate selected starting nodes', async () => {
+  const { doc } = variableGraph();
+  doc.nodes.push(operationNode('other', undefined, 'public'));
+  let requests = 0;
+  const runner = createWorkflowRunner(doc, undefined, { execute: async () => {
+    requests++; return { request: { method: 'GET', path: '/', query: {}, headers: {} }, response: { status: 200, statusText: 'OK', headers: {}, body: {} } };
+  } });
+  const choice = runner.next(); assert.equal(choice.kind, 'choice');
+  assert.deepEqual(choice.choices.map(item => item.id), ['target', 'other']);
+  runner.choose('target'); const visit = runner.next();
+  await runner.submit(visit.values);
+  assert.equal(runner.next().kind, 'complete'); assert.equal(requests, 1);
+  const other = createWorkflowRunner(doc, undefined, { execute: async () => ({ request: { method: 'GET', path: '/', query: {} }, response: { status: 200, statusText: 'OK', headers: {}, body: {} } }) });
+  other.next(); other.choose('other'); assert.equal(other.next().nodeId, 'other');
+  await other.submit({}); assert.equal(other.next().kind, 'complete');
+});
+
+
+Then('vault variable references reject malformed shapes and accessors without reading private values', () => {
+  const id = crypto.randomUUID(), entry = { key: 'body:payload', path: ['token'], credentialId: id };
+  const valid = [entry], parsed = validateVaultVariableInputs(valid);
+  assert.deepEqual(parsed, valid); assert.notEqual(parsed, valid); assert.notEqual(parsed[0].path, entry.path);
+  const inherited = Object.create(entry), accessor = { ...entry }, path = ['token'];
+  let reads = 0;
+  Object.defineProperty(accessor, 'credentialId', { enumerable: true, get() { reads++; return id; } });
+  Object.defineProperty(path, '0', { enumerable: true, get() { reads++; return 'token'; } });
+  const symbol = [entry]; symbol[Symbol('extra')] = true;
+  const extra = [entry]; extra.extra = true;
+  for (const value of [null, {}, '', [], Array(5001), Array(1), symbol, extra, Object.setPrototypeOf([entry], null),
+    [null], [[]], [inherited], [accessor], [{ ...entry, extra: true }], [{ path: [], credentialId: id }],
+    [{ ...entry, key: '' }], [{ ...entry, key: 'k'.repeat(2049) }], [{ ...entry, key: 3 }],
+    [{ ...entry, credentialId: '' }], [{ ...entry, credentialId: 3 }], [{ ...entry, path: null }],
+    [{ ...entry, path: ['x'.repeat(2049)] }], [{ ...entry, path: [null] }], [{ ...entry, path: Array(41).fill('x') }],
+    [{ ...entry, path }], [entry, entry],
+  ]) assert.throws(() => validateVaultVariableInputs(value), code('INVALID'));
+  assert.equal(reads, 0);
+  const token = crypto.randomUUID(), reference = { vaultVariable: id, referenceToken: token };
+  assert.equal(isVaultVariableReference(reference, token), true);
+  for (const value of [null, '', {}, { vaultVariable: id }, { ...reference, extra: true },
+    { ...reference, vaultVariable: 2 }, { ...reference, referenceToken: 'untrusted response' },
+    Object.assign(Object.create({ vaultVariable: id }), { referenceToken: token, other: true })])
+    assert.equal(isVaultVariableReference(value, token), false);
+  const context = { ...invocation({ alternative: 0, credentials: {}, fingerprint: 'a'.repeat(64) }), variables: valid };
+  assert.deepEqual(validateCredentialContext(context), context);
+  assert.throws(() => validateCredentialContext({ ...context, variables: [] }), code('INVALID'));
+});
+
+
+Then('vault variable dispatch honors explicit secured and anonymous alternatives', async () => {
+  const source = schema();
+  source.paths['/optional'].get.parameters = source.paths['/secured'].get.parameters;
+  register(source);
+  let sent = 0;
+  const executor = createWorkflowExecution(async (descriptor, values, context) => {
+    sent++; assert.equal(context.variables[0].credentialId, entry);
+    return result(descriptor.operation, values);
+  });
+  const entry = crypto.randomUUID(), variables = [{ key: 'query:label', path: [], credentialId: entry }];
+  for (const name of ['secured', 'optional', 'public']) {
+    const op = operation(name), descriptor = await approvedOperation(op, origin);
+    const selections = name === 'optional' ? [binding(descriptor.fingerprint, entry), { alternative: 1, credentials: {}, fingerprint: descriptor.fingerprint }]
+      : name === 'secured' ? [binding(descriptor.fingerprint, entry)] : [{ alternative: 0, credentials: {}, fingerprint: descriptor.fingerprint }];
+    for (const selection of selections) {
+      await executor.execute(op, { 'query:label': vaultVariablePlaceholder }, undefined, { ...invocation(selection), variables });
+    }
+    if (name === 'public') for (const selection of [{ alternative: 1, credentials: {}, fingerprint: descriptor.fingerprint }, binding(descriptor.fingerprint, entry)])
+      await assert.rejects(executor.execute(op, {}, undefined, { ...invocation(selection), variables }), code('PERMISSION'));
+  }
+  assert.equal(sent, 4);
+});
+
+
+Then('workflow-added text properties resolve vault references against the canonical schema approval', async () => {
+  const source = schema();
+  source.paths['/public'].post = { ...source.paths['/public'].get, requestBody: { content: { 'application/json': {
+    schema: { type: 'object', additionalProperties: { type: 'string' } },
+  } } } };
+  delete source.paths['/public'].get; register(source);
+  const op = operation('public'), entry = crypto.randomUUID();
+  let graph = createOperationGraph(op, { x: 500, y: 0 }, 'target', source);
+  const panel = graph.nodes.find(node => node.type === 'data' && node.data.direction === 'inputs' && node.data.label === 'Request body');
+  graph = addAdditionalProperty(graph.nodes, graph.edges, panel.id, 'dynamic', 'Text', source);
+  const field = graph.nodes.find(node => node.id === panel.id).data.fields.find(field => field.label === 'dynamic');
+  const variable = createUtilityNode('vault', { x: 0, y: 0 }, 'variable'); variable.data.credentialId = entry;
+  const doc = workflow([variable, ...graph.nodes], [...graph.edges, { id: 'dynamic-variable', kind: 'mapping',
+    source: variable.id, sourceHandle: 'value', target: panel.id, targetHandle: field.id }]);
+  const secret = 'synthetic-dynamic-vault-value';
+  const runner = createWorkflowRunner(doc, undefined, createWorkflowExecution((descriptor, values, context) =>
+    executeCredentialed(descriptor, values, context.binding, [{ id: entry, kind: 'secret', label: 'private', value: secret, grants: [] }], {
+      variables: context.variables, assertCurrent: () => {}, fetchRequest: async (_url, options) => {
+        assert.deepEqual(JSON.parse(options.body), { dynamic: secret }); return Response.json({ result: 'safe' });
+      },
+    })));
+  const visit = runner.next(); assert.equal(visit.values['body:dynamic'], vaultVariablePlaceholder);
+  assert.ok(!JSON.stringify(await runner.submit(visit.values)).includes(secret));
 });

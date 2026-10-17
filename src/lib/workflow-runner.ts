@@ -8,11 +8,14 @@ import { validateWorkflowDocument, type WorkflowDocument, type WorkflowDocumentN
 import { castValue, matchingSwitchGates } from "./workflow-utilities.ts";
 import { createWorkflowExecution, type WorkflowExecutionResult, type WorkflowResponse, type WorkflowExecutor } from "./workflow-execution.ts";
 import { responseHeaderReader } from "./workflow-response.ts";
+import { isVaultVariableReference, vaultVariablePlaceholder, type VaultVariableInput } from "./secrets/variables.ts";
+import { approvedOperation } from "./secrets/policy.ts";
+import { workflowExecutionForOperation } from "./workflow-execution.ts";
 import { VaultError, type CredentialBinding } from "./secrets/types.ts";
 
 type Node = WorkflowDocumentNode;
 type DataNode = Extract<Node, { type: "data" }>;
-type Owner = Exclude<Node, { type: "data" | "switch" | "cast" | "comment" }>;
+type Owner = Exclude<Node, { type: "data" | "switch" | "cast" | "comment" | "vault" }>;
 type OperationNode = Exclude<Owner, { type: "workflow" }>;
 type RoutingNode = Extract<Node, { type: "switch" | "cast" }>;
 type State = "idle" | "queued" | "running" | "complete" | "skipped";
@@ -26,6 +29,7 @@ export type WorkflowVisit = {
   kind: "operation"; id: string; nodeId: string; workflowName: string; operation: Operation;
   values: InputValues; mappedFields: string[]; step: number;
   credentialBinding?: CredentialBinding;
+  vaultVariables?: VaultVariableInput[];
   bindingPath: string[];
 };
 export type WorkflowStep = WorkflowVisit | { kind: "choice"; workflowName: string; choices: { id: string; label: string }[] }
@@ -242,6 +246,19 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
 
   function settle(frame: Frame)
   {
+    for (const node of frame.document.nodes) {
+      if (node.type !== "vault" || node.hidden || frame.states.get(node.id) !== "idle") continue;
+      if (!node.data.credentialId && frame.edges.some(edge => edge.source === node.id))
+        throw new Error("Select a vault entry for each connected vault variable before running the workflow.");
+      frame.states.set(node.id, "complete");
+      if (node.data.credentialId) emit(frame, node.id, "value", { vaultVariable: node.data.credentialId, referenceToken: runId });
+    }
+    // Vault sources are available even when the user explicitly starts at an operation.
+    for (const edge of frame.edges) {
+      const contribution = frame.contributions.get(edge.id)!;
+      if (frame.nodes.get(edge.source)?.type === "vault" && contribution.state === "value")
+        frame.values.set(port(edge.target, edge.targetHandle!), contribution.value);
+    }
     // Each pass consumes idle nodes. Nodes never become idle again during a run.
     while (true)
     {
@@ -253,6 +270,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         const input = inputs(frame, node.id);
         if (!input.ready) continue;
         for (const [key, value] of input.values) frame.values.set(key, value);
+        if (isOwner(node) && (!frame.started || !incoming(frame, node.id).some(edge => frame.nodes.get(edge.source)?.type !== "vault"))) continue;
         changed = true;
         if (isOwner(node))
         {
@@ -290,6 +308,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     const operation = { ...canonical, fields: [...canonical.fields] };
     const values: InputValues = {};
     const mappedFields: string[] = [];
+    const vaultVariables: VaultVariableInput[] = [];
     const mapped = new Map<InputField, unknown>();
     const arrayPaths = new Map<string, Set<string>>();
     for (const panel of dataNodes(frame, node.id, "inputs")) for (const field of panel.data.fields)
@@ -332,14 +351,24 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       mapped.set(input, mergeMapped(mapped.get(input), mappedFragment(tail, value, arrayPaths.get(group) ?? new Set(),
         operation.bodyValue && input.location === "body" ? [] : path.slice(0, 1))));
     }
-    for (const [input, value] of mapped)
+    for (const [input, raw] of mapped)
     {
+      const collect = (value: unknown, path: string[]): unknown => {
+        if (isVaultVariableReference(value, runId)) {
+          vaultVariables.push({ key: input.key, path, credentialId: value.vaultVariable });
+          return vaultVariablePlaceholder;
+        }
+        if (Array.isArray(value)) return value.map((entry, index) => collect(entry, [...path, String(index)]));
+        if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, collect(entry, [...path, key])]));
+        return value;
+      };
+      const value = collect(raw, []);
       const expected = input.type === "integer" ? "number" : input.type;
       const matches = value === null ? inputAllowsNull(input) : expected === "array" ? Array.isArray(value)
         : typeof value === expected && (expected !== "object" || value !== null && !Array.isArray(value));
       if (!matches || typeof value === "number" && (!Number.isFinite(value) || input.type === "integer" && !Number.isInteger(value)))
         throw new Error(`“${input.label}” needs ${input.type === "integer" ? "an integer" : `a ${input.type}`} value. Check its connection or add a Cast.`);
-      validateInputValue(input, value as JsonValue);
+      if (!vaultVariables.some(variable => variable.key === input.key)) validateInputValue(input, value as JsonValue);
       Object.defineProperty(values, input.key, { value: value === null ? null : typeof value === "object" ? JSON.stringify(value) : String(value),
         enumerable: true, writable: true, configurable: true });
       mappedFields.push(input.key);
@@ -348,6 +377,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     for (let ancestor = frame; ancestor.parent && ancestor.call; ancestor = ancestor.parent) bindingPath.unshift(ancestor.call.id);
     return { kind: "operation", id: `${++step}:${node.id}`, nodeId: node.id, workflowName: frame.document.name, bindingPath,
       operation, values, mappedFields, step,
+      ...(vaultVariables.length ? { vaultVariables } : {}),
       ...(node.data.credentialBinding ? { credentialBinding: structuredClone(node.data.credentialBinding) } : {}) };
   }
 
@@ -382,7 +412,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         settle(frame);
         if (!frame.started)
         {
-          const roots = frame.owners.filter(node => !incoming(frame, node.id).length);
+          const roots = frame.owners.filter(node => !incoming(frame, node.id).some(edge => frame.nodes.get(edge.source)?.type !== "vault"));
           const candidates = roots.length ? roots : frame.owners;
           if (!candidates.length) throw new Error("This workflow has no operations to run. Add an operation first.");
           if (candidates.length > 1)
@@ -421,7 +451,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
           current = { frame, node, visit: result };
           return result;
         }
-        const waiting = frame.edges.some(edge => frame.contributions.get(edge.id)!.state === "value"
+        const waiting = frame.edges.some(edge => frame.nodes.get(edge.source)?.type !== "vault" && frame.contributions.get(edge.id)!.state === "value"
           && frame.states.get(targetOwner(frame, edge.target)) === "idle");
         if (waiting) throw new Error("The next operation is waiting for an unresolved branch or a routing cycle. Check its incoming connections.");
         stack.pop();
@@ -453,8 +483,13 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       let result: WorkflowExecutionResult;
       // An explicit UI clear must not fall back to a previously saved credential.
       const selectedBinding = binding === null ? undefined : binding ?? completed.visit.credentialBinding;
-      try { result = await execution.execute(completed.visit.operation, values, controller.signal,
-        selectedBinding ? { binding: selectedBinding, runId, nodeId: completed.visit.id } : undefined); }
+      try {
+        const variables = completed.visit.vaultVariables;
+        const binding = selectedBinding ?? (variables?.length && !completed.visit.operation.security?.length
+          ? { alternative: 0, credentials: {}, fingerprint: (await approvedOperation(operations.find(operation => operation.id === completed.visit.operation.id)!, workflowExecutionForOperation(completed.visit.operation).origin)).fingerprint } : undefined);
+        result = await execution.execute(completed.visit.operation, values, controller.signal,
+          binding ? { binding, runId, nodeId: completed.visit.id, ...(variables ? { variables } : {}) } : undefined);
+      }
       finally { pending = undefined; }
       if (stopped || current !== completed) throw new Error("This run has ended.");
       if (controller.signal.aborted) throw new Error("The request was cancelled.");

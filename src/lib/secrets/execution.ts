@@ -1,8 +1,9 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { InputValidationError, prepareRequest, type InputValues, type PreparedRequest } from "../operation-input.ts";
+import { additionalBodyField, InputValidationError, prepareRequest, type InputValues, type PreparedRequest } from "../operation-input.ts";
 import type { WorkflowExecutionResult, WorkflowResponse } from "../workflow-execution.ts";
+import { validateVaultVariableInputs, vaultVariablePlaceholder, type VaultVariableInput } from "./variables.ts";
 import { validateApprovedOperation, validateCredentialPath } from "./policy.ts";
 import { VaultError, vaultLimits, type ApprovedOperation, type CredentialBinding, type VaultCredential } from "./types.ts";
 
@@ -10,6 +11,7 @@ export type CredentialResponse = WorkflowResponse & { redacted?: boolean };
 export type CredentialExecutionResult = WorkflowExecutionResult & { response: CredentialResponse };
 export type CredentialExecutionOptions = {
   signal?: AbortSignal;
+  variables?: VaultVariableInput[];
   assertCurrent: () => void | Promise<void>;
   fetchRequest?: typeof fetch;
 };
@@ -116,9 +118,11 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     secrets = credentialSnapshot.map(credential => credential.value).filter(value => typeof value === "string" && value.length > 0)
       .sort((a, b) => b.length - a.length);
     const approved = await validateApprovedOperation(descriptor);
-    const alternative = approved.operation.security?.[bindingSnapshot.alternative];
+    const variables = options.variables === undefined ? [] : validateVaultVariableInputs(options.variables);
+    const alternative = approved.operation.security?.length ? approved.operation.security[bindingSnapshot.alternative]
+      : variables.length && bindingSnapshot.alternative === 0 ? [] : undefined;
     if (bindingSnapshot.fingerprint !== approved.fingerprint || !Number.isInteger(bindingSnapshot.alternative)
-      || !alternative?.length || !bindingSnapshot.credentials || Object.keys(bindingSnapshot.credentials).length !== alternative.length)
+      || !alternative || !alternative.length && !variables.length || !bindingSnapshot.credentials || Object.keys(bindingSnapshot.credentials).length !== alternative.length)
       throw new VaultError("PERMISSION");
     const injected = new Headers();
     for (const scheme of alternative)
@@ -133,14 +137,47 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         throw new VaultError("INVALID");
       injected.set(scheme.header, scheme.kind === "bearer" ? `Bearer ${credential.value}` : credential.value);
     }
-    const request = prepareRequest(approved.operation, inputSnapshot);
+    // Replace only explicit, validated reference slots. Never interpolate secrets into
+    // public strings, and never return these decrypted inputs to the page.
+    const structured = new Map<string, unknown>();
+    const fields = [...approved.operation.fields];
+    for (const variable of variables) {
+      const credential = credentialSnapshot.find(item => item.id === variable.credentialId);
+      let field = fields.find(item => item.key === variable.key);
+      if (!field && variable.key.startsWith("body:")) {
+        field = additionalBodyField(approved.operation, variable.key.slice(5), "string");
+        if (field) fields.push(field);
+      }
+      if (!credential || !field || !Object.hasOwn(inputSnapshot, variable.key)) throw new VaultError("PERMISSION");
+      if (!variable.path.length) {
+        if (field.type !== "string" || inputSnapshot[variable.key] !== vaultVariablePlaceholder) throw new VaultError("INVALID");
+        inputSnapshot[variable.key] = credential.value;
+      } else {
+        if (!["object", "array"].includes(field.type)) throw new VaultError("INVALID");
+        if (!structured.has(variable.key)) {
+          try { structured.set(variable.key, JSON.parse(inputSnapshot[variable.key] as string)); }
+          catch { throw new VaultError("INVALID"); }
+        }
+        let parent = structured.get(variable.key);
+        for (const segment of variable.path.slice(0, -1)) {
+          if (!parent || typeof parent !== "object" || !Object.hasOwn(parent, segment)) throw new VaultError("INVALID");
+          parent = (parent as Record<string, unknown>)[segment];
+        }
+        const last = variable.path.at(-1)!;
+        if (!parent || typeof parent !== "object" || !Object.hasOwn(parent, last) || (parent as Record<string, unknown>)[last] !== vaultVariablePlaceholder)
+          throw new VaultError("INVALID");
+        Object.defineProperty(parent, last, { value: credential.value, enumerable: true, writable: true, configurable: true });
+      }
+    }
+    for (const [key, value] of structured) inputSnapshot[key] = JSON.stringify(value);
+    const request = prepareRequest(approved.operation, inputSnapshot, fields);
     validateCredentialPath(request.path);
     const url = new URL(`${approved.origin}${request.path}`);
     for (const [key, value] of Object.entries(request.query))
       for (const entry of Array.isArray(value) ? value : [value]) url.searchParams.append(key, String(entry));
     const headers = new Headers({ Accept: approved.operation.responseMediaType ?? "application/json" });
     const publicHeaders = new Set<string>();
-    const authHeaders = new Set(approved.operation.security!.flat().map(scheme => scheme.header.toLowerCase()));
+    const authHeaders = new Set((approved.operation.security ?? []).flat().map(scheme => scheme.header.toLowerCase()));
     for (const [name, value] of Object.entries(request.headers ?? {}))
     {
       const normalized = name.toLowerCase();
@@ -151,7 +188,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     }
     if (request.body !== undefined && request.contentType !== "multipart/form-data") headers.set("Content-Type", request.contentType ?? "application/json");
     for (const [name, value] of injected) headers.set(name, value);
-    const preview = redactor(secrets).value(prepareRequest(approved.operation, inputSnapshot)) as PreparedRequest;
+    const preview = redactor([...new Set([...secrets, ...secrets.map(secret => encodeURIComponent(secret))])].sort((a, b) => b.length - a.length)).value(request) as PreparedRequest;
     const body = bodyForRequest(request);
     await options.assertCurrent();
     if (signal.aborted) throw new VaultError("CANCELLED");

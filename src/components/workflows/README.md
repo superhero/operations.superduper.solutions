@@ -64,3 +64,22 @@ an operation in navigation adds a node; it never sends a request.
 Keep connected inputs read-only. Cancelling a pending request retains the step
 for retry; quitting ends the run. Completed steps remain read-only and their
 actual responses and prepared requests remain available in run history.
+
+## Vault variables
+
+The toolbar's **Variable Add** icon creates a connectable vault-variable node.
+Select a saved vault entry, then connect its Text output to an operation's Text
+input. Switch and Cast nodes do not consume vault values.
+
+Nodes retain only the local entry ID. The vault worker resolves values when a
+request runs, and validates them against the operation schema. Exporting or
+importing workflows clears these selections, including nested workflows.
+
+## Utility placement
+
+Vault variables, comments, switches and casts use their rendered bounds to find
+free space nearest the visible workspace center. Placement first searches inside
+the viewport, then outside it when needed, and preserves existing node positions.
+Grid snapping applies when enabled. Adding a utility pans to center it in the
+usable area beside open panes and below the toolbar. Operation trees retain
+their ordered placement after existing content.

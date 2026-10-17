@@ -84,3 +84,36 @@ export async function absentDatabase() {
   catch (failure) { error = (failure as { code: string }).code; }
   return { error, before, after: (await indexedDB.databases()).map(item => item.name) };
 }
+
+
+/** Exercise variable transport through the real worker without authentication schemes. */
+export async function publicVariable(backfillLegacy = false) {
+  const next = structuredClone(record);
+  const operation = (next.document.paths as Record<string, { get: { security: unknown[]; parameters?: unknown[] } }>)[descriptor.operation.path]!.get;
+  operation.security = [];
+  operation.parameters = [{ in: "header", name: "X-Vault-Variable", required: true, schema: { type: "string" } }];
+  record = next;
+  await putSchemaDocument(record);
+  descriptor = await approvedOperation(validateSchemaDocument(record.document, record.id).operations[0]!, descriptor.origin);
+  const { binding } = executionInput();
+  const variables = [{ key: "header:X-Vault-Variable", path: [], credentialId: binding.credentials.Bearer }];
+  const execute = () => call("execute", [descriptor, { "header:X-Vault-Variable": "[Vault variable]" },
+    { alternative: 0, credentials: {}, fingerprint: descriptor.fingerprint }, undefined, variables]);
+  let before;
+  if (backfillLegacy) {
+    await catalog(true, tx => {
+      const request = tx.objectStore("state").get("vaultPolicy");
+      request.onsuccess = () => {
+        const policies = request.result;
+        delete policies[record.id].version;
+        policies[record.id].fingerprints = [];
+        tx.objectStore("state").put(policies, "vaultPolicy");
+      };
+    });
+    try { await execute(); before = "unexpected success"; }
+    catch (error) { before = (error as { code?: string }).code; }
+    await loadSchemaDocuments();
+  }
+  const value = await execute();
+  return { before, value };
+}

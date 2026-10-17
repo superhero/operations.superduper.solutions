@@ -6,10 +6,11 @@ import { decryptJSON, encryptJSON, newVaultKey, passwordKey, recoveryKey, passke
   runtimeKey, unwrapVaultKey, wrapVaultKey, validId, canonicalJSON, ownObject } from "./crypto.ts";
 import { authenticateManifest, sealSnapshot, validateSnapshot } from "./format.ts";
 import { approvedOperation } from "./policy.ts";
+import { publicVaultKeys } from "./key-index.ts";
 import { executeCredentialed } from "./execution.ts";
 import { VaultError, passwordProfile, vaultLimits, recoveryKeyBytes, recoveryKeyCharacters } from "./types.ts";
 import type { ApprovedOperation, CredentialBinding, CredentialSummary, CryptoContext, Enrollment,
-  KeyEnvelope, UnlockProof, VaultCredential, VaultSnapshot, VaultStatus } from "./types.ts";
+  KeyEnvelope, UnlockProof, VaultCredential, VaultSnapshot, VaultStatus, VaultKey } from "./types.ts";
 import type { VaultState, VaultStorage } from "./storage.ts";
 
 type Pending = { state: VaultState; snapshot: VaultSnapshot; key: CryptoKey; recovery: string };
@@ -121,6 +122,9 @@ export class VaultSession {
       this.guard(generation);
       this.key = key; this.state = { ...state, snapshot };
       await this.assertCurrent();
+      if (state.keys === undefined)
+        this.state = await this.storage.indexKeys(this.state, (await this.records()).map(({ id, label, kind }) => ({ id, label, kind })));
+      this.guard(generation);
       const status = await this.status();
       this.guard(generation);
       return status;
@@ -165,7 +169,7 @@ export class VaultSession {
     if (!pending || recovery !== pending.recovery) throw new VaultError("AUTHENTICATION");
     const generation = this.generation;
     this.guard(generation);
-    const state = await this.storage.replace(pending.state, pending.snapshot);
+    const state = await this.storage.replace(pending.state, pending.snapshot, []);
     this.guard(generation);
     this.pending = undefined; this.key = pending.key; this.state = state;
     return this.status();
@@ -190,6 +194,11 @@ export class VaultSession {
       return value;
     }));
     this.guard(generation); return result;
+  }
+
+  /** Public names are advisory; only decrypted records authorize use of a value. */
+  async keys(): Promise<{ entries: VaultKey[]; needsUnlock: boolean }> {
+    return publicVaultKeys(await this.storage.read());
   }
 
   async list(): Promise<CredentialSummary[]> {
@@ -220,7 +229,7 @@ export class VaultSession {
     const snapshot = await sealSnapshot({ ...base, records }, key);
     await authenticateManifest(snapshot, key);
     this.guard(generation);
-    const state = await this.storage.replace(expected, snapshot);
+    const state = await this.storage.replace(expected, snapshot, values.map(({ id, label, kind }) => ({ id, label, kind })));
     this.guard(generation); this.state = state; this.key = key;
   }
 
@@ -269,9 +278,9 @@ export class VaultSession {
     await this.save(values); return this.list();
   }
 
-  async execute(descriptor: ApprovedOperation, values: InputValues, binding: CredentialBinding, signal?: AbortSignal) {
+  async execute(descriptor: ApprovedOperation, values: InputValues, binding: CredentialBinding, signal?: AbortSignal, variables?: import("./variables.ts").VaultVariableInput[]) {
     return executeCredentialed(descriptor, values, binding, await this.records(), {
-      ...(signal ? { signal } : {}), assertCurrent: async () => {
+      ...(signal ? { signal } : {}), ...(variables ? { variables } : {}), assertCurrent: async () => {
         await this.assertSchema(descriptor);
         await this.assertCurrent();
       },
@@ -306,9 +315,11 @@ export class VaultSession {
     let snapshot: VaultSnapshot;
     try { snapshot = validateSnapshot(JSON.parse(input)); } catch { throw new VaultError("INVALID"); }
     const key = await this.authenticate(snapshot, proof);
+    const keys: VaultKey[] = [];
     const records = await Promise.all(snapshot.records.map(async record => {
       const value = credential(await decryptJSON<VaultCredential>(key, record.ciphertext, context(snapshot, record)));
       if (value.id !== record.id) throw new VaultError("AUTHENTICATION");
+      keys.push({ id: value.id, label: value.label, kind: value.kind });
       value.grants = []; // Imported IDs and policies never authorize a destination in this installation.
       const next = { ...record, revision: record.revision + 1 };
       return { ...next, ciphertext: await encryptJSON(key, value, context(snapshot, next)) };
@@ -316,7 +327,7 @@ export class VaultSession {
     const next = await sealSnapshot({ id: snapshot.id, epoch: snapshot.epoch, envelopes: snapshot.envelopes,
       revision: snapshot.revision + 1, records }, key);
     this.guard(generation);
-    const state = await this.storage.replace(expected, next);
+    const state = await this.storage.replace(expected, next, keys);
     this.guard(generation); this.state = state; this.key = key;
     return this.status();
   }

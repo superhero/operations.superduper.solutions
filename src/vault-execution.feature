@@ -200,3 +200,15 @@ Feature: Approved credential execution
       | kind         |
       | same-origin  |
       | cross-origin |
+
+  Scenario: Vault variable failures stop before request dispatch
+    Then vault variable execution rejects missing entries malformed slots and stale sessions before sending
+
+  Scenario: Structured vault variable slots preserve public values
+    Then vault variables resolve nested object and array leaves without changing public inputs
+
+  Scenario: Vault variable schema rules apply to decrypted request values
+    Then vault variables respect security alternatives additional properties and decrypted schema constraints
+
+  Scenario: Vault variable previews cannot reveal URL-encoded secrets
+    Then vault variable path previews remove encoded values and invalid structured slots never dispatch

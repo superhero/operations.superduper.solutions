@@ -32,3 +32,24 @@ Feature: Credential references at workflow execution boundaries
 
   Scenario: Redaction does not repeat an already completed request
     Then a redacted authenticated response is preserved while downstream routing and accidental resubmission stop
+
+  Scenario: Vault variable selections remain local even inside nested workflows
+    Then vault variable nodes preserve local references and strip portable selections at every nesting level
+
+  Scenario: Vault variable connections enforce text types and single inputs
+    Then vault variables connect only to available text inputs and never become utility operands
+
+  Scenario: Vault variable requests resolve in the worker and keep public previews safe
+    Then vault variable inputs reach the worker as references without exposing values or allowing public execution
+
+  Scenario: Vault variables preserve explicit starting-operation choices
+    Then vault variable dependencies do not execute disconnected operations or duplicate selected starting nodes
+
+  Scenario: Vault variable reference validation does not invoke accessors
+    Then vault variable references reject malformed shapes and accessors without reading private values
+
+  Scenario: Vault variable dispatch preserves explicit authentication alternatives
+    Then vault variable dispatch honors explicit secured and anonymous alternatives
+
+  Scenario: Vault variables support workflow-added text properties
+    Then workflow-added text properties resolve vault references against the canonical schema approval

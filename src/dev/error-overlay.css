@@ -158,34 +158,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   #__v_o__stacktrace[open]::details-content { block-size: auto; }
 }
 
-/* Solution hints use Tailwind typography's independent light/dark colors. */
-#__v_o__solutions_container {
-  --tw-prose-body: var(--ono-v-text);
-  --tw-prose-headings: var(--ono-v-text);
-  --tw-prose-bold: var(--ono-v-text);
-  --tw-prose-code: var(--ono-v-text);
-  --tw-prose-quotes: var(--ono-v-text);
-  --tw-prose-links: var(--ono-v-link);
-  --tw-prose-pre-code: var(--ono-v-text);
-  --tw-prose-pre-bg: var(--ono-v-surface);
-  margin: 0;
-  padding: 12px 56px 12px 16px;
-  border-block: 1px solid var(--ono-v-border);
-  background: var(--ono-v-bg);
-  color: var(--ono-v-text);
-  font-size: 14px;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-}
-#__v_o__solutions_container > :first-child {
-  margin-top: 0;
-  font-weight: 700;
-}
-#__v_o__solutions_container > :last-child { margin-bottom: 0; }
-#__v_o__solutions > :is([title="Possible Solution"], [data-dev-tooltip-title="Possible Solution"]) {
-  background: transparent !important;
-  color: var(--ono-v-primary);
-}
+/* Error inspection excludes generated solution suggestions, including late updates. */
+#__v_o__solutions { display: none !important; }
 
 #operations-error-context {
   padding: 8px 16px;

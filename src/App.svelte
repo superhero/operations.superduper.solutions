@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick, untrack } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
   import { Tooltip } from "bits-ui";
   import type { Operation } from "$lib/catalog.ts";
   import { getSchemaLibrary } from "$lib/schema-library.ts";
@@ -14,6 +14,8 @@
   import WorkflowWorkspace from "./components/WorkflowWorkspace.svelte";
   import SettingsWorkspace, { palettes } from "./components/SettingsWorkspace.svelte";
   import BackgroundWave from "./components/BackgroundWave.svelte";
+  import HintButton from "$lib/components/HintButton.svelte";
+  import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import NativeScrollbars from "./components/NativeScrollbars.svelte";
 
   let { initialWorkflowDefaults, initialDeveloperToolbar = false, initialEvaluationDetails = false, initialTooltips = true, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
@@ -51,6 +53,20 @@
   let mode = $state<WorkspaceMode>("workflow");
   let modeRequest = 0;
   let settingsPresent = $state(false);
+  // Below 1150px, overlay Settings instead of compressing the workflow controls.
+  const compactSettingsQuery = "(max-width: 1149px)";
+  let compactSettings = $state(matchMedia(compactSettingsQuery).matches);
+  onMount(() => {
+    const media = matchMedia(compactSettingsQuery);
+    const update = () => {
+      const canvasFocused = document.activeElement?.closest(".workflow-host");
+      compactSettings = media.matches;
+      if (compactSettings && settingsPresent && canvasFocused) void tick().then(() => settingsWorkspace.focusActive());
+    };
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  });
   let settingsDrawer: HTMLElement;
   $effect(() => {
     if (!settingsPresent) return;
@@ -314,7 +330,7 @@
 <SideNavigation bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {evaluationDetails}
   workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
   onSelect={selectOperation} />
-<div class="page-content workflow-mode" class:catalog-open={navigationOpen} class:settings-open={mode === "settings"}>
+<div class="page-content workflow-mode" inert={settingsPresent && compactSettings} class:catalog-open={navigationOpen} class:settings-open={mode === "settings"}>
   <Header {navigationOpen} settingsOpen={mode === "settings"} onSettings={toggleSettings} {workflowSaveStatus} onMenu={toggleNavigation} />
   <div class="shell">
     <main>
@@ -328,13 +344,23 @@
         </div>
       {/if}
       <div class="workflow-host">
-        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={true} settingsOpen={mode === "settings"} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={browseOperations} />
+        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={!(settingsPresent && compactSettings)} settingsOpen={mode === "settings"} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={browseOperations} />
       </div>
     </main>
   </div>
 </div>
+{#if compactSettings && settingsPresent}
+  <div class="settings-backdrop" class:open={mode === "settings"} aria-hidden="true"></div>
+{/if}
 <div class="settings-drawer-host">
   <aside id="settings-panel" bind:this={settingsDrawer} class="settings-drawer" class:open={mode === "settings"} aria-label="Application settings" inert={mode !== "settings"}>
+    {#if compactSettings}
+      <div class="settings-mobile-header">
+        <HintButton tooltipSide="left" label="Close settings" aria-label="Close settings" onclick={toggleSettings}>
+          <MaterialIcon name="close" size={24} />
+        </HintButton>
+      </div>
+    {/if}
     <SettingsWorkspace bind:this={settingsWorkspace} {dark} onTheme={toggleTheme} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
           {locale} {localeError} onLocaleChange={selectLocale} onRetryLocale={() => selectLocale(locale)}
           settingsUnavailable={Boolean(settingsError)} {settingsRetrying} onRetrySettings={retrySettings}
@@ -346,17 +372,28 @@
 </Tooltip.Provider>
 
 <style>
-  :global(:root) { --settings-drawer-width: min(900px, calc(100vw - var(--navigation-control-size) - 2 * var(--content-padding))); }
-  .page-content { --workflow-controls-inset: 0px; }
-  .page-content.settings-open { --workflow-controls-inset: var(--settings-drawer-width); }
+  :global(:root) { --settings-drawer-width: min(900px, calc(100vw - 250px)); }
+  @media (max-width: 1149px) { :global(:root) { --settings-drawer-width: 100vw; } }
+  .page-content { --workflow-controls-inset: 0px; --navigation-inset: 0px; }
+  @media (min-width: 900px) { .page-content.catalog-open { --navigation-inset: var(--catalog-width); } }
+  @media (min-width: 1150px) { .page-content.settings-open { --workflow-controls-inset: var(--settings-drawer-width); } }
   .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap) { right: var(--workflow-controls-inset); max-width: calc(100% - var(--workflow-controls-inset) - 2rem); transition: right 200ms ease-in-out, max-width 200ms ease-in-out; }
+  .page-content :global(.workflow-toolbar) { max-width: calc(100% - var(--workflow-controls-inset) - var(--navigation-inset) - 2rem); }
   .page-content :global(.workflow-control-group) { max-width: 100%; flex-wrap: wrap; }
   .page-content :global(.workflow-minimap .svelte-flow__minimap-svg) { max-width: 100%; height: auto; }
-  .page-content :global(.site-header) { width: calc(100% - var(--workflow-controls-inset)); transition: width 200ms ease-in-out; }
+  .page-content :global(.site-header) { margin-left: var(--navigation-inset); width: calc(100% - var(--workflow-controls-inset) - var(--navigation-inset)); transition: width 200ms ease-in-out, margin-left 200ms ease-in-out; }
+  .settings-backdrop { position: fixed; inset: 0; z-index: 24; background: color-mix(in srgb, var(--color-background) 65%, transparent); opacity: 0; transition: opacity 200ms ease-in-out; }
+  .settings-backdrop.open { opacity: 1; }
   .settings-drawer-host { position: fixed; z-index: 25; top: 0; right: 0; bottom: 0; width: var(--settings-drawer-width); overflow: clip; pointer-events: none; }
   .settings-drawer { --app-header-height: 0px; height: 100%; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; pointer-events: auto; background: var(--color-surface); border-left: 1px solid var(--color-border); transform: translateX(100%); visibility: hidden; transition: transform 200ms ease-in-out, visibility 0s linear 200ms; }
+  .settings-mobile-header { position: sticky; top: 0; z-index: 20; display: flex; justify-content: flex-end; align-items: center; height: 64px; padding-inline: var(--content-padding); background: var(--color-surface); }
+  .settings-mobile-header :global(button) { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; background: transparent; color: var(--color-foreground); }
+  @media (max-width: 1149px) {
+    .settings-drawer { --app-header-height: 64px; }
+    .settings-drawer :global(.workspace) { padding-top: 0; }
+  }
   .settings-drawer.open { transform: translateX(0); visibility: visible; transition-delay: 0s; }
-  @media (prefers-reduced-motion: reduce) { .settings-drawer, .page-content :global(.site-header), .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap) { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .settings-backdrop, .settings-drawer, .page-content :global(.site-header), .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap) { transition: none; } }
 
   .settings-recovery {
     display: flex;

@@ -16,6 +16,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import OperationReport from "../reports/OperationReport.svelte";
   import "../reports/reports.css";
   import type { InputField } from "$lib/catalog.ts";
+  import VaultVariableAccess from "$lib/components/VaultVariableAccess.svelte";
   import { InputValidationError, prepareRequest, type InputValues } from "$lib/operation-input.ts";
   import type { WorkflowDocument } from "$lib/workflow-document.ts";
   import { createWorkflowRunner, type WorkflowStep, type WorkflowExecution } from "$lib/workflow-runner.ts";
@@ -83,7 +84,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try
     {
       const submittedValues = { ...values };
-      prepared = prepareRequest(view.operation, submittedValues);
+      if (!view.vaultVariables?.length) prepared = prepareRequest(view.operation, submittedValues);
       const result = await runner!.submit(submittedValues, credentialBinding ?? null);
       if (!disposed) { prepared = result.request; history = [...history, result]; executed = true; retry = false; }
     }
@@ -162,6 +163,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/if}
       <Reveal open={operationDetails} id="run-operation-details">{#key view.id}<OperationReport operation={view.operation} />{/key}</Reveal>
       <p class="hint">{view.workflowName}</p>
+      {#if view.vaultVariables?.length && (!view.operation.security?.length || credentialBinding && view.operation.security[credentialBinding.alternative]?.length === 0)}<VaultVariableAccess disabled={busy || executed} />{/if}
       <form id={operationFormId} onsubmit={execute} novalidate>
         {#if view.operation.security?.length}
           {#key view.id}

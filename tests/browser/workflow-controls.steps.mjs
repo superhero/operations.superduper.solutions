@@ -500,3 +500,35 @@ Then("the switch adapts its operand to the changed input type", async function (
   assert.deepEqual(document.nodes.find(item => item.type === "switch").data.gates, [{ ...this.savedGate, value: "" }]);
   assert.equal(document.edges.length, 1);
 });
+
+
+Then('newly added utility nodes occupy nearby free space and become centered', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  // Keep navigation visible so centering uses the actual remaining workspace.
+  await openCatalog(page);
+  const viewport = workflow(page).locator('.svelte-flow__viewport');
+  for (const [label, type] of [['Comment', 'comment'], ['Switch', 'switch'], ['Cast', 'cast'], ['Add vault variable', 'vault']]) {
+    const existing = await workflow(page).locator('.svelte-flow__node').evaluateAll(nodes => nodes.map(node => ({ id: node.dataset.id, transform: node.style.transform })));
+    const before = await viewport.getAttribute('style');
+    await page.getByRole('button', { name: label, exact: true }).click();
+    const added = workflow(page).locator(`.svelte-flow__node-${type}`).last();
+    await expect(added).toBeVisible();
+    await expect.poll(async () => {
+      const canvas = await workflow(page).boundingBox(), toolbar = await page.locator('.workflow-toolbar').boundingBox();
+      const inset = await page.locator('.workflow-toolbar').evaluate(element => parseFloat(getComputedStyle(element).getPropertyValue('--navigation-inset')) || 0);
+      const bounds = await added.boundingBox();
+      return Math.hypot(bounds.x + bounds.width / 2 - (canvas.x + inset + (canvas.width - inset) / 2),
+        bounds.y + bounds.height / 2 - (toolbar.y + toolbar.height + 24 + (canvas.y + canvas.height - 24 - toolbar.y - toolbar.height - 24) / 2));
+    }).toBeLessThan(2);
+    for (const previous of existing) await expect.poll(() => workflow(page).locator(`.svelte-flow__node[data-id="${previous.id}"]`).evaluate(node => node.style.transform)).toBe(previous.transform);
+    const rectangles = await workflow(page).locator('.svelte-flow__node').evaluateAll(nodes => nodes.map(node => {
+      const rect = node.getBoundingClientRect(); return { id: node.dataset.id, x: rect.x, y: rect.y, right: rect.right, bottom: rect.bottom };
+    }));
+    const addedId = await added.getAttribute('data-id');
+    const bounds = rectangles.find(rect => rect.id === addedId);
+    for (const other of rectangles.filter(rect => rect.id !== bounds.id))
+      assert.ok(bounds.right <= other.x || other.right <= bounds.x || bounds.bottom <= other.y || other.bottom <= bounds.y, 'New utility nodes must not overlap existing nodes.');
+    assert.notEqual(await viewport.getAttribute('style'), before);
+  }
+});
