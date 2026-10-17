@@ -383,7 +383,10 @@
   .settings-drawer { --app-header-height: 0px; height: 100%; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; pointer-events: auto; background: var(--color-surface); border-left: 1px solid var(--color-border); transform: translateX(100%); visibility: hidden; transition: transform 200ms ease-in-out, visibility 0s linear 200ms; }
   .settings-mobile-header { position: sticky; top: 0; z-index: 20; display: flex; justify-content: flex-end; align-items: center; height: 64px; padding-inline: var(--content-padding); background: var(--color-surface); }
   .settings-mobile-header :global(button) { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; background: transparent; color: var(--color-foreground); }
-  @media (max-width: 899px) { .settings-drawer { --app-header-height: 64px; } }
+  @media (max-width: 899px) {
+    .settings-drawer { --app-header-height: 64px; }
+    .settings-drawer :global(.workspace) { padding-top: 0; }
+  }
   .settings-drawer.open { transform: translateX(0); visibility: visible; transition-delay: 0s; }
   @media (prefers-reduced-motion: reduce) { .settings-drawer, .page-content :global(.site-header), .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap) { transition: none; } }
 
