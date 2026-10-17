@@ -270,7 +270,8 @@ function fileSchema(values: unknown[], depth = 0): Schema {
   const keys = [...new Set(objects.flatMap(value => Object.keys(value)))].slice(0, 201);
   return { type, properties: Object.fromEntries(keys.map(key => [key,
     fileSchema(objects.filter(value => Object.hasOwn(value, key)).map(value => value[key]), depth + 1)])),
-    required: keys.filter(key => objects.every(value => Object.hasOwn(value, key))) };
+    required: keys.filter(key => objects.every(value => Object.hasOwn(value, key) && value[key] !== null &&
+      (typeof value[key] !== "string" || value[key].trim().length > 0))) };
 }
 
 /** Build the same bounded output panels used for operations, rooted at a file node. */

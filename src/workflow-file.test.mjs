@@ -283,3 +283,14 @@ Then('file structure attachments share one output and normalize older handles', 
   const wrongOwner=structuredClone(legacy);wrongOwner.nodes.push({...owner,id:'other'});wrongOwner.edges[0].source='other';
   assert.throws(()=>validateWorkflowDocument(wrongOwner),/File structures/);
 });
+Then('uploaded fields with empty values are optional while zero and false remain required', async function () {
+  const {createFileDataGraph}=await import('./lib/workflow-graph.ts');
+  const owner={...fileOwner([]),data:{file:parse('optional.csv','present,optional,blank\n1,2," "\n0,," "')}};
+  const fields=createFileDataGraph(owner).nodes.find(n=>n.data.label==='Item').data.fields;
+  assert.deepEqual(fields.map(f=>[f.label,f.required]),[['present',true],['optional',false],['blank',false]]);
+  const object=fileOwner({zero:0,no:false,empty:'',space:' ',nil:null});
+  assert.deepEqual(createFileDataGraph(object).nodes[0].data.fields.map(f=>[f.label,f.required]),
+    [['zero',true],['no',true],['empty',false],['space',false],['nil',false]]);
+  const rows=fileOwner([{missing:1},{other:1}]);
+  assert.ok(createFileDataGraph(rows).nodes.find(n=>n.data.label==='Item').data.fields.every(f=>!f.required));
+});
