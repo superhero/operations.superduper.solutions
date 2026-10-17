@@ -167,6 +167,7 @@ Then('uploaded structures project nested fields and CSV columns', async function
   assert.deepEqual(graph.nodes.map(n=>n.data.fields.map(f=>[f.label,f.type])),[[['foo','Object']],[['bar','Object']],[['baz','Text']]]);
   const csv={...owner,data:{file:parse('rows.csv','foo,bar,baz,qux\n1,2,3,4\n5,6,7,8')}};
   const csvGraph=createFileDataGraph(csv);
+  assert.deepEqual(csvGraph.nodes.map(n=>n.data.label),['Array','Item']);
   assert.deepEqual(csvGraph.nodes.map(n=>n.data.fields.map(f=>[f.label,f.type])),[[['Items','Array']],[['foo','Array'],['bar','Array'],['baz','Array'],['qux','Array']]]);
   const literal=createFileDataGraph(fileOwner({items:'hello'})); assert.equal(literal.nodes[0].data.fields[0].type,'Text');
   let deep={leaf:true}; for(let i=0;i<14;i++)deep={nested:deep};
@@ -257,7 +258,7 @@ Then('CSV columns become numbers only when every value is numeric', async functi
   assert.deepEqual(parse('numbers.csv','1,+2.5\n3,.5',{...defaults,header:'absent'}).value,[[1,2.5],[3,0.5]]);
   assert.deepEqual(parse('numbers.csv','value\n" 2 "\n"3."').value,[{value:2},{value:3}]);
   const owner={...fileOwner([]),data:{file}};const graph=createFileDataGraph(owner);
-  const fields=graph.nodes.find(n=>n.data.label==='Items').data.fields;
+  const fields=graph.nodes.find(n=>n.data.label==='Item').data.fields;
   assert.deepEqual(fields.map(f=>f.itemType),['Integer','Number','Text','Text','Text','Text','Text','Text']);
   const doc=fileDocument({nodes:[owner,...graph.nodes],edges:graph.edges});
   validateWorkflowDocument(doc);
