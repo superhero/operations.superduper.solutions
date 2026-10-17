@@ -374,7 +374,6 @@ Then('rapid settings changes retain the final theme and palette after reloading'
   const page = this.page;
   await setMode(page, 'settings');
   await expectPaletteChoices(page, 'Default');
-  await openCatalog(page);
   await page.evaluate(async () => {
     const toggle = document.querySelector('[role="switch"][aria-label="Dark theme"]');
     for (const palette of ['alpine', 'sunset', 'graphite-study', 'default', 'sunset']) {

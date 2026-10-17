@@ -50,6 +50,14 @@ feat(settings): move theme mode switch beside palette choices
 
 ```
 
+<!-- changelog-commit:c5a349508462dd80368a69ece381869ea69886b9 -->
+### Commit [`c5a3495`](https://github.com/superhero/operations.superduper.solutions/commit/c5a349508462dd80368a69ece381869ea69886b9)
+
+```text
+feat(settings): slide Operations header beside the settings pane
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.49

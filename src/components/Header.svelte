@@ -14,7 +14,7 @@
 
 <header class="site-header" style:--header-scroll-strength={scrollStrength}>
   <div class="header-content">
-    <div class="brand-controls">
+    <div class="brand-controls" inert={settingsOpen}>
       <MenuButton open={navigationOpen} onclick={onMenu} />
       <div class="brand-copy">
         <strong class="brand">Operations</strong>

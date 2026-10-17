@@ -143,17 +143,14 @@ Then('dismissing mobile navigation preserves reading position with {string} moti
   assert.ok(readingPosition > 0, 'The fixture must provide a nonzero reading position to preserve.');
   await drawer.evaluate((element, top) => element.scrollTo({ top, behavior: 'instant' }), readingPosition);
   await expect.poll(() => drawer.evaluate(element => element.scrollTop)).toBe(readingPosition);
-  const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
-  const bounds = await menu.boundingBox();
-  assert.ok(bounds);
-  // A native pointer click avoids Playwright scrolling a sticky target into view.
-  await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
-  await expect(sheet(page)).toBeVisible();
-  assert.equal(await drawer.evaluate(element => element.scrollTop), readingPosition);
+  await setMode(page, 'workflow');
+  await openCatalog(page);
   await page.keyboard.press('Escape');
   await expect(sheet(page)).toHaveCount(0);
-  await expect(menu).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Open navigation', exact: true })).toBeFocused();
+  await setMode(page, 'settings');
   assert.equal(await drawer.evaluate(element => element.scrollTop), readingPosition);
+
 });
 
 Then('animated navigation completes dismissal before changing workspace or adding an operation', async function () {
@@ -166,7 +163,7 @@ Then('animated navigation completes dismissal before changing workspace or addin
   const action = entry.getByRole('button', { name: 'Add to workflow: List projects', exact: true });
   await settleOpening(page);
   await pauseDismissal(page, () => action.click());
-  await expect(settings).toBeVisible();
+  await expect(workflow(page)).toBeVisible();
   await expect(nodes(page)).toHaveCount(2);
   await page.keyboard.press('Delete');
   await expect(nodes(page)).toHaveCount(2);
@@ -204,7 +201,7 @@ Then('reopening navigation during keyboard selection cancels that destination', 
     await page.keyboard.press('Escape');
   }
   await expect(sheet(page)).toHaveCount(0);
-  await expect(page.getByRole('region', { name: 'Settings workspace', exact: true })).toBeVisible();
+  await expect(workflow(page)).toBeVisible();
   await expect(menu).toBeFocused();
   await openCatalog(page);
   await destination.focus();
