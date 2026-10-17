@@ -380,6 +380,31 @@ and production build pass.
 
 ```
 
+<!-- changelog-commit:4756f2c2fa2edefad0d938f9a4175c3efb00e4f9 -->
+### Commit [`4756f2c`](https://github.com/superhero/operations.superduper.solutions/commit/4756f2c2fa2edefad0d938f9a4175c3efb00e4f9)
+
+```text
+fix(workflows): show array bounds in Items labels and restore type badges
+
+```
+
+<!-- changelog-commit:c8cba91d24dc02af117fe15a6b08d5b3b3b449cd -->
+### Commit [`c8cba91`](https://github.com/superhero/operations.superduper.solutions/commit/c8cba91d24dc02af117fe15a6b08d5b3b3b449cd)
+
+```text
+feat(workflows): infer numeric CSV columns from all data rows
+
+Convert a column to numbers only when every cell is a finite, safely represented
+decimal value. Keep the entire column as text when any cell is nonnumeric or
+empty. Infer Integer or Number item attributes and preserve array-valued output
+connections, including persisted item type metadata.
+
+Update request and persistence checks for actual numeric values. Twelve focused
+source scenarios pass with complete parser coverage; two Chromium scenarios,
+type checking and production build pass.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50
