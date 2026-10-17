@@ -154,6 +154,14 @@ fix(logs): wrap error messages while preserving stack lines
 
 ```
 
+<!-- changelog-commit:28a881622b651ec044e6b976a53fc36e8ac9adcd -->
+### Commit [`28a8816`](https://github.com/superhero/operations.superduper.solutions/commit/28a881622b651ec044e6b976a53fc36e8ac9adcd)
+
+```text
+fix(ui): keep Operations header aligned left beside Settings
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.49
