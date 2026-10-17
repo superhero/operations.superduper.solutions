@@ -173,7 +173,7 @@ p { margin: 0; }
 ::selection { color: var(--color-selection-foreground); background: var(--color-selection-background); }
 * { scrollbar-width: thin; }
 .svelte-flow__node :is(.operation-title-row, .workflow-kind, .data-title, .utility-title) > .material-symbols-rounded { color: var(--color-background); }
-.page-content { position: relative; margin-left: 0; transition: margin-left 200ms ease-in; }
+.page-content { position: relative; }
 .shell, .header-content { max-width: 1060px; margin: 0 auto; }
 .shell { padding: 0 var(--content-padding) var(--content-padding); }
 .site-header { position: sticky; top: 0; z-index: 20; padding-block: var(--header-padding); }
@@ -255,7 +255,6 @@ summary::-webkit-details-marker { display: none; }
 .workflow-mode .header-content { max-width: none; }
 .workflow-mode main { flex: 1; min-height: 0; }
 .workflow-host { height: 100%; }
-@media (min-width: 900px) { .page-content.catalog-open { margin-left: var(--catalog-width); } }
 @media (max-width: 599px) {
   :root { --header-padding: 20px; }
   .brand { font-size: 21px; }

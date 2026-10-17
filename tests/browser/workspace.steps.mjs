@@ -689,3 +689,24 @@ Then('the workflow remains editable beside Settings', async function () {
   await expect(operationNodes(page, 'List projects')).toHaveCount(1);
   await expect(drawer).toHaveClass(/open/);
 });
+
+Then('the left menu overlays the workflow without changing its layout', async function () {
+  const page = this.page;
+  await closeCatalog(page);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const canvas = page.locator('.workflow-host');
+  const viewport = page.locator('.svelte-flow__viewport');
+  const before = await canvas.boundingBox();
+  const transform = await viewport.getAttribute('style');
+  await openCatalog(page);
+  const menu = page.locator('#side-navigation');
+  await expect(menu).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+  assert.deepEqual(await canvas.boundingBox(), before);
+  await expect(viewport).toHaveAttribute('style', transform);
+  const close = page.getByRole('button', { name: 'Close navigation', exact: true });
+  await expect.poll(async () => (await close.boundingBox()).x >= (await menu.boundingBox()).x + (await menu.boundingBox()).width).toBe(true);
+  await close.click();
+  await expect(menu).toBeHidden();
+  assert.deepEqual(await canvas.boundingBox(), before);
+  await expect(viewport).toHaveAttribute('style', transform);
+});
