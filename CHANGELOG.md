@@ -311,6 +311,30 @@ fix(workflows): remove copy action from file schema header
 
 ```
 
+<!-- changelog-commit:ad949965f453ee92cec056914df3badc8b838324 -->
+### Commit [`ad94996`](https://github.com/superhero/operations.superduper.solutions/commit/ad949965f453ee92cec056914df3badc8b838324)
+
+```text
+feat(workflows): bound file schema previews and load more on demand
+
+Limit the file schema scroll area to five visible rows. Render an initial
+1,000-line tree budget shared across expanded branches and expose Load more
+for successive batches. Reset the budget on document replacement and retain
+existing unpaginated behavior for other schema views.
+
+Type checking, production build and two focused Chromium Cucumber scenarios
+pass, covering bounded rendering, pagination, replacement and upload persistence.
+
+```
+
+<!-- changelog-commit:4537d695a764f2ff9a810eea7b383a27881c3523 -->
+### Commit [`4537d69`](https://github.com/superhero/operations.superduper.solutions/commit/4537d695a764f2ff9a810eea7b383a27881c3523)
+
+```text
+fix(workflows): align CSV label sizing and tighten summary spacing
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50
