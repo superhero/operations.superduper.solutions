@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.49
+
 <!-- changelog-commit:96275fe830d174c5e91d6a882cddfda1733f0944 -->
 ### Commit [`96275fe`](https://github.com/superhero/operations.superduper.solutions/commit/96275fe830d174c5e91d6a882cddfda1733f0944)
 
@@ -170,8 +174,6 @@ merge: align scrollbar fix with release-stage validation
 fix(ui): preserve typed scrollbar component exports
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.48
 
