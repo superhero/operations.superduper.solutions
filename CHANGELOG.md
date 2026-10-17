@@ -68,6 +68,46 @@ chore: merge develop into browser test optimizations
 
 ```
 
+<!-- changelog-commit:f8cf2a24e3d8b5ba6c7070937be6b43ed54ffcf7 -->
+### Commit [`f8cf2a2`](https://github.com/superhero/operations.superduper.solutions/commit/f8cf2a24e3d8b5ba6c7070937be6b43ed54ffcf7)
+
+```text
+test(browser): consolidate palette viewport and persistence checks
+
+```
+
+<!-- changelog-commit:83a49b8b4f944a7fa1c76c0140c013a15b1a56c7 -->
+### Commit [`83a49b8`](https://github.com/superhero/operations.superduper.solutions/commit/83a49b8b4f944a7fa1c76c0140c013a15b1a56c7)
+
+```text
+test(browser): consolidate saved node clearance normalization
+
+```
+
+<!-- changelog-commit:ce36462fb157fa3d20b5d49596352f15a8b826a9 -->
+### Commit [`ce36462`](https://github.com/superhero/operations.superduper.solutions/commit/ce36462fb157fa3d20b5d49596352f15a8b826a9)
+
+```text
+test(browser): consolidate workflow history browsing journey
+
+```
+
+<!-- changelog-commit:1ad7863539030910f0102f647154918e417b0b78 -->
+### Commit [`1ad7863`](https://github.com/superhero/operations.superduper.solutions/commit/1ad7863539030910f0102f647154918e417b0b78)
+
+```text
+test(browser): consolidate custom property lifecycle scenarios
+
+```
+
+<!-- changelog-commit:02c32b9d12bcdd7d1717b39f026fa2635d802000 -->
+### Commit [`02c32b9`](https://github.com/superhero/operations.superduper.solutions/commit/02c32b9d12bcdd7d1717b39f026fa2635d802000)
+
+```text
+test(browser): remove unused passing-state screenshots
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.48
