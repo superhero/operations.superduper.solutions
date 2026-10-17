@@ -295,6 +295,14 @@ Merge branch 'feature/csv-no-quotes' of github.com:superhero/operations.superdup
 
 ```
 
+<!-- changelog-commit:0de371fca3d032045c78b63857a5eb793eb63a0c -->
+### Commit [`0de371f`](https://github.com/superhero/operations.superduper.solutions/commit/0de371fca3d032045c78b63857a5eb793eb63a0c)
+
+```text
+fix(workflows): compact file schema disclosure header
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50
