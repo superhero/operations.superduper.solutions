@@ -113,6 +113,24 @@ the loader animation. This skips only the presentation delay, runs its native
 removal and gutter-cleanup callback, and leaves startup-specific scenarios alone.
 It does not advance application clocks or bypass initialization.
 
+### Focused fixtures
+
+Vault UI setup creates a vault and one encrypted credential. The creation and
+management scenario additionally checks copying, cancellation and key rotation;
+other cases keep fresh contexts and the production password-derivation costs.
+
+History setup creates real isolated Git repositories. Only editor scenarios open
+a saved workflow. Reloads belong to the cases that explicitly verify recovery or
+persistence, rather than every shared setup.
+
+Palette persistence checks inspect every preview and accessible choice in both
+theme modes. Repeated selection and reload checks verify the selected radio,
+active colors and durable settings without rescanning every unrelated preview.
+
+Wait for observable saves where possible. Keep bounded real-time waits when the
+assertion proves that an unfinished edit or deleted workflow does **not** save;
+immediate assertions or success polling cannot establish that absence.
+
 ### Preserved checks
 
 Keep fresh contexts, production password-derivation costs, traces, diagnostic

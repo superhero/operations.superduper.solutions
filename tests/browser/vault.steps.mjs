@@ -200,7 +200,7 @@ async function vaultWorkerCount(page) {
     .filter(name => name === 'operations-secret-vault').length;
 }
 
-async function createUIVault() {
+async function createUIVault(checkManagement = false) {
   const page = this.page;
   await openSecrets(page);
   await expect(settings(page).getByText('No vault has been created:', { exact: true })).toBeVisible();
@@ -215,13 +215,15 @@ async function createUIVault() {
   assert.equal(await recovery.evaluate(element => element.closest('form')), null);
   await expect(settings(page).getByRole('button', { name: 'Save recovery key', exact: true })).toHaveAttribute('type', 'button');
   this.uiRecovery = await recovery.textContent();
-  await page.evaluate(() => {
-    window.__recoveryClipboard = "";
-    navigator.clipboard.writeText = async value => { window.__recoveryClipboard = value; };
-  });
-  await settings(page).getByRole('button', { name: 'Copy recovery key', exact: true }).click();
-  assert.equal(await page.evaluate(() => window.__recoveryClipboard), this.uiRecovery);
-  await page.evaluate(() => { delete navigator.clipboard.writeText; delete window.__recoveryClipboard; });
+  if (checkManagement) {
+    await page.evaluate(() => {
+      window.__recoveryClipboard = "";
+      navigator.clipboard.writeText = async value => { window.__recoveryClipboard = value; };
+    });
+    await settings(page).getByRole('button', { name: 'Copy recovery key', exact: true }).click();
+    assert.equal(await page.evaluate(() => window.__recoveryClipboard), this.uiRecovery);
+    await page.evaluate(() => { delete navigator.clipboard.writeText; delete window.__recoveryClipboard; });
+  }
   assert.equal((await storage(page, 'read')).snapshot, null, 'creation waits for saving the recovery key');
   await expect(settings(page).getByLabel('Verify saved recovery key', { exact: true })).toHaveCount(0);
   const recoveryDownload = page.waitForEvent('download');
@@ -232,65 +234,69 @@ async function createUIVault() {
   await settings(page).getByLabel('Credential value', { exact: true }).fill(canaries[1]);
   await settings(page).getByRole('button', { name: 'Save credential', exact: true }).click();
   await expect(settings(page).getByLabel('Credential label', { exact: true })).toHaveValue('', { timeout: 15_000 });
-  const savedRow = settings(page).locator('li').filter({ hasText: canaries[3] });
-  await expect(savedRow.getByRole('button', { name: 'Replace', exact: true })).toHaveCount(0);
-  await page.evaluate(() => { navigator.clipboard.writeText = async value => { window.__credentialClipboard = value; }; });
-  try {
-    await savedRow.getByRole('button', { name: 'Copy', exact: true }).click();
-    await expect.poll(() => page.evaluate(() => window.__credentialClipboard)).toBe(canaries[1]);
-  } finally {
-    await page.evaluate(() => { delete navigator.clipboard.writeText; delete window.__credentialClipboard; });
+  if (checkManagement) {
+    const savedRow = settings(page).locator('li').filter({ hasText: canaries[3] });
+    await expect(savedRow.getByRole('button', { name: 'Replace', exact: true })).toHaveCount(0);
+    await page.evaluate(() => { navigator.clipboard.writeText = async value => { window.__credentialClipboard = value; }; });
+    try {
+      await savedRow.getByRole('button', { name: 'Copy', exact: true }).click();
+      await expect.poll(() => page.evaluate(() => window.__credentialClipboard)).toBe(canaries[1]);
+    } finally {
+      await page.evaluate(() => { delete navigator.clipboard.writeText; delete window.__credentialClipboard; });
+    }
+
+    await expect(settings(page).getByRole('button', { name: 'Generate recovery key', exact: true })).toHaveCount(0);
+    await expect(settings(page).getByRole('combobox', { name: 'Recovery method to replace', exact: true })).toHaveCount(0);
+    const beforePasskey = await storage(page, 'read');
+    await settings(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
+    const passkeyForm = settings(page).locator('form[id$="-passkey"]');
+    await expect(passkeyForm.getByLabel('Password', { exact: true })).toBeVisible();
+    await expect(passkeyForm.getByRole('combobox')).toHaveCount(0);
+    await passkeyForm.getByLabel('Password', { exact: true }).fill(canaries[0]);
+    const passkeyInputHandle = await passkeyForm.getByLabel('Password', { exact: true }).elementHandle();
+    await settings(page).locator('.vault-passkey-row').getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(passkeyForm).toHaveCount(0);
+    assert.equal(await passkeyInputHandle.evaluate(input => input.value), '');
+    assert.deepEqual(await storage(page, 'read'), beforePasskey);
+    const beforeRotation = await storage(page, 'read');
+    await settings(page).getByRole('button', { name: 'Rotate key', exact: true }).click();
+    const cancelRotation = settings(page).locator('.vault-rotate-row').getByRole('button', { name: 'Cancel', exact: true });
+    await expect(cancelRotation).toHaveAttribute('aria-expanded', 'true');
+    await expect(settings(page).locator('.rotation-body')).toBeVisible();
+    await expect(settings(page).locator('.rotation-body').getByRole('button', { name: 'Rotate key', exact: true })).toBeVisible();
+    await cancelRotation.click();
+    await expect(settings(page).locator('.rotation-body')).toHaveCount(0);
+    assert.deepEqual(await storage(page, 'read'), beforeRotation);
+    await settings(page).getByRole('button', { name: 'Rotate key', exact: true }).click();
+    const rotationFields = settings(page).locator('.rotation-body');
+    await expect(rotationFields.getByRole('combobox')).toHaveCount(0);
+    await expect(rotationFields.locator('input[type="password"]')).toHaveCount(1);
+    await rotationFields.locator('input[type="password"]').fill(canaries[0]);
+    const automaticRecoveryDownload = page.waitForEvent('download');
+    await rotationFields.getByRole('button', { name: 'Rotate key', exact: true }).click();
+    const automaticDownload = await automaticRecoveryDownload;
+    assert.equal(automaticDownload.suggestedFilename(), 'operations-vault-recovery-key.txt');
+    const rotatedRecovery = settings(page).locator('pre[aria-label="Generated recovery key"]');
+    await expect(rotatedRecovery).toHaveText(/^[A-Za-z0-9+/]{171}=$/);
+    const oldRecovery = this.uiRecovery;
+    this.uiRecovery = await rotatedRecovery.textContent();
+    assert.notEqual(this.uiRecovery, oldRecovery);
+    const recoveryStream = await automaticDownload.createReadStream();
+    const recoveryChunks = []; for await (const chunk of recoveryStream) recoveryChunks.push(chunk);
+    assert.equal(Buffer.concat(recoveryChunks).toString('utf8'), this.uiRecovery + '\n');
+    const rotatedKeyDownload = page.waitForEvent('download');
+    await settings(page).getByRole('button', { name: 'Save recovery key', exact: true }).click();
+    await rotatedKeyDownload;
+    await expect(rotatedRecovery).toHaveCount(0);
   }
-
-  await expect(settings(page).getByRole('button', { name: 'Generate recovery key', exact: true })).toHaveCount(0);
-  await expect(settings(page).getByRole('combobox', { name: 'Recovery method to replace', exact: true })).toHaveCount(0);
-  const beforePasskey = await storage(page, 'read');
-  await settings(page).getByRole('button', { name: 'Add passkey', exact: true }).click();
-  const passkeyForm = settings(page).locator('form[id$="-passkey"]');
-  await expect(passkeyForm.getByLabel('Password', { exact: true })).toBeVisible();
-  await expect(passkeyForm.getByRole('combobox')).toHaveCount(0);
-  await passkeyForm.getByLabel('Password', { exact: true }).fill(canaries[0]);
-  const passkeyInputHandle = await passkeyForm.getByLabel('Password', { exact: true }).elementHandle();
-  await settings(page).locator('.vault-passkey-row').getByRole('button', { name: 'Cancel', exact: true }).click();
-  await expect(passkeyForm).toHaveCount(0);
-  assert.equal(await passkeyInputHandle.evaluate(input => input.value), '');
-  assert.deepEqual(await storage(page, 'read'), beforePasskey);
-  const beforeRotation = await storage(page, 'read');
-  await settings(page).getByRole('button', { name: 'Rotate key', exact: true }).click();
-  const cancelRotation = settings(page).locator('.vault-rotate-row').getByRole('button', { name: 'Cancel', exact: true });
-  await expect(cancelRotation).toHaveAttribute('aria-expanded', 'true');
-  await expect(settings(page).locator('.rotation-body')).toBeVisible();
-  await expect(settings(page).locator('.rotation-body').getByRole('button', { name: 'Rotate key', exact: true })).toBeVisible();
-  await cancelRotation.click();
-  await expect(settings(page).locator('.rotation-body')).toHaveCount(0);
-  assert.deepEqual(await storage(page, 'read'), beforeRotation);
-  await settings(page).getByRole('button', { name: 'Rotate key', exact: true }).click();
-  const rotationFields = settings(page).locator('.rotation-body');
-  await expect(rotationFields.getByRole('combobox')).toHaveCount(0);
-  await expect(rotationFields.locator('input[type="password"]')).toHaveCount(1);
-  await rotationFields.locator('input[type="password"]').fill(canaries[0]);
-  const automaticRecoveryDownload = page.waitForEvent('download');
-  await rotationFields.getByRole('button', { name: 'Rotate key', exact: true }).click();
-  const automaticDownload = await automaticRecoveryDownload;
-  assert.equal(automaticDownload.suggestedFilename(), 'operations-vault-recovery-key.txt');
-  const rotatedRecovery = settings(page).locator('pre[aria-label="Generated recovery key"]');
-  await expect(rotatedRecovery).toHaveText(/^[A-Za-z0-9+/]{171}=$/);
-  const oldRecovery = this.uiRecovery;
-  this.uiRecovery = await rotatedRecovery.textContent();
-  assert.notEqual(this.uiRecovery, oldRecovery);
-  const recoveryStream = await automaticDownload.createReadStream();
-  const recoveryChunks = []; for await (const chunk of recoveryStream) recoveryChunks.push(chunk);
-  assert.equal(Buffer.concat(recoveryChunks).toString('utf8'), this.uiRecovery + '\n');
-  const rotatedKeyDownload = page.waitForEvent('download');
-  await settings(page).getByRole('button', { name: 'Save recovery key', exact: true }).click();
-  await rotatedKeyDownload;
-  await expect(rotatedRecovery).toHaveCount(0);
-
 
   await expect(settings(page).getByLabel('Credential value', { exact: true })).toHaveValue('');
   await expect(settings(page).locator('li').filter({ hasText: canaries[3] })).toHaveCount(1);
 }
-Given('I create a vault in the Secrets settings and save a synthetic credential', { timeout: 60_000 }, createUIVault);
+Given('I create a vault in the Secrets settings and save a synthetic credential', { timeout: 60_000 }, async function () { await createUIVault.call(this); });
+Given('I exercise vault creation, copying and key management with a synthetic credential', { timeout: 60_000 }, async function () {
+  await createUIVault.call(this, true);
+});
 Given('I create a synthetic vault on the localhost relying-party origin', { timeout: 60_000 }, async function () {
   this.baseURL = this.baseURL.replace('127.0.0.1', 'localhost');
   await this.context.route(`${this.baseURL}/**`, route => route.continue());

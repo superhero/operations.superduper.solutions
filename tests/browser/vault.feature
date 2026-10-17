@@ -79,8 +79,8 @@ Feature: Browser vault persistence and controlled credential execution
       | compressed |
 
   @vault-browser-ui
-  Scenario: Vault creation requires a saved recovery key and locks on reload
-    Given I create a vault in the Secrets settings and save a synthetic credential
+  Scenario: Vault creation, copying and key management preserve encrypted credentials across reload
+    Given I exercise vault creation, copying and key management with a synthetic credential
     Then its registered secret is encrypted and a reload requires unlocking again
 
   @vault-browser-ui

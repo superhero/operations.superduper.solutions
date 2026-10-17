@@ -9,13 +9,13 @@ Feature: Read-only browser storage dashboard
 
   @immediate-page-memory
   Scenario: Workflow storage metrics reflect real Git history when reopened after another saved version
-    Given two independent Git workflows with saved versions
+    Given two independent Git repositories with saved versions
     Then Storage reports repository bytes and history without changing either workflow
     And reopening Storage includes the next saved workflow version
 
   @immediate-page-memory
   Scenario: Storage inspects dirty Git state without rewriting files and isolates repository failures
-    Given two independent Git workflows with saved versions
+    Given two independent Git repositories with saved versions
     Then Storage accurately reports dirty Git files without rewriting the index
     And an unreadable repository does not hide another workflow's metrics
 
