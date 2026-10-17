@@ -193,7 +193,6 @@ Then('the historical graph is selected without creating a commit or changing ano
   assert.deepEqual(graphContent(selected), content(this.historyFirst));
   await expectVersionCards(this.page, this.historyFirstOid);
   await expect(historyDialog(this.page).locator('li[data-version-oid]')).toHaveCount(2);
-  await this.page.screenshot({ path: 'tmp/test/workflow-history-selected-version.png' });
   await historyDialog(this.page).getByRole('button', { name: 'Close', exact: true }).click();
   await expectWorkflowName(this.page, this.historyFirst.name);
   await saved(this.page);
@@ -368,11 +367,8 @@ Then('the mobile history tree shows stashed futures without changing the workflo
   }
   await expect(dialog.locator('[data-branch]')).toHaveCount(0);
   await expect(dialog.getByLabel(/^Branch /)).toHaveCount(0);
-  await page.screenshot({ path: 'tmp/test/workflow-history-tree-mobile.png' });
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.screenshot({ path: 'tmp/test/workflow-history-tree-desktop.png' });
   await dialog.evaluate(element => element.scrollTop = element.scrollHeight);
-  await page.screenshot({ path: 'tmp/test/workflow-history-tree-ancestor.png' });
   await dialog.evaluate(element => element.scrollTop = 0);
   await page.setViewportSize({ width: 390, height: 844 });
   assert.deepEqual(await repository(page, 'inspectGraph', this.historyFirst.id), before, 'Opening history preserves working content, index, refs, and navigation.');

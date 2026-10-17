@@ -623,7 +623,6 @@ Then('the native PRF virtual authenticator enrolls and unlocks the vault without
     await expect(settings(page).getByLabel('Credential label', { exact: true })).toBeVisible();
     await expect(settings(page).locator('li').getByText(canaries[3], { exact: true })).toBeVisible();
     noCanaries(await storage(page, 'read'));
-    await page.screenshot({ path: 'tmp/test/vault-settings.png', fullPage: true });
     await this.attach(JSON.stringify({ type: 'native-WebAuthn-virtual-authenticator', engine: 'chromium', version: this.browser.version(),
       protocol: 'ctap2_1', hasPrf: true, physicalProviderVerified: false }), 'application/vnd.operations.passkey+json');
   });

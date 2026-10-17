@@ -24,6 +24,35 @@ opens its run. Pass `"workflow"` when a scenario only needs to add a node.
 `restartRun` starts a new execution; its optional input restoration represents
 re-entering values, not persisted run state.
 
+## Scenario scope
+
+Palette scenarios check persistence in both themes, then resize the same page
+to check mobile keyboard navigation, colors and layout. Storage behavior does
+not depend on viewport width, so mobile checks do not repeat the reload matrix.
+Each palette still has an isolated scenario; recovery and migration failures
+remain separate. Initial selections check real Tab entry, while repeated
+persistence selections focus the checked radio before using native arrow keys.
+
+The node-clearance normalization scenario checks its input table in one browser
+session. Every row replaces the complete saved defaults, reloads the application,
+and checks the controls, persisted defaults and absence of workflow documents.
+Failures identify the input row and retain the original error as their cause.
+
+History browsing checks share one seeded history: inspect and close it, select
+versions with the keyboard, then select and edit an earlier version. The keyboard
+check returns to the latest commit before the editing checks begin. Interrupted
+checkout, fork, undo and redo recovery remain separate scenarios.
+
+Custom-property scenarios follow creation through mapping, reload, rename and
+removal, and scalar/object creation through nested fields and type changes.
+They reuse the graph while retaining cancellation, duplicate-name, history,
+field-identity and layout assertions at each relevant stage.
+
+Passing scenarios rely on DOM, behavior and persistence assertions rather than
+uncompared screenshot files. Failure hooks retain screenshots, diagnostics and
+full traces; add image comparisons explicitly if a future test needs visual
+regression coverage.
+
 ## Execution boundary
 
 Run `npm run build` before `npm run test:browser`. The

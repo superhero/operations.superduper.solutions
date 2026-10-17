@@ -125,7 +125,6 @@ Then("a failed autosave protects the draft until browser storage recovers", asyn
   await setMode(page, "workflow");
   await expectWorkflowName(page, "Recover this workflow");
   await expect(workflow(page).locator(".svelte-flow__node-cast")).toHaveCount(1);
-  await page.screenshot({ path: 'tmp/test/workflow-header-status.png' });
 });
 
 Then("the removed active workflow stays deleted until the next edit", async function () {

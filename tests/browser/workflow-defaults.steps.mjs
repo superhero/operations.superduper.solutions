@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
-import { Given, Then, When } from '@cucumber/cucumber';
+import { Then, When } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { readExport, setMode, workflow } from './workspace.steps.mjs';
 import { closeWorkflowDetails, workflowNameInput } from './workflow-details.fixture.mjs';
@@ -160,7 +160,6 @@ When('workflow defaults recover after a failed settings save', async function ()
   await expect(settings(page).getByRole('alert')).toHaveCount(0);
   await expect.poll(() => storedDefaults(page)).toEqual({ ...enabledDefaults, dashed: false });
   await setDefaults(page, enabledDefaults);
-  await page.screenshot({ path: 'tmp/test/workflow-defaults.png' });
 });
 
 Then('the defaults survive reload and initialize untouched and new workflows', async function () {
@@ -280,32 +279,33 @@ Then('the grid size slider supports exact keys and saves its nonlinear pointer v
   }
   const selected = samples.at(-1);
   await expect.poll(async () => (await storedDefaults(page)).gridSize).toBe(selected);
-  await page.screenshot({ path: 'tmp/test/integer-slider-grid-size.png' });
   await page.reload();
   await openDefaults(page);
   await expect(input).toHaveValue(String(selected));
   await expect(slider).toHaveAttribute('aria-valuenow', String(selected));
 });
 
-Given('workflow defaults saved with node clearance {word}', async function (raw) {
-  this.nodeClearanceDefaults = { ...disabledDefaults, dashed: true, snap: true,
+Then('each saved node clearance normalizes after reload without changing other defaults:', async function (table) {
+  const defaults = { ...disabledDefaults, dashed: true, snap: true,
     gridSize: 27, dashGap: 6, curveStrength: 71 };
-  const stored = { ...this.nodeClearanceDefaults };
-  if (raw === 'missing') delete stored.nodeClearance;
-  else stored.nodeClearance = raw === 'NaN' ? NaN : raw === 'Infinity' ? Infinity : JSON.parse(raw);
-  await storedDefaults(this.page, stored);
-});
-
-When('Settings reloads the saved node clearance', async function () {
-  await this.page.reload();
-  await openDefaults(this.page);
-});
-
-Then('node clearance is {int} and the other saved workflow defaults are preserved', async function (nodeClearance) {
-  const expected = { ...this.nodeClearanceDefaults, nodeClearance };
-  await expectDefaultSwitches(this.page, expected);
-  await expect.poll(() => storedDefaults(this.page)).toEqual(expected);
-  assert.deepEqual(await storedWorkflows(this.page), [], 'Normalizing a browser setting must not create workflow documents.');
+  for (const { stored: raw, expected: normalized } of table.hashes()) {
+    try {
+      // Replace the complete stored object for every row so the previous
+      // normalization cannot supply a missing or malformed value.
+      const stored = { ...defaults };
+      if (raw === 'missing') delete stored.nodeClearance;
+      else stored.nodeClearance = raw === 'NaN' ? NaN : raw === 'Infinity' ? Infinity : JSON.parse(raw);
+      await storedDefaults(this.page, stored);
+      await this.page.reload();
+      await openDefaults(this.page);
+      const expected = { ...defaults, nodeClearance: Number(normalized) };
+      await expectDefaultSwitches(this.page, expected);
+      await expect.poll(() => storedDefaults(this.page)).toEqual(expected);
+      assert.deepEqual(await storedWorkflows(this.page), [], 'Normalizing a browser setting must not create workflow documents.');
+    } catch (error) {
+      throw new Error(`Saved node clearance ${raw} should normalize to ${normalized}.`, { cause: error });
+    }
+  }
 });
 
 Then('node clearance enforces its bounds and survives reload without saving a workflow', async function () {

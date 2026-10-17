@@ -13,22 +13,15 @@ Feature: Browser-local Git workflow history
   Scenario: History messages describe their actual parent changes without rewriting legacy commits
     Then workflow history records useful messages and derives legacy titles from the correct parents
 
-  Scenario: Opening history does not change the editor or its persisted working file
+  Scenario: Browsing history preserves content and supports keyboard selection before editing an earlier version
     Given I open the latest saved history workflow
     When I open workflow history
     Then history offers selectable version cards without changing the current workflow
-
-  Scenario: Selecting an earlier version moves to its existing commit and preserves later work
-    Given I open the latest saved history workflow
-    When I open workflow history
-    And I select the earliest workflow version
-    Then the historical graph is selected without creating a commit or changing another workflow
-    And editing the selected version forks from that existing commit
-
-  Scenario: Keyboard selection locks version cards until the selected workflow is ready
-    Given I open the latest saved history workflow
     When I open workflow history
     Then keyboard activation selects the existing version while competing cards are disabled
+    When I select the earliest workflow version
+    Then the historical graph is selected without creating a commit or changing another workflow
+    And editing the selected version forks from that existing commit
 
   Scenario: Version selection rejects stale and unrelated revisions without changing history
     Then checkout rejects invalid revisions and selecting the current revision creates no changes

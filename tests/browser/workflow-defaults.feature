@@ -19,12 +19,8 @@ Feature: Browser-local workflow defaults
   Scenario: Grid size slider preserves bounds and changes values faster near the center
     Then the grid size slider supports exact keys and saves its nonlinear pointer value across reload
 
-  Scenario Outline: Saved node clearance is normalized independently from other workflow defaults
-    Given workflow defaults saved with node clearance <stored>
-    When Settings reloads the saved node clearance
-    Then node clearance is <expected> and the other saved workflow defaults are preserved
-
-    Examples:
+  Scenario: Saved node clearance is normalized independently from other workflow defaults
+    Then each saved node clearance normalizes after reload without changing other defaults:
       | stored   | expected |
       | missing  | 16       |
       | 0        | 0        |
