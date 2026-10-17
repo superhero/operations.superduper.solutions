@@ -140,6 +140,37 @@ merge: align release testing policy with automated report badges
 
 ```
 
+<!-- changelog-commit:f1790f347eb9bceb0436c597dc5a57d52235d685 -->
+### Commit [`f1790f3`](https://github.com/superhero/operations.superduper.solutions/commit/f1790f347eb9bceb0436c597dc5a57d52235d685)
+
+```text
+fix(ui): keep native scrollbars slim on hover
+
+```
+
+<!-- changelog-commit:31dac5d2e171b35d50ab109f98c9b2a6e4cc2d26 -->
+### Commit [`31dac5d`](https://github.com/superhero/operations.superduper.solutions/commit/31dac5d2e171b35d50ab109f98c9b2a6e4cc2d26)
+
+```text
+Merge branch 'develop' into bugfix/slim-scrollbars
+```
+
+<!-- changelog-commit:90da528f014fa0fe77fec6fa86f43ddaab793731 -->
+### Commit [`90da528`](https://github.com/superhero/operations.superduper.solutions/commit/90da528f014fa0fe77fec6fa86f43ddaab793731)
+
+```text
+merge: align scrollbar fix with release-stage validation
+
+```
+
+<!-- changelog-commit:2dac65894526d22242730ab6e08f7dd2285978b6 -->
+### Commit [`2dac658`](https://github.com/superhero/operations.superduper.solutions/commit/2dac65894526d22242730ab6e08f7dd2285978b6)
+
+```text
+fix(ui): preserve typed scrollbar component exports
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.48

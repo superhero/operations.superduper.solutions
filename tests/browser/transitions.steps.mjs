@@ -115,7 +115,7 @@ Then('report and schema transitions retain content through interruption', async 
   await expect.poll(() => page.locator('#run-operation-details').evaluate(element => parseFloat(getComputedStyle(element).transitionDuration))).toBeGreaterThan(0);
 });
 
-Then('native scrollbars expand on hover and settle without changing the reading position', async function () {
+Then('native scrollbars stay slim on hover without changing the reading position', async function () {
   const page = this.page;
   await setMode(page, 'settings');
   await page.setViewportSize({ width: 1280, height: 360 });
@@ -124,24 +124,29 @@ Then('native scrollbars expand on hover and settle without changing the reading 
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const root = page.locator('html');
-  const inset = () => root.evaluate(element => parseFloat(getComputedStyle(element).getPropertyValue('--scrollbar-y-inset')));
-  const metrics = await root.evaluate(element => ({ width: innerWidth - element.clientWidth, scrollable: element.scrollHeight > element.clientHeight, height: element.scrollHeight, viewport: element.clientHeight, enhanced: element.classList.contains('animated-scrollbars') }));
-  assert.ok(metrics.scrollable && metrics.width > 0, `The native scrollbar must have a real scrollable document and hit area: ${JSON.stringify(metrics)}`);
-  await page.mouse.move(1280 - metrics.width / 2, 160);
-  await expect.poll(inset).toBe(0);
+  const metrics = () => root.evaluate(element => ({ width: innerWidth - element.clientWidth,
+    scrollable: element.scrollHeight > element.clientHeight,
+    thumb: CSS.supports('selector(::-webkit-scrollbar)')
+      ? getComputedStyle(element, '::-webkit-scrollbar').width : getComputedStyle(element).scrollbarWidth,
+    animations: element.getAnimations().length }));
+  await expect.poll(async () => (await metrics()).scrollable).toBe(true);
+  const before = await metrics();
+  // Headless Firefox suppresses native scrollbars. It can still verify
+  // scrolling and stable geometry; Chromium/WebKit also verify visible width.
+  const hidden = before.thumb === 'none' && page.context().browser().browserType().name() === 'firefox';
+  if (hidden) assert.equal(before.width, 0);
+  else {
+    assert.ok(before.width > 0, 'The document must have a usable native scrollbar.');
+    assert.ok(before.thumb === '4px' || before.thumb === 'thin', `Expected a slim scrollbar: ${JSON.stringify(before)}`);
+  }
+  await page.mouse.move(1280 - Math.max(2, before.width / 2), 160);
+  const target = await page.evaluate(() => Math.min(50, document.documentElement.scrollHeight - innerHeight));
   await page.mouse.wheel(0, 50);
-  await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(0);
-  const before = await page.evaluate(() => scrollY);
-  const leavingMotion = await pauseNextAnimation(page, 'html', '--scrollbar-y-inset');
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(target);
+  assert.deepEqual(await metrics(), before, 'Hovering and scrolling must preserve the slim scrollbar and document width.');
+  const position = await page.evaluate(() => scrollY);
   await page.mouse.move(640, 160);
-  await leavingMotion();
-  const halfwayInset = await inset();
-  assert.ok(halfwayInset > 0 && halfwayInset < 4, 'The scrollbar thumb must interpolate while leaving hover.');
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await expect.poll(inset).toBe(4);
-  await expect.poll(() => root.evaluate(element => element.getAnimations().length)).toBe(0);
-  assert.equal(await page.evaluate(() => scrollY), before, 'Thumb feedback must not scroll the document or change its geometry.');
-  await page.mouse.move(1280 - metrics.width / 2, 160);
-  await expect.poll(inset).toBe(0);
-  await expect.poll(() => root.evaluate(element => element.getAnimations().length)).toBe(0);
+  assert.deepEqual(await metrics(), before);
+  assert.equal(await page.evaluate(() => scrollY), position, 'Leaving the scrollbar must preserve the reading position.');
 });
