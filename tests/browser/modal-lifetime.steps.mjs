@@ -122,7 +122,7 @@ Then('resizing an open desktop catalog preserves the {string} dialog focus and t
   await expect(page.getByRole('button', { name: 'Open navigation', exact: true })).toBeVisible();
   await openCatalog(page);
   await expect(sheet(page)).toBeVisible();
-  await expect(page.getByRole('switch', { name: 'Dark theme', exact: true })).toBeFocused();
+  await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toBeFocused();
 });
 
 Then('dismissing mobile navigation preserves reading position with {string} motion', async function (motion) {
@@ -183,7 +183,7 @@ Then('reopening navigation during keyboard selection cancels that destination', 
   await openCatalog(page);
   const entry = await revealCatalogOperation(page, 'List projects');
   const destination = entry.getByRole('button', { name: 'Add to workflow: List projects', exact: true });
-  const selected = page.getByRole('switch', { name: 'Dark theme', exact: true });
+  const selected = page.getByRole('textbox', { name: 'Prompt', exact: true });
   await settleOpening(page);
   await destination.focus();
   await pauseDismissal(page, () => page.keyboard.press('Space'));

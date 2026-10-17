@@ -11,10 +11,10 @@
   import { catalogs, type CatalogGroup } from "$lib/catalog-registry.ts";
   import { evaluateOperationsAsync } from "$lib/operation-matching-client.ts";
   import type { OperationMatch } from "$lib/matching.ts";
-  let { open = $bindable(false), modal = $bindable(false), documentModal = false, operations, dark, evaluationDetails = false, workflows, workflowError, onWorkflowSelect, onWorkflowRetry, onSelect, onTheme }:
-    { open: boolean; modal?: boolean; documentModal?: boolean; operations: Operation[]; dark: boolean; evaluationDetails?: boolean;
+  let { open = $bindable(false), modal = $bindable(false), documentModal = false, operations, evaluationDetails = false, workflows, workflowError, onWorkflowSelect, onWorkflowRetry, onSelect }:
+    { open: boolean; modal?: boolean; documentModal?: boolean; operations: Operation[]; evaluationDetails?: boolean;
       workflows: WorkflowDocument[]; workflowError: string; onWorkflowSelect: (document: WorkflowDocument) => void; onWorkflowRetry: () => void;
-      onSelect: (operation: Operation) => void; onTheme: () => void } = $props();
+      onSelect: (operation: Operation) => void } = $props();
   let mobile = $state(false);
   let catalogPath = $state<string[]>([]);
   let workflowsOpen = $state(false);
@@ -158,7 +158,7 @@
     document.querySelector<HTMLElement>('[aria-controls="side-navigation"]')?.focus({ preventScroll: true });
   }
   function workspaceFocusTarget(panel: HTMLElement | null | undefined) {
-    return panel?.querySelector<HTMLElement>('button[aria-pressed="true"]') ?? panel?.querySelector<HTMLElement>("button");
+    return panel?.querySelector<HTMLElement>('textarea') ?? panel?.querySelector<HTMLElement>('button');
   }
   async function finishClose() {
     // Presence completion precedes DOM removal; release graph shortcuts afterward.
@@ -221,12 +221,6 @@
 {/snippet}
 
 {#snippet catalog()}
-  <div class="catalog-menu-header">
-    <HintButton class="icon-switch" type="button" role="switch" label={dark ? "Switch to light theme" : "Switch to dark theme"} aria-label="Dark theme" aria-checked={dark}
-      onclick={onTheme}>
-      <span class="switch-thumb"></span><span><MaterialIcon name="light_mode" /></span><span><MaterialIcon name="dark_mode" /></span>
-    </HintButton>
-  </div>
   <CatalogPrompt bind:this={promptEditor} value={prompt} pending={matchingPending} error={matchingError} {evaluation}
     {matchingOpen} {evaluationDetails} onChange={changePrompt}
     onMatchingToggle={() => matchingOpen = !matchingOpen} onRetry={() => retryMatching += 1} />

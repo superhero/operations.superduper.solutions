@@ -4,15 +4,12 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, closeCatalog } from './workspace.steps.mjs';
+import { openCatalog, closeCatalog, selectThemeMode } from './workspace.steps.mjs';
 import { expectThemeColors } from './theme-colors.mjs';
 
 Then('graph selection feedback remains distinct in the {string} theme', async function (theme) {
   const page = this.page;
-  await openCatalog(page);
-  const dark = page.getByRole('switch', { name: 'Dark theme', exact: true });
-  if (await dark.getAttribute('aria-checked') !== String(theme === 'dark')) await dark.click();
-  await closeCatalog(page);
+  await selectThemeMode(page, theme);
   const selected = page.locator('.operation-node.selected');
   await expect(selected).toHaveCount(1);
   const border = await selected.evaluate(element => getComputedStyle(element).borderColor);

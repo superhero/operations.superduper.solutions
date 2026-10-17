@@ -62,10 +62,13 @@ Then('catalog paths, focus and tooltip dismissal behave consistently', async fun
   await expect(overview).toHaveAttribute('aria-expanded', 'false');
   await expect(root).toHaveAttribute('aria-expanded', 'true');
   await page.getByRole('textbox', { name: 'Prompt', exact: true }).focus();
+  await page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }).focus();
+  await page.keyboard.press('Tab');
   await page.keyboard.press('Shift+Tab');
-  await expect(page.getByRole('tooltip')).toContainText('Switch to dark theme');
+  await expect(page.getByRole('tooltip')).toContainText('Settings');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('tooltip')).toHaveCount(0);
+  await page.getByRole('textbox', { name: 'Prompt', exact: true }).focus();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'Open navigation', exact: true })).toBeFocused();
 });

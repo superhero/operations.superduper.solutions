@@ -35,6 +35,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import Disclosure from "$lib/components/Disclosure.svelte";
   import FieldInteger from "$lib/components/FieldInteger.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
+  import HintButton from "$lib/components/HintButton.svelte";
   import SecretsSettings from "./settings/SecretsSettings.svelte";
   import StorageSettings from "./settings/StorageSettings.svelte";
   import ErrorHistory from "./settings/ErrorHistory.svelte";
@@ -45,11 +46,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { isValidWorkflowCurveStrength, isValidWorkflowDashLength, isValidWorkflowDashGap, isValidWorkflowDashSpeed, isValidWorkflowGridSize, isValidWorkflowNodeClearance,
     workflowCurveStrengthLimits, workflowDashLengthLimits, workflowDashGapLimits, workflowDashSpeedLimits, workflowGridSizeLimits, workflowNodeClearanceLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
 
-  let { tooltips = true, tooltipsError = "", onTooltipsChange = () => {}, palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
+  let { dark, onTheme, tooltips = true, tooltipsError = "", onTooltipsChange = () => {}, palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
     locale = defaultLocaleSettings, localeError = "", onLocaleChange = () => {}, onRetryLocale = () => {},
     developerToolbar, developerToolbarError = "", onDeveloperToolbarChange,
     evaluationDetails, evaluationDetailsError = "", onEvaluationDetailsChange,
     settingsUnavailable, settingsRetrying, onRetrySettings }: {
+    dark: boolean;
+    onTheme: () => void;
     tooltips?: boolean;
     tooltipsError?: string;
     onTooltipsChange?: (enabled: boolean) => void;
@@ -359,6 +362,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <MaterialIcon name="chevron_forward" size={17} />
       {/snippet}
       <fieldset aria-label="Color palette">
+        <div class="theme-mode">
+          <HintButton class="icon-switch" type="button" role="switch" label={dark ? "Switch to light theme" : "Switch to dark theme"} aria-label="Dark theme" aria-checked={dark} onclick={onTheme}>
+            <span class="switch-thumb"></span><span><MaterialIcon name="light_mode" /></span><span><MaterialIcon name="dark_mode" /></span>
+          </HintButton>
+        </div>
         <div class="palette-options">
           {#each palettes as option (option.id)}
             <label class="palette-choice">
@@ -413,6 +421,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .defaults-error p { margin: 0; padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; overflow-wrap: anywhere; }
   .defaults-retry { padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; }
   .settings-retry { padding: 16px 16px 0; }
+  .theme-mode { display: flex; justify-content: flex-end; margin-bottom: 16px; }
   .palette-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 16px; }
   .palette-choice { position: relative; min-width: 0; cursor: pointer; }
   .palette-choice input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }

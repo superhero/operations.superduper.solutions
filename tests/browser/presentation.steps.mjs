@@ -6,6 +6,7 @@ import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { chooseCatalogOperation, closeCatalog, field, fillField, expectFieldValue, openCatalog, workspace, searchOperations,
   workflow, workflowAction, operationNodes, restartRun, quitRun, executeOperation, applyDisplayedTheme, setEvaluationDetails } from './workspace.steps.mjs';
+import { selectThemeMode } from './workspace.steps.mjs';
 import { expectThemeColors } from './theme-colors.mjs';
 
 async function expectUnclippedFocus(control) {
@@ -41,12 +42,7 @@ async function expectUnclippedFocus(control) {
   return result;
 }
 
-async function selectTheme(page, theme) {
-  await openCatalog(page);
-  const toggle = page.getByRole('switch', { name: 'Dark theme', exact: true });
-  if (await toggle.getAttribute('aria-checked') !== String(theme === 'dark')) await toggle.click();
-  await closeCatalog(page);
-}
+const selectTheme = selectThemeMode;
 
 async function controlContrasts(controls) {
   return controls.evaluateAll(elements => {

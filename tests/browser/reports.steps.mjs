@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { chooseCatalogOperation, closeCatalog, field, expectFieldValue, openCatalog, workspace, searchOperations, setMode, setEvaluationDetails } from "./workspace.steps.mjs";
+import { chooseCatalogOperation, closeCatalog, field, expectFieldValue, openCatalog, workspace, searchOperations, setMode, setEvaluationDetails, selectThemeMode } from "./workspace.steps.mjs";
 import { expectThemeColors } from "./theme-colors.mjs";
 import { operations } from "../../src/lib/catalog.ts";
 import { catalogForOperation } from "../../src/lib/catalog-registry.ts";
@@ -350,9 +350,8 @@ Then("both reports fit a {int} pixel viewport in the {string} theme", async func
   };
   await setEvaluationDetails(this.page);
   await this.page.setViewportSize({ width, height: 844 });
+  await selectThemeMode(this.page, theme);
   await openCatalog(this.page);
-  const toggle = this.page.getByRole("switch", { name: "Dark theme", exact: true });
-  if (await toggle.getAttribute("aria-checked") !== String(theme === "dark")) await toggle.click();
   await searchOperations(this.page, "List projects");
   await this.page.getByRole("button", { name: "Review matching details", exact: true }).click();
   await expectReportFits(this.page, evaluationReport(this.page));
