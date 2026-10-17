@@ -521,8 +521,9 @@ Then('the settings drawer preserves the workflow at width {int} with {string} mo
   assert.deepEqual(await canvas.boundingBox(), before, 'Opening Settings must not resize or hide the workflow.');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   const bounds = await drawer.boundingBox();
-  const header = await page.locator('.site-header').boundingBox();
-  assert.equal(Math.round(bounds.x + bounds.width), Math.round(header.x + header.width + bounds.width));
+  assert.equal(Math.round(bounds.x + bounds.width), width);
+  assert.equal(bounds.y, 0);
+  assert.equal(bounds.height, 600);
   assert.equal(await drawer.evaluate(element => getComputedStyle(element).transitionDuration), motion === 'reduce' ? '0s' : '0.2s, 0s');
   await settings.evaluate(async button => {
     button.click();
@@ -573,4 +574,33 @@ Then('opening Settings closes the left menu and slides the Operations header lef
   await settings.click();
   await expect.poll(() => header.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).m41)).toBe(0);
   await expect(settings).toBeFocused();
+});
+
+Then('Settings covers the viewport scrollbar without shifting or scrolling the workflow', async function () {
+  const page = this.page;
+  await closeCatalog(page);
+  await page.evaluate(() => { document.body.style.minHeight = '1800px'; window.scrollTo(0, 80); });
+  await expect.poll(() => page.evaluate(() => scrollY)).toBe(80);
+  const canvas = page.locator('.workflow-host');
+  const before = await canvas.boundingBox();
+  const button = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
+  const target = await button.boundingBox();
+  await page.mouse.click(target.x + target.width / 2, target.y + target.height / 2);
+  const drawer = page.locator('.settings-drawer');
+  await expect(drawer).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+  await expect(page.locator('html')).toHaveCSS('overflow', 'hidden');
+  assert.deepEqual(await canvas.boundingBox(), before);
+  assert.equal(await page.evaluate(() => Boolean(document.elementFromPoint(innerWidth - 1, 1)?.closest('.settings-drawer'))), true);
+  assert.equal(await page.evaluate(() => Boolean(document.elementFromPoint(innerWidth - 1, innerHeight - 1)?.closest('.settings-drawer'))), true);
+  const bounds = await drawer.boundingBox();
+  assert.equal(bounds.y, 0);
+  assert.equal(bounds.height, await page.evaluate(() => innerHeight));
+  await drawer.hover();
+  await page.mouse.wheel(0, 100);
+  assert.equal(await page.evaluate(() => scrollY), 80);
+  await page.keyboard.press('Escape');
+  await expect(drawer).toBeHidden();
+  await expect(page.locator('html')).not.toHaveCSS('overflow', 'hidden');
+  assert.deepEqual(await canvas.boundingBox(), before);
+  assert.equal(await page.evaluate(() => scrollY), 80);
 });
