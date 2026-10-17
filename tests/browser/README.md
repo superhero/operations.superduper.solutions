@@ -33,6 +33,11 @@ Each palette still has an isolated scenario; recovery and migration failures
 remain separate. Initial selections check real Tab entry, while repeated
 persistence selections focus the checked radio before using native arrow keys.
 
+The node-clearance normalization scenario checks its input table in one browser
+session. Every row replaces the complete saved defaults, reloads the application,
+and checks the controls, persisted defaults and absence of workflow documents.
+Failures identify the input row and retain the original error as their cause.
+
 ## Execution boundary
 
 Run `npm run build` before `npm run test:browser`. The
