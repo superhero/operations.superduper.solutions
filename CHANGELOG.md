@@ -15,6 +15,118 @@ control. Preserve native text undo in Search.
 
 ```
 
+<!-- changelog-commit:b82b4887e0baf3b13f4e17121bb23574cf68194e -->
+### Commit [`b82b488`](https://github.com/superhero/operations.superduper.solutions/commit/b82b4887e0baf3b13f4e17121bb23574cf68194e)
+
+```text
+fix(locale): adjust preview contrast and add a calendar icon
+
+```
+
+<!-- changelog-commit:47d25580047428294f359fcba98c38978d1144f6 -->
+### Commit [`47d2558`](https://github.com/superhero/operations.superduper.solutions/commit/47d25580047428294f359fcba98c38978d1144f6)
+
+```text
+fix(locale): place the calendar after the date and time
+
+```
+
+<!-- changelog-commit:c60026dbb2dd05828864327e923592264fac3eb5 -->
+### Commit [`c60026d`](https://github.com/superhero/operations.superduper.solutions/commit/c60026dbb2dd05828864327e923592264fac3eb5)
+
+```text
+Merge remote-tracking branch 'origin/bugfix/locale-preview-style' into bugfix/locale-preview-style
+
+```
+
+<!-- changelog-commit:7caa877f991859eae8024d223e7b28d14dbbde52 -->
+### Commit [`7caa877`](https://github.com/superhero/operations.superduper.solutions/commit/7caa877f991859eae8024d223e7b28d14dbbde52)
+
+```text
+fix(vault): remove outer padding from saved key rows
+
+```
+
+<!-- changelog-commit:fbc1e6265c177b7c04b21ec19d52bfe2fcbced39 -->
+### Commit [`fbc1e62`](https://github.com/superhero/operations.superduper.solutions/commit/fbc1e6265c177b7c04b21ec19d52bfe2fcbced39)
+
+```text
+fix(vault): join key actions and retain left padding
+
+```
+
+<!-- changelog-commit:74f56db430364faaf64814440c75793cc0ff5a5d -->
+### Commit [`74f56db`](https://github.com/superhero/operations.superduper.solutions/commit/74f56db430364faaf64814440c75793cc0ff5a5d)
+
+```text
+fix(vault): space key action buttons by two pixels
+
+```
+
+<!-- changelog-commit:60d881037876695d983877b70bc48d1d5779fb69 -->
+### Commit [`60d8810`](https://github.com/superhero/operations.superduper.solutions/commit/60d881037876695d983877b70bc48d1d5779fb69)
+
+```text
+fix(vault): reduce key action gap to one pixel
+
+```
+
+<!-- changelog-commit:21eb1f3ab8baae16efb19d06ac267322fa1b071d -->
+### Commit [`21eb1f3`](https://github.com/superhero/operations.superduper.solutions/commit/21eb1f3ab8baae16efb19d06ac267322fa1b071d)
+
+```text
+fix(vault): add one-pixel padding around key actions
+
+```
+
+<!-- changelog-commit:8456bf50e7ae16ce1224a0e5697db22a13d0038c -->
+### Commit [`8456bf5`](https://github.com/superhero/operations.superduper.solutions/commit/8456bf50e7ae16ce1224a0e5697db22a13d0038c)
+
+```text
+fix(vault): use two-pixel key action spacing
+
+```
+
+<!-- changelog-commit:aaf114350e33f076f5163ec72d170cd3aafd8c2a -->
+### Commit [`aaf1143`](https://github.com/superhero/operations.superduper.solutions/commit/aaf114350e33f076f5163ec72d170cd3aafd8c2a)
+
+```text
+fix(vault): restore one-pixel gap between key actions
+
+```
+
+<!-- changelog-commit:9857e4154c0ada2615e94aefb179946ce321ee5c -->
+### Commit [`9857e41`](https://github.com/superhero/operations.superduper.solutions/commit/9857e4154c0ada2615e94aefb179946ce321ee5c)
+
+```text
+fix(vault): reduce saved key row spacing to four pixels
+
+```
+
+<!-- changelog-commit:f935baa8d2014e7125c17d80beccd9d6f8bcf9a0 -->
+### Commit [`f935baa`](https://github.com/superhero/operations.superduper.solutions/commit/f935baa8d2014e7125c17d80beccd9d6f8bcf9a0)
+
+```text
+fix(vault): set saved key row spacing to six pixels
+
+```
+
+<!-- changelog-commit:b132230c079bb1dfeaf2f8afb06a9d07ed46a213 -->
+### Commit [`b132230`](https://github.com/superhero/operations.superduper.solutions/commit/b132230c079bb1dfeaf2f8afb06a9d07ed46a213)
+
+```text
+fix(vault): show inactivity settings only while unlocked
+
+```
+
+<!-- changelog-commit:3783e0b7395c3dc9474aead21de1e3ed98dbe902 -->
+### Commit [`3783e0b`](https://github.com/superhero/operations.superduper.solutions/commit/3783e0b7395c3dc9474aead21de1e3ed98dbe902)
+
+```text
+merge: synchronize develop before vault layout integration
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50
