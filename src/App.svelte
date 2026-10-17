@@ -73,7 +73,7 @@
     if (request !== modeRequest) return;
     if (next === "settings") settingsPresent = true;
     mode = next;
-    if (matchMedia("(max-width: 899px)").matches) navigationOpen = false;
+    if (next === "settings" || matchMedia("(max-width: 899px)").matches) navigationOpen = false;
     await tick();
     if (next === "workflow") {
       await Promise.all(settingsDrawer.getAnimations().map(animation => animation.finished.catch(() => {})));
@@ -288,7 +288,7 @@
 <SideNavigation bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {evaluationDetails}
   workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
   onSelect={selectOperation} />
-<div class="page-content workflow-mode" class:catalog-open={navigationOpen}>
+<div class="page-content workflow-mode" class:catalog-open={navigationOpen} class:settings-open={mode === "settings"}>
   <Header {navigationOpen} settingsOpen={mode === "settings"} onSettings={toggleSettings} {workflowSaveStatus} onMenu={() => navigationOpen = !navigationOpen} />
   <div class="shell">
     <main>
@@ -320,10 +320,13 @@
 </Tooltip.Provider>
 
 <style>
-  .settings-drawer-host { position: fixed; z-index: 25; top: var(--app-header-height); right: 0; bottom: 0; width: min(900px, 100%); overflow: clip; pointer-events: none; }
+  :global(:root) { --settings-drawer-width: min(900px, calc(100vw - var(--navigation-control-size) - 2 * var(--content-padding))); }
+  .page-content :global(.site-header) { transition: transform 200ms ease-in-out; }
+  .page-content.settings-open :global(.site-header) { transform: translateX(calc(-1 * var(--settings-drawer-width))); }
+  .settings-drawer-host { position: fixed; z-index: 25; top: var(--app-header-height); right: 0; bottom: 0; width: var(--settings-drawer-width); overflow: clip; pointer-events: none; }
   .settings-drawer { --app-header-height: 0px; height: 100%; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; pointer-events: auto; background: var(--color-surface); border-left: 1px solid var(--color-border); transform: translateX(100%); visibility: hidden; transition: transform 200ms ease-in-out, visibility 0s linear 200ms; }
   .settings-drawer.open { transform: translateX(0); visibility: visible; transition-delay: 0s; }
-  @media (prefers-reduced-motion: reduce) { .settings-drawer { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .settings-drawer, .page-content :global(.site-header) { transition: none; } }
 
   .settings-recovery {
     display: flex;

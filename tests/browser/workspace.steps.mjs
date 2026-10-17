@@ -15,6 +15,11 @@ const operationNodes = (page, name) => workflow(page).locator(".svelte-flow__nod
 const connections = page => workflow(page).locator(".svelte-flow__edge:not(.workflow-schema-edge)");
 
 async function openCatalog(page) {
+  const settings = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
+  if (await settings.getAttribute('aria-pressed') === 'true') {
+    await settings.click();
+    await expect(page.locator('.settings-drawer')).toBeHidden();
+  }
   const open = page.getByRole("button", { name: "Open navigation", exact: true });
   await expect(open.or(page.getByRole("button", { name: "Close navigation", exact: true }))).toBeVisible();
   if (await open.isVisible()) await open.click();
@@ -429,7 +434,6 @@ When("I press Delete in Settings", async function () {
 });
 Then("Settings is the only selected workspace", async function () {
   const page = this.page;
-  await openCatalog(page);
   await expect(page.getByRole('group', { name: 'Workspace', exact: true })).toHaveCount(0);
   await expect(page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await closeCatalog(page);
@@ -493,11 +497,11 @@ Then('header Settings opens directly at viewport width {int}', async function (w
   await page.keyboard.press('Enter');
   await expect(settings).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByRole('region', { name: 'Settings workspace', exact: true })).toBeFocused();
-  await expect(page.getByRole('button', { name: 'Open navigation', exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Operation catalog', exact: true })).toBeHidden();
   await openCatalog(page);
   await expect(page.locator('#side-navigation').getByRole('button', { name: 'Settings', exact: true })).toHaveCount(0);
   await closeCatalog(page);
-  await settings.click();
+  await setMode(page, 'workflow');
   await expect(workflow(page)).toBeVisible();
   await expect(settings).toHaveAttribute('aria-pressed', 'false');
 });
@@ -518,7 +522,7 @@ Then('the settings drawer preserves the workflow at width {int} with {string} mo
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   const bounds = await drawer.boundingBox();
   const header = await page.locator('.site-header').boundingBox();
-  assert.equal(Math.round(bounds.x + bounds.width), Math.round(header.x + header.width));
+  assert.equal(Math.round(bounds.x + bounds.width), Math.round(header.x + header.width + bounds.width));
   assert.equal(await drawer.evaluate(element => getComputedStyle(element).transitionDuration), motion === 'reduce' ? '0s' : '0.2s, 0s');
   await settings.evaluate(async button => {
     button.click();
@@ -550,3 +554,23 @@ export async function selectThemeMode(page, theme) {
   await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
   if (!wasSettings) await setMode(page, 'workflow');
 }
+
+Then('opening Settings closes the left menu and slides the Operations header left', async function () {
+  const page = this.page;
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await closeCatalog(page);
+  const header = page.locator('.site-header');
+  await openCatalog(page);
+  await page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }).click();
+  const drawer = page.locator('.settings-drawer');
+  await expect(drawer).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+  await expect(page.getByRole('navigation', { name: 'Operation catalog', exact: true })).toBeHidden();
+  await expect.poll(() => header.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).m41))
+    .toBe(-(await drawer.boundingBox()).width);
+  const settings = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
+  const button = await settings.boundingBox();
+  assert.ok(button.x >= 0 && button.x + button.width <= (await drawer.boundingBox()).x);
+  await settings.click();
+  await expect.poll(() => header.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).m41)).toBe(0);
+  await expect(settings).toBeFocused();
+});
