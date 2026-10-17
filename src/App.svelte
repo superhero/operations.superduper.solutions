@@ -353,7 +353,7 @@
   <aside id="settings-panel" bind:this={settingsDrawer} class="settings-drawer" class:open={mode === "settings"} aria-label="Application settings" inert={mode !== "settings"}>
     {#if compactSettings}
       <div class="settings-mobile-header">
-        <HintButton label="Close settings" aria-label="Close settings" onclick={toggleSettings}>
+        <HintButton tooltipSide="left" label="Close settings" aria-label="Close settings" onclick={toggleSettings}>
           <MaterialIcon name="close" size={24} />
         </HintButton>
       </div>

@@ -54,7 +54,7 @@
 		{@render children?.()}
 		<SheetPrimitive.Close>
 			{#snippet child({ props: closeProps })}
-				<HintButton label="Close navigation" aria-label="Close">
+				<HintButton tooltipSide="left" label="Close navigation" aria-label="Close">
 					{#snippet child({ props: hintProps })}
 						<button {...mergeProps(closeProps, hintProps)}
 							class="sheet-close ring-offset-background focus-visible:ring-ring text-muted-foreground hover:text-foreground absolute end-4 top-4 rounded-xs transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none">
