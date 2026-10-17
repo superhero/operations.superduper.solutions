@@ -82,6 +82,30 @@ fix(ui): use Tune for the Settings control
 
 ```
 
+<!-- changelog-commit:eaa2d055f3f9e683e1d92fff9e8b6851664ca102 -->
+### Commit [`eaa2d05`](https://github.com/superhero/operations.superduper.solutions/commit/eaa2d055f3f9e683e1d92fff9e8b6851664ca102)
+
+```text
+fix(ui): center save status within the header bottom spacing
+
+```
+
+<!-- changelog-commit:1d94c020452beac0c7bfa96a5143d2b8384464cb -->
+### Commit [`1d94c02`](https://github.com/superhero/operations.superduper.solutions/commit/1d94c020452beac0c7bfa96a5143d2b8384464cb)
+
+```text
+fix(ui): lower save status dot for visual alignment
+
+```
+
+<!-- changelog-commit:c9e82692da4d6e7a4ced08ed325d63bdceaf4901 -->
+### Commit [`c9e8269`](https://github.com/superhero/operations.superduper.solutions/commit/c9e82692da4d6e7a4ced08ed325d63bdceaf4901)
+
+```text
+merge: retain automated changelog updates
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.49
