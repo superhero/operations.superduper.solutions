@@ -31,3 +31,5 @@ Feature: Uploaded workflow data
     Then file structure attachments share one output and normalize older handles
   Scenario: Empty uploaded values do not mark a field required
     Then uploaded fields with empty values are optional while zero and false remain required
+  Scenario: Boolean inference examines the entire column
+    Then CSV columns become booleans only when every cell is true or false

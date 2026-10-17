@@ -253,13 +253,13 @@ Then('CSV columns become numbers only when every value is numeric', async functi
   const {validateWorkflowDocument}=await import('./lib/workflow-document.ts');
   const file=parse('numbers.csv','whole,decimal,mixed,blank,unsafe,overflow,boolean,hex\n001,1.5,2,,9007199254740993,1e999,true,0xff\n-2,2e2,text,3,1,2,false,12');
   assert.deepEqual(file.value,[
-    {whole:1,decimal:1.5,mixed:'2',blank:'',unsafe:'9007199254740993',overflow:'1e999',boolean:'true',hex:'0xff'},
-    {whole:-2,decimal:200,mixed:'text',blank:'3',unsafe:'1',overflow:'2',boolean:'false',hex:'12'}]);
+    {whole:1,decimal:1.5,mixed:'2',blank:'',unsafe:'9007199254740993',overflow:'1e999',boolean:true,hex:'0xff'},
+    {whole:-2,decimal:200,mixed:'text',blank:'3',unsafe:'1',overflow:'2',boolean:false,hex:'12'}]);
   assert.deepEqual(parse('numbers.csv','1,+2.5\n3,.5',{...defaults,header:'absent'}).value,[[1,2.5],[3,0.5]]);
   assert.deepEqual(parse('numbers.csv','value\n" 2 "\n"3."').value,[{value:2},{value:3}]);
   const owner={...fileOwner([]),data:{file}};const graph=createFileDataGraph(owner);
   const fields=graph.nodes.find(n=>n.data.label==='Item').data.fields;
-  assert.deepEqual(fields.map(f=>f.itemType),['Integer','Number','Text','Text','Text','Text','Text','Text']);
+  assert.deepEqual(fields.map(f=>f.itemType),['Integer','Number','Text','Text','Text','Text','Boolean','Text']);
   const doc=fileDocument({nodes:[owner,...graph.nodes],edges:graph.edges});
   validateWorkflowDocument(doc);
   for (const type of ['unsupported',null,42]) {
@@ -293,4 +293,14 @@ Then('uploaded fields with empty values are optional while zero and false remain
     [['zero',true],['no',true],['empty',false],['space',false],['nil',false]]);
   const rows=fileOwner([{missing:1},{other:1}]);
   assert.ok(createFileDataGraph(rows).nodes.find(n=>n.data.label==='Item').data.fields.every(f=>!f.required));
+});
+Then('CSV columns become booleans only when every cell is true or false', async function () {
+  const {createFileDataGraph}=await import('./lib/workflow-graph.ts');
+  const file=parse('booleans.csv','flag,mixed,empty,numeric\nTRUE,true,true,1\n" false ",other,,0');
+  assert.deepEqual(file.value,[{flag:true,mixed:'true',empty:'true',numeric:1},{flag:false,mixed:'other',empty:'',numeric:0}]);
+  const owner={...fileOwner([]),data:{file}};
+  const fields=createFileDataGraph(owner).nodes.find(n=>n.data.label==='Item').data.fields;
+  assert.deepEqual(fields.map(f=>f.itemType),['Boolean','Text','Text','Integer']);
+  assert.equal(fields[0].required,true);
+  assert.deepEqual(parse('booleans.csv','true,false\nfalse,true',{...defaults,header:'absent'}).value,[[true,false],[false,true]]);
 });
