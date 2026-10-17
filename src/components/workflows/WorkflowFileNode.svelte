@@ -53,7 +53,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <div class="utility-title"><MaterialIcon name="upload_file" size={20} /><strong>File upload</strong></div>
   <div class="utility-row nodrag nopan nokey">
     <HintButton label="Upload JSON or CSV" labelAsName={false} tooltipSide="bottom" class="file-upload" onclick={() => input.click()}>
-      <span>Upload file</span>
+      <span>{data.file?.name ?? "Upload file"}</span>
     </HintButton>
     <span class="utility-type">{type}</span>
     <Handle id="value" type="source" position={Position.Right} isConnectable={!!data.file}
