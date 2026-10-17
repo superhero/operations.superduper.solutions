@@ -15,6 +15,14 @@ control. Preserve native text undo in Search.
 
 ```
 
+<!-- changelog-commit:b82b4887e0baf3b13f4e17121bb23574cf68194e -->
+### Commit [`b82b488`](https://github.com/superhero/operations.superduper.solutions/commit/b82b4887e0baf3b13f4e17121bb23574cf68194e)
+
+```text
+fix(locale): adjust preview contrast and add a calendar icon
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50
