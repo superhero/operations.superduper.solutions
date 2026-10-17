@@ -109,6 +109,13 @@
     if (closing && mode === "workflow") document.querySelector<HTMLElement>('.site-header button[aria-pressed]')?.focus({ preventScroll: true });
   }
 
+  async function toggleNavigation() {
+    if (mode === "settings") {
+      await setMode("workflow");
+      navigationOpen = true;
+    } else navigationOpen = !navigationOpen;
+  }
+
   function dismissSettings(event: KeyboardEvent) {
     if (mode !== "settings" || event.key !== "Escape" || event.defaultPrevented || navigationModal ||
       document.querySelector('[role="dialog"], [role="tooltip"], [role="menu"], [role="listbox"]')) return;
@@ -308,7 +315,7 @@
   workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
   onSelect={selectOperation} />
 <div class="page-content workflow-mode" class:catalog-open={navigationOpen} class:settings-open={mode === "settings"}>
-  <Header {navigationOpen} settingsOpen={mode === "settings"} onSettings={toggleSettings} {workflowSaveStatus} onMenu={() => navigationOpen = !navigationOpen} />
+  <Header {navigationOpen} settingsOpen={mode === "settings"} onSettings={toggleSettings} {workflowSaveStatus} onMenu={toggleNavigation} />
   <div class="shell">
     <main>
       {#if settingsError && !import.meta.env.DEV}
@@ -345,8 +352,7 @@
   .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap) { right: var(--workflow-controls-inset); max-width: calc(100% - var(--workflow-controls-inset) - 2rem); transition: right 200ms ease-in-out, max-width 200ms ease-in-out; }
   .page-content :global(.workflow-control-group) { max-width: 100%; flex-wrap: wrap; }
   .page-content :global(.workflow-minimap .svelte-flow__minimap-svg) { max-width: 100%; height: auto; }
-  .page-content :global(.site-header) { transition: transform 200ms ease-in-out; }
-  .page-content.settings-open :global(.site-header) { transform: translateX(calc(-1 * var(--settings-drawer-width))); }
+  .page-content :global(.site-header) { width: calc(100% - var(--workflow-controls-inset)); transition: width 200ms ease-in-out; }
   .settings-drawer-host { position: fixed; z-index: 25; top: 0; right: 0; bottom: 0; width: var(--settings-drawer-width); overflow: clip; pointer-events: none; }
   .settings-drawer { --app-header-height: 0px; height: 100%; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; pointer-events: auto; background: var(--color-surface); border-left: 1px solid var(--color-border); transform: translateX(100%); visibility: hidden; transition: transform 200ms ease-in-out, visibility 0s linear 200ms; }
   .settings-drawer.open { transform: translateX(0); visibility: visible; transition-delay: 0s; }

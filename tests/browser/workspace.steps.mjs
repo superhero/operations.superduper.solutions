@@ -556,7 +556,7 @@ export async function selectThemeMode(page, theme) {
   if (!wasSettings) await setMode(page, 'workflow');
 }
 
-Then('opening Settings closes the left menu and slides the Operations header left', async function () {
+Then('opening Settings closes the left menu and keeps the Operations header left aligned', async function () {
   const page = this.page;
   await page.setViewportSize({ width: 1280, height: 844 });
   await closeCatalog(page);
@@ -566,13 +566,14 @@ Then('opening Settings closes the left menu and slides the Operations header lef
   const drawer = page.locator('.settings-drawer');
   await expect(drawer).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
   await expect(page.getByRole('navigation', { name: 'Operation catalog', exact: true })).toBeHidden();
-  await expect.poll(() => header.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).m41))
-    .toBe(-(await drawer.boundingBox()).width);
+  await expect.poll(async () => (await header.boundingBox()).x).toBe(0);
+  const brand = await page.locator('.brand-controls').boundingBox();
+  assert.ok(brand.x >= 0 && brand.x < 32, 'The title and navigation stay anchored to the left.');
   const settings = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
   const button = await settings.boundingBox();
   assert.ok(button.x >= 0 && button.x + button.width <= (await drawer.boundingBox()).x);
   await settings.click();
-  await expect.poll(() => header.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).m41)).toBe(0);
+  await expect.poll(async () => (await header.boundingBox()).x).toBe(0);
   await expect(settings).toBeFocused();
 });
 

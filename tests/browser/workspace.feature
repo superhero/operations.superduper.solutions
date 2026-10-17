@@ -177,7 +177,7 @@ Feature: Browser operations workspace
       | 390   | reduce        |
 
   Scenario: Settings and the left menu do not compete for header space
-    Then opening Settings closes the left menu and slides the Operations header left
+    Then opening Settings closes the left menu and keeps the Operations header left aligned
 
   Scenario: Full-height Settings temporarily replaces the viewport scrollbar
     Then Settings covers the viewport scrollbar without shifting or scrolling the workflow
