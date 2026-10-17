@@ -8,7 +8,7 @@ import { workflow, readExport } from './workspace.steps.mjs';
 import { gesture } from './workflow-single-input.steps.mjs';
 Then('I can upload typed workflow files and correct CSV detection', async function () {
   const page=this.page;
-  await page.getByRole('button',{name:'Add file upload',exact:true}).click();
+  await page.getByRole('button',{name:'Add file',exact:true}).click();
   const node=workflow(page).locator('.svelte-flow__node-file');
   const upload=async(name,text)=>node.locator('input[type=file]').setInputFiles({name,mimeType:'application/octet-stream',buffer:Buffer.from(text)});
   await upload('project.json','"project-1"');
