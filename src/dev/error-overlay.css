@@ -78,28 +78,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 :host *::-webkit-scrollbar-track-piece,
 :host *::-webkit-scrollbar-corner { background: transparent; box-shadow: none; }
 :host *::-webkit-scrollbar-thumb { background: var(--color-scrollbar-thumb); border-radius: 4px; }
-:host-context(.animated-scrollbars) * {
-  scrollbar-width: auto;
-  scrollbar-color: auto;
-  --scrollbar-x-inset: 4px;
-  --scrollbar-y-inset: 4px;
+@supports selector(::-webkit-scrollbar) {
+  :host, :host * { scrollbar-width: auto; scrollbar-color: auto; }
 }
-:host-context(.animated-scrollbars) *::-webkit-scrollbar { width: 8px; height: 8px; }
-:host-context(.animated-scrollbars) *::-webkit-scrollbar-thumb {
-  --scrollbar-left-inset: var(--scrollbar-y-inset);
-  --scrollbar-top-inset: var(--scrollbar-x-inset);
-  --scrollbar-cap-radius: calc((8px - var(--scrollbar-left-inset) - var(--scrollbar-top-inset)) / 2);
-  background-clip: padding-box;
-  border: 0 solid transparent;
-  border-left-width: var(--scrollbar-left-inset);
-  border-top-width: var(--scrollbar-top-inset);
-  border-radius: calc(var(--scrollbar-cap-radius) + var(--scrollbar-left-inset)) var(--scrollbar-cap-radius) var(--scrollbar-cap-radius) calc(var(--scrollbar-cap-radius) + var(--scrollbar-left-inset)) / calc(var(--scrollbar-cap-radius) + var(--scrollbar-top-inset)) calc(var(--scrollbar-cap-radius) + var(--scrollbar-top-inset)) var(--scrollbar-cap-radius) var(--scrollbar-cap-radius);
-}
-:host *::-webkit-scrollbar-thumb:vertical { --scrollbar-top-inset: 0px !important; }
-:host *::-webkit-scrollbar-thumb:horizontal { --scrollbar-left-inset: 0px !important; }
-/* Keep the code scrollbar flush with the last line instead of reserving an inset. */
-:host-context(.animated-scrollbars) .shiki { --scrollbar-x-inset: 0px !important; }
-:host-context(.animated-scrollbars) .shiki::-webkit-scrollbar { height: 4px; }
 
 #__v_o__panel, #__v_o__balloon, button, select, input, textarea, kbd {
   border-radius: 4px;

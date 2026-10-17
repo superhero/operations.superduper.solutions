@@ -9,5 +9,5 @@ Feature: Reference motion and interruption behavior
     Given I open the "Create task" operation from the catalog
     Then report and schema transitions retain content through interruption
 
-  Scenario: Native scrollbar feedback preserves scrolling and responds to reduced motion
-    Then native scrollbars expand on hover and settle without changing the reading position
+  Scenario: Native scrollbars stay slim while hovering and scrolling
+    Then native scrollbars stay slim on hover without changing the reading position
