@@ -482,6 +482,22 @@ build pass; full regression remains with CI.
 
 ```
 
+<!-- changelog-commit:3c2cf3f908d93c4c37153c5fe57b25fa60189d32 -->
+### Commit [`3c2cf3f`](https://github.com/superhero/operations.superduper.solutions/commit/3c2cf3f908d93c4c37153c5fe57b25fa60189d32)
+
+```text
+fix(workflows): recover transient file worker startup failures
+
+Prepare Papa Parse during development dependency optimization and retry
+read-only parsing once with a fresh worker after a worker failure. Keep
+parse errors and cancellation immediate, and bound persistent failures.
+
+Exercise actual Vite development workers in Cucumber, including cold
+loading, failed starts, later recovery, JSON/CSV parsing, option changes,
+and the visible file upload node. Production-only checks missed this path.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50
