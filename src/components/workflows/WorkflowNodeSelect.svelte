@@ -31,7 +31,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {/snippet}
   </Select.Trigger>
   <Select.Portal>
-    <Select.Content class="workflow-node-select-options nodrag nopan nokey nowheel" aria-label={label} sideOffset={5} collisionPadding={10} preventScroll={false}>
+    <Select.Content class="workflow-node-select-options nodrag nopan nokey nowheel" aria-label={label} align="start" sideOffset={5} collisionPadding={10} preventScroll={false}>
       <Select.Viewport>
         {#each choices as choice (choice.value)}
           <Select.Item value={choice.value} label={choice.label} class="workflow-node-select-option">
