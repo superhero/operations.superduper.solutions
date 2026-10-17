@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "badges:coverage": "bash .github/scripts/generate-coverage-badge.sh tmp/test/coverage/coverage-summary.json .github/badges",
+    "badges:coverage": "bash .github/scripts/generate-coverage-badge.sh tmp/test/coverage/coverage-summary.json tmp/test/badges",
     "badges:dependencies": "bash .github/scripts/generate-dependency-badges.sh package.json .github/badges",
-    "badges:scenarios": "bash .github/scripts/generate-scenario-badge.sh .github/badges tmp/test/cucumber-source.json tmp/test/cucumber-test.json tmp/test/cucumber-automation.json tmp/test/cucumber-browser.json",
+    "badges:scenarios": "bash .github/scripts/generate-scenario-badge.sh tmp/test/badges tmp/test/cucumber-source.json tmp/test/cucumber-test.json tmp/test/cucumber-automation.json tmp/test/cucumber-browser.json",
     "build": "npm run icons:check && vite build",
     "dev": "vite --host 127.0.0.1",
     "report:coverage": "node .github/scripts/generate-coverage-report.mjs tmp/test-coverage.html tmp/test/coverage",

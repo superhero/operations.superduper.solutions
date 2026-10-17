@@ -386,12 +386,11 @@ jobs:
         id: source
         run: npm --loglevel=error run test:source:coverage
 
-      - name: Check coverage and badge
+      - name: Check coverage thresholds
         if: needs.validation.outputs.reused != 'true'
         id: coverage
         run: |
           npm --loglevel=error run test:coverage
-          npm --loglevel=error run badges:coverage -- --check
           jq -r '.total | "Coverage: statements \(.statements.pct)%, branches \(.branches.pct)%, functions \(.functions.pct)%, lines \(.lines.pct)%."' \
             tmp/test/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
 
@@ -479,9 +478,11 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Check scenario badge
+      - name: Generate report badges
         if: needs.validation.outputs.reused != 'true'
-        run: npm --loglevel=error run badges:scenarios -- --check
+        run: |
+          npm --loglevel=error run badges:coverage
+          npm --loglevel=error run badges:scenarios
 
       - name: Bind complete validation to its inputs and artifacts
         if: needs.validation.outputs.reused != 'true'
@@ -495,6 +496,7 @@ jobs:
           cp -a tmp/test/coverage/. tmp/validation/coverage/
           rm -rf tmp/validation/coverage/v8
           cp tmp/test-report.html tmp/validation/test-report/
+          cp -a tmp/test/badges tmp/validation/test-report/
           node .github/scripts/validation-artifacts.mjs create "$REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$PR_HEAD_SHA" "$TESTED_SHA" tmp/validation/bundle tmp/validation/coverage tmp/validation/test-report/test-report.html tmp/validation/validation-manifest.json
 
       - name: Upload tested bundle
@@ -519,7 +521,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-report
-          path: tmp/validation/test-report/test-report.html
+          path: tmp/validation/test-report
           if-no-files-found: error
           overwrite: true
           retention-days: 7
@@ -856,7 +858,7 @@ jobs:
           DEPLOYMENT_OUTCOME: ${{ steps.cloudflare.outcome == 'failure' && 'failure' || 'success' }}
         run: bash .github/scripts/record-pages-deployment.sh "$REPOSITORY" main "$MERGE_SHA" "$BUNDLE_HASH" "$DEPLOYMENT_ID" "$DEPLOYMENT_OUTCOME"
 
-      - name: Publish test and coverage reports
+      - name: Publish test reports and badges
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_API_TOKEN || secrets.CLOUDFLARE_PAGES_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
@@ -865,6 +867,14 @@ jobs:
           bash .github/scripts/publish-status.sh tmp/test-coverage.html test-coverage.html 'text/html; charset=utf-8'
           bash .github/scripts/validate-current-release.sh "$REPOSITORY" "$MERGE_SHA"
           bash .github/scripts/publish-status.sh tmp/test-report.html test-report.html 'text/html; charset=utf-8'
+          for badge in test-scenarios test-coverage; do
+            for format in json svg; do
+              content_type='application/json; charset=utf-8'
+              if [[ "$format" == svg ]]; then content_type='image/svg+xml'; fi
+              bash .github/scripts/validate-current-release.sh "$REPOSITORY" "$MERGE_SHA"
+              bash .github/scripts/publish-status.sh "tmp/badges/$badge.$format" "badges/$badge.$format" "$content_type"
+            done
+          done
 
       - name: Report links
         run: |
