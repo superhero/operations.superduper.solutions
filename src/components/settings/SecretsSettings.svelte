@@ -561,7 +561,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   button { width: fit-content; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; cursor: pointer; }
   button:disabled { opacity: .55; cursor: not-allowed; }
   .help, .notice, .destination { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
-  .records { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+  .records { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
   .records li { display: grid; gap: 10px; padding: 2px 2px 2px 10px; border: 0; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); }
   .records .actions { gap: 1px; flex-wrap: nowrap; }
   .records .actions > button:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
