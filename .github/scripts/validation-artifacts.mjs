@@ -9,6 +9,8 @@ import { pathToFileURL } from "node:url";
 import { parseChangelog } from "./changelog.mjs";
 
 export const ARTIFACT_NAMES = ["bundle", "coverage", "test-report", "validation-manifest"];
+export const REPORT_FILES = ["test-report.html", "badges/test-scenarios.json", "badges/test-scenarios.svg",
+  "badges/test-coverage.json", "badges/test-coverage.svg"];
 export const MANIFEST_NAME = "validation-manifest.json";
 export const BUNDLE_FILES = ["_headers", "apple-touch-icon.png", "favicon.bmp", "favicon.gif", "favicon.ico",
   "favicon.jpg", "favicon.png", "favicon.ppm", "favicon.svg", "favicon.tiff", "index.html"];
@@ -106,7 +108,7 @@ export function validateArtifactContract(files)
 {
   if (JSON.stringify(Object.keys(files.bundle).sort()) !== JSON.stringify([...BUNDLE_FILES].sort())
     || !files.coverage["coverage-summary.json"] || !files.coverage["index.html"]
-    || JSON.stringify(Object.keys(files["test-report"])) !== JSON.stringify(["test-report.html"]))
+    || JSON.stringify(Object.keys(files["test-report"]).sort()) !== JSON.stringify([...REPORT_FILES].sort()))
     throw new Error("Validation artifacts do not contain the complete bundle, coverage and test report.");
 }
 
@@ -123,7 +125,7 @@ export function createManifest({ repository, runId, runAttempt, sourceSha, teste
   if (testedSha !== sourceSha && !(parents.length === 2 && parents[1] === sourceSha))
     throw new Error("Tested commit must be the source head or its proposed merge.");
   const files = { bundle: inventory(bundle), coverage: inventory(coverage, { coverage: true }),
-    "test-report": { "test-report.html": ordinaryFile(report) } };
+    "test-report": inventory(dirname(report)) };
   validateArtifactContract(files);
   return { schemaVersion: 1, repository, runId, runAttempt, sourceSha, testedSha,
     ...localIdentity(testedSha, cwd), files };
