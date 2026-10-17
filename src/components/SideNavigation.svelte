@@ -6,17 +6,15 @@
   import Disclosure from "$lib/components/Disclosure.svelte";
   import * as Sheet from "$lib/components/ui/sheet/index.js";
   import type { Operation } from "$lib/catalog.ts";
-  import type { WorkspaceMode } from "$lib/workspace.d.ts";
   import type { WorkflowDocument } from "$lib/workflow-document.ts";
-  import WorkspaceSelector from "./WorkspaceSelector.svelte";
   import CatalogPrompt from "./CatalogPrompt.svelte";
   import { catalogs, type CatalogGroup } from "$lib/catalog-registry.ts";
   import { evaluateOperationsAsync } from "$lib/operation-matching-client.ts";
   import type { OperationMatch } from "$lib/matching.ts";
-  let { open = $bindable(false), modal = $bindable(false), documentModal = false, operations, mode, dark, evaluationDetails = false, workflows, workflowError, onWorkflowSelect, onWorkflowRetry, onSelect, onMode, onTheme }:
-    { open: boolean; modal?: boolean; documentModal?: boolean; operations: Operation[]; mode: WorkspaceMode; dark: boolean; evaluationDetails?: boolean;
+  let { open = $bindable(false), modal = $bindable(false), documentModal = false, operations, dark, evaluationDetails = false, workflows, workflowError, onWorkflowSelect, onWorkflowRetry, onSelect, onTheme }:
+    { open: boolean; modal?: boolean; documentModal?: boolean; operations: Operation[]; dark: boolean; evaluationDetails?: boolean;
       workflows: WorkflowDocument[]; workflowError: string; onWorkflowSelect: (document: WorkflowDocument) => void; onWorkflowRetry: () => void;
-      onSelect: (operation: Operation) => void; onMode: (mode: WorkspaceMode) => void; onTheme: () => void } = $props();
+      onSelect: (operation: Operation) => void; onTheme: () => void } = $props();
   let mobile = $state(false);
   let catalogPath = $state<string[]>([]);
   let workflowsOpen = $state(false);
@@ -183,7 +181,6 @@
     else action();
   }
   function select(operation: Operation) { navigate(() => onSelect(operation)); }
-  function changeMode(next: WorkspaceMode) { if (next !== mode) navigate(() => onMode(next)); }
 </script>
 
 {#snippet branch(group: CatalogGroup, depth: number, parentOpen: boolean, parents: string[] = [])}
@@ -225,7 +222,6 @@
 
 {#snippet catalog()}
   <div class="catalog-menu-header">
-    <WorkspaceSelector {mode} onMode={changeMode} />
     <HintButton class="icon-switch" type="button" role="switch" label={dark ? "Switch to light theme" : "Switch to dark theme"} aria-label="Dark theme" aria-checked={dark}
       onclick={onTheme}>
       <span class="switch-thumb"></span><span><MaterialIcon name="light_mode" /></span><span><MaterialIcon name="dark_mode" /></span>

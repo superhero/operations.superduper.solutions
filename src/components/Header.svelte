@@ -4,7 +4,9 @@
   const scrollProgress = $derived(Math.min(1, Math.max(0, scrollY) / 80));
   const scrollStrength = $derived(1 - (1 - scrollProgress) ** 3);
   import MenuButton from "./MenuButton.svelte";
-  let { navigationOpen, onMenu, workflowSaveStatus }: { navigationOpen: boolean; onMenu: () => void; workflowSaveStatus?: WorkflowSaveStatus | undefined } = $props();
+  import HintButton from "$lib/components/HintButton.svelte";
+  import MaterialIcon from "$lib/components/MaterialIcon.svelte";
+  let { navigationOpen, onMenu, settingsOpen, onSettings, workflowSaveStatus }: { navigationOpen: boolean; onMenu: () => void; settingsOpen: boolean; onSettings: () => void; workflowSaveStatus?: WorkflowSaveStatus | undefined } = $props();
   const saveLabels = { loading: "Loading…", saving: "Saving…", saved: "Saved locally", unsaved: "Not saved", error: "Not saved" };
 </script>
 
@@ -18,6 +20,9 @@
         <strong class="brand">Operations</strong>
       </div>
     </div>
+    <HintButton class="menu-button" label="Settings" tooltipSide="bottom" aria-pressed={settingsOpen} onclick={onSettings}>
+      <MaterialIcon name="settings" />
+    </HintButton>
   </div>
   {#if workflowSaveStatus}
     <div class="document-meta" role="status" class:unsaved={workflowSaveStatus === "saving" || workflowSaveStatus === "error"} class:fresh={workflowSaveStatus === "unsaved"}>

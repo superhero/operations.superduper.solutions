@@ -91,7 +91,7 @@ try {
     await settled();
     phase = `${motion}: enable evaluation details`;
     await openCatalog();
-    const workspaceControls = page.getByRole('group', { name: 'Workspace', exact: true });
+    const workspaceControls = page.getByRole('banner');
     await workspaceControls.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.getByRole('button', { name: 'Close navigation', exact: true }).click();
     const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
@@ -101,7 +101,7 @@ try {
     await evaluationDetails.click();
     await expect(evaluationDetails).toHaveAttribute('aria-checked', 'true');
     await openCatalog();
-    await workspaceControls.getByRole('button', { name: 'Workflows', exact: true }).click();
+    await workspaceControls.getByRole('button', { name: 'Settings', exact: true }).click();
     await expect(page.getByRole('region', { name: 'Workflow canvas', exact: true })).toBeVisible();
     await settled();
     phase = `${motion}: evaluation`;

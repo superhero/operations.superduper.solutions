@@ -98,7 +98,7 @@ try {
   assert.equal(initial.activeBar.metrics['execution.mainThread'], undefined);
   assert.equal(initial.report.repositories.items.find(item => item.id === 'metrics-isolation').metrics.head, workflow.revision);
   await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-  await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByRole('button', { name: 'Close navigation', exact: true }).click();
   await page.locator('summary[aria-label="Browser"]').click();
   const processing = page.getByRole('region', { name: 'Processing', exact: true });
@@ -227,7 +227,7 @@ try {
   assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('v1/metrics/cache'))), { ...cached, bars: [preview] },
     'Null startup snapshots must not overwrite the valid cache.');
   await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-  await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByRole('button', { name: 'Close navigation', exact: true }).click();
   const browserSettings = page.locator('summary[aria-label="Browser"]');
   if (await browserSettings.getAttribute('aria-expanded') !== 'true') await browserSettings.click();

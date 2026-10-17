@@ -5,7 +5,7 @@ import { openWorkflowDetails, closeWorkflowDetails, expectWorkflowName, renameWo
 import assert from "node:assert/strict";
 import { When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { workflow, setMode, openCatalog } from "./workspace.steps.mjs";
+import { workflow, setMode, openCatalog, closeCatalog } from "./workspace.steps.mjs";
 import { repository, storedWorkflows, blockWorkflowSaving, restoreWorkflowSaving } from "./workflow-storage.fixture.mjs";
 
 const nameInput = workflowNameInput;
@@ -88,8 +88,8 @@ Then("starting a new workflow immediately preserves the preceding draft", async 
 
 Then("switching to Settings immediately preserves the latest workflow name", async function () {
   const page = this.page;
-  await openCatalog(page);
-  const settings = page.getByRole("group", { name: "Workspace", exact: true }).getByRole("button", { name: "Settings", exact: true });
+  await closeCatalog(page);
+  const settings = page.getByRole("banner").getByRole("button", { name: "Settings", exact: true });
   await editImmediatelyBefore(page, settings, "Saved on workspace leave");
   await expect(page.getByRole("region", { name: "Settings workspace", exact: true })).toBeVisible();
   assert.equal((await storedWorkflows(page))[0].name, "Saved on workspace leave");

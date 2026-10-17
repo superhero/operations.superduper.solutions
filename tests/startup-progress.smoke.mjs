@@ -63,7 +63,8 @@ function ready(result) {
 
 async function showWorkflows(page) {
   await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-  await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Workflows', exact: true }).click();
+  const settings = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
+  if (await settings.getAttribute('aria-pressed') === 'true') await settings.click();
   await page.getByRole('button', { name: 'Close navigation', exact: true }).click();
 }
 

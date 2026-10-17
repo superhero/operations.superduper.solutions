@@ -197,7 +197,7 @@ try {
         await page.getByRole('switch', { name: 'Dark theme', exact: true }).click();
         await expect.poll(() => holder.evaluate(key => JSON.parse(localStorage.getItem(key)), cacheKey))
           .toEqual({ version: 1, theme: 'dark', palette: 'alpine' });
-        await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Settings', exact: true }).click();
+        await page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }).click();
         await page.getByRole('button', { name: 'Close navigation', exact: true }).click();
         await page.locator('summary[aria-label="Theme"]').click();
         await page.getByRole('radio', { name: 'Sunset', exact: true }).check();

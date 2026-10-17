@@ -264,11 +264,11 @@
 <Tooltip.Provider disabled={!tooltips} delayDuration={400} ignoreNonKeyboardFocus disableHoverableContent>
 <BackgroundWave />
 <NativeScrollbars />
-<SideNavigation bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {mode} {dark} {evaluationDetails}
+<SideNavigation bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {dark} {evaluationDetails}
   workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
-  onSelect={selectOperation} onMode={setMode} onTheme={toggleTheme} />
+  onSelect={selectOperation} onTheme={toggleTheme} />
 <div class="page-content" class:catalog-open={navigationOpen} class:workflow-mode={mode === "workflow"}>
-  <Header {navigationOpen} workflowSaveStatus={mode === "workflow" ? workflowSaveStatus : undefined} onMenu={() => navigationOpen = !navigationOpen} />
+  <Header {navigationOpen} settingsOpen={mode === "settings"} onSettings={() => setMode(mode === "settings" ? "workflow" : "settings")} workflowSaveStatus={mode === "workflow" ? workflowSaveStatus : undefined} onMenu={() => navigationOpen = !navigationOpen} />
   <div class="shell">
     <main>
       {#if settingsError && !import.meta.env.DEV}

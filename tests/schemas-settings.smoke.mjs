@@ -78,7 +78,8 @@ async function navigate(page, mode) {
   }
   const open = page.getByRole('button', { name: 'Open navigation', exact: true });
   if (await open.isVisible()) await open.click();
-  await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: mode, exact: true }).click();
+  const settings = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
+  if (await settings.getAttribute('aria-pressed') !== String(mode === 'Settings')) await settings.click();
   const close = page.getByRole('button', { name: 'Close navigation', exact: true });
   if (await close.isVisible()) await close.click();
 }

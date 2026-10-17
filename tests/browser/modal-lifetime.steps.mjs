@@ -122,7 +122,7 @@ Then('resizing an open desktop catalog preserves the {string} dialog focus and t
   await expect(page.getByRole('button', { name: 'Open navigation', exact: true })).toBeVisible();
   await openCatalog(page);
   await expect(sheet(page)).toBeVisible();
-  await expect(page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Workflows', exact: true })).toBeFocused();
+  await expect(page.getByRole('switch', { name: 'Dark theme', exact: true })).toBeFocused();
 });
 
 Then('dismissing mobile navigation preserves reading position with {string} motion', async function (motion) {
@@ -160,20 +160,12 @@ Then('animated navigation completes dismissal before changing workspace or addin
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
-  for (const destination of ['settings', 'workflow']) {
-    await openCatalog(page);
-    await settleOpening(page);
-    await pauseDismissal(page, () => page.getByRole('group', { name: 'Workspace', exact: true })
-      .getByRole('button', { name: destination === 'settings' ? 'Settings' : 'Workflows', exact: true }).click());
-    await expect(destination === 'settings' ? page.locator('.workflow-workspace') : settings).toBeVisible();
-    await finishDismissal(page);
-    const target = destination === 'settings' ? settings : workflow(page);
-    await expect(target).toBeVisible();
-    await expect.poll(() => target.evaluate(element => element.contains(document.activeElement))).toBe(true);
-  }
+  await setMode(page, 'settings');
   const entry = await revealCatalogOperation(page, 'List projects');
   const action = entry.getByRole('button', { name: 'Add to workflow: List projects', exact: true });
+  await settleOpening(page);
   await pauseDismissal(page, () => action.click());
+  await expect(settings).toBeVisible();
   await expect(nodes(page)).toHaveCount(2);
   await page.keyboard.press('Delete');
   await expect(nodes(page)).toHaveCount(2);
@@ -182,19 +174,17 @@ Then('animated navigation completes dismissal before changing workspace or addin
   await expect(nodes(page).and(page.locator('.selected'))).toBeFocused();
 });
 
-Then('reopening navigation during a keyboard mode change cancels that destination', async function () {
+Then('reopening navigation during keyboard selection cancels that destination', async function () {
   const page = this.page;
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await setMode(page, 'settings');
   await openCatalog(page);
-  const modes = page.getByRole('group', { name: 'Workspace', exact: true });
-  const selected = modes.getByRole('button', { name: 'Settings', exact: true });
-  const destination = modes.getByRole('button', { name: 'Workflows', exact: true });
-  await expect(selected).toBeFocused();
+  const entry = await revealCatalogOperation(page, 'List projects');
+  const destination = entry.getByRole('button', { name: 'Add to workflow: List projects', exact: true });
+  const selected = page.getByRole('switch', { name: 'Dark theme', exact: true });
   await settleOpening(page);
-  await page.keyboard.press('Shift+Tab');
-  await expect(destination).toBeFocused();
+  await destination.focus();
   await pauseDismissal(page, () => page.keyboard.press('Space'));
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
   // Settings has its own tab stops behind the closing Sheet; focus the trigger
@@ -204,7 +194,6 @@ Then('reopening navigation during a keyboard mode change cancels that destinatio
   await page.keyboard.press('Enter');
   await expect(sheet(page)).toHaveAttribute('data-state', 'open');
   await expect(selected).toBeFocused();
-  await expect(selected).toHaveAttribute('aria-pressed', 'true');
   await page.keyboard.press('Delete');
   await expect(nodes(page)).toHaveCount(2);
   await page.keyboard.press('Escape');
@@ -217,12 +206,11 @@ Then('reopening navigation during a keyboard mode change cancels that destinatio
   await expect(page.getByRole('region', { name: 'Settings workspace', exact: true })).toBeVisible();
   await expect(menu).toBeFocused();
   await openCatalog(page);
-  await page.keyboard.press('Shift+Tab');
-  await expect(destination).toBeFocused();
+  await destination.focus();
   await page.keyboard.press('Space');
   await expect(sheet(page)).toHaveCount(0);
   await expect(workflow(page)).toBeVisible();
-  // Returning to a populated workflow restores its selected node, not the
-  // canvas fallback used when no node is selected.
+  await expect(nodes(page)).toHaveCount(3);
+  // The selected operation receives focus after navigation finishes.
   await expect(nodes(page).and(page.locator('.selected'))).toBeFocused();
 });

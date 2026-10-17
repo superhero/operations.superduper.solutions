@@ -2,6 +2,38 @@
 
 ## Latest
 
+<!-- changelog-commit:a16b97110421a1af643865eaa4eb430b64a0683d -->
+### Commit [`a16b971`](https://github.com/superhero/operations.superduper.solutions/commit/a16b97110421a1af643865eaa4eb430b64a0683d)
+
+```text
+feat(ui): move settings control to the main header
+
+```
+
+<!-- changelog-commit:794b7de1b51f84cf9214435e23853bc96d1d4a26 -->
+### Commit [`794b7de`](https://github.com/superhero/operations.superduper.solutions/commit/794b7de1b51f84cf9214435e23853bc96d1d4a26)
+
+```text
+fix(ui): match settings control to menu button styling
+
+```
+
+<!-- changelog-commit:f7e3600d2a5b6ca9e2d775115243b1c0198b2e62 -->
+### Commit [`f7e3600`](https://github.com/superhero/operations.superduper.solutions/commit/f7e3600d2a5b6ca9e2d775115243b1c0198b2e62)
+
+```text
+feat(ui): remove sidebar workspace switcher
+
+```
+
+<!-- changelog-commit:d9d9dd1d3c7a01a2f106abfb6e5e2cfc959f0036 -->
+### Commit [`d9d9dd1`](https://github.com/superhero/operations.superduper.solutions/commit/d9d9dd1d3c7a01a2f106abfb6e5e2cfc959f0036)
+
+```text
+merge: retain automated changelog updates
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.49
