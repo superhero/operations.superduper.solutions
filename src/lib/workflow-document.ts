@@ -19,6 +19,7 @@ export type OperationData = {
   credentialBinding?: CredentialBinding;
 };
 
+export type ArrayBounds = { min: number; max?: number };
 export type WorkflowField = {
   id: string;
   label: string;
@@ -26,9 +27,11 @@ export type WorkflowField = {
   required: boolean;
   description: string;
   connectable: boolean;
+  array?: ArrayBounds;
   endpoint?: { nodeId: string; fieldId: string };
 };
 export type WorkflowData = {
+  array?: ArrayBounds;
   ownerId: string;
   direction: "inputs" | "outputs";
   label: string;
@@ -123,6 +126,14 @@ function operationData(value: Record<string, unknown>): OperationData
   };
 }
 
+function arrayBounds(value: unknown): ArrayBounds {
+  const bounds = record(value);
+  if (typeof bounds.min !== "number" || !Number.isSafeInteger(bounds.min) || bounds.min < 0 ||
+    bounds.max !== undefined && (typeof bounds.max !== "number" || !Number.isSafeInteger(bounds.max) || bounds.max < bounds.min))
+    throw new Error("Array bounds must be nonnegative integers with maximum at least minimum.");
+  return { min: bounds.min, ...(bounds.max === undefined ? {} : { max: bounds.max as number }) };
+}
+
 function workflowData(value: Record<string, unknown>, extended: boolean): WorkflowData
 {
   if (value.direction !== "inputs" && value.direction !== "outputs") throw new Error("Data direction must be inputs or outputs.");
@@ -137,6 +148,7 @@ function workflowData(value: Record<string, unknown>, extended: boolean): Workfl
       type: field.type as WorkflowField["type"], required: flag(field.required),
       description: text(field.description, "Field description", 4000, true), connectable: flag(field.connectable)
     };
+    if (field.array !== undefined) result.array = arrayBounds(field.array);
     if (result.id === "value" || result.type === "Unknown" && result.connectable)
       throw new Error("Unknown fields and structural value ports cannot be mapping handles.");
     if (extended && field.endpoint !== undefined)
@@ -150,6 +162,7 @@ function workflowData(value: Record<string, unknown>, extended: boolean): Workfl
   return {
     ownerId: text(value.ownerId, "Data owner ID", 2048), direction: value.direction,
     label: text(value.label, "Data label", 200), fields,
+    ...(value.array === undefined ? {} : { array: arrayBounds(value.array) }),
     ...(value.notice === undefined ? {} : { notice: text(value.notice, "Data notice", 4000) })
   };
 }

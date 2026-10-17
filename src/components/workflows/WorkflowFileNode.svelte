@@ -55,7 +55,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <HintButton label="Upload JSON or CSV" labelAsName={false} tooltipSide="bottom" class="file-upload" onclick={() => input.click()}>
       <span>Upload file</span>
     </HintButton>
-    <span class="utility-type">{type}</span>
+    <span class="utility-type">{type === "Array" && Array.isArray(data.file?.value) ? `0..${data.file.value.length}` : type}</span>
     <Handle id="value" type="source" position={Position.Right} isConnectable={!!data.file}
       isConnectableEnd={false} aria-label={`File output (${type})`} />
     <input class="file-picker" bind:this={input} type="file" accept=".json,.csv,application/json,text/csv" aria-label="Upload workflow data file"

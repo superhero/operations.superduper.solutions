@@ -107,8 +107,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <div class="data-title">
     <Handle id="value" type={input ? "source" : "target"} position={input ? Position.Right : Position.Left}
       class="structural-port" isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
-      onmousedown={blockPointer} ontouchstart={blockPointer} aria-disabled="true" aria-label={`${data.label} object`} />
-    <MaterialIcon name="data_object" size={20} />
+      onmousedown={blockPointer} ontouchstart={blockPointer} aria-disabled="true" aria-label={`${data.label} ${data.array ? "array" : "object"}`} />
+    <MaterialIcon name={data.array ? "data_array" : "data_object"} size={20} />
     <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={data.label} labelAsName={false}>
       {#snippet child({ props })}
         {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
@@ -125,7 +125,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <abbr {...hintProps} class="required" aria-label="Required"> *</abbr>
       {/snippet}
     </HintButton>{/if}</span>
-  <span class="field-type">{field.type}</span>
+  <span class="field-type">{field.array ? `${field.array.min}..${field.array.max ?? "*"}` : field.type === "Array" ? "0..*" : field.type}</span>
 {/snippet}
 
 <div class="workflow-data-node" class:selected data-owner-id={data.ownerId} data-direction={data.direction}>
