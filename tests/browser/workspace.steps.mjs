@@ -630,12 +630,13 @@ Then('Settings pushes the workflow minimap and button groups beside its pane', a
 Then('wrapped workflow controls fit their occupied rows', async function () {
   const page = this.page;
   const toolbar = page.locator('.workflow-toolbar');
-  for (const width of [800, 390, 1280]) {
+  for (const width of [800, 390, 900, 1280]) {
     await setMode(page, 'workflow');
     await closeCatalog(page);
     await page.setViewportSize({ width, height: 844 });
-    for (const mode of ['workflow', 'settings']) {
-      await setMode(page, mode);
+    for (const mode of ['workflow', 'settings', ...(width >= 900 ? ['navigation'] : [])]) {
+      await setMode(page, mode === 'navigation' ? 'workflow' : mode);
+      if (mode === 'navigation') await openCatalog(page);
       await expect.poll(() => toolbar.evaluate(element => {
         const style = getComputedStyle(element);
         const groups = [...element.querySelectorAll('.workflow-control-group')].map(group => group.getBoundingClientRect());
@@ -703,6 +704,15 @@ Then('the left menu overlays the workflow without changing its layout', async fu
   await expect(menu).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
   assert.deepEqual(await canvas.boundingBox(), before);
   await expect(viewport).toHaveAttribute('style', transform);
+  const toolbar = page.locator('.workflow-toolbar');
+  await expect.poll(async () => {
+    const bounds = await toolbar.boundingBox(), sidebar = await menu.boundingBox();
+    return bounds.x >= sidebar.x + sidebar.width && bounds.x + bounds.width <= before.x + before.width;
+  }).toBe(true);
+  for (const button of await toolbar.getByRole('button').all()) {
+    const bounds = await button.boundingBox(), sidebar = await menu.boundingBox();
+    assert.ok(bounds.x >= sidebar.x + sidebar.width && bounds.x + bounds.width <= before.x + before.width, 'Every toolbar action must remain outside the open menu.');
+  }
   const close = page.getByRole('button', { name: 'Close navigation', exact: true });
   await expect.poll(async () => (await close.boundingBox()).x >= (await menu.boundingBox()).x + (await menu.boundingBox()).width).toBe(true);
   await close.click();

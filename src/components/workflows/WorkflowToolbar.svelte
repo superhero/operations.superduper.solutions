@@ -71,6 +71,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       const chrome = ['padding-left', 'padding-right', 'border-left-width', 'border-right-width']
         .reduce((sum, property) => sum + (parseFloat(style.getPropertyValue(property)) || 0), 0);
       const available = element.clientWidth - (parseFloat(style.right) || 0) -
+        (parseFloat(style.getPropertyValue("--navigation-inset")) || 0) -
         parseFloat(style.marginLeft) - parseFloat(style.marginRight) - chrome;
       if (available <= 0) return;
       const widths = [...toolbar.querySelectorAll<HTMLElement>('.workflow-control-group')].map(group =>
@@ -111,7 +112,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
 
   $effect(() => { if (active) void keepNodesVisible(); compactLayout?.(); });
-  $effect(() => { void settingsOpen; compactLayout?.(); });
+  $effect(() => { void settingsOpen; void navigationOpen; compactLayout?.(); });
 
   export async function reveal(ids: string | string[]) {
     const requested = typeof ids === "string" ? [ids] : ids;
