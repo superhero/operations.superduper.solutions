@@ -11,7 +11,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import HintButton from "./HintButton.svelte";
   import JsonView from "./JsonView.svelte";
 
-  let { value, label = "OpenAPI JSON", title = "OpenAPI schema", copyable = true, operationsOnly = false }: { value: unknown; label?: string; title?: string; copyable?: boolean; operationsOnly?: boolean } = $props();
+  let { value, label = "OpenAPI JSON", title = "OpenAPI schema", copyable = true, pageSize, operationsOnly = false }: { value: unknown; label?: string; title?: string; copyable?: boolean; pageSize?: number; operationsOnly?: boolean } = $props();
   let schemaOpen = $state(false);
   let schemaLoaded = $state(false);
   let schemaWrap = $state(true);
@@ -73,7 +73,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         onclick={(event) => { event.preventDefault(); event.stopPropagation(); schemaWrap = !schemaWrap; }}><MaterialIcon name={schemaWrap ? "format_text_wrap" : "format_text_overflow"} size={20} /></HintButton>
     </span>
   {/snippet}
-  {#if schemaLoaded}<JsonView {value} {label} wrap={schemaWrap} {expandedPaths} {resetKey} />{/if}
+  {#if schemaLoaded}<JsonView {value} {label} {pageSize} wrap={schemaWrap} {expandedPaths} {resetKey} />{/if}
 </Disclosure>
 
 <style>

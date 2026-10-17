@@ -75,7 +75,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <p>{data.file?.header ? "Header row" : "No header"} · {Array.isArray(data.file?.value) ? data.file.value.length : 0} rows</p>
     </div>
   {/if}
-  {#if data.file}<div class="file-preview nodrag nopan nokey nowheel"><JsonSchemaView value={data.file.value} label="File data" title="Schema" copyable={false} /></div>{/if}
+  {#if data.file}<div class="file-preview nodrag nopan nokey nowheel"><JsonSchemaView value={data.file.value} label="File data" title="Schema" copyable={false} pageSize={1000} /></div>{/if}
   {#if error}<p class="file-error nodrag nopan nokey" role="alert">{error}</p>{/if}
 </div>
 <style>
@@ -83,13 +83,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.file-upload) { display: flex; align-items: center; justify-content: center; flex: 1; min-width: 0; padding: 6px 8px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font-size: 11px; font-weight: 700; text-align: center; }
   :global(.file-upload > span:last-child) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .file-picker { display: none; }
-  .csv-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 8px 12px; border-top: 1px solid var(--color-border); }
-  .csv-options label { display: grid; gap: 4px; min-width: 0; font-size: 11px; }
+  .csv-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 8px 12px 4px; border-top: 1px solid var(--color-border); }
+  .csv-options label { display: grid; gap: 4px; min-width: 0; font-size: 10px; }
   .csv-options p { grid-column: 1 / -1; margin: 0; font-size: 10px; }
   .file-preview { padding: 0 12px 8px; }
-  .file-preview :global(.schema-disclosure) { margin-top: 8px; }
+  .file-preview :global(.schema-disclosure) { margin-top: 4px; }
   .file-preview :global(.schema-disclosure > summary) { position: relative; top: auto; min-height: 30px; padding: 2px 6px; gap: 6px; font-size: 11px; }
   .file-preview :global(.schema-disclosure .schema-action) { flex-basis: 24px; width: 24px; height: 24px; }
+  .file-preview :global(.json-scroll) { max-height: 384px; }
   .file-preview :global(.schema-wrap-control) { flex-basis: 24px; }
   .file-error { padding: 8px 12px; margin: 0; font-size: 11px; color: var(--color-error-foreground); overflow-wrap: anywhere; }
 </style>
