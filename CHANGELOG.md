@@ -138,6 +138,14 @@ fix(settings): add a four-pixel theme switch border
 
 ```
 
+<!-- changelog-commit:179c4d60a09cebd30118c88aaf945f3c11ac7c60 -->
+### Commit [`179c4d6`](https://github.com/superhero/operations.superduper.solutions/commit/179c4d60a09cebd30118c88aaf945f3c11ac7c60)
+
+```text
+fix(workflows): scale only toolbar icons on hover
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.49
