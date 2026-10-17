@@ -72,7 +72,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           choices={[{ value: "auto", label: "Auto" }, { value: "none", label: "None" }, { value: '"', label: "Double" }, { value: "'", label: "Single" }]}
           onchange={quote => configure({ quote: quote as CsvOptions["quote"] })} />
       </label>
-      <p>{data.file?.header ? "Header row" : "No header"} · {Array.isArray(data.file?.value) ? data.file.value.length : 0} rows · {data.file?.encoding ?? ""}</p>
+      <p>{data.file?.header ? "Header row" : "No header"} · {Array.isArray(data.file?.value) ? data.file.value.length : 0} rows</p>
     </div>
   {/if}
   {#if data.file}<div class="file-preview nodrag nopan nokey nowheel"><JsonSchemaView value={data.file.value} label="File data" title="Schema" /></div>{/if}
