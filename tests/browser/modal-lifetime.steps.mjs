@@ -138,21 +138,22 @@ Then('dismissing mobile navigation preserves reading position with {string} moti
       .filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity)
       .map(animation => animation.finished.catch(() => {})));
   });
-  const readingPosition = await page.evaluate(() => Math.min(250, document.documentElement.scrollHeight - window.innerHeight));
+  const drawer = page.locator('.settings-drawer');
+  const readingPosition = await drawer.evaluate(element => Math.min(250, element.scrollHeight - element.clientHeight));
   assert.ok(readingPosition > 0, 'The fixture must provide a nonzero reading position to preserve.');
-  await page.evaluate(top => window.scrollTo({ top, behavior: 'instant' }), readingPosition);
-  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(readingPosition);
+  await drawer.evaluate((element, top) => element.scrollTo({ top, behavior: 'instant' }), readingPosition);
+  await expect.poll(() => drawer.evaluate(element => element.scrollTop)).toBe(readingPosition);
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
   const bounds = await menu.boundingBox();
   assert.ok(bounds);
   // A native pointer click avoids Playwright scrolling a sticky target into view.
   await page.mouse.click(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2);
   await expect(sheet(page)).toBeVisible();
-  assert.equal(await page.evaluate(() => window.scrollY), readingPosition);
+  assert.equal(await drawer.evaluate(element => element.scrollTop), readingPosition);
   await page.keyboard.press('Escape');
   await expect(sheet(page)).toHaveCount(0);
   await expect(menu).toBeFocused();
-  assert.equal(await page.evaluate(() => window.scrollY), readingPosition);
+  assert.equal(await drawer.evaluate(element => element.scrollTop), readingPosition);
 });
 
 Then('animated navigation completes dismissal before changing workspace or adding an operation', async function () {

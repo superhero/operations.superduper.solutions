@@ -34,6 +34,14 @@ merge: retain automated changelog updates
 
 ```
 
+<!-- changelog-commit:c0e30e81c54c36142e107f98ce7740f9b9cd3d89 -->
+### Commit [`c0e30e8`](https://github.com/superhero/operations.superduper.solutions/commit/c0e30e81c54c36142e107f98ce7740f9b9cd3d89)
+
+```text
+feat(settings): slide settings over the workflow from the right
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.49

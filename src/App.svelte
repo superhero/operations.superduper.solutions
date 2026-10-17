@@ -50,6 +50,8 @@
   let workflowLibraryError = $state("");
   let mode = $state<WorkspaceMode>("workflow");
   let modeRequest = 0;
+  let settingsPresent = $state(false);
+  let settingsDrawer: HTMLElement;
   let dark = $state(document.documentElement.dataset.theme === "dark");
   let palette = $state(palettes.find(option => option.id === document.documentElement.dataset.palette)?.id ?? palettes[0].id);
   const operations = $derived(getSchemaLibrary().operations);
@@ -61,20 +63,38 @@
     await tick();
     if (navigationModal) return;
     if (mode === "workflow") workflowWorkspace.focusCanvas();
-    else {
-      window.scrollTo({ top: 0, behavior: "instant" });
-      settingsWorkspace.focusActive();
-    }
+    else settingsWorkspace.focusActive();
   }
 
   async function setMode(next: WorkspaceMode) {
-    const request = ++modeRequest;
     if (next === mode) return;
+    const request = ++modeRequest;
     if (mode === "workflow" && !await workflowWorkspace.flushPendingChanges()) return;
     if (request !== modeRequest) return;
+    if (next === "settings") settingsPresent = true;
     mode = next;
     if (matchMedia("(max-width: 899px)").matches) navigationOpen = false;
+    await tick();
+    if (next === "workflow") {
+      await Promise.all(settingsDrawer.getAnimations().map(animation => animation.finished.catch(() => {})));
+      if (request !== modeRequest) return;
+      settingsPresent = false;
+      await tick();
+    }
     await focusDestination();
+  }
+
+  async function toggleSettings() {
+    const closing = mode === "settings";
+    await setMode(closing ? "workflow" : "settings");
+    if (closing && mode === "workflow") document.querySelector<HTMLElement>('.site-header button[aria-pressed]')?.focus({ preventScroll: true });
+  }
+
+  function dismissSettings(event: KeyboardEvent) {
+    if (mode !== "settings" || event.key !== "Escape" || event.defaultPrevented || navigationModal ||
+      document.querySelector('[role="dialog"], [role="tooltip"], [role="menu"], [role="listbox"]')) return;
+    event.preventDefault();
+    void toggleSettings();
   }
 
   $effect(() => {
@@ -255,6 +275,7 @@
 </script>
 
 <svelte:document onpointerover={sizeHover} onfocusin={sizeHover} />
+<svelte:window onkeydown={dismissSettings} />
 
 <svelte:head>
   <title>operations.superduper.solutions</title>
@@ -267,8 +288,8 @@
 <SideNavigation bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {dark} {evaluationDetails}
   workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
   onSelect={selectOperation} onTheme={toggleTheme} />
-<div class="page-content" class:catalog-open={navigationOpen} class:workflow-mode={mode === "workflow"}>
-  <Header {navigationOpen} settingsOpen={mode === "settings"} onSettings={() => setMode(mode === "settings" ? "workflow" : "settings")} workflowSaveStatus={mode === "workflow" ? workflowSaveStatus : undefined} onMenu={() => navigationOpen = !navigationOpen} />
+<div class="page-content workflow-mode" class:catalog-open={navigationOpen}>
+  <Header {navigationOpen} settingsOpen={mode === "settings"} onSettings={toggleSettings} {workflowSaveStatus} onMenu={() => navigationOpen = !navigationOpen} />
   <div class="shell">
     <main>
       {#if settingsError && !import.meta.env.DEV}
@@ -280,23 +301,30 @@
           </div>
         </div>
       {/if}
-      <div class="workflow-host" hidden={mode !== "workflow"}>
-        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={mode === "workflow"} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={browseOperations} />
+      <div class="workflow-host" inert={settingsPresent}>
+        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={!settingsPresent} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={browseOperations} />
       </div>
-      <div hidden={mode !== "settings"}>
-        <SettingsWorkspace bind:this={settingsWorkspace} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
+    </main>
+  </div>
+</div>
+<div class="settings-drawer-host">
+  <aside id="settings-panel" bind:this={settingsDrawer} class="settings-drawer" class:open={mode === "settings"} aria-label="Application settings" inert={mode !== "settings"}>
+    <SettingsWorkspace bind:this={settingsWorkspace} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
           {locale} {localeError} onLocaleChange={selectLocale} onRetryLocale={() => selectLocale(locale)}
           settingsUnavailable={Boolean(settingsError)} {settingsRetrying} onRetrySettings={retrySettings}
           {developerToolbar} {developerToolbarError} onDeveloperToolbarChange={selectDeveloperToolbar}
           {evaluationDetails} {evaluationDetailsError} onEvaluationDetailsChange={selectEvaluationDetails}
           onWorkflowDefaultsChange={selectWorkflowDefaults} onRetryWorkflowDefaults={() => selectWorkflowDefaults(workflowDefaults)} />
-      </div>
-    </main>
-  </div>
+  </aside>
 </div>
 </Tooltip.Provider>
 
 <style>
+  .settings-drawer-host { position: fixed; z-index: 25; top: var(--app-header-height); right: 0; bottom: 0; width: min(900px, 100%); overflow: clip; pointer-events: none; }
+  .settings-drawer { --app-header-height: 0px; height: 100%; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; pointer-events: auto; background: var(--color-surface); border-left: 1px solid var(--color-border); transform: translateX(100%); visibility: hidden; transition: transform 200ms ease-in-out, visibility 0s linear 200ms; }
+  .settings-drawer.open { transform: translateX(0); visibility: visible; transition-delay: 0s; }
+  @media (prefers-reduced-motion: reduce) { .settings-drawer { transition: none; } }
+
   .settings-recovery {
     display: flex;
     align-items: flex-start;

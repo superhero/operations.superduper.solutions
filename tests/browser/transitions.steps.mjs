@@ -121,10 +121,10 @@ Then('native scrollbars stay slim on hover without changing the reading position
   await page.setViewportSize({ width: 1280, height: 360 });
   const heading = page.getByRole('region', { name: 'Settings workspace', exact: true }).locator('summary[aria-label="Application"]');
   if (await heading.getAttribute('aria-expanded') !== 'true') await heading.click();
-  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.locator('.settings-drawer').evaluate(element => element.scrollTo(0, 0));
   await page.emulateMedia({ reducedMotion: 'no-preference' });
-  const root = page.locator('html');
-  const metrics = () => root.evaluate(element => ({ width: innerWidth - element.clientWidth,
+  const root = page.locator('.settings-drawer');
+  const metrics = () => root.evaluate(element => ({ width: element.offsetWidth - element.clientWidth - parseFloat(getComputedStyle(element).borderLeftWidth),
     scrollable: element.scrollHeight > element.clientHeight,
     thumb: CSS.supports('selector(::-webkit-scrollbar)')
       ? getComputedStyle(element, '::-webkit-scrollbar').width : getComputedStyle(element).scrollbarWidth,
@@ -139,14 +139,15 @@ Then('native scrollbars stay slim on hover without changing the reading position
     assert.ok(before.width > 0, 'The document must have a usable native scrollbar.');
     assert.ok(before.thumb === '4px' || before.thumb === 'thin', `Expected a slim scrollbar: ${JSON.stringify(before)}`);
   }
-  await page.mouse.move(1280 - Math.max(2, before.width / 2), 160);
-  const target = await page.evaluate(() => Math.min(50, document.documentElement.scrollHeight - innerHeight));
+  const bounds = await root.boundingBox();
+  await page.mouse.move(bounds.x + bounds.width - Math.max(2, before.width / 2), bounds.y + 80);
+  const target = await root.evaluate(element => Math.min(50, element.scrollHeight - element.clientHeight));
   await page.mouse.wheel(0, 50);
-  await expect.poll(() => page.evaluate(() => scrollY)).toBe(target);
+  await expect.poll(() => root.evaluate(element => element.scrollTop)).toBe(target);
   assert.deepEqual(await metrics(), before, 'Hovering and scrolling must preserve the slim scrollbar and document width.');
-  const position = await page.evaluate(() => scrollY);
+  const position = await root.evaluate(element => element.scrollTop);
   await page.mouse.move(640, 160);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   assert.deepEqual(await metrics(), before);
-  assert.equal(await page.evaluate(() => scrollY), position, 'Leaving the scrollbar must preserve the reading position.');
+  assert.equal(await root.evaluate(element => element.scrollTop), position, 'Leaving the scrollbar must preserve the reading position.');
 });

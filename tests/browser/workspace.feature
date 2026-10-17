@@ -166,3 +166,12 @@ Feature: Browser operations workspace
       | width |
       | 1280  |
       | 390   |
+
+  Scenario Outline: Settings slides over the workflow and preserves its layout
+    Then the settings drawer preserves the workflow at width <width> with "<motion>" motion
+
+    Examples:
+      | width | motion        |
+      | 1280  | no-preference |
+      | 390   | no-preference |
+      | 390   | reduce        |

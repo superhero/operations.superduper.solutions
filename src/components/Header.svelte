@@ -20,7 +20,7 @@
         <strong class="brand">Operations</strong>
       </div>
     </div>
-    <HintButton class="menu-button" label="Settings" tooltipSide="bottom" aria-pressed={settingsOpen} onclick={onSettings}>
+    <HintButton class="menu-button" label="Settings" tooltipSide="bottom" aria-pressed={settingsOpen} aria-expanded={settingsOpen} aria-controls="settings-panel" onclick={onSettings}>
       <MaterialIcon name="settings" />
     </HintButton>
   </div>
