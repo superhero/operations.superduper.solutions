@@ -51,6 +51,9 @@ Then('file previews limit visible rows and load additional lines on demand', asy
   await expect(node.getByRole('button',{name:'Load more',exact:true})).toBeVisible();
   assert.ok(await node.locator('.json-line').count()<=1000);
   await expect(node.locator('.json-number').filter({hasText:/^1099$/})).toHaveCount(0);
+  // Opening the preview grows the canvas node beyond the current viewport.
+  // Bring it back into view through the real camera control before clicking.
+  await page.getByRole('button',{name:'Fit View',exact:true}).click();
   await node.getByRole('button',{name:'Load more',exact:true}).click();
   await expect(node.getByRole('button',{name:'Load more',exact:true})).toHaveCount(0);
   await expect(node.locator('.json-number').filter({hasText:/^1099$/})).toHaveCount(1);
