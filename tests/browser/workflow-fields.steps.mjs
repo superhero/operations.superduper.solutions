@@ -677,6 +677,8 @@ Then('its child panel accepts a nested property without overlapping its parent',
 
 Then('property edit mode makes only custom names and types editable', async function () {
   const panel = responseHeaders(this);
+  // The lifecycle scenario reaches this check after a real reload.
+  await editProperties(panel);
   await panel.getByRole('button', { name: 'Done editing properties', exact: true }).click();
   await expect(panel.getByRole('button', { name: 'Edit properties', exact: true })).toBeVisible();
   await expect(panel.getByRole('button', { name: /^Edit property / })).toHaveCount(0);

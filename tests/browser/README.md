@@ -43,6 +43,11 @@ versions with the keyboard, then select and edit an earlier version. The keyboar
 check returns to the latest commit before the editing checks begin. Interrupted
 checkout, fork, undo and redo recovery remain separate scenarios.
 
+Custom-property scenarios follow creation through mapping, reload, rename and
+removal, and scalar/object creation through nested fields and type changes.
+They reuse the graph while retaining cancellation, duplicate-name, history,
+field-identity and layout assertions at each relevant stage.
+
 ## Execution boundary
 
 Run `npm run build` before `npm run test:browser`. The
