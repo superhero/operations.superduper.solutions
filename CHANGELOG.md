@@ -146,6 +146,14 @@ fix(workflows): scale only toolbar icons on hover
 
 ```
 
+<!-- changelog-commit:ead928d87c065b62f050d520784be893292ea9fe -->
+### Commit [`ead928d`](https://github.com/superhero/operations.superduper.solutions/commit/ead928d87c065b62f050d520784be893292ea9fe)
+
+```text
+fix(logs): wrap error messages while preserving stack lines
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.49

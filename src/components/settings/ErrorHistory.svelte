@@ -41,9 +41,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 {#snippet diagnostic(detail: ErrorDetail)}
   {@const formatted = diagnosticText(detail)}
   <div class="diagnostic">
-    <pre>{formatted.message}</pre>
+    <pre class="error-message">{formatted.message}</pre>
     <div class="entry-divider" aria-hidden="true"></div>
-    {#if formatted.hasStack}<pre>{formatted.stack}</pre>{:else}<p class="muted">No stack trace available.</p>{/if}
+    {#if formatted.hasStack}<pre class="error-stack">{formatted.stack}</pre>{:else}<p class="muted">No stack trace available.</p>{/if}
     {#if detail.cause}<div class="cause"><h5>Caused by</h5>{@render diagnostic(detail.cause)}</div>{/if}
     {#if detail.errors?.length}
       <div class="cause"><h5>Related errors</h5>{#each detail.errors as child}{@render diagnostic(child)}{/each}</div>
@@ -122,6 +122,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .diagnostic > :last-child { margin-bottom: 0; }
   .source { overflow-wrap: anywhere; white-space: pre-wrap; }
   pre { max-width: 100%; margin: 8px 0; overflow: auto; font-size: 11px; }
+  .error-message { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .error-stack { white-space: pre; overflow-wrap: normal; word-break: normal; }
   .cause { margin-top: 12px; padding-left: 12px; border-left: 2px solid var(--color-surface); }
   h5 { margin: 0; font-size: 12px; }
   .failure { padding: 10px 12px; border-left: 2px solid currentColor; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); overflow-wrap: anywhere; }
