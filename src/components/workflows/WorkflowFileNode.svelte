@@ -58,6 +58,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <span class="utility-type">{type}</span>
     <Handle id="value" type="source" position={Position.Right} isConnectable={!!data.file}
       isConnectableEnd={false} aria-label={`File output (${type})`} />
+    {#if branch?.hidden}<WorkflowRestoreBranch {branch} position={Position.Right} beside />{/if}
     <input class="file-picker" bind:this={input} type="file" accept=".json,.csv,application/json,text/csv" aria-label="Upload workflow data file"
       onchange={event => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (file) { pending = file; draftOptions = { ...defaultCsvOptions }; void parse(file, draftOptions); } }} />
   </div>
@@ -79,12 +80,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           onchange={quote => configure({ quote: quote as CsvOptions["quote"] })} />
       </label>
       <p>{data.file?.header ? "Header row" : "No header"} · {Array.isArray(data.file?.value) ? data.file.value.length : 0} rows</p>
-    </div>
-  {/if}
-  {#if branch}
-    <div class="utility-row nodrag nopan nokey"><span>Data structure</span>
-      {#if branch.hidden}<WorkflowRestoreBranch {branch} position={Position.Right} />
-      {:else}<Handle id={branch.id} type="source" position={Position.Right} isConnectable={false} aria-label="File data structure" />{/if}
     </div>
   {/if}
   {#if data.file}<div class="file-preview nodrag nopan nokey nowheel"><JsonSchemaView value={data.file.value} label="File data" title="Schema" copyable={false} pageSize={1000} /></div>{/if}

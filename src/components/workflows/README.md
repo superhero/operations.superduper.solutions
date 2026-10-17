@@ -114,3 +114,6 @@ uploaded arrays use zero through the observed item count. Type badges continue t
 
 Projected array attributes show their item type while connections retain the
 array type needed to carry all projected values.
+
+The file node has one output connector shared by its value and generated
+structure. Older documents normalize separate structure handles to that output.

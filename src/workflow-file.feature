@@ -27,3 +27,5 @@ Feature: Uploaded workflow data
     Then array structures preserve item bounds and validate stored ranges
   Scenario: Numeric inference examines every row and falls back per column
     Then CSV columns become numbers only when every value is numeric
+  Scenario: File structures share the existing output connector
+    Then file structure attachments share one output and normalize older handles

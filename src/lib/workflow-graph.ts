@@ -282,7 +282,7 @@ export function createFileDataGraph(node: Extract<WorkflowDocumentNode, { type: 
   if (node.data.file.value === null || typeof node.data.file.value !== "object")
     tree.fields[0]!.label = "Value";
   placeTree(graph, tree, node.id, "outputs", "file", "", node.position.x + 360 + gap,
-    node.position.y + tree.span / 2, node.id);
+    node.position.y + tree.span / 2, node.id, "value");
   // Projecting a field through array items produces an array, not a single sampled item.
   for (const panel of graph.nodes) if (panel.type === "data") for (const field of panel.data.fields)
     if (field.connectable) {

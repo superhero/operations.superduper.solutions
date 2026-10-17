@@ -268,3 +268,17 @@ Then('CSV columns become numbers only when every value is numeric', async functi
   const invalid=structuredClone(doc);invalid.nodes[1].data.fields[0].type='Object';
   assert.throws(()=>validateWorkflowDocument(invalid),/item types/);
 });
+Then('file structure attachments share one output and normalize older handles', async function () {
+  const {createFileDataGraph}=await import('./lib/workflow-graph.ts');
+  const {validateWorkflowDocument}=await import('./lib/workflow-document.ts');
+  const owner=fileOwner({foo:1});const graph=createFileDataGraph(owner);
+  assert.equal(graph.edges[0].sourceHandle,'value');
+  const legacy=fileDocument({nodes:[owner,...graph.nodes],edges:graph.edges.map(e=>({...e,sourceHandle:e.id}))});
+  assert.equal(validateWorkflowDocument(legacy).edges[0].sourceHandle,'value');
+  for (const handle of ['invalid']) {
+    const invalid=structuredClone(legacy);invalid.edges[0].sourceHandle=handle;
+    assert.throws(()=>validateWorkflowDocument(invalid),/File structures/);
+  }
+  const wrongOwner=structuredClone(legacy);wrongOwner.nodes.push({...owner,id:'other'});wrongOwner.edges[0].source='other';
+  assert.throws(()=>validateWorkflowDocument(wrongOwner),/File structures/);
+});
