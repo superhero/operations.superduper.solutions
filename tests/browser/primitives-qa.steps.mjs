@@ -14,7 +14,7 @@ Then('navigation focus follows normal-motion opening and breakpoint changes', as
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
   await menu.focus();
   await page.keyboard.press('Enter');
-  const mode = page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Workflows', exact: true });
+  const mode = page.getByRole('switch', { name: 'Dark theme', exact: true });
   await expect(mode).toBeFocused();
   await closeCatalog(page);
   await expect(menu).toBeFocused();
@@ -81,11 +81,11 @@ Then('expanding a nested catalog item does not clip its parent', async function 
 Then('hovering another control replaces keyboard help', async function () {
   const page = this.page;
   await openCatalog(page);
-  await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Workflows', exact: true }).focus();
-  await page.keyboard.press('Tab');
+  await page.getByRole('textbox', { name: 'Prompt', exact: true }).focus();
+  await page.keyboard.press('Shift+Tab');
   await expect(page.getByRole('tooltip')).toHaveText('Switch to dark theme');
-  await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Workflows', exact: true }).hover();
-  await expect(page.getByRole('tooltip')).toHaveText('Workflows');
+  await page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }).hover();
+  await expect(page.getByRole('tooltip')).toHaveText('Settings');
   await expect(page.getByRole('tooltip')).toHaveCount(1);
 
   await page.setViewportSize({ width: 390, height: 844 });

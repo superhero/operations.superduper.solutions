@@ -15,7 +15,7 @@ Then('the sidebar prompt filters operations and hides empty catalog groups', asy
   const page = this.page;
   await openCatalog(page);
   const initialGroups = await catalog(page).locator('[data-catalog-group]').evaluateAll(items => items.map(item => item.dataset.catalogGroup));
-  const controls = page.getByRole('group', { name: 'Workspace', exact: true });
+  const controls = page.locator('.catalog-menu-header');
   const placement = await Promise.all([controls.boundingBox(), page.locator('.catalog-prompt').boundingBox(), catalog(page).boundingBox()]);
   assert.ok(placement.every(Boolean));
   assert.ok(placement[1].y >= placement[0].y + placement[0].height && placement[2].y >= placement[1].y + placement[1].height,

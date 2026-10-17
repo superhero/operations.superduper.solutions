@@ -96,19 +96,14 @@ export async function applyDisplayedTheme(page, theme) {
 }
 async function setMode(page, mode) {
   await quitRun(page);
-  if (mode === "settings") await closeCatalog(page);
-  else await openCatalog(page);
-  const name = { workflow: "Workflows", settings: "Settings" }[mode];
-  if (!name) throw new Error(`Unsupported workspace: ${mode}`);
-  const button = (mode === "settings" ? page.getByRole("banner") : page.getByRole("group", { name: "Workspace", exact: true })).getByRole("button", { name, exact: true });
-  if (await button.getAttribute("aria-pressed") !== "true") {
-    await button.click();
-    if (await page.evaluate(() => matchMedia("(max-width: 899px)").matches))
-      await expect(page.getByRole("navigation", { name: "Operation catalog", exact: true })).toBeHidden();
-    if (mode === "settings")
-      await expect(page.getByRole("region", { name: "Settings workspace", exact: true })).toBeFocused();
-  }
   await closeCatalog(page);
+  if (!['workflow', 'settings'].includes(mode)) throw new Error(`Unsupported workspace: ${mode}`);
+  const button = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
+  if (await button.getAttribute('aria-pressed') !== String(mode === 'settings')) {
+    await button.click();
+    if (mode === 'settings')
+      await expect(page.getByRole('region', { name: 'Settings workspace', exact: true })).toBeFocused();
+  }
   const target = mode === "workflow" ? workflow(page) : mode === "settings" ? page.getByRole("region", { name: "Settings workspace", exact: true }) : workflow(page);
   await expect(target).toBeVisible();
 }
@@ -437,10 +432,8 @@ When("I press Delete in Settings", async function () {
 Then("Settings is the only selected workspace", async function () {
   const page = this.page;
   await openCatalog(page);
-  const controls = page.getByRole("group", { name: "Workspace", exact: true });
-  await expect(controls.getByRole("button")).toHaveCount(1);
-  for (const name of ["Workflows", "Settings"])
-    await expect(page.getByRole("button", { name, exact: true })).toHaveAttribute("aria-pressed", String(name === "Settings"));
+  await expect(page.getByRole('group', { name: 'Workspace', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await closeCatalog(page);
   await expect(page.getByRole("banner").getByRole("button", { name: "Settings", exact: true })).toBeVisible();
 });
@@ -505,8 +498,8 @@ Then('header Settings opens directly at viewport width {int}', async function (w
   await expect(page.getByRole('button', { name: 'Open navigation', exact: true })).toBeVisible();
   await openCatalog(page);
   await expect(page.locator('#side-navigation').getByRole('button', { name: 'Settings', exact: true })).toHaveCount(0);
-  await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Workflows', exact: true }).click();
   await closeCatalog(page);
+  await settings.click();
   await expect(workflow(page)).toBeVisible();
   await expect(settings).toHaveAttribute('aria-pressed', 'false');
 });

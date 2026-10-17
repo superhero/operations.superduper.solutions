@@ -266,7 +266,7 @@ try {
       await expect(page.getByRole('alert')).toHaveCount(0);
       assert.deepEqual(await page.evaluate(() => globalThis.settingsWrites), [], `${stage}: fallback must not write settings.`);
       await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-      await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Settings', exact: true }).click();
+      await page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }).click();
       await page.getByRole('button', { name: 'Close navigation', exact: true }).click();
       await settings.locator('summary[aria-label="Browser"]').click();
       await expect(storage.getByRole('button', { name: 'Retry saved settings', exact: true })).toBeVisible();

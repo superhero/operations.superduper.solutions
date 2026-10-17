@@ -35,4 +35,4 @@ Feature: Navigation modal lifetime
 
   Scenario: Reopening navigation cancels the interrupted destination
     Given a workflow with 2 instances of "List projects"
-    Then reopening navigation during a keyboard mode change cancels that destination
+    Then reopening navigation during keyboard selection cancels that destination

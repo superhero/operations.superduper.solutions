@@ -148,10 +148,8 @@ Then('keyboard credential selection sends only the selected saved value without 
     buffer: Buffer.from(JSON.stringify(document)) });
   await expect(page.getByRole('switch', { name: 'Enable Keyboard credential fixture', exact: true }))
     .toHaveAttribute('aria-checked', 'true');
-  const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
-  if (await menu.isVisible()) await activate(page, menu);
-  await activate(page, page.getByRole('group', { name: 'Workspace', exact: true })
-    .getByRole('button', { name: 'Workflows', exact: true }));
+  await activate(page, page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }));
+  await openCatalog(page);
   const catalog = page.getByRole('navigation', { name: 'Operation catalog', exact: true });
   const entry = catalog.locator('[data-operation-name]').filter({ hasText: operationName });
   const ancestors = catalog.locator('[data-catalog-group]').filter({

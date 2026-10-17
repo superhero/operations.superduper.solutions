@@ -60,7 +60,7 @@ async function injectTestError(page, method = 'throwRuntimeError') {
 
 async function developerToolbarSetting(page) {
   await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-  await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByRole('button', { name: 'Close navigation', exact: true }).click();
   const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
   const disclosure = settings.locator('summary[aria-label="Developer"]');
