@@ -113,6 +113,18 @@ the loader animation. This skips only the presentation delay, runs its native
 removal and gutter-cleanup callback, and leaves startup-specific scenarios alone.
 It does not advance application clocks or bypass initialization.
 
+### Shared fixture bundles
+
+`tests/browser/run.mjs` prepares the five standalone fixture bundles once before
+starting Cucumber workers. Every worker reads the same invocation-specific file;
+builds remain serial to limit peak memory. The runner removes its temporary
+bundle directory after successful or failed runs. Dry runs skip preparation.
+
+`npm run test:browser` uses this entry point inside the pinned container. For a
+prepared environment, run `node tests/browser/run.mjs` with ordinary Cucumber
+arguments such as `--name`, `--tags` and `--parallel`. Direct Cucumber invocation
+still supports dry runs; executed browser scenarios require this entry point.
+
 ### Fixture-only entry pages
 
 Storage, network, policy and KDF vault tags, `@error-history-storage` and

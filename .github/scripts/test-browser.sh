@@ -51,8 +51,7 @@ docker run --rm --init --network=none --read-only --shm-size=1g \
   --mount "type=bind,source=$PWD,target=/workspace,readonly" \
   --mount "type=bind,source=$PWD/tmp/test,target=/workspace/tmp/test" \
   --workdir /workspace "$image" \
-  node node_modules/@cucumber/cucumber/bin/cucumber.js \
-  --config cucumber.config.mjs --profile browser "${engine_arguments[@]}" "$@" \
+  node tests/browser/run.mjs "${engine_arguments[@]}" "$@" \
   2>&1 | tee tmp/test/browser/runner.log
 
 node --input-type=module -e '

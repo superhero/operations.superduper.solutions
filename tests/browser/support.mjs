@@ -8,7 +8,6 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { resolve } from 'node:path';
 import { createExampleEndpoint } from './example-endpoint.fixture.mjs';
-import { build } from 'vite';
 import { pail } from '@visulima/pail';
 import { createVaultEndpoint } from './vault-endpoint.fixture.mjs';
 
@@ -42,33 +41,10 @@ BeforeAll(async function () {
   };
   const icons = new Map(await Promise.all(Object.entries(iconTypes).map(async ([filename, type]) =>
     [`/${filename}`, { type, bytes: await readFile(`dist/${filename}`) }])));
-  // This module belongs only to the test server. Inspect real Git repositories
-  // without adding test hooks or filesystem globals to the shipped application.
-  const fixtureBuild = await build({ configFile: false, logLevel: 'error',
-    build: { write: false, target: 'es2024', minify: false,
-      lib: { entry: resolve('tests/browser/workflow-repository.fixture.ts'), formats: ['es'] } } });
-  const fixtureOutput = Array.isArray(fixtureBuild) ? fixtureBuild[0] : fixtureBuild;
-  const repositoryFixture = fixtureOutput.output.find(item => item.type === 'chunk' && item.isEntry).code;
-  const errorFixtureBuild = await build({ configFile: false, logLevel: 'error',
-    build: { write: false, target: 'es2024', minify: false,
-      lib: { entry: resolve('tests/browser/error-history-storage.fixture.ts'), formats: ['es'] } } });
-  const errorFixtureOutput = Array.isArray(errorFixtureBuild) ? errorFixtureBuild[0] : errorFixtureBuild;
-  const errorHistoryFixture = errorFixtureOutput.output.find(item => item.type === 'chunk' && item.isEntry).code;
-  const vaultFixtureBuild = await build({ configFile: false, logLevel: 'error',
-    build: { write: false, target: 'es2024', minify: false,
-      lib: { entry: resolve('tests/browser/vault-storage.fixture.ts'), formats: ['es'] } } });
-  const vaultFixtureOutput = Array.isArray(vaultFixtureBuild) ? vaultFixtureBuild[0] : vaultFixtureBuild;
-  const vaultFixture = vaultFixtureOutput.output.find(item => item.type === 'chunk' && item.isEntry).code;
-  const policyFixtureBuild = await build({ configFile: false, logLevel: 'error',
-    build: { write: false, target: 'es2024', minify: false,
-      lib: { entry: resolve('tests/browser/vault-policy.fixture.ts'), formats: ['es'] } } });
-  const policyFixtureOutput = Array.isArray(policyFixtureBuild) ? policyFixtureBuild[0] : policyFixtureBuild;
-  const policyFixture = policyFixtureOutput.output.find(item => item.type === 'chunk' && item.isEntry).code;
-  const kdfFixtureBuild = await build({ configFile: false, logLevel: 'error',
-    build: { write: false, target: 'es2024', minify: false,
-      lib: { entry: resolve('tests/browser/vault-kdf.fixture.ts'), formats: ['es'] } } });
-  const kdfFixtureOutput = Array.isArray(kdfFixtureBuild) ? kdfFixtureBuild[0] : kdfFixtureBuild;
-  const kdfFixture = kdfFixtureOutput.output.find(item => item.type === 'chunk' && item.isEntry).code;
+  if (typeof this.parameters.fixtureBundlesFile !== 'string')
+    throw new Error('Start browser scenarios with npm run test:browser or node tests/browser/run.mjs.');
+  const { repositoryFixture, errorHistoryFixture, vaultFixture, policyFixture, kdfFixture } =
+    JSON.parse(await readFile(this.parameters.fixtureBundlesFile, 'utf8'));
   const vaultEndpoint = createVaultEndpoint();
   server = createServer((request, response) => {
     if (vaultEndpoint(request, response)) return;
@@ -132,7 +108,8 @@ Before(async function ({ pickle }) {
   this.baseURL = baseURL;
   this.diagnostics = [];
   // Capture the running browser, including successful runs and parallel workers.
-  await this.attach(JSON.stringify({ name: browser.browserType().name(), version: browser.version() }),
+  await this.attach(JSON.stringify({ name: browser.browserType().name(), version: browser.version(),
+    fixtureBundlesFile: this.parameters.fixtureBundlesFile, workerId: process.env.CUCUMBER_WORKER_ID ?? '0' }),
     'application/vnd.operations.browser+json');
   const slug = pickle.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 90);
   this.artifactDirectory = resolve('tmp/test/browser', `${slug}-${randomUUID().slice(0, 8)}`);
