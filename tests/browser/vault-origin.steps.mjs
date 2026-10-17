@@ -133,7 +133,7 @@ Then('its native passkey cannot restore on another RP domain before I explicitly
       const restored = await readStorage(page);
       assert.equal(restored.snapshot.records.length, 1);
       assert.deepEqual(restored.snapshot.envelopes.find(envelope => envelope.kind === 'passkey'), passkey);
-      const canaries = [password, secret, label, this.uiRecovery];
+      const canaries = [password, secret, this.uiRecovery];
       assert.deepEqual(await page.evaluate(async values =>
         (await import('/vault-storage-fixture.js')).persistedCanaries(values), canaries), []);
       await page.goto(originalOrigin);

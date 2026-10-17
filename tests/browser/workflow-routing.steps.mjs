@@ -534,6 +534,7 @@ Then('moving and undoing the blocker restores its derived route without saving r
 
 Then('pending routing work closes with the canvas and reopening creates one fresh worker', async function () {
   const page = this.page;
+  await page.setViewportSize({ width: 1000, height: 844 });
   const observations = () => page.evaluate(() => window.__routingWorkers);
   const live = async () => (await observations()).filter(worker => worker.terminated === 0);
   await expectClearRoute(page);

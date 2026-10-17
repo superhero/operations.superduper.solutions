@@ -498,7 +498,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       const added = measured.filter(node => addedIds.has(node.id));
       const existing = measured.filter(node => !addedIds.has(node.id));
       const positioned = new Map((utility && toolbar
-        ? [placeUtilityNode(added[0]!, existing, toolbar.placementViewport(), snap ? gridSize : 0)]
+        ? [placeUtilityNode(added[0]!, existing, toolbar.placementViewport(), gridSize)]
         : layoutAddedGraph(added, graph.edges, existing, gridSize, nodeId)).map(node => [node.id, node]));
       nodes = nodes.map(node => positioned.get(node.id) ?? node);
     }).finally(() => { placement = null; });

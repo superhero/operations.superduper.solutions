@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
+import { openCatalog } from './workspace.steps.mjs';
 
 const password = 'keyboard-vault-password-6481';
 const originalSecret = 'keyboard-BEARER-canary-6481';
@@ -61,7 +62,6 @@ Given('I open Secrets settings using only the keyboard', async function () {
   const page = this.page;
   await activate(page, page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }));
   await expect(page.getByRole('region', { name: 'Settings workspace', exact: true })).toBeVisible();
-  await page.keyboard.press('Escape');
   const secrets = page.locator('summary[aria-label="Secrets"]');
   if (await secrets.getAttribute('aria-expanded') !== 'true') await activate(page, secrets);
   await expect(panel(page).getByText('No vault has been created:', { exact: true })).toBeVisible();

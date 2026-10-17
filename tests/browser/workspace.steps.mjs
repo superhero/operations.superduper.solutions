@@ -15,6 +15,11 @@ const operationNodes = (page, name) => workflow(page).locator(".svelte-flow__nod
 const connections = page => workflow(page).locator(".svelte-flow__edge:not(.workflow-schema-edge)");
 
 async function openCatalog(page) {
+  const mobileClose = page.getByRole('button', { name: 'Close settings', exact: true });
+  if (await mobileClose.isVisible()) {
+    await mobileClose.click();
+    await expect(page.locator('.settings-drawer')).toBeHidden();
+  }
   const settings = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
   if (await settings.getAttribute('aria-pressed') === 'true') {
     await settings.click();
@@ -27,6 +32,7 @@ async function openCatalog(page) {
 }
 
 async function closeCatalog(page) {
+  await page.locator("#startup-status").waitFor({ state: "detached" });
   if (await page.evaluate(() => matchMedia('(max-width: 899px)').matches) &&
       await page.getByRole('button', { name: 'Close navigation', exact: true }).isVisible())
     await expect(page.locator('#side-navigation')).toHaveAttribute('data-slot', 'sheet-content');

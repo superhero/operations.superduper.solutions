@@ -181,6 +181,8 @@ async function selectPaletteWithKeyboard(page, name, { enterFromSettings = true 
       await page.keyboard.press('Tab');
     await expect(heading).toBeFocused();
     await page.keyboard.press('Tab');
+    await expect(paletteGroup(page).getByRole('switch', { name: 'Dark theme', exact: true })).toBeFocused();
+    await page.keyboard.press('Tab');
     await expect(paletteGroup(page).getByRole('radio', { checked: true })).toBeFocused();
   } else {
     // Tab entry is covered by the initial selection; repeat only native radio navigation.
