@@ -775,6 +775,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   async function changeVersion(action: "undo" | "redo" | "checkout", oid?: string) {
     if (actionBusy || !storageReady) return;
+    const restoreWorkflowFocus = canvas?.contains(window.document.activeElement);
     actionBusy = true;
     historyError = "";
     try {
@@ -789,7 +790,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       const message = failure instanceof Error ? failure.message : String(failure);
       if (historyOpen) historyError = message;
       else { error = message; retry = () => { void changeVersion(action, oid); }; }
-    } finally { actionBusy = false; }
+    } finally {
+      actionBusy = false;
+      await tick();
+      // Making the canvas inert can clear its focus. Do not steal focus from
+      // another control the user deliberately selected during the operation.
+      if (restoreWorkflowFocus && window.document.activeElement === window.document.body) focusCanvas();
+    }
   }
 
   function historyShortcut(event: KeyboardEvent) {
