@@ -163,6 +163,14 @@ merge: align scrollbar fix with release-stage validation
 
 ```
 
+<!-- changelog-commit:2dac65894526d22242730ab6e08f7dd2285978b6 -->
+### Commit [`2dac658`](https://github.com/superhero/operations.superduper.solutions/commit/2dac65894526d22242730ab6e08f7dd2285978b6)
+
+```text
+fix(ui): preserve typed scrollbar component exports
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.48
