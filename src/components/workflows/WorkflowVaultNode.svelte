@@ -4,32 +4,67 @@ SPDX-License-Identifier: AGPL-3.0-only
 See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
-  import { getContext } from "svelte";
+  import { getContext, onMount } from "svelte";
   import { Handle, Position, type Node, type NodeProps } from "@xyflow/svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import VaultVariableAccess from "$lib/components/VaultVariableAccess.svelte";
+  import WorkflowNodeSelect from "./WorkflowNodeSelect.svelte";
+  import { readVaultKeys, subscribeVaultLock } from "$lib/secrets/client.ts";
+  import type { VaultKey } from "$lib/secrets/types.ts";
   import type { VaultVariableData } from "$lib/workflow-document.ts";
   import "./workflow-utility-nodes.css";
   let { id, data, selected }: NodeProps<Node<VaultVariableData, "vault">> = $props();
   const select = getContext<(id: string, credentialId: string) => void>("workflow-vault-variable");
   const editorActive = getContext<() => boolean>("workflow-editor-active");
   let open = $state(false);
-  let label = $state<{ id: string; name: string }>();
+  let entries = $state<VaultKey[]>([]);
+  let needsUnlock = $state(false);
+  let error = $state("");
+  let alive = false;
+  let generation = 0;
+  const label = $derived(entries.find(entry => entry.id === data.credentialId)?.label);
+  async function refresh() {
+    const request = ++generation;
+    try {
+      const index = await readVaultKeys();
+      if (alive && request === generation) {
+        entries = index.entries; needsUnlock = index.needsUnlock; error = "";
+      }
+    } catch (cause) {
+      if (alive && request === generation) error = cause instanceof Error ? cause.message : "Vault keys are unavailable.";
+    }
+  }
+  onMount(() => {
+    alive = true; void refresh();
+    const stop = subscribeVaultLock(() => { void refresh(); });
+    return () => { alive = false; generation++; stop(); };
+  });
   $effect(() => { if (!editorActive()) open = false; });
 </script>
 <div class="workflow-utility-node workflow-vault-node" class:selected>
-  <div class="utility-title"><MaterialIcon name="variable_add" size={20} /><strong>{label?.id === data.credentialId ? label?.name : "Vault variable"}</strong><span class="utility-type">Text</span></div>
+  <div class="utility-title"><MaterialIcon name="variable_add" size={20} /><strong>{label ?? "Vault variable"}</strong></div>
   <div class="utility-row nodrag nopan nokey">
-    <button type="button" class="utility-value" onclick={() => open = true} disabled={!editorActive()}>
-      {data.credentialId ? "Change vault variable" : "Select vault variable"}
-    </button>
+    {#if needsUnlock || !entries.length || error}
+      <button type="button" class="utility-value" onclick={() => open = true} disabled={!editorActive()}>
+        Select vault variable
+      </button>
+    {:else}
+      <div class="vault-selection" onfocusin={() => { void refresh(); }}>
+        <WorkflowNodeSelect label="Vault variable" value={data.credentialId ?? ""}
+          choices={[{ value: "", label: "Select vault variable" }, ...entries.map(entry => ({ value: entry.id, label: entry.label }))]}
+          active={editorActive()} disabled={!editorActive()}
+          onchange={credentialId => { if (credentialId) select(id, credentialId); }} />
+      </div>
+    {/if}
+    <span class="utility-type">String</span>
     <Handle id="value" type="source" position={Position.Right} isConnectableEnd={false} aria-label="Vault variable output (Text)" />
   </div>
 </div>
 <Modal bind:open title="Select vault variable">
-  {#if open}<VaultVariableAccess selected={data.credentialId ?? ""} onselect={(credentialId, name) => { select(id, credentialId); label = { id: credentialId, name }; open = false; }} />{/if}
+  {#if open}<VaultVariableAccess selected={data.credentialId ?? ""} onselect={(credentialId) => { select(id, credentialId); open = false; void refresh(); }} />{/if}
 </Modal>
 <style>
+  .vault-selection { flex: 1; min-width: 0; }
   button { text-align: left; cursor: pointer; }
 </style>
