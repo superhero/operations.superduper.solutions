@@ -1,3 +1,4 @@
+@coverage-report
 Feature: Standalone coverage report
   Coverage navigation must work without separately hosted pages or assets.
   Both an edge-case fixture and real c8 output retain their own scripts and styles.

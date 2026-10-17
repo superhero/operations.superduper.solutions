@@ -4,6 +4,7 @@
 import { repository, storedWorkflows } from "./workflow-storage.fixture.mjs";
 import { expectWorkflowName, renameWorkflow } from './workflow-details.fixture.mjs';
 import assert from "node:assert/strict";
+import { seedOperationGraph } from "./workflow-graph.fixture.mjs";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { closeCatalog, revealCatalogOperation, chooseCatalogOperation, connections, operationNodes, readExport, setMode, workflow } from "./workspace.steps.mjs";
@@ -128,8 +129,7 @@ async function expectOwnerLayout(node, inputs, outputs) {
 
 Given("a workflow ready to map Get project to Create task", async function () {
   await setMode(this.page, "workflow");
-  await chooseCatalogOperation(this.page, "Get project", "workflow");
-  await chooseCatalogOperation(this.page, "Create task", "workflow");
+  await seedOperationGraph(this.page, ["Get project", "Create task"]);
   await this.page.getByRole("button", { name: "Fit View", exact: true }).click();
   await mappingPorts(this);
   await expect(connections(this.page)).toHaveCount(0);

@@ -17,7 +17,6 @@ function noCanaries(value) {
 }
 async function seed(world, action) {
   world.vaultRun = randomUUID(); world.vaultAction = action;
-  await world.page.goto(`${world.baseURL}/vault-fixture.html`);
   world.vault = await invoke(world.page, 'seed', world.baseURL, world.vaultRun, action);
 }
 function expectedFetchDiagnostics(world) {
@@ -40,7 +39,6 @@ Given('a vault whose approved request needs cross-origin credentials without COR
   // Request interception bypasses native preflight in Chromium. This isolated
   // fixture has no external resources; the container still has no network.
   await this.context.unrouteAll({ behavior: 'wait' });
-  await this.page.goto(`${this.baseURL}/vault-fixture.html`);
   this.vault = await invoke(this.page, 'seed', this.vaultCrossOrigin, this.vaultRun, 'ok');
 });
 
@@ -529,7 +527,6 @@ Then('a downloaded vault backup restores with recovery in a fresh application co
 const policy = (page, method, ...args) => page.evaluate(async ({ method, args }) => (await import('/vault-policy-fixture.js'))[method](...args), { method, args });
 Given('a browser vault worker has an approved credential request for a saved schema', async function () {
   this.vaultRun = randomUUID();
-  await this.page.goto(`${this.baseURL}/vault-fixture.html`);
   await policy(this.page, 'setup', this.baseURL, this.vaultRun);
   const result = await policy(this.page, 'execute');
   assert.equal(result.value.response.status, 200);
@@ -560,7 +557,6 @@ Then('a schema policy check in a fresh origin fails without creating storage', a
 
 Then('the production worker bounds the whole HTTP diagnostic before posting it', async function () {
   this.vaultRun = randomUUID();
-  await this.page.goto(`${this.baseURL}/vault-fixture.html`);
   await policy(this.page, 'setup', this.baseURL, this.vaultRun, 'huge-failure');
   const reply = await policy(this.page, 'diagnostic');
   assert.equal(reply.ok, false); assert.equal(reply.error.kind, 'response');
@@ -579,7 +575,6 @@ Then('the production worker bounds the whole HTTP diagnostic before posting it',
 
 Then('the production worker bounds an oversized field diagnostic before posting or dispatching', async function () {
   this.vaultRun = randomUUID();
-  await this.page.goto(`${this.baseURL}/vault-fixture.html`);
   await policy(this.page, 'setup', this.baseURL, this.vaultRun, 'field-limit');
   const reply = await policy(this.page, 'diagnostic');
   assert.equal(reply.ok, false); assert.deepEqual(reply.error, { kind: 'vault', code: 'LIMIT' });
@@ -588,7 +583,6 @@ Then('the production worker bounds an oversized field diagnostic before posting 
 });
 
 Then('the browser KDF worker matches official and independent vectors and reports the selected profile timings', { timeout: 60_000 }, async function () {
-  await this.page.goto(`${this.baseURL}/vault-kdf-fixture.html`);
   const result = await this.page.evaluate(async () => (await import('/vault-kdf-fixture.js')).qualifyKdf());
   assert.equal(result.references, 7); assert.equal(result.comparisons, 3);
   assert.equal(result.applicationKey, 'matched-nonextractable');

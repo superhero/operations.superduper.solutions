@@ -113,6 +113,45 @@ the loader animation. This skips only the presentation delay, runs its native
 removal and gutter-cleanup callback, and leaves startup-specific scenarios alone.
 It does not advance application clocks or bypass initialization.
 
+### Shared fixture bundles
+
+`tests/browser/run.mjs` prepares the five standalone fixture bundles once before
+starting Cucumber workers. Every worker reads the same invocation-specific file;
+builds remain serial to limit peak memory. The runner removes its temporary
+bundle directory after successful or failed runs. Dry runs skip preparation.
+
+`npm run test:browser` uses this entry point inside the pinned container. For a
+prepared environment, run `node tests/browser/run.mjs` with ordinary Cucumber
+arguments such as `--name`, `--tags` and `--parallel`. Direct Cucumber invocation
+still supports dry runs; executed browser scenarios require this entry point.
+
+### Fixture-only entry pages
+
+Storage, network, policy and KDF vault tags, `@error-history-storage` and
+`@error-history-recorder` start on their isolated HTML fixture.
+`@coverage-report` starts on a blank page until its generated report is ready.
+These cases do not initialize and discard the full application first. Shared
+setup still creates a fresh context and installs the same request guards,
+diagnostics and tracing. Fixture steps seed their own data;
+explicit reloads and additional-tab navigation remain part of their tests.
+
+UI and startup scenarios keep the built application entry page. When adding a
+fixture-only tag, ensure every scenario carrying it works without application
+workers, settings or databases left behind by startup.
+
+### Saved graph setup
+
+Use `workflow-graph.fixture.mjs` for cases that start with existing operations.
+It generates real schema panels and uses the application’s import and autosave
+paths, including Git/IndexedDB persistence. Import assigns a fresh document ID;
+identity and history fixtures must retain repository setup. This avoids repeated
+catalog insertion and startup reloads. Fixture geometry uses estimated
+dimensions; dedicated catalog scenarios retain measured insertion layout,
+automatic reveal and creation checks.
+
+Keep explicit reloads when testing persistence. Pointer gestures, mapping,
+snapping, rendering and subsequent saves still run through the real application.
+
 ### Focused fixtures
 
 Vault UI setup creates a vault and one encrypted credential. The creation and
