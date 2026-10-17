@@ -51,8 +51,8 @@
   let mode = $state<WorkspaceMode>("workflow");
   let modeRequest = 0;
   let settingsPresent = $state(false);
-  // The 900px Settings pane must leave at least 320px for an editable workspace.
-  const compactSettingsQuery = "(max-width: 1219px)";
+  // Use the same modal breakpoint as navigation; wider screens keep 250px for the workflow.
+  const compactSettingsQuery = "(max-width: 899px)";
   let compactSettings = $state(matchMedia(compactSettingsQuery).matches);
   onMount(() => {
     const media = matchMedia(compactSettingsQuery);
@@ -360,7 +360,8 @@
 </Tooltip.Provider>
 
 <style>
-  :global(:root) { --settings-drawer-width: min(900px, calc(100vw - var(--navigation-control-size) - 2 * var(--content-padding))); }
+  :global(:root) { --settings-drawer-width: min(900px, calc(100vw - 250px)); }
+  @media (max-width: 899px) { :global(:root) { --settings-drawer-width: calc(100vw - 2 * var(--navigation-control-size) - 2 * var(--content-padding) - 8px); } }
   .page-content { --workflow-controls-inset: 0px; --navigation-inset: 0px; }
   @media (min-width: 900px) { .page-content.catalog-open { --navigation-inset: var(--catalog-width); } }
   .page-content.settings-open { --workflow-controls-inset: var(--settings-drawer-width); }

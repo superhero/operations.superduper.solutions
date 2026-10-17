@@ -729,7 +729,7 @@ Then('Settings disables the workspace when insufficient space remains', async fu
   const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
   const node = page.locator('.svelte-flow__node-operation').first();
   const original = await node.getAttribute('style');
-  for (const width of [390, 900, 1219]) {
+  for (const width of [390, 899]) {
     await page.setViewportSize({ width, height: 844 });
     await expect(canvas).toHaveAttribute('inert', '');
     await settings.focus();
@@ -738,9 +738,28 @@ Then('Settings disables the workspace when insufficient space remains', async fu
     await expect(node).toHaveAttribute('style', original);
     assert.equal(await node.evaluate(element => { element.focus(); return element.contains(document.activeElement); }), false);
     await expect(settings).toBeVisible();
+    const header = page.getByRole('banner');
+    const menu = header.getByRole('button', { name: 'Open navigation', exact: true });
+    const close = header.getByRole('button', { name: 'Settings', exact: true });
+    await expect(menu).toBeVisible();
+    await expect(close).toBeVisible();
+    await expect.poll(async () => {
+      const bounds = await close.boundingBox(), drawer = await page.locator('.settings-drawer').boundingBox();
+      return bounds.x + bounds.width <= drawer.x;
+    }).toBe(true);
   }
-  await page.setViewportSize({ width: 1220, height: 844 });
-  await expect(canvas).not.toHaveAttribute('inert');
+  for (const width of [900, 1000, 1149, 1150, 1220]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect(canvas).not.toHaveAttribute('inert');
+    await expect.poll(async () => Math.round((await page.locator('.settings-drawer').boundingBox()).x)).toBeGreaterThanOrEqual(250);
+    const header = page.getByRole('banner');
+    const menu = header.getByRole('button', { name: 'Open navigation', exact: true });
+    const settingsButton = header.getByRole('button', { name: 'Settings', exact: true });
+    await expect(menu).toBeVisible();
+    await expect(settingsButton).toBeVisible();
+    const left = await menu.boundingBox(), right = await settingsButton.boundingBox();
+    assert.ok(left.x + left.width <= right.x, 'Both header buttons fit without overlapping.');
+  }
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(canvas).toHaveAttribute('inert', '');
   const toggle = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });

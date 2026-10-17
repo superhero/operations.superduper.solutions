@@ -33,7 +33,16 @@
 
 <style>
   header { container: header-layout / inline-size; }
-  @container header-layout (max-width: 300px) { .brand-controls { display: none; } }
+  .header-content { gap: 8px; }
+  .header-content :global(.menu-button) { flex-shrink: 0; }
+  .brand-controls { min-width: 0; }
+  .brand-copy { min-width: 0; overflow: hidden; }
+  .brand { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @container header-layout (max-width: 350px) {
+    .brand-controls { gap: 8px; }
+    .brand { font-size: 16px; }
+  }
+  @container header-layout (max-width: 240px) { .brand-copy { display: none; } }
 
   .document-meta { position: absolute; right: calc(1rem + 3px); bottom: 0; height: var(--header-padding); display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--color-muted-foreground); }
   .document-meta i { width: 6px; height: 6px; transform: translateY(1px); border-radius: 50%; background: var(--color-foreground); }
