@@ -24,7 +24,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={selected?.label ?? value} labelAsName={false} tooltipEnabled={!open}>
         {#snippet child({ props: hintProps })}
           <button {...mergeProps(hintProps, selectProps)}>
-            <span class:placeholder={selected?.placeholder}>{selected?.symbol ?? selected?.label ?? value}</span><MaterialIcon name="expand_more" size={16} />
+            <span class="select-label" class:placeholder={selected?.placeholder}>{selected?.symbol ?? selected?.label ?? value}</span><MaterialIcon name="expand_more" size={16} />
           </button>
         {/snippet}
       </HintButton>
@@ -51,6 +51,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.workflow-node-select-options) { z-index: 60; min-width: max(140px, var(--bits-select-anchor-width)); max-width: calc(100vw - 20px); max-height: min(320px, var(--bits-select-content-available-height)); overflow: auto; padding: 4px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
   :global(.workflow-node-select-option) { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 32px; padding: 6px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; outline: none; transition: background-color 180ms ease-in, color 180ms ease-in; }
   :global(.workflow-node-select-option[data-highlighted]) { background: var(--color-secondary-hover); color: var(--color-secondary-hover-foreground); }
+  .select-label { min-width: 0; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .placeholder { font-style: italic; font-weight: 400; }
   .check { display: grid; place-items: center; width: 16px; height: 16px; }
   @media (prefers-reduced-motion: reduce) { :global(.workflow-node-select), :global(.workflow-node-select-option) { transition: none; } }
