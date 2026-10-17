@@ -9,13 +9,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import MaterialIcon from "./MaterialIcon.svelte";
   import FieldSelect from "./FieldSelect.svelte";
   import VaultAuthentication from "./VaultAuthentication.svelte";
-  import { readVaultStatus, subscribeVaultLock, vaultCall } from "../secrets/client.ts";
-  import type { CredentialSummary, VaultStatus } from "../secrets/types.ts";
+  import { readVaultKeys, readVaultStatus, subscribeVaultLock, vaultCall } from "../secrets/client.ts";
+  import type { VaultKey, VaultStatus } from "../secrets/types.ts";
   let { selected = "", onselect, disabled = false }: { selected?: string; onselect?: (id: string, label: string) => void; disabled?: boolean } = $props();
   let status = $state<VaultStatus>();
-  let entries = $state<CredentialSummary[]>([]);
+  let entries = $state<VaultKey[]>([]);
   let authentication = $state.raw<VaultAuthentication>();
   let busy = $state(false);
+  let needsUnlock = $state(false);
   let error = $state("");
   let alive = false;
   let generation = 0;
@@ -25,8 +26,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     busy = true; error = "";
     try {
       const latest = await readVaultStatus();
-      const list = latest.unlocked && onselect ? await vaultCall("list", []) : [];
-      if (alive && request === generation) { status = latest; entries = list; }
+      const index = onselect ? await readVaultKeys() : { entries: [], needsUnlock: false };
+      if (alive && request === generation) { status = latest; entries = index.entries; needsUnlock = index.needsUnlock; }
     } catch (cause) { if (alive && request === generation) error = cause instanceof Error ? cause.message : "The vault is unavailable."; }
     finally { if (alive && request === generation) busy = false; }
   }
@@ -45,13 +46,26 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
   onMount(() => {
     alive = true; void refresh();
-    const stop = subscribeVaultLock(() => { generation++; busy = false; entries = []; if (status) status = { ...status, unlocked: false }; authentication?.clear(); });
+    const stop = subscribeVaultLock(() => {
+      const request = ++generation; busy = false;
+      if (status) status = { ...status, unlocked: false };
+      authentication?.clear();
+      if (onselect) void readVaultKeys().then(index => {
+        if (alive && request === generation) { entries = index.entries; needsUnlock = index.needsUnlock; }
+      }).catch(() => { /* Public metadata can be retried explicitly. */ });
+    });
     return () => { alive = false; generation++; stop(); authentication?.clear(); };
   });
 </script>
 <div class="vault-variable-access">
   {#if status?.exists}
-    {#if !status.unlocked}
+    {#if onselect && !needsUnlock}
+      {#if entries.length}
+        <FieldSelect id={id} label="Vault variable" value={selected} options={entries.map(entry => ({ value: entry.id, label: entry.label }))}
+          disabled={disabled || busy} portalZIndex={90} onValueChange={value => { const entry = entries.find(item => item.id === value); if (entry) onselect?.(entry.id, entry.label); }} />
+      {:else}<p>No values saved. Add a key and value in Settings → Secrets.</p>{/if}
+    {:else if !status.unlocked}
+      {#if needsUnlock}<p>Unlock once to make existing vault keys available while locked.</p>{/if}
       <form onsubmit={unlock}>
         <VaultAuthentication bind:this={authentication} {status} disabled={disabled || busy} label="Unlock" portalZIndex={90}>
           {#snippet action()}<HintButton class="unlock-vault" type="submit" label="Unlock" aria-label="Unlock" disabled={disabled || busy}>
@@ -59,11 +73,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           </HintButton>{/snippet}
         </VaultAuthentication>
       </form>
-    {:else if onselect}
-      {#if entries.length}
-        <FieldSelect id={id} label="Vault variable" value={selected} options={entries.map(entry => ({ value: entry.id, label: entry.label }))}
-          disabled={disabled || busy} portalZIndex={90} onValueChange={value => { const entry = entries.find(item => item.id === value); if (entry) onselect?.(entry.id, entry.label); }} />
-      {:else}<p>No values saved. Add a key and value in Settings → Secrets.</p>{/if}
     {/if}
   {:else if status}<p>Create a vault in Settings → Secrets to select a variable.</p>{/if}
   {#if error}<p role="alert">{error}</p><button type="button" onclick={refresh} disabled={disabled || busy}>Retry</button>{/if}

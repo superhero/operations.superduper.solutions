@@ -21,7 +21,11 @@ Existing secrets pasted into document text are not removed from earlier history.
 
 ### Encryption and unlocking
 
-A random AES-256-GCM key encrypts credentials, labels and destination grants.
+A random AES-256-GCM key encrypts credential values and destination grants.
+Key names, opaque IDs and credential kinds are also stored in a public index, so
+keys can be browsed and selected while locked. The index is advisory; requests
+resolve IDs against authenticated encrypted records. Existing vaults populate
+the index on their next successful unlock; imports rebuild it during authentication.
 Each encryption uses a fresh 96-bit IV and authenticates its format, vault,
 record, revision and key epoch. An encrypted inventory authenticates the exact
 records and unlock envelopes. Selective rollback fails authentication; a complete
@@ -47,7 +51,7 @@ retain their own authentication.
 A dedicated worker decrypts credentials, validates the current operation, destination and
 authentication placement, then sends
 the request. Only an explicit Copy action returns a selected value to the page for the clipboard;
-normal workflow execution keeps plaintext in the worker. Vault-variable nodes retain
+normal workflow execution keeps plaintext values in the worker. Vault-variable nodes retain
 only a local entry ID and supply Text inputs, including nested request fields.
 Portable workflows clear these selections. Values are resolved and validated in
 the worker immediately before dispatch; the runner and request previews contain

@@ -32,6 +32,7 @@ export type CredentialGrant = { id: string; scheme: string; descriptor: Approved
 export type VaultCredential = {
   id: string; label: string; kind: "bearer" | "apiKey" | "secret"; value: string; grants: CredentialGrant[];
 };
+export type VaultKey = Pick<VaultCredential, "id" | "label" | "kind">;
 export type CredentialSummary = Omit<VaultCredential, "value">;
 export type CredentialBinding = {
   alternative: number; credentials: Record<string, string>; fingerprint: string;

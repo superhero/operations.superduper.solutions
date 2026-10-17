@@ -9,7 +9,7 @@ Feature: Browser vault persistence and controlled credential execution
   @vault-browser-storage
   Scenario: Persisted vault data and exports contain only encrypted private fields
     Given an isolated browser vault with synthetic credentials
-    Then its database and backup contain no registered secret or private label
+    Then its database exposes key names while stored values and exports remain encrypted
 
   @vault-browser-storage
   Scenario: Two tabs cannot overwrite the same durable revision
@@ -180,3 +180,8 @@ Feature: Browser vault persistence and controlled credential execution
   Scenario: Public vault variable requests upgrade legacy catalog policies before dispatch
     Given a browser vault worker has an approved credential request for a saved schema
     Then a public operation resolves a vault variable only after upgrading its legacy schema policy
+
+  @vault-browser-storage
+  Scenario: Legacy vault key indexes populate after one unlock
+    Given an isolated browser vault with synthetic credentials
+    Then a legacy vault publishes only key names after unlocking without changing its encrypted snapshot

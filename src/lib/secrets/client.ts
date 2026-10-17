@@ -5,6 +5,7 @@ import VaultWorker from "./vault.worker.ts?worker&inline";
 import { trackApplicationWorker } from "../application-workers.ts";
 import { InputValidationError } from "../operation-input.ts";
 import { WorkflowResponseError } from "../workflow-execution.ts";
+import { publicVaultKeys } from "./key-index.ts";
 import { createVaultStorage } from "./storage.ts";
 import { createVaultLifecycle } from "./lifecycle.ts";
 import { readVaultPreferences, saveSetting, validateVaultPreferences } from "../app-settings.ts";
@@ -156,4 +157,12 @@ if (typeof document !== "undefined") {
     for (const type of ["pointerdown", "keydown", "wheel", "input"]) document.removeEventListener(type, activity);
   });
 }
-export const readVaultStatus = (): Promise<VaultStatus> => vaultCall("status", []);
+let statusPending: Promise<VaultStatus> | undefined;
+export function readVaultStatus(): Promise<VaultStatus> {
+  if (statusPending) return statusPending;
+  const pending = vaultCall("status", []);
+  statusPending = pending;
+  void pending.finally(() => { if (statusPending === pending) statusPending = undefined; }).catch(() => {});
+  return pending;
+}
+export const readVaultKeys = async () => publicVaultKeys(await createVaultStorage().read());

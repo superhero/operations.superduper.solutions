@@ -76,3 +76,9 @@ Feature: Browser vault session lifecycle
 
   Scenario: Duplicate keys cannot overwrite saved values
     Then duplicate credential keys are rejected without changing saved values
+
+  Scenario: Public vault keys stay readable while values require unlocking
+    Then vault key names remain public across locks updates imports and legacy migration while values stay protected
+
+  Scenario: Malformed public key indexes cannot leak additional record fields
+    Then public vault key indexes validate IDs labels kinds and membership and discard extra fields

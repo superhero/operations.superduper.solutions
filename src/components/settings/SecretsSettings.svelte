@@ -13,8 +13,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import VaultAuthentication from "$lib/components/VaultAuthentication.svelte";
   import { enrollPasskey } from "$lib/secrets/passkeys.ts";
-  import { loadVaultPreferences, lockVault, lockVaultLocally, readVaultStatus, saveVaultPreferences, subscribeVaultLock, vaultCall, vaultCeremony } from "$lib/secrets/client.ts";
-  import { defaultVaultPreferences, safeVaultError, VaultError, vaultLimits, type CredentialSummary,
+  import { loadVaultPreferences, lockVault, lockVaultLocally, readVaultKeys, readVaultStatus, saveVaultPreferences, subscribeVaultLock, vaultCall, vaultCeremony } from "$lib/secrets/client.ts";
+  import { defaultVaultPreferences, safeVaultError, VaultError, vaultLimits, type VaultKey,
     type Enrollment, type UnlockProof, type VaultStatus } from "$lib/secrets/types.ts";
 
   type Authentication = { proof: () => Promise<UnlockProof>; clear: () => void };
@@ -22,7 +22,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const methodNames = { password: "Password", recovery: "Recovery key", passkey: "Passkey" };
   const createFormId = $props.id();
   let status = $state<VaultStatus>(emptyStatus);
-  let records = $state<CredentialSummary[]>([]);
+  let records = $state<VaultKey[]>([]);
   let preferences = $state({ ...defaultVaultPreferences });
   let idleMinutes = $state(String(defaultVaultPreferences.idleLockMinutes));
   const maximumIdleMinutes = 7 * 24 * 60;
@@ -71,12 +71,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
   function locked(): void {
     generation++; clearInputs(); clearRecovery(); clearRestore();
-    records = []; status = { ...status, unlocked: false }; showRotation = false; showPassword = false; passwordError = ""; showPasskey = false; passkeyError = ""; busy = false; progress = "";
+    status = { ...status, unlocked: false }; showRotation = false; showPassword = false; passwordError = ""; showPasskey = false; passkeyError = ""; busy = false; progress = "";
+    const current = generation;
+    if (!disposed) void readVaultKeys().then(index => {
+      if (!disposed && current === generation) records = index.entries.toSorted((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }) || a.label.localeCompare(b.label));
+    }).catch(() => { /* The next explicit action reports storage failures. */ });
   }
   async function refresh(): Promise<void> {
     const current = generation;
     const next = await readVaultStatus();
-    const items = next.unlocked ? await vaultCall("list", []) : [];
+    const items = (await readVaultKeys()).entries;
     if (current !== generation || disposed) return;
     status = next; records = items.toSorted((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: "base" }) || a.label.localeCompare(b.label));
 
@@ -378,22 +382,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {#if credentialId}<div class="actions"><button type="button" disabled={busy} onclick={() => { clearInputs(); credentialId = ""; credentialLabel = ""; }}>Cancel</button></div>{/if}
       </form>
     </div>
-    {#if records.length}
+  {/if}
+    {#if ready && records.length}
     <div class="card">
       <ul class="records">
         {#each records as item (item.id)}
           <li><div class="record-heading"><div><strong>{item.label}</strong></div>
-            <div class="actions"><button type="button" disabled={busy} onclick={() => run("", () => copyCredential(item.id))}><MaterialIcon name="content_copy" size={18} />Copy</button>
-              <button type="button" disabled={busy} onclick={() => run("Removing credential…", async () => { await vaultCall("remove", [null, item.id]); await refresh(); })}><MaterialIcon name="delete" size={18} />Remove</button></div></div>
+            <div class="actions"><button type="button" disabled={busy || !status.unlocked} onclick={() => run("", () => copyCredential(item.id))}><MaterialIcon name="content_copy" size={18} />Copy</button>
+              <button type="button" disabled={busy || !status.unlocked} onclick={() => run("Removing credential…", async () => { await vaultCall("remove", [null, item.id]); await refresh(); })}><MaterialIcon name="delete" size={18} />Remove</button></div></div>
 
           </li>
         {/each}
       </ul>
     </div>
     {/if}
-
-
-  {/if}
   {#if ready && status.exists}
     <div class="card">
       <div class="idle-settings">

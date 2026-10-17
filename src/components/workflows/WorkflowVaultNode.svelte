@@ -4,12 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
-  import { getContext, onMount } from "svelte";
+  import { getContext } from "svelte";
   import { Handle, Position, type Node, type NodeProps } from "@xyflow/svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import Modal from "$lib/components/Modal.svelte";
   import VaultVariableAccess from "$lib/components/VaultVariableAccess.svelte";
-  import { subscribeVaultLock } from "$lib/secrets/client.ts";
   import type { VaultVariableData } from "$lib/workflow-document.ts";
   import "./workflow-utility-nodes.css";
   let { id, data, selected }: NodeProps<Node<VaultVariableData, "vault">> = $props();
@@ -17,7 +16,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const editorActive = getContext<() => boolean>("workflow-editor-active");
   let open = $state(false);
   let label = $state<{ id: string; name: string }>();
-  onMount(() => subscribeVaultLock(() => { label = undefined; }));
   $effect(() => { if (!editorActive()) open = false; });
 </script>
 <div class="workflow-utility-node workflow-vault-node" class:selected>

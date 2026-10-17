@@ -33,6 +33,14 @@ Then('I can add and connect a vault variable without exposing its value', async 
   await page.reload();
   await page.locator('#startup-status').waitFor({ state: 'detached' });
   await expect(variable.getByRole('button', { name: 'Change vault variable', exact: true })).toBeVisible();
+  await variable.getByRole('button', { name: 'Change vault variable', exact: true }).click();
+  const lockedPicker = page.getByRole('dialog', { name: 'Select vault variable', exact: true });
+  await expect(lockedPicker.getByRole('button', { name: 'Unlock', exact: true })).toHaveCount(0);
+  await lockedPicker.getByRole('combobox', { name: 'Vault variable', exact: true }).click();
+  await expect(page.getByRole('option', { name: 'browser-PRIVATE-label-9182', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await lockedPicker.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(lockedPicker).toHaveCount(0);
   await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
   const run = page.getByRole('dialog', { name: /^Run workflow:/ });
   await expect(run.getByRole('button', { name: 'Unlock', exact: true })).toBeVisible();

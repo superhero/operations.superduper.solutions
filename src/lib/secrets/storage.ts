@@ -1,19 +1,20 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { vaultDatabaseName, VaultError, type VaultSnapshot } from "./types.ts";
+import { vaultDatabaseName, VaultError, type VaultSnapshot, type VaultKey } from "./types.ts";
 
 /** The durable counter survives deleting/restoring a vault and invalidates suspended tabs. */
-export type VaultState = { revision: number; lockEpoch: number; snapshot: VaultSnapshot | null };
+export type VaultState = { revision: number; lockEpoch: number; snapshot: VaultSnapshot | null; keys?: VaultKey[] };
 export interface VaultStorage {
   read(): Promise<VaultState>;
-  replace(expected: VaultState, snapshot: VaultSnapshot | null): Promise<VaultState>;
+  replace(expected: VaultState, snapshot: VaultSnapshot | null, keys?: VaultKey[]): Promise<VaultState>;
+  indexKeys(expected: VaultState, keys: VaultKey[]): Promise<VaultState>;
   lock(): Promise<VaultState>;
 }
 const initial = (): VaultState => ({ revision: 0, lockEpoch: 0, snapshot: null });
 const deadline = 2500;
 
-/** Only encrypted snapshots and public counters enter this database. No fallback store. */
+/** Values stay encrypted; key names and counters are public. No fallback store. */
 export function createVaultStorage(): VaultStorage {
   async function open(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
@@ -78,13 +79,21 @@ export function createVaultStorage(): VaultStorage {
   }
   const advance = (previous: VaultState, snapshot = previous.snapshot): VaultState => {
     if (previous.revision >= Number.MAX_SAFE_INTEGER || previous.lockEpoch >= Number.MAX_SAFE_INTEGER) throw new VaultError("LIMIT");
-    return { revision: previous.revision + 1, lockEpoch: previous.lockEpoch + 1, snapshot };
+    return { revision: previous.revision + 1, lockEpoch: previous.lockEpoch + 1, snapshot,
+      ...(snapshot && previous.keys ? { keys: previous.keys } : {}) };
   };
   return {
     read: () => transaction(),
-    replace: (expected, snapshot) => write(previous => {
+    replace: (expected, snapshot, keys) => write(previous => {
       if (previous.revision !== expected.revision || previous.lockEpoch !== expected.lockEpoch) throw new VaultError("CONFLICT");
-      return advance(previous, snapshot);
+      const next = advance(previous, snapshot);
+      delete next.keys;
+      if (snapshot && keys) next.keys = keys;
+      return next;
+    }),
+    indexKeys: (expected, keys) => write(previous => {
+      if (previous.revision !== expected.revision || previous.lockEpoch !== expected.lockEpoch) throw new VaultError("CONFLICT");
+      return { ...previous, keys };
     }),
     lock: () => write(previous => advance(previous)),
   };

@@ -10,13 +10,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { Operation } from "../catalog.ts";
   import { workflowExecutionForOperation } from "../workflow-execution.ts";
   import { approvedOperation } from "../secrets/policy.ts";
-  import { lockVaultLocally, readVaultStatus, subscribeVaultLock, vaultCall } from "../secrets/client.ts";
-  import { VaultError, type ApprovedOperation, type CredentialBinding, type CredentialSummary, type VaultStatus } from "../secrets/types.ts";
+  import { lockVaultLocally, readVaultKeys, readVaultStatus, subscribeVaultLock, vaultCall } from "../secrets/client.ts";
+  import { VaultError, type ApprovedOperation, type CredentialBinding, type VaultKey, type VaultStatus } from "../secrets/types.ts";
 
   let { operation, initial, disabled = false, portalZIndex = 40, onChange }: { operation: Operation; initial?: CredentialBinding | undefined;
     disabled?: boolean; portalZIndex?: number; onChange: (binding: CredentialBinding | undefined) => void } = $props();
   let status = $state<VaultStatus>({ exists: false, unlocked: false, revision: 0, epoch: 0, methods: [] });
-  let credentials = $state<CredentialSummary[]>([]);
+  let credentials = $state<VaultKey[]>([]);
   let descriptor = $state.raw<ApprovedOperation>();
   let alternative = $state("");
   let choices = $state<Record<string, string>>({});
@@ -29,7 +29,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const options = $derived(operation.security?.map((option, index) => ({ value: String(index),
     label: option.length ? option.map(item => item.name).join(" + ") : "Without credentials" })) ?? []);
   const selected = $derived(alternative === "" ? undefined : operation.security?.[Number(alternative)]);
-  function permitted(item: CredentialSummary, scheme: string): boolean {
+  function permitted(item: VaultKey, scheme: string): boolean {
     const kind = selected?.find(item => item.name === scheme)?.kind;
     return item.kind === "secret" || item.kind === kind;
   }
@@ -46,10 +46,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try {
       const next = await approvedOperation(operation, workflowExecutionForOperation(operation).origin);
       const latest = await readVaultStatus();
-      const list = latest.unlocked ? await vaultCall("list", []) : [];
+      const list = (await readVaultKeys()).entries;
       if (!mounted || request !== revision) return;
+      const first = !descriptor;
       descriptor = next; status = latest; credentials = list;
-      if (initial?.fingerprint === next.fingerprint) {
+      if (first && initial?.fingerprint === next.fingerprint) {
         alternative = String(initial.alternative); choices = { ...initial.credentials };
       }
       changed();
@@ -74,8 +75,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   onMount(() => {
     mounted = true; void refresh();
     const stop = subscribeVaultLock(() => {
-      revision++; busy = false; credentials = []; choices = {}; status = { ...status, unlocked: false };
+      revision++; busy = false; status = { ...status, unlocked: false };
       authentication?.clear(); onChange(undefined);
+      const request = revision;
+      void readVaultKeys().then(index => { if (mounted && request === revision) credentials = index.entries; }).catch(() => {});
     });
     return () => {
       mounted = false; revision++; authentication?.clear(); stop();
@@ -93,7 +96,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if descriptor}<p class="destination"><strong>{operation.method}</strong> {descriptor.origin}{operation.path}</p>{/if}
     {#if !status.exists}<p>Create a vault and add credentials in Settings → Secrets.</p>
     {:else}
-      {#if status.unlocked}
         {#each selected as scheme (scheme.name)}
           <div class="credential-choice">
             <label for={`${fieldId}-${scheme.name}`}>{scheme.name} · {scheme.header}</label>
@@ -104,7 +106,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
           </div>
         {/each}
-      {/if}
       {#if !status.unlocked}<VaultAuthentication bind:this={authentication} {status} disabled={disabled || busy} {portalZIndex}
         label="Unlock the vault" />{/if}
       {#if !status.unlocked}<button type="button" onclick={unlock}>Unlock</button>{/if}
