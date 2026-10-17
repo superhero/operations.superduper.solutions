@@ -58,6 +58,14 @@ feat(settings): slide Operations header beside the settings pane
 
 ```
 
+<!-- changelog-commit:925aa091dc95f714ce2bf4e148dc5943e9aad358 -->
+### Commit [`925aa09`](https://github.com/superhero/operations.superduper.solutions/commit/925aa091dc95f714ce2bf4e148dc5943e9aad358)
+
+```text
+fix(settings): cover the full viewport and replace its scrollbar
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.49
