@@ -24,7 +24,7 @@ Before({ tags: "@validation-reuse" }, function ()
   mkdirSync(cwd);
   this.validationReuse = {
     root, cwd, notes: [], calls: [], downloads: [], destination: join(root, "verified"),
-    artifactRoot: join(root, "artifacts"), workflow: "ci-develop.yml",
+    artifactRoot: join(root, "artifacts"), workflow: "ci-release.yml",
     git: (...args) => execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim()
   };
   this.validationReuse.git("init", "--quiet");
@@ -69,7 +69,7 @@ Given("a completed validation run with {string}", function (condition)
     report: join(state.artifactRoot, "test-report", "test-report.html") };
   state.manifest = createManifest(state.manifestOptions);
   state.run = { id: 123, run_attempt: 1, head_sha: state.sourceSha, status: "completed", conclusion: "success",
-    event: "pull_request", path: ".github/workflows/ci-develop.yml", repository: { id: 456, full_name: repository },
+    event: "pull_request", path: ".github/workflows/ci-release.yml", repository: { id: 456, full_name: repository },
     head_repository: { id: 456, full_name: repository } };
   state.artifacts = ARTIFACT_NAMES.map((name, index) => ({ id: index + 2000, name, expired: false, size_in_bytes: 100,
     expires_at: "2099-01-01T00:00:00Z", workflow_run: { id: state.run.id, repository_id: 456,
@@ -103,8 +103,8 @@ Given("a completed validation run with {string}", function (condition)
     case "executable release notes": chmodSync(join(state.cwd, "CHANGELOG.md"), 0o755); break;
     case "symlink release notes":
       rmSync(join(state.cwd, "CHANGELOG.md")); symlinkSync("package.json", join(state.cwd, "CHANGELOG.md")); break;
-    case "a successful release workflow":
-      state.workflow = "ci-release.yml"; state.run.path = ".github/workflows/ci-release.yml"; break;
+    case "a previous develop workflow":
+      state.run.path = ".github/workflows/ci-develop.yml"; break;
     case "a successful main workflow":
       state.workflow = "ci-main.yml"; state.run.path = ".github/workflows/ci-main.yml"; break;
     case "paginated validation artifacts":

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { parseDocument } from "yaml";
@@ -99,7 +100,7 @@ Then("integration workflows share one retained queue without acquiring their own
   assert.equal(reusable.concurrency, undefined, "The reusable preparation must not wait on its caller's integration lock");
   for (const [name, job] of Object.entries(reusable.jobs))
     assert.notEqual(job.concurrency?.group, queue.group, `${name} cannot acquire the caller's integration lock`);
-  for (const name of ["ci-develop", "ci-release", "ci-main", "ci-support", "ci-docs", "cron-outdated"])
+  for (const name of ["ci-develop", "ci-release", "ci-main", "ci-support", "ci-docs", "cron-outdated", "test-develop"])
   {
     const document = parseDocument(readFileSync(new URL(`../workflows/${name}.yml`, import.meta.url), "utf8"));
     assert.deepEqual(document.errors, []);
@@ -342,6 +343,67 @@ Then("the release application job waits for the changelog documentation PR", fun
   for (const recovery of [false, true])
     assert.equal(enabled(token, false, true, "success", {}, { source: "hotfix/1.2.4", recovery }), false);
   assert.equal(prepare.steps.find(step => step.id === "prepare").env.RECOVER_MERGED, "${{ needs.integration.outputs.recovery }}");
+});
+
+Then("develop builds and merges without test execution or validation proof", function ()
+{
+  const { jobs } = this.validationWorkflow;
+  assert.equal(jobs.validation, undefined, "A preview build must not claim reusable test validation");
+  const commands = npmCommands(jobs).map(({ command }) => command);
+  assert.deepEqual(commands.filter(command => command.startsWith("test:") || command.startsWith("report:")), []);
+  assert.equal(commands.filter(command => command === "build").length, 1);
+  assert.equal(commands.filter(command => command === "typecheck").length, 1);
+  const allSteps = Object.values(jobs).flatMap(job => job.steps ?? []);
+  assert.ok(!allSteps.some(step => step.with?.name === "validation-manifest" || step.run?.includes("validation-artifacts.mjs create")));
+  const bundle = uniqueStep(jobs.application.steps, step => step.with?.name === "bundle", "Preview bundle");
+  assert.equal(bundle.with.path, "dist");
+  for (const required of ["integration", "workflow-checks", "validate-pr", "prepare-changelog"])
+    assert.ok(jobs.application.needs.includes(required));
+  assert.ok(jobs["auto-merge"].needs.includes("application"));
+  assert.ok(jobs.preview.needs.includes("auto-merge"));
+  requiresSuccess(jobs.application);
+  requiresSuccess(jobs["auto-merge"]);
+  assert.match(jobs.preview.steps.find(step => step.run?.includes("--name bundle")).run, /GITHUB_RUN_ID/);
+});
+
+Then("the manual develop workflow runs all suites only for the develop branch", function ()
+{
+  const workflow = parseDocument(readFileSync(new URL("../workflows/test-develop.yml", import.meta.url), "utf8")).toJS();
+  assert.deepEqual(Object.keys(workflow.on), ["workflow_dispatch"]);
+  assert.deepEqual(workflow.permissions, { contents: "read" });
+  const { jobs } = workflow;
+  const guard = jobs["validate-target"].steps[0];
+  assert.equal(guard.env.TARGET_REF, "${{ github.ref }}");
+  for (const ref of ["refs/heads/develop", "refs/heads/main", "refs/heads/feature/topic", "refs/tags/develop"])
+  {
+    const result = spawnSync("bash", ["-e", "-c", guard.run], { env: { ...process.env, TARGET_REF: ref } });
+    assert.equal(result.status === 0, ref === "refs/heads/develop");
+  }
+  for (const name of ["workflow-checks", "application"])
+  {
+    assert.ok([jobs[name].needs].flat().includes("validate-target"));
+    const checkout = jobs[name].steps.find(step => step.uses?.startsWith("actions/checkout@"));
+    assert.equal(checkout.with.ref, "${{ github.sha }}");
+    assert.equal(checkout.with["persist-credentials"], false);
+  }
+  assert.ok(jobs.application.needs.includes("workflow-checks"));
+  assert.deepEqual(npmCommands(jobs).filter(({ command }) => requiredSuites.includes(command)).map(({ command }) => command).sort(), [...requiredSuites].sort());
+  assert.ok(jobs.application.steps.some(step => step.run?.includes("npm --loglevel=error run report:tests")));
+  assert.ok(jobs.application.steps.some(step => step.with?.name === "test-report"));
+  assert.doesNotMatch(JSON.stringify(jobs), /create-github-app-token|publish-status|validation-manifest|validation-artifacts\.mjs|pages deploy|auto-merge\.sh/,
+    "Manual tests cannot merge, deploy, or certify release reuse");
+});
+
+Then("release preparation defers all suites until a release candidate exists", function ()
+{
+  const { jobs } = this.validationWorkflow;
+  const source = { source: "develop" };
+  assert.equal(enabled(jobs["create-release"], false, true, "success", {}, source), true);
+  for (const { job, step } of npmCommands(jobs).filter(({ command }) => requiredSuites.includes(command)))
+    assert.equal(enabled(jobs[job], false, true, "success", {}, source)
+      && enabled(step, false, true, "success", {}, source), false,
+      "A develop-to-main trigger must create the release before running its suites");
+  assert.equal(enabled(jobs.application, false, true, "success", {}, { source: "release/1.2.3" }), true);
 });
 
 Then("report badges are generated from passing results and travel with validated reports", function ()

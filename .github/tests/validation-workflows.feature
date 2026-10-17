@@ -31,7 +31,6 @@ Feature: Carry complete validation through integration and release
     And report badges are generated from passing results and travel with validated reports
     Examples:
       | target  |
-      | develop |
       | release |
       | main    |
 
@@ -42,7 +41,6 @@ Feature: Carry complete validation through integration and release
     And the verified artifacts and original report provenance are preserved
     Examples:
       | target  |
-      | develop |
       | release |
       | main    |
 
@@ -52,10 +50,20 @@ Feature: Carry complete validation through integration and release
     And failure diagnostics cannot substitute for successful validation proof
     Examples:
       | target  |
-      | develop |
       | release |
       | main    |
 
   Scenario: A release waits for its versioned changelog
     Given the validation workflow for "main"
     Then the release application job waits for the changelog documentation PR
+
+  Scenario: Develop integration builds previews without automatically running test suites
+    Given the validation workflow for "develop"
+    Then develop builds and merges without test execution or validation proof
+
+  Scenario: Develop test suites require an explicit manual run on develop
+    Then the manual develop workflow runs all suites only for the develop branch
+
+  Scenario: Preparing a release from develop does not run test suites
+    Given the validation workflow for "main"
+    Then release preparation defers all suites until a release candidate exists
