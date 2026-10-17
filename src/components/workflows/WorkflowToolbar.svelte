@@ -176,7 +176,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <HintButton class="svelte-flow__controls-button" aria-label="Switch" label="Switch" onclick={() => onutility("switch")}><MaterialIcon name="alt_route" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Cast" label="Cast" onclick={() => onutility("cast")}><MaterialIcon name="transform" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Add vault variable" label="Add vault variable" onclick={() => onutility("vault")}><MaterialIcon name="variable_add" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Add file upload" label="Add file upload" onclick={() => onutility("file")}><MaterialIcon name="upload_file" size={18} /></HintButton>
+    <HintButton class="svelte-flow__controls-button" aria-label="Add file" label="Add file" onclick={() => onutility("file")}><MaterialIcon name="upload_file" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Comment" label="Comment" onclick={() => onutility("comment")}><MaterialIcon name="sticky_note" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Remove selected" label="Remove selected" disabled={!selected} onclick={onremove}><MaterialIcon name="delete" size={18} /></HintButton>
     </div><div class="workflow-control-group">

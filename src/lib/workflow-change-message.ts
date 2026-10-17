@@ -147,6 +147,7 @@ export function describeWorkflowChange(before: WorkflowDocument | null, after: W
     if (type(old) !== type(node)) { add("Replace node with", label); continue; }
     if (node.type === "comment" && old.type === "comment")
     {
+      if (node.data.width !== old.data.width || node.data.height !== old.data.height) add("Resize", label);
       if (node.data.text !== old.data.text)
         add("Edit comment", `${previous.node(old).replace(/^Comment\s*/, "") || "text"} to ${node.data.text.trim() ? quote(node.data.text) : "empty text"}`);
     }

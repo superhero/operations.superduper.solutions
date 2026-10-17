@@ -174,6 +174,55 @@ coverage, dependency documentation checks, type checking and production build.
 
 ```
 
+<!-- changelog-commit:1086a28f243476157252100c595cff4b433f3f17 -->
+### Commit [`1086a28`](https://github.com/superhero/operations.superduper.solutions/commit/1086a28f243476157252100c595cff4b433f3f17)
+
+```text
+fix(workflows): shorten file node tooltip to Add file
+
+```
+
+<!-- changelog-commit:9aecc0a1d5cd33c2d8dfb2909ad8dfc963ff6d1f -->
+### Commit [`9aecc0a`](https://github.com/superhero/operations.superduper.solutions/commit/9aecc0a1d5cd33c2d8dfb2909ad8dfc963ff6d1f)
+
+```text
+fix(workflows): simplify file upload button without tooltip
+
+```
+
+<!-- changelog-commit:ff2b4868b410b054500ef4146e0ceb929b97b8c6 -->
+### Commit [`ff2b486`](https://github.com/superhero/operations.superduper.solutions/commit/ff2b4868b410b054500ef4146e0ceb929b97b8c6)
+
+```text
+fix(workflows): show supported file types below upload button
+
+```
+
+<!-- changelog-commit:d75e540569355a417f8b041870560da1a9b4294c -->
+### Commit [`d75e540`](https://github.com/superhero/operations.superduper.solutions/commit/d75e540569355a417f8b041870560da1a9b4294c)
+
+```text
+fix(workflows): center upload button text without an icon
+
+```
+
+<!-- changelog-commit:b67c5987de732804f137cbfc1f8da61f3a803ba9 -->
+### Commit [`b67c598`](https://github.com/superhero/operations.superduper.solutions/commit/b67c5987de732804f137cbfc1f8da61f3a803ba9)
+
+```text
+feat(workflows): resize comment nodes from side and corner handles
+
+Replace the native textarea grip with eight themed resize controls on selected
+comments. Persist bounded dimensions with the node and retain them across text
+edits, exports, reloads and workflow history. Save each completed resize as a
+single edit rather than recording intermediate pointer movements.
+
+Validate dimensions through Cucumber source coverage and check resize/reload
+and existing comment editing in two focused Chromium scenarios. Type checking
+and the production build pass.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50

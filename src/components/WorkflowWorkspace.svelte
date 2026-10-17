@@ -87,6 +87,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let saveAttempt = $state.raw<{ snapshot: string; expectedRevision: string | null } | null>(null);
   let queuedSnapshot: string | null = null;
   let textEditing = $state(false);
+  let resizingComment = $state(false);
   let placement = $state.raw<Promise<void> | null>(null);
   let movementAnnouncement = $state("");
   let textEditTarget: EventTarget | null = null;
@@ -178,8 +179,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   setContext("workflow-vault-variable", (nodeId: string, credentialId: string) => {
     if (keyboardActive) nodes = nodes.map(node => node.id === nodeId && node.type === "vault" ? { ...node, data: credentialId ? { credentialId } : {} } : node);
   });
+  setContext("workflow-comment-resize", (nodeId: string, size?: { width: number; height: number }) => {
+    resizingComment = !size;
+    if (size) nodes = nodes.map(node => node.id === nodeId && node.type === "comment"
+      ? { ...node, data: { ...node.data, ...size } } : node);
+  });
   setContext("workflow-comment-text", (nodeId: string, text: string) => {
-    if (keyboardActive) nodes = nodes.map(node => node.id === nodeId && node.type === "comment" ? { ...node, data: { text } } : node);
+    if (keyboardActive) nodes = nodes.map(node => node.id === nodeId && node.type === "comment" ? { ...node, data: { ...node.data, text } } : node);
   });
   setContext("workflow-restore-branch", (nodeId: string) => {
     if (!keyboardActive) return;
@@ -211,7 +217,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
   $effect(() => {
     const value = snapshot;
-    const editing = textEditing || placement !== null || nodes.some(node => node.dragging);
+    const editing = textEditing || resizingComment || placement !== null || nodes.some(node => node.dragging);
     if (!storageReady) return;
     untrack(() => {
       cancelAutosave();
@@ -240,6 +246,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   function storedNode(node: GraphNode): WorkflowDocumentNode {
     const common = { id: node.id, position: node.position, ...(node.hidden ? { hidden: true } : {}) };
+    if (node.type === "comment") return { ...common, type: "comment", data: { ...node.data,
+      ...(node.width ? { width: node.width } : {}), ...(node.height ? { height: node.height } : {}) } };
     if (node.type === "operation") return { ...common, ...(version >= 2 ? { type: "operation" as const } : {}), data: node.data };
     return { ...common, type: node.type, data: node.data } as WorkflowDocumentNode;
   }
@@ -251,7 +259,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 
   function graphNode(node: WorkflowDocumentNode): GraphNode {
-    return { ...node, type: node.type ?? "operation" } as GraphNode;
+    return { ...node, ...(node.type === "comment" ? { width: node.data.width, height: node.data.height } : {}), type: node.type ?? "operation" } as GraphNode;
   }
 
   function snapNodeCenter(node: GraphNode): GraphNode {

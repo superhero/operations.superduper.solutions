@@ -6,7 +6,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <script lang="ts">
   import { getContext, tick, untrack } from "svelte";
-  import { useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
+  import { NodeResizeControl, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { CommentData } from "$lib/workflow-document.ts";
@@ -14,7 +14,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowCommentPreview from "./WorkflowCommentPreview.svelte";
   import "./workflow-utility-nodes.css";
 
-  let { id, data, selected }: NodeProps<Node<CommentData, "comment">> = $props();
+  let { id, data, selected, width, height }: NodeProps<Node<CommentData, "comment">> = $props();
+  const resize = getContext<(id: string, size?: { width: number; height: number }) => void>("workflow-comment-resize");
   const changeText = getContext<(id: string, text: string) => void>("workflow-comment-text");
   const editorActive = getContext<(() => boolean) | undefined>("workflow-editor-active");
   const updateNodeInternals = useUpdateNodeInternals();
@@ -47,7 +48,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 </script>
 
-<div bind:this={card} class="workflow-utility-node workflow-comment-node" class:selected>
+<div bind:this={card} class="workflow-utility-node workflow-comment-node" class:selected style:width={`${width ?? 300}px`} style:height={`${height ?? 180}px`}>
+  {#if selected && (!editorActive || editorActive())}
+    {#each ["top-left", "top", "top-right", "right", "bottom-right", "bottom", "bottom-left", "left"] as const as position}
+      <NodeResizeControl {position} minWidth={200} minHeight={140} maxWidth={2000} maxHeight={2000}
+        onResizeStart={() => resize(id)} onResizeEnd={(_event, size) => resize(id, { width: size.width, height: size.height })}
+        class="comment-resize-handle" aria-label={`Resize comment ${position}`} />
+    {/each}
+  {/if}
   <div class="utility-title">
     <MaterialIcon name="sticky_note" size={20} /><strong>Comment</strong>
   </div>
@@ -75,9 +83,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </div>
 
 <style>
-  .workflow-comment-node { width: 300px; }
+  .workflow-comment-node { display: flex; flex-direction: column; }
+  .comment-editor, .comment-preview { flex: 1; min-height: 0; overflow: auto; }
+  :global(.comment-resize-handle.handle) { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--color-surface); background: var(--color-foreground); }
   .comment-editor, .comment-preview { padding: 10px 12px; border-top: 1px solid var(--color-border); }
   .comment-preview { min-height: 60px; cursor: text; }
-  textarea { display: block; width: 100%; min-height: 112px; max-height: 420px; padding: 8px; border: 0; border-radius: 4px; resize: vertical; background: var(--color-background); color: var(--color-foreground); font: 12px/1.6 ui-monospace, monospace; }
+  textarea { display: block; width: 100%; height: 100%; min-height: 0; padding: 8px; border: 0; border-radius: 4px; resize: none; background: var(--color-background); color: var(--color-foreground); font: 12px/1.6 ui-monospace, monospace; }
   @media (prefers-reduced-motion: reduce) { textarea, .comment-preview { transition: none; } }
 </style>
