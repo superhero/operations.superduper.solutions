@@ -14,7 +14,7 @@
 
 <header class="site-header" style:--header-scroll-strength={scrollStrength}>
   <div class="header-content">
-    <div class="brand-controls" inert={settingsOpen}>
+    <div class="brand-controls">
       <MenuButton open={navigationOpen} onclick={onMenu} />
       <div class="brand-copy">
         <strong class="brand">Operations</strong>
@@ -32,6 +32,9 @@
 </header>
 
 <style>
+  header { container: header-layout / inline-size; }
+  @container header-layout (max-width: 300px) { .brand-controls { display: none; } }
+
   .document-meta { position: absolute; right: calc(1rem + 3px); bottom: 0; height: var(--header-padding); display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--color-muted-foreground); }
   .document-meta i { width: 6px; height: 6px; transform: translateY(1px); border-radius: 50%; background: var(--color-foreground); }
   .document-meta.unsaved i { background: var(--color-accent); }
