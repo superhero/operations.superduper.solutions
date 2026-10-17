@@ -70,3 +70,7 @@ operations. See [OpenAPI adaptation](../../docs/adr/openapi-adaptation.md).
 Add new domain scenarios alongside [source](../README.md) using Cucumber.
 [tests](../../tests/README.md) contains browser scenarios and smoke scripts
 awaiting migration into browser reporting.
+
+File row execution caches immutable projections per validated file node. Reuse
+those projections across row frames; do not repeatedly clone entire CSV columns
+for scalar requests or combine independent files as a Cartesian product.

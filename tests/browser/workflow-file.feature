@@ -13,3 +13,7 @@ Feature: File upload nodes
   Scenario: Uploads create connected data structures and reconcile replacements
     Given a workflow with 1 instances of "Get project"
     Then uploaded files create nested output panels and preserve compatible field connections
+
+  Scenario: CSV Item attributes connect to scalar inputs and execute once per row
+    Given a workflow with 1 instances of "List projects"
+    Then CSV Item connections send correlated scalar requests for every row

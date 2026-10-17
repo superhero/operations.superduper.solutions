@@ -304,3 +304,140 @@ Then('CSV columns become booleans only when every cell is true or false', async 
   assert.equal(fields[0].required,true);
   assert.deepEqual(parse('booleans.csv','true,false\nfalse,true',{...defaults,header:'absent'}).value,[[true,false],[false,true]]);
 });
+
+async function rowFixture(count=3) {
+  const {extractOperations,updateCatalogs}=await import('./lib/catalog.ts');
+  const {catalogs}=await import('./lib/catalog-registry.ts');
+  const {createOperationGraph,createFileDataGraph}=await import('./lib/workflow-graph.ts');
+  const source={openapi:'3.1.0',info:{title:'Rows',version:'1'},servers:[{url:'https://example.com'}],paths:{'/rows':{get:{operationId:'rows',parameters:[
+    {in:'query',name:'name',required:true,schema:{type:'string'}},
+    {in:'query',name:'id',required:true,schema:{type:'integer'}},
+    {in:'query',name:'enabled',required:true,schema:{type:'boolean'}},
+    {in:'query',name:'other',schema:{type:'string'}}],
+    responses:{200:{description:'Row',content:{'application/json':{schema:{type:'object',properties:{name:{type:'string'}},required:['name']}}}}}}}}};
+  updateCatalogs([...catalogs,{id:'row-fixture',name:'Rows',file:'rows.json',document:source,groups:[],execution:{kind:'http',origin:'https://example.com'}}]);
+  const op=extractOperations(source,'row-fixture')[0];
+  const operation=id=>createOperationGraph(op,{x:0,y:0},id,source);
+  const first=operation('first');
+  const owner={...fileOwner([]),data:{file:parse('rows.csv',['name,id,enabled',...Array.from({length:count},(_,i)=>`row-${i},${i},${i%2===0}`)].join('\n'))}};
+  const generated=createFileDataGraph(owner);
+  const panel=generated.nodes.find(n=>n.data.label==='Item');
+  const target=(graph,name)=>{const node=graph.nodes.find(n=>n.type==='data'&&n.data.direction==='inputs');return {node,field:node.data.fields.find(f=>JSON.parse(decodeURIComponent(f.id))[1]===`/${name}`)};};
+  const from=name=>({node:panel,field:panel.data.fields.find(f=>f.label===name)});
+  const wire=(from,to,id)=>({id,kind:'mapping',source:from.node.id,sourceHandle:from.field.id,target:to.node.id,targetHandle:to.field.id});
+  const doc=fileDocument({nodes:[owner,...generated.nodes,...first.nodes],edges:[...generated.edges,...first.edges,...['name','id','enabled'].map(name=>wire(from(name),target(first,name),`map-${name}`))]});
+  return {doc,owner,from,target,wire,operation,restore:()=>updateCatalogs(catalogs)};
+}
+Then('CSV item connections run downstream operations once per aligned row', async function () {
+  const {createWorkflowRunner}=await import('./lib/workflow-runner.ts');
+  const {createWorkflowRequestExecution}=await import('./lib/workflow-execution.ts');
+  const {isWorkflowConnection}=await import('./lib/workflow-graph.ts');
+  const fixture=await rowFixture();
+  try {
+    const {doc,operation,target,from,wire}=fixture;
+    const second=operation('second');const response=doc.nodes.find(n=>n.type==='data'&&n.data.direction==='outputs'&&n.data.fields.some(f=>JSON.parse(decodeURIComponent(f.id))[1]==='/body/name'));
+    doc.nodes.push(...second.nodes);doc.edges.push(...second.edges,
+      wire({node:response,field:response.data.fields.find(f=>JSON.parse(decodeURIComponent(f.id))[1]==='/body/name')},target(second,'name'),'response-name'),
+      ...['id','enabled'].map(name=>wire(from(name),target(second,name),`second-${name}`)));
+    for (const edge of doc.edges.filter(e=>e.kind==='mapping'))assert.equal(isWorkflowConnection(edge,doc.nodes,doc.edges.filter(e=>e.id!==edge.id)),true);
+    assert.equal(isWorkflowConnection({...wire(from('name'),target(second,'id'),'invalid')},doc.nodes,doc.edges.filter(e=>e.id!=='second-id')),false);
+    for (const start of [undefined,'first']) {
+      const sent=[];const runner=createWorkflowRunner(doc,start,createWorkflowRequestExecution(async url=>{
+        const query=Object.fromEntries(new URL(url).searchParams);sent.push(query);return Response.json({name:`${query.name}-response`});
+      }));
+      const visits=[];
+      while(true){const visit=runner.next();if(visit.kind==='complete')break;assert.equal(visit.kind,'operation');visits.push(visit.nodeId);await runner.submit(visit.values);}
+      assert.deepEqual(visits,['first','second','first','second','first','second']);
+      assert.deepEqual(sent.map(v=>v.name),['row-0','row-0-response','row-1','row-1-response','row-2','row-2-response']);
+      assert.deepEqual(sent.map(v=>[v.id,v.enabled]),[['0','true'],['0','true'],['1','false'],['1','false'],['2','true'],['2','true']]);
+    }
+  } finally {fixture.restore();}
+});
+Then('CSV row execution retains failed rows and respects ending the run', async function () {
+  const {createWorkflowRunner}=await import('./lib/workflow-runner.ts');const {createWorkflowRequestExecution}=await import('./lib/workflow-execution.ts');
+  const fixture=await rowFixture();
+  try {
+    let attempts=0;const sent=[];
+    const runner=createWorkflowRunner(fixture.doc,undefined,createWorkflowRequestExecution(async url=>{
+      const name=new URL(url).searchParams.get('name');sent.push(name);
+      if(name==='row-1'&&attempts++===0)throw new TypeError('Temporary outage');return Response.json({name});
+    }));
+    await runner.submit(runner.next().values);
+    const failed=runner.next();await assert.rejects(()=>runner.submit(failed.values),/reach/);
+    assert.equal(runner.next().id,failed.id);assert.equal(runner.next().values['query:name'],'row-1');
+    await runner.submit(runner.next().values);assert.equal(runner.next().values['query:name'],'row-2');
+    runner.end();assert.equal(runner.next().kind,'complete');assert.deepEqual(sent,['row-0','row-1','row-1']);
+  } finally {fixture.restore();}
+});
+Then('CSV row execution filters rows and keeps independent roots separate', async function () {
+  const {createWorkflowRunner}=await import('./lib/workflow-runner.ts');const {createWorkflowRequestExecution}=await import('./lib/workflow-execution.ts');
+  const fixture=await rowFixture();
+  try {
+    const doc=structuredClone(fixture.doc);doc.nodes.push({id:'filter',type:'switch',position:{x:0,y:0},data:{gates:[{id:'yes',operator:'==',value:'true'}]}});
+    const enabled=doc.edges.find(e=>e.id==='map-enabled');doc.edges=doc.edges.filter(e=>e.id!=='map-enabled');
+    doc.edges.push({...enabled,id:'into-filter',target:'filter',targetHandle:'value'},{...enabled,id:'from-filter',source:'filter',sourceHandle:'yes'});
+    const sent=[];const run=createWorkflowRunner(doc,undefined,createWorkflowRequestExecution(async url=>{const name=new URL(url).searchParams.get('name');sent.push(name);return Response.json({name});}));
+    while(true){const next=run.next();if(next.kind==='complete')break;await run.submit(next.values);}
+    assert.deepEqual(sent,['row-0','row-2']);
+    const independent=fixture.operation('independent');const choices=structuredClone(fixture.doc);choices.nodes.push(...independent.nodes);choices.edges.push(...independent.edges);
+    const other=createWorkflowRunner(choices,undefined,createWorkflowRequestExecution(async()=>Response.json({name:'once'})));
+    assert.equal(other.next().kind,'choice');other.choose('independent');assert.equal(other.next().kind,'operation');await other.submit({'query:name':'once','query:id':'1','query:enabled':'true'});assert.equal(other.next().kind,'complete');
+    const empty=structuredClone(fixture.doc);empty.nodes.find(n=>n.type==='file').data.file.value=[];
+    assert.equal(createWorkflowRunner(empty,'first').next().kind,'complete');
+    const routedEmpty=structuredClone(doc);routedEmpty.nodes.find(n=>n.type==='file').data.file.value=[];
+    assert.equal(createWorkflowRunner(routedEmpty).next().kind,'complete');
+  } finally {fixture.restore();}
+});
+Then('CSV row execution supports large batches and rejects unaligned inputs', async function () {
+  const {createWorkflowRunner}=await import('./lib/workflow-runner.ts');const {createWorkflowRequestExecution}=await import('./lib/workflow-execution.ts');
+  const {createFileDataGraph}=await import('./lib/workflow-graph.ts');
+  const fixture=await rowFixture(201);
+  try {
+    let requests=0;const run=createWorkflowRunner(fixture.doc,undefined,createWorkflowRequestExecution(async()=>{requests++;return Response.json({name:'ok'});}));
+    while(true){const next=run.next();if(next.kind==='complete')break;await run.submit(next.values);}assert.equal(requests,201);
+    const other={...fileOwner([]),id:'other-file',data:{file:parse('other.csv','other\na\nb')}};const graph=createFileDataGraph(other);
+    const panel=graph.nodes.find(n=>n.data.label==='Item');const field=panel.data.fields[0];
+    const invalid=structuredClone(fixture.doc);invalid.nodes.push(other,...graph.nodes);invalid.edges.push(...graph.edges,fixture.wire({node:panel,field},fixture.target(fixture.operation('first'),'other'),'other-file-map'));
+    assert.throws(()=>createWorkflowRunner(invalid).next(),/same number of rows/);
+    const malformed=structuredClone(fixture.doc);malformed.nodes.find(n=>n.type==='file').data.file.value={};
+    assert.throws(()=>createWorkflowRunner(malformed).next(),/uploaded array data/);
+    assert.throws(()=>createWorkflowRunner(malformed,'first'),/uploaded array data/);
+  } finally {fixture.restore();}
+});
+Then('Item connection validation distinguishes rows collections and incompatible types', async function () {
+  const {isFileRowConnection,isWorkflowConnectionTypeCompatible}=await import('./lib/workflow-utilities.ts');
+  const fixture=await rowFixture();
+  try {
+    const nodes=fixture.doc.nodes;
+    const target=nodes.find(n=>n.type==='data'&&n.data.ownerId==='first'&&n.data.direction==='inputs');
+    const array={...target,id:'array-target',data:{...target.data,fields:[{id:'array',label:'Array',type:'Array',required:false,description:'',connectable:true}]}};
+    nodes.push(array);
+    const edge=fixture.wire(fixture.from('name'),{node:array,field:array.data.fields[0]},'whole-column');
+    assert.equal(isFileRowConnection(edge,nodes),false);assert.equal(isWorkflowConnectionTypeCompatible(edge,nodes,[]),true);
+    fixture.from('name').field.itemType='Array';
+    assert.equal(isFileRowConnection(edge,nodes),true);assert.equal(isWorkflowConnectionTypeCompatible(edge,nodes,[]),true);
+    fixture.from('name').field.itemType='Text';
+    assert.equal(isFileRowConnection({...edge,sourceHandle:'absent'},nodes),false);
+    const root={...array,id:'array-parent',data:{...array.data,array:{min:0}}};nodes.push(root);
+    assert.equal(isFileRowConnection(edge,nodes,[{id:'schema:array-target',kind:'schema',source:array.id,target:root.id}]),false);
+    assert.equal(isFileRowConnection(edge,nodes,[{id:'cycle',kind:'schema',source:array.id,target:array.id}]),false);
+  } finally {fixture.restore();}
+});
+Then('CSV rows supply nested workflow inputs independently', async function () {
+  const {createWorkflowGraph}=await import('./lib/workflow-graph.ts');
+  const {createWorkflowRunner}=await import('./lib/workflow-runner.ts');const {createWorkflowRequestExecution}=await import('./lib/workflow-execution.ts');
+  const fixture=await rowFixture();
+  try {
+    const child=fixture.operation('child');const reference=createWorkflowGraph({...fileDocument(child),id:'child-workflow',name:'Child'},{x:0,y:0},'call');
+    const doc=structuredClone(fixture.doc);doc.nodes=doc.nodes.filter(n=>n.id==='file'||n.type==='data'&&n.data.ownerId==='file');doc.edges=doc.edges.filter(e=>e.kind==='schema'&&e.source!=='first'&&doc.nodes.some(n=>n.id===e.target));
+    doc.nodes.push(...reference.nodes);doc.edges.push(...reference.edges);
+    const input=reference.nodes.find(n=>n.type==='data'&&n.data.direction==='inputs');
+    for(const name of ['name','id','enabled']) {
+      const field=input.data.fields.find(f=>JSON.parse(decodeURIComponent(f.endpoint.fieldId))[1]===`/${name}`);
+      doc.edges.push(fixture.wire(fixture.from(name),{node:input,field},`nested-${name}`));
+    }
+    const sent=[];const runner=createWorkflowRunner(doc,undefined,createWorkflowRequestExecution(async url=>{const name=new URL(url).searchParams.get('name');sent.push(name);return Response.json({name});}));
+    while(true){const step=runner.next();if(step.kind==='complete')break;await runner.submit(step.values);}
+    assert.deepEqual(sent,['row-0','row-1','row-2']);
+  } finally {fixture.restore();}
+});

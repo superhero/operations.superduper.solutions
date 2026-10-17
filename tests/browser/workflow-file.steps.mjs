@@ -90,3 +90,30 @@ Then('uploaded files create nested output panels and preserve compatible field c
   await page.reload();await page.locator('#startup-status').waitFor({state:'detached'});
   await expect(panels).toHaveCount(2);
 });
+Then('CSV Item connections send correlated scalar requests for every row', async function () {
+  const page=this.page;const requests=[];
+  await page.route('https://example.com/**',async route=>{requests.push(route.request().url());await route.fallback();});
+  await page.getByRole('button',{name:'Add file',exact:true}).click();
+  const file=workflow(page).locator('.svelte-flow__node-file');
+  await file.locator('input[type=file]').setInputFiles({name:'requests.csv',mimeType:'text/csv',buffer:Buffer.from('name,limit\nDocumentation,1\nWebsite,2')});
+  const owner=await file.getAttribute('data-id');
+  const panels=workflow(page).locator(`.workflow-data-node[data-owner-id="${owner}"]`);
+  await expect(panels).toHaveCount(2);
+  await expect(panels.locator('.field-type')).toHaveText(['Object','Text','Integer']);
+  await page.getByRole('button',{name:'Fit View',exact:true}).click();
+  await gesture(page,panels.getByLabel('name output',{exact:true}),workflow(page).getByLabel('Project name input',{exact:true}),'drag');
+  await gesture(page,panels.getByLabel('limit output',{exact:true}),workflow(page).getByLabel('Result limit input',{exact:true}),'drag');
+  assert.equal((await readExport(page)).document.edges.filter(e=>e.kind==='mapping').length,2);
+  await page.getByRole('button',{name:'Run workflow',exact:true}).click();
+  const run=page.getByRole('dialog',{name:/^Run workflow:/});
+  for (const [index,name] of ['Documentation','Website'].entries()) {
+    await expect(run.getByRole('heading',{name:`${index+1}. List projects`,exact:true})).toBeVisible();
+    await expect(run.getByRole('textbox',{name:'Project name',exact:true})).toHaveValue(name);
+    await expect(run.getByRole('textbox',{name:'Result limit value',exact:true})).toHaveValue(String(index+1));
+    await run.getByRole('button',{name:index?'Run operation':'Start workflow',exact:true}).click();
+    await expect(run.getByRole('region',{name:`Step ${index+1} response`,exact:true})).toBeVisible();
+    await run.getByRole('button',{name:'Next operation',exact:true}).click();
+  }
+  await expect(run.getByRole('heading',{name:'Workflow complete.',exact:true})).toBeVisible();
+  assert.deepEqual(requests.map(url=>Object.fromEntries(new URL(url).searchParams)),[{name:'Documentation',limit:'1'},{name:'Website',limit:'2'}]);
+});

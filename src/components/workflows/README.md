@@ -118,3 +118,15 @@ array type needed to carry all projected values.
 
 The file node has one output connector shared by its value and generated
 structure. Older documents normalize separate structure handles to that output.
+
+## Item execution
+
+File Item attributes connect to matching scalar inputs. The selected workflow
+path runs once per row, keeping columns aligned and completing downstream work
+before advancing. A failed request retries the same row; ending the run sends
+no later rows. Empty arrays send no requests. Separate starting paths stay
+independent, and file arrays feeding one path must have equal row counts.
+
+Connections into array inputs retain whole-column mapping, while the file's top
+output supplies the complete parsed value. Switch and Cast inputs can consume
+individual Item values. The operation-step guard applies separately to each row.

@@ -138,7 +138,8 @@ export function routingInputTypes(nodes: WorkflowDocumentNode[], edges: Workflow
         else if (source?.type === "switch") outputs = types.get(source.id)!;
         else if (source?.type === "data" && source.data.direction === "outputs")
         {
-          const type = source.data.fields.find(field => field.id === edge.sourceHandle)?.type ?? "Unknown";
+          const field = source.data.fields.find(field => field.id === edge.sourceHandle);
+          const type = byId.get(source.data.ownerId)?.type === "file" ? field?.itemType ?? field?.type ?? "Unknown" : field?.type ?? "Unknown";
           outputs = [type === "Integer" ? "Number" : type];
         }
         for (const type of outputs) if (!types.get(edge.target)!.has(type))
@@ -172,6 +173,25 @@ type ConnectionValueType = WorkflowField["type"] | "Mixed";
 const scalarConnectionType = (type: ConnectionValueType) => ["Text", "Integer", "Number", "Boolean"].includes(type);
 const numericConnectionType = (type: ConnectionValueType) => type === "Integer" || type === "Number";
 
+/** Item outputs feed scalar ports row-by-row; explicit array inputs keep whole-column mappings. */
+export function isFileRowConnection(connection: ValueConnection, nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[] = []): boolean {
+  const source = nodes.find(node => node.id === connection.source);
+  if (source?.type !== "data" || !nodes.some(node => node.id === source.data.ownerId && node.type === "file")) return false;
+  const field = source.data.fields.find(field => field.id === connection.sourceHandle);
+  if (!field?.itemType) return false;
+  const target = nodes.find(node => node.id === connection.target);
+  let ancestor = target;
+  const seen = new Set<string>();
+  while (ancestor?.type === "data" && !seen.has(ancestor.id)) {
+    if (ancestor.data.array) return false;
+    seen.add(ancestor.id);
+    const id = ancestor.id;
+    const parent = edges.find(edge => edge.kind === "schema" && edge.source === id);
+    ancestor = nodes.find(node => node.id === parent?.target);
+  }
+  return target?.type !== "data" || target.data.fields.find(field => field.id === connection.targetHandle)?.type !== "Array" || field.itemType === "Array";
+}
+
 // Interactive checks stay separate from document validation so old saved graphs
 // remain readable. Switch outputs retain the precise input type, including Integer.
 export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
@@ -183,7 +203,7 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
   const mainInputs = (nodeId: string) => active.filter(edge => edge.target === nodeId && edge.targetHandle === "value");
   const outputType = (nodeId: string, handle: string | null | undefined, seen = new Set<string>()): ConnectionValueType => {
     const node = byId.get(nodeId)!;
-    if (node.type === "data") return node.data.fields.find(field => field.id === handle)!.type;
+    if (node.type === "data") { const field = node.data.fields.find(field => field.id === handle)!; return byId.get(node.data.ownerId)?.type === "file" ? field.itemType ?? field.type : field.type; }
     if (node.type === "cast") return node.data.targetType;
     if (node.type === "vault") return "Text";
     if (node.type === "file") return fileValueType(node.data.file);
@@ -199,6 +219,10 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
     if (target.type === "data")
     {
       const expected = target.data.fields.find(field => field.id === candidate.targetHandle)!.type;
+      if (expected === "Array" && !isFileRowConnection(candidate, nodes, edges)) {
+        const source = byId.get(candidate.source)!;
+        if (source.type === "data" && source.data.fields.find(field => field.id === candidate.sourceHandle)?.itemType) return true;
+      }
       return type === expected || type === "Integer" && expected === "Number";
     }
     if (!scalarConnectionType(type)) return false;
@@ -242,13 +266,13 @@ export function isValueConnection(connection: { sourceHandle?: string | null; ta
   if (target.type === "data") return target.data.direction === "inputs" &&
     target.data.fields.some(field => field.id === connection.targetHandle && field.connectable);
   if (target.type === "cast") return connection.targetHandle === "value" &&
-    (sourceUtility || !!sourceField && ["Text", "Integer", "Number", "Boolean"].includes(sourceField.type));
+    (sourceUtility || !!sourceField && ["Text", "Integer", "Number", "Boolean"].includes(sourceField.itemType ?? sourceField.type));
   if (target.type !== "switch") return false;
   const gate = target.data.gates.find(gate => switchGateInput(gate.id) === connection.targetHandle);
   if (connection.targetHandle !== "value" && !gate) return false;
   if (gate && (gate.operator === "is_set" || gate.operator === "is_not_set" || edges.some(edge => !edge.hidden && !edge.detached &&
     edge.target === target.id && edge.targetHandle === connection.targetHandle))) return false;
-  return sourceUtility || !!sourceField && ["Text", "Integer", "Number", "Boolean"].includes(sourceField.type);
+  return sourceUtility || !!sourceField && ["Text", "Integer", "Number", "Boolean"].includes(sourceField.itemType ?? sourceField.type);
 }
 
 // Keep snapshot endpoint identities separate from the outer diagram's handles.
