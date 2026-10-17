@@ -87,5 +87,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .csv-options label { display: grid; gap: 4px; min-width: 0; font-size: 11px; }
   .csv-options p { grid-column: 1 / -1; margin: 0; font-size: 10px; }
   .file-preview { padding: 0 12px 8px; }
+  .file-preview :global(.schema-disclosure) { margin-top: 8px; }
+  .file-preview :global(.schema-disclosure > summary) { position: relative; top: auto; min-height: 30px; padding: 2px 6px; gap: 6px; font-size: 11px; }
+  .file-preview :global(.schema-disclosure .schema-action) { flex-basis: 24px; width: 24px; height: 24px; }
+  .file-preview :global(.schema-wrap-control) { flex-basis: 24px; }
   .file-error { padding: 8px 12px; margin: 0; font-size: 11px; color: var(--color-error-foreground); overflow-wrap: anywhere; }
 </style>
