@@ -78,3 +78,7 @@ Feature: Browser-local Git workflow history
   Scenario: A legacy pending Undo migrates without losing prior Git commits
     Given I open the latest saved history workflow
     Then an interrupted append-only Undo migrates to real commit navigation
+
+  Scenario: Repeated workflow undo and redo keep focus while navigation is open
+    Given I open the latest saved history workflow
+    Then repeated keyboard undo and redo preserve workflow focus beside the open search

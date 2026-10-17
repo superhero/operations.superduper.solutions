@@ -645,3 +645,32 @@ Then('an interrupted append-only Undo migrates to real commit navigation', async
   assert.deepEqual(redone.commits, before.commits);
   assert.deepEqual(await repository(page, 'inspect', this.historyOther.id), this.historyOtherBefore);
 });
+
+Then('repeated keyboard undo and redo preserve workflow focus beside the open search', async function () {
+  const page = this.page;
+  for (let index = 0; index < 3; index++) {
+    await workflow(page).getByRole('button', { name: 'Cast', exact: true }).click();
+    await saved(page);
+  }
+  const { openCatalog } = await import('./workspace.steps.mjs');
+  await openCatalog(page);
+  const search = page.getByRole('textbox', { name: 'Prompt', exact: true });
+  await expect(search).toBeFocused();
+  await workflow(page).focus();
+  const graph = () => repository(page, 'inspectGraph', this.historyFirst.id);
+  for (const [key, ready] of [['Control+z', 'Redo'], ['Control+Shift+z', 'Undo']]) {
+    for (let index = 0; index < 4; index++) {
+      const before = (await graph()).head;
+      await page.keyboard.press(key);
+      await expect.poll(async () => (await graph()).head).not.toBe(before);
+      await expect(page.getByRole('button', { name: ready, exact: true })).toBeEnabled();
+      await expect(workflow(page)).toBeFocused();
+      await expect(search).not.toBeFocused();
+    }
+  }
+  const before = (await graph()).head;
+  await search.fill('projects');
+  await page.keyboard.press('Control+z');
+  await expect(search).toBeFocused();
+  assert.equal((await graph()).head, before, 'Search text undo must not change workflow history.');
+});
