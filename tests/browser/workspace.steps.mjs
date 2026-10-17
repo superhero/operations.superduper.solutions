@@ -517,7 +517,7 @@ Then('the settings drawer preserves the workflow at width {int} with {string} mo
   await settings.click();
   const drawer = page.locator('.settings-drawer');
   await expect(drawer).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
-  await expect(canvas).toHaveAttribute('inert', '');
+  await expect(canvas).not.toHaveAttribute('inert');
   assert.deepEqual(await canvas.boundingBox(), before, 'Opening Settings must not resize or hide the workflow.');
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   const bounds = await drawer.boundingBox();
@@ -531,7 +531,7 @@ Then('the settings drawer preserves the workflow at width {int} with {string} mo
     button.click();
   });
   await expect(drawer).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
-  await expect(canvas).toHaveAttribute('inert', '');
+  await expect(canvas).not.toHaveAttribute('inert');
   await page.keyboard.press('Escape');
   await expect(drawer).toBeHidden();
   await expect(canvas).not.toHaveAttribute('inert');
@@ -652,4 +652,39 @@ Then('wrapped workflow controls fit their occupied rows', async function () {
       })).toBeLessThanOrEqual(1);
     }
   }
+});
+
+Then('the workflow remains editable beside Settings', async function () {
+  const page = this.page;
+  await closeCatalog(page);
+  await setMode(page, 'settings');
+  const drawer = page.locator('.settings-drawer');
+  const snap = page.locator('.workflow-toolbar').getByRole('button', { name: 'Snap to grid', exact: true });
+  const wasSnapped = await snap.getAttribute('aria-pressed');
+  await snap.click();
+  await expect(snap).toHaveAttribute('aria-pressed', String(wasSnapped !== 'true'));
+  const minimap = page.getByRole('group', { name: 'Workflow minimap', exact: true });
+  const owner = operationNodes(page, 'List projects').first();
+  const viewport = page.locator('.svelte-flow__viewport');
+  const edge = (await drawer.boundingBox()).x;
+  await minimap.focus();
+  for (let index = 0; index < 30; index++) {
+    const bounds = await owner.boundingBox();
+    if (bounds.x >= 8 && bounds.x + bounds.width < edge - 8) break;
+    const before = await viewport.getAttribute('style');
+    await minimap.press(bounds.x < 8 ? 'ArrowLeft' : 'ArrowRight');
+    await expect(viewport).not.toHaveAttribute('style', before);
+  }
+  await owner.click();
+  const original = await owner.getAttribute('style');
+  await owner.press('ArrowRight');
+  await expect(owner).not.toHaveAttribute('style', original);
+  const moved = await owner.getAttribute('style');
+  const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
+  await settings.focus();
+  await page.keyboard.press('Delete');
+  await page.keyboard.press('Control+z');
+  await expect(owner).toHaveAttribute('style', moved);
+  await expect(operationNodes(page, 'List projects')).toHaveCount(1);
+  await expect(drawer).toHaveClass(/open/);
 });

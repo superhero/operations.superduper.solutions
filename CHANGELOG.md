@@ -114,6 +114,30 @@ fix(workflows): compact wrapped toolbar to its occupied rows
 
 ```
 
+<!-- changelog-commit:d3ec4e85fc771d59b68c397cc0d24d504904c133 -->
+### Commit [`d3ec4e8`](https://github.com/superhero/operations.superduper.solutions/commit/d3ec4e85fc771d59b68c397cc0d24d504904c133)
+
+```text
+fix(workflows): keep editing available beside Settings
+
+```
+
+<!-- changelog-commit:c132f8faff8c66485b1186b738a7603c05c41de1 -->
+### Commit [`c132f8f`](https://github.com/superhero/operations.superduper.solutions/commit/c132f8faff8c66485b1186b738a7603c05c41de1)
+
+```text
+fix(ui): position Settings tooltip to the left
+
+```
+
+<!-- changelog-commit:33cfbaf873cb1f051492597b627804de7f083c1f -->
+### Commit [`33cfbaf`](https://github.com/superhero/operations.superduper.solutions/commit/33cfbaf873cb1f051492597b627804de7f083c1f)
+
+```text
+fix(settings): add a four-pixel theme switch border
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.49

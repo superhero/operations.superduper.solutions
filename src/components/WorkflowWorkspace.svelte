@@ -45,8 +45,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { CredentialBinding } from "$lib/secrets/types.ts";
   import Modal from "$lib/components/Modal.svelte";
 
-  let { active, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
-    { active: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
+  let { active, settingsOpen = false, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
+    { active: boolean; settingsOpen?: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
   const nodeTypes = { operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
   const edgeTypes = { default: WorkflowCurveEdge, smoothstep: RoutedEdge };
   type CanvasNode<T> = T extends WorkflowDocumentNode ? Node<T["data"], NonNullable<T["type"]>> & { type: NonNullable<T["type"]> } : never;
@@ -581,7 +581,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 
   async function beforeDelete(selection: { nodes: GraphNode[]; edges: GraphEdge[] }) {
-    if (keyboardActive) applyGraph(removeGraphSelection(selection, nodes, edges), true);
+    if (keyboardActive && !window.document.activeElement?.closest("#settings-panel")) applyGraph(removeGraphSelection(selection, nodes, edges), true);
     return false;
   }
 
@@ -788,7 +788,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function historyShortcut(event: KeyboardEvent) {
     if (!keyboardActive || event.defaultPrevented || !(event.ctrlKey || event.metaKey) || event.altKey) return;
     const target = event.target;
-    if (target instanceof Element && target.closest('input, textarea, select, [contenteditable="true"]')) return;
+    if (target instanceof Element && target.closest('#settings-panel, input, textarea, select, [contenteditable="true"]')) return;
     const undo = event.key.toLowerCase() === "z" && !event.shiftKey;
     const redo = (event.key.toLowerCase() === "z" && event.shiftKey) || event.key.toLowerCase() === "y";
     if (undo || redo) {
@@ -939,7 +939,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <WorkflowSelection {canvas} active={keyboardActive} />
       <WorkflowConnectionSnap bind:this={connectionSnap} isValidConnection={validConnection} active={keyboardActive} {curved} {dashed} curveStrength={workflowDefaults.curveStrength} markerEnd={`url(#${connectionMarkerId})`} />
       {#if nodes.length}<WorkflowMinimap active={keyboardActive} />{/if}
-      <WorkflowToolbar bind:this={toolbar} {canvas} {active} {navigationOpen} {snap} {curved} {dashed} {selected} placing={placement !== null}
+      <WorkflowToolbar bind:this={toolbar} {canvas} {active} {settingsOpen} {navigationOpen} {snap} {curved} {dashed} {selected} placing={placement !== null}
         onsnap={() => snap = !snap} oncurved={switchCurve} ondashed={switchDashes}
         onremove={removeSelected} onnew={newDocument} onopen={openDocuments}
         onexport={exportDocument} onimport={() => upload.click()} onbrowse={onBrowse}
