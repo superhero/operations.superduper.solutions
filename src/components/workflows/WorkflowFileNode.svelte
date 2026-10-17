@@ -59,12 +59,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="csv-options nodrag nopan nokey nowheel">
       <label>Delimiter
         <WorkflowNodeSelect label="CSV delimiter" value={options.delimiter} active={editorActive()}
-          choices={[{ value: "auto", label: "Automatic" }, { value: ",", label: "Comma" }, { value: ";", label: "Semicolon" }, { value: "\t", label: "Tab" }, { value: "|", label: "Pipe" }]}
+          choices={[{ value: "auto", label: "Auto" }, { value: ",", label: "Comma" }, { value: ";", label: "Semicolon" }, { value: "\t", label: "Tab" }, { value: "|", label: "Pipe" }]}
           onchange={delimiter => configure({ delimiter: delimiter as CsvOptions["delimiter"] })} />
       </label>
       <label>Header
         <WorkflowNodeSelect label="CSV header" value={options.header} active={editorActive()}
-          choices={[{ value: "auto", label: "Automatic" }, { value: "present", label: "First row" }, { value: "absent", label: "No header" }]}
+          choices={[{ value: "auto", label: "Auto" }, { value: "present", label: "First row" }, { value: "absent", label: "No header" }]}
           onchange={header => configure({ header: header as CsvOptions["header"] })} />
       </label>
       <label>Quotes
@@ -83,7 +83,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.file-upload) { display: flex; align-items: center; justify-content: center; flex: 1; min-width: 0; padding: 6px 8px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font-size: 11px; font-weight: 700; text-align: center; }
   :global(.file-upload > span:last-child) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .file-picker { display: none; }
-  .csv-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 8px 12px; border-top: 1px solid var(--color-border); }
+  .csv-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 8px 12px; border-top: 1px solid var(--color-border); }
   .csv-options label { display: grid; gap: 4px; min-width: 0; font-size: 11px; }
   .csv-options p { grid-column: 1 / -1; margin: 0; font-size: 10px; }
   .file-preview { padding: 0 12px 8px; }
