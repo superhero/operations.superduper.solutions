@@ -320,8 +320,8 @@
           </div>
         </div>
       {/if}
-      <div class="workflow-host" inert={settingsPresent}>
-        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={!settingsPresent} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={browseOperations} />
+      <div class="workflow-host">
+        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={true} settingsOpen={mode === "settings"} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={browseOperations} />
       </div>
     </main>
   </div>
