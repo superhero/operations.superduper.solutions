@@ -279,6 +279,22 @@ Merge branch 'feature/csv-no-quotes' of github.com:superhero/operations.superdup
 
 ```
 
+<!-- changelog-commit:60cd46f5e470d8e2aec7b35b04ec4873b5f9a975 -->
+### Commit [`60cd46f`](https://github.com/superhero/operations.superduper.solutions/commit/60cd46f5e470d8e2aec7b35b04ec4873b5f9a975)
+
+```text
+fix(workflows): omit encoding from CSV summary
+
+```
+
+<!-- changelog-commit:d3458127d7fa7f9226c92b9811257c5a50c7f0f7 -->
+### Commit [`d345812`](https://github.com/superhero/operations.superduper.solutions/commit/d3458127d7fa7f9226c92b9811257c5a50c7f0f7)
+
+```text
+Merge branch 'feature/csv-no-quotes' of github.com:superhero/operations.superduper.solutions into feature/csv-no-quotes
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50
