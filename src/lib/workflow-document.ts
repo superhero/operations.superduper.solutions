@@ -170,8 +170,9 @@ function validateGraph(nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdg
   {
     if (node.type !== "data") continue;
     const owner = byId.get(node.data.ownerId);
-    if (!owner || owner.type !== "workflow" && owner.type !== "operation" && owner.type !== undefined)
-      throw new Error("Every data owner must refer to an operation or workflow in this document.");
+    if (!owner || owner.type !== "file" && owner.type !== "workflow" && owner.type !== "operation" && owner.type !== undefined)
+      throw new Error("Every data owner must refer to an operation, workflow or file in this document.");
+    if (owner.type === "file" && node.data.direction !== "outputs") throw new Error("File panels must be outputs.");
     richOwners.add(owner.id);
     fieldCount += node.data.fields.length;
     for (const field of node.data.fields)

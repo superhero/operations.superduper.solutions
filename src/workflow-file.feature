@@ -17,3 +17,9 @@ Feature: Uploaded workflow data
     Then file node types propagate through switches and change descriptions
   Scenario: CSV rows become the JSON body of a request
     Then uploaded CSV rows execute as structured request data
+  Scenario: Uploaded structures create bounded typed output panels
+    Then uploaded structures project nested fields and CSV columns
+  Scenario: Replacing data reconciles panels and existing mappings
+    Then replacing file structures preserves matching panels and removes invalid mappings
+  Scenario: Nested uploaded fields supply operation inputs
+    Then uploaded nested fields supply executable operation inputs

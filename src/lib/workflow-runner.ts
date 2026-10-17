@@ -40,7 +40,10 @@ const inactive = Symbol("inactive branch");
 const inputTypes: Partial<Record<WorkflowField["type"], InputSchema["type"]>> = {
   Text: "string", Integer: "integer", Number: "number", Boolean: "boolean", Object: "object", Array: "array", Null: "null"
 };
-const isStaticSource = (node: Node | undefined) => node?.type === "vault" || node?.type === "file";
+const isStaticSource = (frame: Frame, nodeId: string) => {
+  const node = frame.nodes.get(nodeId);
+  return node?.type === "vault" || node?.type === "file" || node?.type === "data" && frame.nodes.get(node.data.ownerId)?.type === "file";
+};
 const isOwner = (node: Node): node is Owner => node.type === undefined || node.type === "operation" || node.type === "workflow";
 const dataNodes = (frame: Frame, owner: string, direction: "inputs" | "outputs") =>
   frame.document.nodes.filter((node): node is DataNode => node.type === "data" && !node.hidden && node.data.ownerId === owner && node.data.direction === direction);
@@ -250,7 +253,11 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     for (const node of frame.document.nodes) {
       if (node.type === "file" && !node.hidden && frame.states.get(node.id) === "idle") {
         frame.states.set(node.id, "complete");
-        if (node.data.file) emit(frame, node.id, "value", node.data.file.value);
+        if (node.data.file) {
+          emit(frame, node.id, "value", node.data.file.value);
+          for (const panel of dataNodes(frame, node.id, "outputs")) for (const field of panel.data.fields)
+            emit(frame, panel.id, field.id, field.connectable ? read(node.data.file.value, identity(field)[1]) : inactive);
+        }
       }
       if (node.type !== "vault" || node.hidden || frame.states.get(node.id) !== "idle") continue;
       if (!node.data.credentialId && frame.edges.some(edge => edge.source === node.id))
@@ -261,7 +268,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     // Constant sources are available even when the user explicitly starts at an operation.
     for (const edge of frame.edges) {
       const contribution = frame.contributions.get(edge.id)!;
-      if (isStaticSource(frame.nodes.get(edge.source)) && contribution.state === "value")
+      if (isStaticSource(frame, edge.source) && contribution.state === "value")
         frame.values.set(port(edge.target, edge.targetHandle!), contribution.value);
     }
     // Each pass consumes idle nodes. Nodes never become idle again during a run.
@@ -275,7 +282,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         const input = inputs(frame, node.id);
         if (!input.ready) continue;
         for (const [key, value] of input.values) frame.values.set(key, value);
-        if (isOwner(node) && (!frame.started || !incoming(frame, node.id).some(edge => !isStaticSource(frame.nodes.get(edge.source))))) continue;
+        if (isOwner(node) && (!frame.started || !incoming(frame, node.id).some(edge => !isStaticSource(frame, edge.source)))) continue;
         changed = true;
         if (isOwner(node))
         {
@@ -417,7 +424,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         settle(frame);
         if (!frame.started)
         {
-          const roots = frame.owners.filter(node => !incoming(frame, node.id).some(edge => !isStaticSource(frame.nodes.get(edge.source))));
+          const roots = frame.owners.filter(node => !incoming(frame, node.id).some(edge => !isStaticSource(frame, edge.source)));
           const candidates = roots.length ? roots : frame.owners;
           if (!candidates.length) throw new Error("This workflow has no operations to run. Add an operation first.");
           if (candidates.length > 1)
@@ -456,7 +463,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
           current = { frame, node, visit: result };
           return result;
         }
-        const waiting = frame.edges.some(edge => !isStaticSource(frame.nodes.get(edge.source)) && frame.contributions.get(edge.id)!.state === "value"
+        const waiting = frame.edges.some(edge => !isStaticSource(frame, edge.source) && frame.contributions.get(edge.id)!.state === "value"
           && frame.states.get(targetOwner(frame, edge.target)) === "idle");
         if (waiting) throw new Error("The next operation is waiting for an unresolved branch or a routing cycle. Check its incoming connections.");
         stack.pop();

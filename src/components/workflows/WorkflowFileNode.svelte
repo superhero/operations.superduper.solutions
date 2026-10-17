@@ -4,11 +4,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
-  import { getContext, onDestroy } from "svelte";
-  import { Handle, Position, type Node, type NodeProps } from "@xyflow/svelte";
+  import { getContext, onDestroy, untrack } from "svelte";
+  import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import JsonSchemaView from "$lib/components/JsonSchemaView.svelte";
+  import WorkflowRestoreBranch from "./WorkflowRestoreBranch.svelte";
   import WorkflowNodeSelect from "./WorkflowNodeSelect.svelte";
   import { defaultCsvOptions, fileValueType, type CsvOptions, type WorkflowFileData, type UploadedWorkflowFile } from "$lib/workflow-file.ts";
   import { parseWorkflowFileAsync } from "$lib/workflow-file-client.ts";
@@ -16,6 +17,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let { id, data, selected }: NodeProps<Node<WorkflowFileData, "file">> = $props();
   const update = getContext<(id: string, data: WorkflowFileData) => void>("workflow-file");
   const editorActive = getContext<() => boolean>("workflow-editor-active");
+  const branchesFor = getContext<(id: string) => Map<string, { id: string; childId: string; label: string; hidden: boolean }> | undefined>("workflow-branches");
+  const branch = $derived([...(branchesFor(id)?.values() ?? [])][0]);
+  const updateNodeInternals = useUpdateNodeInternals();
+  const layout = $derived(JSON.stringify([branch, data]));
+  $effect(() => { layout; untrack(() => updateNodeInternals(id)); });
   let input: HTMLInputElement;
   let pending = $state.raw<File>();
   let draftOptions = $state<CsvOptions>({ ...defaultCsvOptions });
@@ -73,6 +79,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           onchange={quote => configure({ quote: quote as CsvOptions["quote"] })} />
       </label>
       <p>{data.file?.header ? "Header row" : "No header"} · {Array.isArray(data.file?.value) ? data.file.value.length : 0} rows</p>
+    </div>
+  {/if}
+  {#if branch}
+    <div class="utility-row nodrag nopan nokey"><span>Data structure</span>
+      {#if branch.hidden}<WorkflowRestoreBranch {branch} position={Position.Right} />
+      {:else}<Handle id={branch.id} type="source" position={Position.Right} isConnectable={false} aria-label="File data structure" />{/if}
     </div>
   {/if}
   {#if data.file}<div class="file-preview nodrag nopan nokey nowheel"><JsonSchemaView value={data.file.value} label="File data" title="Schema" copyable={false} pageSize={1000} /></div>{/if}

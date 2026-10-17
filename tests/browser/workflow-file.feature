@@ -9,3 +9,7 @@ Feature: File upload nodes
   Scenario: Large file previews use a bounded scroll area and load more on demand
     Given a workflow with 1 instances of "Get project"
     Then file previews limit visible rows and load additional lines on demand
+
+  Scenario: Uploads create connected data structures and reconcile replacements
+    Given a workflow with 1 instances of "Get project"
+    Then uploaded files create nested output panels and preserve compatible field connections
