@@ -36,3 +36,25 @@ Then('I can upload typed workflow files and correct CSV detection', async functi
   await expect(node.getByRole('combobox',{name:'CSV header',exact:true})).toContainText('No header');
   assert.deepEqual((await readExport(page)).document.nodes.find(n=>n.type==='file').data.file.value,doc.nodes.find(n=>n.type==='file').data.file.value);
 });
+Then('file previews limit visible rows and load additional lines on demand', async function () {
+  const page=this.page;
+  await page.getByRole('button',{name:'Add file',exact:true}).click();
+  const node=workflow(page).locator('.svelte-flow__node-file');
+  const upload=async values=>node.locator('input[type=file]').setInputFiles({name:'rows.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(values))});
+  await upload(Array.from({length:1100},(_,i)=>i));
+  await expect(node.locator('.utility-type')).toHaveText('Array');
+  await node.locator('.schema-disclosure > summary').click();
+  const scroll=node.locator('.json-scroll');
+  await expect(scroll).toBeVisible();
+  const dimensions=await scroll.evaluate(el=>({height:el.getBoundingClientRect().height,scroll:el.scrollHeight}));
+  assert.ok(dimensions.height<=128.5 && dimensions.scroll>dimensions.height);
+  await expect(node.getByRole('button',{name:'Load more',exact:true})).toBeVisible();
+  assert.ok(await node.locator('.json-line').count()<=1000);
+  await expect(node.locator('.json-number').filter({hasText:/^1099$/})).toHaveCount(0);
+  await node.getByRole('button',{name:'Load more',exact:true}).click();
+  await expect(node.getByRole('button',{name:'Load more',exact:true})).toHaveCount(0);
+  await expect(node.locator('.json-number').filter({hasText:/^1099$/})).toHaveCount(1);
+  await upload([1,2,3]);
+  await expect(node.locator('.json-number')).toHaveCount(3);
+  await expect(node.getByRole('button',{name:'Load more',exact:true})).toHaveCount(0);
+});

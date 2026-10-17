@@ -96,3 +96,7 @@ Single and None overrides remain available; None preserves quotes literally.
 Parsing runs in a disposable worker; replacing a file preserves compatible
 connections and removes connections whose types no longer match. Uploads are
 limited to 500 kB each and remain subject to the document size limit.
+
+File schema previews scroll within five visible lines and render at most 1,000
+preview lines initially. Load more extends that budget by 1,000; replacing the
+file resets it. Nested expanded branches share the same rendering budget.

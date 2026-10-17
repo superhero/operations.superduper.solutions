@@ -9,8 +9,29 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import MaterialIcon from "./MaterialIcon.svelte";
 
   type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
-  let { value, label = "JSON document", wrap = true, expandedPaths, resetKey = 0 }: { value: unknown; label?: string; wrap?: boolean; expandedPaths?: string[] | undefined; resetKey?: number } = $props();
+  let { value, label = "JSON document", wrap = true, expandedPaths, resetKey = 0, pageSize }: { value: unknown; label?: string; wrap?: boolean; expandedPaths?: string[] | undefined; resetKey?: number; pageSize?: number | undefined } = $props();
   let expanded = $state<Record<string, boolean>>({});
+  let loaded = $state(1000);
+  const childPath = (array: boolean, path: string, key: string) => array ? `${path}[${key}]` : `${path}[${JSON.stringify(key)}]`;
+  const page = $derived.by(() => {
+    const paths = new Set<string>();
+    let remaining = pageSize === undefined ? Infinity : loaded;
+    let more = false;
+    const visit = (item: JsonValue, path: string, key: string | null) => {
+      const object = item !== null && typeof item === "object";
+      const lines = object ? key === null ? 2 : 3 : 1;
+      if (remaining < lines) { more = true; return; }
+      remaining -= lines; paths.add(path);
+      if (object && (expanded[path] ?? (expandedPaths?.includes(path) ?? true))) {
+        for (const [key, value] of Object.entries(item)) {
+          visit(value, childPath(Array.isArray(item), path, key), Array.isArray(item) ? null : key);
+          if (more) break;
+        }
+      }
+    };
+    visit(document.value, "$", null);
+    return { paths, more };
+  });
 
   const document = $derived.by(() => {
     try {
@@ -28,6 +49,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     expandedPaths;
     resetKey;
     expanded = {};
+    loaded = pageSize ?? 1000;
   });
 
 </script>
@@ -43,15 +65,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if key !== null}<div class="json-line json-container-key">{@render property(key)}</div>{/if}
     {#if entries.length}
       {@const open = expanded[path] ?? (expandedPaths?.includes(path) ?? true)}
-      <Disclosure class="json-branch" {open} lazy={expandedPaths !== undefined} groupLabel={`${label}: ${path}`}
+      <Disclosure class="json-branch" {open} lazy={expandedPaths !== undefined || pageSize !== undefined} groupLabel={`${label}: ${path}`}
         label={`${path}: ${entries.length} ${array ? "items" : "properties"}`} tooltipEnabled={false}
         onToggle={(next) => { expanded[path] = next; }}>
         {#snippet summary()}
           <span class="json-toggle" aria-hidden="true"><MaterialIcon name="chevron_forward" size={16} /></span><span class="json-bracket">{array ? "[" : "{"}</span>{#if !open}<span class="json-folded">{" … "}</span><span class="json-bracket">{array ? "]" : "}"}</span><span class="json-punctuation">{comma ? "," : ""}</span>{/if}
         {/snippet}
           <div class="json-children" style:--json-depth-indent={`${(depth + 1) * 2}ch`}>
-            {#each entries as [childKey, childValue], index (childKey)}
-              {@render entry(childValue, array ? `${path}[${childKey}]` : `${path}[${JSON.stringify(childKey)}]`, array ? null : childKey, index < entries.length - 1, depth + 1)}
+            {#each (pageSize === undefined ? entries : entries.filter(([childKey]) => page.paths.has(childPath(array, path, childKey)))) as [childKey, childValue], index (childKey)}
+              {@render entry(childValue, childPath(array, path, childKey), array ? null : childKey, index < entries.length - 1, depth + 1)}
             {/each}
           </div><div class="json-line json-closing"><span class="json-bracket">{array ? "]" : "}"}</span><span class="json-punctuation">{comma ? "," : ""}</span></div>
       </Disclosure>
@@ -73,10 +95,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {@render entry(document.value, "$", null, false, 0)}
       </div>
     </div>
+    {#if pageSize !== undefined && page.more}
+      <button class="json-load-more" onclick={() => loaded += pageSize}>Load more</button>
+    {/if}
   {/if}
 </section>
 
 <style>
+  .json-load-more { display: block; margin: 6px auto 0; padding: 5px 10px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font: inherit; font-size: 11px; cursor: pointer; }
   .json-view { min-width: 0; max-width: 100%; color: var(--color-foreground); }
   .json-error { color: var(--color-error-foreground); background: var(--color-error-background); }
   .json-error { padding: 12px; font-size: 12px; }
