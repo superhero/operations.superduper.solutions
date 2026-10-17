@@ -191,3 +191,7 @@ Feature: Browser operations workspace
       | width |
       | 1280  |
       | 390   |
+
+  Scenario: Wrapped workflow button groups have no unused outer width
+    Given a workflow with 1 instances of "List projects"
+    Then wrapped workflow controls fit their occupied rows

@@ -106,6 +106,14 @@ merge: retain automated changelog updates
 
 ```
 
+<!-- changelog-commit:22050753149d23acbbeca2efc00d1acbb376f5a8 -->
+### Commit [`2205075`](https://github.com/superhero/operations.superduper.solutions/commit/22050753149d23acbbeca2efc00d1acbb376f5a8)
+
+```text
+fix(workflows): compact wrapped toolbar to its occupied rows
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.49
