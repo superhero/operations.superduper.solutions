@@ -263,6 +263,22 @@ fix(workflows): reduce file node width to 360 pixels
 
 ```
 
+<!-- changelog-commit:c15011034c406b62b7716fd162fbe9718eded4a5 -->
+### Commit [`c150110`](https://github.com/superhero/operations.superduper.solutions/commit/c15011034c406b62b7716fd162fbe9718eded4a5)
+
+```text
+fix(workflows): label uploaded file structure as Schema
+
+```
+
+<!-- changelog-commit:51ce6db9a2e48d9e93651b47ce5d645d1dfa7dc3 -->
+### Commit [`51ce6db`](https://github.com/superhero/operations.superduper.solutions/commit/51ce6db9a2e48d9e93651b47ce5d645d1dfa7dc3)
+
+```text
+Merge branch 'feature/csv-no-quotes' of github.com:superhero/operations.superduper.solutions into feature/csv-no-quotes
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50
