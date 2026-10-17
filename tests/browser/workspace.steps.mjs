@@ -625,3 +625,31 @@ Then('Settings pushes the workflow minimap and button groups beside its pane', a
     await expect.poll(async () => Math.round((await control.boundingBox()).width)).toBe(Math.round(before[index].width));
   }
 });
+
+Then('wrapped workflow controls fit their occupied rows', async function () {
+  const page = this.page;
+  const toolbar = page.locator('.workflow-toolbar');
+  for (const width of [800, 390, 1280]) {
+    await setMode(page, 'workflow');
+    await closeCatalog(page);
+    await page.setViewportSize({ width, height: 844 });
+    for (const mode of ['workflow', 'settings']) {
+      await setMode(page, mode);
+      await expect.poll(() => toolbar.evaluate(element => {
+        const style = getComputedStyle(element);
+        const groups = [...element.querySelectorAll('.workflow-control-group')].map(group => group.getBoundingClientRect());
+        const rows = new Map();
+        for (const group of groups) {
+          const key = Math.round(group.top);
+          const row = rows.get(key) ?? { left: group.left, right: group.right };
+          row.left = Math.min(row.left, group.left); row.right = Math.max(row.right, group.right);
+          rows.set(key, row);
+        }
+        const widest = Math.max(...[...rows.values()].map(row => row.right - row.left));
+        const chrome = parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) +
+          parseFloat(style.borderLeftWidth) + parseFloat(style.borderRightWidth);
+        return Math.abs(element.getBoundingClientRect().width - widest - chrome);
+      })).toBeLessThanOrEqual(1);
+    }
+  }
+});

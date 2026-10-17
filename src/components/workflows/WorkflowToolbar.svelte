@@ -25,6 +25,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let revealing = false;
   let revealGeneration = 0;
   let cancelReveal: (() => void) | undefined;
+  let compactLayout: (() => void) | undefined;
   onDestroy(() => { alive = false; cancelReveal?.(); });
 
   async function waitForLayout() {
@@ -49,8 +50,39 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (!visible) await fitView({ padding: 0.25, minZoom: 0.25, maxZoom: 1, duration: 0 });
   }
 
+  // Flex wrapping leaves the container at its width limit, even when no row fills it.
+  function packedWidth(widths: number[], available: number, gap: number) {
+    let row = 0, widest = 0;
+    for (const width of widths) {
+      if (row && row + gap + width > available + 0.5) { widest = Math.max(widest, row); row = 0; }
+      row = row ? row + gap + width : width;
+    }
+    return Math.max(widest, row);
+  }
+
   onMount(() => {
     const element = canvas;
+    let compactFrame = 0;
+    const compact = () => {
+      compactFrame = 0;
+      const toolbar = element?.querySelector<HTMLElement>('.workflow-toolbar');
+      if (!element || !toolbar) return;
+      const style = getComputedStyle(toolbar);
+      const chrome = ['padding-left', 'padding-right', 'border-left-width', 'border-right-width']
+        .reduce((sum, property) => sum + (parseFloat(style.getPropertyValue(property)) || 0), 0);
+      const available = element.clientWidth - (parseFloat(style.right) || 0) -
+        parseFloat(style.marginLeft) - parseFloat(style.marginRight) - chrome;
+      if (available <= 0) return;
+      const widths = [...toolbar.querySelectorAll<HTMLElement>('.workflow-control-group')].map(group =>
+        packedWidth([...group.children].map(button => (button as HTMLElement).offsetWidth), available, parseFloat(getComputedStyle(group).columnGap) || 0));
+      const width = `${Math.ceil(packedWidth(widths, available, parseFloat(style.columnGap) || 0) + chrome)}px`;
+      if (toolbar.style.width !== width) toolbar.style.width = width;
+    };
+    const scheduleCompact = () => { if (!compactFrame) compactFrame = requestAnimationFrame(compact); };
+    compactLayout = scheduleCompact;
+    const finishMove = (event: TransitionEvent) => { if (event.target instanceof Element && event.target.matches('.workflow-toolbar')) scheduleCompact(); };
+    scheduleCompact();
+    element?.addEventListener('transitionend', finishMove);
     const interruptReveal = () => {
       if (!revealing) return;
       revealGeneration += 1;
@@ -60,6 +92,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       void setViewport(getViewport(), { duration: 0 });
     };
     const observer = new ResizeObserver(() => {
+      scheduleCompact();
       void keepNodesVisible();
     });
     if (element) {
@@ -69,12 +102,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     }
     return () => {
       observer.disconnect();
+      compactLayout = undefined;
+      cancelAnimationFrame(compactFrame);
+      element?.removeEventListener('transitionend', finishMove);
       element?.removeEventListener("pointerdown", interruptReveal, true);
       element?.removeEventListener("wheel", interruptReveal, true);
     };
   });
 
-  $effect(() => { if (active) void keepNodesVisible(); });
+  $effect(() => { if (active) void keepNodesVisible(); compactLayout?.(); });
 
   export async function reveal(ids: string | string[]) {
     const requested = typeof ids === "string" ? [ids] : ids;
