@@ -7,8 +7,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { getContext, onMount } from "svelte";
   import { Handle, Position, type Node, type NodeProps } from "@xyflow/svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  import Modal from "$lib/components/Modal.svelte";
-  import VaultVariableAccess from "$lib/components/VaultVariableAccess.svelte";
   import WorkflowNodeSelect from "./WorkflowNodeSelect.svelte";
   import { readVaultKeys, subscribeVaultLock } from "$lib/secrets/client.ts";
   import type { VaultKey } from "$lib/secrets/types.ts";
@@ -17,7 +15,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let { id, data, selected }: NodeProps<Node<VaultVariableData, "vault">> = $props();
   const select = getContext<(id: string, credentialId: string) => void>("workflow-vault-variable");
   const editorActive = getContext<() => boolean>("workflow-editor-active");
-  let open = $state(false);
   let entries = $state<VaultKey[]>([]);
   let needsUnlock = $state(false);
   let error = $state("");
@@ -39,31 +36,27 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const stop = subscribeVaultLock(() => { void refresh(); });
     return () => { alive = false; generation++; stop(); };
   });
-  $effect(() => { if (!editorActive()) open = false; });
+
 </script>
 <div class="workflow-utility-node workflow-vault-node" class:selected>
   <div class="utility-title"><MaterialIcon name="variable_add" size={20} /><strong>Vault variable</strong></div>
   <div class="utility-row nodrag nopan nokey">
-    {#if needsUnlock || !entries.length || error}
-      <button type="button" class="utility-value" onclick={() => open = true} disabled={!editorActive()}>
-        Select vault variable
-      </button>
-    {:else}
-      <div class="vault-selection" onfocusin={() => { void refresh(); }}>
-        <WorkflowNodeSelect label="Vault variable" value={data.credentialId ?? ""}
-          choices={[{ value: "", label: "Select vault variable" }, ...entries.map(entry => ({ value: entry.id, label: entry.label }))]}
-          active={editorActive()} disabled={!editorActive()}
-          onchange={credentialId => { if (credentialId) select(id, credentialId); }} />
-      </div>
-    {/if}
+    <div class="vault-selection" onpointerenter={() => { void refresh(); }} onfocusin={() => { void refresh(); }}>
+      <WorkflowNodeSelect label="Vault variable" value={data.credentialId ?? ""}
+        choices={[{ value: "", label: "Select vault variable" }, ...entries.map(entry => ({ value: entry.id, label: entry.label }))]}
+        active={editorActive()} disabled={!editorActive() || !entries.length}
+        onchange={credentialId => { if (credentialId) select(id, credentialId); }} />
+    </div>
     <span class="utility-type">String</span>
     <Handle id="value" type="source" position={Position.Right} isConnectableEnd={false} aria-label="Vault variable output (Text)" />
   </div>
 </div>
-<Modal bind:open title="Select vault variable">
-  {#if open}<VaultVariableAccess selected={data.credentialId ?? ""} onselect={(credentialId) => { select(id, credentialId); open = false; void refresh(); }} />{/if}
-</Modal>
+{#if needsUnlock}
+  <p class="vault-key-notice">Unlock this older vault once in Settings → Secrets to publish its key names. Values remain encrypted.</p>
+{:else if error}
+  <p class="vault-key-notice" role="alert">{error}</p>
+{/if}
 <style>
   .vault-selection { flex: 1; min-width: 0; }
-  button { text-align: left; cursor: pointer; }
+  .vault-key-notice { max-width: 260px; margin: 4px 0 0; font-size: 11px; color: var(--color-foreground); }
 </style>
