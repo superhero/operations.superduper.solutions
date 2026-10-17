@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.51
+
 <!-- changelog-commit:be052a07c443177cb2bfaee5329abef33c7ba463 -->
 ### Commit [`be052a0`](https://github.com/superhero/operations.superduper.solutions/commit/be052a07c443177cb2bfaee5329abef33c7ba463)
 
@@ -497,8 +501,6 @@ loading, failed starts, later recovery, JSON/CSV parsing, option changes,
 and the visible file upload node. Production-only checks missed this path.
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.50
 
