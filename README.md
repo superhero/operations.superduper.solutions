@@ -310,6 +310,15 @@ details.
 
 ---
 
+<a href="https://www.npmjs.com/package/papaparse"><img src=".github/badges/version-dependency-papaparse.svg" alt="papaparse declared version"></a>
+<a href="https://www.npmjs.com/package/@types/papaparse"><img src=".github/badges/version-dependency-types--papaparse.svg" alt="@types/papaparse declared version"></a>
+
+Parses uploaded CSV data in a dedicated worker, supporting delimiter detection,
+quoted multiline cells and configurable headers. `@types/papaparse` supplies its
+TypeScript definitions during development.
+
+---
+
 <a href="https://www.npmjs.com/package/@playwright/test"><img src=".github/badges/version-dependency-playwright--test.svg" alt="@playwright/test declared version"></a>
 
 Checks the webpage in Chromium through Cucumber scenarios, using Playwright's

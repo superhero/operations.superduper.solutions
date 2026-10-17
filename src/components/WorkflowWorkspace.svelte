@@ -23,7 +23,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { createOperationGraph, createUtilityNode, createWorkflowGraph, addAdditionalProperty, getAdditionalPropertyTypes, getEditableAdditionalProperties, updateAdditionalProperty, removeAdditionalProperty, addSwitchGate, updateSwitchGate, removeSwitchGate, schemaBranches, isWorkflowConnection, removeGraphSelection, restoreDataBranch } from "$lib/workflow-graph.ts";
   import { layoutAddedGraph, placeUtilityNode } from "$lib/workflow-layout.ts";
   import { orderWorkflowNodes, restoreWorkflowNodeOrder } from "$lib/workflow-focus-order.ts";
-  import { adaptRoutingGates, routingInputTypes, workflowDescriptionLimit, workflowInputConnected } from "$lib/workflow-utilities.ts";
+  import { adaptRoutingGates, isWorkflowConnectionTypeCompatible, routingInputTypes, workflowDescriptionLimit, workflowInputConnected } from "$lib/workflow-utilities.ts";
   import { getOperationReport } from "$lib/operation-report.ts";
   import WorkflowNode from "../WorkflowNode.svelte";
   import WorkflowToolbar from "./workflows/WorkflowToolbar.svelte";
@@ -38,6 +38,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { logger } from "$lib/logger.ts";
   import WorkflowSelection from "./workflows/WorkflowSelection.svelte";
   import WorkflowSwitchNode from "./workflows/WorkflowSwitchNode.svelte";
+  import WorkflowFileNode from "./workflows/WorkflowFileNode.svelte";
+  import type { WorkflowFileData } from "$lib/workflow-file.ts";
   import WorkflowVaultNode from "./workflows/WorkflowVaultNode.svelte";
   import WorkflowCastNode from "./workflows/WorkflowCastNode.svelte";
   import WorkflowCommentNode from "./workflows/WorkflowCommentNode.svelte";
@@ -48,7 +50,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   let { active, settingsOpen = false, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
     { active: boolean; settingsOpen?: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
-  const nodeTypes = { vault: WorkflowVaultNode, operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
+  const nodeTypes = { file: WorkflowFileNode, vault: WorkflowVaultNode, operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
   const edgeTypes = { default: WorkflowCurveEdge, smoothstep: RoutedEdge };
   type CanvasNode<T> = T extends WorkflowDocumentNode ? Node<T["data"], NonNullable<T["type"]>> & { type: NonNullable<T["type"]> } : never;
   type GraphNode = CanvasNode<WorkflowDocumentNode>;
@@ -164,6 +166,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
   setContext("workflow-cast-type", (nodeId: string, targetType: CastData["targetType"]) => {
     if (keyboardActive) applyGraph({ nodes: nodes.map(node => node.id === nodeId && node.type === "cast" ? { ...node, data: { targetType } } : node), edges }, true);
+  });
+  setContext("workflow-file", (nodeId: string, data: WorkflowFileData) => {
+    if (!keyboardActive) return;
+    const next = nodes.map(node => node.id === nodeId && node.type === "file" ? { ...node, data } : node);
+    // Reject overlarge documents atomically, preserving the previous file.
+    validateWorkflowDocument({ ...documentValue(), nodes: next });
+    applyGraph({ nodes: next, edges: edges.filter(edge => edge.source !== nodeId ||
+      isWorkflowConnectionTypeCompatible(edge, next, edges)) }, true);
   });
   setContext("workflow-vault-variable", (nodeId: string, credentialId: string) => {
     if (keyboardActive) nodes = nodes.map(node => node.id === nodeId && node.type === "vault" ? { ...node, data: credentialId ? { credentialId } : {} } : node);
@@ -423,6 +433,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const input = (event: Event) => {
       const target = event.target;
       if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return;
+      if (target instanceof HTMLInputElement && target.type === "file") return;
       if (!canvas?.contains(target) && target.id !== "workflow-name" && target.id !== "workflow-description") return;
       textEditTarget = target;
       textEditing = true;
@@ -524,7 +535,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     catch (failure) { describeFailure(`Could not add “${operation.name}”`, failure); }
   }
 
-  async function addUtility(type: "switch" | "cast" | "comment" | "vault") {
+  async function addUtility(type: "switch" | "cast" | "comment" | "vault" | "file") {
     if (!keyboardActive) return;
     const nodeId = crypto.randomUUID();
     await appendGraph({ nodes: [createUtilityNode(type, insertionPosition(), nodeId)], edges: [] }, nodeId, type, 3, true);

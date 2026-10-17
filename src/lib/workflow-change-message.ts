@@ -45,7 +45,7 @@ function labels(document: WorkflowDocument)
     if (node.type === undefined || node.type === "operation") return `${quote(node.data.name)}${ordinal}`;
     if (node.type === "workflow") return `Workflow ${quote(node.data.name)}${ordinal}`;
     if (node.type === "comment") return `Comment${ordinal}${node.data.text.trim() ? ` ${quote(node.data.text)}` : ""}`;
-    return `${node.type === "vault" ? "Vault variable" : node.type === "switch" ? "Switch" : "Cast"}${ordinal}`;
+    return `${node.type === "file" ? "File upload" : node.type === "vault" ? "Vault variable" : node.type === "switch" ? "Switch" : "Cast"}${ordinal}`;
   };
   const endpoint = (id: string, handle?: string): string => {
     const node = nodes.get(id);
@@ -194,7 +194,7 @@ export function describeWorkflowChange(before: WorkflowDocument | null, after: W
       const retained = old.data.fields.filter(field => newFields.has(field.id)).map(field => field.id);
       if (!same(retained, node.data.fields.filter(field => oldFields.has(field.id)).map(field => field.id))) add("Reorder fields in", label);
     }
-    else if (!same(old.data, node.data)) add(node.type === "vault" ? "Select vault variable" : "Update operation", label);
+    else if (!same(old.data, node.data)) add(node.type === "file" ? "Update file upload" : node.type === "vault" ? "Select vault variable" : "Update operation", label);
   }
 
   const oldEdges = new Map((before?.edges ?? []).map(edge => [edge.id, edge]));

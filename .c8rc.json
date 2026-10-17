@@ -41,7 +41,9 @@
     "src/lib/secrets/client.ts",
     "src/lib/secrets/vault.worker.ts",
     "src/lib/secrets/vault-executor.ts",
-    "src/lib/secrets/schema-policy-storage.ts"
+    "src/lib/secrets/schema-policy-storage.ts",
+    "src/lib/workflow-file-client.ts",
+    "src/lib/workflow-file.worker.ts"
   ],
   "extension": [".ts", ".js"],
   "reporter": ["html", "json", "json-summary", "text-summary"],

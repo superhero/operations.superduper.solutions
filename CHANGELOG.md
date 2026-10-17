@@ -155,6 +155,25 @@ merge: synchronize develop before history scroll integration
 
 ```
 
+<!-- changelog-commit:0b6cca8705bbd29dab37a0cb92835b7a9b43c717 -->
+### Commit [`0b6cca8`](https://github.com/superhero/operations.superduper.solutions/commit/0b6cca8705bbd29dab37a0cb92835b7a9b43c717)
+
+```text
+feat(workflows): add typed JSON and CSV file upload nodes
+
+Parse bounded uploads in disposable workers and persist their data with the
+workflow. Infer native JSON output types and expose CSV rows as arrays while
+preserving cell text, with editable delimiter, header and quote options.
+
+Reject unsupported or malformed files without replacing existing data, remove
+incompatible mappings after replacement, and include file values in execution.
+Exclude file-picker events from unfinished text-edit tracking so uploads save.
+
+Validate with focused Cucumber source and browser scenarios, complete parser
+coverage, dependency documentation checks, type checking and production build.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50

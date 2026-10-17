@@ -4,6 +4,7 @@
 
 import { commentTextLimit, isValueConnection, switchGateLimit, switchOperators, switchValueLimit,
   workflowDescriptionLimit, workflowInterface } from "./workflow-utilities.ts";
+import { validateWorkflowFileData, type WorkflowFileData } from "./workflow-file.ts";
 import { normalizeManualRoute } from "./flow-routing/manual.js";
 import { validateCredentialBinding } from "./secrets/bindings.ts";
 import type { CredentialBinding } from "./secrets/types.ts";
@@ -40,14 +41,14 @@ export type CastData = { targetType: "Text" | "Number" | "Boolean" };
 export type VaultVariableData = { credentialId?: string };
 export type CommentData = { text: string };
 export type WorkflowReferenceData = { workflowId: string; name: string; description: string; snapshot: WorkflowDocument };
-export type WorkflowNodeData = OperationData | WorkflowData | SwitchData | CastData | CommentData | VaultVariableData | WorkflowReferenceData;
+export type WorkflowNodeData = OperationData | WorkflowData | SwitchData | CastData | CommentData | VaultVariableData | WorkflowFileData | WorkflowReferenceData;
 export type WorkflowDocumentNode = {
   id: string;
   position: { x: number; y: number };
   hidden?: boolean;
 } & ({ type?: "operation"; data: OperationData } | { type: "data"; data: WorkflowData } |
   { type: "switch"; data: SwitchData } | { type: "cast"; data: CastData } | { type: "comment"; data: CommentData } |
-  { type: "workflow"; data: WorkflowReferenceData } | { type: "vault"; data: VaultVariableData });
+  { type: "workflow"; data: WorkflowReferenceData } | { type: "vault"; data: VaultVariableData } | { type: "file"; data: WorkflowFileData });
 export type WorkflowDocumentEdge = {
   id: string;
   source: string;
@@ -301,6 +302,7 @@ function validateDocument(value: unknown, context: ValidationContext, depth: num
         throw new Error("A cast target must be Text, Number or Boolean.");
       return { ...common, type: "cast", data: { targetType: data.targetType } };
     }
+    if (extended && node.type === "file") return { ...common, type: "file", data: validateWorkflowFileData(data) };
     if (extended && node.type === "vault") {
       if (data.credentialId !== undefined && (typeof data.credentialId !== "string" || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(data.credentialId)))
         throw new Error("Vault variables require a valid local entry reference.");
