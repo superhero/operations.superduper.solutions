@@ -32,7 +32,7 @@
 </header>
 
 <style>
-  .document-meta { position: absolute; right: calc(1rem + 3px); bottom: 8px; display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--color-muted-foreground); }
+  .document-meta { position: absolute; right: calc(1rem + 3px); bottom: 0; height: var(--header-padding); display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--color-muted-foreground); }
   .document-meta i { width: 6px; height: 6px; border-radius: 50%; background: var(--color-foreground); }
   .document-meta.unsaved i { background: var(--color-accent); }
   .document-meta.fresh i { background: transparent; }
