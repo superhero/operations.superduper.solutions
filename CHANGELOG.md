@@ -66,6 +66,22 @@ fix(settings): cover the full viewport and replace its scrollbar
 
 ```
 
+<!-- changelog-commit:a5ef2277930c8cf7396579acb4264c540c6f8a28 -->
+### Commit [`a5ef227`](https://github.com/superhero/operations.superduper.solutions/commit/a5ef2277930c8cf7396579acb4264c540c6f8a28)
+
+```text
+feat(workflows): slide controls and minimap beside Settings
+
+```
+
+<!-- changelog-commit:a929f67960215e6a781fe51431c282b28b875e1f -->
+### Commit [`a929f67`](https://github.com/superhero/operations.superduper.solutions/commit/a929f67960215e6a781fe51431c282b28b875e1f)
+
+```text
+fix(ui): use Tune for the Settings control
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.49
