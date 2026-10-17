@@ -245,6 +245,72 @@ export function createOperationGraph(operation: Operation, position: { x: number
   return { nodes, edges };
 }
 
+
+/** Infer shared structure from uploaded values, without inventing fields for empty or mixed arrays. */
+function fileSchema(values: unknown[], depth = 0): Schema {
+  if (!values.length || depth > 12) return {};
+  const types = new Set(values.map(value => value === null ? "null" : Array.isArray(value) ? "array" : typeof value));
+  if (types.size !== 1) return {};
+  const type = [...types][0]!;
+  if (type === "number") return { type: values.every(value => Number.isInteger(value)) ? "integer" : "number" };
+  if (type === "array") return { type, items: fileSchema((values as unknown[][]).flat(), depth + 1) };
+  if (type !== "object") return { type };
+  const objects = values as Record<string, unknown>[];
+  const keys = [...new Set(objects.flatMap(value => Object.keys(value)))].slice(0, 201);
+  return { type, properties: Object.fromEntries(keys.map(key => [key,
+    fileSchema(objects.filter(value => Object.hasOwn(value, key)).map(value => value[key]), depth + 1)])),
+    required: keys.filter(key => objects.every(value => Object.hasOwn(value, key))) };
+}
+
+/** Build the same bounded output panels used for operations, rooted at a file node. */
+export function createFileDataGraph(node: Extract<WorkflowDocumentNode, { type: "file" }>): Graph {
+  const graph: Graph = { nodes: [], edges: [] };
+  if (!node.data.file) return graph;
+  const tree = project(fileSchema([node.data.file.value]), {}, "file", "File data", "", [], 0,
+    { fields: 0, panels: 0 }, "outputs");
+  if (node.data.file.value === null || typeof node.data.file.value !== "object")
+    tree.fields[0]!.label = "Value";
+  placeTree(graph, tree, node.id, "outputs", "file", "", node.position.x + 360 + gap,
+    node.position.y + tree.span / 2, node.id);
+  // Projecting a field through array items produces an array, not a single sampled item.
+  for (const panel of graph.nodes) if (panel.type === "data") for (const field of panel.data.fields)
+    if (field.connectable) {
+      let value: unknown = node.data.file.value;
+      const path: string = JSON.parse(decodeURIComponent(field.id))[1];
+      for (const part of path.slice(1).split("/")) {
+        if (Array.isArray(value) && part === "items") { field.type = "Array"; break; }
+        value = object(value) ? value[part.replace(/~1/g, "/").replace(/~0/g, "~")] : undefined;
+      }
+    }
+  return graph;
+}
+
+/** Replace inferred panels while retaining stable identities, positions and compatible mappings. */
+export function updateFileDataGraph(nodeId: string, data: Extract<WorkflowDocumentNode, { type: "file" }>["data"],
+  nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[]): Graph {
+  const owner = nodes.find(node => node.id === nodeId);
+  if (owner?.type !== "file") return { nodes, edges };
+  const next = { ...owner, data };
+  const generated = createFileDataGraph(next);
+  const oldPanels = new Map(nodes.filter(node => node.type === "data" && node.data.ownerId === nodeId).map(node => [node.id, node]));
+  const result = [...nodes.filter(node => !oldPanels.has(node.id)).map(node => node.id === nodeId ? next : node),
+    ...generated.nodes.map(node => {
+      const old = oldPanels.get(node.id);
+      return old ? { ...node, position: old.position, ...(old.hidden ? { hidden: true } : {}) } : node;
+    })];
+  const links = [...edges.filter(edge => edge.kind !== "schema" || !oldPanels.has(edge.target)),
+    ...generated.edges.map(edge => {
+      const old = edges.find(previous => previous.id === edge.id);
+      return { ...edge, ...(old?.hidden ? { hidden: true } : {}), ...(old?.detached ? { detached: true } : {}) };
+    })];
+  const index = new Map(result.map(node => [node.id, node]));
+  return { nodes: result, edges: links.filter(edge => {
+    const source = index.get(edge.source), target = index.get(edge.target);
+    return source && target && (edge.kind !== "mapping" || isValueConnection(edge, source, target, links.filter(other => other.id !== edge.id)) &&
+      isWorkflowConnectionTypeCompatible(edge, result, links));
+  }) };
+}
+
 const propertyTypes = Object.values(labels);
 const annotations = ["title", "description", "example", "examples", "default", "deprecated", "readOnly", "writeOnly"];
 const unconstrained = (schema: Schema) => Object.keys(schema).every(key => annotations.includes(key));

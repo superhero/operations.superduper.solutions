@@ -12,7 +12,7 @@ unrelated behavior to `utils.ts`.
 | --- | --- |
 | `catalog*`, `schema-documents`, `schema-library*`, `schema-storage` | OpenAPI compatibility, active operations, schema management and persistence |
 | `matching`, `operation-matching*` | Local operation ranking and cancellable background evaluation for the catalog prompt |
-| `workflow-document`, `workflow-graph`, `workflow-layout`, connection helpers | Persisted graph validation and editor projection |
+| `workflow-document`, `workflow-graph`, `workflow-layout`, connection helpers | Persisted graph validation, operation schema projection and inferred file-output structures |
 | [`flow-routing`](flow-routing/README.md), `workflow-routing*` | Measured orthogonal edge geometry, synchronized dashes and its dedicated worker adapter |
 | `workflow-file*` | Bounded JSON/CSV uploads, dialect options, typed file data and disposable parsing workers |
 | `workflow-runner`, `workflow-execution`, `workflow-response`, `operation-*` | Execution, typed inputs, response mappings and reports |

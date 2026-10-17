@@ -20,10 +20,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { WorkflowDefaults } from "$lib/app-settings.ts";
   import type { WorkflowSaveStatus } from "$lib/workspace.d.ts";
   import WorkflowHistory from "./workflows/WorkflowHistory.svelte";
-  import { createOperationGraph, createUtilityNode, createWorkflowGraph, addAdditionalProperty, getAdditionalPropertyTypes, getEditableAdditionalProperties, updateAdditionalProperty, removeAdditionalProperty, addSwitchGate, updateSwitchGate, removeSwitchGate, schemaBranches, isWorkflowConnection, removeGraphSelection, restoreDataBranch } from "$lib/workflow-graph.ts";
+  import { updateFileDataGraph, createOperationGraph, createUtilityNode, createWorkflowGraph, addAdditionalProperty, getAdditionalPropertyTypes, getEditableAdditionalProperties, updateAdditionalProperty, removeAdditionalProperty, addSwitchGate, updateSwitchGate, removeSwitchGate, schemaBranches, isWorkflowConnection, removeGraphSelection, restoreDataBranch } from "$lib/workflow-graph.ts";
   import { layoutAddedGraph, placeUtilityNode } from "$lib/workflow-layout.ts";
   import { orderWorkflowNodes, restoreWorkflowNodeOrder } from "$lib/workflow-focus-order.ts";
-  import { adaptRoutingGates, isWorkflowConnectionTypeCompatible, routingInputTypes, workflowDescriptionLimit, workflowInputConnected } from "$lib/workflow-utilities.ts";
+  import { adaptRoutingGates, routingInputTypes, workflowDescriptionLimit, workflowInputConnected } from "$lib/workflow-utilities.ts";
   import { getOperationReport } from "$lib/operation-report.ts";
   import WorkflowNode from "../WorkflowNode.svelte";
   import WorkflowToolbar from "./workflows/WorkflowToolbar.svelte";
@@ -170,11 +170,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
   setContext("workflow-file", (nodeId: string, data: WorkflowFileData) => {
     if (!keyboardActive) return;
-    const next = nodes.map(node => node.id === nodeId && node.type === "file" ? { ...node, data } : node);
-    // Reject overlarge documents atomically, preserving the previous file.
-    validateWorkflowDocument({ ...documentValue(), nodes: next });
-    applyGraph({ nodes: next, edges: edges.filter(edge => edge.source !== nodeId ||
-      isWorkflowConnectionTypeCompatible(edge, next, edges)) }, true);
+    const graph = updateFileDataGraph(nodeId, data, nodes, edges);
+    validateWorkflowDocument({ ...documentValue(), ...graph });
+    applyPropertyGraph(graph);
   });
   setContext("workflow-vault-variable", (nodeId: string, credentialId: string) => {
     if (keyboardActive) nodes = nodes.map(node => node.id === nodeId && node.type === "vault" ? { ...node, data: credentialId ? { credentialId } : {} } : node);

@@ -120,6 +120,7 @@ Then('uploaded CSV rows execute as structured request data', async function () {
   const {createWorkflowRequestExecution}=await import('./lib/workflow-execution.ts');
   const schema={type:'array',items:{type:'object',properties:{name:{type:'string'},id:{type:'string'}},required:['name','id']}};
   const source={openapi:'3.1.0',info:{title:'File request',version:'1'},servers:[{url:'https://example.com'}],paths:{'/rows':{post:{operationId:'rows',requestBody:{required:true,content:{'application/json':{schema}}},responses:{200:{description:'Accepted'}}}}}};
+  source.paths['/names']={post:{operationId:'names',requestBody:{required:true,content:{'application/json':{schema:{type:'array',items:{type:'string'}}}}},responses:{200:{description:'Accepted'}}}};
   const op=extractOperations(source,'file-fixture')[0];
   updateCatalogs([...catalogs,{id:'file-fixture',name:'Files',file:'file.json',document:source,groups:[],execution:{kind:'http',origin:'https://example.com'}}]);
   try {
@@ -133,5 +134,90 @@ Then('uploaded CSV rows execute as structured request data', async function () {
     await runner.submit(visit.values);
     assert.deepEqual(sent,[{name:'Alice',id:'00123'}]);
     assert.equal(runner.next().kind,'complete');
+    const {createFileDataGraph}=await import('./lib/workflow-graph.ts');
+    const names=extractOperations(source,'file-fixture').find(op=>op.id==='file-fixture:names');
+    const namesGraph=createOperationGraph(names,{x:0,y:0},'names',source);
+    const namesInput=namesGraph.nodes.find(n=>n.type==='data'&&n.data.direction==='inputs');
+    const owner={id:'file',type:'file',position:{x:0,y:0},data:{file}};
+    const fields=createFileDataGraph(owner);
+    const column=fields.nodes.find(n=>n.data.fields.some(f=>f.label==='name'));
+    const columnField=column.data.fields.find(f=>f.label==='name');
+    const columnDoc={...doc,nodes:[owner,...fields.nodes,...namesGraph.nodes],edges:[...fields.edges,...namesGraph.edges,
+      {id:'column-body',kind:'mapping',source:column.id,sourceHandle:columnField.id,target:namesInput.id,targetHandle:namesInput.data.fields[0].id}]};
+    const columnRunner=createWorkflowRunner(columnDoc,'names',createWorkflowRequestExecution(async(_url,request)=>{sent=JSON.parse(request.body);return Response.json({ok:true});}));
+    await columnRunner.submit(columnRunner.next().values);
+    assert.deepEqual(sent,['Alice']);
+
   } finally {updateCatalogs(catalogs);}
+});
+
+const fileOwner = value => ({id:'file',type:'file',position:{x:0,y:0},data:{file:parse('data.json',JSON.stringify(value))}});
+const fileDocument = graph => ({version:3,id:'file-structures',name:'File structures',...graph,viewport:{x:0,y:0,zoom:1},snap:true,curved:true,dashed:false});
+Then('uploaded structures project nested fields and CSV columns', async function () {
+  const {createFileDataGraph}=await import('./lib/workflow-graph.ts');
+  const {validateWorkflowDocument}=await import('./lib/workflow-document.ts');
+  for (const value of [null,true,'text',3,3.5,{},[],[1,'mixed'],[{foo:1},{bar:true}],{items:'literal'}, {foo:{bar:{baz:'project-1'}}}]) {
+    const owner=fileOwner(value), graph=createFileDataGraph(owner);
+    validateWorkflowDocument(fileDocument({nodes:[owner,...graph.nodes],edges:graph.edges}));
+    assert.ok(graph.nodes.every(n=>n.type==='data'&&n.data.ownerId==='file'&&n.data.direction==='outputs'));
+  }
+  assert.deepEqual(createFileDataGraph({...fileOwner(1),data:{}}),{nodes:[],edges:[]});
+  const owner=fileOwner({foo:{bar:{baz:'project-1'}}});
+  const graph=createFileDataGraph(owner);
+  assert.deepEqual(graph.nodes.map(n=>n.data.fields.map(f=>[f.label,f.type])),[[['foo','Object']],[['bar','Object']],[['baz','Text']]]);
+  const csv={...owner,data:{file:parse('rows.csv','foo,bar,baz,qux\n1,2,3,4\n5,6,7,8')}};
+  const csvGraph=createFileDataGraph(csv);
+  assert.deepEqual(csvGraph.nodes.map(n=>n.data.fields.map(f=>[f.label,f.type])),[[['Items','Array']],[['foo','Array'],['bar','Array'],['baz','Array'],['qux','Array']]]);
+  const literal=createFileDataGraph(fileOwner({items:'hello'})); assert.equal(literal.nodes[0].data.fields[0].type,'Text');
+  let deep={leaf:true}; for(let i=0;i<14;i++)deep={nested:deep};
+  assert.ok(createFileDataGraph(fileOwner(deep)).nodes.some(n=>n.data.fields.some(f=>f.type==='Unknown')));
+});
+Then('replacing file structures preserves matching panels and removes invalid mappings', async function () {
+  const {createFileDataGraph,updateFileDataGraph}=await import('./lib/workflow-graph.ts');
+  const owner=fileOwner({foo:{bar:'one'},gone:{value:1}});
+  const graph=createFileDataGraph(owner);
+  const initial=updateFileDataGraph('file',owner.data,[{...owner,data:{}}],[]);
+  assert.equal(initial.nodes.length,graph.nodes.length+1);
+  const invalid=structuredClone(initial); invalid.nodes[1].data.direction='inputs';
+  const {validateWorkflowDocument}=await import('./lib/workflow-document.ts');
+  assert.throws(()=>validateWorkflowDocument(fileDocument(invalid)),/File panels/);
+  const nodes=[owner,...graph.nodes]; graph.nodes[0].position={x:700,y:100}; graph.nodes[0].hidden=true;
+  graph.edges[0].hidden=true;graph.edges[0].detached=true;
+  const changed=updateFileDataGraph('file',fileOwner({foo:{bar:'two'},added:true}).data,nodes,graph.edges);
+  assert.deepEqual(changed.nodes.find(n=>n.id===graph.nodes[0].id).position,{x:700,y:100});
+  assert.equal(changed.nodes.find(n=>n.id===graph.nodes[0].id).hidden,true);
+  assert.equal(changed.edges.find(e=>e.id===graph.edges[0].id).detached,true);
+  assert.ok(!changed.nodes.some(n=>n.type==='data'&&n.data.label==='gone'));
+  const unchanged=updateFileDataGraph('absent',owner.data,nodes,graph.edges);assert.equal(unchanged.nodes,nodes);
+  const unrelated={id:'other',type:'comment',position:{x:0,y:0},data:{text:'Keep'}};
+  const emptied=updateFileDataGraph('file',{},[...nodes,unrelated],graph.edges);
+  assert.deepEqual(emptied.nodes.map(n=>n.id),['file','other']);assert.deepEqual(emptied.edges,[]);
+});
+Then('uploaded nested fields supply executable operation inputs', async function () {
+  const {operations}=await import('./lib/catalog.ts');
+  const {createOperationGraph,createFileDataGraph,updateFileDataGraph}=await import('./lib/workflow-graph.ts');
+  const {parseWorkflowDocument}=await import('./lib/workflow-document.ts');
+  const {createWorkflowRunner}=await import('./lib/workflow-runner.ts');
+  const {createWorkflowDemo}=await import('./lib/workflow-demo.ts');
+  const demo=(await import('./catalogs/demo.openapi.json',{with:{type:'json'}})).default;
+  const operation=createOperationGraph(operations.find(op=>op.id==='demo:getProject'),{x:0,y:0},'get',demo);
+  const owner=fileOwner({foo:{bar:{baz:'project-1'}}}),graph=createFileDataGraph(owner);
+  const output=graph.nodes.find(n=>n.data.fields.some(f=>f.label==='baz'));
+  const input=operation.nodes.find(n=>n.type==='data'&&n.data.direction==='inputs');
+  const edge={id:'file-mapping',kind:'mapping',source:output.id,sourceHandle:output.data.fields[0].id,target:input.id,targetHandle:input.data.fields[0].id};
+  const doc=fileDocument({nodes:[owner,...graph.nodes,...operation.nodes],edges:[...graph.edges,...operation.edges,edge]});
+  for (const start of [undefined,'get']) {
+    const runner=createWorkflowRunner(parseWorkflowDocument(JSON.stringify(doc)),start,createWorkflowDemo());
+    const visit=runner.next();assert.equal(visit.kind,'operation');assert.equal(visit.values['path:projectId'],'project-1');
+    await runner.submit(visit.values);assert.equal(runner.next().kind,'complete');
+  }
+  const unknown=fileOwner([1,'mixed']);
+  const unknownGraph=createFileDataGraph(unknown);
+  assert.equal(createWorkflowRunner(fileDocument({nodes:[unknown,...unknownGraph.nodes,...operation.nodes],edges:[...unknownGraph.edges,...operation.edges]}),undefined,createWorkflowDemo()).next().kind,'operation');
+  const compatible=updateFileDataGraph('file',fileOwner({foo:{bar:{baz:'project-2'}}}).data,doc.nodes,doc.edges);
+  assert.ok(compatible.edges.some(e=>e.id==='file-mapping'));
+  const incompatible=updateFileDataGraph('file',fileOwner({foo:{bar:{baz:123}}}).data,doc.nodes,doc.edges);
+  assert.ok(!incompatible.edges.some(e=>e.id==='file-mapping'));
+  const removed=updateFileDataGraph('file',fileOwner({}).data,doc.nodes,doc.edges);
+  assert.ok(!removed.edges.some(e=>e.id==='file-mapping'));
 });

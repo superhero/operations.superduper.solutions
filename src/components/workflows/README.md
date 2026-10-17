@@ -100,3 +100,8 @@ limited to 500 kB each and remain subject to the document size limit.
 File schema previews scroll within a 384px viewport and render at most 1,000
 preview lines initially. Load more extends that budget by 1,000; replacing the
 file resets it. Nested expanded branches share the same rendering budget.
+
+Uploaded files also own generated output panels, using the operation-panel
+renderer and layout. Object properties keep stable path identities; array-item
+projections expose arrays of values. Replacing a file reconciles its panels,
+retaining matching positions and compatible mappings while removing stale ones.
