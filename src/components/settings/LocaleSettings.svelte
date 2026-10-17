@@ -5,6 +5,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
+  import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import FieldSelect from "$lib/components/FieldSelect.svelte";
   import { formatDateTime, getTimeZoneOptions, type LocaleSettings } from "$lib/locale-settings.ts";
 
@@ -64,7 +65,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </div>
   </div>
   <div class="locale-preview">
-    <span>Preview</span>
+    <span class="preview-heading"><MaterialIcon name="calendar_month" size={20} />Preview</span>
     <output aria-label="Date and time preview" aria-live="polite" aria-atomic="true">{preview}</output>
   </div>
   {#if error}
@@ -81,8 +82,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .locale-option { display: grid; align-content: start; gap: 8px; min-width: 0; padding: 10px; border-radius: 4px; background: var(--color-surface); --field-background: var(--color-background); --field-foreground: var(--color-foreground); }
   .locale-option label { font-size: 12px; font-weight: 700; }
   .locale-option :global(.field-select-trigger) { border-radius: 4px; font-size: 12px; }
-  .locale-preview { display: flex; align-items: baseline; justify-content: center; flex-wrap: wrap; gap: 6px 12px; margin-top: 12px; padding: 10px 12px; border-radius: 4px; background: var(--color-emphasis); color: var(--color-foreground); text-align: center; font-size: 12px; }
-  .locale-preview > span { font-weight: 700; }
+  .locale-preview { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 12px; margin-top: 12px; padding: 10px 12px; border-radius: 4px; background: var(--color-emphasis); color: var(--color-background); text-align: center; font-size: 12px; }
+  .preview-heading { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
   .locale-preview output { min-width: 0; overflow-wrap: anywhere; }
   .defaults-error { display: grid; justify-items: start; gap: 10px; margin-top: 12px; }
   .defaults-error p { margin: 0; padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; overflow-wrap: anywhere; }
