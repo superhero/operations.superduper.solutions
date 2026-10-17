@@ -181,3 +181,13 @@ Feature: Browser operations workspace
 
   Scenario: Full-height Settings temporarily replaces the viewport scrollbar
     Then Settings covers the viewport scrollbar without shifting or scrolling the workflow
+
+  Scenario Outline: Workflow controls move beside Settings
+    Given I use a viewport of <width> by 844 pixels
+    And a workflow with 1 instances of "List projects"
+    Then Settings pushes the workflow minimap and button groups beside its pane
+
+    Examples:
+      | width |
+      | 1280  |
+      | 390   |

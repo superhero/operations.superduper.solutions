@@ -340,12 +340,17 @@
 
 <style>
   :global(:root) { --settings-drawer-width: min(900px, calc(100vw - var(--navigation-control-size) - 2 * var(--content-padding))); }
+  .page-content { --workflow-controls-inset: 0px; }
+  .page-content.settings-open { --workflow-controls-inset: var(--settings-drawer-width); }
+  .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap) { right: var(--workflow-controls-inset); max-width: calc(100% - var(--workflow-controls-inset) - 2rem); transition: right 200ms ease-in-out, max-width 200ms ease-in-out; }
+  .page-content :global(.workflow-control-group) { max-width: 100%; flex-wrap: wrap; }
+  .page-content :global(.workflow-minimap .svelte-flow__minimap-svg) { max-width: 100%; height: auto; }
   .page-content :global(.site-header) { transition: transform 200ms ease-in-out; }
   .page-content.settings-open :global(.site-header) { transform: translateX(calc(-1 * var(--settings-drawer-width))); }
   .settings-drawer-host { position: fixed; z-index: 25; top: 0; right: 0; bottom: 0; width: var(--settings-drawer-width); overflow: clip; pointer-events: none; }
   .settings-drawer { --app-header-height: 0px; height: 100%; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; pointer-events: auto; background: var(--color-surface); border-left: 1px solid var(--color-border); transform: translateX(100%); visibility: hidden; transition: transform 200ms ease-in-out, visibility 0s linear 200ms; }
   .settings-drawer.open { transform: translateX(0); visibility: visible; transition-delay: 0s; }
-  @media (prefers-reduced-motion: reduce) { .settings-drawer, .page-content :global(.site-header) { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .settings-drawer, .page-content :global(.site-header), .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap) { transition: none; } }
 
   .settings-recovery {
     display: flex;
