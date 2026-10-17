@@ -53,8 +53,8 @@
   let mode = $state<WorkspaceMode>("workflow");
   let modeRequest = 0;
   let settingsPresent = $state(false);
-  // Use the same modal breakpoint as navigation; wider screens keep 250px for the workflow.
-  const compactSettingsQuery = "(max-width: 899px)";
+  // Below 1150px, overlay Settings instead of compressing the workflow controls.
+  const compactSettingsQuery = "(max-width: 1149px)";
   let compactSettings = $state(matchMedia(compactSettingsQuery).matches);
   onMount(() => {
     const media = matchMedia(compactSettingsQuery);
@@ -373,10 +373,10 @@
 
 <style>
   :global(:root) { --settings-drawer-width: min(900px, calc(100vw - 250px)); }
-  @media (max-width: 899px) { :global(:root) { --settings-drawer-width: 100vw; } }
+  @media (max-width: 1149px) { :global(:root) { --settings-drawer-width: 100vw; } }
   .page-content { --workflow-controls-inset: 0px; --navigation-inset: 0px; }
   @media (min-width: 900px) { .page-content.catalog-open { --navigation-inset: var(--catalog-width); } }
-  @media (min-width: 900px) { .page-content.settings-open { --workflow-controls-inset: var(--settings-drawer-width); } }
+  @media (min-width: 1150px) { .page-content.settings-open { --workflow-controls-inset: var(--settings-drawer-width); } }
   .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap) { right: var(--workflow-controls-inset); max-width: calc(100% - var(--workflow-controls-inset) - 2rem); transition: right 200ms ease-in-out, max-width 200ms ease-in-out; }
   .page-content :global(.workflow-toolbar) { max-width: calc(100% - var(--workflow-controls-inset) - var(--navigation-inset) - 2rem); }
   .page-content :global(.workflow-control-group) { max-width: 100%; flex-wrap: wrap; }
@@ -388,7 +388,7 @@
   .settings-drawer { --app-header-height: 0px; height: 100%; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; pointer-events: auto; background: var(--color-surface); border-left: 1px solid var(--color-border); transform: translateX(100%); visibility: hidden; transition: transform 200ms ease-in-out, visibility 0s linear 200ms; }
   .settings-mobile-header { position: sticky; top: 0; z-index: 20; display: flex; justify-content: flex-end; align-items: center; height: 64px; padding-inline: var(--content-padding); background: var(--color-surface); }
   .settings-mobile-header :global(button) { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; background: transparent; color: var(--color-foreground); }
-  @media (max-width: 899px) {
+  @media (max-width: 1149px) {
     .settings-drawer { --app-header-height: 64px; }
     .settings-drawer :global(.workspace) { padding-top: 0; }
   }

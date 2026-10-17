@@ -175,6 +175,8 @@ Feature: Browser operations workspace
       | 1280  | no-preference |
       | 390   | no-preference |
       | 390   | reduce        |
+      | 930   | no-preference |
+      | 1149  | no-preference |
 
   Scenario: Settings and the left menu do not compete for header space
     Then opening Settings closes the left menu and keeps the Operations header left aligned

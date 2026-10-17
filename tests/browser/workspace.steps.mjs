@@ -106,6 +106,14 @@ async function setMode(page, mode) {
   await quitRun(page);
   await closeCatalog(page);
   if (!['workflow', 'settings'].includes(mode)) throw new Error(`Unsupported workspace: ${mode}`);
+  const mobileClose = page.getByRole('button', { name: 'Close settings', exact: true });
+  if (await mobileClose.isVisible()) {
+    if (mode === 'workflow') {
+      await mobileClose.click();
+      await expect(mobileClose).toBeHidden();
+    }
+    return;
+  }
   const button = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
   if (await button.getAttribute('aria-pressed') !== String(mode === 'settings')) {
     await button.click();
@@ -521,10 +529,10 @@ Then('the settings drawer preserves the workflow at width {int} with {string} mo
   await settings.click();
   const drawer = page.locator('.settings-drawer');
   await expect(drawer).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
-  if (width < 900) await expect.poll(() => canvas.evaluate(element => Boolean(element.closest('[inert]')))).toBe(true);
+  if (width < 1150) await expect.poll(() => canvas.evaluate(element => Boolean(element.closest('[inert]')))).toBe(true);
   else await expect(canvas).not.toHaveAttribute('inert');
   assert.deepEqual(await canvas.boundingBox(), before, 'Opening Settings must not resize or hide the workflow.');
-  if (width < 900) {
+  if (width < 1150) {
     assert.deepEqual(await toolbar.boundingBox(), toolbarBefore, 'Modal Settings must not compress workflow controls.');
     await expect(viewport).toHaveAttribute('style', transformBefore);
     await expect(page.locator('.settings-backdrop')).toBeVisible();
@@ -541,7 +549,7 @@ Then('the settings drawer preserves the workflow at width {int} with {string} mo
     button.click();
   });
   await expect(drawer).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
-  if (width < 900) await expect.poll(() => canvas.evaluate(element => Boolean(element.closest('[inert]')))).toBe(true);
+  if (width < 1150) await expect.poll(() => canvas.evaluate(element => Boolean(element.closest('[inert]')))).toBe(true);
   else await expect(canvas).not.toHaveAttribute('inert');
   await page.keyboard.press('Escape');
   await expect(drawer).toBeHidden();
@@ -625,7 +633,10 @@ Then('Settings pushes the workflow minimap and button groups beside its pane', a
   const before = await Promise.all(controls.map(control => control.boundingBox()));
   await setMode(page, 'settings');
   const drawer = await page.locator('.settings-drawer').boundingBox();
-  for (const control of controls) {
+  if (page.viewportSize().width < 1150) {
+    for (const [index, control] of controls.entries())
+      assert.deepEqual(await control.boundingBox(), before[index], 'Modal Settings preserves control layout.');
+  } else for (const control of controls) {
     await expect.poll(async () => {
       const bounds = await control.boundingBox();
       return bounds.x >= -1 && bounds.x + bounds.width <= drawer.x;
@@ -740,7 +751,7 @@ Then('Settings disables the workspace when insufficient space remains', async fu
   const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
   const node = page.locator('.svelte-flow__node-operation').first();
   const original = await node.getAttribute('style');
-  for (const width of [390, 899]) {
+  for (const width of [390, 899, 930, 1000, 1149]) {
     await page.setViewportSize({ width, height: 844 });
     await expect(canvas).toHaveAttribute('inert', '');
     await settings.focus();
@@ -754,7 +765,7 @@ Then('Settings disables the workspace when insufficient space remains', async fu
     await expect.poll(async () => Math.round((await page.locator('.settings-drawer').boundingBox()).width)).toBe(width);
     assert.equal(await page.getByRole('banner', { includeHidden: true }).evaluate(element => Boolean(element.closest('[inert]'))), true);
   }
-  for (const width of [900, 1000, 1149, 1150, 1220]) {
+  for (const width of [1150, 1220]) {
     await page.setViewportSize({ width, height: 844 });
     await expect(canvas).not.toHaveAttribute('inert');
     await expect.poll(async () => Math.round((await page.locator('.settings-drawer').boundingBox()).x)).toBeGreaterThanOrEqual(250);
