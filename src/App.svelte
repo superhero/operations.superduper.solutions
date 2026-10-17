@@ -349,6 +349,9 @@
     </main>
   </div>
 </div>
+{#if compactSettings && settingsPresent}
+  <div class="settings-backdrop" class:open={mode === "settings"} aria-hidden="true"></div>
+{/if}
 <div class="settings-drawer-host">
   <aside id="settings-panel" bind:this={settingsDrawer} class="settings-drawer" class:open={mode === "settings"} aria-label="Application settings" inert={mode !== "settings"}>
     {#if compactSettings}
@@ -373,12 +376,14 @@
   @media (max-width: 899px) { :global(:root) { --settings-drawer-width: 100vw; } }
   .page-content { --workflow-controls-inset: 0px; --navigation-inset: 0px; }
   @media (min-width: 900px) { .page-content.catalog-open { --navigation-inset: var(--catalog-width); } }
-  .page-content.settings-open { --workflow-controls-inset: var(--settings-drawer-width); }
+  @media (min-width: 900px) { .page-content.settings-open { --workflow-controls-inset: var(--settings-drawer-width); } }
   .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap) { right: var(--workflow-controls-inset); max-width: calc(100% - var(--workflow-controls-inset) - 2rem); transition: right 200ms ease-in-out, max-width 200ms ease-in-out; }
   .page-content :global(.workflow-toolbar) { max-width: calc(100% - var(--workflow-controls-inset) - var(--navigation-inset) - 2rem); }
   .page-content :global(.workflow-control-group) { max-width: 100%; flex-wrap: wrap; }
   .page-content :global(.workflow-minimap .svelte-flow__minimap-svg) { max-width: 100%; height: auto; }
   .page-content :global(.site-header) { margin-left: var(--navigation-inset); width: calc(100% - var(--workflow-controls-inset) - var(--navigation-inset)); transition: width 200ms ease-in-out, margin-left 200ms ease-in-out; }
+  .settings-backdrop { position: fixed; inset: 0; z-index: 24; background: color-mix(in srgb, var(--color-background) 65%, transparent); opacity: 0; transition: opacity 200ms ease-in-out; }
+  .settings-backdrop.open { opacity: 1; }
   .settings-drawer-host { position: fixed; z-index: 25; top: 0; right: 0; bottom: 0; width: var(--settings-drawer-width); overflow: clip; pointer-events: none; }
   .settings-drawer { --app-header-height: 0px; height: 100%; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; pointer-events: auto; background: var(--color-surface); border-left: 1px solid var(--color-border); transform: translateX(100%); visibility: hidden; transition: transform 200ms ease-in-out, visibility 0s linear 200ms; }
   .settings-mobile-header { position: sticky; top: 0; z-index: 20; display: flex; justify-content: flex-end; align-items: center; height: 64px; padding-inline: var(--content-padding); background: var(--color-surface); }
@@ -388,7 +393,7 @@
     .settings-drawer :global(.workspace) { padding-top: 0; }
   }
   .settings-drawer.open { transform: translateX(0); visibility: visible; transition-delay: 0s; }
-  @media (prefers-reduced-motion: reduce) { .settings-drawer, .page-content :global(.site-header), .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap) { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .settings-backdrop, .settings-drawer, .page-content :global(.site-header), .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap) { transition: none; } }
 
   .settings-recovery {
     display: flex;

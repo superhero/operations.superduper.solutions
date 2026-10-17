@@ -513,6 +513,10 @@ Then('the settings drawer preserves the workflow at width {int} with {string} mo
   await page.emulateMedia({ reducedMotion: motion });
   const canvas = page.locator('.workflow-host');
   const before = await canvas.boundingBox();
+  const toolbar = page.locator('.workflow-toolbar');
+  const toolbarBefore = await toolbar.boundingBox();
+  const viewport = page.locator('.svelte-flow__viewport');
+  const transformBefore = await viewport.getAttribute('style');
   const settings = page.getByRole('banner', { includeHidden: true }).getByRole('button', { name: 'Settings', exact: true, includeHidden: true });
   await settings.click();
   const drawer = page.locator('.settings-drawer');
@@ -520,6 +524,11 @@ Then('the settings drawer preserves the workflow at width {int} with {string} mo
   if (width < 900) await expect.poll(() => canvas.evaluate(element => Boolean(element.closest('[inert]')))).toBe(true);
   else await expect(canvas).not.toHaveAttribute('inert');
   assert.deepEqual(await canvas.boundingBox(), before, 'Opening Settings must not resize or hide the workflow.');
+  if (width < 900) {
+    assert.deepEqual(await toolbar.boundingBox(), toolbarBefore, 'Modal Settings must not compress workflow controls.');
+    await expect(viewport).toHaveAttribute('style', transformBefore);
+    await expect(page.locator('.settings-backdrop')).toBeVisible();
+  }
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
   const bounds = await drawer.boundingBox();
   assert.equal(Math.round(bounds.x + bounds.width), width);
