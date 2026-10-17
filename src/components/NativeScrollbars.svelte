@@ -4,6 +4,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
+<script lang="ts">
+</script>
+
 <style>
   :global(*) { scrollbar-color: var(--color-scrollbar-thumb) transparent; }
   :global(:is(html, .catalog-menu, .catalog-sheet, .modal-content, .json-scroll, .json-report, textarea)) { scrollbar-gutter: stable; }
