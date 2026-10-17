@@ -21,7 +21,7 @@
       </div>
     </div>
     <HintButton class="menu-button" label="Settings" tooltipSide="bottom" aria-pressed={settingsOpen} aria-expanded={settingsOpen} aria-controls="settings-panel" onclick={onSettings}>
-      <MaterialIcon name="settings" />
+      <MaterialIcon name="tune" />
     </HintButton>
   </div>
   {#if workflowSaveStatus}
