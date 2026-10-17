@@ -5,7 +5,7 @@
 Feature: Uploaded workflow data
   Scenario: JSON data retains its native output type
     Then uploaded JSON preserves native values and types
-  Scenario: CSV dialects preserve cells without numeric coercion
+  Scenario: CSV dialects preserve text and detect numeric columns
     Then uploaded CSV supports common delimiters quotes headers and line endings
   Scenario: Invalid and excessive input is rejected
     Then workflow uploads reject unsupported malformed and excessive data
@@ -25,3 +25,5 @@ Feature: Uploaded workflow data
     Then uploaded nested fields supply executable operation inputs
   Scenario: Array structures preserve declared and observed item ranges
     Then array structures preserve item bounds and validate stored ranges
+  Scenario: Numeric inference examines every row and falls back per column
+    Then CSV columns become numbers only when every value is numeric

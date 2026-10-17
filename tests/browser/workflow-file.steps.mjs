@@ -23,7 +23,7 @@ Then('I can upload typed workflow files and correct CSV detection', async functi
   await expect(node.locator('.utility-type')).toHaveText('Array');
   await expect(node.getByRole('alert')).toHaveCount(0);
   let doc=(await readExport(page)).document;
-  assert.deepEqual(doc.nodes.find(n=>n.type==='file').data.file.value,[{name:'Alice',id:'00123'},{name:'Bob',id:'00234'}]);
+  assert.deepEqual(doc.nodes.find(n=>n.type==='file').data.file.value,[{name:'Alice',id:123},{name:'Bob',id:234}]);
   assert.equal(doc.edges.filter(e=>e.kind==='mapping').length,0);
   await node.getByRole('combobox',{name:'CSV header',exact:true}).click();
   await page.getByRole('option',{name:'No header',exact:true}).click();
@@ -79,7 +79,7 @@ Then('uploaded files create nested output panels and preserve compatible field c
   await expect(panels.locator('.data-title .material-symbols-rounded').filter({hasText:'data_array'})).toHaveCount(1);
   await expect(panels).toHaveCount(2);
   await expect(panels.locator('.field-name').first()).toHaveText('0..25');
-  await expect(panels.locator('.field-type')).toHaveText(['Array','Array','Array','Array','Array']);
+  await expect(panels.locator('.field-type')).toHaveText(['Object','Integer','Integer','Integer','Integer']);
   doc=(await readExport(page)).document;
   assert.equal(doc.edges.filter(e=>e.kind==='mapping').length,0);
   await expect(page.locator('.site-header .document-meta').getByText('Saved locally',{exact:true})).toBeVisible();

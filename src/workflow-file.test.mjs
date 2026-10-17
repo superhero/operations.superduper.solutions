@@ -20,14 +20,14 @@ Then('uploaded CSV supports common delimiters quotes headers and line endings', 
   assert.deepEqual(parse('auto.csv',"name,note\nAlice,don't change this").value,[{name:'Alice',note:"don't change this"}]);
   for (const delimiter of [',',';','\t','|']) for (const eol of ['\n','\r\n','\r']) {
     const file=parse('rows.csv',`id${delimiter}name${eol}00123${delimiter}Alice${eol}`);
-    assert.equal(file.delimiter,delimiter); assert.deepEqual(file.value,[{id:'00123',name:'Alice'}]);
+    assert.equal(file.delimiter,delimiter); assert.deepEqual(file.value,[{id:123,name:'Alice'}]);
     assert.equal(fileValueType(file),'Array');
   }
-  assert.deepEqual(parse('rows.csv','sep=;\r\nid;name\r\n1;A').value,[{id:'1',name:'A'}]);
+  assert.deepEqual(parse('rows.csv','sep=;\r\nid;name\r\n1;A').value,[{id:1,name:'A'}]);
   assert.deepEqual(parse('rows.csv','name,note\nA,"one, two\nand ""three"""').value,[{name:'A',note:'one, two\nand "three"'}]);
   assert.deepEqual(parse('rows.csv',"name;note\nA;'one;two'",{...defaults,quote:"'"}).value,[{name:'A',note:'one;two'}]);
   assert.deepEqual(parse('rows.csv','alpha,beta\ngamma,delta',{...defaults,header:'absent'}).value,[['alpha','beta'],['gamma','delta']]);
-  assert.deepEqual(parse('rows.csv','1,2\n3,4').value,[['1','2'],['3','4']]);
+  assert.deepEqual(parse('rows.csv','1,2\n3,4').value,[[1,2],[3,4]]);
   assert.deepEqual(parse('rows.csv','name',{...defaults,header:'present'}).value,[]);
   assert.deepEqual(parse('rows.csv','single').value,[['single']]);
   for (const delimiter of [',',';','\t','|']) {
@@ -38,10 +38,10 @@ Then('uploaded CSV supports common delimiters quotes headers and line endings', 
       assert.equal(validate({file}).file.options.quote,'none');
     }
   }
-  assert.deepEqual(parse('rows.csv','name,note\nAlice,00123').value,[{name:'Alice',note:'00123'}]);
+  assert.deepEqual(parse('rows.csv','name,note\nAlice,00123').value,[{name:'Alice',note:123}]);
   assert.deepEqual(parse('rows.csv','a,a\n1,2').value,[['a','a'],['1','2']]);
   assert.deepEqual(parse('rows.csv','a,,b\n1,2,3').value,[['a','','b'],['1','2','3']]);
-  assert.deepEqual(parse('rows.csv','sep=;\na,b\n1,2',{...defaults,delimiter:','}).value,[{a:'1',b:'2'}]);
+  assert.deepEqual(parse('rows.csv','sep=;\na,b\n1,2',{...defaults,delimiter:','}).value,[{a:1,b:2}]);
 });
 Then('workflow uploads reject unsupported malformed and excessive data', function () {
   for (const [name,source] of [['data.txt','{}'],['data.json','{'],['data.json','1e999'],['data.csv',''],['data.csv','a\u0000b'],['data.json',' '.repeat(500001)],['data.csv','a,b\n1'],['data.csv','a,b\n"unfinished'],['data.csv','x\n'.repeat(10001)],['data.csv',Array(1001).fill('x').join(',')]]) assert.throws(()=>parse(name,source));
@@ -118,7 +118,7 @@ Then('uploaded CSV rows execute as structured request data', async function () {
   const {createOperationGraph}=await import('./lib/workflow-graph.ts');
   const {createWorkflowRunner}=await import('./lib/workflow-runner.ts');
   const {createWorkflowRequestExecution}=await import('./lib/workflow-execution.ts');
-  const schema={type:'array',items:{type:'object',properties:{name:{type:'string'},id:{type:'string'}},required:['name','id']}};
+  const schema={type:'array',items:{type:'object',properties:{name:{type:'string'},id:{type:'integer'}},required:['name','id']}};
   const source={openapi:'3.1.0',info:{title:'File request',version:'1'},servers:[{url:'https://example.com'}],paths:{'/rows':{post:{operationId:'rows',requestBody:{required:true,content:{'application/json':{schema}}},responses:{200:{description:'Accepted'}}}}}};
   source.paths['/names']={post:{operationId:'names',requestBody:{required:true,content:{'application/json':{schema:{type:'array',items:{type:'string'}}}}},responses:{200:{description:'Accepted'}}}};
   const op=extractOperations(source,'file-fixture')[0];
@@ -132,7 +132,7 @@ Then('uploaded CSV rows execute as structured request data', async function () {
     const runner=createWorkflowRunner(doc,undefined,createWorkflowRequestExecution(async(_url,request)=>{sent=JSON.parse(request.body);return Response.json({ok:true});}));
     const visit=runner.next(); assert.equal(visit.kind,'operation');
     await runner.submit(visit.values);
-    assert.deepEqual(sent,[{name:'Alice',id:'00123'}]);
+    assert.deepEqual(sent,[{name:'Alice',id:123}]);
     assert.equal(runner.next().kind,'complete');
     const {createFileDataGraph}=await import('./lib/workflow-graph.ts');
     const names=extractOperations(source,'file-fixture').find(op=>op.id==='file-fixture:names');
@@ -246,4 +246,25 @@ Then('array structures preserve item bounds and validate stored ranges', async f
     const invalid=structuredClone(doc);invalid.nodes[1].data.array=bounds;assert.throws(()=>validateWorkflowDocument(invalid));
     const invalidField=structuredClone(doc);invalidField.nodes[1].data.fields[0].array=bounds;assert.throws(()=>validateWorkflowDocument(invalidField));
   }
+});
+Then('CSV columns become numbers only when every value is numeric', async function () {
+  const {createFileDataGraph}=await import('./lib/workflow-graph.ts');
+  const {validateWorkflowDocument}=await import('./lib/workflow-document.ts');
+  const file=parse('numbers.csv','whole,decimal,mixed,blank,unsafe,overflow,boolean,hex\n001,1.5,2,,9007199254740993,1e999,true,0xff\n-2,2e2,text,3,1,2,false,12');
+  assert.deepEqual(file.value,[
+    {whole:1,decimal:1.5,mixed:'2',blank:'',unsafe:'9007199254740993',overflow:'1e999',boolean:'true',hex:'0xff'},
+    {whole:-2,decimal:200,mixed:'text',blank:'3',unsafe:'1',overflow:'2',boolean:'false',hex:'12'}]);
+  assert.deepEqual(parse('numbers.csv','1,+2.5\n3,.5',{...defaults,header:'absent'}).value,[[1,2.5],[3,0.5]]);
+  assert.deepEqual(parse('numbers.csv','value\n" 2 "\n"3."').value,[{value:2},{value:3}]);
+  const owner={...fileOwner([]),data:{file}};const graph=createFileDataGraph(owner);
+  const fields=graph.nodes.find(n=>n.data.label==='Items').data.fields;
+  assert.deepEqual(fields.map(f=>f.itemType),['Integer','Number','Text','Text','Text','Text','Text','Text']);
+  const doc=fileDocument({nodes:[owner,...graph.nodes],edges:graph.edges});
+  validateWorkflowDocument(doc);
+  for (const type of ['unsupported',null,42]) {
+    const invalid=structuredClone(doc);invalid.nodes[1].data.fields[0].itemType=type;
+    assert.throws(()=>validateWorkflowDocument(invalid),/item types/);
+  }
+  const invalid=structuredClone(doc);invalid.nodes[1].data.fields[0].type='Object';
+  assert.throws(()=>validateWorkflowDocument(invalid),/item types/);
 });

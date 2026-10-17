@@ -125,7 +125,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <abbr {...hintProps} class="required" aria-label="Required"> *</abbr>
       {/snippet}
     </HintButton>{/if}</span>
-  <span class="field-type">{field.type}</span>
+  <span class="field-type">{field.itemType ?? field.type}</span>
 {/snippet}
 
 <div class="workflow-data-node" class:selected data-owner-id={data.ownerId} data-direction={data.direction}>
