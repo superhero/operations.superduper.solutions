@@ -12,6 +12,18 @@ Batch palette accessibility checks and use bounded native keyboard routes, inclu
 
 ```
 
+<!-- changelog-commit:f734472ea519d5488619da70a4d93049f0a0822b -->
+### Commit [`f734472`](https://github.com/superhero/operations.superduper.solutions/commit/f734472ea519d5488619da70a4d93049f0a0822b)
+
+```text
+test(browser): narrow fixtures and repeated palette checks
+
+Keep vault management coverage in its explicit creation scenario instead of repeating key rotation during unrelated setup. Separate real Git repository fixtures from editor activation and remove their unconditional reload.
+
+Check full palette structure in both theme modes while using targeted selection and persistence assertions for repeated interactions. Poll completed autosaves, retaining real pauses for negative timing assertions. Document these boundaries without changing application code, CI or cryptographic costs.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.48
