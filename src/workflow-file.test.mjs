@@ -27,6 +27,15 @@ Then('uploaded CSV supports common delimiters quotes headers and line endings', 
   assert.deepEqual(parse('rows.csv','1,2\n3,4').value,[['1','2'],['3','4']]);
   assert.deepEqual(parse('rows.csv','name',{...defaults,header:'present'}).value,[]);
   assert.deepEqual(parse('rows.csv','single').value,[['single']]);
+  for (const delimiter of [',',';','\t','|']) {
+    const source=`name${delimiter}note\r\nAlice${delimiter}"literal\r\nBob${delimiter}'text'`;
+    for (const selection of ['auto',delimiter]) {
+      const file=parse('rows.csv',source,{...defaults,delimiter:selection,quote:'none'});
+      assert.deepEqual(file.value,[{name:'Alice',note:'"literal'},{name:'Bob',note:"'text'"}]);
+      assert.equal(validate({file}).file.options.quote,'none');
+    }
+  }
+  assert.deepEqual(parse('rows.csv','name,note\nAlice,00123').value,[{name:'Alice',note:'00123'}]);
   assert.deepEqual(parse('rows.csv','a,a\n1,2').value,[['a','a'],['1','2']]);
   assert.deepEqual(parse('rows.csv','a,,b\n1,2,3').value,[['a','','b'],['1','2','3']]);
   assert.deepEqual(parse('rows.csv','sep=;\na,b\n1,2',{...defaults,delimiter:','}).value,[{a:'1',b:'2'}]);

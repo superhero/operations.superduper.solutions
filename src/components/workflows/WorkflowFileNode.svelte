@@ -69,7 +69,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </label>
       <label>Quotes
         <WorkflowNodeSelect label="CSV quotes" value={options.quote} active={editorActive()}
-          choices={[{ value: '"', label: "Double" }, { value: "'", label: "Single" }]}
+          choices={[{ value: "none", label: "None" }, { value: '"', label: "Double" }, { value: "'", label: "Single" }]}
           onchange={quote => configure({ quote: quote as CsvOptions["quote"] })} />
       </label>
       <p>{data.file?.header ? "Header row" : "No header"} · {Array.isArray(data.file?.value) ? data.file.value.length : 0} rows · {data.file?.encoding ?? ""}</p>
