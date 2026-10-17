@@ -223,6 +223,94 @@ and the production build pass.
 
 ```
 
+<!-- changelog-commit:f0b87840e5b61a1e50723c2ec3f16ec53a167f15 -->
+### Commit [`f0b8784`](https://github.com/superhero/operations.superduper.solutions/commit/f0b87840e5b61a1e50723c2ec3f16ec53a167f15)
+
+```text
+feat(workflows): support CSV without quote processing
+
+```
+
+<!-- changelog-commit:deffbe269723eb8b93d92b8419fde13c24157bac -->
+### Commit [`deffbe2`](https://github.com/superhero/operations.superduper.solutions/commit/deffbe269723eb8b93d92b8419fde13c24157bac)
+
+```text
+fix(workflows): compact CSV options into one row
+
+```
+
+<!-- changelog-commit:d54a0cb0aa83ceb697b7ca861c09d0d9b8cc142c -->
+### Commit [`d54a0cb`](https://github.com/superhero/operations.superduper.solutions/commit/d54a0cb0aa83ceb697b7ca861c09d0d9b8cc142c)
+
+```text
+feat(workflows): detect CSV quoting with an Auto option
+
+```
+
+<!-- changelog-commit:296e1b0849c15d8e20bae0edb2ca0d1aa898ff1a -->
+### Commit [`296e1b0`](https://github.com/superhero/operations.superduper.solutions/commit/296e1b0849c15d8e20bae0edb2ca0d1aa898ff1a)
+
+```text
+fix(workflows): widen file nodes for CSV option labels
+
+```
+
+<!-- changelog-commit:e0fe3bfdf2cf5d154beb79125c1020191bbe1d60 -->
+### Commit [`e0fe3bf`](https://github.com/superhero/operations.superduper.solutions/commit/e0fe3bfdf2cf5d154beb79125c1020191bbe1d60)
+
+```text
+fix(workflows): reduce file node width to 360 pixels
+
+```
+
+<!-- changelog-commit:c15011034c406b62b7716fd162fbe9718eded4a5 -->
+### Commit [`c150110`](https://github.com/superhero/operations.superduper.solutions/commit/c15011034c406b62b7716fd162fbe9718eded4a5)
+
+```text
+fix(workflows): label uploaded file structure as Schema
+
+```
+
+<!-- changelog-commit:51ce6db9a2e48d9e93651b47ce5d645d1dfa7dc3 -->
+### Commit [`51ce6db`](https://github.com/superhero/operations.superduper.solutions/commit/51ce6db9a2e48d9e93651b47ce5d645d1dfa7dc3)
+
+```text
+Merge branch 'feature/csv-no-quotes' of github.com:superhero/operations.superduper.solutions into feature/csv-no-quotes
+
+```
+
+<!-- changelog-commit:60cd46f5e470d8e2aec7b35b04ec4873b5f9a975 -->
+### Commit [`60cd46f`](https://github.com/superhero/operations.superduper.solutions/commit/60cd46f5e470d8e2aec7b35b04ec4873b5f9a975)
+
+```text
+fix(workflows): omit encoding from CSV summary
+
+```
+
+<!-- changelog-commit:d3458127d7fa7f9226c92b9811257c5a50c7f0f7 -->
+### Commit [`d345812`](https://github.com/superhero/operations.superduper.solutions/commit/d3458127d7fa7f9226c92b9811257c5a50c7f0f7)
+
+```text
+Merge branch 'feature/csv-no-quotes' of github.com:superhero/operations.superduper.solutions into feature/csv-no-quotes
+
+```
+
+<!-- changelog-commit:0de371fca3d032045c78b63857a5eb793eb63a0c -->
+### Commit [`0de371f`](https://github.com/superhero/operations.superduper.solutions/commit/0de371fca3d032045c78b63857a5eb793eb63a0c)
+
+```text
+fix(workflows): compact file schema disclosure header
+
+```
+
+<!-- changelog-commit:9e0e0b269e09cb0760fd9cffb38a398075227b93 -->
+### Commit [`9e0e0b2`](https://github.com/superhero/operations.superduper.solutions/commit/9e0e0b269e09cb0760fd9cffb38a398075227b93)
+
+```text
+fix(workflows): remove copy action from file schema header
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50
