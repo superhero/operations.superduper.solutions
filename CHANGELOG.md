@@ -2,6 +2,22 @@
 
 ## Latest
 
+<!-- changelog-commit:a16b97110421a1af643865eaa4eb430b64a0683d -->
+### Commit [`a16b971`](https://github.com/superhero/operations.superduper.solutions/commit/a16b97110421a1af643865eaa4eb430b64a0683d)
+
+```text
+feat(ui): move settings control to the main header
+
+```
+
+<!-- changelog-commit:794b7de1b51f84cf9214435e23853bc96d1d4a26 -->
+### Commit [`794b7de`](https://github.com/superhero/operations.superduper.solutions/commit/794b7de1b51f84cf9214435e23853bc96d1d4a26)
+
+```text
+fix(ui): match settings control to menu button styling
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.49
