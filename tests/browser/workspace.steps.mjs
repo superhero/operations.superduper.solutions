@@ -604,3 +604,24 @@ Then('Settings covers the viewport scrollbar without shifting or scrolling the w
   assert.deepEqual(await canvas.boundingBox(), before);
   assert.equal(await page.evaluate(() => scrollY), 80);
 });
+
+Then('Settings pushes the workflow minimap and button groups beside its pane', async function () {
+  const page = this.page;
+  await closeCatalog(page);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const controls = [page.locator('.workflow-toolbar'), page.locator('.workflow-minimap')];
+  const before = await Promise.all(controls.map(control => control.boundingBox()));
+  await setMode(page, 'settings');
+  const drawer = await page.locator('.settings-drawer').boundingBox();
+  for (const control of controls) {
+    await expect.poll(async () => {
+      const bounds = await control.boundingBox();
+      return bounds.x >= -1 && bounds.x + bounds.width <= drawer.x;
+    }).toBe(true);
+  }
+  await setMode(page, 'workflow');
+  for (const [index, control] of controls.entries()) {
+    await expect.poll(async () => Math.round((await control.boundingBox()).x)).toBe(Math.round(before[index].x));
+    await expect.poll(async () => Math.round((await control.boundingBox()).width)).toBe(Math.round(before[index].width));
+  }
+});
