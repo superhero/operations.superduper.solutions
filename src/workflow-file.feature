@@ -45,3 +45,5 @@ Feature: Uploaded workflow data
     Then Item connection validation distinguishes rows collections and incompatible types
   Scenario: Each CSV row can execute a nested workflow
     Then CSV rows supply nested workflow inputs independently
+  Scenario: File fields retain their scalar types when routed through utility nodes
+    Then file fields expose their item or native types to switches and casts

@@ -441,3 +441,22 @@ Then('CSV rows supply nested workflow inputs independently', async function () {
     assert.deepEqual(sent,['row-0','row-1','row-2']);
   } finally {fixture.restore();}
 });
+Then('file fields expose their item or native types to switches and casts', async function () {
+  const {createUtilityNode,createFileDataGraph}=await import('./lib/workflow-graph.ts');
+  const {routingInputTypes}=await import('./lib/workflow-utilities.ts');
+  for (const [name,source,label,expected] of [
+    ['rows.csv','number\n1\n2','number','Number'],
+    ['object.json','{"name":"foo"}','name','Text'],
+    ['object.json','{"name":"foo"}','missing','Unknown'],
+  ]) {
+    const owner={...fileOwner([]),data:{file:parse(name,source)}};
+    const graph=createFileDataGraph(owner);
+    const panel=graph.nodes.find(node=>node.data.fields.some(field=>field.label===(label==='missing'?'name':label)));
+    const handle=panel.data.fields.find(field=>field.label===label)?.id??'missing';
+    for (const kind of ['switch','cast']) {
+      const target=createUtilityNode(kind,{x:0,y:0},'target');
+      const edge={id:'file-field',kind:'mapping',source:panel.id,sourceHandle:handle,target:target.id,targetHandle:'value'};
+      assert.equal(routingInputTypes([owner,...graph.nodes,target],[...graph.edges,edge]).get(target.id),expected);
+    }
+  }
+});
