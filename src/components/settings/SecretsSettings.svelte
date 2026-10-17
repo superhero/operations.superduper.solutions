@@ -396,7 +396,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </ul>
     </div>
     {/if}
-  {#if ready && status.exists}
+  {#if ready && status.unlocked}
     <div class="card">
       <div class="idle-settings">
       <button class="idle-toggle" type="button" role="switch" aria-checked={preferences.idleLockEnabled} disabled={busy || idleSaving}
