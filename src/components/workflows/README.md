@@ -10,7 +10,7 @@ currently lives at [WorkflowNode.svelte](../../WorkflowNode.svelte).
 
 | Change | Start here |
 | --- | --- |
-| Node fields and utility interactions | `WorkflowDataNode`, `WorkflowSwitchNode`, `WorkflowCastNode`, `WorkflowCommentNode`, `WorkflowReferenceNode` |
+| Node fields and utility interactions | `WorkflowDataNode`, `WorkflowSwitchNode`, `WorkflowCastNode`, `WorkflowCommentNode`, `WorkflowReferenceNode`, `WorkflowFileNode` |
 | Shared operation and workflow-reference card layout | `workflow-owner-nodes.css` |
 | Connection rendering and target previews | `WorkflowCurveEdge`, `WorkflowConnectionLine`, `WorkflowConnectionSnap` |
 | Selection and navigation aids | `WorkflowSelection`, `WorkflowMinimap`, `WorkflowToolbar` |
@@ -31,6 +31,8 @@ Node controls use `nodrag`, `nopan`, `nokey` and, where needed, `nowheel` to kee
 editing separate from canvas gestures. Preserve modal shortcut isolation,
 connection eligibility, transient selection and completed-edit autosave. Comment
 previews use the local Markdown parser with escaped text and restricted links.
+Selected comments expose eight side/corner resize handles. Their bounded sizes
+are saved with the comment; resize gestures become completed edits for autosave.
 
 Each input accepts one active value connection and unlocks when it is disconnected.
 Outputs can feed multiple inputs; schema attachments do not occupy value inputs.
@@ -83,3 +85,48 @@ the viewport, then outside it when needed, and preserves existing node positions
 Grid snapping applies when enabled. Adding a utility pans to center it in the
 usable area beside open panes and below the toolbar. Operation trees retain
 their ordered placement after existing content.
+
+## File inputs
+
+File nodes embed parsed JSON or CSV data in the workflow, including exports and
+Git history. JSON retains its native type; CSV produces an array of rows. Columns
+become booleans when every cell is true or false, or numbers when every cell is
+numeric and safely representable. Otherwise the whole column stays text.
+Automatic delimiter and header detection
+can be overridden on the node.
+Quotes default to Auto, detecting double, single or no quoting. Explicit Double,
+Single and None overrides remain available; None preserves quotes literally.
+Parsing runs in a disposable worker; replacing a file preserves compatible
+connections and removes connections whose types no longer match. Uploads are
+limited to 500 kB each and remain subject to the document size limit.
+
+File schema previews scroll within a 384px viewport and render at most 1,000
+preview lines initially. Load more extends that budget by 1,000; replacing the
+file resets it. Nested expanded branches share the same rendering budget.
+
+Uploaded files also own generated output panels, using the operation-panel
+renderer and layout. Object properties keep stable path identities; array-item
+projections expose arrays of values. Replacing a file reconciles its panels,
+retaining matching positions and compatible mappings while removing stale ones.
+
+Array panels use the Data Array symbol. Their Items row labels show item bounds as
+`min..max`, defaulting to `0..*`. OpenAPI bounds come from `minItems`/`maxItems`;
+uploaded arrays use zero through the observed item count. Type badges continue to show the data type.
+
+Projected array attributes show their item type while connections retain the
+array type needed to carry all projected values.
+
+The file node has one output connector shared by its value and generated
+structure. Older documents normalize separate structure handles to that output.
+
+## Item execution
+
+File Item attributes connect to matching scalar inputs. The selected workflow
+path runs once per row, keeping columns aligned and completing downstream work
+before advancing. A failed request retries the same row; ending the run sends
+no later rows. Empty arrays send no requests. Separate starting paths stay
+independent, and file arrays feeding one path must have equal row counts.
+
+Connections into array inputs retain whole-column mapping, while the file's top
+output supplies the complete parsed value. Switch and Cast inputs can consume
+individual Item values. The operation-step guard applies separately to each row.

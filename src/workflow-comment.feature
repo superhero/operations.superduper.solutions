@@ -14,3 +14,6 @@ Feature: Safe workflow comment previews
 
   Scenario: Incomplete Markdown and line endings preserve readable annotations
     Then workflow comment previews retain incomplete formatting and normalize line endings
+
+  Scenario: Comment sizes are bounded and survive document round trips
+    Then comment dimensions persist and reject invalid sizes

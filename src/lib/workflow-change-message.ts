@@ -45,7 +45,7 @@ function labels(document: WorkflowDocument)
     if (node.type === undefined || node.type === "operation") return `${quote(node.data.name)}${ordinal}`;
     if (node.type === "workflow") return `Workflow ${quote(node.data.name)}${ordinal}`;
     if (node.type === "comment") return `Comment${ordinal}${node.data.text.trim() ? ` ${quote(node.data.text)}` : ""}`;
-    return `${node.type === "vault" ? "Vault variable" : node.type === "switch" ? "Switch" : "Cast"}${ordinal}`;
+    return `${node.type === "file" ? "File upload" : node.type === "vault" ? "Vault variable" : node.type === "switch" ? "Switch" : "Cast"}${ordinal}`;
   };
   const endpoint = (id: string, handle?: string): string => {
     const node = nodes.get(id);
@@ -147,6 +147,7 @@ export function describeWorkflowChange(before: WorkflowDocument | null, after: W
     if (type(old) !== type(node)) { add("Replace node with", label); continue; }
     if (node.type === "comment" && old.type === "comment")
     {
+      if (node.data.width !== old.data.width || node.data.height !== old.data.height) add("Resize", label);
       if (node.data.text !== old.data.text)
         add("Edit comment", `${previous.node(old).replace(/^Comment\s*/, "") || "text"} to ${node.data.text.trim() ? quote(node.data.text) : "empty text"}`);
     }
@@ -194,7 +195,7 @@ export function describeWorkflowChange(before: WorkflowDocument | null, after: W
       const retained = old.data.fields.filter(field => newFields.has(field.id)).map(field => field.id);
       if (!same(retained, node.data.fields.filter(field => oldFields.has(field.id)).map(field => field.id))) add("Reorder fields in", label);
     }
-    else if (!same(old.data, node.data)) add(node.type === "vault" ? "Select vault variable" : "Update operation", label);
+    else if (!same(old.data, node.data)) add(node.type === "file" ? "Update file upload" : node.type === "vault" ? "Select vault variable" : "Update operation", label);
   }
 
   const oldEdges = new Map((before?.edges ?? []).map(edge => [edge.id, edge]));

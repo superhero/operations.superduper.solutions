@@ -109,7 +109,7 @@ When('the application module becomes available and I reload startup', async func
 Then('the development application finishes loading with its retry guard cleared', { timeout: 90_000 },
   async function () { await expectReady(this.startup); });
 
-After({ tags: '@startup-modules' }, async function ({ result }) {
+After({ tags: '@startup-modules or @file-worker-development' }, async function ({ result }) {
   const state = this.startup;
   if (!state?.context) return;
   const failed = result?.status !== Status.PASSED || state.pageErrors.length > 0;
@@ -128,3 +128,94 @@ After({ tags: '@startup-modules' }, async function ({ result }) {
   expect(state.pageErrors, 'Unexpected development page errors').toEqual([]);
 });
 AfterAll(async function () { await server?.close(); });
+
+
+Given('a cold development file parser with {int} failed worker starts', { timeout: 90_000 }, async function (failures) {
+  const url = await developmentURL();
+  const state = this.startup = { requests: 0, pageErrors: [], consoleErrors: [], failures };
+  state.context = await this.browser.newContext({ serviceWorkers: 'block' });
+  await state.context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+  await state.context.route(`${url}/**`, route => {
+    const pathname = new URL(route.request().url()).pathname;
+    if (pathname === '/' && !state.realApp) return route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Development file worker</title>' });
+    if (pathname.endsWith('/workflow-file.worker.ts') && new URL(route.request().url()).searchParams.has('worker_file')) {
+      state.requests++;
+      if (state.requests <= state.failures) return route.fulfill({ status: 503, body: 'Worker module temporarily unavailable' });
+    }
+    return route.continue();
+  });
+  state.page = await state.context.newPage();
+  await state.page.goto(url);
+});
+
+When('I parse JSON and CSV through the development worker', { timeout: 90_000 }, async function () {
+  this.fileResults = await this.startup.page.evaluate(async () => {
+    const { parseWorkflowFileAsync: parse } = await import('/lib/workflow-file-client.ts');
+    const { defaultCsvOptions: options } = await import('/lib/workflow-file.ts');
+    const signal = new AbortController().signal;
+    const json = await parse(new File(['{"foo":{"bar":{"baz":42}}}'], 'nested.json'), options, signal);
+    const csv = await parse(new File(['flag;number;text;optional\ntrue;1.5;foo;2\nfalse;3;4;'], 'mixed.csv'), options, signal);
+    const reparsed = await parse(csv, { ...options, header: 'absent' }, signal);
+    return { json: json.value, csv: csv.value, rows: reparsed.value.length };
+  });
+});
+Then('the development worker returns typed data and corrected CSV options', function () {
+  expect(this.fileResults).toEqual({ json: { foo: { bar: { baz: 42 } } },
+    csv: [{ flag: true, number: 1.5, text: 'foo', optional: '2' },
+      { flag: false, number: 3, text: '4', optional: '' }], rows: 3 });
+});
+Then('exactly {int} file workers were started', function (count) {
+  expect(this.startup.requests).toBe(count);
+});
+When('I attempt a development file upload', { timeout: 90_000 }, async function () {
+  this.fileFailure = await this.startup.page.evaluate(async () => {
+    const { parseWorkflowFileAsync: parse } = await import('/lib/workflow-file-client.ts');
+    const { defaultCsvOptions: options } = await import('/lib/workflow-file.ts');
+    try { await parse(new File(['{}'], 'test.json'), options, new AbortController().signal); return null; }
+    catch (error) { return error.name; }
+  });
+});
+Then('the upload reports a worker failure after its bounded retry', function () {
+  expect(this.fileFailure).toBe('WorkerError');
+  expect(this.startup.requests).toBe(2);
+});
+When('development worker loading becomes available', function () { this.startup.failures = 0; });
+Then('an aborted file parse does not start another worker', async function () {
+  const count = this.startup.requests;
+  const error = await this.startup.page.evaluate(async () => {
+    const { parseWorkflowFileAsync: parse } = await import('/lib/workflow-file-client.ts');
+    const { defaultCsvOptions: options } = await import('/lib/workflow-file.ts');
+    const controller = new AbortController(); controller.abort();
+    try { await parse(new File(['{}'], 'test.json'), options, controller.signal); }
+    catch (error) { return error.name; }
+  });
+  expect(error).toBe('AbortError');
+  expect(this.startup.requests).toBe(count);
+});
+
+When('I upload a CSV through the visible development file node', { timeout: 90_000 }, async function () {
+  const state = this.startup;
+  state.realApp = true;
+  await state.page.reload();
+  await expectReady(state);
+  await state.page.locator('#startup-status').waitFor({ state: 'detached', timeout: 90_000 });
+  await state.page.getByRole('button', { name: 'Add file', exact: true }).click();
+  const node = state.page.locator('.svelte-flow__node-file');
+  await node.locator('input[type=file]').setInputFiles({ name: 'rows.csv', mimeType: 'text/csv',
+    buffer: Buffer.from('foo,bar\n1,2\n3,4') });
+  await expect(node.locator('.utility-type')).toHaveText('Array');
+  await expect(node).toContainText('Header row · 2 rows');
+  await expect(node.getByRole('alert')).toHaveCount(0);
+  await expect(state.page.locator('.workflow-data-node')).toHaveCount(2);
+});
+Then('malformed file data is rejected without restarting the worker', async function () {
+  const count = this.startup.requests;
+  const error = await this.startup.page.evaluate(async () => {
+    const { parseWorkflowFileAsync: parse } = await import('/lib/workflow-file-client.ts');
+    const { defaultCsvOptions: options } = await import('/lib/workflow-file.ts');
+    try { await parse(new File(['{'], 'broken.json'), options, new AbortController().signal); }
+    catch (error) { return error.name; }
+  });
+  expect(error).toBe('SyntaxError');
+  expect(this.startup.requests).toBe(count + 1);
+});

@@ -4,6 +4,7 @@
 
 import { commentTextLimit, isValueConnection, switchGateLimit, switchOperators, switchValueLimit,
   workflowDescriptionLimit, workflowInterface } from "./workflow-utilities.ts";
+import { validateWorkflowFileData, type WorkflowFileData } from "./workflow-file.ts";
 import { normalizeManualRoute } from "./flow-routing/manual.js";
 import { validateCredentialBinding } from "./secrets/bindings.ts";
 import type { CredentialBinding } from "./secrets/types.ts";
@@ -18,6 +19,7 @@ export type OperationData = {
   credentialBinding?: CredentialBinding;
 };
 
+export type ArrayBounds = { min: number; max?: number };
 export type WorkflowField = {
   id: string;
   label: string;
@@ -25,9 +27,12 @@ export type WorkflowField = {
   required: boolean;
   description: string;
   connectable: boolean;
+  array?: ArrayBounds;
+  itemType?: WorkflowField["type"];
   endpoint?: { nodeId: string; fieldId: string };
 };
 export type WorkflowData = {
+  array?: ArrayBounds;
   ownerId: string;
   direction: "inputs" | "outputs";
   label: string;
@@ -38,16 +43,16 @@ export type SwitchGate = { id: string; operator: "==" | "!=" | ">" | ">=" | "<" 
 export type SwitchData = { gates: SwitchGate[] };
 export type CastData = { targetType: "Text" | "Number" | "Boolean" };
 export type VaultVariableData = { credentialId?: string };
-export type CommentData = { text: string };
+export type CommentData = { text: string; width?: number; height?: number };
 export type WorkflowReferenceData = { workflowId: string; name: string; description: string; snapshot: WorkflowDocument };
-export type WorkflowNodeData = OperationData | WorkflowData | SwitchData | CastData | CommentData | VaultVariableData | WorkflowReferenceData;
+export type WorkflowNodeData = OperationData | WorkflowData | SwitchData | CastData | CommentData | VaultVariableData | WorkflowFileData | WorkflowReferenceData;
 export type WorkflowDocumentNode = {
   id: string;
   position: { x: number; y: number };
   hidden?: boolean;
 } & ({ type?: "operation"; data: OperationData } | { type: "data"; data: WorkflowData } |
   { type: "switch"; data: SwitchData } | { type: "cast"; data: CastData } | { type: "comment"; data: CommentData } |
-  { type: "workflow"; data: WorkflowReferenceData } | { type: "vault"; data: VaultVariableData });
+  { type: "workflow"; data: WorkflowReferenceData } | { type: "vault"; data: VaultVariableData } | { type: "file"; data: WorkflowFileData });
 export type WorkflowDocumentEdge = {
   id: string;
   source: string;
@@ -122,6 +127,14 @@ function operationData(value: Record<string, unknown>): OperationData
   };
 }
 
+function arrayBounds(value: unknown): ArrayBounds {
+  const bounds = record(value);
+  if (typeof bounds.min !== "number" || !Number.isSafeInteger(bounds.min) || bounds.min < 0 ||
+    bounds.max !== undefined && (typeof bounds.max !== "number" || !Number.isSafeInteger(bounds.max) || bounds.max < bounds.min))
+    throw new Error("Array bounds must be nonnegative integers with maximum at least minimum.");
+  return { min: bounds.min, ...(bounds.max === undefined ? {} : { max: bounds.max as number }) };
+}
+
 function workflowData(value: Record<string, unknown>, extended: boolean): WorkflowData
 {
   if (value.direction !== "inputs" && value.direction !== "outputs") throw new Error("Data direction must be inputs or outputs.");
@@ -136,6 +149,12 @@ function workflowData(value: Record<string, unknown>, extended: boolean): Workfl
       type: field.type as WorkflowField["type"], required: flag(field.required),
       description: text(field.description, "Field description", 4000, true), connectable: flag(field.connectable)
     };
+    if (field.itemType !== undefined) {
+      if (result.type !== "Array" || !["Text", "Integer", "Number", "Boolean", "Object", "Array", "Null", "Unknown"].includes(String(field.itemType)))
+        throw new Error("Array item types must name a supported workflow type.");
+      result.itemType = field.itemType as WorkflowField["type"];
+    }
+    if (field.array !== undefined) result.array = arrayBounds(field.array);
     if (result.id === "value" || result.type === "Unknown" && result.connectable)
       throw new Error("Unknown fields and structural value ports cannot be mapping handles.");
     if (extended && field.endpoint !== undefined)
@@ -149,6 +168,7 @@ function workflowData(value: Record<string, unknown>, extended: boolean): Workfl
   return {
     ownerId: text(value.ownerId, "Data owner ID", 2048), direction: value.direction,
     label: text(value.label, "Data label", 200), fields,
+    ...(value.array === undefined ? {} : { array: arrayBounds(value.array) }),
     ...(value.notice === undefined ? {} : { notice: text(value.notice, "Data notice", 4000) })
   };
 }
@@ -169,8 +189,9 @@ function validateGraph(nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdg
   {
     if (node.type !== "data") continue;
     const owner = byId.get(node.data.ownerId);
-    if (!owner || owner.type !== "workflow" && owner.type !== "operation" && owner.type !== undefined)
-      throw new Error("Every data owner must refer to an operation or workflow in this document.");
+    if (!owner || owner.type !== "file" && owner.type !== "workflow" && owner.type !== "operation" && owner.type !== undefined)
+      throw new Error("Every data owner must refer to an operation, workflow or file in this document.");
+    if (owner.type === "file" && node.data.direction !== "outputs") throw new Error("File panels must be outputs.");
     richOwners.add(owner.id);
     fieldCount += node.data.fields.length;
     for (const field of node.data.fields)
@@ -210,9 +231,15 @@ function validateGraph(nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdg
             !field?.connectable || !["Object", "Array"].includes(field.type))
           throw new Error("Schema connections must use a declared object or array field of the same owner and direction.");
       }
+      else if (parent.type === "file") {
+        if (parent.id !== child.data.ownerId || parentHandle !== "value" && parentHandle !== edge.id)
+          throw new Error("File structures must attach to their owner's output.");
+        // Older file nodes used a separate structure handle. Share the value output now.
+        edge.sourceHandle = "value";
+      }
       else if (parent.id !== child.data.ownerId || parentHandle !== edge.id)
         throw new Error("Root schema connections must use their owner's named schema handle.");
-      const port = JSON.stringify([parent.id, parentHandle]);
+      const port = JSON.stringify([parent.id, parent.type === "file" ? "value" : parentHandle]);
       if (parents.has(child.id) || ports.has(port)) throw new Error("Each schema branch must have one parent and a unique field handle.");
       parents.set(child.id, parent.id);
       ports.add(port);
@@ -301,13 +328,23 @@ function validateDocument(value: unknown, context: ValidationContext, depth: num
         throw new Error("A cast target must be Text, Number or Boolean.");
       return { ...common, type: "cast", data: { targetType: data.targetType } };
     }
+    if (extended && node.type === "file") return { ...common, type: "file", data: validateWorkflowFileData(data) };
     if (extended && node.type === "vault") {
       if (data.credentialId !== undefined && (typeof data.credentialId !== "string" || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(data.credentialId)))
         throw new Error("Vault variables require a valid local entry reference.");
       return { ...common, type: "vault", data: data.credentialId === undefined ? {} : { credentialId: data.credentialId } };
     }
-    if (extended && node.type === "comment")
-      return { ...common, type: "comment", data: { text: text(data.text, "Comment", commentTextLimit, true) } };
+    if (extended && node.type === "comment") {
+      const size: { width?: number; height?: number } = {};
+      for (const key of ["width", "height"] as const) {
+        if (data[key] === undefined) continue;
+        const minimum = key === "width" ? 200 : 140;
+        if (typeof data[key] !== "number" || !Number.isFinite(data[key]) || data[key] < minimum || data[key] > 2000)
+          throw new Error("Comment dimensions are outside the supported range.");
+        size[key] = data[key];
+      }
+      return { ...common, type: "comment", data: { text: text(data.text, "Comment", commentTextLimit, true), ...size } };
+    }
     if (extended && node.type === "workflow")
     {
       const snapshot = validateDocument(data.snapshot, context, depth + 1);

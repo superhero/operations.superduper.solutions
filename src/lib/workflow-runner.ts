@@ -5,7 +5,7 @@
 import { operations, type InputField, type InputSchema, type JsonValue, type Operation } from "./catalog.ts";
 import { additionalBodyField, inputAllowsNull, InputValidationError, validateInputValue, type InputValues } from "./operation-input.ts";
 import { validateWorkflowDocument, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
-import { castValue, matchingSwitchGates } from "./workflow-utilities.ts";
+import { castValue, isFileRowConnection, matchingSwitchGates } from "./workflow-utilities.ts";
 import { createWorkflowExecution, type WorkflowExecutionResult, type WorkflowResponse, type WorkflowExecutor } from "./workflow-execution.ts";
 import { responseHeaderReader } from "./workflow-response.ts";
 import { isVaultVariableReference, vaultVariablePlaceholder, type VaultVariableInput } from "./secrets/variables.ts";
@@ -15,7 +15,7 @@ import { VaultError, type CredentialBinding } from "./secrets/types.ts";
 
 type Node = WorkflowDocumentNode;
 type DataNode = Extract<Node, { type: "data" }>;
-type Owner = Exclude<Node, { type: "data" | "switch" | "cast" | "comment" | "vault" }>;
+type Owner = Exclude<Node, { type: "data" | "switch" | "cast" | "comment" | "vault" | "file" }>;
 type OperationNode = Exclude<Owner, { type: "workflow" }>;
 type RoutingNode = Extract<Node, { type: "switch" | "cast" }>;
 type State = "idle" | "queued" | "running" | "complete" | "skipped";
@@ -23,6 +23,7 @@ type Contribution = { state: "pending" | "inactive" | "value"; value?: unknown }
 type Frame = {
   document: WorkflowDocument; nodes: Map<string, Node>; owners: Owner[]; values: Map<string, unknown>;
   edges: WorkflowDocument["edges"]; contributions: Map<string, Contribution>; states: Map<string, State>;
+  rows?: { index: number; count: number; start?: string; active?: Set<string> };
   queue: string[]; started: boolean; parent: Frame | undefined; call: Owner | undefined;
 };
 export type WorkflowVisit = {
@@ -39,6 +40,10 @@ const port = (node: string, handle: string) => JSON.stringify([node, handle]);
 const inactive = Symbol("inactive branch");
 const inputTypes: Partial<Record<WorkflowField["type"], InputSchema["type"]>> = {
   Text: "string", Integer: "integer", Number: "number", Boolean: "boolean", Object: "object", Array: "array", Null: "null"
+};
+const isStaticSource = (frame: Frame, nodeId: string) => {
+  const node = frame.nodes.get(nodeId);
+  return node?.type === "vault" || node?.type === "file" || node?.type === "data" && frame.nodes.get(node.data.ownerId)?.type === "file";
 };
 const isOwner = (node: Node): node is Owner => node.type === undefined || node.type === "operation" || node.type === "workflow";
 const dataNodes = (frame: Frame, owner: string, direction: "inputs" | "outputs") =>
@@ -138,14 +143,54 @@ function mergeMapped(previous: unknown, next: unknown): unknown
   return previous;
 }
 
-function createFrame(document: WorkflowDocument, parent?: Frame, call?: Owner): Frame
+function createFrame(document: WorkflowDocument, parent?: Frame, call?: Owner, rowIndex = 0): Frame
 {
   const nodes = new Map(document.nodes.map(node => [node.id, node]));
   const edges = document.edges.filter(edge => edge.kind !== "schema" && !edge.hidden && !edge.detached
     && !nodes.get(edge.source)?.hidden && !nodes.get(edge.target)?.hidden);
+  const hasRows = edges.some(edge => isFileRowConnection(edge, document.nodes, document.edges));
   return { document, nodes, owners: document.nodes.filter(node => !node.hidden && isOwner(node)) as Owner[],
     values: new Map(), edges, contributions: new Map(edges.map(edge => [edge.id, { state: "pending" }])),
-    states: new Map(document.nodes.map(node => [node.id, "idle"])), queue: [], started: false, parent, call };
+    states: new Map(document.nodes.map(node => [node.id, "idle"])), queue: [], started: false, parent, call,
+    ...(hasRows ? { rows: { index: rowIndex, count: 1 } } : {}) };
+}
+
+const fileProjectionCache = new WeakMap<Node, Map<string, unknown>>();
+function fileProjection(owner: Extract<Node, { type: "file" }>, field: WorkflowField): unknown {
+  let cache = fileProjectionCache.get(owner);
+  if (!cache) { cache = new Map(); fileProjectionCache.set(owner, cache); }
+  if (!cache.has(field.id)) cache.set(field.id, read(owner.data.file!.value, identity(field)[1]));
+  return cache.get(field.id);
+}
+
+/** Only arrays feeding the selected path participate; independent roots stay independent. */
+function rowCount(frame: Frame, start: string): { count: number; active: Set<string> } {
+  const relevant = new Set([start]);
+  for (const id of relevant) for (const edge of frame.edges) {
+    const sourceOwner = targetOwner(frame, edge.source);
+    if (sourceOwner === id) relevant.add(targetOwner(frame, edge.target));
+  }
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const edge of frame.edges) {
+      const source = frame.nodes.get(edge.source)!;
+      if (relevant.has(targetOwner(frame, edge.target)) && ["switch", "cast"].includes(source.type!) && !relevant.has(source.id)) {
+        relevant.add(source.id); changed = true;
+      }
+    }
+  }
+  const counts = new Set<number>();
+  for (const edge of frame.edges.filter(edge => relevant.has(targetOwner(frame, edge.target)) &&
+    isFileRowConnection(edge, frame.document.nodes, frame.document.edges))) {
+    const panel = frame.nodes.get(edge.source)! as DataNode;
+    const owner = frame.nodes.get(panel.data.ownerId)! as Extract<Node, { type: "file" }>;
+    const projected = fileProjection(owner, panel.data.fields.find(field => field.id === edge.sourceHandle)!);
+    if (!Array.isArray(projected)) throw new Error("An Item connection requires uploaded array data.");
+    counts.add(projected.length);
+  }
+  if (counts.size > 1) throw new Error("Connected file arrays must have the same number of rows to run together.");
+  return { count: [...counts][0] ?? 1, active: relevant };
 }
 
 function targetOwner(frame: Frame, target: string): string
@@ -196,6 +241,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
   let current: { frame: Frame; node: Owner; visit: WorkflowVisit } | undefined;
   let choice: { frame: Frame; ids: string[] } | undefined;
   let step = 0;
+  let iterationStartStep = 0;
   let stopped = false;
   let terminalError: string | undefined;
   let message = "Workflow complete.";
@@ -203,6 +249,11 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
 
   function queue(frame: Frame, id: string)
   {
+    if (!frame.started && frame.rows) {
+      frame.rows.start = id;
+      Object.assign(frame.rows, rowCount(frame, id));
+      if (!frame.rows.count) return;
+    }
     frame.states.set(id, "queued");
     frame.queue.push(id);
   }
@@ -210,13 +261,19 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
   function emit(frame: Frame, nodeId: string, handle: string, value: unknown)
   {
     const key = port(nodeId, handle);
-    if (value !== inactive) frame.values.set(key, structuredClone(value));
+    if (value !== inactive) frame.values.set(key, isStaticSource(frame, nodeId) ? value : structuredClone(value));
     for (const edge of frame.edges.filter(edge => edge.source === nodeId && (edge.sourceHandle ?? "") === handle))
     {
       const ownerId = targetOwner(frame, edge.target);
       if (value !== inactive && frame.states.get(ownerId) === "complete")
         throw new Error("This workflow loops back to a completed operation. Remove the cycle before running it again.");
-      frame.contributions.set(edge.id, value === inactive ? { state: "inactive" } : { state: "value", value: structuredClone(value) });
+      let rowValue = value;
+      if (frame.rows && (!frame.rows.active || frame.rows.active.has(targetOwner(frame, edge.target))) &&
+        isFileRowConnection(edge, frame.document.nodes, frame.document.edges) && value !== inactive) {
+        if (!Array.isArray(value)) throw new Error("An Item connection requires uploaded array data.");
+        rowValue = frame.rows.index < value.length ? value[frame.rows.index] : inactive;
+      }
+      frame.contributions.set(edge.id, rowValue === inactive ? { state: "inactive" } : { state: "value", value: structuredClone(rowValue) });
     }
   }
 
@@ -247,16 +304,24 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
   function settle(frame: Frame)
   {
     for (const node of frame.document.nodes) {
+      if (node.type === "file" && !node.hidden && frame.states.get(node.id) === "idle") {
+        frame.states.set(node.id, "complete");
+        if (node.data.file) {
+          emit(frame, node.id, "value", node.data.file.value);
+          for (const panel of dataNodes(frame, node.id, "outputs")) for (const field of panel.data.fields)
+            emit(frame, panel.id, field.id, field.connectable ? fileProjection(node, field) : inactive);
+        }
+      }
       if (node.type !== "vault" || node.hidden || frame.states.get(node.id) !== "idle") continue;
       if (!node.data.credentialId && frame.edges.some(edge => edge.source === node.id))
         throw new Error("Select a vault entry for each connected vault variable before running the workflow.");
       frame.states.set(node.id, "complete");
       if (node.data.credentialId) emit(frame, node.id, "value", { vaultVariable: node.data.credentialId, referenceToken: runId });
     }
-    // Vault sources are available even when the user explicitly starts at an operation.
+    // Constant sources are available even when the user explicitly starts at an operation.
     for (const edge of frame.edges) {
       const contribution = frame.contributions.get(edge.id)!;
-      if (frame.nodes.get(edge.source)?.type === "vault" && contribution.state === "value")
+      if (isStaticSource(frame, edge.source) && contribution.state === "value")
         frame.values.set(port(edge.target, edge.targetHandle!), contribution.value);
     }
     // Each pass consumes idle nodes. Nodes never become idle again during a run.
@@ -266,11 +331,12 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       for (const node of frame.document.nodes.filter((node): node is Owner | RoutingNode =>
         isOwner(node) || node.type === "switch" || node.type === "cast"))
       {
-        if (node.hidden || frame.states.get(node.id) !== "idle" || !incoming(frame, node.id).length) continue;
+        if (node.hidden || frame.states.get(node.id) !== "idle" || !incoming(frame, node.id).length ||
+          frame.rows?.active && !frame.rows.active.has(node.id)) continue;
         const input = inputs(frame, node.id);
         if (!input.ready) continue;
         for (const [key, value] of input.values) frame.values.set(key, value);
-        if (isOwner(node) && (!frame.started || !incoming(frame, node.id).some(edge => frame.nodes.get(edge.source)?.type !== "vault"))) continue;
+        if (isOwner(node) && (!frame.started || !incoming(frame, node.id).some(edge => !isStaticSource(frame, edge.source)))) continue;
         changed = true;
         if (isOwner(node))
         {
@@ -393,7 +459,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
   {
     const frame = stack[0]!;
     if (!frame.owners.some(node => node.id === startingNodeId)) throw new Error("The selected starting operation is unavailable.");
-    queue(frame, startingNodeId);
+    if (frame.rows?.count !== 0) queue(frame, startingNodeId);
     frame.started = true;
   }
 
@@ -412,7 +478,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         settle(frame);
         if (!frame.started)
         {
-          const roots = frame.owners.filter(node => !incoming(frame, node.id).some(edge => frame.nodes.get(edge.source)?.type !== "vault"));
+          const roots = frame.owners.filter(node => !incoming(frame, node.id).some(edge => !isStaticSource(frame, edge.source)));
           const candidates = roots.length ? roots : frame.owners;
           if (!candidates.length) throw new Error("This workflow has no operations to run. Add an operation first.");
           if (candidates.length > 1)
@@ -433,6 +499,11 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         if (id)
         {
           const node = frame.nodes.get(id)! as Owner;
+          const input = inputs(frame, id);
+          for (const [key, value] of input.values) frame.values.set(key, value);
+          if (frame.rows && input.ready && input.inactive) {
+            frame.states.set(id, "skipped"); outputs(frame, node); continue;
+          }
           frame.states.set(id, "running");
           if (node.type === "workflow")
           {
@@ -446,14 +517,22 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
             stack.push(child);
             continue;
           }
-          if (step >= 200) throw new Error("The workflow exceeded 200 operation steps. End this run and simplify the workflow.");
+          if (step - iterationStartStep >= 200) throw new Error("The workflow exceeded 200 operation steps. End this run and simplify the workflow.");
           const result = visit(frame, node);
           current = { frame, node, visit: result };
           return result;
         }
-        const waiting = frame.edges.some(edge => frame.nodes.get(edge.source)?.type !== "vault" && frame.contributions.get(edge.id)!.state === "value"
+        const waiting = frame.edges.some(edge => !isStaticSource(frame, edge.source) && frame.contributions.get(edge.id)!.state === "value"
           && frame.states.get(targetOwner(frame, edge.target)) === "idle");
         if (waiting) throw new Error("The next operation is waiting for an unresolved branch or a routing cycle. Check its incoming connections.");
+        if (frame.rows && frame.rows.index + 1 < frame.rows.count) {
+          const next = createFrame(frame.document, frame.parent, frame.call, frame.rows.index + 1);
+          queue(next, frame.rows.start!);
+          next.started = true;
+          iterationStartStep = step;
+          stack[stack.length - 1] = next;
+          continue;
+        }
         stack.pop();
         if (frame.parent && frame.call)
         {

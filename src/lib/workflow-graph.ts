@@ -10,7 +10,7 @@ import { adaptRoutingGates, gateForType, isValueConnection, isWorkflowConnection
 
 type Schema = Record<string, unknown>;
 type Shape = { schema: Schema; seen: string[]; type: WorkflowField["type"]; notice?: string };
-type Tree = { label: string; fields: WorkflowField[]; children: { fieldId: string; path: string; tree: Tree }[]; notice?: string; height: number; span: number };
+type Tree = { array?: { min: number; max?: number }; label: string; fields: WorkflowField[]; children: { fieldId: string; path: string; tree: Tree }[]; notice?: string; height: number; span: number };
 type Graph = { nodes: WorkflowDocumentNode[]; edges: WorkflowDocumentEdge[] };
 export type SchemaBranch = { id: string; childId: string; direction: "inputs" | "outputs"; label: string; hidden: boolean };
 const labels: Record<string, WorkflowField["type"]> = { string: "Text", integer: "Integer", number: "Number", boolean: "Boolean", object: "Object", array: "Array", null: "Null" };
@@ -58,6 +58,12 @@ function shape(value: unknown, document: Schema, seen: string[], depth: number):
   return { ...result, type: notice ? "Unknown" : type!, ...(notice ? { notice } : {}) };
 }
 
+function schemaArrayBounds(schema: Schema): { min: number; max?: number } {
+  const min = typeof schema.minItems === "number" && Number.isSafeInteger(schema.minItems) && schema.minItems >= 0 ? schema.minItems : 0;
+  const max = typeof schema.maxItems === "number" && Number.isSafeInteger(schema.maxItems) && schema.maxItems >= min ? schema.maxItems : undefined;
+  return { min, ...(max === undefined ? {} : { max }) };
+}
+
 function project(source: unknown, document: Schema, group: string, label: string, path: string, seen: string[],
   depth: number, budget: { fields: number; panels: number }, direction: WorkflowData["direction"]): Tree
 {
@@ -76,7 +82,8 @@ function project(source: unknown, document: Schema, group: string, label: string
     if (direction === "outputs" && result.schema.writeOnly === true || direction === "inputs" && result.schema.readOnly === true) return;
     const field: WorkflowField = {
       id: identity(group, fieldPath), label: string(result.schema.title, name).slice(0, 200), type: result.type, required,
-      description: string(result.schema.description).slice(0, 4000), connectable: !result.notice
+      description: string(result.schema.description).slice(0, 4000), connectable: !result.notice,
+      ...(result.type === "Array" ? { array: schemaArrayBounds(result.schema) } : {})
     };
     fields.push(field);
     budget.fields++;
@@ -98,12 +105,15 @@ function project(source: unknown, document: Schema, group: string, label: string
       for (const [name, value] of Object.entries(properties)) add(value, name, `${path}/${pointer(name)}`, required.includes(name));
       if (!fields.length) notice ??= "No named properties documented";
     }
-    else if (resolved.type === "Array") add(schema.items, "Items", `${path}/items`, true);
+    else if (resolved.type === "Array") {
+      add(schema.items, "Items", `${path}/items`, true);
+      if (fields[0]) fields[0].array = schemaArrayBounds(schema);
+    }
     else add(schema, "Request body", path, false);
   }
   const height = 64 + Math.max(fields.length, 1) * 34 + (notice && fields.length ? 40 : 0);
   const span = Math.max(height, children.reduce((sum, child) => sum + child.tree.span, 0) + Math.max(0, children.length - 1) * 32);
-  return { label, fields, children, ...(notice ? { notice } : {}), height, span };
+  return { label, fields, children, ...(resolved.type === "Array" ? { array: schemaArrayBounds(schema) } : {}), ...(notice ? { notice } : {}), height, span };
 }
 
 function inputGroups(operation: Operation, source: Schema | undefined, pathItem: Schema, document: Schema)
@@ -188,7 +198,7 @@ function placeTree(graph: Graph, tree: Tree, ownerId: string, direction: Workflo
   const id = `${ownerId}:${identity(group, path)}`;
   const edgeId = `schema:${id}`;
   graph.nodes.push({ id, type: "data", position: { x, y: centerY - tree.height / 2 },
-    data: { ownerId, direction, label: tree.label, fields: tree.fields, ...(tree.notice ? { notice: tree.notice } : {}) } });
+    data: { ownerId, direction, label: tree.label, fields: tree.fields, ...(tree.array ? { array: tree.array } : {}), ...(tree.notice ? { notice: tree.notice } : {}) } });
   graph.edges.push({ id: edgeId, kind: "schema", source: input ? id : parentId, target: input ? parentId : id,
     sourceHandle: input ? "value" : handle ?? edgeId, targetHandle: input ? handle ?? edgeId : "value" });
   let childY = centerY - (tree.children.reduce((sum, child) => sum + child.tree.span, 0) + Math.max(0, tree.children.length - 1) * 32) / 2;
@@ -243,6 +253,75 @@ export function createOperationGraph(operation: Operation, position: { x: number
     }
   }
   return { nodes, edges };
+}
+
+
+/** Infer shared structure from uploaded values, without inventing fields for empty or mixed arrays. */
+function fileSchema(values: unknown[], depth = 0): Schema {
+  if (!values.length || depth > 12) return {};
+  const types = new Set(values.map(value => value === null ? "null" : Array.isArray(value) ? "array" : typeof value));
+  if (types.size !== 1) return {};
+  const type = [...types][0]!;
+  if (type === "number") return { type: values.every(value => Number.isInteger(value)) ? "integer" : "number" };
+  if (type === "array") return { type, maxItems: (values as unknown[][]).reduce((max, value) => Math.max(max, value.length), 0),
+    items: fileSchema((values as unknown[][]).flat(), depth + 1) };
+  if (type !== "object") return { type };
+  const objects = values as Record<string, unknown>[];
+  const keys = [...new Set(objects.flatMap(value => Object.keys(value)))].slice(0, 201);
+  return { type, properties: Object.fromEntries(keys.map(key => [key,
+    fileSchema(objects.filter(value => Object.hasOwn(value, key)).map(value => value[key]), depth + 1)])),
+    required: keys.filter(key => objects.every(value => Object.hasOwn(value, key) && value[key] !== null &&
+      (typeof value[key] !== "string" || value[key].trim().length > 0))) };
+}
+
+/** Build the same bounded output panels used for operations, rooted at a file node. */
+export function createFileDataGraph(node: Extract<WorkflowDocumentNode, { type: "file" }>): Graph {
+  const graph: Graph = { nodes: [], edges: [] };
+  if (!node.data.file) return graph;
+  const tree = project(fileSchema([node.data.file.value]), {}, "file", Array.isArray(node.data.file.value) ? "Array" : "File data", "", [], 0,
+    { fields: 0, panels: 0 }, "outputs");
+  if (node.data.file.value === null || typeof node.data.file.value !== "object")
+    tree.fields[0]!.label = "Value";
+  placeTree(graph, tree, node.id, "outputs", "file", "", node.position.x + 360 + gap,
+    node.position.y + tree.span / 2, node.id, "value");
+  for (const panel of graph.nodes) if (panel.type === "data" && panel.data.label === "Items") panel.data.label = "Item";
+  // Projecting a field through array items produces an array, not a single sampled item.
+  for (const panel of graph.nodes) if (panel.type === "data") for (const field of panel.data.fields)
+    if (field.connectable) {
+      let value: unknown = node.data.file.value;
+      const path: string = JSON.parse(decodeURIComponent(field.id))[1];
+      for (const part of path.slice(1).split("/")) {
+        if (Array.isArray(value) && part === "items") { field.itemType = field.type; field.type = "Array"; field.array = { min: 0, max: value.length }; break; }
+        value = object(value) ? value[part.replace(/~1/g, "/").replace(/~0/g, "~")] : undefined;
+      }
+    }
+  return graph;
+}
+
+/** Replace inferred panels while retaining stable identities, positions and compatible mappings. */
+export function updateFileDataGraph(nodeId: string, data: Extract<WorkflowDocumentNode, { type: "file" }>["data"],
+  nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[]): Graph {
+  const owner = nodes.find(node => node.id === nodeId);
+  if (owner?.type !== "file") return { nodes, edges };
+  const next = { ...owner, data };
+  const generated = createFileDataGraph(next);
+  const oldPanels = new Map(nodes.filter(node => node.type === "data" && node.data.ownerId === nodeId).map(node => [node.id, node]));
+  const result = [...nodes.filter(node => !oldPanels.has(node.id)).map(node => node.id === nodeId ? next : node),
+    ...generated.nodes.map(node => {
+      const old = oldPanels.get(node.id);
+      return old ? { ...node, position: old.position, ...(old.hidden ? { hidden: true } : {}) } : node;
+    })];
+  const links = [...edges.filter(edge => edge.kind !== "schema" || !oldPanels.has(edge.target)),
+    ...generated.edges.map(edge => {
+      const old = edges.find(previous => previous.id === edge.id);
+      return { ...edge, ...(old?.hidden ? { hidden: true } : {}), ...(old?.detached ? { detached: true } : {}) };
+    })];
+  const index = new Map(result.map(node => [node.id, node]));
+  return { nodes: result, edges: links.filter(edge => {
+    const source = index.get(edge.source), target = index.get(edge.target);
+    return source && target && (edge.kind !== "mapping" || isValueConnection(edge, source, target, links.filter(other => other.id !== edge.id)) &&
+      isWorkflowConnectionTypeCompatible(edge, result, links));
+  }) };
 }
 
 const propertyTypes = Object.values(labels);
@@ -610,10 +689,10 @@ export function isWorkflowConnection(connection: { source: string; target: strin
   return isValueConnection(connection, source, target, edges) && isWorkflowConnectionTypeCompatible(connection, nodes, edges);
 }
 
-export function createUtilityNode(type: "switch" | "cast" | "comment" | "vault", position: { x: number; y: number }, id: string): WorkflowDocumentNode
+export function createUtilityNode(type: "switch" | "cast" | "comment" | "vault" | "file", position: { x: number; y: number }, id: string): WorkflowDocumentNode
 {
   const common = { id, position: { ...position } };
-  if (type === "vault") return { ...common, type, data: {} };
+  if (type === "vault" || type === "file") return { ...common, type, data: {} };
   if (type === "switch") return { ...common, type, data: { gates: [{ id: "gate-1", operator: "==", value: "" }] } };
   if (type === "cast") return { ...common, type, data: { targetType: "Text" } };
   return { ...common, type, data: { text: "" } };
@@ -667,7 +746,7 @@ export function createWorkflowGraph(savedDocument: WorkflowDocument, position: {
       const owner = snapshot.nodes.find((owner): owner is Extract<WorkflowDocumentNode, { data: { name: string } }> => owner.id === node.data.ownerId)!;
       const name = owner.data.name;
       return { id: `${ownerId}:interface:${direction}:${index}`, data: { ownerId, direction,
-        label: `${name} · ${node.data.label}`.slice(0, 200), fields: fields.map((field, index) => ({ ...field,
+        label: `${name} · ${node.data.label}`.slice(0, 200), ...(node.data.array ? { array: node.data.array } : {}), fields: fields.map((field, index) => ({ ...field,
           id: identity("interface", String(index)), endpoint: { nodeId: node.id, fieldId: field.id } })),
         ...(node.data.notice ? { notice: node.data.notice } : {}) } };
     }) : [{ id: `${ownerId}:interface:${direction}`, data: { ownerId, direction, label: direction === "inputs" ? "Inputs" : "Outputs",

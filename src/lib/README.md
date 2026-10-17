@@ -12,8 +12,9 @@ unrelated behavior to `utils.ts`.
 | --- | --- |
 | `catalog*`, `schema-documents`, `schema-library*`, `schema-storage` | OpenAPI compatibility, active operations, schema management and persistence |
 | `matching`, `operation-matching*` | Local operation ranking and cancellable background evaluation for the catalog prompt |
-| `workflow-document`, `workflow-graph`, `workflow-layout`, connection helpers | Persisted graph validation and editor projection |
+| `workflow-document`, `workflow-graph`, `workflow-layout`, connection helpers | Persisted graph validation, operation schema projection and inferred file-output structures |
 | [`flow-routing`](flow-routing/README.md), `workflow-routing*` | Measured orthogonal edge geometry, synchronized dashes and its dedicated worker adapter |
+| `workflow-file*` | Bounded JSON/CSV uploads, dialect options, typed file data and disposable parsing workers |
 | `workflow-runner`, `workflow-execution`, `workflow-response`, `operation-*` | Execution, typed inputs, response mappings and reports |
 | `workflow-repository*`, `workflow-change-message` | Autosave, recovery, history navigation and commit descriptions |
 | [`secrets`](secrets/README.md), `operation-security` | Encrypted credentials, approved execution, unlock methods and OpenAPI authentication requirements |
@@ -69,3 +70,7 @@ operations. See [OpenAPI adaptation](../../docs/adr/openapi-adaptation.md).
 Add new domain scenarios alongside [source](../README.md) using Cucumber.
 [tests](../../tests/README.md) contains browser scenarios and smoke scripts
 awaiting migration into browser reporting.
+
+File row execution caches immutable projections per validated file node. Reuse
+those projections across row frames; do not repeatedly clone entire CSV columns
+for scalar requests or combine independent files as a Cartesian product.
