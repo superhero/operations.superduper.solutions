@@ -166,7 +166,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (keyboardActive) applyGraph({ nodes: nodes.map(node => node.id === nodeId && node.type === "cast" ? { ...node, data: { targetType } } : node), edges }, true);
   });
   setContext("workflow-vault-variable", (nodeId: string, credentialId: string) => {
-    if (keyboardActive) nodes = nodes.map(node => node.id === nodeId && node.type === "vault" ? { ...node, data: { credentialId } } : node);
+    if (keyboardActive) nodes = nodes.map(node => node.id === nodeId && node.type === "vault" ? { ...node, data: credentialId ? { credentialId } : {} } : node);
   });
   setContext("workflow-comment-text", (nodeId: string, text: string) => {
     if (keyboardActive) nodes = nodes.map(node => node.id === nodeId && node.type === "comment" ? { ...node, data: { text } } : node);

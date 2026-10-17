@@ -30,6 +30,9 @@ Then('I can add and connect a vault variable without exposing its value', async 
   await page.getByRole('option', { name: 'Another vault key', exact: true }).click();
   await expect(selection).toContainText('Another vault key');
   await selection.click();
+  await page.getByRole('option', { name: 'Select vault variable', exact: true }).click();
+  await expect(selection).toContainText('Select vault variable');
+  await selection.click();
   await page.getByRole('option', { name: 'browser-PRIVATE-label-9182', exact: true }).click();
   await expect(variable.locator('.utility-row .utility-type')).toHaveText('String');
   await page.getByRole('button', { name: 'Fit View', exact: true }).click();

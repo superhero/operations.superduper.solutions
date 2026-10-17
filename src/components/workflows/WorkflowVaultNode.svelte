@@ -45,7 +45,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <WorkflowNodeSelect label="Vault variable" value={data.credentialId ?? ""}
         choices={[{ value: "", label: "Select vault variable", placeholder: true }, ...entries.map(entry => ({ value: entry.id, label: entry.label }))]}
         active={editorActive()} disabled={!editorActive() || !entries.length}
-        onchange={credentialId => { if (credentialId) select(id, credentialId); }} />
+        onchange={credentialId => select(id, credentialId)} />
     </div>
     <span class="utility-type">String</span>
     <Handle id="value" type="source" position={Position.Right} isConnectableEnd={false} aria-label="Vault variable output (Text)" />
