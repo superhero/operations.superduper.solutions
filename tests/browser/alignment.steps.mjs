@@ -61,7 +61,7 @@ Then('catalog paths, focus and tooltip dismissal behave consistently', async fun
   await tasks.click();
   await expect(overview).toHaveAttribute('aria-expanded', 'false');
   await expect(root).toHaveAttribute('aria-expanded', 'true');
-  await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Settings', exact: true }).focus();
+  await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Workflows', exact: true }).focus();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('tooltip')).toContainText('Switch to dark theme');
   await page.keyboard.press('Escape');

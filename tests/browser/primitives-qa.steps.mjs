@@ -81,7 +81,7 @@ Then('expanding a nested catalog item does not clip its parent', async function 
 Then('hovering another control replaces keyboard help', async function () {
   const page = this.page;
   await openCatalog(page);
-  await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Settings', exact: true }).focus();
+  await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Workflows', exact: true }).focus();
   await page.keyboard.press('Tab');
   await expect(page.getByRole('tooltip')).toHaveText('Switch to dark theme');
   await page.getByRole('group', { name: 'Workspace', exact: true }).getByRole('button', { name: 'Workflows', exact: true }).hover();

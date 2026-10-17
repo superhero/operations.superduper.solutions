@@ -160,7 +160,8 @@ Then('animated navigation completes dismissal before changing workspace or addin
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
-  for (const destination of ['settings', 'workflow']) {
+  await setMode(page, 'settings');
+  for (const destination of ['workflow']) {
     await openCatalog(page);
     await settleOpening(page);
     await pauseDismissal(page, () => page.getByRole('group', { name: 'Workspace', exact: true })
@@ -189,11 +190,10 @@ Then('reopening navigation during a keyboard mode change cancels that destinatio
   await setMode(page, 'settings');
   await openCatalog(page);
   const modes = page.getByRole('group', { name: 'Workspace', exact: true });
-  const selected = modes.getByRole('button', { name: 'Settings', exact: true });
+  const selected = modes.getByRole('button', { name: 'Workflows', exact: true });
   const destination = modes.getByRole('button', { name: 'Workflows', exact: true });
   await expect(selected).toBeFocused();
   await settleOpening(page);
-  await page.keyboard.press('Shift+Tab');
   await expect(destination).toBeFocused();
   await pauseDismissal(page, () => page.keyboard.press('Space'));
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
@@ -204,7 +204,7 @@ Then('reopening navigation during a keyboard mode change cancels that destinatio
   await page.keyboard.press('Enter');
   await expect(sheet(page)).toHaveAttribute('data-state', 'open');
   await expect(selected).toBeFocused();
-  await expect(selected).toHaveAttribute('aria-pressed', 'true');
+  await expect(selected).toHaveAttribute('aria-pressed', 'false');
   await page.keyboard.press('Delete');
   await expect(nodes(page)).toHaveCount(2);
   await page.keyboard.press('Escape');
@@ -217,7 +217,6 @@ Then('reopening navigation during a keyboard mode change cancels that destinatio
   await expect(page.getByRole('region', { name: 'Settings workspace', exact: true })).toBeVisible();
   await expect(menu).toBeFocused();
   await openCatalog(page);
-  await page.keyboard.press('Shift+Tab');
   await expect(destination).toBeFocused();
   await page.keyboard.press('Space');
   await expect(sheet(page)).toHaveCount(0);

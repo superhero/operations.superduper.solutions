@@ -268,7 +268,7 @@
   workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
   onSelect={selectOperation} onMode={setMode} onTheme={toggleTheme} />
 <div class="page-content" class:catalog-open={navigationOpen} class:workflow-mode={mode === "workflow"}>
-  <Header {navigationOpen} workflowSaveStatus={mode === "workflow" ? workflowSaveStatus : undefined} onMenu={() => navigationOpen = !navigationOpen} />
+  <Header {navigationOpen} settingsOpen={mode === "settings"} onSettings={() => setMode("settings")} workflowSaveStatus={mode === "workflow" ? workflowSaveStatus : undefined} onMenu={() => navigationOpen = !navigationOpen} />
   <div class="shell">
     <main>
       {#if settingsError && !import.meta.env.DEV}

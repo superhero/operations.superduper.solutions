@@ -158,3 +158,11 @@ Feature: Browser operations workspace
     And I switch to the workflow workspace
     Then at least one complete operation node is visible inside the canvas
     And the page fits the viewport horizontally
+
+  Scenario Outline: Settings opens from the main header without opening navigation
+    Then header Settings opens directly at viewport width <width>
+
+    Examples:
+      | width |
+      | 1280  |
+      | 390   |
