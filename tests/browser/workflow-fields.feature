@@ -6,7 +6,7 @@ Feature: Documented workflow fields and mappings
   Operations expose their documented input and response fields as editable workflow panels.
 
   Scenario: Added operations expose separate schema groups and nested fields
-    Given a workflow with 1 instances of "List projects"
+    Given I add 1 instances of "List projects" from the catalog
     Then List projects exposes its query parameters and nested project response
     When I add "Create task" through the workflow catalog
     Then Create task separates required path and request-body fields

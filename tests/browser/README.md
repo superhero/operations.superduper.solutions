@@ -127,6 +127,19 @@ UI and startup scenarios keep the built application entry page. When adding a
 fixture-only tag, ensure every scenario carrying it works without application
 workers, settings or databases left behind by startup.
 
+### Saved graph setup
+
+Use `workflow-graph.fixture.mjs` for cases that start with existing operations.
+It generates real schema panels and uses the application’s import and autosave
+paths, including Git/IndexedDB persistence. Import assigns a fresh document ID;
+identity and history fixtures must retain repository setup. This avoids repeated
+catalog insertion and startup reloads. Fixture geometry uses estimated
+dimensions; dedicated catalog scenarios retain measured insertion layout,
+automatic reveal and creation checks.
+
+Keep explicit reloads when testing persistence. Pointer gestures, mapping,
+snapping, rendering and subsequent saves still run through the real application.
+
 ### Focused fixtures
 
 Vault UI setup creates a vault and one encrypted credential. The creation and

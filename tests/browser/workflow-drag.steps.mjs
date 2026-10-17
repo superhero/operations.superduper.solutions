@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { repository, storedWorkflows } from "./workflow-storage.fixture.mjs";
 import assert from "node:assert/strict";
+import { loadGraphFixture } from "./workflow-graph.fixture.mjs";
 import { Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { operations } from "../../src/lib/catalog.ts";
@@ -133,9 +134,8 @@ Then("dragging a workflow {string} keeps its rendered position and connections s
   const graph = createOperationGraph(operation, { x: 470, y: 250 }, "drag-owner", catalogForOperation(operation.id).document);
   const document = { version: 2, id: "drag-regression", name: "Drag regression", ...graph,
     viewport: { x: 0, y: 0, zoom: 0.9 }, snap: false, curved: false, dashed: false };
-  await repository(page, 'save', document, null);
-  await page.reload();
   await setMode(page, "workflow");
+  await loadGraphFixture(page, document);
   const attachment = graph.edges[0];
   const nodeId = kind === "operation" ? attachment.target : attachment.source;
   const handleId = kind === "operation" ? attachment.targetHandle : attachment.sourceHandle;
@@ -194,9 +194,8 @@ Then("dragging a workflow {string} snaps its center to the {int}px grid and pres
   const graph = createOperationGraph(operation, { x: 470, y: 250 }, "snap-owner", catalogForOperation(operation.id).document);
   const document = { version: 2, id: "center-snap-regression", name: "Center snap regression", ...graph,
     viewport: { x: 37, y: -19, zoom: 0.9 }, snap: true, curved: false, dashed: false };
-  await repository(page, 'save', document, null);
-  await page.reload();
   await setMode(page, "workflow");
+  await loadGraphFixture(page, document);
   const fixture = graph.nodes.find(node => node.type === kind);
   const node = page.locator(`.svelte-flow__node[data-id=${JSON.stringify(fixture.id)}]`);
   await expect(node).toBeVisible();

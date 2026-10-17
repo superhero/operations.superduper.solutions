@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { closeWorkflowDetails, expectWorkflowName, renameWorkflow, workflowNameInput } from './workflow-details.fixture.mjs';
 import assert from "node:assert/strict";
+import { seedOperationGraph } from "./workflow-graph.fixture.mjs";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 
@@ -336,7 +337,7 @@ Then("the page fits the viewport horizontally", async function () {
   await expect.poll(() => this.page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
-Given("a workflow with {int} instances of {string}", async function (count, name) {
+Given("I add {int} instances of {string} from the catalog", async function (count, name) {
   this.operationName = name;
   await setMode(this.page, "workflow");
   for (let index = 0; index < count; index += 1) {
@@ -348,6 +349,17 @@ Given("a workflow with {int} instances of {string}", async function (count, name
   await operationNodes(this.page, name).last().click({ trial: true });
   await expect.poll(() => visibleNodeCount(this.page, name)).toBe(count);
 });
+
+Given("a workflow with {int} instances of {string}", async function (count, name) {
+  this.operationName = name;
+  await setMode(this.page, "workflow");
+  await seedOperationGraph(this.page, Array(count).fill(name));
+  await expect(operationNodes(this.page, name)).toHaveCount(count);
+  await this.page.getByRole("button", { name: "Fit View", exact: true }).click();
+  await operationNodes(this.page, name).last().click();
+  await expect.poll(() => visibleNodeCount(this.page, name)).toBe(count);
+});
+
 When("I connect the first operation to the second", async function () {
   const owners = operationNodes(this.page, this.operationName);
   const sourceId = await owners.nth(0).getAttribute("data-id");
