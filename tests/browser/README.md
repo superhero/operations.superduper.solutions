@@ -38,6 +38,11 @@ session. Every row replaces the complete saved defaults, reloads the application
 and checks the controls, persisted defaults and absence of workflow documents.
 Failures identify the input row and retain the original error as their cause.
 
+History browsing checks share one seeded history: inspect and close it, select
+versions with the keyboard, then select and edit an earlier version. The keyboard
+check returns to the latest commit before the editing checks begin. Interrupted
+checkout, fork, undo and redo recovery remain separate scenarios.
+
 ## Execution boundary
 
 Run `npm run build` before `npm run test:browser`. The
