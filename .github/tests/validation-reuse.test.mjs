@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { After, Before, Given, Then, When } from "@cucumber/cucumber";
 import { findValidation } from "../scripts/find-validation.mjs";
-import { ARTIFACT_NAMES, BUNDLE_FILES, MANIFEST_NAME, createManifest } from "../scripts/validation-artifacts.mjs";
+import { ARTIFACT_NAMES, BUNDLE_FILES, REPORT_FILES, MANIFEST_NAME, createManifest } from "../scripts/validation-artifacts.mjs";
 import { ValidationRequestError } from "../scripts/validation-request.mjs";
 
 const repository = "superhero/operations.superduper.solutions";
@@ -62,6 +62,8 @@ Given("a completed validation run with {string}", function (condition)
   write(join(state.artifactRoot, "coverage", "coverage-summary.json"), '{"total":{"lines":{"pct":100}}}\n');
   write(join(state.artifactRoot, "coverage", "index.html"), "<html>Original coverage report</html>\n");
   write(join(state.artifactRoot, "test-report", "test-report.html"), "<html>Original combined test report</html>\n");
+  for (const file of REPORT_FILES.filter(file => file.startsWith("badges/")))
+    write(join(state.artifactRoot, "test-report", file), `Original ${file}\n`);
   state.manifestOptions = { repository, runId: 123, runAttempt: 1, sourceSha: state.sourceSha, testedSha: state.testedSha,
     cwd: state.cwd, bundle: join(state.artifactRoot, "bundle"), coverage: join(state.artifactRoot, "coverage"),
     report: join(state.artifactRoot, "test-report", "test-report.html") };
@@ -130,6 +132,8 @@ Given("a completed validation run with {string}", function (condition)
     case "an incomplete remote tree": state.tree.truncated = true; break;
     case "a corrupt bundle": write(join(state.artifactRoot, "bundle", "index.html"), "corrupt bundle\n"); break;
     case "an incomplete coverage report": rmSync(join(state.artifactRoot, "coverage", "coverage-summary.json")); break;
+    case "a missing report badge": rmSync(join(state.artifactRoot, "test-report", "badges/test-scenarios.svg")); break;
+    case "a modified report badge": write(join(state.artifactRoot, "test-report", "badges/test-coverage.json"), "modified badge\n"); break;
     case "a missing combined report": rmSync(join(state.artifactRoot, "test-report", "test-report.html")); break;
     case "an extra artifact file": write(join(state.artifactRoot, "bundle", "unexpected.html"), "extra file\n"); break;
     case "a prototype-named artifact file": write(join(state.artifactRoot, "bundle", "__proto__"), "extra file\n"); break;
@@ -288,6 +292,8 @@ Then("validation is {string} with the original provenance", function (outcome)
     assert.equal(state.result.input_fingerprint, state.manifest.inputFingerprint);
     assert.equal(readFileSync(join(state.destination, "bundle", "index.html"), "utf8"), "tested bundle index.html\n");
     assert.equal(readFileSync(join(state.destination, "test-report", "test-report.html"), "utf8"), "<html>Original combined test report</html>\n");
+    for (const file of REPORT_FILES.filter(file => file.startsWith("badges/")))
+      assert.equal(readFileSync(join(state.destination, "test-report", file), "utf8"), `Original ${file}\n`);
     assert.deepEqual(JSON.parse(readFileSync(join(state.destination, "validation-manifest", MANIFEST_NAME), "utf8")),
       JSON.parse(JSON.stringify(state.manifest)));
   }

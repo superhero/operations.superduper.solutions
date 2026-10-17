@@ -116,6 +116,14 @@ test: refresh scenario badge after browser consolidation
 
 ```
 
+<!-- changelog-commit:609ba172ce6216b92d603f47fc3850fe359c261c -->
+### Commit [`609ba17`](https://github.com/superhero/operations.superduper.solutions/commit/609ba172ce6216b92d603f47fc3850fe359c261c)
+
+```text
+ci: generate and publish test badges with validated reports
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.48
