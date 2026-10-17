@@ -343,6 +343,26 @@ fix(workflows): triple the file preview viewport height
 
 ```
 
+<!-- changelog-commit:80467d938367cf9341b19db427dde173f2b99a31 -->
+### Commit [`80467d9`](https://github.com/superhero/operations.superduper.solutions/commit/80467d938367cf9341b19db427dde173f2b99a31)
+
+```text
+feat(workflows): project uploaded data into connected output structures
+
+Infer bounded data shapes from uploaded JSON and CSV and reuse operation output
+panels and placement. Expose nested object fields and array projections as usable
+outputs. Preserve stable field identities, panel positions and compatible mappings
+when replacing files, removing obsolete panels and incompatible connections.
+
+Treat file-owned output fields as static sources during workflow execution,
+including explicit starting operations. Keep array projections typed as arrays.
+
+Ten focused Cucumber source scenarios and two Chromium scenarios pass, covering
+nested execution, CSV column requests, replacement reconciliation and persistence.
+Type checking and production build pass.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50
