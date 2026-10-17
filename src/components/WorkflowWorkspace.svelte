@@ -21,7 +21,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { WorkflowSaveStatus } from "$lib/workspace.d.ts";
   import WorkflowHistory from "./workflows/WorkflowHistory.svelte";
   import { createOperationGraph, createUtilityNode, createWorkflowGraph, addAdditionalProperty, getAdditionalPropertyTypes, getEditableAdditionalProperties, updateAdditionalProperty, removeAdditionalProperty, addSwitchGate, updateSwitchGate, removeSwitchGate, schemaBranches, isWorkflowConnection, removeGraphSelection, restoreDataBranch } from "$lib/workflow-graph.ts";
-  import { layoutAddedGraph } from "$lib/workflow-layout.ts";
+  import { layoutAddedGraph, placeUtilityNode } from "$lib/workflow-layout.ts";
   import { orderWorkflowNodes, restoreWorkflowNodeOrder } from "$lib/workflow-focus-order.ts";
   import { adaptRoutingGates, routingInputTypes, workflowDescriptionLimit, workflowInputConnected } from "$lib/workflow-utilities.ts";
   import { getOperationReport } from "$lib/operation-report.ts";
@@ -476,7 +476,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   const insertionPosition = () => ({ x: (180 - viewport.x) / viewport.zoom, y: (180 - viewport.y) / viewport.zoom });
 
-  async function appendGraph(graph: Pick<WorkflowDocument, "nodes" | "edges">, nodeId: string, title: string, requiredVersion: 2 | 3) {
+  async function appendGraph(graph: Pick<WorkflowDocument, "nodes" | "edges">, nodeId: string, title: string, requiredVersion: 2 | 3, utility = false) {
     if (placement) await placement;
     try {
       if (nodes.length + graph.nodes.length > 500 || edges.length + graph.edges.length > 1000)
@@ -495,8 +495,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           ? { ...node, measured: { width: element.offsetWidth, height: element.offsetHeight } }
           : node;
       });
-      const positioned = new Map(layoutAddedGraph(measured.filter(node => addedIds.has(node.id)), graph.edges,
-        measured.filter(node => !addedIds.has(node.id)), gridSize, nodeId).map(node => [node.id, node]));
+      const added = measured.filter(node => addedIds.has(node.id));
+      const existing = measured.filter(node => !addedIds.has(node.id));
+      const positioned = new Map((utility && toolbar
+        ? [placeUtilityNode(added[0]!, existing, toolbar.placementViewport(), snap ? gridSize : 0)]
+        : layoutAddedGraph(added, graph.edges, existing, gridSize, nodeId)).map(node => [node.id, node]));
       nodes = nodes.map(node => positioned.get(node.id) ?? node);
     }).finally(() => { placement = null; });
     version = Math.max(version, requiredVersion) as 2 | 3;
@@ -506,7 +509,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     notice = "";
     await placement;
     await tick();
-    await toolbar?.reveal(nodeId);
+    await toolbar?.reveal(nodeId, utility);
     if (active && !navigationModal) focusCanvas();
   }
 
@@ -524,7 +527,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   async function addUtility(type: "switch" | "cast" | "comment" | "vault") {
     if (!keyboardActive) return;
     const nodeId = crypto.randomUUID();
-    await appendGraph({ nodes: [createUtilityNode(type, insertionPosition(), nodeId)], edges: [] }, nodeId, type, 3);
+    await appendGraph({ nodes: [createUtilityNode(type, insertionPosition(), nodeId)], edges: [] }, nodeId, type, 3, true);
   }
 
   export async function addWorkflow(document: WorkflowDocument) {

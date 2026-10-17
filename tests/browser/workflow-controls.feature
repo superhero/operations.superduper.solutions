@@ -72,3 +72,7 @@ Feature: Workflow utility controls and reusable plans
     Then importing and editing metadata retain the saved routing operands
     When I change the imported cast output to Number
     Then the switch adapts its operand to the changed input type
+
+  Scenario: Utility nodes use nearby empty space and center the viewport
+    Given a workflow with 1 instances of "List projects"
+    Then newly added utility nodes occupy nearby free space and become centered

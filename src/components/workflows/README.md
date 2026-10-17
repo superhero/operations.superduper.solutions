@@ -74,3 +74,12 @@ input. Switch and Cast nodes do not consume vault values.
 Nodes retain only the local entry ID. The vault worker resolves values when a
 request runs, and validates them against the operation schema. Exporting or
 importing workflows clears these selections, including nested workflows.
+
+## Utility placement
+
+Vault variables, comments, switches and casts use their rendered bounds to find
+free space nearest the visible workspace center. Placement first searches inside
+the viewport, then outside it when needed, and preserves existing node positions.
+Grid snapping applies when enabled. Adding a utility pans to center it in the
+usable area beside open panes and below the toolbar. Operation trees retain
+their ordered placement after existing content.

@@ -114,7 +114,23 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   $effect(() => { if (active) void keepNodesVisible(); compactLayout?.(); });
   $effect(() => { void settingsOpen; void navigationOpen; compactLayout?.(); });
 
-  export async function reveal(ids: string | string[]) {
+  function visibleCanvasArea() {
+    const bounds = canvas!.getBoundingClientRect();
+    const toolbar = canvas!.querySelector(".workflow-toolbar");
+    const style = toolbar && getComputedStyle(toolbar);
+    const left = 24 + (style ? parseFloat(style.getPropertyValue("--navigation-inset")) || 0 : 0);
+    const right = 24 + (style ? parseFloat(style.right) || 0 : 0);
+    const top = Math.max(24, (toolbar?.getBoundingClientRect().bottom ?? bounds.top) - bounds.top + 24);
+    return { x: left, y: top, width: Math.max(1, canvas!.clientWidth - left - right), height: Math.max(1, canvas!.clientHeight - top - 24) };
+  }
+
+  export function placementViewport() {
+    const area = visibleCanvasArea(), viewport = getViewport();
+    return { x: (area.x - viewport.x) / viewport.zoom, y: (area.y - viewport.y) / viewport.zoom,
+      width: area.width / viewport.zoom, height: area.height / viewport.zoom };
+  }
+
+  export async function reveal(ids: string | string[], centerVisible = false) {
     const requested = typeof ids === "string" ? [ids] : ids;
     if (!requested.length) return;
     const generation = ++revealGeneration;
@@ -138,12 +154,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         const bounds = canvas.getBoundingClientRect();
         const toolbar = canvas.querySelector(".workflow-toolbar")?.getBoundingClientRect();
         const insetTop = Math.max(padding, (toolbar?.bottom ?? bounds.top) - bounds.top + padding);
-        const width = Math.max(1, canvas.clientWidth - padding * 2);
-        const height = Math.max(1, canvas.clientHeight - insetTop - padding);
+        const area = centerVisible ? visibleCanvasArea() : { x: padding, y: insetTop,
+          width: Math.max(1, canvas.clientWidth - padding * 2), height: Math.max(1, canvas.clientHeight - insetTop - padding) };
+        const { width, height } = area;
         const zoom = Math.max(store.minZoom, Math.min(getViewport().zoom, width / (right - left), height / (bottom - top)));
         const duration = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 280;
-        await Promise.race([cancelled, setViewport({ x: padding + width / 2 - (left + right) / 2 * zoom,
-          y: insetTop + height / 2 - (top + bottom) / 2 * zoom, zoom }, { duration, interpolate: "linear" })]);
+        await Promise.race([cancelled, setViewport({ x: area.x + width / 2 - (left + right) / 2 * zoom,
+          y: area.y + height / 2 - (top + bottom) / 2 * zoom, zoom }, { duration, interpolate: "linear" })]);
         return;
       }
     } finally {

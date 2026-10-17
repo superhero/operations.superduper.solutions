@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
-import { layoutAddedGraph } from './lib/workflow-layout.ts';
+import { layoutAddedGraph, placeUtilityNode } from './lib/workflow-layout.ts';
 
 const operation = (id, width, height, position = { x: 180, y: 180 }) => ({ id, type: 'operation', position,
   measured: { width, height }, data: { operationId: id, name: id, description: '', method: 'GET', path: '/' } });
@@ -61,9 +61,9 @@ Then('appended workflow nodes place all new inputs after existing bounds and pre
   assert.deepEqual(existing, original, 'Existing user-arranged nodes must stay unchanged.');
 });
 
-Then('workflow utility nodes append to the right and snap their centers', () => {
+Then('single-node operation trees append to the right and snap their centers', () => {
   const previous = [operation('previous', 220, 96, { x: 0, y: 0 })];
-  const utility = { id: 'cast', type: 'cast', position: { x: 8, y: -700 }, measured: { width: 231, height: 82 }, data: { targetType: 'Text' } };
+  const utility = operation('next', 231, 82, { x: 8, y: -700 });
   const result = layoutAddedGraph([utility], [], previous, 12, utility.id);
   assert.ok(result[0].position.x >= 220 + 80 + 12);
   assert.equal(center(result[0]).y, 48);
@@ -105,4 +105,51 @@ Then('nonstructural, hidden, duplicate and cyclic workflow edges cannot distort 
   const previous = [panel('old', 'outputs', 100, 120)];
   const appended = layoutAddedGraph([owner, child], basic, previous, 12, 'owner');
   assert.equal(center(appended[0]).y, 60);
+});
+
+
+Then('utility placement finds the nearest free viewport position and falls back outside without moving existing nodes', () => {
+  const node = operation('utility', 40, 30, { x: -900, y: -900 });
+  const viewport = { x: -100, y: -100, width: 200, height: 200 };
+  const placed = placeUtilityNode(node, [], viewport);
+  assert.deepEqual(center(placed), { x: 0, y: 0 });
+  const blocked = operation('block', 40, 40, { x: -20, y: -20 });
+  const original = structuredClone(blocked);
+  const nearby = placeUtilityNode(node, [blocked], viewport);
+  assert.equal(Math.hypot(center(nearby).x, center(nearby).y), 59);
+  assertNoOverlap([nearby, blocked]); assert.deepEqual(blocked, original);
+  assert.deepEqual(placeUtilityNode(node, [{ ...blocked, hidden: true }], viewport).position, placed.position);
+  const full = operation('full', 200, 200, { x: -100, y: -100 });
+  const outside = placeUtilityNode(node, [full], viewport);
+  assertNoOverlap([outside, full]);
+  assert.equal(Math.hypot(center(outside).x, center(outside).y), 139);
+  const oversized = placeUtilityNode(operation('large', 240, 220), [], viewport);
+  assert.deepEqual(center(oversized), { x: 0, y: 0 });
+  assert.deepEqual(center(placeUtilityNode(node, [], viewport, NaN)), { x: 0, y: 0 });
+});
+
+Then('gridded utility placement matches an exhaustive nearest-space search across crowded and panned viewports', () => {
+  const viewport = { x: -100, y: -80, width: 200, height: 160 };
+  const node = operation('utility', 36, 22);
+  for (const existing of [[], [operation('center', 40, 40, { x: -20, y: -20 })],
+    [operation('wide', 130, 60, { x: -70, y: -20 }), operation('upper', 50, 50, { x: 60, y: -90 })],
+    [operation('all', 250, 180, { x: -130, y: -90 })]]) {
+    const result = placeUtilityNode(node, existing, viewport, 10);
+    const actual = center(result);
+    assert.equal(Math.abs(actual.x % 10), 0); assert.equal(Math.abs(actual.y % 10), 0);
+    const free = (x, y) => existing.every(item => x + 18 + 24 <= item.position.x || x - 18 - 24 >= right(item) ||
+      y + 11 + 24 <= item.position.y || y - 11 - 24 >= bottom(item));
+    const candidates = [];
+    for (let x = -400; x <= 400; x += 10) for (let y = -400; y <= 400; y += 10) if (free(x, y))
+      candidates.push({ x, y, inside: x - 18 >= viewport.x && x + 18 <= viewport.x + viewport.width &&
+        y - 11 >= viewport.y && y + 11 <= viewport.y + viewport.height });
+    const inside = candidates.filter(item => item.inside);
+    const minimum = Math.min(...(inside.length ? inside : candidates).map(item => item.x ** 2 + item.y ** 2));
+    assert.equal(actual.x ** 2 + actual.y ** 2, minimum);
+    assert.ok(free(actual.x, actual.y));
+    const shifted = placeUtilityNode(node, existing.map(item => ({ ...item,
+      position: { x: item.position.x + 300, y: item.position.y - 500 } })),
+      { ...viewport, x: viewport.x + 300, y: viewport.y - 500 }, 10);
+    assert.deepEqual(shifted.position, { x: result.position.x + 300, y: result.position.y - 500 });
+  }
 });
