@@ -11,57 +11,43 @@ Feature: Reversible six-color palettes
     Then every ordinary theme color reverses its position in the six-color palette
     And prompt fields and badges remain readable while primary actions use the label foreground in both modes
 
-  Scenario Outline: Settings preserves <palette> at <width> pixels independently of light and dark mode
-    Given I use a viewport of <width> by 844 pixels
+  Scenario Outline: Settings preserves <palette> across reloads, themes and viewport widths
+    Given I use a viewport of 1280 by 844 pixels
     When I switch to the settings workspace
     Then Settings offers all palettes with "Default" selected
     When I select the "<palette>" palette with the keyboard
     Then "<palette>" and theme settings persist independently after reloading
     And every ordinary theme color reverses its position in the six-color palette
     And the page fits the viewport horizontally
+    Given I use a viewport of 390 by 844 pixels
+    Then Settings offers all palettes with "<palette>" selected
+    When I select the "Default" palette with the keyboard
+    And I select the "<palette>" palette with the keyboard
+    Then every ordinary theme color reverses its position in the six-color palette
+    And the page fits the viewport horizontally
 
     Examples:
-      | width | palette       |
-      | 1280  | Sunset        |
-      | 390   | Sunset        |
-      | 1280  | Alpine        |
-      | 390   | Alpine        |
-      | 1280  | Obsidian      |
-      | 390   | Obsidian      |
-      | 1280  | Midnight Gold |
-      | 390   | Midnight Gold |
-      | 1280  | Neon          |
-      | 390   | Neon          |
-      | 1280  | Lantern       |
-      | 390   | Lantern       |
-      | 1280  | Spring        |
-      | 390   | Spring        |
-      | 1280  | Bonfire       |
-      | 390   | Bonfire       |
-      | 1280  | Harvest Moon  |
-      | 390   | Harvest Moon  |
-      | 1280  | Blue Horizon  |
-      | 390   | Blue Horizon  |
-      | 1280  | Golden Violet |
-      | 390   | Golden Violet |
-      | 1280  | Citrus        |
-      | 390   | Citrus        |
-      | 1280  | Cappuccino    |
-      | 390   | Cappuccino    |
-      | 1280  | Garden Dusk   |
-      | 390   | Garden Dusk   |
-      | 1280  | Autumn        |
-      | 390   | Autumn        |
-      | 1280  | Rainfall      |
-      | 390   | Rainfall      |
-      | 1280  | Graphite       |
-      | 390   | Graphite       |
-      | 1280  | Steel          |
-      | 390   | Steel          |
-      | 1280  | Carbon         |
-      | 390   | Carbon         |
-      | 1280  | Heritage Noir  |
-      | 390   | Heritage Noir  |
+      | palette       |
+      | Sunset        |
+      | Alpine        |
+      | Obsidian      |
+      | Midnight Gold |
+      | Neon          |
+      | Lantern       |
+      | Spring        |
+      | Bonfire       |
+      | Harvest Moon  |
+      | Blue Horizon  |
+      | Golden Violet |
+      | Citrus        |
+      | Cappuccino    |
+      | Garden Dusk   |
+      | Autumn        |
+      | Rainfall      |
+      | Graphite      |
+      | Steel         |
+      | Carbon        |
+      | Heritage Noir |
 
   Scenario Outline: Invalid or unavailable palette settings retain a usable <palette> palette
     When I reload with an "<setting>" palette setting

@@ -176,16 +176,21 @@ async function expectPaletteChoices(page, selected, { structure = true } = {}) {
   assert.deepEqual(paletteNames.map(name => palette[name]), definitions.get(selectedPalette.selector), 'The selected palette must supply the root slots.');
 }
 
-async function selectPaletteWithKeyboard(page, name) {
+async function selectPaletteWithKeyboard(page, name, { enterFromSettings = true } = {}) {
   const theme = await page.locator('html').getAttribute('data-theme');
-  await settings(page).focus();
-  const heading = settings(page).locator('summary[aria-label="Theme"]');
-  const sectionCount = await settings(page).locator('summary').count();
-  for (let index = 0; index < sectionCount && !await heading.evaluate(element => element === document.activeElement); index++)
+  if (enterFromSettings) {
+    await settings(page).focus();
+    const heading = settings(page).locator('summary[aria-label="Theme"]');
+    const sectionCount = await settings(page).locator('summary').count();
+    for (let index = 0; index < sectionCount && !await heading.evaluate(element => element === document.activeElement); index++)
+      await page.keyboard.press('Tab');
+    await expect(heading).toBeFocused();
     await page.keyboard.press('Tab');
-  await expect(heading).toBeFocused();
-  await page.keyboard.press('Tab');
-  await expect(paletteGroup(page).getByRole('radio', { checked: true })).toBeFocused();
+    await expect(paletteGroup(page).getByRole('radio', { checked: true })).toBeFocused();
+  } else {
+    // Tab entry is covered by the initial selection; repeat only native radio navigation.
+    await paletteGroup(page).getByRole('radio', { checked: true }).focus();
+  }
   const choice = paletteChoice(page, name);
   const wraps = page.context().browser().browserType().name() !== 'webkit';
   const route = await paletteGroup(page).getByRole('radio').evaluateAll((inputs, { name, wraps }) => {
@@ -227,7 +232,7 @@ Then('{string} and theme settings persist independently after reloading', async 
     // need the selected radio and the active root palette.
     await expectPaletteChoices(page, selected);
     for (const name of ['Default', selected]) {
-      await selectPaletteWithKeyboard(page, name);
+      await selectPaletteWithKeyboard(page, name, { enterFromSettings: false });
       await expectPaletteChoices(page, name, { structure: false });
     }
     await expect.poll(() => storedSettings(page)).toEqual({ palette: selectedPalette.id, theme });

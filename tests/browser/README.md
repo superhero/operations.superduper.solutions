@@ -24,6 +24,15 @@ opens its run. Pass `"workflow"` when a scenario only needs to add a node.
 `restartRun` starts a new execution; its optional input restoration represents
 re-entering values, not persisted run state.
 
+## Scenario scope
+
+Palette scenarios check persistence in both themes, then resize the same page
+to check mobile keyboard navigation, colors and layout. Storage behavior does
+not depend on viewport width, so mobile checks do not repeat the reload matrix.
+Each palette still has an isolated scenario; recovery and migration failures
+remain separate. Initial selections check real Tab entry, while repeated
+persistence selections focus the checked radio before using native arrow keys.
+
 ## Execution boundary
 
 Run `npm run build` before `npm run test:browser`. The
