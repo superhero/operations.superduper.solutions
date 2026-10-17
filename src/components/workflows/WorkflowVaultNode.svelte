@@ -23,7 +23,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let error = $state("");
   let alive = false;
   let generation = 0;
-  const label = $derived(entries.find(entry => entry.id === data.credentialId)?.label);
   async function refresh() {
     const request = ++generation;
     try {
@@ -43,7 +42,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   $effect(() => { if (!editorActive()) open = false; });
 </script>
 <div class="workflow-utility-node workflow-vault-node" class:selected>
-  <div class="utility-title"><MaterialIcon name="variable_add" size={20} /><strong>{label ?? "Vault variable"}</strong></div>
+  <div class="utility-title"><MaterialIcon name="variable_add" size={20} /><strong>Vault variable</strong></div>
   <div class="utility-row nodrag nopan nokey">
     {#if needsUnlock || !entries.length || error}
       <button type="button" class="utility-value" onclick={() => open = true} disabled={!editorActive()}>
