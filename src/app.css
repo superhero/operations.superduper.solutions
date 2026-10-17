@@ -249,6 +249,7 @@ summary::-webkit-details-marker { display: none; }
 .catalog-operation-detail:has(> .catalog-description:hover, > .catalog-open-operation:hover) > :is(.catalog-description, .catalog-open-operation) { color: var(--color-emphasis); }
 .catalog-note { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--color-muted-foreground); }
 [data-slot="sheet-content"].catalog-sheet { width: min(320px, 90vw); max-width: none; gap: 0; padding: 64px var(--content-padding) 28px; overflow-y: auto; background: var(--color-surface); }
+[data-slot="sheet-content"].catalog-sheet .sheet-close { top: 10px; inset-inline-end: var(--content-padding); }
 .workflow-mode { display: flex; flex-direction: column; height: 100dvh; }
 .workflow-mode .shell { display: flex; flex: 1; flex-direction: column; min-height: 0; width: 100%; max-width: none; padding: 0; }
 .workflow-mode .site-header { flex: 0 0 auto; }
