@@ -223,6 +223,46 @@ and the production build pass.
 
 ```
 
+<!-- changelog-commit:f0b87840e5b61a1e50723c2ec3f16ec53a167f15 -->
+### Commit [`f0b8784`](https://github.com/superhero/operations.superduper.solutions/commit/f0b87840e5b61a1e50723c2ec3f16ec53a167f15)
+
+```text
+feat(workflows): support CSV without quote processing
+
+```
+
+<!-- changelog-commit:deffbe269723eb8b93d92b8419fde13c24157bac -->
+### Commit [`deffbe2`](https://github.com/superhero/operations.superduper.solutions/commit/deffbe269723eb8b93d92b8419fde13c24157bac)
+
+```text
+fix(workflows): compact CSV options into one row
+
+```
+
+<!-- changelog-commit:d54a0cb0aa83ceb697b7ca861c09d0d9b8cc142c -->
+### Commit [`d54a0cb`](https://github.com/superhero/operations.superduper.solutions/commit/d54a0cb0aa83ceb697b7ca861c09d0d9b8cc142c)
+
+```text
+feat(workflows): detect CSV quoting with an Auto option
+
+```
+
+<!-- changelog-commit:296e1b0849c15d8e20bae0edb2ca0d1aa898ff1a -->
+### Commit [`296e1b0`](https://github.com/superhero/operations.superduper.solutions/commit/296e1b0849c15d8e20bae0edb2ca0d1aa898ff1a)
+
+```text
+fix(workflows): widen file nodes for CSV option labels
+
+```
+
+<!-- changelog-commit:e0fe3bfdf2cf5d154beb79125c1020191bbe1d60 -->
+### Commit [`e0fe3bf`](https://github.com/superhero/operations.superduper.solutions/commit/e0fe3bfdf2cf5d154beb79125c1020191bbe1d60)
+
+```text
+fix(workflows): reduce file node width to 360 pixels
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50
