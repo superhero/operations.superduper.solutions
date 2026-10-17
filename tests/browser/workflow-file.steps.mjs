@@ -20,10 +20,10 @@ Then('I can upload typed workflow files and correct CSV detection', async functi
   await expect(node.getByRole('alert')).toContainText('Only JSON and CSV');
   await expect(node.locator('.utility-type')).toHaveText('Text');
   await upload('rows.csv','name;id\nAlice;00123\nBob;00234');
-  await expect(node.locator('.utility-type')).toHaveText('0..2');
+  await expect(node.locator('.utility-type')).toHaveText('Array');
   await expect(node.getByRole('alert')).toHaveCount(0);
   let doc=(await readExport(page)).document;
-  assert.deepEqual(doc.nodes.find(n=>n.type==='file').data.file.value,[{name:'Alice',id:'00123'},{name:'Bob',id:'00234'}]);
+  assert.deepEqual(doc.nodes.find(n=>n.type==='file').data.file.value,[{name:'Alice',id:123},{name:'Bob',id:234}]);
   assert.equal(doc.edges.filter(e=>e.kind==='mapping').length,0);
   await node.getByRole('combobox',{name:'CSV header',exact:true}).click();
   await page.getByRole('option',{name:'No header',exact:true}).click();
@@ -42,7 +42,7 @@ Then('file previews limit visible rows and load additional lines on demand', asy
   const node=workflow(page).locator('.svelte-flow__node-file');
   const upload=async values=>node.locator('input[type=file]').setInputFiles({name:'rows.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(values))});
   await upload(Array.from({length:1100},(_,i)=>i));
-  await expect(node.locator('.utility-type')).toHaveText('0..1100');
+  await expect(node.locator('.utility-type')).toHaveText('Array');
   await node.locator('.schema-disclosure > summary').click();
   const scroll=node.locator('.json-scroll');
   await expect(scroll).toBeVisible();
@@ -78,7 +78,8 @@ Then('uploaded files create nested output panels and preserve compatible field c
   await upload('rows.csv',['foo,bar,baz,qux',...Array.from({length:25},(_,i)=>`${i},${i+1},${i+2},${i+3}`)].join('\n'));
   await expect(panels.locator('.data-title .material-symbols-rounded').filter({hasText:'data_array'})).toHaveCount(1);
   await expect(panels).toHaveCount(2);
-  await expect(panels.locator('.field-type')).toHaveText(['0..25','0..25','0..25','0..25','0..25']);
+  await expect(panels.locator('.field-name').first()).toHaveText('0..25');
+  await expect(panels.locator('.field-type')).toHaveText(['Object','Integer','Integer','Integer','Integer']);
   doc=(await readExport(page)).document;
   assert.equal(doc.edges.filter(e=>e.kind==='mapping').length,0);
   await expect(page.locator('.site-header .document-meta').getByText('Saved locally',{exact:true})).toBeVisible();

@@ -289,7 +289,7 @@ export function createFileDataGraph(node: Extract<WorkflowDocumentNode, { type: 
       let value: unknown = node.data.file.value;
       const path: string = JSON.parse(decodeURIComponent(field.id))[1];
       for (const part of path.slice(1).split("/")) {
-        if (Array.isArray(value) && part === "items") { field.type = "Array"; field.array = { min: 0, max: value.length }; break; }
+        if (Array.isArray(value) && part === "items") { field.itemType = field.type; field.type = "Array"; field.array = { min: 0, max: value.length }; break; }
         value = object(value) ? value[part.replace(/~1/g, "/").replace(/~0/g, "~")] : undefined;
       }
     }

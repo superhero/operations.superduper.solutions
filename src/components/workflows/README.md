@@ -89,8 +89,10 @@ their ordered placement after existing content.
 ## File inputs
 
 File nodes embed parsed JSON or CSV data in the workflow, including exports and
-Git history. JSON retains its native type; CSV produces an array with string
-cells. Automatic delimiter and header detection can be overridden on the node.
+Git history. JSON retains its native type; CSV produces an array of rows. Columns
+become numbers only when every data cell is numeric and safely representable;
+otherwise the whole column stays text. Automatic delimiter and header detection
+can be overridden on the node.
 Quotes default to Auto, detecting double, single or no quoting. Explicit Double,
 Single and None overrides remain available; None preserves quotes literally.
 Parsing runs in a disposable worker; replacing a file preserves compatible
@@ -106,7 +108,9 @@ renderer and layout. Object properties keep stable path identities; array-item
 projections expose arrays of values. Replacing a file reconciles its panels,
 retaining matching positions and compatible mappings while removing stale ones.
 
-Array panels use the Data Array symbol. Their field badges show item bounds as
+Array panels use the Data Array symbol. Their Items row labels show item bounds as
 `min..max`, defaulting to `0..*`. OpenAPI bounds come from `minItems`/`maxItems`;
-uploaded arrays use zero through the observed item count. Array projections
-retain the source array's range.
+uploaded arrays use zero through the observed item count. Type badges continue to show the data type.
+
+Projected array attributes show their item type while connections retain the
+array type needed to carry all projected values.

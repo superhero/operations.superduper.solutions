@@ -28,6 +28,7 @@ export type WorkflowField = {
   description: string;
   connectable: boolean;
   array?: ArrayBounds;
+  itemType?: WorkflowField["type"];
   endpoint?: { nodeId: string; fieldId: string };
 };
 export type WorkflowData = {
@@ -148,6 +149,11 @@ function workflowData(value: Record<string, unknown>, extended: boolean): Workfl
       type: field.type as WorkflowField["type"], required: flag(field.required),
       description: text(field.description, "Field description", 4000, true), connectable: flag(field.connectable)
     };
+    if (field.itemType !== undefined) {
+      if (result.type !== "Array" || !["Text", "Integer", "Number", "Boolean", "Object", "Array", "Null", "Unknown"].includes(String(field.itemType)))
+        throw new Error("Array item types must name a supported workflow type.");
+      result.itemType = field.itemType as WorkflowField["type"];
+    }
     if (field.array !== undefined) result.array = arrayBounds(field.array);
     if (result.id === "value" || result.type === "Unknown" && result.connectable)
       throw new Error("Unknown fields and structural value ports cannot be mapping handles.");

@@ -89,7 +89,15 @@ export function parseWorkflowFile(name: string, source: string, options: CsvOpti
     first.every(cell => !!cell.trim() && !/^(?:[+-]?(?:\d*\.)?\d+(?:e[+-]?\d+)?|true|false|null)$/i.test(cell.trim())) && new Set(first).size === first.length;
   if (header && (first.some(cell => !cell.trim()) || new Set(first).size !== first.length))
     throw new Error("CSV headers must be nonempty and unique. Choose No header to retain these cells as data.");
-  const value = header ? rows.slice(1).map(row => Object.fromEntries(first.map((key, index) => [key, row[index]! ]))) : rows;
+  const data = header ? rows.slice(1) : rows;
+  const numeric = first.map((_, index) => data.length > 0 && data.every(row => {
+    const text = row[index]!.trim();
+    const value = Number(text);
+    return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(text) && Number.isFinite(value) &&
+      (!Number.isInteger(value) || Number.isSafeInteger(value));
+  }));
+  const converted = data.map(row => row.map((cell, index) => numeric[index] ? Number(cell) : cell));
+  const value = header ? converted.map(row => Object.fromEntries(first.map((key, index) => [key, row[index]! ]))) : converted;
   return validateWorkflowFileData({ file: { name, format, source, value, options,
     delimiter: result.meta.delimiter, header, encoding } }).file!;
 }

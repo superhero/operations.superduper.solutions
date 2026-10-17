@@ -119,13 +119,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 {/snippet}
 
 {#snippet fieldContent(field: WorkflowField)}
-  <span class="field-name">{field.label}{#if field.required}<HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label="Required" labelAsName={false}>
+  <span class="field-name">{data.array ? `${data.array.min}..${data.array.max ?? "*"}` : field.label}{#if field.required && !data.array}<HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label="Required" labelAsName={false}>
       {#snippet child({ props })}
         {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
         <abbr {...hintProps} class="required" aria-label="Required"> *</abbr>
       {/snippet}
     </HintButton>{/if}</span>
-  <span class="field-type">{field.array ? `${field.array.min}..${field.array.max ?? "*"}` : field.type === "Array" ? "0..*" : field.type}</span>
+  <span class="field-type">{field.itemType ?? field.type}</span>
 {/snippet}
 
 <div class="workflow-data-node" class:selected data-owner-id={data.ownerId} data-direction={data.direction}>
