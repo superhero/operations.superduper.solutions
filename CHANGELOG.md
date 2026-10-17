@@ -303,6 +303,14 @@ fix(workflows): compact file schema disclosure header
 
 ```
 
+<!-- changelog-commit:9e0e0b269e09cb0760fd9cffb38a398075227b93 -->
+### Commit [`9e0e0b2`](https://github.com/superhero/operations.superduper.solutions/commit/9e0e0b269e09cb0760fd9cffb38a398075227b93)
+
+```text
+fix(workflows): remove copy action from file schema header
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50
