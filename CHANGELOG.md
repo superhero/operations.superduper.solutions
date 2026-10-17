@@ -108,6 +108,14 @@ test(browser): remove unused passing-state screenshots
 
 ```
 
+<!-- changelog-commit:6d56986af73c90adadb64e841718d5683894fc5e -->
+### Commit [`6d56986`](https://github.com/superhero/operations.superduper.solutions/commit/6d56986af73c90adadb64e841718d5683894fc5e)
+
+```text
+test: refresh scenario badge after browser consolidation
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.48
