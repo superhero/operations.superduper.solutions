@@ -57,8 +57,8 @@
 				<HintButton label="Close navigation" aria-label="Close">
 					{#snippet child({ props: hintProps })}
 						<button {...mergeProps(closeProps, hintProps)}
-							class="ring-offset-background focus-visible:ring-ring text-muted-foreground hover:text-foreground absolute end-4 top-4 rounded-xs transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none">
-							<MaterialIcon name="close" size={16} />
+							class="sheet-close ring-offset-background focus-visible:ring-ring text-muted-foreground hover:text-foreground absolute end-4 top-4 rounded-xs transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-hidden disabled:pointer-events-none">
+							<MaterialIcon name="close" size={24} />
 							<span class="sr-only">Close</span>
 						</button>
 					{/snippet}
@@ -69,6 +69,7 @@
 </SheetPortal>
 
 <style>
+	:global([data-slot="sheet-content"] .sheet-close) { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; }
 	/* Bits presence waits for this transition, including interrupted reversals. */
 	:global([data-slot="sheet-content"]) {
 		transform: translate(0, 0);
