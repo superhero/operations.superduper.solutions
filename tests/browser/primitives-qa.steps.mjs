@@ -198,7 +198,7 @@ Then('scrolling cancels a pending operation tooltip', async function () {
   await expect(page.getByRole('tooltip')).toHaveCount(0);
 });
 
-Then('settings scroll independently below the main header', async function () {
+Then('settings scroll independently of the main header', async function () {
   const page = this.page;
   await page.setViewportSize({ width: 1280, height: 400 });
   const section = page.getByRole('region', { name: 'Settings workspace', exact: true }).locator('summary[aria-label="Application"]');
@@ -210,5 +210,5 @@ Then('settings scroll independently below the main header', async function () {
   await expect.poll(() => drawer.evaluate(element => element.scrollTop)).toBe(150);
   assert.deepEqual(await header.boundingBox(), before);
   assert.equal(await page.evaluate(() => scrollY), 0);
-  await expect.poll(async () => Math.round((await section.boundingBox()).y)).toBe(Math.round(before.y + before.height));
+  await expect.poll(async () => Math.round((await section.boundingBox()).y)).toBe(Math.round((await drawer.boundingBox()).y));
 });

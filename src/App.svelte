@@ -52,6 +52,25 @@
   let modeRequest = 0;
   let settingsPresent = $state(false);
   let settingsDrawer: HTMLElement;
+  $effect(() => {
+    if (!settingsPresent) return;
+    const root = document.documentElement;
+    const properties = ['overflow', 'scrollbar-gutter', 'padding-right'];
+    const previous = properties.map(property => ({ property, value: root.style.getPropertyValue(property), priority: root.style.getPropertyPriority(property) }));
+    const gutter = Math.max(0, window.innerWidth - root.getBoundingClientRect().width);
+    const padding = parseFloat(getComputedStyle(root).paddingRight) || 0;
+    // Replace the viewport scrollbar's gutter with padding so the canvas does not jump.
+    root.style.setProperty('overflow', 'hidden');
+    root.style.setProperty('scrollbar-gutter', 'auto');
+    root.style.setProperty('padding-right', `${padding + gutter}px`);
+    return () => {
+      for (const { property, value, priority } of previous) {
+        if (value) root.style.setProperty(property, value, priority);
+        else root.style.removeProperty(property);
+      }
+    };
+  });
+
   let dark = $state(document.documentElement.dataset.theme === "dark");
   let palette = $state(palettes.find(option => option.id === document.documentElement.dataset.palette)?.id ?? palettes[0].id);
   const operations = $derived(getSchemaLibrary().operations);
@@ -323,7 +342,7 @@
   :global(:root) { --settings-drawer-width: min(900px, calc(100vw - var(--navigation-control-size) - 2 * var(--content-padding))); }
   .page-content :global(.site-header) { transition: transform 200ms ease-in-out; }
   .page-content.settings-open :global(.site-header) { transform: translateX(calc(-1 * var(--settings-drawer-width))); }
-  .settings-drawer-host { position: fixed; z-index: 25; top: var(--app-header-height); right: 0; bottom: 0; width: var(--settings-drawer-width); overflow: clip; pointer-events: none; }
+  .settings-drawer-host { position: fixed; z-index: 25; top: 0; right: 0; bottom: 0; width: var(--settings-drawer-width); overflow: clip; pointer-events: none; }
   .settings-drawer { --app-header-height: 0px; height: 100%; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; pointer-events: auto; background: var(--color-surface); border-left: 1px solid var(--color-border); transform: translateX(100%); visibility: hidden; transition: transform 200ms ease-in-out, visibility 0s linear 200ms; }
   .settings-drawer.open { transform: translateX(0); visibility: visible; transition-delay: 0s; }
   @media (prefers-reduced-motion: reduce) { .settings-drawer, .page-content :global(.site-header) { transition: none; } }
