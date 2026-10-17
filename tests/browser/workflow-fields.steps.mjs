@@ -48,7 +48,7 @@ async function expectResponseEnvelope(panel, bodyType) {
   await expect(panel.locator('.data-field .field-name')).toHaveText([
     /^Status\s*\*\s*$/, /^Status message\s*\*\s*$/, /^Response body\s*\*\s*$/, /^Response headers\s*\*\s*$/
   ]);
-  for (const [label, type] of [['Status', 'Integer'], ['Status message', 'Text'], ['Response body', bodyType], ['Response headers', 'Object']])
+  for (const [label, type] of [['Status', 'Integer'], ['Status message', 'Text'], ['Response body', bodyType === 'Array' ? '0..*' : bodyType], ['Response headers', 'Object']])
     await expect(fieldRow(panel, label).locator('.field-type')).toHaveText(type);
   await expect(panel.getByLabel('Status output', { exact: true })).toHaveClass(/connectablestart/);
   await expect(panel.getByLabel('Status message output', { exact: true })).toHaveClass(/connectablestart/);
@@ -149,7 +149,7 @@ Then("List projects exposes its query parameters and nested project response", a
   await expect(response).toBeVisible();
   await expectResponseEnvelope(response, 'Array');
   await expect(body).toBeVisible();
-  await expect(fieldRow(body, "Project").locator(".field-type")).toHaveText("Object");
+  await expect(fieldRow(body, "Project").locator(".field-type")).toHaveText("0..*");
   await expect(headers).toBeVisible();
   await expect(headers.getByRole('button', { name: 'Edit properties', exact: true })).toBeVisible();
   await expect(nested).toBeVisible();

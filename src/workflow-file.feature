@@ -23,3 +23,5 @@ Feature: Uploaded workflow data
     Then replacing file structures preserves matching panels and removes invalid mappings
   Scenario: Nested uploaded fields supply operation inputs
     Then uploaded nested fields supply executable operation inputs
+  Scenario: Array structures preserve declared and observed item ranges
+    Then array structures preserve item bounds and validate stored ranges

@@ -105,3 +105,8 @@ Uploaded files also own generated output panels, using the operation-panel
 renderer and layout. Object properties keep stable path identities; array-item
 projections expose arrays of values. Replacing a file reconciles its panels,
 retaining matching positions and compatible mappings while removing stale ones.
+
+Array panels use the Data Array symbol. Their field badges show item bounds as
+`min..max`, defaulting to `0..*`. OpenAPI bounds come from `minItems`/`maxItems`;
+uploaded arrays use zero through the observed item count. Array projections
+retain the source array's range.

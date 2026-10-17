@@ -221,3 +221,29 @@ Then('uploaded nested fields supply executable operation inputs', async function
   const removed=updateFileDataGraph('file',fileOwner({}).data,doc.nodes,doc.edges);
   assert.ok(!removed.edges.some(e=>e.id==='file-mapping'));
 });
+Then('array structures preserve item bounds and validate stored ranges', async function () {
+  const {extractOperations}=await import('./lib/catalog.ts');
+  const {createOperationGraph,createFileDataGraph}=await import('./lib/workflow-graph.ts');
+  const {validateWorkflowDocument,parseWorkflowDocument}=await import('./lib/workflow-document.ts');
+  for (const [constraints,expected] of [[{},{min:0}],[{maxItems:5},{min:0,max:5}],[{minItems:2,maxItems:5},{min:2,max:5}],
+    [{minItems:-1,maxItems:-1},{min:0}],[{minItems:'x',maxItems:'x'},{min:0}],[{minItems:1.5,maxItems:1.5},{min:0}],
+    [{minItems:2,maxItems:1},{min:2}]]) {
+    const schema={type:'array',items:{type:'string'},...constraints};
+    const source={openapi:'3.1.0',info:{title:'Ranges',version:'1'},paths:{'/range':{post:{operationId:'range',requestBody:{content:{'application/json':{schema}}},responses:{200:{description:'Range',content:{'application/json':{schema}}}}}}}};
+    const graph=createOperationGraph({id:'ranges:range',name:'Range',description:'',method:'POST',path:'/range',group:'',fields:[],bodyRequired:false},{x:0,y:0},'range',source);
+    const panels=graph.nodes.filter(n=>n.type==='data'&&n.data.array);
+    assert.ok(panels.length>=2);
+    for (const panel of panels) {assert.deepEqual(panel.data.array,expected);assert.deepEqual(panel.data.fields[0].array,expected);}
+    const doc=parseWorkflowDocument(JSON.stringify(fileDocument(graph)));
+    assert.deepEqual(doc.nodes.find(n=>n.type==='data'&&n.data.array).data.array,expected);
+  }
+  const owner=fileOwner(Array.from({length:25},(_,i)=>({foo:i})));
+  const graph=createFileDataGraph(owner);
+  assert.deepEqual(graph.nodes[0].data.array,{min:0,max:25});
+  for (const panel of graph.nodes) for(const field of panel.data.fields)assert.deepEqual(field.array,{min:0,max:25});
+  const doc=fileDocument({nodes:[owner,...graph.nodes],edges:graph.edges});
+  for(const bounds of [null,{}, {min:-1},{min:1.5},{min:'2'},{min:2,max:1},{min:0,max:-1},{min:0,max:1.5},{min:0,max:'5'}]) {
+    const invalid=structuredClone(doc);invalid.nodes[1].data.array=bounds;assert.throws(()=>validateWorkflowDocument(invalid));
+    const invalidField=structuredClone(doc);invalidField.nodes[1].data.fields[0].array=bounds;assert.throws(()=>validateWorkflowDocument(invalidField));
+  }
+});
