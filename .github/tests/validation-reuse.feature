@@ -15,7 +15,6 @@ Feature: Reuse complete validation only for trusted identical inputs
       | a proposed merge checkout          |
       | a shallow proposed merge checkout  |
       | independently valid release notes  |
-      | a successful release workflow      |
       | a successful main workflow         |
       | paginated validation artifacts     |
       | an older complete validation       |
@@ -47,6 +46,7 @@ Feature: Reuse complete validation only for trusted identical inputs
       | a fork run                         |
       | another repository                 |
       | another workflow                   |
+      | a previous develop workflow        |
       | another event                      |
       | a failed run                       |
       | incomplete artifact pagination     |

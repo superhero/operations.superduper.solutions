@@ -26,9 +26,13 @@ The normal report command rejects missing or invalid inputs but cannot detect
 unregistered tests, filtered runs or stale results. Skipped and unfinished cases
 are not passes.
 
-Integrations into `develop` and active releases produce the complete four-suite
-report, scoped coverage and tested bundle before merging. A later integration
-may reuse that complete evidence only when every tracked input matches except
+Manual `develop` test runs produce all four suite reports, coverage and a built
+bundle for inspection. Automatic develop integration builds previews without
+running test suites or certifying release evidence.
+
+Release candidates automatically produce the complete four-suite report, scoped
+coverage and tested bundle. A later release/main integration may reuse that
+release evidence only when every tracked input matches except
 the managed root `CHANGELOG.md`. The original successful workflow, tested commit,
 artifact completeness and file hashes must verify; missing, expired or invalid
 evidence requires a fresh run.

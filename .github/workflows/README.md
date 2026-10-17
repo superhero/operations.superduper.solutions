@@ -319,16 +319,34 @@ cached.
 
 ### Required checks
 
-Code auto-merges require automation tests, Gitflow policy and application checks.
-Documentation uses its separate path.
+Develop PRs require Gitflow policy, script linting, dependency-badge checks,
+type checking and a successful preview build. They do not run test suites or
+produce reusable release-validation proof. Documentation uses its separate path.
 
-PRs into `develop` and `release/*` complete type checking, scoped coverage,
-build, source, acceptance, automation and browser tests before merging. They
-produce the same complete bundle, reports and validation evidence as release CI.
+Release candidates run source, acceptance, automation and browser suites with
+scoped coverage before release. Later release/main integration may reuse verified
+release evidence when inputs match; otherwise it runs fresh validation.
 
-Merges are serialized per target and bind the tested head and base revision.
-The head must match exactly. Target advances containing only dependency-version
-SVG changes are accepted; other advances require fresh validation.
+Merges are serialized per target and bind the checked head and base revision.
+The head must match exactly. Dependency-version SVG-only target advances are
+accepted; other advances require refreshed integration checks.
+
+### Manual develop tests
+
+Run **test-develop** from GitHub Actions, selecting the `develop` branch, or use:
+
+```sh
+gh workflow run test-develop.yml --ref develop
+```
+
+The workflow rejects other branches and pins all four suites to the selected
+commit. Reports, coverage, badges and the built bundle remain run artifacts.
+It does not merge, deploy or certify a release; release candidates still need
+automatic release validation. Like the other integration workflows, it uses
+the shared queue.
+
+The workflow must reach the default branch before GitHub exposes its manual
+trigger.
 
 ### Merge methods
 
@@ -440,8 +458,8 @@ dependency SVG updates; ancestry is checked again before merge.
 
 ### Reusing complete validation
 
-`develop`, release stabilization and main-target workflows may reuse a successful
-same-repository validation run when every tracked input matches, except the
+Release stabilization and main-target workflows may reuse a successful
+same-repository release validation run when every tracked input matches, except the
 managed root `CHANGELOG.md`. Other Markdown files, workflows, tests, dependency
 files, build configuration and file modes remain part of the comparison.
 
