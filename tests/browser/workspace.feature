@@ -209,3 +209,7 @@ Feature: Browser operations workspace
       | width |
       | 900   |
       | 1280  |
+
+  Scenario: Settings blocks a cramped workspace and restores editing as space becomes available
+    Given a workflow with 1 instances of "List projects"
+    Then Settings disables the workspace when insufficient space remains

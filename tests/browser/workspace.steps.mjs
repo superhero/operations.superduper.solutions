@@ -720,3 +720,31 @@ Then('the left menu overlays the workflow without changing its layout', async fu
   assert.deepEqual(await canvas.boundingBox(), before);
   await expect(viewport).toHaveAttribute('style', transform);
 });
+
+
+Then('Settings disables the workspace when insufficient space remains', async function () {
+  const page = this.page, canvas = page.locator('.workflow-workspace');
+  await closeCatalog(page);
+  await setMode(page, 'settings');
+  const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
+  const node = page.locator('.svelte-flow__node-operation').first();
+  const original = await node.getAttribute('style');
+  for (const width of [390, 900, 1219]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect(canvas).toHaveAttribute('inert', '');
+    await settings.focus();
+    await page.keyboard.press('Delete');
+    await page.keyboard.press('Control+z');
+    await expect(node).toHaveAttribute('style', original);
+    assert.equal(await node.evaluate(element => { element.focus(); return element.contains(document.activeElement); }), false);
+    await expect(settings).toBeVisible();
+  }
+  await page.setViewportSize({ width: 1220, height: 844 });
+  await expect(canvas).not.toHaveAttribute('inert');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(canvas).toHaveAttribute('inert', '');
+  const toggle = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
+  await toggle.click();
+  await expect(canvas).not.toHaveAttribute('inert');
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+});

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick, untrack } from "svelte";
+  import { onMount, tick, untrack } from "svelte";
   import { Tooltip } from "bits-ui";
   import type { Operation } from "$lib/catalog.ts";
   import { getSchemaLibrary } from "$lib/schema-library.ts";
@@ -51,6 +51,20 @@
   let mode = $state<WorkspaceMode>("workflow");
   let modeRequest = 0;
   let settingsPresent = $state(false);
+  // The 900px Settings pane must leave at least 320px for an editable workspace.
+  const compactSettingsQuery = "(max-width: 1219px)";
+  let compactSettings = $state(matchMedia(compactSettingsQuery).matches);
+  onMount(() => {
+    const media = matchMedia(compactSettingsQuery);
+    const update = () => {
+      const canvasFocused = document.activeElement?.closest(".workflow-host");
+      compactSettings = media.matches;
+      if (compactSettings && settingsPresent && canvasFocused) void tick().then(() => settingsWorkspace.focusActive());
+    };
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  });
   let settingsDrawer: HTMLElement;
   $effect(() => {
     if (!settingsPresent) return;
@@ -328,7 +342,7 @@
         </div>
       {/if}
       <div class="workflow-host">
-        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={true} settingsOpen={mode === "settings"} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={browseOperations} />
+        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={!(settingsPresent && compactSettings)} settingsOpen={mode === "settings"} {navigationOpen} {navigationModal} {workflowDefaults} onBrowse={browseOperations} />
       </div>
     </main>
   </div>
