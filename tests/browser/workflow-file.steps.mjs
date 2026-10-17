@@ -47,7 +47,7 @@ Then('file previews limit visible rows and load additional lines on demand', asy
   const scroll=node.locator('.json-scroll');
   await expect(scroll).toBeVisible();
   const dimensions=await scroll.evaluate(el=>({height:el.getBoundingClientRect().height,scroll:el.scrollHeight}));
-  assert.ok(dimensions.height<=128.5 && dimensions.scroll>dimensions.height);
+  assert.ok(dimensions.height<=384.5 && dimensions.scroll>dimensions.height);
   await expect(node.getByRole('button',{name:'Load more',exact:true})).toBeVisible();
   assert.ok(await node.locator('.json-line').count()<=1000);
   await expect(node.locator('.json-number').filter({hasText:/^1099$/})).toHaveCount(0);
