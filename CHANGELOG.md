@@ -363,6 +363,23 @@ Type checking and production build pass.
 
 ```
 
+<!-- changelog-commit:51afee61f0718db5c45ace90b0b959e997a8e58f -->
+### Commit [`51afee6`](https://github.com/superhero/operations.superduper.solutions/commit/51afee61f0718db5c45ace90b0b959e997a8e58f)
+
+```text
+feat(workflows): show array icons and item ranges
+
+Use Data Array for array panels and display cardinality badges with zero as
+the default minimum and an asterisk for unknown maximum. Preserve OpenAPI
+minItems/maxItems and derive uploaded array maxima from their data, including
+array projections such as CSV columns. Save and validate this metadata with
+workflow fields and panels.
+
+Eighteen focused source scenarios, four Chromium scenarios, type checking
+and production build pass.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50
