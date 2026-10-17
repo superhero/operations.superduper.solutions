@@ -122,7 +122,7 @@ async function resolvedColors(page, names) {
   }, names);
 }
 
-async function expectPaletteChoices(page, selected) {
+async function expectPaletteChoices(page, selected, { structure = true } = {}) {
   const group = paletteGroup(page);
   const theme = settings(page).locator('summary[aria-label="Theme"]');
   if (await theme.getAttribute('aria-expanded') === 'false') await theme.click();
@@ -130,41 +130,45 @@ async function expectPaletteChoices(page, selected) {
   const definitions = new Map((await paletteDefinitions()).map(([, selector, body]) =>
     [selector, [...body.matchAll(/--palette-\d\s*:\s*(#[a-f\d]{6});/gi)].map(match => rgbColor(match[1]))]));
   await expect(group).toBeVisible();
-  // Preserve computed accessible-name and enabled-state checks in one browser
-  // snapshot, without Playwright Test's runner-only snapshot matcher.
-  await expect.poll(async () => {
-    const choices = [];
-    const visit = nodes => {
-      for (const node of nodes) {
-        if (node.role === 'radio') choices.push({ name: node.name, disabled: node.disabled ?? false, checked: node.checked ?? false });
-        if (node.children) visit(node.children);
-      }
-    };
-    visit(await group.ariaSnapshotJSON());
-    return choices;
-  }).toEqual(paletteOptions.map(({ name }) => ({ name, disabled: false, checked: name === selected })));
-  // Read all 126 swatches together while rendering and styles settle.
-  await expect.poll(() => group.getByRole('radio').evaluateAll(inputs => inputs.map(input => {
-    const preview = input.closest('label')?.querySelector('[data-palette-preview]');
-    return {
-      id: input.value,
-      type: input.getAttribute('type'),
-      checked: input.checked,
-      preview: preview?.getAttribute('data-palette-preview'),
-      swatches: [...(preview?.children ?? [])].filter(element => !element.matches(".palette-selected-icon")).map(element => {
-        const bounds = element.getBoundingClientRect();
-        return {
-          visible: element.checkVisibility({ visibilityProperty: true }) && bounds.width > 0 && bounds.height > 0,
-          color: getComputedStyle(element).backgroundColor,
-        };
-      }),
-    };
-  })), { message: 'Every enabled palette choice must preview its own six visible colors in order.' }).toEqual(
-    paletteOptions.map(({ id, name, selector }) => ({
-      id, type: 'radio', checked: name === selected, preview: id,
-      swatches: definitions.get(selector).map(color => ({ visible: true, color })),
-    })),
-  );
+  if (structure) {
+    // Preserve computed accessible-name and enabled-state checks in one browser
+    // snapshot, without Playwright Test's runner-only snapshot matcher.
+    await expect.poll(async () => {
+      const choices = [];
+      const visit = nodes => {
+        for (const node of nodes) {
+          if (node.role === 'radio') choices.push({ name: node.name, disabled: node.disabled ?? false, checked: node.checked ?? false });
+          if (node.children) visit(node.children);
+        }
+      };
+      visit(await group.ariaSnapshotJSON());
+      return choices;
+    }).toEqual(paletteOptions.map(({ name }) => ({ name, disabled: false, checked: name === selected })));
+    // Read all 126 swatches together while rendering and styles settle.
+    await expect.poll(() => group.getByRole('radio').evaluateAll(inputs => inputs.map(input => {
+      const preview = input.closest('label')?.querySelector('[data-palette-preview]');
+      return {
+        id: input.value,
+        type: input.getAttribute('type'),
+        checked: input.checked,
+        preview: preview?.getAttribute('data-palette-preview'),
+        swatches: [...(preview?.children ?? [])].filter(element => !element.matches(".palette-selected-icon")).map(element => {
+          const bounds = element.getBoundingClientRect();
+          return {
+            visible: element.checkVisibility({ visibilityProperty: true }) && bounds.width > 0 && bounds.height > 0,
+            color: getComputedStyle(element).backgroundColor,
+          };
+        }),
+      };
+    })), { message: 'Every enabled palette choice must preview its own six visible colors in order.' }).toEqual(
+      paletteOptions.map(({ id, name, selector }) => ({
+        id, type: 'radio', checked: name === selected, preview: id,
+        swatches: definitions.get(selector).map(color => ({ visible: true, color })),
+      })),
+    );
+  } else {
+    await expect(group.getByRole('radio', { checked: true })).toHaveAccessibleName(selected);
+  }
   const selectedPalette = paletteOptions.find(option => option.name === selected);
   assert.ok(selectedPalette, `Unknown palette option: ${selected}`);
   await expect(page.locator('html')).toHaveAttribute('data-palette', selectedPalette.id);
@@ -219,16 +223,18 @@ Then('{string} and theme settings persist independently after reloading', async 
   assert.ok(selectedPalette, `Unknown palette option: ${selected}`);
   for (const theme of ['dark', 'light']) {
     await selectTheme(page, theme);
+    // Check every preview once per mode; selection and reload checks below only
+    // need the selected radio and the active root palette.
     await expectPaletteChoices(page, selected);
     for (const name of ['Default', selected]) {
       await selectPaletteWithKeyboard(page, name);
-      await expectPaletteChoices(page, name);
+      await expectPaletteChoices(page, name, { structure: false });
     }
     await expect.poll(() => storedSettings(page)).toEqual({ palette: selectedPalette.id, theme });
     assert.deepEqual(await legacySettings(page), { theme: null, palette: null });
     await page.reload();
     await setMode(page, 'settings');
-    await expectPaletteChoices(page, selected);
+    await expectPaletteChoices(page, selected, { structure: false });
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
   }
 });

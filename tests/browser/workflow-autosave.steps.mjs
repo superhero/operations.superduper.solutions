@@ -10,6 +10,8 @@ import { repository, storedWorkflows, blockWorkflowSaving, restoreWorkflowSaving
 
 const nameInput = workflowNameInput;
 const saved = page => expect(page.locator(".site-header .document-meta").getByText("Saved locally", { exact: true })).toBeVisible();
+// Negative assertions need a real quiet interval: an immediate empty read would
+// miss a delayed save that incorrectly recreates a blank or deleted workflow.
 const debounceFinished = page => page.evaluate(() => new Promise(resolve => setTimeout(resolve, 650)));
 
 // Dispatch the name edit and the next action in one browser task, with Svelte's
@@ -78,7 +80,7 @@ Then("starting a new workflow immediately preserves the preceding draft", async 
   await editImmediatelyBefore(page, page.getByRole("button", { name: "New workflow", exact: true }), "Second autosaved draft");
   await expect(nameInput(page)).toHaveValue("Untitled workflow");
   await expect(nameInput(page)).toBeFocused();
-  await debounceFinished(page);
+  await expect.poll(async () => (await storedWorkflows(page)).map(document => document.name)).toEqual(["First autosaved draft", "Second autosaved draft"]);
   const documents = await storedWorkflows(page);
   assert.deepEqual(documents.map(document => document.name), ["First autosaved draft", "Second autosaved draft"]);
   assert.notEqual(documents[0].id, documents[1].id);

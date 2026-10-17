@@ -64,7 +64,7 @@ async function openWorkflow(page, name) {
   await expectWorkflowName(page, name);
 }
 
-Given('two independent Git workflows with saved versions', async function () {
+Given('two independent Git repositories with saved versions', async function () {
   this.historyFirst = document('history-alpha', 'First workflow version');
   this.historyOther = document('history-beta', 'Independent workflow');
   const first = await repository(this.page, 'save', this.historyFirst, null, 'Create first workflow');
@@ -75,7 +75,9 @@ Given('two independent Git workflows with saved versions', async function () {
   this.historyFirstOid = first.revision;
   this.historyLatestOid = latest.revision;
   this.historyOtherBefore = await repository(this.page, 'inspect', this.historyOther.id);
-  await this.page.reload();
+});
+
+Given('I open the latest saved history workflow', async function () {
   await setMode(this.page, 'workflow');
   await openWorkflow(this.page, this.historyLatest.name);
   await saved(this.page);
@@ -559,6 +561,8 @@ Then('returning to the original text while saving preserves both completed edits
   assert.deepEqual(graph.versions[0].parent, [graph.versions[1].oid]);
 });
 
+// These pauses are the behavior under test: unfinished interactions must remain
+// unsaved past the old debounce interval. Keep real time here.
 Then('a paused text edit and a paused node drag each create only one completed version', async function () {
   const page = this.page;
   await openWorkflowDetails(page);
