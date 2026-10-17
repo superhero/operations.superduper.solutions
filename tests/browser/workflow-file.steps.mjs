@@ -1,0 +1,38 @@
+// Copyright (C) 2026 Erik Landvall
+// SPDX-License-Identifier: AGPL-3.0-only
+// See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import assert from 'node:assert/strict';
+import { Then } from '@cucumber/cucumber';
+import { expect } from '@playwright/test';
+import { workflow, readExport } from './workspace.steps.mjs';
+import { gesture } from './workflow-single-input.steps.mjs';
+Then('I can upload typed workflow files and correct CSV detection', async function () {
+  const page=this.page;
+  await page.getByRole('button',{name:'Add file upload',exact:true}).click();
+  const node=workflow(page).locator('.svelte-flow__node-file');
+  const upload=async(name,text)=>node.locator('input[type=file]').setInputFiles({name,mimeType:'application/octet-stream',buffer:Buffer.from(text)});
+  await upload('project.json','"project-1"');
+  await expect(node.locator('.utility-type')).toHaveText('Text');
+  await page.getByRole('button',{name:'Fit View',exact:true}).click();
+  await gesture(page,node.getByLabel('File output (Text)',{exact:true}),workflow(page).getByLabel('Project ID input',{exact:true}),'drag');
+  assert.equal((await readExport(page)).document.edges.filter(e=>e.kind==='mapping').length,1);
+  await upload('bad.txt','not supported');
+  await expect(node.getByRole('alert')).toContainText('Only JSON and CSV');
+  await expect(node.locator('.utility-type')).toHaveText('Text');
+  await upload('rows.csv','name;id\nAlice;00123\nBob;00234');
+  await expect(node.locator('.utility-type')).toHaveText('Array');
+  await expect(node.getByRole('alert')).toHaveCount(0);
+  let doc=(await readExport(page)).document;
+  assert.deepEqual(doc.nodes.find(n=>n.type==='file').data.file.value,[{name:'Alice',id:'00123'},{name:'Bob',id:'00234'}]);
+  assert.equal(doc.edges.filter(e=>e.kind==='mapping').length,0);
+  await node.getByRole('combobox',{name:'CSV header',exact:true}).click();
+  await page.getByRole('option',{name:'No header',exact:true}).click();
+  await expect(node.getByRole('combobox',{name:'CSV header',exact:true})).toContainText('No header');
+  doc=(await readExport(page)).document;
+  assert.deepEqual(doc.nodes.find(n=>n.type==='file').data.file.value,[['name','id'],['Alice','00123'],['Bob','00234']]);
+  await expect(page.locator(".site-header .document-meta").getByText("Saved locally", {exact:true})).toBeVisible();
+  await page.reload();
+  await page.locator('#startup-status').waitFor({state:'detached'});
+  await expect(node.getByRole('combobox',{name:'CSV header',exact:true})).toContainText('No header');
+  assert.deepEqual((await readExport(page)).document.nodes.find(n=>n.type==='file').data.file.value,doc.nodes.find(n=>n.type==='file').data.file.value);
+});

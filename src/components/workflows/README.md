@@ -10,7 +10,7 @@ currently lives at [WorkflowNode.svelte](../../WorkflowNode.svelte).
 
 | Change | Start here |
 | --- | --- |
-| Node fields and utility interactions | `WorkflowDataNode`, `WorkflowSwitchNode`, `WorkflowCastNode`, `WorkflowCommentNode`, `WorkflowReferenceNode` |
+| Node fields and utility interactions | `WorkflowDataNode`, `WorkflowSwitchNode`, `WorkflowCastNode`, `WorkflowCommentNode`, `WorkflowReferenceNode`, `WorkflowFileNode` |
 | Shared operation and workflow-reference card layout | `workflow-owner-nodes.css` |
 | Connection rendering and target previews | `WorkflowCurveEdge`, `WorkflowConnectionLine`, `WorkflowConnectionSnap` |
 | Selection and navigation aids | `WorkflowSelection`, `WorkflowMinimap`, `WorkflowToolbar` |
@@ -83,3 +83,12 @@ the viewport, then outside it when needed, and preserves existing node positions
 Grid snapping applies when enabled. Adding a utility pans to center it in the
 usable area beside open panes and below the toolbar. Operation trees retain
 their ordered placement after existing content.
+
+## File inputs
+
+File nodes embed parsed JSON or CSV data in the workflow, including exports and
+Git history. JSON retains its native type; CSV produces an array with string
+cells. Automatic delimiter and header detection can be overridden on the node.
+Parsing runs in a disposable worker; replacing a file preserves compatible
+connections and removes connections whose types no longer match. Uploads are
+limited to 500 kB each and remain subject to the document size limit.

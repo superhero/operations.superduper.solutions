@@ -610,10 +610,10 @@ export function isWorkflowConnection(connection: { source: string; target: strin
   return isValueConnection(connection, source, target, edges) && isWorkflowConnectionTypeCompatible(connection, nodes, edges);
 }
 
-export function createUtilityNode(type: "switch" | "cast" | "comment" | "vault", position: { x: number; y: number }, id: string): WorkflowDocumentNode
+export function createUtilityNode(type: "switch" | "cast" | "comment" | "vault" | "file", position: { x: number; y: number }, id: string): WorkflowDocumentNode
 {
   const common = { id, position: { ...position } };
-  if (type === "vault") return { ...common, type, data: {} };
+  if (type === "vault" || type === "file") return { ...common, type, data: {} };
   if (type === "switch") return { ...common, type, data: { gates: [{ id: "gate-1", operator: "==", value: "" }] } };
   if (type === "cast") return { ...common, type, data: { targetType: "Text" } };
   return { ...common, type, data: { text: "" } };

@@ -4,6 +4,8 @@
 
 import type { CastData, SwitchGate, WorkflowDocument, WorkflowDocumentEdge, WorkflowDocumentNode, WorkflowField } from "./workflow-document.ts";
 
+import { fileValueType } from "./workflow-file.ts";
+
 export const switchGateLimit = 32;
 export const switchValueLimit = 4096;
 export const commentTextLimit = 16000;
@@ -131,7 +133,8 @@ export function routingInputTypes(nodes: WorkflowDocumentNode[], edges: Workflow
       {
         const source = byId.get(edge.source);
         let outputs: Iterable<RoutingType> = [];
-        if (source?.type === "cast") outputs = [source.data.targetType];
+        if (source?.type === "file") { const type = fileValueType(source.data.file); outputs = [type === "Integer" ? "Number" : type]; }
+        else if (source?.type === "cast") outputs = [source.data.targetType];
         else if (source?.type === "switch") outputs = types.get(source.id)!;
         else if (source?.type === "data" && source.data.direction === "outputs")
         {
@@ -183,6 +186,7 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
     if (node.type === "data") return node.data.fields.find(field => field.id === handle)!.type;
     if (node.type === "cast") return node.data.targetType;
     if (node.type === "vault") return "Text";
+    if (node.type === "file") return fileValueType(node.data.file);
     if (seen.has(nodeId)) return "Unknown";
     const ancestors = new Set([...seen, nodeId]);
     const types = new Set(mainInputs(nodeId).map(edge => outputType(edge.source, edge.sourceHandle, ancestors)));
@@ -232,7 +236,7 @@ export function isValueConnection(connection: { sourceHandle?: string | null; ta
     ? source.data.fields.find(field => field.id === connection.sourceHandle && field.connectable) : undefined;
   if (source.type === "vault") return connection.sourceHandle === "value" && target.type === "data" &&
     target.data.direction === "inputs" && target.data.fields.some(field => field.id === connection.targetHandle && field.connectable && field.type === "Text");
-  const sourceUtility = source.type === "cast" ? connection.sourceHandle === "result" : source.type === "switch" &&
+  const sourceUtility = source.type === "file" ? !!source.data.file && connection.sourceHandle === "value" : source.type === "cast" ? connection.sourceHandle === "result" : source.type === "switch" &&
     source.data.gates.some(gate => gate.id === connection.sourceHandle);
   if (!sourceField && !sourceUtility) return false;
   if (target.type === "data") return target.data.direction === "inputs" &&
