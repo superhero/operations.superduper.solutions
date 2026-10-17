@@ -18,7 +18,7 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 <details>
 <summary><code>npm run badges:coverage</code></summary>
 
-- **Purpose:** Update the source-coverage badge.
+- **Purpose:** Generate the source-coverage badge under `tmp/test/badges`.
 - **Requirements:** Requires Bash, jq and a fresh `npm run test:source:coverage` followed by
   `npm run test:coverage`.
 
@@ -35,7 +35,7 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 <details>
 <summary><code>npm run badges:scenarios</code></summary>
 
-- **Purpose:** Update the test-scenario badge.
+- **Purpose:** Generate the test-scenario badge under `tmp/test/badges`.
 - **Requirements:** Requires Bash, jq and fresh, complete results from all four test suites.
 
 </details>
@@ -181,7 +181,9 @@ automatically before release.
 
 ## Quality Assurance
 
-[![Test Scenarios](.github/badges/test-scenarios.svg)](https://status.operations.superduper.solutions/test-report.html)
+Badges and linked reports describe the latest successfully published release.
+
+[![Test Scenarios](https://status.operations.superduper.solutions/badges/test-scenarios.svg)](https://status.operations.superduper.solutions/test-report.html)
 
 Test coverage of the application behavior, build output, and release automation,
 showing which expected outcomes are verified and which scenarios fail, with
@@ -189,7 +191,7 @@ details to help investigate regressions.
 
 ---
 
-[![Test Coverage](.github/badges/test-coverage.svg)](https://status.operations.superduper.solutions/test-coverage.html)
+[![Test Coverage](https://status.operations.superduper.solutions/badges/test-coverage.svg)](https://status.operations.superduper.solutions/test-coverage.html)
 
 Code coverage of the measured application source, showing which statements,
 branches, functions, and lines are exercised by tests and where additional

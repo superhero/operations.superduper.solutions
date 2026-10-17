@@ -63,6 +63,8 @@ Feature: Reuse complete validation only for trusted identical inputs
       | a corrupt bundle                   |
       | an incomplete coverage report      |
       | a missing combined report          |
+      | a missing report badge             |
+      | a modified report badge            |
       | an extra artifact file             |
       | a prototype-named artifact file    |
       | an extra empty artifact directory  |

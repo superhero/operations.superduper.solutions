@@ -138,13 +138,13 @@ The [coverage decision](../../docs/adr/test-suite-reports.md#coverage) defines
 
 ### Scenario badges
 
-After all four suites, run `npm run badges:scenarios`. Commit the updated
-`.github/badges/test-scenarios.json` and SVG with the test changes.
+CI generates JSON and SVG badges from all four Cucumber reports. Counts include
+scenario-outline examples, not steps; passing requires successful steps and hooks.
+Badges travel inside the validated `test-report` artifact and are published with
+the release reports. No badge commit or freshness check is required.
 
-- Counts include every reported scenario-outline example, not individual steps.
-- Passing requires successful steps and hooks; failed or skipped cases cannot
-  represent an all-passing suite.
-- Release CI checks the files with `npm run badges:scenarios -- --check`.
+For local inspection, `npm run badges:scenarios` writes to `tmp/test/badges`.
+Filtered or incomplete results cannot represent the complete suite.
 
 ### Dependency badges
 
@@ -163,12 +163,11 @@ failures leave badges unchanged.
 
 ### Coverage badges
 
-After the fresh coverage run, use `npm run badges:coverage`. Commit
-`.github/badges/test-coverage.json` and its SVG with the code changes.
+CI generates the statement-coverage badge from the scoped c8 summary. Coverage
+thresholds remain blocking checks; the full report includes all four measures.
+The badge shares the validated report artifact and publication path above.
 
-The badge shows statement coverage; the full report includes all four measures.
-Release CI checks against its own measurements with
-`npm run badges:coverage -- --check`; it does not create coverage-badge commits.
+For local inspection, `npm run badges:coverage` writes to `tmp/test/badges`.
 
 ## Documentation-only changes
 
@@ -464,7 +463,7 @@ managed root `CHANGELOG.md`. Other Markdown files, workflows, tests, dependency
 files, build configuration and file modes remain part of the comparison.
 
 Fresh runs publish a validation manifest only after automation, application
-tests, reports and badge checks succeed. Reuse verifies that manifest against
+tests, reports and badge generation succeed. Reuse verifies that manifest against
 the original successful run and tested commit, without listing individual jobs
 again. The bundle, coverage and combined test report must be complete,
 unexpired and match the manifest's file hashes. Missing or unverifiable evidence
@@ -587,7 +586,9 @@ rollback is a separate operation.
 ### Report destinations
 
 Production promotion uploads `test-coverage.html` and `test-report.html` to R2
-from validated artifacts. Dependency checks and badge files do not publish to R2.
+from validated artifacts, together with scenario and coverage JSON/SVG badges
+under `badges/`. README quality badges show these published release results.
+Dependency badges remain committed files and do not publish to R2.
 
 ### Synchronization into develop
 

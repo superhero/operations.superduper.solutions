@@ -245,7 +245,7 @@ Then("release artifacts remain bound to the exact tested checkout", function ()
       if (Object.hasOwn(step.env ?? {}, "BASE_SHA"))
         assert.equal(step.env.BASE_SHA, "${{ needs.integration.outputs.base_sha }}", `${name}/${step.name} must retain the fresh target pin`);
   assert.match(proof.run, /"\$GITHUB_RUN_ID" "\$GITHUB_RUN_ATTEMPT"/);
-  for (const [name, path] of Object.entries({ bundle: "tmp/validation/bundle", coverage: "tmp/validation/coverage", "test-report": "tmp/validation/test-report/test-report.html" }))
+  for (const [name, path] of Object.entries({ bundle: "tmp/validation/bundle", coverage: "tmp/validation/coverage", "test-report": "tmp/validation/test-report" }))
   {
     const upload = jobs.application.steps.find(step => step.with?.name === name);
     assert.equal(upload.with.path, path);
@@ -404,4 +404,34 @@ Then("release preparation defers all suites until a release candidate exists", f
       && enabled(step, false, true, "success", {}, source), false,
       "A develop-to-main trigger must create the release before running its suites");
   assert.equal(enabled(jobs.application, false, true, "success", {}, { source: "release/1.2.3" }), true);
+});
+
+Then("report badges are generated from passing results and travel with validated reports", function ()
+{
+  const { jobs } = this.validationWorkflow;
+  const steps = jobs.application.steps;
+  const badges = uniqueStep(steps, step => npmScripts(step).includes("badges:scenarios"), "Report badges");
+  assert.deepEqual(npmScripts(badges), ["badges:coverage", "badges:scenarios"]);
+  assert.doesNotMatch(badges.run, /--check/);
+  requiresSuccess(badges);
+  assert.equal(enabled(badges, false), true);
+  assert.equal(enabled(badges, true), false, "Reuse preserves the original badges");
+  for (const command of ["test:coverage", "test:browser", "report:tests"])
+    assert.ok(steps.findIndex(step => npmScripts(step).includes(command)) < steps.indexOf(badges));
+  assert.ok(steps.filter(step => npmScripts(step).includes("test:coverage")).length === 1);
+  const proof = validationProof(jobs).create;
+  assert.ok(steps.indexOf(proof) > steps.indexOf(badges));
+  assert.match(proof.run, /cp -a tmp\/test\/badges tmp\/validation\/test-report\//);
+  assert.doesNotMatch(steps.map(step => step.run ?? "").join("\n"), /badges:(?:scenarios|coverage)[^\n]*--check/);
+  if (this.validationTarget === "main")
+  {
+    const publication = uniqueStep(Object.values(jobs).flatMap(job => job.steps ?? []),
+      step => step.run?.includes("tmp/badges/$badge.$format"), "Published report badges");
+    requiresSuccess(publication);
+    assert.match(publication.run, /for badge in test-scenarios test-coverage/);
+    assert.match(publication.run, /for format in json svg/);
+    assert.match(publication.run, /validate-current-release\.sh[^\n]+\n\s+bash \.github\/scripts\/publish-status\.sh "tmp\/badges/);
+    assert.match(publication.run, /application\/json; charset=utf-8/);
+    assert.match(publication.run, /image\/svg\+xml/);
+  }
 });

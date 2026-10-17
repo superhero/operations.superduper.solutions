@@ -28,6 +28,7 @@ Feature: Carry complete validation through integration and release
     Then all validation suites run before a new proof is published
     And exactly one fresh proof is published after all validation artifacts
     And release artifacts remain bound to the exact tested checkout
+    And report badges are generated from passing results and travel with validated reports
     Examples:
       | target  |
       | release |

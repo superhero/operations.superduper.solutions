@@ -5,14 +5,18 @@
 Feature: Publish release reports and report dependency versions
 
   Scenario Outline: Publish each release report at its stable R2 destination
-    Given a status file for "<key>" with content type "text/html; charset=utf-8"
+    Given a status file for "<key>" with content type "<type>"
     When the status is published
     Then R2 receives the file at its configured destination
 
     Examples:
-      | key                |
-      | test-coverage.html |
-      | test-report.html   |
+      | key                        | type                     |
+      | test-coverage.html         | text/html; charset=utf-8 |
+      | test-report.html           | text/html; charset=utf-8 |
+      | badges/test-scenarios.json | application/json; charset=utf-8 |
+      | badges/test-scenarios.svg  | image/svg+xml            |
+      | badges/test-coverage.json  | application/json; charset=utf-8 |
+      | badges/test-coverage.svg   | image/svg+xml            |
 
   Scenario Outline: Publishing failures explain the destination without exposing credentials
     Given a status file for "test-coverage.html" with content type "text/html; charset=utf-8"
