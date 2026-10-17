@@ -562,8 +562,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   button:disabled { opacity: .55; cursor: not-allowed; }
   .help, .notice, .destination { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
   .records { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
-  .records li { display: grid; gap: 10px; padding: 1px 1px 1px 10px; border: 0; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); }
-  .records .actions { gap: 1px; flex-wrap: nowrap; }
+  .records li { display: grid; gap: 10px; padding: 2px 2px 2px 10px; border: 0; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); }
+  .records .actions { gap: 2px; flex-wrap: nowrap; }
   .records .actions > button:first-child { border-top-right-radius: 0; border-bottom-right-radius: 0; }
   .records .actions > button:last-child { border-top-left-radius: 0; border-bottom-left-radius: 0; }
   .destination { padding: 10px; border-radius: 4px; background: var(--color-background); }
