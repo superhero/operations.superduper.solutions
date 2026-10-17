@@ -113,6 +113,20 @@ the loader animation. This skips only the presentation delay, runs its native
 removal and gutter-cleanup callback, and leaves startup-specific scenarios alone.
 It does not advance application clocks or bypass initialization.
 
+### Fixture-only entry pages
+
+Storage, network, policy and KDF vault tags, `@error-history-storage` and
+`@error-history-recorder` start on their isolated HTML fixture.
+`@coverage-report` starts on a blank page until its generated report is ready.
+These cases do not initialize and discard the full application first. Shared
+setup still creates a fresh context and installs the same request guards,
+diagnostics and tracing. Fixture steps seed their own data;
+explicit reloads and additional-tab navigation remain part of their tests.
+
+UI and startup scenarios keep the built application entry page. When adding a
+fixture-only tag, ensure every scenario carrying it works without application
+workers, settings or databases left behind by startup.
+
 ### Focused fixtures
 
 Vault UI setup creates a vault and one encrypted credential. The creation and

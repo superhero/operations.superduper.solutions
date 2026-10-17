@@ -8,7 +8,6 @@ const fixture = '/error-history-storage-fixture.js';
 const historyPage = page => page.evaluate(async path => (await import(path)).readErrors(), fixture);
 
 Given('an empty error-history database', async function () {
-  await this.page.goto(`${this.baseURL}/error-history-fixture.html`);
   await this.page.evaluate(async path => (await import(path)).clearHistory(), fixture);
 });
 

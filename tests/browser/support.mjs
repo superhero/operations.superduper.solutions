@@ -17,6 +17,19 @@ let browser;
 let server;
 let baseURL;
 
+// These scenarios exercise standalone fixtures, not application startup.
+// Keep UI and startup scenarios on the built application by default.
+const fixturePages = new Map([
+  ['@error-history-storage', '/error-history-fixture.html'],
+  ['@error-history-recorder', '/error-history-fixture.html'],
+  // Coverage steps prepare their own HTTP/file report before navigating.
+  ['@coverage-report', 'about:blank'],
+  ['@vault-browser-storage', '/vault-fixture.html'],
+  ['@vault-browser-network', '/vault-fixture.html'],
+  ['@vault-browser-policy', '/vault-fixture.html'],
+  ['@vault-browser-kdf', '/vault-kdf-fixture.html'],
+]);
+
 class BrowserWorld extends World {}
 setWorldConstructor(BrowserWorld);
 
@@ -168,7 +181,9 @@ Before(async function ({ pickle }) {
     if (response.status() >= 400)
       this.diagnostics.push({ type: 'http-error', url: response.url(), status: response.status() });
   });
-  await this.page.goto(baseURL, { waitUntil: 'load' });
+  const fixturePage = pickle.tags.map(tag => fixturePages.get(tag.name)).find(Boolean);
+  await this.page.goto(fixturePage ? new URL(fixturePage, baseURL).href : baseURL, { waitUntil: 'load' });
+  if (fixturePage) return;
   // Module loading precedes the worker-backed startup; filling an inert input
   // does not enter text even though Playwright sees its rendered textarea.
   await this.page.waitForFunction(() => {

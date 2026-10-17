@@ -158,7 +158,6 @@ When('another tab records a failure', async function () {
 });
 
 Given('an isolated running error recorder', async function () {
-  await this.page.goto(`${this.baseURL}/error-history-fixture.html`);
   await this.page.evaluate(async fixture => {
     const { subscribeErrorHistory } = await import(fixture);
     globalThis.errorRecorderStates = [];

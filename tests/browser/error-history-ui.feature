@@ -22,6 +22,7 @@ Feature: Recorded errors in Logs settings
     When another tab records a failure
     Then the error history shows 1 unique errors and 1 entries
 
+  @error-history-recorder
   Scenario: A failed recorder bounds queued errors and resumes after explicit retry
     Given an isolated running error recorder
     When the recorder cannot write its next error
@@ -31,6 +32,7 @@ Feature: Recorded errors in Logs settings
     When I retry the isolated error recorder
     Then 64 unique errors are saved without recording the storage failure
 
+  @error-history-recorder
   Scenario: A silent worker cannot cause replay of a possibly committed error
     Given an isolated running error recorder
     When the error worker saves an error without acknowledging it
@@ -38,11 +40,13 @@ Feature: Recorded errors in Logs settings
     When I retry the isolated error recorder
     Then the acknowledged history contains the error exactly once
 
+  @error-history-recorder
   Scenario: Repeated pending errors coalesce without losing occurrence counts
     Given an isolated running error recorder
     When the same error is reported 80 times before recording runs
     Then one saved error contains 80 occurrences
 
+  @error-history-recorder
   Scenario: An idle recorder worker failure cannot record itself
     Given an isolated running error recorder
     When the idle error worker crashes
