@@ -1,0 +1,196 @@
+# Copyright (C) 2026 Erik Landvall
+# SPDX-License-Identifier: AGPL-3.0-only
+# See LICENSE and LICENSE-ADDITIONAL-TERMS.
+name: test-develop
+run-name: "Manual develop tests: ${{ github.sha }}"
+on:
+  workflow_dispatch: null
+concurrency:
+  group: integration-ci
+  queue: max
+  cancel-in-progress: false
+permissions:
+  contents: read
+jobs:
+  validate-target:
+    name: Require develop branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Reject other branches
+        env:
+          TARGET_REF: ${{ github.ref }}
+        run: '[[ "$TARGET_REF" == refs/heads/develop ]] || { echo "::error::Run this workflow on develop."; exit 1; }'
+  workflow-checks:
+    name: Automation tests
+    needs: validate-target
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Lint standalone scripts
+        run: shellcheck .github/scripts/*.sh
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Check dependency version badges
+        run: npm --loglevel=error run badges:dependencies -- --check
+      - name: Test automation
+        id: automation
+        run: npm --loglevel=error run test:automation
+      - name: Upload automation report
+        if: ${{ !cancelled() && (steps.automation.outcome == 'success' || steps.automation.outcome == 'failure') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: automation-test-report
+          path: tmp/test/cucumber-automation.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+  application:
+    name: Application tests and build
+    needs:
+      - validate-target
+      - workflow-checks
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout develop revision
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Type check
+        run: npm --loglevel=error run typecheck
+      - name: Source tests with coverage
+        id: source
+        run: npm --loglevel=error run test:source:coverage
+      - name: Check coverage thresholds
+        id: coverage
+        run: |
+          npm --loglevel=error run test:coverage
+          jq -r '.total | "Coverage: statements \(.statements.pct)%, branches \(.branches.pct)%, functions \(.functions.pct)%, lines \(.lines.pct)%."' \
+            tmp/test/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
+      - name: Build
+        run: npm --loglevel=error run build
+      - name: Acceptance tests
+        id: acceptance
+        run: npm --loglevel=error run test:acceptance
+      - name: Browser tests against the built bundle
+        id: browser
+        timeout-minutes: 30
+        run: npm --loglevel=error run test:browser
+      - name: Upload browser results and diagnostics
+        if: ${{ !cancelled() && (steps.browser.outcome == 'success' || steps.browser.outcome == 'failure') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: browser-test-report
+          path: |
+            tmp/test/cucumber-browser.json
+            tmp/test/browser
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+      - name: Upload application test results
+        if: ${{ !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: application-test-report
+          path: |
+            tmp/test/cucumber-source.json
+            tmp/test/cucumber-test.json
+            tmp/test/cucumber-browser.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+      - name: Download automation test results
+        if: ${{ !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name automation-test-report --dir tmp/test
+      - name: Generate combined test report
+        id: report
+        env:
+          REPORT_COMMIT: ${{ github.sha }}
+          REPORT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: npm --loglevel=error run report:tests
+      - name: Generate diagnostic report after failure
+        id: failure-report
+        if: failure() && !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure')
+        env:
+          REPORT_COMMIT: ${{ github.sha }}
+          REPORT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          reports=()
+          missing=()
+          for suite in source:source acceptance:test browser:browser automation:automation; do
+            file="tmp/test/cucumber-${suite#*:}.json"
+            if [[ -f "$file" ]]; then reports+=("$file"); else missing+=("${suite%%:*}"); fi
+          done
+          (( ${#reports[@]} > 0 )) || exit 1
+          warning='CI failed. This diagnostic report does not certify a successful build.'
+          if (( ${#missing[@]} > 0 )); then warning+=" Missing suite results: ${missing[*]}."; fi
+          REPORT_WARNING="$warning" node .github/scripts/generate-test-report.mjs tmp/test-report.html "${reports[@]}"
+      - name: Upload failed validation diagnostics
+        if: failure() && steps.failure-report.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: validation-diagnostics
+          path: |
+            tmp/test-report.html
+            tmp/test/coverage
+            !tmp/test/coverage/v8
+          if-no-files-found: error
+          retention-days: 7
+      - name: Generate report badges
+        run: |
+          bash .github/scripts/generate-coverage-badge.sh tmp/test/coverage/coverage-summary.json tmp/test/badges
+          bash .github/scripts/generate-scenario-badge.sh tmp/test/badges tmp/test/cucumber-source.json tmp/test/cucumber-test.json tmp/test/cucumber-automation.json tmp/test/cucumber-browser.json
+      - name: Upload bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: bundle
+          path: dist
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: |-
+            tmp/test/coverage
+            !tmp/test/coverage/v8
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload test-report
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-report
+          path: tmp/test-report.html
+          if-no-files-found: error
+          retention-days: 7
+      - name: Upload report-badges
+        uses: actions/upload-artifact@v7
+        with:
+          name: report-badges
+          path: tmp/test/badges
+          if-no-files-found: error
+          retention-days: 7

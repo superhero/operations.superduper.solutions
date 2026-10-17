@@ -9,7 +9,7 @@ import { ARTIFACT_NAMES, MANIFEST_NAME, inputFingerprint, inventory, isPositiveI
   localIdentity, verifyArtifacts } from "./validation-artifacts.mjs";
 import { githubRequest, githubDownload, ValidationRequestError, requestFailureDescription } from "./validation-request.mjs";
 
-export const TRUSTED_WORKFLOWS = new Set(["ci-develop.yml", "ci-release.yml", "ci-main.yml"]);
+export const TRUSTED_WORKFLOWS = new Set(["ci-release.yml", "ci-main.yml"]);
 const LOOKUP_BUDGET_MS = 120000;
 const MAX_CANDIDATES = 20;
 class LookupBudgetExhausted extends Error {}

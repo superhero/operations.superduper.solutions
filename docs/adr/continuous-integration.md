@@ -114,9 +114,12 @@ checks. Protected branches enforce checks tied to the tested revision. GitHub
 Actions merges and tags the verified revision, then opens a `main` → `develop`
 synchronization PR.
 
-Integrations into `develop` and active releases complete type checking, scoped
-coverage, build and all four test suites before merging. Later workflows may
-reuse complete successful validation when every tracked input matches except
+Develop integration performs static checks and builds previews. Its four test
+suites run only through an explicit manual workflow on `develop`; preview builds
+do not certify release validation.
+
+Release candidates automatically complete scoped coverage, build and all four
+test suites. Later release/main workflows may reuse complete successful release validation when every tracked input matches except
 the managed root `CHANGELOG.md`. Reuse verifies the original run, tested revision,
 complete reports and bundle hashes, preserving their provenance. Missing,
 expired or unverifiable evidence requires fresh validation; current branch and

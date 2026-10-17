@@ -173,7 +173,7 @@ jobs:
         run: npm --loglevel=error run badges:dependencies -- --check
 
       - name: Test automation
-        if: needs.validation.outputs.reused != 'true'
+        if: needs.validation.outputs.reused != 'true' && github.head_ref != 'develop'
         id: automation
         run: npm --loglevel=error run test:automation
 

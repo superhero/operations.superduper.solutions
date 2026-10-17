@@ -174,10 +174,10 @@ changes back to `develop`.
 
 [![Develop CI](https://img.shields.io/github/actions/workflow/status/superhero/operations.superduper.solutions/ci-develop.yml?label=Develop%20CI)](https://github.com/superhero/operations.superduper.solutions/actions/workflows/ci-develop.yml)
 
-Validates incoming changes before merging them into `develop`, checking branch
-policy, types, tests, and build output. Keeps feature work, bug fixes, and
-released changes integrated for the next release, then updates the
-development preview.
+Checks branch policy, script linting, types and build output before merging into
+`develop`, then updates the development preview. Test suites run on `develop`
+only through the manual **test-develop** workflow; release candidates run them
+automatically before release.
 
 ## Quality Assurance
 
