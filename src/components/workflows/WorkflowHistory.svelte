@@ -83,6 +83,25 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     return () => { observer.disconnect(); cancelAnimationFrame(frame); };
   });
 
+  $effect(() => {
+    const element = treeElement;
+    const oid = currentRevision;
+    workflowId;
+    if (!element || !oid || busy) return;
+    const frame = requestAnimationFrame(() => {
+      const card = [...element.querySelectorAll<HTMLElement>("[data-version-oid]")]
+        .find(row => row.dataset.versionOid === oid);
+      const container = element.closest<HTMLElement>(".modal-content");
+      if (!card || !container) return;
+      const headerHeight = container.querySelector<HTMLElement>(":scope > header")?.offsetHeight ?? 0;
+      const row = card.getBoundingClientRect();
+      const bounds = container.getBoundingClientRect();
+      container.scrollTop += row.top - bounds.top - headerHeight -
+        Math.max(0, (container.clientHeight - headerHeight - row.height) / 2);
+    });
+    return () => cancelAnimationFrame(frame);
+  });
+
   function laneColor(lane: number)
   {
     return lane === 0 ? "var(--color-badge-background)" : "var(--color-background)";

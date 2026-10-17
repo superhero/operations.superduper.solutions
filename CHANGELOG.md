@@ -127,6 +127,34 @@ merge: synchronize develop before vault layout integration
 
 ```
 
+<!-- changelog-commit:30002b7af97da09101b1cfbfc416e8fbc8d2e446 -->
+### Commit [`30002b7`](https://github.com/superhero/operations.superduper.solutions/commit/30002b7af97da09101b1cfbfc416e8fbc8d2e446)
+
+```text
+fix(workflows): prevent vault selector flashing during undo
+
+```
+
+<!-- changelog-commit:5904bc08cf2293fe7fbe8b8c7a72d75326a2ba3c -->
+### Commit [`5904bc0`](https://github.com/superhero/operations.superduper.solutions/commit/5904bc08cf2293fe7fbe8b8c7a72d75326a2ba3c)
+
+```text
+fix(workflows): reveal the active checkout when opening history
+
+Scroll the history dialog to the current revision after rendering,
+accounting for its sticky header. Reopening or changing the checkout
+reveals the active card without moving the page or changing focus.
+
+```
+
+<!-- changelog-commit:696a19b8a7ebe5723f0e8cb4986d61d2c409e332 -->
+### Commit [`696a19b`](https://github.com/superhero/operations.superduper.solutions/commit/696a19b8a7ebe5723f0e8cb4986d61d2c409e332)
+
+```text
+merge: synchronize develop before history scroll integration
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50

@@ -82,3 +82,11 @@ Feature: Browser-local Git workflow history
   Scenario: Repeated workflow undo and redo keep focus while navigation is open
     Given I open the latest saved history workflow
     Then repeated keyboard undo and redo preserve workflow focus beside the open search
+
+  Scenario Outline: Opening history reveals an older active checkout
+    Then history opens at the active checkout at width <width>
+
+    Examples:
+      | width |
+      | 1280  |
+      | 390   |
