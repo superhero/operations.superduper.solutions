@@ -422,6 +422,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .defaults-retry { padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-primary); color: var(--color-primary-foreground); font-size: 12px; font-weight: 700; }
   .settings-retry { padding: 16px 16px 0; }
   .theme-mode { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+  .theme-mode :global(.icon-switch) { box-sizing: content-box; border: 4px solid var(--color-muted); }
   .palette-options { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 16px; }
   .palette-choice { position: relative; min-width: 0; cursor: pointer; }
   .palette-choice input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
