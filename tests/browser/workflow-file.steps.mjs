@@ -68,6 +68,10 @@ Then('uploaded files create nested output panels and preserve compatible field c
   const owner=await node.getAttribute('data-id');
   const panels=workflow(page).locator(`.workflow-data-node[data-owner-id="${owner}"]`);
   await expect(panels).toHaveCount(3);
+  await expect(node.locator('.svelte-flow__handle')).toHaveCount(1);
+  await expect(node.getByText('Data structure',{exact:true})).toHaveCount(0);
+  const structure=(await readExport(page)).document.edges.find(e=>e.kind==='schema'&&e.source===owner);
+  assert.equal(structure.sourceHandle,'value');
   await page.getByRole('button',{name:'Fit View',exact:true}).click();
   await gesture(page,panels.getByLabel('baz output',{exact:true}),workflow(page).getByLabel('Project ID input',{exact:true}),'drag');
   let doc=(await readExport(page)).document;

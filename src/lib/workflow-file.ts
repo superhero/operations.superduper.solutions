@@ -96,7 +96,8 @@ export function parseWorkflowFile(name: string, source: string, options: CsvOpti
     return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(text) && Number.isFinite(value) &&
       (!Number.isInteger(value) || Number.isSafeInteger(value));
   }));
-  const converted = data.map(row => row.map((cell, index) => numeric[index] ? Number(cell) : cell));
+  const boolean = first.map((_, index) => data.length > 0 && data.every(row => /^(?:true|false)$/i.test(row[index]!.trim())));
+  const converted = data.map(row => row.map((cell, index) => boolean[index] ? cell.trim().toLowerCase() === "true" : numeric[index] ? Number(cell) : cell));
   const value = header ? converted.map(row => Object.fromEntries(first.map((key, index) => [key, row[index]! ]))) : converted;
   return validateWorkflowFileData({ file: { name, format, source, value, options,
     delimiter: result.meta.delimiter, header, encoding } }).file!;

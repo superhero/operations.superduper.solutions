@@ -167,6 +167,7 @@ Then('uploaded structures project nested fields and CSV columns', async function
   assert.deepEqual(graph.nodes.map(n=>n.data.fields.map(f=>[f.label,f.type])),[[['foo','Object']],[['bar','Object']],[['baz','Text']]]);
   const csv={...owner,data:{file:parse('rows.csv','foo,bar,baz,qux\n1,2,3,4\n5,6,7,8')}};
   const csvGraph=createFileDataGraph(csv);
+  assert.deepEqual(csvGraph.nodes.map(n=>n.data.label),['Array','Item']);
   assert.deepEqual(csvGraph.nodes.map(n=>n.data.fields.map(f=>[f.label,f.type])),[[['Items','Array']],[['foo','Array'],['bar','Array'],['baz','Array'],['qux','Array']]]);
   const literal=createFileDataGraph(fileOwner({items:'hello'})); assert.equal(literal.nodes[0].data.fields[0].type,'Text');
   let deep={leaf:true}; for(let i=0;i<14;i++)deep={nested:deep};
@@ -252,13 +253,13 @@ Then('CSV columns become numbers only when every value is numeric', async functi
   const {validateWorkflowDocument}=await import('./lib/workflow-document.ts');
   const file=parse('numbers.csv','whole,decimal,mixed,blank,unsafe,overflow,boolean,hex\n001,1.5,2,,9007199254740993,1e999,true,0xff\n-2,2e2,text,3,1,2,false,12');
   assert.deepEqual(file.value,[
-    {whole:1,decimal:1.5,mixed:'2',blank:'',unsafe:'9007199254740993',overflow:'1e999',boolean:'true',hex:'0xff'},
-    {whole:-2,decimal:200,mixed:'text',blank:'3',unsafe:'1',overflow:'2',boolean:'false',hex:'12'}]);
+    {whole:1,decimal:1.5,mixed:'2',blank:'',unsafe:'9007199254740993',overflow:'1e999',boolean:true,hex:'0xff'},
+    {whole:-2,decimal:200,mixed:'text',blank:'3',unsafe:'1',overflow:'2',boolean:false,hex:'12'}]);
   assert.deepEqual(parse('numbers.csv','1,+2.5\n3,.5',{...defaults,header:'absent'}).value,[[1,2.5],[3,0.5]]);
   assert.deepEqual(parse('numbers.csv','value\n" 2 "\n"3."').value,[{value:2},{value:3}]);
   const owner={...fileOwner([]),data:{file}};const graph=createFileDataGraph(owner);
-  const fields=graph.nodes.find(n=>n.data.label==='Items').data.fields;
-  assert.deepEqual(fields.map(f=>f.itemType),['Integer','Number','Text','Text','Text','Text','Text','Text']);
+  const fields=graph.nodes.find(n=>n.data.label==='Item').data.fields;
+  assert.deepEqual(fields.map(f=>f.itemType),['Integer','Number','Text','Text','Text','Text','Boolean','Text']);
   const doc=fileDocument({nodes:[owner,...graph.nodes],edges:graph.edges});
   validateWorkflowDocument(doc);
   for (const type of ['unsupported',null,42]) {
@@ -267,4 +268,39 @@ Then('CSV columns become numbers only when every value is numeric', async functi
   }
   const invalid=structuredClone(doc);invalid.nodes[1].data.fields[0].type='Object';
   assert.throws(()=>validateWorkflowDocument(invalid),/item types/);
+});
+Then('file structure attachments share one output and normalize older handles', async function () {
+  const {createFileDataGraph}=await import('./lib/workflow-graph.ts');
+  const {validateWorkflowDocument}=await import('./lib/workflow-document.ts');
+  const owner=fileOwner({foo:1});const graph=createFileDataGraph(owner);
+  assert.equal(graph.edges[0].sourceHandle,'value');
+  const legacy=fileDocument({nodes:[owner,...graph.nodes],edges:graph.edges.map(e=>({...e,sourceHandle:e.id}))});
+  assert.equal(validateWorkflowDocument(legacy).edges[0].sourceHandle,'value');
+  for (const handle of ['invalid']) {
+    const invalid=structuredClone(legacy);invalid.edges[0].sourceHandle=handle;
+    assert.throws(()=>validateWorkflowDocument(invalid),/File structures/);
+  }
+  const wrongOwner=structuredClone(legacy);wrongOwner.nodes.push({...owner,id:'other'});wrongOwner.edges[0].source='other';
+  assert.throws(()=>validateWorkflowDocument(wrongOwner),/File structures/);
+});
+Then('uploaded fields with empty values are optional while zero and false remain required', async function () {
+  const {createFileDataGraph}=await import('./lib/workflow-graph.ts');
+  const owner={...fileOwner([]),data:{file:parse('optional.csv','present,optional,blank\n1,2," "\n0,," "')}};
+  const fields=createFileDataGraph(owner).nodes.find(n=>n.data.label==='Item').data.fields;
+  assert.deepEqual(fields.map(f=>[f.label,f.required]),[['present',true],['optional',false],['blank',false]]);
+  const object=fileOwner({zero:0,no:false,empty:'',space:' ',nil:null});
+  assert.deepEqual(createFileDataGraph(object).nodes[0].data.fields.map(f=>[f.label,f.required]),
+    [['zero',true],['no',true],['empty',false],['space',false],['nil',false]]);
+  const rows=fileOwner([{missing:1},{other:1}]);
+  assert.ok(createFileDataGraph(rows).nodes.find(n=>n.data.label==='Item').data.fields.every(f=>!f.required));
+});
+Then('CSV columns become booleans only when every cell is true or false', async function () {
+  const {createFileDataGraph}=await import('./lib/workflow-graph.ts');
+  const file=parse('booleans.csv','flag,mixed,empty,numeric\nTRUE,true,true,1\n" false ",other,,0');
+  assert.deepEqual(file.value,[{flag:true,mixed:'true',empty:'true',numeric:1},{flag:false,mixed:'other',empty:'',numeric:0}]);
+  const owner={...fileOwner([]),data:{file}};
+  const fields=createFileDataGraph(owner).nodes.find(n=>n.data.label==='Item').data.fields;
+  assert.deepEqual(fields.map(f=>f.itemType),['Boolean','Text','Text','Integer']);
+  assert.equal(fields[0].required,true);
+  assert.deepEqual(parse('booleans.csv','true,false\nfalse,true',{...defaults,header:'absent'}).value,[[true,false],[false,true]]);
 });

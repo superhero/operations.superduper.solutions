@@ -270,19 +270,21 @@ function fileSchema(values: unknown[], depth = 0): Schema {
   const keys = [...new Set(objects.flatMap(value => Object.keys(value)))].slice(0, 201);
   return { type, properties: Object.fromEntries(keys.map(key => [key,
     fileSchema(objects.filter(value => Object.hasOwn(value, key)).map(value => value[key]), depth + 1)])),
-    required: keys.filter(key => objects.every(value => Object.hasOwn(value, key))) };
+    required: keys.filter(key => objects.every(value => Object.hasOwn(value, key) && value[key] !== null &&
+      (typeof value[key] !== "string" || value[key].trim().length > 0))) };
 }
 
 /** Build the same bounded output panels used for operations, rooted at a file node. */
 export function createFileDataGraph(node: Extract<WorkflowDocumentNode, { type: "file" }>): Graph {
   const graph: Graph = { nodes: [], edges: [] };
   if (!node.data.file) return graph;
-  const tree = project(fileSchema([node.data.file.value]), {}, "file", "File data", "", [], 0,
+  const tree = project(fileSchema([node.data.file.value]), {}, "file", Array.isArray(node.data.file.value) ? "Array" : "File data", "", [], 0,
     { fields: 0, panels: 0 }, "outputs");
   if (node.data.file.value === null || typeof node.data.file.value !== "object")
     tree.fields[0]!.label = "Value";
   placeTree(graph, tree, node.id, "outputs", "file", "", node.position.x + 360 + gap,
-    node.position.y + tree.span / 2, node.id);
+    node.position.y + tree.span / 2, node.id, "value");
+  for (const panel of graph.nodes) if (panel.type === "data" && panel.data.label === "Items") panel.data.label = "Item";
   // Projecting a field through array items produces an array, not a single sampled item.
   for (const panel of graph.nodes) if (panel.type === "data") for (const field of panel.data.fields)
     if (field.connectable) {
