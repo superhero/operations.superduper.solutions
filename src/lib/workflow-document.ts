@@ -39,7 +39,7 @@ export type SwitchGate = { id: string; operator: "==" | "!=" | ">" | ">=" | "<" 
 export type SwitchData = { gates: SwitchGate[] };
 export type CastData = { targetType: "Text" | "Number" | "Boolean" };
 export type VaultVariableData = { credentialId?: string };
-export type CommentData = { text: string };
+export type CommentData = { text: string; width?: number; height?: number };
 export type WorkflowReferenceData = { workflowId: string; name: string; description: string; snapshot: WorkflowDocument };
 export type WorkflowNodeData = OperationData | WorkflowData | SwitchData | CastData | CommentData | VaultVariableData | WorkflowFileData | WorkflowReferenceData;
 export type WorkflowDocumentNode = {
@@ -308,8 +308,17 @@ function validateDocument(value: unknown, context: ValidationContext, depth: num
         throw new Error("Vault variables require a valid local entry reference.");
       return { ...common, type: "vault", data: data.credentialId === undefined ? {} : { credentialId: data.credentialId } };
     }
-    if (extended && node.type === "comment")
-      return { ...common, type: "comment", data: { text: text(data.text, "Comment", commentTextLimit, true) } };
+    if (extended && node.type === "comment") {
+      const size: { width?: number; height?: number } = {};
+      for (const key of ["width", "height"] as const) {
+        if (data[key] === undefined) continue;
+        const minimum = key === "width" ? 200 : 140;
+        if (typeof data[key] !== "number" || !Number.isFinite(data[key]) || data[key] < minimum || data[key] > 2000)
+          throw new Error("Comment dimensions are outside the supported range.");
+        size[key] = data[key];
+      }
+      return { ...common, type: "comment", data: { text: text(data.text, "Comment", commentTextLimit, true), ...size } };
+    }
     if (extended && node.type === "workflow")
     {
       const snapshot = validateDocument(data.snapshot, context, depth + 1);

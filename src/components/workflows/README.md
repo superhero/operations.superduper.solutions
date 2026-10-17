@@ -31,6 +31,8 @@ Node controls use `nodrag`, `nopan`, `nokey` and, where needed, `nowheel` to kee
 editing separate from canvas gestures. Preserve modal shortcut isolation,
 connection eligibility, transient selection and completed-edit autosave. Comment
 previews use the local Markdown parser with escaped text and restricted links.
+Selected comments expose eight side/corner resize handles. Their bounded sizes
+are saved with the comment; resize gestures become completed edits for autosave.
 
 Each input accepts one active value connection and unlocks when it is disconnected.
 Outputs can feed multiple inputs; schema attachments do not occupy value inputs.

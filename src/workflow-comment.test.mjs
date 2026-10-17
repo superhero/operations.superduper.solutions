@@ -68,3 +68,20 @@ Then("workflow comment previews retain incomplete formatting and normalize line 
   assert.deepEqual(commentBlocks("- Last item"), [{ type: "list", ordered: false, items: [[text("Last item")]] }]);
   assert.deepEqual(commentBlocks("Paragraph\n```\ncode\n```"), [paragraph("Paragraph"), { type: "code", text: "code" }]);
 });
+
+Then("comment dimensions persist and reject invalid sizes", async function () {
+  const { validateWorkflowDocument, parseWorkflowDocument } = await import('./lib/workflow-document.ts');
+  const document = { version: 3, id: 'sized-comment', name: 'Comment',
+    nodes: [{ id: 'comment', type: 'comment', position: { x: 0, y: 0 }, data: { text: 'Notes', width: 420, height: 260 } }],
+    edges: [], viewport: { x: 0, y: 0, zoom: 1 }, snap: true, curved: true, dashed: false };
+  assert.deepEqual(parseWorkflowDocument(JSON.stringify(document)).nodes[0].data, document.nodes[0].data);
+  const { describeWorkflowChange } = await import('./lib/workflow-change-message.ts');
+  const before = structuredClone(document); before.nodes[0].data.width = 300;
+  assert.match(describeWorkflowChange(before, document), /Resize/);
+  for (const key of ['width', 'height']) for (const value of [0, -1, 2001, NaN, Infinity, '300', null]) {
+    const invalid = structuredClone(document); invalid.nodes[0].data[key] = value;
+    assert.throws(() => validateWorkflowDocument(invalid), /dimensions/);
+  }
+  delete document.nodes[0].data.width; delete document.nodes[0].data.height;
+  assert.deepEqual(validateWorkflowDocument(document).nodes[0].data, {text:'Notes'});
+});
