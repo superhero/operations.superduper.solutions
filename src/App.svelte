@@ -285,9 +285,9 @@
 <Tooltip.Provider disabled={!tooltips} delayDuration={400} ignoreNonKeyboardFocus disableHoverableContent>
 <BackgroundWave />
 <NativeScrollbars />
-<SideNavigation bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {dark} {evaluationDetails}
+<SideNavigation bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {evaluationDetails}
   workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
-  onSelect={selectOperation} onTheme={toggleTheme} />
+  onSelect={selectOperation} />
 <div class="page-content workflow-mode" class:catalog-open={navigationOpen}>
   <Header {navigationOpen} settingsOpen={mode === "settings"} onSettings={toggleSettings} {workflowSaveStatus} onMenu={() => navigationOpen = !navigationOpen} />
   <div class="shell">
@@ -309,7 +309,7 @@
 </div>
 <div class="settings-drawer-host">
   <aside id="settings-panel" bind:this={settingsDrawer} class="settings-drawer" class:open={mode === "settings"} aria-label="Application settings" inert={mode !== "settings"}>
-    <SettingsWorkspace bind:this={settingsWorkspace} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
+    <SettingsWorkspace bind:this={settingsWorkspace} {dark} onTheme={toggleTheme} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
           {locale} {localeError} onLocaleChange={selectLocale} onRetryLocale={() => selectLocale(locale)}
           settingsUnavailable={Boolean(settingsError)} {settingsRetrying} onRetrySettings={retrySettings}
           {developerToolbar} {developerToolbarError} onDeveloperToolbarChange={selectDeveloperToolbar}

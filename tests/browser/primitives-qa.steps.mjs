@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, closeCatalog, workspace, searchOperations, setEvaluationDetails } from './workspace.steps.mjs';
+import { openCatalog, closeCatalog, workspace, searchOperations, setEvaluationDetails, openThemeSettings } from './workspace.steps.mjs';
 import { holdHeightAnimations, resumeHeightAnimations, seekHeightAnimation } from './height-animation.fixture.mjs';
 
 Then('navigation focus follows normal-motion opening and breakpoint changes', async function () {
@@ -14,7 +14,7 @@ Then('navigation focus follows normal-motion opening and breakpoint changes', as
   const menu = page.getByRole('button', { name: 'Open navigation', exact: true });
   await menu.focus();
   await page.keyboard.press('Enter');
-  const mode = page.getByRole('switch', { name: 'Dark theme', exact: true });
+  const mode = page.getByRole('textbox', { name: 'Prompt', exact: true });
   await expect(mode).toBeFocused();
   await closeCatalog(page);
   await expect(menu).toBeFocused();
@@ -80,8 +80,9 @@ Then('expanding a nested catalog item does not clip its parent', async function 
 
 Then('hovering another control replaces keyboard help', async function () {
   const page = this.page;
-  await openCatalog(page);
-  await page.getByRole('textbox', { name: 'Prompt', exact: true }).focus();
+  await openThemeSettings(page);
+  await page.getByRole('switch', { name: 'Dark theme', exact: true }).focus();
+  await page.keyboard.press('Tab');
   await page.keyboard.press('Shift+Tab');
   await expect(page.getByRole('tooltip')).toHaveText('Switch to dark theme');
   await page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }).hover();
@@ -89,8 +90,11 @@ Then('hovering another control replaces keyboard help', async function () {
   await expect(page.getByRole('tooltip')).toHaveCount(1);
 
   await page.setViewportSize({ width: 390, height: 844 });
+  await openCatalog(page);
   const close = page.locator('[data-slot="sheet-content"]').getByRole('button', { name: 'Close', exact: true });
   await close.focus();
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Shift+Tab');
   await expect(page.getByRole('tooltip')).toHaveText('Close navigation');
   await expect(close).toHaveAccessibleName('Close');
   await close.press('Enter');

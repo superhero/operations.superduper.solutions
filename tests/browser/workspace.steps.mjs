@@ -304,15 +304,10 @@ Then("{string} offers the choices {string}", async function (label, choices) {
   await expect(this.page.getByRole("listbox")).toHaveCount(0);
   await expect(input).toBeFocused();
 });
-When("I enable the dark theme", async function () {
-  await openCatalog(this.page);
-  const toggle = this.page.getByRole("switch", { name: "Dark theme", exact: true });
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-checked", "true");
-});
+When("I enable the dark theme", async function () { await selectThemeMode(this.page, 'dark'); });
 When("I reload the workspace", async function () { await this.page.reload(); });
 Then("the dark theme remains selected", async function () {
-  await openCatalog(this.page);
+  await openThemeSettings(this.page);
   await expect(this.page.getByRole("switch", { name: "Dark theme", exact: true })).toHaveAttribute("aria-checked", "true");
   await expect(this.page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
@@ -538,3 +533,20 @@ Then('the settings drawer preserves the workflow at width {int} with {string} mo
   await expect(settings).toBeFocused();
   assert.deepEqual(await canvas.boundingBox(), before);
 });
+
+export async function openThemeSettings(page) {
+  await setMode(page, 'settings');
+  const section = page.getByRole('region', { name: 'Settings workspace', exact: true }).locator('summary[aria-label="Theme"]');
+  if (await section.getAttribute('aria-expanded') !== 'true') await section.click();
+  await expect(page.getByRole('group', { name: 'Color palette', exact: true }).getByRole('switch', { name: 'Dark theme', exact: true })).toBeVisible();
+  await expect(page.locator('#side-navigation').getByRole('switch', { name: 'Dark theme', exact: true })).toHaveCount(0);
+}
+
+export async function selectThemeMode(page, theme) {
+  const wasSettings = await page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }).getAttribute('aria-pressed') === 'true';
+  await openThemeSettings(page);
+  const toggle = page.getByRole('switch', { name: 'Dark theme', exact: true });
+  if (await toggle.getAttribute('aria-checked') !== String(theme === 'dark')) await toggle.click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+  if (!wasSettings) await setMode(page, 'workflow');
+}

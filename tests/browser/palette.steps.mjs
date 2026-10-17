@@ -6,6 +6,7 @@ import { readFile } from 'node:fs/promises';
 import { Then, When } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { closeCatalog, openCatalog, setMode, searchOperations, setEvaluationDetails } from './workspace.steps.mjs';
+import { selectThemeMode } from './workspace.steps.mjs';
 
 const paletteNames = Array.from({ length: 6 }, (_, index) => `--palette-${index + 1}`);
 const toneNames = Array.from({ length: 6 }, (_, index) => `--tone-${index + 1}`);
@@ -96,13 +97,7 @@ function assertOrdered(colors, selector = ':root') {
   }
 }
 
-async function selectTheme(page, theme) {
-  await openCatalog(page);
-  const toggle = page.getByRole('switch', { name: 'Dark theme', exact: true });
-  if (await toggle.getAttribute('aria-checked') !== String(theme === 'dark')) await toggle.click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
-  await closeCatalog(page);
-}
+const selectTheme = selectThemeMode;
 
 async function resolvedColors(page, names) {
   return page.evaluate(properties => {

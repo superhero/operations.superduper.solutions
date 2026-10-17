@@ -15,11 +15,10 @@ Then('the sidebar prompt filters operations and hides empty catalog groups', asy
   const page = this.page;
   await openCatalog(page);
   const initialGroups = await catalog(page).locator('[data-catalog-group]').evaluateAll(items => items.map(item => item.dataset.catalogGroup));
-  const controls = page.locator('.catalog-menu-header');
-  const placement = await Promise.all([controls.boundingBox(), page.locator('.catalog-prompt').boundingBox(), catalog(page).boundingBox()]);
+  const placement = await Promise.all([page.locator('.catalog-prompt').boundingBox(), catalog(page).boundingBox()]);
   assert.ok(placement.every(Boolean));
-  assert.ok(placement[1].y >= placement[0].y + placement[0].height && placement[2].y >= placement[1].y + placement[1].height,
-    'The prompt belongs below workspace controls and above the operation menu.');
+  assert.ok(placement[1].y >= placement[0].y + placement[0].height,
+    'Search belongs above the operation menu.');
   await searchOperations(page, 'List projects');
   await expect(prompt(page)).toBeFocused();
   assert.deepEqual(await matchingNames(page), ['List projects', 'Get project', 'Example query and header inputs', 'HTTPBin query and header inputs', 'Create task'].sort());
