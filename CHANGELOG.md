@@ -335,6 +335,14 @@ fix(workflows): align CSV label sizing and tighten summary spacing
 
 ```
 
+<!-- changelog-commit:26277a73c19fecaa890ae51d5c74859ef33b5ef7 -->
+### Commit [`26277a7`](https://github.com/superhero/operations.superduper.solutions/commit/26277a73c19fecaa890ae51d5c74859ef33b5ef7)
+
+```text
+fix(workflows): triple the file preview viewport height
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.50
