@@ -11,7 +11,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import HintButton from "./HintButton.svelte";
   import JsonView from "./JsonView.svelte";
 
-  let { value, label = "OpenAPI JSON", operationsOnly = false }: { value: unknown; label?: string; operationsOnly?: boolean } = $props();
+  let { value, label = "OpenAPI JSON", title = "OpenAPI schema", operationsOnly = false }: { value: unknown; label?: string; title?: string; operationsOnly?: boolean } = $props();
   let schemaOpen = $state(false);
   let schemaLoaded = $state(false);
   let schemaWrap = $state(true);
@@ -58,14 +58,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 </script>
 
-<Disclosure class="schema-disclosure" label="OpenAPI schema" open={schemaOpen} onToggle={(next) => {
+<Disclosure class="schema-disclosure" label={title} open={schemaOpen} onToggle={(next) => {
   schemaOpen = next;
   if (next) { schemaLoaded = true; if (operationsOnly) resetKey += 1; }
 }}>
   {#snippet summary()}
     <MaterialIcon name="keyboard_arrow_right" class="schema-chevron" size={18} />
     <HintButton class="schema-action" label="Copy JSON" aria-label="Copy JSON" aria-disabled={copying} aria-busy={copying} onclick={copySchema}><MaterialIcon name="file_copy" size={18} /></HintButton>
-    <span class="schema-title">OpenAPI schema<span class="schema-copy-status" role="status">{copyStatus}</span></span>
+    <span class="schema-title">{title}<span class="schema-copy-status" role="status">{copyStatus}</span></span>
     <span class="schema-wrap-control" class:visible={schemaOpen} inert={!schemaOpen} aria-hidden={!schemaOpen}>
       <HintButton class="schema-action" label="Wrap lines" aria-label="Wrap lines" aria-pressed={schemaWrap} tooltipEnabled={schemaOpen}
         onclick={(event) => { event.preventDefault(); event.stopPropagation(); schemaWrap = !schemaWrap; }}><MaterialIcon name={schemaWrap ? "format_text_wrap" : "format_text_overflow"} size={20} /></HintButton>
