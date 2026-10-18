@@ -26,6 +26,14 @@ style: reduce keybinding row padding
 
 ```
 
+<!-- changelog-commit:e9941ac965d69833ac018783db2cf67811ae577c -->
+### Commit [`e9941ac`](https://github.com/superhero/operations.superduper.solutions/commit/e9941ac965d69833ac018783db2cf67811ae577c)
+
+```text
+feat: configure deletion shortcuts for nodes and connections
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
