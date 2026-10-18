@@ -16,7 +16,7 @@ class BrowserReporter extends PrettyReporter
       reportApplicationError(error ?? meta.message, { source: "application", scope: meta.scope?.join(" > ") });
     }
     if (error && failure) {
-      /* c8 ignore start -- Vite-only overlay bridge, exercised by tests/dev-overlay.smoke.mjs. */
+      /* c8 ignore start -- Vite-only overlay bridge, exercised by the development-tools scenario in tests/browser/legacy-smoke.feature. */
       if (import.meta.env?.DEV) {
         rememberErrorChain(error);
         // Report application errors directly, leaving transport diagnostics in

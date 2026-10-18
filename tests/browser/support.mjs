@@ -23,6 +23,7 @@ const fixturePages = new Map([
   ['@error-history-recorder', '/error-history-fixture.html'],
   // Coverage steps prepare their own HTTP/file report before navigating.
   ['@coverage-report', 'about:blank'],
+  ['@legacy-smoke', 'about:blank'],
   ['@vault-browser-storage', '/vault-fixture.html'],
   ['@vault-browser-network', '/vault-fixture.html'],
   ['@vault-browser-policy', '/vault-fixture.html'],
@@ -109,7 +110,7 @@ Before(async function ({ pickle }) {
   this.diagnostics = [];
   // Capture the running browser, including successful runs and parallel workers.
   await this.attach(JSON.stringify({ name: browser.browserType().name(), version: browser.version(),
-    fixtureBundlesFile: this.parameters.fixtureBundlesFile, workerId: process.env.CUCUMBER_WORKER_ID ?? '0' }),
+    fixtureBundlesFile: this.parameters.fixtureBundlesFile, workerId: process.env.VITEST_POOL_ID ?? '0' }),
     'application/vnd.operations.browser+json');
   const slug = pickle.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 90);
   this.artifactDirectory = resolve('tmp/test/browser', `${slug}-${randomUUID().slice(0, 8)}`);

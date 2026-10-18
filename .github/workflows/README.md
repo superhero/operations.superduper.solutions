@@ -9,7 +9,7 @@ See [Contributing](../../CONTRIBUTING.md) for wider project guidance.
 
 Keep event triggers, permissions, job dependencies and artifact wiring in this
 directory's workflow YAML. Reusable executable behavior belongs in
-[`../scripts/`](../scripts/README.md), its Cucumber coverage in
+[`../scripts/`](../scripts/README.md), its Gherkin coverage in
 [`../tests/`](../tests/README.md), and repository-administration payloads in
 [`../policies/`](../policies/README.md). See the
 [automation directory map](../DIRECTORY.md) for generated outputs and other files.
@@ -29,7 +29,7 @@ directory's workflow YAML. Reusable executable behavior belongs in
 ### Prerequisites
 
 - Run commands from the repository root after `npm ci`.
-- Automation tests require Bash, Git and jq; shell validation also needs ShellCheck.
+- Automation tests require Bash, Git 2.45+ and jq; shell validation also needs ShellCheck.
 - Acceptance and browser tests require `npm run build` first.
 - Browser tests require running Docker and use the pinned Playwright image.
 
@@ -40,11 +40,11 @@ external requests fail the scenario.
 
 ### Automation changes
 
-Run the Cucumber tags covering the affected automation. Full regression runs
+Run the Gherkin tags covering the affected automation. Full regression runs
 belong to CI unless explicitly requested.
 
 ```sh
-npm run test:automation -- --tags '@integration-queue or @validation-workflows' --parallel 1
+npm run test:automation -- --tags '@integration-queue or @validation-workflows'
 npm run badges:dependencies -- --check
 shellcheck .github/scripts/*.sh
 ```
@@ -83,62 +83,79 @@ candidate releases the slot so later PRs can proceed.
 
 ## Test reports
 
-### Run all four suites
+### Suites and outputs
+
+Every authored case uses Gherkin and runs through QuickPickle and Vitest.
+[`profiles.mjs`](../../tests/gherkin/profiles.mjs) declares discovery; the
+[testing ADR](../../docs/adr/test-suite-reports.md) defines the reporting standard.
 
 | Suite | Command | JSON output under `tmp/test/` |
 | --- | --- | --- |
-| Source | `npm run test:source` | `cucumber-source.json` |
-| Acceptance | `npm run test:acceptance` | `cucumber-test.json` |
-| Automation | `npm run test:automation` | `cucumber-automation.json` |
-| Browser | `npm run test:browser` | `cucumber-browser.json` |
+| Source | `npm run test:source` | `vitest-source.json` |
+| Acceptance | `npm run test:acceptance` | `vitest-acceptance.json` |
+| Automation | `npm run test:automation` | `vitest-automation.json` |
+| Application browser | `npm run test:browser` | `vitest-browser-chromium.json` |
+| Svelte components | `npm run test:components` | `vitest-components.json` |
+| Runner contracts | `npm run test:runner` | `vitest-runner.json` |
 
-Use `test:source:coverage` instead of `test:source` when collecting coverage.
-The [testing ADR](../../docs/adr/test-suite-reports.md) defines Cucumber reporting
-and records the remaining browser smoke-test gap.
+Unfiltered `test:browser` also runs components inside the pinned container.
+Use `test:source:coverage` when collecting release coverage. Locally, select
+relevant feature paths, `--tags 'expression'` or `-t 'scenario pattern'`; leave
+full regression to CI unless explicitly requested.
 
-### Generate the combined report
+### Execution evidence
 
-After a fresh, complete run of all four suites:
+Each suite also writes a blob under `tmp/test/blobs/` and a proof under
+`tmp/test/executions/`. Proofs bind the tested commit, run attempt, selected
+features and hashes of the JSON and blob. Feature URI and example-row identities
+are compared with an independently parsed inventory.
+
+Normal report generation requires all six complete, passing, unfiltered suites
+and 100% scoped coverage. Missing cases, stale results, skipped work, altered
+hashes or mismatched CI attempts fail validation.
+
+### Combined HTML report
+
+After complete validation, run:
 
 ```sh
 npm run report:tests
 ```
 
-`multiple-cucumber-html-reporter` produces `tmp/test-report.html`. The standalone
-file contains the overview, feature/scenario details and all required assets
-for offline viewing.
+Vitest merges recorded results and coverage without rerunning tests. The output
+is `tmp/test/report/`, including the entry page, UI assets, coverage, attachments,
+machine results and provenance. Keep the whole directory together.
 
-Missing or invalid inputs fail normal generation. Generation does not establish
-that tests were discovered or results are current; filtered or stale results
-must not represent complete validation.
+Serve it locally over HTTP, for example:
 
-### Results after failure
+```sh
+npx --no-install vite preview --outDir tmp/test/report --host 127.0.0.1
+```
 
-- Development and release CI retain available raw results as `application-test-report` and
-  `automation-test-report`.
-- A partial diagnostic HTML report may be generated after failure. It names
-  missing suites and explicitly warns that validation failed.
-- Detailed test output remains in job logs; coverage is reported separately.
+### Failure diagnostics
+
+- `application-test-report` and `automation-test-report` retain available raw
+  JSON, blobs, execution proofs and attachments.
+- Failed browser cases retain screenshots, diagnostics and downloadable traces.
+- A partial HTML report may be retained as `validation-diagnostics`. Its warning
+  and provenance mark it incomplete; it cannot become reusable validation proof.
+- Detailed tool output remains in the job logs.
 
 ## Coverage reports
 
-Collect fresh source coverage, enforce its thresholds and package the report:
+`npm run test:source:coverage` collects V8 coverage for the application scope in
+`coverage.config.json`, including unexecuted files. `npm run test:coverage`
+checks its summary against 100% statements, branches, functions and lines.
 
-```sh
-npm run test:source:coverage
-npm run test:coverage
-npm run report:coverage
-```
-
-Outputs are `tmp/test/coverage/` and standalone `tmp/test-coverage.html`.
-The [coverage decision](../../docs/adr/test-suite-reports.md#coverage) defines
-100% statement, branch, function and line coverage within the configured scope.
+Raw reports remain under `tmp/test/coverage/`; `report:tests` includes their
+merged counterpart under `tmp/test/report/coverage/`. There is no separate HTML
+packaging command or separate primary report to publish.
 
 ## Badges
 
 ### Scenario badges
 
-CI generates JSON and SVG badges from all four Cucumber reports. Counts include
+CI generates JSON and SVG badges from all six Vitest suite results. Counts include
 scenario-outline examples, not steps; passing requires successful steps and hooks.
 Badges travel inside the validated `test-report` artifact and are published with
 the release reports. No badge commit or freshness check is required.
@@ -163,7 +180,7 @@ failures leave badges unchanged.
 
 ### Coverage badges
 
-CI generates the statement-coverage badge from the scoped c8 summary. Coverage
+CI generates the statement-coverage badge from the scoped V8 summary. Coverage
 thresholds remain blocking checks; the full report includes all four measures.
 The badge shares the validated report artifact and publication path above.
 
@@ -322,7 +339,7 @@ Develop PRs require Gitflow policy, script linting, dependency-badge checks,
 type checking and a successful preview build. They do not run test suites or
 produce reusable release-validation proof. Documentation uses its separate path.
 
-Release candidates run source, acceptance, automation and browser suites with
+Release candidates run all six Gherkin suites with
 scoped coverage before release. Later release/main integration may reuse verified
 release evidence when inputs match; otherwise it runs fresh validation.
 
@@ -338,7 +355,7 @@ Run **test-develop** from GitHub Actions, selecting the `develop` branch, or use
 gh workflow run test-develop.yml --ref develop
 ```
 
-The workflow rejects other branches and pins all four suites to the selected
+The workflow rejects other branches and pins all six suites to the selected
 commit. Reports, coverage, badges and the built bundle remain run artifacts.
 It does not merge, deploy or certify a release; release candidates still need
 automatic release validation. Like the other integration workflows, it uses
@@ -450,7 +467,7 @@ does not choose conflicting application content for you.
 
 ### Required evidence
 
-Release CI requires full scoped coverage and all four suites for its application
+Release CI requires full scoped coverage and all six suites for its application
 inputs. Fresh runs build the exact release head and collect automation results
 from the same run. The release head must include current `main`, except verified
 dependency SVG updates; ancestry is checked again before merge.
@@ -462,8 +479,8 @@ same-repository release validation run when every tracked input matches, except 
 managed root `CHANGELOG.md`. Other Markdown files, workflows, tests, dependency
 files, build configuration and file modes remain part of the comparison.
 
-Fresh runs publish a validation manifest only after automation, application
-tests, reports and badge generation succeed. Reuse verifies that manifest against
+Fresh runs publish a schema-2 validation manifest only after all suites, coverage,
+reports and badge generation succeed. Reuse verifies that manifest against
 the original successful run and tested commit, without listing individual jobs
 again. The bundle, coverage and combined test report must be complete,
 unexpired and match the manifest's file hashes. Missing or unverifiable evidence
@@ -486,7 +503,7 @@ Artifacts uploaded before auto-merge:
 | --- | --- |
 | `bundle` | Tested application |
 | `coverage` | Source coverage reports |
-| `test-report` | Combined HTML test report |
+| `test-report` | Complete Vitest HTML directory, coverage, attachments, provenance and generated badges |
 | `validation-manifest` | Original run, tested inputs and artifact hashes, produced by fresh complete validation |
 
 Failed acceptance results remain downloadable. Coverage reports are retained
@@ -585,10 +602,17 @@ rollback is a separate operation.
 
 ### Report destinations
 
-Production promotion uploads `test-coverage.html` and `test-report.html` to R2
-from validated artifacts, together with scenario and coverage JSON/SVG badges
-under `badges/`. README quality badges show these published release results.
-Dependency badges remain committed files and do not publish to R2.
+Production promotion publishes the complete report under an immutable
+`reports/<commit>-<run>-<attempt>/` prefix in R2. Downloaded bundle and report
+files must match the original validation manifest before any publication. Reused
+evidence retains its original tested commit, run and attempt. Assets upload before the entry
+page; `test-report.html` redirects to it only after publication succeeds and the
+release is still current. The older `test-coverage.html` URL redirects to that
+report's coverage pages.
+
+Scenario and coverage JSON/SVG badges publish under `badges/` from the same
+validated artifact. Dependency badges remain committed files and do not publish
+to R2.
 
 ### Synchronization into develop
 
@@ -622,9 +646,13 @@ they do not receive every production hotfix automatically.
 
 ### Failed promotion
 
-Retry failed jobs in the original release PR run. A full rerun is also supported:
-it recognizes the matching merged PR, rebuilds the pinned head and verifies the
-released tree again. Matching tags are reused; the PR is never merged twice.
+After a validation or test failure, rerun **all jobs**: complete evidence requires
+all suites from the same run attempt. A promotion-only failure can retry failed
+jobs; publication retains the successful validation producer's original attempt.
+
+A full rerun recognizes the matching merged PR, rebuilds the pinned head and
+verifies the released tree again. Matching tags are reused; the PR is never
+merged twice.
 
 ### Manual merges and prerequisites
 

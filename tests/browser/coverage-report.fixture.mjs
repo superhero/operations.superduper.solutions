@@ -2,191 +2,281 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { join, relative, resolve } from 'node:path';
+import { createServer } from 'node:http';
+import { cp, mkdir, readFile, readdir, rename, stat } from 'node:fs/promises';
+import { extname, relative, resolve, sep } from 'node:path';
+import { gunzipSync, inflateRawSync } from 'node:zlib';
+import { parse } from 'flatted';
+import { expect } from '@playwright/test';
+import { createReportFixture } from '../gherkin/report-fixtures/index.mjs';
 
-// A small Istanbul-style report: named line anchors, repeated IDs, relative
-// assets, per-page scripts and filenames that collide when punctuation is lost.
-export async function coverageFixture(directory) {
-  const input = join(directory, 'coverage');
-  await mkdir(join(input, 'src', 'nested'), { recursive: true });
-  const document = (body, prefix = '') => `<!doctype html><html><head><meta charset="utf-8">
-    <link rel="stylesheet" href="${prefix}base.css"></head><body>${body}
-    <script src="${prefix}report.js"></script></body></html>`;
-  await writeFile(join(input, 'base.css'), '.line{height:28px}body{font-family:sans-serif;background-image:url("pixel.svg")}');
-  await writeFile(join(input, 'pixel.svg'), '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>');
-  await writeFile(join(input, 'report.js'), `document.body.dataset.ready = 'true';
-    document.getElementById('fileSearch')?.addEventListener('input', event => {
-      for (const link of document.querySelectorAll('[data-file]'))
-        link.hidden = !link.textContent.includes(event.target.value);
-    });`);
-  await writeFile(join(input, 'index.html'), document('<h1>All files</h1><a href="src/nested/index.html">src/nested</a>'));
-  await writeFile(join(input, 'src/nested/index.html'), document(`<h1>src/nested</h1>
-    <a href="../../index.html">All files</a><label>Filter <input id="fileSearch"></label>
-    <a data-file href="source-a.ts.html">source-a.ts</a>
-    <a data-file href="source_a.ts.html">source_a.ts</a>
-    <a href="source-a.ts.html#L40">Open line 40</a>`, '../../'));
-  for (const name of ['source-a.ts', 'source_a.ts']) {
-    const lines = Array.from({ length: 80 }, (_, index) => `<div class="line"><a name="L${index + 1}"></a>
-      <a href="#L${index + 1}">${index + 1}</a><code>${name} line ${index + 1}: &lt;script&gt;Ω&lt;/script&gt;</code></div>`).join('');
-    await writeFile(join(input, 'src/nested', `${name}.html`), document(`<h1>${name}</h1>
-      <a href="../../index.html">All files</a><a href="index.html">src/nested</a>${lines}`, '../../'));
+const mediaTypes = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css',
+  '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon',
+  '.zip': 'application/zip', '.gz': 'application/octet-stream', '.woff2': 'font/woff2' };
+const testsIn = task => task.type === 'test' ? [task] : (task.tasks ?? []).flatMap(testsIn);
+const numberIn = text => Number((text.match(/\d[\d,]*/) ?? ['NaN'])[0].replaceAll(',', ''));
+const optionalFont = 'https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400&display=swap';
+
+async function recordBrowserEvidence(world) {
+  const directory = resolve(world.artifactDirectory, 'recorded-evidence');
+  await mkdir(directory, { recursive: true });
+  const screenshotPath = resolve(directory, 'page.png');
+  const tracePath = resolve(directory, 'trace.zip');
+  const context = await world.browser.newContext({ viewport: { width: 640, height: 320 }, serviceWorkers: 'block' });
+  const url = `${world.baseURL}/error-history-fixture.html`;
+  try {
+    await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+    const page = await context.newPage();
+    await page.goto(url);
+    await page.setContent('<!doctype html><title>Report evidence</title><button onclick="this.textContent=\'Recorded interaction\'">Record interaction</button>');
+    await page.getByRole('button', { name: 'Record interaction', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Recorded interaction', exact: true })).toBeVisible();
+    await page.screenshot({ path: screenshotPath });
+    await context.tracing.stop({ path: tracePath });
+  } finally { await context.close(); }
+  return { screenshotPath, tracePath, url };
+}
+
+export async function openReport(world, relocated = false) {
+  const recorded = await recordBrowserEvidence(world);
+  const fixture = await createReportFixture(resolve(world.artifactDirectory, 'report-input'), {
+    html: true, coverage: true, outline: true, attachments: { screenshotPath: recorded.screenshotPath, tracePath: recorded.tracePath },
+  });
+  const originalDirectory = resolve(fixture.reportDirectory);
+  const results = fixture.results ?? JSON.parse(await readFile(fixture.jsonFile, 'utf8'));
+  let directory = originalDirectory;
+  if (relocated) {
+    directory = resolve(world.artifactDirectory, 'relocated-report');
+    await cp(originalDirectory, directory, { recursive: true });
+    // The live server cannot fall back to the producer's assets or absolute paths.
+    await rename(originalDirectory, `${originalDirectory}.unavailable-after-relocation`);
   }
-  const output = join(directory, 'test-coverage.html');
-  execFileSync(process.execPath, [resolve('.github/scripts/generate-coverage-report.mjs'), output, input]);
-  return output;
+  const state = world.report = { fixture, directory, results, recorded, requested: [], missing: [], external: [], errors: [] };
+  state.metadata = parse(gunzipSync(await readFile(resolve(directory, 'ui/html.meta.json.gz'))).toString('utf8'));
+  state.tests = state.metadata.files.flatMap(file => testsIn(file).map(test => ({ ...test, projectName: file.projectName })));
+  state.server = createServer(async (request, response) => {
+    try {
+      const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+      let file = resolve(directory, `.${pathname}`);
+      if (file !== directory && !file.startsWith(`${directory}${sep}`)) throw new Error('Outside report root');
+      if ((await stat(file)).isDirectory()) file = resolve(file, 'index.html');
+      const bytes = await readFile(file);
+      response.writeHead(200, { 'Content-Type': mediaTypes[extname(file)] ?? 'application/octet-stream', 'Cache-Control': 'no-store' });
+      response.end(bytes);
+    } catch {
+      state.missing.push(request.url);
+      response.writeHead(404, { 'Content-Type': 'text/plain' }); response.end('Missing static report asset');
+    }
+  });
+  await new Promise((done, reject) => { state.server.once('error', reject); state.server.listen(0, '127.0.0.1', done); });
+  state.origin = `http://127.0.0.1:${state.server.address().port}`;
+  state.context = await world.browser.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true, serviceWorkers: 'block' });
+  await state.context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+  await state.context.route('**/*', route => {
+    const url = route.request().url();
+    state.requested.push(url);
+    if (url.startsWith(`${state.origin}/`) || /^(data|blob):/.test(url)) return route.continue();
+    state.external.push(url);
+    return route.abort('blockedbyclient');
+  });
+  state.context.on('page', page => page.on('pageerror', error => state.errors.push({ message: error.message, stack: error.stack })));
+  state.page = await state.context.newPage();
+  state.page.setDefaultTimeout(10_000);
+  const response = await state.page.goto(`${state.origin}/index.html`);
+  assert.equal(response.status(), 200);
+  await expect.poll(async () => numberIn(await state.page.getByTestId('num-files').innerText())).toBe(state.metadata.files.length);
+  return state;
 }
 
-export async function coverageNavigation(page) {
-  const frame = page.frameLocator('#coverage');
-  const heading = async name => {
-    await frame.getByRole('heading', { name, exact: true }).waitFor();
-    await frame.locator('body[data-ready="true"]').waitFor();
-    assert.equal(await page.locator('#coverage-error').textContent(), '');
-  };
-  const visibleLine = async line => {
-    await page.waitForFunction(value => {
-      const frame = document.getElementById('coverage');
-      const marker = frame.contentDocument.getElementsByName(value)[0];
-      const top = marker?.getBoundingClientRect().top;
-      return top !== undefined && top >= -1 && top < frame.clientHeight;
-    }, line);
-  };
-  await heading('All files');
-  await frame.getByRole('link', { name: 'src/nested', exact: true }).click();
-  await heading('src/nested');
-  await frame.getByLabel('Filter').fill('source_a');
-  assert.equal(await frame.getByRole('link', { name: 'source-a.ts', exact: true }).count(), 0);
-  await frame.getByLabel('Filter').fill('');
-  await frame.getByRole('link', { name: 'source-a.ts', exact: true }).click();
-  await heading('source-a.ts');
-  await frame.getByRole('link', { name: '40', exact: true }).click();
-  await page.waitForURL(url => new URLSearchParams(url.hash.slice(1)).get('line') === 'L40');
-  await heading('source-a.ts');
-  await visibleLine('L40');
-  const deepLink = page.url();
-  await page.reload();
-  await heading('source-a.ts');
-  await visibleLine('L40');
-  await frame.getByRole('link', { name: 'src/nested', exact: true }).click();
-  await heading('src/nested');
-  await frame.getByRole('link', { name: 'source_a.ts', exact: true }).click();
-  await heading('source_a.ts');
-  await page.goBack();
-  await heading('src/nested');
-  await page.goBack();
-  await heading('source-a.ts');
-  assert.equal(page.url(), deepLink);
-  await visibleLine('L40');
-  await page.goForward();
-  await heading('src/nested');
-  await frame.getByRole('link', { name: 'Open line 40', exact: true }).click();
-  await heading('source-a.ts');
-  await visibleLine('L40');
-  await frame.getByRole('link', { name: 'All files', exact: true }).click();
-  await heading('All files');
-  await page.goto(page.url().split('#')[0]);
-  await heading('All files');
-  await frame.getByRole('link', { name: 'src/nested', exact: true }).click();
-  await heading('src/nested');
-  await page.goBack();
-  await heading('All files');
-  await page.goto(`${page.url().split('#')[0]}#file=missing.html`);
-  await page.getByRole('alert').filter({ hasText: 'Unknown embedded coverage page: missing.html' }).waitFor();
-  await page.goto(deepLink);
-  await heading('source-a.ts');
-  await visibleLine('L40');
-}
-
-// Use the installed c8/Istanbul reporter as well as the adversarial fixture.
-// Generated coverage stays inside this scenario's directory, never in the
-// application's coverage directory or its V8 collection directory.
-export async function realCoverageFixture(directory) {
-  await mkdir(join(directory, 'src', 'nested'), { recursive: true });
-  await writeFile(join(directory, 'package.json'), '{"type":"module"}\n');
-  await writeFile(join(directory, 'src', 'root.js'), 'export const answer = 42;\n');
-  for (const name of ['source-a', 'source_a']) {
-    const padding = Array.from({ length: 80 }, (_, index) => `// ${name} line ${index + 1}: Ω`).join('\n');
-    await writeFile(join(directory, 'src', 'nested', `${name}.js`),
-      `export function choose(value) {\n  if (value) return 'Ω';\n  return 'other';\n}\n${padding}\n`);
+async function findFile(directory, basename) {
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const path = resolve(directory, entry.name);
+    if (entry.isFile() && entry.name === basename) return path;
+    if (entry.isDirectory()) { const nested = await findFile(path, basename); if (nested) return nested; }
   }
-  await writeFile(join(directory, 'exercise.mjs'), `import { answer } from './src/root.js';
-    import { choose } from './src/nested/source-a.js';
-    if (answer !== 42 || choose(true) !== 'Ω') throw new Error('Unexpected fixture result');\n`);
-  // c8 searches ancestor directories for config. Keep this JavaScript fixture
-  // independent of the application's TypeScript coverage scope and thresholds.
-  await writeFile(join(directory, '.c8rc.json'), `${JSON.stringify({
-    all: true, src: ['src'], include: ['src/**/*.js'], exclude: [], extension: ['.js'],
-    reporter: ['html', 'json'], 'reports-dir': 'coverage', 'temp-directory': 'v8',
-  }, null, 2)}\n`);
-  execFileSync(process.execPath, [resolve('node_modules/c8/bin/c8.js'), '--config=.c8rc.json',
-    process.execPath, 'exercise.mjs'], { cwd: directory });
-  const coverage = JSON.parse(await readFile(join(directory, 'coverage', 'coverage-final.json'), 'utf8'));
-  assert.deepEqual(Object.keys(coverage).map(file => relative(directory, file).replaceAll('\\', '/')).sort(),
-    ['src/nested/source-a.js', 'src/nested/source_a.js', 'src/root.js'],
-    'The real coverage fixture must include both executed and unexecuted JavaScript files.');
-  const output = join(directory, 'test-coverage.html');
-  execFileSync(process.execPath, [resolve('.github/scripts/generate-coverage-report.mjs'), output, join(directory, 'coverage')]);
-  return output;
 }
 
-export async function realCoverageNavigation(page) {
-  const frame = page.frameLocator('#coverage');
-  const ready = async () => {
-    await page.waitForFunction(() => {
-      const doc = document.getElementById('coverage').contentDocument;
-      return doc?.readyState === 'complete' && doc.documentElement.dataset.coveragePage;
-    });
-    assert.equal(await page.locator('#coverage-error').textContent(), '');
-  };
-  const visibleLine = async () => {
-    await page.waitForFunction(() => {
-      const frame = document.getElementById('coverage');
-      const marker = frame.contentDocument?.getElementsByName('L40')[0];
-      const top = marker?.getBoundingClientRect().top;
-      return top !== undefined && top >= -1 && top < frame.clientHeight;
-    });
-  };
-  await frame.getByRole('heading', { name: 'All files', exact: true }).waitFor();
-  await ready();
-  await frame.locator('a[href$="nested/index.html"]').click();
+async function coverageFrame(state) {
+  const element = await state.page.locator('#vitest-ui-coverage').elementHandle();
+  return element?.contentFrame();
+}
+async function frameAt(state, url) {
+  await expect.poll(async () => (await coverageFrame(state))?.url()).toBe(url);
+  await expect.poll(async () => (await coverageFrame(state))?.evaluate(() => document.readyState)).toBe('complete');
+}
+
+export async function browseCoverage(state) {
+  const page = state.page;
+  await page.getByRole('button', { name: 'Show coverage', exact: true }).click();
+  const frame = page.frameLocator('#vitest-ui-coverage');
+  await frame.getByText('All files', { exact: true }).first().waitFor();
+  const source = await findFile(resolve(state.directory, 'coverage'), 'source-a.js.html');
+  assert.ok(source, 'The coverage fixture retains a real source page');
+  const sourceURL = new URL(relative(state.directory, source).split(sep).join('/'), `${state.origin}/`).href;
+  const parentURL = new URL('./index.html', sourceURL).href;
+  for (let hop = 0; hop < 10; hop++) {
+    const current = (await coverageFrame(state)).url();
+    if (current === parentURL) break;
+    const links = await frame.locator('a[href]').evaluateAll(elements => elements.map(element => ({ text: element.textContent.trim(), url: element.href })));
+    const next = links.filter(link => link.url !== current && link.url.endsWith('/index.html')
+      && sourceURL.startsWith(link.url.slice(0, -'index.html'.length))).sort((a, b) => b.url.length - a.url.length)[0];
+    assert.ok(next, `Coverage exposes a folder link towards ${sourceURL}`);
+    await frame.locator('a[href]').evaluateAll((elements, url) => elements.find(element => element.href === url).click(), next.url);
+    await frameAt(state, next.url);
+  }
+  await frameAt(state, parentURL);
   const links = frame.locator('.coverage-summary tbody td.file a');
-  await links.filter({ hasText: 'source-a.js' }).waitFor();
-  await ready();
-  const originalOrder = await links.allTextContents();
-  assert.deepEqual([...originalOrder].sort(), ['source-a.js', 'source_a.js']);
+  await expect(links.filter({ hasText: /^source-a\.js$/ })).toHaveCount(1);
+  await expect(links.filter({ hasText: /^source_a\.js$/ })).toHaveCount(1);
+  const order = await links.allTextContents();
   await frame.locator('th[data-col="file"]').click();
-  assert.deepEqual(await links.allTextContents(), [...originalOrder].reverse());
-  await frame.locator('#fileSearch').fill('source_a');
-  assert.equal(await frame.locator('.coverage-summary tbody tr:visible').count(), 1);
-  assert.equal(await frame.locator('.coverage-summary tbody tr:visible td.file a').textContent(), 'source_a.js');
+  await expect.poll(() => links.allTextContents()).toEqual([...order].reverse());
+  await frame.locator('#fileSearch').fill('source_a.js');
+  await expect(frame.locator('.coverage-summary tbody tr:visible')).toHaveCount(1);
+  await expect(frame.locator('.coverage-summary tbody tr:visible td.file a')).toHaveText('source_a.js');
   await frame.locator('#fileSearch').fill('');
   await frame.getByRole('link', { name: 'source-a.js', exact: true }).click();
-  await frame.getByRole('heading').filter({ hasText: 'source-a.js' }).waitFor();
-  await ready();
-  assert.ok((await frame.locator('pre.prettyprint').textContent()).includes('Ω'));
-  await frame.locator('a[href="#L40"]').click();
-  await page.waitForURL(url => new URLSearchParams(url.hash.slice(1)).get('line') === 'L40');
-  await visibleLine();
-  const deepLink = page.url();
-  await page.reload();
-  await frame.getByRole('heading').filter({ hasText: 'source-a.js' }).waitFor();
-  await ready();
-  await visibleLine();
-  await frame.locator('h1 a[href="index.html"]').click();
-  await frame.getByRole('link', { name: 'source_a.js', exact: true }).waitFor();
-  await ready();
-  await frame.getByRole('link', { name: 'source_a.js', exact: true }).click();
-  await frame.getByRole('heading').filter({ hasText: 'source_a.js' }).waitFor();
-  await ready();
-  await page.goBack();
-  await frame.getByRole('link', { name: 'source_a.js', exact: true }).waitFor();
-  await page.goBack();
-  await frame.getByRole('heading').filter({ hasText: 'source-a.js' }).waitFor();
-  assert.equal(page.url(), deepLink);
-  await visibleLine();
-  await page.goForward();
-  await frame.getByRole('link', { name: 'source_a.js', exact: true }).waitFor();
-  await ready();
+  await frameAt(state, sourceURL);
+  await expect(frame.locator('pre.prettyprint')).toContainText('Ω');
+  state.sourceURL = sourceURL;
+  state.coverageDirectoryURL = parentURL;
+}
+
+export async function assertMeasuredScope(state) {
+  const coverage = JSON.parse(await readFile(resolve(state.directory, 'coverage/coverage-final.json'), 'utf8'));
+  const files = Object.entries(coverage);
+  for (const basename of ['source-a.js', 'source_a.js']) assert.ok(files.some(([file]) => file.endsWith(`/${basename}`)), `${basename} remains a distinct measured file`);
+  assert.ok(files.some(([, record]) => Object.values(record.s).some(hit => hit > 0)), 'Executed source retains real hits');
+  assert.ok(files.some(([, record]) => Object.keys(record.s).length > 0 && Object.values(record.s).every(hit => hit === 0)), 'Unexecuted source is retained with zero hits');
+}
+
+async function sourceLine(page, name) {
+  const link = page.locator(`a[href="#${name}"]`).first();
+  await expect(link).toBeVisible();
+  await expect.poll(() => page.evaluate(value => {
+    const marker = document.getElementsByName(value)[0] ?? document.getElementById(value);
+    const top = marker?.getBoundingClientRect().top;
+    return top !== undefined && top >= -1 && top < innerHeight;
+  }, name)).toBe(true);
+}
+export async function openDirectSource(state) {
+  state.sourcePage = await state.context.newPage();
+  state.deepLink = `${state.sourceURL}#L40`;
+  await state.sourcePage.goto(state.deepLink);
+  await sourceLine(state.sourcePage, 'L40');
+  await state.sourcePage.reload();
+  await sourceLine(state.sourcePage, 'L40');
+  await state.sourcePage.locator('h1 a[href="index.html"]').click();
+  await expect(state.sourcePage.getByRole('link', { name: 'source_a.js', exact: true })).toBeVisible();
+  await state.sourcePage.getByRole('link', { name: 'source_a.js', exact: true }).click();
+  await expect(state.sourcePage.locator('h1')).toContainText('source_a.js');
+  await state.sourcePage.goBack();
+  await expect(state.sourcePage.getByRole('link', { name: 'source-a.js', exact: true })).toBeVisible();
+  await state.sourcePage.goBack();
+  await expect(state.sourcePage).toHaveURL(state.deepLink);
+  await sourceLine(state.sourcePage, 'L40');
+  await state.sourcePage.goForward();
+  await expect(state.sourcePage.getByRole('link', { name: 'source_a.js', exact: true })).toBeVisible();
+}
+export async function assertSourceState(state) {
+  await state.sourcePage.goto(state.deepLink);
+  await sourceLine(state.sourcePage, 'L40');
+  await expect(state.sourcePage.locator('pre.prettyprint')).toContainText('Ω');
+}
+
+export async function assertDashboard(state) {
+  const count = state.results.numTotalTests;
+  assert.ok(count > 0);
+  assert.equal(state.results.numPassedTests, count);
+  assert.equal(state.results.numFailedTests, 0);
+  assert.equal(state.results.numPendingTests, 0);
+  assert.equal(state.tests.length, count);
+  assert.ok(state.tests.every(test => test.result?.state === 'pass'));
+  await expect.poll(async () => numberIn(await state.page.getByTestId('pass-entry').innerText())).toBe(count);
+  await expect.poll(async () => numberIn(await state.page.getByTestId('fail-entry').innerText())).toBe(0);
+  const identities = state.tests.map(test => {
+    const metadata = test.meta?.gherkin;
+    assert.ok(metadata?.id && metadata.uri && Number.isInteger(metadata.line), 'Every authored case retains its feature identity');
+    assert.ok(!metadata.uri.startsWith('/') && !metadata.uri.includes('\\'), 'Feature identities remain checkout-relative');
+    return `${test.projectName ?? ''}:${metadata.id}`;
+  });
+  assert.equal(new Set(identities).size, identities.length, 'Examples are not collapsed into matching titles');
+  const examples = state.tests.map(test => test.meta.gherkin).filter(metadata => metadata.exampleBlock >= 0);
+  assert.equal(examples.length, 2, 'Both identically valued Examples rows appear in the report');
+  assert.equal(new Set(examples.map(metadata => metadata.exampleLine)).size, 2);
+}
+export async function openBrowserEvidence(state) {
+  const page = state.page;
+  const dashboard = page.getByRole('button', { name: 'Show dashboard', exact: true });
+  if (await dashboard.isVisible()) await dashboard.click();
+  const test = state.tests.find(test => test.annotations?.some(note => note.attachment?.contentType === 'image/png')
+    && test.annotations.some(note => note.attachment?.contentType === 'application/zip'));
+  assert.ok(test, 'The report fixture contains a Gherkin case with screenshot and trace evidence');
+  state.evidenceCase = test;
+  const search = page.getByPlaceholder(/^Search/);
+  await search.fill(test.name);
+  const expand = page.getByTestId('expand-all');
+  if (await expand.isVisible()) await expand.click();
+  await page.getByText(test.name, { exact: true }).click();
+  await page.getByText('Test Annotations', { exact: true }).waitFor();
+}
+export async function assertBrowserEvidence(state) {
+  const test = state.evidenceCase;
+  const pngNote = test.annotations.find(note => note.attachment?.contentType === 'image/png');
+  const screenshot = state.page.getByRole('note').filter({ hasText: pngNote.message }).locator('img');
+  await expect.poll(() => screenshot.evaluate(element => element.complete && element.naturalWidth > 0)).toBe(true);
+  const image = Buffer.from(await screenshot.evaluate(async element => [...new Uint8Array(await (await fetch(element.src)).arrayBuffer())]));
+  assert.deepEqual([...image.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
+  assert.deepEqual(image, await readFile(state.recorded.screenshotPath), 'The screenshot retains the actual browser capture');
+  const zipNote = test.annotations.find(note => note.attachment?.contentType === 'application/zip');
+  const pending = state.page.waitForEvent('download');
+  await state.page.getByRole('note').filter({ hasText: zipNote.message }).getByRole('link', { name: 'Download', exact: true }).click();
+  const download = await pending;
+  assert.equal(await download.failure(), null, 'Trace download completes');
+  const bytes = await readFile(await download.path());
+  assert.deepEqual(bytes, await readFile(state.recorded.tracePath), 'The relocated download retains every original Playwright trace byte');
+  const entries = traceEntries(bytes);
+  const trace = entries.find(entry => entry.name.endsWith('.trace'));
+  const network = entries.find(entry => entry.name.endsWith('.network'));
+  assert.ok(trace && network, 'The attachment contains Playwright trace and network streams');
+  const events = trace.bytes.toString('utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line));
+  assert.ok(events.some(event => event.type === 'context-options'), 'The recording identifies its real browser context');
+  assert.ok(events.some(event => event.type === 'before' && event.method === 'click'
+    && event.params?.selector?.includes('Record interaction')), 'The recording retains the actual browser click');
+  const requests = network.bytes.toString('utf8').trim().split('\n').filter(Boolean).map(line => JSON.parse(line));
+  assert.ok(requests.some(event => event.type === 'resource-snapshot'
+    && event.snapshot?.request?.url === state.recorded.url && event.snapshot?.response?.status === 200), 'The recording retains its real HTTP request');
+}
+function traceEntries(bytes) {
+  const end = bytes.lastIndexOf(Buffer.from([80, 75, 5, 6]));
+  assert.ok(end >= 0, 'The trace is a complete ZIP archive');
+  let offset = bytes.readUInt32LE(end + 16);
+  const count = bytes.readUInt16LE(end + 10);
+  const entries = [];
+  for (let index = 0; index < count; index++) {
+    assert.equal(bytes.readUInt32LE(offset), 0x02014b50);
+    const method = bytes.readUInt16LE(offset + 10);
+    const size = bytes.readUInt32LE(offset + 20);
+    const nameSize = bytes.readUInt16LE(offset + 28);
+    const extraSize = bytes.readUInt16LE(offset + 30);
+    const commentSize = bytes.readUInt16LE(offset + 32);
+    const local = bytes.readUInt32LE(offset + 42);
+    const name = bytes.subarray(offset + 46, offset + 46 + nameSize).toString('utf8');
+    if (name.endsWith('.trace') || name.endsWith('.network')) {
+      assert.equal(bytes.readUInt32LE(local), 0x04034b50);
+      const data = local + 30 + bytes.readUInt16LE(local + 26) + bytes.readUInt16LE(local + 28);
+      const compressed = bytes.subarray(data, data + size);
+      assert.ok(method === 0 || method === 8, 'Playwright trace compression remains supported');
+      entries.push({ name, bytes: method === 0 ? compressed : inflateRawSync(compressed, { maxOutputLength: 16 * 1024 * 1024 }) });
+    }
+    offset += 46 + nameSize + extraSize + commentSize;
+  }
+  return entries;
+}
+export function assertPackagedAssets(state) {
+  assert.deepEqual(state.errors, []);
+  assert.deepEqual(state.missing, []);
+  assert.deepEqual(state.external.filter(url => url !== optionalFont), []);
+  assert.ok(state.requested.some(url => url.endsWith('/ui/html.meta.json.gz')), 'The static report reads its packaged machine metadata');
+  assert.ok(state.requested.some(url => url.includes('/ui/assets/')), 'The static report reads its packaged interface assets');
 }

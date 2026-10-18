@@ -7,9 +7,11 @@ import { lstatSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseChangelog } from "./changelog.mjs";
+import { toolchainPackages } from "../../tests/gherkin/execution-fingerprint.mjs";
 
 export const ARTIFACT_NAMES = ["bundle", "coverage", "test-report", "validation-manifest"];
-export const REPORT_FILES = ["test-report.html", "badges/test-scenarios.json", "badges/test-scenarios.svg",
+export const REPORT_FILES = ["index.html", "ui/html.meta.json.gz", "results.json", "provenance.json",
+  "coverage/index.html", "coverage/coverage-summary.json", "badges/test-scenarios.json", "badges/test-scenarios.svg",
   "badges/test-coverage.json", "badges/test-coverage.svg"];
 export const MANIFEST_NAME = "validation-manifest.json";
 export const BUNDLE_FILES = ["_headers", "apple-touch-icon.png", "favicon.bmp", "favicon.gif", "favicon.ico",
@@ -108,8 +110,53 @@ export function validateArtifactContract(files)
 {
   if (JSON.stringify(Object.keys(files.bundle).sort()) !== JSON.stringify([...BUNDLE_FILES].sort())
     || !files.coverage["coverage-summary.json"] || !files.coverage["index.html"]
-    || JSON.stringify(Object.keys(files["test-report"]).sort()) !== JSON.stringify([...REPORT_FILES].sort()))
+    || REPORT_FILES.some(path => !files["test-report"][path])
+    || !Object.keys(files["test-report"]).some(path => /^ui\/assets\/.+\.js$/.test(path))
+    || !Object.keys(files["test-report"]).some(path => /^ui\/assets\/.+\.css$/.test(path))
+    || Object.keys(files["test-report"]).some(path => !REPORT_FILES.includes(path)
+      && !/^(?:ui|coverage|attachments|badges)\//.test(path)))
     throw new Error("Validation artifacts do not contain the complete bundle, coverage and test report.");
+}
+
+export function validateReportEvidence(directory, { testedSha, runId, runAttempt } = {})
+{
+  const provenance = JSON.parse(readFileSync(join(directory, "provenance.json"), "utf8"));
+  const expected = ["source", "acceptance", "automation", "browser", "components", "runner"].sort();
+  const object = value => value && typeof value === "object" && !Array.isArray(value);
+  const digest = value => typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
+  const version = value => typeof value === "string" && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(value);
+  const keys = value => JSON.stringify(Object.keys(value).sort());
+  const requiredVersions = ["node", ...toolchainPackages].sort();
+  const installedVersions = value => object(value)
+    && keys(value) === JSON.stringify(requiredVersions)
+    && typeof value.node === "string" && value.node.startsWith("v") && version(value.node.slice(1))
+    && toolchainPackages.every(name => version(value[name]));
+  if (!isSha(testedSha) || !isPositiveInteger(runId) || !isPositiveInteger(runAttempt)
+    || provenance.schemaVersion !== 2 || provenance.complete !== true || provenance.diagnostic !== false
+    || provenance.mergeExitCode !== 0 || provenance.testedSha !== testedSha
+    || !Array.isArray(provenance.suites)
+    || provenance.suites.some(suite => !object(suite))
+    || JSON.stringify(provenance.suites.map(suite => suite.profile).sort()) !== JSON.stringify(expected)
+    || provenance.suites.some(suite => suite.head !== testedSha || !isPositiveInteger(suite.cases)
+      || suite.project !== (suite.profile === "browser" ? "browser-chromium" : suite.profile)
+      || String(suite.runId) !== String(runId) || String(suite.runAttempt) !== String(runAttempt)
+      || !digest(suite.resultHash) || !digest(suite.blobHash) || !digest(suite.configFingerprint)
+      || !installedVersions(suite.dependencyVersions)))
+    throw new Error("Report lacks complete successful provenance for all Gherkin suites.");
+  const signatures = provenance.suites.map(suite => JSON.stringify(Object.entries(suite.dependencyVersions).sort()));
+  if (new Set(provenance.suites.map(suite => suite.configFingerprint)).size !== 1 || new Set(signatures).size !== 1)
+    throw new Error("Report suites do not share the original configuration and installed toolchain.");
+  const blobNames = provenance.suites.map(suite => `${suite.project}.json`).sort();
+  if (!object(provenance.inputHashes) || keys(provenance.inputHashes) !== JSON.stringify(blobNames)
+    || provenance.suites.some(suite => provenance.inputHashes[`${suite.project}.json`] !== suite.blobHash))
+    throw new Error("Report input hashes do not match the six verified suite blobs.");
+  // Recorded versions describe the original producer. Reuse never substitutes
+  // the current machine's toolchain or configuration for those recorded bytes.
+  const summary = JSON.parse(readFileSync(join(directory, "coverage/coverage-summary.json"), "utf8")).total;
+  for (const metric of ["lines", "statements", "functions", "branches"])
+    if (!isPositiveInteger(summary?.[metric]?.total) || summary[metric].covered !== summary[metric].total
+      || summary[metric].skipped !== 0 || summary[metric].pct !== 100)
+      throw new Error("Report coverage does not satisfy every 100% threshold.");
 }
 
 export function createManifest({ repository, runId, runAttempt, sourceSha, testedSha, bundle, coverage, report, cwd = process.cwd() })
@@ -127,15 +174,29 @@ export function createManifest({ repository, runId, runAttempt, sourceSha, teste
   const files = { bundle: inventory(bundle), coverage: inventory(coverage, { coverage: true }),
     "test-report": inventory(dirname(report)) };
   validateArtifactContract(files);
-  return { schemaVersion: 1, repository, runId, runAttempt, sourceSha, testedSha,
+  validateReportEvidence(dirname(report), { testedSha, runId, runAttempt });
+  return { schemaVersion: 2, repository, runId, runAttempt, sourceSha, testedSha,
     ...localIdentity(testedSha, cwd), files };
+}
+
+export function validateManifestProvenance(manifest, expected = manifest)
+{
+  if (!manifest || manifest.schemaVersion !== 2 || !isRepository(manifest.repository)
+    || !isPositiveInteger(manifest.runId) || !isPositiveInteger(manifest.runAttempt)
+    || !isSha(manifest.sourceSha) || !isSha(manifest.testedSha) || !isSha(manifest.testedTree)
+    || !/^[a-f0-9]{64}$/.test(manifest.inputFingerprint ?? "")
+    || !expected || ["repository", "runId", "runAttempt", "sourceSha", "testedSha"]
+      .some(field => manifest[field] !== expected[field]))
+    throw new Error("Validation manifest does not match the original tested run provenance.");
 }
 
 export function verifyArtifacts(manifest, directory)
 {
+  validateManifestProvenance(manifest);
   const actual = { bundle: inventory(join(directory, "bundle")), coverage: inventory(join(directory, "coverage")),
     "test-report": inventory(join(directory, "test-report")) };
   validateArtifactContract(actual);
+  validateReportEvidence(join(directory, "test-report"), manifest);
   if (!manifest.files || JSON.stringify(Object.keys(manifest.files).sort()) !== JSON.stringify(Object.keys(actual).sort()))
     throw new Error("Manifest artifact set is incomplete.");
   for (const name of Object.keys(actual))
@@ -151,10 +212,22 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
 {
   try
   {
-    const [command, repository, runId, runAttempt, sourceSha, testedSha, bundle, coverage, report, output, ...extra] = process.argv.slice(2);
-    if (command !== "create" || !output || extra.length) throw new Error("Usage: validation-artifacts.mjs create <repository> <run-id> <run-attempt> <source-sha> <tested-sha> <bundle-dir> <coverage-dir> <report-file> <manifest-file>.");
-    const manifest = createManifest({ repository, runId: Number(runId), runAttempt: Number(runAttempt), sourceSha, testedSha, bundle, coverage, report });
-    writeFileSync(output, `${JSON.stringify(manifest, null, 2)}\n`);
+    const [command, ...args] = process.argv.slice(2);
+    if (command === "verify")
+    {
+      const [file, directory, repository, runId, runAttempt, sourceSha, testedSha, ...extra] = args;
+      if (!testedSha || extra.length) throw new Error("Usage: validation-artifacts.mjs verify <manifest-file> <artifact-directory> <repository> <run-id> <run-attempt> <source-sha> <tested-sha>.");
+      const manifest = JSON.parse(readFileSync(file, "utf8"));
+      validateManifestProvenance(manifest, { repository, runId: Number(runId), runAttempt: Number(runAttempt), sourceSha, testedSha });
+      verifyArtifacts(manifest, directory);
+    }
+    else
+    {
+      const [repository, runId, runAttempt, sourceSha, testedSha, bundle, coverage, report, output, ...extra] = args;
+      if (command !== "create" || !output || extra.length) throw new Error("Usage: validation-artifacts.mjs create <repository> <run-id> <run-attempt> <source-sha> <tested-sha> <bundle-dir> <coverage-dir> <report-file> <manifest-file>.");
+      const manifest = createManifest({ repository, runId: Number(runId), runAttempt: Number(runAttempt), sourceSha, testedSha, bundle, coverage, report });
+      writeFileSync(output, `${JSON.stringify(manifest, null, 2)}\n`);
+    }
   }
   catch (error)
   {

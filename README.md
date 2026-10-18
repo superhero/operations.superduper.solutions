@@ -36,7 +36,7 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 <summary><code>npm run badges:scenarios</code></summary>
 
 - **Purpose:** Generate the test-scenario badge under `tmp/test/badges`.
-- **Requirements:** Requires Bash, jq and fresh, complete results from all four test suites.
+- **Requirements:** Requires Bash, jq and fresh, complete results from all six Gherkin suites.
 
 </details>
 
@@ -70,18 +70,11 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 </details>
 
 <details>
-<summary><code>npm run report:coverage</code></summary>
-
-- **Purpose:** Package the generated coverage report into the standalone `tmp/test-coverage.html`.
-- **Requirements:** Run `npm ci`, `npm run test:source:coverage` and `npm run test:coverage` first.
-
-</details>
-
-<details>
 <summary><code>npm run report:tests</code></summary>
 
-- **Purpose:** Generate the combined `tmp/test-report.html`.
-- **Requirements:** Run `npm ci` first. Fresh, complete results from all four test suites are required.
+- **Purpose:** Merge Vitest results into `tmp/test/report/`, including coverage and attachments.
+- **Requirements:** Run `npm ci` first. Complete, unfiltered results, execution proofs and
+  coverage from all six suites are required; merging does not rerun tests.
 
 </details>
 
@@ -94,34 +87,36 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 </details>
 
 <details>
-<summary><code>npm run test:acceptance:coverage</code></summary>
-
-- **Purpose:** Run acceptance scenarios and collect coverage data.
-- **Requirements:** Run `npm ci` and `npm run build` first.
-
-</details>
-
-<details>
 <summary><code>npm run test:automation</code></summary>
 
 - **Purpose:** Check repository automation without deploying.
-- **Requirements:** Run `npm ci` first. Bash, Git and jq are required.
+- **Requirements:** Run `npm ci` first. Bash, Git 2.45+ and jq are required.
 
 </details>
 
 <details>
 <summary><code>npm run test:browser</code></summary>
 
-- **Purpose:** Run browser scenarios in Chromium.
+- **Purpose:** Run application browser scenarios and Svelte component scenarios in Chromium.
+  Focused browser selections run only the selected application scenarios.
 - **Requirements:** Run `npm ci` and `npm run build` first. Bash and running Docker are required.
+
+</details>
+
+<details>
+<summary><code>npm run test:components</code></summary>
+
+- **Purpose:** Check Svelte state, bindings, props and cleanup through Gherkin in Vitest Browser Mode.
+- **Requirements:** Run `npm ci` first and provide matching Playwright browser binaries.
+  The unfiltered `test:browser` command runs these cases in its pinned container.
 
 </details>
 
 <details>
 <summary><code>npm run test:coverage</code></summary>
 
-- **Purpose:** Generate reports in `tmp/test/coverage/` and enforce 100% statement, branch,
-  function and line coverage.
+- **Purpose:** Check the generated coverage summary against 100% statement, branch,
+  function and line requirements; this command does not rerun tests.
 - **Scope:** Node-executable application logic; see [Testing, coverage and reporting](docs/adr/test-suite-reports.md)
   for the scope and exclusions.
 - **Requirements:** Collect fresh coverage with `npm run test:source:coverage` first.
@@ -129,10 +124,18 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 </details>
 
 <details>
+<summary><code>npm run test:runner</code></summary>
+
+- **Purpose:** Check Gherkin discovery, scenario identities, cancellation, cleanup and report evidence.
+- **Requirements:** Run `npm ci` first.
+
+</details>
+
+<details>
 <summary><code>npm run test:source</code></summary>
 
-- **Purpose:** Run all source behavior and unit scenarios through Cucumber,
-  recording each result in `tmp/test/cucumber-source.json`.
+- **Purpose:** Run source behavior and unit scenarios through QuickPickle and Vitest,
+  recording each case in `tmp/test/vitest-source.json`.
 - **Requirements:** Run `npm ci` first.
 
 </details>
@@ -140,7 +143,7 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 <details>
 <summary><code>npm run test:source:coverage</code></summary>
 
-- **Purpose:** Run all source Cucumber scenarios and collect coverage data.
+- **Purpose:** Run source Gherkin scenarios and collect V8 coverage in `tmp/test/coverage/`.
 - **Requirements:** Run `npm ci` first.
 
 </details>
@@ -167,8 +170,8 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 Creates releases from `develop` and validates and previews release and hotfix
 pull requests before merging into `main`. Continues in the same release run to
-tag and deploy, publish test and coverage reports, and synchronize released
-changes back to `develop`.
+tag and deploy, publish the combined test and coverage report, and synchronize
+released changes back to `develop`.
 
 ---
 
@@ -191,13 +194,77 @@ details to help investigate regressions.
 
 ---
 
-[![Test Coverage](https://status.operations.superduper.solutions/badges/test-coverage.svg)](https://status.operations.superduper.solutions/test-coverage.html)
+[![Test Coverage](https://status.operations.superduper.solutions/badges/test-coverage.svg)](https://status.operations.superduper.solutions/test-report.html)
 
 Code coverage of the measured application source, showing which statements,
 branches, functions, and lines are exercised by tests and where additional
 tests are needed.
 
 ## Dependency packages
+
+<a href="https://www.npmjs.com/package/@cucumber/gherkin"><img src=".github/badges/version-dependency-cucumber--gherkin.svg" alt="@cucumber/gherkin declared version"></a>
+
+Parses Gherkin features and scenario-outline examples. Independent case discovery
+checks that the combined report contains every declared scenario.
+
+---
+
+<a href="https://www.npmjs.com/package/@cucumber/messages"><img src=".github/badges/version-dependency-cucumber--messages.svg" alt="@cucumber/messages declared version"></a>
+
+Provides the Gherkin message types and identifiers used when parsing features
+and preserving canonical scenario and example-row locations.
+
+---
+
+<a href="https://www.npmjs.com/package/flatted"><img src=".github/badges/version-dependency-flatted.svg" alt="flatted declared version"></a>
+
+Reads and rewrites Vitest blob references when results move between CI jobs,
+so reports retain attachments and coverage without changing the original evidence.
+
+---
+
+<a href="https://www.npmjs.com/package/quickpickle"><img src=".github/badges/version-dependency-quickpickle.svg" alt="quickpickle declared version"></a>
+
+Registers Gherkin scenarios and steps with Vitest. The maintained local package
+in `tests/gherkin/quickpickle` preserves example identities, cancellation, cleanup
+and failure details needed by the shared report.
+
+---
+
+<a href="https://www.npmjs.com/package/vitest"><img src=".github/badges/version-dependency-vitest.svg" alt="vitest declared version"></a>
+
+Executes all Gherkin suites and produces mergeable results. Its built-in HTML
+report presents scenario outcomes, diagnostics and coverage in one report.
+
+---
+
+<a href="https://www.npmjs.com/package/@vitest/ui"><img src=".github/badges/version-dependency-vitest--ui.svg" alt="@vitest/ui declared version"></a>
+
+Provides the built-in Vitest HTML interface used to browse the combined results.
+Publish the complete report directory with its metadata and assets.
+
+---
+
+<a href="https://www.npmjs.com/package/@vitest/coverage-v8"><img src=".github/badges/version-dependency-vitest--coverage-v8.svg" alt="@vitest/coverage-v8 declared version"></a>
+
+Measures V8 coverage within the explicit application scope, including unexecuted
+files. Release validation requires 100% statements, branches, functions and lines.
+
+---
+
+<a href="https://www.npmjs.com/package/@vitest/browser-playwright"><img src=".github/badges/version-dependency-vitest--browser-playwright.svg" alt="@vitest/browser-playwright declared version"></a>
+
+Connects Vitest Browser Mode to Playwright for Gherkin component scenarios
+using native browser interactions.
+
+---
+
+<a href="https://www.npmjs.com/package/vitest-browser-svelte"><img src=".github/badges/version-dependency-vitest-browser-svelte.svg" alt="vitest-browser-svelte declared version"></a>
+
+Mounts, updates and unmounts Svelte components in Vitest Browser Mode while
+retaining native bindings and lifecycle cleanup.
+
+---
 
 <a href="https://www.npmjs.com/package/bits-ui"><img src=".github/badges/version-dependency-bits-ui.svg" alt="bits-ui declared version"></a>
 
@@ -214,26 +281,10 @@ files locally in IndexedDB.
 
 ---
 
-<a href="https://www.npmjs.com/package/c8"><img src=".github/badges/version-dependency-c8.svg" alt="c8 declared version"></a>
-
-Supports application testing by measuring source code coverage and generating
-coverage reports. The release workflow uses its coverage checks to enforce
-requirements and block releases that leave measured code untested.
-
----
-
 <a href="https://www.npmjs.com/package/cn"><img src=".github/badges/version-dependency-cn.svg" alt="cn declared version"></a>
 
 Supports the webpage’s UI styling, combining default and custom `Tailwind CSS`
 classes in `shadcn-svelte` components and resolving conflicts.
-
----
-
-<a href="https://www.npmjs.com/package/@cucumber/cucumber"><img src=".github/badges/version-dependency-cucumber--cucumber.svg" alt="@cucumber/cucumber declared version"></a>
-
-Supports application and CI validation by running source, acceptance, browser,
-and automation scenarios defined in `Gherkin`, producing the results used by the
-combined test report.
 
 ---
 
@@ -302,14 +353,6 @@ Displays themed development errors with source frames and their cause chains.
 
 ---
 
-<a href="https://www.npmjs.com/package/multiple-cucumber-html-reporter"><img src=".github/badges/version-dependency-multiple-cucumber-html-reporter.svg" alt="multiple-cucumber-html-reporter declared version"></a>
-
-Supports release quality review by generating the combined test report from
-source, acceptance, browser, and automation results, with scenario outcomes and failure
-details.
-
----
-
 <a href="https://www.npmjs.com/package/papaparse"><img src=".github/badges/version-dependency-papaparse.svg" alt="papaparse declared version"></a>
 <a href="https://www.npmjs.com/package/@types/papaparse"><img src=".github/badges/version-dependency-types--papaparse.svg" alt="@types/papaparse declared version"></a>
 
@@ -321,7 +364,7 @@ TypeScript definitions during development.
 
 <a href="https://www.npmjs.com/package/@playwright/test"><img src=".github/badges/version-dependency-playwright--test.svg" alt="@playwright/test declared version"></a>
 
-Checks the webpage in Chromium through Cucumber scenarios, using Playwright's
+Checks the webpage in Chromium through Gherkin scenarios, using Playwright's
 browser controls and assertions to verify user interactions and responsive
 layout. Captures screenshots and traces to explain browser test failures.
 

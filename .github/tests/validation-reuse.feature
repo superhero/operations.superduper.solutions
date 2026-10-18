@@ -65,6 +65,12 @@ Feature: Reuse complete validation only for trusted identical inputs
       | a missing combined report          |
       | a missing report badge             |
       | a modified report badge            |
+      | a legacy report manifest           |
+      | a missing report UI asset          |
+      | a modified report UI asset         |
+      | an extra report root file          |
+      | a diagnostic combined report       |
+      | a report missing a Gherkin suite    |
       | an extra artifact file             |
       | a prototype-named artifact file    |
       | an extra empty artifact directory  |
@@ -127,3 +133,34 @@ Feature: Reuse complete validation only for trusted identical inputs
       | retry wait exhausts the budget        | fresh   |
       | interrupted artifact download         | reused  |
       | repeated artifact interruptions       | fresh   |
+
+  Scenario Outline: Report completeness is required when recording new proof
+    Given a completed validation run with "<condition>"
+    When complete validation provenance is recorded
+    Then the invalid validation request is rejected
+
+    Examples:
+      | condition                       |
+      | a diagnostic combined report    |
+      | a report missing a Gherkin suite |
+      | a missing report UI asset       |
+
+
+  Scenario Outline: Recorded report provenance preserves the complete original execution identity
+    Given a completed validation run with "<condition>"
+    When complete validation provenance is recorded
+    Then the invalid validation request is rejected
+
+    Examples:
+      | condition                                    |
+      | a report missing configuration identity      |
+      | a report with mixed configuration identities |
+      | a report missing installed versions          |
+      | a report with mixed installed versions       |
+      | a report with incomplete installed versions  |
+      | a report with wrong producer run             |
+      | a report with wrong producer attempt         |
+      | a report missing input hashes                |
+      | a report with altered input hash             |
+      | a report with an extra input hash            |
+      | a report missing result hash                 |

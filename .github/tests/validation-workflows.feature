@@ -67,3 +67,7 @@ Feature: Carry complete validation through integration and release
   Scenario: Preparing a release from develop does not run test suites
     Given the validation workflow for "main"
     Then release preparation defers all suites until a release candidate exists
+
+  Scenario: Retrying publication retains the successful validation producer attempt
+    Given the validation workflow for "main"
+    Then publication retries use the producing attempt rather than the retry attempt

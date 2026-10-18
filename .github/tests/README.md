@@ -3,12 +3,12 @@
 This directory tests repository scripts, workflow configuration, release rules,
 publication and report generation. Add behavior in a named `.feature` scenario
 or scenario-outline example, with step definitions in a matching `.test.mjs`
-file. Despite that suffix, these modules use Cucumber; they are not standalone
-Node tests.
+file. Despite that suffix, these modules register Gherkin steps for Vitest;
+they are not standalone Node tests.
 
 ## Discovery
 
-The `automation` profile in [`cucumber.config.mjs`](../../cucumber.config.mjs)
+The `automation` profile in [`tests/gherkin/profiles.mjs`](../../tests/gherkin/profiles.mjs)
 discovers `.github/tests/*.feature` and `.github/tests/*.test.mjs` automatically.
 Nested directories need a configuration change. Import helper modules from
 steps; helpers are not independently discovered scenarios.
@@ -27,14 +27,14 @@ separate release docs PRs, retries and concurrent branch updates. Validation
 reuse scenarios verify matching inputs, complete artifact hashes and original
 run provenance, plus bounded retries and fresh-validation fallback. Request
 tests exercise the GitHub CLI adapter with a local fake command. Workflow
-scenarios ensure manifests follow successful checks from all four suites and
+scenarios ensure manifests follow successful checks from all six suites and
 that publication waits for the versioned release changelog. Queue scenarios
 exercise live revision checks, bounded API retries, candidate updates and
 merged-release recovery without real GitHub writes.
 
 ## Reporting and validation
 
-Each independently evaluated case must remain visible in Cucumber results;
+Each independently evaluated case must remain visible in Vitest results;
 follow the [test-reporting ADR](../../docs/adr/test-suite-reports.md). Application
 browser cases belong in [`tests/browser/`](../../tests/browser/README.md).
 See [local automation validation](../workflows/README.md#automation-changes) for
