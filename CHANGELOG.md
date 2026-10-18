@@ -210,6 +210,14 @@ style: tighten spacing below toolbar group headings
 
 ```
 
+<!-- changelog-commit:fb2eb458538607bebdfce54fc52a6cbbf028839a -->
+### Commit [`fb2eb45`](https://github.com/superhero/operations.superduper.solutions/commit/fb2eb458538607bebdfce54fc52a6cbbf028839a)
+
+```text
+style: balance spacing around toolbar group headings
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
