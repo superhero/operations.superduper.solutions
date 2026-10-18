@@ -2,6 +2,22 @@
 
 ## Latest
 
+<!-- changelog-commit:e80413d89ff1d9e71e20f3931e3aea89fc4d2010 -->
+### Commit [`e80413d`](https://github.com/superhero/operations.superduper.solutions/commit/e80413d89ff1d9e71e20f3931e3aea89fc4d2010)
+
+```text
+fix(settings): increase commit grid squares by one pixel
+
+```
+
+<!-- changelog-commit:ba8847c056905676289a0020148290f82ebab151 -->
+### Commit [`ba8847c`](https://github.com/superhero/operations.superduper.solutions/commit/ba8847c056905676289a0020148290f82ebab151)
+
+```text
+fix(settings): size commit grid squares at 28 pixels
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.51
