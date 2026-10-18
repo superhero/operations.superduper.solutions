@@ -176,6 +176,25 @@ verify dashboard invisibility before its separate opening animation.
 
 ```
 
+<!-- changelog-commit:1ddbce539aea8bdb184e003817a90e2f9cd9d0d4 -->
+### Commit [`1ddbce5`](https://github.com/superhero/operations.superduper.solutions/commit/1ddbce539aea8bdb184e003817a90e2f9cd9d0d4)
+
+```text
+test: unify Gherkin execution and coverage in Vitest
+
+Run every authored case through the maintained QuickPickle integration,
+including former standalone browser scripts and Svelte lifecycle checks.
+Preserve scenario identities, cancellation, cleanup and native diagnostics.
+
+Publish Vitest's built-in report with coverage and attachments as one
+verified directory. Bind complete runs to their cases, configuration,
+installed toolchain and artifact hashes before release reuse or publication.
+
+Retain the scoped 100% coverage gates and remove two unreachable source
+alternatives without changing application behavior.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.51
