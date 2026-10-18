@@ -11,7 +11,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   } = $props();
   let recording = $state<keyof Keybindings | null>(null);
   let notice = $state("");
-  const labels = { undo: "Undo", redo: "Redo", selectAll: "Select all", nodeSelection: "Add node to selection", areaSelection: "Add area to selection" };
+  const labels = { undo: "Undo", redo: "Redo", selectAll: "Select all", deleteSelection: "Delete selection", nodeSelection: "Add node to selection", areaSelection: "Add area to selection" };
   const actions = [...shortcutActions, "nodeSelection", "areaSelection"] as const;
   function capture(event: KeyboardEvent, action: keyof Keybindings) {
     if (recording !== action || event.key === "Tab") return;
@@ -27,7 +27,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       return;
     }
     const shortcut = shortcutFromEvent(event);
-    if (!shortcut) { notice = "Use Ctrl/Cmd or Alt with a letter or number. Escape cancels."; return; }
+    if (!shortcut) { notice = "Press Delete, Backspace, or Ctrl/Cmd or Alt with a letter or number. Escape cancels."; return; }
     const conflict = shortcutActions.find(other => other !== action && value[other] === shortcut);
     if (conflict) { notice = `Already assigned to ${labels[conflict]}. Choose another shortcut.`; return; }
     notice = "";

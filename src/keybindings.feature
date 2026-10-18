@@ -9,3 +9,5 @@ Feature: Configurable workflow keybindings
     Then shortcuts match Control and Command exactly and ignore composition
   Scenario: Selection modifiers and redo alternatives remain configurable
     Then selection modifiers map to flow keys and explicit shortcuts override redo aliases
+  Scenario: Deletion has two default keys and can be reassigned
+    Then delete and backspace share the configured deletion action without capturing text modifiers

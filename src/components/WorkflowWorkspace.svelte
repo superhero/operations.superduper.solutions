@@ -822,6 +822,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const target = event.target;
     if (target instanceof Element && target.closest('#settings-panel, input, textarea, select, [contenteditable], [role="listbox"], [role="combobox"], .nokey')) return;
     const action = shortcutAction(event, keybindings);
+    if (action === "deleteSelection") {
+      event.preventDefault();
+      void beforeDelete({ nodes: nodes.filter(node => node.selected && node.deletable !== false), edges: edges.filter(edge => edge.selected && edge.deletable !== false) });
+      return;
+    }
     if (action === "selectAll") {
       event.preventDefault();
       nodes = nodes.map(node => ({ ...node, selected: !node.hidden && node.selectable !== false }));
@@ -962,7 +967,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <SvelteFlow bind:nodes={() => orderedNodes, updateCanvasNodes} bind:edges bind:viewport {nodeTypes} {edgeTypes} defaultEdgeOptions={edgeOptions} connectionLineComponent={WorkflowConnectionLine} connectionLineType={curved ? ConnectionLineType.Bezier : ConnectionLineType.SmoothStep} onbeforeconnect={prepareConnection} onconnect={adaptGates}
       elevateEdgesOnSelect={false} defaultMarkerColor={null} connectionLineStyle={`${edgeOptions.style}; marker-end: url(#${connectionMarkerId})`}
       minZoom={0.25} maxZoom={2} {...(snap ? {} : { snapGrid: [1, 1] as [number, number] })}
-      deleteKey={keyboardActive ? ["Backspace", "Delete"] : null} selectionKey={keyboardActive ? modifierKeys(keybindings.areaSelection) : null}
+      deleteKey={null} selectionKey={keyboardActive ? modifierKeys(keybindings.areaSelection) : null}
       multiSelectionKey={keyboardActive ? (keybindings.nodeSelection === "Shift" ? ["Shift", "Meta", "Control"] : modifierKeys(keybindings.nodeSelection)) : null} panActivationKey={keyboardActive ? " " : null}
       zoomActivationKey={keyboardActive ? ["Meta", "Control"] : null} disableKeyboardA11y={!keyboardActive}
       isValidConnection={validConnection} onbeforedelete={beforeDelete}
