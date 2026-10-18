@@ -18,6 +18,46 @@ fix(settings): size commit grid squares at 28 pixels
 
 ```
 
+<!-- changelog-commit:380367ac885ccca2430a5e69a8da4c9e9722ce2a -->
+### Commit [`380367a`](https://github.com/superhero/operations.superduper.solutions/commit/380367ac885ccca2430a5e69a8da4c9e9722ce2a)
+
+```text
+fix(settings): reduce commit grid squares to 23 pixels
+
+```
+
+<!-- changelog-commit:bbbb380e9e6549bd9f4e365b383b8f50a0e229ef -->
+### Commit [`bbbb380`](https://github.com/superhero/operations.superduper.solutions/commit/bbbb380e9e6549bd9f4e365b383b8f50a0e229ef)
+
+```text
+Merge branch 'bugfix/commit-grid-square-size' of github.com:superhero/operations.superduper.solutions into bugfix/commit-grid-square-size
+
+```
+
+<!-- changelog-commit:090bcd57ecc68e5db8eb853fce97c60be205cf92 -->
+### Commit [`090bcd5`](https://github.com/superhero/operations.superduper.solutions/commit/090bcd57ecc68e5db8eb853fce97c60be205cf92)
+
+```text
+fix(settings): increase commit grid squares to 29 pixels
+
+```
+
+<!-- changelog-commit:a5318293f1acd4b8b8dafb04203cd70d667e3887 -->
+### Commit [`a531829`](https://github.com/superhero/operations.superduper.solutions/commit/a5318293f1acd4b8b8dafb04203cd70d667e3887)
+
+```text
+fix(settings): increase commit grid squares to 33 pixels
+
+```
+
+<!-- changelog-commit:a46c52a3269696a225c47df242b32635a79db091 -->
+### Commit [`a46c52a`](https://github.com/superhero/operations.superduper.solutions/commit/a46c52a3269696a225c47df242b32635a79db091)
+
+```text
+fix(settings): increase commit grid squares to 35 pixels
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.51
