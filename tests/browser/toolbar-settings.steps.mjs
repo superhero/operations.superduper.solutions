@@ -10,7 +10,7 @@ Then('toolbar visibility choices persist and leave keyboard shortcuts available'
   const page = this.page;
   const toolbar = workflow(page).locator('.workflow-toolbar');
   await setMode(page, 'settings');
-  await page.locator('summary[aria-label="Buttons"]').click();
+  await page.locator('summary[aria-label="Toolbar"]').click();
   let preferences = page.getByRole('group', { name: 'Toolbar button preferences', exact: true });
   const labels = toolbarButtonGroups.flatMap(group => group.buttons.map(key => toolbarButtonLabels[key]));
   await expect(preferences.getByRole('switch')).toHaveText(labels);
@@ -43,7 +43,7 @@ Then('toolbar visibility choices persist and leave keyboard shortcuts available'
   await setMode(page, 'workflow');
   await expect(toolbar).toHaveCount(0);
   await setMode(page, 'settings');
-  await page.locator('summary[aria-label="Buttons"]').click();
+  await page.locator('summary[aria-label="Toolbar"]').click();
   preferences = page.getByRole('group', { name: 'Toolbar button preferences', exact: true });
   await expect(preferences.getByRole('switch', { checked: false })).toHaveCount(labels.length);
   await expect(preferences.getByRole('button', { name: 'Show all', exact: true })).toHaveCount(0);
