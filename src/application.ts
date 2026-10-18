@@ -45,6 +45,7 @@ export async function initializeApplication(): Promise<void> {
       initialTooltips: settings.tooltips,
       initialLocale: settings.locale,
       initialKeybindings: settings.keybindings,
+      initialToolbarButtons: settings.toolbarButtons,
       initialSettingsError: settings.storageError,
     } }));
     await tick();
