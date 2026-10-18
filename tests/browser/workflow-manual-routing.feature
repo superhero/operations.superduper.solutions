@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @workflow-manual-routing
+@toolbar-controls
 Feature: Manually adjusting orthogonal workflow connections
   Scenario: Hover and selection expose accessible controls at every segment midpoint
     Given an imported manual routing workflow at zoom 1

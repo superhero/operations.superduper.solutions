@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+@toolbar-controls
 Feature: Workflow replacement and export regressions
   Scenario Outline: Canceling a replacement after autosave fails preserves the draft and useful focus
     Given two saved QA workflows and a draft that cannot autosave

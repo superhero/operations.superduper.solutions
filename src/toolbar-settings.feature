@@ -3,5 +3,5 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Toolbar visibility preferences
-  Scenario: New and malformed preferences show every control
-    Then toolbar preferences default to visible and normalize only known boolean choices
+  Scenario: New and malformed preferences use the minimal toolbar
+    Then toolbar preferences use minimal defaults and normalize only known boolean choices

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+@toolbar-controls
 Feature: Workflow keybinding preferences
   Scenario: Custom shortcuts persist and leave text editing alone
     Given nested workflow input and output branches mapped to another operation

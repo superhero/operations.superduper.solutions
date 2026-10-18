@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+@toolbar-controls
 Feature: Direct workflow node manipulation
   Scenario: New operation trees use measured columns and reveal their owner to the right
     Then added operation trees keep clear aligned columns and smoothly reveal the next graph to the right

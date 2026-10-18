@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+@toolbar-controls
 Feature: Workflow utility controls and reusable plans
   Routing, annotations and saved workflows remain editable and persist locally.
 

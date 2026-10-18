@@ -1,6 +1,7 @@
 # Copyright (C) 2026 Erik Landvall
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
+@toolbar-controls
 Feature: Workflow toolbar actions
   Scenario: Direct keyboard actions protect the selected graph and preserve navigation
     Given a workflow with 2 instances of "List projects"

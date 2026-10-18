@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @workflow-routing
+@toolbar-controls
 Feature: Measured workflow connection routing
   Scenario: Orthogonal connections avoid measured blockers and meet their handles
     Given an imported routing workflow with a blocking node

@@ -10,6 +10,8 @@ import { resolve } from 'node:path';
 import { createExampleEndpoint } from './example-endpoint.fixture.mjs';
 import { pail } from '@visulima/pail';
 import { createVaultEndpoint } from './vault-endpoint.fixture.mjs';
+import { toolbarButtonNames } from '../../src/lib/toolbar-settings.ts';
+import { appSettingsDatabaseName } from '../../src/lib/storage-names.ts';
 import { browserAbortCapture, finishBrowserContext } from '../gherkin/browser-abort-guard.mjs';
 
 setDefaultTimeout(30_000);
@@ -116,7 +118,16 @@ Before(async function ({ pickle }) {
     'application/vnd.operations.browser+json');
   const slug = pickle.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 90);
   this.artifactDirectory = resolve('tmp/test/browser', `${slug}-${randomUUID().slice(0, 8)}`);
+  // Interaction scenarios explicitly save visible controls; untagged scenarios
+  // exercise the application's real fresh-profile defaults.
+  const toolbarControls = pickle.tags.some(tag => tag.name === '@toolbar-controls');
   this.context = await browser.newContext({
+    ...(toolbarControls ? { storageState: {
+      cookies: [], origins: [{ origin: baseURL, localStorage: [], indexedDB: [{
+        name: appSettingsDatabaseName, version: 1, stores: [{ name: 'settings', autoIncrement: false,
+          indexes: [], records: [{ key: 'toolbarButtons', value: Object.fromEntries(toolbarButtonNames.map(key => [key, true])) }] }]
+      }] }]
+    } } : {}),
     viewport: { width: 1280, height: 900 },
     locale: 'en-US', timezoneId: 'UTC', colorScheme: 'light',
     reducedMotion: 'reduce', deviceScaleFactor: 1,

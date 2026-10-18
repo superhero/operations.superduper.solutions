@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { toolbarButtonGroups, toolbarButtonNames, defaultToolbarButtons, normalizeToolbarButtons } from './lib/toolbar-settings.ts';
-Then('toolbar preferences default to visible and normalize only known boolean choices', () => {
+Then('toolbar preferences use minimal defaults and normalize only known boolean choices', () => {
   for (const value of [null, undefined, [], true, 42, {}]) assert.deepEqual(normalizeToolbarButtons(value), defaultToolbarButtons);
   const grouped = toolbarButtonGroups.flatMap(group => group.buttons);
   assert.equal(new Set(grouped).size, toolbarButtonNames.length);
@@ -17,5 +17,10 @@ Then('toolbar preferences default to visible and normalize only known boolean ch
   assert.equal(Object.keys(saved).length, toolbarButtonNames.length);
   saved.copy = true;
   assert.equal(normalizeToolbarButtons({ copy: false }).copy, false);
-  assert.ok(Object.values(defaultToolbarButtons).every(Boolean));
+  for (const key of ["zoomIn", "zoomOut", ...toolbarButtonGroups[1].buttons, ...toolbarButtonGroups[2].buttons])
+    assert.equal(defaultToolbarButtons[key], false);
+  assert.equal(defaultToolbarButtons.fit, true);
+  assert.equal(defaultToolbarButtons.run, true);
+  assert.equal(normalizeToolbarButtons({ zoomIn: true, dashed: true }).zoomIn, true);
+  assert.equal(normalizeToolbarButtons({ zoomIn: true, dashed: true }).dashed, true);
 });

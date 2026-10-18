@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { toolbarButtonLabels, toolbarButtonGroups } from '../../src/lib/toolbar-settings.ts';
+import { toolbarButtonLabels, toolbarButtonGroups, defaultToolbarButtons } from '../../src/lib/toolbar-settings.ts';
 import { setMode, workflow } from './workspace.steps.mjs';
 
 Then('toolbar visibility choices persist and leave keyboard shortcuts available', async function () {
@@ -25,8 +25,8 @@ Then('toolbar visibility choices persist and leave keyboard shortcuts available'
   }
   for (const [key, label] of Object.entries(toolbarButtonLabels)) {
     const toggle = preferences.getByRole('switch', { name: label, exact: true });
-    await expect(toggle).toHaveAttribute('aria-checked', 'true');
-    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-checked', String(defaultToolbarButtons[key]));
+    if (defaultToolbarButtons[key]) await toggle.click();
     await expect(toggle).toHaveAttribute('aria-checked', 'false');
     const buttonName = key === 'zoomIn' ? 'Zoom In' : key === 'zoomOut' ? 'Zoom Out' : label;
     await expect(toolbar.getByRole('button', { name: buttonName, exact: true })).toHaveCount(0);
