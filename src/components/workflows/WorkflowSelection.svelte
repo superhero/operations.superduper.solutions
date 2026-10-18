@@ -5,9 +5,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
+  import { defaultKeybindings, modifierPressed, type Keybindings } from "$lib/keybindings.ts";
   import { useStore } from "@xyflow/svelte";
 
-  let { canvas, active }: { canvas: HTMLElement | undefined; active: boolean } = $props();
+  let { keybindings = defaultKeybindings, canvas, active }: { keybindings?: Keybindings; canvas: HTMLElement | undefined; active: boolean } = $props();
   const store = useStore();
   let additive = $state.raw<{ nodes: Set<string>; edges: Set<string> } | null>(null);
 
@@ -54,7 +55,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       if (!wrapper && overlay)
         wrapper = document.elementsFromPoint(event.clientX, event.clientY)
           .map(item => item.closest<HTMLElement>(".svelte-flow__node")).find(Boolean) ?? null;
-      if (event.type === "pointerdown" && event.shiftKey && !wrapper &&
+      if (event.type === "pointerdown" && modifierPressed(event, keybindings.areaSelection) && !wrapper &&
         (overlay || event.target.matches(".svelte-flow__pane"))) {
         additive = {
           nodes: new Set(store.nodes.filter(node => node.selected).map(node => node.id)),
@@ -67,7 +68,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         clearSelection();
         return;
       }
-      if (!event.shiftKey) return;
+      if (!modifierPressed(event, keybindings.nodeSelection)) return;
       const node = store.nodes.find(node => node.id === wrapper?.dataset.id);
       if (!node || node.hidden || node.selectable === false) return;
       event.preventDefault();

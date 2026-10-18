@@ -5,6 +5,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
+  import { defaultKeybindings, shortcutAction, modifierKeys, modifierPressed, type Keybindings } from "$lib/keybindings.ts";
   import { onMount, setContext, tick, untrack } from "svelte";
   import { Background, BackgroundVariant, ConnectionLineType, MarkerType, SvelteFlow, SvelteFlowProvider, addEdge, type Edge, type Node, type Connection } from "@xyflow/svelte";
   import "@xyflow/svelte/dist/style.css";
@@ -48,8 +49,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { CredentialBinding } from "$lib/secrets/types.ts";
   import Modal from "$lib/components/Modal.svelte";
 
-  let { active, settingsOpen = false, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
-    { active: boolean; settingsOpen?: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
+  let { keybindings = defaultKeybindings, active, settingsOpen = false, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
+    { keybindings?: Keybindings; active: boolean; settingsOpen?: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
   const nodeTypes = { file: WorkflowFileNode, vault: WorkflowVaultNode, operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
   const edgeTypes = { default: WorkflowCurveEdge, smoothstep: RoutedEdge };
   type CanvasNode<T> = T extends WorkflowDocumentNode ? Node<T["data"], NonNullable<T["type"]>> & { type: NonNullable<T["type"]> } : never;
@@ -303,7 +304,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 
   function selectNodeBranch(event: MouseEvent) {
-    if (!keyboardActive || event.shiftKey || !(event.target instanceof Element) ||
+    if (!keyboardActive || modifierPressed(event, keybindings.nodeSelection) || !(event.target instanceof Element) ||
       event.target.closest("button, a, input, textarea, select, [contenteditable], .nokey, .svelte-flow__handle")) return;
     const wrapper = event.target.closest<HTMLElement>(".svelte-flow__node");
     const clicked = nodes.find(node => node.id === wrapper?.dataset.id);
@@ -817,12 +818,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 
   function historyShortcut(event: KeyboardEvent) {
-    if (!keyboardActive || event.defaultPrevented || !(event.ctrlKey || event.metaKey) || event.altKey) return;
+    if (!keyboardActive || event.defaultPrevented || event.isComposing) return;
     const target = event.target;
-    if (target instanceof Element && target.closest('#settings-panel, input, textarea, select, [contenteditable="true"]')) return;
-    const undo = event.key.toLowerCase() === "z" && !event.shiftKey;
-    const redo = (event.key.toLowerCase() === "z" && event.shiftKey) || event.key.toLowerCase() === "y";
-    if (undo || redo) {
+    if (target instanceof Element && target.closest('#settings-panel, input, textarea, select, [contenteditable], [role="listbox"], [role="combobox"], .nokey')) return;
+    const action = shortcutAction(event, keybindings);
+    if (action === "selectAll") {
+      event.preventDefault();
+      nodes = nodes.map(node => ({ ...node, selected: !node.hidden && node.selectable !== false }));
+      const selectedIds = new Set(nodes.filter(node => node.selected).map(node => node.id));
+      edges = edges.map(edge => ({ ...edge, selected: !edge.hidden && edge.selectable !== false &&
+        selectedIds.has(edge.source) && selectedIds.has(edge.target) }));
+      return;
+    }
+    const undo = action === "undo";
+    if (undo || action === "redo") {
       event.preventDefault();
       if (undo ? canUndo || dirty : canRedo && !dirty) void changeVersion(undo ? "undo" : "redo");
     }
@@ -953,8 +962,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <SvelteFlow bind:nodes={() => orderedNodes, updateCanvasNodes} bind:edges bind:viewport {nodeTypes} {edgeTypes} defaultEdgeOptions={edgeOptions} connectionLineComponent={WorkflowConnectionLine} connectionLineType={curved ? ConnectionLineType.Bezier : ConnectionLineType.SmoothStep} onbeforeconnect={prepareConnection} onconnect={adaptGates}
       elevateEdgesOnSelect={false} defaultMarkerColor={null} connectionLineStyle={`${edgeOptions.style}; marker-end: url(#${connectionMarkerId})`}
       minZoom={0.25} maxZoom={2} {...(snap ? {} : { snapGrid: [1, 1] as [number, number] })}
-      deleteKey={keyboardActive ? ["Backspace", "Delete"] : null} selectionKey={keyboardActive ? "Shift" : null}
-      multiSelectionKey={keyboardActive ? ["Shift", "Meta", "Control"] : null} panActivationKey={keyboardActive ? " " : null}
+      deleteKey={keyboardActive ? ["Backspace", "Delete"] : null} selectionKey={keyboardActive ? modifierKeys(keybindings.areaSelection) : null}
+      multiSelectionKey={keyboardActive ? (keybindings.nodeSelection === "Shift" ? ["Shift", "Meta", "Control"] : modifierKeys(keybindings.nodeSelection)) : null} panActivationKey={keyboardActive ? " " : null}
       zoomActivationKey={keyboardActive ? ["Meta", "Control"] : null} disableKeyboardA11y={!keyboardActive}
       isValidConnection={validConnection} onbeforedelete={beforeDelete}
       onconnectstart={() => connectionSnap?.start()}
@@ -967,7 +976,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         </marker></defs>
       </svg>
       <Background variant={BackgroundVariant.Dots} gap={24} size={2} />
-      <WorkflowSelection {canvas} active={keyboardActive} />
+      <WorkflowSelection {canvas} {keybindings} active={keyboardActive} />
       <WorkflowConnectionSnap bind:this={connectionSnap} isValidConnection={validConnection} active={keyboardActive} {curved} {dashed} curveStrength={workflowDefaults.curveStrength} markerEnd={`url(#${connectionMarkerId})`} />
       {#if nodes.length}<WorkflowMinimap active={keyboardActive} />{/if}
       <WorkflowToolbar bind:this={toolbar} {canvas} {active} {settingsOpen} {navigationOpen} {snap} {curved} {dashed} {selected} placing={placement !== null}

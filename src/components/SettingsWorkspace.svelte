@@ -40,6 +40,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import SecretsSettings from "./settings/SecretsSettings.svelte";
   import StorageSettings from "./settings/StorageSettings.svelte";
   import ErrorHistory from "./settings/ErrorHistory.svelte";
+  import KeybindingsSettings from "./settings/KeybindingsSettings.svelte";
+  import { defaultKeybindings, type Keybindings } from "$lib/keybindings.ts";
   import LocaleSettings from "./settings/LocaleSettings.svelte";
   import SchemaSettings from "./settings/SchemaSettings.svelte";
   import { getSchemaLibrary, loadSchemaLibrary, uploadSchema, replaceSchema, renameSchema, moveSchema, setSchemaEnabled, deleteSchema, downloadSchema } from "$lib/schema-library.ts";
@@ -48,6 +50,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     workflowCurveStrengthLimits, workflowDashLengthLimits, workflowDashGapLimits, workflowDashSpeedLimits, workflowGridSizeLimits, workflowNodeClearanceLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
 
   let { dark, onTheme, tooltips = true, tooltipsError = "", onTooltipsChange = () => {}, palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
+    keybindings = defaultKeybindings, keybindingsError = "", onKeybindingsChange = () => {}, onRetryKeybindings = () => {},
     locale = defaultLocaleSettings, localeError = "", onLocaleChange = () => {}, onRetryLocale = () => {},
     developerToolbar, developerToolbarError = "", onDeveloperToolbarChange,
     evaluationDetails, evaluationDetailsError = "", onEvaluationDetailsChange,
@@ -63,6 +66,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     onWorkflowDefaultsChange: (next: WorkflowDefaults) => void;
     workflowDefaultsError?: string;
     onRetryWorkflowDefaults: () => void;
+    keybindings?: Keybindings;
+    keybindingsError?: string;
+    onKeybindingsChange?: (next: Keybindings) => void;
+    onRetryKeybindings?: () => void;
     locale?: LocalePreferences;
     localeError?: string;
     onLocaleChange?: (next: LocalePreferences) => void;
@@ -78,7 +85,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     onRetrySettings: () => void;
   } = $props();
   let workspace: HTMLElement;
-  let openSection = $state<"secrets" | "theme" | "locale" | "logs" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
+  let openSection = $state<"keybindings" | "secrets" | "theme" | "locale" | "logs" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
   let storageBuilt = $state(false);
   let storageReady = $state(false);
   let storageDismissing = $state(false);
@@ -374,6 +381,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {/if}
       </fieldset>
     </Disclosure>
+    <Disclosure class="catalog-group settings-section" label="Keybindings" tooltipEnabled={false} open={openSection === "keybindings"} onToggle={(next) => openSection = next ? "keybindings" : null}>
+      {#snippet summary()}
+        <div class="section-heading"><h2>Keybindings</h2><span class="section-subtitle">Configure shortcuts and selection gestures</span></div>
+        <MaterialIcon name="chevron_forward" size={17} />
+      {/snippet}
+      <KeybindingsSettings value={keybindings} onValueChange={onKeybindingsChange} error={keybindingsError} onRetry={onRetryKeybindings} />
+    </Disclosure>
+
     <Disclosure class="catalog-group settings-section" label="Locale" tooltipEnabled={false} open={openSection === "locale"} onToggle={(next) => openSection = next ? "locale" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Locale</h2><span class="section-subtitle">Choose date, time and timezone preferences</span></div>

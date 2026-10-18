@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { openDB, type DBSchema, type IDBPDatabase, type IDBPTransaction } from "idb";
+import { normalizeKeybindings, type Keybindings } from "./keybindings.ts";
 import { logger } from "./logger.ts";
 import { reportStartup } from "./startup-progress.ts";
 import { normalizeLocaleSettings, type LocaleSettings } from "./locale-settings.ts";
@@ -55,7 +56,7 @@ export function isValidWorkflowNodeClearance(value: unknown): value is number
   return typeof value === "number" && Number.isSafeInteger(value)
     && value >= workflowNodeClearanceLimits.min && value <= workflowNodeClearanceLimits.max;
 }
-type SettingValues = { theme: string; palette: string; workflowDefaults: WorkflowDefaults; developerToolbar: boolean; evaluationDetails: boolean; tooltips: boolean; locale: LocaleSettings; vaultPreferences?: VaultPreferences };
+type SettingValues = { keybindings: Keybindings; theme: string; palette: string; workflowDefaults: WorkflowDefaults; developerToolbar: boolean; evaluationDetails: boolean; tooltips: boolean; locale: LocaleSettings; vaultPreferences?: VaultPreferences };
 
 interface SettingsDatabase extends DBSchema
 {
@@ -179,10 +180,10 @@ async function inStore<Mode extends "readonly" | "readwrite", T>(mode: Mode,
 
 async function readSettings(store: Pick<SettingsStore, "get">): Promise<SavedSettings>
 {
-  const [theme, palette, workflowDefaults, developerToolbar, evaluationDetails, tooltips, locale] = await Promise.all([
-    store.get("theme"), store.get("palette"), store.get("workflowDefaults"), store.get("developerToolbar"), store.get("evaluationDetails"), store.get("tooltips"), store.get("locale"),
+  const [theme, palette, workflowDefaults, developerToolbar, evaluationDetails, tooltips, locale, keybindings] = await Promise.all([
+    store.get("theme"), store.get("palette"), store.get("workflowDefaults"), store.get("developerToolbar"), store.get("evaluationDetails"), store.get("tooltips"), store.get("locale"), store.get("keybindings"),
   ]);
-  return { theme, palette, workflowDefaults, developerToolbar, evaluationDetails, tooltips, locale };
+  return { theme, palette, workflowDefaults, developerToolbar, evaluationDetails, tooltips, locale, keybindings };
 }
 
 function normalize(saved: SavedSettings, legacy: LegacySettings, paletteIds: readonly string[]): SettingValues
@@ -192,7 +193,7 @@ function normalize(saved: SavedSettings, legacy: LegacySettings, paletteIds: rea
   const palette = typeof candidate === "string" && paletteIds.includes(candidate) ? candidate : "default";
   const workflow = saved.workflowDefaults && typeof saved.workflowDefaults === "object"
     ? saved.workflowDefaults as Partial<WorkflowDefaults> : defaultWorkflowSettings;
-  return { theme, palette, developerToolbar: saved.developerToolbar === true, evaluationDetails: saved.evaluationDetails === true, tooltips: saved.tooltips !== false, locale: normalizeLocaleSettings(saved.locale), workflowDefaults: {
+  return { theme, palette, keybindings: normalizeKeybindings(saved.keybindings), developerToolbar: saved.developerToolbar === true, evaluationDetails: saved.evaluationDetails === true, tooltips: saved.tooltips !== false, locale: normalizeLocaleSettings(saved.locale), workflowDefaults: {
     dashed: typeof workflow.dashed === "boolean" ? workflow.dashed : defaultWorkflowSettings.dashed,
     curved: typeof workflow.curved === "boolean" ? workflow.curved : defaultWorkflowSettings.curved,
     snap: typeof workflow.snap === "boolean" ? workflow.snap : defaultWorkflowSettings.snap,

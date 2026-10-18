@@ -8,6 +8,7 @@ the single-open-section behavior, appearance and workflow defaults.
 
 | Section | Boundary |
 | --- | --- |
+| [KeybindingsSettings.svelte](KeybindingsSettings.svelte) | Configures workflow shortcuts and selection modifiers through app settings; text editing keeps native shortcuts |
 | [LocaleSettings.svelte](LocaleSettings.svelte) | Receives preferences and change/retry callbacks; uses the shared locale formatter for its preview |
 | [SchemaSettings.svelte](SchemaSettings.svelte) | Receives library records and callbacks for upload, replacement, rename, ordering, enablement, deletion and download |
 | [SecretsSettings.svelte](SecretsSettings.svelte) | Manages encrypted credentials, destination approvals, unlock methods, backups and locking through the dedicated vault worker |
