@@ -50,6 +50,14 @@ feat: add configurable open workflow shortcut
 
 ```
 
+<!-- changelog-commit:df40fd86fc72d0bbee89534bf0461532ae8ba730 -->
+### Commit [`df40fd8`](https://github.com/superhero/operations.superduper.solutions/commit/df40fd86fc72d0bbee89534bf0461532ae8ba730)
+
+```text
+feat: add run shortcut and omit optional inputs by default
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
