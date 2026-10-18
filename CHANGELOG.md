@@ -82,6 +82,21 @@ and reduced motion, plus cancellation before construction in Cucumber.
 
 ```
 
+<!-- changelog-commit:d6976e7468773b40a42e61db6070ae0977c9de54 -->
+### Commit [`d6976e7`](https://github.com/superhero/operations.superduper.solutions/commit/d6976e7468773b40a42e61db6070ae0977c9de54)
+
+```text
+fix(settings): show readable building status on every Browser open
+
+Use the expanded section's foreground for the Building... status instead
+of inheriting the page foreground. Reset construction on every Browser
+open so repeated opens follow the same compact status and expansion.
+
+Verify both opens under normal and reduced motion in light and dark
+themes, including the status foreground, and retain cancellation coverage.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.51

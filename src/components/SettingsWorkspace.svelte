@@ -297,7 +297,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {/if}
       </fieldset>
     </Disclosure>
-    <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} lazy animateSize open={openSection === "storage"} onToggle={(next) => openSection = next ? "storage" : null}>
+    <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} lazy animateSize open={openSection === "storage"} onToggle={(next) => { if (next) storageBuilt = false; openSection = next ? "storage" : null; }}>
       {#snippet summary()}
         <div class="section-heading"><h2>Browser</h2><span class="section-subtitle">Monitor browser resource usage</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
@@ -407,7 +407,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </section>
 
 <style>
-  .storage-building { margin: 0; padding: 12px 16px 16px; font-size: 12px; }
+  .storage-building { margin: 0; padding: 12px 16px 16px; font-size: 12px; color: var(--color-catalog-active-foreground); }
   .settings-sections { display: grid; gap: 12px; }
   .settings-sections :global(.settings-section) { border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-muted); transition: background-color 180ms ease-in; }
   .settings-sections :global(.settings-section:has(> summary[aria-expanded="true"])) { background: var(--color-catalog-active); }
