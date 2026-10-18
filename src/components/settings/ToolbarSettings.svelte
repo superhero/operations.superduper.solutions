@@ -34,7 +34,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   fieldset { min-width: 0; margin: 0; padding: 16px; border: 0; color: var(--color-foreground); container-type: inline-size; }
   .groups { columns: 3; column-gap: 10px; }
   .button-group { display: inline-block; box-sizing: border-box; width: 100%; min-width: 0; margin: 0 0 10px; padding: 10px; break-inside: avoid; border-radius: 4px; background: var(--color-surface); color: var(--color-catalog-foreground); }
-  h3 { margin: 0 0 4px; padding: 0 10px; color: var(--color-accent); font-size: 14px; line-height: 2; font-weight: 700; }
+  h3 { margin: 0 0 10px; padding: 0 10px; color: var(--color-accent); font-size: 14px; line-height: 2; font-weight: 700; }
   .options { display: grid; gap: 6px; }
   .option { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; padding: 2px 10px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-catalog-foreground); font-size: 12px; font-weight: 700; text-align: left; }
   .option > span:first-child { min-width: 0; overflow-wrap: anywhere; }
