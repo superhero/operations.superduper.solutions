@@ -427,7 +427,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .browser-content { position: relative; }
   .storage-staging { position: absolute; inset: 0 0 auto; visibility: hidden; pointer-events: none; }
   .building-dots { display: inline-flex; font-size: 20px; line-height: 1; }
-  .building-dots > span { width: 0.8em; text-align: center; }
+  .building-dots > span { width: 0.8em; text-align: center; animation: building-wave 1200ms ease-in-out infinite; }
+  .building-dots > span:nth-child(2) { animation-delay: -200ms; }
+  .building-dots > span:nth-child(3) { animation-delay: -400ms; }
+  @keyframes building-wave { 0%, 100% { transform: scale(0.7); } 50% { transform: scale(1.35); } }
+  @media (prefers-reduced-motion: reduce) { .building-dots > span { animation: none; } }
   .settings-sections { display: grid; gap: 12px; }
   .settings-sections :global(.settings-section) { border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-muted); transition: background-color 180ms ease-in; }
   .settings-sections :global(.settings-section:has(> summary[aria-expanded="true"])) { background: var(--color-catalog-active); }

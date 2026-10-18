@@ -33,10 +33,24 @@ Then('Browser settings show a compact building status before the dashboard with 
           const expected = getComputedStyle(probe).color;
           probe.remove();
           const dots = building.querySelector('.building-dots');
+          const animations = dots.getAnimations({ subtree: true }).filter(animation => animation.animationName?.endsWith('building-wave'));
+          let scales;
+          if (animations.length && !window.browserBuildFrames.length) {
+            const animation = animations[0];
+            const original = animation.currentTime;
+            animation.pause();
+            scales = [0, 300, 600, 900, 1200].map(time => {
+              animation.currentTime = time;
+              return new DOMMatrix(getComputedStyle(dots.children[0]).transform).a;
+            });
+            animation.currentTime = original;
+            animation.play();
+          }
           window.browserBuildFrames.push({ height: panel.getBoundingClientRect().height,
             dashboard: !!dashboard && getComputedStyle(dashboard).visibility !== 'hidden', color: getComputedStyle(building).color, expected,
             dots: [...dots.children].map(dot => dot.textContent), weight: getComputedStyle(building).fontWeight,
-            dotSize: getComputedStyle(dots).fontSize });
+            dotSize: getComputedStyle(dots).fontSize, scales, animations: animations.length,
+            delays: [...dots.children].map(dot => getComputedStyle(dot).animationDelay) });
         }
         if (!dashboard || getComputedStyle(dashboard).visibility === 'hidden' || section.querySelector(':scope > summary').getAttribute('aria-expanded') !== 'true')
           requestAnimationFrame(sample);
@@ -54,6 +68,16 @@ Then('Browser settings show a compact building status before the dashboard with 
       expect(frame.dots).toEqual(['·', '·', '·']);
       expect(Number(frame.weight)).toBeGreaterThanOrEqual(700);
       expect(parseFloat(frame.dotSize)).toBe(20);
+      expect(frame.animations).toBe(motion === 'reduce' ? 0 : 3);
+      if (motion !== 'reduce') expect(new Set(frame.delays).size).toBe(3);
+    }
+    if (motion !== 'reduce') {
+      const [start, rising, peak, falling, end] = frames[0].scales;
+      expect(start).toBeLessThan(rising);
+      expect(rising).toBeLessThan(peak);
+      expect(peak).toBeGreaterThan(falling);
+      expect(falling).toBeGreaterThan(end);
+      expect(end).toBeCloseTo(start);
     }
     await expect.poll(() => section.locator(':scope > .disclosure-panel').evaluate(el => el.getBoundingClientRect().height)).toBeGreaterThan(100);
     await section.locator('summary').first().click();
