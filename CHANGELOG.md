@@ -98,6 +98,14 @@ feat: configure individual workflow toolbar button visibility
 
 ```
 
+<!-- changelog-commit:bcc6d490c1c60f857be6ff54e7b7b870f7ff94c5 -->
+### Commit [`bcc6d49`](https://github.com/superhero/operations.superduper.solutions/commit/bcc6d490c1c60f857be6ff54e7b7b870f7ff94c5)
+
+```text
+style: simplify toolbar settings and balance row padding
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
