@@ -10,6 +10,14 @@ feat: configure workflow shortcuts and selection keybindings
 
 ```
 
+<!-- changelog-commit:3a60065c5cb613f8fbe0b4e0011a37dce15d0e55 -->
+### Commit [`3a60065`](https://github.com/superhero/operations.superduper.solutions/commit/3a60065c5cb613f8fbe0b4e0011a37dce15d0e55)
+
+```text
+feat: simplify keybindings into uniform editable rows
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
