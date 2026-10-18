@@ -38,7 +38,7 @@ that the committed compatibility files match it.
 ## Verification
 
 Source behavior scenarios pair `*.feature` with `*.test.mjs` here. Add both paths
-to the explicit `source` profile in [cucumber.config.mjs](../cucumber.config.mjs).
+to the explicit `source` profile in [tests/gherkin/profiles.mjs](../tests/gherkin/profiles.mjs).
 `build.*` and `favicons.*` belong to the separate acceptance profile. Use `npm run test:source`
 for source checks; `npm run build && npm run test:acceptance` verifies packaging.
 Browser-driven coverage belongs in [tests](../tests/README.md).

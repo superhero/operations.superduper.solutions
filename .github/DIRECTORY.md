@@ -11,9 +11,9 @@ policy inputs and generated status badges. Application behavior belongs in
 | --- | --- |
 | [`workflows/`](workflows/README.md) | Event triggers, job orchestration, permissions and artifacts |
 | [`scripts/`](scripts/README.md) | Validation, merging, release, publication and report commands |
-| [`tests/`](tests/README.md) | Cucumber scenarios and steps for repository automation |
+| [`tests/`](tests/README.md) | Gherkin scenarios and steps for repository automation |
 | [`policies/`](policies/README.md) | Declarative inputs for repository administration |
-| [`badges/`](badges/README.md) | Generated SVGs and test-summary JSON committed with their inputs |
+| [`badges/`](badges/README.md) | Committed dependency SVGs; test badges accompany published reports |
 
 ## Responsibility boundaries
 

@@ -57,7 +57,7 @@ export async function findValidation({ repository, targetSha, destination, cwd =
   if (!isRepository(repository) || !isSha(targetSha) || !destination) throw new Error("Repository, full target SHA and destination are required.");
   if (existsSync(destination)) throw new Error("Validation destination must not exist; refusing to mix artifacts.");
   const target = localIdentity(targetSha, cwd);
-  const result = { reused: false, source_run_id: "", tested_sha: "", input_fingerprint: target.inputFingerprint };
+  const result = { reused: false, source_run_id: "", source_run_attempt: "", source_sha: "", tested_sha: "", input_fingerprint: target.inputFingerprint };
   // Reuse is optional. Bound the whole network lookup, including each command,
   // so an unavailable or busy history leaves time to fall back to fresh tests.
   const deadline = now() + LOOKUP_BUDGET_MS;
@@ -147,7 +147,7 @@ export async function findValidation({ repository, targetSha, destination, cwd =
       if (JSON.stringify(Object.keys(inventory(manifestDirectory))) !== JSON.stringify([MANIFEST_NAME]))
         throw new Error("Unexpected validation manifest files.");
       const manifest = JSON.parse(readFileSync(join(temporary, "validation-manifest", MANIFEST_NAME), "utf8"));
-      if (manifest.schemaVersion !== 1 || manifest.repository !== repository || manifest.runId !== run.id
+      if (manifest.schemaVersion !== 2 || manifest.repository !== repository || manifest.runId !== run.id
         || manifest.runAttempt !== run.run_attempt || manifest.sourceSha !== run.head_sha
         || !isSha(manifest.testedSha) || !isSha(manifest.testedTree)
         || manifest.inputFingerprint !== target.inputFingerprint)
@@ -176,7 +176,7 @@ export async function findValidation({ repository, targetSha, destination, cwd =
       cpSync(temporary, destination, { recursive: true, errorOnExist: true, force: false });
       remaining();
       note(`Reusing complete validation from ${repository} run ${run.id}, tested commit ${manifest.testedSha}.`);
-      return { ...result, reused: true, source_run_id: String(run.id), tested_sha: manifest.testedSha };
+      return { ...result, reused: true, source_run_id: String(run.id), source_run_attempt: String(run.run_attempt), source_sha: manifest.sourceSha, tested_sha: manifest.testedSha };
     }
     catch (error)
     {

@@ -70,7 +70,8 @@ on confirmation, cancellation, page-exit locking and unmount.
 
 Source `vault-*.feature` scenarios cover cryptography, format, policy, lifecycle,
 recovery and application integration. Browser scenarios exercise IndexedDB,
-workers, actual requests and UI behavior. All participate in Cucumber reporting.
+workers, actual requests and UI behavior. These Gherkin cases share the combined
+Vitest report.
 Use synthetic canaries only. Native WebAuthn PRF checks use Chromium's virtual
 authenticator. Physical mobile devices, platform and roaming providers, synced
 credentials and cross-provider portability remain unverified. Browser engine

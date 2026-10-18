@@ -8,7 +8,7 @@ import { Given, When, Then } from "@cucumber/cucumber";
 import { parseDocument } from "yaml";
 
 const requiredSuites = [
-  "test:automation", "typecheck", "test:source:coverage", "test:coverage",
+  "test:automation", "typecheck", "test:source:coverage", "test:runner", "test:coverage",
   "build", "test:acceptance", "test:browser"
 ];
 const reportChecks = ["report:tests", "badges:scenarios", "badges:coverage"];
@@ -421,17 +421,52 @@ Then("report badges are generated from passing results and travel with validated
   assert.ok(steps.filter(step => npmScripts(step).includes("test:coverage")).length === 1);
   const proof = validationProof(jobs).create;
   assert.ok(steps.indexOf(proof) > steps.indexOf(badges));
+  assert.match(proof.run, /cp -a tmp\/test\/report\/\. tmp\/validation\/test-report\//);
   assert.match(proof.run, /cp -a tmp\/test\/badges tmp\/validation\/test-report\//);
   assert.doesNotMatch(steps.map(step => step.run ?? "").join("\n"), /badges:(?:scenarios|coverage)[^\n]*--check/);
   if (this.validationTarget === "main")
   {
     const publication = uniqueStep(Object.values(jobs).flatMap(job => job.steps ?? []),
-      step => step.run?.includes("tmp/badges/$badge.$format"), "Published report badges");
+      step => step.run?.includes("publish-report.mjs"), "Published report and badges");
     requiresSuccess(publication);
-    assert.match(publication.run, /for badge in test-scenarios test-coverage/);
-    assert.match(publication.run, /for format in json svg/);
-    assert.match(publication.run, /validate-current-release\.sh[^\n]+\n\s+bash \.github\/scripts\/publish-status\.sh "tmp\/badges/);
-    assert.match(publication.run, /application\/json; charset=utf-8/);
-    assert.match(publication.run, /image\/svg\+xml/);
+    assert.match(publication.run, /validate-current-release\.sh[^\n]+\n\s*node \.github\/scripts\/publish-report\.mjs/);
+    assert.match(publication.run, /publish-report\.mjs tmp\/publication\/test-report "reports\/\$MERGE_SHA-\$GITHUB_RUN_ID-\$GITHUB_RUN_ATTEMPT" tmp\/publication\/validation-manifest\/validation-manifest\.json/);
+    assert.doesNotMatch(publication.run, /generate-coverage-report|publish-status\.sh tmp\/test-coverage\.html/);
+    const promotion = jobs['promote-release'];
+    assert.ok(promotion.needs.includes('validation'));
+    for (const [field, output] of Object.entries({ VALIDATION_RUN_ID: 'source_run_id',
+      VALIDATION_RUN_ATTEMPT: 'source_run_attempt', VALIDATION_SOURCE_SHA: 'source_sha', VALIDATION_TESTED_SHA: 'tested_sha' }))
+      assert.ok(promotion.env[field].includes(`needs.validation.outputs.${output}`), `${field} must retain original reused provenance`);
+    const download = uniqueStep(promotion.steps, step => step.name === 'Download release artifacts', 'Downloaded validation proof');
+    assert.match(download.run, /for name in bundle coverage test-report validation-manifest/);
+    assert.match(download.run, /--name reused-validation --dir tmp\/publication/);
+    assert.match(download.run, /validation-artifacts\.mjs verify tmp\/publication\/validation-manifest\/validation-manifest\.json tmp\/publication/);
+    assert.ok(download.run.indexOf('validation-artifacts.mjs verify') < download.run.indexOf('cp -a tmp/publication/bundle/. dist/'));
+    assert.ok(promotion.steps.indexOf(download) < promotion.steps.indexOf(publication));
+    assert.ok(promotion.steps.indexOf(download) < promotion.steps.findIndex(step => step.name === 'Check production content and destination'));
+
   }
+});
+
+Then("publication retries use the producing attempt rather than the retry attempt", function ()
+{
+  const { jobs } = this.validationWorkflow;
+  const application = jobs.application;
+  const promotion = jobs['promote-release'];
+  assert.equal(application.outputs.validation_run_attempt, '${{ steps.validation-proof.outputs.run_attempt }}');
+  const producer = uniqueStep(application.steps, step => step.id === 'validation-proof', 'Validation producer attempt');
+  assert.match(producer.run, /printf 'run_attempt=%s\\n' "\$GITHUB_RUN_ATTEMPT" >> "\$GITHUB_OUTPUT"/);
+  assert.ok(promotion.needs.includes('application'));
+  const expression = promotion.env.VALIDATION_RUN_ATTEMPT.replace(/^\$\{\{([\s\S]*)\}\}$/, '$1');
+  assert.doesNotMatch(expression, /github\.run_attempt/);
+  const evaluate = new Function('needs', `return (${expression});`);
+  for (const retryAttempt of ['2', '3']) {
+    assert.equal(evaluate({ application: { outputs: { validation_run_attempt: '1' } },
+      validation: { outputs: { reused: 'false' } } }), '1', `Promotion attempt ${retryAttempt} must retain producer attempt 1`);
+  }
+  assert.equal(evaluate({ application: { outputs: { validation_run_attempt: '2' } },
+    validation: { outputs: { reused: 'false' } } }), '2', 'A full rerun uses its new producer attempt');
+  assert.equal(evaluate({ application: { outputs: {} },
+    validation: { outputs: { reused: 'true', source_run_attempt: '7' } } }), '7',
+    'Reused validation retains the original external run attempt');
 });

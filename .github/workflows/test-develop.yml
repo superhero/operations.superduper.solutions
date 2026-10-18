@@ -51,7 +51,11 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: automation-test-report
-          path: tmp/test/cucumber-automation.json
+          path: |-
+            tmp/test/vitest-automation.json
+            tmp/test/blobs/automation.json
+            tmp/test/executions/automation.json
+            tmp/test/attachments
           if-no-files-found: error
           overwrite: true
           retention-days: 7
@@ -64,7 +68,7 @@ jobs:
       actions: read
       contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 50
     steps:
       - name: Checkout develop revision
         uses: actions/checkout@v7
@@ -83,6 +87,9 @@ jobs:
       - name: Source tests with coverage
         id: source
         run: npm --loglevel=error run test:source:coverage
+      - name: Gherkin runner integration contracts
+        id: runner
+        run: npm --loglevel=error run test:runner
       - name: Check coverage thresholds
         id: coverage
         run: |
@@ -96,15 +103,19 @@ jobs:
         run: npm --loglevel=error run test:acceptance
       - name: Browser tests against the built bundle
         id: browser
-        timeout-minutes: 30
+        timeout-minutes: 40
         run: npm --loglevel=error run test:browser
       - name: Upload browser results and diagnostics
         if: ${{ !cancelled() && (steps.browser.outcome == 'success' || steps.browser.outcome == 'failure') }}
         uses: actions/upload-artifact@v7
         with:
           name: browser-test-report
-          path: |
-            tmp/test/cucumber-browser.json
+          path: |-
+            tmp/test/vitest-browser-chromium.json
+            tmp/test/vitest-components.json
+            tmp/test/blobs
+            tmp/test/executions
+            tmp/test/attachments
             tmp/test/browser
           if-no-files-found: error
           overwrite: true
@@ -114,10 +125,15 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: application-test-report
-          path: |
-            tmp/test/cucumber-source.json
-            tmp/test/cucumber-test.json
-            tmp/test/cucumber-browser.json
+          path: |-
+            tmp/test/vitest-source.json
+            tmp/test/vitest-acceptance.json
+            tmp/test/vitest-runner.json
+            tmp/test/vitest-browser-chromium.json
+            tmp/test/vitest-components.json
+            tmp/test/blobs
+            tmp/test/executions
+            tmp/test/attachments
           if-no-files-found: error
           overwrite: true
           retention-days: 7
@@ -139,31 +155,23 @@ jobs:
           REPORT_COMMIT: ${{ github.sha }}
           REPORT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          reports=()
-          missing=()
-          for suite in source:source acceptance:test browser:browser automation:automation; do
-            file="tmp/test/cucumber-${suite#*:}.json"
-            if [[ -f "$file" ]]; then reports+=("$file"); else missing+=("${suite%%:*}"); fi
-          done
-          (( ${#reports[@]} > 0 )) || exit 1
           warning='CI failed. This diagnostic report does not certify a successful build.'
-          if (( ${#missing[@]} > 0 )); then warning+=" Missing suite results: ${missing[*]}."; fi
-          REPORT_WARNING="$warning" node .github/scripts/generate-test-report.mjs tmp/test-report.html "${reports[@]}"
+          REPORT_WARNING="$warning" node .github/scripts/generate-test-report.mjs tmp/test/report tmp/test/blobs
       - name: Upload failed validation diagnostics
         if: failure() && steps.failure-report.outcome == 'success'
         uses: actions/upload-artifact@v7
         with:
           name: validation-diagnostics
-          path: |
-            tmp/test-report.html
+          path: |-
+            tmp/test/report
             tmp/test/coverage
             !tmp/test/coverage/v8
           if-no-files-found: error
           retention-days: 7
       - name: Generate report badges
-        run: |
-          bash .github/scripts/generate-coverage-badge.sh tmp/test/coverage/coverage-summary.json tmp/test/badges
-          bash .github/scripts/generate-scenario-badge.sh tmp/test/badges tmp/test/cucumber-source.json tmp/test/cucumber-test.json tmp/test/cucumber-automation.json tmp/test/cucumber-browser.json
+        run: |-
+          npm --loglevel=error run badges:coverage
+          npm --loglevel=error run badges:scenarios
       - name: Upload bundle
         uses: actions/upload-artifact@v7
         with:
@@ -184,7 +192,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-report
-          path: tmp/test-report.html
+          path: tmp/test/report
           if-no-files-found: error
           retention-days: 7
       - name: Upload report-badges

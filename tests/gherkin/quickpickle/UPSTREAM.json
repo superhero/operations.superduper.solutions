@@ -1,0 +1,23 @@
+{
+  "repository": "https://github.com/dnotes/quickpickle",
+  "revision": "36e8810bf10cea835db63a6fd6767c2eb22a9268",
+  "upstreamVersion": "1.11.2",
+  "npmTarball": "https://registry.npmjs.org/quickpickle/-/quickpickle-1.11.2.tgz",
+  "npmTarballSha256": "be5488dd339b712c8ac29e5cd906952395c257d556f15cc87710bf06b479e6f5",
+  "qualifiedEsmSha256": "ebf942ff87634a72fdb171e5714d68c95160ae9184fbc18c4968a73e5b678b11",
+  "sourceSha256": {
+    "LICENSE": "deb81a7a0aac255e8ef32106ecf8d112de387073a954555c0091649531b240af",
+    "src/hooks.ts": "2519b05816eaef2ca10dba3c86f65fc572d072dc15dccaa4afeaabd1e06c7f3d",
+    "src/index.ts": "8f81dbc8e45ee01af15c20969c6be1530de2834be3bf0b2593447514fa5f4b13",
+    "src/models/DataTable.ts": "14e0d0c764bc10627c779dc2d879999575691fc52d69bd5f9c823bf36c780c0c",
+    "src/models/DocString.ts": "554e293254793e98aa7f0ab1529336121e43eecc1449b1fa18588e39493ca1bb",
+    "src/render.ts": "721edfdf3fe7ed6bb8ebe29dc7b6c476c84dcb4faf19f401a88bc39127902611",
+    "src/shims/path-sanitizer.ts": "d1497f6e75e815b6a772740053a468dbde0be8c4cb849834313cafd60cf98263",
+    "src/shims/path.ts": "051a06c089d0173edd1003bb78ec7aa02a3a85ddd3330e78575246662730de4d",
+    "src/shims/png.ts": "ec60d18ec543b2a3ee631e713ce3154d2e87e7700470c410247f52c7647563fa",
+    "src/steps.ts": "166a11cc26841c1a44ce8016685b21db812df207718954be7fb3f64356c14001",
+    "src/tags.ts": "1809999bc2f836e8207524123f25b1e4f51459378828460827432fee5ddf4dbd",
+    "src/visual.ts": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/world.ts": "a5730596e431f5ec9c40e30d006cc20047d6d79b284f4cd86ec5121800fc6a58"
+  }
+}

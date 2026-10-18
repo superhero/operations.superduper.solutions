@@ -1,188 +1,132 @@
-#!/usr/bin/env node
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { basename, dirname, extname, join, resolve } from "node:path";
-import { generate } from "multiple-cucumber-html-reporter";
-import { createPail, pail } from "@visulima/pail";
+import { spawnSync } from 'node:child_process';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, relative, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { parse, stringify } from 'flatted';
+import { hashFile, requiredProfiles, readResults, caseSignature, verifyCoverage, verifyExecution } from './test-results.mjs';
 
-// GitHub workflow commands must stay undecorated and on the error stream.
-const annotations = createPail({ stdout: process.stderr, logLevel: "informational", interactive: false });
+const repository = fileURLToPath(new URL('../../', import.meta.url));
+const escape = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+const identity = profile => profile === 'browser' ? 'browser-chromium' : profile;
 
-const [output, ...inputs] = process.argv.slice(2);
-const context = `output='${output ?? ""}', inputs=${JSON.stringify(inputs)}`;
-let temporary;
-let outputOwned = false;
-
-// Preserve the reporter's complete pages and JavaScript in their own document.
-function openReport()
-{
-  const files = JSON.parse(document.getElementById("report-files").textContent);
-  const frame = document.getElementById("report");
-  const urls = new Map();
-  const decode = file => Uint8Array.from(atob(file.data), character => character.charCodeAt(0));
-  const text = file => new TextDecoder().decode(decode(file));
-  let current = "index.html";
-
-  function localPath(reference, page)
-  {
-    if (/^(?:[a-z][a-z\d+.-]*:|\/\/|#)/i.test(reference)) return null;
-    return decodeURIComponent(new URL(reference, `https://report.invalid/${page}`).pathname.slice(1));
+// Blobs contain absolute paths, including file references in annotations and
+// coverage maps. Relocate copies after validating the original execution proof;
+// never rewrite the test evidence that was hashed by its producing job.
+export function relocateBlob(serialized, featurePaths, destination = repository) {
+  const blob = parse(serialized);
+  if (!Array.isArray(blob) || blob[0] !== '5.0.5' || !Array.isArray(blob[1]) || blob[1].length === 0 || !Array.isArray(blob[2]))
+    throw new Error('Unsupported, empty or malformed Vitest blob.');
+  const roots = new Set();
+  for (const file of blob[1]) {
+    const feature = featurePaths.find(path => file.filepath?.replaceAll('\\', '/').endsWith(`/${path}`));
+    if (!feature) throw new Error('Blob feature is absent from its execution manifest.');
+    roots.add(file.filepath.replaceAll('\\', '/').slice(0, -feature.length - 1));
   }
-
-  function asset(path)
-  {
-    if (urls.has(path)) return urls.get(path);
-    if (!Object.hasOwn(files, path)) throw new Error(`Missing embedded report resource: ${path}`);
-    const file = files[path];
-    const content = file.type === "text/css" ? text(file).replace(/url\(\s*(['"]?)(.*?)\1\s*\)/g,
-      (original, quote, reference) => {
-        const target = localPath(reference, path);
-        return target ? `url("${asset(target)}")` : original;
-      }) : decode(file);
-    const url = URL.createObjectURL(new Blob([content], { type: file.type }));
-    urls.set(path, url);
-    return url;
-  }
-
-  function show()
-  {
-    try
-    {
-      current = decodeURIComponent(location.hash.slice(1)) || "index.html";
-      if (!Object.hasOwn(files, current) || files[current].type !== "text/html")
-        throw new Error(`Unknown embedded report page: ${current}`);
-      const page = new DOMParser().parseFromString(text(files[current]), "text/html");
-      for (const element of page.querySelectorAll("[src], [href], [poster]"))
-      {
-        for (const attribute of ["src", "href", "poster"])
-        {
-          if (!element.hasAttribute(attribute) || (element.tagName === "A" && attribute === "href")) continue;
-          const target = localPath(element.getAttribute(attribute), current);
-          if (target) element.setAttribute(attribute, asset(target));
-        }
-      }
-      frame.srcdoc = `<!doctype html>\n${page.documentElement.outerHTML}`;
-    }
-    catch (error)
-    {
-      document.getElementById("report-error").textContent = `Cannot open test report: ${error.message}`;
+  if (roots.size !== 1) throw new Error('A suite blob has ambiguous original roots.');
+  const [origin] = roots;
+  const seen = new Set();
+  const relocate = value => typeof value === 'string' && value.startsWith(`${origin}/`)
+    ? `${destination.replaceAll('\\', '/')}${value.slice(origin.length)}` : value;
+  function visit(object) {
+    if (!object || typeof object !== 'object' || seen.has(object)) return;
+    seen.add(object);
+    for (const [key, value] of Object.entries(object)) {
+      const next = relocate(key);
+      const replacement = relocate(value);
+      if (next !== key) delete object[key];
+      object[next] = replacement;
+      visit(replacement);
     }
   }
-
-  frame.addEventListener("load", () => {
-    frame.contentDocument.addEventListener("click", event => {
-      const link = event.target.closest("a[href]");
-      if (!link) return;
-      const target = localPath(link.getAttribute("href"), current);
-      if (target && Object.hasOwn(files, target) && files[target].type === "text/html")
-      {
-        event.preventDefault();
-        location.hash = encodeURIComponent(target);
-      }
-    });
-  });
-  window.addEventListener("hashchange", show);
-  show();
+  visit(blob);
+  return stringify(blob);
 }
 
-try
-{
-  if (!output || inputs.length === 0)
-    throw new Error("Usage: generate-test-report.mjs <output-html> <cucumber-json>...");
-  if (inputs.some(input => resolve(input) === resolve(output)))
-    throw new Error("Output must be different from every input report.");
-  outputOwned = true;
-  await rm(output, { force: true });
-  temporary = await mkdtemp(join(tmpdir(), "operations-test-report-"));
-  const jsonDir = join(temporary, "json");
-  const reportPath = join(temporary, "html");
-  await mkdir(jsonDir);
-  let featureCount = 0;
-  for (const [index, input] of inputs.entries())
-  {
-    const features = JSON.parse(await readFile(input, "utf8"));
-    if (!Array.isArray(features) || features.length === 0 || features.some(feature =>
-      !feature || typeof feature.name !== "string" || !feature.name || !Array.isArray(feature.elements) ||
-      feature.elements.length === 0 || feature.elements.some(scenario => !Array.isArray(scenario.steps) ||
-        scenario.steps.length === 0 || scenario.steps.some(step =>
-          !["passed", "failed", "skipped", "undefined", "pending", "ambiguous"].includes(step.result?.status)))))
-      throw new Error(`Invalid Cucumber report '${input}': expected a nonempty feature array with scenarios, steps, and result statuses.`);
-    // Transfer runtime metadata from Cucumber hooks before rendering. The
-    // metadata attachment is not a test artifact and should not clutter steps.
-    for (const feature of features)
-    {
-      let browser;
-      for (const scenario of feature.elements)
-        for (const step of [...(scenario.before ?? []), ...scenario.steps, ...(scenario.after ?? [])])
-          if (step.embeddings) step.embeddings = step.embeddings.filter(attachment => {
-            if (attachment.mime_type !== "application/vnd.operations.browser+json") return true;
-            const observed = JSON.parse(Buffer.from(attachment.data, "base64").toString("utf8"));
-            if (!observed || !["chromium", "firefox", "webkit"].includes(observed.name) ||
-              typeof observed.version !== "string" || !/^\d+(?:\.\d+)*$/.test(observed.version))
-              throw new Error(`Invalid browser metadata in '${input}' for '${feature.name}'.`);
-            if (browser && (browser.name !== observed.name || browser.version !== observed.version))
-              throw new Error(`Conflicting browser metadata in '${input}' for '${feature.name}'.`);
-            browser = { name: observed.name, version: observed.version };
-            return false;
-          });
-      if (browser) feature.metadata = { ...feature.metadata, browser };
-      else if (/^cucumber-(?:source|test|automation)\.json$/.test(basename(input)) && !feature.metadata?.browser)
-        feature.metadata = { ...feature.metadata, browser: { name: "Not applicable", version: "" } };
+export function generateReport(output = 'tmp/test/report', inputs = 'tmp/test/blobs', options = {}) {
+  const root = options.root ?? repository;
+  const directory = resolve(root, output);
+  const blobs = resolve(root, inputs);
+  const diagnostic = options.diagnostic ?? Boolean(process.env.REPORT_WARNING || process.env.REPORT_DIAGNOSTIC === '1');
+  if (directory === root || !relative(root, directory).startsWith(`tmp/`) || directory === blobs || blobs.startsWith(`${directory}/`))
+    throw new Error('Report output must be a dedicated directory below tmp, separate from its input blobs.');
+  for (let ancestor = directory; ancestor !== root; ancestor = dirname(ancestor))
+    if (existsSync(ancestor) && lstatSync(ancestor).isSymbolicLink()) throw new Error('Report output must not traverse symlinks.');
+  rmSync(directory, { recursive: true, force: true });
+  let staging;
+  try {
+    const names = readdirSync(blobs).filter(name => name.endsWith('.json')).sort();
+    if (!names.length) throw new Error(`No suite blobs in ${blobs}.`);
+    const inputDirectory = dirname(blobs);
+    let verified = [];
+    if (!diagnostic) {
+      const expected = requiredProfiles.map(profile => `${identity(profile)}.json`).sort();
+      if (JSON.stringify(names) !== JSON.stringify(expected)) throw new Error('Required suite blob set is incomplete or contains unexpected results.');
+      verified = requiredProfiles.map(profile => verifyExecution(profile, relative(root, inputDirectory), { root }));
+      if (new Set(verified.map(suite => suite.configFingerprint)).size !== 1 ||
+        new Set(verified.map(suite => JSON.stringify(Object.entries(suite.dependencyVersions).sort()))).size !== 1)
+        throw new Error('Suite configuration or installed toolchains differ.');
+      verifyCoverage(join(inputDirectory, 'coverage/coverage-summary.json'));
     }
-    featureCount += features.length;
-    await writeFile(join(jsonDir, `suite-${index}.json`), JSON.stringify(features));
+    mkdirSync(directory, { recursive: true });
+    mkdirSync(join(root, 'tmp/test'), { recursive: true });
+    staging = mkdtempSync(join(root, 'tmp/test/.merge-'));
+    const hashes = Object.fromEntries(names.map(name => [name, hashFile(join(blobs, name))]));
+    for (const name of names) {
+      const proof = JSON.parse(readFileSync(join(inputDirectory, 'executions', name), 'utf8'));
+      if (!Array.isArray(proof.featurePaths) || !proof.featurePaths.length) throw new Error(`Missing feature manifest for ${name}.`);
+      writeFileSync(join(staging, name), relocateBlob(readFileSync(join(blobs, name), 'utf8'), proof.featurePaths, root));
+    }
+    const result = spawnSync(process.execPath, [join(root, 'node_modules/vitest/vitest.mjs'),
+      '--config', join(root, 'tests/gherkin/merge.config.mjs'), `--merge-reports=${staging}`],
+    { cwd: root, env: { ...process.env, OPERATIONS_REPORT_DIRECTORY: directory }, encoding: 'utf8', timeout: 120000,
+      maxBuffer: 16 * 1024 * 1024 });
+    if (result.error) throw result.error;
+    process.stdout.write(result.stdout ?? '');
+    process.stderr.write(result.stderr ?? '');
+    if (!existsSync(join(directory, 'index.html')) || !existsSync(join(directory, 'results.json')))
+      throw new Error('Vitest did not produce a complete report entry and machine results.');
+    for (const name of names) if (hashFile(join(blobs, name)) !== hashes[name]) throw new Error('Original suite evidence changed while merging.');
+    if (!diagnostic && result.status !== 0) throw new Error(`Merged tests or coverage failed (exit ${result.status}).`);
+    if (!diagnostic) {
+      verifyCoverage(join(directory, 'coverage/coverage-summary.json'));
+      const merged = readResults(join(directory, 'results.json'), { root });
+      const expected = verified.flatMap(suite => suite.caseSignatures).sort();
+      const actual = merged.cases.map(item => caseSignature(item, root)).sort();
+      if (!merged.report.success || JSON.stringify(expected) !== JSON.stringify(actual))
+        throw new Error('Merged report does not contain exactly the verified scenarios and steps.');
+    }
+    const provenance = { schemaVersion: 2, complete: !diagnostic, diagnostic,
+      warning: diagnostic ? process.env.REPORT_WARNING || 'Diagnostic results do not certify complete successful validation.' : null,
+      testedSha: process.env.REPORT_COMMIT ?? verified[0]?.head ?? null,
+      runUrl: process.env.REPORT_RUN_URL ?? null,
+      suites: verified.map(({ caseSignatures, ...suite }) => suite), inputHashes: hashes,
+      mergeExitCode: result.status, generatedAt: new Date().toISOString() };
+    writeFileSync(join(directory, 'provenance.json'), `${JSON.stringify(provenance, null, 2)}\n`);
+    if (diagnostic) {
+      const index = join(directory, 'index.html');
+      const html = readFileSync(index, 'utf8');
+      writeFileSync(index, html.replace(/<body([^>]*)>/i,
+        `<body$1><aside role="alert" style="padding:1rem;background:#553b00;color:white">${escape(provenance.warning)}</aside>`));
+    }
+    return provenance;
+  } catch (error) {
+    rmSync(directory, { recursive: true, force: true });
+    throw new Error(`Cannot generate test report '${directory}' from '${blobs}': ${error.message}`, { cause: error });
+  } finally {
+    if (staging) rmSync(staging, { recursive: true, force: true });
   }
-  const runUrl = process.env.REPORT_RUN_URL ? new URL(process.env.REPORT_RUN_URL) : undefined;
-  const runId = runUrl?.pathname.match(/\/actions\/runs\/(\d+)\/?$/)?.[1];
-  if (runUrl && (runUrl.protocol !== "https:" || !runId))
-    throw new Error("REPORT_RUN_URL must be an HTTPS GitHub Actions run URL.");
-  const customData = {
-    // False suppresses the template field; null restores the runtime username.
-    username: false,
-    ...(process.env.REPORT_COMMIT ? { Commit: process.env.REPORT_COMMIT.slice(0, 7) } : {}),
-    ...(runUrl ? { ciPipeline:
-      `<a href="${runUrl.href.replaceAll("&", "&amp;").replaceAll('"', "&quot;")}" target="_blank" rel="noopener noreferrer">${runId}</a>` } : {})
-  };
-  await generate({ jsonDir, reportPath, pageTitle: "Test Report", reportName: "Operations tests",
-    // Empty strings restore the default footer. Clear its content and wrapper.
-    pageFooter: " ", customStyle: "footer { display: none; }",
-    hideMetadata: true, displayDuration: true, useCDN: false, externalizeMedia: false, logging: "warn", customData });
+}
 
-  const types = { ".html": "text/html", ".css": "text/css", ".js": "text/javascript", ".png": "image/png",
-    ".svg": "image/svg+xml", ".woff2": "font/woff2", ".woff": "font/woff", ".ico": "image/x-icon" };
-  const files = {};
-  for (const path of (await readdir(reportPath, { recursive: true })).sort())
-  {
-    if (!extname(path)) continue;
-    files[path] = { type: types[extname(path)] ?? "application/octet-stream",
-      data: (await readFile(join(reportPath, path))).toString("base64") };
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  try {
+    const [output, inputs, ...extra] = process.argv.slice(2);
+    if (extra.length) throw new Error('Usage: generate-test-report.mjs [output-directory] [blob-directory].');
+    generateReport(output, inputs);
+  } catch (error) {
+    console.error(`::error::${error.message}`);
+    process.exitCode = 1;
   }
-  if (!files["index.html"] || Object.keys(files).filter(path => path.startsWith("features/") && path.endsWith(".html")).length !== featureCount)
-    throw new Error("Reporter did not generate an overview and a detail page for every input feature.");
-  await mkdir(dirname(resolve(output)), { recursive: true });
-  const warning = (process.env.REPORT_WARNING ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
-  await writeFile(output, `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Test Report</title><style>html,body{margin:0;height:100%}body{display:flex;flex-direction:column}iframe{display:block;width:100%;flex:1;min-height:0;border:0}#report-warning,#report-error{padding:1rem;margin:0;font-family:system-ui,sans-serif}#report-warning{background:#fff3cd;color:#664d03}#report-warning:empty,#report-error:empty{display:none}</style></head>
-<body><p id="report-warning" role="status">${warning}</p><p id="report-error" role="alert"></p><iframe id="report" title="Cucumber test report"></iframe>
-<script id="report-files" type="application/json">${JSON.stringify(files).replaceAll("<", "\\u003c")}</script>
-<script>(${openReport.toString()})();</script></body></html>\n`);
-  pail.force.success(`Generated standalone test report: ${output} (${inputs.length} suites, ${featureCount} features).`);
-}
-catch (error)
-{
-  if (outputOwned) await rm(output, { force: true }).catch(() => {});
-  let message = `::error::Cannot generate test report (${context}): ${error.message}`;
-  for (const name of ["NPM_TOKEN", "NODE_AUTH_TOKEN", "GH_TOKEN", "GITHUB_TOKEN", "GH_APP_PRIVATE_KEY",
-    "CLOUDFLARE_API_TOKEN", "CLOUDFLARE_PAGES_API_TOKEN", "CLOUDFLARE_R2_API_TOKEN"])
-    if (process.env[name]) message = message.replaceAll(process.env[name], "[REDACTED]");
-  annotations.raw(`${message.replace(/[\r\n]+/g, " ")}\n`);
-  process.exitCode = 1;
-}
-finally
-{
-  if (temporary) await rm(temporary, { recursive: true, force: true });
 }

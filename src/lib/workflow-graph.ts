@@ -11,7 +11,9 @@ import { adaptRoutingGates, gateForType, isValueConnection, isWorkflowConnection
 type Schema = Record<string, unknown>;
 type Shape = { schema: Schema; seen: string[]; type: WorkflowField["type"]; notice?: string };
 type Tree = { array?: { min: number; max?: number }; label: string; fields: WorkflowField[]; children: { fieldId: string; path: string; tree: Tree }[]; notice?: string; height: number; span: number };
-type Graph = { nodes: WorkflowDocumentNode[]; edges: WorkflowDocumentEdge[] };
+type DataNode = Extract<WorkflowDocumentNode, { type: "data" }>;
+type Graph<Node extends WorkflowDocumentNode = WorkflowDocumentNode> = { nodes: Node[]; edges: WorkflowDocumentEdge[] };
+type TreeTarget = { nodes: { push(...nodes: DataNode[]): number }; edges: WorkflowDocumentEdge[] };
 export type SchemaBranch = { id: string; childId: string; direction: "inputs" | "outputs"; label: string; hidden: boolean };
 const labels: Record<string, WorkflowField["type"]> = { string: "Text", integer: "Integer", number: "Number", boolean: "Boolean", object: "Object", array: "Array", null: "Null" };
 const panelWidth = 260;
@@ -191,7 +193,7 @@ function responseEnvelope(raw: unknown, media: string | undefined, document: Sch
   } };
 }
 
-function placeTree(graph: Graph, tree: Tree, ownerId: string, direction: WorkflowData["direction"], group: string,
+function placeTree(graph: TreeTarget, tree: Tree, ownerId: string, direction: WorkflowData["direction"], group: string,
   path: string, x: number, centerY: number, parentId: string, handle?: string): void
 {
   const input = direction === "inputs";
@@ -276,7 +278,7 @@ function fileSchema(values: unknown[], depth = 0): Schema {
 
 /** Build the same bounded output panels used for operations, rooted at a file node. */
 export function createFileDataGraph(node: Extract<WorkflowDocumentNode, { type: "file" }>): Graph {
-  const graph: Graph = { nodes: [], edges: [] };
+  const graph: Graph<DataNode> = { nodes: [], edges: [] };
   if (!node.data.file) return graph;
   const tree = project(fileSchema([node.data.file.value]), {}, "file", Array.isArray(node.data.file.value) ? "Array" : "File data", "", [], 0,
     { fields: 0, panels: 0 }, "outputs");
@@ -284,9 +286,9 @@ export function createFileDataGraph(node: Extract<WorkflowDocumentNode, { type: 
     tree.fields[0]!.label = "Value";
   placeTree(graph, tree, node.id, "outputs", "file", "", node.position.x + 360 + gap,
     node.position.y + tree.span / 2, node.id, "value");
-  for (const panel of graph.nodes) if (panel.type === "data" && panel.data.label === "Items") panel.data.label = "Item";
+  for (const panel of graph.nodes) if (panel.data.label === "Items") panel.data.label = "Item";
   // Projecting a field through array items produces an array, not a single sampled item.
-  for (const panel of graph.nodes) if (panel.type === "data") for (const field of panel.data.fields)
+  for (const panel of graph.nodes) for (const field of panel.data.fields)
     if (field.connectable) {
       let value: unknown = node.data.file.value;
       const path: string = JSON.parse(decodeURIComponent(field.id))[1];

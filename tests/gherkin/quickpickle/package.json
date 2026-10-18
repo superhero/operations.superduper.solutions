@@ -1,0 +1,52 @@
+{
+  "name": "quickpickle",
+  "version": "1.11.2-operations.1",
+  "private": true,
+  "type": "module",
+  "description": "Source-maintained QuickPickle integration for Operations Gherkin suites.",
+  "license": "MIT",
+  "main": "./index.mjs",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs"
+    },
+    "./runtime": {
+      "types": "./index.d.ts",
+      "import": "./src/runtime.mjs"
+    }
+  },
+  "files": [
+    "index.mjs",
+    "index.d.ts",
+    "src",
+    "LICENSE",
+    "README.md",
+    "UPSTREAM.json"
+  ],
+  "dependencies": {
+    "@a11y-tools/aria-roles": "1.0.0",
+    "@cucumber/cucumber-expressions": "18.0.1",
+    "@cucumber/gherkin": "32.2.0",
+    "@cucumber/messages": "27.2.0",
+    "@cucumber/tag-expressions": "6.2.0",
+    "buffer": "6.0.3",
+    "image-crop-or-pad": "1.0.1",
+    "js-yaml": "4.1.1",
+    "lodash-es": "4.17.23",
+    "pngjs": "7.0.0"
+  },
+  "peerDependencies": {
+    "pixelmatch": "^6.0.0",
+    "vitest": "5.0.5"
+  },
+  "peerDependenciesMeta": {
+    "pixelmatch": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=26.7.0"
+  }
+}

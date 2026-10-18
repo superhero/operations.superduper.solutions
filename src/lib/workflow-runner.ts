@@ -459,7 +459,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
   {
     const frame = stack[0]!;
     if (!frame.owners.some(node => node.id === startingNodeId)) throw new Error("The selected starting operation is unavailable.");
-    if (frame.rows?.count !== 0) queue(frame, startingNodeId);
+    queue(frame, startingNodeId);
     frame.started = true;
   }
 

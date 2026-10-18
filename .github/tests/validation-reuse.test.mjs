@@ -10,6 +10,7 @@ import { After, Before, Given, Then, When } from "@cucumber/cucumber";
 import { findValidation } from "../scripts/find-validation.mjs";
 import { ARTIFACT_NAMES, BUNDLE_FILES, REPORT_FILES, MANIFEST_NAME, createManifest } from "../scripts/validation-artifacts.mjs";
 import { ValidationRequestError } from "../scripts/validation-request.mjs";
+import { toolchainPackages } from "../../tests/gherkin/execution-fingerprint.mjs";
 
 const repository = "superhero/operations.superduper.solutions";
 const apiRoot = `repos/${repository}`;
@@ -61,12 +62,23 @@ Given("a completed validation run with {string}", function (condition)
   for (const name of BUNDLE_FILES) write(join(state.artifactRoot, "bundle", name), `tested bundle ${name}\n`);
   write(join(state.artifactRoot, "coverage", "coverage-summary.json"), '{"total":{"lines":{"pct":100}}}\n');
   write(join(state.artifactRoot, "coverage", "index.html"), "<html>Original coverage report</html>\n");
-  write(join(state.artifactRoot, "test-report", "test-report.html"), "<html>Original combined test report</html>\n");
-  for (const file of REPORT_FILES.filter(file => file.startsWith("badges/")))
+  const coverageSummary = { total: Object.fromEntries(["lines", "statements", "functions", "branches"]
+    .map(metric => [metric, { total: 1, covered: 1, skipped: 0, pct: 100 }])) };
+  for (const file of [...REPORT_FILES, "ui/assets/index.js", "ui/assets/index.css"])
     write(join(state.artifactRoot, "test-report", file), `Original ${file}\n`);
+  write(join(state.artifactRoot, "test-report", "index.html"), "<html>Original combined test report</html>\n");
+  write(join(state.artifactRoot, "test-report", "coverage/coverage-summary.json"), JSON.stringify(coverageSummary));
+  const suites = ["source", "acceptance", "automation", "browser", "components", "runner"]
+    .map((profile, index) => ({ profile, project: profile === "browser" ? "browser-chromium" : profile,
+      cases: 1, head: state.testedSha, runId: "123", runAttempt: "1", resultHash: "e".repeat(64),
+      blobHash: (index + 1).toString(16).repeat(64), configFingerprint: "f".repeat(64),
+      dependencyVersions: { node: "v20.1.0", ...Object.fromEntries(toolchainPackages.map(name => [name, "1.2.3"])) } }));
+  write(join(state.artifactRoot, "test-report", "provenance.json"), JSON.stringify({ schemaVersion: 2,
+    complete: true, diagnostic: false, mergeExitCode: 0, testedSha: state.testedSha, suites,
+    inputHashes: Object.fromEntries(suites.map(suite => [`${suite.project}.json`, suite.blobHash])) }));
   state.manifestOptions = { repository, runId: 123, runAttempt: 1, sourceSha: state.sourceSha, testedSha: state.testedSha,
     cwd: state.cwd, bundle: join(state.artifactRoot, "bundle"), coverage: join(state.artifactRoot, "coverage"),
-    report: join(state.artifactRoot, "test-report", "test-report.html") };
+    report: join(state.artifactRoot, "test-report", "index.html") };
   state.manifest = createManifest(state.manifestOptions);
   state.run = { id: 123, run_attempt: 1, head_sha: state.sourceSha, status: "completed", conclusion: "success",
     event: "pull_request", path: ".github/workflows/ci-release.yml", repository: { id: 456, full_name: repository },
@@ -84,6 +96,19 @@ Given("a completed validation run with {string}", function (condition)
       return { mode, type, sha, path };
     }) };
 
+  const invalidProvenance = {
+    "a report missing configuration identity": value => { delete value.suites[0].configFingerprint; },
+    "a report with mixed configuration identities": value => { value.suites[0].configFingerprint = "a".repeat(64); },
+    "a report missing installed versions": value => { delete value.suites[0].dependencyVersions; },
+    "a report with mixed installed versions": value => { value.suites[0].dependencyVersions.vitest = "2.0.0"; },
+    "a report with incomplete installed versions": value => { delete value.suites[0].dependencyVersions.vitest; },
+    "a report with wrong producer run": value => { value.suites[0].runId = "124"; },
+    "a report with wrong producer attempt": value => { value.suites[0].runAttempt = "2"; },
+    "a report missing input hashes": value => { delete value.inputHashes; },
+    "a report with altered input hash": value => { value.inputHashes["source.json"] = "a".repeat(64); },
+    "a report with an extra input hash": value => { value.inputHashes["unknown.json"] = "a".repeat(64); },
+    "a report missing result hash": value => { delete value.suites[0].resultHash; },
+  };
   const changes = {
     "changed source": "src/application.ts", "changed dependencies": "package.json", "changed lockfile": "package-lock.json",
     "changed tests": "src/application.feature", "changed workflow": ".github/workflows/ci-develop.yml",
@@ -91,6 +116,11 @@ Given("a completed validation run with {string}", function (condition)
     "changed dependency badges": ".github/badges/version-dependency-vite.svg"
   };
   if (changes[condition]) write(join(state.cwd, changes[condition]), "Changed relevant input\n");
+  else if (invalidProvenance[condition]) {
+    const path = join(state.artifactRoot, "test-report", "provenance.json");
+    const value = JSON.parse(readFileSync(path)); invalidProvenance[condition](value);
+    write(path, JSON.stringify(value));
+  }
   else switch (condition)
   {
     case "identical inputs": case "a proposed merge checkout": break;
@@ -125,6 +155,21 @@ Given("a completed validation run with {string}", function (condition)
     case "an expired coverage artifact": state.artifacts[1].expired = true; break;
     case "a duplicate report artifact": state.artifacts.push({ ...state.artifacts[2], id: 9001 }); break;
     case "an artifact from another run": state.artifacts[0].workflow_run.id = 999; break;
+    case "a legacy report manifest": state.manifest.schemaVersion = 1; break;
+    case "a missing report UI asset": rmSync(join(state.artifactRoot, "test-report", "ui/assets/index.js")); break;
+    case "a modified report UI asset": write(join(state.artifactRoot, "test-report", "ui/assets/index.css"), "changed CSS"); break;
+    case "an extra report root file": write(join(state.artifactRoot, "test-report", "untracked.js"), "unexpected script"); break;
+    case "a diagnostic combined report": {
+      const path = join(state.artifactRoot, "test-report", "provenance.json");
+      const provenance = JSON.parse(readFileSync(path));
+      provenance.complete = false; provenance.diagnostic = true;
+      write(path, JSON.stringify(provenance)); break;
+    }
+    case "a report missing a Gherkin suite": {
+      const path = join(state.artifactRoot, "test-report", "provenance.json");
+      const provenance = JSON.parse(readFileSync(path));
+      provenance.suites.pop(); write(path, JSON.stringify(provenance)); break;
+    }
     case "an old manifest attempt": state.manifest.runAttempt = 2; break;
     case "a manifest for another source": state.manifest.sourceSha = otherSha; break;
     case "an unrelated tested commit": state.manifest.testedSha = state.commit.sha = otherSha; break;
@@ -134,7 +179,7 @@ Given("a completed validation run with {string}", function (condition)
     case "an incomplete coverage report": rmSync(join(state.artifactRoot, "coverage", "coverage-summary.json")); break;
     case "a missing report badge": rmSync(join(state.artifactRoot, "test-report", "badges/test-scenarios.svg")); break;
     case "a modified report badge": write(join(state.artifactRoot, "test-report", "badges/test-coverage.json"), "modified badge\n"); break;
-    case "a missing combined report": rmSync(join(state.artifactRoot, "test-report", "test-report.html")); break;
+    case "a missing combined report": rmSync(join(state.artifactRoot, "test-report", "index.html")); break;
     case "an extra artifact file": write(join(state.artifactRoot, "bundle", "unexpected.html"), "extra file\n"); break;
     case "a prototype-named artifact file": write(join(state.artifactRoot, "bundle", "__proto__"), "extra file\n"); break;
     case "an extra empty artifact directory": mkdirSync(join(state.artifactRoot, "bundle", "empty")); break;
@@ -288,10 +333,12 @@ Then("validation is {string} with the original provenance", function (outcome)
   if (outcome === "reused")
   {
     assert.equal(state.result.source_run_id, "123");
+    assert.equal(state.result.source_run_attempt, "1");
+    assert.equal(state.result.source_sha, state.sourceSha);
     assert.equal(state.result.tested_sha, state.testedSha);
     assert.equal(state.result.input_fingerprint, state.manifest.inputFingerprint);
     assert.equal(readFileSync(join(state.destination, "bundle", "index.html"), "utf8"), "tested bundle index.html\n");
-    assert.equal(readFileSync(join(state.destination, "test-report", "test-report.html"), "utf8"), "<html>Original combined test report</html>\n");
+    assert.equal(readFileSync(join(state.destination, "test-report", "index.html"), "utf8"), "<html>Original combined test report</html>\n");
     for (const file of REPORT_FILES.filter(file => file.startsWith("badges/")))
       assert.equal(readFileSync(join(state.destination, "test-report", file), "utf8"), `Original ${file}\n`);
     assert.deepEqual(JSON.parse(readFileSync(join(state.destination, "validation-manifest", MANIFEST_NAME), "utf8")),
@@ -300,6 +347,8 @@ Then("validation is {string} with the original provenance", function (outcome)
   else
   {
     assert.equal(state.result.source_run_id, "");
+    assert.equal(state.result.source_run_attempt, "");
+    assert.equal(state.result.source_sha, "");
     assert.equal(state.result.tested_sha, "");
     assert.ok(!existsSync(state.destination), "Rejected artifacts must not be available for publication.");
     assert.ok(state.notes.some(note => note.includes("full validation is required")));

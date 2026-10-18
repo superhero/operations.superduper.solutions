@@ -2,10 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
-import { existsSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Given, Then, When } from "@cucumber/cucumber";
 import { REPOSITORY } from "./support.mjs";
+import { publishReport } from "../scripts/publish-report.mjs";
+import { REPORT_FILES, inventory } from "../scripts/validation-artifacts.mjs";
+import { createHash } from "node:crypto";
+import { toolchainPackages } from "../../tests/gherkin/execution-fingerprint.mjs";
 
 Given("a status file for {string} with content type {string}", function (key, type)
 {
@@ -39,7 +43,8 @@ When("the status is published", function ()
 {
   const { key, type, file, noRequest, ...response } = this.publication;
   const env = this.automation.env;
-  const command = ["--fail-with-body", "--silent", "--show-error", "--request", "PUT",
+  const command = ["--fail-with-body", "--silent", "--show-error",
+    "--connect-timeout", "10", "--max-time", "30", "--retry", "2", "--retry-delay", "1", "--retry-all-errors", "--request", "PUT",
     "--header", `Authorization: Bearer ${env.CLOUDFLARE_API_TOKEN}`, "--header", `Content-Type: ${type}`,
     "--data-binary", `@${file}`,
     `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/r2/buckets/operations-status/objects/${key}`];
@@ -218,4 +223,122 @@ Then("the registry failure reports sanitized stderr", function ()
 Then("temporary registry data is removed", function ()
 {
   assert.deepEqual(readdirSync(this.automation.root).filter(file => file.startsWith("dependency-status.")), []);
+});
+
+Given("a complete Vitest report directory", function ()
+{
+  const directory = join(this.automation.root, "report");
+  const head = "a".repeat(40);
+  this.reportPublication = { directory, prefix: `reports/${head}-123-1`, calls: [], guards: 0,
+    expectedProvenance: { repository: 'owner/project', runId: 123, runAttempt: 1, sourceSha: head, testedSha: head } };
+  for (const file of [...REPORT_FILES, "ui/assets/index.js", "ui/assets/index.css", "attachments/screenshot.png", "attachments/trace.zip"]) {
+    const target = join(directory, file);
+    mkdirSync(join(target, ".."), { recursive: true });
+    writeFileSync(target, `Original ${file}\n`);
+  }
+  const suites = ["source", "acceptance", "automation", "browser", "components", "runner"]
+    .map((profile, index) => ({ profile, project: profile === "browser" ? "browser-chromium" : profile,
+      head, cases: 1, runId: "123", runAttempt: "1", resultHash: "e".repeat(64),
+      blobHash: (index + 1).toString(16).repeat(64), configFingerprint: "f".repeat(64),
+      dependencyVersions: { node: "v20.1.0", ...Object.fromEntries(toolchainPackages.map(name => [name, "1.2.3"])) } }));
+  writeFileSync(join(directory, "provenance.json"), JSON.stringify({ schemaVersion: 2,
+    complete: true, diagnostic: false, mergeExitCode: 0, testedSha: head, suites,
+    inputHashes: Object.fromEntries(suites.map(suite => [`${suite.project}.json`, suite.blobHash])) }));
+  writeFileSync(join(directory, "coverage/coverage-summary.json"), JSON.stringify({ total:
+    Object.fromEntries(["lines", "branches", "functions", "statements"].map(metric =>
+      [metric, { total: 1, covered: 1, skipped: 0, pct: 100 }])) }));
+  this.reportPublication.manifest = { schemaVersion: 2, ...this.reportPublication.expectedProvenance,
+    testedTree: 'b'.repeat(40), inputFingerprint: 'c'.repeat(64), files: { 'test-report': inventory(directory) } };
+});
+Given("the report is diagnostic rather than complete validation", function ()
+{
+  const path = join(this.reportPublication.directory, "provenance.json");
+  const value = JSON.parse(readFileSync(path)); value.complete = false; value.diagnostic = true;
+  writeFileSync(path, JSON.stringify(value));
+});
+function publishFixture(world, failure) {
+  const state = world.reportPublication;
+  try {
+    state.plan = publishReport(state.directory, state.prefix, {
+      manifest: state.manifest, expectedProvenance: state.expectedProvenance,
+      run(command, [script, file, key, type]) {
+        assert.equal(command, "bash"); assert.equal(script, ".github/scripts/publish-status.sh");
+        state.calls.push({ file, key, type, contents: readFileSync(file) });
+        if (failure === "concurrent" && state.calls.length === 1)
+          writeFileSync(join(state.directory, "ui/assets/index.css"), "Changed after snapshot");
+        return { status: failure === "asset" && key.endsWith(".css") ? 1 : 0 };
+      },
+      guard() { state.guards++; if (failure === "newer") throw new Error("Newer release"); },
+    });
+  } catch (error) { state.error = error; }
+}
+When("the report directory is published successfully", function () { publishFixture(this); });
+When("report publication fails on a CSS asset", function () { publishFixture(this, "asset"); });
+When("a newer release is detected before publishing report pointers", function () { publishFixture(this, "newer"); });
+Then("report assets retain their MIME types under an immutable prefix", function ()
+{
+  const state = this.reportPublication;
+  assert.ifError(state.error);
+  const types = { "ui/assets/index.js": "text/javascript; charset=utf-8", "ui/assets/index.css": "text/css; charset=utf-8",
+    "ui/html.meta.json.gz": "application/gzip", "attachments/screenshot.png": "image/png", "attachments/trace.zip": "application/zip", "badges/test-scenarios.json": "application/json; charset=utf-8",
+    "badges/test-coverage.svg": "image/svg+xml" };
+  for (const [path, type] of Object.entries(types)) {
+    const item = state.calls.find(call => call.key === `${state.prefix}/${path}`);
+    assert.equal(item?.type, type);
+    assert.deepEqual(readFileSync(join(state.directory, path)), item.contents, "Publication must not alter original report evidence");
+  }
+});
+Then("report entries and stable pointers are published after their dependencies", function ()
+{
+  const state = this.reportPublication;
+  const keys = state.calls.map(call => call.key);
+  assert.equal(keys.filter(key => key.startsWith(`${state.prefix}/`)).at(-1), `${state.prefix}/index.html`);
+  assert.deepEqual(keys.slice(-2), ["test-coverage.html", "test-report.html"]);
+  for (const badge of ['test-scenarios', 'test-coverage']) for (const format of ['json', 'svg'])
+    assert.ok(keys.indexOf(`badges/${badge}.${format}`) < keys.indexOf('test-report.html'));
+  assert.equal(state.guards, 6);
+  assert.ok(state.calls.at(-1).contents.toString().includes(`/${state.prefix}/index.html`));
+});
+Then("no report entry or stable pointer is published", function ()
+{
+  const state = this.reportPublication;
+  assert.ok(state.error);
+  assert.ok(state.calls.length > 0);
+  assert.ok(state.calls.every(call => call.key !== `${state.prefix}/index.html` && call.key.startsWith(`${state.prefix}/`)));
+  assert.equal(state.guards, 0);
+});
+Then("immutable report assets remain available without replacing stable pointers", function ()
+{
+  const state = this.reportPublication;
+  assert.ok(state.error);
+  assert.equal(state.calls.at(-1).key, `${state.prefix}/index.html`);
+  assert.ok(state.calls.every(call => call.key.startsWith(`${state.prefix}/`)));
+  assert.equal(state.guards, 1);
+});
+Then("no report publication requests are made", function ()
+{
+  assert.ok(this.reportPublication.error);
+  assert.deepEqual(this.reportPublication.calls, []);
+});
+
+Given("the validated publication input has {string}", function (defect) {
+  const state = this.reportPublication;
+  const modifications = { 'modified CSS': 'ui/assets/index.css', 'modified attachment': 'attachments/trace.zip',
+    'modified results': 'results.json', 'modified provenance': 'provenance.json' };
+  if (modifications[defect]) writeFileSync(join(state.directory, modifications[defect]), 'Changed after validation');
+  else if (defect === 'missing UI asset') unlinkSync(join(state.directory, 'ui/assets/index.js'));
+  else if (defect === 'missing manifest') delete state.manifest;
+  else if (defect === 'manifest from another run') state.manifest.runId++;
+  else if (defect === 'manifest from another commit') state.manifest.testedSha = 'f'.repeat(40);
+  else assert.fail(`Unknown publication integrity defect: ${defect}`);
+});
+When("the downloaded report changes during publication", function () { publishFixture(this, 'concurrent'); });
+Then("published assets retain the original validated snapshot", function () {
+  const state = this.reportPublication;
+  assert.ifError(state.error);
+  for (const call of state.calls.filter(call => call.key.startsWith(`${state.prefix}/`))) {
+    const path = call.key.slice(state.prefix.length + 1);
+    assert.equal(createHash('sha256').update(call.contents).digest('hex'), state.manifest.files['test-report'][path]);
+  }
+  assert.equal(readFileSync(join(state.directory, 'ui/assets/index.css'), 'utf8'), 'Changed after snapshot');
 });

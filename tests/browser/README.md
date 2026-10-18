@@ -1,10 +1,10 @@
 # Browser scenarios
 
-This suite exercises the built application and generated report behavior through
-Cucumber and Playwright. Put user-visible cases in top-level `.feature` files
-and execution details in `.steps.mjs`. The `browser` profile in
-[`cucumber.config.mjs`](../../cucumber.config.mjs) discovers both patterns and
-loads [`support.mjs`](support.mjs) explicitly. Nested files need registration.
+This suite exercises the built application and generated reports through Gherkin,
+QuickPickle, Vitest and Playwright. Put user-visible cases in top-level `.feature`
+files and execution details in `.steps.mjs`. The `browser` profile in
+[`profiles.mjs`](../gherkin/profiles.mjs) discovers both patterns and loads
+[`support.mjs`](support.mjs) explicitly. Import nested helpers from those steps.
 
 ## Helpers and fixtures
 
@@ -63,13 +63,22 @@ creates a fresh browser context for each scenario, and rejects
 unexpected external requests. Simulate endpoint responses through test routes;
 keep test hooks out of the shipped application.
 
-Chromium remains the default. Use `BROWSER_ENGINE=firefox` or
-`BROWSER_ENGINE=webkit` for an opt-in run with the same pinned image. Additional
-Cucumber arguments pass through, for example
-`BROWSER_ENGINE=firefox npm run test:browser -- --tags @vault-browser-kdf --parallel 1`.
-Non-Chromium runs exclude `@chromium-only` scenarios. Each invocation replaces
-the browser report and failure artifacts; copy evidence before starting another
-run when comparing engines.
+Chromium remains the default. An unfiltered `npm run test:browser` also runs the
+Svelte component suite afterward, in the same container. Focused selections run
+only their selected application cases:
+
+```sh
+npm run test:browser -- tests/browser/workflow-file.feature -t 'upload'
+BROWSER_ENGINE=firefox npm run test:browser -- --tags @vault-browser-kdf
+```
+
+Firefox and WebKit are opt-in and exclude `@chromium-only` cases. Each engine has
+its own JSON, blob and proof filenames; another run of that engine replaces them.
+Filtered or stale results cannot supply complete release evidence.
+
+Local containers use one browser worker, 2 CPUs and 2 GiB, without extra swap.
+GitHub Actions uses two workers within 2 CPUs and 4 GiB. Inspect host headroom
+before increasing a development budget.
 
 The error-history fixture runs the real IndexedDB store and recording worker on
 an isolated test page. Its scenarios cover multi-tab deduplication, FIFO eviction,
@@ -80,7 +89,7 @@ Vault fixtures exercise the real IndexedDB/Web Locks adapters, worker schema
 policy and bounded Fetch responses against isolated loopback endpoints. The KDF
 worker checks pinned reference bytes and the application's nonextractable key
 under a restrictive CSP. Vault UI cases use the built application, including
-recovery verification, lock/unlock and encrypted backup restore. Native WebAuthn
+recovery-key presentation, lock/unlock and encrypted vault import. Native WebAuthn
 cases use Chromium's CDP virtual authenticator on `localhost`; these cover native
 ceremonies and worker wrapping. The different-RP restore case adds bounded
 cancellation to the native call without fabricating credentials or PRF output.
@@ -105,7 +114,7 @@ use ordinary browser requests.
 
 ## Runtime and test boundaries
 
-Use Cucumber step durations to separate expensive assertions from repeated setup.
+Use Vitest scenario and Gherkin step durations to separate expensive assertions from repeated setup.
 Compare the same scenarios, browser image, worker count and resource limits before
 and after a change. Summed scenario time overlaps when workers run in parallel;
 it is not the suite's wall-clock duration.
@@ -113,9 +122,9 @@ it is not the suite's wall-clock duration.
 List the slowest scenarios from a completed report, including their setup:
 
 ```sh
-jq '[.[] | .uri as $file | .elements[] | select(.type == "scenario") |
-  {file: $file, name, seconds: ([.steps[].result.duration // 0] | add / 1000000000)}] |
-  sort_by(.seconds) | reverse | .[:10]' tmp/test/cucumber-browser.json
+jq '[.testResults[] | .name as $file | .assertionResults[] |
+  {file: $file, name: .title, seconds: (.duration / 1000)}] |
+  sort_by(.seconds) | reverse | .[:10]' tmp/test/vitest-browser-chromium.json
 ```
 
 ### Palette navigation
@@ -144,21 +153,30 @@ It does not advance application clocks or bypass initialization.
 
 ### Shared fixture bundles
 
-`tests/browser/run.mjs` prepares the five standalone fixture bundles once before
-starting Cucumber workers. Every worker reads the same invocation-specific file;
-builds remain serial to limit peak memory. The runner removes its temporary
-bundle directory after successful or failed runs. Dry runs skip preparation.
+`tests/browser/run.mjs` delegates to the shared Gherkin launcher. It prepares the
+five standalone bundles once per invocation, before starting workers; fixture
+builds remain serial to bound peak memory. Workers read the shared file under
+`tmp/test/browser/`.
 
-`npm run test:browser` uses this entry point inside the pinned container. For a
-prepared environment, run `node tests/browser/run.mjs` with ordinary Cucumber
-arguments such as `--name`, `--tags` and `--parallel`. Direct Cucumber invocation
-still supports dry runs; executed browser scenarios require this entry point.
+The pinned Docker command uses this entry point. In a prepared Playwright
+environment, run `node tests/browser/run.mjs` with feature paths, `--tags` or `-t`.
+Browser step modules stay native so serialized `page.evaluate()` callbacks do not
+contain Vite's Node helpers.
+
+### Worker ownership
+
+Vitest's automatic worker fixture owns shared browsers, HTTP servers and
+registered development-server cleanup. Each scenario owns a fresh context.
+Cleanup does not depend on a predicted feature count; tag and name filters keep
+the same lifetime rules. Aborting a scenario closes its contexts before later
+work continues, while failed cleanup still fails validation.
 
 ### Fixture-only entry pages
 
 Storage, network, policy and KDF vault tags, `@error-history-storage` and
 `@error-history-recorder` start on their isolated HTML fixture.
 `@coverage-report` starts on a blank page until its generated report is ready.
+`@legacy-smoke` similarly lets each migrated lifecycle case create its own page.
 These cases do not initialize and discard the full application first. Shared
 setup still creates a fresh context and installs the same request guards,
 diagnostics and tracing. Fixture steps seed their own data;
@@ -209,6 +227,7 @@ external waits before increasing parallelism or replacing integration behavior.
 
 Scenarios run in parallel, so keep mutable state in the scenario World or its
 fixtures. Failure diagnostics, screenshots and traces belong in
-`tmp/test/browser/`; Cucumber JSON belongs in `tmp/test/`. See the
+`tmp/test/browser/`; Vitest JSON, blobs and execution proofs belong in `tmp/test/`.
+Report attachments retain screenshots and trace downloads after job transfer. See the
 [workflow guide](../../.github/workflows/README.md#local-validation) for setup
 and complete report generation.

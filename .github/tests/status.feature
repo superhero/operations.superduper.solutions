@@ -118,3 +118,47 @@ Feature: Publish release reports and report dependency versions
     When dependency status is updated for "main"
     Then the failed registry check creates no badges
     And no successful dependency report is written
+
+  Scenario: Publish the full Vitest report before moving stable pointers
+    Given a complete Vitest report directory
+    When the report directory is published successfully
+    Then report assets retain their MIME types under an immutable prefix
+    And report entries and stable pointers are published after their dependencies
+
+  Scenario: Failed assets cannot expose a partial report
+    Given a complete Vitest report directory
+    When report publication fails on a CSS asset
+    Then no report entry or stable pointer is published
+
+  Scenario: A newer release prevents replacing stable report pointers
+    Given a complete Vitest report directory
+    When a newer release is detected before publishing report pointers
+    Then immutable report assets remain available without replacing stable pointers
+
+  Scenario: Diagnostic reports cannot become published validation
+    Given a complete Vitest report directory
+    And the report is diagnostic rather than complete validation
+    When the report directory is published successfully
+    Then no report publication requests are made
+
+
+  Scenario Outline: Publication rejects changes to original validation evidence before network requests
+    Given a complete Vitest report directory
+    And the validated publication input has "<defect>"
+    When the report directory is published successfully
+    Then no report publication requests are made
+    Examples:
+      | defect                       |
+      | modified CSS                 |
+      | modified attachment          |
+      | modified results             |
+      | modified provenance          |
+      | missing UI asset             |
+      | missing manifest             |
+      | manifest from another run    |
+      | manifest from another commit |
+
+  Scenario: Publication uses its verified snapshot if downloaded files change
+    Given a complete Vitest report directory
+    When the downloaded report changes during publication
+    Then published assets retain the original validated snapshot

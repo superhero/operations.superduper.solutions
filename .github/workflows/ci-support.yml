@@ -6,8 +6,8 @@ run-name: "#${{ github.event.pull_request.number }}: ${{ github.event.pull_reque
 
 on:
   pull_request:
-    branches: ['support/**']
-    types: [opened, synchronize, reopened, edited, ready_for_review]
+    branches: [ 'support/**' ]
+    types: [ opened, synchronize, reopened, edited, ready_for_review ]
 
 concurrency:
   group: integration-ci
@@ -43,32 +43,30 @@ jobs:
         with:
           ref: ${{ needs.integration.outputs.tested_sha }}
           persist-credentials: false
-
       - name: Lint standalone scripts
         run: shellcheck .github/scripts/*.sh
-
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: npm
-
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-
       - name: Check dependency version badges
         run: npm --loglevel=error run badges:dependencies -- --check
-
       - name: Test automation
         id: automation
         run: npm --loglevel=error run test:automation
-
       - name: Upload automation report
         if: success() || (failure() && steps.automation.outcome == 'failure')
         uses: actions/upload-artifact@v7
         with:
           name: automation-test-report
-          path: tmp/test/cucumber-automation.json
+          path: |-
+            tmp/test/vitest-automation.json
+            tmp/test/blobs/automation.json
+            tmp/test/executions/automation.json
+            tmp/test/attachments
           if-no-files-found: error
           overwrite: true
           retention-days: 7
@@ -88,7 +86,6 @@ jobs:
         with:
           ref: ${{ needs.integration.outputs.tested_sha }}
           persist-credentials: false
-
       - name: Validate pull request
         env:
           GH_TOKEN: ${{ github.token }}
@@ -101,62 +98,60 @@ jobs:
   application:
     if: "needs.integration.outputs.ready == 'true'"
     name: Test and Build
-    needs: [integration, validate-pr]
+    needs: [ integration, validate-pr ]
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 50
     steps:
       - name: Checkout proposed merge
         uses: actions/checkout@v7
         with:
           ref: ${{ needs.integration.outputs.tested_sha }}
           persist-credentials: false
-
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
           node-version-file: .node-version
           cache: npm
-
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-
       - name: Type check
         run: npm --loglevel=error run typecheck
-
       - name: Source tests
         run: npm --loglevel=error run test:source
-
+      - name: Gherkin runner integration contracts
+        id: runner
+        run: npm --loglevel=error run test:runner
       - name: Build
         run: npm --loglevel=error run build
-
       - name: Acceptance tests
         id: acceptance
         run: npm --loglevel=error run test:acceptance
-
       - name: Browser tests against the built bundle
         id: browser
-        timeout-minutes: 30
+        timeout-minutes: 40
         run: npm --loglevel=error run test:browser
-
       - name: Upload browser results and diagnostics
         if: ${{ !cancelled() && (steps.browser.outcome == 'success' || steps.browser.outcome == 'failure') }}
         uses: actions/upload-artifact@v7
         with:
           name: browser-test-report
-          path: |
-            tmp/test/cucumber-browser.json
+          path: |-
+            tmp/test/vitest-browser-chromium.json
+            tmp/test/vitest-components.json
+            tmp/test/blobs
+            tmp/test/executions
+            tmp/test/attachments
             tmp/test/browser
           if-no-files-found: error
           overwrite: true
           retention-days: 7
-
       - name: Upload failed acceptance report
         if: failure() && steps.acceptance.outcome == 'failure'
         continue-on-error: true
         uses: actions/upload-artifact@v7
         with:
           name: test-report
-          path: tmp/test/cucumber-test.json
+          path: tmp/test/vitest-acceptance.json
           if-no-files-found: ignore
           overwrite: true
           retention-days: 7
@@ -166,11 +161,9 @@ jobs:
     concurrency:
       group: merge-${{ github.base_ref }}
       cancel-in-progress: false
-    needs: [integration, workflow-checks, validate-pr, application]
+    needs: [ integration, workflow-checks, validate-pr, application ]
     if: >-
-      needs.integration.outputs.ready == 'true'
-      && github.event.pull_request.head.repo.full_name == github.repository
-      && !github.event.pull_request.draft
+      needs.integration.outputs.ready == 'true' && github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -182,13 +175,11 @@ jobs:
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
-
       - name: Checkout validated merge
         uses: actions/checkout@v7
         with:
           ref: ${{ needs.integration.outputs.tested_sha }}
           persist-credentials: false
-
       - name: Merge validated pull request
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
