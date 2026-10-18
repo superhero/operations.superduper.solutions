@@ -13,3 +13,6 @@ Feature: Browser settings construction
 
   Scenario: Closing Browser settings cancels pending construction
     Then closing Browser before construction leaves it unbuilt until reopened
+
+  Scenario: Browser expands smoothly through its initial dots pane
+    Then Browser slides from its initial dots pane into the constructed dashboard

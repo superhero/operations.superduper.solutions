@@ -32,6 +32,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <script lang="ts">
+  import { tick } from "svelte";
   import Disclosure from "$lib/components/Disclosure.svelte";
   import FieldInteger from "$lib/components/FieldInteger.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
@@ -79,6 +80,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let workspace: HTMLElement;
   let openSection = $state<"secrets" | "theme" | "locale" | "logs" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
   let storageBuilt = $state(false);
+  let storageReady = $state(false);
   $effect(() => {
     if (openSection !== "storage" || storageBuilt) return;
     let cancelled = false;
@@ -90,6 +92,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         await Promise.allSettled(panel?.getAnimations().map(animation => animation.finished) ?? []);
         if (!cancelled) storageBuilt = true;
       });
+    });
+    return () => { cancelled = true; cancelAnimationFrame(frame); };
+  });
+  $effect(() => {
+    if (!storageBuilt) return;
+    let cancelled = false;
+    let frame = 0;
+    // Mount behind the compact pane first: nested disclosures must settle
+    // without changing its visible height before the expansion begins.
+    void tick().then(() => {
+      if (!cancelled) frame = requestAnimationFrame(() => storageReady = true);
     });
     return () => { cancelled = true; cancelAnimationFrame(frame); };
   });
@@ -297,7 +310,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {/if}
       </fieldset>
     </Disclosure>
-    <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} lazy animateSize open={openSection === "storage"} onToggle={(next) => { if (next) storageBuilt = false; openSection = next ? "storage" : null; }}>
+    <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} animateSize open={openSection === "storage"} onToggle={(next) => { if (next) { storageReady = false; storageBuilt = false; } openSection = next ? "storage" : null; }}>
       {#snippet summary()}
         <div class="section-heading"><h2>Browser</h2><span class="section-subtitle">Monitor browser resource usage</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
@@ -309,11 +322,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           </button>
         </div>
       {/if}
-      {#if storageBuilt}
-        <StorageSettings />
-      {:else}
-        <p class="storage-building" role="status" aria-label="Building"><span class="building-dots" aria-hidden="true">{#each [0, 1, 2, 3, 4] as dot (dot)}<span>·</span>{/each}</span></p>
-      {/if}
+      <div class="browser-content">
+        {#if !storageReady}
+          <p class="storage-building" role="status" aria-label="Building"><span class="building-dots" aria-hidden="true">{#each [0, 1, 2] as dot (dot)}<span>·</span>{/each}</span></p>
+        {/if}
+        {#if storageBuilt}
+          <div class:storage-staging={!storageReady} inert={!storageReady}><StorageSettings /></div>
+        {/if}
+      </div>
     </Disclosure>
     <Disclosure class="catalog-group settings-section" label="Developer" tooltipEnabled={false} open={openSection === "developer"} onToggle={(next) => openSection = next ? "developer" : null}>
       {#snippet summary()}
@@ -408,11 +424,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .storage-building { margin: 0; padding: 12px 16px 16px; font-size: 12px; font-weight: 700; color: var(--color-catalog-active-foreground); text-align: center; }
-  .building-dots { position: relative; display: inline-flex; }
-  .building-dots > span { width: 1em; text-align: center; }
-  .building-dots::after { content: "⊙"; position: absolute; top: 0; left: 0; width: 1em; text-align: center; animation: building-dot 800ms steps(5, jump-none) infinite alternate; }
-  @keyframes building-dot { from { transform: translateX(0); } to { transform: translateX(4em); } }
-  @media (prefers-reduced-motion: reduce) { .building-dots::after { animation: none; transform: translateX(2em); } }
+  .browser-content { position: relative; }
+  .storage-staging { position: absolute; inset: 0 0 auto; visibility: hidden; pointer-events: none; }
+  .building-dots { display: inline-flex; font-size: 20px; line-height: 1; }
+  .building-dots > span { width: 0.8em; text-align: center; }
   .settings-sections { display: grid; gap: 12px; }
   .settings-sections :global(.settings-section) { border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-muted); transition: background-color 180ms ease-in; }
   .settings-sections :global(.settings-section:has(> summary[aria-expanded="true"])) { background: var(--color-catalog-active); }
