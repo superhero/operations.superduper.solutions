@@ -54,3 +54,18 @@ Then('pasted nested workflows retain their original snapshot interfaces', () => 
   const endpoints = value => value.nodes.filter(node => node.type === 'data').flatMap(node => node.data.fields.map(field => field.endpoint));
   assert.deepEqual(endpoints(pasted), endpoints(copied));
 });
+
+Then('copying legacy operation connections preserves edges without handles', () => {
+  const first = graph('first').nodes[0], other = graph('other').nodes[0];
+  const saved = document({ version: 1, nodes: [first, other], edges: [{ id: 'legacy', source: first.id, target: other.id }] });
+  validateWorkflowDocument(saved);
+  const copied = copyWorkflowSelection(saved, ['first', 'other'], []);
+  const pasted = pasteWorkflowSelection(copied);
+  validateWorkflowDocument(document({ ...pasted, nodes: [...saved.nodes, ...pasted.nodes], edges: [...saved.edges, ...pasted.edges] }));
+  assert.equal(pasted.edges.length, 1);
+  assert.notEqual(pasted.edges[0].id, 'legacy');
+  assert.equal(pasted.edges[0].source, pasted.nodes[0].id);
+  assert.equal(pasted.edges[0].target, pasted.nodes[1].id);
+  assert.equal(Object.hasOwn(pasted.edges[0], 'sourceHandle'), false);
+  assert.equal(Object.hasOwn(pasted.edges[0], 'targetHandle'), false);
+});

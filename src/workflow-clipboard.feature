@@ -9,3 +9,5 @@ Feature: Workflow selection clipboard
     Then pasted graphs have fresh identities and translated routes without mutating the clipboard
   Scenario: Nested workflows preserve snapshot endpoints
     Then pasted nested workflows retain their original snapshot interfaces
+  Scenario: Legacy connections retain their topology without handles
+    Then copying legacy operation connections preserves edges without handles

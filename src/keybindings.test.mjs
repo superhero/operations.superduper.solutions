@@ -17,6 +17,7 @@ Then('keybindings normalize malformed settings and reject duplicate shortcuts', 
   assert.equal(formatShortcut('Mod+Shift+u'), 'Ctrl/Cmd + Shift + U');
 });
 Then('shortcuts match Control and Command exactly and ignore composition', () => {
+  assert.equal(shortcutFromEvent(event({ ctrlKey: false, altKey: true, key: 'u' })), 'Alt+u');
   assert.equal(shortcutAction(event({}), defaultKeybindings), 'undo');
   assert.equal(shortcutAction(event({ key: 'Y', ctrlKey: false, metaKey: true }), defaultKeybindings), 'redo');
   assert.equal(shortcutAction(event({ key: 'a' }), defaultKeybindings), 'selectAll');
