@@ -18,6 +18,14 @@ feat: simplify keybindings into uniform editable rows
 
 ```
 
+<!-- changelog-commit:07d3b2e9e3be73387848a9823c8a109c3712e8b5 -->
+### Commit [`07d3b2e`](https://github.com/superhero/operations.superduper.solutions/commit/07d3b2e9e3be73387848a9823c8a109c3712e8b5)
+
+```text
+style: reduce keybinding row padding
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
