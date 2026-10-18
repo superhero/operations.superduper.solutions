@@ -3,8 +3,9 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
+import { vi } from "vitest";
 import { After, Before, Then } from "@cucumber/cucumber";
+import * as catalogModule from "./lib/catalog.ts";
 import { extractOperations, operations, publishPreparedCatalogs, updateCatalogs } from "./lib/catalog.ts";
 import { bundledCatalogs, catalogs, catalogForOperation } from "./lib/catalog-registry.ts";
 import { getOperationReport } from "./lib/operation-report.ts";
@@ -47,28 +48,21 @@ After({ tags: "@schema-runtime" }, function () {
 });
 
 Then("schema validation normalizes a non-Error failure from operation extraction", () => {
-  // Isolate the replacement module so live catalog tests keep their real registry.
-  const script = `
-    import assert from "node:assert/strict";
-    import { registerHooks } from "node:module";
-    registerHooks({
-      resolve(specifier, context, next) {
-        return specifier === "./catalog.ts" && context.parentURL === ${JSON.stringify(new URL("./lib/schema-documents.ts", import.meta.url).href)}
-          ? { url: "test:failed-extractor", shortCircuit: true } : next(specifier, context);
-      },
-      load(url, context, next) {
-        return url === "test:failed-extractor"
-          ? { format: "module", source: 'export function extractOperations() { throw "Operation extraction failed"; }', shortCircuit: true }
-          : next(url, context);
-      }
-    });
-    const { validateSchemaDocument } = await import(${JSON.stringify(new URL("./lib/schema-documents.ts", import.meta.url).href)});
-    assert.throws(() => validateSchemaDocument(${JSON.stringify(fixture())}, "test"),
+  // Keep the fault injection in the same transformed module graph. Combining
+  // native Node and Vite byte offsets for this file corrupts V8 coverage maps.
+  const original = catalogModule.extractOperations;
+  const extraction = vi.spyOn(catalogModule, "extractOperations").mockImplementation(() => {
+    throw "Operation extraction failed";
+  });
+  try {
+    assert.throws(() => validateSchemaDocument(fixture(), "test"),
       { message: "Invalid OpenAPI document: Operation extraction failed" });
-  `;
-  const result = spawnSync(process.execPath, ["--input-type=module", "-e", script], { encoding: "utf8" });
-  assert.ifError(result.error);
-  assert.equal(result.status, 0, result.stderr);
+    assert.equal(extraction.mock.calls.length, 1);
+  } finally {
+    extraction.mockRestore();
+  }
+  assert.equal(catalogModule.extractOperations, original);
+  assert.equal(validateSchemaDocument(fixture(), "restored").operations[0].id, "restored:read");
 });
 
 Then("HTTP execution retains server base paths and resolves operation and path server overrides", async () => {

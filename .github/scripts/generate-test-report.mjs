@@ -46,10 +46,13 @@ export function relocateBlob(serialized, featurePaths, destination = repository)
 }
 
 export function generateReport(output = 'tmp/test/report', inputs = 'tmp/test/blobs', options = {}) {
-  const root = options.root ?? repository;
+  const root = resolve(options.root ?? repository);
   const directory = resolve(root, output);
   const blobs = resolve(root, inputs);
   const diagnostic = options.diagnostic ?? Boolean(process.env.REPORT_WARNING || process.env.REPORT_DIAGNOSTIC === '1');
+  const mergeTimeout = options.mergeTimeout ?? 120000;
+  if (!Number.isSafeInteger(mergeTimeout) || mergeTimeout < 1)
+    throw new Error('Report merge timeout must be a positive number of milliseconds.');
   if (directory === root || !relative(root, directory).startsWith(`tmp/`) || directory === blobs || blobs.startsWith(`${directory}/`))
     throw new Error('Report output must be a dedicated directory below tmp, separate from its input blobs.');
   for (let ancestor = directory; ancestor !== root; ancestor = dirname(ancestor))
@@ -81,8 +84,12 @@ export function generateReport(output = 'tmp/test/report', inputs = 'tmp/test/bl
     }
     const result = spawnSync(process.execPath, [join(root, 'node_modules/vitest/vitest.mjs'),
       '--config', join(root, 'tests/gherkin/merge.config.mjs'), `--merge-reports=${staging}`],
-    { cwd: root, env: { ...process.env, OPERATIONS_REPORT_DIRECTORY: directory }, encoding: 'utf8', timeout: 120000,
+    // This child only merges stored results. SIGKILL enforces the deadline even
+    // if its event loop stalls or a dependency retains a SIGTERM handler.
+    { cwd: root, env: { ...process.env, OPERATIONS_REPORT_DIRECTORY: directory }, encoding: 'utf8', timeout: mergeTimeout, killSignal: 'SIGKILL',
       maxBuffer: 16 * 1024 * 1024 });
+    if (result.error?.code === 'ETIMEDOUT')
+      throw new Error(`Vitest report merge exceeded ${mergeTimeout} ms and was terminated.`, { cause: result.error });
     if (result.error) throw result.error;
     process.stdout.write(result.stdout ?? '');
     process.stderr.write(result.stderr ?? '');

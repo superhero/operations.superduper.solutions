@@ -10,6 +10,12 @@ Feature: Built-in Vitest reports preserve evidence and reject incomplete certifi
     Then the built-in report preserves each project and its individual cases
     And report generation preserves original evidence and bundled assets
 
+  Scenario: A workspace root with a trailing separator produces the same complete diagnostic report
+    Given real Vitest results from all six Gherkin projects
+    When the diagnostic report is generated from a workspace root with a trailing separator
+    Then the built-in report preserves each project and its individual cases
+    And report generation preserves original evidence and bundled assets
+
   Scenario: A partial diagnostic report visibly identifies a failed CI run and missing suites
     Given real Vitest results without the browser project
     When the diagnostic test report is generated
@@ -38,3 +44,8 @@ Feature: Built-in Vitest reports preserve evidence and reject incomplete certifi
     When Vitest executes them with every coverage threshold set to 100 percent
     Then every scenario and step passes while only the coverage gate fails
     And the coverage summary retains unexecuted source and missing branches
+
+  Scenario: A stalled report merger cannot outlive its deadline or leave successful output
+    Given a report merger that ignores graceful termination
+    When the diagnostic test report is generated with a short merge deadline
+    Then the stalled merger is terminated and its incomplete output is removed

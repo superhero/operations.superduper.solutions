@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFile
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
-import { parse } from 'flatted';
+import { parse, stringify } from 'flatted';
 import { Given, Then, When } from '@cucumber/cucumber';
 import { createReportFixture } from '../../tests/gherkin/report-fixtures/index.mjs';
 import './support.mjs';
@@ -43,9 +43,10 @@ Given('the input blob is {string}', function (problem) {
   else writeFileSync(file, { 'malformed JSON': '{', empty: '[]', 'invalid shape': '[{}]' }[problem]);
 });
 
-function generate(world, diagnostic) {
+function generate(world, diagnostic, { trailingRoot = false } = {}) {
   const program = `import { generateReport } from ${JSON.stringify(generator)};
-    try { generateReport('tmp/test/merged-report', 'tmp/test/blobs', {root:process.cwd(),diagnostic:${diagnostic}}); }
+    try { generateReport('tmp/test/merged-report', 'tmp/test/blobs', {root:${trailingRoot ? "process.cwd()+'/'" : 'process.cwd()'},diagnostic:${diagnostic},
+      ${world.testReport.mergeTimeout ? `mergeTimeout:${world.testReport.mergeTimeout}` : ''}}); }
     catch(error) { console.error(error.message); process.exitCode=1; }`;
   world.result = spawnSync(process.execPath, ['--input-type=module', '-e', program], {
     cwd: world.testReport.root, encoding: 'utf8', timeout: 45000,
@@ -59,6 +60,9 @@ function generate(world, diagnostic) {
     assert.ok(!(world.result.stdout + world.result.stderr).includes(secret), 'Report diagnostics exposed a test credential');
 }
 When('the diagnostic test report is generated', { timeout: 60000 }, function () { generate(this, true); });
+When('the diagnostic report is generated from a workspace root with a trailing separator', { timeout: 60000 }, function () {
+  generate(this, true, { trailingRoot: true });
+});
 When('strict test report generation is attempted', { timeout: 60000 }, function () { generate(this, false); });
 
 Then('the built-in report preserves each project and its individual cases', function () {
@@ -156,4 +160,43 @@ Then('the coverage summary retains unexecuted source and missing branches', func
   const executed = Object.entries(coverage).find(([path]) => path.endsWith('/source-a.js'))?.[1];
   assert.ok(executed && Object.values(executed.s).some(hit => hit > 0));
   assert.ok(Object.values(executed.b).some(hits => hits.some(hit => hit === 0)), 'The partially executed branch remains uncovered');
+});
+
+Given('a report merger that ignores graceful termination', function () {
+  const root = join(this.automation.root, 'stalled-report-fixture');
+  const blobDirectory = join(root, 'tmp/test/blobs');
+  const output = join(root, 'tmp/test/merged-report');
+  for (const directory of [blobDirectory, output, join(root, 'tmp/test/executions'), join(root, 'node_modules/vitest')])
+    mkdirSync(directory, { recursive: true });
+  const featurePaths = ['features/stalled.feature'];
+  writeFileSync(join(blobDirectory, 'fixture.json'), stringify(['5.0.5',
+    [{ filepath: join(root, featurePaths[0]) }], [], {}, 1, {}]));
+  writeFileSync(join(root, 'tmp/test/executions/fixture.json'), JSON.stringify({ featurePaths }));
+  writeFileSync(join(output, 'index.html'), 'stale successful report');
+  writeFileSync(join(root, 'node_modules/vitest/vitest.mjs'), `import {writeFileSync} from 'node:fs';
+    process.on('SIGTERM', () => {});
+    writeFileSync('merger-ready.json', JSON.stringify({pid:process.pid, ignoresSigterm:process.listenerCount('SIGTERM')===1}));
+    setInterval(() => {}, 1000);
+    // A broken timeout must fail this control, never strand its own process.
+    setTimeout(() => process.exit(98), 5000);
+  `);
+  this.testReport = { root, blobDirectory, output, mergeTimeout: 1000 };
+});
+When('the diagnostic test report is generated with a short merge deadline', { timeout: 10000 }, function () {
+  const started = Date.now();
+  generate(this, true);
+  this.testReport.elapsed = Date.now() - started;
+});
+Then('the stalled merger is terminated and its incomplete output is removed', function () {
+  assert.equal(this.result.status, 1, this.result.stdout + this.result.stderr);
+  const ready = JSON.parse(readFileSync(join(this.testReport.root, 'merger-ready.json'), 'utf8'));
+  assert.equal(ready.ignoresSigterm, true, 'The control must actually ignore graceful termination');
+  assert.ok(this.testReport.elapsed < 4000, 'Report generation waited for the control fallback instead of enforcing its deadline');
+  assert.throws(() => process.kill(ready.pid, 0), { code: 'ESRCH' }, 'The report merger survived its deadline');
+  assert.match(this.result.stderr, /Vitest report merge exceeded 1000 ms and was terminated/);
+  for (const value of ['Cannot generate test report', this.testReport.output, this.testReport.blobDirectory])
+    assert.ok(this.result.stderr.includes(value), this.result.stderr);
+  assert.equal(existsSync(this.testReport.output), false);
+  assert.ok(!readdirSync(join(this.testReport.root, 'tmp/test')).some(name => name.startsWith('.merge-')));
+  assert.deepEqual(this.automation.calls(), []);
 });
