@@ -5,7 +5,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
-  import { defaultToolbarButtons, type ToolbarButtons } from "$lib/toolbar-settings.ts";
+  import { defaultToolbarButtons, toolbarButtonGroups, type ToolbarButtons } from "$lib/toolbar-settings.ts";
   import { onMount, onDestroy, tick } from "svelte";
   import { Controls, useSvelteFlow, useStore } from "@xyflow/svelte";
   import HintButton from "$lib/components/HintButton.svelte";
@@ -174,7 +174,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 {#if Object.values(buttons).some(Boolean)}
 <Controls position="top-right" orientation="horizontal" class="workflow-toolbar" showLock={false} showZoom={false} showFitView={false}>
   {#snippet before()}
-    {#if [buttons.browse, buttons.switch, buttons.cast, buttons.vault, buttons.file, buttons.comment].some(Boolean)}
+    {#if toolbarButtonGroups[0].buttons.some(key => buttons[key])}
     <div class="workflow-control-group">
     {#if buttons.browse}<HintButton class="svelte-flow__controls-button" aria-label="Browse operations" label="Browse operations" aria-pressed={navigationOpen} aria-controls="side-navigation" onclick={onbrowse}><MaterialIcon name="list" size={18} /></HintButton>{/if}
     {#if buttons.switch}<HintButton class="svelte-flow__controls-button" aria-label="Switch" label="Switch" onclick={() => onutility("switch")}><MaterialIcon name="alt_route" size={18} /></HintButton>{/if}
@@ -184,7 +184,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if buttons.comment}<HintButton class="svelte-flow__controls-button" aria-label="Comment" label="Comment" onclick={() => onutility("comment")}><MaterialIcon name="sticky_note" size={18} /></HintButton>{/if}
     </div>
     {/if}
-    {#if [buttons.copy, buttons.cut, buttons.paste, buttons.delete].some(Boolean)}
+    {#if toolbarButtonGroups[1].buttons.some(key => buttons[key])}
     <div class="workflow-control-group">
     {#if buttons.copy}<HintButton class="svelte-flow__controls-button" aria-label="Copy selection" label="Copy selection" disabled={!selected} onclick={oncopy}><MaterialIcon name="content_copy" size={18} /></HintButton>{/if}
     {#if buttons.cut}<HintButton class="svelte-flow__controls-button" aria-label="Cut selection" label="Cut selection" disabled={!selected} onclick={oncut}><MaterialIcon name="content_cut" size={18} /></HintButton>{/if}
@@ -192,14 +192,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if buttons.delete}<HintButton class="svelte-flow__controls-button" aria-label="Remove selected" label="Remove selected" disabled={!selected} onclick={onremove}><MaterialIcon name="delete" size={18} /></HintButton>{/if}
     </div>
     {/if}
-    {#if [buttons.dashed, buttons.curved, buttons.snap].some(Boolean)}
+    {#if toolbarButtonGroups[2].buttons.some(key => buttons[key])}
     <div class="workflow-control-group">
     {#if buttons.dashed}<HintButton class="svelte-flow__controls-button" aria-label="Dashed connections" label="Dashed connections" aria-pressed={dashed} onclick={ondashed}><MaterialIcon name="unknown_med" size={18} /></HintButton>{/if}
     {#if buttons.curved}<HintButton class="svelte-flow__controls-button" aria-label="Curved connections" label="Curved connections" aria-pressed={curved} onclick={oncurved}><MaterialIcon name="line_curve" size={18} /></HintButton>{/if}
     {#if buttons.snap}<HintButton class="svelte-flow__controls-button" aria-label="Snap to grid" label="Snap to grid" aria-pressed={snap} onclick={onsnap}><MaterialIcon name="grid_on" size={18} /></HintButton>{/if}
     </div>
     {/if}
-    {#if [buttons.zoomIn, buttons.zoomOut, buttons.fit].some(Boolean)}
+    {#if toolbarButtonGroups[3].buttons.some(key => buttons[key])}
     <div class="workflow-control-group">
     {#if buttons.zoomIn}<HintButton class="svelte-flow__controls-button" aria-label={ariaLabels["controls.zoomIn.ariaLabel"]} label={ariaLabels["controls.zoomIn.ariaLabel"]}
       disabled={maxZoomReached} onclick={() => { void zoomIn(); }}><MaterialIcon name="add" size={18} /></HintButton>{/if}
@@ -211,14 +211,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {/if}
   {/snippet}
   {#snippet after()}
-    {#if [buttons.undo, buttons.redo, buttons.history].some(Boolean)}
+    {#if toolbarButtonGroups[4].buttons.some(key => buttons[key])}
     <div class="workflow-control-group">
       {#if buttons.undo}<HintButton class="svelte-flow__controls-button" aria-label="Undo" label="Undo" disabled={!canUndo || historyBusy} onclick={onundo}><MaterialIcon name="undo" size={18} /></HintButton>{/if}
       {#if buttons.redo}<HintButton class="svelte-flow__controls-button" aria-label="Redo" label="Redo" disabled={!canRedo || historyBusy} onclick={onredo}><MaterialIcon name="redo" size={18} /></HintButton>{/if}
       {#if buttons.history}<HintButton class="svelte-flow__controls-button" aria-label="Workflow history" label="Workflow history" onclick={onhistory}><MaterialIcon name="history" size={18} /></HintButton>{/if}
     </div>
     {/if}
-    {#if [buttons.new, buttons.open, buttons.details, buttons.import, buttons.export].some(Boolean)}
+    {#if toolbarButtonGroups[5].buttons.some(key => buttons[key])}
     <div class="workflow-control-group">
     {#if buttons.new}<HintButton class="svelte-flow__controls-button" aria-label="New workflow" label="New workflow" onclick={onnew}><MaterialIcon name="flowsheet" size={18} /></HintButton>{/if}
     {#if buttons.open}<HintButton class="svelte-flow__controls-button" aria-label="Open workflow" label="Open workflow" onclick={onopen}><MaterialIcon name="folder_open" size={18} /></HintButton>{/if}
@@ -227,7 +227,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if buttons.export}<HintButton class="svelte-flow__controls-button" aria-label="Export workflow" label="Export workflow" onclick={onexport}><MaterialIcon name="download" size={18} /></HintButton>{/if}
     </div>
     {/if}
-    {#if [buttons.run].some(Boolean)}
+    {#if toolbarButtonGroups[6].buttons.some(key => buttons[key])}
     <div class="workflow-control-group">
       {#if buttons.run}<HintButton class="svelte-flow__controls-button" aria-label="Run workflow" label="Run workflow" onclick={onrun}><MaterialIcon name="play_arrow" size={18} /></HintButton>{/if}
     </div>
