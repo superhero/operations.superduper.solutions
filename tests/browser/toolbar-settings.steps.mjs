@@ -14,9 +14,15 @@ Then('toolbar visibility choices persist and leave keyboard shortcuts available'
   let preferences = page.getByRole('group', { name: 'Toolbar button preferences', exact: true });
   const labels = toolbarButtonGroups.flatMap(group => group.buttons.map(key => toolbarButtonLabels[key]));
   await expect(preferences.getByRole('switch')).toHaveText(labels);
-  await expect.poll(() => preferences.locator('.groups').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(3);
-  for (const group of toolbarButtonGroups)
+  await expect.poll(() => preferences.locator('.groups').evaluate(element => Number(getComputedStyle(element).columnCount))).toBe(3);
+  for (const group of toolbarButtonGroups) {
+    const card = preferences.getByRole('group', { name: group.label, exact: true });
+    const box = await card.boundingBox();
+    const title = await card.getByRole('heading', { name: group.label, exact: true }).boundingBox();
+    expect(title.y).toBeGreaterThanOrEqual(box.y + 8);
+    expect(title.y + title.height).toBeLessThan(box.y + box.height);
     await expect(preferences.getByRole('group', { name: group.label, exact: true }).getByRole('switch')).toHaveCount(group.buttons.length);
+  }
   for (const [key, label] of Object.entries(toolbarButtonLabels)) {
     const toggle = preferences.getByRole('switch', { name: label, exact: true });
     await expect(toggle).toHaveAttribute('aria-checked', 'true');
