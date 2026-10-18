@@ -2,6 +2,14 @@
 
 ## Latest
 
+<!-- changelog-commit:e975af1fcc1fbbad475d5fa5229cd76c3de03694 -->
+### Commit [`e975af1`](https://github.com/superhero/operations.superduper.solutions/commit/e975af1fcc1fbbad475d5fa5229cd76c3de03694)
+
+```text
+feat: configure workflow shortcuts and selection keybindings
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
