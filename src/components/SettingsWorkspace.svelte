@@ -92,7 +92,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     onRetrySettings: () => void;
   } = $props();
   let workspace: HTMLElement;
-  let openSection = $state<"buttons" | "keybindings" | "secrets" | "theme" | "locale" | "logs" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
+  let openSection = $state<"toolbar" | "keybindings" | "secrets" | "theme" | "locale" | "logs" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
   let storageBuilt = $state(false);
   let storageReady = $state(false);
   let storageDismissing = $state(false);
@@ -358,13 +358,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {/if}
       </div>
     </Disclosure>
-    <Disclosure class="catalog-group settings-section" label="Buttons" tooltipEnabled={false} open={openSection === "buttons"} onToggle={next => openSection = next ? "buttons" : null}>
-      {#snippet summary()}
-        <div class="section-heading"><h2>Buttons</h2><span class="section-subtitle">Show or hide workflow toolbar buttons</span></div>
-        <MaterialIcon name="chevron_forward" size={17} />
-      {/snippet}
-      <ToolbarSettings value={toolbarButtons} onValueChange={onToolbarButtonsChange} error={toolbarButtonsError} onRetry={onRetryToolbarButtons}/>
-    </Disclosure>
+
 
     <Disclosure class="catalog-group settings-section" label="Developer" tooltipEnabled={false} open={openSection === "developer"} onToggle={(next) => openSection = next ? "developer" : null}>
       {#snippet summary()}
@@ -461,6 +455,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           {/each}
         </div>
       </fieldset>
+    </Disclosure>
+    <Disclosure class="catalog-group settings-section" label="Toolbar" tooltipEnabled={false} open={openSection === "toolbar"} onToggle={next => openSection = next ? "toolbar" : null}>
+      {#snippet summary()}
+        <div class="section-heading"><h2>Toolbar</h2><span class="section-subtitle">Show or hide workflow toolbar buttons</span></div>
+        <MaterialIcon name="chevron_forward" size={17} />
+      {/snippet}
+      <ToolbarSettings value={toolbarButtons} onValueChange={onToolbarButtonsChange} error={toolbarButtonsError} onRetry={onRetryToolbarButtons}/>
     </Disclosure>
   </div>
 </section>

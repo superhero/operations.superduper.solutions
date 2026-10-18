@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+@toolbar-controls
 Feature: Documented workflow fields and mappings
   Operations expose their documented input and response fields as editable workflow panels.
 

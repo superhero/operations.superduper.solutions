@@ -3,6 +3,7 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 @workflow-defaults
+@toolbar-controls
 Feature: Browser-local workflow defaults
   Scenario: Workflow defaults persist and initialize untouched and new workflows
     Then Settings sections open exclusively with the current workflow defaults in a fresh browser

@@ -170,6 +170,22 @@ style: increase group heading line height and recolor dividers
 
 ```
 
+<!-- changelog-commit:be322e4d9ee0171c2d898d9f68e07d38a39066b5 -->
+### Commit [`be322e4`](https://github.com/superhero/operations.superduper.solutions/commit/be322e4d9ee0171c2d898d9f68e07d38a39066b5)
+
+```text
+feat: hide secondary toolbar controls by default
+
+```
+
+<!-- changelog-commit:c1e1ddfd4c5f1748e08c6fc2fd66bc5c22568ad7 -->
+### Commit [`c1e1ddf`](https://github.com/superhero/operations.superduper.solutions/commit/c1e1ddfd4c5f1748e08c6fc2fd66bc5c22568ad7)
+
+```text
+style: rename Buttons settings to Toolbar
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52

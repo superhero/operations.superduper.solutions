@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+@toolbar-controls
 Feature: Workflow branch selection
   Modifier clicks and double-clicks select workflow nodes without changing the workflow.
   Drag rectangles disappear on release while the selection remains.

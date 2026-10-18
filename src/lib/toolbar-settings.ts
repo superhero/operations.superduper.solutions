@@ -40,8 +40,11 @@ export const toolbarButtonGroups = [
   { label: "Run", buttons: ["run"] }
 ] as const satisfies readonly { label: string; buttons: readonly ToolbarButton[] }[];
 export const toolbarButtonNames = Object.keys(toolbarButtonLabels) as ToolbarButton[];
-export const defaultToolbarButtons = Object.fromEntries(toolbarButtonNames.map(key => [key, true])) as ToolbarButtons;
+const initiallyHidden = new Set<ToolbarButton>([
+  "zoomIn", "zoomOut", ...toolbarButtonGroups[1].buttons, ...toolbarButtonGroups[2].buttons
+]);
+export const defaultToolbarButtons = Object.fromEntries(toolbarButtonNames.map(key => [key, !initiallyHidden.has(key)])) as ToolbarButtons;
 export function normalizeToolbarButtons(value: unknown): ToolbarButtons {
   const saved = value && typeof value === "object" ? value as Partial<ToolbarButtons> : {};
-  return Object.fromEntries(toolbarButtonNames.map(key => [key, typeof saved[key] === "boolean" ? saved[key] : true])) as ToolbarButtons;
+  return Object.fromEntries(toolbarButtonNames.map(key => [key, typeof saved[key] === "boolean" ? saved[key] : defaultToolbarButtons[key]])) as ToolbarButtons;
 }
