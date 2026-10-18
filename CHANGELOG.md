@@ -186,6 +186,54 @@ style: rename Buttons settings to Toolbar
 
 ```
 
+<!-- changelog-commit:8ffaed96c074faf0866f3393bd2e5ec5c3960494 -->
+### Commit [`8ffaed9`](https://github.com/superhero/operations.superduper.solutions/commit/8ffaed96c074faf0866f3393bd2e5ec5c3960494)
+
+```text
+style: match toolbar switch backgrounds to developer settings
+
+```
+
+<!-- changelog-commit:0d943c35222d4e6c15a88a82f84510219c43be81 -->
+### Commit [`0d943c3`](https://github.com/superhero/operations.superduper.solutions/commit/0d943c35222d4e6c15a88a82f84510219c43be81)
+
+```text
+style: remove toolbar group heading dividers
+
+```
+
+<!-- changelog-commit:822616bc912cab109e799e56afb025f93bd2c95c -->
+### Commit [`822616b`](https://github.com/superhero/operations.superduper.solutions/commit/822616bc912cab109e799e56afb025f93bd2c95c)
+
+```text
+style: tighten spacing below toolbar group headings
+
+```
+
+<!-- changelog-commit:fb2eb458538607bebdfce54fc52a6cbbf028839a -->
+### Commit [`fb2eb45`](https://github.com/superhero/operations.superduper.solutions/commit/fb2eb458538607bebdfce54fc52a6cbbf028839a)
+
+```text
+style: balance spacing around toolbar group headings
+
+```
+
+<!-- changelog-commit:5734c75142853567eb13cae0fd012d0add3df061 -->
+### Commit [`5734c75`](https://github.com/superhero/operations.superduper.solutions/commit/5734c75142853567eb13cae0fd012d0add3df061)
+
+```text
+style: pack application settings into toolbar-style columns
+
+```
+
+<!-- changelog-commit:279629394ac4013b5603762a259863d613336973 -->
+### Commit [`2796293`](https://github.com/superhero/operations.superduper.solutions/commit/279629394ac4013b5603762a259863d613336973)
+
+```text
+fix: keep application settings in three independent lanes
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
