@@ -66,6 +66,22 @@ fix(settings): adjust commit grid square size and spacing
 
 ```
 
+<!-- changelog-commit:7a9567b65c89dd989050efde643d4cddfe88b5a9 -->
+### Commit [`7a9567b`](https://github.com/superhero/operations.superduper.solutions/commit/7a9567b65c89dd989050efde643d4cddfe88b5a9)
+
+```text
+feat(settings): stage Browser opening with a building indicator
+
+Paint a compact Building... status and finish its initial slide before
+constructing the Browser dashboard. Let the existing disclosure animate
+to the built content height, and reuse the dashboard on later opens.
+Cancel pending construction when closing or switching sections.
+
+Cover the painted compact state, full expansion and reuse under normal
+and reduced motion, plus cancellation before construction in Cucumber.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.51
