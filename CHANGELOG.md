@@ -90,6 +90,14 @@ style: separate workflow clipboard controls from node tools
 
 ```
 
+<!-- changelog-commit:73b482827d01db8016872b1e8a61fb2505eee402 -->
+### Commit [`73b4828`](https://github.com/superhero/operations.superduper.solutions/commit/73b482827d01db8016872b1e8a61fb2505eee402)
+
+```text
+feat: configure individual workflow toolbar button visibility
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52

@@ -5,6 +5,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
+  import { defaultToolbarButtons, type ToolbarButtons } from "$lib/toolbar-settings.ts";
   import { copyWorkflowSelection, pasteWorkflowSelection, type WorkflowClipboard } from "$lib/workflow-clipboard.ts";
   import { defaultKeybindings, shortcutAction, modifierKeys, modifierPressed, type Keybindings } from "$lib/keybindings.ts";
   import { onMount, setContext, tick, untrack } from "svelte";
@@ -50,8 +51,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { CredentialBinding } from "$lib/secrets/types.ts";
   import Modal from "$lib/components/Modal.svelte";
 
-  let { keybindings = defaultKeybindings, active, settingsOpen = false, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
-    { keybindings?: Keybindings; active: boolean; settingsOpen?: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
+  let { toolbarButtons = defaultToolbarButtons, keybindings = defaultKeybindings, active, settingsOpen = false, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
+    { toolbarButtons?: ToolbarButtons; keybindings?: Keybindings; active: boolean; settingsOpen?: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
   const nodeTypes = { file: WorkflowFileNode, vault: WorkflowVaultNode, operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
   const edgeTypes = { default: WorkflowCurveEdge, smoothstep: RoutedEdge };
   type CanvasNode<T> = T extends WorkflowDocumentNode ? Node<T["data"], NonNullable<T["type"]>> & { type: NonNullable<T["type"]> } : never;
@@ -1024,7 +1025,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <WorkflowSelection menuOpen={navigationOpen || settingsOpen} {canvas} {keybindings} active={keyboardActive} />
       <WorkflowConnectionSnap bind:this={connectionSnap} isValidConnection={validConnection} active={keyboardActive} {curved} {dashed} curveStrength={workflowDefaults.curveStrength} markerEnd={`url(#${connectionMarkerId})`} />
       {#if nodes.length}<WorkflowMinimap active={keyboardActive} />{/if}
-      <WorkflowToolbar bind:this={toolbar} {canvas} {active} {settingsOpen} {navigationOpen} {snap} {curved} {dashed} {selected} placing={placement !== null}
+      <WorkflowToolbar buttons={toolbarButtons} bind:this={toolbar} {canvas} {active} {settingsOpen} {navigationOpen} {snap} {curved} {dashed} {selected} placing={placement !== null}
         onsnap={() => snap = !snap} oncurved={switchCurve} ondashed={switchDashes}
         oncopy={() => copySelection()} oncut={() => copySelection(true)} onpaste={() => { void pasteSelection(); }} canPaste={clipboard !== null}
         onremove={removeSelected} onnew={newDocument} onopen={openDocuments}

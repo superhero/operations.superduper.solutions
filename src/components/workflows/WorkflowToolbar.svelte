@@ -5,17 +5,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
-  import { onMount, onDestroy } from "svelte";
+  import { defaultToolbarButtons, type ToolbarButtons } from "$lib/toolbar-settings.ts";
+  import { onMount, onDestroy, tick } from "svelte";
   import { Controls, useSvelteFlow, useStore } from "@xyflow/svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  let { oncopy, oncut, onpaste, canPaste = false, canvas, active, settingsOpen = false, placing = false, navigationOpen, snap, curved, dashed, selected, onsnap, oncurved, ondashed, onremove, onnew, onopen, onexport, onimport, onbrowse, onutility, ondescribe, onrun, canUndo, canRedo, historyBusy, onundo, onredo, onhistory }:
-    { oncopy: () => void; oncut: () => void; onpaste: () => void; canPaste?: boolean; canvas: HTMLElement | undefined; active: boolean; settingsOpen?: boolean; placing?: boolean; navigationOpen: boolean; snap: boolean; curved: boolean; dashed: boolean; selected: boolean;
+  let { buttons = defaultToolbarButtons, oncopy, oncut, onpaste, canPaste = false, canvas, active, settingsOpen = false, placing = false, navigationOpen, snap, curved, dashed, selected, onsnap, oncurved, ondashed, onremove, onnew, onopen, onexport, onimport, onbrowse, onutility, ondescribe, onrun, canUndo, canRedo, historyBusy, onundo, onredo, onhistory }:
+    { buttons?: ToolbarButtons; oncopy: () => void; oncut: () => void; onpaste: () => void; canPaste?: boolean; canvas: HTMLElement | undefined; active: boolean; settingsOpen?: boolean; placing?: boolean; navigationOpen: boolean; snap: boolean; curved: boolean; dashed: boolean; selected: boolean;
       onsnap: () => void; oncurved: () => void; ondashed: () => void; onremove: () => void;
       onnew: () => void; onopen: () => void; onexport: () => void;
       onimport: () => void; onbrowse: () => void; onutility: (type: "switch" | "cast" | "comment" | "vault" | "file") => void;
       ondescribe: () => void; onrun: () => void; canUndo: boolean; canRedo: boolean; historyBusy: boolean;
       onundo: () => void; onredo: () => void; onhistory: () => void } = $props();
+  $effect(() => { void buttons; void tick().then(() => compactLayout?.()); });
   const { fitView, getInternalNode, getNodes, getViewport, setViewport, zoomIn, zoomOut } = useSvelteFlow();
   const store = useStore();
   const minZoomReached = $derived(store.viewport.zoom <= store.minZoom);
@@ -169,51 +171,70 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 </script>
 
+{#if Object.values(buttons).some(Boolean)}
 <Controls position="top-right" orientation="horizontal" class="workflow-toolbar" showLock={false} showZoom={false} showFitView={false}>
   {#snippet before()}
+    {#if [buttons.browse, buttons.switch, buttons.cast, buttons.vault, buttons.file, buttons.comment].some(Boolean)}
     <div class="workflow-control-group">
-    <HintButton class="svelte-flow__controls-button" aria-label="Browse operations" label="Browse operations" aria-pressed={navigationOpen} aria-controls="side-navigation" onclick={onbrowse}><MaterialIcon name="list" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Switch" label="Switch" onclick={() => onutility("switch")}><MaterialIcon name="alt_route" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Cast" label="Cast" onclick={() => onutility("cast")}><MaterialIcon name="transform" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Add vault variable" label="Add vault variable" onclick={() => onutility("vault")}><MaterialIcon name="variable_add" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Add file" label="Add file" onclick={() => onutility("file")}><MaterialIcon name="upload_file" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Comment" label="Comment" onclick={() => onutility("comment")}><MaterialIcon name="sticky_note" size={18} /></HintButton>
-    </div><div class="workflow-control-group">
-    <HintButton class="svelte-flow__controls-button" aria-label="Copy selection" label="Copy selection" disabled={!selected} onclick={oncopy}><MaterialIcon name="content_copy" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Cut selection" label="Cut selection" disabled={!selected} onclick={oncut}><MaterialIcon name="content_cut" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Paste" label="Paste" disabled={!canPaste} onclick={onpaste}><MaterialIcon name="content_paste" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Remove selected" label="Remove selected" disabled={!selected} onclick={onremove}><MaterialIcon name="delete" size={18} /></HintButton>
-    </div><div class="workflow-control-group">
-    <HintButton class="svelte-flow__controls-button" aria-label="Dashed connections" label="Dashed connections" aria-pressed={dashed} onclick={ondashed}><MaterialIcon name="unknown_med" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Curved connections" label="Curved connections" aria-pressed={curved} onclick={oncurved}><MaterialIcon name="line_curve" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Snap to grid" label="Snap to grid" aria-pressed={snap} onclick={onsnap}><MaterialIcon name="grid_on" size={18} /></HintButton>
-    </div><div class="workflow-control-group">
-    <HintButton class="svelte-flow__controls-button" aria-label={ariaLabels["controls.zoomIn.ariaLabel"]} label={ariaLabels["controls.zoomIn.ariaLabel"]}
-      disabled={maxZoomReached} onclick={() => { void zoomIn(); }}><MaterialIcon name="add" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label={ariaLabels["controls.zoomOut.ariaLabel"]} label={ariaLabels["controls.zoomOut.ariaLabel"]}
-      disabled={minZoomReached} onclick={() => { void zoomOut(); }}><MaterialIcon name="remove" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label={ariaLabels["controls.fitView.ariaLabel"]} label={ariaLabels["controls.fitView.ariaLabel"]}
-      onclick={() => { void fitView({ padding: 0.2, maxZoom: 1 }); }}><MaterialIcon name="fit_screen" size={18} /></HintButton>
+    {#if buttons.browse}<HintButton class="svelte-flow__controls-button" aria-label="Browse operations" label="Browse operations" aria-pressed={navigationOpen} aria-controls="side-navigation" onclick={onbrowse}><MaterialIcon name="list" size={18} /></HintButton>{/if}
+    {#if buttons.switch}<HintButton class="svelte-flow__controls-button" aria-label="Switch" label="Switch" onclick={() => onutility("switch")}><MaterialIcon name="alt_route" size={18} /></HintButton>{/if}
+    {#if buttons.cast}<HintButton class="svelte-flow__controls-button" aria-label="Cast" label="Cast" onclick={() => onutility("cast")}><MaterialIcon name="transform" size={18} /></HintButton>{/if}
+    {#if buttons.vault}<HintButton class="svelte-flow__controls-button" aria-label="Add vault variable" label="Add vault variable" onclick={() => onutility("vault")}><MaterialIcon name="variable_add" size={18} /></HintButton>{/if}
+    {#if buttons.file}<HintButton class="svelte-flow__controls-button" aria-label="Add file" label="Add file" onclick={() => onutility("file")}><MaterialIcon name="upload_file" size={18} /></HintButton>{/if}
+    {#if buttons.comment}<HintButton class="svelte-flow__controls-button" aria-label="Comment" label="Comment" onclick={() => onutility("comment")}><MaterialIcon name="sticky_note" size={18} /></HintButton>{/if}
     </div>
+    {/if}
+    {#if [buttons.copy, buttons.cut, buttons.paste, buttons.delete].some(Boolean)}
+    <div class="workflow-control-group">
+    {#if buttons.copy}<HintButton class="svelte-flow__controls-button" aria-label="Copy selection" label="Copy selection" disabled={!selected} onclick={oncopy}><MaterialIcon name="content_copy" size={18} /></HintButton>{/if}
+    {#if buttons.cut}<HintButton class="svelte-flow__controls-button" aria-label="Cut selection" label="Cut selection" disabled={!selected} onclick={oncut}><MaterialIcon name="content_cut" size={18} /></HintButton>{/if}
+    {#if buttons.paste}<HintButton class="svelte-flow__controls-button" aria-label="Paste" label="Paste" disabled={!canPaste} onclick={onpaste}><MaterialIcon name="content_paste" size={18} /></HintButton>{/if}
+    {#if buttons.delete}<HintButton class="svelte-flow__controls-button" aria-label="Remove selected" label="Remove selected" disabled={!selected} onclick={onremove}><MaterialIcon name="delete" size={18} /></HintButton>{/if}
+    </div>
+    {/if}
+    {#if [buttons.dashed, buttons.curved, buttons.snap].some(Boolean)}
+    <div class="workflow-control-group">
+    {#if buttons.dashed}<HintButton class="svelte-flow__controls-button" aria-label="Dashed connections" label="Dashed connections" aria-pressed={dashed} onclick={ondashed}><MaterialIcon name="unknown_med" size={18} /></HintButton>{/if}
+    {#if buttons.curved}<HintButton class="svelte-flow__controls-button" aria-label="Curved connections" label="Curved connections" aria-pressed={curved} onclick={oncurved}><MaterialIcon name="line_curve" size={18} /></HintButton>{/if}
+    {#if buttons.snap}<HintButton class="svelte-flow__controls-button" aria-label="Snap to grid" label="Snap to grid" aria-pressed={snap} onclick={onsnap}><MaterialIcon name="grid_on" size={18} /></HintButton>{/if}
+    </div>
+    {/if}
+    {#if [buttons.zoomIn, buttons.zoomOut, buttons.fit].some(Boolean)}
+    <div class="workflow-control-group">
+    {#if buttons.zoomIn}<HintButton class="svelte-flow__controls-button" aria-label={ariaLabels["controls.zoomIn.ariaLabel"]} label={ariaLabels["controls.zoomIn.ariaLabel"]}
+      disabled={maxZoomReached} onclick={() => { void zoomIn(); }}><MaterialIcon name="add" size={18} /></HintButton>{/if}
+    {#if buttons.zoomOut}<HintButton class="svelte-flow__controls-button" aria-label={ariaLabels["controls.zoomOut.ariaLabel"]} label={ariaLabels["controls.zoomOut.ariaLabel"]}
+      disabled={minZoomReached} onclick={() => { void zoomOut(); }}><MaterialIcon name="remove" size={18} /></HintButton>{/if}
+    {#if buttons.fit}<HintButton class="svelte-flow__controls-button" aria-label={ariaLabels["controls.fitView.ariaLabel"]} label={ariaLabels["controls.fitView.ariaLabel"]}
+      onclick={() => { void fitView({ padding: 0.2, maxZoom: 1 }); }}><MaterialIcon name="fit_screen" size={18} /></HintButton>{/if}
+    </div>
+    {/if}
   {/snippet}
   {#snippet after()}
+    {#if [buttons.undo, buttons.redo, buttons.history].some(Boolean)}
     <div class="workflow-control-group">
-      <HintButton class="svelte-flow__controls-button" aria-label="Undo" label="Undo" disabled={!canUndo || historyBusy} onclick={onundo}><MaterialIcon name="undo" size={18} /></HintButton>
-      <HintButton class="svelte-flow__controls-button" aria-label="Redo" label="Redo" disabled={!canRedo || historyBusy} onclick={onredo}><MaterialIcon name="redo" size={18} /></HintButton>
-      <HintButton class="svelte-flow__controls-button" aria-label="Workflow history" label="Workflow history" onclick={onhistory}><MaterialIcon name="history" size={18} /></HintButton>
+      {#if buttons.undo}<HintButton class="svelte-flow__controls-button" aria-label="Undo" label="Undo" disabled={!canUndo || historyBusy} onclick={onundo}><MaterialIcon name="undo" size={18} /></HintButton>{/if}
+      {#if buttons.redo}<HintButton class="svelte-flow__controls-button" aria-label="Redo" label="Redo" disabled={!canRedo || historyBusy} onclick={onredo}><MaterialIcon name="redo" size={18} /></HintButton>{/if}
+      {#if buttons.history}<HintButton class="svelte-flow__controls-button" aria-label="Workflow history" label="Workflow history" onclick={onhistory}><MaterialIcon name="history" size={18} /></HintButton>{/if}
     </div>
+    {/if}
+    {#if [buttons.new, buttons.open, buttons.details, buttons.import, buttons.export].some(Boolean)}
     <div class="workflow-control-group">
-    <HintButton class="svelte-flow__controls-button" aria-label="New workflow" label="New workflow" onclick={onnew}><MaterialIcon name="flowsheet" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Open workflow" label="Open workflow" onclick={onopen}><MaterialIcon name="folder_open" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Workflow details" label="Workflow details" onclick={ondescribe}><MaterialIcon name="article" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Import workflow" label="Import workflow" onclick={onimport}><MaterialIcon name="upload" size={18} /></HintButton>
-    <HintButton class="svelte-flow__controls-button" aria-label="Export workflow" label="Export workflow" onclick={onexport}><MaterialIcon name="download" size={18} /></HintButton>
+    {#if buttons.new}<HintButton class="svelte-flow__controls-button" aria-label="New workflow" label="New workflow" onclick={onnew}><MaterialIcon name="flowsheet" size={18} /></HintButton>{/if}
+    {#if buttons.open}<HintButton class="svelte-flow__controls-button" aria-label="Open workflow" label="Open workflow" onclick={onopen}><MaterialIcon name="folder_open" size={18} /></HintButton>{/if}
+    {#if buttons.details}<HintButton class="svelte-flow__controls-button" aria-label="Workflow details" label="Workflow details" onclick={ondescribe}><MaterialIcon name="article" size={18} /></HintButton>{/if}
+    {#if buttons.import}<HintButton class="svelte-flow__controls-button" aria-label="Import workflow" label="Import workflow" onclick={onimport}><MaterialIcon name="upload" size={18} /></HintButton>{/if}
+    {#if buttons.export}<HintButton class="svelte-flow__controls-button" aria-label="Export workflow" label="Export workflow" onclick={onexport}><MaterialIcon name="download" size={18} /></HintButton>{/if}
     </div>
+    {/if}
+    {#if [buttons.run].some(Boolean)}
     <div class="workflow-control-group">
-      <HintButton class="svelte-flow__controls-button" aria-label="Run workflow" label="Run workflow" onclick={onrun}><MaterialIcon name="play_arrow" size={18} /></HintButton>
+      {#if buttons.run}<HintButton class="svelte-flow__controls-button" aria-label="Run workflow" label="Run workflow" onclick={onrun}><MaterialIcon name="play_arrow" size={18} /></HintButton>{/if}
     </div>
+    {/if}
   {/snippet}
 </Controls>
+{/if}
 
 <style>
   .workflow-control-group { display: flex; flex: 0 0 auto; gap: 1px; }

@@ -7,6 +7,7 @@
   import type { WorkflowDocument } from "$lib/workflow-document.ts";
   import { loadSettings, saveSetting, type WorkflowDefaults } from "$lib/app-settings.ts";
   import { defaultLocaleSettings, normalizeLocaleSettings, type LocaleSettings } from "$lib/locale-settings.ts";
+  import { defaultToolbarButtons, normalizeToolbarButtons, type ToolbarButtons } from "$lib/toolbar-settings.ts";
   import { defaultKeybindings, normalizeKeybindings, shortcutAction, type Keybindings } from "$lib/keybindings.ts";
   import { applyLocaleSettings } from "$lib/datetime-state.ts";
   import { logger } from "$lib/logger.ts";
@@ -19,13 +20,14 @@
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import NativeScrollbars from "./components/NativeScrollbars.svelte";
 
-  let { initialKeybindings = defaultKeybindings, initialWorkflowDefaults, initialDeveloperToolbar = false, initialEvaluationDetails = false, initialTooltips = true, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
+  let { initialToolbarButtons = defaultToolbarButtons, initialKeybindings = defaultKeybindings, initialWorkflowDefaults, initialDeveloperToolbar = false, initialEvaluationDetails = false, initialTooltips = true, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
     initialWorkflowDefaults: WorkflowDefaults;
     initialDeveloperToolbar?: boolean;
     initialEvaluationDetails?: boolean;
     initialTooltips?: boolean;
     initialLocale?: LocaleSettings;
     initialKeybindings?: Keybindings;
+    initialToolbarButtons?: ToolbarButtons;
     initialSettingsError?: Error | null;
   } = $props();
   let workflowDefaults = $state<WorkflowDefaults>(untrack(() => ({ ...initialWorkflowDefaults })));
@@ -40,13 +42,16 @@
   let evaluationDetailsSave = 0;
   let locale = $state<LocaleSettings>(untrack(() => normalizeLocaleSettings(initialLocale)));
   let keybindings = $state<Keybindings>(untrack(() => normalizeKeybindings(initialKeybindings)));
+  let toolbarButtons = $state<ToolbarButtons>(untrack(() => normalizeToolbarButtons(initialToolbarButtons)));
+  let toolbarButtonsError = $state("");
+  let toolbarButtonsSave = 0;
   let keybindingsError = $state("");
   let keybindingsSave = 0;
   let localeError = $state("");
   let localeSave = 0;
   let settingsError = $state(untrack(() => initialSettingsError));
   let settingsRetrying = $state(false);
-  const settingsEdits = { theme: 0, palette: 0, workflowDefaults: 0, developerToolbar: 0, evaluationDetails: 0, tooltips: 0, locale: 0, keybindings: 0 };
+  const settingsEdits = { theme: 0, palette: 0, workflowDefaults: 0, developerToolbar: 0, evaluationDetails: 0, tooltips: 0, locale: 0, keybindings: 0, toolbarButtons: 0 };
   let workflowDefaultsError = $state("");
   let workflowDefaultsSave = 0;
   let navigationOpen = $state(!matchMedia("(max-width: 899px)").matches);
@@ -185,6 +190,19 @@
 
   $effect(() => { applyLocaleSettings(locale); });
 
+  function selectToolbarButtons(next: ToolbarButtons) {
+    settingsEdits.toolbarButtons += 1;
+    toolbarButtons = normalizeToolbarButtons(next);
+    toolbarButtonsError = "";
+    const request = ++toolbarButtonsSave;
+    void saveSetting("toolbarButtons", toolbarButtons).catch(error => {
+      if (request === toolbarButtonsSave) {
+        toolbarButtonsError = "Could not save toolbar button preferences. These choices apply only to this session until saving succeeds.";
+        void reportSettingsError(error);
+      }
+    });
+  }
+
   function selectKeybindings(next: Keybindings) {
     settingsEdits.keybindings += 1;
     keybindings = normalizeKeybindings(next);
@@ -293,6 +311,7 @@
         if (edits.developerToolbar === settingsEdits.developerToolbar) developerToolbar = settings.developerToolbar;
         if (edits.evaluationDetails === settingsEdits.evaluationDetails) evaluationDetails = settings.evaluationDetails;
         if (edits.tooltips === settingsEdits.tooltips) tooltips = settings.tooltips;
+        if (edits.toolbarButtons === settingsEdits.toolbarButtons) toolbarButtons = settings.toolbarButtons;
         if (edits.keybindings === settingsEdits.keybindings) keybindings = settings.keybindings;
         if (edits.locale === settingsEdits.locale) locale = settings.locale;
       }
@@ -368,7 +387,7 @@
         </div>
       {/if}
       <div class="workflow-host">
-        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={!(settingsPresent && compactSettings)} settingsOpen={mode === "settings"} {navigationOpen} {navigationModal} {workflowDefaults} {keybindings} onBrowse={browseOperations} />
+        <WorkflowWorkspace bind:this={workflowWorkspace} bind:documentModal bind:saveStatus={workflowSaveStatus} bind:documents={savedWorkflows} bind:libraryError={workflowLibraryError} active={!(settingsPresent && compactSettings)} settingsOpen={mode === "settings"} {navigationOpen} {navigationModal} {workflowDefaults} {keybindings} {toolbarButtons} onBrowse={browseOperations} />
       </div>
     </main>
   </div>
@@ -386,6 +405,7 @@
       </div>
     {/if}
     <SettingsWorkspace bind:this={settingsWorkspace} {dark} onTheme={toggleTheme} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
+          {toolbarButtons} {toolbarButtonsError} onToolbarButtonsChange={selectToolbarButtons} onRetryToolbarButtons={() => selectToolbarButtons(toolbarButtons)}
           {keybindings} {keybindingsError} onKeybindingsChange={selectKeybindings} onRetryKeybindings={() => selectKeybindings(keybindings)}
           {locale} {localeError} onLocaleChange={selectLocale} onRetryLocale={() => selectLocale(locale)}
           settingsUnavailable={Boolean(settingsError)} {settingsRetrying} onRetrySettings={retrySettings}

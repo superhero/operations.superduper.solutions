@@ -40,6 +40,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import SecretsSettings from "./settings/SecretsSettings.svelte";
   import StorageSettings from "./settings/StorageSettings.svelte";
   import ErrorHistory from "./settings/ErrorHistory.svelte";
+  import ToolbarSettings from "./settings/ToolbarSettings.svelte";
+  import { defaultToolbarButtons, type ToolbarButtons } from "$lib/toolbar-settings.ts";
   import KeybindingsSettings from "./settings/KeybindingsSettings.svelte";
   import { defaultKeybindings, type Keybindings } from "$lib/keybindings.ts";
   import LocaleSettings from "./settings/LocaleSettings.svelte";
@@ -50,6 +52,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     workflowCurveStrengthLimits, workflowDashLengthLimits, workflowDashGapLimits, workflowDashSpeedLimits, workflowGridSizeLimits, workflowNodeClearanceLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
 
   let { dark, onTheme, tooltips = true, tooltipsError = "", onTooltipsChange = () => {}, palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
+    toolbarButtons = defaultToolbarButtons, toolbarButtonsError = "", onToolbarButtonsChange = () => {}, onRetryToolbarButtons = () => {},
     keybindings = defaultKeybindings, keybindingsError = "", onKeybindingsChange = () => {}, onRetryKeybindings = () => {},
     locale = defaultLocaleSettings, localeError = "", onLocaleChange = () => {}, onRetryLocale = () => {},
     developerToolbar, developerToolbarError = "", onDeveloperToolbarChange,
@@ -66,6 +69,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     onWorkflowDefaultsChange: (next: WorkflowDefaults) => void;
     workflowDefaultsError?: string;
     onRetryWorkflowDefaults: () => void;
+    toolbarButtons?: ToolbarButtons;
+    toolbarButtonsError?: string;
+    onToolbarButtonsChange?: (next: ToolbarButtons) => void;
+    onRetryToolbarButtons?: () => void;
     keybindings?: Keybindings;
     keybindingsError?: string;
     onKeybindingsChange?: (next: Keybindings) => void;
@@ -85,7 +92,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     onRetrySettings: () => void;
   } = $props();
   let workspace: HTMLElement;
-  let openSection = $state<"keybindings" | "secrets" | "theme" | "locale" | "logs" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
+  let openSection = $state<"buttons" | "keybindings" | "secrets" | "theme" | "locale" | "logs" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
   let storageBuilt = $state(false);
   let storageReady = $state(false);
   let storageDismissing = $state(false);
@@ -351,6 +358,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {/if}
       </div>
     </Disclosure>
+    <Disclosure class="catalog-group settings-section" label="Buttons" tooltipEnabled={false} open={openSection === "buttons"} onToggle={next => openSection = next ? "buttons" : null}>
+      {#snippet summary()}
+        <div class="section-heading"><h2>Buttons</h2><span class="section-subtitle">Show or hide workflow toolbar buttons</span></div>
+        <MaterialIcon name="chevron_forward" size={17} />
+      {/snippet}
+      <ToolbarSettings value={toolbarButtons} onValueChange={onToolbarButtonsChange} error={toolbarButtonsError} onRetry={onRetryToolbarButtons}/>
+    </Disclosure>
+
     <Disclosure class="catalog-group settings-section" label="Developer" tooltipEnabled={false} open={openSection === "developer"} onToggle={(next) => openSection = next ? "developer" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Developer</h2><span class="section-subtitle">Choose diagnostic tools and reports</span></div>
