@@ -105,6 +105,14 @@ fix(settings): center Browser building status
 
 ```
 
+<!-- changelog-commit:addb01f8a3e35e05717117dae63599ab43923358 -->
+### Commit [`addb01f`](https://github.com/superhero/operations.superduper.solutions/commit/addb01f8a3e35e05717117dae63599ab43923358)
+
+```text
+fix(settings): use three dot styles for Browser building status
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.51
