@@ -162,6 +162,14 @@ style: align group dividers with heading and row padding
 
 ```
 
+<!-- changelog-commit:664fa2414bf8738a0ac5548dd14655db376caffc -->
+### Commit [`664fa24`](https://github.com/superhero/operations.superduper.solutions/commit/664fa2414bf8738a0ac5548dd14655db376caffc)
+
+```text
+style: increase group heading line height and recolor dividers
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
