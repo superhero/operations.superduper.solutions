@@ -407,7 +407,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </section>
 
 <style>
-  .storage-building { margin: 0; padding: 12px 16px 16px; font-size: 12px; color: var(--color-catalog-active-foreground); }
+  .storage-building { margin: 0; padding: 12px 16px 16px; font-size: 12px; color: var(--color-catalog-active-foreground); text-align: center; }
   .settings-sections { display: grid; gap: 12px; }
   .settings-sections :global(.settings-section) { border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-muted); transition: background-color 180ms ease-in; }
   .settings-sections :global(.settings-section:has(> summary[aria-expanded="true"])) { background: var(--color-catalog-active); }
