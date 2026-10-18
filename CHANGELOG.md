@@ -58,6 +58,14 @@ feat: add run shortcut and omit optional inputs by default
 
 ```
 
+<!-- changelog-commit:266b065fdf65fe4fc812a49fc8242ba36a24cfec -->
+### Commit [`266b065`](https://github.com/superhero/operations.superduper.solutions/commit/266b065fdf65fe4fc812a49fc8242ba36a24cfec)
+
+```text
+feat: add configurable workflow history shortcut
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
