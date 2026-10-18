@@ -145,6 +145,21 @@ alongside repeated opens, both themes, reduced motion and cancellation.
 
 ```
 
+<!-- changelog-commit:a2a0f2f9ad7c5bed5a699ceed071fa3a4451a216 -->
+### Commit [`a2a0f2f`](https://github.com/superhero/operations.superduper.solutions/commit/a2a0f2f9ad7c5bed5a699ceed071fa3a4451a216)
+
+```text
+feat(settings): animate building dots in a scaling wave
+
+Scale the three middle dots smoothly with staggered phases. Transform-only
+animation preserves the compact panel dimensions; reduced motion keeps
+the dots still. Retain the accessible Building status label.
+
+Verify growth, peak, shrink and return to the initial scale, staggered
+phases and reduced motion alongside the existing opening checks.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.51
