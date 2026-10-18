@@ -12,7 +12,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let recording = $state<keyof Keybindings | null>(null);
   let notice = $state("");
   const labels = { undo: "Undo", redo: "Redo", selectAll: "Select all", deleteSelection: "Delete selection", newWorkflow: "New workflow", openWorkflow: "Open workflow", runWorkflow: "Run workflow", history: "History", closeMenu: "Close menu", copy: "Copy selection", cut: "Cut selection", paste: "Paste", nodeSelection: "Add node to selection", areaSelection: "Add area to selection" };
-  const actions = [...shortcutActions, "nodeSelection", "areaSelection"] as const;
+  const actions = ([...shortcutActions, "nodeSelection", "areaSelection"] as const)
+    .toSorted((left, right) => labels[left].localeCompare(labels[right]));
   function capture(event: KeyboardEvent, action: keyof Keybindings) {
     if (recording !== action || event.key === "Tab") return;
     event.preventDefault();

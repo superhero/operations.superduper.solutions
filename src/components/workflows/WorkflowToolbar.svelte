@@ -178,6 +178,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <HintButton class="svelte-flow__controls-button" aria-label="Add vault variable" label="Add vault variable" onclick={() => onutility("vault")}><MaterialIcon name="variable_add" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Add file" label="Add file" onclick={() => onutility("file")}><MaterialIcon name="upload_file" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Comment" label="Comment" onclick={() => onutility("comment")}><MaterialIcon name="sticky_note" size={18} /></HintButton>
+    </div><div class="workflow-control-group">
     <HintButton class="svelte-flow__controls-button" aria-label="Copy selection" label="Copy selection" disabled={!selected} onclick={oncopy}><MaterialIcon name="content_copy" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Cut selection" label="Cut selection" disabled={!selected} onclick={oncut}><MaterialIcon name="content_cut" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Paste" label="Paste" disabled={!canPaste} onclick={onpaste}><MaterialIcon name="content_paste" size={18} /></HintButton>
