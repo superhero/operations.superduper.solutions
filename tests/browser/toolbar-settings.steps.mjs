@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { toolbarButtonLabels } from '../../src/lib/toolbar-settings.ts';
+import { toolbarButtonLabels, toolbarButtonGroups } from '../../src/lib/toolbar-settings.ts';
 import { setMode, workflow } from './workspace.steps.mjs';
 
 Then('toolbar visibility choices persist and leave keyboard shortcuts available', async function () {
@@ -12,8 +12,11 @@ Then('toolbar visibility choices persist and leave keyboard shortcuts available'
   await setMode(page, 'settings');
   await page.locator('summary[aria-label="Buttons"]').click();
   let preferences = page.getByRole('group', { name: 'Toolbar button preferences', exact: true });
-  const labels = Object.values(toolbarButtonLabels).sort((left, right) => left.localeCompare(right));
+  const labels = toolbarButtonGroups.flatMap(group => group.buttons.map(key => toolbarButtonLabels[key]));
   await expect(preferences.getByRole('switch')).toHaveText(labels);
+  await expect.poll(() => preferences.locator('.groups').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(3);
+  for (const group of toolbarButtonGroups)
+    await expect(preferences.getByRole('group', { name: group.label, exact: true }).getByRole('switch')).toHaveCount(group.buttons.length);
   for (const [key, label] of Object.entries(toolbarButtonLabels)) {
     const toggle = preferences.getByRole('switch', { name: label, exact: true });
     await expect(toggle).toHaveAttribute('aria-checked', 'true');
