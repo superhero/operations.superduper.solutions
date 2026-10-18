@@ -52,3 +52,15 @@ Then('toolbar visibility choices persist and leave keyboard shortcuts available'
   await expect(toolbar.locator('button')).toHaveCount(labels.length);
   await expect(toolbar.locator('.workflow-control-group')).toHaveCount(7);
 });
+
+Then('application preferences use three independent lanes', async function () {
+  const page = this.page;
+  await setMode(page, 'settings');
+  await page.locator('summary[aria-label="Application"]').click();
+  const lanes = page.getByRole('group', { name: 'UI defaults', exact: true }).locator('.application-lane');
+  await expect(lanes).toHaveCount(3);
+  const boxes = await Promise.all((await lanes.all()).map(lane => lane.boundingBox()));
+  expect(new Set(boxes.map(box => Math.round(box.x))).size).toBe(3);
+  expect(Math.max(...boxes.map(box => box.y)) - Math.min(...boxes.map(box => box.y))).toBeLessThan(2);
+  for (const lane of await lanes.all()) await expect(lane.locator('.workflow-default-pair')).toHaveCount(2);
+});
