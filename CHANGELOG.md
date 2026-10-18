@@ -218,6 +218,14 @@ style: balance spacing around toolbar group headings
 
 ```
 
+<!-- changelog-commit:5734c75142853567eb13cae0fd012d0add3df061 -->
+### Commit [`5734c75`](https://github.com/superhero/operations.superduper.solutions/commit/5734c75142853567eb13cae0fd012d0add3df061)
+
+```text
+style: pack application settings into toolbar-style columns
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
