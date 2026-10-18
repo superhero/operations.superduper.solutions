@@ -78,12 +78,24 @@ Then('workflow shortcut preferences persist, prevent conflicts and preserve text
 Then('configured node and rectangle modifiers retain the selection group', async function () {
   const page = this.page;
   const panel = await preferences(page);
-  const choose = async (label, option) => {
-    await panel.getByRole('combobox', { name: label, exact: true }).click();
-    await page.getByRole('option', { name: option, exact: true }).click();
+  const choose = async (label, key) => {
+    const button = panel.getByRole('button', { name: label, exact: true });
+    await button.click();
+    await button.press(key);
   };
-  await choose('Add node to selection modifier', 'Alt/Option');
-  await choose('Add area to selection modifier', 'Ctrl/Cmd');
+  await expect(panel.getByRole('combobox')).toHaveCount(0);
+  const rows = panel.locator('.option');
+  await expect(rows).toHaveCount(5);
+  const sizes = [];
+  for (const row of await rows.all()) {
+    const label = await row.locator('span').boundingBox();
+    const button = await row.getByRole('button').boundingBox();
+    sizes.push({ width: button.width, height: button.height });
+    expect(Math.abs(label.y + label.height / 2 - button.y - button.height / 2)).toBeLessThan(2);
+  }
+  expect(sizes.every(size => size.width === sizes[0].width && size.height === sizes[0].height)).toBe(true);
+  await choose('Add node to selection modifier', 'Alt');
+  await choose('Add area to selection modifier', 'Control');
   await setMode(page, 'workflow');
   await node(page, 'Selection owner').locator('.operation-title-row strong').click({ modifiers: ['Alt'] });
   await expect(selected(page)).toHaveCount(1);
