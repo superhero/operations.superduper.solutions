@@ -4,9 +4,10 @@
 import { After, AfterAll, Given, Then, When, Status } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createServer } from 'vite';
+import { browserAbortCapture, finishBrowserContext } from '../gherkin/browser-abort-guard.mjs';
 
 const retryKey = 'v1/startup/module-reload';
 const runtimeMessage = 'Startup fixture module failed';
@@ -112,18 +113,19 @@ Then('the development application finishes loading with its retry guard cleared'
 After({ tags: '@startup-modules or @file-worker-development' }, async function ({ result }) {
   const state = this.startup;
   if (!state?.context) return;
+  const aborted = await browserAbortCapture(this, state.context);
   const failed = result?.status !== Status.PASSED || state.pageErrors.length > 0;
   try {
     if (failed) {
       await mkdir(this.artifactDirectory, { recursive: true });
       await this.attach(JSON.stringify({ requests: state.requests, pageErrors: state.pageErrors,
         consoleErrors: state.consoleErrors, url: state.page?.url() }), 'application/json');
-      if (state.page) await this.attach(await state.page.screenshot({
+      if (aborted?.screenshotSaved) await this.attach(await readFile(aborted.screenshotPath), 'image/png');
+      else if (!aborted?.closed && state.page && !state.page.isClosed()) await this.attach(await state.page.screenshot({
         path: `${this.artifactDirectory}/startup.png`, timeout: 5_000 }), 'image/png');
     }
   } finally {
-    try { await state.context.tracing.stop(failed ? { path: `${this.artifactDirectory}/startup-trace.zip` } : {}); }
-    finally { await state.context.close(); }
+    await finishBrowserContext(this, state.context, failed ? { path: `${this.artifactDirectory}/startup-trace.zip` } : {});
   }
   expect(state.pageErrors, 'Unexpected development page errors').toEqual([]);
 });

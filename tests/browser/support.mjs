@@ -10,6 +10,7 @@ import { resolve } from 'node:path';
 import { createExampleEndpoint } from './example-endpoint.fixture.mjs';
 import { pail } from '@visulima/pail';
 import { createVaultEndpoint } from './vault-endpoint.fixture.mjs';
+import { browserAbortCapture, finishBrowserContext } from '../gherkin/browser-abort-guard.mjs';
 
 setDefaultTimeout(30_000);
 let browser;
@@ -24,6 +25,7 @@ const fixturePages = new Map([
   // Coverage steps prepare their own HTTP/file report before navigating.
   ['@coverage-report', 'about:blank'],
   ['@legacy-smoke', 'about:blank'],
+  ['@browser-abort-diagnostics', 'about:blank'],
   ['@vault-browser-storage', '/vault-fixture.html'],
   ['@vault-browser-network', '/vault-fixture.html'],
   ['@vault-browser-policy', '/vault-fixture.html'],
@@ -180,6 +182,7 @@ Before(async function ({ pickle }) {
 });
 
 After(async function ({ pickle, result }) {
+  const aborted = await browserAbortCapture(this, this.context);
   const errors = (this.diagnostics ?? []).filter(item => item.type !== 'console-warning');
   const failed = result?.status !== Status.PASSED || errors.length > 0;
   try {
@@ -192,18 +195,16 @@ After(async function ({ pickle, result }) {
       };
       await writeFile(`${this.artifactDirectory}/diagnostics.json`, `${JSON.stringify(diagnostics, null, 2)}\n`);
       await this.attach(JSON.stringify(diagnostics, null, 2), 'application/json');
-      if (this.page && !this.page.isClosed()) {
+      if (aborted?.screenshotSaved) {
+        await this.attach(await readFile(aborted.screenshotPath), 'image/png');
+      } else if (!aborted?.closed && this.page && !this.page.isClosed()) {
         const screenshot = await this.page.screenshot({ path: `${this.artifactDirectory}/screenshot.png`, fullPage: true, timeout: 5_000 });
         await this.attach(screenshot, 'image/png');
       }
       pail.force.error(`Browser diagnostics for "${pickle.name}": ${this.artifactDirectory}`);
     }
   } finally {
-    try {
-      await this.context?.tracing.stop(failed ? { path: `${this.artifactDirectory}/trace.zip` } : {});
-    } finally {
-      await this.context?.close();
-    }
+    await finishBrowserContext(this, this.context, failed ? { path: `${this.artifactDirectory}/trace.zip` } : {});
   }
   if (errors.length > 0)
     throw new Error(`Browser errors in "${pickle.name}": ${JSON.stringify(errors)}. Diagnostics: ${this.artifactDirectory}`);

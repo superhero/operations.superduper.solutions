@@ -34,9 +34,10 @@ redirects only the Cucumber registration import to the compatibility adapter.
 
 Each scenario owns a fresh context. An automatic Vitest worker fixture owns shared
 browser, server and development-server hooks. Cleanup is independent of feature
-counts, names or tags. Abort closes scenario contexts; screenshots, diagnostics
-and traces become report attachments. SIGINT/SIGTERM request cancellation and
-cleanup; interrupted runs remain unsuccessful.
+counts, names or tags. Abort gives diagnostic capture up to 750 ms before closing
+owned contexts. Completed screenshots and traces become report attachments;
+unavailable captures remain explicit diagnostics. SIGINT/SIGTERM request
+cancellation and cleanup; interrupted runs remain unsuccessful.
 
 ## Reports and coverage
 
