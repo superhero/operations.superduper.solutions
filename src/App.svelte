@@ -7,7 +7,7 @@
   import type { WorkflowDocument } from "$lib/workflow-document.ts";
   import { loadSettings, saveSetting, type WorkflowDefaults } from "$lib/app-settings.ts";
   import { defaultLocaleSettings, normalizeLocaleSettings, type LocaleSettings } from "$lib/locale-settings.ts";
-  import { defaultKeybindings, normalizeKeybindings, type Keybindings } from "$lib/keybindings.ts";
+  import { defaultKeybindings, normalizeKeybindings, shortcutAction, type Keybindings } from "$lib/keybindings.ts";
   import { applyLocaleSettings } from "$lib/datetime-state.ts";
   import { logger } from "$lib/logger.ts";
   import Header from "./components/Header.svelte";
@@ -137,11 +137,16 @@
     } else navigationOpen = !navigationOpen;
   }
 
-  function dismissSettings(event: KeyboardEvent) {
-    if (mode !== "settings" || event.key !== "Escape" || event.defaultPrevented || navigationModal ||
-      document.querySelector('[role="dialog"], [role="tooltip"], [role="menu"], [role="listbox"]')) return;
+  function dismissMenus(event: KeyboardEvent) {
+    if (event.defaultPrevented || event.isComposing || !(navigationOpen || mode === "settings") ||
+      shortcutAction(event, keybindings) !== "closeMenu" ||
+      document.querySelector('[role="dialog"]:not(#side-navigation), [role="menu"], [role="listbox"]')) return;
     event.preventDefault();
-    void toggleSettings();
+    if (mode === "settings") void toggleSettings();
+    else {
+      navigationOpen = false;
+      void tick().then(() => document.querySelector<HTMLElement>('[aria-controls="side-navigation"]')?.focus({ preventScroll: true }));
+    }
   }
 
   $effect(() => {
@@ -336,7 +341,7 @@
 </script>
 
 <svelte:document onpointerover={sizeHover} onfocusin={sizeHover} />
-<svelte:window onkeydown={dismissSettings} />
+<svelte:window onkeydown={dismissMenus} />
 
 <svelte:head>
   <title>operations.superduper.solutions</title>
@@ -346,7 +351,7 @@
 <Tooltip.Provider disabled={!tooltips} delayDuration={400} ignoreNonKeyboardFocus disableHoverableContent>
 <BackgroundWave />
 <NativeScrollbars />
-<SideNavigation bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {evaluationDetails}
+<SideNavigation closeMenuWithEscape={keybindings.closeMenu === "Escape"} bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {evaluationDetails}
   workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
   onSelect={selectOperation} />
 <div class="page-content workflow-mode" inert={settingsPresent && compactSettings} class:catalog-open={navigationOpen} class:settings-open={mode === "settings"}>

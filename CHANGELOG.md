@@ -50,6 +50,30 @@ feat: add configurable open workflow shortcut
 
 ```
 
+<!-- changelog-commit:df40fd86fc72d0bbee89534bf0461532ae8ba730 -->
+### Commit [`df40fd8`](https://github.com/superhero/operations.superduper.solutions/commit/df40fd86fc72d0bbee89534bf0461532ae8ba730)
+
+```text
+feat: add run shortcut and omit optional inputs by default
+
+```
+
+<!-- changelog-commit:266b065fdf65fe4fc812a49fc8242ba36a24cfec -->
+### Commit [`266b065`](https://github.com/superhero/operations.superduper.solutions/commit/266b065fdf65fe4fc812a49fc8242ba36a24cfec)
+
+```text
+feat: add configurable workflow history shortcut
+
+```
+
+<!-- changelog-commit:1b26ef46da8b16b6c6d34d22ae1e3ffc040c9bb8 -->
+### Commit [`1b26ef4`](https://github.com/superhero/operations.superduper.solutions/commit/1b26ef46da8b16b6c6d34d22ae1e3ffc040c9bb8)
+
+```text
+feat: configure Escape to close either side menu
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52

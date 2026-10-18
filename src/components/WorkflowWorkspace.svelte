@@ -852,10 +852,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const target = event.target;
     if (target instanceof Element && target.closest('#settings-panel, input, textarea, select, [contenteditable], [role="listbox"], [role="combobox"], .nokey')) return;
     const action = shortcutAction(event, keybindings);
-    if (action === "newWorkflow" || action === "openWorkflow" || action === "copy" || action === "cut" || action === "paste") {
+    if (action === "newWorkflow" || action === "openWorkflow" || action === "runWorkflow" || action === "history" || action === "copy" || action === "cut" || action === "paste") {
       event.preventDefault();
       if (action === "newWorkflow") newDocument();
       else if (action === "openWorkflow") openDocuments();
+      else if (action === "runWorkflow") startRun();
+      else if (action === "history") void openHistory();
       else if (action === "paste") void pasteSelection();
       else copySelection(action === "cut");
       return;
@@ -1019,7 +1021,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         </marker></defs>
       </svg>
       <Background variant={BackgroundVariant.Dots} gap={24} size={2} />
-      <WorkflowSelection {canvas} {keybindings} active={keyboardActive} />
+      <WorkflowSelection menuOpen={navigationOpen || settingsOpen} {canvas} {keybindings} active={keyboardActive} />
       <WorkflowConnectionSnap bind:this={connectionSnap} isValidConnection={validConnection} active={keyboardActive} {curved} {dashed} curveStrength={workflowDefaults.curveStrength} markerEnd={`url(#${connectionMarkerId})`} />
       {#if nodes.length}<WorkflowMinimap active={keyboardActive} />{/if}
       <WorkflowToolbar bind:this={toolbar} {canvas} {active} {settingsOpen} {navigationOpen} {snap} {curved} {dashed} {selected} placing={placement !== null}

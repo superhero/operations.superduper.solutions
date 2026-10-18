@@ -18,3 +18,16 @@ Feature: Workflow keybinding preferences
   Scenario: Open workflow uses the configured shortcut
     Given nested workflow input and output branches mapped to another operation
     Then the configurable open workflow shortcut opens the saved workflow picker
+  Scenario: Run workflow opens from its shortcut
+    Given nested workflow input and output branches mapped to another operation
+    Then the run workflow shortcut opens the run view
+  Scenario: Workflow history opens from its shortcut
+    Given nested workflow input and output branches mapped to another operation
+    Then the history shortcut opens workflow history
+  Scenario Outline: Escape closes the active side menu
+    Given nested workflow input and output branches mapped to another operation
+    Then Escape closes either menu while respecting nested controls at width <width>
+    Examples:
+      | width |
+      | 1280  |
+      | 640   |

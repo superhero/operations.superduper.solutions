@@ -29,6 +29,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     field.location === "body" && (values[field.key] === null || values[field.key]?.trim()
       || field.type === "string" && operation.bodySchema?.type === "object"
         && !Object.hasOwn(operation.bodySchema.properties ?? {}, field.name) && typeof values[field.key] === "string"))));
+  const canOmit = (field: InputField) => Boolean(!field.required || operation.bodyValue && field.location === "body" && !operation.bodyRequired);
   function omit(field: InputField, checked: boolean) {
     if (checked) {
       const value = values[field.key];
@@ -50,7 +51,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
   function describedBy(field: InputField) {
     return [fieldHelp.includes(field.key) ? `${idPrefix}-help-${field.key}` : "",
-      values[field.key] === null || Object.hasOwn(values, field.key) && values[field.key] === undefined ? `${idPrefix}-state-${field.key}` : "",
+      values[field.key] === null || canOmit(field) && !mappedFields.includes(field.key) && values[field.key] === undefined ? `${idPrefix}-state-${field.key}` : "",
       mappedFields.includes(field.key) ? `${idPrefix}-connected-${field.key}` : "",
       fieldError?.fieldKey === field.key ? `${idPrefix}-error-${field.key}` : ""].filter(Boolean).join(" ") || undefined;
   }
@@ -65,7 +66,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {#if location.key === "body" && !operation.bodyRequired}<p class="hint">Optional body. Starred fields are required when providing a body.</p>{/if}
         {#each fields as field (field.key)}
           {@const connected = mappedFields.includes(field.key)}
-          {@const omitted = Object.hasOwn(values, field.key) && values[field.key] === undefined}
+          {@const omitted = canOmit(field) && !mappedFields.includes(field.key) && values[field.key] === undefined}
           {@const nullValue = values[field.key] === null}
           {@const schema = field.schema ?? field}
           <div class="operation-field">
@@ -77,7 +78,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                 multiline={field.location === "body" && operation.bodyMediaType === "text/plain"}
                 invalid={fieldError?.fieldKey === field.key} describedBy={describedBy(field)} />
               <div class="field-actions">
-                {#if !field.required || operation.bodyValue && field.location === "body" && !operation.bodyRequired}
+                {#if canOmit(field)}
                   <OperationFieldToggle label={`Do not send ${field.label}`} hint="Do not send" icon="hide_source"
                     controls={`${idPrefix}-${field.key}`} checked={omitted} disabled={disabled || connected}
                     onchange={checked => omit(field, checked)} />

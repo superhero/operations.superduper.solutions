@@ -11,6 +11,8 @@ Then('keybindings normalize malformed settings and reject duplicate shortcuts', 
   const saved = { ...defaultKeybindings, undo: 'Alt+Shift+u', nodeSelection: 'Mod', areaSelection: 'Alt' };
   assert.deepEqual(normalizeKeybindings(saved), saved);
   assert.equal(normalizeKeybindings({ deleteSelection: 'Mod+d' }).deleteSelection, 'Mod+d');
+  assert.equal(shortcutAction(event({ key: 'Escape', ctrlKey: false }), defaultKeybindings), 'closeMenu');
+  assert.equal(shortcutAction(event({ key: 'Escape', ctrlKey: false, isComposing: true }), defaultKeybindings), null);
   assert.equal(formatShortcut('Delete'), 'Delete / Backspace');
   assert.equal(formatShortcut('Mod+Shift+u'), 'Ctrl/Cmd + Shift + U');
 });
@@ -18,7 +20,7 @@ Then('shortcuts match Control and Command exactly and ignore composition', () =>
   assert.equal(shortcutAction(event({}), defaultKeybindings), 'undo');
   assert.equal(shortcutAction(event({ key: 'Y', ctrlKey: false, metaKey: true }), defaultKeybindings), 'redo');
   assert.equal(shortcutAction(event({ key: 'a' }), defaultKeybindings), 'selectAll');
-  for (const [key, action] of [['o', 'openWorkflow'], ['n', 'newWorkflow'], ['c', 'copy'], ['x', 'cut'], ['v', 'paste']])
+  for (const [key, action] of [['h', 'history'], ['r', 'runWorkflow'], ['o', 'openWorkflow'], ['n', 'newWorkflow'], ['c', 'copy'], ['x', 'cut'], ['v', 'paste']])
     for (const primary of [{ ctrlKey: true }, { ctrlKey: false, metaKey: true }])
       assert.equal(shortcutAction(event({ key, ...primary }), defaultKeybindings), action);
   for (const patch of [{ isComposing: true }, { getModifierState: () => true }, { metaKey: true }, { ctrlKey: false }, { key: 'Control' }])
