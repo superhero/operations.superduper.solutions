@@ -4,6 +4,7 @@
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { setMode } from './workspace.steps.mjs';
+import { holdHeightAnimations, seekHeightAnimation, finishHeightAnimations } from './height-animation.fixture.mjs';
 
 const browserSection = page => page.locator('.settings-section').filter({ has: page.locator('summary[aria-label="Browser"]') });
 Then('Browser settings show a compact building status before the dashboard with {string} motion in {string} theme', async function (motion, theme) {
@@ -32,25 +33,12 @@ Then('Browser settings show a compact building status before the dashboard with 
           const expected = getComputedStyle(probe).color;
           probe.remove();
           const dots = building.querySelector('.building-dots');
-          const marker = getComputedStyle(dots, '::after');
-          const animation = dots.getAnimations({ subtree: true }).find(item => item.animationName?.endsWith('building-dot'));
-          let positions;
-          if (animation && !window.browserBuildFrames.length) {
-            const original = animation.currentTime;
-            animation.pause();
-            positions = [80, 240, 400, 560, 720, 1040, 1200, 1360, 1520].map(time => {
-              animation.currentTime = time;
-              return new DOMMatrix(getComputedStyle(dots, '::after').transform).m41 / parseFloat(getComputedStyle(dots).fontSize);
-            });
-            animation.currentTime = original;
-            animation.play();
-          }
           window.browserBuildFrames.push({ height: panel.getBoundingClientRect().height,
-            dashboard: !!dashboard, color: getComputedStyle(building).color, expected,
+            dashboard: !!dashboard && getComputedStyle(dashboard).visibility !== 'hidden', color: getComputedStyle(building).color, expected,
             dots: [...dots.children].map(dot => dot.textContent), weight: getComputedStyle(building).fontWeight,
-            marker: marker.content, animation: marker.animationName, positions });
+            dotSize: getComputedStyle(dots).fontSize });
         }
-        if (!dashboard || section.querySelector(':scope > summary').getAttribute('aria-expanded') !== 'true')
+        if (!dashboard || getComputedStyle(dashboard).visibility === 'hidden' || section.querySelector(':scope > summary').getAttribute('aria-expanded') !== 'true')
           requestAnimationFrame(sample);
       };
       requestAnimationFrame(sample);
@@ -63,13 +51,10 @@ Then('Browser settings show a compact building status before the dashboard with 
     expect(frames.every(frame => !frame.dashboard && frame.height < 100)).toBe(true);
     expect(frames.every(frame => frame.color === frame.expected)).toBe(true);
     for (const frame of frames) {
-      expect(frame.dots).toEqual(['·', '·', '·', '·', '·']);
+      expect(frame.dots).toEqual(['·', '·', '·']);
       expect(Number(frame.weight)).toBeGreaterThanOrEqual(700);
-      expect(frame.marker).toBe('"⊙"');
-      if (motion === 'reduce') expect(frame.animation).toBe('none');
-      else expect(frame.animation).toMatch(/building-dot$/);
+      expect(parseFloat(frame.dotSize)).toBe(20);
     }
-    if (motion !== 'reduce') expect(frames[0].positions).toEqual([0, 1, 2, 3, 4, 3, 2, 1, 0]);
     await expect.poll(() => section.locator(':scope > .disclosure-panel').evaluate(el => el.getBoundingClientRect().height)).toBeGreaterThan(100);
     await section.locator('summary').first().click();
     await expect(section.locator('summary').first()).toHaveAttribute('aria-expanded', 'false');
@@ -92,4 +77,39 @@ Then('closing Browser before construction leaves it unbuilt until reopened', asy
   await expect(section.locator('.storage-dashboard')).toHaveCount(0);
   await section.locator('summary').first().click();
   await expect(section.locator('.storage-dashboard')).toBeVisible();
+});
+
+Then('Browser slides from its initial dots pane into the constructed dashboard', async function () {
+  const page = this.page;
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await setMode(page, 'settings');
+  const section = browserSection(page);
+  const panel = section.locator(':scope > .disclosure-panel');
+  // The cheap indicator is already mounted before the first click.
+  await expect(section.locator('.building-dots > span')).toHaveCount(3);
+  await expect(section.locator('.storage-dashboard')).toHaveCount(0);
+  const restore = await holdHeightAnimations(panel);
+  try {
+    await section.locator('summary').first().click();
+    await expect.poll(() => panel.evaluate(el => el.getAnimations().length)).toBeGreaterThan(0);
+    const initial = await seekHeightAnimation(panel, 0.5);
+    expect(initial.from).toBe(0);
+    expect(initial.to).toBeGreaterThan(20);
+    expect(initial.to).toBeLessThan(100);
+    expect(initial.height).toBeGreaterThan(0);
+    expect(initial.height).toBeLessThan(initial.to);
+    await expect(section.locator('.storage-building')).toBeVisible();
+    await expect(section.locator('.storage-dashboard')).toHaveCount(0);
+    await finishHeightAnimations(panel);
+    await expect.poll(() => panel.evaluate(el => el.getAnimations().some(animation =>
+      parseFloat(animation.effect.getKeyframes().at(-1).height) > 100))).toBe(true);
+    const full = await seekHeightAnimation(panel, 0.5);
+    expect(full.from).toBeCloseTo(initial.to, 0);
+    expect(full.to).toBeGreaterThan(full.from);
+    expect(full.height).toBeGreaterThan(full.from);
+    expect(full.height).toBeLessThan(full.to);
+    await finishHeightAnimations(panel);
+    await expect(section.locator('.storage-dashboard')).toBeVisible();
+    await expect(section.locator('.storage-building')).toHaveCount(0);
+  } finally { await restore(); }
 });
