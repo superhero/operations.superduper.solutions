@@ -29,7 +29,10 @@ connection eligibility checks; route geometry stays outside persisted documents.
 
 Node controls use `nodrag`, `nopan`, `nokey` and, where needed, `nowheel` to keep
 editing separate from canvas gestures. Preserve modal shortcut isolation,
-connection eligibility, transient selection and completed-edit autosave. Comment
+connection eligibility, transient selection and completed-edit autosave. Configurable
+shortcuts and toolbar buttons share clipboard actions; text fields keep native
+editing. Copies include owned schema trees and internal connections, and remain
+available across workflow changes until the page is reloaded. Comment
 previews use the local Markdown parser with escaped text and restricted links.
 Selected comments expose eight side/corner resize handles. Their bounded sizes
 are saved with the comment; resize gestures become completed edits for autosave.
