@@ -122,6 +122,14 @@ feat: group toolbar settings in a three-column layout
 
 ```
 
+<!-- changelog-commit:9b6fec7bd05e628e28f8bb811af44e82e76deb84 -->
+### Commit [`9b6fec7`](https://github.com/superhero/operations.superduper.solutions/commit/9b6fec7bd05e628e28f8bb811af44e82e76deb84)
+
+```text
+fix: keep toolbar group headings inside compact column cards
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
