@@ -11,6 +11,8 @@ Then('keybindings normalize malformed settings and reject duplicate shortcuts', 
   const saved = { ...defaultKeybindings, undo: 'Alt+Shift+u', nodeSelection: 'Mod', areaSelection: 'Alt' };
   assert.deepEqual(normalizeKeybindings(saved), saved);
   assert.equal(normalizeKeybindings({ deleteSelection: 'Mod+d' }).deleteSelection, 'Mod+d');
+  assert.equal(shortcutAction(event({ key: 'Escape', ctrlKey: false }), defaultKeybindings), 'closeMenu');
+  assert.equal(shortcutAction(event({ key: 'Escape', ctrlKey: false, isComposing: true }), defaultKeybindings), null);
   assert.equal(formatShortcut('Delete'), 'Delete / Backspace');
   assert.equal(formatShortcut('Mod+Shift+u'), 'Ctrl/Cmd + Shift + U');
 });

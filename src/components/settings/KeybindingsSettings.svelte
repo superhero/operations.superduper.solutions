@@ -11,13 +11,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   } = $props();
   let recording = $state<keyof Keybindings | null>(null);
   let notice = $state("");
-  const labels = { undo: "Undo", redo: "Redo", selectAll: "Select all", deleteSelection: "Delete selection", newWorkflow: "New workflow", openWorkflow: "Open workflow", runWorkflow: "Run workflow", history: "History", copy: "Copy selection", cut: "Cut selection", paste: "Paste", nodeSelection: "Add node to selection", areaSelection: "Add area to selection" };
+  const labels = { undo: "Undo", redo: "Redo", selectAll: "Select all", deleteSelection: "Delete selection", newWorkflow: "New workflow", openWorkflow: "Open workflow", runWorkflow: "Run workflow", history: "History", closeMenu: "Close menu", copy: "Copy selection", cut: "Cut selection", paste: "Paste", nodeSelection: "Add node to selection", areaSelection: "Add area to selection" };
   const actions = [...shortcutActions, "nodeSelection", "areaSelection"] as const;
   function capture(event: KeyboardEvent, action: keyof Keybindings) {
     if (recording !== action || event.key === "Tab") return;
     event.preventDefault();
     event.stopPropagation();
-    if (event.key === "Escape") { recording = null; notice = ""; return; }
+    if (event.key === "Escape" && action !== "closeMenu") { recording = null; notice = ""; return; }
     if (action === "nodeSelection" || action === "areaSelection") {
       const modifier: SelectionModifier | null = event.key === "Shift" ? "Shift" : event.key === "Control" || event.key === "Meta" ? "Mod" : event.key === "Alt" ? "Alt" : null;
       if (!modifier) { notice = "Press Shift, Ctrl/Cmd or Alt/Option. Escape cancels."; return; }

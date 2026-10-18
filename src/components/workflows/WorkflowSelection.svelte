@@ -5,10 +5,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
-  import { defaultKeybindings, modifierPressed, type Keybindings } from "$lib/keybindings.ts";
+  import { defaultKeybindings, modifierPressed, shortcutAction, type Keybindings } from "$lib/keybindings.ts";
   import { useStore } from "@xyflow/svelte";
 
-  let { keybindings = defaultKeybindings, canvas, active }: { keybindings?: Keybindings; canvas: HTMLElement | undefined; active: boolean } = $props();
+  let { menuOpen = false, keybindings = defaultKeybindings, canvas, active }: { menuOpen?: boolean; keybindings?: Keybindings; canvas: HTMLElement | undefined; active: boolean } = $props();
   const store = useStore();
   let additive = $state.raw<{ nodes: Set<string>; edges: Set<string> } | null>(null);
 
@@ -89,6 +89,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       additive = null;
     }
     function escape(event: KeyboardEvent) {
+      if (menuOpen && shortcutAction(event, keybindings) === "closeMenu") return;
       if (event.key !== "Escape" || store.connection.inProgress || store.clickConnectStartHandle || !(event.target instanceof Element) ||
         event.target.closest("input, textarea, select, [contenteditable], .nokey") ||
         event.target !== document.body && !element.contains(event.target)) return;

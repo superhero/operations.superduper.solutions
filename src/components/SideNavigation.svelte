@@ -11,8 +11,8 @@
   import { catalogs, type CatalogGroup } from "$lib/catalog-registry.ts";
   import { evaluateOperationsAsync } from "$lib/operation-matching-client.ts";
   import type { OperationMatch } from "$lib/matching.ts";
-  let { open = $bindable(false), modal = $bindable(false), documentModal = false, operations, evaluationDetails = false, workflows, workflowError, onWorkflowSelect, onWorkflowRetry, onSelect }:
-    { open: boolean; modal?: boolean; documentModal?: boolean; operations: Operation[]; evaluationDetails?: boolean;
+  let { closeMenuWithEscape = true, open = $bindable(false), modal = $bindable(false), documentModal = false, operations, evaluationDetails = false, workflows, workflowError, onWorkflowSelect, onWorkflowRetry, onSelect }:
+    { closeMenuWithEscape?: boolean; open: boolean; modal?: boolean; documentModal?: boolean; operations: Operation[]; evaluationDetails?: boolean;
       workflows: WorkflowDocument[]; workflowError: string; onWorkflowSelect: (document: WorkflowDocument) => void; onWorkflowRetry: () => void;
       onSelect: (operation: Operation) => void } = $props();
   let mobile = $state(false);
@@ -148,13 +148,8 @@
         (workspaceFocusTarget(panel) ?? document.querySelector<HTMLElement>('[aria-controls="side-navigation"]'))?.focus();
       });
     };
-    const escape = (event: KeyboardEvent) => {
-      if (!mobile && open && event.key === "Escape" && !event.defaultPrevented && !document.querySelector('[role="dialog"], [role="tooltip"], [role="menu"]')) {
-        open = false; event.preventDefault();
-      }
-    };
-    update(); media.addEventListener("change", update); document.addEventListener("keydown", escape);
-    return () => { media.removeEventListener("change", update); document.removeEventListener("keydown", escape); };
+    update(); media.addEventListener("change", update);
+    return () => { media.removeEventListener("change", update); };
   });
   function focusMenu() {
     document.querySelector<HTMLElement>('[aria-controls="side-navigation"]')?.focus({ preventScroll: true });
@@ -265,7 +260,7 @@
 {#if mobile}
   {#if !documentModal}
   <Sheet.Root bind:open onOpenChangeComplete={(next) => { if (!next) void finishClose(); }}>
-    <Sheet.Content id="side-navigation" class="catalog-sheet" side="left" aria-label="Navigation" onOpenAutoFocus={(event) => {
+    <Sheet.Content onEscapeKeydown={event => { if (!closeMenuWithEscape) event.preventDefault(); }} id="side-navigation" class="catalog-sheet" side="left" aria-label="Navigation" onOpenAutoFocus={(event) => {
       event.preventDefault();
       sheetAutoFocused = true;
       if (promptFocusRequested) {

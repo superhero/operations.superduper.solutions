@@ -24,3 +24,10 @@ Feature: Workflow keybinding preferences
   Scenario: Workflow history opens from its shortcut
     Given nested workflow input and output branches mapped to another operation
     Then the history shortcut opens workflow history
+  Scenario Outline: Escape closes the active side menu
+    Given nested workflow input and output branches mapped to another operation
+    Then Escape closes either menu while respecting nested controls at width <width>
+    Examples:
+      | width |
+      | 1280  |
+      | 640   |

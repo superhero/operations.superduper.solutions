@@ -1021,7 +1021,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         </marker></defs>
       </svg>
       <Background variant={BackgroundVariant.Dots} gap={24} size={2} />
-      <WorkflowSelection {canvas} {keybindings} active={keyboardActive} />
+      <WorkflowSelection menuOpen={navigationOpen || settingsOpen} {canvas} {keybindings} active={keyboardActive} />
       <WorkflowConnectionSnap bind:this={connectionSnap} isValidConnection={validConnection} active={keyboardActive} {curved} {dashed} curveStrength={workflowDefaults.curveStrength} markerEnd={`url(#${connectionMarkerId})`} />
       {#if nodes.length}<WorkflowMinimap active={keyboardActive} />{/if}
       <WorkflowToolbar bind:this={toolbar} {canvas} {active} {settingsOpen} {navigationOpen} {snap} {curved} {dashed} {selected} placing={placement !== null}

@@ -4,7 +4,7 @@
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { closeWorkflowDetails, workflowDetails } from './workflow-details.fixture.mjs';
-import { setMode, workflow } from './workspace.steps.mjs';
+import { setMode, workflow, openCatalog } from './workspace.steps.mjs';
 
 async function preferences(page) {
   await setMode(page, 'settings');
@@ -86,7 +86,7 @@ Then('configured node and rectangle modifiers retain the selection group', async
   };
   await expect(panel.getByRole('combobox')).toHaveCount(0);
   const rows = panel.locator('.option');
-  await expect(rows).toHaveCount(13);
+  await expect(rows).toHaveCount(14);
   const sizes = [];
   for (const row of await rows.all()) {
     const label = await row.locator('span').boundingBox();
@@ -223,4 +223,26 @@ Then('the history shortcut opens workflow history', async function () {
   await workflow(page).focus();
   await page.keyboard.press('Control+h');
   await expect(page.getByRole('dialog', { name: 'Workflow history', exact: true })).toBeVisible();
+});
+
+Then('Escape closes either menu while respecting nested controls at width {int}', async function (width) {
+  const page = this.page;
+  await page.setViewportSize({ width, height: 800 });
+  await openCatalog(page);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('navigation', { name: 'Operation catalog', exact: true })).toBeHidden();
+  await setMode(page, 'settings');
+  await page.locator('summary[aria-label="Locale"]').click();
+  await page.getByRole('combobox', { name: 'Date format', exact: true }).click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('listbox')).toHaveCount(0);
+  await expect(page.locator('.settings-drawer')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.settings-drawer')).toBeHidden();
+  await openCatalog(page);
+  if (width >= 900) {
+    await workflow(page).focus();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('navigation', { name: 'Operation catalog', exact: true })).toBeHidden();
+  }
 });
