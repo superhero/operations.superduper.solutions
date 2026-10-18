@@ -86,7 +86,7 @@ Then('configured node and rectangle modifiers retain the selection group', async
   };
   await expect(panel.getByRole('combobox')).toHaveCount(0);
   const rows = panel.locator('.option');
-  await expect(rows).toHaveCount(12);
+  await expect(rows).toHaveCount(13);
   const sizes = [];
   for (const row of await rows.all()) {
     const label = await row.locator('span').boundingBox();
@@ -216,4 +216,11 @@ Then('the run workflow shortcut opens the run view', async function () {
   await workflow(page).focus();
   await page.keyboard.press('Control+r');
   await expect(page.getByRole('dialog', { name: /^Run workflow:/ })).toBeVisible();
+});
+
+Then('the history shortcut opens workflow history', async function () {
+  const page = this.page;
+  await workflow(page).focus();
+  await page.keyboard.press('Control+h');
+  await expect(page.getByRole('dialog', { name: 'Workflow history', exact: true })).toBeVisible();
 });

@@ -21,3 +21,6 @@ Feature: Workflow keybinding preferences
   Scenario: Run workflow opens from its shortcut
     Given nested workflow input and output branches mapped to another operation
     Then the run workflow shortcut opens the run view
+  Scenario: Workflow history opens from its shortcut
+    Given nested workflow input and output branches mapped to another operation
+    Then the history shortcut opens workflow history
