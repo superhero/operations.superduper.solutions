@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { chooseCatalogOperation, executeOperation, field, fillField, quitRun, restartRun, setMode, workflowAction, workspace } from './workspace.steps.mjs';
+import { chooseCatalogOperation, executeOperation, includeField, field, fillField, quitRun, restartRun, setMode, workflowAction, workspace } from './workspace.steps.mjs';
 import { repository, storedWorkflows } from './workflow-storage.fixture.mjs';
 
 const omitted = (page, label) => workspace(page).getByRole('checkbox', { name: `Do not send ${label}`, exact: true });
@@ -91,6 +91,9 @@ Then('request field controls preserve drafts and send distinct omitted null and 
   await expect(enumDetails).toContainText('"allowed", "other"');
   await information(page, 'Restricted choice').click();
 
+  await expect(omitted(page, 'Note')).toBeChecked();
+  await expect(await field(page, 'Note')).toBeDisabled();
+  await includeField(page, 'Note');
   const note = await field(page, 'Note');
   await note.fill('Keep this draft');
   await note.press('Tab');
@@ -125,6 +128,7 @@ Then('request field controls preserve drafts and send distinct omitted null and 
   await fillField(page, 'Restricted choice', 'allowed');
   await fillField(page, 'Query omitted', 'Do not transmit');
   await omitted(page, 'Query omitted').check();
+  await includeField(page, 'Query null');
   await nullValue(page, 'Query null').check();
   await fillField(page, 'Query count', '0');
   await fillField(page, 'Query flag', 'false');
@@ -157,6 +161,8 @@ Then('an OpenAPI {string} optional body sends omission and null distinctly', asy
   } } }, version);
   const requests = await recordRequests(page, this.baseURL);
   await chooseCatalogOperation(page, 'Send optional body');
+  await expect(omitted(page, 'Optional payload')).toBeChecked();
+  await includeField(page, 'Optional payload');
   const editor = await field(page, 'Optional payload');
   await editor.fill('Whole body draft');
   await omitted(page, 'Optional payload').check();
@@ -171,6 +177,7 @@ Then('an OpenAPI {string} optional body sends omission and null distinctly', asy
   assert.equal(requests[0].contentType, null);
 
   await restartRun(page);
+  await includeField(page, 'Optional payload');
   await nullValue(page, 'Optional payload').check();
   await expect(editor).toBeDisabled();
   await executeOperation(page);

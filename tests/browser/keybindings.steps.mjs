@@ -25,7 +25,7 @@ Then('workflow shortcut preferences persist, prevent conflicts and preserve text
   const page = this.page;
   let panel = await preferences(page);
   await bind(panel, 'Undo', 'Control+u', 'Ctrl/Cmd + U');
-  await bind(panel, 'Redo', 'Control+r', 'Ctrl/Cmd + R');
+  await bind(panel, 'Redo', 'Control+Shift+r', 'Ctrl/Cmd + Shift + R');
   const all = panel.getByRole('button', { name: 'Select all shortcut', exact: true });
   await all.click();
   await all.press('Control+u');
@@ -46,7 +46,7 @@ Then('workflow shortcut preferences persist, prevent conflicts and preserve text
         transaction.oncomplete = () => db.close();
       };
     });
-  })).toMatchObject({ undo: 'Mod+u', redo: 'Mod+r', selectAll: 'Mod+q' });
+  })).toMatchObject({ undo: 'Mod+u', redo: 'Mod+Shift+r', selectAll: 'Mod+q' });
   await page.reload();
   panel = await preferences(page);
   await expect(panel.getByRole('button', { name: 'Undo shortcut', exact: true })).toHaveText('Ctrl/Cmd + U');
@@ -61,7 +61,7 @@ Then('workflow shortcut preferences persist, prevent conflicts and preserve text
   await workflow(page).focus();
   await page.keyboard.press('Control+u');
   await expect(workflow(page).locator('.svelte-flow__node-comment')).toHaveCount(0);
-  await page.keyboard.press('Control+r');
+  await page.keyboard.press('Control+Shift+r');
   await expect(workflow(page).locator('.svelte-flow__node-comment')).toHaveCount(1);
   await workflow(page).focus();
   await page.keyboard.press('Escape');
@@ -86,7 +86,7 @@ Then('configured node and rectangle modifiers retain the selection group', async
   };
   await expect(panel.getByRole('combobox')).toHaveCount(0);
   const rows = panel.locator('.option');
-  await expect(rows).toHaveCount(11);
+  await expect(rows).toHaveCount(12);
   const sizes = [];
   for (const row of await rows.all()) {
     const label = await row.locator('span').boundingBox();
@@ -209,4 +209,11 @@ Then('the configurable open workflow shortcut opens the saved workflow picker', 
   await expect(picker).toBeHidden();
   await page.keyboard.press('Control+Shift+o');
   await expect(picker).toBeVisible();
+});
+
+Then('the run workflow shortcut opens the run view', async function () {
+  const page = this.page;
+  await workflow(page).focus();
+  await page.keyboard.press('Control+r');
+  await expect(page.getByRole('dialog', { name: /^Run workflow:/ })).toBeVisible();
 });

@@ -1,12 +1,12 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-export const shortcutActions = ["undo", "redo", "selectAll", "deleteSelection", "newWorkflow", "openWorkflow", "copy", "cut", "paste"] as const;
+export const shortcutActions = ["undo", "redo", "selectAll", "deleteSelection", "newWorkflow", "openWorkflow", "runWorkflow", "copy", "cut", "paste"] as const;
 export type ShortcutAction = typeof shortcutActions[number];
 export type SelectionModifier = "Shift" | "Mod" | "Alt";
 export type Keybindings = Record<ShortcutAction, string> & { nodeSelection: SelectionModifier; areaSelection: SelectionModifier };
 export const defaultKeybindings: Readonly<Keybindings> = {
-  undo: "Mod+z", redo: "Mod+y", selectAll: "Mod+a", deleteSelection: "Delete", newWorkflow: "Mod+n", openWorkflow: "Mod+o", copy: "Mod+c", cut: "Mod+x", paste: "Mod+v", nodeSelection: "Shift", areaSelection: "Shift"
+  undo: "Mod+z", redo: "Mod+y", selectAll: "Mod+a", deleteSelection: "Delete", newWorkflow: "Mod+n", openWorkflow: "Mod+o", runWorkflow: "Mod+r", copy: "Mod+c", cut: "Mod+x", paste: "Mod+v", nodeSelection: "Shift", areaSelection: "Shift"
 };
 type Modifiers = { ctrlKey: boolean; metaKey: boolean; altKey: boolean; shiftKey: boolean };
 

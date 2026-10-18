@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { closeCatalog, expectFieldValue, field, openCatalog, restartRun, applyDisplayedTheme } from './workspace.steps.mjs';
+import { closeCatalog, expectFieldValue, includeField, field, openCatalog, restartRun, applyDisplayedTheme } from './workspace.steps.mjs';
 import { expectThemeColors } from './theme-colors.mjs';
 
 Then('the required Priority dropdown supports keyboard choice and cancellation', async function () {
@@ -97,6 +97,7 @@ Then('the Priority dropdown uses themed animated choices without overflowing', a
 
 Then('the Result limit slider preserves bounds and keyboard focus', async function () {
   const page = this.page;
+  await includeField(page, 'Result limit');
   const input = await field(page, 'Result limit');
   const slider = page.getByRole('slider', { name: 'Result limit', exact: true });
   await expect(slider).toHaveAttribute('aria-valuemin', '1');
@@ -116,6 +117,7 @@ Then('the Result limit slider preserves bounds and keyboard focus', async functi
 
 Then('the optional Count slider preserves large signed integers and clears without a default', async function () {
   const page = this.page;
+  await includeField(page, 'Count');
   const input = await field(page, 'Count');
   const slider = page.getByRole('slider', { name: 'Count', exact: true });
   await expect(slider).toHaveAttribute('aria-valuemin', String(Number.MIN_SAFE_INTEGER));
@@ -139,6 +141,7 @@ Then('the optional Count slider preserves large signed integers and clears witho
 
 for (const [verb, action] of [['increase', 'Increase'], ['decrease', 'Decrease']]) {
   When(`I ${verb} Estimated hours with its arrow`, async function () {
+    await includeField(this.page, 'Estimated hours');
     const input = await field(this.page, 'Estimated hours');
     await input.focus();
     await this.page.getByRole('button', { name: `${action} Estimated hours`, exact: true }).click();
@@ -149,6 +152,7 @@ for (const [verb, action] of [['increase', 'Increase'], ['decrease', 'Decrease']
 
 Then('number arrows reveal through hover and focus with the selected motion preference', async function () {
   const page = this.page;
+  await includeField(page, 'Estimated hours');
   const input = await field(page, 'Estimated hours');
   const other = await field(page, 'Title');
   const row = page.locator('.joined-field').filter({ has: page.getByRole('spinbutton', { name: 'Estimated hours', exact: true }) });

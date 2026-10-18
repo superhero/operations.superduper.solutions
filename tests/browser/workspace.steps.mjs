@@ -163,7 +163,13 @@ async function field(page, label) {
   return input;
 }
 
+export async function includeField(page, label) {
+  const toggle = workspace(page).getByRole('checkbox', { name: `Do not send ${label}`, exact: true });
+  if (await toggle.count() && await toggle.isChecked() && await toggle.isEnabled()) await toggle.uncheck();
+}
+
 async function fillField(page, label, value) {
+  await includeField(page, label);
   const input = await field(page, label);
   if (await input.getAttribute("role") === "combobox") {
     await input.click();

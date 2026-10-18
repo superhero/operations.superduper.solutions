@@ -18,3 +18,6 @@ Feature: Workflow keybinding preferences
   Scenario: Open workflow uses the configured shortcut
     Given nested workflow input and output branches mapped to another operation
     Then the configurable open workflow shortcut opens the saved workflow picker
+  Scenario: Run workflow opens from its shortcut
+    Given nested workflow input and output branches mapped to another operation
+    Then the run workflow shortcut opens the run view
