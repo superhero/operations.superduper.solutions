@@ -186,6 +186,30 @@ style: rename Buttons settings to Toolbar
 
 ```
 
+<!-- changelog-commit:8ffaed96c074faf0866f3393bd2e5ec5c3960494 -->
+### Commit [`8ffaed9`](https://github.com/superhero/operations.superduper.solutions/commit/8ffaed96c074faf0866f3393bd2e5ec5c3960494)
+
+```text
+style: match toolbar switch backgrounds to developer settings
+
+```
+
+<!-- changelog-commit:0d943c35222d4e6c15a88a82f84510219c43be81 -->
+### Commit [`0d943c3`](https://github.com/superhero/operations.superduper.solutions/commit/0d943c35222d4e6c15a88a82f84510219c43be81)
+
+```text
+style: remove toolbar group heading dividers
+
+```
+
+<!-- changelog-commit:822616bc912cab109e799e56afb025f93bd2c95c -->
+### Commit [`822616b`](https://github.com/superhero/operations.superduper.solutions/commit/822616bc912cab109e799e56afb025f93bd2c95c)
+
+```text
+style: tighten spacing below toolbar group headings
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
