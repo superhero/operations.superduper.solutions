@@ -160,6 +160,22 @@ phases and reduced motion alongside the existing opening checks.
 
 ```
 
+<!-- changelog-commit:8b0647e484f47058d571129597bc6f1799bf8e06 -->
+### Commit [`8b0647e`](https://github.com/superhero/operations.superduper.solutions/commit/8b0647e484f47058d571129597bc6f1799bf8e06)
+
+```text
+fix(settings): close building dots before expanding Browser content
+
+Keep the constructed dashboard hidden while the compact dots pane slides
+fully closed. Wait for that real height animation before revealing the
+Browser view, so the histogram expands from zero instead of appearing
+during the handoff. Cancel pending handoffs when switching sections.
+
+Extend the focused browser test to inspect the closing animation and
+verify dashboard invisibility before its separate opening animation.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.51

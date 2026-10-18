@@ -125,10 +125,23 @@ Then('Browser slides from its initial dots pane into the constructed dashboard',
     await expect(section.locator('.storage-building')).toBeVisible();
     await expect(section.locator('.storage-dashboard')).toHaveCount(0);
     await finishHeightAnimations(panel);
+    await expect.poll(() => panel.evaluate(el => el.getAnimations().some(animation => {
+      const frames = animation.effect.getKeyframes();
+      return parseFloat(frames[0].height) > 0 && parseFloat(frames.at(-1).height) === 0;
+    }))).toBe(true);
+    const closing = await seekHeightAnimation(panel, 0.5);
+    expect(closing.from).toBeCloseTo(initial.to, 0);
+    expect(closing.to).toBe(0);
+    expect(closing.height).toBeGreaterThan(0);
+    expect(closing.height).toBeLessThan(closing.from);
+    await expect(section.locator('.storage-building')).toBeVisible();
+    await expect(section.locator('.storage-dashboard')).not.toBeVisible();
+    await expect(section.getByRole('region', { name: 'Usage history' })).not.toBeVisible();
+    await finishHeightAnimations(panel);
     await expect.poll(() => panel.evaluate(el => el.getAnimations().some(animation =>
       parseFloat(animation.effect.getKeyframes().at(-1).height) > 100))).toBe(true);
     const full = await seekHeightAnimation(panel, 0.5);
-    expect(full.from).toBeCloseTo(initial.to, 0);
+    expect(full.from).toBe(0);
     expect(full.to).toBeGreaterThan(full.from);
     expect(full.height).toBeGreaterThan(full.from);
     expect(full.height).toBeLessThan(full.to);
