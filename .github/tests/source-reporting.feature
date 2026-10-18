@@ -8,6 +8,16 @@ Feature: Every source behavior reaches the shared Vitest reports
     Then every source feature and its steps belong to exactly one explicit reporting profile
     And the source test command routes Gherkin through the shared Vitest launcher
 
+  Scenario Outline: Browser configurations load when dependency directories cannot accept bundled output
+    Given the "<profile>" configuration has no writable bundled-config directory
+    When that configuration is loaded natively
+    Then its Gherkin and browser plugins are available without temporary config files
+
+    Examples:
+      | profile    |
+      | browser    |
+      | components |
+
   Scenario Outline: Individual results survive execution and report generation
     Given two named source scenarios with a second scenario that has "<outcome>"
     When the shared source execution configuration runs those scenarios

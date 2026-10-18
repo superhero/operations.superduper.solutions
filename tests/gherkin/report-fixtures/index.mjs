@@ -121,7 +121,7 @@ export default defineConfig({ root: fileURLToPath(new URL('../../', import.meta.
   }
 });\n`);
   const execution = spawnSync(process.execPath, [join(repository, 'node_modules/vitest/vitest.mjs'),
-    'run', '--config', join(root, 'vitest.config.mjs')], {
+    'run', '--configLoader', 'native', '--config', join(root, 'vitest.config.mjs')], {
     cwd: root, env: { ...process.env, OPERATIONS_TEST_TAGS: '', OPERATIONS_FEATURES: '',
       OPERATIONS_TEST_PROFILE: 'source', OPERATIONS_COVERAGE: '0' },
     encoding: 'utf8', timeout: 45000, maxBuffer: 4 * 1024 * 1024,

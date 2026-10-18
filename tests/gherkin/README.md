@@ -20,7 +20,8 @@ local development but cannot supply complete release evidence.
 ## Node modules
 
 Node suites use ordinary Vitest transforms so V8 coverage maps to the same source
-that executed. One narrow Vite plugin replaces the matching worker constructor
+that executed. Native ESM configuration loading keeps dependency directories
+read-only. One narrow Vite plugin replaces the matching worker constructor
 adapter; the real matching client and RPC remain under test. The schema extractor
 failure test uses a restored Vitest spy in that same module graph, avoiding mixed
 native and transformed byte offsets in coverage.

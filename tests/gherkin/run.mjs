@@ -125,8 +125,10 @@ async function execute(name, engine) {
     environment.OPERATIONS_WORLD_PARAMETERS = JSON.stringify({ fixtureBundlesFile: await browserBundles() });
   }
   const startedAt = new Date().toISOString();
+  // Configuration is native ESM. Avoid Vite's bundled-config writes into
+  // node_modules, which stays read-only in the browser container.
   const exitCode = await runNode(resolve(root, 'node_modules/vitest/vitest.mjs'),
-    ['run', '--config', name === 'runner' ? 'tests/gherkin/runner-regressions/vitest.config.mjs' : 'vitest.config.mjs', ...forwarded], environment);
+    ['run', '--configLoader', 'native', '--config', name === 'runner' ? 'tests/gherkin/runner-regressions/vitest.config.mjs' : 'vitest.config.mjs', ...forwarded], environment);
   let resultHash, blobHash, complete = false;
   try {
     const [result, blob] = await Promise.all([readFile(resolve(root, resultPath)), readFile(resolve(root, blobPath))]);

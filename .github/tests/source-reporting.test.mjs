@@ -2,11 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { parse } from 'flatted';
+import { loadConfigFromFile } from 'vite';
 import { Given, Then, When } from '@cucumber/cucumber';
 import { acceptance, source } from '../../tests/gherkin/profiles.mjs';
 import { createReportFixture } from '../../tests/gherkin/report-fixtures/index.mjs';
@@ -44,6 +45,38 @@ Then('the source test command routes Gherkin through the shared Vitest launcher'
   assert.doesNotMatch(Object.values(commands).join('\n'), /\bnode\s+--test\b|\btest:unit\b|\bcucumber-js\b/);
   const launcher = readFileSync(join(repository, 'tests/gherkin/run.mjs'), 'utf8');
   assert.ok(launcher.includes('node_modules/vitest/vitest.mjs'));
+});
+
+Given('the {string} configuration has no writable bundled-config directory', function (profile) {
+  assert.ok(['browser', 'components'].includes(profile));
+  const root = join(this.automation.root, `native-${profile}-config`);
+  mkdirSync(join(root, 'node_modules'), { recursive: true });
+  // An ordinary file prevents bundled output regardless of the runner's user
+  // permissions; loading the native configuration must leave it untouched.
+  writeFileSync(join(root, 'node_modules/.vite-temp'), 'bundled configuration is unavailable');
+  const config = join(root, 'vitest.config.mjs');
+  writeFileSync(config, `import {createTestConfig} from ${JSON.stringify(join(repository, 'tests/gherkin/config.mjs'))};\n`
+    + `export default await createTestConfig(${JSON.stringify(profile)});\n`);
+  this.nativeReportingConfig = { profile, root, config };
+});
+When('that configuration is loaded natively', async function () {
+  const state = this.nativeReportingConfig;
+  state.loaded = await loadConfigFromFile({ command: 'serve', mode: 'test' },
+    state.config, state.root, 'silent', undefined, 'native');
+});
+Then('its Gherkin and browser plugins are available without temporary config files', function () {
+  const { profile, root, loaded } = this.nativeReportingConfig;
+  assert.equal(loaded.config.test.name, profile === 'browser' ? 'browser-chromium' : 'components');
+  const plugins = loaded.config.plugins.flat(Infinity).filter(Boolean);
+  assert.ok(plugins.some(plugin => plugin.name?.startsWith('quickpickle')));
+  if (profile === 'components') {
+    assert.ok(plugins.some(plugin => plugin.name === 'vite-plugin-svelte'));
+    assert.equal(loaded.config.test.browser.enabled, true);
+    assert.equal(loaded.config.test.browser.provider.name, 'playwright');
+  }
+  assert.equal(readFileSync(join(root, 'node_modules/.vite-temp'), 'utf8'), 'bundled configuration is unavailable');
+  assert.deepEqual(readdirSync(join(root, 'node_modules')), ['.vite-temp']);
+  assert.deepEqual(readdirSync(root).sort(), ['node_modules', 'vitest.config.mjs']);
 });
 
 Given('two named source scenarios with a second scenario that has {string}', function (outcome) {
