@@ -74,6 +74,22 @@ feat: configure Escape to close either side menu
 
 ```
 
+<!-- changelog-commit:6b86672b1211e1a14ea32d85e88dfe7b3b2e93e5 -->
+### Commit [`6b86672`](https://github.com/superhero/operations.superduper.solutions/commit/6b86672b1211e1a14ea32d85e88dfe7b3b2e93e5)
+
+```text
+style: sort keybindings alphabetically by name
+
+```
+
+<!-- changelog-commit:d01d48c4040dd17bc311ec1babcf7dab73857af6 -->
+### Commit [`d01d48c`](https://github.com/superhero/operations.superduper.solutions/commit/d01d48c4040dd17bc311ec1babcf7dab73857af6)
+
+```text
+style: separate workflow clipboard controls from node tools
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
