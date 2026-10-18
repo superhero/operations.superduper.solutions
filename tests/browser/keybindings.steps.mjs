@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
+import { closeWorkflowDetails, workflowDetails } from './workflow-details.fixture.mjs';
 import { setMode, workflow } from './workspace.steps.mjs';
 
 async function preferences(page) {
@@ -85,7 +86,7 @@ Then('configured node and rectangle modifiers retain the selection group', async
   };
   await expect(panel.getByRole('combobox')).toHaveCount(0);
   const rows = panel.locator('.option');
-  await expect(rows).toHaveCount(6);
+  await expect(rows).toHaveCount(11);
   const sizes = [];
   for (const row of await rows.all()) {
     const label = await row.locator('span').boundingBox();
@@ -146,4 +147,66 @@ Then('deletion shortcuts remove selected nodes and connections and respect editi
   await expect(input).toHaveValue('Kee');
   await input.press('Control+d');
   await expect(graph.locator('.svelte-flow__node-comment')).toHaveCount(1);
+});
+
+Then('workflow clipboard shortcuts and buttons preserve graphs across new workflows', async function () {
+  const page = this.page, graph = workflow(page);
+  const total = await graph.locator('.svelte-flow__node').count();
+  await expect(graph.getByRole('button', { name: 'Paste', exact: true })).toBeDisabled();
+  const mapping = graph.locator('.svelte-flow__edge[data-id="mapped-output"]');
+  await mapping.focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Control+x');
+  await expect(mapping).toHaveCount(0);
+  await expect(graph.locator('.svelte-flow__node')).toHaveCount(total);
+  await graph.focus();
+  await page.keyboard.press('Control+z');
+  await expect(mapping).toHaveCount(1);
+
+  await node(page, 'Selection owner').locator('.operation-title-row strong').click();
+  await graph.getByRole('button', { name: 'Copy selection', exact: true }).click();
+  await expect(graph.getByRole('button', { name: 'Paste', exact: true })).toBeEnabled();
+  await graph.focus();
+  await page.keyboard.press('Control+c');
+  await page.keyboard.press('Control+v');
+  await expect.poll(() => graph.locator('.svelte-flow__node').count()).toBeGreaterThan(total);
+  const afterPaste = await graph.locator('.svelte-flow__node').count();
+  await page.keyboard.press('Control+x');
+  await expect(graph.locator('.svelte-flow__node')).toHaveCount(total);
+  await graph.getByRole('button', { name: 'Paste', exact: true }).click();
+  await expect(graph.locator('.svelte-flow__node')).toHaveCount(afterPaste);
+  await graph.getByRole('button', { name: 'Cut selection', exact: true }).click();
+  await expect(graph.locator('.svelte-flow__node')).toHaveCount(total);
+  await graph.focus();
+  await page.keyboard.press('Control+c');
+  // An empty selection must not erase the previously copied graph.
+  await page.keyboard.press('Control+n');
+  await expect(workflowDetails(page)).toBeVisible();
+  await closeWorkflowDetails(page);
+  await expect(graph.locator('.svelte-flow__node')).toHaveCount(0);
+  await graph.focus();
+  await page.keyboard.press('Control+v');
+  await expect(graph.locator('.svelte-flow__node')).toHaveCount(afterPaste - total);
+  await expect(graph.locator('.svelte-flow__node.selected')).toHaveCount(afterPaste - total);
+  await expect(page.locator('.site-header .document-meta')).toContainText('Saved locally');
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(graph.locator('.svelte-flow__node')).toHaveCount(afterPaste - total);
+});
+
+Then('the configurable open workflow shortcut opens the saved workflow picker', async function () {
+  const page = this.page;
+  await workflow(page).focus();
+  await page.keyboard.press('Control+o');
+  const picker = page.getByRole('dialog', { name: 'Saved workflows', exact: true });
+  await expect(picker).toBeVisible();
+  await picker.getByRole('button', { name: 'Close', exact: true }).click();
+  const panel = await preferences(page);
+  await bind(panel, 'Open workflow', 'Control+Shift+o', 'Ctrl/Cmd + Shift + O');
+  await setMode(page, 'workflow');
+  await workflow(page).focus();
+  await page.keyboard.press('Control+o');
+  await expect(picker).toBeHidden();
+  await page.keyboard.press('Control+Shift+o');
+  await expect(picker).toBeVisible();
 });

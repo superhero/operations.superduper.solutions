@@ -12,3 +12,9 @@ Feature: Workflow keybinding preferences
   Scenario: Delete selection supports nodes and connections
     Given nested workflow input and output branches mapped to another operation
     Then deletion shortcuts remove selected nodes and connections and respect editing fields
+  Scenario: Workflow clipboard shortcuts and toolbar buttons
+    Given nested workflow input and output branches mapped to another operation
+    Then workflow clipboard shortcuts and buttons preserve graphs across new workflows
+  Scenario: Open workflow uses the configured shortcut
+    Given nested workflow input and output branches mapped to another operation
+    Then the configurable open workflow shortcut opens the saved workflow picker

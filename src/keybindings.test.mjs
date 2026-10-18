@@ -18,6 +18,9 @@ Then('shortcuts match Control and Command exactly and ignore composition', () =>
   assert.equal(shortcutAction(event({}), defaultKeybindings), 'undo');
   assert.equal(shortcutAction(event({ key: 'Y', ctrlKey: false, metaKey: true }), defaultKeybindings), 'redo');
   assert.equal(shortcutAction(event({ key: 'a' }), defaultKeybindings), 'selectAll');
+  for (const [key, action] of [['o', 'openWorkflow'], ['n', 'newWorkflow'], ['c', 'copy'], ['x', 'cut'], ['v', 'paste']])
+    for (const primary of [{ ctrlKey: true }, { ctrlKey: false, metaKey: true }])
+      assert.equal(shortcutAction(event({ key, ...primary }), defaultKeybindings), action);
   for (const patch of [{ isComposing: true }, { getModifierState: () => true }, { metaKey: true }, { ctrlKey: false }, { key: 'Control' }])
     assert.equal(shortcutFromEvent(event(patch)), null);
   assert.equal(shortcutAction(event({ altKey: true }), defaultKeybindings), null);

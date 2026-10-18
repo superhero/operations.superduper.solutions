@@ -34,6 +34,22 @@ feat: configure deletion shortcuts for nodes and connections
 
 ```
 
+<!-- changelog-commit:c9f7b4760b3c3c1235455995872ff58ed43d926e -->
+### Commit [`c9f7b47`](https://github.com/superhero/operations.superduper.solutions/commit/c9f7b4760b3c3c1235455995872ff58ed43d926e)
+
+```text
+feat: add workflow clipboard actions and keyboard shortcuts
+
+```
+
+<!-- changelog-commit:70bdf677d0a4f01d5eba7ee5d81d63dcd820750e -->
+### Commit [`70bdf67`](https://github.com/superhero/operations.superduper.solutions/commit/70bdf677d0a4f01d5eba7ee5d81d63dcd820750e)
+
+```text
+feat: add configurable open workflow shortcut
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52

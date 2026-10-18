@@ -5,6 +5,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
+  import { copyWorkflowSelection, pasteWorkflowSelection, type WorkflowClipboard } from "$lib/workflow-clipboard.ts";
   import { defaultKeybindings, shortcutAction, modifierKeys, modifierPressed, type Keybindings } from "$lib/keybindings.ts";
   import { onMount, setContext, tick, untrack } from "svelte";
   import { Background, BackgroundVariant, ConnectionLineType, MarkerType, SvelteFlow, SvelteFlowProvider, addEdge, type Edge, type Node, type Connection } from "@xyflow/svelte";
@@ -97,6 +98,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let refreshGeneration = 0;
   let error = $state("");
   let notice = $state("");
+  let clipboard = $state.raw<WorkflowClipboard | null>(null);
+  let pasteOffset = 32;
   let retry = $state<(() => void) | null>(null);
   let upload: HTMLInputElement;
   let toolbar = $state<WorkflowToolbar>();
@@ -601,6 +604,33 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   function adaptGates() { nodes = adaptRoutingGates(nodes, edges).map(graphNode); }
 
+  function copySelection(cut = false) {
+    const copied = copyWorkflowSelection(documentValue(), nodes.filter(node => node.selected).map(node => node.id), edges.filter(edge => edge.selected).map(edge => edge.id));
+    if (!copied) return;
+    clipboard = copied;
+    pasteOffset = 32;
+    if (cut) {
+      void beforeDelete({ nodes: nodes.filter(node => node.selected && node.deletable !== false), edges: edges.filter(edge => edge.selected && edge.deletable !== false) });
+    }
+  }
+
+  async function pasteSelection() {
+    if (!clipboard || !keyboardActive || placement) return;
+    try {
+      const graph = pasteWorkflowSelection(clipboard, pasteOffset);
+      const nextVersion = Math.max(version, graph.version) as 1 | 2 | 3;
+      validateWorkflowDocument({ ...documentValue(), version: nextVersion, nodes: [...nodes.map(storedNode), ...graph.nodes], edges: [...documentValue().edges, ...graph.edges] });
+      version = nextVersion;
+      pasteOffset += 32;
+      nodes = [...nodes.map(node => ({ ...node, selected: false })), ...graph.nodes.map(node => ({ ...graphNode(node), selected: !node.hidden }))];
+      edges = [...edges.map(edge => ({ ...edge, selected: false })), ...graph.edges.map(edge => ({ ...paintEdge(edge), selected: !edge.hidden }))];
+      error = "";
+      await tick();
+      await toolbar?.reveal(graph.nodes.filter(node => !node.hidden).map(node => node.id));
+      if (keyboardActive) focusCanvas();
+    } catch (failure) { describeFailure("Could not paste selection", failure); }
+  }
+
   function removeSelected() {
     applyGraph(removeGraphSelection({ nodes: nodes.filter(node => node.selected), edges: edges.filter(edge => edge.selected) }, nodes, edges), true);
   }
@@ -822,6 +852,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const target = event.target;
     if (target instanceof Element && target.closest('#settings-panel, input, textarea, select, [contenteditable], [role="listbox"], [role="combobox"], .nokey')) return;
     const action = shortcutAction(event, keybindings);
+    if (action === "newWorkflow" || action === "openWorkflow" || action === "copy" || action === "cut" || action === "paste") {
+      event.preventDefault();
+      if (action === "newWorkflow") newDocument();
+      else if (action === "openWorkflow") openDocuments();
+      else if (action === "paste") void pasteSelection();
+      else copySelection(action === "cut");
+      return;
+    }
     if (action === "deleteSelection") {
       event.preventDefault();
       void beforeDelete({ nodes: nodes.filter(node => node.selected && node.deletable !== false), edges: edges.filter(edge => edge.selected && edge.deletable !== false) });
@@ -967,7 +1005,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <SvelteFlow bind:nodes={() => orderedNodes, updateCanvasNodes} bind:edges bind:viewport {nodeTypes} {edgeTypes} defaultEdgeOptions={edgeOptions} connectionLineComponent={WorkflowConnectionLine} connectionLineType={curved ? ConnectionLineType.Bezier : ConnectionLineType.SmoothStep} onbeforeconnect={prepareConnection} onconnect={adaptGates}
       elevateEdgesOnSelect={false} defaultMarkerColor={null} connectionLineStyle={`${edgeOptions.style}; marker-end: url(#${connectionMarkerId})`}
       minZoom={0.25} maxZoom={2} {...(snap ? {} : { snapGrid: [1, 1] as [number, number] })}
-      deleteKey={null} selectionKey={keyboardActive ? modifierKeys(keybindings.areaSelection) : null}
+      deleteKey={[]} selectionKey={keyboardActive ? modifierKeys(keybindings.areaSelection) : null}
       multiSelectionKey={keyboardActive ? (keybindings.nodeSelection === "Shift" ? ["Shift", "Meta", "Control"] : modifierKeys(keybindings.nodeSelection)) : null} panActivationKey={keyboardActive ? " " : null}
       zoomActivationKey={keyboardActive ? ["Meta", "Control"] : null} disableKeyboardA11y={!keyboardActive}
       isValidConnection={validConnection} onbeforedelete={beforeDelete}
@@ -986,6 +1024,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {#if nodes.length}<WorkflowMinimap active={keyboardActive} />{/if}
       <WorkflowToolbar bind:this={toolbar} {canvas} {active} {settingsOpen} {navigationOpen} {snap} {curved} {dashed} {selected} placing={placement !== null}
         onsnap={() => snap = !snap} oncurved={switchCurve} ondashed={switchDashes}
+        oncopy={() => copySelection()} oncut={() => copySelection(true)} onpaste={() => { void pasteSelection(); }} canPaste={clipboard !== null}
         onremove={removeSelected} onnew={newDocument} onopen={openDocuments}
         onexport={exportDocument} onimport={() => upload.click()} onbrowse={onBrowse}
         onutility={addUtility} ondescribe={describeWorkflow} onrun={() => startRun()}

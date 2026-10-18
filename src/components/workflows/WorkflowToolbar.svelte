@@ -9,8 +9,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { Controls, useSvelteFlow, useStore } from "@xyflow/svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  let { canvas, active, settingsOpen = false, placing = false, navigationOpen, snap, curved, dashed, selected, onsnap, oncurved, ondashed, onremove, onnew, onopen, onexport, onimport, onbrowse, onutility, ondescribe, onrun, canUndo, canRedo, historyBusy, onundo, onredo, onhistory }:
-    { canvas: HTMLElement | undefined; active: boolean; settingsOpen?: boolean; placing?: boolean; navigationOpen: boolean; snap: boolean; curved: boolean; dashed: boolean; selected: boolean;
+  let { oncopy, oncut, onpaste, canPaste = false, canvas, active, settingsOpen = false, placing = false, navigationOpen, snap, curved, dashed, selected, onsnap, oncurved, ondashed, onremove, onnew, onopen, onexport, onimport, onbrowse, onutility, ondescribe, onrun, canUndo, canRedo, historyBusy, onundo, onredo, onhistory }:
+    { oncopy: () => void; oncut: () => void; onpaste: () => void; canPaste?: boolean; canvas: HTMLElement | undefined; active: boolean; settingsOpen?: boolean; placing?: boolean; navigationOpen: boolean; snap: boolean; curved: boolean; dashed: boolean; selected: boolean;
       onsnap: () => void; oncurved: () => void; ondashed: () => void; onremove: () => void;
       onnew: () => void; onopen: () => void; onexport: () => void;
       onimport: () => void; onbrowse: () => void; onutility: (type: "switch" | "cast" | "comment" | "vault" | "file") => void;
@@ -178,6 +178,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <HintButton class="svelte-flow__controls-button" aria-label="Add vault variable" label="Add vault variable" onclick={() => onutility("vault")}><MaterialIcon name="variable_add" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Add file" label="Add file" onclick={() => onutility("file")}><MaterialIcon name="upload_file" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Comment" label="Comment" onclick={() => onutility("comment")}><MaterialIcon name="sticky_note" size={18} /></HintButton>
+    <HintButton class="svelte-flow__controls-button" aria-label="Copy selection" label="Copy selection" disabled={!selected} onclick={oncopy}><MaterialIcon name="content_copy" size={18} /></HintButton>
+    <HintButton class="svelte-flow__controls-button" aria-label="Cut selection" label="Cut selection" disabled={!selected} onclick={oncut}><MaterialIcon name="content_cut" size={18} /></HintButton>
+    <HintButton class="svelte-flow__controls-button" aria-label="Paste" label="Paste" disabled={!canPaste} onclick={onpaste}><MaterialIcon name="content_paste" size={18} /></HintButton>
     <HintButton class="svelte-flow__controls-button" aria-label="Remove selected" label="Remove selected" disabled={!selected} onclick={onremove}><MaterialIcon name="delete" size={18} /></HintButton>
     </div><div class="workflow-control-group">
     <HintButton class="svelte-flow__controls-button" aria-label="Dashed connections" label="Dashed connections" aria-pressed={dashed} onclick={ondashed}><MaterialIcon name="unknown_med" size={18} /></HintButton>
