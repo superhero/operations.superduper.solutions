@@ -78,12 +78,24 @@ Then('workflow shortcut preferences persist, prevent conflicts and preserve text
 Then('configured node and rectangle modifiers retain the selection group', async function () {
   const page = this.page;
   const panel = await preferences(page);
-  const choose = async (label, option) => {
-    await panel.getByRole('combobox', { name: label, exact: true }).click();
-    await page.getByRole('option', { name: option, exact: true }).click();
+  const choose = async (label, key) => {
+    const button = panel.getByRole('button', { name: label, exact: true });
+    await button.click();
+    await button.press(key);
   };
-  await choose('Add node to selection modifier', 'Alt/Option');
-  await choose('Add area to selection modifier', 'Ctrl/Cmd');
+  await expect(panel.getByRole('combobox')).toHaveCount(0);
+  const rows = panel.locator('.option');
+  await expect(rows).toHaveCount(6);
+  const sizes = [];
+  for (const row of await rows.all()) {
+    const label = await row.locator('span').boundingBox();
+    const button = await row.getByRole('button').boundingBox();
+    sizes.push({ width: button.width, height: button.height });
+    expect(Math.abs(label.y + label.height / 2 - button.y - button.height / 2)).toBeLessThan(2);
+  }
+  expect(sizes.every(size => size.width === sizes[0].width && size.height === sizes[0].height)).toBe(true);
+  await choose('Add node to selection modifier', 'Alt');
+  await choose('Add area to selection modifier', 'Control');
   await setMode(page, 'workflow');
   await node(page, 'Selection owner').locator('.operation-title-row strong').click({ modifiers: ['Alt'] });
   await expect(selected(page)).toHaveCount(1);
@@ -98,4 +110,40 @@ Then('configured node and rectangle modifiers retain the selection group', async
   await expect(selected(page)).toHaveCount(2);
   await node(page, 'Selection owner').locator('.operation-title-row strong').click({ modifiers: ['Alt'] });
   await expect(selected(page)).toHaveCount(1);
+});
+
+Then('deletion shortcuts remove selected nodes and connections and respect editing fields', async function () {
+  const page = this.page;
+  const graph = workflow(page);
+  const edge = graph.locator('.svelte-flow__edge[data-id="mapped-output"]');
+  await edge.focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Delete');
+  await expect(edge).toHaveCount(0);
+  await graph.focus();
+  await page.keyboard.press('Control+z');
+  await expect(edge).toHaveCount(1);
+  await node(page, 'Other operation').locator('.operation-title-row strong').click();
+  await page.keyboard.press('Backspace');
+  await expect(node(page, 'Other operation')).toHaveCount(0);
+  await graph.focus();
+  await page.keyboard.press('Control+z');
+  await expect(node(page, 'Other operation')).toHaveCount(1);
+  const panel = await preferences(page);
+  await bind(panel, 'Delete selection', 'Control+d', 'Ctrl/Cmd + D');
+  await setMode(page, 'workflow');
+  await node(page, 'Other operation').locator('.operation-title-row strong').click();
+  await page.keyboard.press('Delete');
+  await page.keyboard.press('Backspace');
+  await expect(node(page, 'Other operation')).toHaveCount(1);
+  await page.keyboard.press('Control+d');
+  await expect(node(page, 'Other operation')).toHaveCount(0);
+  await graph.getByRole('button', { name: 'Comment', exact: true }).click();
+  const input = graph.locator('.svelte-flow__node-comment textarea');
+  await input.fill('Keep');
+  await input.press('End');
+  await input.press('Backspace');
+  await expect(input).toHaveValue('Kee');
+  await input.press('Control+d');
+  await expect(graph.locator('.svelte-flow__node-comment')).toHaveCount(1);
 });

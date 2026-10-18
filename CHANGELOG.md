@@ -10,6 +10,30 @@ feat: configure workflow shortcuts and selection keybindings
 
 ```
 
+<!-- changelog-commit:3a60065c5cb613f8fbe0b4e0011a37dce15d0e55 -->
+### Commit [`3a60065`](https://github.com/superhero/operations.superduper.solutions/commit/3a60065c5cb613f8fbe0b4e0011a37dce15d0e55)
+
+```text
+feat: simplify keybindings into uniform editable rows
+
+```
+
+<!-- changelog-commit:07d3b2e9e3be73387848a9823c8a109c3712e8b5 -->
+### Commit [`07d3b2e`](https://github.com/superhero/operations.superduper.solutions/commit/07d3b2e9e3be73387848a9823c8a109c3712e8b5)
+
+```text
+style: reduce keybinding row padding
+
+```
+
+<!-- changelog-commit:e9941ac965d69833ac018783db2cf67811ae577c -->
+### Commit [`e9941ac`](https://github.com/superhero/operations.superduper.solutions/commit/e9941ac965d69833ac018783db2cf67811ae577c)
+
+```text
+feat: configure deletion shortcuts for nodes and connections
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52

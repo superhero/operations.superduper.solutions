@@ -9,3 +9,6 @@ Feature: Workflow keybinding preferences
   Scenario: Selection gestures use the configured modifiers
     Given nested workflow input and output branches mapped to another operation
     Then configured node and rectangle modifiers retain the selection group
+  Scenario: Delete selection supports nodes and connections
+    Given nested workflow input and output branches mapped to another operation
+    Then deletion shortcuts remove selected nodes and connections and respect editing fields

@@ -10,6 +10,8 @@ Then('keybindings normalize malformed settings and reject duplicate shortcuts', 
     assert.deepEqual(normalizeKeybindings(value), defaultKeybindings);
   const saved = { ...defaultKeybindings, undo: 'Alt+Shift+u', nodeSelection: 'Mod', areaSelection: 'Alt' };
   assert.deepEqual(normalizeKeybindings(saved), saved);
+  assert.equal(normalizeKeybindings({ deleteSelection: 'Mod+d' }).deleteSelection, 'Mod+d');
+  assert.equal(formatShortcut('Delete'), 'Delete / Backspace');
   assert.equal(formatShortcut('Mod+Shift+u'), 'Ctrl/Cmd + Shift + U');
 });
 Then('shortcuts match Control and Command exactly and ignore composition', () => {
@@ -32,4 +34,14 @@ Then('selection modifiers map to flow keys and explicit shortcuts override redo 
   assert.equal(shortcutAction(event({ shiftKey: true }), defaultKeybindings), 'redo');
   assert.equal(shortcutAction(event({ shiftKey: true }), { ...defaultKeybindings, undo: 'Mod+Shift+z' }), 'undo');
   assert.equal(shortcutAction(event({ shiftKey: true }), { ...defaultKeybindings, redo: 'Alt+r' }), null);
+});
+
+Then('delete and backspace share the configured deletion action without capturing text modifiers', () => {
+  for (const key of ['Delete', 'Backspace']) {
+    assert.equal(shortcutAction(event({ key, ctrlKey: false }), defaultKeybindings), 'deleteSelection');
+    for (const patch of [{ shiftKey: true }, { altKey: true }, { metaKey: true }, { isComposing: true }])
+      assert.equal(shortcutAction(event({ key, ctrlKey: false, ...patch }), defaultKeybindings), null);
+    assert.equal(shortcutAction(event({ key, ctrlKey: false }), { ...defaultKeybindings, deleteSelection: 'Mod+d' }), null);
+  }
+  assert.equal(shortcutAction(event({ key: 'd' }), { ...defaultKeybindings, deleteSelection: 'Mod+d' }), 'deleteSelection');
 });
