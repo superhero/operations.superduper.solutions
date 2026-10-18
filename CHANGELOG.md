@@ -106,6 +106,14 @@ style: simplify toolbar settings and balance row padding
 
 ```
 
+<!-- changelog-commit:74a42fb073cff4fb22b2cc243b4444e7cdfebba7 -->
+### Commit [`74a42fb`](https://github.com/superhero/operations.superduper.solutions/commit/74a42fb073cff4fb22b2cc243b4444e7cdfebba7)
+
+```text
+style: arrange developer settings in two columns
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
