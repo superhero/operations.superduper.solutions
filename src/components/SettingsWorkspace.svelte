@@ -372,7 +372,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <MaterialIcon name="chevron_forward" size={17} />
       {/snippet}
       <fieldset class="workflow-settings" aria-label="Developer">
-        <div class="workflow-defaults">
+        <div class="workflow-defaults developer-defaults">
           {#if import.meta.env.DEV}
             <div class="workflow-default-pair">
               <button class="workflow-default" type="button" role="switch" aria-checked={developerToolbar}
@@ -489,6 +489,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   fieldset { min-width: 0; margin: 0; padding: 16px; border: 0; }
   .workflow-settings { container-type: inline-size; }
   .workflow-defaults { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .developer-defaults { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .workflow-default-pair { display: grid; align-content: start; gap: 10px; min-width: 0; padding: 10px; border-radius: 4px; background: var(--color-surface); }
   .workflow-default { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; padding: 10px 12px; border: 0; border-radius: 4px; background: var(--color-surface); color: var(--color-catalog-foreground); font-size: 12px; font-weight: 700; text-align: left; }
   .workflow-default:focus-visible { outline-color: var(--color-ring); }
