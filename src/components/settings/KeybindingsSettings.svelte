@@ -11,7 +11,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   } = $props();
   let recording = $state<keyof Keybindings | null>(null);
   let notice = $state("");
-  const labels = { undo: "Undo", redo: "Redo", selectAll: "Select all", deleteSelection: "Delete selection", newWorkflow: "New workflow", copy: "Copy selection", cut: "Cut selection", paste: "Paste", nodeSelection: "Add node to selection", areaSelection: "Add area to selection" };
+  const labels = { undo: "Undo", redo: "Redo", selectAll: "Select all", deleteSelection: "Delete selection", newWorkflow: "New workflow", openWorkflow: "Open workflow", copy: "Copy selection", cut: "Cut selection", paste: "Paste", nodeSelection: "Add node to selection", areaSelection: "Add area to selection" };
   const actions = [...shortcutActions, "nodeSelection", "areaSelection"] as const;
   function capture(event: KeyboardEvent, action: keyof Keybindings) {
     if (recording !== action || event.key === "Tab") return;

@@ -852,9 +852,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const target = event.target;
     if (target instanceof Element && target.closest('#settings-panel, input, textarea, select, [contenteditable], [role="listbox"], [role="combobox"], .nokey')) return;
     const action = shortcutAction(event, keybindings);
-    if (action === "newWorkflow" || action === "copy" || action === "cut" || action === "paste") {
+    if (action === "newWorkflow" || action === "openWorkflow" || action === "copy" || action === "cut" || action === "paste") {
       event.preventDefault();
       if (action === "newWorkflow") newDocument();
+      else if (action === "openWorkflow") openDocuments();
       else if (action === "paste") void pasteSelection();
       else copySelection(action === "cut");
       return;

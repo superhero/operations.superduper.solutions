@@ -86,7 +86,7 @@ Then('configured node and rectangle modifiers retain the selection group', async
   };
   await expect(panel.getByRole('combobox')).toHaveCount(0);
   const rows = panel.locator('.option');
-  await expect(rows).toHaveCount(10);
+  await expect(rows).toHaveCount(11);
   const sizes = [];
   for (const row of await rows.all()) {
     const label = await row.locator('span').boundingBox();
@@ -192,4 +192,21 @@ Then('workflow clipboard shortcuts and buttons preserve graphs across new workfl
   await page.reload();
   await setMode(page, 'workflow');
   await expect(graph.locator('.svelte-flow__node')).toHaveCount(afterPaste - total);
+});
+
+Then('the configurable open workflow shortcut opens the saved workflow picker', async function () {
+  const page = this.page;
+  await workflow(page).focus();
+  await page.keyboard.press('Control+o');
+  const picker = page.getByRole('dialog', { name: 'Saved workflows', exact: true });
+  await expect(picker).toBeVisible();
+  await picker.getByRole('button', { name: 'Close', exact: true }).click();
+  const panel = await preferences(page);
+  await bind(panel, 'Open workflow', 'Control+Shift+o', 'Ctrl/Cmd + Shift + O');
+  await setMode(page, 'workflow');
+  await workflow(page).focus();
+  await page.keyboard.press('Control+o');
+  await expect(picker).toBeHidden();
+  await page.keyboard.press('Control+Shift+o');
+  await expect(picker).toBeVisible();
 });
