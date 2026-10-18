@@ -113,6 +113,22 @@ fix(settings): use three dot styles for Browser building status
 
 ```
 
+<!-- changelog-commit:c7d29cb647827b83ba16a3c863650d1393a8becd -->
+### Commit [`c7d29cb`](https://github.com/superhero/operations.superduper.solutions/commit/c7d29cb647827b83ba16a3c863650d1393a8becd)
+
+```text
+feat(settings): animate a ring across five bold building dots
+
+Replace the three-symbol Browser building status with five bold middle
+dots and a ring that steps between them in both directions. Keep endpoint
+positions visible before reversing. Reduced motion leaves the ring at
+the center, and the accessible Building label stays unchanged.
+
+Extend focused Cucumber checks to verify dot count, weight, ring marker
+and the full animation path across repeated opens and both themes.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.51
