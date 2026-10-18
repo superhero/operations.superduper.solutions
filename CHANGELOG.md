@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.53
+
 <!-- changelog-commit:e975af1fcc1fbbad475d5fa5229cd76c3de03694 -->
 ### Commit [`e975af1`](https://github.com/superhero/operations.superduper.solutions/commit/e975af1fcc1fbbad475d5fa5229cd76c3de03694)
 
@@ -233,8 +237,6 @@ style: pack application settings into toolbar-style columns
 fix: keep application settings in three independent lanes
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.52
 
