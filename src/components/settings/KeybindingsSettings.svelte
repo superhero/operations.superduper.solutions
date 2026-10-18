@@ -58,7 +58,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   fieldset { min-width: 0; margin: 0; padding: 16px; border: 0; color: var(--color-foreground); }
   p { margin: 0 0 12px; font-size: 12px; }
   .options { display: grid; gap: 6px; margin-bottom: 12px; }
-  .option { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; min-width: 0; padding: 10px; border-radius: 4px; background: var(--color-surface); }
+  .option { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; min-width: 0; padding: 2px 2px 2px 10px; border-radius: 4px; background: var(--color-surface); }
   .option > span { font-size: 12px; font-weight: 700; }
   button { min-height: 36px; padding: 8px 12px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font-size: 12px; font-weight: 700; transition: scale 180ms ease-in-out; }
   .option button { box-sizing: border-box; width: 176px; height: 36px; padding: 6px 8px; white-space: nowrap; }
