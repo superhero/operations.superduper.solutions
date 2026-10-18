@@ -129,6 +129,22 @@ and the full animation path across repeated opens and both themes.
 
 ```
 
+<!-- changelog-commit:ec212c4294269f3c672944f4710b8aea545bb2aa -->
+### Commit [`ec212c4`](https://github.com/superhero/operations.superduper.solutions/commit/ec212c4294269f3c672944f4710b8aea545bb2aa)
+
+```text
+fix(settings): keep three dots in the initial Browser pane
+
+Replace the moving ring with three medium-sized bold middle dots. Mount
+the cheap indicator before opening so it belongs to the initial slide.
+Prepare the dashboard invisibly behind that compact pane, then reveal it
+after mounting settles so nested content cannot jump its visible height.
+
+Verify the compact and full height animations at intermediate positions,
+alongside repeated opens, both themes, reduced motion and cancellation.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.51
