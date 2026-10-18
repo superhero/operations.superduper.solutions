@@ -31,8 +31,24 @@ Then('Browser settings show a compact building status before the dashboard with 
           building.append(probe);
           const expected = getComputedStyle(probe).color;
           probe.remove();
+          const dots = building.querySelector('.building-dots');
+          const marker = getComputedStyle(dots, '::after');
+          const animation = dots.getAnimations({ subtree: true }).find(item => item.animationName?.endsWith('building-dot'));
+          let positions;
+          if (animation && !window.browserBuildFrames.length) {
+            const original = animation.currentTime;
+            animation.pause();
+            positions = [80, 240, 400, 560, 720, 1040, 1200, 1360, 1520].map(time => {
+              animation.currentTime = time;
+              return new DOMMatrix(getComputedStyle(dots, '::after').transform).m41 / parseFloat(getComputedStyle(dots).fontSize);
+            });
+            animation.currentTime = original;
+            animation.play();
+          }
           window.browserBuildFrames.push({ height: panel.getBoundingClientRect().height,
-            dashboard: !!dashboard, color: getComputedStyle(building).color, expected });
+            dashboard: !!dashboard, color: getComputedStyle(building).color, expected,
+            dots: [...dots.children].map(dot => dot.textContent), weight: getComputedStyle(building).fontWeight,
+            marker: marker.content, animation: marker.animationName, positions });
         }
         if (!dashboard || section.querySelector(':scope > summary').getAttribute('aria-expanded') !== 'true')
           requestAnimationFrame(sample);
@@ -46,6 +62,14 @@ Then('Browser settings show a compact building status before the dashboard with 
     expect(frames.length).toBeGreaterThan(0);
     expect(frames.every(frame => !frame.dashboard && frame.height < 100)).toBe(true);
     expect(frames.every(frame => frame.color === frame.expected)).toBe(true);
+    for (const frame of frames) {
+      expect(frame.dots).toEqual(['·', '·', '·', '·', '·']);
+      expect(Number(frame.weight)).toBeGreaterThanOrEqual(700);
+      expect(frame.marker).toBe('"⊙"');
+      if (motion === 'reduce') expect(frame.animation).toBe('none');
+      else expect(frame.animation).toMatch(/building-dot$/);
+    }
+    if (motion !== 'reduce') expect(frames[0].positions).toEqual([0, 1, 2, 3, 4, 3, 2, 1, 0]);
     await expect.poll(() => section.locator(':scope > .disclosure-panel').evaluate(el => el.getBoundingClientRect().height)).toBeGreaterThan(100);
     await section.locator('summary').first().click();
     await expect(section.locator('summary').first()).toHaveAttribute('aria-expanded', 'false');

@@ -312,7 +312,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {#if storageBuilt}
         <StorageSettings />
       {:else}
-        <p class="storage-building" role="status" aria-label="Building"><span aria-hidden="true">· ⊙ ●</span></p>
+        <p class="storage-building" role="status" aria-label="Building"><span class="building-dots" aria-hidden="true">{#each [0, 1, 2, 3, 4] as dot (dot)}<span>·</span>{/each}</span></p>
       {/if}
     </Disclosure>
     <Disclosure class="catalog-group settings-section" label="Developer" tooltipEnabled={false} open={openSection === "developer"} onToggle={(next) => openSection = next ? "developer" : null}>
@@ -407,7 +407,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </section>
 
 <style>
-  .storage-building { margin: 0; padding: 12px 16px 16px; font-size: 12px; color: var(--color-catalog-active-foreground); text-align: center; }
+  .storage-building { margin: 0; padding: 12px 16px 16px; font-size: 12px; font-weight: 700; color: var(--color-catalog-active-foreground); text-align: center; }
+  .building-dots { position: relative; display: inline-flex; }
+  .building-dots > span { width: 1em; text-align: center; }
+  .building-dots::after { content: "⊙"; position: absolute; top: 0; left: 0; width: 1em; text-align: center; animation: building-dot 800ms steps(5, jump-none) infinite alternate; }
+  @keyframes building-dot { from { transform: translateX(0); } to { transform: translateX(4em); } }
+  @media (prefers-reduced-motion: reduce) { .building-dots::after { animation: none; transform: translateX(2em); } }
   .settings-sections { display: grid; gap: 12px; }
   .settings-sections :global(.settings-section) { border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-muted); transition: background-color 180ms ease-in; }
   .settings-sections :global(.settings-section:has(> summary[aria-expanded="true"])) { background: var(--color-catalog-active); }
