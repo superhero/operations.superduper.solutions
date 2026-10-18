@@ -130,6 +130,38 @@ fix: keep toolbar group headings inside compact column cards
 
 ```
 
+<!-- changelog-commit:0d2a5deb6a10bec8245338255bce069bde95db53 -->
+### Commit [`0d2a5de`](https://github.com/superhero/operations.superduper.solutions/commit/0d2a5deb6a10bec8245338255bce069bde95db53)
+
+```text
+style: distinguish toolbar settings group headings
+
+```
+
+<!-- changelog-commit:766d10d8707ed50a6e9c1ed66b0325082318a181 -->
+### Commit [`766d10d`](https://github.com/superhero/operations.superduper.solutions/commit/766d10d8707ed50a6e9c1ed66b0325082318a181)
+
+```text
+style: use 8px dashes and 6px gaps in group dividers
+
+```
+
+<!-- changelog-commit:e4a45340a5071140a01626b614bd0b5c486579bc -->
+### Commit [`e4a4534`](https://github.com/superhero/operations.superduper.solutions/commit/e4a45340a5071140a01626b614bd0b5c486579bc)
+
+```text
+style: use 6px dashes and 8px gaps in group dividers
+
+```
+
+<!-- changelog-commit:4df195cada28bb3d1fe9edd4d4f2799fff3547da -->
+### Commit [`4df195c`](https://github.com/superhero/operations.superduper.solutions/commit/4df195cada28bb3d1fe9edd4d4f2799fff3547da)
+
+```text
+style: align group dividers with heading and row padding
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
