@@ -66,6 +66,14 @@ feat: add configurable workflow history shortcut
 
 ```
 
+<!-- changelog-commit:1b26ef46da8b16b6c6d34d22ae1e3ffc040c9bb8 -->
+### Commit [`1b26ef4`](https://github.com/superhero/operations.superduper.solutions/commit/1b26ef46da8b16b6c6d34d22ae1e3ffc040c9bb8)
+
+```text
+feat: configure Escape to close either side menu
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
