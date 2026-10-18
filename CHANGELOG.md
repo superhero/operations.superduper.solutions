@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.52
+
 <!-- changelog-commit:e80413d89ff1d9e71e20f3931e3aea89fc4d2010 -->
 ### Commit [`e80413d`](https://github.com/superhero/operations.superduper.solutions/commit/e80413d89ff1d9e71e20f3931e3aea89fc4d2010)
 
@@ -194,8 +198,6 @@ Retain the scoped 100% coverage gates and remove two unreachable source
 alternatives without changing application behavior.
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.51
 
