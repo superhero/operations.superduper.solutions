@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { expect } from '@playwright/test';
-import { createFixtureServer, ownedBrowser, openSettings } from './support.mjs';
+import { createFixtureServer, ownedBrowser, openSettings, waitForApplicationReady } from './support.mjs';
 
 // Assertions are advanced by the named steps in legacy-smoke.feature.
 export async function* journey(world, variant) {
@@ -56,6 +56,7 @@ try {
   page = await context.newPage(); page.setDefaultTimeout(15000);
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(base, { waitUntil: 'networkidle', timeout: 60000 });
+  await waitForApplicationReady(page);
   await expect(page.locator('#startup-status')).toHaveCount(0);
   await subscribe();
   await expect.poll(() => page.evaluate(() => window.recorderProbe.calls)).toBe(1);
@@ -163,7 +164,9 @@ yield "worker measurements retain native processing values while incomplete bars
 yield "completed metrics bars persist exactly once without mutating workflows";
   const follower = await context.newPage(); follower.setDefaultTimeout(15000);
   follower.on('pageerror', error => errors.push(error.message));
-  await follower.goto(base, { waitUntil: 'networkidle' }); await expect(follower.locator('#startup-status')).toHaveCount(0);
+  await follower.goto(base, { waitUntil: 'networkidle' });
+  await waitForApplicationReady(follower);
+  await expect(follower.locator('#startup-status')).toHaveCount(0);
   await subscribe(follower);
   await expect.poll(() => follower.evaluate(() => window.recorderProbe.state.activeBar?.metrics['application.total']?.count)).toBe(1);
   assert.equal(await follower.evaluate(() => window.recorderProbe.calls), 0, 'A second tab follows without measuring independently.');
@@ -221,7 +224,10 @@ yield "one recorder owns sampling across tabs and hands over complete aggregates
       }
     };
   }, start + 2 * quarter + 1000);
-  await page.reload({ waitUntil: 'networkidle' }); await expect(page.locator('#startup-status')).toHaveCount(0); await subscribe();
+  await page.reload({ waitUntil: 'networkidle' });
+  await waitForApplicationReady(page);
+  await expect(page.locator('#startup-status')).toHaveCount(0);
+  await subscribe();
   await expect.poll(() => page.evaluate(() => window.recorderHistoryProbe.queued.length)).toBe(1);
   await expect.poll(() => page.evaluate(() => typeof window.recorderProbe.resolve)).toBe('function');
   const restored = await page.evaluate(() => window.recorderProbe.state);
@@ -308,6 +314,7 @@ yield "page lifecycle events maintain accurate worker accounting";
       const fallback = await fallbackContext.newPage();
       fallback.on('pageerror', error => errors.push(`${mode} cache: ${error.message}`));
       await fallback.goto(base, { waitUntil: 'networkidle' });
+      await waitForApplicationReady(fallback);
       await expect(fallback.locator('#startup-status')).toHaveCount(0);
       await subscribe(fallback);
       await expect.poll(() => fallback.evaluate(() => typeof window.recorderProbe.resolve)).toBe('function');

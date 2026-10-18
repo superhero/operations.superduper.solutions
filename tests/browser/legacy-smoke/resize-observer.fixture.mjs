@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { expect } from '@playwright/test';
-import { createFixtureServer, ownedBrowser, openSettings, closeSettings } from './support.mjs';
+import { createFixtureServer, ownedBrowser, openSettings, closeSettings, waitForApplicationReady } from './support.mjs';
 
 // Assertions are advanced by the named steps in legacy-smoke.feature.
 export async function* journey(world, variant) {
@@ -87,6 +87,7 @@ try {
     });
     phase = `${motion}: startup`;
     await page.goto(baseURL, { waitUntil: 'networkidle', timeout: 60_000 });
+    await waitForApplicationReady(page);
     await expect(page.locator('#startup-status')).toHaveCount(0);
     await settled();
     phase = `${motion}: enable evaluation details`;

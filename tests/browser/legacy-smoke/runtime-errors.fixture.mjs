@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { expect } from '@playwright/test';
-import { createFixtureServer, ownedBrowser } from './support.mjs';
+import { createFixtureServer, ownedBrowser, waitForApplicationReady } from './support.mjs';
 
 // Assertions are advanced by the named steps in legacy-smoke.feature.
 export async function* journey(world, variant) {
@@ -49,6 +49,7 @@ try {
     } catch { /* Ignore non-JSON websocket control frames. */ }
   }));
   await page.goto(baseURL, { waitUntil: 'networkidle', timeout: 60_000 });
+  await waitForApplicationReady(page);
   await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toBeVisible();
   await expect(page.locator('#startup-status')).toHaveCount(0);
   const overlay = page.getByRole('dialog', { name: 'Runtime Error Overlay', exact: true });

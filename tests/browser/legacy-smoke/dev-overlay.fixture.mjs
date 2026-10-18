@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { expect } from '@playwright/test';
-import { createFixtureServer, ownedBrowser, openSettings } from './support.mjs';
+import { createFixtureServer, ownedBrowser, openSettings, waitForApplicationReady } from './support.mjs';
 import { expectThemeColors } from '../theme-colors.mjs';
 
 // Assertions are advanced by the named steps in legacy-smoke.feature.
@@ -116,6 +116,7 @@ try {
   page.setDefaultTimeout(15_000);
   trackErrors(page);
   await page.goto(baseURL, { waitUntil: 'networkidle', timeout: 60_000 });
+  await waitForApplicationReady(page);
   await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toBeVisible();
   const overlay = page.getByRole('dialog', { name: 'Runtime Error Overlay', exact: true });
   await expect(overlay).toHaveCount(0);
@@ -175,6 +176,7 @@ yield "developer toolbar settings persist and disabled tools cannot receive poin
     await saveSetting('palette', 'sunset');
   });
   await page.goto(baseURL, { waitUntil: 'networkidle', timeout: 60_000 });
+  await waitForApplicationReady(page);
   await expect(page.locator('#startup-status')).toHaveCount(0);
   await injectTestError(page);
   await expect(overlay).toBeVisible({ timeout: 20_000 });
@@ -433,6 +435,7 @@ yield "native Pail errors retain stack locations and later reports recover after
       globalThis.heldDatabase.close();
     });
   }
+  await waitForApplicationReady(page);
   await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toBeVisible();
   await expect(page.locator('#startup-status')).toHaveCount(0);
   await expect(page.locator(':root')).toHaveAttribute('data-theme', 'dark');

@@ -104,6 +104,15 @@ export function ownedBrowser(world) {
   };
 }
 
+export async function waitForApplicationReady(page) {
+  // Network idle does not include the worker-backed application startup.
+  // Keep cold module loading separate from each journey's UI assertions.
+  await page.waitForFunction(() => {
+    const app = document.getElementById('app');
+    return app?.hasChildNodes() && !app.hasAttribute('inert') && !app.hasAttribute('aria-busy');
+  }, undefined, { timeout: 60_000 });
+}
+
 export async function openSettings(page) {
   const button = page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true });
   if (await button.getAttribute('aria-pressed') !== 'true') await button.click();
