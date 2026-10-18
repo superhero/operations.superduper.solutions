@@ -78,6 +78,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   } = $props();
   let workspace: HTMLElement;
   let openSection = $state<"secrets" | "theme" | "locale" | "logs" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
+  let storageBuilt = $state(false);
+  $effect(() => {
+    if (openSection !== "storage" || storageBuilt) return;
+    let cancelled = false;
+    let frame = requestAnimationFrame(() => {
+      // Give the compact status a painted frame before constructing the dashboard.
+      frame = requestAnimationFrame(async () => {
+        const header = workspace.querySelector('summary[aria-label="Browser"]');
+        const panel = header?.nextElementSibling;
+        await Promise.allSettled(panel?.getAnimations().map(animation => animation.finished) ?? []);
+        if (!cancelled) storageBuilt = true;
+      });
+    });
+    return () => { cancelled = true; cancelAnimationFrame(frame); };
+  });
   $effect(() => {
     if (!openSection || !workspace) return;
     const header = workspace.querySelector<HTMLElement>('.settings-section > summary[aria-expanded="true"]');
@@ -294,7 +309,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           </button>
         </div>
       {/if}
-      <StorageSettings />
+      {#if storageBuilt}
+        <StorageSettings />
+      {:else}
+        <p class="storage-building" role="status">Building...</p>
+      {/if}
     </Disclosure>
     <Disclosure class="catalog-group settings-section" label="Developer" tooltipEnabled={false} open={openSection === "developer"} onToggle={(next) => openSection = next ? "developer" : null}>
       {#snippet summary()}
@@ -388,6 +407,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </section>
 
 <style>
+  .storage-building { margin: 0; padding: 12px 16px 16px; font-size: 12px; }
   .settings-sections { display: grid; gap: 12px; }
   .settings-sections :global(.settings-section) { border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-muted); transition: background-color 180ms ease-in; }
   .settings-sections :global(.settings-section:has(> summary[aria-expanded="true"])) { background: var(--color-catalog-active); }
