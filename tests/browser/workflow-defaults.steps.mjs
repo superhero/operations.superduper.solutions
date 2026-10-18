@@ -16,6 +16,7 @@ const toolbarLabels = { dashed: 'Dashed connections', curved: 'Curved connection
 const settings = page => page.getByRole('region', { name: 'Settings workspace', exact: true });
 const summary = (page, name) => settings(page).locator(`summary[aria-label="${name}"]`);
 const options = ({ dashed, curved, snap }) => ({ dashed, curved, snap });
+const storedNumber = raw => raw === 'NaN' ? NaN : raw === 'Infinity' ? Infinity : JSON.parse(raw);
 
 export async function storedDefaults(page, change) {
   return page.evaluate(({ write, change }) => new Promise((resolve, reject) => {
@@ -216,25 +217,26 @@ Then('workflow options remain independent from the saved defaults', async functi
   assert.deepEqual(options((await storedWorkflows(page)).find(document => document.id === saved.id)), original);
 });
 
-Then('invalid workflow defaults retain valid booleans and safely reset other fields', async function () {
-  const cases = [
-    { stored: { dashed: 'yes', curved: 1, snap: true }, expected: freshDefaults },
-    { stored: { dashed: true, curved: true, snap: null, gridSize: 0, extra: true, nodeSymbols: 'false' }, expected: { ...freshDefaults, curved: true } },
-    { stored: { ...disabledDefaults, gridSize: 33, nodeSymbols: false }, expected: { ...disabledDefaults, gridSize: 8, nodeSymbols: false } },
-    { stored: { ...disabledDefaults, gridSize: 12.5 }, expected: { ...disabledDefaults, gridSize: 8 } },
-    { stored: { ...disabledDefaults, gridSize: '18' }, expected: { ...disabledDefaults, gridSize: 8 } },
-    { stored: 'invalid workflow defaults', expected: freshDefaults },
-  ];
-  for (const { stored, expected } of cases) {
-    await storedDefaults(this.page, stored);
-    await this.page.reload();
-    await openDefaults(this.page);
-    await expectDefaultSwitches(this.page, expected);
-    assert.deepEqual(await storedDefaults(this.page), expected, 'Loading invalid defaults must persist their normalized values.');
-    await setMode(this.page, 'workflow');
-    await expectWorkflowOptions(this.page, expected);
-    assert.deepEqual(await storedWorkflows(this.page), []);
-  }
+Then('saved workflow defaults {string} normalize after reload without changing valid fields',
+  { timeout: 10_000 }, async function (name) {
+  const cases = {
+    'invalid booleans': { stored: { dashed: 'yes', curved: 1, snap: true }, expected: freshDefaults },
+    'invalid fields': { stored: { dashed: true, curved: true, snap: null, gridSize: 0, extra: true, nodeSymbols: 'false' }, expected: { ...freshDefaults, curved: true } },
+    'out-of-range grid size': { stored: { ...disabledDefaults, gridSize: 33, nodeSymbols: false }, expected: { ...disabledDefaults, gridSize: 8, nodeSymbols: false } },
+    'fractional grid size': { stored: { ...disabledDefaults, gridSize: 12.5 }, expected: { ...disabledDefaults, gridSize: 8 } },
+    'text grid size': { stored: { ...disabledDefaults, gridSize: '18' }, expected: { ...disabledDefaults, gridSize: 8 } },
+    'non-object defaults': { stored: 'invalid workflow defaults', expected: freshDefaults },
+  };
+  assert.ok(Object.hasOwn(cases, name), `Unknown saved defaults fixture: ${name}`);
+  const { stored, expected } = cases[name];
+  await storedDefaults(this.page, stored);
+  await this.page.reload();
+  await openDefaults(this.page);
+  await expectDefaultSwitches(this.page, expected);
+  assert.deepEqual(await storedDefaults(this.page), expected, 'Loading invalid defaults must persist their normalized values.');
+  await setMode(this.page, 'workflow');
+  await expectWorkflowOptions(this.page, expected);
+  assert.deepEqual(await storedWorkflows(this.page), []);
 });
 
 Then('the grid size slider supports exact keys and saves its nonlinear pointer value across reload', async function () {
@@ -285,26 +287,27 @@ Then('the grid size slider supports exact keys and saves its nonlinear pointer v
   await expect(slider).toHaveAttribute('aria-valuenow', String(selected));
 });
 
-Then('each saved node clearance normalizes after reload without changing other defaults:', async function (table) {
+Then('saved node clearance {word} normalizes to {int} after reload without changing other defaults',
+  { timeout: 10_000 }, async function (raw, normalized) {
   const defaults = { ...disabledDefaults, dashed: true, snap: true,
     gridSize: 27, dashGap: 6, curveStrength: 71 };
-  for (const { stored: raw, expected: normalized } of table.hashes()) {
-    try {
-      // Replace the complete stored object for every row so the previous
-      // normalization cannot supply a missing or malformed value.
-      const stored = { ...defaults };
-      if (raw === 'missing') delete stored.nodeClearance;
-      else stored.nodeClearance = raw === 'NaN' ? NaN : raw === 'Infinity' ? Infinity : JSON.parse(raw);
-      await storedDefaults(this.page, stored);
-      await this.page.reload();
-      await openDefaults(this.page);
-      const expected = { ...defaults, nodeClearance: Number(normalized) };
-      await expectDefaultSwitches(this.page, expected);
-      await expect.poll(() => storedDefaults(this.page)).toEqual(expected);
-      assert.deepEqual(await storedWorkflows(this.page), [], 'Normalizing a browser setting must not create workflow documents.');
-    } catch (error) {
-      throw new Error(`Saved node clearance ${raw} should normalize to ${normalized}.`, { cause: error });
-    }
+  try {
+    // Every reload has its own bounded Gherkin step. Eleven complete startups
+    // must not share one 30-second budget; a stalled individual row still fails.
+    // Replace the complete object so the previous normalization cannot supply
+    // a missing or malformed value.
+    const stored = { ...defaults };
+    if (raw === 'missing') delete stored.nodeClearance;
+    else stored.nodeClearance = storedNumber(raw);
+    await storedDefaults(this.page, stored);
+    await this.page.reload();
+    await openDefaults(this.page);
+    const expected = { ...defaults, nodeClearance: normalized };
+    await expectDefaultSwitches(this.page, expected);
+    await expect.poll(() => storedDefaults(this.page)).toEqual(expected);
+    assert.deepEqual(await storedWorkflows(this.page), [], 'Normalizing a browser setting must not create workflow documents.');
+  } catch (error) {
+    throw new Error(`Saved node clearance ${raw} should normalize to ${normalized}.`, { cause: error });
   }
 });
 
@@ -339,29 +342,20 @@ Then('node clearance enforces its bounds and survives reload without saving a wo
   assert.deepEqual(await storedWorkflows(page), [], 'Saving clearance must not save an untouched workflow.');
 });
 
-Then('missing and malformed dash settings preserve each other and the remaining workflow defaults', async function () {
+Then('saved dash length {word} and speed {word} normalize to {int} and {int} after reload without changing other defaults',
+  { timeout: 10_000 }, async function (rawLength, rawSpeed, length, speed) {
   const page = this.page, retained = { ...disabledDefaults, dashed: true, nodeSymbols: false, gridSize: 27, dashGap: 9 };
-  const cases = [
-    { patch: {}, missing: ['dashLength', 'dashSpeed'], length: 8, speed: 64 },
-    { patch: { dashSpeed: 31 }, missing: ['dashLength'], length: 8, speed: 31 },
-    { patch: { dashLength: 17 }, missing: ['dashSpeed'], length: 17, speed: 64 },
-    { patch: { dashLength: 1, dashSpeed: 0 }, length: 1, speed: 0 },
-    { patch: { dashLength: 128, dashSpeed: 512 }, length: 128, speed: 512 },
-    { patch: { dashLength: '18', dashSpeed: 31 }, length: 8, speed: 31 },
-    { patch: { dashLength: 17, dashSpeed: -1 }, length: 17, speed: 64 },
-    { patch: { dashLength: 0, dashSpeed: 513 }, length: 8, speed: 64 },
-    { patch: { dashLength: 1.5, dashSpeed: NaN }, length: 8, speed: 64 },
-  ];
-  for (const { patch, missing = [], length, speed } of cases) {
-    const stored = { ...retained, ...patch };
-    for (const key of missing) delete stored[key];
-    await storedDefaults(page, stored);
-    await page.reload();
-    await openDefaults(page);
-    const expected = { ...retained, dashLength: length, dashSpeed: speed };
-    await expectDefaultSwitches(page, expected);
-    assert.deepEqual(await storedDefaults(page), expected, 'Each dash setting must normalize without resetting independent preferences.');
+  const stored = { ...retained };
+  for (const [key, raw] of [['dashLength', rawLength], ['dashSpeed', rawSpeed]]) {
+    if (raw === 'missing') delete stored[key];
+    else stored[key] = storedNumber(raw);
   }
+  await storedDefaults(page, stored);
+  await page.reload();
+  await openDefaults(page);
+  const expected = { ...retained, dashLength: length, dashSpeed: speed };
+  await expectDefaultSwitches(page, expected);
+  assert.deepEqual(await storedDefaults(page), expected, 'Each dash setting must normalize without resetting independent preferences.');
   assert.deepEqual(await storedWorkflows(page), [], 'Normalizing dash preferences must not save an untouched workflow.');
 });
 

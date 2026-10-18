@@ -12,6 +12,7 @@ export async function* journey(world, variant) {
 
 const directory = world.artifactDirectory;
 const cacheKey = 'v1/settings/appearance-cache';
+const storageHeldMessage = 'Appearance fixture: settings storage success held.';
 const cached = { version: 1, theme: 'dark', palette: 'sunset' };
 const authoritative = { theme: 'light', palette: 'alpine',
   workflowDefaults: { dashed: true, curved: false, snap: true, nodeSymbols: true, gridSize: 27, dashLength: 8, dashGap: 6, dashSpeed: 32, curveStrength: 70, nodeClearance: 24 } };
@@ -89,7 +90,7 @@ try {
     }), { cacheKey, raw, settings: scenario === 'empty-settings' ? {} : authoritative });
     const page = await context.newPage(); page.setDefaultTimeout(15000);
     page.on('pageerror', error => errors.push({ scenario, message: error.message }));
-    await page.addInitScript(({ scenario, cacheKey }) => {
+    await page.addInitScript(({ scenario, cacheKey, storageHeldMessage }) => {
       const state = window.appearanceProbe = { settingsOpens: 0, writes: [], held: [], blocked: scenario === 'stale-cache' };
       if (scenario === 'unavailable-storage') {
         // Isolate this feature's denied storage access from the development
@@ -112,7 +113,10 @@ try {
         }
         const request = open.apply(this, arguments);
         if (name === 'v1/settings' && state.blocked) request.addEventListener('success', event => {
-          if (state.blocked) { event.stopImmediatePropagation(); state.held.push(request); }
+          if (state.blocked) {
+            event.stopImmediatePropagation(); state.held.push(request);
+            console.debug(storageHeldMessage);
+          }
         }, true);
         return request;
       };
@@ -126,7 +130,7 @@ try {
         for (const request of state.held) request.dispatchEvent(new Event('success'));
         state.held.length = 0;
       };
-    }, { scenario, cacheKey });
+    }, { scenario, cacheKey, storageHeldMessage });
     let releaseEntry;
     let entryGate = new Promise(resolve => { releaseEntry = resolve; });
     await page.route(/\/index\.ts(?:\?|$)/, async route => { await entryGate; await route.continue(); });
@@ -140,8 +144,14 @@ try {
         'The early cache and stylesheet must not need an IndexedDB request');
       await page.screenshot({ path: resolve(directory, `${scenario}-early.png`) });
 yield "the cached appearance paints before application code and IndexedDB access";
+      // Cold development modules may still be loading before storage is reached.
+      const heldSettings = scenario === 'stale-cache' ? page.waitForEvent('console', {
+        predicate: message => message.type() === 'debug' && message.text() === storageHeldMessage,
+        timeout: 60_000,
+      }) : null;
       releaseEntry();
       if (scenario === 'stale-cache') {
+        await heldSettings;
         await expect.poll(() => page.evaluate(() => window.appearanceProbe.held.length)).toBeGreaterThan(0);
         await loadingColors(page, cached);
         await page.evaluate(() => window.appearanceProbe.release());
@@ -208,7 +218,12 @@ yield "the cached appearance paints before application code and IndexedDB access
         await page.reload({ waitUntil: 'commit' });
         await loadingColors(page, cached);
         assert.equal(await page.evaluate(() => window.appearanceProbe.settingsOpens), 0);
+        const heldReload = page.waitForEvent('console', {
+          predicate: message => message.type() === 'debug' && message.text() === storageHeldMessage,
+          timeout: 60_000,
+        });
         releaseEntry();
+        await heldReload;
         await expect.poll(() => page.evaluate(() => window.appearanceProbe.held.length)).toBeGreaterThan(0);
         await page.evaluate(() => window.appearanceProbe.release());
         await expect(page.locator('#startup-status')).toHaveCount(0, { timeout: 30000 });

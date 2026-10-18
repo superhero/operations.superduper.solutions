@@ -22,6 +22,7 @@ const stages = ['Loading application', 'Opening settings storage', 'Reading sett
   .map((label, index) => `${label} — ${index + 1} of 13`);
 const progressText = stages.map(stage => stage.replace(/^(.*) — (\d+ of 13)$/, '$2\n$1'));
 const failureMessage = 'Startup smoke: workflow storage unavailable.';
+const storageHeldMessage = 'Startup fixture: storage success held.';
 const comment = 'Saved canvas restored before startup completes.';
 const cases = [];
 const diagnostics = [];
@@ -30,7 +31,7 @@ let page;
 let succeeded = false;
 
 // Inject faults into the worker's served module, without application test hooks.
-function installWorkflowStorageFault({ fault, failureMessage }) {
+function installWorkflowStorageFault({ fault, failureMessage, storageHeldMessage }) {
   const open = IDBFactory.prototype.open;
   const requests = [];
   let stalled = true;
@@ -40,7 +41,10 @@ function installWorkflowStorageFault({ fault, failureMessage }) {
     if (name === 'v1/workflows/index' && stalled) {
       const pending = { request, arrived: false };
       requests.push(pending);
-      request.addEventListener('success', event => { pending.arrived = true; if (stalled) event.stopImmediatePropagation(); }, true);
+      request.addEventListener('success', event => {
+        pending.arrived = true;
+        if (stalled) { event.stopImmediatePropagation(); console.debug(storageHeldMessage); }
+      }, true);
     }
     return request;
   };
@@ -78,13 +82,13 @@ try {
       const url = route.request().url();
       if (fault?.startsWith('workflow-') && new URL(url).pathname.endsWith('/workflow-repository.worker.ts')) {
         const response = await route.fetch();
-        return route.fulfill({ response, body: `${installWorkflowStorageFault.toString()}\ninstallWorkflowStorageFault(${JSON.stringify({ fault, failureMessage })});\n${await response.text()}` });
+        return route.fulfill({ response, body: `${installWorkflowStorageFault.toString()}\ninstallWorkflowStorageFault(${JSON.stringify({ fault, failureMessage, storageHeldMessage })});\n${await response.text()}` });
       }
       if (url.startsWith(`${baseURL}/`) || url.startsWith('data:') || url.startsWith('blob:')) return route.continue();
       diagnostics.push({ name, type: 'unexpected-network', url });
       return route.abort();
     });
-    await context.addInitScript(({ fault, failureMessage }) => {
+    await context.addInitScript(({ fault, failureMessage, storageHeldMessage }) => {
       // The flow renderer is lazy, but restored state must reach the workspace
       // DOM before startup finishes, even while the Operations tab is active.
       new MutationObserver(records => {
@@ -104,7 +108,10 @@ try {
         if (name === databaseName && stalled) {
           const pending = { request, arrived: false };
           requests.push(pending);
-          request.addEventListener('success', event => { pending.arrived = true; if (stalled) event.stopImmediatePropagation(); }, true);
+          request.addEventListener('success', event => {
+            pending.arrived = true;
+            if (stalled) { event.stopImmediatePropagation(); console.debug(storageHeldMessage); }
+          }, true);
         }
         return request;
       };
@@ -112,7 +119,7 @@ try {
         stalled = false;
         for (const { request, arrived } of requests) if (arrived) request.dispatchEvent(new Event('success'));
       };
-    }, { fault, failureMessage });
+    }, { fault, failureMessage, storageHeldMessage });
     page = await context.newPage();
     page.setDefaultTimeout(15_000);
     const result = { name, stages: [], console: [], errors: [] };
@@ -192,7 +199,12 @@ try {
   }
   for (const [fault, index] of [['settings-stall', 1], ['workflow-stall', 6]].filter(([fault]) => fault === variant)) {
     const current = await openCase(fault, fault);
-    await page.goto(baseURL, { waitUntil: 'domcontentloaded' });
+    // Observe the held native success event before checking its rendered stage.
+    const storageHeld = page.waitForEvent('console', {
+      predicate: message => message.type() === 'debug' && message.text() === storageHeldMessage,
+      timeout: 60_000,
+    });
+    await Promise.all([page.goto(baseURL, { waitUntil: 'domcontentloaded' }), storageHeld]);
     const status = page.getByRole('status', { name: 'Loading Operations', exact: true });
     await expect(status).toBeVisible();
     await expect(status.locator('#startup-progress')).toHaveText(progressText[index]);

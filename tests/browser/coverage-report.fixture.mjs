@@ -160,7 +160,8 @@ async function sourceLine(page, name) {
   }, name)).toBe(true);
 }
 export async function openDirectSource(state) {
-  state.sourcePage = await state.context.newPage();
+  // Embedded coverage checks are complete; reuse its tab to bound browser process use.
+  state.sourcePage = state.page;
   state.deepLink = `${state.sourceURL}#L40`;
   await state.sourcePage.goto(state.deepLink);
   await sourceLine(state.sourcePage, 'L40');
