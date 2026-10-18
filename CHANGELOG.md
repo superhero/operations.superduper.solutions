@@ -97,6 +97,14 @@ themes, including the status foreground, and retain cancellation coverage.
 
 ```
 
+<!-- changelog-commit:b7564cbaf181893d80af1004cbbc86920ba15bee -->
+### Commit [`b7564cb`](https://github.com/superhero/operations.superduper.solutions/commit/b7564cbaf181893d80af1004cbbc86920ba15bee)
+
+```text
+fix(settings): center Browser building status
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.51
