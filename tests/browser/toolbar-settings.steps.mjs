@@ -37,7 +37,8 @@ Then('toolbar visibility choices persist and leave keyboard shortcuts available'
   await page.locator('summary[aria-label="Buttons"]').click();
   preferences = page.getByRole('group', { name: 'Toolbar button preferences', exact: true });
   await expect(preferences.getByRole('switch', { checked: false })).toHaveCount(labels.length);
-  await preferences.getByRole('button', { name: 'Show all', exact: true }).click();
+  await expect(preferences.getByRole('button', { name: 'Show all', exact: true })).toHaveCount(0);
+  for (const label of labels) await preferences.getByRole('switch', { name: label, exact: true }).click();
   await expect(toolbar).toBeVisible();
   await expect(toolbar.locator('button')).toHaveCount(labels.length);
   await expect(toolbar.locator('.workflow-control-group')).toHaveCount(7);
