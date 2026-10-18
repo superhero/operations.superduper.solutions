@@ -3,6 +3,8 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 import assert from "node:assert/strict";
+import { defaultKeybindings } from "../../../src/lib/keybindings.ts";
+import { defaultToolbarButtons } from "../../../src/lib/toolbar-settings.ts";
 import { resolve } from "node:path";
 import { createFixtureServer, ownedBrowser } from './support.mjs';
 
@@ -265,7 +267,7 @@ try {
   }, current.workflows), false);
 
   const migrated = await loadDefaults(page);
-  assert.deepEqual(migrated.settings, { ...savedSettings, evaluationDetails: false, tooltips: true, locale: { dateFormat: "system", timeFormat: "system", timeZone: "system" }, storageError: null });
+  assert.deepEqual(migrated.settings, { ...savedSettings, keybindings: defaultKeybindings, toolbarButtons: defaultToolbarButtons, evaluationDetails: false, tooltips: true, locale: { dateFormat: "system", timeFormat: "system", timeZone: "system" }, storageError: null });
   assert.deepEqual(migrated.workflow, expected.workflow);
   assert.deepEqual(migrated.history, expected.history);
   assert.deepEqual(migrated.versions, expected.versions);
@@ -297,7 +299,7 @@ try {
   const reloaded = await openPage(context, baseURL);
   await prepare(reloaded);
   const retained = await loadDefaults(reloaded);
-  assert.deepEqual(retained.settings, { ...savedSettings, theme: "light", evaluationDetails: false, tooltips: true, locale: { dateFormat: "system", timeFormat: "system", timeZone: "system" }, storageError: null });
+  assert.deepEqual(retained.settings, { ...savedSettings, theme: "light", keybindings: defaultKeybindings, toolbarButtons: defaultToolbarButtons, evaluationDetails: false, tooltips: true, locale: { dateFormat: "system", timeFormat: "system", timeZone: "system" }, storageError: null });
   assert.deepEqual(retained.workflow, edited);
   assert.equal(retained.history.length, 5);
   for (const revision of expected.history) assert.ok(retained.history.some(value => value.oid === revision.oid));

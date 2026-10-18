@@ -289,7 +289,7 @@ Then('actual responses reset with {string} motion when the request changes', asy
   await expect(body).not.toContainText('Documentation');
   await chooseCatalogOperation(page, 'List projects');
   await expect(body).toHaveCount(0);
-  await page.getByRole('textbox', { name: 'Project name', exact: true }).fill('Documentation');
+  await fillField(page, 'Project name', 'Documentation');
   await executeOperation(page);
   await expect(body).toContainText('Documentation');
   await expect(body).not.toContainText('Website');

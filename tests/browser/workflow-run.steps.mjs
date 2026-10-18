@@ -8,7 +8,7 @@ import { expect } from "@playwright/test";
 import demo from "../../src/catalogs/demo.openapi.json" with { type: "json" };
 import { operations } from "../../src/lib/catalog.ts";
 import { createOperationGraph } from "../../src/lib/workflow-graph.ts";
-import { openCatalog, setMode, workflow, workflowAction } from "./workspace.steps.mjs";
+import { includeField, openCatalog, setMode, workflow, workflowAction } from "./workspace.steps.mjs";
 
 const graph = (name, id = name) => createOperationGraph(operations.find(item => item.id === `demo:${name}`), { x: 0, y: 0 }, id, demo);
 const fixture = (...graphs) => ({ version: 3, id: "runner-browser", name: "Runner browser", nodes: graphs.flatMap(graph => graph.nodes),
@@ -42,6 +42,7 @@ const openRun = async (page, doc) => {
   await expect(dialog(page)).toContainText("Server: https://example.com");
 };
 const select = async (page, name, value) => {
+  await includeField(page, name);
   await dialog(page).getByRole("combobox", { name, exact: true }).click();
   await page.getByRole("listbox").getByRole("option", { name: value, exact: true }).click();
 };

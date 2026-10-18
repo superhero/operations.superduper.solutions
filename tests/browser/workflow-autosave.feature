@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+@toolbar-controls
 Feature: Browser workflow autosave
   Scenario: An untouched blank workflow does not create a saved document
     When I switch to the workflow workspace

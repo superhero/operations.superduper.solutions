@@ -8,7 +8,7 @@ import { expect } from "@playwright/test";
 import { operations } from "../../src/lib/catalog.ts";
 import { catalogForOperation } from "../../src/lib/catalog-registry.ts";
 import { createOperationGraph } from "../../src/lib/workflow-graph.ts";
-import { chooseCatalogOperation, fillField, openCatalog, setMode, workflowAction, workspace } from "./workspace.steps.mjs";
+import { chooseCatalogOperation, fillField, includeField, openCatalog, setMode, workflowAction, workspace } from "./workspace.steps.mjs";
 
 const operation = id => operations.find(item => item.id === id);
 const graph = id => createOperationGraph(operation(id), { x: 0, y: 0 }, id, catalogForOperation(id).document);
@@ -25,6 +25,7 @@ async function openRun(page, graphs, edges = []) {
 }
 async function fillRun(page, label, value) {
   const run = runDialog(page);
+  await includeField(page, label);
   const select = run.getByRole("combobox", { name: label, exact: true });
   if (await select.count()) {
     await select.click();

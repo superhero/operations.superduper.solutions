@@ -319,6 +319,7 @@ Then("the operation identifier is {string}", async function (id) {
   await expect(workspace(this.page).getByText(id, { exact: true })).toBeVisible();
 });
 Then("{string} offers the choices {string}", async function (label, choices) {
+  await includeField(this.page, label);
   const input = await field(this.page, label);
   await input.click();
   const options = this.page.getByRole("listbox").getByRole("option");
