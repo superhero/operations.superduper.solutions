@@ -30,6 +30,15 @@ export const toolbarButtonLabels = {
 } as const;
 export type ToolbarButton = keyof typeof toolbarButtonLabels;
 export type ToolbarButtons = Record<ToolbarButton, boolean>;
+export const toolbarButtonGroups = [
+  { label: "Nodes", buttons: ["browse", "switch", "cast", "vault", "file", "comment"] },
+  { label: "Clipboard", buttons: ["copy", "cut", "paste", "delete"] },
+  { label: "Connections", buttons: ["dashed", "curved", "snap"] },
+  { label: "View", buttons: ["zoomIn", "zoomOut", "fit"] },
+  { label: "History", buttons: ["undo", "redo", "history"] },
+  { label: "Workflows", buttons: ["new", "open", "details", "import", "export"] },
+  { label: "Run", buttons: ["run"] }
+] as const satisfies readonly { label: string; buttons: readonly ToolbarButton[] }[];
 export const toolbarButtonNames = Object.keys(toolbarButtonLabels) as ToolbarButton[];
 export const defaultToolbarButtons = Object.fromEntries(toolbarButtonNames.map(key => [key, true])) as ToolbarButtons;
 export function normalizeToolbarButtons(value: unknown): ToolbarButtons {

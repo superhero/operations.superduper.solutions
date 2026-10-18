@@ -114,6 +114,14 @@ style: arrange developer settings in two columns
 
 ```
 
+<!-- changelog-commit:e99f3f47879d489b8a8a119bd5f4152b1b7589c3 -->
+### Commit [`e99f3f4`](https://github.com/superhero/operations.superduper.solutions/commit/e99f3f47879d489b8a8a119bd5f4152b1b7589c3)
+
+```text
+feat: group toolbar settings in a three-column layout
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
