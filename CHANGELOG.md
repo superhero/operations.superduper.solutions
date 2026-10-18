@@ -226,6 +226,14 @@ style: pack application settings into toolbar-style columns
 
 ```
 
+<!-- changelog-commit:279629394ac4013b5603762a259863d613336973 -->
+### Commit [`2796293`](https://github.com/superhero/operations.superduper.solutions/commit/279629394ac4013b5603762a259863d613336973)
+
+```text
+fix: keep application settings in three independent lanes
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.52
