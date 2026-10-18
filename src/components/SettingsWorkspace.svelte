@@ -312,7 +312,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {#if storageBuilt}
         <StorageSettings />
       {:else}
-        <p class="storage-building" role="status">Building...</p>
+        <p class="storage-building" role="status" aria-label="Building"><span aria-hidden="true">· ⊙ ●</span></p>
       {/if}
     </Disclosure>
     <Disclosure class="catalog-group settings-section" label="Developer" tooltipEnabled={false} open={openSection === "developer"} onToggle={(next) => openSection = next ? "developer" : null}>
