@@ -267,7 +267,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .activity-bars { display: flex; gap: 3px; height: 64px; margin-bottom: 16px; }
   .activity-bars > span { display: flex; align-items: flex-end; flex: 1; min-width: 0; }
   .activity-bars i { display: block; width: 100%; background: var(--color-badge-background); border-radius: 2px 2px 0 0; transition: height 180ms ease; }
-  .activity-grid { display: grid; grid-template-columns: repeat(auto-fill, 33px); justify-content: space-between; gap: 4px; }
+  .activity-grid { display: grid; grid-template-columns: repeat(auto-fill, 35px); justify-content: space-between; gap: 4px; }
   .activity-day, .activity-scale i { border-radius: 4px; background: color-mix(in srgb, var(--color-badge-background) var(--intensity), var(--color-background)); }
   .activity-day { display: block; aspect-ratio: 1; transition: background-color 200ms ease; }
   .activity-day:focus-visible { outline: 2px solid var(--color-foreground); outline-offset: 2px; }
