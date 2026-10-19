@@ -9,34 +9,34 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 | Schema | HTTP operations | Source |
 |---|---:|---|
 | Anthropic / Claude | 144 | [Source](https://github.com/anthropics/anthropic-sdk-typescript/blob/sdk-v0.120.0/.stats.yml) |
-| AWS — Lambda | 66 | [Source](https://github.com/aws/api-models-aws) |
-| AWS — S3 | 97 | [Source](https://github.com/aws/api-models-aws) |
-| Bitbucket Cloud | 299 | [Source](https://dac-static.atlassian.com/cloud/bitbucket/swagger.v3.json) |
-| Bluesky — App and AT Protocol | 152 | [Source](https://github.com/bluesky-social/endpoints-standalone) |
-| Bluesky — Direct messages | 38 | [Source](https://github.com/bluesky-social/endpoints-standalone) |
-| Bluesky — Ozone moderation | 45 | [Source](https://github.com/bluesky-social/endpoints-standalone) |
+| AWS / Lambda | 66 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / S3 | 97 | [Source](https://github.com/aws/api-models-aws) |
+| Bitbucket / Cloud | 299 | [Source](https://dac-static.atlassian.com/cloud/bitbucket/swagger.v3.json) |
+| Bluesky / App and AT Protocol | 152 | [Source](https://github.com/bluesky-social/endpoints-standalone) |
+| Bluesky / Direct messages | 38 | [Source](https://github.com/bluesky-social/endpoints-standalone) |
+| Bluesky / Ozone moderation | 45 | [Source](https://github.com/bluesky-social/endpoints-standalone) |
 | Cloudflare | 3,761 | [Source](https://raw.githubusercontent.com/cloudflare/api-schemas/main/openapi.yaml) |
 | Cohere | 42 | [Source](https://raw.githubusercontent.com/cohere-ai/cohere-developer-experience/main/cohere-openapi.yaml) |
-| Confluence Cloud | 252 | [Source](https://dac-static.atlassian.com/cloud/confluence/openapi-v2.v3.json) |
+| Confluence / Cloud | 252 | [Source](https://dac-static.atlassian.com/cloud/confluence/openapi-v2.v3.json) |
 | DeepSeek | 11 | [Source](https://api-docs.deepseek.com/api/create-chat-completion/) |
 | DigitalOcean | 855 | [Source](https://raw.githubusercontent.com/digitalocean/openapi/main/specification/DigitalOcean-public.v2.yaml) |
 | Discord | 246 | [Source](https://raw.githubusercontent.com/discord/discord-api-spec/main/specs/openapi.json) |
-| Docker Engine | 108 | [Source](https://raw.githubusercontent.com/moby/moby/master/api/swagger.yaml) |
-| Dukascopy Trading Tools | 1 | [Source](https://www.dukascopy.com/trading-tools/api/documentation) |
-| ECB Data Portal | 11 | [Source](https://data.ecb.europa.eu/help/api/overview) |
+| Docker / Engine | 108 | [Source](https://raw.githubusercontent.com/moby/moby/master/api/swagger.yaml) |
+| Dukascopy / Trading Tools | 1 | [Source](https://www.dukascopy.com/trading-tools/api/documentation) |
+| ECB / Data Portal | 11 | [Source](https://data.ecb.europa.eu/help/api/overview) |
 | ElevenLabs | 418 | [Source](https://api.elevenlabs.io/openapi.json) |
 | Frankfurter | 9 | [Source](https://api.frankfurter.dev/v2/openapi.json) |
 | FRED / GeoFRED | 35 | [Source](https://fred.stlouisfed.org/docs/api/fred/) |
 | GitHub | 1,242 | [Source](https://raw.githubusercontent.com/github/rest-api-description/main/descriptions-next/api.github.com/api.github.com.yaml) |
 | GitLab | 1,869 | [Source](https://gitlab.com/gitlab-org/gitlab/-/raw/master/doc/api/openapi/openapi_v3.yaml) |
-| Google Cloud — Compute | 758 | [Source](https://compute.googleapis.com/$discovery/rest?version=v1) |
-| Google Cloud — Storage | 76 | [Source](https://storage.googleapis.com/$discovery/rest?version=v1) |
-| Google Gemini — Interactions | 37 | [Source](https://ai.google.dev/static/api/interactions.openapi.json) |
+| Google / Cloud / Compute | 758 | [Source](https://compute.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Storage | 76 | [Source](https://storage.googleapis.com/$discovery/rest?version=v1) |
+| Google / Gemini / Interactions | 37 | [Source](https://ai.google.dev/static/api/interactions.openapi.json) |
 | Groq | 23 | [Source](https://github.com/groq/groq-typescript/blob/v1.6.0/.stats.yml) |
-| Hetzner Cloud | 190 | [Source](https://docs.hetzner.cloud/cloud.spec.json) |
-| Hugging Face — Inference Endpoints | 46 | [Source](https://api.endpoints.huggingface.cloud/openapi.json) |
-| Jira Cloud | 630 | [Source](https://dac-static.atlassian.com/cloud/jira/platform/swagger-v3.v3.json) |
-| Microsoft Azure — Resources | 40 | [Source](https://github.com/Azure/azure-rest-api-specs) |
+| Hetzner / Cloud | 190 | [Source](https://docs.hetzner.cloud/cloud.spec.json) |
+| Hugging Face / Inference Endpoints | 46 | [Source](https://api.endpoints.huggingface.cloud/openapi.json) |
+| Jira / Cloud | 630 | [Source](https://dac-static.atlassian.com/cloud/jira/platform/swagger-v3.v3.json) |
+| Microsoft / Azure / Resources | 40 | [Source](https://github.com/Azure/azure-rest-api-specs) |
 | Mistral | 173 | [Source](https://raw.githubusercontent.com/mistralai/platform-docs-public/main/openapi.yaml) |
 | Ollama | 17 | [Source](https://raw.githubusercontent.com/ollama/ollama/main/docs/openapi.yaml) |
 | OpenAI | 360 | [Source](https://raw.githubusercontent.com/openai/openai-openapi/main/openapi.yaml) |
@@ -44,7 +44,7 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 | Render | 228 | [Source](https://api-docs.render.com/openapi/render-public-api-1.json) |
 | Replicate | 36 | [Source](https://api.replicate.com/openapi.json) |
 | Resend | 142 | [Source](https://raw.githubusercontent.com/resend/resend-openapi/main/resend.yaml) |
-| Telegram Bot API | 180 | [Source](https://raw.githubusercontent.com/photon-hq/telegram-api/main/specs/telegram-bot-api.openapi.json) |
+| Telegram / Bot API | 180 | [Source](https://raw.githubusercontent.com/photon-hq/telegram-api/main/specs/telegram-bot-api.openapi.json) |
 | Together AI | 208 | [Source](https://docs.together.ai/openapi.yaml) |
 | Twilio | 197 | [Source](https://raw.githubusercontent.com/twilio/twilio-oai/main/spec/yaml/twilio_api_v2010.yaml) |
 | Vercel | 465 | [Source](https://openapi.vercel.sh/) |

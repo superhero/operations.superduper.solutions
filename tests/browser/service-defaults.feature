@@ -4,6 +4,29 @@
 
 Feature: Default service schemas in the application
   @service-defaults
+  Scenario: Provider names use product paths and refresh saved factory labels
+    Then provider schema names use these paths across saved-label updates
+      | id                 | previous                          | name                               |
+      | aws-lambda         | AWS — Lambda                      | AWS / Lambda                       |
+      | aws-s3             | AWS — S3                          | AWS / S3                           |
+      | bitbucket          | Bitbucket Cloud                   | Bitbucket / Cloud                  |
+      | bluesky-app        | Bluesky — App and AT Protocol      | Bluesky / App and AT Protocol       |
+      | bluesky-dms        | Bluesky — Direct messages         | Bluesky / Direct messages          |
+      | bluesky-moderation | Bluesky — Ozone moderation        | Bluesky / Ozone moderation         |
+      | confluence         | Confluence Cloud                  | Confluence / Cloud                 |
+      | docker             | Docker Engine                     | Docker / Engine                    |
+      | dukascopy          | Dukascopy Trading Tools           | Dukascopy / Trading Tools          |
+      | ecb                | ECB Data Portal                   | ECB / Data Portal                  |
+      | gcp-compute        | Google Cloud — Compute            | Google / Cloud / Compute           |
+      | gcp-storage        | Google Cloud — Storage            | Google / Cloud / Storage           |
+      | gemini             | Google Gemini — Interactions      | Google / Gemini / Interactions     |
+      | hetzner            | Hetzner Cloud                     | Hetzner / Cloud                    |
+      | huggingface        | Hugging Face — Inference Endpoints | Hugging Face / Inference Endpoints |
+      | jira               | Jira Cloud                        | Jira / Cloud                       |
+      | azure-resources    | Microsoft Azure — Resources       | Microsoft / Azure / Resources      |
+      | telegram           | Telegram Bot API                  | Telegram / Bot API                 |
+
+  @service-defaults
   Scenario: Initial schema order is alphabetical and subsequent manual ordering persists
     Then all initial schemas sort by displayed name and keep a manually saved order
 

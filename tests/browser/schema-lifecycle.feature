@@ -12,6 +12,9 @@ Feature: Targeted schema storage and independent history
   Scenario: Schema name changes do not repeat initial alphabetical sorting
     Then renamed remaining examples retain their order when schema defaults initialize again
 
+  Scenario: Factory label changes preserve authored names and canonical source ownership
+    Then new factory labels refresh without decoding sources or replacing personal names
+
   Scenario: Derived cache corruption and source read failures remain recoverable
     Then schema cache repair preserves history and retries failed reads
 

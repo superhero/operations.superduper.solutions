@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };
+import sources from '../../build/service-schemas.sources.json' with { type: 'json' };
 import { bundledCatalogs } from '../../src/lib/catalog-registry.ts';
 import { setMode, openCatalog, closeCatalog, workflowAction, workspace, fillField } from './workspace.steps.mjs';
 
@@ -35,6 +36,49 @@ async function reload(page) {
   await page.locator('#startup-status').waitFor({ state: 'detached', timeout: 30_000 });
   await schemas(page);
 }
+Then('provider schema names use these paths across saved-label updates', async function (table) {
+  const page = this.page;
+  const names = table.hashes();
+  for (const { id, name } of names) {
+    assert.equal(descriptors.find(source => source.id === id)?.name, name);
+    assert.equal(sources.find(source => source.id === id)?.name, name);
+  }
+  await schemas(page);
+  const ids = () => page.locator('.schema-card').evaluateAll(cards => cards.map(card => card.dataset.schemaId));
+  const initial = await ids();
+  for (const { id, name } of names) await expect(card(page, id).locator('.schema-name-label')).toHaveText(name);
+  await card(page, 'anthropic').getByRole('button', { name: 'Move Anthropic / Claude', exact: true }).press('ArrowDown');
+  const ordered = [initial[1], initial[0], ...initial.slice(2)];
+  await expect.poll(ids).toEqual(ordered);
+  const before = await stored(page);
+  await page.evaluate(names => new Promise((resolve, reject) => {
+    const opening = indexedDB.open('v1/catalogs/index');
+    opening.onerror = () => reject(opening.error);
+    opening.onsuccess = () => {
+      const db = opening.result;
+      const tx = db.transaction('catalog', 'readwrite');
+      const store = tx.objectStore('catalog');
+      for (const { id, previous } of names) {
+        const read = store.get(id);
+        read.onsuccess = () => store.put({ ...read.result, displayName: previous }, id);
+      }
+      tx.oncomplete = () => { db.close(); resolve(); };
+      tx.onabort = () => { db.close(); reject(tx.error); };
+    };
+  }), names);
+  await reload(page);
+  for (const { id, name } of names) await expect(card(page, id).locator('.schema-name-label')).toHaveText(name);
+  assert.deepEqual(await ids(), ordered);
+  const after = await stored(page);
+  for (const { id } of names) {
+    const { updatedAt: _before, ...original } = before.find(record => record.id === id);
+    const { updatedAt: _after, ...current } = after.find(record => record.id === id);
+    assert.deepEqual(current, original, `${id}: a label update must retain the canonical source and metadata.`);
+  }
+  await reload(page);
+  assert.deepEqual(await stored(page), after, 'Current labels must not be written again on every startup.');
+});
+
 Then('all initial schemas sort by displayed name and keep a manually saved order', async function () {
   const page = this.page;
   const expected = [...bundledCatalogs.map(({ id, name }) => ({ id, name })), ...descriptors]

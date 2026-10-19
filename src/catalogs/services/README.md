@@ -34,6 +34,10 @@ Refresh their authored snapshots with `build/deepseek-schema.mjs` and
 
 ## Provider collections
 
+Display names use spaced `/` separators for provider and product levels, such as
+`Google / Cloud / Compute` and `Microsoft / Azure / Resources`. Factory-owned
+labels refresh on startup; user-authored names retain their saved values.
+
 Cloud providers expose separate API descriptions. The initial Google Cloud
 collection covers Compute and Storage; AWS covers S3 and Lambda; Azure covers
 Resource Manager resources. These are named service contracts, not a claim to

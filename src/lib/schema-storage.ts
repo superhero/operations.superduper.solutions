@@ -593,12 +593,16 @@ async function initialize(database: Database): Promise<void>
           revision: catalog.revision, ...(catalog.summary ? { summary: catalog.summary } : {}),
           ...(defaults!.adapterRevision ? { adapterRevision: defaults!.adapterRevision } : {}),
           enabled: true, createdAt: now, updatedAt: now }, catalog.id);
-      } else if (existing?.factoryDigest && (existing.factoryDigest !== catalog.revision || existing.adapterRevision !== defaults!.adapterRevision)) {
+      } else if (existing?.factoryDigest) {
         // Unmodified factory copies follow bundled updates; authored Git copies do not.
-        documents.invalidate(`${catalog.id}:`);
-        await active.objectStore("catalog").put({ ...existing, factoryDigest: catalog.revision, revision: catalog.revision,
-          ...(catalog.summary ? { summary: catalog.summary } : {}),
-          ...(defaults!.adapterRevision ? { adapterRevision: defaults!.adapterRevision } : {}), updatedAt: now }, catalog.id);
+        const sourceChanged = existing.factoryDigest !== catalog.revision || existing.adapterRevision !== defaults!.adapterRevision;
+        if (sourceChanged || existing.displayName !== catalog.name) {
+          if (sourceChanged) documents.invalidate(`${catalog.id}:`);
+          await active.objectStore("catalog").put({ ...existing, displayName: catalog.name,
+            factoryDigest: catalog.revision, revision: catalog.revision,
+            ...(catalog.summary ? { summary: catalog.summary } : {}),
+            ...(defaults!.adapterRevision ? { adapterRevision: defaults!.adapterRevision } : {}), updatedAt: now }, catalog.id);
+        }
       }
       installed.add(catalog.id);
     }
