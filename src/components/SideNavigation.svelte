@@ -42,8 +42,10 @@
     void operations;
     return catalogs.flatMap(catalog => catalog.groups);
   });
+  const indexedOperations = $derived(new Map(operations.map(operation => [operation.id, operation])));
   function groupOperations(group: CatalogGroup, filtered = true) {
-    return operations.filter(operation => group.operationIds?.includes(operation.id) && (!filtered || !matchingIds || matchingIds.has(operation.id)));
+    return (group.operationIds ?? []).map(id => indexedOperations.get(id))
+      .filter((operation): operation is Operation => !!operation && (!filtered || !matchingIds || matchingIds.has(operation.id)));
   }
   function groupCount(group: CatalogGroup, filtered = false): number {
     return groupOperations(group, filtered).length + (group.children ?? []).reduce((count, child) => count + groupCount(child, filtered), 0);
@@ -186,7 +188,7 @@
   {@const expanded = parentOpen && (matchingIds ? (searchExpansion[JSON.stringify(path)] ?? groupCount(group, true) > 0) : catalogPath[depth] === group.id)}
   {#if groupCount(group, true) > 0}
     <div class="catalog-branch" data-catalog-group={group.id}>
-      <Disclosure class="catalog-group" label={`${group.name} group, ${count} operations`} tooltipEnabled={false} open={expanded} onToggle={(next) => toggleGroup(depth, path, next)}>
+      <Disclosure lazy class="catalog-group" label={`${group.name} group, ${count} operations`} tooltipEnabled={false} open={expanded} onToggle={(next) => toggleGroup(depth, path, next)}>
         {#snippet summary()}<span class="catalog-name">{group.name}</span><span class="catalog-count" aria-label={`${count} operations`}><span class="catalog-count-value">{count}</span></span><MaterialIcon name="chevron_forward" size={17} />{/snippet}
         {#if group.children?.length}
           <div class="catalog-children">
@@ -198,8 +200,9 @@
           <ul class="catalog-operations">
             {#each entries as operation (operation.id)}
               <li data-operation-id={operation.id} data-operation-name={operation.name}>
-                <button class="catalog-operation-action" type="button" aria-label={`Add to workflow: ${operation.name}`}
-                  onclick={() => { togglePath(depth + 1, operation.id, true); select(operation); }}>
+                <HintButton class="catalog-operation-action" label={operation.unavailableReason ?? ""} labelAsName={false}
+                  tooltipEnabled={!!operation.unavailableReason} aria-disabled={!!operation.unavailableReason} aria-label={`Add to workflow: ${operation.name}`}
+                  onclick={() => { if (operation.unavailableReason) return; togglePath(depth + 1, operation.id, true); select(operation); }}>
                   <span class="catalog-name">{operation.name}</span>
                   <HintButton label="Add to workflow" labelAsName={false} tooltipSide="right">
                     {#snippet child({ props })}
@@ -207,7 +210,7 @@
                       <span {...iconProps} class="catalog-action-icon"><MaterialIcon name="add_box" size={24} /></span>
                     {/snippet}
                   </HintButton>
-                </button>
+                </HintButton>
               </li>
             {/each}
           </ul>
@@ -232,7 +235,7 @@
     <span><MaterialIcon name="page_control" size={20} /></span>
   </div>
   <nav class="operation-catalog workflow-catalog" aria-label="Saved workflow catalog">
-    <Disclosure class="catalog-group" label={`Workflows, ${workflows.length} saved`} tooltipEnabled={false} open={workflowsOpen} onToggle={(next) => workflowsOpen = next}>
+    <Disclosure lazy class="catalog-group" label={`Workflows, ${workflows.length} saved`} tooltipEnabled={false} open={workflowsOpen} onToggle={(next) => workflowsOpen = next}>
       {#snippet summary()}<span class="catalog-name">Workflows</span><span class="catalog-count" aria-label={`${workflows.length} workflows`}><span class="catalog-count-value">{workflows.length}</span></span><MaterialIcon name="chevron_forward" size={17} />{/snippet}
       {#if workflowError}
         <p role="alert" class="hint">{workflowError}</p><button type="button" class="text-button" onclick={onWorkflowRetry}>Retry</button>

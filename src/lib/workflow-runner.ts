@@ -371,8 +371,9 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     const canonical = operations.find(operation => operation.id === node.data.operationId
       && operation.method === node.data.method && operation.path === node.data.path);
     if (!canonical) throw new Error(`“${node.data.name}” is unavailable in the registered schemas. Add an available operation before running it.`);
+    if (canonical.unavailableReason) throw new Error(canonical.unavailableReason);
     const operation = { ...canonical, fields: [...canonical.fields] };
-    const values: InputValues = {};
+    const values: InputValues = Object.fromEntries(operation.fields.filter(field => field.defaultValue !== undefined).map(field => [field.key, field.defaultValue]));
     const mappedFields: string[] = [];
     const vaultVariables: VaultVariableInput[] = [];
     const mapped = new Map<InputField, unknown>();
@@ -430,12 +431,12 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       };
       const value = collect(raw, []);
       const expected = input.type === "integer" ? "number" : input.type;
-      const matches = value === null ? inputAllowsNull(input) : expected === "array" ? Array.isArray(value)
+      const matches = input.type === "json" ? true : value === null ? inputAllowsNull(input) : expected === "array" ? Array.isArray(value)
         : typeof value === expected && (expected !== "object" || value !== null && !Array.isArray(value));
       if (!matches || typeof value === "number" && (!Number.isFinite(value) || input.type === "integer" && !Number.isInteger(value)))
         throw new Error(`“${input.label}” needs ${input.type === "integer" ? "an integer" : `a ${input.type}`} value. Check its connection or add a Cast.`);
       if (!vaultVariables.some(variable => variable.key === input.key)) validateInputValue(input, value as JsonValue);
-      Object.defineProperty(values, input.key, { value: value === null ? null : typeof value === "object" ? JSON.stringify(value) : String(value),
+      Object.defineProperty(values, input.key, { value: input.type === "json" ? JSON.stringify(value) : value === null ? null : typeof value === "object" ? JSON.stringify(value) : String(value),
         enumerable: true, writable: true, configurable: true });
       mappedFields.push(input.key);
     }

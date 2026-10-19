@@ -1,0 +1,33 @@
+# Default service schemas
+
+Compressed OpenAPI documents retain the upstream schema data and notices. These
+are application inputs, not credentials or live API responses. The schema worker
+verifies each pack's size and SHA-256 before decoding it.
+
+## Sources and regeneration
+
+`index.json` records each source, version, conversion, operation count and hashes.
+The authored source list is `build/service-schemas.sources.json`; regenerate packs
+with `node build/service-schemas.mjs`. Pass catalog IDs to refresh selected packs.
+Network downloads are cached under ignored `tmp/schema-sources`, with at most two
+requests active and bounded retries. Builds use committed packs without fetching
+provider schemas.
+
+## Formats
+
+Docker Engine and Azure's Swagger documents are converted to OpenAPI 3. External
+references are bundled into local references; recursive models remain references
+rather than being expanded into circular or duplicated objects. Original request
+and response descriptions remain in each pack.
+
+DeepSeek and Dukascopy publish structured metadata through their documentation.
+Refresh their authored snapshots with `build/deepseek-schema.mjs` and
+`build/dukascopy-schema.mjs` before regenerating the corresponding packs.
+
+## Provider collections
+
+Cloud providers expose separate API descriptions. The initial Google Cloud
+collection covers Compute and Storage; AWS covers S3 and Lambda; Azure covers
+Resource Manager resources. These are named service contracts, not a claim to
+include every product offered by those providers. Source provenance distinguishes
+provider documents from community conversions.

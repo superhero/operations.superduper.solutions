@@ -6,6 +6,11 @@ This directory holds durable explanations of project decisions. Its current
 contents are [architectural decision records](adr/README.md), which preserve
 the choices and reasoning behind the application and its development practices.
 
+## Service inventory
+
+[Default service schemas](default-service-schemas.md) lists bundled providers,
+selected product scopes and browser execution limits.
+
 ## Choose the document type
 
 | Information | Location |

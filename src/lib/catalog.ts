@@ -7,7 +7,8 @@ import { extractOperationSecurity, type OperationSecurity } from "./operation-se
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type InputSchema = {
-  type: "string" | "number" | "integer" | "boolean" | "object" | "array" | "null";
+  type: "string" | "number" | "integer" | "boolean" | "object" | "array" | "null" | "json";
+  pattern?: string;
   nullable?: boolean;
   enum?: (string | number | boolean | null)[];
   minimum?: number;
@@ -23,6 +24,7 @@ export type InputSchema = {
 };
 export type InputField = Omit<InputSchema, "properties" | "required" | "items"> & {
   key: string;
+  defaultValue?: string;
   name: string;
   label: string;
   description: string;
@@ -46,6 +48,8 @@ export type Operation = {
   responseExample?: unknown;
   responseMediaType?: string;
   security?: OperationSecurity;
+  unavailableReason?: string;
+  oauthScopes?: Record<string, string[]>[];
 };
 
 type RecordValue = Record<string, unknown>;

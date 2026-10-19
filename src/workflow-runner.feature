@@ -86,3 +86,6 @@ Feature: Step through workflow requests with explicit test responses
       | behavior |
       | honors   |
       | ignores  |
+
+  Scenario: Reviewed service defaults and generic JSON mappings remain exact
+    Then service workflow inputs retain required defaults generic JSON values and execution guards

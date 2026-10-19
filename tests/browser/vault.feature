@@ -185,3 +185,8 @@ Feature: Browser vault persistence and controlled credential execution
   Scenario: Legacy vault key indexes populate after one unlock
     Given an isolated browser vault with synthetic credentials
     Then a legacy vault publishes only key names after unlocking without changing its encrypted snapshot
+
+  @vault-browser-policy
+  Scenario: Factory schema policy is bound to its packaged digest
+    Given a browser vault worker has an approved credential request for a saved schema
+    Then factory schema policy accepts only the matching packaged digest

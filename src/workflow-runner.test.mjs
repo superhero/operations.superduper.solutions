@@ -931,3 +931,31 @@ Then(/^a workflow request that (honors|ignores) cancellation can be cancelled wi
   runner.cancelPending();
   assert.equal(runner.next().kind, "complete");
 });
+
+Then('service workflow inputs retain required defaults generic JSON values and execution guards', async () => {
+  const canonical = operation('getProject');
+  const fields = canonical.fields;
+  try {
+    canonical.fields = fields.map(field => field.key === 'path:projectId' ? { ...field, defaultValue: 'project-1' } : field);
+    const runner = createWorkflowRunner(document(graph('getProject')));
+    assert.equal(runner.next().values['path:projectId'], 'project-1');
+    canonical.unavailableReason = 'Unsupported service transport';
+    assert.throws(() => createWorkflowRunner(document(graph('getProject'))).next(), /Unsupported service transport/);
+  } finally { canonical.fields = fields; delete canonical.unavailableReason; }
+  for (const response of ['literal text', 7, false, null, { nested: [1, true] }]) {
+    const fixture = dynamicFixture({ type: 'string' });
+    const restore = registerDynamicFixture(fixture.source);
+    try {
+      const target = operations.find(item => item.id === fixture.added[1].id);
+      target.fields = target.fields.map(field => ({ ...field, type: 'json', schema: { type: 'json' } }));
+      target.bodySchema = { type: 'json' };
+      mapping(fixture.doc, atPath(fixture.doc, 'source', 'outputs', ''), atPath(fixture.doc, 'target', 'inputs', ''));
+      const runner = createRequestRunner(fixture.doc, undefined, createWorkflowRequestExecution(async (_url, options) =>
+        Response.json(options.method === 'GET' ? response : JSON.parse(options.body))));
+      await submit(runner);
+      const next = runner.next();
+      assert.equal(next.values['body:$'], JSON.stringify(response));
+      assert.deepEqual((await runner.submit(next.values)).request.body, response);
+    } finally { restore(); }
+  }
+});

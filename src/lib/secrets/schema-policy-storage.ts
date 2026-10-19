@@ -58,7 +58,9 @@ export async function assertCurrentSchema(descriptor: ApprovedOperation): Promis
           const entry = policies && typeof policies === "object" && !Array.isArray(policies) && Object.hasOwn(policies, schemaId)
             ? (policies as SchemaCredentialPolicies)[schemaId] : undefined;
           if (metadata.result?.id !== schemaId || metadata.result?.enabled !== true || pending.result !== undefined || removed.result !== undefined
-            || !entry || typeof entry.revision !== "string" || !/^[a-f0-9]{40}$/.test(entry.revision)
+            || !entry || typeof entry.revision !== "string" || !(metadata.result?.factoryDigest
+              ? /^[a-f0-9]{64}$/.test(metadata.result.factoryDigest) && entry.revision === metadata.result.factoryDigest
+              : /^[a-f0-9]{40}$/.test(entry.revision))
             || !Array.isArray(entry.fingerprints) || !entry.fingerprints.includes(descriptor.fingerprint))
             finish(new VaultError("PERMISSION"));
           else finish();

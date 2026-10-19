@@ -47,6 +47,8 @@ const source = {
     "src/processing-metrics.test.mjs",
     "src/resource-core.test.mjs",
     "src/schema-documents.test.mjs",
+    "src/service-schema-packs.test.mjs",
+    "src/service-catalog.test.mjs",
     "src/schema-runtime.test.mjs",
     "src/worker-rpc.test.mjs",
     "src/workflow-curve.test.mjs",

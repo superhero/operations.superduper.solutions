@@ -3,6 +3,8 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { closeWorkflowDetails, expectWorkflowName, renameWorkflow, workflowNameInput } from './workflow-details.fixture.mjs';
 import assert from "node:assert/strict";
+import { operations } from "../../src/lib/catalog.ts";
+import { catalogs } from "../../src/lib/catalog-registry.ts";
 import { seedOperationGraph } from "./workflow-graph.fixture.mjs";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
@@ -52,16 +54,28 @@ export async function revealCatalogOperation(page, name) {
   await openCatalog(page);
   const catalog = page.getByRole("navigation", { name: "Operation catalog", exact: true });
   const entry = catalog.locator("[data-operation-name]").filter({ has: page.getByText(name, { exact: true }) });
-  if (!await entry.count() && await page.getByRole("textbox", { name: "Prompt", exact: true }).inputValue())
-    await searchOperations(page, "");
-  await expect(entry).toHaveCount(1);
-  const ancestors = catalog.locator("[data-catalog-group]").filter({
-    has: page.locator("[data-operation-name]").filter({ has: page.getByText(name, { exact: true }) })
-  });
-  for (const group of await ancestors.all()) {
+  if (!await entry.count() && await page.getByRole("textbox", { name: "Prompt", exact: true }).inputValue()) await searchOperations(page, "");
+  const target = operations.find(operation => operation.name === name);
+  function findPath(groups, parents = []) {
+    for (const group of groups) {
+      const path = [...parents, group.id];
+      if (group.operationIds?.includes(target?.id)) return path;
+      const child = findPath(group.children ?? [], path);
+      if (child) return child;
+    }
+  }
+  const path = target && findPath(catalogs.flatMap(catalog => catalog.groups));
+  let scope = catalog;
+  let found = !!path || await entry.count() > 0;
+  for (const id of path ?? []) {
+    const group = scope.locator(`[data-catalog-group="${id}"]`);
+    if (!await group.count()) { found = false; break; }
     const heading = group.locator(":scope > .catalog-group > summary");
     if (await heading.getAttribute("aria-expanded") !== "true") await heading.click();
+    scope = group;
   }
+  if (!found) await searchOperations(page, name);
+  await expect(entry).toHaveCount(1);
   return entry;
 }
 

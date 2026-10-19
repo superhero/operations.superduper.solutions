@@ -1,0 +1,2731 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "DeepSeek API",
+    "description": "The DeepSeek API. To use the DeepSeek API, please [create an API key first](https://platform.deepseek.com/api_keys).",
+    "version": "1.0.0",
+    "termsOfService": "https://cdn.deepseek.com/policies/en-US/deepseek-open-platform-terms-of-service.html",
+    "contact": {
+      "name": "DeepSeek Support",
+      "email": "api-service@deepseek.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/license/mit/"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.deepseek.com"
+    }
+  ],
+  "paths": {
+    "/files/{file_id}": {
+      "get": {
+        "operationId": "retrieveFile",
+        "tags": [
+          "Files"
+        ],
+        "description": "Returns information about a specific file.",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "description": "The ID of the file to retrieve.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK, returns the `file object`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Describes a file that has been uploaded to the Files API.",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The file identifier, of the form `file-api-...`, which can be referenced in chat completion requests."
+                    },
+                    "object": {
+                      "type": "string",
+                      "enum": [
+                        "file"
+                      ],
+                      "description": "The object type, which is always `file`."
+                    },
+                    "bytes": {
+                      "type": "integer",
+                      "description": "The size of the file in bytes."
+                    },
+                    "created_at": {
+                      "type": "integer",
+                      "description": "The Unix timestamp (in seconds) of when the file was created."
+                    },
+                    "filename": {
+                      "type": "string",
+                      "description": "The name of the file."
+                    },
+                    "purpose": {
+                      "type": "string",
+                      "enum": [
+                        "user_data"
+                      ],
+                      "description": "The intended purpose of the file."
+                    },
+                    "expires_at": {
+                      "type": "integer",
+                      "description": "The Unix timestamp (in seconds) of when the file expires. Only present when an expiration was set at upload time."
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "object",
+                    "bytes",
+                    "created_at",
+                    "filename",
+                    "purpose"
+                  ],
+                  "title": "FileObject"
+                },
+                "example": "{\n  \"id\": \"file-api-0a1b2c3d4e5f60718293a4b5c6d7e8f9\",\n  \"object\": \"file\",\n  \"bytes\": 102400,\n  \"created_at\": 1700000000,\n  \"filename\": \"image.jpg\",\n  \"purpose\": \"user_data\"\n}\n"
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "label": "OpenAI SDK",
+            "source": "from openai import OpenAI\n\nclient = OpenAI(api_key=\"<your API key>\", base_url=\"https://api.deepseek.com\")\n\ninfo = client.files.retrieve(\"file-api-0a1b2c3d4e5f60718293a4b5c6d7e8f9\")\nprint(info.filename, info.bytes)\n"
+          },
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl https://api.deepseek.com/files/file-api-0a1b2c3d4e5f60718293a4b5c6d7e8f9 \\\n  -H \"Authorization: Bearer <your API key>\"\n"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "externalDocs": {
+          "url": "https://api-docs.deepseek.com/api/retrieve-file/"
+        },
+        "servers": [
+          {
+            "url": "https://api.deepseek.com"
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "deleteFile",
+        "tags": [
+          "Files"
+        ],
+        "description": "Deletes a file.",
+        "parameters": [
+          {
+            "name": "file_id",
+            "in": "path",
+            "required": true,
+            "description": "The ID of the file to delete.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK, returns the deletion status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The ID of the deleted file."
+                    },
+                    "object": {
+                      "type": "string",
+                      "enum": [
+                        "file"
+                      ],
+                      "description": "The object type, which is always `file`."
+                    },
+                    "deleted": {
+                      "type": "boolean",
+                      "description": "Whether the file was successfully deleted."
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "object",
+                    "deleted"
+                  ],
+                  "title": "DeleteFileResponse"
+                },
+                "example": "{\n  \"id\": \"file-api-0a1b2c3d4e5f60718293a4b5c6d7e8f9\",\n  \"object\": \"file\",\n  \"deleted\": true\n}\n"
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "label": "OpenAI SDK",
+            "source": "from openai import OpenAI\n\nclient = OpenAI(api_key=\"<your API key>\", base_url=\"https://api.deepseek.com\")\n\nclient.files.delete(\"file-api-0a1b2c3d4e5f60718293a4b5c6d7e8f9\")\n"
+          },
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl -X DELETE https://api.deepseek.com/files/file-api-0a1b2c3d4e5f60718293a4b5c6d7e8f9 \\\n  -H \"Authorization: Bearer <your API key>\"\n"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "externalDocs": {
+          "url": "https://api-docs.deepseek.com/api/delete-file/"
+        },
+        "servers": [
+          {
+            "url": "https://api.deepseek.com"
+          }
+        ]
+      }
+    },
+    "/files": {
+      "post": {
+        "operationId": "createFile",
+        "tags": [
+          "Files"
+        ],
+        "description": "Upload an image file that can later be referenced by its `file_id` in chat completion requests.\n\nSupported formats: JPEG, PNG, GIF, and WebP. The format is detected from the file content. See the [Files API guide](/guides/files_api) for details.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "The image file to upload. Supported formats: JPEG, PNG, GIF, and WebP. Maximum file size: 64 MiB.\n"
+                  },
+                  "purpose": {
+                    "type": "string",
+                    "enum": [
+                      "user_data"
+                    ],
+                    "description": "The intended purpose of the uploaded file. Must be `user_data`."
+                  },
+                  "expires_after[anchor]": {
+                    "type": "string",
+                    "enum": [
+                      "created_at"
+                    ],
+                    "description": "The anchor for the expiration. Must be `created_at` if provided, and is required together with `expires_after[seconds]`."
+                  },
+                  "expires_after[seconds]": {
+                    "type": "integer",
+                    "minimum": 3600,
+                    "maximum": 2592000,
+                    "description": "The lifetime of the file in seconds, between 3600 (1 hour) and 2592000 (30 days). Required together with `expires_after[anchor]`. Omit both `expires_after` fields to keep the file permanently."
+                  }
+                },
+                "required": [
+                  "file",
+                  "purpose"
+                ],
+                "title": "CreateFileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK, returns the uploaded `file object`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Describes a file that has been uploaded to the Files API.",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "The file identifier, of the form `file-api-...`, which can be referenced in chat completion requests."
+                    },
+                    "object": {
+                      "type": "string",
+                      "enum": [
+                        "file"
+                      ],
+                      "description": "The object type, which is always `file`."
+                    },
+                    "bytes": {
+                      "type": "integer",
+                      "description": "The size of the file in bytes."
+                    },
+                    "created_at": {
+                      "type": "integer",
+                      "description": "The Unix timestamp (in seconds) of when the file was created."
+                    },
+                    "filename": {
+                      "type": "string",
+                      "description": "The name of the file."
+                    },
+                    "purpose": {
+                      "type": "string",
+                      "enum": [
+                        "user_data"
+                      ],
+                      "description": "The intended purpose of the file."
+                    },
+                    "expires_at": {
+                      "type": "integer",
+                      "description": "The Unix timestamp (in seconds) of when the file expires. Only present when an expiration was set at upload time."
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "object",
+                    "bytes",
+                    "created_at",
+                    "filename",
+                    "purpose"
+                  ],
+                  "title": "FileObject"
+                },
+                "example": "{\n  \"id\": \"file-api-0a1b2c3d4e5f60718293a4b5c6d7e8f9\",\n  \"object\": \"file\",\n  \"bytes\": 102400,\n  \"created_at\": 1700000000,\n  \"filename\": \"image.jpg\",\n  \"purpose\": \"user_data\"\n}\n"
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "label": "OpenAI SDK",
+            "source": "from openai import OpenAI\n\nclient = OpenAI(api_key=\"<your API key>\", base_url=\"https://api.deepseek.com\")\n\nwith open(\"image.jpg\", \"rb\") as f:\n    uploaded = client.files.create(file=f, purpose=\"user_data\")\n\nprint(uploaded.id)\n"
+          },
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl https://api.deepseek.com/files \\\n  -H \"Authorization: Bearer <your API key>\" \\\n  -F purpose=\"user_data\" \\\n  -F file=\"@image.jpg\"\n"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "externalDocs": {
+          "url": "https://api-docs.deepseek.com/api/create-file/"
+        },
+        "servers": [
+          {
+            "url": "https://api.deepseek.com"
+          }
+        ]
+      },
+      "get": {
+        "operationId": "listFiles",
+        "tags": [
+          "Files"
+        ],
+        "description": "Returns a list of files that belong to the user, with cursor-based pagination.",
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "required": false,
+            "description": "A `file_id` cursor for pagination. Returns files listed after this one.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "The number of files to return. Must be between 1 and 1000.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 1000
+            }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "Sort order by creation time. `asc` for ascending, `desc` for descending.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc"
+            }
+          },
+          {
+            "name": "purpose",
+            "in": "query",
+            "required": false,
+            "description": "Only return files with the given purpose. Only `user_data` is supported.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "user_data"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK, returns a list of `file object`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "enum": [
+                        "list"
+                      ],
+                      "description": "The object type, which is always `list`."
+                    },
+                    "data": {
+                      "type": "array",
+                      "description": "The list of file objects.",
+                      "items": {
+                        "type": "object",
+                        "description": "Describes a file that has been uploaded to the Files API.",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "The file identifier, of the form `file-api-...`, which can be referenced in chat completion requests."
+                          },
+                          "object": {
+                            "type": "string",
+                            "enum": [
+                              "file"
+                            ],
+                            "description": "The object type, which is always `file`."
+                          },
+                          "bytes": {
+                            "type": "integer",
+                            "description": "The size of the file in bytes."
+                          },
+                          "created_at": {
+                            "type": "integer",
+                            "description": "The Unix timestamp (in seconds) of when the file was created."
+                          },
+                          "filename": {
+                            "type": "string",
+                            "description": "The name of the file."
+                          },
+                          "purpose": {
+                            "type": "string",
+                            "enum": [
+                              "user_data"
+                            ],
+                            "description": "The intended purpose of the file."
+                          },
+                          "expires_at": {
+                            "type": "integer",
+                            "description": "The Unix timestamp (in seconds) of when the file expires. Only present when an expiration was set at upload time."
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "object",
+                          "bytes",
+                          "created_at",
+                          "filename",
+                          "purpose"
+                        ],
+                        "title": "FileObject"
+                      }
+                    },
+                    "first_id": {
+                      "type": "string",
+                      "description": "The ID of the first file in the list. Useful as a pagination cursor."
+                    },
+                    "last_id": {
+                      "type": "string",
+                      "description": "The ID of the last file in the list. Useful as a pagination cursor."
+                    },
+                    "has_more": {
+                      "type": "boolean",
+                      "description": "Whether there are more files beyond this page."
+                    }
+                  },
+                  "required": [
+                    "object",
+                    "data",
+                    "has_more"
+                  ],
+                  "title": "ListFilesResponse"
+                },
+                "example": "{\n  \"object\": \"list\",\n  \"data\": [\n    {\n      \"id\": \"file-api-0a1b2c3d4e5f60718293a4b5c6d7e8f9\",\n      \"object\": \"file\",\n      \"bytes\": 102400,\n      \"created_at\": 1700000000,\n      \"filename\": \"image.jpg\",\n      \"purpose\": \"user_data\"\n    }\n  ],\n  \"first_id\": \"file-api-0a1b2c3d4e5f60718293a4b5c6d7e8f9\",\n  \"last_id\": \"file-api-0a1b2c3d4e5f60718293a4b5c6d7e8f9\",\n  \"has_more\": false\n}\n"
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "label": "OpenAI SDK",
+            "source": "from openai import OpenAI\n\nclient = OpenAI(api_key=\"<your API key>\", base_url=\"https://api.deepseek.com\")\n\nfiles = client.files.list()\nfor f in files.data:\n    print(f.id, f.filename)\n"
+          },
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl https://api.deepseek.com/files \\\n  -H \"Authorization: Bearer <your API key>\"\n"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "externalDocs": {
+          "url": "https://api-docs.deepseek.com/api/list-files/"
+        },
+        "servers": [
+          {
+            "url": "https://api.deepseek.com"
+          }
+        ]
+      }
+    },
+    "/v1/tools/search": {
+      "post": {
+        "operationId": "search",
+        "tags": [
+          "Search"
+        ],
+        "description": "Search the web for a query and return a ranked list of structured results. See the [Search & Fetch guide](/guides/search) for supported query operators, error handling, and billing.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": {
+                    "type": "string",
+                    "description": "The search query. Supports operators such as `site:`, `-site:`, and quoted phrases. Must contain 1 to 128 Unicode characters and cannot be all whitespace.\n",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "count": {
+                    "type": "integer",
+                    "description": "The number of results to return, between 1 and 50. Defaults to 10.",
+                    "minimum": 1,
+                    "maximum": 50,
+                    "default": 10
+                  },
+                  "ori_question": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "The user's original question that triggered the search, between 1 and 128 characters. Providing it can improve query understanding. `null` is treated as not provided.\n",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "localization": {
+                    "type": "string",
+                    "description": "An optional IP address used to localize search results. Defaults to an empty string.\n",
+                    "default": ""
+                  },
+                  "need_content": {
+                    "type": "boolean",
+                    "description": "Whether to return page content in `content`. Defaults to `false`; when `false`, `content` is always an empty string.\n",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "query"
+                ],
+                "title": "SearchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK, returns the search results.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "description": "The search results. Empty when the query matches no results.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rerank_score": {
+                            "type": "number",
+                            "format": "float",
+                            "description": "A relevance score from 0 to 3 that combines signals such as relevance, authority, and freshness. Scores of 1.5 or above are considered high-quality results.\n",
+                            "minimum": 0,
+                            "maximum": 3
+                          },
+                          "title": {
+                            "type": "string",
+                            "description": "The title of the search result."
+                          },
+                          "url": {
+                            "type": "string",
+                            "description": "The URL of the search result."
+                          },
+                          "snippet": {
+                            "type": "string",
+                            "description": "A short summary related to the query, typically 100 to 200 characters, intended for display in a UI.\n"
+                          },
+                          "summary": {
+                            "type": "string",
+                            "description": "A long summary related to the query, typically 600 to 800 characters, intended to be read by a model.\n"
+                          },
+                          "content": {
+                            "type": "string",
+                            "description": "The page content. Empty when `need_content` is `false` or when the content is unavailable.\n"
+                          },
+                          "site_name": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "The name of the site, or `null` when unavailable."
+                          },
+                          "site_icon": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "The URL of the site icon, or `null` when unavailable."
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true,
+                            "description": "The publication time in UTC, formatted as RFC 3339, or `null` when unknown.\n"
+                          },
+                          "authority": {
+                            "type": "integer",
+                            "description": "The authority tier of the page, 0 to 4 (`-1` means unknown). Values of 3 or above indicate highly authoritative sources.\n",
+                            "minimum": -1,
+                            "maximum": 4
+                          }
+                        },
+                        "required": [
+                          "rerank_score",
+                          "title",
+                          "url",
+                          "snippet",
+                          "summary",
+                          "content",
+                          "site_name",
+                          "site_icon",
+                          "date",
+                          "authority"
+                        ],
+                        "title": "SearchResult"
+                      }
+                    }
+                  },
+                  "required": [
+                    "results"
+                  ],
+                  "title": "SearchResponse"
+                },
+                "example": "{\n  \"results\": [\n    {\n      \"rerank_score\": 2.4,\n      \"title\": \"DeepSeek V4 model released\",\n      \"url\": \"https://example.com/deepseek-v4\",\n      \"snippet\": \"DeepSeek V4 is now available, with tool calling and long-context support.\",\n      \"summary\": \"DeepSeek has released the V4 model. The release adds improved tool calling and long-context support for agent workflows.\",\n      \"content\": \"DeepSeek V4 is now generally available...\",\n      \"site_name\": \"Example News\",\n      \"site_icon\": \"https://example.com/favicon.ico\",\n      \"date\": \"2026-06-01T00:00:00+00:00\",\n      \"authority\": 3\n    }\n  ]\n}\n"
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl https://api.deepseek.com/v1/tools/search \\\n  -H \"Authorization: Bearer <your API key>\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"query\": \"DeepSeek V4 release\",\n    \"count\": 5,\n    \"need_content\": true\n  }'\n"
+          },
+          {
+            "lang": "Python",
+            "label": "requests",
+            "source": "import requests\n\nresponse = requests.post(\n    \"https://api.deepseek.com/v1/tools/search\",\n    headers={\n        \"Authorization\": \"Bearer <your API key>\",\n    },\n    json={\n        \"query\": \"DeepSeek V4 release\",\n        \"count\": 5,\n        \"need_content\": True,\n    },\n)\nresponse.raise_for_status()\n\nfor result in response.json()[\"results\"]:\n    print(result[\"title\"], result[\"url\"])\n    print(result[\"summary\"])\n"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "externalDocs": {
+          "url": "https://api-docs.deepseek.com/api/search/"
+        },
+        "servers": [
+          {
+            "url": "https://api.deepseek.com"
+          }
+        ]
+      }
+    },
+    "/responses": {
+      "post": {
+        "operationId": "createResponse",
+        "tags": [
+          "Responses"
+        ],
+        "description": "Creates a model response in the OpenAI Responses API format.\n\nThe API is **stateless**: responses and conversations are not stored on the server. For multi-turn conversations, the client needs to send the full conversation history in `input` on each request. Please refer to the [Responses API Guide](/guides/responses_api) for details, including the full parameter compatibility tables.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "model": {
+                    "description": "ID of the model to use. Use `deepseek-flash` or `deepseek-v4-pro`.\n",
+                    "example": "deepseek-flash",
+                    "type": "string",
+                    "enum": [
+                      "deepseek-flash",
+                      "deepseek-v4-pro"
+                    ]
+                  },
+                  "input": {
+                    "description": "The input to the model. Either a plain string (treated as a single `user` message), or a list of input items.\n\nSupported input item types are `message` / `function_call` / `function_call_output` / `custom_tool_call` / `custom_tool_call_output` / `reasoning` / `web_search_call`; other types are ignored. Message roles can be `user` / `assistant` / `system` / `developer` (`developer` is treated as `user`). With the `deepseek-flash` model, `input_image` content parts are supported in `user` / `developer` message items and in the `output` of `function_call_output` / `custom_tool_call_output` items; images in `system` or `assistant` messages return a `400` error. File inputs are not supported.\n\nAt least one of `input` and `instructions` is required.\n",
+                    "nullable": true,
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "title": "Text input"
+                      },
+                      {
+                        "type": "array",
+                        "title": "Input item list"
+                      }
+                    ]
+                  },
+                  "instructions": {
+                    "description": "A system-level instruction, inserted as the first system message of the model's context.",
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "reasoning": {
+                    "description": "Configuration of the thinking mode.",
+                    "type": "object",
+                    "nullable": true,
+                    "properties": {
+                      "effort": {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "low",
+                          "high",
+                          "max"
+                        ],
+                        "description": "Controls the thinking mode toggle and the thinking effort. `none` disables thinking mode; `low` / `high` / `max` enable thinking mode. If not set, the model's default thinking behavior is used (enabled by default). For compatibility with existing software, `minimal` is accepted and mapped to `low`, and `medium` / `xhigh` are accepted and mapped to `high`.\n"
+                      }
+                    }
+                  },
+                  "max_output_tokens": {
+                    "description": "An upper bound for the number of tokens that can be generated in the response, including both the visible output tokens and the reasoning tokens.\n",
+                    "type": "integer",
+                    "nullable": true,
+                    "example": 4096
+                  },
+                  "stream": {
+                    "description": "If set to `true`, the response is streamed as semantic server-sent events. The final event is `response.completed` / `response.incomplete` / `response.failed` (there is no `data: [DONE]` message). Please refer to the [Responses API Guide](/guides/responses_api#streaming) for the full event list.\n",
+                    "type": "boolean",
+                    "nullable": true,
+                    "default": false
+                  },
+                  "temperature": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "default": 1,
+                    "example": 1,
+                    "nullable": true,
+                    "description": "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. Has no effect in thinking mode.\n"
+                  },
+                  "top_p": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "default": 1,
+                    "example": 1,
+                    "nullable": true,
+                    "description": "An alternative to sampling with temperature, called nucleus sampling. It only takes effect in thinking mode, where the effective range is 0.95–1.0: values below 0.95 are treated as 0.95. In non-thinking mode it is fixed at 1.0 and the value you pass is ignored.\n"
+                  },
+                  "text": {
+                    "description": "Configuration of the text output.",
+                    "type": "object",
+                    "nullable": true,
+                    "properties": {
+                      "format": {
+                        "type": "object",
+                        "description": "The output format. `{\"type\": \"text\"}` (default) for plain text; `{\"type\": \"json_object\"}` for JSON mode; `{\"type\": \"json_schema\", \"name\": ..., \"schema\": ...}` for structured output conforming to the given JSON Schema.\n",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "text",
+                              "json_object",
+                              "json_schema"
+                            ],
+                            "default": "text"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "The name of the schema. Required when `type` is `json_schema`."
+                          },
+                          "schema": {
+                            "type": "object",
+                            "description": "The JSON Schema that the output must conform to. Required when `type` is `json_schema`."
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "tools": {
+                    "type": "array",
+                    "nullable": true,
+                    "example": null,
+                    "description": "A list of tools the model may call. Function names must be non-empty, at most 128 characters, match `^[a-zA-Z0-9_-]+$`, and be unique across all tools. `function` tools are supported; `web_search` is supported with `deepseek-v4-pro`; other built-in tool types are ignored. Please refer to the [Responses API Guide](/guides/responses_api) for details.\n",
+                    "items": {
+                      "type": "object",
+                      "description": "A tool the model may call. `function` defines a function tool — note that in the Responses API format, `name` / `parameters` and other function fields are at the top level of the tool object. `custom` defines a custom tool; only `{\"type\": \"custom\", \"name\": \"apply_patch\"}` is supported, and other names return a `400` error. `web_search` enables server-side web search and is supported with `deepseek-v4-pro`.\n",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "function",
+                            "custom",
+                            "web_search"
+                          ],
+                          "description": "The type of the tool: `function`, `custom` (only `apply_patch`), or `web_search` (`deepseek-v4-pro` only).\n"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "For `function` and `custom` tools. The name of the tool. For function tools, must be non-empty, at most 128 characters, match `^[a-zA-Z0-9_-]+$`, and be unique across all tools. For custom tools, must be `apply_patch`."
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "For `function` tools. A description of what the function does, used by the model to choose when and how to call the function."
+                        },
+                        "parameters": {
+                          "type": "object",
+                          "description": "The parameters the functions accepts, described as a JSON Schema object. See the [Tool Calls Guide](/guides/tool_calls) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for documentation about the format. \n\nOmitting `parameters` defines a function with an empty parameter list.",
+                          "additionalProperties": true,
+                          "title": "FunctionParameters"
+                        }
+                      },
+                      "required": [
+                        "type"
+                      ],
+                      "title": "ResponseTool"
+                    }
+                  },
+                  "tool_choice": {
+                    "nullable": true,
+                    "description": "Controls which (if any) tool is called by the model.\n\n`none` means the model will not call any tool and instead generates a message.\n\n`auto` (default) means the model can pick between generating a message or calling one or more tools.\n\n`required` means the model must call one or more tools.\n\nSpecifying a particular tool via `{\"type\": \"function\", \"name\": \"my_function\"}` forces the model to call that tool.\n",
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "title": "Tool choice mode",
+                        "enum": [
+                          "none",
+                          "auto",
+                          "required"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "title": "Named tool choice",
+                        "description": "Forces the model to call the specified tool. `name` is required when `type` is `function`.",
+                        "required": [
+                          "type"
+                        ]
+                      }
+                    ]
+                  },
+                  "top_logprobs": {
+                    "description": "An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability.",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 20,
+                    "nullable": true,
+                    "default": null,
+                    "example": null
+                  },
+                  "user": {
+                    "description": "A custom end-user identifier, with allowed character set [a-zA-Z0-9\\\\-_] and a maximum length of 512. Do not include user privacy information.\n* It can be used to distinguish user identities on your side to help us with content safety review, for KVCache isolation, and for scheduling isolation. For more details, please refer to [Rate Limit & Isolation](/quick_start/rate_limit)",
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "model"
+                ],
+                "title": "CreateResponseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200 (No streaming)": {
+            "description": "OK, returns a `response` object",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "A model response in the OpenAI Responses API format.",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "A unique identifier for the response."
+                    },
+                    "object": {
+                      "type": "string",
+                      "description": "The object type, which is always `response`.",
+                      "enum": [
+                        "response"
+                      ]
+                    },
+                    "created_at": {
+                      "type": "integer",
+                      "description": "The Unix timestamp (in seconds) of when the response was created."
+                    },
+                    "status": {
+                      "type": "string",
+                      "description": "The status of the response.",
+                      "enum": [
+                        "in_progress",
+                        "completed",
+                        "incomplete",
+                        "failed"
+                      ]
+                    },
+                    "error": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The error object when the response failed, with `code` and `message` fields."
+                    },
+                    "incomplete_details": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "The details about why the response is incomplete. The `reason` field can be `max_output_tokens` or `content_filter`.",
+                      "properties": {
+                        "reason": {
+                          "type": "string",
+                          "enum": [
+                            "max_output_tokens",
+                            "content_filter"
+                          ]
+                        }
+                      }
+                    },
+                    "model": {
+                      "type": "string",
+                      "description": "The model used for the response."
+                    },
+                    "output": {
+                      "type": "array",
+                      "description": "The list of output items generated by the model. In thinking mode, the chain-of-thought is returned as a `reasoning` item before the `message` item. Function calls are returned as `function_call` items.\n",
+                      "items": {
+                        "type": "object",
+                        "description": "An output item generated by the model. `message` items carry the assistant text, `reasoning` items carry the chain-of-thought, `function_call` items represent function calls, `custom_tool_call` items represent custom tool calls (such as `apply_patch`), `web_search_call` items represent server-side web searches (`deepseek-v4-pro` only), and `tool_search_call` items represent tool searches.\n",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "message",
+                              "reasoning",
+                              "function_call",
+                              "custom_tool_call",
+                              "web_search_call",
+                              "tool_search_call"
+                            ],
+                            "description": "The type of the output item: `message` / `reasoning` / `function_call` / `custom_tool_call` / `web_search_call` / `tool_search_call`."
+                          },
+                          "id": {
+                            "type": "string",
+                            "description": "The unique ID of the output item."
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "in_progress",
+                              "completed",
+                              "incomplete"
+                            ],
+                            "description": "The status of the output item."
+                          },
+                          "role": {
+                            "type": "string",
+                            "enum": [
+                              "assistant"
+                            ],
+                            "description": "For `message` items. Always `assistant`."
+                          },
+                          "content": {
+                            "type": "array",
+                            "description": "For `message` items, a list of `output_text` content parts. For `reasoning` items, a list of `reasoning_text` content parts carrying the chain-of-thought in plain text.",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "enum": [
+                                    "output_text",
+                                    "reasoning_text"
+                                  ]
+                                },
+                                "text": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "call_id": {
+                            "type": "string",
+                            "description": "For `function_call` / `custom_tool_call` / `tool_search_call` items. An identifier used when passing the tool output back to the API."
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "For `function_call` / `custom_tool_call` items. The name of the function or custom tool to call."
+                          },
+                          "arguments": {
+                            "type": "string",
+                            "description": "For `function_call` items. The arguments to call the function with, as generated by the model in JSON format. Note that the model does not always generate valid JSON, and may hallucinate parameters not defined by your function schema. Validate the arguments in your code before calling your function."
+                          }
+                        },
+                        "title": "ResponseOutputItem"
+                      }
+                    },
+                    "usage": {
+                      "type": "object",
+                      "description": "Token usage statistics for the response.",
+                      "properties": {
+                        "input_tokens": {
+                          "type": "integer",
+                          "description": "Number of input tokens."
+                        },
+                        "input_tokens_details": {
+                          "type": "object",
+                          "description": "Breakdown of the input tokens.",
+                          "properties": {
+                            "cached_tokens": {
+                              "type": "integer",
+                              "description": "Number of input tokens that hit the context cache. See [Context Caching](/guides/kv_cache)."
+                            }
+                          }
+                        },
+                        "output_tokens": {
+                          "type": "integer",
+                          "description": "Number of output tokens."
+                        },
+                        "output_tokens_details": {
+                          "type": "object",
+                          "description": "Breakdown of the output tokens.",
+                          "properties": {
+                            "reasoning_tokens": {
+                              "type": "integer",
+                              "description": "Number of reasoning (chain-of-thought) tokens generated by the model."
+                            }
+                          }
+                        },
+                        "total_tokens": {
+                          "type": "integer",
+                          "description": "Total number of tokens used in the request (input + output)."
+                        }
+                      },
+                      "required": [
+                        "input_tokens",
+                        "output_tokens",
+                        "total_tokens"
+                      ],
+                      "title": "ResponseUsage"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "object",
+                    "created_at",
+                    "status",
+                    "model",
+                    "output"
+                  ],
+                  "title": "Response"
+                },
+                "example": "{\n  \"id\": \"24778070-1c36-4ae0-a4bd-870afc7fc13e\",\n  \"object\": \"response\",\n  \"created_at\": 1753000000,\n  \"status\": \"completed\",\n  \"model\": \"deepseek-flash\",\n  \"output\": [\n    {\n      \"type\": \"reasoning\",\n      \"id\": \"rs_1\",\n      \"status\": \"completed\",\n      \"content\": [\n        {\n          \"type\": \"reasoning_text\",\n          \"text\": \"The user greets me. I should reply politely.\"\n        }\n      ],\n      \"summary\": []\n    },\n    {\n      \"type\": \"message\",\n      \"id\": \"msg_1\",\n      \"status\": \"completed\",\n      \"role\": \"assistant\",\n      \"content\": [\n        {\n          \"type\": \"output_text\",\n          \"text\": \"Hello! How can I help you today?\",\n          \"annotations\": []\n        }\n      ]\n    }\n  ],\n  \"usage\": {\n    \"input_tokens\": 22,\n    \"input_tokens_details\": { \"cached_tokens\": 0 },\n    \"output_tokens\": 29,\n    \"output_tokens_details\": { \"reasoning_tokens\": 27 },\n    \"total_tokens\": 51\n  },\n  \"store\": false,\n  \"parallel_tool_calls\": true,\n  \"previous_response_id\": null,\n  \"error\": null,\n  \"incomplete_details\": null\n}\n"
+              }
+            }
+          },
+          "200 (Streaming)": {
+            "description": "OK, returns a streamed sequence of semantic server-sent events. Each event has an `event` field for the event type and an incrementing `sequence_number`. The final event is `response.completed` / `response.incomplete` / `response.failed` (there is no `data: [DONE]` message). Please refer to the [Responses API Guide](/guides/responses_api#streaming) for the full event list.\n",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                },
+                "example": "event: response.created\ndata: {\"type\": \"response.created\", \"sequence_number\": 0, \"response\": {\"id\": \"...\", \"object\": \"response\", \"status\": \"in_progress\", ...}}\n\nevent: response.output_item.added\ndata: {\"type\": \"response.output_item.added\", \"sequence_number\": 2, \"output_index\": 0, \"item\": {\"type\": \"reasoning\", ...}}\n\nevent: response.reasoning_text.delta\ndata: {\"type\": \"response.reasoning_text.delta\", \"sequence_number\": 4, \"item_id\": \"rs_1\", \"output_index\": 0, \"content_index\": 0, \"delta\": \"The user\"}\n\nevent: response.output_item.added\ndata: {\"type\": \"response.output_item.added\", \"sequence_number\": 9, \"output_index\": 1, \"item\": {\"type\": \"message\", \"role\": \"assistant\", ...}}\n\nevent: response.output_text.delta\ndata: {\"type\": \"response.output_text.delta\", \"sequence_number\": 11, \"item_id\": \"msg_1\", \"output_index\": 1, \"content_index\": 0, \"delta\": \"Hello\"}\n\nevent: response.completed\ndata: {\"type\": \"response.completed\", \"sequence_number\": 20, \"response\": {\"id\": \"...\", \"object\": \"response\", \"status\": \"completed\", \"usage\": {...}, ...}}\n"
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "label": "OpenAI SDK",
+            "source": "from openai import OpenAI\n\nclient = OpenAI(api_key=\"<your API key>\", base_url=\"https://api.deepseek.com\")\n\nresponse = client.responses.create(\n    model=\"deepseek-flash\",\n    instructions=\"You are a helpful assistant.\",\n    input=\"Hi, how are you?\",\n)\n\nprint(response.output_text)\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "OpenAI SDK",
+            "source": "import OpenAI from \"openai\";\n\nconst openai = new OpenAI({\n        baseURL: 'https://api.deepseek.com',\n        apiKey: '<your API key>'\n});\n\nasync function main() {\n  const response = await openai.responses.create({\n    model: \"deepseek-flash\",\n    instructions: \"You are a helpful assistant.\",\n    input: \"Hi, how are you?\",\n  });\n\n  console.log(response.output_text);\n}\n\nmain();\n"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "externalDocs": {
+          "url": "https://api-docs.deepseek.com/api/create-response/"
+        },
+        "servers": [
+          {
+            "url": "https://api.deepseek.com"
+          }
+        ]
+      }
+    },
+    "/completions": {
+      "post": {
+        "operationId": "createCompletion",
+        "tags": [
+          "Completions"
+        ],
+        "description": "FIM (Fill In the Middle) Completion API.<br/>User must set `base_url=\"https://api.deepseek.com/beta\"` to use this feature.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "model": {
+                    "description": "ID of the model to use. Use `deepseek-flash` or `deepseek-v4-pro`.\n",
+                    "type": "string",
+                    "enum": [
+                      "deepseek-flash",
+                      "deepseek-v4-pro"
+                    ]
+                  },
+                  "prompt": {
+                    "description": "The prompt to generate completions for.\n",
+                    "nullable": false,
+                    "type": "string"
+                  },
+                  "echo": {
+                    "type": "boolean",
+                    "default": false,
+                    "nullable": true,
+                    "description": "Echo back the prompt in addition to the completion. Cannot be used together with `suffix` or `logprobs`.\n"
+                  },
+                  "logprobs": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 20,
+                    "default": null,
+                    "nullable": true,
+                    "description": "Include the log probabilities on the `logprobs` most likely output tokens, as well the chosen tokens. For example, if `logprobs` is 20, the API will return a list of the 20 most likely tokens. The API will always return the `logprob` of the sampled token, so there may be up to `logprobs+1` elements in the response.\n\nThe maximum value for `logprobs` is 20.\n"
+                  },
+                  "max_tokens": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "example": 1024,
+                    "nullable": true,
+                    "description": "The maximum number of tokens that can be generated in the completion.\n"
+                  },
+                  "stop": {
+                    "description": "Up to 16 sequences where the API will stop generating further tokens. The returned text will not contain the stop sequence.\n",
+                    "nullable": true,
+                    "default": null,
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "example": null,
+                        "nullable": true
+                      },
+                      {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 16
+                      }
+                    ]
+                  },
+                  "stream": {
+                    "description": "Whether to stream back partial progress. If set, tokens will be sent as data-only [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#Event_stream_format) as they become available, with the stream terminated by a `data: [DONE]` message. [Example Python code](https://cookbook.openai.com/examples/how_to_stream_completions).\n",
+                    "type": "boolean",
+                    "nullable": true,
+                    "default": false
+                  },
+                  "stream_options": {
+                    "description": "Options for streaming response. Must be set together with `stream: true`; if `stream` is not set to `true`, the API returns a `400` error.\n",
+                    "type": "object",
+                    "nullable": true,
+                    "default": null,
+                    "example": null,
+                    "properties": {
+                      "include_usage": {
+                        "type": "boolean",
+                        "description": "If set to `true`, all chunks in the stream will include a `usage` field, whose value is `null` on every chunk except the last one. If omitted or set to `false`, the `usage` field is absent from all chunks except the last one.\n\nEither way, the last chunk before the `data: [DONE]` message carries the token usage statistics for the entire request in its `usage` field. Note that no separate usage-only chunk is emitted: the statistics ride on the last content chunk, whose `choices` array always contains exactly one element that carries no new content and a non-null `finish_reason`.\n"
+                      }
+                    },
+                    "title": "ChatCompletionStreamOptions"
+                  },
+                  "suffix": {
+                    "description": "The suffix that comes after a completion of inserted text.\n",
+                    "default": null,
+                    "nullable": true,
+                    "type": "string",
+                    "example": null
+                  },
+                  "temperature": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "default": 1,
+                    "example": 1,
+                    "nullable": true,
+                    "description": "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.\n\nWe generally recommend altering this or `top_p` but not both.\n"
+                  },
+                  "top_p": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 1,
+                    "default": 1,
+                    "example": 1,
+                    "nullable": true,
+                    "description": "An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered.\n\nThe value must be greater than 0 and at most 1. We generally recommend altering this or `temperature` but not both.\n"
+                  },
+                  "frequency_penalty": {
+                    "deprecated": true,
+                    "description": "This parameter is no longer supported. It will not take effect if you pass it to the API.\n"
+                  },
+                  "presence_penalty": {
+                    "deprecated": true,
+                    "description": "This parameter is no longer supported. It will not take effect if you pass it to the API.\n"
+                  }
+                },
+                "required": [
+                  "model",
+                  "prompt"
+                ],
+                "title": "CreateCompletionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Represents a completion response from the API. Note: both the streamed and non-streamed response objects share the same shape (unlike the chat endpoint).\n",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "A unique identifier for the completion."
+                    },
+                    "choices": {
+                      "type": "array",
+                      "description": "The list of completion choices the model generated for the input prompt.",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "finish_reason",
+                          "index",
+                          "logprobs",
+                          "text"
+                        ],
+                        "properties": {
+                          "finish_reason": {
+                            "type": "string",
+                            "description": "The reason the model stopped generating tokens. This will be `stop` if the model hit a natural stop point or a provided stop sequence,\n`length` if the maximum number of tokens specified in the request was reached,\n`content_filter` if content was omitted due to a flag from our content filters,\n`insufficient_system_resource` if the request is interrupted due to insufficient resource of the inference system,\nor `aborted` if the generation was interrupted.\n",
+                            "enum": [
+                              "stop",
+                              "length",
+                              "content_filter",
+                              "insufficient_system_resource",
+                              "aborted"
+                            ]
+                          },
+                          "index": {
+                            "type": "integer"
+                          },
+                          "logprobs": {
+                            "type": "object",
+                            "nullable": true,
+                            "properties": {
+                              "text_offset": {
+                                "type": "array",
+                                "items": {
+                                  "type": "integer"
+                                }
+                              },
+                              "token_logprobs": {
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                }
+                              },
+                              "tokens": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "top_logprobs": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "type": "number"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "text": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "created": {
+                      "type": "integer",
+                      "description": "The Unix timestamp (in seconds) of when the completion was created."
+                    },
+                    "model": {
+                      "type": "string",
+                      "description": "The model used for completion."
+                    },
+                    "system_fingerprint": {
+                      "type": "string",
+                      "description": "This fingerprint represents the backend configuration that the model runs with.\n"
+                    },
+                    "object": {
+                      "type": "string",
+                      "description": "The object type, which is always \"text_completion\"",
+                      "enum": [
+                        "text_completion"
+                      ]
+                    },
+                    "usage": {
+                      "type": "object",
+                      "description": "Usage statistics for the completion request.",
+                      "properties": {
+                        "completion_tokens": {
+                          "type": "integer",
+                          "description": "Number of tokens in the generated completion."
+                        },
+                        "prompt_tokens": {
+                          "type": "integer",
+                          "description": "Number of tokens in the prompt. It equals prompt_cache_hit_tokens + prompt_cache_miss_tokens."
+                        },
+                        "prompt_tokens_details": {
+                          "type": "object",
+                          "description": "Breakdown of tokens used in the prompt.",
+                          "properties": {
+                            "cached_tokens": {
+                              "type": "integer",
+                              "description": "Number of tokens in the prompt that hit the context cache. Same as `prompt_cache_hit_tokens`."
+                            }
+                          }
+                        },
+                        "prompt_cache_hit_tokens": {
+                          "type": "integer",
+                          "description": "Number of tokens in the prompt that hits the context cache."
+                        },
+                        "prompt_cache_miss_tokens": {
+                          "type": "integer",
+                          "description": "Number of tokens in the prompt that misses the context cache."
+                        },
+                        "total_tokens": {
+                          "type": "integer",
+                          "description": "Total number of tokens used in the request (prompt + completion)."
+                        },
+                        "completion_tokens_details": {
+                          "type": "object",
+                          "description": "Breakdown of tokens used in a completion.",
+                          "properties": {
+                            "reasoning_tokens": {
+                              "type": "integer",
+                              "description": "Tokens generated by the model for reasoning."
+                            }
+                          }
+                        }
+                      },
+                      "required": [
+                        "prompt_tokens",
+                        "prompt_tokens_details",
+                        "prompt_cache_hit_tokens",
+                        "prompt_cache_miss_tokens",
+                        "completion_tokens",
+                        "total_tokens"
+                      ],
+                      "title": "CompletionUsage"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "object",
+                    "created",
+                    "model",
+                    "choices"
+                  ],
+                  "title": "CreateCompletionResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "label": "OpenAI SDK",
+            "source": "from openai import OpenAI\n\n# user should set `base_url=\"https://api.deepseek.com/beta\"` to use this feature.\nclient = OpenAI(\n  api_key=\"<your API key>\",\n  base_url=\"https://api.deepseek.com/beta\",\n)\nresponse = client.completions.create(\n  model=\"deepseek-flash\",\n  prompt=\"def fib(a):\",\n  suffix=\"    return fib(a-1) + fib(a-2)\",\n  max_tokens=128)\nprint(response.choices[0].text)\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "OpenAI SDK",
+            "source": "import OpenAI from \"openai\";\n\n# user should set `baseURL=\"https://api.deepseek.com/beta\"` to use this feature.\nconst openai = new OpenAI({\n  baseURL: 'https://api.deepseek.com/beta', \n  apiKey: '<your API key>'\n});\nasync function main() {\n  const completion = await openai.completions.create({\n    model: \"deepseek-flash\",\n    prompt: \"def fib(a):\",\n    suffix: \"    return fib(a-1) + fib(a-2)\",\n    max_tokens: 128\n  });\n  console.log(completion);\n}\nmain();\n"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "externalDocs": {
+          "url": "https://api-docs.deepseek.com/api/create-completion/"
+        },
+        "servers": [
+          {
+            "url": "https://api.deepseek.com/beta"
+          }
+        ]
+      }
+    },
+    "/user/balance": {
+      "get": {
+        "operationId": "getUserBalance",
+        "tags": [
+          "Balance"
+        ],
+        "description": "Get user current balance",
+        "responses": {
+          "200": {
+            "description": "OK, returns user balance info.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "is_available": {
+                      "type": "boolean",
+                      "description": "Whether the user's balance is sufficient for API calls."
+                    },
+                    "balance_infos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "currency": {
+                            "type": "string",
+                            "enum": [
+                              "CNY",
+                              "USD"
+                            ],
+                            "description": "The currency of the balance."
+                          },
+                          "total_balance": {
+                            "type": "string",
+                            "nullable": false,
+                            "example": "110.00",
+                            "description": "The total available balance, including the granted balance and the topped-up balance."
+                          },
+                          "granted_balance": {
+                            "type": "string",
+                            "nullable": false,
+                            "example": "10.00",
+                            "description": "The total not expired granted balance."
+                          },
+                          "topped_up_balance": {
+                            "type": "string",
+                            "nullable": false,
+                            "example": "100.00",
+                            "description": "The total topped-up balance."
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "title": "GetUserBalanceResponse"
+                },
+                "example": "{\n  \"is_available\": true,\n  \"balance_infos\": [\n    {\n      \"currency\": \"CNY\",\n      \"total_balance\": \"110.00\",\n      \"granted_balance\": \"10.00\",\n      \"topped_up_balance\": \"100.00\"\n    }\n  ]\n}\n"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "externalDocs": {
+          "url": "https://api-docs.deepseek.com/api/get-user-balance/"
+        },
+        "servers": [
+          {
+            "url": "https://api.deepseek.com"
+          }
+        ]
+      }
+    },
+    "/models": {
+      "get": {
+        "operationId": "listModels",
+        "tags": [
+          "Models"
+        ],
+        "description": "Lists the currently available models, and provides metadata about each one, such as its display name, context window, output limit, supported input/output modalities, supported effort levels, and per-protocol API capabilities. Check [Models & Pricing](/quick_start/pricing) for our currently supported models.",
+        "responses": {
+          "200": {
+            "description": "OK, returns A list of models",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "object": {
+                      "type": "string",
+                      "enum": [
+                        "list"
+                      ],
+                      "description": "The object type, which is always `list`."
+                    },
+                    "data": {
+                      "type": "array",
+                      "description": "The list of model objects.",
+                      "items": {
+                        "title": "Model",
+                        "type": "object",
+                        "description": "Describes a DeepSeek model offering that can be used with the API. Besides the identifier fields, each model carries machine-readable metadata about its capabilities and limits; a metadata field may be omitted when the information is not available for that model.",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "The model identifier, which can be referenced in the API endpoints."
+                          },
+                          "object": {
+                            "type": "string",
+                            "description": "The object type, which is always \"model\".",
+                            "enum": [
+                              "model"
+                            ]
+                          },
+                          "owned_by": {
+                            "type": "string",
+                            "description": "The organization that owns the model."
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "The display name of the model, for use in model pickers and model discovery tools."
+                          },
+                          "context_window": {
+                            "type": "integer",
+                            "description": "The total token capacity of the context window, counting both input and output tokens."
+                          },
+                          "max_output_tokens": {
+                            "type": "integer",
+                            "description": "The maximum number of output tokens the server allows in a single response, i.e. the maximum accepted value of `max_tokens`."
+                          },
+                          "input_modalities": {
+                            "type": "array",
+                            "description": "The input types the model accepts.",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "text",
+                                "image"
+                              ]
+                            }
+                          },
+                          "output_modalities": {
+                            "type": "array",
+                            "description": "The media types the model can generate.",
+                            "items": {
+                              "type": "string",
+                              "enum": [
+                                "text"
+                              ]
+                            }
+                          },
+                          "effort": {
+                            "type": "object",
+                            "description": "The effort levels available when thinking mode is enabled.",
+                            "properties": {
+                              "supported_levels": {
+                                "type": "array",
+                                "description": "The effort levels the model supports when thinking mode is enabled, in the recommended display order. These are the values accepted by the `reasoning_effort` parameter; `none`, which turns thinking mode off, is not included.",
+                                "items": {
+                                  "type": "string"
+                                }
+                              },
+                              "default_level": {
+                                "type": "string",
+                                "description": "The effort level the server uses when thinking mode is enabled and the request does not specify one. Always one of `supported_levels`. Only present when the server defines a default for the model."
+                              }
+                            },
+                            "required": [
+                              "supported_levels"
+                            ]
+                          },
+                          "api_capabilities": {
+                            "type": "object",
+                            "description": "Model behavior declared per API protocol.",
+                            "properties": {
+                              "anthropic_messages": {
+                                "type": "object",
+                                "description": "Capabilities that apply when the model is used through the [Anthropic Messages API](/guides/anthropic_api).",
+                                "properties": {
+                                  "system_prompt_update": {
+                                    "type": "string",
+                                    "enum": [
+                                      "leading-only",
+                                      "in-history"
+                                    ],
+                                    "description": "How the model picks up an updated system prompt during a conversation.\n\n- `leading-only`: only the system prompt at the start of the conversation takes effect. To change the system prompt, modify that leading system prompt; system messages appearing later in the history are not treated as system prompt updates.\n- `in-history`: a `system` message may be appended to the conversation history. The latest `system` message in the history provides the complete effective system prompt and replaces all earlier ones.\n"
+                                  }
+                                },
+                                "required": [
+                                  "system_prompt_update"
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "object",
+                          "owned_by"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "object",
+                    "data"
+                  ],
+                  "title": "ListModelsResponse"
+                },
+                "example": "{\n  \"object\": \"list\",\n  \"data\": [\n    {\n      \"id\": \"deepseek-flash\",\n      \"object\": \"model\",\n      \"owned_by\": \"deepseek\",\n      \"name\": \"DeepSeek-V4.1-Flash\",\n      \"context_window\": 1048576,\n      \"max_output_tokens\": 393216,\n      \"input_modalities\": [\"text\", \"image\"],\n      \"output_modalities\": [\"text\"],\n      \"effort\": {\n        \"supported_levels\": [\"low\", \"high\", \"max\"],\n        \"default_level\": \"high\"\n      },\n      \"api_capabilities\": {\n        \"anthropic_messages\": {\n          \"system_prompt_update\": \"in-history\"\n        }\n      }\n    },\n    {\n      \"id\": \"deepseek-v4-pro\",\n      \"object\": \"model\",\n      \"owned_by\": \"deepseek\",\n      \"name\": \"DeepSeek-V4-Pro\",\n      \"context_window\": 1048576,\n      \"max_output_tokens\": 393216,\n      \"input_modalities\": [\"text\"],\n      \"output_modalities\": [\"text\"],\n      \"effort\": {\n        \"supported_levels\": [\"low\", \"high\", \"max\"],\n        \"default_level\": \"high\"\n      },\n      \"api_capabilities\": {\n        \"anthropic_messages\": {\n          \"system_prompt_update\": \"leading-only\"\n        }\n      }\n    }\n  ]\n}\n"
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "label": "OpenAI SDK",
+            "source": "from openai import OpenAI\n\n# for backward compatibility, you can still use `https://api.deepseek.com/v1` as `base_url`.\nclient = OpenAI(api_key=\"<your API key>\", base_url=\"https://api.deepseek.com\")\nprint(client.models.list())\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "OpenAI SDK",
+            "source": "import OpenAI from \"openai\";\n\n# for backward compatibility, you can still use `https://api.deepseek.com/v1` as `baseURL`.\nconst openai = new OpenAI({\n        baseURL: 'https://api.deepseek.com',\n        apiKey: '<your API key>'\n});\n\nasync function main() {\n  const models = await openai.models.list()\n  for await (const model of models) {\n    console.log(model);\n  }\n}\n\nmain();\n"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "externalDocs": {
+          "url": "https://api-docs.deepseek.com/api/list-models/"
+        },
+        "servers": [
+          {
+            "url": "https://api.deepseek.com"
+          }
+        ]
+      }
+    },
+    "/chat/completions": {
+      "post": {
+        "operationId": "createChatCompletion",
+        "tags": [
+          "Chat"
+        ],
+        "description": "Creates a model response for the given chat conversation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "messages": {
+                    "description": "A list of messages comprising the conversation so far.",
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "title": "System message",
+                          "required": [
+                            "content",
+                            "role"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "title": "User message",
+                          "required": [
+                            "content",
+                            "role"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "title": "Assistant message",
+                          "required": [
+                            "role",
+                            "content"
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "title": "Tool message",
+                          "required": [
+                            "role",
+                            "content",
+                            "tool_call_id"
+                          ]
+                        }
+                      ],
+                      "title": "ChatCompletionRequestMessage"
+                    },
+                    "example": [
+                      {
+                        "content": "You are a helpful assistant",
+                        "role": "system"
+                      },
+                      {
+                        "content": "Hi",
+                        "role": "user"
+                      }
+                    ]
+                  },
+                  "model": {
+                    "description": "ID of the model to use. Use `deepseek-flash` or `deepseek-v4-pro`.\n",
+                    "example": "deepseek-flash",
+                    "type": "string",
+                    "enum": [
+                      "deepseek-flash",
+                      "deepseek-v4-pro"
+                    ]
+                  },
+                  "thinking": {
+                    "description": "Controls the switch between thinking and non-thinking mode.",
+                    "type": "object",
+                    "nullable": true,
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "enabled",
+                          "disabled"
+                        ],
+                        "default": "enabled",
+                        "description": "If set to `enabled`, then use thinking mode. If set to `disabled`, then use non-thinking model."
+                      }
+                    }
+                  },
+                  "reasoning_effort": {
+                    "description": "Controls the thinking mode toggle and the thinking effort. `none` disables thinking mode; `low` / `high` / `max` enable thinking mode. The default effort is `high`. For compatibility with existing software, `minimal` is accepted and mapped to `low`, and `medium` / `xhigh` are accepted and mapped to `high`.\n",
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "low",
+                      "high",
+                      "max"
+                    ]
+                  },
+                  "max_tokens": {
+                    "exclusiveMinimum": true,
+                    "example": 4096,
+                    "description": "The maximum number of tokens that can be generated in the chat completion.\n\nThe total length of input tokens and generated tokens is limited by the model's context length.\n\nThe value must be between 1 and 384K (393216). When not set, the default is 8K in non-thinking mode, 64K in thinking mode (128K with `reasoning_effort` set to `max`). Please refer to the [Models & Pricing](/quick_start/pricing) page for details.\n",
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "response_format": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "An object specifying the format that the model must output.\nSetting to { \"type\": \"json_object\" } enables JSON Output, which guarantees the message the model generates is valid JSON.\n\n**Important:** When using JSON Output, you must also instruct the model to produce JSON yourself via a system or user message. Without this, the model may generate an unending stream of whitespace until the generation reaches the token limit, resulting in a long-running and seemingly \"stuck\" request. Also note that the message content may be partially cut off if finish_reason=\"length\", which indicates the generation exceeded max_tokens or the conversation exceeded the max context length.\n",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "text",
+                          "json_object"
+                        ],
+                        "example": "text",
+                        "default": "text",
+                        "description": "Must be one of `text` or `json_object`."
+                      }
+                    }
+                  },
+                  "stop": {
+                    "description": "Up to 16 sequences where the API will stop generating further tokens.\n",
+                    "nullable": true,
+                    "default": null,
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "title": "Single stop sequence",
+                        "nullable": true,
+                        "example": null
+                      },
+                      {
+                        "type": "array",
+                        "title": "Stop sequence list",
+                        "minItems": 1,
+                        "maxItems": 16
+                      }
+                    ]
+                  },
+                  "stream": {
+                    "description": "If set, partial message deltas will be sent. Tokens will be sent as data-only server-sent events (SSE) as they become available, with the stream terminated by a `data: [DONE]` message.\n",
+                    "type": "boolean",
+                    "nullable": true,
+                    "default": false
+                  },
+                  "stream_options": {
+                    "description": "Options for streaming response. Must be set together with `stream: true`; if `stream` is not set to `true`, the API returns a `400` error.\n",
+                    "type": "object",
+                    "nullable": true,
+                    "default": null,
+                    "example": null,
+                    "properties": {
+                      "include_usage": {
+                        "type": "boolean",
+                        "description": "If set to `true`, all chunks in the stream will include a `usage` field, whose value is `null` on every chunk except the last one. If omitted or set to `false`, the `usage` field is absent from all chunks except the last one.\n\nEither way, the last chunk before the `data: [DONE]` message carries the token usage statistics for the entire request in its `usage` field. Note that no separate usage-only chunk is emitted: the statistics ride on the last content chunk, whose `choices` array always contains exactly one element that carries no new content and a non-null `finish_reason`.\n"
+                      }
+                    },
+                    "title": "ChatCompletionStreamOptions"
+                  },
+                  "temperature": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 2,
+                    "default": 1,
+                    "example": 1,
+                    "nullable": true,
+                    "description": "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic.\n\nWe generally recommend altering this or `top_p` but not both. Has no effect in thinking mode.\n"
+                  },
+                  "top_p": {
+                    "type": "number",
+                    "minimum": 0,
+                    "exclusiveMinimum": true,
+                    "maximum": 1,
+                    "default": 1,
+                    "example": 1,
+                    "nullable": true,
+                    "description": "An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered.\n\nThe value must be greater than 0 and at most 1. We generally recommend altering this or `temperature` but not both. It only takes effect in thinking mode, where the effective range is 0.95–1.0: values below 0.95 are treated as 0.95. In non-thinking mode it is fixed at 1.0 and the value you pass is ignored.\n"
+                  },
+                  "tools": {
+                    "type": "array",
+                    "nullable": true,
+                    "example": null,
+                    "description": "A list of tools the model may call. Currently, only functions are supported as a tool.\nUse this to provide a list of functions the model may generate JSON inputs for. Tool names must be unique.\n",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "function"
+                          ],
+                          "description": "The type of the tool. Currently, only `function` is supported."
+                        },
+                        "function": {
+                          "type": "object",
+                          "properties": {
+                            "description": {
+                              "type": "string",
+                              "description": "A description of what the function does, used by the model to choose when and how to call the function."
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 128."
+                            },
+                            "parameters": {
+                              "type": "object",
+                              "description": "The parameters the functions accepts, described as a JSON Schema object. See the [Tool Calls Guide](/guides/tool_calls) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for documentation about the format. \n\nOmitting `parameters` defines a function with an empty parameter list.",
+                              "additionalProperties": true,
+                              "title": "FunctionParameters"
+                            },
+                            "strict": {
+                              "type": "boolean",
+                              "description": "If set to true, the API will use strict-mode for the tool calls to ensure the output always complies with the function's JSON schema. This is a Beta feature, for more details please refer to [Tool Calls Guide](/guides/tool_calls)",
+                              "default": "false"
+                            }
+                          },
+                          "required": [
+                            "name"
+                          ],
+                          "title": "FunctionObject"
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "function"
+                      ],
+                      "title": "ChatCompletionTool"
+                    }
+                  },
+                  "tool_choice": {
+                    "type": [
+                      "string",
+                      "object"
+                    ],
+                    "nullable": true,
+                    "description": "Controls which (if any) tool is called by the model.\n\n`none` means the model will not call any tool and instead generates a message.\n\n`auto` means the model can pick between generating a message or calling one or more tools.\n\n`required` means the model must call one or more tools.\n\nSpecifying a particular tool via `{\"type\": \"function\", \"function\": {\"name\": \"my_function\"}}` forces the model to call that tool.\n\n`none` is the default when no tools are present. `auto` is the default if tools are present.\n\n`required` and named tool choices are not supported in thinking mode; the API returns a `400` error. Disable thinking mode first to use them.\n",
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "none",
+                          "auto",
+                          "required"
+                        ],
+                        "title": "ChatCompletionToolChoice"
+                      },
+                      {
+                        "type": "object",
+                        "description": "Specifies a tool the model should use. Use to force the model to call a specific function.",
+                        "required": [
+                          "type",
+                          "function"
+                        ],
+                        "title": "ChatCompletionNamedToolChoice"
+                      }
+                    ],
+                    "title": "ChatCompletionToolChoiceOption"
+                  },
+                  "logprobs": {
+                    "description": "Whether to return log probabilities of the output tokens or not. If true, returns the log probabilities of each output token returned in the `content` of `message`.",
+                    "type": "boolean",
+                    "default": false,
+                    "nullable": true
+                  },
+                  "top_logprobs": {
+                    "description": "An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. `logprobs` must be set to `true` if this parameter is used.",
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 20,
+                    "nullable": true,
+                    "default": null,
+                    "example": null
+                  },
+                  "user_id": {
+                    "description": "A custom user_id. Allowed character set is [a-zA-Z0-9\\\\-_], with a maximum length of 512. Do not include user privacy information in the user_id.\n* user_id can be used to distinguish user identities on your side to help us with content safety review.\n* user_id can be used for KVCache isolation for privacy management.\n* user_id can be used for scheduling isolation of users on your business side.\n* For more details on the user_id parameter, please refer to [Rate Limit & Isolation](/quick_start/rate_limit)",
+                    "nullable": true
+                  },
+                  "frequency_penalty": {
+                    "deprecated": true,
+                    "description": "This parameter is no longer supported. It will not take effect if you pass it to the API.\n"
+                  },
+                  "presence_penalty": {
+                    "deprecated": true,
+                    "description": "This parameter is no longer supported. It will not take effect if you pass it to the API.\n"
+                  }
+                },
+                "required": [
+                  "model",
+                  "messages"
+                ],
+                "title": "CreateChatCompletionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200 (No streaming)": {
+            "description": "OK, returns a `chat completion object`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Represents a chat completion response returned by model, based on the provided input.",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "description": "A unique identifier for the chat completion."
+                    },
+                    "choices": {
+                      "type": "array",
+                      "description": "A list of chat completion choices.",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "finish_reason",
+                          "index",
+                          "message",
+                          "logprobs"
+                        ],
+                        "properties": {
+                          "finish_reason": {
+                            "type": "string",
+                            "description": "The reason the model stopped generating tokens. This will be `stop` if the model hit a natural stop point or a provided stop sequence,\n`length` if the maximum number of tokens specified in the request was reached,\n`content_filter` if content was omitted due to a flag from our content filters,\n`tool_calls` if the model called a tool,\n`insufficient_system_resource` if the request is interrupted due to insufficient resource of the inference system,\nor `aborted` if the generation was interrupted.\n",
+                            "enum": [
+                              "stop",
+                              "length",
+                              "content_filter",
+                              "tool_calls",
+                              "insufficient_system_resource",
+                              "aborted"
+                            ]
+                          },
+                          "index": {
+                            "type": "integer",
+                            "description": "The index of the choice in the list of choices."
+                          },
+                          "message": {
+                            "type": "object",
+                            "description": "A chat completion message generated by the model.",
+                            "properties": {
+                              "content": {
+                                "type": "string",
+                                "description": "The contents of the message.",
+                                "nullable": true
+                              },
+                              "reasoning_content": {
+                                "type": "string",
+                                "description": "For thinking mode only. The reasoning contents of the assistant message, before the final answer.",
+                                "nullable": true
+                              },
+                              "tool_calls": {
+                                "type": "array",
+                                "description": "The tool calls generated by the model.",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "description": "The ID of the tool call."
+                                    },
+                                    "type": {
+                                      "type": "string",
+                                      "enum": [
+                                        "function"
+                                      ],
+                                      "description": "The type of the tool. Currently, only `function` is supported."
+                                    },
+                                    "function": {
+                                      "type": "object",
+                                      "description": "The function that the model called.",
+                                      "properties": {
+                                        "name": {
+                                          "type": "string",
+                                          "description": "The name of the function to call."
+                                        },
+                                        "arguments": {
+                                          "type": "string",
+                                          "description": "The arguments to call the function with, as generated by the model in JSON format. Note that the model does not always generate valid JSON, and may hallucinate parameters not defined by your function schema. Validate the arguments in your code before calling your function."
+                                        }
+                                      },
+                                      "required": [
+                                        "name",
+                                        "arguments"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "id",
+                                    "type",
+                                    "function"
+                                  ],
+                                  "title": "ChatCompletionMessageToolCall"
+                                },
+                                "title": "ChatCompletionMessageToolCalls"
+                              },
+                              "role": {
+                                "type": "string",
+                                "enum": [
+                                  "assistant"
+                                ],
+                                "description": "The role of the author of this message."
+                              }
+                            },
+                            "required": [
+                              "role",
+                              "content"
+                            ],
+                            "title": "ChatCompletionResponseMessage"
+                          },
+                          "logprobs": {
+                            "description": "Log probability information for the choice.",
+                            "type": "object",
+                            "nullable": true,
+                            "properties": {
+                              "content": {
+                                "description": "A list of message content tokens with log probability information.",
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "token": {
+                                      "description": "The token.",
+                                      "type": "string"
+                                    },
+                                    "logprob": {
+                                      "description": "The log probability of this token, if it is within the top 20 most likely tokens. Otherwise, the value `-9999.0` is used to signify that the token is very unlikely.",
+                                      "type": "number"
+                                    },
+                                    "bytes": {
+                                      "description": "A list of integers representing the UTF-8 bytes representation of the token. Useful in instances where characters are represented by multiple tokens and their byte representations must be combined to generate the correct text representation. Can be `null` if there is no bytes representation for the token.",
+                                      "type": "array",
+                                      "items": {
+                                        "type": "integer"
+                                      },
+                                      "nullable": true
+                                    },
+                                    "top_logprobs": {
+                                      "description": "List of the most likely tokens and their log probability, at this token position. In rare cases, there may be fewer than the number of requested `top_logprobs` returned.",
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "token": {
+                                            "description": "The token.",
+                                            "type": "string"
+                                          },
+                                          "logprob": {
+                                            "description": "The log probability of this token, if it is within the top 20 most likely tokens. Otherwise, the value `-9999.0` is used to signify that the token is very unlikely.",
+                                            "type": "number"
+                                          },
+                                          "bytes": {
+                                            "description": "A list of integers representing the UTF-8 bytes representation of the token. Useful in instances where characters are represented by multiple tokens and their byte representations must be combined to generate the correct text representation. Can be `null` if there is no bytes representation for the token.",
+                                            "type": "array",
+                                            "items": {
+                                              "type": "integer"
+                                            },
+                                            "nullable": true
+                                          }
+                                        },
+                                        "required": [
+                                          "token",
+                                          "logprob",
+                                          "bytes"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "token",
+                                    "logprob",
+                                    "bytes",
+                                    "top_logprobs"
+                                  ],
+                                  "title": "ChatCompletionTokenLogprob"
+                                },
+                                "nullable": true
+                              },
+                              "reasoning_content": {
+                                "description": "A list of message content tokens with log probability information.",
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "token": {
+                                      "description": "The token.",
+                                      "type": "string"
+                                    },
+                                    "logprob": {
+                                      "description": "The log probability of this token, if it is within the top 20 most likely tokens. Otherwise, the value `-9999.0` is used to signify that the token is very unlikely.",
+                                      "type": "number"
+                                    },
+                                    "bytes": {
+                                      "description": "A list of integers representing the UTF-8 bytes representation of the token. Useful in instances where characters are represented by multiple tokens and their byte representations must be combined to generate the correct text representation. Can be `null` if there is no bytes representation for the token.",
+                                      "type": "array",
+                                      "items": {
+                                        "type": "integer"
+                                      },
+                                      "nullable": true
+                                    },
+                                    "top_logprobs": {
+                                      "description": "List of the most likely tokens and their log probability, at this token position. In rare cases, there may be fewer than the number of requested `top_logprobs` returned.",
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "token": {
+                                            "description": "The token.",
+                                            "type": "string"
+                                          },
+                                          "logprob": {
+                                            "description": "The log probability of this token, if it is within the top 20 most likely tokens. Otherwise, the value `-9999.0` is used to signify that the token is very unlikely.",
+                                            "type": "number"
+                                          },
+                                          "bytes": {
+                                            "description": "A list of integers representing the UTF-8 bytes representation of the token. Useful in instances where characters are represented by multiple tokens and their byte representations must be combined to generate the correct text representation. Can be `null` if there is no bytes representation for the token.",
+                                            "type": "array",
+                                            "items": {
+                                              "type": "integer"
+                                            },
+                                            "nullable": true
+                                          }
+                                        },
+                                        "required": [
+                                          "token",
+                                          "logprob",
+                                          "bytes"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "token",
+                                    "logprob",
+                                    "bytes",
+                                    "top_logprobs"
+                                  ],
+                                  "title": "ChatCompletionTokenLogprob"
+                                },
+                                "nullable": true
+                              }
+                            },
+                            "required": [
+                              "content"
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "created": {
+                      "type": "integer",
+                      "description": "The Unix timestamp (in seconds) of when the chat completion was created."
+                    },
+                    "model": {
+                      "type": "string",
+                      "description": "The model used for the chat completion."
+                    },
+                    "system_fingerprint": {
+                      "type": "string",
+                      "description": "This fingerprint represents the backend configuration that the model runs with."
+                    },
+                    "object": {
+                      "type": "string",
+                      "description": "The object type, which is always `chat.completion`.",
+                      "enum": [
+                        "chat.completion"
+                      ]
+                    },
+                    "usage": {
+                      "type": "object",
+                      "description": "Usage statistics for the completion request.",
+                      "properties": {
+                        "completion_tokens": {
+                          "type": "integer",
+                          "description": "Number of tokens in the generated completion."
+                        },
+                        "prompt_tokens": {
+                          "type": "integer",
+                          "description": "Number of tokens in the prompt. It equals prompt_cache_hit_tokens + prompt_cache_miss_tokens."
+                        },
+                        "prompt_tokens_details": {
+                          "type": "object",
+                          "description": "Breakdown of tokens used in the prompt.",
+                          "properties": {
+                            "cached_tokens": {
+                              "type": "integer",
+                              "description": "Number of tokens in the prompt that hit the context cache. Same as `prompt_cache_hit_tokens`."
+                            }
+                          }
+                        },
+                        "prompt_cache_hit_tokens": {
+                          "type": "integer",
+                          "description": "Number of tokens in the prompt that hits the context cache."
+                        },
+                        "prompt_cache_miss_tokens": {
+                          "type": "integer",
+                          "description": "Number of tokens in the prompt that misses the context cache."
+                        },
+                        "total_tokens": {
+                          "type": "integer",
+                          "description": "Total number of tokens used in the request (prompt + completion)."
+                        },
+                        "completion_tokens_details": {
+                          "type": "object",
+                          "description": "Breakdown of tokens used in a completion.",
+                          "properties": {
+                            "reasoning_tokens": {
+                              "type": "integer",
+                              "description": "Tokens generated by the model for reasoning."
+                            }
+                          }
+                        }
+                      },
+                      "required": [
+                        "prompt_tokens",
+                        "prompt_tokens_details",
+                        "prompt_cache_hit_tokens",
+                        "prompt_cache_miss_tokens",
+                        "completion_tokens",
+                        "total_tokens"
+                      ],
+                      "title": "CompletionUsage"
+                    }
+                  },
+                  "required": [
+                    "choices",
+                    "created",
+                    "id",
+                    "model",
+                    "system_fingerprint",
+                    "object"
+                  ],
+                  "title": "CreateChatCompletionResponse"
+                },
+                "example": "{\n  \"id\": \"930c60df-bf64-41c9-a88e-3ec75f81e00e\",\n  \"choices\": [\n    {\n      \"finish_reason\": \"stop\",\n      \"index\": 0,\n      \"message\": {\n        \"content\": \"Hello! How can I help you today?\",\n        \"role\": \"assistant\"\n      },\n      \"logprobs\": null\n    }\n  ],\n  \"created\": 1705651092,\n  \"model\": \"deepseek-flash\",\n  \"object\": \"chat.completion\",\n  \"system_fingerprint\": \"fp_7a09fdf9c2\",\n  \"usage\": {\n    \"completion_tokens\": 10,\n    \"prompt_tokens\": 16,\n    \"total_tokens\": 26,\n    \"prompt_tokens_details\": {\n      \"cached_tokens\": 0\n    },\n    \"prompt_cache_hit_tokens\": 0,\n    \"prompt_cache_miss_tokens\": 16\n  }\n}\n"
+              }
+            }
+          },
+          "200 (Streaming)": {
+            "description": "OK, returns a streamed sequence of `chat completion chunk` objects",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "description": "Represents a streamed chunk of a chat completion response returned by model, based on the provided input.",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "A unique identifier for the chat completion. Each chunk has the same ID."
+                      },
+                      "choices": {
+                        "type": "array",
+                        "description": "A list of chat completion choices.",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "delta",
+                            "finish_reason",
+                            "index"
+                          ],
+                          "properties": {
+                            "delta": {
+                              "type": "object",
+                              "description": "A chat completion delta generated by streamed model responses.",
+                              "properties": {
+                                "content": {
+                                  "type": "string",
+                                  "description": "The contents of the chunk message.",
+                                  "nullable": true
+                                },
+                                "reasoning_content": {
+                                  "type": "string",
+                                  "description": "For thinking mode only. The reasoning contents of the assistant message, before the final answer.",
+                                  "nullable": true
+                                },
+                                "role": {
+                                  "type": "string",
+                                  "enum": [
+                                    "assistant"
+                                  ],
+                                  "description": "The role of the author of this message."
+                                },
+                                "tool_calls": {
+                                  "type": "array",
+                                  "description": "The tool calls generated by the model, such as function calls. The first chunk of each tool call carries the `id`, `type` and `function` fields; subsequent chunks only carry the function arguments.",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "index": {
+                                        "type": "integer"
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "description": "The ID of the tool call."
+                                      },
+                                      "type": {
+                                        "type": "string",
+                                        "enum": [
+                                          "function"
+                                        ],
+                                        "description": "The type of the tool. Currently, only `function` is supported."
+                                      },
+                                      "function": {
+                                        "type": "object",
+                                        "properties": {
+                                          "name": {
+                                            "type": "string",
+                                            "description": "The name of the function to call."
+                                          },
+                                          "arguments": {
+                                            "type": "string",
+                                            "description": "The arguments to call the function with, as generated by the model in JSON format. Note that the model does not always generate valid JSON, and may hallucinate parameters not defined by your function schema. Validate the arguments in your code before calling your function."
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "index"
+                                    ],
+                                    "title": "ChatCompletionMessageToolCallChunk"
+                                  }
+                                }
+                              },
+                              "title": "ChatCompletionStreamResponseDelta"
+                            },
+                            "logprobs": {
+                              "description": "Log probability information for the choice.",
+                              "type": "object",
+                              "nullable": true,
+                              "properties": {
+                                "content": {
+                                  "description": "A list of message content tokens with log probability information.",
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "token": {
+                                        "description": "The token.",
+                                        "type": "string"
+                                      },
+                                      "logprob": {
+                                        "description": "The log probability of this token, if it is within the top 20 most likely tokens. Otherwise, the value `-9999.0` is used to signify that the token is very unlikely.",
+                                        "type": "number"
+                                      },
+                                      "bytes": {
+                                        "description": "A list of integers representing the UTF-8 bytes representation of the token. Useful in instances where characters are represented by multiple tokens and their byte representations must be combined to generate the correct text representation. Can be `null` if there is no bytes representation for the token.",
+                                        "type": "array",
+                                        "items": {
+                                          "type": "integer"
+                                        },
+                                        "nullable": true
+                                      },
+                                      "top_logprobs": {
+                                        "description": "List of the most likely tokens and their log probability, at this token position. In rare cases, there may be fewer than the number of requested `top_logprobs` returned.",
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "token": {
+                                              "description": "The token.",
+                                              "type": "string"
+                                            },
+                                            "logprob": {
+                                              "description": "The log probability of this token, if it is within the top 20 most likely tokens. Otherwise, the value `-9999.0` is used to signify that the token is very unlikely.",
+                                              "type": "number"
+                                            },
+                                            "bytes": {
+                                              "description": "A list of integers representing the UTF-8 bytes representation of the token. Useful in instances where characters are represented by multiple tokens and their byte representations must be combined to generate the correct text representation. Can be `null` if there is no bytes representation for the token.",
+                                              "type": "array",
+                                              "items": {
+                                                "type": "integer"
+                                              },
+                                              "nullable": true
+                                            }
+                                          },
+                                          "required": [
+                                            "token",
+                                            "logprob",
+                                            "bytes"
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "token",
+                                      "logprob",
+                                      "bytes",
+                                      "top_logprobs"
+                                    ],
+                                    "title": "ChatCompletionTokenLogprob"
+                                  },
+                                  "nullable": true
+                                },
+                                "reasoning_content": {
+                                  "description": "A list of message content tokens with log probability information.",
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "token": {
+                                        "description": "The token.",
+                                        "type": "string"
+                                      },
+                                      "logprob": {
+                                        "description": "The log probability of this token, if it is within the top 20 most likely tokens. Otherwise, the value `-9999.0` is used to signify that the token is very unlikely.",
+                                        "type": "number"
+                                      },
+                                      "bytes": {
+                                        "description": "A list of integers representing the UTF-8 bytes representation of the token. Useful in instances where characters are represented by multiple tokens and their byte representations must be combined to generate the correct text representation. Can be `null` if there is no bytes representation for the token.",
+                                        "type": "array",
+                                        "items": {
+                                          "type": "integer"
+                                        },
+                                        "nullable": true
+                                      },
+                                      "top_logprobs": {
+                                        "description": "List of the most likely tokens and their log probability, at this token position. In rare cases, there may be fewer than the number of requested `top_logprobs` returned.",
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "token": {
+                                              "description": "The token.",
+                                              "type": "string"
+                                            },
+                                            "logprob": {
+                                              "description": "The log probability of this token, if it is within the top 20 most likely tokens. Otherwise, the value `-9999.0` is used to signify that the token is very unlikely.",
+                                              "type": "number"
+                                            },
+                                            "bytes": {
+                                              "description": "A list of integers representing the UTF-8 bytes representation of the token. Useful in instances where characters are represented by multiple tokens and their byte representations must be combined to generate the correct text representation. Can be `null` if there is no bytes representation for the token.",
+                                              "type": "array",
+                                              "items": {
+                                                "type": "integer"
+                                              },
+                                              "nullable": true
+                                            }
+                                          },
+                                          "required": [
+                                            "token",
+                                            "logprob",
+                                            "bytes"
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "required": [
+                                      "token",
+                                      "logprob",
+                                      "bytes",
+                                      "top_logprobs"
+                                    ],
+                                    "title": "ChatCompletionTokenLogprob"
+                                  },
+                                  "nullable": true
+                                }
+                              },
+                              "required": [
+                                "content"
+                              ]
+                            },
+                            "finish_reason": {
+                              "type": "string",
+                              "description": "The reason the model stopped generating tokens. This will be `stop` if the model hit a natural stop point or a provided stop sequence,\n`length` if the maximum number of tokens specified in the request was reached,\n`content_filter` if content was omitted due to a flag from our content filters,\n`tool_calls` if the model called a tool,\n`insufficient_system_resource` if the request is interrupted due to insufficient resource of the inference system,\nor `aborted` if the generation was interrupted.\n",
+                              "enum": [
+                                "stop",
+                                "length",
+                                "content_filter",
+                                "tool_calls",
+                                "insufficient_system_resource",
+                                "aborted"
+                              ],
+                              "nullable": true
+                            },
+                            "index": {
+                              "type": "integer",
+                              "description": "The index of the choice in the list of choices."
+                            }
+                          }
+                        }
+                      },
+                      "created": {
+                        "type": "integer",
+                        "description": "The Unix timestamp (in seconds) of when the chat completion was created. Each chunk has the same timestamp."
+                      },
+                      "model": {
+                        "type": "string",
+                        "description": "The model to generate the completion."
+                      },
+                      "system_fingerprint": {
+                        "type": "string",
+                        "description": "This fingerprint represents the backend configuration that the model runs with."
+                      },
+                      "object": {
+                        "type": "string",
+                        "description": "The object type, which is always `chat.completion.chunk`.",
+                        "enum": [
+                          "chat.completion.chunk"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "choices",
+                      "created",
+                      "id",
+                      "model",
+                      "system_fingerprint",
+                      "object"
+                    ],
+                    "title": "CreateChatCompletionStreamResponse"
+                  }
+                },
+                "example": "data: {\"id\": \"1f633d8bfc032625086f14113c411638\", \"choices\": [{\"index\": 0, \"delta\": {\"content\": \"\", \"role\": \"assistant\"}, \"finish_reason\": null, \"logprobs\": null}], \"created\": 1718345013, \"model\": \"deepseek-flash\", \"system_fingerprint\": \"fp_a49d71b8a1\", \"object\": \"chat.completion.chunk\"}\n\ndata: {\"choices\": [{\"delta\": {\"content\": \"Hello\", \"role\": \"assistant\"}, \"finish_reason\": null, \"index\": 0, \"logprobs\": null}], \"created\": 1718345013, \"id\": \"1f633d8bfc032625086f14113c411638\", \"model\": \"deepseek-flash\", \"object\": \"chat.completion.chunk\", \"system_fingerprint\": \"fp_a49d71b8a1\"}\n\ndata: {\"choices\": [{\"delta\": {\"content\": \"!\", \"role\": \"assistant\"}, \"finish_reason\": null, \"index\": 0, \"logprobs\": null}], \"created\": 1718345013, \"id\": \"1f633d8bfc032625086f14113c411638\", \"model\": \"deepseek-flash\", \"object\": \"chat.completion.chunk\", \"system_fingerprint\": \"fp_a49d71b8a1\"}\n\ndata: {\"choices\": [{\"delta\": {\"content\": \" How\", \"role\": \"assistant\"}, \"finish_reason\": null, \"index\": 0, \"logprobs\": null}], \"created\": 1718345013, \"id\": \"1f633d8bfc032625086f14113c411638\", \"model\": \"deepseek-flash\", \"object\": \"chat.completion.chunk\", \"system_fingerprint\": \"fp_a49d71b8a1\"}\n\ndata: {\"choices\": [{\"delta\": {\"content\": \" can\", \"role\": \"assistant\"}, \"finish_reason\": null, \"index\": 0, \"logprobs\": null}], \"created\": 1718345013, \"id\": \"1f633d8bfc032625086f14113c411638\", \"model\": \"deepseek-flash\", \"object\": \"chat.completion.chunk\", \"system_fingerprint\": \"fp_a49d71b8a1\"}\n\ndata: {\"choices\": [{\"delta\": {\"content\": \" I\", \"role\": \"assistant\"}, \"finish_reason\": null, \"index\": 0, \"logprobs\": null}], \"created\": 1718345013, \"id\": \"1f633d8bfc032625086f14113c411638\", \"model\": \"deepseek-flash\", \"object\": \"chat.completion.chunk\", \"system_fingerprint\": \"fp_a49d71b8a1\"}\n\ndata: {\"choices\": [{\"delta\": {\"content\": \" assist\", \"role\": \"assistant\"}, \"finish_reason\": null, \"index\": 0, \"logprobs\": null}], \"created\": 1718345013, \"id\": \"1f633d8bfc032625086f14113c411638\", \"model\": \"deepseek-flash\", \"object\": \"chat.completion.chunk\", \"system_fingerprint\": \"fp_a49d71b8a1\"}\n\ndata: {\"choices\": [{\"delta\": {\"content\": \" you\", \"role\": \"assistant\"}, \"finish_reason\": null, \"index\": 0, \"logprobs\": null}], \"created\": 1718345013, \"id\": \"1f633d8bfc032625086f14113c411638\", \"model\": \"deepseek-flash\", \"object\": \"chat.completion.chunk\", \"system_fingerprint\": \"fp_a49d71b8a1\"}\n\ndata: {\"choices\": [{\"delta\": {\"content\": \" today\", \"role\": \"assistant\"}, \"finish_reason\": null, \"index\": 0, \"logprobs\": null}], \"created\": 1718345013, \"id\": \"1f633d8bfc032625086f14113c411638\", \"model\": \"deepseek-flash\", \"object\": \"chat.completion.chunk\", \"system_fingerprint\": \"fp_a49d71b8a1\"}\n\ndata: {\"choices\": [{\"delta\": {\"content\": \"?\", \"role\": \"assistant\"}, \"finish_reason\": null, \"index\": 0, \"logprobs\": null}], \"created\": 1718345013, \"id\": \"1f633d8bfc032625086f14113c411638\", \"model\": \"deepseek-flash\", \"object\": \"chat.completion.chunk\", \"system_fingerprint\": \"fp_a49d71b8a1\"}\n\ndata: {\"choices\": [{\"delta\": {\"content\": \"\", \"role\": null}, \"finish_reason\": \"stop\", \"index\": 0, \"logprobs\": null}], \"created\": 1718345013, \"id\": \"1f633d8bfc032625086f14113c411638\", \"model\": \"deepseek-flash\", \"object\": \"chat.completion.chunk\", \"system_fingerprint\": \"fp_a49d71b8a1\", \"usage\": {\"completion_tokens\": 9, \"prompt_tokens\": 17, \"total_tokens\": 26, \"prompt_tokens_details\": {\"cached_tokens\": 0}, \"prompt_cache_hit_tokens\": 0, \"prompt_cache_miss_tokens\": 17}}\n\ndata: [DONE]\n"
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "Python",
+            "label": "OpenAI SDK",
+            "source": "from openai import OpenAI\n\n# for backward compatibility, you can still use `https://api.deepseek.com/v1` as `base_url`.\nclient = OpenAI(api_key=\"<your API key>\", base_url=\"https://api.deepseek.com\")\n\nresponse = client.chat.completions.create(\n    model=\"deepseek-flash\",\n    messages=[\n        {\"role\": \"system\", \"content\": \"You are a helpful assistant\"},\n        {\"role\": \"user\", \"content\": \"Hello\"},\n  ],\n    max_tokens=1024,\n    temperature=0.7,\n    stream=False\n)\n\nprint(response.choices[0].message.content)\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "OpenAI SDK",
+            "source": "import OpenAI from \"openai\";\n\n# for backward compatibility, you can still use `https://api.deepseek.com/v1` as `baseURL`.\nconst openai = new OpenAI({\n        baseURL: 'https://api.deepseek.com',\n        apiKey: '<your API key>'\n});\n\nasync function main() {\n  const completion = await openai.chat.completions.create({\n    messages: [{ role: \"system\", content: \"You are a helpful assistant.\" }],\n    model: \"deepseek-flash\",\n  });\n\n  console.log(completion.choices[0].message.content);\n}\n\nmain();\n"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "externalDocs": {
+          "url": "https://api-docs.deepseek.com/api/create-chat-completion/"
+        },
+        "servers": [
+          {
+            "url": "https://api.deepseek.com"
+          }
+        ]
+      }
+    },
+    "/v1/tools/fetch": {
+      "post": {
+        "operationId": "fetch",
+        "tags": [
+          "Search"
+        ],
+        "description": "Fetch a web page and return its title and content as Markdown. See the [Search & Fetch guide](/guides/search) for error handling and billing.\n",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "description": "The URL to fetch. Must be at most 8192 characters and an HTTP or HTTPS URL with a host. The URL must not contain a username or password.\n",
+                    "minLength": 1,
+                    "maxLength": 8192
+                  }
+                },
+                "required": [
+                  "url"
+                ],
+                "title": "FetchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK, returns the fetched page content.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "description": "The title of the page. Empty when the title is unavailable."
+                    },
+                    "content": {
+                      "type": "string",
+                      "description": "The fetched page content as Markdown text."
+                    }
+                  },
+                  "required": [
+                    "title",
+                    "content"
+                  ],
+                  "title": "FetchResponse"
+                },
+                "example": "{\n  \"title\": \"Example article\",\n  \"content\": \"# Example article\\n\\nArticle content.\"\n}\n"
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "label": "cURL",
+            "source": "curl https://api.deepseek.com/v1/tools/fetch \\\n  -H \"Authorization: Bearer <your API key>\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"url\": \"https://example.com/article\"\n  }'\n"
+          },
+          {
+            "lang": "Python",
+            "label": "requests",
+            "source": "import requests\n\nresponse = requests.post(\n    \"https://api.deepseek.com/v1/tools/fetch\",\n    headers={\n        \"Authorization\": \"Bearer <your API key>\",\n    },\n    json={\"url\": \"https://example.com/article\"},\n)\nresponse.raise_for_status()\n\npage = response.json()\nprint(page[\"title\"])\nprint(page[\"content\"])\n"
+          }
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "externalDocs": {
+          "url": "https://api-docs.deepseek.com/api/fetch/"
+        },
+        "servers": [
+          {
+            "url": "https://api.deepseek.com"
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

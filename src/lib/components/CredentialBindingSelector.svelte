@@ -89,6 +89,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <fieldset class="credential-selection" disabled={disabled || busy}>
   <legend>Credentials</legend>
+  {#if operation.oauthScopes}<p class="hint">Use an existing OAuth access token. The API checks its scopes and validity.</p>{/if}
   <FieldSelect id={`${fieldId}-alternative`} label="Authentication alternative" value={alternative} options={options}
     disabled={disabled || busy} {portalZIndex}
     onValueChange={value => { alternative = value; choices = {}; changed(); }} />

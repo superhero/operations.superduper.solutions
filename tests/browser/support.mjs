@@ -11,7 +11,8 @@ import { createExampleEndpoint } from './example-endpoint.fixture.mjs';
 import { pail } from '@visulima/pail';
 import { createVaultEndpoint } from './vault-endpoint.fixture.mjs';
 import { toolbarButtonNames } from '../../src/lib/toolbar-settings.ts';
-import { appSettingsDatabaseName } from '../../src/lib/storage-names.ts';
+import serviceSchemas from "../../src/catalogs/services/index.json" with { type: "json" };
+import { catalogsIndexDatabaseName, appSettingsDatabaseName } from '../../src/lib/storage-names.ts';
 import { browserAbortCapture, finishBrowserContext } from '../gherkin/browser-abort-guard.mjs';
 
 setDefaultTimeout(30_000);
@@ -121,13 +122,16 @@ Before(async function ({ pickle }) {
   // Interaction scenarios explicitly save visible controls; untagged scenarios
   // exercise the application's real fresh-profile defaults.
   const toolbarControls = pickle.tags.some(tag => tag.name === '@toolbar-controls');
+  const indexedDB = [];
+  if (toolbarControls) indexedDB.push({ name: appSettingsDatabaseName, version: 1, stores: [{ name: 'settings', autoIncrement: false,
+    indexes: [], records: [{ key: 'toolbarButtons', value: Object.fromEntries(toolbarButtonNames.map(key => [key, true])) }] }] });
+  // Most scenarios explicitly isolate the two example catalogs. Dedicated service
+  // scenarios exercise the complete production defaults, including their migration.
+  if (!pickle.tags.some(tag => tag.name === '@service-defaults')) indexedDB.push({ name: catalogsIndexDatabaseName, version: 1,
+    stores: ['catalog', 'pending', 'removed', 'state'].map(name => ({ name, autoIncrement: false, indexes: [],
+      records: name === 'state' ? [{ key: 'serviceDefaults', value: serviceSchemas.map(schema => schema.id) }] : [] })) });
   this.context = await browser.newContext({
-    ...(toolbarControls ? { storageState: {
-      cookies: [], origins: [{ origin: baseURL, localStorage: [], indexedDB: [{
-        name: appSettingsDatabaseName, version: 1, stores: [{ name: 'settings', autoIncrement: false,
-          indexes: [], records: [{ key: 'toolbarButtons', value: Object.fromEntries(toolbarButtonNames.map(key => [key, true])) }] }]
-      }] }]
-    } } : {}),
+    ...(indexedDB.length ? { storageState: { cookies: [], origins: [{ origin: baseURL, localStorage: [], indexedDB }] } } : {}),
     viewport: { width: 1280, height: 900 },
     locale: 'en-US', timezoneId: 'UTC', colorScheme: 'light',
     reducedMotion: 'reduce', deviceScaleFactor: 1,

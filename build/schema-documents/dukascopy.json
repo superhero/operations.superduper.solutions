@@ -1,0 +1,327 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Dukascopy Trading Tools",
+    "version": "2.0",
+    "description": "Trading Tools query API. Choose a procedure with the path parameter. Historical prices additionally require instrument. See the original procedure definitions in x-dukascopy-procedures."
+  },
+  "servers": [
+    {
+      "url": "https://freeserv.dukascopy.com"
+    }
+  ],
+  "paths": {
+    "/2.0/": {
+      "get": {
+        "operationId": "queryTradingTools",
+        "summary": "Query instruments, quotes or historical candles",
+        "tags": [
+          "Trading data"
+        ],
+        "externalDocs": {
+          "url": "https://www.dukascopy.com/trading-tools/api/documentation"
+        },
+        "parameters": [
+          {
+            "name": "path",
+            "in": "query",
+            "required": true,
+            "description": "api/instrumentList: Get the list of instruments and their details.\napi/lastOneMinuteCandles: Get the latest 1-minute candles for all instruments.\napi/currentPrices: Get current quotes for an instrument.\napi/historicalPrices: Get historical candles for an instrument.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "api/instrumentList",
+                "api/lastOneMinuteCandles",
+                "api/currentPrices",
+                "api/historicalPrices"
+              ]
+            }
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": true,
+            "description": "Apply to get key.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instruments",
+            "in": "query",
+            "required": false,
+            "description": "Instrument ids separated by comma.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "required": false,
+            "description": "List of fields separated by comma (id, name, pipValue, nameLong)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instrument",
+            "in": "query",
+            "required": false,
+            "description": "Instrument id.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "timeFrame",
+            "in": "query",
+            "required": false,
+            "description": "One of '1day_eet', '1day', '1hour', '10m', '1min', '10sec', 'tick'",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "count",
+            "in": "query",
+            "required": false,
+            "description": "max=5000",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "start",
+            "in": "query",
+            "required": false,
+            "description": "Unix timestamp with milliseconds",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "end",
+            "in": "query",
+            "required": false,
+            "description": "Unix timestamp with milliseconds",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "dayStartTime",
+            "in": "query",
+            "required": false,
+            "description": "UTC or EET day start time",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offerSide",
+            "in": "query",
+            "required": false,
+            "description": "B - for bid, and A - for ask",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Instrument list, quotes or candle data for the selected procedure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {}
+                }
+              }
+            }
+          }
+        },
+        "x-dukascopy-procedures": [
+          {
+            "path": "api/instrumentList",
+            "description": "Get the list of instruments and their details.",
+            "parameters": [
+              {
+                "id": 12,
+                "method": 4,
+                "name": "key",
+                "description": "Apply to get key.",
+                "required": 1,
+                "default": "",
+                "type": 2,
+                "deprecated": 0,
+                "active": 1
+              },
+              {
+                "id": 13,
+                "method": 4,
+                "name": "instruments",
+                "description": "Instrument ids separated by comma. Do not specify to get a full list of instruments.",
+                "required": 0,
+                "default": "",
+                "type": 2,
+                "deprecated": 0,
+                "active": 1
+              },
+              {
+                "id": 14,
+                "method": 4,
+                "name": "fields",
+                "description": "List of fields separated by comma (id, name, pipValue, nameLong)",
+                "required": 0,
+                "default": "id,name,pipValue,nameLong",
+                "type": 2,
+                "deprecated": 0,
+                "active": 1
+              }
+            ]
+          },
+          {
+            "path": "api/lastOneMinuteCandles",
+            "description": "Get the latest 1-minute candles for all instruments.",
+            "parameters": [
+              {
+                "id": 1,
+                "method": 1,
+                "name": "key",
+                "description": "Apply to get key.",
+                "required": 1,
+                "default": "",
+                "type": 2,
+                "deprecated": 0,
+                "active": 1
+              }
+            ]
+          },
+          {
+            "path": "api/currentPrices",
+            "description": "Get current quotes for an instrument.",
+            "parameters": [
+              {
+                "id": 2,
+                "method": 2,
+                "name": "key",
+                "description": "Apply to get key.",
+                "required": 1,
+                "default": "",
+                "type": 2,
+                "deprecated": 0,
+                "active": 1
+              },
+              {
+                "id": 3,
+                "method": 2,
+                "name": "instruments",
+                "description": "Instrument ids separated by comma.",
+                "required": 0,
+                "default": "",
+                "type": 2,
+                "deprecated": 0,
+                "active": 1
+              }
+            ]
+          },
+          {
+            "path": "api/historicalPrices",
+            "description": "Get historical candles for an instrument.",
+            "parameters": [
+              {
+                "id": 4,
+                "method": 3,
+                "name": "key",
+                "description": "Apply to get key.",
+                "required": 1,
+                "default": "",
+                "type": 2,
+                "deprecated": 0,
+                "active": 1
+              },
+              {
+                "id": 5,
+                "method": 3,
+                "name": "instrument",
+                "description": "Instrument id.",
+                "required": 1,
+                "default": "",
+                "type": 3,
+                "deprecated": 0,
+                "active": 1
+              },
+              {
+                "id": 6,
+                "method": 3,
+                "name": "timeFrame",
+                "description": "One of '1day_eet', '1day', '1hour', '10m', '1min', '10sec', 'tick'",
+                "required": 0,
+                "default": "10m",
+                "type": 2,
+                "deprecated": 0,
+                "active": 1
+              },
+              {
+                "id": 7,
+                "method": 3,
+                "name": "count",
+                "description": "max=5000",
+                "required": 0,
+                "default": "500",
+                "type": 3,
+                "deprecated": 0,
+                "active": 1
+              },
+              {
+                "id": 8,
+                "method": 3,
+                "name": "start",
+                "description": "Unix timestamp with milliseconds",
+                "required": 0,
+                "default": "",
+                "type": 3,
+                "deprecated": 0,
+                "active": 1
+              },
+              {
+                "id": 9,
+                "method": 3,
+                "name": "end",
+                "description": "Unix timestamp with milliseconds",
+                "required": 0,
+                "default": "Current time",
+                "type": 3,
+                "deprecated": 0,
+                "active": 1
+              },
+              {
+                "id": 10,
+                "method": 3,
+                "name": "dayStartTime",
+                "description": "UTC or EET day start time",
+                "required": 0,
+                "default": "UTC",
+                "type": 2,
+                "deprecated": 0,
+                "active": 1
+              },
+              {
+                "id": 11,
+                "method": 3,
+                "name": "offerSide",
+                "description": "B - for bid, and A - for ask",
+                "required": 0,
+                "default": "B",
+                "type": 8,
+                "deprecated": 0,
+                "active": 1
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

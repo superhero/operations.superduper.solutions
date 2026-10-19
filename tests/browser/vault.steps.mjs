@@ -750,3 +750,7 @@ Then('a legacy vault publishes only key names after unlocking without changing i
   assert.equal(result.valueError, 'LOCKED'); assert.equal(result.conflict, 'CONFLICT');
   assert.equal(result.sameSnapshot, true); assert.equal(result.sameCounters, true); noCanaries(result);
 });
+
+Then('factory schema policy accepts only the matching packaged digest', async function () {
+  assert.equal(await policy(this.page, 'factoryPolicy'), 'PERMISSION');
+});
