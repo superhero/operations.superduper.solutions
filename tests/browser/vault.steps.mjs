@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
+import { exampleCatalogState } from './catalog-state.fixture.mjs';
 import { chooseCatalogOperation, setMode } from './workspace.steps.mjs';
 
 const fixture = '/vault-storage-fixture.js';
@@ -484,7 +485,7 @@ Then('a downloaded vault backup restores with recovery in a fresh application co
   const chunks = []; for await (const chunk of stream) chunks.push(chunk);
   const buffer = Buffer.concat(chunks); noCanaries(buffer.toString('utf8'));
   await expect(settings(this.page).getByRole('button', { name: 'Unlock vault', exact: true })).toBeVisible();
-  const context = await this.browser.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
+  const context = await this.browser.newContext({ storageState: exampleCatalogState(this.baseURL), viewport: { width: 1280, height: 900 }, serviceWorkers: 'block' });
   const page = await context.newPage();
   try {
     await page.goto(this.baseURL); await page.locator('#startup-status').waitFor({ state: 'detached' });

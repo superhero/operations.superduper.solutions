@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { exampleCatalogState } from "../catalog-state.fixture.mjs";
 import assert from 'node:assert/strict';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -57,7 +58,7 @@ const server = await createFixtureServer({ configFile: resolve('vite.config.mjs'
 let browser;
 
 async function openContext(base, name) {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 1000 }, reducedMotion: 'reduce',
+  const context = await browser.newContext({ storageState: exampleCatalogState(base), viewport: { width: 1280, height: 1000 }, reducedMotion: 'reduce',
     locale: 'en-US', timezoneId: 'UTC', acceptDownloads: true });
   await context.route('**/*', route => route.request().url().startsWith(`${base}/`) || /^(data|blob):/.test(route.request().url())
     ? route.continue() : route.abort());
@@ -70,6 +71,14 @@ async function openContext(base, name) {
   page.setDefaultTimeout(20000);
   page.on('pageerror', error => errors.push({ scenario: name, message: error.message }));
   return { context, page };
+}
+
+async function expandCatalog(page, id) {
+  const root = page.locator(`[data-catalog-group="${id}"]`);
+  const header = root.locator(':scope > .catalog-group > summary');
+  if (await header.getAttribute('aria-expanded') !== 'true') await header.click();
+  for (const child of await root.locator('.catalog-children > .catalog-branch > .catalog-group > summary').all())
+    if (await child.getAttribute('aria-expanded') !== 'true') await child.click();
 }
 
 async function navigate(page, mode) {
@@ -188,12 +197,7 @@ yield "schema management loads its seeded documents in a dedicated worker";
 
     await navigate(page, 'Workflows');
     await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    const operationEntry = page.locator(`[data-operation-id="${operationId}"]`);
-    const catalogBranches = await operationEntry.locator('xpath=ancestor::details').all();
-    for (const branch of catalogBranches) {
-      const summary = branch.locator(':scope > summary');
-      if (await summary.getAttribute('aria-expanded') !== 'true') await summary.click();
-    }
+    await expandCatalog(page, first.id);
     await page.getByRole('button', { name: `Add to workflow: List ${title} inventory`, exact: true }).click();
     const operationNode = page.locator('.svelte-flow__node-operation').filter({ has: page.locator(`[data-operation-name=${JSON.stringify(`List ${title} inventory`)}]`) });
     await expect(operationNode).toBeVisible();
@@ -457,17 +461,14 @@ yield "editable schema names save on blur or Enter without redundant commits";
 
     await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
     const selectedCatalogOperation = page.locator(`[data-operation-id="${yamlRecord.id}:checkHealth"]`);
-    for (const branch of await selectedCatalogOperation.locator('xpath=ancestor::details').all()) {
-      const summary = branch.locator(':scope > summary');
-      if (await summary.getAttribute('aria-expanded') !== 'true') await summary.click();
-    }
+    await expandCatalog(page, yamlRecord.id);
     await selectedCatalogOperation.getByRole('button', { name: 'Add to workflow: Check YAML schema health', exact: true }).click();
     const yamlNode = page.locator('.svelte-flow__node-operation').filter({ has: page.locator('[data-operation-name="Check YAML schema health"]') });
     await expect(yamlNode).toBeVisible();
     const yamlNodeId = await yamlNode.getAttribute('data-id');
     await enterSchemas(page);
     const expandedCatalogGroups = await page.locator('.catalog-branch').evaluateAll(branches => branches
-      .filter(branch => branch.querySelector(':scope > details > summary')?.getAttribute('aria-expanded') === 'true')
+      .filter(branch => branch.querySelector(':scope > .catalog-group > summary')?.getAttribute('aria-expanded') === 'true')
       .map(branch => branch.dataset.catalogGroup));
     const catalogGroupIds = await page.evaluate(async () => Object.fromEntries((await import('/lib/catalog-registry.ts')).catalogs
       .map(catalog => [catalog.id, catalog.groups.map(group => group.id)])));
@@ -495,7 +496,7 @@ yield "editable schema names save on blur or Enter without redundant commits";
     await expect.poll(() => page.evaluate(() => window.schemaCatalogAnimations.some(transforms => new Set(transforms.filter(Boolean)).size > 1))).toBe(true);
     const catalogAnimations = await page.evaluate(() => window.schemaCatalogAnimations);
     assert.ok(expandedCatalogGroups.length > 0);
-    for (const id of expandedCatalogGroups) await expect(page.locator(`[data-catalog-group="${id}"] > details > summary`)).toHaveAttribute('aria-expanded', 'true');
+    for (const id of expandedCatalogGroups) await expect(page.locator(`[data-catalog-group="${id}"] > .catalog-group > summary`)).toHaveAttribute('aria-expanded', 'true');
     await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
     await expect(selectedCatalogOperation.getByRole('button', { name: 'Add to workflow: Check YAML schema health', exact: true })).toBeVisible();
     await expect(yamlNode).toHaveAttribute('data-id', yamlNodeId);

@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { exampleCatalogState } from "./catalog-state.fixture.mjs";
 import { After, AfterAll, Given, Then, When, Status } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
@@ -39,7 +40,7 @@ async function developmentURL() {
 async function startWithFault(world, fault) {
   const url = await developmentURL();
   const state = world.startup = { fault, requests: 0, pageErrors: [], consoleErrors: [], consoleChecks: [] };
-  state.context = await world.browser.newContext({ reducedMotion: 'reduce', serviceWorkers: 'block' });
+  state.context = await world.browser.newContext({ storageState: exampleCatalogState(url), reducedMotion: 'reduce', serviceWorkers: 'block' });
   await state.context.tracing.start({ screenshots: true, snapshots: true, sources: true });
   await state.context.route('**/*', async route => {
     const request = route.request();
@@ -135,7 +136,7 @@ AfterAll(async function () { await server?.close(); });
 Given('a cold development file parser with {int} failed worker starts', { timeout: 90_000 }, async function (failures) {
   const url = await developmentURL();
   const state = this.startup = { requests: 0, pageErrors: [], consoleErrors: [], failures };
-  state.context = await this.browser.newContext({ serviceWorkers: 'block' });
+  state.context = await this.browser.newContext({ storageState: exampleCatalogState(url), serviceWorkers: 'block' });
   await state.context.tracing.start({ screenshots: true, snapshots: true, sources: true });
   await state.context.route(`${url}/**`, route => {
     const pathname = new URL(route.request().url()).pathname;

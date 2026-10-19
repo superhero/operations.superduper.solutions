@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { exampleCatalogState } from "../catalog-state.fixture.mjs";
 import assert from 'node:assert/strict';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -102,7 +103,7 @@ try {
   assert.ok(address && typeof address === 'object');
   const baseURL = `http://127.0.0.1:${address.port}`;
   browser = ownedBrowser(world);
-  const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce', colorScheme: 'dark' });
+  const context = await browser.newContext({ storageState: exampleCatalogState(baseURL), viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce', colorScheme: 'dark' });
   // The overlay has its own saved mode; exercise it even with a light app theme.
   await context.addInitScript(() => localStorage.setItem('__v-o__theme', 'dark'));
   const confineRequest = async route => {
@@ -366,7 +367,7 @@ yield "a failed development reporting transport makes one attempt without recurs
 yield "native Pail errors retain stack locations and later reports recover after transport failure";
   // Pause app code to inspect the critical loader, then release the pending
   // settings writer and inject a test error after the saved theme and app load.
-  const blockedContext = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const blockedContext = await browser.newContext({ storageState: exampleCatalogState(baseURL), viewport: { width: 1280, height: 900 } });
   await blockedContext.route('**/*', confineRequest);
   let releaseAppModule;
   const appModuleGate = new Promise(resolve => { releaseAppModule = resolve; });

@@ -152,12 +152,11 @@ Then('keyboard credential selection sends only the selected saved value without 
   await openCatalog(page);
   const catalog = page.getByRole('navigation', { name: 'Operation catalog', exact: true });
   const entry = catalog.locator('[data-operation-name]').filter({ hasText: operationName });
-  const ancestors = catalog.locator('[data-catalog-group]').filter({
-    has: page.locator('[data-operation-name]').filter({ hasText: operationName }) });
-  for (const group of await ancestors.all()) {
-    const heading = group.locator(':scope > .catalog-group > summary');
-    if (await heading.getAttribute('aria-expanded') !== 'true') await activate(page, heading);
-  }
+  const heading = catalog.locator('[data-catalog-group] > .catalog-group > summary').filter({ hasText: new URL(this.baseURL).host }).first();
+  if (await heading.getAttribute('aria-expanded') !== 'true') await activate(page, heading);
+  const root = heading.locator('xpath=ancestor::*[@data-catalog-group][1]');
+  for (const child of await root.locator('.catalog-children > .catalog-branch > .catalog-group > summary').all())
+    if (await child.getAttribute('aria-expanded') !== 'true') await activate(page, child);
   await activate(page, entry.getByRole('button', { name: `Add to workflow: ${operationName}`, exact: true }));
   await page.keyboard.press('Escape');
   await activate(page, page.getByRole('button', { name: 'Run workflow', exact: true }));

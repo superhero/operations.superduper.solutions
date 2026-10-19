@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { exampleCatalogState } from "../catalog-state.fixture.mjs";
 // Isolated browser/IndexedDB; test clocks advance only inside this test context.
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -50,7 +51,7 @@ try {
     });
   });
   if (variant === 'lifecycle') {
-  const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
+  const context = await browser.newContext({ storageState: exampleCatalogState(base), viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
   await context.route('**/*', route => route.request().url().startsWith(`${base}/`) || /^(data|blob):/.test(route.request().url()) ? route.continue() : route.abort());
   await context.addInitScript(installMemoryProbe);
   page = await context.newPage(); page.setDefaultTimeout(15000);
@@ -290,7 +291,7 @@ yield "page lifecycle events maintain accurate worker accounting";
   }
   results.cacheFallbacks = [];
   for (const mode of variant === 'lifecycle' ? [] : [variant]) {
-    const fallbackContext = await browser.newContext();
+    const fallbackContext = await browser.newContext({ storageState: exampleCatalogState(base) });
     try {
       await fallbackContext.route('**/*', route => route.request().url().startsWith(`${base}/`) || /^(data|blob):/.test(route.request().url())
         ? route.continue() : route.abort());

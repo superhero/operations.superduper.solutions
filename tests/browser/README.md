@@ -27,7 +27,9 @@ re-entering values, not persisted run state.
 ## Default catalog fixtures
 
 Most scenarios isolate the two example catalogs through the real IndexedDB
-installation record, avoiding unrelated provider setup. The `@service-defaults`
+installation record, avoiding unrelated provider setup. Use
+`catalog-state.fixture.mjs` for additional application contexts and development
+origins; it also prepares localhost aliases used by passkey scenarios. The `@service-defaults`
 scenarios exercise all shipped providers, fresh and existing profiles, persistent
 local choices and normal workflow execution. This fixture changes stored setup,
 not the shipped application or its validation.

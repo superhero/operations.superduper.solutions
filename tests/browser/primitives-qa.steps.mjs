@@ -66,6 +66,8 @@ Then('expanding a nested catalog item does not clip its parent', async function 
     const finalChildOverflow = await childPanel.evaluate(element =>
       element.querySelector('.catalog-operations').getBoundingClientRect().bottom - element.getBoundingClientRect().bottom);
     assert.ok(finalChildOverflow <= 1, `The expanded child clipped its operation list by ${finalChildOverflow}px.`);
+    await restoreChild();
+    restoreChild = undefined;
     await group.locator(':scope > summary').press('Enter');
     await expect.poll(() => panel.evaluate(element => element.getAnimations().length)).toBeGreaterThan(0);
     const closingFrame = await seekHeightAnimation(panel, 0.5);

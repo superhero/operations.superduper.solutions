@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { exampleCatalogState } from "../catalog-state.fixture.mjs";
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -67,7 +68,7 @@ try {
   const base = `http://127.0.0.1:${server.httpServer.address().port}`;
   browser = ownedBrowser(world);
   for (const scenario of [variant]) {
-    const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
+    const context = await browser.newContext({ storageState: exampleCatalogState(base), viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
     await context.route('**/*', route => route.request().url().startsWith(`${base}/`) || /^(data|blob):/.test(route.request().url())
       ? route.continue() : route.abort());
     await context.route(`${base}/__appearance-holder`, route => route.fulfill({

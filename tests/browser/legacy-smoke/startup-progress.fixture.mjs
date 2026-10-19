@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { exampleCatalogState } from "../catalog-state.fixture.mjs";
 // Uses temporary browser contexts and its own local Vite server.
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -77,7 +78,7 @@ try {
   const baseURL = `http://127.0.0.1:${server.httpServer.address().port}`;
   browser = ownedBrowser(world);
   async function openCase(name, fault) {
-    const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+    const context = await browser.newContext({ storageState: exampleCatalogState(baseURL), viewport: { width: 1280, height: 900 } });
     await context.route('**/*', async route => {
       const url = route.request().url();
       if (fault?.startsWith('workflow-') && new URL(url).pathname.endsWith('/workflow-repository.worker.ts')) {
