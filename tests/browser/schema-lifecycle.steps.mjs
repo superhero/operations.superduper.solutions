@@ -71,11 +71,12 @@ Then('schema metadata and discovery avoid disabled and unrelated document reads'
     await api.readSchemaOperation('factory-a:list', api.schemaMetadataIdentity(current));
     const secondHistory = await api.getSchemaHistory(a.id);
     const after = (await api.listSchemaMetadata()).find(record => record.id === a.id);
-    return { metadataOnly, beforeModel, afterModel: api.counters(), disabled, firstHistory, secondHistory,
+    return { metadataOnly, description: current.summary.description, beforeModel, afterModel: api.counters(), disabled, firstHistory, secondHistory,
       stillFactory: !!after.factoryDigest, sourceIdentity: model.sourceIdentity, expectedIdentity: api.schemaMetadataIdentity(current),
       fields: model.operation.fields.map(field => ({ name: field.name, type: field.type })) };
   });
   assert.deepEqual(evidence.metadataOnly.reads, {});
+  assert.equal(evidence.description, 'Description of factory-a v1.');
   assert.deepEqual(evidence.beforeModel.reads, {});
   assert.match(evidence.disabled, /schema changed/);
   assert.deepEqual(evidence.afterModel.reads, { 'factory-a': 1 });
@@ -158,6 +159,7 @@ Then('factory revisions retain independent Git ancestry and authored ownership',
   assert.deepEqual(result.authoredHistory, result.authored);
   assert.equal(result.authoredMetadata.factoryDigest, undefined);
   assert.equal(result.authoredMetadata.summary.name, 'My authored service');
+  assert.equal(result.authoredMetadata.summary.description, 'Description of factory-a v2.');
   assert.equal(result.deletedRemainsAbsent, true);
 });
 

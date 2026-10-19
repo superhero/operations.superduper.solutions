@@ -84,7 +84,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function details(record: SchemaLibraryRecord) {
     return {
       title: record.summary.name,
-      server: record.summary.serverUrl,
+      description: record.summary.description,
       operations: record.summary.operationCount
     };
   }
@@ -293,9 +293,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           </div>
 
           <Reveal open={expandedCards[record.id] ?? false} id={`schema-details-${record.id}`} overflowVisible>
-            <dl class="schema-metadata">
-              <div><dt>Server URL</dt><dd>{metadata.server}</dd></div>
-              <div><dt>Operations</dt><dd>
+            <div class="schema-metadata">
+              <div class="schema-description"><p>{metadata.description || "—"}</p></div>
+              <div><dl><dt>Operations</dt><dd>
                 {#if metadata.operations !== null && record.summary.unavailableCount}
                   <HintButton label={`${(metadata.operations - record.summary.unavailableCount).toLocaleString()} of ${metadata.operations.toLocaleString()} operations supported.`} labelAsName={false}>
                     {#snippet child({ props })}
@@ -304,8 +304,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                     {/snippet}
                   </HintButton>
                 {:else}{metadata.operations?.toLocaleString() ?? "—"}{/if}
-              </dd></div>
-            </dl>
+              </dd></dl></div>
+            </div>
 
             <Reveal open={!record.enabled} id={`schema-disabled-${record.id}`}><p class="schema-note">Operations from this document are unavailable until it is enabled.</p></Reveal>
 
@@ -381,6 +381,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-actions :global(.schema-drag-handle:active) { cursor: grabbing; }
   .schema-metadata { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: 12px; margin: 18px 0; }
   .schema-metadata > div { min-width: 0; padding: 8px 10px; border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-background); }
+  .schema-description { display: flex; align-items: center; }
+  .schema-description p { min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 400; line-height: 1.5; }
+  .schema-metadata dl { margin: 0; }
   .schema-metadata dt { margin-bottom: 5px; font-size: 11px; font-weight: 400; color: var(--color-muted-foreground); }
   .schema-metadata dd { min-width: 0; margin: 0; font-size: clamp(16px, 2vw, 21px); font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
   .schema-heading :global(.schema-enabled) { display: flex; align-items: center; justify-content: center; flex: 0 0 56px; height: 100%; padding: 4px 8px; border: 0; border-radius: 0 4px 4px 0; background: transparent; color: inherit; }

@@ -21,7 +21,7 @@ export const failRead = (id: string) => failures.add(id);
 
 export async function setup(version = 1, operationCount = 1, names: Record<string, string> = {}) {
   const documents = new Map(["factory-a", "factory-b"].map(id => [id, {
-    openapi: "3.1.0", info: { title: `${id} v${version}`, version: String(version) },
+    openapi: "3.1.0", info: { title: `${id} v${version}`, version: String(version), description: `Description of ${id} v${version}.` },
     servers: [{ url: "https://schema.example.test/v1" }],
     paths: Object.fromEntries(Array.from({ length: operationCount }, (_, index) => [index ? `/items-${index}` : "/items", { get: { operationId: index ? `list${index}` : "list", summary: `List items ${index}`, parameters: [{
       name: "limit", in: "query", schema: { type: "integer", minimum: 1 },

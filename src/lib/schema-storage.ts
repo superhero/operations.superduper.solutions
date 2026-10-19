@@ -17,7 +17,7 @@ import type { Operation, OperationModel } from "./catalog.ts";
 import { scopeOperationSchema } from "./operation-report.ts";
 import { createSchemaCache } from "./schema-cache.ts";
 import { schemaModelBatchSize } from "./schema-models.ts";
-import { createSchemaDiscovery, validateSchemaDiscovery, schemaIndexVersion, type SchemaDiscovery, type SchemaSummary } from "./schema-index.ts";
+import { createSchemaDiscovery, createSchemaSummary, validateSchemaDiscovery, schemaIndexVersion, type SchemaDiscovery, type SchemaSummary } from "./schema-index.ts";
 
 if (!("Buffer" in globalThis)) Object.defineProperty(globalThis, "Buffer", { value: Buffer, configurable: true, writable: true });
 
@@ -438,8 +438,7 @@ async function finishPending(database: Database, pending: PendingSchema): Promis
   } else {
     const inspected = validateLibraryDocument(raw, id);
     document = inspected.document;
-    metadata.summary = { name: inspected.name, serverUrl: inspected.serverUrl, operationCount: inspected.operations.length,
-      unavailableCount: inspected.operations.filter(operation => operation.unavailableReason).length };
+    metadata.summary = createSchemaSummary(inspected);
     policy = await credentialPolicy({ ...metadata, document }, pending.revision);
   }
   metadata.gitRevision = pending.revision;

@@ -335,6 +335,22 @@ and enablement.
 
 ```
 
+<!-- changelog-commit:a1306b20d35df06337993dcb9bc9b01c6e27ec57 -->
+### Commit [`a1306b2`](https://github.com/superhero/operations.superduper.solutions/commit/a1306b20d35df06337993dcb9bc9b01c6e27ec57)
+
+```text
+fix(schemas): show descriptions in schema cards
+
+Replace the server URL metric with unlabeled, normal-size description text.
+Truncate long descriptions with a single-line ellipsis at every viewport
+width while retaining the operations count and full-width schema viewer.
+
+Carry info.description through shared schema summaries and regenerate the
+bundled discovery indexes so cards can display descriptions without loading
+full source documents. Persist the same metadata for authored schemas.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54

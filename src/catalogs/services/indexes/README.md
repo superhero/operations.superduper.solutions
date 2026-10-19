@@ -1,8 +1,9 @@
 # Service discovery indexes
 
 These generated compressed indexes contain navigation and matching descriptors,
-summary counts and source identities. Full OpenAPI documents remain in the parent
-directory; request models are loaded from those documents when needed.
+schema descriptions, summary counts and source identities. Full OpenAPI documents
+remain in the parent directory; request models are loaded from those documents
+when needed.
 
 ## Generation
 

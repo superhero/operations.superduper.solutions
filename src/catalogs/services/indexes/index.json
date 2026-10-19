@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "6044cf8488b59a95b7d44c35d45c969a16dbf02b40013407da75984f68dfc516",
+  "adapterRevision": "bdd8c1fcf93ffefe45064242af225dd1578209b4db4fdec6cfc6b3eeab55021d",
   "indexes": [
     {
       "id": "anthropic",
@@ -17,12 +17,13 @@
     {
       "id": "aws-lambda",
       "sourceRevision": "da4be377c6195d8d2a9d6ef71d18ce4b93f21021ec7924e407753535f60ae2a1",
-      "bytes": 29119,
-      "compressedBytes": 3456,
-      "sha256": "c1d232a2e5b8020b80efee2a0eed8f47a11a64d5e3c79c241ee6e1649c124cc8",
+      "bytes": 32946,
+      "compressedBytes": 3501,
+      "sha256": "f56ae41dcf29b3ce4b79280d6c7931d3809287df4c6bd12907c9064190b862ce",
       "summary": {
         "name": "AWS Lambda",
         "serverUrl": "http://lambda.us-east-1.amazonaws.com",
+        "description": "<fullname>Lambda</fullname> <p> <b>Overview</b> </p> <p>Lambda is a compute service that lets you run code without provisioning or managing servers. Lambda runs your code on a high-availability compute infrastructure and performs all of the administration of the compute resources, including server and operating system maintenance, capacity provisioning and automatic scaling, code monitoring and logging. With Lambda, you can run code for virtually any type of application or backend service. For more information about the Lambda service, see <a href=\"https://docs.aws.amazon.com/lambda/latest/dg/welcome.html\">What is Lambda</a> in the <b>Lambda Developer Guide</b>.</p> <p>The <i>Lambda API Reference</i> provides information about each of the API methods, including details about the parameters in each API request and response. </p> <p/> <p>You can use Software Development Kits (SDKs), Integrated Development Environment (IDE) Toolkits, and command line tools to access the API. For installation instructions, see <a href=\"http://aws.amazon.com/tools/\">Tools for Amazon Web Services</a>. </p> <p>For a list of Region-specific endpoints that Lambda supports, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/lambda-service.html/\">Lambda endpoints and quotas </a> in the <i>Amazon Web Services General Reference.</i>. </p> <p>When making the API calls, you will need to authenticate your request by providing a signature. Lambda supports signature version 4. For more information, see <a href=\"https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html\">Signature Version 4 signing process</a> in the <i>Amazon Web Services General Reference.</i>. </p> <p> <b>CA certificates</b> </p> <p>Because Amazon Web Services SDKs use the CA certificates from your computer, changes to the certificates on the Amazon Web Services servers can cause connection failures when you attempt to use an SDK. You can prevent these failures by keeping your computer's CA certificates and operating system up-to-date. If you encounter this issue in a corporate environment and do not manage your own computer, you might need to ask an administrator to assist with the update process. The following list shows minimum operating system and Java versions:</p> <ul> <li> <p>Microsoft Windows versions that have updates from January 2005 or later installed contain at least one of the required CAs in their trust list. </p> </li> <li> <p>Mac OS X 10.4 with Java for Mac OS X 10.4 Release 5 (February 2007), Mac OS X 10.5 (October 2007), and later versions contain at least one of the required CAs in their trust list. </p> </li> <li> <p>Red Hat Enterprise Linux 5 (March 2007), 6, and 7 and CentOS 5, 6, and 7 all contain at least one of the required CAs in their default trusted CA list. </p> </li> <li> <p>Java 1.4.2_12 (May 2006), 5 Update 2 (March 2005), and all later versions, including Java 6 (December 2006), 7, and 8, contain at least one of the required CAs in their default trusted CA list. </p> </li> </ul> <p>When accessing the Lambda management console or Lambda API endpoints, whether through browsers or programmatically, you will need to ensure your client machines support any of the following CAs: </p> <ul> <li> <p>Amazon Root CA 1</p> </li> <li> <p>Starfield Services Root Certificate Authority - G2</p> </li> <li> <p>Starfield Class 2 Certification Authority</p> </li> </ul> <p>Root certificates from the first two authorities are available from <a href=\"https://www.amazontrust.com/repository/\">Amazon trust services</a>, but keeping your computer up-to-date is the more straightforward solution. To learn more about ACM-provided certificates, see <a href=\"http://aws.amazon.com/certificate-manager/faqs/#certificates\">Amazon Web Services Certificate Manager FAQs.</a> </p>",
         "operationCount": 66,
         "unavailableCount": 66
       }
@@ -30,12 +31,13 @@
     {
       "id": "aws-s3",
       "sourceRevision": "2c1283af457c374eea21b36eda33edbebd1d331b8954dff16c332d22881d212d",
-      "bytes": 30989,
-      "compressedBytes": 2373,
-      "sha256": "84756e8777d2ae0d96d90f5f6a54b1f194e93ccf6a089f36d8397ff440cdbb4d",
+      "bytes": 31010,
+      "compressedBytes": 2374,
+      "sha256": "7a75c92976861ca37d668f5cb5bd5482c9107d98b0cd4d2bb9915ec41380335d",
       "summary": {
         "name": "Amazon Simple Storage Service",
         "serverUrl": "http://s3.us-east-1.amazonaws.com",
+        "description": "<p/>",
         "operationCount": 97,
         "unavailableCount": 91
       }
@@ -43,12 +45,13 @@
     {
       "id": "bitbucket",
       "sourceRevision": "701ee30fe04d2ac4708fbba10061836d663466e0d72ed9f5df78b4a239d12b2d",
-      "bytes": 132883,
-      "compressedBytes": 8581,
-      "sha256": "fad40520894b899a0b703fad42aca201cef4e8c8fd1506deee30daded43ce299",
+      "bytes": 133108,
+      "compressedBytes": 8583,
+      "sha256": "5a1cb051ae77b9bd19f94419927d49f9841681ebd14de8662e8ef0327a2d2654",
       "summary": {
         "name": "Bitbucket API",
         "serverUrl": "https://api.bitbucket.org/2.0",
+        "description": "Code against the Bitbucket API to automate simple tasks, embed Bitbucket data into your own site, build mobile or desktop apps, or even add custom UI add-ons into Bitbucket itself using the Connect framework.",
         "operationCount": 299,
         "unavailableCount": 299
       }
@@ -56,12 +59,13 @@
     {
       "id": "bluesky-app",
       "sourceRevision": "02fc57bf6b47faca285b60712403939e36ed4e997ad13ca52b2c523862df20ba",
-      "bytes": 49510,
-      "compressedBytes": 4768,
-      "sha256": "1222a623732dfa5948a5ab34ac6c68607075bf85d83c78b257f2a72c01f3e284",
+      "bytes": 51328,
+      "compressedBytes": 4798,
+      "sha256": "3bac6c3efe2f42c8d2558bee0b150d7b00669ebcff57d46658a58d0bc00a9f5d",
       "summary": {
         "name": "Bluesky HTTP API Reference — Bluesky App",
         "serverUrl": "https://bsky.social",
+        "description": "This is the HTTP API reference for Bluesky. It covers the `app.bsky.*`, `com.atproto.*`, `chat.bsky.*`, and `tools.ozone.*` Lexicon namespaces — the Lexicons implemented by the Bluesky application, its related services (DMs, Ozone moderation), and the AT Protocol [PDS](https://atproto.com/guides/the-at-stack#pds) those services build on. Use the document switcher in the top left to move between endpoints.\n\nThe wider AT Protocol Lexicon ecosystem is open and any service can publish its own Lexicons. For an index of community Lexicons see [lexicon.garden](https://lexicon.garden/), and for the schema language itself see the [Lexicon guide](https://atproto.com/guides/lexicon).\n\n## Authentication and request routing\n\nThese endpoints don't all live on the same host, and where a request should be sent depends on whether the caller is authenticated:\n\n- **Most `app.bsky.*` `GET`s are public** and can be called without authentication against the Bluesky AppView at `https://public.api.bsky.app`. `POST`s (writes) and any endpoint that returns account-private data require auth.\n- **Authenticated requests should be sent to the user's own PDS**. The PDS validates the session and, if needed, proxies the request to the correct backend. Proxied requests should [include an `atproto-proxy` header](https://atproto.com/specs/xrpc#service-proxying). [Bluesky DMs](#bluesky-dms/description/introduction) and [Ozone Moderation](#ozone-moderation/description/introduction) requests always require proxying.\n\nFor client libraries that handle session management and proxying for you, see the [AT Protocol SDKs](https://atproto.com/sdks).\n\nTo consume the whole network as a live, filterable JSON firehose (or replay a slice of it), see the [Jetstream API](#jetstream/description/introduction).",
         "operationCount": 152,
         "unavailableCount": 3
       }
@@ -69,12 +73,13 @@
     {
       "id": "bluesky-dms",
       "sourceRevision": "6931832a103cd04c4db77cea13faa77a5742f34b87d24548a011242d5fe16431",
-      "bytes": 13763,
-      "compressedBytes": 2127,
-      "sha256": "6a0a0e13dad5edc3fef09a0d365da0c1f8fb4e508f04ec81774d042fdf4ba19d",
+      "bytes": 15581,
+      "compressedBytes": 2153,
+      "sha256": "51ff7952ef09e78d9fd932e9dd2ed5c24cb4b9854329679eeac9ef0ce6e9846d",
       "summary": {
         "name": "Bluesky HTTP API Reference — Bluesky DMs",
         "serverUrl": "https://bsky.social",
+        "description": "This is the HTTP API reference for Bluesky. It covers the `app.bsky.*`, `com.atproto.*`, `chat.bsky.*`, and `tools.ozone.*` Lexicon namespaces — the Lexicons implemented by the Bluesky application, its related services (DMs, Ozone moderation), and the AT Protocol [PDS](https://atproto.com/guides/the-at-stack#pds) those services build on. Use the document switcher in the top left to move between endpoints.\n\nThe wider AT Protocol Lexicon ecosystem is open and any service can publish its own Lexicons. For an index of community Lexicons see [lexicon.garden](https://lexicon.garden/), and for the schema language itself see the [Lexicon guide](https://atproto.com/guides/lexicon).\n\n## Authentication and request routing\n\nThese endpoints don't all live on the same host, and where a request should be sent depends on whether the caller is authenticated:\n\n- **Most `app.bsky.*` `GET`s are public** and can be called without authentication against the Bluesky AppView at `https://public.api.bsky.app`. `POST`s (writes) and any endpoint that returns account-private data require auth.\n- **Authenticated requests should be sent to the user's own PDS**. The PDS validates the session and, if needed, proxies the request to the correct backend. Proxied requests should [include an `atproto-proxy` header](https://atproto.com/specs/xrpc#service-proxying). [Bluesky DMs](#bluesky-dms/description/introduction) and [Ozone Moderation](#ozone-moderation/description/introduction) requests always require proxying.\n\nFor client libraries that handle session management and proxying for you, see the [AT Protocol SDKs](https://atproto.com/sdks).\n\nTo consume the whole network as a live, filterable JSON firehose (or replay a slice of it), see the [Jetstream API](#jetstream/description/introduction).",
         "operationCount": 38,
         "unavailableCount": 0
       }
@@ -82,12 +87,13 @@
     {
       "id": "bluesky-moderation",
       "sourceRevision": "d5c612b1515e9812f7fc571f77a2f28f2d5e64ed00ffc23f4f782784fd893435",
-      "bytes": 18127,
-      "compressedBytes": 2395,
-      "sha256": "f81eb32294c0fcaf88ae9c668386766b2680cfda688ecf6328319a2c9d7ba1c7",
+      "bytes": 19945,
+      "compressedBytes": 2425,
+      "sha256": "0ddbbdbf2cd995567bbf2d611641d8aedc7463123ef39fa32297a4431f197157",
       "summary": {
         "name": "Bluesky HTTP API Reference — Ozone Moderation",
         "serverUrl": "https://bsky.social",
+        "description": "This is the HTTP API reference for Bluesky. It covers the `app.bsky.*`, `com.atproto.*`, `chat.bsky.*`, and `tools.ozone.*` Lexicon namespaces — the Lexicons implemented by the Bluesky application, its related services (DMs, Ozone moderation), and the AT Protocol [PDS](https://atproto.com/guides/the-at-stack#pds) those services build on. Use the document switcher in the top left to move between endpoints.\n\nThe wider AT Protocol Lexicon ecosystem is open and any service can publish its own Lexicons. For an index of community Lexicons see [lexicon.garden](https://lexicon.garden/), and for the schema language itself see the [Lexicon guide](https://atproto.com/guides/lexicon).\n\n## Authentication and request routing\n\nThese endpoints don't all live on the same host, and where a request should be sent depends on whether the caller is authenticated:\n\n- **Most `app.bsky.*` `GET`s are public** and can be called without authentication against the Bluesky AppView at `https://public.api.bsky.app`. `POST`s (writes) and any endpoint that returns account-private data require auth.\n- **Authenticated requests should be sent to the user's own PDS**. The PDS validates the session and, if needed, proxies the request to the correct backend. Proxied requests should [include an `atproto-proxy` header](https://atproto.com/specs/xrpc#service-proxying). [Bluesky DMs](#bluesky-dms/description/introduction) and [Ozone Moderation](#ozone-moderation/description/introduction) requests always require proxying.\n\nFor client libraries that handle session management and proxying for you, see the [AT Protocol SDKs](https://atproto.com/sdks).\n\nTo consume the whole network as a live, filterable JSON firehose (or replay a slice of it), see the [Jetstream API](#jetstream/description/introduction).",
         "operationCount": 45,
         "unavailableCount": 0
       }
@@ -95,12 +101,13 @@
     {
       "id": "cloudflare",
       "sourceRevision": "5999fa69349d2e160e58bac0f9603f110c2937d67dbf6dac3a1bed9f3859c778",
-      "bytes": 1254751,
-      "compressedBytes": 117317,
-      "sha256": "b5c1b6903f6beff3aae45d1bfc5e4485488b59a2d56c363ffbaae6917a286db1",
+      "bytes": 1256565,
+      "compressedBytes": 117347,
+      "sha256": "8f086f5acecdc91a776019260f2464c6e2e97e00cbd19a1091aa6284ef94416a",
       "summary": {
         "name": "Cloudflare API",
         "serverUrl": "https://api.cloudflare.com/client/v4",
+        "description": "Welcome to Cloudflare's API documentation site. We are experimenting with an updated version of our API documentation - check out [developers.cloudflare.com/api-next/](https://developers.cloudflare.com/api-next/) to test out the new experience.\n\nTo get started using Cloudflare's products and services via the API, refer to [how to interact with Cloudflare](https://developers.cloudflare.com/fundamentals/basic-tasks/interact-with-cloudflare/), which covers using tools like [Terraform](https://developers.cloudflare.com/terraform/#cloudflare-terraform) and the [official SDKs](https://developers.cloudflare.com/fundamentals/api/reference/sdks/) to maintain your Cloudflare resources.\n\nUsing the Cloudflare API requires authentication so that Cloudflare knows who is making requests and what permissions you have. Create an API token to grant access to the API to perform actions. You can also authenticate with [API keys](https://developers.cloudflare.com/fundamentals/api/get-started/keys/), but these keys have [several limitations](https://developers.cloudflare.com/fundamentals/api/get-started/keys/#limitations) that make them less secure than API tokens. Whenever possible, use API tokens to interact with the Cloudflare API.\n\nTo create an API token, from the Cloudflare dashboard, go to My Profile > API Tokens and select Create Token. For more information on how to create and troubleshoot API tokens, refer to\nour [API fundamentals](https://developers.cloudflare.com/fundamentals/api/).\n\nFor information regarding rate limits, refer to our [API Rate Limits](https://developers.cloudflare.com/cloudflare-for-platforms/workers-for-platforms/platform/limits/#api-rate-limits).\n\nTotally new to Cloudflare? [Start here](https://developers.cloudflare.com/fundamentals/get-started/).",
         "operationCount": 3761,
         "unavailableCount": 78
       }
@@ -108,12 +115,13 @@
     {
       "id": "cohere",
       "sourceRevision": "75a54009440bcf35ba7dfc3141aeb173176448e68f1659d6435cecbd1af41712",
-      "bytes": 10357,
-      "compressedBytes": 1582,
-      "sha256": "8f847a4b4912f9c5921ebd73d39a93ea56998f2313327ded03b69020dc659f64",
+      "bytes": 10440,
+      "compressedBytes": 1584,
+      "sha256": "75843e34fe35678de48d7a85baf99aa03820d14bed9befca0b4775b2c01fdfcd",
       "summary": {
         "name": "API Reference",
         "serverUrl": "https://api.cohere.com",
+        "description": "The Cohere API for interacting with Chat, Embed and Rerank models.",
         "operationCount": 42,
         "unavailableCount": 2
       }
@@ -121,12 +129,13 @@
     {
       "id": "confluence",
       "sourceRevision": "246e0eec8f432eae39c32250a0ca1a32b233c166f86a80ff1de4dac7f92b9380",
-      "bytes": 93574,
-      "compressedBytes": 6304,
-      "sha256": "4a0e2005ec678213b02965104dbcfc08c02c2bead226e0c6a52f22f211a25d85",
+      "bytes": 93778,
+      "compressedBytes": 6308,
+      "sha256": "4209056800bf394702f718084910054e0e8daacf9cedc9b3d7e1914b1d4e3aff",
       "summary": {
         "name": "The Confluence Cloud REST API v2",
         "serverUrl": "https://no-default/wiki/api/v2",
+        "description": "This document describes Confluence's v2 APIs. This is intended to be an iteration on the existing Confluence Cloud REST API with improvements in both endpoint definitions and performance.",
         "operationCount": 252,
         "unavailableCount": 252
       }
@@ -134,12 +143,13 @@
     {
       "id": "deepseek",
       "sourceRevision": "56da9a4b5f75e48ad33a9cf92004e21bccd95f0b14eb67572be13b04f10c91ad",
-      "bytes": 3383,
-      "compressedBytes": 810,
-      "sha256": "d2bd84d1b352af265853935d56bd0d83b6ecdae8a2e41518c6ae8464af7bc062",
+      "bytes": 3516,
+      "compressedBytes": 813,
+      "sha256": "f47136a4a30a54e177373938917a1c789873b65243322839e5dd72ee5cd31ba1",
       "summary": {
         "name": "DeepSeek API",
         "serverUrl": "https://api.deepseek.com",
+        "description": "The DeepSeek API. To use the DeepSeek API, please [create an API key first](https://platform.deepseek.com/api_keys).",
         "operationCount": 11,
         "unavailableCount": 1
       }
@@ -160,12 +170,13 @@
     {
       "id": "discord",
       "sourceRevision": "07512fa28e35b7e6df694f685b0a43fca8fe9e9bddf8da71d6c630171ed4683f",
-      "bytes": 64451,
-      "compressedBytes": 5792,
-      "sha256": "5f61a0a52ce252383b06ef88bd3cf786e658377b790669f0680f966524a239b8",
+      "bytes": 64576,
+      "compressedBytes": 5794,
+      "sha256": "1a3f28342dad6133881e1549bf8db1511da7c2c8adae9496a762128bfe5b1bf8",
       "summary": {
         "name": "Discord HTTP API (Preview)",
         "serverUrl": "https://discord.com/api/v10",
+        "description": "Preview of the Discord v10 HTTP API specification. See https://discord.com/developers/docs for more details.",
         "operationCount": 246,
         "unavailableCount": 3
       }
@@ -173,12 +184,13 @@
     {
       "id": "docker",
       "sourceRevision": "84e994fb0d80850cb01d1a098c89ead30ca0c9cd8aff6cdbcd46f258304d88ba",
-      "bytes": 45253,
-      "compressedBytes": 4417,
-      "sha256": "dcda28a847adf116f5bd5ec039eb013814dd8e80aabf899959c345062d0ea7f1",
+      "bytes": 47836,
+      "compressedBytes": 4447,
+      "sha256": "e25a9d5fab3d21bc6ed679559b68e1b22e34dce66caa850044ec76115b36b552",
       "summary": {
         "name": "Docker Engine API",
         "serverUrl": "",
+        "description": "The Engine API is an HTTP API served by Docker Engine. It is the API the\nDocker client uses to communicate with the Engine, so everything the Docker\nclient can do can be done with the API.\n\nMost of the client's commands map directly to API endpoints (e.g. `docker ps`\nis `GET /containers/json`). The notable exception is running containers,\nwhich consists of several API calls.\n\n# Errors\n\nThe API uses standard HTTP status codes to indicate the success or failure\nof the API call. The body of the response will be JSON in the following\nformat:\n\n```\n{\n  \"message\": \"page not found\"\n}\n```\n\n# Versioning\n\nThe API is usually changed in each release, so API calls are versioned to\nensure that clients don't break. To lock to a specific version of the API,\nyou prefix the URL with its version, for example, call `/v1.30/info` to use\nthe v1.30 version of the `/info` endpoint. If the API version specified in\nthe URL is not supported by the daemon, a HTTP `400 Bad Request` error message\nis returned.\n\nIf you omit the version-prefix, the current version of the API is used.\nFor example, calling `/info` is the same as calling `/v1.57/info`. Using the\nAPI without a version-prefix is deprecated and will be removed in a future release.\n\nEngine releases in the near future should support this version of the API,\nso your client will continue to work even if it is talking to a newer Engine.\n\nThe API uses an open schema model, which means the server may add extra properties\nto responses. Likewise, the server will ignore any extra query parameters and\nrequest body properties. When you write clients, you need to ignore additional\nproperties in responses to ensure they do not break when talking to newer\ndaemons.\n\n\n# Authentication\n\nAuthentication for registries is handled client side. The client has to send\nauthentication details to various endpoints that need to communicate with\nregistries, such as `POST /images/(name)/push`. These are sent as\n`X-Registry-Auth` header as a [base64url encoded](https://tools.ietf.org/html/rfc4648#section-5)\n(JSON) string with the following structure:\n\n```\n{\n  \"username\": \"string\",\n  \"password\": \"string\",\n  \"serveraddress\": \"string\"\n}\n```\n\nThe `serveraddress` is a domain/IP without a protocol. Throughout this\nstructure, double quotes are required.\n\nIf you have already got an identity token from the [`/auth` endpoint](#operation/SystemAuth),\nyou can just pass this instead of credentials:\n\n```\n{\n  \"identitytoken\": \"9cbaf023786cd7...\"\n}\n```",
         "operationCount": 108,
         "unavailableCount": 108
       }
@@ -186,12 +198,13 @@
     {
       "id": "dukascopy",
       "sourceRevision": "55842575880e02e8bd30f447644e6c3037f7287f76c0ab32939dca10b2188792",
-      "bytes": 1011,
-      "compressedBytes": 514,
-      "sha256": "944152a924ab21504356291ffd87847e9e0f31ca82287abf8cec2bd1e57f08dc",
+      "bytes": 1213,
+      "compressedBytes": 518,
+      "sha256": "72cfa67c72609f0e7cee8643d714e620a88f0ee0be6b9b62cf318003cbca1990",
       "summary": {
         "name": "Dukascopy Trading Tools",
         "serverUrl": "https://freeserv.dukascopy.com",
+        "description": "Trading Tools query API. Choose a procedure with the path parameter. Historical prices additionally require instrument. See the original procedure definitions in x-dukascopy-procedures.",
         "operationCount": 1,
         "unavailableCount": 0
       }
@@ -199,12 +212,13 @@
     {
       "id": "ecb",
       "sourceRevision": "e70d9891e6ea2e86f0779aa095b4bc4bc375cc79ad12eb78d330f9eaa67b8020",
-      "bytes": 5757,
-      "compressedBytes": 931,
-      "sha256": "582510000185802ab3570457c9fdf11677bddd8545cffee22088b03d27d7d8ec",
+      "bytes": 5925,
+      "compressedBytes": 938,
+      "sha256": "7fd1063a8950e7c557128bc7cd7d41b53ce704a7f6cff446a499f84bf71c8ca1",
       "summary": {
         "name": "SDMX RESTful API, v2.2.2",
         "serverUrl": "https://data-api.ecb.europa.eu/service",
+        "description": "The RESTful API for SDMX 3.1.\n\nFor additional information, check the [documentation](https://github.com/sdmx-twg/sdmx-rest/blob/master/doc/index.md).",
         "operationCount": 11,
         "unavailableCount": 10
       }
@@ -212,12 +226,13 @@
     {
       "id": "elevenlabs",
       "sourceRevision": "8cee136ec627a5557c61fca7650f69feeeb63d45fc4b1aea097f6f76b69f5c9e",
-      "bytes": 120028,
-      "compressedBytes": 12754,
-      "sha256": "d31b99f4855bcaa5c9bfd03e2b97019e5c24836d3a842cbf788e93e18b9e6778",
+      "bytes": 120279,
+      "compressedBytes": 12758,
+      "sha256": "6d750a8b71a2fdfdf3267116d7592d7b94062167231a34b8649057d851609cee",
       "summary": {
         "name": "ElevenLabs API Documentation",
         "serverUrl": "https://api.elevenlabs.io",
+        "description": "This is the documentation for the ElevenLabs API. You can use this API to use our service programmatically, this is done by using your API key. You can find your API key in the dashboard at https://elevenlabs.io/app/settings/api-keys.",
         "operationCount": 418,
         "unavailableCount": 31
       }
@@ -225,12 +240,13 @@
     {
       "id": "frankfurter",
       "sourceRevision": "5ba0aa5e8ea6226971acaacd06068ccfe84507adb0942e5d6f8b5409f1849aab",
-      "bytes": 2700,
-      "compressedBytes": 643,
-      "sha256": "91c02929539c0d499798870efcc758d33cfaa597fca48433320dd9a92771c6f2",
+      "bytes": 2828,
+      "compressedBytes": 647,
+      "sha256": "b4a43dabaa03852f987de03383213a188f04c7fa20d8382b9088b9874955cc00",
       "summary": {
         "name": "Frankfurter API",
         "serverUrl": "https://api.frankfurter.dev/v2",
+        "description": "Frankfurter is an open-source API for current and historical foreign exchange rates published by central banks.",
         "operationCount": 9,
         "unavailableCount": 0
       }
@@ -238,12 +254,13 @@
     {
       "id": "fred",
       "sourceRevision": "4ac00be029bb776d24616e955a9dab397b77ebd83844151a92b63b09b69cb6c7",
-      "bytes": 13122,
-      "compressedBytes": 1715,
-      "sha256": "4a0932be2118082c7393195afed5698eeb7a16a4779c0989e383ce792d00fdb1",
+      "bytes": 13654,
+      "compressedBytes": 1723,
+      "sha256": "e942eac784a330af1179e95e5e9c9769fbdaf3f247a1b85ff5aa9bba47a7f38d",
       "summary": {
         "name": "FRED API",
         "serverUrl": "https://api.stlouisfed.org",
+        "description": "Federal Reserve Economic Data (FRED) web service, published by the Economic Research Division of the Federal Reserve Bank of St. Louis.\n\nThe API exposes economic data series and the categories, releases, sources and tags that organise them, plus the regional data and GeoJSON shape files behind the FRED maps (the /geofred paths).\n\nEvery request needs a free API key, passed as the api_key query parameter: https://fredaccount.stlouisfed.org/apikeys\n\nResponses are XML by default; set file_type=json for JSON.",
         "operationCount": 35,
         "unavailableCount": 35
       }
@@ -251,12 +268,13 @@
     {
       "id": "github",
       "sourceRevision": "f9293195f0097a6ae134f8652fca11d15dc26638ee312dd3ce35d5723d56925a",
-      "bytes": 373975,
-      "compressedBytes": 33731,
-      "sha256": "1ae9f969c458b32af5f6593e95f1674a4cf211991d020d2c89f066cdd5077182",
+      "bytes": 374013,
+      "compressedBytes": 33732,
+      "sha256": "425ede64605c5ca934a82d16259a41fd8e55364033ab9c3df8102acf0dbbf90a",
       "summary": {
         "name": "GitHub v3 REST API",
         "serverUrl": "https://api.github.com",
+        "description": "GitHub's v3 REST API.",
         "operationCount": 1242,
         "unavailableCount": 1
       }
@@ -264,12 +282,13 @@
     {
       "id": "gitlab",
       "sourceRevision": "e5ab69dc7cbfde3b2f2a6c27faccf33a57dabaa70967bb0b52697633050e13e3",
-      "bytes": 619741,
-      "compressedBytes": 54445,
-      "sha256": "bbd99db7692befc27a6aacb172083ba486b3efe54a105e5ca90e8381929c5de4",
+      "bytes": 619818,
+      "compressedBytes": 54447,
+      "sha256": "7b00a6fb509d1ace9d861721e735b851c8826790af6f3ed661100355fb54eeda",
       "summary": {
         "name": "GitLab REST API",
         "serverUrl": "https://gitlab.com",
+        "description": "GitLab REST API used to interact with a GitLab installation.",
         "operationCount": 1869,
         "unavailableCount": 107
       }
@@ -277,12 +296,13 @@
     {
       "id": "gcp-compute",
       "sourceRevision": "33803659d1a38271f3b910f3358fe6b248980f11e397b543e51b1ac120ea1cd8",
-      "bytes": 329944,
-      "compressedBytes": 16802,
-      "sha256": "8e112103c5e9b0bd712f61e5e3d6f9ff92201395cb48481b9359b6387dc5d97d",
+      "bytes": 330020,
+      "compressedBytes": 16805,
+      "sha256": "94a824ef3bf5b73e683b063f3a1840ea4120d01ffa2ce2b59938e306aeb6784b",
       "summary": {
         "name": "Compute Engine API",
         "serverUrl": "https://compute.googleapis.com/compute/v1",
+        "description": "Creates and runs virtual machines on Google Cloud Platform.",
         "operationCount": 758,
         "unavailableCount": 758
       }
@@ -290,12 +310,13 @@
     {
       "id": "gcp-storage",
       "sourceRevision": "89fce203814a45b34a3f61504d99453530579866c55554b400e0d52dc8d42d8e",
-      "bytes": 30121,
-      "compressedBytes": 2193,
-      "sha256": "c36969a3c6cfd77f3e707bb09288b41c16f62e2f8aae21249d5049a9f32e2371",
+      "bytes": 30201,
+      "compressedBytes": 2195,
+      "sha256": "63c27a44ccde56637aca58bc6124e329d59e900002b09d14e87a86e4286787b5",
       "summary": {
         "name": "Cloud Storage JSON API",
         "serverUrl": "https://storage.googleapis.com/storage/v1",
+        "description": "Stores and retrieves potentially large, immutable data objects.",
         "operationCount": 76,
         "unavailableCount": 76
       }
@@ -303,12 +324,13 @@
     {
       "id": "gemini",
       "sourceRevision": "c1187de634a269841d465bf550d90be48464ca5b206f7b0987375b208cb0c324",
-      "bytes": 14022,
-      "compressedBytes": 1673,
-      "sha256": "d66bd81fe12f5b01465e5cb351ec6264e4a71e5ed5804c6c9d3759e5ead166a3",
+      "bytes": 14543,
+      "compressedBytes": 1684,
+      "sha256": "efd2eab4f0782be2671135e77347c859e43b149ea3d7a53cd6d71729bdf6bc6e",
       "summary": {
         "name": "Gemini API",
         "serverUrl": "https://generativelanguage.googleapis.com",
+        "description": "The Gemini Interactions API allows developers to build generative AI applications using Gemini models. Gemini is our most capable model, built from the ground up to be multimodal. It can generalize and seamlessly understand, operate across, and combine different types of information including language, images, audio, video, and code. You can use the Gemini API for use cases like reasoning across text and images, content generation, dialogue agents, summarization and classification systems, and more.",
         "operationCount": 37,
         "unavailableCount": 37
       }
@@ -316,12 +338,13 @@
     {
       "id": "groq",
       "sourceRevision": "24a6ad42e199c84687dc4037a8173f52bdc721c74ed1670c8c58441805ee1cf2",
-      "bytes": 7419,
-      "compressedBytes": 1553,
-      "sha256": "f76bd79b2e9deb2836f541e249fe32612927ab81a150bdde475166012c4ea4af",
+      "bytes": 7471,
+      "compressedBytes": 1555,
+      "sha256": "19a88b9015972fb590f88ef011ed92d45a9554c3ecc127ad82039cc8441c9d0d",
       "summary": {
         "name": "GroqCloud API",
         "serverUrl": "https://api.groq.com",
+        "description": "Specification of the Groq cloud API",
         "operationCount": 23,
         "unavailableCount": 3
       }
@@ -329,12 +352,13 @@
     {
       "id": "hetzner",
       "sourceRevision": "2c64f5ca75a52a2d19471d78e513738a4558b6b895bfb0d8d1a0a9fcb9d20857",
-      "bytes": 65666,
-      "compressedBytes": 10103,
-      "sha256": "03edc5f3159668ae6327b4d68fa71db5d037b44afc9945093d69b6e48eb0c872",
+      "bytes": 82269,
+      "compressedBytes": 10321,
+      "sha256": "7ae3172876f2a0d89adf6327edb2312d8943cb7e1579f2c60374a817da7214a3",
       "summary": {
         "name": "Hetzner Cloud API",
         "serverUrl": "https://api.hetzner.cloud/v1",
+        "description": "# Overview\n\nThis is the official documentation for the Hetzner Cloud API.\n\n## Introduction\n\nThe Hetzner Cloud API operates over HTTPS and uses JSON as its data format. The API is a RESTful API and utilizes HTTP methods and HTTP status codes to specify requests and responses.\n\nAs an alternative to working directly with our API you may also consider to use:\n\n- Our CLI program [hcloud](https://github.com/hetznercloud/cli)\n- Our [library for Go](https://github.com/hetznercloud/hcloud-go)\n- Our [library for Python](https://github.com/hetznercloud/hcloud-python)\n\nYou can find even more libraries, tools and integrations on our [Awesome List on GitHub](https://github.com/hetznercloud/awesome-hcloud).\n\n## Getting Started\n\nTo get started using the API you first need an API token. Sign in into the [Hetzner Console](https://console.hetzner.com/) choose a Project, go to `Security` → `API Tokens`, and generate a new token. Make sure to copy the token because it won’t be shown to you again. A token is bound to a Project, to interact with the API of another Project you have to create a new token inside the Project. Let’s say your new token is `LRK9DAWQ1ZAEFSrCNEEzLCUwhYX1U3g7wMg4dTlkkDC96fyDuyJ39nVbVjCKSDfj`.\n\nYou’re now ready to do your first request against the API. To get a list of all Servers in your Project, issue the example request on the right side using [curl](https://curl.se/).\n\nMake sure to replace the token in the example command with the token you have just created. Since your Project probably does not contain any Servers yet, the example response will look like the response on the right side. We will almost always provide a resource root like `servers` inside the example response. A response can also contain a `meta` object with information like [Pagination](#description/pagination).\n\n**Example Request**\n\n```shell\ncurl -H \"Authorization: Bearer LRK9DAWQ1ZAEFSrCNEEzLCUwhYX1U3g7wMg4dTlkkDC96fyDuyJ39nVbVjCKSDfj\" \\\n  https://api.hetzner.cloud/v1/servers\n```\n\n**Example Response**\n\n```json\n{\n  \"servers\": [],\n  \"meta\": {\n    \"pagination\": {\n      \"page\": 1,\n      \"per_page\": 25,\n      \"previous_page\": null,\n      \"next_page\": null,\n      \"last_page\": 1,\n      \"total_entries\": 0\n    }\n  }\n}\n```\n\n## Authentication\n\nAll requests to the Hetzner Cloud API must be authenticated via a API token. Include your secret API token in every request you send to the API with the `Authorization` HTTP header.\n\nTo create a new API token for your Project, switch into the [Hetzner Console](https://console.hetzner.com/) choose a Project, go to `Security` → `API Tokens`, and generate a new token.\n\n**Example Authorization header**\n\n```http\nAuthorization: Bearer LRK9DAWQ1ZAEFSrCNEEzLCUwhYX1U3g7wMg4dTlkkDC96fyDuyJ39nVbVjCKSDfj\n```\n\n## Query Parameters\n\nThe API makes use of query parameters to sort and filter responses. The parameter names and values must be URI encoded according to [RFC2396](https://datatracker.ietf.org/doc/html/rfc2396). Query parameters of type `array` can be used multiple times:\n\n**Example query parameters for pagination**\n\n```\nhttps://api.hetzner.cloud/v1/certificates?page=1&page_size=12\n```\n\n**Example use of multiple values for a parameter**\n\n```\nhttps://api.hetzner.cloud/v1/certificates?type=uploaded&type=managed\n```\n\n**Example use of an encoded parameter**\n\n```\nhttps://api.hetzner.cloud/v1/certificates?label_selector=key%3Dvalue\n```\n\n## Errors\n\nErrors are indicated by HTTP status codes. Further, the response of the request which generated the error contains an error code, an error message, and, optionally, error details. The schema of the error details object depends on the error code.\n\nThe error response contains the following keys:\n\n| Keys      | Meaning                                                               |\n| --------- | --------------------------------------------------------------------- |\n| `code`    | Short string indicating the type of error (machine-parsable)          |\n| `message` | Textual description on what has gone wrong                            |\n| `details` | An object providing for details on the error (schema depends on code) |\n\n**Example response**\n\n```json\n{\n  \"error\": {\n    \"code\": \"invalid_input\",\n    \"message\": \"invalid input in field 'broken_field': is too long\",\n    \"details\": {\n      \"fields\": [\n        {\n          \"name\": \"broken_field\",\n          \"messages\": [\"is too long\"]\n        }\n      ]\n    }\n  }\n}\n```\n\n### Error Codes\n\n| Status | Code | Description |\n| --- | --- | --- |\n| `400` | `json_error` | Invalid JSON input in your request. |\n| `401` | `unauthorized` | Request was made with an invalid or unknown token. |\n| `403` | `forbidden` | Insufficient permissions for this request. |\n| `403` | `maintenance` | Cannot perform operation due to maintenance. |\n| `403` | `resource_limit_exceeded` | Error when exceeding the maximum quantity of a resource for an account. |\n| `404` | `not_found` | Entity not found. |\n| `405` | `method_not_allowed` | The request method is not allowed |\n| `409` | `uniqueness_error` | One or more of the objects fields must be unique. |\n| `409` | `conflict` | The resource has changed during the request, please retry. |\n| `410` | `deprecated_api_endpoint` | The API endpoint functionality was removed. |\n| `412` | `resource_unavailable` | The requested resource is currently unavailable (e.g. not available for order). |\n| `422` | `invalid_input` | Error while parsing or processing the input. |\n| `422` | `service_error` | Error within a service. |\n| `422` | `unsupported_error` | The corresponding resource does not support the Action. |\n| `423` | `locked` | The item you are trying to access is locked (there is already an Action running). |\n| `423` | `protected` | The Action you are trying to start is protected for this resource. |\n| `429` | `rate_limit_exceeded` | Error when sending too many requests. |\n| `500` | `server_error` | Error within the API backend. |\n| `502` | `bad_gateway` | The request could not be answered by the API backend, please retry. |\n| `503` | `unavailable` | A service or product is currently not available. |\n| `504` | `timeout` | The request could not be answered in time, please retry. |\n\n**invalid_input**\n\n```json\n{\n  \"error\": {\n    \"code\": \"invalid_input\",\n    \"message\": \"invalid input in field 'broken_field': is too long\",\n    \"details\": {\n      \"fields\": [\n        {\n          \"name\": \"broken_field\",\n          \"messages\": [\"is too long\"]\n        }\n      ]\n    }\n  }\n}\n```\n\n**uniqueness_error**\n\n```json\n{\n  \"error\": {\n    \"code\": \"uniqueness_error\",\n    \"message\": \"SSH key with the same fingerprint already exists\",\n    \"details\": {\n      \"fields\": [\n        {\n          \"name\": \"public_key\"\n        }\n      ]\n    }\n  }\n}\n```\n\n**resource_limit_exceeded**\n\n```json\n{\n  \"error\": {\n    \"code\": \"resource_limit_exceeded\",\n    \"message\": \"project limit exceeded\",\n    \"details\": {\n      \"limits\": [\n        {\n          \"name\": \"project_limit\"\n        }\n      ]\n    }\n  }\n}\n```\n\n**deprecated_api_endpoint**\n\n```json\n{\n  \"error\": {\n    \"code\": \"deprecated_api_endpoint\",\n    \"message\": \"API functionality was removed\",\n    \"details\": {\n      \"announcement\": \"https://docs.hetzner.cloud/changelog#2023-07-20-foo-endpoint-is-deprecated\"\n    }\n  }\n}\n```\n\n## Actions\n\nActions represent asynchronous tasks within the API, targeting one or more resources. Triggering changes in the API may return a `running` action.\n\nAn action should be waited upon, until it reaches either the `success` or `error` state. Avoid polling the action's state too frequently to reduce the risk of exhausting your API requests and hitting the [rate limit](#description/rate-limiting).\n\nIf an action fails, it will contain details about the underlying error.\n\nOnce the asynchronous tasks have completed and the targeted resources are in a consistent state, the action is marked as succeeded.\n\nIn some cases, you may trigger multiple changes at once, and only wait for the returned actions at a later stage.\n\n## Labels\n\nLabels are `key/value` pairs that can be attached to all resources.\n\nValid label keys have two segments: an optional prefix and name, separated by a slash (`/`). The name segment is required and must be a string of 63 characters or less, beginning and ending with an alphanumeric character (`[a-z0-9A-Z]`) with dashes (`-`), underscores (`_`), dots (`.`), and alphanumerics between. The prefix is optional. If specified, the prefix must be a DNS subdomain: a series of DNS labels separated by dots (`.`), not longer than 253 characters in total, followed by a slash (`/`).\n\nValid label values must be a string of 63 characters or less and must be empty or begin and end with an alphanumeric character (`[a-z0-9A-Z]`) with dashes (`-`), underscores (`_`), dots (`.`), and alphanumerics between.\n\nThe `hetzner.cloud/` prefix is reserved and cannot be used.\n\n**Example Labels**\n\n```json\n{\n  \"labels\": {\n    \"environment\": \"development\",\n    \"service\": \"backend\",\n    \"example.com/my\": \"label\",\n    \"just-a-key\": \"\"\n  }\n}\n```\n\n## Label Selector\n\nFor resources with labels, you can filter resources by their labels using the label selector query language.\n\n| Expression           | Meaning                                              |\n| -------------------- | ---------------------------------------------------- |\n| `k==v` / `k=v`       | Value of key `k` does equal value `v`                |\n| `k!=v`               | Value of key `k` does not equal value `v`            |\n| `k`                  | Key `k` is present                                   |\n| `!k`                 | Key `k` is not present                               |\n| `k in (v1,v2,v3)`    | Value of key `k` is `v1`, `v2`, or `v3`              |\n| `k notin (v1,v2,v3)` | Value of key `k` is neither `v1`, nor `v2`, nor `v3` |\n| `k1==v,!k2`          | Value of key `k1` is `v` and key `k2` is not present |\n\n### Examples\n\n- Returns all resources that have a `env=production` label and that don't have a `type=database` label:\n\n  `env=production,type!=database`\n\n- Returns all resources that have a `env=testing` or `env=staging` label:\n\n  `env in (testing,staging)`\n\n- Returns all resources that don't have a `type` label:\n\n  `!type`\n\n## Pagination\n\nResponses which return multiple items support pagination. If they do support pagination, it can be controlled with following query string parameters:\n\n- A `page` parameter specifies the page to fetch. The number of the first page is 1. For invalid values, page 1 is fetched.\n- A `per_page` parameter specifies the number of items returned per page. The default value is 25 and the maximum is 50, unless otherwise specified in the documentation. For invalid values, the default is used.\n\nResponses contain a `Link` header with pagination information. This header is deprecated and will be removed in the future as [announced in the changelog](https://docs.hetzner.cloud/changelog#2026-10-12-link-header-deprecation).\n\nAdditionally, if the response body is JSON and the root object is an object, that object has a `pagination` object inside the `meta` object with pagination information:\n\n**Example Pagination**\n\n```json\n{\n    \"servers\": [...],\n    \"meta\": {\n        \"pagination\": {\n            \"page\": 2,\n            \"per_page\": 25,\n            \"previous_page\": 1,\n            \"next_page\": 3,\n            \"last_page\": 4,\n            \"total_entries\": 100\n        }\n    }\n}\n```\n\nThe keys `previous_page`, `next_page`, `last_page`, and `total_entries` may be `null` when on the first page, last page, or when the total number of entries is unknown.\n\n**Example Pagination Link header**\n\n```http\nLink: <https://api.hetzner.cloud/v1/actions?page=2&per_page=5>; rel=\"prev\",\n      <https://api.hetzner.cloud/v1/actions?page=4&per_page=5>; rel=\"next\",\n      <https://api.hetzner.cloud/v1/actions?page=6&per_page=5>; rel=\"last\"\n```\n\nLine breaks have been added for display purposes only and responses may only contain some of the above `rel` values.\n\n## Rate Limiting\n\nAll requests, whether they are authenticated or not, are subject to rate limiting. If you have reached your limit, your requests will be handled with a `429 Too Many Requests` error. Burst requests are allowed. Responses contain several headers which provide information about your current rate limit status.\n\n- The `RateLimit-Limit` header contains the total number of requests you can perform per hour.\n- The `RateLimit-Remaining` header contains the number of requests remaining in the current rate limit time frame.\n- The `RateLimit-Reset` header contains a UNIX timestamp of the point in time when your rate limit will have recovered, and you will have the full number of requests available again.\n\nThe default limit is 3600 requests per hour and per Project. The number of remaining requests increases gradually. For example, when your limit is 3600 requests per hour, the number of remaining requests will increase by 1 every second.\n\n## Server Metadata\n\nYour Server can discover metadata about itself by doing a HTTP request to specific URLs. The following data is available:\n\n| Data              | Format | Contents                                                     |\n| ----------------- | ------ | ------------------------------------------------------------ |\n| hostname          | text   | Name of the Server as set in the api                         |\n| instance-id       | number | ID of the server                                             |\n| public-ipv4       | text   | Primary public IPv4 address                                  |\n| private-networks  | yaml   | Details about the private networks the Server is attached to |\n| availability-zone | text   | Name of the availability zone that Server runs in            |\n| region            | text   | Network zone, e.g. eu-central                                |\n\n**Example: Summary**\n\n```shell\n$ curl http://169.254.169.254/hetzner/v1/metadata\n```\n\n```yaml\navailability-zone: hel1-dc2\nhostname: my-server\ninstance-id: 42\npublic-ipv4: 1.2.3.4\nregion: eu-central\n```\n\n**Example: Hostname**\n\n```shell\n$ curl http://169.254.169.254/hetzner/v1/metadata/hostname\nmy-server\n```\n\n**Example: Instance ID**\n\n```shell\n$ curl http://169.254.169.254/hetzner/v1/metadata/instance-id\n42\n```\n\n**Example: Public IPv4**\n\n```shell\n$ curl http://169.254.169.254/hetzner/v1/metadata/public-ipv4\n1.2.3.4\n```\n\n**Example: Private Networks**\n\n```shell\n$ curl http://169.254.169.254/hetzner/v1/metadata/private-networks\n```\n\n```yaml\n- ip: 10.0.0.2\n  alias_ips: [10.0.0.3, 10.0.0.4]\n  interface_num: 1\n  mac_address: 86:00:00:2a:7d:e0\n  network_id: 1234\n  network_name: nw-test1\n  network: 10.0.0.0/8\n  subnet: 10.0.0.0/24\n  gateway: 10.0.0.1\n- ip: 192.168.0.2\n  alias_ips: []\n  interface_num: 2\n  mac_address: 86:00:00:2a:7d:e1\n  network_id: 4321\n  network_name: nw-test2\n  network: 192.168.0.0/16\n  subnet: 192.168.0.0/24\n  gateway: 192.168.0.1\n```\n\n**Example: Availability Zone**\n\n```shell\n$ curl http://169.254.169.254/hetzner/v1/metadata/availability-zone\nhel1-dc2\n```\n\n**Example: Region**\n\n```shell\n$ curl http://169.254.169.254/hetzner/v1/metadata/region\neu-central\n```\n\n## Sorting\n\nSome responses which return multiple items support sorting. If they do support sorting the documentation states which fields can be used for sorting. You specify sorting with the `sort` query string parameter. You can sort by multiple fields. You can set the sort direction by appending `:asc` or `:desc` to the field name. By default, ascending sorting is used.\n\n**Example: Sorting**\n\n```\nhttps://api.hetzner.cloud/v1/actions?sort=status\nhttps://api.hetzner.cloud/v1/actions?sort=status:asc\nhttps://api.hetzner.cloud/v1/actions?sort=status:desc\nhttps://api.hetzner.cloud/v1/actions?sort=status:asc&sort=command:desc\n```\n\nSorting parameters are applied in the order they are provided.\nInvalid sorting parameters (e.g. providing contrary sorting orders like `sort=status:asc&sort=status:desc`) are ignored.\n\n## Deprecation Notices\n\nYou can find all announced deprecations in our [Changelog](/changelog).",
         "operationCount": 190,
         "unavailableCount": 0
       }
@@ -342,12 +366,13 @@
     {
       "id": "huggingface",
       "sourceRevision": "b2a77dd815bdc106a9fef18d207b3fd023926413afc442a1afaf06869f0e2437",
-      "bytes": 13638,
-      "compressedBytes": 1831,
-      "sha256": "b511b08788e44d6669287908367943bbff658e61846e754aec518691d3132625",
+      "bytes": 13760,
+      "compressedBytes": 1833,
+      "sha256": "f98957c6072688f5954f7d46e374a64ab2c923482cc7bbdcb9fca57b5db4d75e",
       "summary": {
         "name": "HF Inference Endpoints API",
         "serverUrl": "https://api.endpoints.huggingface.cloud",
+        "description": "Deploy and manage Hugging Face models as production-ready inference endpoints on various cloud providers.",
         "operationCount": 46,
         "unavailableCount": 0
       }
@@ -355,12 +380,13 @@
     {
       "id": "jira",
       "sourceRevision": "ae048ce3f43809abb18e96523e22c8adb67b6f720bfc4bf4c59594822c3cb325",
-      "bytes": 233830,
-      "compressedBytes": 18938,
-      "sha256": "c91b8ec39af860155e8526a69e9fe4cc18ee17c6577e9ac0ea7aa8cccaa57b5c",
+      "bytes": 233889,
+      "compressedBytes": 18940,
+      "sha256": "19cf7075d31cd8041415f8791c4d39566c54d30ff4f4dd1cabf4de2e418fa6ed",
       "summary": {
         "name": "The Jira Cloud platform REST API",
         "serverUrl": "https://your-domain.atlassian.net",
+        "description": "Jira Cloud platform REST API documentation",
         "operationCount": 630,
         "unavailableCount": 623
       }
@@ -368,12 +394,13 @@
     {
       "id": "azure-resources",
       "sourceRevision": "3229eb7c17e2b7737c4cfafe7671d3729a1f0bb71062f9411473224425637534",
-      "bytes": 13408,
-      "compressedBytes": 1500,
-      "sha256": "446431e839c0ba96e5694037b1d124bb485de961cec0b0257d098d34fdd46786",
+      "bytes": 13492,
+      "compressedBytes": 1502,
+      "sha256": "92cbe39dba2f7e5d5c50eb0ee888d32be7d6908ae5da114a5f99d80c96f41be8",
       "summary": {
         "name": "ResourceManagementClient",
         "serverUrl": "https://management.azure.com",
+        "description": "Provides operations for working with resources and resource groups.",
         "operationCount": 40,
         "unavailableCount": 0
       }
@@ -381,12 +408,13 @@
     {
       "id": "mistral",
       "sourceRevision": "622a632d504522df0cd18749ef4aad68535942a0b5e7bb80b4849f901ca4d899",
-      "bytes": 61325,
-      "compressedBytes": 6405,
-      "sha256": "9925a683649ced6c465506de74fbff672f20941b1516d587e2a4007cad0a907a",
+      "bytes": 61546,
+      "compressedBytes": 6409,
+      "sha256": "2e3c0a801631b06a894502b0d616a1b870710a8cd9938b47a9631dce70ec9b7b",
       "summary": {
         "name": "Mistral AI API",
         "serverUrl": "https://api.mistral.ai",
+        "description": "Our Chat Completion and Embeddings APIs specification. Create your account on [La Plateforme](https://console.mistral.ai) to get access and read the [docs](https://docs.mistral.ai) to learn how to use it.",
         "operationCount": 173,
         "unavailableCount": 13
       }
@@ -394,12 +422,13 @@
     {
       "id": "ollama",
       "sourceRevision": "16f3b75a4944e1fb0e5b68fedc30b5974406dc2ac125d07cb33dde6981e2f99b",
-      "bytes": 3846,
-      "compressedBytes": 845,
-      "sha256": "98c015f7aba4d425ea36762f09423282ee9b5a386352ed8a150b81fbfd285b95",
+      "bytes": 3908,
+      "compressedBytes": 849,
+      "sha256": "5b4e05ebed2d950a3245196c960232b0b4e9e73ca2baca93ae3637c5164b41a9",
       "summary": {
         "name": "Ollama API",
         "serverUrl": "http://localhost:11434",
+        "description": "OpenAPI specification for the Ollama HTTP API",
         "operationCount": 17,
         "unavailableCount": 1
       }
@@ -407,12 +436,13 @@
     {
       "id": "openai",
       "sourceRevision": "b7ec5bd5e29c40f0bfa2e53c06ece711a40276653646d9f3db77498d6579ab41",
-      "bytes": 93265,
-      "compressedBytes": 9133,
-      "sha256": "044e8a0d4faac0c83164810e3f1782c08452ed372f62657afd3f264077c2daef",
+      "bytes": 93378,
+      "compressedBytes": 9135,
+      "sha256": "b157ebb0f8bfd6bca53d11f100f9f82cbd6b13a65bed0970371babb670613c83",
       "summary": {
         "name": "OpenAI API",
         "serverUrl": "https://api.openai.com/v1",
+        "description": "The OpenAI REST API. Please see https://platform.openai.com/docs/api-reference for more details.",
         "operationCount": 360,
         "unavailableCount": 18
       }
@@ -420,12 +450,13 @@
     {
       "id": "openrouter",
       "sourceRevision": "8e9803815de386067a20d33b094c08a67c10db451178e7cf2f970a6b78ae9960",
-      "bytes": 40293,
-      "compressedBytes": 5013,
-      "sha256": "a22a7d0923b400f4fe3b9b50bbfa9798723358f8bfe932178e5653afa75d4111",
+      "bytes": 40367,
+      "compressedBytes": 5014,
+      "sha256": "5e7f0217bd42196f0e1847d94ff2b9d8d0c849b9c9231089646da202c6c19308",
       "summary": {
         "name": "OpenRouter API",
         "serverUrl": "https://openrouter.ai/api/v1",
+        "description": "OpenAI-compatible API with additional OpenRouter features",
         "operationCount": 152,
         "unavailableCount": 2
       }
@@ -433,12 +464,13 @@
     {
       "id": "render",
       "sourceRevision": "97a86252d35cbe6b66c141483ad2cc52a323d8dfb0ecd5d73e11ac8cfc7dc3e3",
-      "bytes": 59162,
-      "compressedBytes": 6170,
-      "sha256": "1300ad93645dcc0598f6d9b6a5ef136f5e8d02778ee04bb6215da6dd59913cd0",
+      "bytes": 59223,
+      "compressedBytes": 6171,
+      "sha256": "9dc7113937c327ddce88ad86e17cbffa76faabe08ef4f98962f062fa363cee9d",
       "summary": {
         "name": "Render Public API",
         "serverUrl": "https://api.render.com/v1",
+        "description": "Manage everything about your Render services",
         "operationCount": 228,
         "unavailableCount": 25
       }
@@ -446,12 +478,13 @@
     {
       "id": "replicate",
       "sourceRevision": "790b5dfeb6e9fffc5c967de5dd30b17e305bad4686ad700ad91650de7a457468",
-      "bytes": 9208,
-      "compressedBytes": 1286,
-      "sha256": "8aba10fe9da9d33506c576041c81417c03c4d99c70bba80716466b84a9cd4314",
+      "bytes": 9267,
+      "compressedBytes": 1289,
+      "sha256": "f0448d5f1393948c5258a2d8fc00d5f0f4f84beebb13b2c97ba3e5da04693bbd",
       "summary": {
         "name": "Replicate HTTP API",
         "serverUrl": "https://api.replicate.com/v1",
+        "description": "A web service for running Replicate models",
         "operationCount": 36,
         "unavailableCount": 1
       }
@@ -459,12 +492,13 @@
     {
       "id": "resend",
       "sourceRevision": "951d4cd61d760bfb79e85adf5bb5bec22299eab434ab3b4e87c8d71095a10d5e",
-      "bytes": 35708,
-      "compressedBytes": 3755,
-      "sha256": "6ef93a6e6d61d4caeb6615db21e4e7c6e637b68742e472c0bbf4cc14a7c04947",
+      "bytes": 35769,
+      "compressedBytes": 3756,
+      "sha256": "c432252d9779a00d886631d6a4ab73ad6ff619bfc1ddca686d60cb31b9ff2c56",
       "summary": {
         "name": "Resend",
         "serverUrl": "https://api.resend.com",
+        "description": "Resend is the email platform for developers.",
         "operationCount": 142,
         "unavailableCount": 4
       }
@@ -472,12 +506,13 @@
     {
       "id": "telegram",
       "sourceRevision": "f5234e87e6880f87fbba5bd594d80d2d235bac2d9388a47b00b109bc5fe0e6cc",
-      "bytes": 42432,
-      "compressedBytes": 3858,
-      "sha256": "722283649238612e604b46970b376e1562bfb64c1dfaf15c5cedf24f64b5e1b0",
+      "bytes": 42536,
+      "compressedBytes": 3862,
+      "sha256": "17189dde4eb17a58c659c812f1fcb64f489b1a7422ee939534e7045b8dff66b9",
       "summary": {
         "name": "Telegram Bot API",
         "serverUrl": "https://api.telegram.org/bot%3Cbot_token%3E",
+        "description": "Generated from the official Telegram Bot API documentation using @gramio/schema-parser.",
         "operationCount": 180,
         "unavailableCount": 2
       }
@@ -485,12 +520,13 @@
     {
       "id": "together",
       "sourceRevision": "5e1162180a8e29e07f9d0754f0d82815f493c7cea34b3c9ca2d7bd5b2115c69f",
-      "bytes": 60156,
-      "compressedBytes": 6318,
-      "sha256": "21f2ea40f16157c6cb1a7b4fed1be454d66780f2b0b02d00eb5bd0d4603ae775",
+      "bytes": 60242,
+      "compressedBytes": 6320,
+      "sha256": "7985b33bd73ef5865c16adbfa3dfca92f73628a89bbb33dc96aaf20974b1e530",
       "summary": {
         "name": "Together APIs",
         "serverUrl": "https://api.together.ai/v2",
+        "description": "The Together REST API. See https://docs.together.ai for more details.",
         "operationCount": 208,
         "unavailableCount": 3
       }
@@ -498,12 +534,13 @@
     {
       "id": "twilio",
       "sourceRevision": "912992d3da38d4c43e693ae519976c47ea410db67bdebe9997b872a949e7acad",
-      "bytes": 93267,
-      "compressedBytes": 6721,
-      "sha256": "5adebab280caad7400c7929f23c05d76b343b3f990bdc13f5bda3521c0072ff7",
+      "bytes": 93319,
+      "compressedBytes": 6723,
+      "sha256": "931346d0dbdf0f5daf260a03b3d73b3ed15aeade9927f398bc80bcf99d02a933",
       "summary": {
         "name": "Twilio - Api",
         "serverUrl": "https://api.twilio.com",
+        "description": "This is the public Twilio REST API.",
         "operationCount": 197,
         "unavailableCount": 197
       }
@@ -511,12 +548,13 @@
     {
       "id": "vercel",
       "sourceRevision": "4d90721d2c1a6799222e55886f3faf3a2fc01c5fe1eacc22b3ba372b65db7665",
-      "bytes": 123968,
-      "compressedBytes": 14298,
-      "sha256": "0826ff09d0f861a4c0d71f6afea0c085e5b98564a8212ba999e82b7ea716463b",
+      "bytes": 124138,
+      "compressedBytes": 14301,
+      "sha256": "429b53c7990c7de0b448bab8c18afd761e72bf648e3728a1298df8c42beb6f46",
       "summary": {
         "name": "Vercel API",
         "serverUrl": "https://api.vercel.com",
+        "description": "Vercel combines the best developer experience with an obsessive focus on end-user performance. Our platform enables frontend teams to do their best work.",
         "operationCount": 465,
         "unavailableCount": 3
       }
@@ -524,12 +562,13 @@
     {
       "id": "x",
       "sourceRevision": "e21fbef8a11e6c2a8dfcbbe2390fc10c73dc79671b3b5f51de787d4be106a9c6",
-      "bytes": 46343,
-      "compressedBytes": 4654,
-      "sha256": "076443abf8187a2def6d8dc3938e0061688e5b6a431d799511559758d235e1c7",
+      "bytes": 46388,
+      "compressedBytes": 4655,
+      "sha256": "3705130741e519ad1200dc36d0022a57e2cc75a9ef561ec50e63c6d57195c0b9",
       "summary": {
         "name": "X API v2",
         "serverUrl": "https://api.x.com",
+        "description": "X API v2 available endpoints",
         "operationCount": 156,
         "unavailableCount": 129
       }
@@ -537,12 +576,13 @@
     {
       "id": "xai",
       "sourceRevision": "1361ade8ea7ae8c3931e28410f996fae95eea3cfcaf8e6cd54850c31174be1b0",
-      "bytes": 15733,
+      "bytes": 15799,
       "compressedBytes": 3066,
-      "sha256": "ad840fee4aca504492c8eb6f806597183e957dcc1025ba1c27a4a4d78295f481",
+      "sha256": "1ca24c8ad7a7c1e4ce2f36756f86c040bf6ba67438d356c769cf7eb080a34aa3",
       "summary": {
         "name": "xAI's REST API",
         "serverUrl": "https://api.x.ai/v1",
+        "description": "REST API for xAI compatible with other providers.",
         "operationCount": 44,
         "unavailableCount": 2
       }
