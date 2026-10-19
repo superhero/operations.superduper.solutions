@@ -11,6 +11,7 @@ import { createExampleEndpoint } from './example-endpoint.fixture.mjs';
 import { pail } from '@visulima/pail';
 import { createVaultEndpoint } from './vault-endpoint.fixture.mjs';
 import { toolbarButtonNames } from '../../src/lib/toolbar-settings.ts';
+import { enterBrowserFeature, releaseDevelopmentResources } from './development-resources.fixture.mjs';
 import { exampleCatalogState } from "./catalog-state.fixture.mjs";
 import { appSettingsDatabaseName } from '../../src/lib/storage-names.ts';
 import { browserAbortCapture, finishBrowserContext } from '../gherkin/browser-abort-guard.mjs';
@@ -110,6 +111,15 @@ BeforeAll(async function () {
 });
 
 Before(async function ({ pickle }) {
+  const uri = this.info.gherkin.uri;
+  const changed = await enterBrowserFeature(uri);
+  if (changed && uri.endsWith('/service-defaults.feature')) {
+    // Start the complete-library journey without browser-process caches from
+    // hundreds of unrelated scenarios. Contexts and real app startup stay fresh.
+    const engine = browser.browserType();
+    await browser.close();
+    browser = await engine.launch(engine.name() === 'chromium' ? { ignoreDefaultArgs: ['--hide-scrollbars'] } : {});
+  }
   this.browser = browser;
   this.baseURL = baseURL;
   this.diagnostics = [];
@@ -227,7 +237,8 @@ After(async function ({ pickle, result }) {
 
 AfterAll(async function () {
   try {
-    await browser?.close();
+    try { await releaseDevelopmentResources(); }
+    finally { await browser?.close(); }
   } finally {
     if (server?.listening) await new Promise((resolveClose, reject) => server.close(error => error ? reject(error) : resolveClose()));
   }

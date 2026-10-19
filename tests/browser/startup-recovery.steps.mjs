@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { registerDevelopmentCleanup } from './development-resources.fixture.mjs';
 import { exampleCatalogState } from "./catalog-state.fixture.mjs";
 import { After, AfterAll, Given, Then, When, Status } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
@@ -130,7 +131,13 @@ After({ tags: '@startup-modules or @file-worker-development' }, async function (
   }
   expect(state.pageErrors, 'Unexpected development page errors').toEqual([]);
 });
-AfterAll(async function () { await server?.close(); });
+async function closeDevelopmentServer() {
+  await server?.close();
+  server = undefined;
+  serverReady = undefined;
+}
+registerDevelopmentCleanup(closeDevelopmentServer);
+AfterAll(closeDevelopmentServer);
 
 
 Given('a cold development file parser with {int} failed worker starts', { timeout: 90_000 }, async function (failures) {

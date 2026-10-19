@@ -5,6 +5,7 @@ import { createServer } from 'vite';
 import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { registerDevelopmentCleanup } from '../development-resources.fixture.mjs';
 
 const servers = new Map();
 
@@ -76,6 +77,8 @@ export async function closeFixtureServers() {
   const errors = results.filter(value => value.status === 'rejected').map(value => value.reason);
   if (errors.length) throw new AggregateError(errors, 'Development fixture server cleanup failed');
 }
+
+registerDevelopmentCleanup(closeFixtureServers);
 
 export function ownedBrowser(world) {
   const contexts = world.legacyContexts ??= new Set();

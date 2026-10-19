@@ -177,6 +177,9 @@ contain Vite's Node helpers.
 
 Vitest's automatic worker fixture owns shared browsers, HTTP servers and
 registered development-server cleanup. Each scenario owns a fresh context.
+Compiled development graphs are reused within a feature and released when its
+worker enters another feature. The complete-library feature starts a fresh browser
+process to bound retained caches. Worker teardown remains the final cleanup guard.
 Cleanup does not depend on a predicted feature count; tag and name filters keep
 the same lifetime rules. Aborting a scenario closes its contexts before later
 work continues, while failed cleanup still fails validation.
