@@ -370,6 +370,20 @@ layout. Captures screenshots and traces to explain browser test failures.
 
 ---
 
+<a href="https://www.npmjs.com/package/@apidevtools/json-schema-ref-parser"><img src=".github/badges/version-dependency-apidevtools--json-schema-ref-parser.svg" alt="@apidevtools/json-schema-ref-parser declared version"></a>
+
+Bundles external schema references into the checked-in service packs during an
+explicit refresh. Ordinary builds do not download provider schemas.
+
+---
+
+<a href="https://www.npmjs.com/package/swagger2openapi"><img src=".github/badges/version-dependency-swagger2openapi.svg" alt="swagger2openapi declared version"></a>
+
+Converts Swagger 2 service descriptions to OpenAPI 3 during schema refresh.
+It is development tooling and is not shipped in the browser runtime.
+
+---
+
 <a href="https://www.npmjs.com/package/sharp"><img src=".github/badges/version-dependency-sharp.svg" alt="sharp declared version"></a>
 
 Generates checked-in favicon compatibility files from the original SVG during

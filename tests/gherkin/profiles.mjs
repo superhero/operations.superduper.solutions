@@ -103,6 +103,8 @@ const source = {
     "src/processing-metrics.feature",
     "src/resource-core.feature",
     "src/schema-documents.feature",
+    "src/service-schema-packs.feature",
+    "src/service-catalog.feature",
     "src/schema-runtime.feature",
     "src/worker-rpc.feature",
     "src/workflow-curve.feature",
