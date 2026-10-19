@@ -52,6 +52,23 @@ Record the completed develop integrations and prioritize cleaner phase measureme
 
 ```
 
+<!-- changelog-commit:e1936ce62fddb72be902937676b9cd48b313e933 -->
+### Commit [`e1936ce`](https://github.com/superhero/operations.superduper.solutions/commit/e1936ce62fddb72be902937676b9cd48b313e933)
+
+```text
+perf(schemas): release hidden controls and compact matching work
+
+Mount settings controls only in the visible section and release them after
+closing. Preserve the Browser indicator, transitions and saved settings.
+Retain exact compact search results without full candidate sorting; reuse
+pending installations and completed menus while releasing closed workers.
+
+Separate primary timing and heap measurements from diagnostic profiling.
+Record startup, worker CPU, model-stage costs and rejected cache experiments.
+Cover cancellation ownership, native navigation and Firefox error arguments.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54

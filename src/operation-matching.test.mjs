@@ -23,20 +23,21 @@ const hooks = registerHooks({
       : next(url, context);
   },
 });
-let createOperationMatchingEvaluator, evaluateOperationsAsync;
+let createOperationMatchingEvaluator, evaluateOperationsAsync, prepareOperationMatching;
 try {
-  ({ createOperationMatchingEvaluator, evaluateOperationsAsync } = await import("./lib/operation-matching-client.ts"));
+  ({ createOperationMatchingEvaluator, evaluateOperationsAsync, prepareOperationMatching } = await import("./lib/operation-matching-client.ts"));
 } finally { hooks.deregister(); }
 
 class MatchingWorkerDouble extends EventTarget {
   messages = [];
   terminations = 0;
   library = createMatchingLibrary();
+  holdConfiguration = false;
   postMessage(message) {
     this.messages.push(structuredClone(message));
     if (message.method === 'configure') {
       this.library.configure(...message.args);
-      this.reply({ kind: 'result', id: message.id });
+      if (!this.holdConfiguration) this.reply({ kind: 'result', id: message.id });
     }
   }
   terminate() { this.terminations++; }
@@ -88,7 +89,7 @@ function evaluator(world, factory) {
   return evaluate;
 }
 async function searching(worker) {
-  await Promise.resolve();
+  for (let count = 0; count < 10 && worker.messages.at(-1)?.method !== 'search'; count++) await Promise.resolve();
   assert.equal(worker.messages.at(-1).method, 'search');
 }
 function start(world, query, worker = new MatchingWorkerDouble()) {
@@ -105,6 +106,7 @@ Then("background matching sends only identifiers and names and restores the comp
     assert.deepEqual(options, { name: "operation-matching" });
     return worker;
   };
+  prepareOperationMatching(operations);
   const pending = evaluateOperationsAsync("List projetcs", operations, signal(this).signal);
   pending.catch(() => {});
   assert.equal(worker.messages[0].method, 'configure');
@@ -131,6 +133,8 @@ Then("background matching sends only identifiers and names and restores the comp
   assert.deepEqual(result.results, evaluateOperations('Create task', operations).results);
   assert.equal(result.considered, operations.length);
   assert.equal(worker.terminations, 0);
+  assert.equal(prepareOperationMatching([]).catalogs.length, 0);
+  assert.equal(worker.terminations, 1);
 });
 
 Then("an already aborted operation search never starts its worker", async function () {
@@ -144,6 +148,7 @@ Then("an already aborted operation search never starts its worker", async functi
 
 Then("replacing an operation search terminates its worker and only the replacement can complete", async function () {
   const previous = start(this, "List projects");
+  await searching(previous.worker);
   previous.controller.abort();
   assert.equal(previous.worker.terminations, 1);
   assert.equal(applicationExecutionMetrics().dedicatedWorkers, this.matchingWorkerBaseline);
@@ -218,7 +223,10 @@ Then("the operation matching worker evaluates compact descriptors with the norma
       for (const details of [true, false]) {
         await handler({ data: { kind: 'request', id: 30 + index, method: 'search', args: [query, 'snapshot', details] } });
         const scores = matches => matches.map(({ operation, similarity }) => ({ id: operation.id, similarity }));
-        assert.deepEqual(replies.at(-1), { kind: 'result', id: 30 + index, value: {
+        const actual = replies.at(-1);
+        assert.ok(Number.isFinite(actual.value.scoringMs));
+        delete actual.value.scoringMs;
+        assert.deepEqual(actual, { kind: 'result', id: 30 + index, value: {
           considered: expected.candidates.length, results: scores(expected.results), candidates: details ? scores(expected.candidates) : [],
         } });
       }
@@ -267,17 +275,89 @@ Then('a replacement search wins even without an explicit caller abort', async fu
   const obsolete = evaluate('List projects', operations, oldController.signal);
   const rejected = assert.rejects(obsolete, { name: 'AbortError' });
   const latest = evaluate('Create task', operations, signal(this).signal);
-  await searching(workers[1]);
-  workers[0].complete(); workers[1].complete();
+  assert.equal(workers.length, 1, 'Replacement shares the unfinished index installation.');
+  await searching(workers[0]); workers[0].complete();
   assert.equal((await latest).results[0].operation.id, 'demo:createTask');
   await rejected;
-  assert.equal(workers[0].terminations, 1);
+  assert.equal(workers[0].messages.filter(message => message.method === 'configure').length, 1);
+  assert.equal(workers[0].terminations, 0);
   const controller = signal(this);
   const previous = evaluate('List projects', operations, controller.signal);
   const cancelled = assert.rejects(previous, { name: 'AbortError' });
   const replacement = evaluate('Create task', operations, signal(this).signal);
   controller.abort();
-  await searching(workers[2]); workers[2].complete();
+  await searching(workers[1]); workers[1].complete();
   await replacement; await cancelled;
-  assert.equal(workers[2].terminations, 0, 'Aborting an older owner cannot stop its replacement.');
+  assert.equal(workers[0].terminations, 1, 'Replacing active scoring still terminates actual CPU work.');
+  assert.equal(workers[1].terminations, 0, 'Aborting an older owner cannot stop its replacement.');
+});
+
+Then('an aborted installation stays reusable without starting obsolete scoring', async function () {
+  const worker = new MatchingWorkerDouble(); worker.holdConfiguration = true;
+  const evaluate = evaluator(this, () => worker);
+  const controller = signal(this);
+  const obsolete = evaluate('List projects', operations, controller.signal);
+  const reason = new Error('Search owner cancelled');
+  const cancelled = assert.rejects(obsolete, error => error === reason);
+  controller.abort(reason);
+  const next = evaluate('Create task', operations, signal(this).signal);
+  assert.equal(worker.messages.length, 1);
+  worker.reply({ kind: 'result', id: worker.messages[0].id });
+  await searching(worker);
+  assert.equal(worker.messages.at(-1).args[0], 'Create task');
+  worker.complete(); await next; await cancelled;
+  assert.equal(worker.terminations, 0);
+  evaluate.invalidate(worker.messages[0].args[2]);
+  assert.equal(worker.terminations, 0);
+  evaluate.invalidate('disabled-all');
+  assert.equal(worker.terminations, 1, 'An idle obsolete index is released without waiting for another query.');
+});
+
+Then('schema changes queue coherent installations and recover after configuration failure', async function () {
+  const workers = [];
+  const evaluate = evaluator(this, () => { const worker = new MatchingWorkerDouble(); worker.holdConfiguration = true; workers.push(worker); return worker; });
+  const obsolete = evaluate('List projects', operations, signal(this).signal);
+  const rejected = assert.rejects(obsolete, { name: 'AbortError' });
+  const changed = operations.map(operation => operation.id.startsWith('demo:') ? { ...operation, name: `${operation.name} revised` } : operation);
+  const latest = evaluate('revised', changed, signal(this).signal);
+  evaluate.invalidate('older-revision');
+  const worker = workers[0];
+  assert.equal(worker.messages.length, 1);
+  worker.reply({ kind: 'result', id: worker.messages[0].id });
+  for (let count = 0; count < 10 && worker.messages.length < 2; count++) await Promise.resolve();
+  assert.equal(worker.messages[1].method, 'configure');
+  assert.deepEqual(worker.messages[1].args[0].map(catalog => catalog.id), ['demo']);
+  worker.reply({ kind: 'result', id: worker.messages[1].id });
+  await searching(worker); worker.complete();
+  assert.deepEqual((await latest).results, evaluateOperations('revised', changed).results);
+  await rejected;
+  // A native error arriving after a configure reply still wins publication.
+  evaluate.dispose();
+  const failed = evaluate('List projects', operations, signal(this).signal);
+  const failure = assert.rejects(failed, { name: 'WorkerError' });
+  workers[1].reply({ kind: 'result', id: workers[1].messages[0].id });
+  workers[1].dispatchEvent(new Event('messageerror'));
+  await failure;
+  const retry = evaluate('List projects', operations, signal(this).signal);
+  workers[2].reply({ kind: 'result', id: workers[2].messages[0].id });
+  await searching(workers[2]); workers[2].complete(); await retry;
+  assert.equal(workers[2].terminations, 0);
+});
+
+Then('late matching failures retain the replacement and reject replies from crashed workers', async function () {
+  const workers = [];
+  const evaluate = evaluator(this, () => { const worker = new MatchingWorkerDouble(); workers.push(worker); return worker; });
+  const failed = evaluate('List projects', operations, signal(this).signal);
+  const rejected = assert.rejects(failed, { name: 'EvaluationError' });
+  await searching(workers[0]);
+  workers[0].reply({ kind: 'error', id: workers[0].messages.at(-1).id, error: { name: 'EvaluationError', message: 'Scoring failed' } });
+  const replacement = evaluate('Create task', operations, signal(this).signal);
+  await searching(workers[1]); workers[1].complete();
+  await replacement; await rejected;
+  assert.equal(workers[1].terminations, 0);
+  const crashed = evaluate('List projects', operations, signal(this).signal);
+  const crash = assert.rejects(crashed, { name: 'WorkerError' });
+  workers[1].complete();
+  workers[1].dispatchEvent(new Event('error'));
+  await crash;
 });

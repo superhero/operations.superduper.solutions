@@ -49,6 +49,13 @@ pinned. Size accounting limits retention, not exact JavaScript heap consumption.
 Active workflows may require more models than the cache budget permits to retain
 when idle.
 
+Closed settings sections construct their controls on demand and release them
+after their closing transition, including when the entire drawer closes. The
+Browser indicator stays mounted while its dashboard is released. The parent retains saved settings and Application numeric drafts;
+canonical source storage and ongoing application services remain independent of
+these controls. This avoids maintaining schema-card tooltip listeners while the
+Schemas section is closed.
+
 Search normalization reuses unchanged schema descriptors. The navigation shares
 one tooltip controller for its rows and uses browser-managed offscreen rendering
 through `content-visibility: auto`. Real buttons remain in the DOM to preserve

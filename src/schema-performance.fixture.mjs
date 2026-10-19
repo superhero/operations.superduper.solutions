@@ -10,23 +10,42 @@ import * as matching from './lib/matching.ts';
 
 // Native module execution avoids measuring Vitest's VM/global lookup overhead
 // inside the distance loop. Correctness still runs through the Gherkin oracle.
-const { operations, queries, signatures, profile } = workerData;
+const { operations, queries, signatures, resultSignatures, profile } = workerData;
 const start = performance.now();
-const evaluate = typeof matching.createOperationMatcher === 'function'
-  ? matching.createOperationMatcher(operations) : query => matching.evaluateOperations(query, operations);
+const prepared = matching.prepareMatchingOperations(operations);
+const evaluate = query => matching.evaluatePreparedOperations(query, prepared);
+const compact = query => matching.evaluatePreparedOperations(query, prepared, false);
 const indexPreparationMs = performance.now() - start;
+// Warm both modes before collecting either mode's samples.
+for (let sample = 0; sample < 3; sample++) for (const query of queries.slice(0, 4)) { evaluate(query); compact(query); }
 const searches = queries.map((query, index) => {
   evaluate(query); // Warm each query before timing it.
-  const samplesMs = [];
+  const samplesMs = [], compactSamplesMs = [], cpuMs = [], compactCpuMs = [];
   let actual;
   for (let sample = 0; sample < 5; sample++) {
-    const started = performance.now();
-    actual = evaluate(query);
-    samplesMs.push(performance.now() - started);
-    assert.equal(createHash('sha256').update(JSON.stringify(actual)).digest('hex'), signatures[index]);
+    // Alternate modes within each pair; scheduling delays are reported separately
+    // from this native worker thread's CPU consumption.
+    const order = sample % 2 ? ['compact', 'full'] : ['full', 'compact'];
+    for (const mode of order) {
+      const cpuStarted = process.threadCpuUsage();
+      const started = performance.now();
+      const result = mode === 'full' ? evaluate(query) : compact(query);
+      const elapsed = performance.now() - started;
+      const cpu = process.threadCpuUsage(cpuStarted);
+      if (mode === 'full') {
+        actual = result; samplesMs.push(elapsed); cpuMs.push((cpu.user + cpu.system) / 1000);
+        assert.equal(createHash('sha256').update(JSON.stringify(result)).digest('hex'), signatures[index]);
+      } else {
+        compactSamplesMs.push(elapsed); compactCpuMs.push((cpu.user + cpu.system) / 1000);
+        assert.equal(createHash('sha256').update(JSON.stringify(result.results)).digest('hex'), resultSignatures[index]);
+      }
+    }
   }
-  return { query, medianMs: [...samplesMs].sort((a, b) => a - b)[2], samplesMs,
+  const median = values => [...values].sort((a, b) => a - b)[2];
+  return { query, compactSamplesMs, compactMedianMs: median(compactSamplesMs), medianMs: median(samplesMs), samplesMs,
+    cpuMs, compactCpuMs, medianCpuMs: median(cpuMs), compactMedianCpuMs: median(compactCpuMs),
     candidates: actual.candidates.length, results: actual.results.length };
+
 });
 let cpuProfile;
 if (profile) {

@@ -10,9 +10,12 @@ const library = createMatchingLibrary();
 serveWorkerRpc({ evaluate: evaluateOperations,
   configure: library.configure,
   search(prompt: string, revision: string, details: boolean) {
-    const result = evaluatePreparedOperations(prompt, library.read(revision));
+    const prepared = library.read(revision);
+    const started = performance.now();
+    const result = evaluatePreparedOperations(prompt, prepared, details);
+    const scoringMs = performance.now() - started;
     const scores = (matches: typeof result.results) => matches.map(({ operation, similarity }) => ({ id: operation.id, similarity }));
-    return { considered: result.candidates.length, results: scores(result.results), candidates: details ? scores(result.candidates) : [] };
+    return { scoringMs, considered: result.results.length ? prepared.length : 0, results: scores(result.results), candidates: details ? scores(result.candidates) : [] };
   },
   evaluatePrepared(prompt: string, prepared: PreparedMatchingOperation[]) {
     const result = evaluatePreparedOperations(prompt, prepared);

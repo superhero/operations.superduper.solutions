@@ -146,10 +146,22 @@ When('workflow defaults recover after a failed settings save', async function ()
       return window.settingsOriginalTransaction.call(this, stores, mode, ...rest);
     };
   });
-  await settings(page).getByRole('switch', { name: 'Dashed lines', exact: true }).click();
+  const [logged] = await Promise.all([
+    page.waitForEvent('console', message => message.type() === 'error'),
+    settings(page).getByRole('switch', { name: 'Dashed lines', exact: true }).click(),
+  ]);
   await expect(settings(page).getByRole('alert')).toContainText('Could not save workflow defaults');
-  const expectedFailure = item => item.type === 'console-error' && item.message.includes('SettingsStorageError')
-    && item.message.includes('Settings save temporarily unavailable');
+  // Firefox's console text is only 'Error [operations]'. Assert the actual
+  // error and cause instead of relying on the browser's string presentation.
+  const argumentsText = (await Promise.all(logged.args().map(argument => argument.evaluate(value => {
+    const messages = [];
+    for (let depth = 0; value && typeof value === 'object' && depth < 8; depth++, value = value.cause)
+      messages.push(`${value.name}: ${value.message}`);
+    return messages.join('\n');
+  })))).join('\n');
+  assert.match(argumentsText, /SettingsStorageError/);
+  assert.match(argumentsText, /Settings save temporarily unavailable/);
+  const expectedFailure = item => item.type === 'console-error' && item.message === logged.text();
   await expect.poll(() => this.diagnostics.filter(expectedFailure).length).toBe(1);
   this.diagnostics = this.diagnostics.filter(item => !expectedFailure(item));
   assert.deepEqual(await storedDefaults(page), enabledDefaults);

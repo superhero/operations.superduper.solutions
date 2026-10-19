@@ -1,0 +1,3765 @@
+{
+  "version": 1,
+  "date": "2026-10-19",
+  "baseline": {
+    "commit": "09eb5c093972fd45e2740bb8a02e831cd6a66e29",
+    "probe": "Same performance.now worker-search timing probe as candidate; no other baseline application changes.",
+    "buildSha256": "ea07c8ce5d48cccaed646c75fcf321bb440093c967f4d2011d1f3e4d182839d5",
+    "browser": {
+      "label": "09eb5c0",
+      "browser": "153.0.8010.12",
+      "snapshots": false,
+      "httpCache": "disabled by routing",
+      "startup": [
+        {
+          "freshMs": 1208.2561919999998,
+          "persistedMs": 769.0838119999999
+        },
+        {
+          "freshMs": 1203.480324,
+          "persistedMs": 886.0231400000002
+        },
+        {
+          "freshMs": 1186.4859659999993,
+          "persistedMs": 887.655178
+        }
+      ],
+      "traffic": {
+        "workers": 1,
+        "terminations": 0,
+        "requests": 16,
+        "indexOperations": 13892,
+        "scores": 0,
+        "results": 3110,
+        "methods": {
+          "configure": 1,
+          "search": 15
+        }
+      },
+      "openSchemasMs": 252.918698999998,
+      "initialHeap": {
+        "totalUsedBytes": 45334552,
+        "totalBackingBytes": 32657082,
+        "totalEmbedderBytes": 6339080,
+        "containerBytes": 1161551872,
+        "pageUsedBytes": 33390180,
+        "workers": [
+          {
+            "name": "operations-metrics-recorder",
+            "usedBytes": 949212
+          },
+          {
+            "name": "operations-workflows",
+            "usedBytes": 681500
+          },
+          {
+            "name": "operations-schema-library",
+            "usedBytes": 10313660
+          }
+        ]
+      },
+      "searchHeap": {
+        "totalUsedBytes": 52051236,
+        "totalBackingBytes": 32705161,
+        "totalEmbedderBytes": 5848216,
+        "containerBytes": 1142616064,
+        "pageUsedBytes": 35159432,
+        "workers": [
+          {
+            "name": "operations-metrics-recorder",
+            "usedBytes": 948084
+          },
+          {
+            "name": "operations-workflows",
+            "usedBytes": 682272
+          },
+          {
+            "name": "operations-schema-library",
+            "usedBytes": 10313660
+          },
+          {
+            "name": "operation-matching",
+            "usedBytes": 4947788
+          }
+        ]
+      },
+      "closedSearchHeap": {
+        "totalUsedBytes": 52020324,
+        "totalBackingBytes": 32705294,
+        "totalEmbedderBytes": 6911952,
+        "containerBytes": 1146896384,
+        "pageUsedBytes": 35128520,
+        "workers": [
+          {
+            "name": "operations-metrics-recorder",
+            "usedBytes": 948084
+          },
+          {
+            "name": "operations-workflows",
+            "usedBytes": 682272
+          },
+          {
+            "name": "operations-schema-library",
+            "usedBytes": 10313660
+          },
+          {
+            "name": "operation-matching",
+            "usedBytes": 4947788
+          }
+        ]
+      },
+      "closedSettings": {
+        "connectedNodes": 3254,
+        "windowListeners": {
+          "mousemove": 1,
+          "pointerdown": 1,
+          "pointerup": 2,
+          "touchstart": 1,
+          "touchend": 1,
+          "touchcancel": 1,
+          "mousedown": 1,
+          "mouseup": 1,
+          "click": 1,
+          "auxclick": 1,
+          "dblclick": 1,
+          "contextmenu": 2,
+          "keydown": 336,
+          "scroll": 330,
+          "pointercancel": 2,
+          "pagehide": 5,
+          "error": 1,
+          "unhandledrejection": 1,
+          "focus": 1,
+          "pageshow": 3,
+          "__playwright_global_listeners_check__": 1,
+          "beforeunload": 1,
+          "resize": 1,
+          "blur": 2,
+          "keyup": 5
+        }
+      },
+      "openSchemas": {
+        "connectedNodes": 6890,
+        "windowListeners": {
+          "mousemove": 1,
+          "pointerdown": 1,
+          "pointerup": 2,
+          "touchstart": 1,
+          "touchend": 1,
+          "touchcancel": 1,
+          "mousedown": 1,
+          "mouseup": 1,
+          "click": 1,
+          "auxclick": 1,
+          "dblclick": 1,
+          "contextmenu": 2,
+          "keydown": 336,
+          "scroll": 330,
+          "pointercancel": 2,
+          "pagehide": 5,
+          "error": 1,
+          "unhandledrejection": 1,
+          "focus": 1,
+          "pageshow": 3,
+          "__playwright_global_listeners_check__": 1,
+          "beforeunload": 1,
+          "resize": 1,
+          "blur": 2,
+          "keyup": 5
+        }
+      },
+      "closedSchemas": {
+        "connectedNodes": 6890,
+        "windowListeners": {
+          "mousemove": 1,
+          "pointerdown": 1,
+          "pointerup": 2,
+          "touchstart": 1,
+          "touchend": 1,
+          "touchcancel": 1,
+          "mousedown": 1,
+          "mouseup": 1,
+          "click": 1,
+          "auxclick": 1,
+          "dblclick": 1,
+          "contextmenu": 2,
+          "keydown": 336,
+          "scroll": 330,
+          "pointercancel": 2,
+          "pagehide": 5,
+          "error": 1,
+          "unhandledrejection": 1,
+          "focus": 1,
+          "pageshow": 3,
+          "__playwright_global_listeners_check__": 1,
+          "beforeunload": 1,
+          "resize": 1,
+          "blur": 2,
+          "keyup": 5
+        }
+      },
+      "searches": [
+        {
+          "query": "List projects",
+          "inputToDomMs": 428.1899999976158,
+          "inputToFrameOpportunityMs": 492.48499999940395,
+          "matches": 291,
+          "rpc": [
+            {
+              "method": "configure",
+              "inputToStartMs": 151.03499999642372,
+              "durationMs": 16.70500000193715
+            },
+            {
+              "method": "search",
+              "inputToStartMs": 167.78499999642372,
+              "durationMs": 63.235000003129244,
+              "scoringMs": 62.83499999716878
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 623763,
+            "user_usec": 579921,
+            "system_usec": 43841,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 5,
+            "nr_throttled": 1,
+            "throttled_usec": 83326,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "Create a new project",
+          "inputToDomMs": 320.41999999806285,
+          "inputToFrameOpportunityMs": 356.28999999910593,
+          "matches": 326,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 151.95499999821186,
+              "durationMs": 84.16000000014901,
+              "scoringMs": 83.91500000283122
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 351905,
+            "user_usec": 334599,
+            "system_usec": 17307,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 4,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "get",
+          "inputToDomMs": 170.64499999955297,
+          "inputToFrameOpportunityMs": 189.76499999687076,
+          "matches": 5,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 151.3149999976158,
+              "durationMs": 12.984999999403954,
+              "scoringMs": 12.79500000178814
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 171242,
+            "user_usec": 152409,
+            "system_usec": 18833,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 2,
+            "nr_throttled": 1,
+            "throttled_usec": 10110,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "List projects",
+          "inputToDomMs": 373.6350000016391,
+          "inputToFrameOpportunityMs": 412.3099999986589,
+          "matches": 291,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.27499999850988,
+              "durationMs": 89.48000000044703,
+              "scoringMs": 88.98000000044703
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 350007,
+            "user_usec": 322241,
+            "system_usec": 27765,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 4,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "Create a new project",
+          "inputToDomMs": 307.054999999702,
+          "inputToFrameOpportunityMs": 342.0049999989569,
+          "matches": 326,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 151.00499999895692,
+              "durationMs": 84.46499999985099,
+              "scoringMs": 84.10000000149012
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 444938,
+            "user_usec": 433592,
+            "system_usec": 11347,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 4,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "get",
+          "inputToDomMs": 167.12000000104308,
+          "inputToFrameOpportunityMs": 194.39000000059605,
+          "matches": 5,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 151.01500000059605,
+              "durationMs": 11.54000000283122,
+              "scoringMs": 11.369999997317791
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 96575,
+            "user_usec": 93557,
+            "system_usec": 3019,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 2,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "List projects",
+          "inputToDomMs": 318.70499999821186,
+          "inputToFrameOpportunityMs": 347.69999999925494,
+          "matches": 291,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.785000000149,
+              "durationMs": 77.44500000029802,
+              "scoringMs": 77.08999999985099
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 263147,
+            "user_usec": 261783,
+            "system_usec": 1363,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 4,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "Create a new project",
+          "inputToDomMs": 308.945000000298,
+          "inputToFrameOpportunityMs": 341.964999999851,
+          "matches": 326,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.94500000029802,
+              "durationMs": 83.46499999985099,
+              "scoringMs": 83.06999999657273
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 301042,
+            "user_usec": 283617,
+            "system_usec": 17426,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 3,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "get",
+          "inputToDomMs": 166.39999999850988,
+          "inputToFrameOpportunityMs": 190.39999999850988,
+          "matches": 5,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.89999999850988,
+              "durationMs": 11.320000000298023,
+              "scoringMs": 11.094999998807907
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 87804,
+            "user_usec": 87804,
+            "system_usec": 0,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 3,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "List projects",
+          "inputToDomMs": 307.2399999983609,
+          "inputToFrameOpportunityMs": 339.35999999940395,
+          "matches": 291,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.4049999974668,
+              "durationMs": 83.81000000238419,
+              "scoringMs": 83.42000000178814
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 259728,
+            "user_usec": 252856,
+            "system_usec": 6872,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 3,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "Create a new project",
+          "inputToDomMs": 304.9699999988079,
+          "inputToFrameOpportunityMs": 341.82999999821186,
+          "matches": 326,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.84999999776483,
+              "durationMs": 83.5300000011921,
+              "scoringMs": 83.26499999687076
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 298543,
+            "user_usec": 277230,
+            "system_usec": 21313,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 4,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "get",
+          "inputToDomMs": 166.9949999973178,
+          "inputToFrameOpportunityMs": 193.70499999821186,
+          "matches": 5,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.83499999716878,
+              "durationMs": 11.255000002682209,
+              "scoringMs": 11.099999997764826
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 80596,
+            "user_usec": 78241,
+            "system_usec": 2355,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 2,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "List projects",
+          "inputToDomMs": 315.10500000044703,
+          "inputToFrameOpportunityMs": 347.4049999974668,
+          "matches": 291,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.32499999925494,
+              "durationMs": 85.49500000104308,
+              "scoringMs": 85.18500000238419
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 277471,
+            "user_usec": 273958,
+            "system_usec": 3514,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 3,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "Create a new project",
+          "inputToDomMs": 304.55000000074506,
+          "inputToFrameOpportunityMs": 339.464999999851,
+          "matches": 326,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.78999999910593,
+              "durationMs": 83.0300000011921,
+              "scoringMs": 82.75499999895692
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 334244,
+            "user_usec": 323742,
+            "system_usec": 10502,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 4,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "get",
+          "inputToDomMs": 167.19500000029802,
+          "inputToFrameOpportunityMs": 185.00499999895692,
+          "matches": 5,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 151.20499999821186,
+              "durationMs": 11.405000001192093,
+              "scoringMs": 11.244999997317791
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 104736,
+            "user_usec": 101235,
+            "system_usec": 3502,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 2,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        }
+      ],
+      "sameWorkerModeComparison": [
+        {
+          "query": "List projects",
+          "samples": [
+            {
+              "details": true,
+              "scoringMs": 55.07000000029802,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": false,
+              "scoringMs": 54.55499999970198,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": false,
+              "scoringMs": 54.49000000208616,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": true,
+              "scoringMs": 56.025000002235174,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": true,
+              "scoringMs": 54.64000000059605,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": false,
+              "scoringMs": 53.599999997764826,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": false,
+              "scoringMs": 54.46000000089407,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": true,
+              "scoringMs": 53.10999999940395,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": true,
+              "scoringMs": 64.22499999776483,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": false,
+              "scoringMs": 89.46499999985099,
+              "considered": 13892,
+              "results": 291
+            }
+          ]
+        },
+        {
+          "query": "Create a new project",
+          "samples": [
+            {
+              "details": true,
+              "scoringMs": 141.94500000029802,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": false,
+              "scoringMs": 100.42499999701977,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": false,
+              "scoringMs": 84.96000000089407,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": true,
+              "scoringMs": 83.64999999850988,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": true,
+              "scoringMs": 83.27499999850988,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": false,
+              "scoringMs": 83.875,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": false,
+              "scoringMs": 84.64999999850988,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": true,
+              "scoringMs": 82.75499999895692,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": true,
+              "scoringMs": 83.91499999910593,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": false,
+              "scoringMs": 131.72500000149012,
+              "considered": 13892,
+              "results": 326
+            }
+          ]
+        },
+        {
+          "query": "get",
+          "samples": [
+            {
+              "details": true,
+              "scoringMs": 19.87999999895692,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": false,
+              "scoringMs": 18.640000000596046,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": false,
+              "scoringMs": 19.984999999403954,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": true,
+              "scoringMs": 20.064999997615814,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": true,
+              "scoringMs": 19.154999997466803,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": false,
+              "scoringMs": 19.060000002384186,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": false,
+              "scoringMs": 16.599999997764826,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": true,
+              "scoringMs": 14.850000001490116,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": true,
+              "scoringMs": 16.769999999552965,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": false,
+              "scoringMs": 12.945000000298023,
+              "considered": 13892,
+              "results": 5
+            }
+          ]
+        }
+      ]
+    },
+    "native": {
+      "label": "current",
+      "node": "v26.7.0",
+      "execution": "native-worker",
+      "schemaCount": 42,
+      "operationCount": 13859,
+      "preparation": [
+        {
+          "id": "anthropic",
+          "operations": 144,
+          "durationMs": 16.16569400000003
+        },
+        {
+          "id": "aws-lambda",
+          "operations": 66,
+          "durationMs": 8.998669000000064
+        },
+        {
+          "id": "aws-s3",
+          "operations": 97,
+          "durationMs": 6.1225469999999405
+        },
+        {
+          "id": "bitbucket",
+          "operations": 299,
+          "durationMs": 21.451565000000073
+        },
+        {
+          "id": "bluesky-app",
+          "operations": 152,
+          "durationMs": 10.106549000000086
+        },
+        {
+          "id": "bluesky-dms",
+          "operations": 38,
+          "durationMs": 3.6811330000000453
+        },
+        {
+          "id": "bluesky-moderation",
+          "operations": 45,
+          "durationMs": 4.589288000000124
+        },
+        {
+          "id": "cloudflare",
+          "operations": 3761,
+          "durationMs": 278.6466130000001
+        },
+        {
+          "id": "cohere",
+          "operations": 42,
+          "durationMs": 18.177689999999984
+        },
+        {
+          "id": "confluence",
+          "operations": 252,
+          "durationMs": 11.969955000000027
+        },
+        {
+          "id": "deepseek",
+          "operations": 11,
+          "durationMs": 1.5540040000000772
+        },
+        {
+          "id": "digitalocean",
+          "operations": 855,
+          "durationMs": 52.740234999999984
+        },
+        {
+          "id": "discord",
+          "operations": 246,
+          "durationMs": 18.67168300000003
+        },
+        {
+          "id": "docker",
+          "operations": 108,
+          "durationMs": 5.565008999999918
+        },
+        {
+          "id": "dukascopy",
+          "operations": 1,
+          "durationMs": 0.6143129999998109
+        },
+        {
+          "id": "ecb",
+          "operations": 11,
+          "durationMs": 0.8922410000000127
+        },
+        {
+          "id": "elevenlabs",
+          "operations": 418,
+          "durationMs": 41.63132100000007
+        },
+        {
+          "id": "frankfurter",
+          "operations": 9,
+          "durationMs": 0.7593879999999444
+        },
+        {
+          "id": "fred",
+          "operations": 35,
+          "durationMs": 2.353550000000041
+        },
+        {
+          "id": "github",
+          "operations": 1242,
+          "durationMs": 122.29615199999989
+        },
+        {
+          "id": "gitlab",
+          "operations": 1869,
+          "durationMs": 152.34157099999993
+        },
+        {
+          "id": "gcp-compute",
+          "operations": 758,
+          "durationMs": 133.4223539999998
+        },
+        {
+          "id": "gcp-storage",
+          "operations": 76,
+          "durationMs": 11.178876000000173
+        },
+        {
+          "id": "gemini",
+          "operations": 37,
+          "durationMs": 4.009630000000016
+        },
+        {
+          "id": "groq",
+          "operations": 23,
+          "durationMs": 2.1616129999999885
+        },
+        {
+          "id": "hetzner",
+          "operations": 190,
+          "durationMs": 11.8320769999998
+        },
+        {
+          "id": "huggingface",
+          "operations": 46,
+          "durationMs": 2.5690640000000258
+        },
+        {
+          "id": "jira",
+          "operations": 630,
+          "durationMs": 43.61441100000002
+        },
+        {
+          "id": "azure-resources",
+          "operations": 40,
+          "durationMs": 2.475112000000081
+        },
+        {
+          "id": "mistral",
+          "operations": 173,
+          "durationMs": 15.377247000000125
+        },
+        {
+          "id": "ollama",
+          "operations": 17,
+          "durationMs": 6.09522899999979
+        },
+        {
+          "id": "openai",
+          "operations": 360,
+          "durationMs": 30.04644600000006
+        },
+        {
+          "id": "openrouter",
+          "operations": 152,
+          "durationMs": 26.956766000000243
+        },
+        {
+          "id": "render",
+          "operations": 228,
+          "durationMs": 8.937404999999671
+        },
+        {
+          "id": "replicate",
+          "operations": 36,
+          "durationMs": 1.5900550000001203
+        },
+        {
+          "id": "resend",
+          "operations": 142,
+          "durationMs": 5.407804999999826
+        },
+        {
+          "id": "telegram",
+          "operations": 180,
+          "durationMs": 10.507454999999936
+        },
+        {
+          "id": "together",
+          "operations": 208,
+          "durationMs": 12.447705999999926
+        },
+        {
+          "id": "twilio",
+          "operations": 197,
+          "durationMs": 13.469978999999967
+        },
+        {
+          "id": "vercel",
+          "operations": 465,
+          "durationMs": 43.39544299999989
+        },
+        {
+          "id": "x",
+          "operations": 156,
+          "durationMs": 8.981678000000102
+        },
+        {
+          "id": "xai",
+          "operations": 44,
+          "durationMs": 4.907094000000143
+        }
+      ],
+      "indexPreparationMs": 45.75028800000018,
+      "searches": [
+        {
+          "query": "List projects",
+          "compactSamplesMs": [
+            56.74079800000072,
+            56.584679999999935,
+            57.21773700000085,
+            57.04672300000129,
+            58.277138999999806
+          ],
+          "compactMedianMs": 57.04672300000129,
+          "medianMs": 57.590275999998994,
+          "samplesMs": [
+            56.45436300000074,
+            57.94087799999943,
+            57.09472899999855,
+            57.590275999998994,
+            57.787694999999076
+          ],
+          "cpuMs": [
+            56.582,
+            56.557,
+            56.605,
+            56.6,
+            56.489
+          ],
+          "compactCpuMs": [
+            56.597,
+            56.618,
+            56.599,
+            56.591,
+            56.577
+          ],
+          "medianCpuMs": 56.582,
+          "compactMedianCpuMs": 56.597,
+          "candidates": 13859,
+          "results": 289
+        },
+        {
+          "query": "Create a new project",
+          "compactSamplesMs": [
+            122.41798099999869,
+            91.69177200000013,
+            85.15751900000032,
+            88.8429670000005,
+            144.59433499999977
+          ],
+          "compactMedianMs": 91.69177200000013,
+          "medianMs": 89.461718999999,
+          "samplesMs": [
+            153.41297300000042,
+            89.6296110000003,
+            88.12819599999966,
+            89.461718999999,
+            88.54001599999901
+          ],
+          "cpuMs": [
+            153.041,
+            89.953,
+            86.613,
+            89.88,
+            86.575
+          ],
+          "compactCpuMs": [
+            119.791,
+            89.949,
+            83.257,
+            89.908,
+            142.839
+          ],
+          "medianCpuMs": 89.88,
+          "compactMedianCpuMs": 89.949,
+          "candidates": 13859,
+          "results": 325
+        },
+        {
+          "query": "get",
+          "compactSamplesMs": [
+            23.359259999999267,
+            21.999244000000544,
+            17.258546999999453,
+            14.411081000000195,
+            12.740648000000874
+          ],
+          "compactMedianMs": 17.258546999999453,
+          "medianMs": 17.990176999999676,
+          "samplesMs": [
+            22.647220000000743,
+            21.97563099999934,
+            17.990176999999676,
+            13.616081000000122,
+            13.043781999998828
+          ],
+          "cpuMs": [
+            23.282,
+            19.967,
+            16.647,
+            13.308,
+            13.314
+          ],
+          "compactCpuMs": [
+            23.261,
+            23.258,
+            19.97,
+            13.316,
+            13.32
+          ],
+          "medianCpuMs": 16.647,
+          "compactMedianCpuMs": 19.97,
+          "candidates": 13859,
+          "results": 5
+        },
+        {
+          "query": "List all running virtual machines in the selected project",
+          "compactSamplesMs": [
+            324.79175399999986,
+            289.67173099999854,
+            370.12931899999967,
+            249.78878799999984,
+            282.9025729999994
+          ],
+          "compactMedianMs": 289.67173099999854,
+          "medianMs": 248.63500099999874,
+          "samplesMs": [
+            248.63500099999874,
+            248.2137440000006,
+            248.49519099999998,
+            250.22226099999898,
+            331.0945499999998
+          ],
+          "cpuMs": [
+            249.825,
+            246.493,
+            246.536,
+            249.81,
+            328.772
+          ],
+          "compactCpuMs": [
+            326.169,
+            289.646,
+            369.166,
+            249.86,
+            283.038
+          ],
+          "medianCpuMs": 249.81,
+          "compactMedianCpuMs": 289.646,
+          "candidates": 13859,
+          "results": 5
+        },
+        {
+          "query": "LIST_projetcs",
+          "compactSamplesMs": [
+            57.40226699999948,
+            56.660665999999765,
+            57.20484000000033,
+            57.371046000000206,
+            97.98061000000052
+          ],
+          "compactMedianMs": 57.371046000000206,
+          "medianMs": 57.76504700000078,
+          "samplesMs": [
+            57.24438399999963,
+            57.298423000000184,
+            57.76504700000078,
+            76.26135400000021,
+            99.52208799999971
+          ],
+          "cpuMs": [
+            56.632,
+            56.633,
+            56.623,
+            76.561,
+            99.837
+          ],
+          "compactCpuMs": [
+            56.632,
+            56.625,
+            56.632,
+            56.609,
+            96.48
+          ],
+          "medianCpuMs": 56.633,
+          "compactMedianCpuMs": 56.632,
+          "candidates": 13859,
+          "results": 223
+        },
+        {
+          "query": "\u00c9l\u00e9ment \uff27\uff25\uff34 \ud83d\ude00",
+          "compactSamplesMs": [
+            47.656903999999486,
+            47.585494000000836,
+            48.02318799999921,
+            47.91532299999926,
+            47.69706699999915
+          ],
+          "compactMedianMs": 47.69706699999915,
+          "medianMs": 47.576193999999305,
+          "samplesMs": [
+            51.737121999998635,
+            47.54279900000074,
+            47.576193999999305,
+            47.3180339999999,
+            48.228777000000264
+          ],
+          "cpuMs": [
+            53.29,
+            46.641,
+            46.625,
+            46.633,
+            49.932
+          ],
+          "compactCpuMs": [
+            46.634,
+            46.641,
+            46.634,
+            49.958,
+            49.941
+          ],
+          "medianCpuMs": 46.641,
+          "compactMedianCpuMs": 46.641,
+          "candidates": 13859,
+          "results": 7
+        },
+        {
+          "query": "",
+          "compactSamplesMs": [
+            0.0011329999997542473,
+            0.0006380000013450626,
+            0.0005609999989246717,
+            0.000556999999389518,
+            0.000586000000112108
+          ],
+          "compactMedianMs": 0.000586000000112108,
+          "medianMs": 0.0005540000001929002,
+          "samplesMs": [
+            0.001156000000264612,
+            0.0005440000004455214,
+            0.0005359999995562248,
+            0.0006090000006224727,
+            0.0005540000001929002
+          ],
+          "cpuMs": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "compactCpuMs": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "medianCpuMs": 0,
+          "compactMedianCpuMs": 0,
+          "candidates": 0,
+          "results": 0
+        },
+        {
+          "query": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "compactSamplesMs": [
+            0.0012700000006589107,
+            0.0011730000005627517,
+            0.0011610000001383014,
+            0.0011819999999715947,
+            0.0012050000004819594
+          ],
+          "compactMedianMs": 0.0011819999999715947,
+          "medianMs": 0.001172000000224216,
+          "samplesMs": [
+            0.0011309999990771757,
+            0.0011890000005223555,
+            0.0011639999993349193,
+            0.0011919999997189734,
+            0.001172000000224216
+          ],
+          "cpuMs": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "compactCpuMs": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "medianCpuMs": 0,
+          "compactMedianCpuMs": 0,
+          "candidates": 0,
+          "results": 0
+        }
+      ],
+      "memory": {
+        "rss": 575188992,
+        "heapTotal": 67354624,
+        "heapUsed": 34542608,
+        "external": 7414664,
+        "arrayBuffers": 78315
+      },
+      "profiledSamples": 2251
+    }
+  },
+  "candidate": {
+    "runtimeSha256": {
+      "src/App.svelte": "3e26eb56cf8f48e4d3d7d0908671418e442434b59c585c080c64bfb97894eea9",
+      "src/components/SettingsWorkspace.svelte": "acda0c7f7d1f801a967b081918b211ccf70499cc3a28998b224912fb1ee81fe5",
+      "src/components/SideNavigation.svelte": "c830f3f76780d6177d61730e03504edc70d0f2b8236981ca50921ed2c37a92e3",
+      "src/lib/matching.ts": "bdaccdb0a6b86d5a6a65cd82b1c48d16051d9fac4d4cc0b6074a0c7d0fd4e89f",
+      "src/lib/operation-matching-client.ts": "849d3c565a6e3ea3fbef4a36af9252a69e8b6dcea0875c6bf8a7492fcd91e43a",
+      "src/lib/operation-matching.worker.ts": "ed51d277b4d9a27aad34987a6f8c984681de23f56a24a65c63a190ed09e4bde7"
+    },
+    "buildSha256": "fe05e109a3383cb4e5b246085067f50a6322264fb44298cd14962c4e04616a8d",
+    "browser": {
+      "label": "final",
+      "browser": "153.0.8010.12",
+      "snapshots": false,
+      "httpCache": "disabled by routing",
+      "startup": [
+        {
+          "freshMs": 834.926966,
+          "persistedMs": 641.5367409999999
+        },
+        {
+          "freshMs": 859.3490940000002,
+          "persistedMs": 669.4962740000001
+        },
+        {
+          "freshMs": 896.9353659999997,
+          "persistedMs": 564.8433429999995
+        }
+      ],
+      "traffic": {
+        "workers": 1,
+        "terminations": 0,
+        "requests": 16,
+        "indexOperations": 13892,
+        "scores": 0,
+        "results": 3110,
+        "methods": {
+          "configure": 1,
+          "search": 15
+        }
+      },
+      "openSchemasMs": 423.0497009999999,
+      "initialHeap": {
+        "totalUsedBytes": 28570040,
+        "totalBackingBytes": 32656017,
+        "totalEmbedderBytes": 3839816,
+        "containerBytes": 1072099328,
+        "pageUsedBytes": 16626360,
+        "workers": [
+          {
+            "name": "operations-workflows",
+            "usedBytes": 681512
+          },
+          {
+            "name": "operations-schema-library",
+            "usedBytes": 10312956
+          },
+          {
+            "name": "operations-metrics-recorder",
+            "usedBytes": 949212
+          }
+        ]
+      },
+      "searchHeap": {
+        "totalUsedBytes": 35439956,
+        "totalBackingBytes": 32704379,
+        "totalEmbedderBytes": 4535976,
+        "containerBytes": 1088761856,
+        "pageUsedBytes": 18529704,
+        "workers": [
+          {
+            "name": "operations-workflows",
+            "usedBytes": 682284
+          },
+          {
+            "name": "operations-schema-library",
+            "usedBytes": 10312956
+          },
+          {
+            "name": "operations-metrics-recorder",
+            "usedBytes": 948084
+          },
+          {
+            "name": "operation-matching",
+            "usedBytes": 4966928
+          }
+        ]
+      },
+      "closedSearchHeap": {
+        "totalUsedBytes": 30451240,
+        "totalBackingBytes": 32701099,
+        "totalEmbedderBytes": 3820480,
+        "containerBytes": 1074290688,
+        "pageUsedBytes": 18507916,
+        "workers": [
+          {
+            "name": "operations-workflows",
+            "usedBytes": 682284
+          },
+          {
+            "name": "operations-schema-library",
+            "usedBytes": 10312956
+          },
+          {
+            "name": "operations-metrics-recorder",
+            "usedBytes": 948084
+          }
+        ]
+      },
+      "closedSettings": {
+        "connectedNodes": 603,
+        "windowListeners": {
+          "mousemove": 1,
+          "pointerdown": 1,
+          "pointerup": 2,
+          "touchstart": 1,
+          "touchend": 1,
+          "touchcancel": 1,
+          "mousedown": 1,
+          "mouseup": 1,
+          "click": 1,
+          "auxclick": 1,
+          "dblclick": 1,
+          "contextmenu": 2,
+          "keydown": 27,
+          "scroll": 21,
+          "pointercancel": 2,
+          "pagehide": 5,
+          "error": 1,
+          "unhandledrejection": 1,
+          "focus": 1,
+          "pageshow": 3,
+          "__playwright_global_listeners_check__": 1,
+          "beforeunload": 1,
+          "resize": 1,
+          "blur": 2,
+          "keyup": 5
+        }
+      },
+      "openSchemas": {
+        "connectedNodes": 6335,
+        "windowListeners": {
+          "mousemove": 1,
+          "pointerdown": 1,
+          "pointerup": 2,
+          "touchstart": 1,
+          "touchend": 1,
+          "touchcancel": 1,
+          "mousedown": 1,
+          "mouseup": 1,
+          "click": 1,
+          "auxclick": 1,
+          "dblclick": 1,
+          "contextmenu": 2,
+          "keydown": 335,
+          "scroll": 329,
+          "pointercancel": 2,
+          "pagehide": 5,
+          "error": 1,
+          "unhandledrejection": 1,
+          "focus": 1,
+          "pageshow": 3,
+          "__playwright_global_listeners_check__": 1,
+          "beforeunload": 1,
+          "resize": 1,
+          "blur": 2,
+          "keyup": 5
+        }
+      },
+      "closedSchemas": {
+        "connectedNodes": 4239,
+        "windowListeners": {
+          "mousemove": 1,
+          "pointerdown": 1,
+          "pointerup": 2,
+          "touchstart": 1,
+          "touchend": 1,
+          "touchcancel": 1,
+          "mousedown": 1,
+          "mouseup": 1,
+          "click": 1,
+          "auxclick": 1,
+          "dblclick": 1,
+          "contextmenu": 2,
+          "keydown": 27,
+          "scroll": 21,
+          "pointercancel": 2,
+          "pagehide": 5,
+          "error": 1,
+          "unhandledrejection": 1,
+          "focus": 1,
+          "pageshow": 3,
+          "__playwright_global_listeners_check__": 1,
+          "beforeunload": 1,
+          "resize": 1,
+          "blur": 2,
+          "keyup": 5
+        }
+      },
+      "searches": [
+        {
+          "query": "List projects",
+          "inputToDomMs": 354.36500000208616,
+          "inputToFrameOpportunityMs": 387.5100000016391,
+          "matches": 291,
+          "rpc": [
+            {
+              "method": "configure",
+              "inputToStartMs": 151.42000000178814,
+              "durationMs": 25.219999998807907
+            },
+            {
+              "method": "search",
+              "inputToStartMs": 176.74000000208616,
+              "durationMs": 72.94999999925494,
+              "scoringMs": 72.48999999836087
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 459043,
+            "user_usec": 438880,
+            "system_usec": 20163,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 4,
+            "nr_throttled": 1,
+            "throttled_usec": 65436,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "Create a new project",
+          "inputToDomMs": 343.5250000022352,
+          "inputToFrameOpportunityMs": 376.3700000010431,
+          "matches": 326,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 151.80000000074506,
+              "durationMs": 118.27499999850988,
+              "scoringMs": 117.80499999970198
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 372841,
+            "user_usec": 346918,
+            "system_usec": 25924,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 4,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "get",
+          "inputToDomMs": 183.64500000327826,
+          "inputToFrameOpportunityMs": 207.92000000178814,
+          "matches": 5,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 151.21500000357628,
+              "durationMs": 27.944999996572733,
+              "scoringMs": 27.574999999254942
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 127278,
+            "user_usec": 127279,
+            "system_usec": 0,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 3,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "List projects",
+          "inputToDomMs": 274.14499999955297,
+          "inputToFrameOpportunityMs": 303.66499999910593,
+          "matches": 291,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.41499999910593,
+              "durationMs": 59.53000000119209,
+              "scoringMs": 59.26000000163913
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 213349,
+            "user_usec": 205931,
+            "system_usec": 7419,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 3,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "Create a new project",
+          "inputToDomMs": 312.3800000026822,
+          "inputToFrameOpportunityMs": 342.51500000059605,
+          "matches": 326,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 151.04000000283122,
+              "durationMs": 97.67999999970198,
+              "scoringMs": 97.2199999988079
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 399735,
+            "user_usec": 385865,
+            "system_usec": 13871,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 4,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "get",
+          "inputToDomMs": 181.70999999716878,
+          "inputToFrameOpportunityMs": 194.53999999910593,
+          "matches": 5,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.9349999986589,
+              "durationMs": 26.719999998807907,
+              "scoringMs": 26.50500000268221
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 107920,
+            "user_usec": 102181,
+            "system_usec": 5739,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 2,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "List projects",
+          "inputToDomMs": 287.1650000028312,
+          "inputToFrameOpportunityMs": 314.42500000074506,
+          "matches": 291,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.29000000283122,
+              "durationMs": 71.85499999672174,
+              "scoringMs": 71.51999999955297
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 216686,
+            "user_usec": 216329,
+            "system_usec": 357,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 4,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "Create a new project",
+          "inputToDomMs": 323.43000000342727,
+          "inputToFrameOpportunityMs": 353.3400000035763,
+          "matches": 326,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.96000000089407,
+              "durationMs": 117.60999999940395,
+              "scoringMs": 117.21000000089407
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 366205,
+            "user_usec": 354568,
+            "system_usec": 11636,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 3,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "get",
+          "inputToDomMs": 165.8800000026822,
+          "inputToFrameOpportunityMs": 189.17000000178814,
+          "matches": 5,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.964999999851,
+              "durationMs": 10.964999999850988,
+              "scoringMs": 10.625
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 134737,
+            "user_usec": 120594,
+            "system_usec": 14144,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 2,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "List projects",
+          "inputToDomMs": 299.82499999925494,
+          "inputToFrameOpportunityMs": 329.17000000178814,
+          "matches": 291,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.339999999851,
+              "durationMs": 73.4050000011921,
+              "scoringMs": 73.03999999910593
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 265734,
+            "user_usec": 259718,
+            "system_usec": 6015,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 3,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "Create a new project",
+          "inputToDomMs": 308.9950000010431,
+          "inputToFrameOpportunityMs": 340.089999999851,
+          "matches": 326,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.875,
+              "durationMs": 98.74000000208616,
+              "scoringMs": 98.33999999985099
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 284589,
+            "user_usec": 282203,
+            "system_usec": 2386,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 3,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "get",
+          "inputToDomMs": 183.57499999925494,
+          "inputToFrameOpportunityMs": 198.29499999806285,
+          "matches": 5,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.91499999910593,
+              "durationMs": 28.21499999985099,
+              "scoringMs": 27.875
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 107755,
+            "user_usec": 104365,
+            "system_usec": 3391,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 2,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "List projects",
+          "inputToDomMs": 319.9700000025332,
+          "inputToFrameOpportunityMs": 360.9150000028312,
+          "matches": 291,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.32500000298023,
+              "durationMs": 73.19999999925494,
+              "scoringMs": 72.875
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 279375,
+            "user_usec": 263492,
+            "system_usec": 15882,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 3,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "Create a new project",
+          "inputToDomMs": 302.304999999702,
+          "inputToFrameOpportunityMs": 334.67500000074506,
+          "matches": 326,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.8150000013411,
+              "durationMs": 93.18999999761581,
+              "scoringMs": 92.8150000013411
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 280627,
+            "user_usec": 266923,
+            "system_usec": 13705,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 4,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        {
+          "query": "get",
+          "inputToDomMs": 183.49500000104308,
+          "inputToFrameOpportunityMs": 197.9349999986589,
+          "matches": 5,
+          "rpc": [
+            {
+              "method": "search",
+              "inputToStartMs": 150.9349999986589,
+              "durationMs": 27.690000001341105,
+              "scoringMs": 27.33999999985099
+            }
+          ],
+          "containerCpu": {
+            "usage_usec": 105663,
+            "user_usec": 93779,
+            "system_usec": 11884,
+            "nice_usec": 0,
+            "core_sched.force_idle_usec": 0,
+            "nr_periods": 2,
+            "nr_throttled": 0,
+            "throttled_usec": 0,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        }
+      ],
+      "sameWorkerModeComparison": [
+        {
+          "query": "List projects",
+          "samples": [
+            {
+              "details": true,
+              "scoringMs": 79.97999999672174,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": false,
+              "scoringMs": 63.524999998509884,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": false,
+              "scoringMs": 52.775000002235174,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": true,
+              "scoringMs": 52.46999999880791,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": true,
+              "scoringMs": 52.58000000193715,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": false,
+              "scoringMs": 49.360000003129244,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": false,
+              "scoringMs": 48.605000000447035,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": true,
+              "scoringMs": 50.80499999970198,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": true,
+              "scoringMs": 52.55499999970198,
+              "considered": 13892,
+              "results": 291
+            },
+            {
+              "details": false,
+              "scoringMs": 49.650000002235174,
+              "considered": 13892,
+              "results": 291
+            }
+          ]
+        },
+        {
+          "query": "Create a new project",
+          "samples": [
+            {
+              "details": true,
+              "scoringMs": 82.78999999910593,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": false,
+              "scoringMs": 77.29999999701977,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": false,
+              "scoringMs": 77.07999999821186,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": true,
+              "scoringMs": 85.8150000013411,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": true,
+              "scoringMs": 120.36499999836087,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": false,
+              "scoringMs": 103.92500000074506,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": false,
+              "scoringMs": 79.94999999925494,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": true,
+              "scoringMs": 81.1900000013411,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": true,
+              "scoringMs": 81.24500000104308,
+              "considered": 13892,
+              "results": 326
+            },
+            {
+              "details": false,
+              "scoringMs": 77.64000000059605,
+              "considered": 13892,
+              "results": 326
+            }
+          ]
+        },
+        {
+          "query": "get",
+          "samples": [
+            {
+              "details": true,
+              "scoringMs": 10.514999996870756,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": false,
+              "scoringMs": 7.074999999254942,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": false,
+              "scoringMs": 7.054999999701977,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": true,
+              "scoringMs": 10.559999998658895,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": true,
+              "scoringMs": 10.66499999910593,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": false,
+              "scoringMs": 8.570000000298023,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": false,
+              "scoringMs": 7.329999998211861,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": true,
+              "scoringMs": 10.439999997615814,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": true,
+              "scoringMs": 10.649999998509884,
+              "considered": 13892,
+              "results": 5
+            },
+            {
+              "details": false,
+              "scoringMs": 7.275000002235174,
+              "considered": 13892,
+              "results": 5
+            }
+          ]
+        }
+      ]
+    },
+    "native": {
+      "label": "current",
+      "node": "v26.7.0",
+      "execution": "native-worker",
+      "schemaCount": 42,
+      "operationCount": 13859,
+      "preparation": [
+        {
+          "id": "anthropic",
+          "operations": 144,
+          "durationMs": 13.510232999999971
+        },
+        {
+          "id": "aws-lambda",
+          "operations": 66,
+          "durationMs": 9.15006700000015
+        },
+        {
+          "id": "aws-s3",
+          "operations": 97,
+          "durationMs": 6.341642000000093
+        },
+        {
+          "id": "bitbucket",
+          "operations": 299,
+          "durationMs": 21.323172000000113
+        },
+        {
+          "id": "bluesky-app",
+          "operations": 152,
+          "durationMs": 9.989211999999952
+        },
+        {
+          "id": "bluesky-dms",
+          "operations": 38,
+          "durationMs": 3.7467189999999846
+        },
+        {
+          "id": "bluesky-moderation",
+          "operations": 45,
+          "durationMs": 4.745967000000064
+        },
+        {
+          "id": "cloudflare",
+          "operations": 3761,
+          "durationMs": 426.69298500000014
+        },
+        {
+          "id": "cohere",
+          "operations": 42,
+          "durationMs": 11.648959999999988
+        },
+        {
+          "id": "confluence",
+          "operations": 252,
+          "durationMs": 33.41767700000014
+        },
+        {
+          "id": "deepseek",
+          "operations": 11,
+          "durationMs": 5.544425000000047
+        },
+        {
+          "id": "digitalocean",
+          "operations": 855,
+          "durationMs": 55.97668599999997
+        },
+        {
+          "id": "discord",
+          "operations": 246,
+          "durationMs": 18.847584000000097
+        },
+        {
+          "id": "docker",
+          "operations": 108,
+          "durationMs": 5.536608999999999
+        },
+        {
+          "id": "dukascopy",
+          "operations": 1,
+          "durationMs": 0.5145360000001347
+        },
+        {
+          "id": "ecb",
+          "operations": 11,
+          "durationMs": 0.7331429999999273
+        },
+        {
+          "id": "elevenlabs",
+          "operations": 418,
+          "durationMs": 47.13902600000006
+        },
+        {
+          "id": "frankfurter",
+          "operations": 9,
+          "durationMs": 2.6714999999999236
+        },
+        {
+          "id": "fred",
+          "operations": 35,
+          "durationMs": 2.4971199999999953
+        },
+        {
+          "id": "github",
+          "operations": 1242,
+          "durationMs": 75.5897500000001
+        },
+        {
+          "id": "gitlab",
+          "operations": 1869,
+          "durationMs": 93.28453999999988
+        },
+        {
+          "id": "gcp-compute",
+          "operations": 758,
+          "durationMs": 127.11120900000014
+        },
+        {
+          "id": "gcp-storage",
+          "operations": 76,
+          "durationMs": 10.945425999999998
+        },
+        {
+          "id": "gemini",
+          "operations": 37,
+          "durationMs": 4.013997999999901
+        },
+        {
+          "id": "groq",
+          "operations": 23,
+          "durationMs": 2.209229999999934
+        },
+        {
+          "id": "hetzner",
+          "operations": 190,
+          "durationMs": 11.898343000000068
+        },
+        {
+          "id": "huggingface",
+          "operations": 46,
+          "durationMs": 2.5882560000000012
+        },
+        {
+          "id": "jira",
+          "operations": 630,
+          "durationMs": 43.13881500000025
+        },
+        {
+          "id": "azure-resources",
+          "operations": 40,
+          "durationMs": 2.5346850000000813
+        },
+        {
+          "id": "mistral",
+          "operations": 173,
+          "durationMs": 10.244215000000167
+        },
+        {
+          "id": "ollama",
+          "operations": 17,
+          "durationMs": 1.696447999999691
+        },
+        {
+          "id": "openai",
+          "operations": 360,
+          "durationMs": 33.83713900000021
+        },
+        {
+          "id": "openrouter",
+          "operations": 152,
+          "durationMs": 30.517311000000063
+        },
+        {
+          "id": "render",
+          "operations": 228,
+          "durationMs": 15.041079000000082
+        },
+        {
+          "id": "replicate",
+          "operations": 36,
+          "durationMs": 4.187229000000116
+        },
+        {
+          "id": "resend",
+          "operations": 142,
+          "durationMs": 10.016919000000144
+        },
+        {
+          "id": "telegram",
+          "operations": 180,
+          "durationMs": 18.725003000000015
+        },
+        {
+          "id": "together",
+          "operations": 208,
+          "durationMs": 22.973837999999887
+        },
+        {
+          "id": "twilio",
+          "operations": 197,
+          "durationMs": 32.53953499999989
+        },
+        {
+          "id": "vercel",
+          "operations": 465,
+          "durationMs": 132.84216500000002
+        },
+        {
+          "id": "x",
+          "operations": 156,
+          "durationMs": 16.722032000000127
+        },
+        {
+          "id": "xai",
+          "operations": 44,
+          "durationMs": 6.890961000000061
+        }
+      ],
+      "indexPreparationMs": 72.30620799999997,
+      "searches": [
+        {
+          "query": "List projects",
+          "compactSamplesMs": [
+            92.31959500000085,
+            93.80752900000152,
+            54.51604000000043,
+            53.47080499999902,
+            52.78022500000043
+          ],
+          "compactMedianMs": 54.51604000000043,
+          "medianMs": 61.70833700000003,
+          "samplesMs": [
+            66.53445499999907,
+            86.68462300000101,
+            61.70833700000003,
+            58.791017999999895,
+            56.36427100000037
+          ],
+          "cpuMs": [
+            66.563,
+            86.215,
+            59.947,
+            59.854,
+            56.632
+          ],
+          "compactCpuMs": [
+            93.136,
+            93.082,
+            53.273,
+            53.302,
+            53.291
+          ],
+          "medianCpuMs": 59.947,
+          "compactMedianCpuMs": 53.302,
+          "candidates": 13859,
+          "results": 289
+        },
+        {
+          "query": "Create a new project",
+          "compactSamplesMs": [
+            83.73045499999898,
+            93.41218300000037,
+            87.3052630000002,
+            83.71372699999847,
+            83.17145199999868
+          ],
+          "compactMedianMs": 83.73045499999898,
+          "medianMs": 87.64751399999841,
+          "samplesMs": [
+            87.64751399999841,
+            147.89852799999971,
+            135.55528799999956,
+            87.47239199999967,
+            86.81039299999975
+          ],
+          "cpuMs": [
+            86.823,
+            146.323,
+            136.388,
+            89.911,
+            86.599
+          ],
+          "compactCpuMs": [
+            83.268,
+            93.199,
+            86.602,
+            83.273,
+            83.285
+          ],
+          "medianCpuMs": 89.911,
+          "compactMedianCpuMs": 83.285,
+          "candidates": 13859,
+          "results": 325
+        },
+        {
+          "query": "get",
+          "compactSamplesMs": [
+            8.02080500000011,
+            7.910503000000972,
+            8.093952999999601,
+            7.875532000000021,
+            8.125347000001057
+          ],
+          "compactMedianMs": 8.02080500000011,
+          "medianMs": 11.996903000001112,
+          "samplesMs": [
+            11.811663999998927,
+            12.296973000000435,
+            12.152885999999853,
+            11.8476210000008,
+            11.996903000001112
+          ],
+          "cpuMs": [
+            13.326,
+            13.319,
+            9.991,
+            13.328,
+            9.992
+          ],
+          "compactCpuMs": [
+            9.99,
+            6.662,
+            6.659,
+            6.663,
+            6.662
+          ],
+          "medianCpuMs": 13.319,
+          "compactMedianCpuMs": 6.662,
+          "candidates": 13859,
+          "results": 5
+        },
+        {
+          "query": "List all running virtual machines in the selected project",
+          "compactSamplesMs": [
+            247.3266109999986,
+            272.27630900000077,
+            246.8411619999988,
+            342.62677299999996,
+            260.80586199999925
+          ],
+          "compactMedianMs": 260.80586199999925,
+          "medianMs": 262.33363199999985,
+          "samplesMs": [
+            298.8581630000008,
+            337.29082000000017,
+            245.0880079999988,
+            262.33363199999985,
+            246.72443699999894
+          ],
+          "cpuMs": [
+            299.641,
+            336.013,
+            246.46,
+            263.07,
+            246.5
+          ],
+          "compactCpuMs": [
+            246.495,
+            272.934,
+            249.803,
+            339.195,
+            263.013
+          ],
+          "medianCpuMs": 263.07,
+          "compactMedianCpuMs": 263.013,
+          "candidates": 13859,
+          "results": 5
+        },
+        {
+          "query": "LIST_projetcs",
+          "compactSamplesMs": [
+            69.07563200000004,
+            57.33629599999949,
+            53.140408999999636,
+            53.72549799999979,
+            54.46234799999911
+          ],
+          "compactMedianMs": 54.46234799999911,
+          "medianMs": 57.56601799999953,
+          "samplesMs": [
+            100.44413700000041,
+            60.91293699999915,
+            57.56601799999953,
+            56.649311999999554,
+            57.21772400000009
+          ],
+          "cpuMs": [
+            99.834,
+            59.614,
+            56.633,
+            56.621,
+            56.589
+          ],
+          "compactCpuMs": [
+            66.593,
+            56.639,
+            53.305,
+            56.611,
+            53.227
+          ],
+          "medianCpuMs": 56.633,
+          "compactMedianCpuMs": 56.611,
+          "candidates": 13859,
+          "results": 223
+        },
+        {
+          "query": "\u00c9l\u00e9ment \uff27\uff25\uff34 \ud83d\ude00",
+          "compactSamplesMs": [
+            43.91743399999905,
+            43.66663499999959,
+            77.09583600000042,
+            67.77399499999956,
+            45.28349700000035
+          ],
+          "compactMedianMs": 45.28349700000035,
+          "medianMs": 58.62033100000008,
+          "samplesMs": [
+            47.664231000000655,
+            63.54641199999969,
+            79.73311500000091,
+            58.62033100000008,
+            51.20310399999835
+          ],
+          "cpuMs": [
+            46.595,
+            63.237,
+            79.837,
+            59.909,
+            53.282
+          ],
+          "compactCpuMs": [
+            43.308,
+            43.289,
+            76.497,
+            66.514,
+            46.634
+          ],
+          "medianCpuMs": 59.909,
+          "compactMedianCpuMs": 46.634,
+          "candidates": 13859,
+          "results": 7
+        },
+        {
+          "query": "",
+          "compactSamplesMs": [
+            0.0008920000000216532,
+            0.0005720000008295756,
+            0.0005449999989650678,
+            0.0005060000003140885,
+            0.0005290000008244533
+          ],
+          "compactMedianMs": 0.0005449999989650678,
+          "medianMs": 0.0005640000017592683,
+          "samplesMs": [
+            0.0010400000010122312,
+            0.0005629999996017432,
+            0.0005640000017592683,
+            0.0005660000006173505,
+            0.0005399999990913784
+          ],
+          "cpuMs": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "compactCpuMs": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "medianCpuMs": 0,
+          "compactMedianCpuMs": 0,
+          "candidates": 0,
+          "results": 0
+        },
+        {
+          "query": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "compactSamplesMs": [
+            0.001156000000264612,
+            0.001156000000264612,
+            0.0011549999999260763,
+            0.001101000001654029,
+            0.0011009999998350395
+          ],
+          "compactMedianMs": 0.0011549999999260763,
+          "medianMs": 0.0011290000002190936,
+          "samplesMs": [
+            0.0010959999999613501,
+            0.0011290000002190936,
+            0.0010880000008910429,
+            0.0011389999999664724,
+            0.001141000000643544
+          ],
+          "cpuMs": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "compactCpuMs": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "medianCpuMs": 0,
+          "compactMedianCpuMs": 0,
+          "candidates": 0,
+          "results": 0
+        }
+      ],
+      "memory": {
+        "rss": 596029440,
+        "heapTotal": 50315264,
+        "heapUsed": 29395000,
+        "external": 7413948,
+        "arrayBuffers": 78231
+      },
+      "profiledSamples": 2132
+    },
+    "coverage": {
+      "total": {
+        "lines": {
+          "total": 128,
+          "covered": 128,
+          "skipped": 0,
+          "pct": 100
+        },
+        "statements": {
+          "total": 175,
+          "covered": 175,
+          "skipped": 0,
+          "pct": 100
+        },
+        "functions": {
+          "total": 40,
+          "covered": 40,
+          "skipped": 0,
+          "pct": 100
+        },
+        "branches": {
+          "total": 94,
+          "covered": 94,
+          "skipped": 0,
+          "pct": 100
+        },
+        "branchesTrue": {
+          "total": 0,
+          "covered": 0,
+          "skipped": 0,
+          "pct": "Unknown"
+        }
+      },
+      "/var/tmp/operations-schema-next-candidate/src/lib/matching.ts": {
+        "lines": {
+          "total": 52,
+          "covered": 52,
+          "skipped": 0,
+          "pct": 100
+        },
+        "functions": {
+          "total": 12,
+          "covered": 12,
+          "skipped": 0,
+          "pct": 100
+        },
+        "statements": {
+          "total": 73,
+          "covered": 73,
+          "skipped": 0,
+          "pct": 100
+        },
+        "branches": {
+          "total": 43,
+          "covered": 43,
+          "skipped": 0,
+          "pct": 100
+        }
+      },
+      "/var/tmp/operations-schema-next-candidate/src/lib/operation-matching-client.ts": {
+        "lines": {
+          "total": 65,
+          "covered": 65,
+          "skipped": 0,
+          "pct": 100
+        },
+        "functions": {
+          "total": 22,
+          "covered": 22,
+          "skipped": 0,
+          "pct": 100
+        },
+        "statements": {
+          "total": 88,
+          "covered": 88,
+          "skipped": 0,
+          "pct": 100
+        },
+        "branches": {
+          "total": 47,
+          "covered": 47,
+          "skipped": 0,
+          "pct": 100
+        }
+      },
+      "/var/tmp/operations-schema-next-candidate/src/lib/operation-matching.worker.ts": {
+        "lines": {
+          "total": 11,
+          "covered": 11,
+          "skipped": 0,
+          "pct": 100
+        },
+        "functions": {
+          "total": 6,
+          "covered": 6,
+          "skipped": 0,
+          "pct": 100
+        },
+        "statements": {
+          "total": 14,
+          "covered": 14,
+          "skipped": 0,
+          "pct": 100
+        },
+        "branches": {
+          "total": 4,
+          "covered": 4,
+          "skipped": 0,
+          "pct": 100
+        }
+      }
+    }
+  },
+  "environment": {
+    "host": "sds-01",
+    "cpus": 2,
+    "memoryBytes": 3221225472,
+    "memorySwapBytes": 3221225472,
+    "pids": 512,
+    "nodeHeapMiB": 1800,
+    "node": "26.7.0",
+    "playwright": "1.63.0",
+    "browser": "153.0.8010.12",
+    "browserWorkers": 1,
+    "desktopHeavyWork": false,
+    "httpCache": "Disabled by Playwright routing; persisted startup refers to IndexedDB/Git, not HTTP cache.",
+    "snapshots": false,
+    "primaryMeasurementsBeforeProfiling": true
+  },
+  "startupInvestigation": {
+    "earlierBase4dcf8a7": [
+      {
+        "freshMs": 1292.32262,
+        "persistedMs": 909.0518320000001
+      },
+      {
+        "freshMs": 1329.4532480000007,
+        "persistedMs": 978.670314
+      },
+      {
+        "freshMs": 1343.8481979999997,
+        "persistedMs": 917.6924630000012
+      }
+    ],
+    "interpretation": "The earlier single-pair 1.19s to 1.53s slowdown did not recur. Different sample runs are not a causal attribution to a particular change."
+  },
+  "canonicalModels": {
+    "node": "v26.7.0",
+    "measurements": [
+      {
+        "id": "openai",
+        "batchSize": 16,
+        "operationIds": [
+          "openai:listAssistants",
+          "openai:createBatch",
+          "openai:ListContainers",
+          "openai:getConversationItem",
+          "openai:deleteEvalRun",
+          "openai:createFineTuningCheckpointPermission",
+          "openai:createImage",
+          "openai:admin-api-keys-list",
+          "openai:deleteCertificate",
+          "openai:retrieve-group-role",
+          "openai:create-project",
+          "openai:retrieve-project-data-retention",
+          "openai:list-project-rate-limits",
+          "openai:delete-project-spend-alert",
+          "openai:list-organization-spend-alerts",
+          "openai:usage-images",
+          "openai:unassign-user-role",
+          "openai:assign-project-user-role",
+          "openai:createResponse",
+          "openai:createMessage",
+          "openai:submitToolOuputsToRun",
+          "openai:cancelVectorStoreFileBatch",
+          "openai:deleteConversation",
+          "openai:Getorganizationspendlimit",
+          "openai:CreateVideoExtend",
+          "openai:UpdateSkillDefaultVersion",
+          "openai:DeleteThreadMethod",
+          "openai:listAgentSessionSubagentTurns",
+          "openai:updateAgentEnvironmentTemplate",
+          "openai:listAgentSessionEvents",
+          "openai:createVaultCredential",
+          "openai:ListWebhookEventTypes"
+        ],
+        "samplesMs": [
+          18.85269100000005,
+          18.14061700000093,
+          17.333299000001716,
+          16.96386600000187,
+          28.03669599999921
+        ],
+        "bytes": 916331,
+        "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+        "samples": {
+          "current": [
+            {
+              "elapsedMs": 18.85269100000005,
+              "beforeHeap": 15071104,
+              "afterProjectionHeap": 19400056,
+              "bytes": 916331,
+              "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+              "afterReleaseHeap": 15080952
+            },
+            {
+              "elapsedMs": 18.14061700000093,
+              "beforeHeap": 15081304,
+              "afterProjectionHeap": 18670608,
+              "bytes": 916331,
+              "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+              "afterReleaseHeap": 15081736
+            },
+            {
+              "elapsedMs": 17.333299000001716,
+              "beforeHeap": 15082072,
+              "afterProjectionHeap": 20136184,
+              "bytes": 916331,
+              "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+              "afterReleaseHeap": 15082912
+            },
+            {
+              "elapsedMs": 16.96386600000187,
+              "beforeHeap": 15084232,
+              "afterProjectionHeap": 19452728,
+              "bytes": 916331,
+              "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+              "afterReleaseHeap": 15092568
+            },
+            {
+              "elapsedMs": 28.03669599999921,
+              "beforeHeap": 15092960,
+              "afterProjectionHeap": 18747888,
+              "bytes": 916331,
+              "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+              "afterReleaseHeap": 15094208
+            }
+          ]
+        }
+      },
+      {
+        "id": "cloudflare",
+        "batchSize": 16,
+        "operationIds": [
+          "cloudflare:accounts-list-accounts",
+          "cloudflare:access-service-tokens-list-service-tokens",
+          "cloudflare:aig-config-fetch-custom-domain",
+          "cloudflare:notification-silences-create-silences",
+          "cloudflare:accounts-browser-extension-inventories-get",
+          "cloudflare:post_CategoryCreate",
+          "cloudflare:cloudforce-one-resubmit-rule-approval",
+          "cloudflare:rssArticleSkillRun",
+          "cloudflare:d1-delete-database",
+          "cloudflare:zero-trust-accounts-patch-device-settings-for-the-zero-trust-account",
+          "cloudflare:dlp-sensitivity-groups-get-level-order",
+          "cloudflare:email_security_replace_trusted_domain",
+          "cloudflare:zero-trust-gateway-rules-zero-trust-gateway-rule-details",
+          "cloudflare:account-load-balancers-update-account-load-balancer",
+          "cloudflare:magic-interconnects-update-multiple-interconnects",
+          "cloudflare:listAccountVulnerabilityDiscoveryRepositories",
+          "cloudflare:magic-pcap-collection-stop-full-pcap",
+          "cloudflare:CreatePoll",
+          "cloudflare:web-analytics-create-rule",
+          "cloudflare:list-audio-tracks",
+          "cloudflare:vectorize-list-metadata-indexes",
+          "cloudflare:worker-script-settings-patch-settings",
+          "cloudflare:cloudflare-ips-cloudflare-ip-details",
+          "cloudflare:radar-get-bgp-rpki-aspa-timeseries",
+          "cloudflare:radar-get-http-top-ases-by-bot-class",
+          "cloudflare:user-load-balancer-regions-list-regions",
+          "cloudflare:api-shield-operations-bulk-post-labels-to-operations",
+          "cloudflare:dns-settings-for-a-zone-update-dns-settings",
+          "cloudflare:sinkhole-config-delete-ingress",
+          "cloudflare:precursor-for-a-zone-update-config",
+          "cloudflare:put-zones-zone_identifier-zaraz-workflow",
+          "cloudflare:zone-analytics-(-deprecated)-get-dashboard"
+        ],
+        "samplesMs": [
+          7.913334000000759,
+          61.352130999999645,
+          59.76970599999913,
+          14.241637000002811,
+          66.2887069999997
+        ],
+        "bytes": 306130,
+        "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+        "samples": {
+          "current": [
+            {
+              "elapsedMs": 7.913334000000759,
+              "beforeHeap": 45019744,
+              "afterProjectionHeap": 47417104,
+              "bytes": 306130,
+              "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+              "afterReleaseHeap": 45019720
+            },
+            {
+              "elapsedMs": 61.352130999999645,
+              "beforeHeap": 45019976,
+              "afterProjectionHeap": 46681440,
+              "bytes": 306130,
+              "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+              "afterReleaseHeap": 45020168
+            },
+            {
+              "elapsedMs": 59.76970599999913,
+              "beforeHeap": 45020272,
+              "afterProjectionHeap": 45875048,
+              "bytes": 306130,
+              "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+              "afterReleaseHeap": 45020416
+            },
+            {
+              "elapsedMs": 14.241637000002811,
+              "beforeHeap": 45020520,
+              "afterProjectionHeap": 45906640,
+              "bytes": 306130,
+              "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+              "afterReleaseHeap": 45020664
+            },
+            {
+              "elapsedMs": 66.2887069999997,
+              "beforeHeap": 45020768,
+              "afterProjectionHeap": 45902496,
+              "bytes": 306130,
+              "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+              "afterReleaseHeap": 45021128
+            }
+          ]
+        }
+      }
+    ],
+    "modelMeasurements": [
+      {
+        "id": "openai",
+        "operationCount": 32,
+        "batches": [
+          {
+            "batchSize": 1,
+            "samples": [
+              {
+                "elapsedMs": 35.82381499999974,
+                "stagesMs": {
+                  "adaptation": 3.2769159999879776,
+                  "origin": 0.18328499999915948,
+                  "projection": 16.952213000015036,
+                  "approval": 12.092301000000589,
+                  "accounting": 3.1651620000011462
+                },
+                "beforeHeap": 15097864,
+                "afterModelsHeap": 19281240,
+                "signature": "77c08f3f0bc2c63684a78d93dddb537dbc2cf3c77992c475d31069ae78b8d63b",
+                "afterReleaseHeap": 15275968
+              },
+              {
+                "elapsedMs": 40.05053499999849,
+                "stagesMs": {
+                  "adaptation": 2.9407139999966603,
+                  "origin": 0.14582300000984105,
+                  "projection": 22.8554169999843,
+                  "approval": 11.089305999998032,
+                  "accounting": 2.935926999998628
+                },
+                "beforeHeap": 15276728,
+                "afterModelsHeap": 17877688,
+                "signature": "77c08f3f0bc2c63684a78d93dddb537dbc2cf3c77992c475d31069ae78b8d63b",
+                "afterReleaseHeap": 15289824
+              },
+              {
+                "elapsedMs": 33.34443900000042,
+                "stagesMs": {
+                  "adaptation": 2.8902849999903992,
+                  "origin": 0.1526209999974526,
+                  "projection": 16.531596999986505,
+                  "approval": 10.662726000002294,
+                  "accounting": 3.0276530000119237
+                },
+                "beforeHeap": 15290336,
+                "afterModelsHeap": 19570312,
+                "signature": "77c08f3f0bc2c63684a78d93dddb537dbc2cf3c77992c475d31069ae78b8d63b",
+                "afterReleaseHeap": 15305464
+              }
+            ]
+          },
+          {
+            "batchSize": 8,
+            "samples": [
+              {
+                "elapsedMs": 35.09110399999918,
+                "stagesMs": {
+                  "adaptation": 2.7897269999921264,
+                  "origin": 0.11122899999827496,
+                  "projection": 17.07361900000251,
+                  "approval": 12.039481000007072,
+                  "accounting": 3.0111419999921054
+                },
+                "beforeHeap": 15314672,
+                "afterModelsHeap": 19153096,
+                "signature": "77c08f3f0bc2c63684a78d93dddb537dbc2cf3c77992c475d31069ae78b8d63b",
+                "afterReleaseHeap": 15348856
+              },
+              {
+                "elapsedMs": 51.94877600000109,
+                "stagesMs": {
+                  "adaptation": 4.079225000015867,
+                  "origin": 0.1621519999935117,
+                  "projection": 27.61883599999419,
+                  "approval": 15.644331000003149,
+                  "accounting": 4.336813999980222
+                },
+                "beforeHeap": 15349520,
+                "afterModelsHeap": 19389512,
+                "signature": "77c08f3f0bc2c63684a78d93dddb537dbc2cf3c77992c475d31069ae78b8d63b",
+                "afterReleaseHeap": 15357424
+              },
+              {
+                "elapsedMs": 59.649412999999186,
+                "stagesMs": {
+                  "adaptation": 4.69837100001314,
+                  "origin": 0.1962579999853915,
+                  "projection": 32.045321000012336,
+                  "approval": 17.981547000006685,
+                  "accounting": 4.611507000012352
+                },
+                "beforeHeap": 15357936,
+                "afterModelsHeap": 20660120,
+                "signature": "77c08f3f0bc2c63684a78d93dddb537dbc2cf3c77992c475d31069ae78b8d63b",
+                "afterReleaseHeap": 15488184
+              }
+            ]
+          },
+          {
+            "batchSize": 16,
+            "samples": [
+              {
+                "elapsedMs": 62.784953999998834,
+                "stagesMs": {
+                  "adaptation": 5.459040000001551,
+                  "origin": 0.206224999990809,
+                  "projection": 33.8572799999929,
+                  "approval": 18.175435000008292,
+                  "accounting": 4.956971999992675
+                },
+                "beforeHeap": 15488768,
+                "afterModelsHeap": 19447416,
+                "signature": "77c08f3f0bc2c63684a78d93dddb537dbc2cf3c77992c475d31069ae78b8d63b",
+                "afterReleaseHeap": 15502544
+              },
+              {
+                "elapsedMs": 50.642564000001585,
+                "stagesMs": {
+                  "adaptation": 3.8099509999956354,
+                  "origin": 0.17217299999902025,
+                  "projection": 27.770064000003913,
+                  "approval": 14.69853299999886,
+                  "accounting": 4.065431000009994
+                },
+                "beforeHeap": 15503208,
+                "afterModelsHeap": 19363128,
+                "signature": "77c08f3f0bc2c63684a78d93dddb537dbc2cf3c77992c475d31069ae78b8d63b",
+                "afterReleaseHeap": 15511776
+              },
+              {
+                "elapsedMs": 37.00394299999971,
+                "stagesMs": {
+                  "adaptation": 2.6538279999913357,
+                  "origin": 0.10538399998040404,
+                  "projection": 20.43612399999256,
+                  "approval": 10.599985000008019,
+                  "accounting": 3.144029999992199
+                },
+                "beforeHeap": 15512288,
+                "afterModelsHeap": 20563544,
+                "signature": "77c08f3f0bc2c63684a78d93dddb537dbc2cf3c77992c475d31069ae78b8d63b",
+                "afterReleaseHeap": 15528048
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cloudflare",
+        "operationCount": 32,
+        "batches": [
+          {
+            "batchSize": 1,
+            "samples": [
+              {
+                "elapsedMs": 78.10062000000107,
+                "stagesMs": {
+                  "adaptation": 7.628858999996737,
+                  "origin": 0.12494299999525538,
+                  "projection": 7.535922000006394,
+                  "approval": 61.173749000008684,
+                  "accounting": 1.5506340000029013
+                },
+                "beforeHeap": 45074456,
+                "afterModelsHeap": 46183448,
+                "signature": "f2b64071572130e4c728a87f53940b9b615e0125fc0bbbc4303ecb111df314f3",
+                "afterReleaseHeap": 45046552
+              },
+              {
+                "elapsedMs": 27.567059999997582,
+                "stagesMs": {
+                  "adaptation": 7.232996000006096,
+                  "origin": 0.12005600001066341,
+                  "projection": 7.493733000002976,
+                  "approval": 11.103370999993786,
+                  "accounting": 1.533755000007659
+                },
+                "beforeHeap": 45047248,
+                "afterModelsHeap": 46085288,
+                "signature": "f2b64071572130e4c728a87f53940b9b615e0125fc0bbbc4303ecb111df314f3",
+                "afterReleaseHeap": 45047656
+              },
+              {
+                "elapsedMs": 28.291525000000547,
+                "stagesMs": {
+                  "adaptation": 7.150920000000042,
+                  "origin": 0.11841399999684654,
+                  "projection": 7.509370999981911,
+                  "approval": 11.93728800001918,
+                  "accounting": 1.493516999991698
+                },
+                "beforeHeap": 45048168,
+                "afterModelsHeap": 47382424,
+                "signature": "f2b64071572130e4c728a87f53940b9b615e0125fc0bbbc4303ecb111df314f3",
+                "afterReleaseHeap": 45048048
+              }
+            ]
+          },
+          {
+            "batchSize": 8,
+            "samples": [
+              {
+                "elapsedMs": 26.882649999999558,
+                "stagesMs": {
+                  "adaptation": 7.03959300000497,
+                  "origin": 0.1207520000061777,
+                  "projection": 6.9335900000041875,
+                  "approval": 11.22921299999507,
+                  "accounting": 1.4964770000078715
+                },
+                "beforeHeap": 45048864,
+                "afterModelsHeap": 47408800,
+                "signature": "f2b64071572130e4c728a87f53940b9b615e0125fc0bbbc4303ecb111df314f3",
+                "afterReleaseHeap": 45057856
+              },
+              {
+                "elapsedMs": 26.716207000001305,
+                "stagesMs": {
+                  "adaptation": 7.183372999999847,
+                  "origin": 0.11768199998914497,
+                  "projection": 7.28357899999537,
+                  "approval": 10.54936099999395,
+                  "accounting": 1.5067800000142597
+                },
+                "beforeHeap": 45058600,
+                "afterModelsHeap": 47422024,
+                "signature": "f2b64071572130e4c728a87f53940b9b615e0125fc0bbbc4303ecb111df314f3",
+                "afterReleaseHeap": 45060480
+              },
+              {
+                "elapsedMs": 71.98098500000197,
+                "stagesMs": {
+                  "adaptation": 7.898538000012195,
+                  "origin": 0.13830599999710103,
+                  "projection": 7.7203020000051765,
+                  "approval": 54.53109200001563,
+                  "accounting": 1.6151589999935823
+                },
+                "beforeHeap": 45060992,
+                "afterModelsHeap": 47435712,
+                "signature": "f2b64071572130e4c728a87f53940b9b615e0125fc0bbbc4303ecb111df314f3",
+                "afterReleaseHeap": 45060872
+              }
+            ]
+          },
+          {
+            "batchSize": 16,
+            "samples": [
+              {
+                "elapsedMs": 47.10646700000143,
+                "stagesMs": {
+                  "adaptation": 11.493799000018043,
+                  "origin": 0.2266779999990831,
+                  "projection": 13.784813999987819,
+                  "approval": 19.101005000007717,
+                  "accounting": 2.364047999995819
+                },
+                "beforeHeap": 45061544,
+                "afterModelsHeap": 47452752,
+                "signature": "f2b64071572130e4c728a87f53940b9b615e0125fc0bbbc4303ecb111df314f3",
+                "afterReleaseHeap": 45090712
+              },
+              {
+                "elapsedMs": 26.984605000001466,
+                "stagesMs": {
+                  "adaptation": 7.463739999995596,
+                  "origin": 0.11993000001893961,
+                  "projection": 7.62742100000105,
+                  "approval": 10.217194000015297,
+                  "accounting": 1.47834600002534
+                },
+                "beforeHeap": 45091376,
+                "afterModelsHeap": 47427696,
+                "signature": "f2b64071572130e4c728a87f53940b9b615e0125fc0bbbc4303ecb111df314f3",
+                "afterReleaseHeap": 45091256
+              },
+              {
+                "elapsedMs": 28.954861000001983,
+                "stagesMs": {
+                  "adaptation": 7.466551999994408,
+                  "origin": 0.12327599999844097,
+                  "projection": 7.250990000000456,
+                  "approval": 12.485966999989614,
+                  "accounting": 1.5623199999972712
+                },
+                "beforeHeap": 45091768,
+                "afterModelsHeap": 47424216,
+                "signature": "f2b64071572130e4c728a87f53940b9b615e0125fc0bbbc4303ecb111df314f3",
+                "afterReleaseHeap": 45099816
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "memory": {
+      "rss": 528666624,
+      "heapTotal": 47718400,
+      "heapUsed": 45109776,
+      "external": 7717621,
+      "arrayBuffers": 145663
+    },
+    "peakRssKiB": 550184
+  },
+  "discardedExperiments": {
+    "referenceMetadataCache": {
+      "decision": "Reverted: mixed paired timing changes; independent canonical projections retained.",
+      "sourcePatchSha256": "10821ea34acfae72a20f3237bec2dcee3cbc1e557d655ad21b6b729d20eefe63",
+      "paired": {
+        "node": "v26.7.0",
+        "measurements": [
+          {
+            "id": "openai",
+            "batchSize": 16,
+            "operationIds": [
+              "openai:listAssistants",
+              "openai:createBatch",
+              "openai:ListContainers",
+              "openai:getConversationItem",
+              "openai:deleteEvalRun",
+              "openai:createFineTuningCheckpointPermission",
+              "openai:createImage",
+              "openai:admin-api-keys-list",
+              "openai:deleteCertificate",
+              "openai:retrieve-group-role",
+              "openai:create-project",
+              "openai:retrieve-project-data-retention",
+              "openai:list-project-rate-limits",
+              "openai:delete-project-spend-alert",
+              "openai:list-organization-spend-alerts",
+              "openai:usage-images",
+              "openai:unassign-user-role",
+              "openai:assign-project-user-role",
+              "openai:createResponse",
+              "openai:createMessage",
+              "openai:submitToolOuputsToRun",
+              "openai:cancelVectorStoreFileBatch",
+              "openai:deleteConversation",
+              "openai:Getorganizationspendlimit",
+              "openai:CreateVideoExtend",
+              "openai:UpdateSkillDefaultVersion",
+              "openai:DeleteThreadMethod",
+              "openai:listAgentSessionSubagentTurns",
+              "openai:updateAgentEnvironmentTemplate",
+              "openai:listAgentSessionEvents",
+              "openai:createVaultCredential",
+              "openai:ListWebhookEventTypes"
+            ],
+            "samplesMs": [
+              18.779238000000078,
+              19.04033900000013,
+              22.710685999999896,
+              19.47917899999993,
+              27.467799999999897
+            ],
+            "bytes": 916331,
+            "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+            "samples": {
+              "current": [
+                {
+                  "elapsedMs": 18.779238000000078,
+                  "beforeHeap": 15197448,
+                  "afterProjectionHeap": 20133304,
+                  "bytes": 916331,
+                  "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+                  "afterReleaseHeap": 15197832
+                },
+                {
+                  "elapsedMs": 19.04033900000013,
+                  "beforeHeap": 15199304,
+                  "afterProjectionHeap": 20180328,
+                  "bytes": 916331,
+                  "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+                  "afterReleaseHeap": 15207216
+                },
+                {
+                  "elapsedMs": 22.710685999999896,
+                  "beforeHeap": 15208440,
+                  "afterProjectionHeap": 18415096,
+                  "bytes": 916331,
+                  "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+                  "afterReleaseHeap": 15206512
+                },
+                {
+                  "elapsedMs": 19.47917899999993,
+                  "beforeHeap": 15206616,
+                  "afterProjectionHeap": 19050888,
+                  "bytes": 916331,
+                  "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+                  "afterReleaseHeap": 15217136
+                },
+                {
+                  "elapsedMs": 27.467799999999897,
+                  "beforeHeap": 15219368,
+                  "afterProjectionHeap": 20195216,
+                  "bytes": 916331,
+                  "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+                  "afterReleaseHeap": 15220832
+                }
+              ],
+              "reference": [
+                {
+                  "elapsedMs": 34.606501999999864,
+                  "beforeHeap": 15196976,
+                  "afterProjectionHeap": 19563408,
+                  "bytes": 916331,
+                  "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+                  "afterReleaseHeap": 15196864
+                },
+                {
+                  "elapsedMs": 19.0012270000002,
+                  "beforeHeap": 15207608,
+                  "afterProjectionHeap": 18731064,
+                  "bytes": 916331,
+                  "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+                  "afterReleaseHeap": 15207752
+                },
+                {
+                  "elapsedMs": 18.54376400000001,
+                  "beforeHeap": 15207856,
+                  "afterProjectionHeap": 20238240,
+                  "bytes": 916331,
+                  "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+                  "afterReleaseHeap": 15208336
+                },
+                {
+                  "elapsedMs": 18.621402999999646,
+                  "beforeHeap": 15217240,
+                  "afterProjectionHeap": 20221936,
+                  "bytes": 916331,
+                  "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+                  "afterReleaseHeap": 15217808
+                },
+                {
+                  "elapsedMs": 17.6670680000002,
+                  "beforeHeap": 15217912,
+                  "afterProjectionHeap": 19642008,
+                  "bytes": 916331,
+                  "signature": "5bab701759d6bb9aed72eacea3349270f83d3ce6c11d153fee1c6c04ff4a429c",
+                  "afterReleaseHeap": 15219264
+                }
+              ]
+            }
+          },
+          {
+            "id": "cloudflare",
+            "batchSize": 16,
+            "operationIds": [
+              "cloudflare:accounts-list-accounts",
+              "cloudflare:access-service-tokens-list-service-tokens",
+              "cloudflare:aig-config-fetch-custom-domain",
+              "cloudflare:notification-silences-create-silences",
+              "cloudflare:accounts-browser-extension-inventories-get",
+              "cloudflare:post_CategoryCreate",
+              "cloudflare:cloudforce-one-resubmit-rule-approval",
+              "cloudflare:rssArticleSkillRun",
+              "cloudflare:d1-delete-database",
+              "cloudflare:zero-trust-accounts-patch-device-settings-for-the-zero-trust-account",
+              "cloudflare:dlp-sensitivity-groups-get-level-order",
+              "cloudflare:email_security_replace_trusted_domain",
+              "cloudflare:zero-trust-gateway-rules-zero-trust-gateway-rule-details",
+              "cloudflare:account-load-balancers-update-account-load-balancer",
+              "cloudflare:magic-interconnects-update-multiple-interconnects",
+              "cloudflare:listAccountVulnerabilityDiscoveryRepositories",
+              "cloudflare:magic-pcap-collection-stop-full-pcap",
+              "cloudflare:CreatePoll",
+              "cloudflare:web-analytics-create-rule",
+              "cloudflare:list-audio-tracks",
+              "cloudflare:vectorize-list-metadata-indexes",
+              "cloudflare:worker-script-settings-patch-settings",
+              "cloudflare:cloudflare-ips-cloudflare-ip-details",
+              "cloudflare:radar-get-bgp-rpki-aspa-timeseries",
+              "cloudflare:radar-get-http-top-ases-by-bot-class",
+              "cloudflare:user-load-balancer-regions-list-regions",
+              "cloudflare:api-shield-operations-bulk-post-labels-to-operations",
+              "cloudflare:dns-settings-for-a-zone-update-dns-settings",
+              "cloudflare:sinkhole-config-delete-ingress",
+              "cloudflare:precursor-for-a-zone-update-config",
+              "cloudflare:put-zones-zone_identifier-zaraz-workflow",
+              "cloudflare:zone-analytics-(-deprecated)-get-dashboard"
+            ],
+            "samplesMs": [
+              9.980491000000256,
+              8.242189999999937,
+              9.332698000000164,
+              8.501326000000063,
+              8.040838000000349
+            ],
+            "bytes": 306130,
+            "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+            "samples": {
+              "current": [
+                {
+                  "elapsedMs": 9.980491000000256,
+                  "beforeHeap": 45111304,
+                  "afterProjectionHeap": 46135520,
+                  "bytes": 306130,
+                  "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+                  "afterReleaseHeap": 44920768
+                },
+                {
+                  "elapsedMs": 8.242189999999937,
+                  "beforeHeap": 44921216,
+                  "afterProjectionHeap": 46149488,
+                  "bytes": 306130,
+                  "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+                  "afterReleaseHeap": 44922032
+                },
+                {
+                  "elapsedMs": 9.332698000000164,
+                  "beforeHeap": 44922632,
+                  "afterProjectionHeap": 46990232,
+                  "bytes": 306130,
+                  "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+                  "afterReleaseHeap": 44924424
+                },
+                {
+                  "elapsedMs": 8.501326000000063,
+                  "beforeHeap": 44924528,
+                  "afterProjectionHeap": 46976792,
+                  "bytes": 306130,
+                  "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+                  "afterReleaseHeap": 44924672
+                },
+                {
+                  "elapsedMs": 8.040838000000349,
+                  "beforeHeap": 44925272,
+                  "afterProjectionHeap": 47031864,
+                  "bytes": 306130,
+                  "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+                  "afterReleaseHeap": 44925560
+                }
+              ],
+              "reference": [
+                {
+                  "elapsedMs": 9.180810000000292,
+                  "beforeHeap": 44908120,
+                  "afterProjectionHeap": 46465488,
+                  "bytes": 306130,
+                  "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+                  "afterReleaseHeap": 44908016
+                },
+                {
+                  "elapsedMs": 14.333071999999902,
+                  "beforeHeap": 44922136,
+                  "afterProjectionHeap": 47359448,
+                  "bytes": 306130,
+                  "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+                  "afterReleaseHeap": 44922280
+                },
+                {
+                  "elapsedMs": 67.70223299999998,
+                  "beforeHeap": 44922384,
+                  "afterProjectionHeap": 46553256,
+                  "bytes": 306130,
+                  "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+                  "afterReleaseHeap": 44922528
+                },
+                {
+                  "elapsedMs": 8.167061999999987,
+                  "beforeHeap": 44924776,
+                  "afterProjectionHeap": 45817264,
+                  "bytes": 306130,
+                  "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+                  "afterReleaseHeap": 44924920
+                },
+                {
+                  "elapsedMs": 8.271434000000227,
+                  "beforeHeap": 44925024,
+                  "afterProjectionHeap": 45821568,
+                  "bytes": 306130,
+                  "signature": "2dcce338f26e5081b473b1e9e43fed2b101ec41d1460fa47c2567e215549cd5d",
+                  "afterReleaseHeap": 44925168
+                }
+              ]
+            }
+          }
+        ],
+        "memory": {
+          "rss": 343076864,
+          "heapTotal": 47194112,
+          "heapUsed": 44947720,
+          "external": 7696574,
+          "arrayBuffers": 145663
+        },
+        "peakRssKiB": 368152
+      }
+    },
+    "separateScoringHelper": {
+      "decision": "Reverted: browser timings did not establish a benefit; inline scoring retained.",
+      "browser": [
+        {
+          "query": "List projects",
+          "inputToDomMs": 340.79499999806285,
+          "workerScoringMs": [
+            55.99500000104308
+          ]
+        },
+        {
+          "query": "Create a new project",
+          "inputToDomMs": 336.9949999973178,
+          "workerScoringMs": [
+            105.01000000163913
+          ]
+        },
+        {
+          "query": "get",
+          "inputToDomMs": 184.69999999925494,
+          "workerScoringMs": [
+            28.020000003278255
+          ]
+        },
+        {
+          "query": "List projects",
+          "inputToDomMs": 281.8649999983609,
+          "workerScoringMs": [
+            69.64000000059605
+          ]
+        },
+        {
+          "query": "Create a new project",
+          "inputToDomMs": 317.6149999983609,
+          "workerScoringMs": [
+            106.75
+          ]
+        },
+        {
+          "query": "get",
+          "inputToDomMs": 195.2199999988079,
+          "workerScoringMs": [
+            28.315000001341105
+          ]
+        },
+        {
+          "query": "List projects",
+          "inputToDomMs": 270.679999999702,
+          "workerScoringMs": [
+            69.51499999687076
+          ]
+        },
+        {
+          "query": "Create a new project",
+          "inputToDomMs": 331.89499999955297,
+          "workerScoringMs": [
+            114.17999999970198
+          ]
+        },
+        {
+          "query": "get",
+          "inputToDomMs": 182.83500000089407,
+          "workerScoringMs": [
+            27.569999996572733
+          ]
+        },
+        {
+          "query": "List projects",
+          "inputToDomMs": 272.75,
+          "workerScoringMs": [
+            69.98000000044703
+          ]
+        },
+        {
+          "query": "Create a new project",
+          "inputToDomMs": 340.5650000013411,
+          "workerScoringMs": [
+            114.58000000193715
+          ]
+        },
+        {
+          "query": "get",
+          "inputToDomMs": 182.35999999940395,
+          "workerScoringMs": [
+            27.134999997913837
+          ]
+        },
+        {
+          "query": "List projects",
+          "inputToDomMs": 274.64499999955297,
+          "workerScoringMs": [
+            68.95999999716878
+          ]
+        },
+        {
+          "query": "Create a new project",
+          "inputToDomMs": 342.96000000089407,
+          "workerScoringMs": [
+            115.47500000149012
+          ]
+        },
+        {
+          "query": "get",
+          "inputToDomMs": 181.84999999776483,
+          "workerScoringMs": [
+            25.859999999403954
+          ]
+        }
+      ]
+    }
+  },
+  "artifacts": {
+    "local": ".agents/tmp/schema-next/delivery-candidate",
+    "remote": "/var/tmp/operations-schema-next-candidate/tmp/profile-delivery",
+    "profiles": [
+      {
+        "file": "operation-matching.cpuprofile",
+        "sha256": "535ce04ccfd8741c69f105087e2bdff64ab20168f2c3c8ad1a59d32dd105f437"
+      },
+      {
+        "file": "operations-schema-library.cpuprofile",
+        "sha256": "c5679d5b4ae9d51cc25520a5d6155334c6dffd8726f4f579af7629449013b42c"
+      },
+      {
+        "file": "page.cpuprofile",
+        "sha256": "4a7e600cfc573bc5a873063177ecd86d4dda1c0266bd63145a3f3a0e049aabe4"
+      },
+      {
+        "file": "search.cpuprofile",
+        "sha256": "ce6a5a33b59ad661407aef5ff545847bd72d18c8b7e9c2f0fb393efc84f1ccc8"
+      }
+    ],
+    "rawReports": [
+      {
+        "file": "delivery-baseline/browser.json",
+        "sha256": "205ede91886ecf515ca8762bb965ac82c28b13db9b4f161d149abfd37e3fbd4d"
+      },
+      {
+        "file": "delivery-candidate/browser.json",
+        "sha256": "f869d3e783236448586ec00bf104100f034ab4c40e12e04fc245b244d07bfd2d"
+      },
+      {
+        "file": "cpu-baseline/source.json",
+        "sha256": "1e7ae95202fe039d49a71f471c6fdc8f6be3424d0362d966c1601d3488d08f2f"
+      },
+      {
+        "file": "delivery-candidate/source.json",
+        "sha256": "57067613cacfc756d4ac3508c97aed3c8ca23129384b904c2846e4874dbc9caa"
+      },
+      {
+        "file": "final-candidate/models.json",
+        "sha256": "63a0eb8b16e070536bf92cc79a51ba7db9045f169387c04a433d4f59ed9320ad"
+      },
+      {
+        "file": "candidate/projections-paired.json",
+        "sha256": "19b682de1400f2cbf8f789b3e8da6b45e746fecf9fa09216e98125ec1cf4b8d4"
+      },
+      {
+        "file": "helper-browser.json",
+        "sha256": "37264d2a94c5f25104a593d17a61af20fc7e8e1e1424ddd382c209a0e3320498"
+      }
+    ]
+  },
+  "validation": {
+    "sourceCoverage": {
+      "scenarios": 18,
+      "files": [
+        "src/lib/matching.ts",
+        "src/lib/operation-matching-client.ts",
+        "src/lib/operation-matching.worker.ts"
+      ],
+      "allMetricsPercent": 100
+    },
+    "browserDelivery": {
+      "scenariosPerEngine": 5,
+      "engines": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ]
+    },
+    "browserNavigation": {
+      "scenariosPerEngine": 2,
+      "engines": [
+        "chromium",
+        "firefox",
+        "webkit"
+      ]
+    },
+    "nativeOracle": "Full 42-service inventory, Unicode corpus and original ranking oracle; compact and full results identical.",
+    "modelBatches": "32 operations per service, OpenAI and Cloudflare, batch sizes 1/8/16; signatures identical.",
+    "typecheck": {
+      "errors": 0,
+      "warnings": 1,
+      "warning": "Existing vault-variable accessibility warning."
+    },
+    "build": "passed",
+    "fullRegressionRun": false,
+    "ciMonitored": false,
+    "ciWorkflowChanges": false
+  }
+}

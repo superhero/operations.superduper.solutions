@@ -16,3 +16,7 @@ Feature: Incremental schema interaction
 
   Scenario: A real service schema edit avoids normalizing unrelated schemas
     Then incremental index preparation is measured against full normalization
+
+  @schema-model-profile
+  Scenario: Profile repeated canonical reference projections
+    Then repeated canonical projections are measured in bounded schema batches

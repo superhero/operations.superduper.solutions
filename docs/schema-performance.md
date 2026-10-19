@@ -6,58 +6,47 @@ plus the two examples. Numeric samples,
 heap breakdowns, transfer counts and tested bundle hashes are in
 [`schema-performance.json`](schema-performance.json).
 
-## Current status and next work
+## Current status and remaining work
 
-Both optimization passes are merged into `develop`: the loading/storage changes
-in [#358](https://github.com/superhero/operations.superduper.solutions/pull/358),
-and the four interaction changes in
+The loading/storage pass merged in
+[#358](https://github.com/superhero/operations.superduper.solutions/pull/358),
+and the interaction pass in
 [#359](https://github.com/superhero/operations.superduper.solutions/pull/359)
-(`00cf348`). Offscreen menu rendering/shared tooltips, reusable matching workers
-with compact replies, per-schema normalized indexes and batched workflow models
-are implemented. The measurements below distinguish the two passes.
+(`00cf348`). Their historical measurements remain below. The rendering and
+matching follow-up investigates all five subsequent priorities:
 
-The next priorities are investigations, not promises of additional speedups:
+| Priority | Outcome |
+| --- | --- |
+| Measurement and startup | Added opt-in snapshot-free timing passes, matching-worker CPU profiles, page-clock phase boundaries, repeated fresh/persisted startup, native thread CPU and container throttling counters. Diagnostic profiles and primary timing/retention samples are separate. |
+| Hidden UI construction | Settings controls mount only for the selected, visible section, then release after closing. The drawer retains the selected section and Application numeric drafts. Browser's cheap dots remain mounted; its dashboard releases after closing. Existing menu buttons, hierarchy, native Tab navigation and offscreen rendering remain. |
+| Compact result allocation/sorting | Score the complete inventory, retain every result above 0.5 plus the exact remaining top-five places, and sort only those retained results. Report mode still returns the complete ranking. Independent result oracles cover both modes. |
+| Index lifetime and cancellation | Clear/close releases the worker; unchanged completed results reopen without scoring. Source/text/report-mode changes invalidate those results. Superseded queries share an installation that has not started scoring; active CPU work still terminates immediately. Source changes also release idle obsolete indexes. |
+| Repeated canonical models | Measured projection, adaptation, approval, accounting and temporary/released heap across two real services and batch sizes. Reverted a batch-local reference-metadata cache because paired gains were inconsistent; canonical models remain independent. |
 
-| Order | Work | Evidence and acceptance |
-| --- | --- | --- |
-| 1 | Improve measurement and check startup | Separate app work from tracing/selector overhead; profile the matching worker too. Repeat paired cold/warm startup samples to investigate 1.19s → 1.53s, rather than dismissing or declaring a regression from one pair. Record input, debounce, worker configuration/scoring, DOM publication and next-paint timings separately. |
-| 2 | Reduce remaining UI construction | `content-visibility` skips offscreen contents but leaves all matched buttons, components and trigger registrations mounted. Measure group/disclosure updates and hidden settings controls; reduce unnecessary state/listeners before considering full DOM windowing. Preserve Tab order, focus scrolling, hierarchy, hover outlines and mobile behavior. |
-| 3 | Avoid full result allocation/sorting in compact matching mode | The worker currently evaluates and sorts every candidate even when its reply includes only matches. Benchmark retaining all above-threshold matches plus the exact top five, then sorting their union. Preserve every score, ID-based tie order and report-mode ranking; heuristic shortlists remain outside the contract. |
-| 4 | Bound persistent index retention and cancellation costs | Reuse adds about 4.7 MiB of worker heap. Main-thread index refresh does not immediately update an idle worker, and an active abort requires reinstalling the catalog in its replacement. Measure disable-all, closed-menu and rapid-typing lifecycles before choosing explicit release or another cancellation strategy. Keep actual CPU cancellation and stale-reply rejection. |
-| 5 | Measure large-workflow canonical model costs | Batches reduce messages/transactions, but each operation still gets its own canonical adaptation, reference closure and fingerprint. Measure repeated references, transient/retained heap and batch-size effects before introducing shared immutable projections. Qualify revision, adapter, root, recursion/depth and execution-context keys; never reuse a partial projection as a complete model. |
+See [the follow-up evidence](#rendering-and-matching-follow-up) for samples,
+limitations, checks and the next investigation. The stored JSON includes discarded
+experiment results so an unretained prototype cannot be mistaken for delivered code.
 
-The next implementation should first improve the focused measurement harness,
-then use those results to select the UI change. Keep the ordinary regression
-traces available. Use one capped job on `sds-01`; full regression and CI following
-remain governed by the existing focused-testing instructions. Any new eager
-preparation belongs inside startup loading, following
-[startup readiness](adr/startup-readiness.md), rather than post-startup idle work.
+### Measurement correction
 
-### New findings from the existing evidence
+The previous saved page profile contained about 620ms of self samples in
+Playwright snapshot helpers (`visitNode`, `checkAndReturn`, `ensureCachedData`)
+out of 2,296ms sampled, about 27%. That was harness CPU, not application CPU;
+subtracting it from an individual search would be invalid. The old profiling
+helper also omitted the matching worker.
 
-A read-only inspection of the final search-page CPU profile found about 620ms of
-self samples in Playwright snapshot helpers (`visitNode`, `checkAndReturn` and
-`ensureCachedData`) out of 2,296ms sampled: about 27%. These helpers are present in
-the installed Playwright 1.63.0 snapshot implementation. The browser tests enable
-[tracing with snapshots](../tests/browser/support.mjs). This time is test-harness
-work, so the profile must not be read as pure application CPU or used to subtract
-620ms from any individual search latency. The paired timings remain observations
-under the same harness; native matching/index benchmarks are separate.
+The new minimal mode disables Playwright screenshots, DOM snapshots and sources
+only for explicitly selected profiling scenarios. Ordinary tests keep complete
+failure traces. Matching-worker diagnostics warm a target before attaching and
+stop/disable profiling in cleanup. Primary heap snapshots occur before profiling,
+which can itself retain script data. Connected DOM counts are separate from CDP's
+counts, which can include detached documents.
 
-The [CPU profiling helper](../tests/browser/schema-profile.fixture.mjs) currently
-attaches to the page and schema-library worker, not the matching worker. It cannot
-attribute browser matching CPU. Also, 336 window keydown listeners remain even
-for the five-match search. Code inspection confirms that the closed Schemas
-[section](../src/components/SettingsWorkspace.svelte) still mounts its cards
-and per-button tooltip controllers; how much of that fixed listener count and
-runtime cost they explain is not yet isolated.
-
-Profile provenance: `final-profile/search-page.cpuprofile`, SHA-256
+Historical profile: `final-profile/search-page.cpuprofile`, SHA-256
 `a52615ada52be94d32cfa94259ddaa474456d368af34e0e9469b5c16ba838658`,
-under the local `schema-interaction-performance` evidence directory. This is a
-reanalysis of the saved trace, not a new benchmark or a change to test behavior.
+under the local `schema-interaction-performance` evidence directory.
 
-### Deferred delivery change (original item 5)
+### Deferred delivery change
 
 Separate schema assets remain deferred. Before implementation, agree how the
 single-file/offline distribution will work, define content-addressed pack/index
@@ -246,3 +235,141 @@ remains with CI; this work does not change or monitor CI workflows.
 To reproduce the added native comparison, run the focused
 `src/schema-interaction.feature` with `SCHEMA_PROFILE_OUTPUT` set. The existing
 browser profile command above now also records matching-worker transfer counts.
+
+
+
+
+## Rendering and matching follow-up
+
+The third pass compares `09eb5c0` with the runtime hashes and built HTML hashes in
+[`schema-rendering-performance.json`](schema-rendering-performance.json). Both use
+the same worker timing probe and focused Gherkin harness on the capped host.
+
+Primary browser values below are medians of three fresh/persisted starts or five
+inputs per query. Heap snapshots force GC on the page and dedicated workers
+before any diagnostic profiler is enabled.
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| Fresh schema-store startup | 1203ms | 859ms |
+| Persisted schema-store startup | 886ms | 642ms |
+| Startup used JS heap | 43.23 MiB | 27.25 MiB |
+| Connected startup DOM nodes | 3,254 | 603 |
+| Closed-settings window keydown listeners | 336 | 27 |
+| Used JS heap after search closes | 49.61 MiB | 29.04 MiB |
+| “List projects” input → DOM publication | 319ms | 300ms |
+| “Create a new project” input → DOM publication | 307ms | 312ms |
+| “get” input → DOM publication | 167ms | 183ms |
+
+These measurements attribute the large fixed listener and heap costs to mounted
+settings controls: opening Schemas creates its controls, and closing the section
+or drawer releases them. The Browser indicator and existing slide sequence remain;
+its dashboard releases when closed. The menu retains native buttons and Tab order.
+
+Closing search releases about 4.76 MiB in this sample. Reopening unchanged results starts
+no worker; source changes invalidate that cache. Active scoring cancellation still
+terminates actual CPU work, while an unfinished installation can serve its latest
+query without another full-index transfer. Normal completed searches remain reusable
+while navigation stays open. The main enabled-schema index still occupies memory.
+
+The earlier one-pair startup slowdown was not reproduced: three repeated starts
+of `4dcf8a7` measured 1.29–1.34s fresh and 0.91–0.98s persisted; the current baseline
+and candidate samples are recorded independently. This does not isolate the cause
+of the earlier outlier. Routing disables HTTP cache, so these are local storage and
+readiness measurements rather than network or warm-HTTP-cache benchmarks.
+
+### Matching measurements and limits
+
+Native compact-mode wall-time medians, five alternating full/compact pairs after
+warmup, excluding assertions and signature generation:
+
+| Query | Before | After |
+| --- | --- | --- |
+| List projects | 57.0ms | 54.5ms |
+| Create a new project | 91.7ms | 83.7ms |
+| get | 17.3ms | 8.0ms |
+| List all running virtual machines in the selected project | 289.7ms | 260.8ms |
+
+The JSON also retains OS-accounted native worker-thread CPU, raw wall-time
+samples and container CPU counters. Browser timings changed direction in some
+earlier pairs; warmup and shared-host conditions matter. Alternating both modes
+in the same installed browser worker checks their exact results and avoids
+confounding each mode with a separate worker startup. A smaller allocation count
+does not establish a universal end-to-end speedup. The narrow search remains
+dominated by the 150ms debounce.
+
+Page-clock phases distinguish input, first RPC, index installation, worker search,
+DOM publication and a subsequent two-frame rendering opportunity. The last value
+is a frame proxy, not proof of paint or a field INP measurement. Worker `scoringMs`
+excludes reply construction/transfer; RPC duration includes queueing and transfer.
+Throttling counters identify container quota delays, not every form of contention.
+Diagnostic CPU profiles include page, schema-library and matching targets, and
+remain separate from the unprofiled timing and retention samples.
+
+### Canonical model investigation
+
+The native model fixture samples 32 operations distributed across each real
+schema. It records adaptation, effective server resolution, reference projection,
+approval/fingerprinting, byte accounting, and temporary/released heap. Models and
+policy signatures remain identical with loop batch sizes 1, 8 and 16. Storage
+transactions, worker messages and browser rendering are outside this fixture;
+its batch-size timings do not select a new RPC budget.
+
+| Service, 32 operations at batch size 16 | Model work | Projection | Approval | Temporary heap |
+| --- | --- | --- | --- | --- |
+| openai | 50.6ms | 27.8ms | 14.7ms | 3.78 MiB |
+| cloudflare | 29.0ms | 7.6ms | 12.5ms | 2.23 MiB |
+
+After releasing outputs and forcing GC, the measured retained change was close
+to zero. This is native worker heap accounting, not browser RSS or an arbitrary
+large-workflow bound. Active workflow models still remain pinned by design.
+
+A batch-local reference-metadata cache preserved every measured projection but
+changed the OpenAI median from 18.6ms to 19.5ms and Cloudflare from 9.2ms to 8.5ms
+in alternating paired samples. The ranges overlapped and gains were inconsistent,
+so it was reverted. A separate scoring helper also failed to establish a browser
+benefit and was reverted. Neither experiment is delivered application code.
+
+Any future projection sharing must use immutable complete source/revision/adapter
+identity and account for operation roots, allowed cross-operation references,
+traversal kind, recursion/depth and execution context. Mutable report outputs and
+partial input adaptations cannot become shared complete executable models.
+
+### Verification and reproduction
+
+Focused Gherkin checks pass for cancellation before/after replies, installation
+replacement, late failures, schema deltas, exact ranking, closed controls, cached
+menu reopening and invalidation. The final delivery and navigation checks pass in
+Chromium, Firefox and WebKit, including normal Browser slide motion, mobile focus,
+Tab scrolling, tooltips and saved-default failure/retry. Changed matching modules
+have 100% scoped statement/branch/function/line coverage. Build and typecheck pass
+with the existing vault-variable accessibility warning.
+
+The failed-save check exposed an existing Firefox console-presentation mismatch
+on the baseline too. It now asserts the actual logged Error and cause arguments
+instead of browser-specific text; unrelated console errors still fail the scenario.
+No CI workflow was changed, and full regression and CI monitoring were not run.
+
+Use one prepared job on `sds-01`: 2 CPUs, 3 GiB RAM and total memory/swap, 512
+processes, 1,800 MiB Node heap, Node 26.7.0 and Playwright 1.63.0/Chromium 153.
+The small Docker launcher has a separate 0.05 CPU/128 MiB cap. Ordinary regression
+traces remain enabled. For matched baseline/candidate evidence:
+
+```sh
+SCHEMA_PROFILE_LOW_OVERHEAD=1 SCHEMA_PROFILE_OUTPUT=tmp/schema-follow-up \
+  node tests/gherkin/run.mjs browser tests/browser/service-defaults.feature --tags @schema-next
+SCHEMA_PROFILE_OUTPUT=tmp/schema-follow-up \
+  node tests/gherkin/run.mjs source src/schema-performance.feature
+SCHEMA_PROFILE_OUTPUT=tmp/schema-follow-up \
+  node tests/gherkin/run.mjs source src/schema-interaction.feature --tags @schema-model-profile
+```
+
+### Next investigation
+
+Prioritize a provably bounded edit-distance calculation in compact mode, retaining
+all above-threshold results and exact top-five ties. Scoring still dominates worker
+CPU after removing full allocation/sorting. Keep the independent oracle and test
+long/Unicode queries. Profile a representative larger workflow before revisiting
+projection caches; the measured 32-operation model work does not justify persistent
+sharing yet. Further menu windowing needs evidence after the hidden-controls fix
+and must preserve native focus and hierarchy. Separate asset delivery remains deferred.

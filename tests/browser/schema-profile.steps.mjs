@@ -3,10 +3,11 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
 import { performance } from 'node:perf_hooks';
+import { readFile } from 'node:fs/promises';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, setMode } from './workspace.steps.mjs';
-import { cpuProfile, heapProfile, observeSchemaTransfers, saveSchemaProfile, renderProfile, observeMatchingTransfers } from './schema-profile.fixture.mjs';
+import { openCatalog, closeCatalog, setMode } from './workspace.steps.mjs';
+import { cpuProfile, heapProfile, observeSchemaTransfers, saveSchemaProfile, renderProfile, observeMatchingTransfers, observeSearchPhases, compareBrowserMatching } from './schema-profile.fixture.mjs';
 import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };
 
 async function ready(page) {
@@ -71,6 +72,8 @@ Then('schema lifecycle performance is measured with the complete service collect
     initialHeap: await heapProfile(this.browser, this.context, page), searches: [] };
   await openCatalog(page);
   const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
+  await prompt.fill('get');
+  await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', 'get');
   const searchCpu = await cpuProfile(this.browser, this.context, page, async () => {
     for (const query of ['List projects', 'Create a new project', 'get']) {
       const start = performance.now();
@@ -81,8 +84,8 @@ Then('schema lifecycle performance is measured with the complete service collect
       report.searches.at(-1).render = await renderProfile(this.context, page);
       report.searches.at(-1).transfers = await page.evaluate(() => globalThis.__matchingTransfers);
     }
-    await prompt.fill('');
   });
+  await prompt.fill('');
   const profiles = searchCpu.profiles.map(profile => ({ ...profile, name: `search-${profile.name}` }));
   await schemas(page);
   const toggle = page.locator('[data-schema-id="frankfurter"]').getByRole('switch');
@@ -194,4 +197,78 @@ Then('a closed schema inspector ignores a delayed source reply and can reopen', 
   await expect(card.getByRole('alert')).toHaveCount(0);
   await heading.click();
   await expect(card.locator('.json-view')).toHaveCount(0);
+});
+
+
+Then('startup and search phases are measured separately from diagnostic profiling', { timeout: 240_000 }, async function () {
+  assert.equal(this.browser.browserType().name(), 'chromium');
+  const page = this.page;
+  await this.context.addInitScript(observeMatchingTransfers);
+  await this.context.addInitScript(observeSearchPhases);
+  const report = { label: process.env.SCHEMA_PROFILE_LABEL ?? 'current', browser: this.browser.version(),
+    snapshots: process.env.SCHEMA_PROFILE_LOW_OVERHEAD !== '1', httpCache: 'disabled by routing',
+    startup: [], searches: [] };
+  for (let sample = 0; sample < 3; sample++) {
+    await page.goto(`${this.baseURL}/vault-fixture.html`);
+    await page.evaluate(async () => {
+      for (const { name } of await indexedDB.databases()) if (name.startsWith('v1/catalogs'))
+        await new Promise((resolve, reject) => {
+          const request = indexedDB.deleteDatabase(name); request.onsuccess = resolve;
+          request.onerror = () => reject(request.error); request.onblocked = () => reject(new Error('Schema database still open'));
+        });
+    });
+    let start = performance.now();
+    await page.goto(this.baseURL, { waitUntil: 'domcontentloaded' });
+    const freshMs = await ready(page) - start;
+    start = performance.now();
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    const persistedMs = await ready(page) - start;
+    report.startup.push({ freshMs, persistedMs });
+  }
+  if (process.env.SCHEMA_PROFILE_STARTUP_ONLY === '1') {
+    await saveSchemaProfile(this, report, []);
+    return;
+  }
+  report.closedSettings = await renderProfile(this.context, page);
+  report.initialHeap = await heapProfile(this.browser, this.context, page);
+  await openCatalog(page);
+  const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
+  async function query(value) {
+    await prompt.fill(value);
+    await page.waitForFunction(value => globalThis.__searchPhases.at(-1)?.query === value
+      && globalThis.__searchPhases.at(-1)?.frameAt, value, { timeout: 30_000 });
+    return page.evaluate(() => structuredClone(globalThis.__searchPhases.at(-1)));
+  }
+  const cpuStats = async () => {
+    const raw = await readFile('/sys/fs/cgroup/cpu.stat', 'utf8').catch(() => null);
+    return raw ? Object.fromEntries(raw.trim().split('\n').map(line => {
+      const [key, value] = line.split(' '); return [key, Number(value)];
+    })) : null;
+  };
+  for (let sample = 0; sample < 5; sample++) for (const text of ['List projects', 'Create a new project', 'get']) {
+    const before = await cpuStats();
+    const phase = await query(text);
+    const after = await cpuStats();
+    phase.containerCpu = before && after ? Object.fromEntries(Object.keys(after).map(key => [key, after[key] - before[key]])) : null;
+    report.searches.push({ ...phase, render: await renderProfile(this.context, page),
+      matches: await page.locator('[data-operation-id]').count() });
+  }
+  report.searchHeap = await heapProfile(this.browser, this.context, page);
+  report.traffic = await page.evaluate(() => globalThis.__matchingTransfers);
+  // Retention is measured before enabling profilers, which can retain script data.
+  await closeCatalog(page);
+  report.closedSearchHeap = await heapProfile(this.browser, this.context, page);
+  await openCatalog(page);
+  await query('List projects');
+  // Diagnostic samples are a separate pass, never mixed into latency/heap samples.
+  const diagnostic = await cpuProfile(this.browser, this.context, page, () => query('Create a new project'));
+  assert.ok(diagnostic.profiles.some(target => target.name === 'operation-matching'));
+  if (process.env.SCHEMA_PROFILE_OUTPUT) report.matchingModes = await compareBrowserMatching(page);
+  const openSchemasStarted = performance.now();
+  await schemas(page);
+  report.openSchemasMs = performance.now() - openSchemasStarted;
+  report.openSchemas = await renderProfile(this.context, page);
+  await page.locator('summary[aria-label="Schemas"]').click();
+  report.closedSchemas = await renderProfile(this.context, page);
+  await saveSchemaProfile(this, report, diagnostic.profiles);
 });

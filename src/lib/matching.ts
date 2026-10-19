@@ -58,13 +58,17 @@ function distance(left: string, right: string, row: Uint32Array): number
   return row[leftLength]!;
 }
 
-export function evaluatePreparedOperations<T extends MatchableOperation>(prompt: string, operations: readonly PreparedMatchingOperation<T>[]): OperationEvaluation<T>
+export function evaluatePreparedOperations<T extends MatchableOperation>(prompt: string, operations: readonly PreparedMatchingOperation<T>[], details = true): OperationEvaluation<T>
 {
   const query = normalize(prompt);
   if (!query || query.length > 256) return { candidates: [], results: [] };
   // The shorter side never exceeds the bounded query, even for very long names.
   const row = new Uint32Array(query.length + 1);
-  const candidates = operations.map(({ operation, names }) => {
+  const candidates: OperationMatch<T>[] = [];
+  const best: OperationMatch<T>[] = [];
+  const compare = (left: OperationMatch<T>, right: OperationMatch<T>) =>
+    right.similarity - left.similarity || left.operation.id.localeCompare(right.operation.id);
+  for (const { operation, names } of operations) {
     let similarity = 0;
     for (const name of names)
     {
@@ -74,10 +78,21 @@ export function evaluatePreparedOperations<T extends MatchableOperation>(prompt:
       if (1 - Math.abs(query.length - name.length) / length <= similarity) continue;
       similarity = Math.max(similarity, 1 - distance(query, name, row) / length);
     }
-    return { operation, similarity };
-  })
-    .sort((left, right) => right.similarity - left.similarity || left.operation.id.localeCompare(right.operation.id));
-  // A single pass merges both selections without repeating their overlap.
+    if (details || similarity > minimumSimilarity) candidates.push({ operation, similarity });
+    else {
+      // Only below-threshold rows can fill the remaining top-five places.
+      // Equal rows insert after existing ties, preserving the stable full sort.
+      const last = best[best.length - 1]!;
+      if (best.length === topResultCount && (similarity < last.similarity
+        || similarity === last.similarity && operation.id.localeCompare(last.operation.id) >= 0)) continue;
+      const match = { operation, similarity };
+      const index = best.findIndex(other => compare(match, other) < 0);
+      best.splice(index < 0 ? best.length : index, 0, match);
+      if (best.length > topResultCount) best.pop();
+    }
+  }
+  candidates.sort(compare);
+  if (!details) return { candidates: [], results: candidates.concat(best.slice(0, Math.max(0, topResultCount - candidates.length))) };
   return { candidates, results: candidates.filter((result, index) => index < topResultCount || result.similarity > minimumSimilarity) };
 }
 

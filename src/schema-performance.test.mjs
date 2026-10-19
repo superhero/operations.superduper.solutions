@@ -48,6 +48,8 @@ Then('indexed matching retains exact scores for varied Unicode names and queries
   for (const query of [...names, '', '  ', 'x'.repeat(257)]) {
     const expected = referenceEvaluation(query, operations);
     assert.deepEqual(evaluate(query), expected);
+    assert.deepEqual(matching.rankOperations(query, operations), expected.results);
+    assert.deepEqual(matching.evaluatePreparedOperations(query, matching.prepareMatchingOperations(operations), false), { candidates: [], results: expected.results });
     assert.deepEqual(matching.evaluateOperations(query, operations), expected);
   }
   const unread = [{ id: 'unread', get name() { assert.fail('Empty and over-limit queries must not read candidate names'); } }];
@@ -74,15 +76,16 @@ Then('the complete service catalogue is profiled with unchanged matching results
     : query => matching.evaluateOperations(query, operations);
   const queries = ['List projects', 'Create a new project', 'get',
     'List all running virtual machines in the selected project', 'LIST_projetcs', 'Élément ＧＥＴ 😀', '', 'x'.repeat(257)];
-  const signatures = [];
+  const signatures = [], resultSignatures = [];
   for (const query of queries) {
     const expected = referenceEvaluation(query, operations);
     assert.deepEqual(evaluate(query), expected);
+    resultSignatures.push(createHash('sha256').update(JSON.stringify(expected.results)).digest('hex'));
     signatures.push(createHash('sha256').update(JSON.stringify(expected)).digest('hex'));
   }
   const directoryOutput = process.env.SCHEMA_PROFILE_OUTPUT;
   const worker = new Worker(pathToFileURL(resolve('src/schema-performance.fixture.mjs')), {
-    workerData: { operations, queries, signatures, profile: !!directoryOutput },
+    workerData: { operations, queries, signatures, resultSignatures, profile: !!directoryOutput },
   });
   let measured;
   try {
