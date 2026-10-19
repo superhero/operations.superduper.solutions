@@ -4,5 +4,5 @@
 @toolbar-controls
 Feature: Workflow toolbar actions
   Scenario: Direct keyboard actions protect the selected graph and preserve navigation
-    Given a workflow with 2 instances of "List projects"
+    Given a workflow with 2 instances of "Example array response"
     Then direct workflow actions protect graph shortcuts and restore focus without closing navigation

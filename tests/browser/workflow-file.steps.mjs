@@ -14,7 +14,7 @@ Then('I can upload typed workflow files and correct CSV detection', async functi
   await upload('project.json','"project-1"');
   await expect(node.locator('.utility-type')).toHaveText('Text');
   await page.getByRole('button',{name:'Fit View',exact:true}).click();
-  await gesture(page,node.getByLabel('File output (Text)',{exact:true}),workflow(page).getByLabel('Project ID input',{exact:true}),'drag');
+  await gesture(page,node.getByLabel('File output (Text)',{exact:true}),workflow(page).getByLabel('Path value input',{exact:true}),'drag');
   assert.equal((await readExport(page)).document.edges.filter(e=>e.kind==='mapping').length,1);
   await upload('bad.txt','not supported');
   await expect(node.getByRole('alert')).toContainText('Only JSON and CSV');
@@ -76,7 +76,7 @@ Then('uploaded files create nested output panels and preserve compatible field c
   const structure=(await readExport(page)).document.edges.find(e=>e.kind==='schema'&&e.source===owner);
   assert.equal(structure.sourceHandle,'value');
   await page.getByRole('button',{name:'Fit View',exact:true}).click();
-  await gesture(page,panels.getByLabel('baz output',{exact:true}),workflow(page).getByLabel('Project ID input',{exact:true}),'drag');
+  await gesture(page,panels.getByLabel('baz output',{exact:true}),workflow(page).getByLabel('Path value input',{exact:true}),'drag');
   let doc=(await readExport(page)).document;
   assert.equal(doc.edges.filter(e=>e.kind==='mapping').length,1);
   await upload('nested.json',JSON.stringify({foo:{bar:{baz:'project-2'}}}));
@@ -104,14 +104,14 @@ Then('CSV Item connections send correlated scalar requests for every row', async
   await expect(panels).toHaveCount(2);
   await expect(panels.locator('.field-type')).toHaveText(['Object','Text','Integer']);
   await page.getByRole('button',{name:'Fit View',exact:true}).click();
-  await gesture(page,panels.getByLabel('name output',{exact:true}),workflow(page).getByLabel('Project name input',{exact:true}),'drag');
+  await gesture(page,panels.getByLabel('name output',{exact:true}),workflow(page).getByLabel('Name input',{exact:true}),'drag');
   await gesture(page,panels.getByLabel('limit output',{exact:true}),workflow(page).getByLabel('Result limit input',{exact:true}),'drag');
   assert.equal((await readExport(page)).document.edges.filter(e=>e.kind==='mapping').length,2);
   await page.getByRole('button',{name:'Run workflow',exact:true}).click();
   const run=page.getByRole('dialog',{name:/^Run workflow:/});
   for (const [index,name] of ['Documentation','Website'].entries()) {
-    await expect(run.getByRole('heading',{name:`${index+1}. List projects`,exact:true})).toBeVisible();
-    await expect(run.getByRole('textbox',{name:'Project name',exact:true})).toHaveValue(name);
+    await expect(run.getByRole('heading',{name:`${index+1}. Example array response`,exact:true})).toBeVisible();
+    await expect(run.getByRole('textbox',{name:'Name',exact:true})).toHaveValue(name);
     await expect(run.getByRole('textbox',{name:'Result limit value',exact:true})).toHaveValue(String(index+1));
     await run.getByRole('button',{name:index?'Run operation':'Start workflow',exact:true}).click();
     await expect(run.getByRole('region',{name:`Step ${index+1} response`,exact:true})).toBeVisible();

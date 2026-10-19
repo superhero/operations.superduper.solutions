@@ -75,5 +75,5 @@ Feature: Workflow utility controls and reusable plans
     Then the switch adapts its operand to the changed input type
 
   Scenario: Utility nodes use nearby empty space and center the viewport
-    Given a workflow with 1 instances of "List projects"
+    Given a workflow with 1 instances of "Example array response"
     Then newly added utility nodes occupy nearby free space and become centered

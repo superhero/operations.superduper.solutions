@@ -2,12 +2,12 @@
   {
     "id": "projects",
     "name": "example.com",
-    "description": "Example requests to https://example.com for exploring HTTP methods, input types and workflows.",
+    "description": "Illustrative OpenAPI methods, inputs and response schemas using placeholder URLs.",
     "children": [
       {
         "id": "overview",
-        "name": "Overview",
-        "description": "Find projects and inspect their current details and status.",
+        "name": "Response examples",
+        "description": "Illustrative array and object response schemas.",
         "operationIds": [
           "demo:listProjects",
           "demo:getProject"
@@ -15,8 +15,8 @@
       },
       {
         "id": "tasks",
-        "name": "Tasks",
-        "description": "Create tasks and maintain their titles, priorities and completion status.",
+        "name": "Request examples",
+        "description": "Illustrative POST and PATCH request bodies.",
         "operationIds": [
           "demo:createTask",
           "demo:updateTask"

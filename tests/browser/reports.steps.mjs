@@ -44,13 +44,13 @@ Then("evaluation details stay hidden until enabled and the saved choice survives
   await expect(toggle).toHaveClass(/\bprompt-symbol\b/);
   await expect(page.locator(".catalog-prompt label.prompt-symbol")).toHaveCount(0);
   await expect(page.locator(".catalog-prompt .prompt-actions")).toHaveCount(0);
-  await searchOperations(page, "List projects");
+  await searchOperations(page, "Example array response");
   await expect(toggle).toBeEnabled();
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
   await expect(evaluationReport(page)).toBeVisible();
   await expect(evaluationReport(page).locator(".evaluation-prompt")).toHaveCount(0);
-  await expect(page.locator(".catalog-prompt")).toHaveAttribute("data-evaluated-prompt", "List projects");
+  await expect(page.locator(".catalog-prompt")).toHaveAttribute("data-evaluated-prompt", "Example array response");
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
   await expect(evaluationReport(page)).toBeHidden();
@@ -67,7 +67,7 @@ Then("evaluation details stay hidden until enabled and the saved choice survives
 
   await setEvaluationDetails(page);
   await page.reload();
-  await searchOperations(page, "List projects");
+  await searchOperations(page, "Example array response");
   await expect(toggle).toBeVisible();
   await expect(symbol).toHaveText("manage_search");
   await toggle.click();
@@ -76,7 +76,7 @@ Then("evaluation details stay hidden until enabled and the saved choice survives
   await expect(toggle).toHaveCount(0);
   await expect(evaluationReport(page)).toBeHidden();
   await page.reload();
-  await searchOperations(page, "List projects");
+  await searchOperations(page, "Example array response");
   await expect(toggle).toHaveCount(0);
   await expect(symbol).toHaveText("search");
   await expect(evaluationReport(page)).toBeHidden();
@@ -227,7 +227,7 @@ Then("the open report follows the latest prompt automatically", async function (
 
 
 
-Then("the operation report describes the demo Create task source and inputs", async function () {
+Then("the operation report describes the demo Example POST body source and inputs", async function () {
   const report = operationReport(this.page);
   await expect(report).toBeVisible();
   await expect(metric(report, "Catalog")).toHaveText(exampleCatalog.name);
@@ -236,31 +236,31 @@ Then("the operation report describes the demo Create task source and inputs", as
   await expect(report.getByRole("region", { name: "Catalog metadata", exact: true })).toHaveCount(0);
   const metadata = report.getByRole("region", { name: "Operation metadata", exact: true });
   await expect(fact(metadata, "File")).toHaveText(/(?:^|\/)demo\.openapi\.json$/);
-  await expect(fact(metadata, "Catalog version")).toHaveText("1.0.0");
+  await expect(fact(metadata, "Catalog version")).toHaveText("1.0.1");
   await expect(fact(metadata, "OpenAPI version")).toHaveText("3.1.0");
   await expect(fact(metadata, "Server URL")).toHaveText("https://example.com");
   await expect(fact(metadata, "Operation ID")).toHaveText("createTask");
   await expect(fact(metadata, "Catalog identifier")).toHaveText("demo:createTask");
-  await expect(fact(metadata, "Name")).toHaveText("Create task");
-  await expect(fact(metadata, "Description")).toHaveText("Add a task to a project with a title, priority and optional estimate.");
+  await expect(fact(metadata, "Name")).toHaveText("Example POST body");
+  await expect(fact(metadata, "Description")).toHaveText("Illustrates a required path input and a JSON body with string, enum and optional number fields.");
   await expectInputTables(report, { Path: [["projectId", "Yes"]], Body: [["title", "Yes"], ["priority", "Yes"], ["estimate", "No"]] });
   const path = report.getByRole("table", { name: "Input properties · Path", exact: true });
-  await expect(path.locator("tbody tr").getByRole("cell")).toHaveText(["Project ID", "string", "Yes", "The identifier of the project to work with."]);
+  await expect(path.locator("tbody tr").getByRole("cell")).toHaveText(["Path value", "string", "Yes", "An arbitrary string used in the example schema."]);
   const body = report.getByRole("table", { name: "Input properties · Body", exact: true });
   const estimate = body.getByRole("row").filter({ has: this.page.getByRole("rowheader", { name: "estimate", exact: true }) });
-  await expect(estimate.getByRole("cell").nth(0)).toHaveText("Estimated hours");
+  await expect(estimate.getByRole("cell").nth(0)).toHaveText("Number value");
   await expect(estimate.getByRole("cell").nth(1)).toHaveText("number");
   const groups = report.getByRole("region", { name: "Operation grouping", exact: true }).getByRole("listitem");
   await expect(groups).toHaveCount(2);
   await expect(fact(groups.nth(0), "Name")).toHaveText(exampleCatalog.name);
-  await expect(fact(groups.nth(1), "Name")).toHaveText("Tasks");
+  await expect(fact(groups.nth(1), "Name")).toHaveText("Request examples");
   await expect(report.locator('summary[aria-label="OpenAPI schema"]')).toHaveAttribute("aria-expanded", "false");
 });
 
 Then("changing the reported operation resets its schema view and run inputs", async function () {
   await operationReport(this.page).locator('summary[aria-label="OpenAPI schema"]').click();
   await expect(this.page.getByRole("region", { name: "Operation OpenAPI JSON", exact: true })).toBeVisible();
-  await chooseCatalogOperation(this.page, "Get project");
+  await chooseCatalogOperation(this.page, "Example object response");
   await expect(this.page.getByRole("button", { name: "Review operation details", exact: true })).toHaveAttribute("aria-expanded", "false");
   await expect(operationReport(this.page)).toHaveCount(0);
   await this.page.getByRole("button", { name: "Review operation details", exact: true }).click();
@@ -276,12 +276,12 @@ Then("changing the reported operation resets its schema view and run inputs", as
   const groups = report.getByRole("region", { name: "Operation grouping", exact: true }).getByRole("listitem");
   await expect(groups).toHaveCount(2);
   await expect(fact(groups.nth(0), "Name")).toHaveText(exampleCatalog.name);
-  await expect(fact(groups.nth(1), "Name")).toHaveText("Overview");
+  await expect(fact(groups.nth(1), "Name")).toHaveText("Response examples");
   await report.locator('summary[aria-label="OpenAPI schema"]').click();
   const schema = this.page.getByRole("region", { name: "Operation OpenAPI JSON", exact: true });
   await expect(schema).toContainText('"/projects/{projectId}"');
   await expect(schema).not.toContainText('"/projects/{projectId}/tasks"');
-  await chooseCatalogOperation(this.page, "List projects");
+  await chooseCatalogOperation(this.page, "Example array response");
   await this.page.getByRole("button", { name: "Review operation details", exact: true }).click();
   await expectInputTables(operationReport(this.page), { Query: [["name", "No"], ["limit", "No"]] });
   await chooseCatalogOperation(this.page, "HTTPBin JSON object");
@@ -303,8 +303,8 @@ Then("changing the reported operation resets its schema view and run inputs", as
   await expect(fact(liveGroups.nth(0), "Name")).toHaveText(liveCatalog.name);
   await expect(fact(liveGroups.nth(1), "Name")).toHaveText("Body formats");
   await expect(liveReport.locator('summary[aria-label="OpenAPI schema"]')).toHaveAttribute("aria-expanded", "false");
-  await chooseCatalogOperation(this.page, "Create task");
-  await expect(await field(this.page, "Project ID")).toHaveValue("");
+  await chooseCatalogOperation(this.page, "Example POST body");
+  await expect(await field(this.page, "Path value")).toHaveValue("");
   await expect(await field(this.page, "Title")).toHaveValue("");
   await expectFieldValue(this.page, "Priority", "");
 });
@@ -352,17 +352,17 @@ Then("both reports fit a {int} pixel viewport in the {string} theme", async func
   await this.page.setViewportSize({ width, height: 844 });
   await selectThemeMode(this.page, theme);
   await openCatalog(this.page);
-  await searchOperations(this.page, "List projects");
+  await searchOperations(this.page, "Example array response");
   await this.page.getByRole("button", { name: "Review matching details", exact: true }).click();
   await expectReportFits(this.page, evaluationReport(this.page));
   const proposed = evaluationReport(this.page).getByRole("list", { name: "Proposed operations", exact: true });
   const notProposed = evaluationReport(this.page).getByRole("list", { name: "Not proposed operations", exact: true });
-  await expect(proposed.getByRole("listitem")).toHaveCount(5);
-  await expectRejectedSummary(notProposed, 5);
-  await expect(proposed.locator(".candidate-name").nth(0)).toHaveText("List projects");
-  await expect(proposed.locator(".candidate-name").nth(1)).toHaveText("Get project");
-  await expect(notProposed.locator(".candidate-name").nth(0)).toHaveText("Example JSON object");
-  await expect(notProposed.locator(".candidate-name").nth(1)).toHaveText("Update task");
+  await expect(proposed.getByRole("listitem")).toHaveCount(8);
+  await expectRejectedSummary(notProposed, 8);
+  await expect(proposed.locator(".candidate-name").nth(0)).toHaveText("Example array response");
+  await expect(proposed.locator(".candidate-name").nth(1)).toHaveText("Example object response");
+  await expect(notProposed.locator(".candidate-name").nth(0)).toHaveText("Example DELETE request");
+  await expect(notProposed.locator(".candidate-name").nth(1)).toHaveText("Example OPTIONS request");
   const left = await proposed.boundingBox();
   const right = await notProposed.boundingBox();
   assert.ok(left && right, "Both comparison lists must be visible.");
@@ -370,7 +370,7 @@ Then("both reports fit a {int} pixel viewport in the {string} theme", async func
     "Sidebar reports stack failed matches below proposals without changing either list.");
   await expectReportColor(evaluationReport(this.page), "background-color", roles.shell);
   await expectReportColor(evaluationReport(this.page).locator(".report-metric").first(), "background-color", roles.card);
-  await chooseCatalogOperation(this.page, "Create task");
+  await chooseCatalogOperation(this.page, "Example POST body");
   await this.page.getByRole("button", { name: "Review operation details", exact: true }).click();
   const report = operationReport(this.page);
   await expectReportFits(this.page, report);
@@ -455,7 +455,7 @@ Then("both reports fit a {int} pixel viewport in the {string} theme", async func
   const originallyWrapped = await wrapping.getAttribute("aria-pressed");
   const scroll = json.locator(".json-scroll");
   const originalStyle = await scroll.getAttribute("style");
-  const description = json.locator(".json-string").filter({ hasText: "Add a task to a project with a title, priority and optional estimate." });
+  const description = json.locator(".json-string").filter({ hasText: "Illustrates a required path input and a JSON body with string, enum and optional number fields." });
   const stringLayout = () => description.evaluate(element => {
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     const characters = [];

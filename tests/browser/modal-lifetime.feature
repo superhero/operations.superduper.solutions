@@ -4,7 +4,7 @@
 @toolbar-controls
 Feature: Navigation modal lifetime
   Scenario Outline: Graph shortcuts remain suspended throughout animated dismissal
-    Given a workflow with 2 instances of "List projects"
+    Given a workflow with 2 instances of "Example array response"
     Then dismissing animated mobile navigation with "<dismissal>" protects the graph until it is gone
 
     Examples:
@@ -13,7 +13,7 @@ Feature: Navigation modal lifetime
       | Escape    |
 
   Scenario Outline: Responsive navigation preserves the active document dialog
-    Given a workflow with 2 instances of "List projects"
+    Given a workflow with 2 instances of "Example array response"
     Then resizing an open desktop catalog preserves the "<dialog>" dialog focus and trap
 
     Examples:
@@ -31,9 +31,9 @@ Feature: Navigation modal lifetime
       | reduce        |
 
   Scenario: Mobile destinations wait for the closing Sheet to disappear
-    Given a workflow with 2 instances of "List projects"
+    Given a workflow with 2 instances of "Example array response"
     Then animated navigation completes dismissal before changing workspace or adding an operation
 
   Scenario: Reopening navigation cancels the interrupted destination
-    Given a workflow with 2 instances of "List projects"
+    Given a workflow with 2 instances of "Example array response"
     Then reopening navigation during keyboard selection cancels that destination

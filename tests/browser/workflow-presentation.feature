@@ -4,7 +4,7 @@
 @toolbar-controls
 Feature: Workflow selection feedback
   Scenario Outline: Hover and keyboard focus preserve selected visual states
-    Given a workflow with 2 instances of "List projects"
+    Given a workflow with 2 instances of "Example array response"
     Then graph selection feedback remains distinct in the "<theme>" theme
 
     Examples:

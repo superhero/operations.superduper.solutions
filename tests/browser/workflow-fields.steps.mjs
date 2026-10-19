@@ -64,10 +64,10 @@ async function ownerId(page, name) {
 }
 
 async function mappingPorts(world) {
-  const sourceOwner = await ownerId(world.page, "Get project");
-  const targetOwner = await ownerId(world.page, "Create task");
-  const source = panels(world.page, sourceOwner, "outputs").getByLabel("Project ID output", { exact: true });
-  const target = namedPanel(world.page, targetOwner, "inputs", "Path parameters").getByLabel("Project ID input", { exact: true });
+  const sourceOwner = await ownerId(world.page, "Example object response");
+  const targetOwner = await ownerId(world.page, "Example POST body");
+  const source = panels(world.page, sourceOwner, "outputs").getByLabel("Path value output", { exact: true });
+  const target = namedPanel(world.page, targetOwner, "inputs", "Path parameters").getByLabel("Path value input", { exact: true });
   await expect(source).toBeVisible();
   await expect(target).toBeVisible();
   const sourceNode = await source.evaluate(element => element.closest(".svelte-flow__node").dataset.id);
@@ -127,25 +127,25 @@ async function expectOwnerLayout(node, inputs, outputs) {
   }
 }
 
-Given("a workflow ready to map Get project to Create task", async function () {
+Given("a workflow ready to map Example object response to Example POST body", async function () {
   await setMode(this.page, "workflow");
-  await seedOperationGraph(this.page, ["Get project", "Create task"]);
+  await seedOperationGraph(this.page, ["Example object response", "Example POST body"]);
   await this.page.getByRole("button", { name: "Fit View", exact: true }).click();
   await mappingPorts(this);
   await expect(connections(this.page)).toHaveCount(0);
 });
 
-Then("List projects exposes its query parameters and nested project response", async function () {
-  const id = await ownerId(this.page, "List projects");
+Then("Example array response exposes its query parameters and nested project response", async function () {
+  const id = await ownerId(this.page, "Example array response");
   const query = namedPanel(this.page, id, "inputs", "Query parameters");
   await expect(query).toBeVisible();
-  await expect(query.getByLabel("Project name input", { exact: true })).toHaveClass(/connectableend/);
+  await expect(query.getByLabel("Name input", { exact: true })).toHaveClass(/connectableend/);
   await expect(query.getByLabel("Result limit input", { exact: true })).not.toHaveClass(/connectablestart/);
   await expect(fieldRow(query, "Result limit").locator(".field-type")).toHaveText("Integer");
   const response = namedPanel(this.page, id, "outputs", "Response · 200");
   const body = namedPanel(this.page, id, "outputs", "Response body");
   const headers = namedPanel(this.page, id, "outputs", "Response headers");
-  const nested = namedPanel(this.page, id, "outputs", "Project");
+  const nested = namedPanel(this.page, id, "outputs", "Example object");
   await expect(response).toBeVisible();
   await expectResponseEnvelope(response, 'Array');
   await expect(body).toBeVisible();
@@ -153,47 +153,47 @@ Then("List projects exposes its query parameters and nested project response", a
   await expect(headers).toBeVisible();
   await expect(headers.getByRole('button', { name: 'Edit properties', exact: true })).toBeVisible();
   await expect(nested).toBeVisible();
-  const projectId = fieldRow(nested, "Project ID");
+  const projectId = fieldRow(nested, "Path value");
   await expect(projectId.locator(".required")).toHaveText("*");
   await expect(workflow(this.page).locator('.svelte-flow__node[title], .svelte-flow__node [title]')).toHaveCount(0);
-  await expectHoverHint(operationNodes(this.page, 'List projects').locator('.operation-title-row'),
-    'GET /projects\nFind projects by name and limit the number of results.');
-  await expectHoverHint(nested.locator('.data-title strong'), 'Project');
-  await expectHoverHint(projectId, /fictional project identifier[\s\S]*Required/);
+  await expectHoverHint(operationNodes(this.page, 'Example array response').locator('.operation-title-row'),
+    'GET /projects\nIllustrates optional string and integer query inputs and an array response schema.');
+  await expectHoverHint(nested.locator('.data-title strong'), 'Example object');
+  await expectHoverHint(projectId, /arbitrary string used in the example schema[\s\S]*Required/);
   await expectHoverHint(projectId.locator('.required'), 'Required');
   assert.ok(await projectId.evaluate(element => element.tabIndex < 0), 'Field hints must preserve the native node tab order.');
   assert.ok(await projectId.locator('.required').evaluate(element => element.tabIndex < 0), 'Required markers must not add tab stops.');
-  await expect(projectId.getByLabel("Project ID output", { exact: true })).toHaveClass(/connectablestart/);
+  await expect(projectId.getByLabel("Path value output", { exact: true })).toHaveClass(/connectablestart/);
   await expect(response.locator('[data-handleid="value"]')).toHaveAttribute("aria-disabled", "true");
-  await expect(operationNodes(this.page, "List projects").locator(".owner-port")).toHaveCount(2);
-  await expectOwnerLayout(operationNodes(this.page, "List projects"), ['Query'], ['200']);
+  await expect(operationNodes(this.page, "Example array response").locator(".owner-port")).toHaveCount(2);
+  await expectOwnerLayout(operationNodes(this.page, "Example array response"), ['Query'], ['200']);
   await expect(connections(this.page)).toHaveCount(0);
 });
 
-Then("Create task separates required path and request-body fields", async function () {
-  const id = await ownerId(this.page, "Create task");
+Then("Example POST body separates required path and request-body fields", async function () {
+  const id = await ownerId(this.page, "Example POST body");
   const path = namedPanel(this.page, id, "inputs", "Path parameters");
   const body = namedPanel(this.page, id, "inputs", "Request body");
-  await expect(fieldRow(path, "Project ID").locator(".required")).toHaveText("*");
+  await expect(fieldRow(path, "Path value").locator(".required")).toHaveText("*");
   await expect(fieldRow(body, "Title").locator(".required")).toHaveText("*");
   await expect(fieldRow(body, "Priority").locator(".required")).toHaveText("*");
-  await expect(fieldRow(body, "Estimated hours").locator(".required")).toHaveCount(0);
-  await expect(fieldRow(body, "Estimated hours").locator(".field-type")).toHaveText("Number");
+  await expect(fieldRow(body, "Number value").locator(".required")).toHaveCount(0);
+  await expect(fieldRow(body, "Number value").locator(".field-type")).toHaveText("Number");
   await expectResponseEnvelope(namedPanel(this.page, id, 'outputs', 'Response · 201'), 'Object');
   await expect(panels(this.page, id, "outputs").getByLabel("Completed output", { exact: true })).toBeVisible();
-  const ports = operationNodes(this.page, "Create task").locator(".owner-port");
+  const ports = operationNodes(this.page, "Example POST body").locator(".owner-port");
   await expect(ports).toHaveCount(3);
   for (const port of await ports.all()) {
     await expect(port).toHaveAttribute("aria-disabled", "true");
     await expect(port).not.toHaveClass(/connectablestart|connectableend/);
   }
-  await expectOwnerLayout(operationNodes(this.page, "Create task"), ['Path', 'Body'], ['201']);
+  await expectOwnerLayout(operationNodes(this.page, "Example POST body"), ['Path', 'Body'], ['201']);
 });
 
 Given('repeated operation nodes with documented response variants', async function () {
   const operation = { ...operations.find(operation => operation.id === 'demo:getProject'), name: 'Response variants' };
   const document = { paths: { [operation.path]: { get: {
-    parameters: [{ name: 'projectId', in: 'path', required: true, schema: { type: 'string', title: 'Project ID' } }],
+    parameters: [{ name: 'projectId', in: 'path', required: true, schema: { type: 'string', title: 'Path value' } }],
     responses: {
       200: { description: 'Success', content: { 'application/json': { schema: { type: 'string' } }, 'text/plain': { schema: { type: 'string' } } } },
       400: { description: 'Invalid input', content: { 'application/json': { schema: { type: 'string' } } } },
@@ -268,8 +268,8 @@ Then("the project identifier mapping keeps its saved field endpoints", async fun
 });
 
 async function hideNestedResponse(world) {
-  world.branchOwnerId = await ownerId(world.page, "List projects");
-  const nested = namedPanel(world.page, world.branchOwnerId, "outputs", "Project");
+  world.branchOwnerId = await ownerId(world.page, "Example array response");
+  const nested = namedPanel(world.page, world.branchOwnerId, "outputs", "Example object");
   world.branchHandles = await nested.locator(".data-field .svelte-flow__handle").evaluateAll(handles => handles.map(handle => handle.dataset.handleid));
   world.branchNodeId = await nested.evaluate(element => element.closest(".svelte-flow__node").dataset.id);
   await nested.locator(".data-title strong").click();
@@ -283,7 +283,7 @@ async function hideNestedResponse(world) {
 async function restoreNestedResponse(world) {
   const response = namedPanel(world.page, world.branchOwnerId, "outputs", "Response body");
   await response.getByRole("button", { name: "Restore Project", exact: true }).click();
-  const nested = namedPanel(world.page, world.branchOwnerId, "outputs", "Project");
+  const nested = namedPanel(world.page, world.branchOwnerId, "outputs", "Example object");
   await expect(nested).toBeVisible();
   await expect(nested).not.toHaveClass(/selected/);
   await expect(world.page.getByRole("button", { name: "Remove selected", exact: true })).toBeDisabled();
@@ -295,8 +295,8 @@ When("I hide and restore the nested project response", async function () {
 });
 When('I hide and restore the root query input', async function () {
   const page = this.page;
-  const id = await ownerId(page, 'List projects');
-  const owner = operationNodes(page, 'List projects');
+  const id = await ownerId(page, 'Example array response');
+  const owner = operationNodes(page, 'Example array response');
   const query = namedPanel(page, id, 'inputs', 'Query parameters');
   const before = (await readExport(page)).document;
   const handle = owner.getByLabel('Query parameters input', { exact: true });
@@ -324,7 +324,7 @@ When("I hide the nested project response", async function () { await hideNestedR
 When("I restore the nested project response", async function () { await restoreNestedResponse(this); });
 
 Then("the nested response remains hidden with its saved fields", async function () {
-  await expect(namedPanel(this.page, this.branchOwnerId, "outputs", "Project")).toHaveCount(0);
+  await expect(namedPanel(this.page, this.branchOwnerId, "outputs", "Example object")).toHaveCount(0);
   const response = namedPanel(this.page, this.branchOwnerId, "outputs", "Response body");
   await expect(response.getByRole("button", { name: "Restore Project", exact: true })).toBeVisible();
   await expect(workflow(this.page).locator(".workflow-schema-edge")).toHaveCount(4);
@@ -340,22 +340,22 @@ Then("the nested response remains hidden with its saved fields", async function 
 });
 
 Then("the nested response retains its field handles and operation", async function () {
-  const nested = namedPanel(this.page, this.branchOwnerId, "outputs", "Project");
+  const nested = namedPanel(this.page, this.branchOwnerId, "outputs", "Example object");
   assert.deepEqual(await nested.locator(".data-field .svelte-flow__handle").evaluateAll(handles => handles.map(handle => handle.dataset.handleid)), this.branchHandles);
   assert.equal(await nested.evaluate(element => element.closest(".svelte-flow__node").dataset.id), this.branchNodeId);
-  await expect(operationNodes(this.page, "List projects")).toHaveCount(1);
+  await expect(operationNodes(this.page, "Example array response")).toHaveCount(1);
   await expect(workflow(this.page).locator(".workflow-schema-edge")).toHaveCount(5);
 });
 
-When("I delete the List projects owner", async function () {
-  const owner = operationNodes(this.page, "List projects");
+When("I delete the Example array response owner", async function () {
+  const owner = operationNodes(this.page, "Example array response");
   await owner.click();
   await owner.focus();
   await this.page.keyboard.press("Delete");
 });
 
 Then("its schema panels and connections are removed", async function () {
-  await expect(operationNodes(this.page, "List projects")).toHaveCount(0);
+  await expect(operationNodes(this.page, "Example array response")).toHaveCount(0);
   await expect(panels(this.page, this.branchOwnerId)).toHaveCount(0);
   await expect(workflow(this.page).locator(".svelte-flow__edge")).toHaveCount(0);
   await expect(workflow(this.page).locator(".workflow-empty").getByRole("button", { name: "Browse operations", exact: true })).toBeVisible();
@@ -403,7 +403,7 @@ Given("a legacy workflow with an unnamed operation connection", async function (
     version: 1, id: "legacy-fields-review", name: "Legacy field review",
     nodes: [100, 460].map((x, index) => ({
       id: `legacy-operation-${index}`, position: { x, y: 140 },
-      data: { operationId: "demo:listProjects", name: "List projects", description: "Review the project list.", method: "GET", path: "/projects" },
+      data: { operationId: "demo:listProjects", name: "Example array response", description: "Review the project list.", method: "GET", path: "/projects" },
     })),
     edges: [{ id: "legacy-connection", source: "legacy-operation-0", target: "legacy-operation-1" }],
     viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, dashed: false,
@@ -411,18 +411,18 @@ Given("a legacy workflow with an unnamed operation connection", async function (
   await repository(this.page, 'save', document, null);
   await this.page.reload();
   await setMode(this.page, "workflow");
-  await expect(operationNodes(this.page, "List projects")).toHaveCount(2);
+  await expect(operationNodes(this.page, "Example array response")).toHaveCount(2);
   await expect(connections(this.page)).toHaveCount(1);
 });
 
 Then("the legacy connection and new schema panels both remain usable", async function () {
-  await expect(operationNodes(this.page, "List projects")).toHaveCount(2);
-  await expect(operationNodes(this.page, "Create task")).toHaveCount(1);
+  await expect(operationNodes(this.page, "Example array response")).toHaveCount(2);
+  await expect(operationNodes(this.page, "Example POST body")).toHaveCount(1);
   await expect(connections(this.page)).toHaveCount(1);
   await expect(connections(this.page).locator(".svelte-flow__edge-path")).toHaveAttribute("d", /^M.+/);
-  await expect(workflow(this.page).getByLabel("List projects input", { exact: true })).toHaveCount(2);
-  await expect(workflow(this.page).getByLabel("List projects output", { exact: true })).toHaveCount(2);
-  const id = await ownerId(this.page, "Create task");
+  await expect(workflow(this.page).getByLabel("Example array response input", { exact: true })).toHaveCount(2);
+  await expect(workflow(this.page).getByLabel("Example array response output", { exact: true })).toHaveCount(2);
+  const id = await ownerId(this.page, "Example POST body");
   await expect(namedPanel(this.page, id, "inputs", "Request body").getByLabel("Title input", { exact: true })).toBeVisible();
   await expect(workflow(this.page).locator(".workflow-schema-edge")).toHaveCount(5);
   const document = (await readExport(this.page)).document;
@@ -438,7 +438,7 @@ Given("an imported legacy workflow near the coordinate limit", async function ()
     version: 1, id: "coordinate-limit-review", name: "Coordinate limit review",
     nodes: [100, 460].map((x, index) => ({
       id: `coordinate-operation-${index}`, position: { x, y: 999980 },
-      data: { operationId: "demo:listProjects", name: "List projects", description: "Keep this existing operation.", method: "GET", path: "/projects" },
+      data: { operationId: "demo:listProjects", name: "Example array response", description: "Keep this existing operation.", method: "GET", path: "/projects" },
     })),
     edges: [{ id: "coordinate-connection", source: "coordinate-operation-0", target: "coordinate-operation-1" }],
     viewport: { x: 0, y: -999740, zoom: 1 }, snap: false, curved: false, dashed: false,
@@ -448,24 +448,24 @@ Given("an imported legacy workflow near the coordinate limit", async function ()
     name: "coordinate-limit.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(document)),
   });
   await expectWorkflowName(this.page, document.name);
-  await expect(operationNodes(this.page, "List projects")).toHaveCount(2);
+  await expect(operationNodes(this.page, "Example array response")).toHaveCount(2);
   await expect(connections(this.page)).toHaveCount(1);
   this.coordinateBaseline = (await readExport(this.page)).document;
 });
 
-When("I try to add Create task beyond the coordinate limit", async function () {
-  const entry = await revealCatalogOperation(this.page, "Create task");
-  await entry.getByRole("button", { name: "Add to workflow: Create task", exact: true }).click();
+When("I try to add Example POST body beyond the coordinate limit", async function () {
+  const entry = await revealCatalogOperation(this.page, "Example POST body");
+  await entry.getByRole("button", { name: "Add to workflow: Example POST body", exact: true }).click();
   await closeCatalog(this.page);
 });
 
 Then("the refused addition explains the limit and preserves the original graph", async function () {
   const error = workflow(this.page).getByRole("alert");
-  await expect(error).toContainText("Could not add “Create task”");
+  await expect(error).toContainText("Could not add “Example POST body”");
   await expect(error).toContainText("Workflow coordinates must be finite numbers between -1000000 and 1000000.");
-  await expect(operationNodes(this.page, "Create task")).toHaveCount(0);
+  await expect(operationNodes(this.page, "Example POST body")).toHaveCount(0);
   await expect(workflow(this.page).locator(".workflow-data-node")).toHaveCount(0);
-  await expect(operationNodes(this.page, "List projects")).toHaveCount(2);
+  await expect(operationNodes(this.page, "Example array response")).toHaveCount(2);
   await expect(connections(this.page)).toHaveCount(1);
   const { viewport: originalViewport, ...original } = this.coordinateBaseline;
   const { viewport: currentViewport, ...current } = (await readExport(this.page)).document;
@@ -502,10 +502,10 @@ async function addResponseProperty(page, panel, name, type) {
   if (type === 'Object') await page.getByRole('button', { name: 'Fit View', exact: true }).click();
 }
 
-Given('a workflow with open HTTPBin response objects and Create task', async function () {
+Given('a workflow with open HTTPBin response objects and Example POST body', async function () {
   await setMode(this.page, 'workflow');
   await chooseCatalogOperation(this.page, 'HTTPBin GET request', 'workflow');
-  await chooseCatalogOperation(this.page, 'Create task', 'workflow');
+  await chooseCatalogOperation(this.page, 'Example POST body', 'workflow');
   await this.page.getByRole('button', { name: 'Fit View', exact: true }).click();
   this.additionalOwnerId = await ownerId(this.page, 'HTTPBin GET request');
   await renameWorkflow(this.page, 'Additional properties before editing');
@@ -516,7 +516,7 @@ Then('open response objects offer additional properties while closed inputs do n
   for (const label of ['Response body', 'Response headers', 'Query values', 'Request headers', 'Form fields', 'Uploaded files'])
     await expect(namedPanel(this.page, this.additionalOwnerId, 'outputs', label)
       .getByRole('button', { name: 'Edit properties', exact: true })).toBeVisible();
-  const taskId = await ownerId(this.page, 'Create task');
+  const taskId = await ownerId(this.page, 'Example POST body');
   for (const label of ['Path parameters', 'Request body']) {
     const panel = namedPanel(this.page, taskId, 'inputs', label);
     await expect(panel).toBeVisible();
@@ -594,10 +594,10 @@ Then('the duplicate property is refused without changing the graph', async funct
   await panel.getByRole('button', { name: 'Cancel adding property', exact: true }).click();
 });
 
-When('I map the added response header to the Create task project identifier', async function () {
+When('I map the added response header to the Example POST body project identifier', async function () {
   const source = responseHeaders(this).getByLabel(`${this.additionalPropertyName} output`, { exact: true });
-  const taskId = await ownerId(this.page, 'Create task');
-  const target = namedPanel(this.page, taskId, 'inputs', 'Path parameters').getByLabel('Project ID input', { exact: true });
+  const taskId = await ownerId(this.page, 'Example POST body');
+  const target = namedPanel(this.page, taskId, 'inputs', 'Path parameters').getByLabel('Path value input', { exact: true });
   this.fieldEndpoints = {
     source: this.additionalNodeId,
     sourceHandle: this.additionalHandleId,
@@ -688,7 +688,7 @@ Then('property edit mode makes only custom names and types editable', async func
   await editProperties(documentedResponse);
   await expect(documentedResponse.getByRole('button', { name: /^Edit property / })).toHaveCount(0);
   await documentedResponse.getByRole('button', { name: 'Done editing properties', exact: true }).click();
-  const taskId = await ownerId(this.page, 'Create task');
+  const taskId = await ownerId(this.page, 'Example POST body');
   await expect(panels(this.page, taskId).getByRole('button', { name: /^Edit property / })).toHaveCount(0);
   await expect(workflow(this.page).getByRole('button', { name: 'Remove property', exact: true })).toHaveCount(0);
 });

@@ -18,11 +18,11 @@ const get = id => operations.find(operation => operation.id === `demo:${id}`);
 let failure;
 let matches;
 
-Then("the demo exposes four operations grouped as Projects and Tasks", function ()
+Then("the demo retains four legacy operation IDs with generic request and response groups", function ()
 {
   const demo = operations.filter(operation => operation.id.startsWith("demo:") && ["listProjects", "getProject", "createTask", "updateTask"].some(id => operation.id === `demo:${id}`));
   assert.equal(demo.length, 4);
-  assert.deepEqual([...new Set(demo.map(operation => operation.group))], ["Projects", "Tasks"]);
+  assert.deepEqual([...new Set(demo.map(operation => operation.group))], ["Response examples", "Request examples"]);
   assert.deepEqual(demo.map(operation => operation.id), ["demo:listProjects", "demo:getProject", "demo:createTask", "demo:updateTask"]);
 });
 
@@ -71,7 +71,7 @@ Then("local references resolve escaped names and chained references", function (
 
 Then("response previews use documented success examples only", function ()
 {
-  assert.equal(get("getProject").responseExample.name, "Documentation");
+  assert.equal(get("getProject").responseExample.name, "foo");
   const doc = document({ responses: {
     400: { content: { "application/json": { example: { error: "Invalid" } } } },
     202: { description: "Accepted" },
@@ -168,7 +168,7 @@ Then("empty and oversized searches return no operations", function ()
 Then("equal matching scores are ordered by operation identifier", function ()
 {
   const entries = Array.from({ length: 12 }, (_, index) => ({ ...operations[0], id: `fixture:${String(11 - index).padStart(2, "0")}` }));
-  assert.deepEqual(rankOperations("List projects", entries).map(result => result.operation.id),
+  assert.deepEqual(rankOperations(operations[0].name, entries).map(result => result.operation.id),
     Array.from({ length: 12 }, (_, index) => `fixture:${String(index).padStart(2, "0")}`));
 });
 

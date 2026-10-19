@@ -20,7 +20,7 @@ const response = schema => ({ "200": { description: "An item", content: { "appli
 
 Then("every bundled example has an independent source report and described group path", function () {
   const before = structuredClone({ catalogs, operations });
-  const groupNames = { Projects: "Overview", Tasks: "Tasks", "HTTP methods": "HTTP methods", "Input types": "Input types", "Body formats": "Body formats" };
+  const groupNames = { "Response examples": "Response examples", "Request examples": "Request examples", "HTTP methods": "HTTP methods", "Input types": "Input types", "Body formats": "Body formats" };
   for (const operation of operations) {
     const catalog = catalogForOperation(operation.id);
     const document = catalog.document;
@@ -71,10 +71,10 @@ Then("the example registries send requests to their declared example.com and HTT
   }
   const legacy = operations.filter(operation => ["demo:listProjects", "demo:getProject", "demo:createTask", "demo:updateTask"].includes(operation.id));
   assert.deepEqual(legacy.map(operation => [operation.id, operation.name, operation.method, operation.path]), [
-    ["demo:listProjects", "List projects", "GET", "/projects"],
-    ["demo:getProject", "Get project", "GET", "/projects/{projectId}"],
-    ["demo:createTask", "Create task", "POST", "/projects/{projectId}/tasks"],
-    ["demo:updateTask", "Update task", "PATCH", "/tasks/{taskId}"]
+    ["demo:listProjects", "Example array response", "GET", "/projects"],
+    ["demo:getProject", "Example object response", "GET", "/projects/{projectId}"],
+    ["demo:createTask", "Example POST body", "POST", "/projects/{projectId}/tasks"],
+    ["demo:updateTask", "Example PATCH body", "PATCH", "/tasks/{taskId}"]
   ]);
   assert.equal(new Set(operations.map(operation => operation.name)).size, operations.length);
 });

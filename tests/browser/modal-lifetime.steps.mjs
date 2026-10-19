@@ -159,8 +159,8 @@ Then('animated navigation completes dismissal before changing workspace or addin
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
   await setMode(page, 'settings');
-  const entry = await revealCatalogOperation(page, 'List projects');
-  const action = entry.getByRole('button', { name: 'Add to workflow: List projects', exact: true });
+  const entry = await revealCatalogOperation(page, 'Example array response');
+  const action = entry.getByRole('button', { name: 'Add to workflow: Example array response', exact: true });
   await settleOpening(page);
   await pauseDismissal(page, () => action.click());
   await expect(workflow(page)).toBeVisible();
@@ -178,8 +178,8 @@ Then('reopening navigation during keyboard selection cancels that destination', 
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await setMode(page, 'settings');
   await openCatalog(page);
-  const entry = await revealCatalogOperation(page, 'List projects');
-  const destination = entry.getByRole('button', { name: 'Add to workflow: List projects', exact: true });
+  const entry = await revealCatalogOperation(page, 'Example array response');
+  const destination = entry.getByRole('button', { name: 'Add to workflow: Example array response', exact: true });
   const selected = page.getByRole('textbox', { name: 'Prompt', exact: true });
   await settleOpening(page);
   await destination.focus();
