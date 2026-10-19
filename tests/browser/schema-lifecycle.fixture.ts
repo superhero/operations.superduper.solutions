@@ -19,7 +19,7 @@ const adapterRevision = "a".repeat(64);
 export const counters = () => ({ reads: { ...reads }, indexes: { ...indexReads } });
 export const failRead = (id: string) => failures.add(id);
 
-export async function setup(version = 1, operationCount = 1) {
+export async function setup(version = 1, operationCount = 1, names: Record<string, string> = {}) {
   const documents = new Map(["factory-a", "factory-b"].map(id => [id, {
     openapi: "3.1.0", info: { title: `${id} v${version}`, version: String(version) },
     servers: [{ url: "https://schema.example.test/v1" }],
@@ -35,7 +35,7 @@ export async function setup(version = 1, operationCount = 1) {
     const revision = Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("");
     const discovery = createSchemaDiscovery(inspectServiceSchema(document, id), revision);
     prepared.set(id, discovery);
-    catalogs.push({ id, name: document.info.title, file: `${id}.json`, revision, bytes: bytes.length, summary: discovery.summary });
+    catalogs.push({ id, name: names[id] ?? document.info.title, file: `${id}.json`, revision, bytes: bytes.length, summary: discovery.summary });
   }
   configureSchemaDefaults({ catalogs, adapterRevision,
     read: async id => {

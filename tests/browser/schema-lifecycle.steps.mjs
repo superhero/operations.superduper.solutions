@@ -8,6 +8,36 @@ Before({ tags: '@schema-lifecycle' }, async function () {
   await this.page.evaluate(async () => { globalThis.schemaFixture = await import('/schema-lifecycle-fixture.js'); });
 });
 
+Then('new factory labels refresh without decoding sources or replacing personal names', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setup(1, 1, { 'factory-a': 'Google Cloud — Compute', 'factory-b': 'Google Gemini — Interactions' });
+    await api.setSchemaDocumentEnabled('factory-a', false, { metadataOnly: true });
+    await api.moveSchemaDocument('factory-b', 'demo', 'before');
+    await api.renameSchemaDocument('factory-b', 'My Gemini API');
+    const before = await api.listSchemaMetadata();
+    const authoredHistory = await api.getSchemaHistory('factory-b');
+    const counters = api.counters();
+    const names = { 'factory-a': 'Google / Cloud / Compute', 'factory-b': 'Google / Gemini / Interactions' };
+    const after = await api.setup(1, 1, names);
+    const again = await api.setup(1, 1, names);
+    return { before, after, again, authoredHistory, currentHistory: await api.getSchemaHistory('factory-b'),
+      counters, currentCounters: api.counters() };
+  });
+  const original = result.before.find(record => record.id === 'factory-a');
+  const current = result.after.find(record => record.id === 'factory-a');
+  assert.equal(current.displayName, 'Google / Cloud / Compute');
+  assert.equal(current.enabled, false);
+  assert.equal(current.factoryDigest, original.factoryDigest);
+  assert.equal(current.revision, original.revision);
+  assert.deepEqual(result.after.map(record => record.id), result.before.map(record => record.id));
+  assert.deepEqual(result.after.find(record => record.id === 'factory-b'), result.before.find(record => record.id === 'factory-b'));
+  assert.equal(result.after.find(record => record.id === 'factory-b').summary.name, 'My Gemini API');
+  assert.deepEqual(result.currentHistory, result.authoredHistory);
+  assert.deepEqual(result.again, result.after);
+  assert.deepEqual(result.currentCounters, result.counters);
+});
+
 Then('renamed remaining examples retain their order when schema defaults initialize again', async function () {
   const records = await this.page.evaluate(async () => {
     const api = globalThis.schemaFixture;
