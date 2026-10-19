@@ -3,6 +3,19 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @json-view
 Feature: Read-only operation JSON
+  Scenario Outline: Local schema references unfold and scroll without changing the operation
+    Given the Example POST body JSON report is open at <width> pixels
+    When I follow a local JSON reference into a folded schema
+    Then reviewing JSON has left the operation draft and non-metric local storage unchanged
+
+    Examples:
+      | width |
+      | 1280  |
+      | 320   |
+
+  Scenario: Reference navigation reaches paginated targets and handles JSON pointer boundaries
+    Then local JSON references reach paginated targets and preserve literal unresolved references
+
   Scenario: Native keyboard folding preserves operation inputs
     Given the Example POST body JSON report is open at 1280 pixels
     When I fold the JSON root and nested operation branches with the keyboard

@@ -54,12 +54,22 @@ Then('file previews limit visible rows and load additional lines on demand', asy
   // Opening the preview grows the canvas node beyond the current viewport.
   // Bring it back into view through the real camera control before clicking.
   await page.getByRole('button',{name:'Fit View',exact:true}).click();
+  const panel=node.locator('.schema-disclosure > .disclosure-panel');
+  await expect.poll(()=>panel.evaluate(element=>Math.abs(element.clientHeight-element.firstElementChild.offsetHeight))).toBeLessThanOrEqual(1);
   await node.getByRole('button',{name:'Load more',exact:true}).click();
   await expect(node.getByRole('button',{name:'Load more',exact:true})).toHaveCount(0);
   await expect(node.locator('.json-number').filter({hasText:/^1099$/})).toHaveCount(1);
   await upload([1,2,3]);
   await expect(node.locator('.json-number')).toHaveCount(3);
   await expect(node.getByRole('button',{name:'Load more',exact:true})).toHaveCount(0);
+  await upload({reference:{$ref:'#/target'},target:{value:'File reference destination'}});
+  const destination=node.getByRole('group',{name:'File data: $["target"]',exact:true}).locator(':scope > summary');
+  await destination.click();
+  await expect(destination).toHaveAttribute('aria-expanded','false');
+  await node.getByRole('button',{name:'Go to #/target',exact:true}).click();
+  await expect(destination).toHaveAttribute('aria-expanded','true');
+  await expect(destination).toBeFocused();
+  await expect(destination).toBeInViewport({ratio:1});
 });
 Then('uploaded files create nested output panels and preserve compatible field connections', async function () {
   const page=this.page;

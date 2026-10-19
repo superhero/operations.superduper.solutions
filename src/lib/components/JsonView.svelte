@@ -5,32 +5,43 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
+  import { onDestroy, tick } from "svelte";
   import Disclosure from "./Disclosure.svelte";
   import MaterialIcon from "./MaterialIcon.svelte";
 
   type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
+  type Reference = { path: string; ancestors: string[]; value: JsonValue };
   let { value, label = "JSON document", wrap = true, expandedPaths, resetKey = 0, pageSize, validated = false }: { value: unknown; label?: string; wrap?: boolean; expandedPaths?: string[] | undefined; resetKey?: number; pageSize?: number | undefined; validated?: boolean } = $props();
   let expanded = $state<Record<string, boolean>>({});
   let loaded = $state(1000);
+  let referencePage = $state.raw<Reference>();
+  const targets = new Map<string, HTMLElement>();
+  let navigation = 0;
   const expandedDefaults = $derived(expandedPaths ? new Set(expandedPaths) : undefined);
   const childPath = (array: boolean, path: string, key: string) => array ? `${path}[${key}]` : `${path}[${JSON.stringify(key)}]`;
   const page = $derived.by(() => {
     const paths = new Set<string>();
     let remaining = pageSize === undefined ? Infinity : loaded;
-    let more = false;
-    const visit = (item: JsonValue, path: string, key: string | null) => {
+    const visit = (item: JsonValue, path: string, key: string | null): boolean => {
       const object = item !== null && typeof item === "object";
       const lines = object ? key === null ? 2 : 3 : 1;
-      if (remaining < lines) { more = true; return; }
+      if (remaining < lines) return false;
       remaining -= lines; paths.add(path);
       if (object && (expanded[path] ?? (expandedDefaults?.has(path) ?? true))) {
         for (const [key, value] of Object.entries(item)) {
-          visit(value, childPath(Array.isArray(item), path, key), Array.isArray(item) ? null : key);
-          if (more) break;
+          if (!visit(value, childPath(Array.isArray(item), path, key), Array.isArray(item) ? null : key)) return false;
         }
       }
+      return true;
     };
-    visit(document.value, "$", null);
+    let more = !visit(document.value, "$", null);
+    if (pageSize !== undefined && referencePage) {
+      // Reveal the route and one bounded page at the destination, rather than
+      // rendering every preceding sibling in a large document.
+      for (const path of referencePage.ancestors) paths.add(path);
+      remaining = loaded;
+      more = !visit(referencePage.value, referencePage.path, null) || more;
+    }
     return { paths, more };
   });
 
@@ -50,10 +61,66 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     document.value;
     expandedPaths;
     resetKey;
+    navigation++;
+    referencePage = undefined;
     expanded = {};
     loaded = pageSize ?? 1000;
   });
 
+  onDestroy(() => navigation++);
+
+  function reference(value: string): Reference | undefined {
+    if (!value.startsWith("#")) return;
+    let pointer: string;
+    try { pointer = decodeURIComponent(value.slice(1)); } catch { return; }
+    if ((pointer !== "" && !pointer.startsWith("/")) || /~(?:[^01]|$)/.test(pointer)) return;
+    let item = document.value;
+    let path = "$";
+    const ancestors = [path];
+    for (const token of pointer === "" ? [] : pointer.slice(1).split("/")) {
+      const key = token.replace(/~1/g, "/").replace(/~0/g, "~");
+      if (!item || typeof item !== "object" || !Object.hasOwn(item, key)
+        || Array.isArray(item) && !/^(0|[1-9][0-9]*)$/.test(key)) return;
+      path = childPath(Array.isArray(item), path, key);
+      item = Array.isArray(item) ? item[Number(key)]! : item[key]!;
+      ancestors.push(path);
+    }
+    return { path, ancestors, value: item };
+  }
+
+  function registerTarget(element: HTMLElement, path: string) {
+    targets.set(path, element);
+    return { destroy: () => { if (targets.get(path) === element) targets.delete(path); } };
+  }
+
+  async function followReference(destination: Reference) {
+    const current = ++navigation;
+    referencePage = destination;
+    for (const path of destination.ancestors) expanded[path] = true;
+    await tick();
+    const element = targets.get(destination.path);
+    const target = element?.closest<HTMLElement>("summary") ?? element;
+    if (!target) return;
+    // Nested disclosures and the containing schema can resize together. Scroll
+    // to their settled geometry without guessing a delay or finishing animations.
+    const panels = new Set<HTMLElement>();
+    const ownPanel = target.closest("details")?.querySelector<HTMLElement>(":scope > .disclosure-panel");
+    if (ownPanel) panels.add(ownPanel);
+    for (let parent = target.parentElement; parent; parent = parent.parentElement)
+      if (parent.classList.contains("disclosure-panel")) panels.add(parent);
+    while (current === navigation && target.isConnected) {
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      const animations = [...panels].flatMap(panel => panel.getAnimations()).filter(animation =>
+        animation.playState !== "finished" && animation.effect instanceof KeyframeEffect
+        && animation.effect.getKeyframes().some(frame => "height" in frame));
+      if (!animations.length) break;
+      await Promise.all(animations.map(animation => animation.finished.catch(() => {})));
+    }
+    if (current !== navigation || !target.isConnected) return;
+    if (target.tagName !== "SUMMARY") target.tabIndex = -1;
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth", block: "center", inline: "nearest" });
+  }
 </script>
 
 {#snippet property(key: string | null)}
@@ -69,9 +136,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {@const open = expanded[path] ?? (expandedDefaults?.has(path) ?? true)}
       <Disclosure class="json-branch" {open} lazy={expandedPaths !== undefined || pageSize !== undefined} groupLabel={`${label}: ${path}`}
         label={`${path}: ${entries.length} ${array ? "items" : "properties"}`} tooltipEnabled={false}
-        onToggle={(next) => { expanded[path] = next; }}>
+        onToggle={(next) => { navigation++; expanded[path] = next; }}>
         {#snippet summary()}
-          <span class="json-toggle" aria-hidden="true"><MaterialIcon name="chevron_forward" size={16} /></span><span class="json-bracket">{array ? "[" : "{"}</span>{#if !open}<span class="json-folded">{" … "}</span><span class="json-bracket">{array ? "]" : "}"}</span><span class="json-punctuation">{comma ? "," : ""}</span>{/if}
+          <span class="json-toggle" aria-hidden="true"><MaterialIcon name="chevron_forward" size={16} /></span><span class="json-bracket" use:registerTarget={path}>{array ? "[" : "{"}</span>{#if !open}<span class="json-folded">{" … "}</span><span class="json-bracket">{array ? "]" : "}"}</span><span class="json-punctuation">{comma ? "," : ""}</span>{/if}
         {/snippet}
           <div class="json-children" style:--json-depth-indent={`${(depth + 1) * 2}ch`}>
             {#each (pageSize === undefined ? entries : entries.filter(([childKey]) => page.paths.has(childPath(array, path, childKey)))) as [childKey, childValue], index (childKey)}
@@ -80,11 +147,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           </div><div class="json-line json-closing"><span class="json-bracket">{array ? "]" : "}"}</span><span class="json-punctuation">{comma ? "," : ""}</span></div>
       </Disclosure>
     {:else}
-      <div class="json-line"><span class="json-bracket">{array ? "[" : "{"}</span></div>
+      <div class="json-line" use:registerTarget={path}><span class="json-bracket">{array ? "[" : "{"}</span></div>
       <div class="json-line json-closing"><span class="json-bracket">{array ? "]" : "}"}</span><span class="json-punctuation">{comma ? "," : ""}</span></div>
     {/if}
   {:else}
-    <div class="json-line" class:json-string-line={typeof item === "string"}>{#if key !== null}<span class="json-property">{@render property(key)}</span>{/if}<span class="json-value"><span class:json-string={typeof item === "string"} class:json-description={typeof item === "string" && key !== null && ["description", "title", "version", "openapi", "summary"].includes(key)} class:json-description-text={key === "description" && typeof item === "string"} class:json-number={typeof item === "number"} class:json-boolean={typeof item === "boolean"} class:json-null={item === null}>{JSON.stringify(item)}</span><span class="json-punctuation">{comma ? "," : ""}</span></span></div>
+    {@const destination = key === "$ref" && typeof item === "string" ? reference(item) : undefined}
+    <div class="json-line" class:json-string-line={typeof item === "string"} use:registerTarget={path}>{#if key !== null}<span class="json-property">{@render property(key)}</span>{/if}<span class="json-value">{#if destination}<button type="button" class="json-reference json-string" aria-label={`Go to ${item}`} onclick={() => followReference(destination)}>{JSON.stringify(item)}</button>{:else}<span class:json-string={typeof item === "string"} class:json-description={typeof item === "string" && key !== null && ["description", "title", "version", "openapi", "summary"].includes(key)} class:json-description-text={key === "description" && typeof item === "string"} class:json-number={typeof item === "number"} class:json-boolean={typeof item === "boolean"} class:json-null={item === null}>{JSON.stringify(item)}</span>{/if}<span class="json-punctuation">{comma ? "," : ""}</span></span></div>
   {/if}
 {/snippet}
 
@@ -135,6 +203,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .json-key { color: var(--color-json-key); font-weight: 600; }
   .json-key, .json-bracket { transition: color 180ms ease-in; }
   .json-string { color: var(--color-json-string); }
+  .json-reference { padding: 0; border: 0; border-radius: 2px; background: transparent; font: inherit; text-align: inherit; white-space: inherit; overflow-wrap: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+  .json-reference:is(:hover, :focus-visible) { color: var(--color-foreground); }
+  .json-reference:focus-visible, .json-line:focus-visible { outline: 2px solid var(--color-foreground); outline-offset: 2px; }
+  .json-line, .json-view :global(.json-branch > summary) { scroll-margin-block: calc(var(--app-header-height, 0px) + var(--settings-header-height, 0px) + 64px) 32px; }
   .json-description { color: var(--color-json-description); }
   .json-description-text { font-style: italic; }
   .json-number { color: var(--color-json-value); font-weight: 700; }

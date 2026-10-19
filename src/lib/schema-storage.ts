@@ -7,6 +7,7 @@ import { Buffer } from "buffer";
 import * as git from "isomorphic-git";
 import { openDB, type DBSchema, type IDBPDatabase, type IDBPTransaction } from "idb";
 import { bundledCatalogs } from "./catalog-registry.ts";
+import legacyExamples from "../catalogs/example-revisions.json" with { type: "json" };
 import { operationServerUrl, validateSchemaDocument, validateSchemaDocumentId, type SchemaDocumentRecord } from "./schema-documents.ts";
 import { catalogsDatabaseName, catalogsIndexDatabaseName } from "./storage-names.ts";
 import { approvedOperation } from "./secrets/policy.ts";
@@ -31,6 +32,7 @@ type SchemaDefaults = {
   validate: (document: Record<string, unknown>, id: string) => ReturnType<typeof validateSchemaDocument>;
 };
 let defaults: SchemaDefaults | undefined;
+let currentExampleRevisions: Promise<string[]> | undefined;
 const documents = createSchemaCache<Record<string, unknown>>(16 * 1024 * 1024);
 const inspections = new WeakMap<object, Map<string, ReturnType<typeof validateSchemaDocument>>>();
 /** Supply factory documents at the worker boundary; storage remains reusable with authored catalogs. */
@@ -54,7 +56,7 @@ interface SchemaDatabase extends DBSchema
   removed: { key: string; value: true };
   indexes: { key: string; value: { identity: string; discovery: SchemaDiscovery } };
   policies: { key: string; value: SchemaCredentialPolicies[string] };
-  state: { key: "seeded" | "order" | "vaultPolicy" | "serviceDefaults"; value: boolean | string[] | SchemaCredentialPolicies };
+  state: { key: "seeded" | "order" | "vaultPolicy" | "serviceDefaults" | "exampleRevisions"; value: boolean | string[] | SchemaCredentialPolicies };
 }
 type StoreName = "catalog" | "pending" | "removed" | "state" | "indexes" | "policies";
 type Database = IDBPDatabase<SchemaDatabase>;
@@ -524,6 +526,45 @@ async function writeRecord(database: Database, record: SchemaDocumentRecord, com
   return readRecord(metadata);
 }
 
+async function updateBundledExamples(database: Database): Promise<void>
+{
+  const hash = async (value: unknown) => (await git.hashBlob({ object: `${JSON.stringify(value, null, 2)}\n` })).oid;
+  const current = await (currentExampleRevisions ??= Promise.all(bundledCatalogs.map(async catalog =>
+    `${catalog.id}:${await hash(catalog.document)}:${await hash(catalog.groups)}`)));
+  const previous = await transaction(database, ["state"], "readonly", active => active.objectStore("state").get("exampleRevisions"));
+  if (JSON.stringify(previous) === JSON.stringify(current)) return;
+  const installed = Array.isArray(previous) ? previous : [];
+  for (const [index, catalog] of bundledCatalogs.entries()) {
+    const metadata = await readMetadata(database, catalog.id);
+    if (!metadata || metadata.factoryDigest) continue;
+    const revision = await head(catalog.id);
+    if (!revision) continue;
+    // Identify stock copies from their Git tree without decoding saved documents.
+    const { tree } = await git.readTree({ fs: fs(), dir: schemaRepositoryPath(catalog.id), oid: revision });
+    const source = tree.find(entry => entry.path === filepath && entry.type === "blob");
+    const [, target, targetGroups] = current[index]!.split(":");
+    if (!source) continue;
+    const known = legacyExamples.filter(example => example.id === catalog.id);
+    for (const entry of installed) {
+      if (typeof entry !== "string") continue;
+      const [id, document, groups] = entry.split(":");
+      if (id === catalog.id && /^[a-f0-9]{40}$/.test(document ?? "") && /^[a-f0-9]{40}$/.test(groups ?? ""))
+        known.push({ id, document: document!, groups: groups!, sourceCommit: "previous installation" });
+    }
+    if (source.oid !== target && !known.some(example => example.document === source.oid)) continue;
+    const groups = metadata.groups ? await hash(metadata.groups) : undefined;
+    const bundledGroups = !groups || groups === targetGroups || known.some(example => example.document === source.oid && example.groups === groups);
+    if (source.oid === target && (!bundledGroups || groups === targetGroups)) continue;
+    const { document } = validateSchemaDocument(catalog.document, catalog.id);
+    await writeRecord(database, { ...metadata, document,
+      ...(bundledGroups ? { groups: catalog.groups } : {}), updatedAt: Date.now() },
+      `Update bundled OpenAPI example: ${catalog.name}`);
+  }
+  await transaction(database, ["state"], "readwrite", async active => {
+    await active.objectStore("state").put(current, "exampleRevisions");
+  });
+}
+
 async function initialize(database: Database): Promise<void>
 {
   const seeded = await transaction(database, ["state"], "readonly", active => active.objectStore("state").get("seeded"));
@@ -538,6 +579,7 @@ async function initialize(database: Database): Promise<void>
     }
     await transaction(database, ["state"], "readwrite", async active => { await active.objectStore("state").put(true, "seeded"); });
   }
+  await updateBundledExamples(database);
   if (defaults) await transaction(database, ["catalog", "state"], "readwrite", async active => {
     const store = active.objectStore("state");
     const previous = await store.get("serviceDefaults");

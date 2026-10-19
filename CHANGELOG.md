@@ -239,6 +239,52 @@ fix(schemas): guard nullable counts in tooltip content
 
 ```
 
+<!-- changelog-commit:08b70c001da0f462ae2f2337b71ac6e695cb47c1 -->
+### Commit [`08b70c0`](https://github.com/superhero/operations.superduper.solutions/commit/08b70c001da0f462ae2f2337b71ac6e695cb47c1)
+
+```text
+fix(examples): refresh unchanged bundled schemas on startup
+
+Upgrade known older example.com and httpbin documents through their
+existing schema histories. Preserve edits, groups, enablement, order and
+deletions, and record checked bundle versions to avoid duplicate updates.
+
+Cover legacy installations and saved workflow execution with native
+browser regressions backed by immutable historical fixtures.
+
+```
+
+<!-- changelog-commit:784082990bdb810beda0afd5e8fa7b99979b2ada -->
+### Commit [`7840829`](https://github.com/superhero/operations.superduper.solutions/commit/784082990bdb810beda0afd5e8fa7b99979b2ada)
+
+```text
+Merge remote-tracking branch 'origin/develop' into feature/json-reference-navigation
+
+# Conflicts:
+#	CHANGELOG.md
+
+```
+
+<!-- changelog-commit:a14f5a9252eebbc58d8971fdf2a867633895b169 -->
+### Commit [`a14f5a9`](https://github.com/superhero/operations.superduper.solutions/commit/a14f5a9252eebbc58d8971fdf2a867633895b169)
+
+```text
+feat(json): follow local schema references in the viewer
+
+Make resolvable $ref pointers actionable with keyboard access, expansion of
+their ancestors and destination, and smooth scrolling after disclosures
+settle. Respect reduced motion and cancel superseded navigation.
+
+Reveal a bounded target page instead of rendering every preceding sibling.
+Decode URI and JSON pointer escapes without following external or invalid
+references, and preserve raw JSON and operation drafts.
+
+Measure disclosure heights in layout pixels so zoomed file previews keep
+their content and Load more controls reachable. Cover schema inspectors,
+operation reports and file previews with Gherkin browser checks.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54

@@ -50,7 +50,7 @@ export async function setup(version = 1, operationCount = 1) {
   return listSchemaMetadata();
 }
 
-export async function editStore(store: string, id: string, mutate: "corrupt-index" | "corrupt-policy" | "delete-policy") {
+export async function editStore(store: string, id: string, mutate: "corrupt-index" | "corrupt-policy" | "delete-policy" | "delete") {
   const db = await new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open("v1/catalogs/index");
     request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
@@ -59,7 +59,7 @@ export async function editStore(store: string, id: string, mutate: "corrupt-inde
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(store, "readwrite");
       const data = tx.objectStore(store);
-      if (mutate === "delete-policy") data.delete(id);
+      if (mutate === "delete-policy" || mutate === "delete") data.delete(id);
       else {
         const read = data.get(id);
         read.onsuccess = () => data.put(mutate === "corrupt-policy" ? { ...read.result, fingerprints: null }

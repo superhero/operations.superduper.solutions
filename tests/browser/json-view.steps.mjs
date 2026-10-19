@@ -56,6 +56,131 @@ Given("the Example POST body JSON report is open at {int} pixels", async functio
   await expect(wrapButton(this.page)).toHaveAttribute("aria-pressed", "true");
 });
 
+async function captureReferenceScrolling(page) {
+  await page.evaluate(() => {
+    window.jsonReferenceScrolls = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (options) {
+      window.jsonReferenceScrolls.push({ options, text: this.textContent });
+      return original.call(this, options);
+    };
+  });
+}
+
+async function expectReferenceDestination(page, target, behavior) {
+  await expect(target).toBeFocused();
+  await expect.poll(() => page.evaluate(() => window.jsonReferenceScrolls.at(-1)?.options.behavior)).toBe(behavior);
+  await expect.poll(() => target.evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    const x = Math.max(0, Math.min(innerWidth - 1, rect.left + rect.width / 2));
+    const y = rect.top + rect.height / 2;
+    const hit = document.elementFromPoint(x, y);
+    return rect.top >= 0 && rect.bottom <= innerHeight && hit !== null && element.contains(hit);
+  })).toBe(true);
+}
+
+When("I follow a local JSON reference into a folded schema", async function () {
+  const page = this.page;
+  await captureReferenceScrolling(page);
+  const components = '$["components"]';
+  const schemas = `${components}["schemas"]`;
+  const task = `${schemas}["NewTask"]`;
+  const required = `${task}["required"]`;
+  await heading(page, required).click();
+  await heading(page, components).click();
+  await expect(heading(page, task)).toHaveCount(0);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const link = viewer(page).getByRole('button', { name: 'Go to #/components/schemas/NewTask', exact: true });
+  await link.focus();
+  await page.keyboard.press('Enter');
+  await expectReferenceDestination(page, heading(page, task), 'smooth');
+  for (const path of [components, schemas, task]) await expect(heading(page, path)).toHaveAttribute('aria-expanded', 'true');
+  await expect(heading(page, required)).toHaveAttribute('aria-expanded', 'false');
+  await expect(branch(page, task)).toContainText('"priority"');
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await heading(page, task).press('Space');
+  await expect(heading(page, task)).toHaveAttribute('aria-expanded', 'false');
+  await link.click();
+  await expectReferenceDestination(page, heading(page, task), 'instant');
+  await expect(heading(page, task)).toHaveAttribute('aria-expanded', 'true');
+});
+
+Then('local JSON references reach paginated targets and preserve literal unresolved references', { timeout: 60_000 }, async function () {
+  const page = this.page;
+  await setMode(page, 'settings');
+  await page.locator('summary[aria-label="Schemas"]').click();
+  const pointers = [
+    '#/components/schemas/Target', '#/x-targets/a~1b~0c/%E2%98%83', '#/x-targets/list/0',
+    '#/x-targets/empty', '#/x-targets/', '#/x-targets/loop', '#',
+    '#/missing', '#/x-targets/list/01', '#/x-targets/list/-', '#/x-targets/list/length',
+    '#/toString', '#/x-targets/a~2b', '#/%ZZ', '#named-anchor', 'https://elsewhere.example/schema.json#/Target',
+  ];
+  const document = {
+    openapi: '3.1.0', info: { title: 'JSON reference navigation', version: '1' },
+    servers: [{ url: 'https://example.com' }],
+    paths: { '/references': { get: { operationId: 'references', responses: { '200': { description: 'OK' } },
+      'x-literal': pointers[0], 'x-navigation': pointers.map($ref => ({ $ref })),
+      ...Object.fromEntries(Array.from({ length: 1200 }, (_, index) => [`x-padding-${index}`, index])),
+    } } },
+    components: { schemas: { Target: { type: 'object', properties: { name: { type: 'string' } } } } },
+    'x-targets': { 'a/b~c': { '☃': false }, list: [null], empty: {}, '': 'empty property name', loop: { $ref: '#/x-targets/loop' } },
+  };
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({ name: 'references.json',
+    mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
+  const card = page.locator('.schema-card').filter({ has: page.getByRole('button', { name: 'Schema details: JSON reference navigation', exact: true }) });
+  await card.getByRole('button', { name: 'Open schema: JSON reference navigation', exact: true }).click();
+  await card.locator('.schema-title').click();
+  const label = 'Full OpenAPI JSON: JSON reference navigation';
+  const json = page.getByRole('region', { name: label, exact: true });
+  const group = path => json.getByRole('group', { name: `${label}: ${path}`, exact: true });
+  const summary = path => group(path).locator(':scope > summary');
+  const navigationPath = '$["paths"]["/references"]["get"]["x-navigation"]';
+  await summary(navigationPath).click();
+  for (let index = 0; index < pointers.length; index++) await summary(`${navigationPath}[${index}]`).click();
+  const go = pointer => json.getByRole('button', { name: `Go to ${pointer}`, exact: true }).first();
+  for (const pointer of pointers.slice(7)) {
+    await expect(json.getByRole('button', { name: `Go to ${pointer}`, exact: true })).toHaveCount(0);
+    await expect(group(navigationPath)).toContainText(JSON.stringify(pointer));
+  }
+  await expect(json.locator('.json-reference')).toHaveCount(7);
+  await expect(summary('$["components"]')).toHaveCount(0);
+  await expect(json.getByRole('button', { name: 'Load more', exact: true })).toBeVisible();
+  await captureReferenceScrolling(page);
+  await go(pointers[0]).click();
+  const target = '$["components"]["schemas"]["Target"]';
+  await expectReferenceDestination(page, summary(target), 'instant');
+  await expect(summary(target)).toHaveAttribute('aria-expanded', 'true');
+  await expect(group(target)).toContainText('"properties"');
+  assert.ok(await json.locator('.json-line').count() < 1200, 'Navigation must not materialize every preceding row.');
+  await expect(summary('$["paths"]["/references"]["get"]["responses"]')).toHaveAttribute('aria-expanded', 'false');
+
+  // A newer request owns focus and scrolling even before the first has settled.
+  await json.evaluate((element, refs) => {
+    for (const pointer of refs) element.querySelector(`[aria-label="${CSS.escape(`Go to ${pointer}`)}"]`).click();
+  }, [pointers[0], pointers[1]]);
+  const focusedLine = json.locator('.json-line:focus');
+  await expectReferenceDestination(page, focusedLine, 'instant');
+  await expect(focusedLine).toContainText('"☃": false');
+  await go(pointers[2]).click();
+  await expectReferenceDestination(page, focusedLine, 'instant');
+  await expect(focusedLine).toHaveText('null');
+  await go(pointers[3]).click();
+  await expectReferenceDestination(page, focusedLine, 'instant');
+  await expect(focusedLine).toHaveText('{');
+  await go(pointers[4]).click();
+  await expectReferenceDestination(page, focusedLine, 'instant');
+  await expect(focusedLine).toContainText('"": "empty property name"');
+  await go(pointers[5]).click();
+  await expectReferenceDestination(page, summary('$["x-targets"]["loop"]'), 'instant');
+  await expect(group('$["x-targets"]["loop"]')).toContainText('"#/x-targets/loop"');
+  await go('#').click();
+  await expectReferenceDestination(page, summary('$'), 'instant');
+  await json.getByRole('button', { name: 'Load more', exact: true }).click();
+  await expect(json.getByRole('button', { name: 'Load more', exact: true })).toHaveCount(0);
+  assert.deepEqual(this.diagnostics.filter(item => item.type === 'unexpected-network-request'), []);
+});
+
 When("I fold the JSON root and nested operation branches with the keyboard", async function () {
   const root = heading(this.page, "$");
   const paths = '$["paths"]';

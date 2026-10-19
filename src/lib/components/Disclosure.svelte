@@ -40,7 +40,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     expanded = open;
     if (!open) onClosed?.();
     if (animateSize && panel) {
-      targetHeight = open ? content?.getBoundingClientRect().height ?? 0 : 0;
+      targetHeight = open ? content?.offsetHeight ?? 0 : 0;
       panel.style.height = `${targetHeight}px`;
     }
   }
@@ -70,10 +70,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       if (!frame) frame = requestAnimationFrame(() => {
         frame = 0;
         if (!open || !content) return;
-        const height = content.getBoundingClientRect().height;
+        // CSS heights use layout pixels; client rectangles include canvas zoom.
+        const height = content.offsetHeight;
         if (height === targetHeight) return;
         if (reduced) settle();
-        else animateHeight(panel.getBoundingClientRect().height, height);
+        else animateHeight(panel.offsetHeight, height);
       });
     }) : undefined;
     if (content) observer?.observe(content);
@@ -86,7 +87,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     // Nested content must be free to grow beyond an ancestor's cached endpoint.
     parent?.settleAncestors();
     const revision = ++transition;
-    const height = panel.getBoundingClientRect().height;
+    const height = panel.offsetHeight;
     animation?.cancel();
     animation = undefined;
     for (const child of childrenToSettle) child();
@@ -95,7 +96,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     void tick().then(() => {
       if (revision !== transition || next !== open) return;
       if (reduced) { settle(); return; }
-      animateHeight(height, next ? animateSize ? content?.getBoundingClientRect().height ?? 0 : panel.scrollHeight : 0);
+      animateHeight(height, next ? animateSize ? content?.offsetHeight ?? 0 : panel.scrollHeight : 0);
     });
   });
 </script>
