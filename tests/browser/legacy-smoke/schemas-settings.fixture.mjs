@@ -95,7 +95,9 @@ async function enterSchemas(page) {
   await expect(page.locator('#startup-status')).toHaveCount(0, { timeout: 45000 });
   await navigate(page, 'Settings');
   const summary = page.locator('summary[aria-label="Schemas"]');
-  if (await summary.getAttribute('aria-expanded') !== 'true') await summary.click();
+  await expect(summary).toBeVisible();
+  // Reopening Settings can restore this disclosure between separate protocol calls.
+  await summary.evaluate(element => { if (element.getAttribute('aria-expanded') !== 'true') element.click(); });
   await expect(page.getByRole('region', { name: 'OpenAPI documents', exact: true })).toBeVisible();
 }
 
@@ -337,6 +339,7 @@ yield "invalid schema documents cannot change existing state";
     await expect(card(page, yamlRecord.id)).toBeVisible();
 yield "deleting one schema preserves other repositories and saved workflows";
     const renameCard = card(page, yamlRecord.id);
+    await expandCard(page, yamlRecord.id);
     const beforeRename = await history(page, yamlRecord.id);
     const nameInput = renameCard.getByRole('textbox', { name: 'Schema name', exact: true });
     await expect(nameInput).toHaveValue('YAML schema smoke');
@@ -344,12 +347,12 @@ yield "deleting one schema preserves other repositories and saved workflows";
     await expect(renameCard.getByRole('button', { name: /^(Edit schema name|Save schema name|Cancel rename)$/ })).toHaveCount(0);
     await page.evaluate(() => document.fonts.ready);
     assert.deepEqual(await nameInput.evaluate(input => {
-      const slot = input.previousElementSibling;
+      const slot = input.nextElementSibling;
       const icon = slot.querySelector('.material-symbols-rounded');
       const slotBounds = slot.getBoundingClientRect(), inputBounds = input.getBoundingClientRect();
       return { width: slot.offsetWidth, height: slot.offsetHeight, inputHeight: input.offsetHeight,
         icon: icon.textContent, iconWidth: icon.getBoundingClientRect().width,
-        connected: Math.abs(slotBounds.right - inputBounds.left) < 1 };
+        connected: Math.abs(inputBounds.right - slotBounds.left) < 1 };
     }), { width: 32, height: 32, inputHeight: 32, icon: 'edit_line', iconWidth: 20, connected: true });
     await nameInput.fill('Discard this name');
     await nameInput.press('Escape');
@@ -407,6 +410,7 @@ yield "deleting one schema preserves other repositories and saved workflows";
     await page.reload({ waitUntil: 'networkidle', timeout: 90000 });
     await enterSchemas(page);
     await idle(page);
+    await expandCard(page, yamlRecord.id);
     await expect(card(page, yamlRecord.id).getByRole('textbox', { name: 'Schema name', exact: true })).toHaveValue('Renamed with Enter');
     results.rename = { id: yamlRecord.id, title: 'Renamed with Enter', blurAndEnterSave: true, unchangedAndEmptyNotCommitted: true };
 

@@ -8,6 +8,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { tick } from "svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
+  import HintButton from "$lib/components/HintButton.svelte";
   import JsonSchemaView from "$lib/components/JsonSchemaView.svelte";
   import Reveal from "$lib/components/Reveal.svelte";
   import type { SchemaLibraryRecord } from "$lib/schema-library-types.ts";
@@ -244,33 +245,41 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <li class="schema-card" class:dragging={draggingId === record.id} data-schema-id={record.id}
           style:order={previewOrder?.indexOf(record.id)}>
           <div class="schema-heading">
+            <Button class="schema-card-toggle" size="icon-sm" variant="secondary" aria-label={`Schema details: ${metadata.title}`}
+              aria-expanded={expandedCards[record.id] ?? false} aria-controls={`schema-details-${record.id}`}
+              tooltip={expandedCards[record.id] ? "Hide schema details" : "Show schema details"} onclick={() => toggleCard(record.id)}>
+              <MaterialIcon name="keyboard_arrow_right" size={18} />
+            </Button>
             <div class="schema-name">
-              <label class="schema-name-icon" for={`schema-name-${record.id}`}><MaterialIcon name="edit_line" size={20} /><span class="sr-only">Schema name</span></label>
-              <input id={`schema-name-${record.id}`} class="schema-name-input" value={nameDrafts[record.id] ?? metadata.title} aria-label="Schema name" required disabled={mutationsDisabled}
-                aria-invalid={nameDrafts[record.id] !== undefined && !nameDrafts[record.id]?.trim()}
-                oninput={event => nameDrafts[record.id] = event.currentTarget.value}
-                onblur={() => saveName(record.id, metadata.title)}
-                onkeydown={event => {
-                  if (event.key === "Escape") {
-                    event.preventDefault();
-                    delete nameDrafts[record.id];
-                    event.currentTarget.value = metadata.title;
-                    actionError = "";
-                    event.currentTarget.blur();
-                  } else if (event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); }
-                }} />
-            </div>
-            <div class="schema-actions" role="group" aria-label={`Card controls for ${metadata.title}`}>
-              <Button class="schema-enabled" size="icon-sm" variant="ghost" role="switch" aria-label={`Enable ${metadata.title}`} aria-checked={record.enabled}
-                tooltip={record.enabled ? "Disable schema" : "Enable schema"} disabled={mutationsDisabled}
+              {#if expandedCards[record.id]}
+                <input id={`schema-name-${record.id}`} class="schema-name-input" value={nameDrafts[record.id] ?? metadata.title} aria-label="Schema name" required disabled={mutationsDisabled}
+                  aria-invalid={nameDrafts[record.id] !== undefined && !nameDrafts[record.id]?.trim()}
+                  oninput={event => nameDrafts[record.id] = event.currentTarget.value}
+                  onblur={() => saveName(record.id, metadata.title)}
+                  onkeydown={event => {
+                    if (event.key === "Escape") {
+                      event.preventDefault();
+                      delete nameDrafts[record.id];
+                      event.currentTarget.value = metadata.title;
+                      actionError = "";
+                      event.currentTarget.blur();
+                    } else if (event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); }
+                  }} />
+                <label class="schema-name-icon" for={`schema-name-${record.id}`}><MaterialIcon name="edit_line" size={20} /><span class="sr-only">Schema name</span></label>
+              {:else}
+                <button class="schema-name-label" type="button" aria-label={`Open schema: ${metadata.title}`} aria-expanded="false" aria-controls={`schema-details-${record.id}`}
+                  onclick={event => {
+                    event.currentTarget.closest(".schema-heading")?.querySelector<HTMLButtonElement>(".schema-card-toggle")?.focus({ preventScroll: true });
+                    toggleCard(record.id);
+                  }}>{metadata.title}</button>
+              {/if}
+              <HintButton class="schema-enabled" role="switch" aria-label={`Enable ${metadata.title}`} aria-checked={record.enabled}
+                label={record.enabled ? "Disable schema" : "Enable schema"} labelAsName={false} disabled={mutationsDisabled}
                 onclick={() => run("", () => onEnabledChange(record.id, !record.enabled))}>
                 <span class="default-switch" aria-hidden="true"><span></span></span>
-              </Button>
-              <Button class="schema-card-toggle" size="icon-sm" variant="secondary" aria-label={`Schema details: ${metadata.title}`}
-                aria-expanded={expandedCards[record.id] ?? false} aria-controls={`schema-details-${record.id}`}
-                tooltip={expandedCards[record.id] ? "Hide schema details" : "Show schema details"} onclick={() => toggleCard(record.id)}>
-                <MaterialIcon name="keyboard_arrow_right" size={18} />
-              </Button>
+              </HintButton>
+            </div>
+            <div class="schema-actions" role="group" aria-label={`Card controls for ${metadata.title}`}>
               <Button class="schema-drag-handle" size="icon-sm" variant="secondary" tooltip="Drag to reorder" aria-label={`Move ${metadata.title}`}
                 disabled={mutationsDisabled || records.length < 2} draggable={!mutationsDisabled && records.length > 1}
                 ondragstart={event => startDrag(event, record.id)} ondragend={cancelDrag}
@@ -338,9 +347,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-toolbar, .schema-card, .schema-empty { min-width: 0; padding: 16px; border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
   .schema-heading { --schema-control-size: calc(var(--spacing) * 8); display: flex; align-items: center; gap: 6px; }
   .schema-name { display: flex; flex: 1; min-width: 0; height: var(--schema-control-size); border-radius: 4px; background: var(--color-background); color: var(--color-foreground); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
-  .schema-name:focus-within, .schema-name:hover:has(input:enabled) { outline-color: var(--color-ring); }
+  .schema-name:focus-within, .schema-name:hover:has(:enabled) { outline-color: var(--color-ring); }
   .schema-name-icon { display: grid; place-items: center; flex: 0 0 var(--schema-control-size); width: var(--schema-control-size); height: 100%; cursor: text; }
-  .schema-name-input { box-sizing: border-box; min-width: 0; width: 100%; height: 100%; padding: 6px 10px; border: 0; border-radius: 0 4px 4px 0; outline: none; background: transparent; color: inherit; font-size: 14px; }
+  .schema-name-input, .schema-name-label { box-sizing: border-box; flex: 1; min-width: 0; width: 100%; height: 100%; padding: 6px 10px; border: 0; border-radius: 4px 0 0 4px; outline: none; background: transparent; color: inherit; font-size: 14px; }
+  .schema-name-label { overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
   .schema-empty h3 { margin: 0; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
   .schema-empty p, .schema-note { margin: 6px 0 0; color: var(--color-muted-foreground); font-size: 12px; overflow-wrap: anywhere; }
   .schema-note { color: var(--color-accent); }
@@ -359,7 +369,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-metadata > div { min-width: 0; padding: 8px 10px; border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-background); }
   .schema-metadata dt { margin-bottom: 5px; font-size: 11px; font-weight: 400; color: var(--color-muted-foreground); }
   .schema-metadata dd { min-width: 0; margin: 0; font-size: clamp(16px, 2vw, 21px); font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
-  .schema-heading :global(.schema-enabled) { width: 40px; padding: 0; background: transparent; color: inherit; }
+  .schema-heading :global(.schema-enabled) { display: flex; align-items: center; justify-content: center; flex: 0 0 56px; height: 100%; padding: 4px 8px; border: 0; border-radius: 0 4px 4px 0; background: transparent; color: inherit; }
   .default-switch { box-sizing: border-box; flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-muted-foreground); transition: background-color 180ms ease-in, transform 180ms ease-in; }
   .default-switch > span { display: block; width: 18px; height: 18px; border-radius: 2px; background: var(--color-surface); transform: translateX(0); transition: transform 180ms ease-in, background-color 180ms ease-in; }
   :global(.schema-enabled[aria-checked="true"]) .default-switch { background: var(--color-catalog-active); }
