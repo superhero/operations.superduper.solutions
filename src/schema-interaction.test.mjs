@@ -132,3 +132,22 @@ Then('incremental index preparation is measured against full normalization', { t
   }
   await this.attach(JSON.stringify(result), 'application/json');
 });
+
+Then('repeated canonical projections are measured in bounded schema batches', { timeout: 60_000 }, async function () {
+  const { Worker } = await import('node:worker_threads');
+  const { NODE_V8_COVERAGE: _coverage, ...environment } = process.env;
+  const worker = new Worker(new URL('./schema-projection.fixture.mjs', import.meta.url), { env: environment });
+  const result = await new Promise((resolve, reject) => {
+    worker.once('message', resolve); worker.once('error', reject);
+    worker.once('exit', code => reject(new Error(`Projection benchmark exited without a result (${code})`)));
+  }).finally(() => worker.terminate());
+  assert.equal(result.measurements.length, 2);
+  assert.deepEqual(result.modelMeasurements.map(source => source.batches.map(batch => batch.batchSize)), [[1, 8, 16], [1, 8, 16]]);
+  assert.ok(result.measurements.every(sample => sample.operationIds.length === 32 && sample.bytes > 0 && sample.samplesMs.length === 5));
+  if (process.env.SCHEMA_PROFILE_OUTPUT) {
+    const { mkdir, writeFile } = await import('node:fs/promises');
+    await mkdir(process.env.SCHEMA_PROFILE_OUTPUT, { recursive: true });
+    await writeFile(`${process.env.SCHEMA_PROFILE_OUTPUT}/projections.json`, JSON.stringify(result, null, 2) + '\n');
+  }
+  await this.attach(JSON.stringify(result), 'application/json');
+});

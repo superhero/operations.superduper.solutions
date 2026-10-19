@@ -406,7 +406,7 @@
         </HintButton>
       </div>
     {/if}
-    <SettingsWorkspace bind:this={settingsWorkspace} {dark} onTheme={toggleTheme} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
+    <SettingsWorkspace active={settingsPresent} bind:this={settingsWorkspace} {dark} onTheme={toggleTheme} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
           {toolbarButtons} {toolbarButtonsError} onToolbarButtonsChange={selectToolbarButtons} onRetryToolbarButtons={() => selectToolbarButtons(toolbarButtons)}
           {keybindings} {keybindingsError} onKeybindingsChange={selectKeybindings} onRetryKeybindings={() => selectKeybindings(keybindings)}
           {locale} {localeError} onLocaleChange={selectLocale} onRetryLocale={() => selectLocale(locale)}

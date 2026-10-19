@@ -32,10 +32,17 @@ Matching retains normalized indexes per enabled schema and updates only changed
 schemas. Completed searches reuse their worker and its installed indexes. Queries
 send text and a snapshot token; replies include matched IDs and scores. Full
 candidate scores cross the boundary only when developer evaluation details are
-enabled. The page retains its original operation references. New text terminates
-an executing obsolete worker immediately; its replacement reinstalls the cached
-indexes. Crashes also invalidate worker-side index state. Exact scoring, Unicode
-normalization and tie ordering remain unchanged.
+enabled. Compact evaluation retains every above-threshold match and the exact
+remaining top-five places without sorting the complete candidate list. The page
+retains its original operation references. New text terminates an executing
+obsolete scorer immediately; its replacement reinstalls the cached indexes.
+When only index installation is in flight, newer queries share that installation
+and obsolete owners never begin scoring. Clearing the search or closing navigation
+releases the worker. Unchanged completed results and group expansion can reopen
+without starting another worker; changed sources, text or report mode invalidate
+that result. Publishing changed schemas releases an idle obsolete index
+without requiring another query. Crashes also invalidate worker-side index state.
+Exact scoring, Unicode normalization and tie ordering remain unchanged.
 
 ## Reliability
 

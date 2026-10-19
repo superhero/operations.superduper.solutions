@@ -51,13 +51,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { isValidWorkflowCurveStrength, isValidWorkflowDashLength, isValidWorkflowDashGap, isValidWorkflowDashSpeed, isValidWorkflowGridSize, isValidWorkflowNodeClearance,
     workflowCurveStrengthLimits, workflowDashLengthLimits, workflowDashGapLimits, workflowDashSpeedLimits, workflowGridSizeLimits, workflowNodeClearanceLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
 
-  let { dark, onTheme, tooltips = true, tooltipsError = "", onTooltipsChange = () => {}, palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
+  let { active = true, dark, onTheme, tooltips = true, tooltipsError = "", onTooltipsChange = () => {}, palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
     toolbarButtons = defaultToolbarButtons, toolbarButtonsError = "", onToolbarButtonsChange = () => {}, onRetryToolbarButtons = () => {},
     keybindings = defaultKeybindings, keybindingsError = "", onKeybindingsChange = () => {}, onRetryKeybindings = () => {},
     locale = defaultLocaleSettings, localeError = "", onLocaleChange = () => {}, onRetryLocale = () => {},
     developerToolbar, developerToolbarError = "", onDeveloperToolbarChange,
     evaluationDetails, evaluationDetailsError = "", onEvaluationDetailsChange,
     settingsUnavailable, settingsRetrying, onRetrySettings }: {
+    active?: boolean;
     dark: boolean;
     onTheme: () => void;
     tooltips?: boolean;
@@ -97,7 +98,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let storageReady = $state(false);
   let storageDismissing = $state(false);
   $effect(() => {
-    if (openSection !== "storage" || storageBuilt) return;
+    if (!active || openSection !== "storage" || storageBuilt) return;
     let cancelled = false;
     let frame = requestAnimationFrame(() => {
       // Give the compact status a painted frame before constructing the dashboard.
@@ -111,7 +112,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     return () => { cancelled = true; cancelAnimationFrame(frame); };
   });
   $effect(() => {
-    if (!storageBuilt || openSection !== "storage") return;
+    if (!active || !storageBuilt || openSection !== "storage") return;
     let cancelled = false;
     let frame = 0;
     // Keep the prepared dashboard hidden until the dots have slid fully closed.
@@ -132,7 +133,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     return () => { cancelled = true; cancelAnimationFrame(frame); };
   });
   $effect(() => {
-    if (!openSection || !workspace) return;
+    if (!active || !openSection || !workspace) return;
     const header = workspace.querySelector<HTMLElement>('.settings-section > summary[aria-expanded="true"]');
     if (!header) return;
     const update = () => workspace.style.setProperty("--settings-header-height", `${header.getBoundingClientRect().height}px`);
@@ -233,7 +234,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <section class="workspace" aria-label="Settings workspace" bind:this={workspace} tabindex="-1">
   <div class="settings-sections">
-    <Disclosure class="catalog-group settings-section" label="Application" tooltipEnabled={false} open={openSection === "workflow"} onToggle={(next) => openSection = next ? "workflow" : null}>
+    <Disclosure lazy class="catalog-group settings-section" label="Application" tooltipEnabled={false} open={active && openSection === "workflow"} onToggle={(next) => openSection = next ? "workflow" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Application</h2><span class="section-subtitle">Configure UI defaults</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
@@ -341,7 +342,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {/if}
       </fieldset>
     </Disclosure>
-    <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} animateSize open={openSection === "storage"} onToggle={(next) => { if (next) { storageReady = false; storageBuilt = false; storageDismissing = false; } openSection = next ? "storage" : null; }}>
+    <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} onClosed={() => { storageBuilt = false; storageReady = false; storageDismissing = false; }} animateSize open={active && openSection === "storage"} onToggle={(next) => { if (next) { storageReady = false; storageBuilt = false; storageDismissing = false; } openSection = next ? "storage" : null; }}>
       {#snippet summary()}
         <div class="section-heading"><h2>Browser</h2><span class="section-subtitle">Monitor browser resource usage</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
@@ -366,7 +367,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     </Disclosure>
 
 
-    <Disclosure class="catalog-group settings-section" label="Developer" tooltipEnabled={false} open={openSection === "developer"} onToggle={(next) => openSection = next ? "developer" : null}>
+    <Disclosure lazy class="catalog-group settings-section" label="Developer" tooltipEnabled={false} open={active && openSection === "developer"} onToggle={(next) => openSection = next ? "developer" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Developer</h2><span class="section-subtitle">Choose diagnostic tools and reports</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
@@ -396,7 +397,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {/if}
       </fieldset>
     </Disclosure>
-    <Disclosure class="catalog-group settings-section" label="Keybindings" tooltipEnabled={false} open={openSection === "keybindings"} onToggle={(next) => openSection = next ? "keybindings" : null}>
+    <Disclosure lazy class="catalog-group settings-section" label="Keybindings" tooltipEnabled={false} open={active && openSection === "keybindings"} onToggle={(next) => openSection = next ? "keybindings" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Keybindings</h2><span class="section-subtitle">Configure shortcuts and selection gestures</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
@@ -404,21 +405,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <KeybindingsSettings value={keybindings} onValueChange={onKeybindingsChange} error={keybindingsError} onRetry={onRetryKeybindings} />
     </Disclosure>
 
-    <Disclosure class="catalog-group settings-section" label="Locale" tooltipEnabled={false} open={openSection === "locale"} onToggle={(next) => openSection = next ? "locale" : null}>
+    <Disclosure lazy class="catalog-group settings-section" label="Locale" tooltipEnabled={false} open={active && openSection === "locale"} onToggle={(next) => openSection = next ? "locale" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Locale</h2><span class="section-subtitle">Choose date, time and timezone preferences</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
       {/snippet}
       <LocaleSettings value={locale} onValueChange={onLocaleChange} error={localeError} onRetry={onRetryLocale} />
     </Disclosure>
-    <Disclosure class="catalog-group settings-section" label="Logs" tooltipEnabled={false} lazy animateSize open={openSection === "logs"} onToggle={(next) => openSection = next ? "logs" : null}>
+    <Disclosure lazy class="catalog-group settings-section" label="Logs" tooltipEnabled={false} animateSize open={active && openSection === "logs"} onToggle={(next) => openSection = next ? "logs" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Logs</h2><span class="section-subtitle">Review recorded application errors</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
       {/snippet}
       <div class="logs-settings"><ErrorHistory /></div>
     </Disclosure>
-    <Disclosure class="catalog-group settings-section" label="Schemas" tooltipEnabled={false} open={openSection === "schemas"} onToggle={(next) => openSection = next ? "schemas" : null}>
+    <Disclosure lazy class="catalog-group settings-section" label="Schemas" tooltipEnabled={false} open={active && openSection === "schemas"} onToggle={(next) => openSection = next ? "schemas" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Schemas</h2><span class="section-subtitle">Manage your OpenAPI documents</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
@@ -427,14 +428,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         onUpload={uploadSchema} onReplace={replaceSchema} onRename={renameSchema} onMove={moveSchema} onEnabledChange={setSchemaEnabled} onDelete={deleteSchema}
         onDownload={downloadSchema} onRetry={loadSchemaLibrary} onLoad={loadSchemaSource} onRelease={releaseSchemaSource} />
     </Disclosure>
-    <Disclosure class="catalog-group settings-section" label="Secrets" tooltipEnabled={false} lazy animateSize open={openSection === "secrets"} onToggle={(next) => openSection = next ? "secrets" : null}>
+    <Disclosure lazy class="catalog-group settings-section" label="Secrets" tooltipEnabled={false} animateSize open={active && openSection === "secrets"} onToggle={(next) => openSection = next ? "secrets" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Secrets</h2><span class="section-subtitle">Protect credentials and approve their use</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
       {/snippet}
       <SecretsSettings />
     </Disclosure>
-    <Disclosure class="catalog-group settings-section" label="Theme" tooltipEnabled={false} open={openSection === "theme"} onToggle={(next) => openSection = next ? "theme" : null}>
+    <Disclosure lazy class="catalog-group settings-section" label="Theme" tooltipEnabled={false} open={active && openSection === "theme"} onToggle={(next) => openSection = next ? "theme" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Theme</h2><span class="section-subtitle">Decide what color the webpage will use</span></div>
         <MaterialIcon name="chevron_forward" size={17} />
@@ -462,7 +463,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         </div>
       </fieldset>
     </Disclosure>
-    <Disclosure class="catalog-group settings-section" label="Toolbar" tooltipEnabled={false} open={openSection === "toolbar"} onToggle={next => openSection = next ? "toolbar" : null}>
+    <Disclosure lazy class="catalog-group settings-section" label="Toolbar" tooltipEnabled={false} open={active && openSection === "toolbar"} onToggle={next => openSection = next ? "toolbar" : null}>
       {#snippet summary()}
         <div class="section-heading"><h2>Toolbar</h2><span class="section-subtitle">Show or hide workflow toolbar buttons</span></div>
         <MaterialIcon name="chevron_forward" size={17} />

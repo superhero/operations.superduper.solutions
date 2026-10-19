@@ -32,3 +32,12 @@ Feature: Cancellable operation matching
 
   Scenario: Replacement cannot publish an already received configuration response
     Then a replacement search wins even without an explicit caller abort
+
+  Scenario: Cancellation during installation retains indexes but never starts obsolete scoring
+    Then an aborted installation stays reusable without starting obsolete scoring
+
+  Scenario: Source changes serialize index installation and retain retry after failure
+    Then schema changes queue coherent installations and recover after configuration failure
+
+  Scenario: Late failure cannot close a replacement or publish a crashed reply
+    Then late matching failures retain the replacement and reject replies from crashed workers

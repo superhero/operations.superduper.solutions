@@ -25,3 +25,11 @@ Feature: Default service schemas in the application
   @service-defaults
   Scenario: Long search menus keep native navigation and one active help popup
     Then full-library search renders nearby rows and shares tooltip state
+
+  @service-defaults @schema-profile @schema-next @chromium-only
+  Scenario: Measure repeated startup and untraced search phases
+    Then startup and search phases are measured separately from diagnostic profiling
+
+  @service-defaults
+  Scenario: Closed settings and search release their controls and worker
+    Then closed settings and search retain no inactive controls or matching worker

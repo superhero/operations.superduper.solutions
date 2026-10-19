@@ -154,7 +154,11 @@ Before(async function ({ pickle }) {
       });
     });
   }
-  await this.context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+  // Explicit profiling runs avoid Playwright's DOM snapshots. Ordinary tests
+  // retain their complete failure traces; routing/network isolation is unchanged.
+  const minimalProfile = process.env.SCHEMA_PROFILE_LOW_OVERHEAD === '1'
+    && pickle.tags.some(tag => tag.name === '@schema-profile');
+  await this.context.tracing.start({ screenshots: !minimalProfile, snapshots: !minimalProfile, sources: !minimalProfile });
   await this.context.route('**/*', async route => {
     const url = route.request().url();
     if (url.startsWith(`${baseURL}/`) || url.startsWith('data:') || url.startsWith('blob:')) {

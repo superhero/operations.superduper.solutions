@@ -31,6 +31,7 @@
   let evaluation = $state<{ prompt: string; candidates: OperationMatch[]; results: OperationMatch[]; considered: number; durationMs: number } | null>(null);
   let searchExpansion = $state<Record<string, boolean>>({});
   let retryMatching = $state(0);
+  let completed: { operations: Operation[]; details: boolean } | undefined;
   let matchingController: AbortController | undefined;
   let matchingTimer: ReturnType<typeof setTimeout> | undefined;
   let matchingRevision = 0;
@@ -100,16 +101,22 @@
   }
   $effect.pre(() => {
     const query = prompt;
+    const visible = open;
     const snapshot = operations;
     const isComposing = composing;
     const details = evaluationDetails;
     void retryMatching;
     cancelMatching();
-    evaluation = null;
+    const reusable = untrack(() => evaluation?.prompt === query && completed?.operations === snapshot && completed.details === details);
+    if (!reusable) { evaluation = null; completed = undefined; searchExpansion = {}; }
     matchingError = "";
-    searchExpansion = {};
-    matchingPending = Boolean(query.trim());
-    if (!query.trim() || isComposing) return;
+    matchingPending = Boolean(query.trim()) && !reusable;
+    if (!visible || !query.trim() || isComposing) {
+      evaluateOperationsAsync.dispose();
+      return;
+    }
+    // Closing releases the worker; an unchanged completed menu needs no rebuild.
+    if (reusable) return;
     const controller = new AbortController();
     matchingController = controller;
     const revision = matchingRevision;
@@ -117,6 +124,7 @@
       matchingTimer = undefined;
       void evaluateOperationsAsync(query, snapshot, controller.signal, details).then(result => {
         if (controller.signal.aborted || revision !== matchingRevision) return;
+        completed = { operations: snapshot, details };
         evaluation = { prompt: query, ...result };
         matchingPending = false;
       }).catch((cause: unknown) => {

@@ -61,6 +61,7 @@ async function workers(browser, pageSession) {
     if (reply.error) request.reject(new Error(reply.error.message)); else request.resolve(reply.result);
   });
   const attached = [];
+  const started = new Set();
   try {
     for (const target of targets) {
       const { sessionId } = await root.send('Target.attachToTarget', { targetId: target.targetId, flatten: false });
@@ -107,7 +108,7 @@ export async function renderProfile(context, page) {
     const byType = {};
     for (const listener of listeners) byType[listener.type] = (byType[listener.type] ?? 0) + 1;
     await session.send('Runtime.releaseObject', { objectId: object });
-    return { windowListeners: byType, ...await session.send('Memory.getDOMCounters') };
+    return { connectedNodes: await page.evaluate(() => document.querySelectorAll('*').length), windowListeners: byType, ...await session.send('Memory.getDOMCounters') };
   } finally { await session.detach(); }
 }
 
@@ -115,18 +116,27 @@ export async function cpuProfile(browser, context, page, action) {
   const session = await context.newCDPSession(page);
   const workerSessions = await workers(browser, session);
   const targets = [{ name: 'page', send: (method, params) => session.send(method, params) },
-    ...workerSessions.attached.filter(worker => worker.name === 'operations-schema-library')];
+    ...workerSessions.attached.filter(worker => ['operations-schema-library', 'operation-matching'].includes(worker.name))];
+  const started = new Set();
   try {
     for (const target of targets) {
       await target.send('Profiler.enable');
       await target.send('Profiler.setSamplingInterval', { interval: 2000 });
       await target.send('Profiler.start');
+      started.add(target);
     }
     const result = await action();
     const profiles = [];
-    for (const target of targets) profiles.push({ name: target.name, ...(await target.send('Profiler.stop')) });
+    for (const target of targets) {
+      profiles.push({ name: target.name, ...(await target.send('Profiler.stop')) });
+      started.delete(target);
+    }
     return { result, profiles };
-  } finally { await workerSessions.close(); await session.detach(); }
+  } finally {
+    for (const target of started) await target.send('Profiler.stop').catch(() => {});
+    for (const target of targets) await target.send('Profiler.disable').catch(() => {});
+    await workerSessions.close(); await session.detach();
+  }
 }
 
 export async function saveSchemaProfile(world, report, profiles, attach = true) {
@@ -148,12 +158,15 @@ export function observeMatchingTransfers() {
       const stats = globalThis.__matchingTransfers;
       stats.workers++;
       const post = this.postMessage.bind(this), terminate = this.terminate.bind(this);
-      this.terminate = () => { stats.terminations++; return terminate(); };
+      this.terminate = () => { stats.terminations++; if (globalThis.__matchingSession?.worker === this) delete globalThis.__matchingSession; return terminate(); };
       this.postMessage = (request, ...rest) => {
         if (request?.kind === 'request') {
           stats.requests++;
           stats.methods[request.method] = (stats.methods[request.method] ?? 0) + 1;
-          if (request.method === 'configure') stats.indexOperations += request.args[0].reduce((total, catalog) => total + catalog.prepared.length, 0);
+          if (request.method === 'configure') {
+            globalThis.__matchingSession = { worker: this, revision: request.args[2] };
+            stats.indexOperations += request.args[0].reduce((total, catalog) => total + catalog.prepared.length, 0);
+          }
           if (['evaluate', 'evaluatePrepared'].includes(request.method)) stats.indexOperations += request.args[1].length;
         }
         return post(request, ...rest);
@@ -165,4 +178,78 @@ export function observeMatchingTransfers() {
       });
     }
   };
+}
+
+/** Page-clock phases; frameAt is a rendering opportunity, not proof of paint. */
+export function observeSearchPhases() {
+  globalThis.__searchPhases = [];
+  let phase;
+  document.addEventListener('input', event => {
+    if (event.target.id !== 'operation-prompt') return;
+    phase = { query: event.target.value, inputAt: performance.now(), requests: [] };
+    globalThis.__searchPhases.push(phase);
+  }, true);
+  const NativeWorker = globalThis.Worker;
+  globalThis.Worker = class extends NativeWorker {
+    constructor(url, options) {
+      super(url, options);
+      if (options?.name !== 'operation-matching') return;
+      const pending = new Map(), post = this.postMessage.bind(this);
+      this.postMessage = (message, ...rest) => {
+        if (message?.kind === 'request' && phase) {
+          const request = { method: message.method, startAt: performance.now() };
+          phase.requests.push(request); pending.set(message.id, request);
+        }
+        return post(message, ...rest);
+      };
+      this.addEventListener('message', ({ data }) => {
+        const request = pending.get(data?.id);
+        if (!request || !['result', 'error'].includes(data.kind)) return;
+        request.endAt = performance.now();
+        if (data.value?.scoringMs !== undefined) request.scoringMs = data.value.scoringMs;
+        pending.delete(data.id);
+      });
+    }
+  };
+  new MutationObserver(records => {
+    if (!phase || !records.some(record => record.target.matches?.('.catalog-prompt')
+      && record.target.dataset.evaluatedPrompt === phase.query)) return;
+    const current = phase;
+    current.publishAt = performance.now();
+    requestAnimationFrame(() => requestAnimationFrame(() => { current.frameAt = performance.now(); }));
+  }).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-evaluated-prompt'] });
+}
+
+/** Compare both modes in the same installed browser worker, without DOM updates. */
+export async function compareBrowserMatching(page) {
+  return page.evaluate(async () => {
+    const { worker, revision } = globalThis.__matchingSession;
+    let nextId = 100_000;
+    const search = (query, details) => new Promise((resolve, reject) => {
+      const id = ++nextId;
+      const finish = () => { clearTimeout(timer); worker.removeEventListener('message', receive); };
+      const receive = ({ data }) => {
+        if (data?.id !== id || !['result', 'error'].includes(data.kind)) return;
+        finish();
+        if (data.kind === 'error') reject(new Error(data.error.message)); else resolve(data.value);
+      };
+      const timer = setTimeout(() => { finish(); reject(new Error('Browser matching comparison timed out')); }, 15_000);
+      worker.addEventListener('message', receive);
+      worker.postMessage({ kind: 'request', id, method: 'search', args: [query, revision, details] });
+    });
+    const comparisons = [];
+    for (const query of ['List projects', 'Create a new project', 'get']) {
+      let expected;
+      const samples = [];
+      for (let sample = 0; sample < 5; sample++) for (const details of sample % 2 ? [false, true] : [true, false]) {
+        const result = await search(query, details);
+        const signature = JSON.stringify(result.results);
+        expected ??= signature;
+        if (expected !== signature) throw new Error('Browser compact matching changed results');
+        samples.push({ details, scoringMs: result.scoringMs, considered: result.considered, results: result.results.length });
+      }
+      comparisons.push({ query, samples });
+    }
+    return comparisons;
+  });
 }

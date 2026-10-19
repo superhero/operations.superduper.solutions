@@ -84,3 +84,47 @@ Then('a multi-schema workflow restores through bounded model requests', async fu
   assert.deepEqual(requests.flatMap(request => request.args[2]).sort(), selected.map(operation => operation.id).sort());
   await this.attach(JSON.stringify({ operations: selected.length, requests: requests.map(request => ({ schema: request.args[0], operations: request.args[2].length })) }), 'application/json');
 });
+
+Then('closed settings and search retain no inactive controls or matching worker', async function () {
+  const { observeMatchingTransfers } = await import('./schema-profile.fixture.mjs');
+  const { closeCatalog, setMode } = await import('./workspace.steps.mjs');
+  await this.context.addInitScript(observeMatchingTransfers);
+  const page = this.page;
+  await page.reload();
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
+  const hiddenInputs = page.locator('.settings-section .disclosure-panel input');
+  await expect(hiddenInputs).toHaveCount(0);
+  await setMode(page, 'settings');
+  const schemas = page.locator('summary[aria-label="Schemas"]');
+  await schemas.click();
+  await expect(page.locator('[data-schema-id]')).toHaveCount(44);
+  const name = await page.locator('[data-schema-id="openai"] input[aria-label="Schema name"]').inputValue();
+  await schemas.click();
+  await expect(page.locator('[data-schema-id]')).toHaveCount(0);
+  await expect(hiddenInputs).toHaveCount(0);
+  await schemas.click();
+  await expect(page.locator('[data-schema-id="openai"] input[aria-label="Schema name"]')).toHaveValue(name);
+  await openCatalog(page);
+  await expect(hiddenInputs).toHaveCount(0);
+  await searchOperations(page, 'get');
+  const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
+  const live = await page.evaluate(() => globalThis.__matchingTransfers);
+  assert.equal(live.workers - live.terminations, 1);
+  await prompt.fill('');
+  await expect.poll(() => page.evaluate(() => globalThis.__matchingTransfers.workers - globalThis.__matchingTransfers.terminations)).toBe(0);
+  await searchOperations(page, 'get');
+  await closeCatalog(page);
+  await expect.poll(() => page.evaluate(() => globalThis.__matchingTransfers.workers - globalThis.__matchingTransfers.terminations)).toBe(0);
+  const created = await page.evaluate(() => globalThis.__matchingTransfers.workers);
+  await openCatalog(page);
+  await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', 'get');
+  assert.equal(await page.evaluate(() => globalThis.__matchingTransfers.workers), created, 'Reopening unchanged results needs no worker or scoring.');
+  await expect(page.locator('[data-operation-id]')).toHaveCount(5);
+  // Hidden-source changes invalidate cached results before reopening the menu.
+  await setMode(page, 'settings');
+  await page.locator('[data-schema-id="frankfurter"]').getByRole('switch').click();
+  await expect(page.locator('[data-schema-id="frankfurter"]').getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await openCatalog(page);
+  await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', 'get');
+  assert.equal(await page.evaluate(() => globalThis.__matchingTransfers.workers), created + 1);
+});
