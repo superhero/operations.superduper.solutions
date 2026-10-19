@@ -157,7 +157,7 @@ try {
       await expect.poll(background).toBe(closedBackground);
       await trigger.hover();
       await expect.poll(background).toBe(closedBackground);
-      await expect(schemaCard.locator('.json-view')).toHaveCount(1);
+      await expect(schemaCard.locator('.json-view')).toHaveCount(0);
       await expect(json).not.toBeVisible();
       await trigger.press('Enter');
       await expect(json).toBeVisible();

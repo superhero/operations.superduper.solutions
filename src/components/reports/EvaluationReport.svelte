@@ -14,8 +14,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let { durationMs, candidates, results, considered }:
     { durationMs: number; candidates: Candidate[]; results: Candidate[]; considered: number } = $props();
 
-  const ranked = $derived([...candidates].sort((left, right) =>
-    right.similarity - left.similarity || left.operation.id.localeCompare(right.operation.id)));
+  const ranked = $derived(candidates);
   const proposed = $derived(new Set(results.map(result => result.operation.id)));
   const proposedCandidates = $derived(ranked.filter(candidate => proposed.has(candidate.operation.id)));
   const notProposedCandidates = $derived(ranked.filter(candidate => !proposed.has(candidate.operation.id)));

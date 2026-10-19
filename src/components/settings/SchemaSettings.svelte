@@ -12,7 +12,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import Reveal from "$lib/components/Reveal.svelte";
   import type { SchemaLibraryRecord } from "$lib/schema-library-types.ts";
 
-  let { records, busy = false, ready = true, error = "", onUpload, onReplace, onRename, onMove, onEnabledChange, onDelete, onDownload, onRetry }: {
+  let { records, busy = false, ready = true, error = "", onUpload, onReplace, onRename, onMove, onEnabledChange, onDelete, onDownload, onRetry, onLoad, onRelease }: {
     records: SchemaLibraryRecord[];
     busy?: boolean;
     ready?: boolean;
@@ -25,6 +25,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     onDelete: (id: string) => Promise<void>;
     onDownload: (record: SchemaLibraryRecord) => void;
     onRetry: () => Promise<void>;
+    onLoad: (id: string) => Promise<Record<string, unknown>>;
+    onRelease: (id: string) => void;
   } = $props();
 
   let uploadInput: HTMLInputElement;
@@ -277,13 +279,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
           <dl class="schema-metadata">
             <div><dt>Server URL</dt><dd>{metadata.server}</dd></div>
-            <div><dt>Operations</dt><dd>{metadata.operations.toLocaleString()}</dd></div>
-            {#if record.summary.unavailableCount}<div><dt>Runnable</dt><dd>{(metadata.operations - record.summary.unavailableCount).toLocaleString()}</dd></div>{/if}
+            <div><dt>Operations</dt><dd>{metadata.operations?.toLocaleString() ?? "—"}</dd></div>
+            {#if metadata.operations !== null && record.summary.unavailableCount}<div><dt>Runnable</dt><dd>{(metadata.operations - record.summary.unavailableCount).toLocaleString()}</dd></div>{/if}
           </dl>
 
           <Reveal open={!record.enabled} id={`schema-disabled-${record.id}`}><p class="schema-note">Operations from this document are unavailable until it is enabled.</p></Reveal>
 
-          <JsonSchemaView value={record.document} label={`Full OpenAPI JSON: ${metadata.title}`} operationsOnly />
+          <JsonSchemaView load={() => onLoad(record.id)} onRelease={() => onRelease(record.id)} sourceKey={record.sourceIdentity}
+            label={`Full OpenAPI JSON: ${metadata.title}`} operationsOnly pageSize={1000} validated />
 
           {#if deletingId === record.id}
             <div class="schema-delete" role="group" aria-label={`Confirm deletion of ${metadata.title}`}>

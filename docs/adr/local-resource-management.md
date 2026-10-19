@@ -37,6 +37,27 @@ history. Undo and Redo are workflow features, not requirements for every content
 type. Remote transport, credentials, synchronization and general branch controls
 are outside this decision.
 
+## Schema ownership and caches
+
+Bundled schemas initially use reviewed compressed sources and manifest revisions.
+First complete-source access materializes an independent Git baseline. Later
+observed factory revisions append commits without changing enablement or order.
+History inspection does not convert a factory schema into authored content;
+renaming or replacing does, protecting that divergence from future bundle updates.
+Unused defaults need no decoded working copy merely to appear in settings.
+
+The schema metadata database also holds discardable discovery indexes and targeted
+credential policies. Source identity and adapter revision bind each derivative to
+authoritative content. Old whole-library policies migrate to per-schema records;
+obsolete clients cannot keep using the retired policy map. Pending writes and
+disablement continue to fail closed before credential execution.
+
+IndexedDB persistence does not justify retaining every document in memory. Read
+one source when required, coalesce concurrent reads and bound cached working sets.
+Closing a source inspector releases its data; current workflow and run models stay
+pinned until their owner releases them. Cache failure must not replace or delete
+Git content.
+
 ## Workflow persistence
 
 ### Content and metadata

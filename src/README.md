@@ -42,3 +42,7 @@ to the explicit `source` profile in [tests/gherkin/profiles.mjs](../tests/gherki
 `build.*` and `favicons.*` belong to the separate acceptance profile. Use `npm run test:source`
 for source checks; `npm run build && npm run test:acceptance` verifies packaging.
 Browser-driven coverage belongs in [tests](../tests/README.md).
+
+`schema-performance.fixture.mjs` is a Node worker used only by the matching
+benchmark. It measures native module execution outside Vitest's VM; it is not
+an application worker. See the [measurement method](../docs/schema-performance.md).

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-import { operations, type InputField, type InputSchema, type JsonValue, type Operation } from "./catalog.ts";
+import { operationForId, type InputField, type InputSchema, type JsonValue, type Operation } from "./catalog.ts";
 import { additionalBodyField, inputAllowsNull, InputValidationError, validateInputValue, type InputValues } from "./operation-input.ts";
 import { validateWorkflowDocument, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
 import { castValue, isFileRowConnection, matchingSwitchGates } from "./workflow-utilities.ts";
@@ -368,9 +368,9 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
 
   function visit(frame: Frame, node: OperationNode): WorkflowVisit
   {
-    const canonical = operations.find(operation => operation.id === node.data.operationId
-      && operation.method === node.data.method && operation.path === node.data.path);
-    if (!canonical) throw new Error(`“${node.data.name}” is unavailable in the registered schemas. Add an available operation before running it.`);
+    const canonical = operationForId(node.data.operationId);
+    if (!canonical || canonical.method !== node.data.method || canonical.path !== node.data.path)
+      throw new Error(`“${node.data.name}” is unavailable in the registered schemas. Add an available operation before running it.`);
     if (canonical.unavailableReason) throw new Error(canonical.unavailableReason);
     const operation = { ...canonical, fields: [...canonical.fields] };
     const values: InputValues = Object.fromEntries(operation.fields.filter(field => field.defaultValue !== undefined).map(field => [field.key, field.defaultValue]));
@@ -566,7 +566,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       try {
         const variables = completed.visit.vaultVariables;
         const binding = selectedBinding ?? (variables?.length && !completed.visit.operation.security?.length
-          ? { alternative: 0, credentials: {}, fingerprint: (await approvedOperation(operations.find(operation => operation.id === completed.visit.operation.id)!, workflowExecutionForOperation(completed.visit.operation).origin)).fingerprint } : undefined);
+          ? { alternative: 0, credentials: {}, fingerprint: (await approvedOperation(operationForId(completed.visit.operation.id)!, workflowExecutionForOperation(completed.visit.operation).origin)).fingerprint } : undefined);
         result = await execution.execute(completed.visit.operation, values, controller.signal,
           binding ? { binding, runId, nodeId: completed.visit.id, ...(variables ? { variables } : {}) } : undefined);
       }

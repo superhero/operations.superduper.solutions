@@ -37,3 +37,15 @@ Reuse semantic roles from [app.css](../../app.css), and preserve reduced-motion
 handling and cancellation of stale animation completions. See the
 [interface ADR](../../../docs/adr/svelte-interface.md) before changing a shared
 interaction.
+
+## Large JSON sources
+
+`JsonSchemaView` accepts an asynchronous source loader and revision key. It loads
+on open, ignores obsolete replies and releases data after the closing transition.
+Pass a page limit for large sources. `JsonView`'s `validated` path accepts only
+owned, immutable JSON that has already passed domain validation; arbitrary inputs
+retain normalization. Formatted copy text is created only when requested.
+
+`Disclosure.onClosed` supports release after animation. Disabling its tooltip
+uses a native summary without instantiating tooltip state; preserve nested-control
+events, keyboard focus and reduced-motion behavior when changing that path.

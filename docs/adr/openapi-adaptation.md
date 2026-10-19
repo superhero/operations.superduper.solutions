@@ -18,8 +18,28 @@ types containing `null` retain that distinction through request validation.
 Form-encoded bodies continue to require primitive non-null values.
 
 Users choose which documents are enabled. Changes update the active registry
-without rewriting saved workflows. Compatibility is checked before operations
-become available; parsing, validation and repository work run in dedicated workers.
+without rewriting saved workflows. Discovery and executable models are separate;
+parsing, validation and repository work run in dedicated workers.
+
+## Discovery and execution
+
+Startup reads metadata and compact indexes for enabled schemas. Disabled sources
+are not decoded, inspected or hashed merely to list their cards. Reviewed bundled
+indexes are generated from the complete source and bound to its digest and adapter
+revision. User imports generate an equivalent index from validated content.
+
+Descriptors retain operation identity, name, method, path, grouping and execution
+limitations. They cannot prepare or execute a request. Adding, restoring or running
+a workflow loads its canonical operation models and their local-reference closure.
+Current source identity and enablement are checked before publishing a model.
+Credential policy is derived from authoritative content, never a discovery index.
+
+Metadata changes publish only changed catalogs and active IDs. Reordering alone
+does not rebuild matching inputs or revoke unchanged credential policy. Decoded
+sources use a bounded cache; models used by the current workflow or run remain
+pinned. Size accounting limits retention, not exact JavaScript heap consumption.
+Active workflows may require more models than the cache budget permits to retain
+when idle.
 
 ## Schema library
 
@@ -38,9 +58,13 @@ preserving its ID and other content.
 
 Cards show the complete document in the same read-only JSON viewer as operation
 reports, with collapsible scopes, line wrapping and copying. The viewer renders
-on first expansion, even for disabled documents. Each opening exposes paths and
-HTTP methods while folding operation bodies and other nested fields. Viewing
-changes neither content nor Git history.
+on expansion, even for disabled documents. Each opening exposes paths and HTTP
+methods while folding operation bodies and other nested fields. Rows are paged;
+copy and download still include the entire document. Closing releases the viewer
+after its slide transition, and late replies cannot reopen it.
+
+Inspection does not edit content. First access to a bundled source may materialize
+its initial local Git snapshot; reopening unchanged content creates no commit.
 
 ### Default service library
 
@@ -49,10 +73,15 @@ adds missing defaults to existing profiles without replacing authored documents.
 Installation records survive deletion, so deleted defaults stay deleted.
 
 Unmodified defaults follow bundled revisions while retaining enablement and order.
-Renaming, replacing or requesting history materializes a Git copy; subsequent
-bundled revisions do not overwrite that copy. Display names can identify a provider
-without rewriting its upstream document title. Examples retain their existing
-once-only seeding behavior.
+Their Git baseline materializes when a complete source, operation model or history
+is needed. Once materialized, later observed bundled revisions append content
+commits in that schema's repository. Reading history preserves factory ownership;
+renaming or replacing transfers ownership to authored content, which subsequent
+bundled revisions cannot overwrite. Unused disabled defaults remain manifest entries
+until needed; local history does not invent unseen upstream revisions.
+
+Display names can identify a provider without rewriting its upstream document
+title. Examples retain their existing once-only seeding behavior.
 
 ### Available operations
 
@@ -60,7 +89,7 @@ Bundled examples seed once, preserving the `demo` and `httpbin` IDs and authored
 navigation groups. Deleting every document does not reseed them. Schema
 repositories load before workflows are restored.
 
-Successfully loaded, enabled documents replace the registry atomically, updating
+Successfully loaded, enabled discovery indexes replace the registry atomically, updating
 navigation, matching and reports immediately. Removed or disabled operations
 cannot execute, but saved workflow references keep their IDs and can work again
 when the same document is enabled. Replacement retains IDs; changed or removed
@@ -81,9 +110,11 @@ without changing the working file.
 
 ### Metadata and recovery
 
-`v1/catalogs/index` stores document metadata, repository paths, enablement,
-initialization state and recovery journals, not another editable schema copy.
-Enablement remains outside Git.
+`v1/catalogs/index` stores metadata, repository paths, enablement, recovery journals,
+rebuildable discovery indexes and per-schema credential policies. These are not
+independently editable content copies. Cache identities include source and adapter
+revisions. Corrupt derivatives rebuild from verified sources; cache quota failure
+does not erase authoritative Git content. Enablement remains outside Git.
 
 A serialized queue and browser lock protect writes across tabs. Immutable Git
 objects are flushed before publishing a recovery journal, allowing the working

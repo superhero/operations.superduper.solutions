@@ -2,13 +2,21 @@
 
 Compressed OpenAPI documents retain the upstream schema data and notices. These
 are application inputs, not credentials or live API responses. The schema worker
-verifies each pack's size and SHA-256 before decoding it.
+verifies each pack's size and SHA-256 before accepting its decoded content.
+
+## Discovery indexes
+
+[`indexes`](indexes/README.md) holds generated summaries and operation descriptors.
+Startup opens enabled indexes; full sources load only for canonical operation
+models, inspection, download or editing. Disabled schemas retain metadata without
+source decoding. All compressed artifacts still ship in the single HTML file.
 
 ## Sources and regeneration
 
 `index.json` records each source, version, conversion, operation count and hashes.
 The authored source list is `build/service-schemas.sources.json`; regenerate packs
-with `node build/service-schemas.mjs`. Pass catalog IDs to refresh selected packs.
+with `npm run schemas:refresh`. Pass catalog IDs to `build/service-schemas.mjs` to
+refresh selected packs, then run `npm run schemas:index`.
 Network downloads are cached under ignored `tmp/schema-sources`, with at most two
 requests active and bounded retries. Builds use committed packs without fetching
 provider schemas.

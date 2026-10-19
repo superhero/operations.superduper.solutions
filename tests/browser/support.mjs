@@ -34,6 +34,7 @@ const fixturePages = new Map([
   ['@vault-browser-network', '/vault-fixture.html'],
   ['@vault-browser-policy', '/vault-fixture.html'],
   ['@vault-browser-kdf', '/vault-kdf-fixture.html'],
+  ['@schema-lifecycle', '/vault-fixture.html'],
 ]);
 
 class BrowserWorld extends World {}
@@ -50,7 +51,7 @@ BeforeAll(async function () {
     [`/${filename}`, { type, bytes: await readFile(`dist/${filename}`) }])));
   if (typeof this.parameters.fixtureBundlesFile !== 'string')
     throw new Error('Start browser scenarios with npm run test:browser or node tests/browser/run.mjs.');
-  const { repositoryFixture, errorHistoryFixture, vaultFixture, policyFixture, kdfFixture } =
+  const { repositoryFixture, errorHistoryFixture, vaultFixture, policyFixture, kdfFixture, schemaFixture } =
     JSON.parse(await readFile(this.parameters.fixtureBundlesFile, 'utf8'));
   const vaultEndpoint = createVaultEndpoint();
   server = createServer((request, response) => {
@@ -74,6 +75,9 @@ BeforeAll(async function () {
     } else if (request.url === '/vault-policy-fixture.js') {
       response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
       response.end(policyFixture);
+    } else if (request.url === '/schema-lifecycle-fixture.js') {
+      response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
+      response.end(schemaFixture);
     } else if (request.url === '/vault-kdf-fixture.js') {
       response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
       response.end(kdfFixture);

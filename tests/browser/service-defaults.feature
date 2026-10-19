@@ -9,3 +9,15 @@ Feature: Default service schemas in the application
 
   Scenario: Existing profiles receive new defaults without losing authored documents
     Then the default schema migration preserves an existing custom document and disabled example
+
+  @service-defaults @schema-profile @chromium-only
+  Scenario: Measure schema startup search management and inspector retention
+    Then schema lifecycle performance is measured with the complete service collection
+
+  @service-defaults
+  Scenario: Large schema inspection renders a bounded page and releases closed content
+    Then the largest bundled schema can be inspected without retaining its closed viewer
+
+  @service-defaults
+  Scenario: Closing an inspector ignores an outstanding source response
+    Then a closed schema inspector ignores a delayed source reply and can reopen

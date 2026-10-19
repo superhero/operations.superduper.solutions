@@ -118,7 +118,7 @@ function security(document: Value, source: Value, operation: Operation): Operati
   return extractOperationSecurity({ ...document, components: { ...value(document.components), securitySchemes: normalizedSchemes } }, { security: requirements });
 }
 
-export function inspectServiceSchema(document: Value, id: string): {
+export function inspectServiceSchema(document: Value, id: string, selected?: ReadonlySet<string>, location?: Pick<Operation, "path" | "method">): {
   document: Value; operations: Operation[]; name: string; serverUrl: string; groups: CatalogGroup[];
 }
 {
@@ -129,15 +129,17 @@ export function inspectServiceSchema(document: Value, id: string): {
   const identities = new Set<string>();
   const groups = new Map<string, CatalogGroup>();
   let serverUrl = "";
-  for (const [path, rawItem] of Object.entries(value(document.paths)))
+  const paths = value(document.paths);
+  for (const [path, rawItem] of location ? [[location.path, paths[location.path]] as const] : Object.entries(paths))
   {
     if (!path.startsWith("/")) continue;
     const item = resolve(rawItem, document);
-    for (const [method, rawOperation] of Object.entries(item))
+    for (const [method, rawOperation] of location ? [[location.method.toLowerCase(), item[location.method.toLowerCase()]] as const] : Object.entries(item))
     {
       if (!methods.has(method)) continue;
       const source = value(rawOperation);
       const identity = `${id}:${text(source.operationId, `${method.toUpperCase()} ${path}`)}`;
+      if (selected && !selected.has(identity)) continue;
       if (identities.has(identity)) throw new Error(`Duplicate service operation: ${identity}`);
       identities.add(identity);
       const group = Array.isArray(source.tags) ? text(source.tags[0], "Operations") : "Operations";

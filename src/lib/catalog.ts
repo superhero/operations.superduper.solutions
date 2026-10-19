@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-import { catalogs, replaceCatalogs, type Catalog } from "./catalog-registry.ts";
+import { catalogs, replaceCatalogs, setOperationCatalog, type Catalog } from "./catalog-registry.ts";
 import { extractOperationSecurity, type OperationSecurity } from "./operation-security.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
@@ -34,6 +34,8 @@ export type InputField = Omit<InputSchema, "properties" | "required" | "items"> 
 };
 export type BodyMediaType = "application/json" | "text/plain" | "application/x-www-form-urlencoded" | "multipart/form-data";
 export type Operation = {
+  /** Navigation-only descriptor. Execution requires a separately hydrated model. */
+  deferred?: true;
   id: string;
   name: string;
   description: string;
@@ -318,6 +320,61 @@ export function extractOperations(value: unknown, source: string): Operation[]
 export let operations = catalogs.flatMap(catalog => extractOperations(catalog.document, catalog.id));
 const sourceIdentity = (catalog: Catalog) => JSON.stringify([catalog.file, catalog.document]);
 let operationSources = new Map(catalogs.map(catalog => [catalog.id, sourceIdentity(catalog)]));
+let operationIndex = new Map(operations.map(operation => [operation.id, operation]));
+const models = new Map<string, OperationModel>();
+const pins = new Map<object, ReadonlySet<string>>();
+const modelBudget = 8 * 1024 * 1024;
+
+export type OperationModel = { operation: Operation; document: Record<string, unknown>; origin: string;
+  sourceIdentity: string; bytes: number };
+
+export function operationSourceIdentity(id: string): string | undefined {
+  const separator = id.indexOf(":");
+  return separator < 0 ? undefined : operationSources.get(id.slice(0, separator));
+}
+
+/** A discovery descriptor is never an executable canonical operation. */
+export function operationForId(id: string): Operation | undefined {
+  const operation = operationIndex.get(id);
+  if (!operation?.deferred) return operation;
+  const model = models.get(id);
+  if (model) { models.delete(id); models.set(id, model); }
+  return model?.operation;
+}
+
+export function operationDescriptorForId(id: string): Operation | undefined { return operationIndex.get(id); }
+
+export function operationOrigin(id: string): string | undefined { return models.get(id)?.origin; }
+
+function releaseModel(id: string): void { models.delete(id); setOperationCatalog(id); }
+
+function pruneModels(keep?: string): void {
+  let total = [...models.values()].reduce((bytes, model) => bytes + model.bytes, 0);
+  const retained = new Set([...pins.values()].flatMap(ids => [...ids]));
+  for (const [id, model] of models) if (total > modelBudget && id !== keep && !retained.has(id)) {
+    total -= model.bytes; releaseModel(id);
+  }
+}
+
+export function pinOperationModels(owner: object, ids?: ReadonlySet<string>): void {
+  if (ids) pins.set(owner, ids); else pins.delete(owner);
+  pruneModels();
+}
+
+/** Refuse replies from a replaced/disabled source before installing any model. */
+export function installOperationModel(model: OperationModel): Operation {
+  const descriptor = operationIndex.get(model.operation.id);
+  const catalog = catalogs.find(catalog => catalog.id === model.operation.id.slice(0, model.operation.id.indexOf(":")));
+  if (!descriptor || !catalog || operationSourceIdentity(descriptor.id) !== model.sourceIdentity
+    || model.operation.deferred || descriptor.method !== model.operation.method || descriptor.path !== model.operation.path
+    || !Number.isSafeInteger(model.bytes) || model.bytes < 0)
+    throw new Error("The schema changed while its operation was loading. Try again.");
+  models.delete(model.operation.id);
+  models.set(model.operation.id, model);
+  setOperationCatalog(model.operation.id, { ...catalog, document: model.document, execution: { kind: "http", origin: model.origin } });
+  pruneModels(model.operation.id);
+  return model.operation;
+}
 
 export type PreparedCatalog = { catalog: Catalog; operations: Operation[]; sourceIdentity: string };
 
@@ -345,9 +402,16 @@ export function publishPreparedCatalogs(next: readonly PreparedCatalog[]): void
     return operationSources.get(catalog.id) === identity
       ? prepared.map(operation => previousOperations.get(operation.id) ?? operation) : prepared;
   });
-  replaceCatalogs(replacement);
-  operations = extracted;
+  if (replacement.length !== catalogs.length || replacement.some((catalog, index) => catalogs[index] !== catalog)) replaceCatalogs(replacement);
+  // Card ordering changes navigation, not the matching input snapshot.
+  if (extracted.length !== operations.length || extracted.some(operation => previousOperations.get(operation.id) !== operation)) operations = extracted;
+  operationIndex = new Map(operations.map(operation => [operation.id, operation]));
   operationSources = nextSources;
+  for (const [id, model] of models) {
+    const catalog = replacement.find(catalog => catalog.id === id.slice(0, id.indexOf(":")));
+    if (!catalog || operationSourceIdentity(id) !== model.sourceIdentity || !operationIndex.has(id)) releaseModel(id);
+    else setOperationCatalog(id, { ...catalog, document: model.document, execution: { kind: "http", origin: model.origin } });
+  }
 }
 
 /** Validate every operation before replacing the live registry and operation index together. */

@@ -46,7 +46,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { defaultKeybindings, type Keybindings } from "$lib/keybindings.ts";
   import LocaleSettings from "./settings/LocaleSettings.svelte";
   import SchemaSettings from "./settings/SchemaSettings.svelte";
-  import { getSchemaLibrary, loadSchemaLibrary, uploadSchema, replaceSchema, renameSchema, moveSchema, setSchemaEnabled, deleteSchema, downloadSchema } from "$lib/schema-library.ts";
+  import { getSchemaLibrary, loadSchemaLibrary, uploadSchema, replaceSchema, renameSchema, moveSchema, setSchemaEnabled, deleteSchema, downloadSchema, loadSchemaSource, releaseSchemaSource } from "$lib/schema-library.ts";
   import { defaultLocaleSettings, type LocaleSettings as LocalePreferences } from "$lib/locale-settings.ts";
   import { isValidWorkflowCurveStrength, isValidWorkflowDashLength, isValidWorkflowDashGap, isValidWorkflowDashSpeed, isValidWorkflowGridSize, isValidWorkflowNodeClearance,
     workflowCurveStrengthLimits, workflowDashLengthLimits, workflowDashGapLimits, workflowDashSpeedLimits, workflowGridSizeLimits, workflowNodeClearanceLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
@@ -425,7 +425,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {/snippet}
       <SchemaSettings records={schemaLibrary.records} busy={schemaLibrary.busy} ready={schemaLibrary.initialized} error={schemaLibrary.error}
         onUpload={uploadSchema} onReplace={replaceSchema} onRename={renameSchema} onMove={moveSchema} onEnabledChange={setSchemaEnabled} onDelete={deleteSchema}
-        onDownload={downloadSchema} onRetry={loadSchemaLibrary} />
+        onDownload={downloadSchema} onRetry={loadSchemaLibrary} onLoad={loadSchemaSource} onRelease={releaseSchemaSource} />
     </Disclosure>
     <Disclosure class="catalog-group settings-section" label="Secrets" tooltipEnabled={false} lazy animateSize open={openSection === "secrets"} onToggle={(next) => openSection = next ? "secrets" : null}>
       {#snippet summary()}

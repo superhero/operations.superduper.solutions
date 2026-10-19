@@ -12,8 +12,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { getContext, onMount, setContext, tick, untrack, type Snippet } from "svelte";
   import HintButton from "./HintButton.svelte";
-  let { open = false, onToggle, summary, children, class: className = "", label, groupLabel, hint, tooltipEnabled = true, lazy = false, animateSize = false }:
-    { open?: boolean; onToggle: (next: boolean) => void; summary: Snippet; children: Snippet; class?: string; label?: string; groupLabel?: string; hint?: string; tooltipEnabled?: boolean; lazy?: boolean; animateSize?: boolean } = $props();
+  let { open = false, onToggle, onClosed, summary, children, class: className = "", label, groupLabel, hint, tooltipEnabled = true, lazy = false, animateSize = false }:
+    { open?: boolean; onToggle: (next: boolean) => void; onClosed?: () => void; summary: Snippet; children: Snippet; class?: string; label?: string; groupLabel?: string; hint?: string; tooltipEnabled?: boolean; lazy?: boolean; animateSize?: boolean } = $props();
   const id = $props.id();
   let panel: HTMLDivElement;
   let content = $state<HTMLDivElement>();
@@ -38,6 +38,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     animation?.cancel();
     animation = undefined;
     expanded = open;
+    if (!open) onClosed?.();
     if (animateSize && panel) {
       targetHeight = open ? content?.getBoundingClientRect().height ?? 0 : 0;
       panel.style.height = `${targetHeight}px`;
@@ -49,7 +50,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (animateSize) panel.style.height = `${to}px`;
     const current = panel.animate([{ height: `${from}px`, overflow: "visible clip" }, { height: `${to}px`, overflow: "visible clip" }], { duration: 240, easing: "ease-in-out", fill: "both" });
     animation = current;
-    current.onfinish = () => { if (animation === current) { expanded = open; animation = undefined; current.cancel(); } };
+    current.onfinish = () => { if (animation === current) { expanded = open; animation = undefined; current.cancel(); if (!open) onClosed?.(); } };
   }
   function settleTree() { settle(); for (const child of childrenToSettle) child(); }
   setContext<DisclosureContext>(disclosureContext, {
@@ -100,10 +101,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <details class={className} open={expanded || open} aria-label={groupLabel}>
-  <HintButton label={hint ?? `${open ? "Hide" : "Show"} ${label ?? "details"}`} {tooltipEnabled} disabled={nestedHover || nestedFocus}>
-    {#snippet child({ props })}
-      {@const { type: _type, disabled: _disabled, ...triggerProps } = props}
-      <summary {...triggerProps} bind:this={heading} aria-label={label} aria-expanded={open} aria-controls={id}
+  {#snippet trigger(triggerProps: Record<string, any>)}
+      <summary {...triggerProps} bind:this={heading} tabindex={triggerProps.tabindex ?? 0} aria-label={label} aria-expanded={open} aria-controls={id}
         onpointerover={(event) => nestedHover = isNestedControl(event.target)}
         onpointerleave={(event) => { nestedHover = false; if (typeof triggerProps.onpointerleave === "function") triggerProps.onpointerleave(event); }}
         onfocusin={(event) => nestedFocus = isNestedControl(event.target)}
@@ -115,8 +114,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         }}>
         {@render summary()}
       </summary>
+  {/snippet}
+  {#if tooltipEnabled}
+  <HintButton label={hint ?? `${open ? "Hide" : "Show"} ${label ?? "details"}`} disabled={nestedHover || nestedFocus}>
+    {#snippet child({ props })}
+      {@const { type: _type, disabled: _disabled, ...triggerProps } = props}
+      {@render trigger(triggerProps)}
     {/snippet}
   </HintButton>
+  {:else}
+    {@render trigger({})}
+  {/if}
   <div bind:this={panel} id={id} class="disclosure-panel" class:resizable={animateSize} inert={!open} aria-hidden={!open} hidden={!expanded && !open}>
     {#if animateSize}
       <div bind:this={content} class="disclosure-content">

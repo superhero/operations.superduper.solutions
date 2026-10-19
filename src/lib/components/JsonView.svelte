@@ -9,9 +9,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import MaterialIcon from "./MaterialIcon.svelte";
 
   type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
-  let { value, label = "JSON document", wrap = true, expandedPaths, resetKey = 0, pageSize }: { value: unknown; label?: string; wrap?: boolean; expandedPaths?: string[] | undefined; resetKey?: number; pageSize?: number | undefined } = $props();
+  let { value, label = "JSON document", wrap = true, expandedPaths, resetKey = 0, pageSize, validated = false }: { value: unknown; label?: string; wrap?: boolean; expandedPaths?: string[] | undefined; resetKey?: number; pageSize?: number | undefined; validated?: boolean } = $props();
   let expanded = $state<Record<string, boolean>>({});
   let loaded = $state(1000);
+  const expandedDefaults = $derived(expandedPaths ? new Set(expandedPaths) : undefined);
   const childPath = (array: boolean, path: string, key: string) => array ? `${path}[${key}]` : `${path}[${JSON.stringify(key)}]`;
   const page = $derived.by(() => {
     const paths = new Set<string>();
@@ -22,7 +23,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       const lines = object ? key === null ? 2 : 3 : 1;
       if (remaining < lines) { more = true; return; }
       remaining -= lines; paths.add(path);
-      if (object && (expanded[path] ?? (expandedPaths?.includes(path) ?? true))) {
+      if (object && (expanded[path] ?? (expandedDefaults?.has(path) ?? true))) {
         for (const [key, value] of Object.entries(item)) {
           visit(value, childPath(Array.isArray(item), path, key), Array.isArray(item) ? null : key);
           if (more) break;
@@ -34,18 +35,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
 
   const document = $derived.by(() => {
+    if (validated) return { value: value as JsonValue, error: "" };
     try {
       const text = JSON.stringify(value, null, 2);
-      if (text === undefined) return { text: null, value: null, error: "This value cannot be represented as JSON." };
+      if (text === undefined) return { value: null, error: "This value cannot be represented as JSON." };
       const parsed: JsonValue = JSON.parse(text);
-      return { text, value: parsed, error: "" };
+      return { value: parsed, error: "" };
     } catch {
-      return { text: null, value: null, error: "This value cannot be represented as JSON." };
+      return { value: null, error: "This value cannot be represented as JSON." };
     }
   });
 
   $effect(() => {
-    document.text;
+    document.value;
     expandedPaths;
     resetKey;
     expanded = {};
@@ -64,7 +66,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {@const entries = Object.entries(item)}
     {#if key !== null}<div class="json-line json-container-key">{@render property(key)}</div>{/if}
     {#if entries.length}
-      {@const open = expanded[path] ?? (expandedPaths?.includes(path) ?? true)}
+      {@const open = expanded[path] ?? (expandedDefaults?.has(path) ?? true)}
       <Disclosure class="json-branch" {open} lazy={expandedPaths !== undefined || pageSize !== undefined} groupLabel={`${label}: ${path}`}
         label={`${path}: ${entries.length} ${array ? "items" : "properties"}`} tooltipEnabled={false}
         onToggle={(next) => { expanded[path] = next; }}>

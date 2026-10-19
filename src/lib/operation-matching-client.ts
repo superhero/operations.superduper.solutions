@@ -3,10 +3,20 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import MatchingWorker from "./operation-matching.worker.ts?worker&inline";
 import type { Operation } from "./catalog.ts";
-import type { MatchableOperation, OperationEvaluation } from "./matching.ts";
+import { prepareMatchingOperations, type OperationEvaluation } from "./matching.ts";
 import { createWorkerClient } from "./worker-rpc.ts";
 
 export type TimedOperationEvaluation = OperationEvaluation & { durationMs: number };
+const snapshots = new WeakMap<Operation[], { prepared: ReturnType<typeof prepareMatchingOperations>;
+  byId: Map<string, Operation> }>();
+
+export function prepareOperationMatching(operations: Operation[]) {
+  if (!snapshots.has(operations)) snapshots.set(operations, {
+    prepared: prepareMatchingOperations(operations.map(({ id, name }) => ({ id, name }))),
+    byId: new Map(operations.map(operation => [operation.id, operation])),
+  });
+  return snapshots.get(operations)!;
+}
 
 /** Each calculation owns its worker so aborting also stops its CPU work. */
 export function createOperationMatchingEvaluator(factory: () => Worker = () => new MatchingWorker({ name: "operation-matching" }))
@@ -19,14 +29,13 @@ export function createOperationMatchingEvaluator(factory: () => Worker = () => n
     signal.addEventListener("abort", cancel, { once: true });
     try
     {
-      // Schemas, examples and request fields stay on the page.
-      const evaluation = await client.call<OperationEvaluation<MatchableOperation>>("evaluate", [prompt,
-        operations.map(({ id, name }) => ({ id, name }))]);
+      const snapshot = prepareOperationMatching(operations);
+      const evaluation = await client.call<{ candidates: { id: string; similarity: number }[]; results: string[] }>(
+        "evaluatePrepared", [prompt, snapshot.prepared]);
       signal.throwIfAborted();
-      const byId = new Map(operations.map(operation => [operation.id, operation]));
-      const candidates = evaluation.candidates.map(match => ({ operation: byId.get(match.operation.id)!, similarity: match.similarity }));
+      const candidates = evaluation.candidates.map(match => ({ operation: snapshot.byId.get(match.id)!, similarity: match.similarity }));
       const matchedById = new Map(candidates.map(match => [match.operation.id, match]));
-      return { candidates, results: evaluation.results.map(match => matchedById.get(match.operation.id)!),
+      return { candidates, results: evaluation.results.map(id => matchedById.get(id)!),
         durationMs: performance.now() - started };
     }
     finally

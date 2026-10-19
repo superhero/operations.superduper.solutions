@@ -5,20 +5,30 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onDestroy, untrack } from "svelte";
   import Disclosure from "./Disclosure.svelte";
   import MaterialIcon from "./MaterialIcon.svelte";
   import HintButton from "./HintButton.svelte";
   import JsonView from "./JsonView.svelte";
 
-  let { value, label = "OpenAPI JSON", title = "OpenAPI schema", copyable = true, pageSize, operationsOnly = false }: { value: unknown; label?: string; title?: string; copyable?: boolean; pageSize?: number; operationsOnly?: boolean } = $props();
+  let { value, load, onRelease, sourceKey = "", validated = false, label = "OpenAPI JSON", title = "OpenAPI schema", copyable = true, pageSize, operationsOnly = false }:
+    { value?: unknown; load?: () => Promise<unknown>; onRelease?: () => void; sourceKey?: string; validated?: boolean;
+      label?: string; title?: string; copyable?: boolean; pageSize?: number; operationsOnly?: boolean } = $props();
   let schemaOpen = $state(false);
   let schemaLoaded = $state(false);
   let schemaWrap = $state(true);
   let resetKey = $state(0);
+  let loadedValue = $state.raw<unknown>();
+  let loading = $state(false);
+  let loadError = $state("");
+  let pendingLoad: Promise<unknown> | undefined;
+  let held = false;
+  let generation = 0;
+  let previousKey = untrack(() => sourceKey);
+  const displayedValue = $derived(load ? loadedValue : value);
   const expandedPaths = $derived.by(() => {
     if (!operationsOnly) return undefined;
-    const paths = value && typeof value === "object" && "paths" in value ? value.paths : undefined;
+    const paths = displayedValue && typeof displayedValue === "object" && "paths" in displayedValue ? displayedValue.paths : undefined;
     const methods = ["get", "put", "post", "delete", "options", "head", "patch", "trace"];
     return ["$", '$["paths"]', ...Object.entries(paths && typeof paths === "object" ? paths : {})
       .flatMap(([path, item]) => {
@@ -32,7 +42,48 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let copyStatusTimer: ReturnType<typeof setTimeout> | undefined;
   let disposed = false;
 
-  onDestroy(() => { disposed = true; clearTimeout(copyStatusTimer); });
+  onDestroy(() => { disposed = true; release(); clearTimeout(copyStatusTimer); });
+
+  function release() {
+    generation++;
+    pendingLoad = undefined;
+    loadedValue = undefined;
+    schemaLoaded = false;
+    loading = false;
+    loadError = "";
+    if (held) { held = false; onRelease?.(); }
+  }
+
+  function obtain(): Promise<unknown> {
+    if (!load) return Promise.resolve(value);
+    if (!pendingLoad) { held = true; pendingLoad = load(); }
+    return pendingLoad;
+  }
+
+  async function openSource() {
+    const current = ++generation;
+    loading = !!load;
+    loadError = "";
+    try {
+      const document = await obtain();
+      if (disposed || !schemaOpen || current !== generation) { onRelease?.(); return; }
+      loadedValue = document;
+      schemaLoaded = true;
+      if (operationsOnly) resetKey++;
+    } catch (error) {
+      if (!disposed && schemaOpen && current === generation) {
+        loadError = error instanceof Error ? error.message : "Could not load this schema.";
+        pendingLoad = undefined;
+      }
+    } finally { if (current === generation) loading = false; }
+  }
+
+  $effect(() => {
+    if (sourceKey === previousKey) return;
+    previousKey = sourceKey;
+    release();
+    if (schemaOpen) void openSource();
+  });
 
   function showCopyStatus(message: string) {
     if (disposed) return;
@@ -43,24 +94,25 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   async function copySchema(event: MouseEvent) {
     event.preventDefault();
     event.stopPropagation();
-    const schema = value;
+    const key = sourceKey;
     if (copying) return;
     copying = true;
     clearTimeout(copyStatusTimer);
     copyStatus = "";
     try {
       if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+      const schema = await obtain();
       await navigator.clipboard.writeText(JSON.stringify(schema, null, 2));
-      if (value === schema) showCopyStatus("JSON copied.");
+      if (sourceKey === key) showCopyStatus("JSON copied.");
     } catch {
-      if (value === schema) showCopyStatus("Could not copy JSON. Check clipboard access and try again.");
-    } finally { copying = false; }
+      if (sourceKey === key) showCopyStatus("Could not copy JSON. Check clipboard access and try again.");
+    } finally { copying = false; if (!schemaOpen) release(); }
   }
 </script>
 
-<Disclosure class="schema-disclosure" label={title} open={schemaOpen} onToggle={(next) => {
+<Disclosure class="schema-disclosure" label={title} open={schemaOpen} lazy animateSize onClosed={release} onToggle={(next) => {
   schemaOpen = next;
-  if (next) { schemaLoaded = true; if (operationsOnly) resetKey += 1; }
+  if (next) void openSource();
 }}>
   {#snippet summary()}
     <MaterialIcon name="keyboard_arrow_right" class="schema-chevron" size={18} />
@@ -73,10 +125,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         onclick={(event) => { event.preventDefault(); event.stopPropagation(); schemaWrap = !schemaWrap; }}><MaterialIcon name={schemaWrap ? "format_text_wrap" : "format_text_overflow"} size={20} /></HintButton>
     </span>
   {/snippet}
-  {#if schemaLoaded}<JsonView {value} {label} {pageSize} wrap={schemaWrap} {expandedPaths} {resetKey} />{/if}
+  {#if loading}<p class="schema-loading" role="status" aria-label="Loading schema">···</p>{/if}
+  {#if loadError}<div class="schema-load-error"><p role="alert">{loadError}</p><button type="button" onclick={openSource}>Retry</button></div>{/if}
+  {#if schemaLoaded}<JsonView value={displayedValue} {validated} {label} {pageSize} wrap={schemaWrap} {expandedPaths} {resetKey} />{/if}
 </Disclosure>
 
 <style>
+  .schema-loading { margin: 8px 0; text-align: center; font-size: 20px; }
+  .schema-load-error { padding: 10px; font-size: 12px; }
   :global(.schema-disclosure) { margin-top: 16px; }
   :global(.schema-disclosure > summary) { position: sticky; top: calc(var(--app-header-height) + var(--settings-header-height, 0px) + 8px); z-index: 2; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 14px; border-radius: 4px; list-style: none; background: var(--color-report-card); color: var(--color-foreground); font-size: 14px; font-weight: 650; transition: background-color 180ms ease-in, color 180ms ease-in, transform 180ms ease-in, outline-color 180ms ease-in; }
   :global(.schema-disclosure > summary[aria-expanded="true"]) { background: var(--color-json-header-hover-background); color: var(--color-json-header-hover-foreground); }

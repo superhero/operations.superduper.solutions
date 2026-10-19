@@ -160,11 +160,13 @@ yield "interrupted schema writes preserve the old revision or recover the durabl
 
   const beforeRename = (await records(page)).find(value => value.id === first.id);
   const renamed = await page.evaluate(id => fixture.renameSchemaDocument(id, "  Renamed API  "), first.id);
-  assert.deepEqual(renamed, { ...beforeRename, document: { ...beforeRename.document,
-    info: { ...beforeRename.document.info, title: "Renamed API" } }, updatedAt: renamed.updatedAt },
-  "Renaming only updates the latest saved title and modification time.");
-  assert.ok(renamed.updatedAt > beforeRename.updatedAt);
   const renamedHistory = await history(page, first.id);
+  assert.deepEqual(renamed, { ...beforeRename, document: { ...beforeRename.document,
+    info: { ...beforeRename.document.info, title: "Renamed API" } }, updatedAt: renamed.updatedAt,
+    revision: renamedHistory[0].oid, gitRevision: renamedHistory[0].oid,
+    summary: { ...beforeRename.summary, name: "Renamed API" } },
+  "Renaming updates the title, summary and source identity while preserving other content and metadata.");
+  assert.ok(renamed.updatedAt > beforeRename.updatedAt);
   assert.equal(renamedHistory.length, recoveredHistory.length + 1);
   assert.equal(renamedHistory[0].message, "Rename OpenAPI schema: Recovered replacement → Renamed API");
   assert.deepEqual(renamedHistory[0].parents, [recoveredHistory[0].oid]);
