@@ -45,6 +45,9 @@ Feature: Read-only operation JSON
   Scenario: Schema edit icons fade through opening closing and interruption
     Then schema edit icons fade in and out and respect reduced motion
 
+  Scenario: Schema header hover stays visible across card transitions
+    Then the scaled schema header keeps its edges visible while card slides stay clipped
+
   Scenario Outline: Schema cards keep compact controls and a full-width viewer
     Then schema cards keep their controls usable and their viewer full width at <width> pixels
 

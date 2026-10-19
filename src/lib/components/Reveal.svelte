@@ -6,11 +6,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <script lang="ts">
   import { onMount, tick, untrack, type Snippet } from "svelte";
-  let { open, id, children }: { open: boolean; id: string; children: Snippet } = $props();
+  let { open, id, children, overflowVisible = false }: { open: boolean; id: string; children: Snippet; overflowVisible?: boolean } = $props();
   let reduced = $state(true);
   let ready = false;
   let rendered = $state(untrack(() => open));
   let visible = $state(untrack(() => open));
+  let settledOpen = $state(untrack(() => open));
   let panel = $state<HTMLDivElement>();
   let revision = 0;
   let previous = untrack(() => open);
@@ -19,7 +20,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const media = matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => {
       reduced = media.matches;
-      if (reduced) { revision += 1; visible = open; rendered = open; }
+      if (reduced) { revision += 1; visible = open; rendered = open; settledOpen = open; }
     };
     update(); ready = true;
     media.addEventListener("change", update);
@@ -31,7 +32,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (next === previous) return;
     previous = next;
     const current = ++revision;
-    if (!ready || reduced) { visible = next; rendered = next; return; }
+    settledOpen = false;
+    if (!ready || reduced) { visible = next; rendered = next; settledOpen = next; return; }
     rendered = true;
     void (async () => {
       await tick();
@@ -42,13 +44,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       await tick();
       if (current !== revision || !panel) return;
       await Promise.allSettled(panel.getAnimations().map(animation => animation.finished));
-      if (current === revision) rendered = next;
+      if (current === revision) { rendered = next; settledOpen = next; }
     })();
   });
 </script>
 
 <div bind:this={panel} {id} class="reveal-panel" class:is-open={visible} inert={!open} aria-hidden={!open} hidden={!rendered && !open}>
-  <div class="reveal-panel-inner">
+  <div class="reveal-panel-inner" class:overflow-visible={overflowVisible && open && settledOpen}>
     {#if rendered}{@render children()}{/if}
   </div>
 </div>
@@ -57,5 +59,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .reveal-panel { display: grid; grid-template-rows: 0fr; visibility: hidden; transition: grid-template-rows 240ms ease-in, visibility 0s linear 240ms; }
   .reveal-panel.is-open { grid-template-rows: 1fr; visibility: visible; transition-delay: 0s; }
   .reveal-panel-inner { min-width: 0; min-height: 0; overflow: clip; }
+  /* Hover effects may escape a fully open panel, but never an unfinished slide. */
+  .reveal-panel-inner.overflow-visible { overflow: visible; }
   @media (prefers-reduced-motion: reduce) { .reveal-panel { transition: none; } }
 </style>

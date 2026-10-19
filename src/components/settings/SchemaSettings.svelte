@@ -292,7 +292,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             </div>
           </div>
 
-          <Reveal open={expandedCards[record.id] ?? false} id={`schema-details-${record.id}`}>
+          <Reveal open={expandedCards[record.id] ?? false} id={`schema-details-${record.id}`} overflowVisible>
             <dl class="schema-metadata">
               <div><dt>Server URL</dt><dd>{metadata.server}</dd></div>
               <div><dt>Operations</dt><dd>{metadata.operations?.toLocaleString() ?? "—"}</dd></div>
