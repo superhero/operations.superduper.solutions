@@ -42,6 +42,16 @@ Add focused Gherkin coverage and record resource-capped measurements, including 
 
 ```
 
+<!-- changelog-commit:060f88167fb2c692985be39aa9bebcd54893f72f -->
+### Commit [`060f881`](https://github.com/superhero/operations.superduper.solutions/commit/060f88167fb2c692985be39aa9bebcd54893f72f)
+
+```text
+docs(schemas): update performance roadmap and profiling findings
+
+Record the completed develop integrations and prioritize cleaner phase measurements before further UI, matching, retention and model-projection work. Explain Playwright snapshot overhead, omitted matching-worker CPU sampling and unresolved startup and heap tradeoffs. Keep separate schema delivery deferred with its prerequisites.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
