@@ -429,6 +429,92 @@ Then('schema edit icons fade in and out and respect reduced motion', async funct
   } finally { await icon.evaluate(element => element.__fadeObserver?.disconnect()); }
 });
 
+Then('the scaled schema header keeps its edges visible while card slides stay clipped', async function () {
+  const page = this.page;
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await setMode(page, 'settings');
+  await page.locator('summary[aria-label="Schemas"]').click();
+  const card = page.locator('.schema-card[data-schema-id="demo"]');
+  const toggle = card.getByRole('button', { name: /^Schema details:/ });
+  const panel = card.locator(':scope > .reveal-panel');
+  const header = card.locator('summary[aria-label="OpenAPI schema"]');
+  const settleSlide = async () => {
+    await expect(panel).toHaveClass(/is-open/);
+    await expect.poll(() => panel.evaluate(element => element.getAnimations().length)).toBe(0);
+  };
+  const expectHoverEdges = async () => {
+    await header.hover();
+    await expect.poll(() => header.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a)).toBeGreaterThan(1);
+    await expect.poll(() => header.evaluate(element => {
+      const bounds = element.getBoundingClientRect();
+      const centerX = bounds.left + bounds.width / 2;
+      const centerY = bounds.top + bounds.height / 2;
+      return [[bounds.left + 1, centerY], [bounds.right - 1, centerY],
+        [centerX, bounds.top + 1], [centerX, bounds.bottom - 1]]
+        .every(([x, y]) => element.contains(document.elementFromPoint(x, y)));
+    }), { message: 'Every edge of the enlarged header must remain painted and clickable' }).toBe(true);
+  };
+  await toggle.click();
+  await settleSlide();
+  await expectHoverEdges();
+  await header.locator('.schema-title').click();
+  await expect(header).toHaveAttribute('aria-expanded', 'true');
+  await expectHoverEdges();
+  await page.screenshot({ path: `${this.artifactDirectory}/schema-header-hover.png` });
+  await header.locator('.schema-title').click();
+  await expect(header).toHaveAttribute('aria-expanded', 'false');
+  await expect(card.locator('.json-view')).toHaveCount(0);
+  await panel.evaluate(element => {
+    element.__slideObserver = new MutationObserver(() => {
+      getComputedStyle(element).gridTemplateRows;
+      for (const animation of element.getAnimations()) animation.pause();
+    });
+    element.__slideObserver.observe(element, { attributes: true, attributeFilter: ['class'] });
+  });
+  const halfway = () => panel.evaluate(async element => {
+    const animation = element.getAnimations().find(item => item.transitionProperty === 'grid-template-rows');
+    if (!animation) throw new Error('The schema card must have an active slide transition.');
+    await animation.ready;
+    animation.currentTime = Number(animation.effect.getTiming().duration) / 2;
+    const bounds = element.getBoundingClientRect();
+    const inner = element.firstElementChild;
+    const header = inner.querySelector('summary[aria-label="OpenAPI schema"]');
+    const hidden = header.getBoundingClientRect();
+    return { height: bounds.height, fullHeight: inner.scrollHeight,
+      clipped: !element.contains(document.elementFromPoint(hidden.left + hidden.width / 2, hidden.bottom - 1)) };
+  });
+  try {
+    await toggle.click();
+    const closing = await halfway();
+    assert.ok(closing.height > 0 && closing.height < closing.fullHeight && closing.clipped,
+      `A closing card clips content below its animated boundary: ${JSON.stringify(closing)}`);
+    await toggle.click();
+    const reopening = await halfway();
+    assert.ok(reopening.height > closing.height && reopening.height < reopening.fullHeight && reopening.clipped,
+      `Reversing the slide preserves clipping until fully open: ${JSON.stringify({ closing, reopening })}`);
+    await panel.evaluate(element => {
+      element.__slideObserver.disconnect();
+      element.getAnimations().forEach(animation => animation.finish());
+    });
+    await settleSlide();
+    await expectHoverEdges();
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await toggle.click();
+    await expect(header).toHaveCount(0);
+    await toggle.click();
+    await expect(header).toBeVisible();
+    await settleSlide();
+    const reduced = await header.evaluate(element => {
+      const bounds = element.getBoundingClientRect();
+      return { scale: new DOMMatrix(getComputedStyle(element).transform).a,
+        visible: element.contains(document.elementFromPoint(bounds.left + 1, bounds.top + bounds.height / 2)) };
+    });
+    assert.equal(reduced.scale, 1, 'Reduced motion keeps the header at its normal size');
+    assert.ok(reduced.visible, 'The header remains available after reopening without motion');
+  } finally { await panel.evaluate(element => element.__slideObserver?.disconnect()); }
+});
+
 Then('schema cards keep their controls usable and their viewer full width at {int} pixels', async function (width) {
   const page = this.page;
   await page.setViewportSize({ width, height: 1000 });
