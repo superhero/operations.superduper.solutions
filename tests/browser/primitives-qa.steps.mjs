@@ -150,7 +150,7 @@ Then('schema action hints take priority over the disclosure hint', async functio
   await page.mouse.move(0, 0);
   await header.hover();
   await expect(tooltip).toHaveText('Hide OpenAPI schema');
-  for (const name of ['Copy JSON', 'Wrap lines']) {
+  for (const name of ['Wrap lines', 'Copy JSON']) {
     const action = header.getByRole('button', { name, exact: true });
     await action.hover();
     await expect(tooltip).toHaveCount(1);
@@ -164,7 +164,7 @@ Then('schema action hints take priority over the disclosure hint', async functio
   await expect(header).toHaveAttribute('aria-expanded', 'true');
   await page.mouse.move(0, 0);
   await header.focus();
-  for (const name of ['Copy JSON', 'Wrap lines']) {
+  for (const name of ['Wrap lines', 'Copy JSON']) {
     await page.keyboard.press('Tab');
     await expect(header.getByRole('button', { name, exact: true })).toBeFocused();
     await expect(tooltip).toHaveText(name);
@@ -173,7 +173,7 @@ Then('schema action hints take priority over the disclosure hint', async functio
   await page.keyboard.press('Escape');
   await expect(tooltip).toHaveCount(0);
   await expect(header).toHaveAttribute('aria-expanded', 'true');
-  await expect(wrap).toBeFocused();
+  await expect(header.getByRole('button', { name: 'Copy JSON', exact: true })).toBeFocused();
 });
 
 Then('scrolling cancels a pending operation tooltip', async function () {

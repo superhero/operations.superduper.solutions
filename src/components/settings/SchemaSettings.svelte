@@ -305,15 +305,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
               label={`Full OpenAPI JSON: ${metadata.title}`} operationsOnly pageSize={1000} validated>
               {#snippet actions()}
                 <span class="schema-actions" role="group" aria-label={`Actions for ${metadata.title}`}>
-                  <Button size="icon-sm" variant="secondary" tooltip={`Replace ${metadata.title}`} aria-label={`Replace ${metadata.title}`} disabled={mutationsDisabled} onclick={() => chooseReplacement(record.id)}>
+                  <HintButton class="schema-action" label={`Replace ${metadata.title}`} labelAsName={false} aria-label={`Replace ${metadata.title}`} disabled={mutationsDisabled} onclick={() => chooseReplacement(record.id)}>
                     <MaterialIcon name="upload_file" size={20} />
-                  </Button>
-                  <Button size="icon-sm" variant="secondary" tooltip="Download schema" aria-label={`Download ${metadata.title}`} disabled={working} onclick={() => onDownload(record)}>
+                  </HintButton>
+                  <HintButton class="schema-action" label="Download schema" labelAsName={false} aria-label={`Download ${metadata.title}`} disabled={working} onclick={() => onDownload(record)}>
                     <MaterialIcon name="download" size={20} />
-                  </Button>
-                  <Button size="icon-sm" variant="secondary" tooltip={`Delete ${metadata.title}`} aria-label={`Delete ${metadata.title}`} disabled={mutationsDisabled || deletingId === record.id} onclick={() => deletingId = record.id}>
+                  </HintButton>
+                  <HintButton class="schema-action" label={`Delete ${metadata.title}`} labelAsName={false} aria-label={`Delete ${metadata.title}`} disabled={mutationsDisabled || deletingId === record.id} onclick={() => deletingId = record.id}>
                     <MaterialIcon name="delete" size={20} />
-                  </Button>
+                  </HintButton>
                 </span>
               {/snippet}
             </JsonSchemaView>

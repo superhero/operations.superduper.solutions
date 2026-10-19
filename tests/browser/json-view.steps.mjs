@@ -526,9 +526,21 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   await expect(confirmation).toBeVisible();
   await expect(schema).toHaveAttribute('aria-expanded', 'false');
   await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
-  await schema.click();
+  await schema.locator('.schema-title').click();
   const json = card.getByRole('region', { name: `Full OpenAPI JSON: ${title}`, exact: true });
   await expect(json).toBeVisible();
+  const headerButtons = await schema.locator('.schema-header-actions button').evaluateAll(buttons => buttons.map(button => {
+    const style = getComputedStyle(button);
+    const bounds = button.getBoundingClientRect();
+    return { name: button.getAttribute('aria-label'), x: bounds.x, y: bounds.y,
+      format: [style.width, style.height, style.padding, style.borderWidth, style.borderRadius, style.backgroundColor, style.color, style.boxShadow] };
+  }));
+  assert.deepEqual(headerButtons.map(button => button.name), ['Wrap lines', 'Copy JSON', `Replace ${title}`, `Download ${title}`, `Delete ${title}`]);
+  for (const [index, button] of headerButtons.entries()) {
+    assert.deepEqual(button.format, headerButtons[0].format, 'All five schema action buttons share the existing format');
+    assert.ok(Math.abs(button.y - headerButtons[0].y) < 1, 'Schema actions stay on one row even on a narrow screen');
+    if (index) assert.ok(button.x > headerButtons[index - 1].x, 'Visual action order matches keyboard order');
+  }
   const viewerWidth = await json.evaluate(element => {
     const viewer = element.getBoundingClientRect();
     const card = element.closest('.schema-card');

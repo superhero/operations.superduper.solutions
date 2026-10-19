@@ -116,15 +116,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 }}>
   {#snippet summary()}
     <MaterialIcon name="keyboard_arrow_right" class="schema-chevron" size={18} />
-    {#if copyable}
-    <HintButton class="schema-action" label="Copy JSON" aria-label="Copy JSON" aria-disabled={copying} aria-busy={copying} onclick={copySchema}><MaterialIcon name="file_copy" size={18} /></HintButton>
-    {/if}
     <span class="schema-title">{title}<span class="schema-copy-status" role="status">{copyStatus}</span></span>
-    <span class="schema-wrap-control" class:visible={schemaOpen} inert={!schemaOpen} aria-hidden={!schemaOpen}>
-      <HintButton class="schema-action" label="Wrap lines" aria-label="Wrap lines" aria-pressed={schemaWrap} tooltipEnabled={schemaOpen}
-        onclick={(event) => { event.preventDefault(); event.stopPropagation(); schemaWrap = !schemaWrap; }}><MaterialIcon name={schemaWrap ? "format_text_wrap" : "format_text_overflow"} size={20} /></HintButton>
+    <span class="schema-header-actions">
+      <span class="schema-wrap-control" class:visible={schemaOpen} inert={!schemaOpen} aria-hidden={!schemaOpen}>
+        <HintButton class="schema-action" label="Wrap lines" aria-label="Wrap lines" aria-pressed={schemaWrap} tooltipEnabled={schemaOpen}
+          onclick={(event) => { event.preventDefault(); event.stopPropagation(); schemaWrap = !schemaWrap; }}><MaterialIcon name={schemaWrap ? "format_text_wrap" : "format_text_overflow"} size={20} /></HintButton>
+      </span>
+      {#if copyable}
+        <HintButton class="schema-action" label="Copy JSON" aria-label="Copy JSON" aria-disabled={copying} aria-busy={copying} onclick={copySchema}><MaterialIcon name="file_copy" size={18} /></HintButton>
+      {/if}
+      {@render actions?.()}
     </span>
-    {@render actions?.()}
   {/snippet}
   {#if loading}<p class="schema-loading" role="status" aria-label="Loading schema">···</p>{/if}
   {#if loadError}<div class="schema-load-error"><p role="alert">{loadError}</p><button type="button" onclick={openSource}>Retry</button></div>{/if}
@@ -141,6 +143,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.schema-disclosure .schema-chevron) { transition: transform 180ms ease-in; }
   :global(.schema-disclosure > summary[aria-expanded="true"] .schema-chevron) { transform: rotate(90deg); }
   .schema-title { flex: 1; min-width: 0; }
+  .schema-header-actions { display: inline-flex; align-items: center; flex: 0 0 auto; gap: inherit; margin-left: auto; }
   .schema-wrap-control { display: inline-flex; flex: 0 0 28px; color: var(--color-json-header-hover-foreground); opacity: 0; visibility: hidden; transition: opacity 180ms ease, visibility 0s linear 180ms; }
   .schema-wrap-control.visible { opacity: 1; visibility: visible; transition-delay: 0s; }
   .schema-copy-status { position: absolute; top: calc(100% + 8px); left: 0; max-width: 100%; padding: 6px 10px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-muted-foreground); font-size: 11px; font-weight: 700; pointer-events: none; }

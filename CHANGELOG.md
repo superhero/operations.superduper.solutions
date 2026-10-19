@@ -183,6 +183,28 @@ on closing and respect reduced motion.
 Merge branch 'develop' into bugfix/schema-card-control-motion
 ```
 
+<!-- changelog-commit:15c1d67c5d64fd7b0f2346cce86929b5df2bacf6 -->
+### Commit [`15c1d67`](https://github.com/superhero/operations.superduper.solutions/commit/15c1d67c5d64fd7b0f2346cce86929b5df2bacf6)
+
+```text
+fix(schemas): unify and reorder schema header actions
+
+Use the existing transparent schema action controls for replacement,
+download and deletion. Group actions on the right in the order Wrap,
+Copy, Replace, Download and Delete, preserving the full viewer width.
+
+Keep the action group together on narrow screens and align keyboard
+navigation with the displayed order.
+
+```
+
+<!-- changelog-commit:7f3eac9c20650cb144b4e3ca22fc4dd16688a9f9 -->
+### Commit [`7f3eac9`](https://github.com/superhero/operations.superduper.solutions/commit/7f3eac9c20650cb144b4e3ca22fc4dd16688a9f9)
+
+```text
+Merge branch 'develop' into bugfix/schema-header-actions
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
