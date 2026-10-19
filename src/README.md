@@ -43,6 +43,7 @@ to the explicit `source` profile in [tests/gherkin/profiles.mjs](../tests/gherki
 for source checks; `npm run build && npm run test:acceptance` verifies packaging.
 Browser-driven coverage belongs in [tests](../tests/README.md).
 
-`schema-performance.fixture.mjs` is a Node worker used only by the matching
-benchmark. It measures native module execution outside Vitest's VM; it is not
-an application worker. See the [measurement method](../docs/schema-performance.md).
+`schema-performance.fixture.mjs` and `schema-interaction.fixture.mjs` are Node
+workers used only by matching and index benchmarks. They measure native module
+execution outside Vitest's VM; they are not application workers. See the
+[measurement method](../docs/schema-performance.md).

@@ -36,6 +36,7 @@ export function observeSchemaTransfers() {
           stats.models += entry.operations?.filter(operation => !operation.deferred).length ?? 0;
         }
         if (method === 'model' && value?.operation) stats.models++;
+        if (method === 'models' && Array.isArray(value)) stats.models += value.length;
         if (method === 'document' && value?.paths) documents.add(value);
         stats.documents += documents.size;
       });
@@ -134,4 +135,34 @@ export async function saveSchemaProfile(world, report, profiles, attach = true) 
   await mkdir(directory, { recursive: true });
   await writeFile(resolve(directory, 'browser.json'), JSON.stringify(report, null, 2) + '\n');
   for (const { name, profile } of profiles) await writeFile(resolve(directory, `${name}.cpuprofile`), JSON.stringify(profile));
+}
+
+/** Count index traffic separately from query messages, without copying payloads. */
+export function observeMatchingTransfers() {
+  const NativeWorker = globalThis.Worker;
+  globalThis.__matchingTransfers = { workers: 0, terminations: 0, requests: 0, indexOperations: 0, scores: 0, results: 0, methods: {} };
+  globalThis.Worker = class extends NativeWorker {
+    constructor(url, options) {
+      super(url, options);
+      if (options?.name !== 'operation-matching') return;
+      const stats = globalThis.__matchingTransfers;
+      stats.workers++;
+      const post = this.postMessage.bind(this), terminate = this.terminate.bind(this);
+      this.terminate = () => { stats.terminations++; return terminate(); };
+      this.postMessage = (request, ...rest) => {
+        if (request?.kind === 'request') {
+          stats.requests++;
+          stats.methods[request.method] = (stats.methods[request.method] ?? 0) + 1;
+          if (request.method === 'configure') stats.indexOperations += request.args[0].reduce((total, catalog) => total + catalog.prepared.length, 0);
+          if (['evaluate', 'evaluatePrepared'].includes(request.method)) stats.indexOperations += request.args[1].length;
+        }
+        return post(request, ...rest);
+      };
+      this.addEventListener('message', ({ data }) => {
+        if (data?.kind !== 'result' || !data.value?.candidates) return;
+        stats.scores += data.value.candidates.length;
+        stats.results += data.value.results.length;
+      });
+    }
+  };
 }

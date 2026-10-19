@@ -73,7 +73,7 @@ Then('newer prompt text cancels the pending worker and owns the displayed matche
     const state = { worker: null, request: null, terminated: false,
       restore() { Worker.prototype.postMessage = post; Worker.prototype.terminate = terminate; } };
     Worker.prototype.postMessage = function (message, ...args) {
-      if (message?.method === 'evaluate' && message.args?.[0] === 'List projects') {
+      if (message?.method === 'search' && message.args?.[0] === 'List projects') {
         state.worker = this;
         state.request = message;
         return;

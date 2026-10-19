@@ -26,3 +26,9 @@ Feature: Cancellable operation matching
 
   Scenario: The matching worker retains existing ranking rules
     Then the operation matching worker evaluates compact descriptors with the normal ranking rules
+
+  Scenario: Completed workers accept schema deltas and recover from idle crashes
+    Then matching reuses unchanged schema indexes and reinstalls them after an idle crash
+
+  Scenario: Replacement cannot publish an already received configuration response
+    Then a replacement search wins even without an explicit caller abort

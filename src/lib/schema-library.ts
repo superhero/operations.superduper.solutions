@@ -7,7 +7,7 @@ import { operations, publishPreparedCatalogs, operationForId, operationDescripto
 import { catalogs as registeredCatalogs } from "./catalog-registry.ts";
 import type { WorkflowDocument } from "./workflow-document.ts";
 import { prepareOperationMatching } from "./operation-matching-client.ts";
-import { workflowOperationIds } from "./schema-models.ts";
+import { workflowOperationIds, createSchemaModelLoader } from "./schema-models.ts";
 import type { SchemaDownload, SchemaLibraryRecord, SchemaLibrarySnapshot } from "./schema-library-types.ts";
 import SchemaLibraryWorker from "./schema-library.worker.ts?worker&inline";
 import { createWorkerClient } from "./worker-rpc.ts";
@@ -21,7 +21,12 @@ const worker = createWorkerClient(() => new SchemaLibraryWorker({ name: "operati
 import.meta.hot?.dispose(() => worker.dispose());
 let pending: Promise<void> = Promise.resolve();
 let prepared = new Map<string, PreparedCatalog>();
-const loadingModels = new Map<string, Promise<Operation>>();
+export const hydrateOperations = createSchemaModelLoader({
+  existing: operationForId,
+  identity: id => operationDescriptorForId(id) ? operationSourceIdentity(id) : undefined,
+  read: (schema, identity, ids) => worker.call<OperationModel[]>("models", [schema, identity, ids]),
+  install: installOperationModel,
+});
 
 export function getSchemaLibrary() { return current.current; }
 
@@ -46,17 +51,7 @@ function applySnapshot({ records, catalogs, active }: SchemaLibrarySnapshot): vo
 
 export async function hydrateOperation(id: string): Promise<Operation>
 {
-  const existing = operationForId(id);
-  if (existing) return existing;
-  const identity = operationSourceIdentity(id);
-  if (!identity || !operationDescriptorForId(id)) throw new Error("This operation is not available in the registered schemas.");
-  const key = `${id}:${identity}`;
-  if (!loadingModels.has(key)) {
-    const work = worker.call<OperationModel>("model", [id, identity]).then(installOperationModel)
-      .finally(() => { if (loadingModels.get(key) === work) loadingModels.delete(key); });
-    loadingModels.set(key, work);
-  }
-  return loadingModels.get(key)!;
+  return (await hydrateOperations([id]))[0]!;
 }
 
 /** Each open workflow/run pins only its models; closing releases that ownership. */
@@ -67,12 +62,12 @@ export function createWorkflowSchemaLease()
     async update(document: WorkflowDocument): Promise<void> {
       const ids = workflowOperationIds(document);
       pinOperationModels(owner, ids);
-      for (const id of ids) {
+      await hydrateOperations([...ids].filter(id => {
         const descriptor = operationDescriptorForId(id);
         // Missing/unsupported operations keep their saved graph and are diagnosed
         // by the runner, rather than preventing the entire canvas from opening.
-        if (descriptor && !descriptor.unavailableReason) await hydrateOperation(id);
-      }
+        return descriptor && !descriptor.unavailableReason;
+      }));
     },
     release() { pinOperationModels(owner); },
   };

@@ -16,7 +16,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     value: string;
     pending: boolean;
     error: string;
-    evaluation: { prompt: string; candidates: OperationMatch[]; results: OperationMatch[]; durationMs: number } | null;
+    evaluation: { prompt: string; candidates: OperationMatch[]; results: OperationMatch[]; considered: number; durationMs: number } | null;
     matchingOpen: boolean;
     evaluationDetails?: boolean;
     onChange: (value: string, composing?: boolean) => void;
@@ -81,7 +81,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <Reveal open={matchingOpen && Boolean(evaluation)} id="matching-help">
     {#if evaluation}
       <EvaluationReport durationMs={evaluation.durationMs} candidates={evaluation.candidates}
-        results={evaluation.results} considered={evaluation.candidates.length} />
+        results={evaluation.results} considered={evaluation.considered} />
     {/if}
   </Reveal>
   {/if}

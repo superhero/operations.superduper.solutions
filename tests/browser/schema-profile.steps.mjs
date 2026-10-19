@@ -6,7 +6,7 @@ import { performance } from 'node:perf_hooks';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { openCatalog, setMode } from './workspace.steps.mjs';
-import { cpuProfile, heapProfile, observeSchemaTransfers, saveSchemaProfile, renderProfile } from './schema-profile.fixture.mjs';
+import { cpuProfile, heapProfile, observeSchemaTransfers, saveSchemaProfile, renderProfile, observeMatchingTransfers } from './schema-profile.fixture.mjs';
 import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };
 
 async function ready(page) {
@@ -49,6 +49,7 @@ Then('schema lifecycle performance is measured with the complete service collect
   // Install observation before the measured navigations. It records counts only;
   // serializing full RPC payloads would distort the thing being measured.
   await this.context.addInitScript(observeSchemaTransfers);
+  await this.context.addInitScript(observeMatchingTransfers);
   await page.goto(`${this.baseURL}/vault-fixture.html`);
   await page.evaluate(async () => {
     for (const { name } of await indexedDB.databases()) if (name.startsWith('v1/catalogs'))
@@ -78,6 +79,7 @@ Then('schema lifecycle performance is measured with the complete service collect
       report.searches.push({ query, durationMs: performance.now() - start,
         visibleMatches: await page.locator('[data-operation-id]').count() });
       report.searches.at(-1).render = await renderProfile(this.context, page);
+      report.searches.at(-1).transfers = await page.evaluate(() => globalThis.__matchingTransfers);
     }
     await prompt.fill('');
   });

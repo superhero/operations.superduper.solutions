@@ -45,7 +45,8 @@ Warm native Node medians, five samples per query, excluding assertions:
 | get | 109ms | 12ms |
 | List all running virtual machines in the selected project | 581ms | 250ms |
 
-Index preparation takes 44ms once per operation snapshot. Every measured candidate,
+The first optimization prepares its index in 44ms per operation snapshot; the
+interaction follow-up below reuses unchanged schemas. Every measured candidate,
 score, ordering and selected result matches an independent implementation of the
 previous contract. Additional cases cover Unicode, common affixes and invalid queries.
 
@@ -123,3 +124,64 @@ explicit change to the single-file/offline contract.
 See [OpenAPI adaptation](adr/openapi-adaptation.md),
 [worker boundaries](adr/dedicated-workers.md) and
 [local persistence](adr/local-resource-management.md) for the implemented contracts.
+
+## Interaction follow-up
+
+The next four improvements compare `develop` at `4dcf8a7` with
+`feature/schema-interaction-performance`, using the same capped host and browser
+harness. Complete samples, transfer counts, heap breakdowns and build hashes are
+in [`schema-interaction-performance.json`](schema-interaction-performance.json).
+
+| Work | Before | After |
+| --- | --- | --- |
+| “List projects” input → menu | 634ms | 493ms |
+| “Create a new project” input → menu | 695ms | 571ms |
+| “get” input → menu | 319ms | 323ms |
+| Normalization after changing Frankfurter's nine operations, native median | 35.5ms | 2.2ms |
+| Prepared operations sent across three searches | 41,676 | 13,892 |
+| Candidate scores returned across those searches | 41,676 | 622 |
+| Matching workers created across those searches | 3 | 1 |
+| Window keydown listeners after “Create a new project” | 760 | 336 |
+| Requests to restore 16 operations from two schemas | 16 | 2 |
+| Policy transactions to load six operations from one schema | 6 | 1 |
+
+The menu uses browser-managed
+[`content-visibility`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Properties/content-visibility)
+to skip offscreen contents while retaining real buttons and native focus order.
+It shares [one Bits UI tooltip controller](https://www.bits-ui.com/docs/components/tooltip)
+across row triggers; popup content mounts when needed. Focus can scroll to the
+last row, and consecutive rows keep normal Tab navigation. Disabled-operation
+reasons remain supported. The functional check verifies that more than half of
+the long menu's contents are skipped before scrolling in each browser engine.
+
+Completed searches retain their worker and installed indexes. Queries carry text
+and a snapshot token; opt-in developer reports still request every candidate's
+score. Active aborts terminate the obsolete worker immediately. Source changes
+reuse the other 41 schemas' normalized vectors, while failed or cancelled workers
+reinstall the main thread's cached indexes. Ranking rules are unchanged.
+
+Model requests group by schema and current source identity, with a maximum of 16
+operations per batch and coalescing for overlapping loads. Each operation retains
+its own canonical adaptation, reference closure and credential fingerprint.
+Storage tests compare the models with individual reads and verify that a failed
+batch publishes no partial credential policy.
+
+These are one paired browser run and five warm native index samples. There is
+no measured gain for the five-match “get” case. Fresh startup was 1.19s versus
+1.53s in this pair; this change targets later interaction work. Initial used JS
+heap remains about 46.4 MiB. Keeping the search worker adds about 4.7 MiB of worker
+heap after searching; total heap after closing inspection is 52.3 → 56.8 MiB.
+The HTML grows by 4,545 bytes, or 1,650 bytes with native Node gzip. Delivery
+continues as one offline-capable HTML; separate schema downloads remain deferred.
+
+Fifteen focused source scenarios pass, with 100% statement, branch, function and
+line coverage for the matching index, matching client/worker and model loader.
+Selected menu, cancellation, revision rejection, batch storage and workflow
+restoration scenarios pass in Chromium, Firefox and WebKit. All eleven schema
+lifecycle/live-prompt scenarios also pass in Chromium. Typechecking and the
+normal build pass, retaining the existing vault-node warning. Full regression
+remains with CI; this work does not change or monitor CI workflows.
+
+To reproduce the added native comparison, run the focused
+`src/schema-interaction.feature` with `SCHEMA_PROFILE_OUTPUT` set. The existing
+browser profile command above now also records matching-worker transfer counts.
