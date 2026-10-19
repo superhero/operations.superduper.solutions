@@ -732,6 +732,16 @@ Then('schema cards keep their controls usable and their viewer full width at {in
     truncated: true, fits: true }, 'Long descriptions remain normal-size single-line text with an ellipsis at desktop and mobile widths');
   const schema = card.locator('summary[aria-label="OpenAPI schema"]');
   await expect(schema).toHaveAttribute('aria-expanded', 'false');
+  const expectCountAlignment = async () => {
+    const alignment = await card.evaluate(element => {
+      const count = element.querySelector('.schema-operation-count').getBoundingClientRect();
+      const copy = element.querySelector('button[aria-label="Copy JSON"]').getBoundingClientRect();
+      const header = element.querySelector('summary[aria-label="OpenAPI schema"]').getBoundingClientRect();
+      return { left: Math.abs(count.left - copy.left), right: Math.abs(count.right - header.right) };
+    });
+    assert.ok(alignment.left < 1 && alignment.right < 1, 'The compact count pane aligns with the four persistent schema actions at every viewport width');
+  };
+  await expectCountAlignment();
   const actions = schema.getByRole('group', { name: `Actions for ${title}`, exact: true });
   for (const action of ['Replace', 'Download', 'Delete'])
     await expect(actions.getByRole('button', { name: `${action} ${title}`, exact: true })).toBeVisible();
@@ -760,6 +770,7 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   await schema.locator('.schema-title').click();
   const json = card.getByRole('region', { name: `Full OpenAPI JSON: ${title}`, exact: true });
   await expect(json).toBeVisible();
+  await expectCountAlignment();
   const headerButtons = await schema.locator('.schema-header-actions button').evaluateAll(buttons => buttons.map(button => {
     const style = getComputedStyle(button);
     const bounds = button.getBoundingClientRect();
