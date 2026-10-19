@@ -1,6 +1,6 @@
 # Default service schemas
 
-The application bundles 43 packs covering 38 providers and 13,891 HTTP operations,
+The application bundles 83 packs covering 36 providers and 17,963 HTTP operations,
 alongside the two examples. Manage them in **Settings → Schemas**. Installation
 loads API descriptions locally; it does not contact provider APIs or supply credentials.
 
@@ -10,15 +10,56 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 |---|---:|---|
 | ALFRED / Archival Federal Reserve Economic Data | 31 | [Source](https://fred.stlouisfed.org/docs/api/fred/realtime_period.html) |
 | Anthropic / Claude | 144 | [Source](https://github.com/anthropics/anthropic-sdk-typescript/blob/sdk-v0.120.0/.stats.yml) |
+| Atlassian / Admin / API Access | 22 | [Source](https://developer.atlassian.com/cloud/admin/api-access/rest/) |
+| Atlassian / Admin / Control | 22 | [Source](https://developer.atlassian.com/cloud/admin/control/rest/) |
+| Atlassian / Admin / Data Loss Prevention | 8 | [Source](https://developer.atlassian.com/cloud/admin/dlp/rest/) |
+| Atlassian / Admin / Organizations | 47 | [Source](https://developer.atlassian.com/cloud/admin/organization/rest/) |
+| Atlassian / Admin / User Management | 10 | [Source](https://developer.atlassian.com/cloud/admin/user-management/rest/) |
+| Atlassian / Admin / User Provisioning | 24 | [Source](https://developer.atlassian.com/cloud/admin/user-provisioning/rest/) |
+| Atlassian / App Migration | 11 | [Source](https://developer.atlassian.com/platform/app-migration/rest/v1/) |
+| Atlassian / Assets | 64 | [Source](https://developer.atlassian.com/cloud/assets/rest/) |
+| Atlassian / Automation | 30 | [Source](https://developer.atlassian.com/cloud/automation/rest) |
+| Atlassian / Backup Management | 17 | [Source](https://developer.atlassian.com/cloud/backup-management-apis/rest/) |
+| Atlassian / Bamboo / Data Center | 404 | [Source](https://developer.atlassian.com/server/bamboo/rest) |
+| Atlassian / Bitbucket / Cloud | 299 | [Source](https://developer.atlassian.com/cloud/bitbucket/rest/) |
+| Atlassian / Bitbucket / Data Center | 574 | [Source](https://developer.atlassian.com/server/bitbucket/rest/) |
+| Atlassian / Capacity Planning | 11 | [Source](https://developer.atlassian.com/cloud/capacity-planning/rest/) |
+| Atlassian / Commerce | 40 | [Source](https://developer.atlassian.com/platform/commerce/rest/) |
+| Atlassian / Commerce IT | 4 | [Source](https://developer.atlassian.com/cloud/commerce-it-frontoffice/rest/) |
+| Atlassian / Compass | 11 | [Source](https://developer.atlassian.com/cloud/compass/rest/v2/) |
+| Atlassian / Confluence / Cloud | 252 | [Source](https://developer.atlassian.com/cloud/confluence/rest/) |
+| Atlassian / Confluence / Cloud / v1 | 130 | [Source](https://developer.atlassian.com/cloud/confluence/rest/v1/intro/) |
+| Atlassian / Confluence / Data Center | 183 | [Source](https://developer.atlassian.com/server/confluence/rest/) |
+| Atlassian / Crowd / Data Center | 143 | [Source](https://developer.atlassian.com/server/crowd/rest/) |
+| Atlassian / Customer Service Management | 60 | [Source](https://developer.atlassian.com/cloud/customer-service-management/rest/v1/) |
+| Atlassian / Focus | 26 | [Source](https://developer.atlassian.com/cloud/focus/rest/) |
+| Atlassian / Forge / Containers | 60 | [Source](https://developer.atlassian.com/platform/forge/rest/v2/) |
+| Atlassian / Forge / Storage | 15 | [Source](https://developer.atlassian.com/platform/forge/rest/v1/) |
+| Atlassian / Forms | 34 | [Source](https://developer.atlassian.com/cloud/forms/rest/) |
+| Atlassian / Incidents | 27 | [Source](https://developer.atlassian.com/cloud/incidents/rest/) |
+| Atlassian / Jira / Cloud | 630 | [Source](https://developer.atlassian.com/cloud/jira/platform/rest/) |
+| Atlassian / Jira / Service Management / Cloud | 75 | [Source](https://developer.atlassian.com/cloud/jira/service-desk/rest/) |
+| Atlassian / Jira / Service Management / Data Center | 514 | [Source](https://developer.atlassian.com/server/jira-servicedesk/rest/) |
+| Atlassian / Jira / Service Management / Operations | 240 | [Source](https://developer.atlassian.com/cloud/jira/service-desk-ops/rest/v2/) |
+| Atlassian / Jira / Software / Cloud | 105 | [Source](https://developer.atlassian.com/cloud/jira/software/rest/) |
+| Atlassian / Jira / Software / Data Center | 437 | [Source](https://developer.atlassian.com/server/jira/platform/rest/) |
+| Atlassian / Marketplace | 143 | [Source](https://developer.atlassian.com/platform/marketplace/rest/v2/) |
+| Atlassian / Marketplace / Product Tags | 2 | [Source](https://developer.atlassian.com/platform/marketplace/rest/v3/intro/) |
+| Atlassian / Migration / Public API | 9 | [Source](https://developer.atlassian.com/platform/migration-api/rest/) |
+| Atlassian / Migration / Utilities | 6 | [Source](https://developer.atlassian.com/cloud/migration/rest/) |
+| Atlassian / Opsgenie | 170 | [Source](https://github.com/opsgenie/opsgenie-oas) |
+| Atlassian / Privacy and Consent | 2 | [Source](https://developer.atlassian.com/platform/privacy-and-consent-onboarding/rest/) |
+| Atlassian / Security Vulnerability | 4 | [Source](https://developer.atlassian.com/platform/security-vulnerability-api/rest/) |
+| Atlassian / Statuspage | 112 | [Source](https://developer.statuspage.io/) |
+| Atlassian / Teams | 15 | [Source](https://developer.atlassian.com/platform/teams/rest/v1/) |
+| Atlassian / Trello | 261 | [Source](https://developer.atlassian.com/cloud/trello/rest/) |
 | AWS / Lambda | 66 | [Source](https://github.com/aws/api-models-aws) |
 | AWS / S3 | 97 | [Source](https://github.com/aws/api-models-aws) |
-| Bitbucket / Cloud | 299 | [Source](https://dac-static.atlassian.com/cloud/bitbucket/swagger.v3.json) |
 | Bluesky / App and AT Protocol | 152 | [Source](https://github.com/bluesky-social/endpoints-standalone) |
 | Bluesky / Direct messages | 38 | [Source](https://github.com/bluesky-social/endpoints-standalone) |
 | Bluesky / Ozone moderation | 45 | [Source](https://github.com/bluesky-social/endpoints-standalone) |
 | Cloudflare | 3,761 | [Source](https://raw.githubusercontent.com/cloudflare/api-schemas/main/openapi.yaml) |
 | Cohere | 42 | [Source](https://raw.githubusercontent.com/cohere-ai/cohere-developer-experience/main/cohere-openapi.yaml) |
-| Confluence / Cloud | 252 | [Source](https://dac-static.atlassian.com/cloud/confluence/openapi-v2.v3.json) |
 | DeepSeek | 11 | [Source](https://api-docs.deepseek.com/api/create-chat-completion/) |
 | DigitalOcean | 855 | [Source](https://raw.githubusercontent.com/digitalocean/openapi/main/specification/DigitalOcean-public.v2.yaml) |
 | Discord | 246 | [Source](https://raw.githubusercontent.com/discord/discord-api-spec/main/specs/openapi.json) |
@@ -36,7 +77,6 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 | Groq | 23 | [Source](https://github.com/groq/groq-typescript/blob/v1.6.0/.stats.yml) |
 | Hetzner / Cloud | 190 | [Source](https://docs.hetzner.cloud/cloud.spec.json) |
 | Hugging Face / Inference Endpoints | 46 | [Source](https://api.endpoints.huggingface.cloud/openapi.json) |
-| Jira / Cloud | 630 | [Source](https://dac-static.atlassian.com/cloud/jira/platform/swagger-v3.v3.json) |
 | Microsoft / Azure / Resources | 40 | [Source](https://github.com/Azure/azure-rest-api-specs) |
 | Mistral | 173 | [Source](https://raw.githubusercontent.com/mistralai/platform-docs-public/main/openapi.yaml) |
 | Ollama | 17 | [Source](https://raw.githubusercontent.com/ollama/ollama/main/docs/openapi.yaml) |
@@ -67,6 +107,44 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 - Anthropic and Groq artifacts are identified by official SDK metadata. Missing
   version labels are explicitly supplied for Anthropic and Bluesky. The inventory
   retains provenance, including community conversions.
+
+## Atlassian
+
+The existing Bitbucket Cloud, Jira Cloud platform and Confluence Cloud v2 catalogs
+use the `Atlassian / …` prefix. Their catalog IDs, operation IDs, source digests
+and discovery data remain unchanged. Factory labels refresh without replacing
+user-authored names or saved enablement and ordering.
+
+The collection also includes published contracts for Jira Software and Service
+Management, Confluence v1, Trello, Statuspage, Opsgenie, Compass REST, Assets,
+Automation, Focus, Forms, Incidents, Customer Service Management, Capacity
+Planning, administration, backup management, Commerce, Marketplace, migration,
+privacy and consent, security vulnerability reporting, Teams, Forge storage and
+Forge containers. Data Center contracts cover Bamboo, Bitbucket, Confluence,
+Crowd, Jira Software and Jira Service Management. These are the published API
+profiles, not a claim that every product capability has a REST endpoint.
+
+Confluence v1 and v2 expose complementary resources. Marketplace product tags use
+a separate v3 contract alongside the main v2 API. Jira Data Center product
+contracts share core resources; both complete product contracts are retained.
+The inventory follows Atlassian's public Cloud and Data Center API directories,
+checked on 2026-10-20. GraphQL-only APIs are not converted into invented REST
+contracts. No public, tenant-independent Jira Align contract was found; its
+instance-specific Swagger export can be uploaded through Settings → Schemas.
+
+Statuspage's original OpenAPI document is extracted from its embedded ReDoc JSON
+state without executing page scripts. Opsgenie's official Swagger 2 document is
+converted through the existing Swagger pipeline. New catalogs use method/path
+operation IDs because several upstream specifications reuse operation IDs or
+reference the same operation through multiple paths. Original IDs remain in
+`x-upstream-operation-id`, and materialized path aliases retain
+`x-upstream-path-ref`. Recursive request and response models remain references.
+
+Published authentication requirements and server definitions are retained.
+Basic authentication, private app-runtime credentials and instance configuration
+still have the limitations described below; adding a catalog does not make an
+unsupported authentication mechanism executable. No account access is granted
+by installing these descriptions.
 
 ## FRED and ALFRED
 

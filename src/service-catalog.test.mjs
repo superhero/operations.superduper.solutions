@@ -11,6 +11,58 @@ import { approvedOperation } from './lib/secrets/policy.ts';
 import { executeCredentialed } from './lib/secrets/execution.ts';
 import { adaptFredSchema } from '../build/fred-schema.mjs';
 
+Then('the Atlassian collection includes its published product APIs without changing established catalog identities', async () => {
+  const expected = ['bitbucket', 'jira', 'confluence', 'trello', 'statuspage', 'opsgenie', 'bamboo', 'bitbucket-dc', 'confluence-dc', 'crowd-dc',
+    'jira-dc', 'jira-software', 'jira-service-management', 'jira-service-management-dc', 'jira-service-management-ops',
+    'atlassian-admin-api-access', 'atlassian-admin-control', 'atlassian-admin-dlp', 'atlassian-admin-organizations',
+    'atlassian-admin-users', 'atlassian-admin-provisioning', 'atlassian-app-migration', 'atlassian-assets', 'atlassian-automation',
+    'atlassian-backup-management', 'atlassian-capacity-planning', 'atlassian-commerce', 'atlassian-commerce-it', 'atlassian-compass',
+    'atlassian-confluence-v1', 'atlassian-customer-service-management', 'atlassian-focus', 'atlassian-forge-storage', 'atlassian-forge-containers',
+    'atlassian-forms', 'atlassian-incidents', 'atlassian-marketplace', 'atlassian-marketplace-product-tags', 'atlassian-migration-api',
+    'atlassian-migration-utilities', 'atlassian-privacy-consent', 'atlassian-security-vulnerabilities', 'atlassian-teams'];
+  const sources = serviceSchemaDescriptors.filter(source => source.provider === 'atlassian');
+  assert.deepEqual(sources.map(source => source.id).sort(), expected.sort());
+  for (const source of sources) {
+    assert.ok(source.name.startsWith('Atlassian / '), source.id);
+    assert.ok(source.provenance.startsWith('https://'), source.id);
+    const document = await readServiceSchema(source.id);
+    const catalog = inspectServiceSchema(document, source.id);
+    assert.equal(catalog.operations.length, source.operations, source.id);
+    assert.equal(new Set(catalog.operations.map(operation => operation.id)).size, source.operations, source.id);
+    if (!['bitbucket', 'jira', 'confluence'].includes(source.id)) {
+      for (const operation of catalog.operations) assert.equal(operation.id, `${source.id}:${operation.method} ${operation.path}`);
+    } else {
+      for (const [path, item] of Object.entries(document.paths)) for (const method of ['get', 'post', 'put', 'patch', 'delete']) {
+        if (typeof item[method]?.operationId === 'string')
+          assert.ok(catalog.operations.some(operation => operation.id === `${source.id}:${item[method].operationId}` && operation.path === path));
+      }
+    }
+    if (source.id === 'atlassian-automation') {
+      for (const path of ['/rest/v1/rule/manual/search', '/rest/latest/rule/manual/search']) {
+        assert.equal(document.paths[path].get['x-upstream-operation-id'], 'searchManualRulesWithGet');
+        assert.ok(catalog.operations.some(operation => operation.id === `${source.id}:GET ${path}`));
+      }
+      assert.equal(source.operations, 30, 'Versioned and latest paths remain independently addressable.');
+    }
+    if (source.id === 'trello') {
+      assert.equal(document.components.securitySchemes.APIKey.in, 'query');
+      assert.equal(document.components.securitySchemes.APIToken.in, 'query');
+      assert.deepEqual(document.security, [{ APIKey: [], APIToken: [] }]);
+      assert.ok(catalog.operations.some(operation => operation.security?.some(alternative =>
+        alternative.some(scheme => scheme.query === 'key') && alternative.some(scheme => scheme.query === 'token'))));
+    }
+    if (source.id === 'atlassian-compass') {
+      assert.equal(document.components.securitySchemes.basicAuth.scheme, 'basic');
+      assert.ok(catalog.operations.some(operation => /bearer authentication/.test(operation.unavailableReason)),
+        'Unsupported source authentication must remain visible rather than becoming anonymous.');
+    }
+    if (source.id === 'statuspage') {
+      assert.equal(document.info.title, 'Statuspage API');
+      assert.equal(source.operations, 112);
+    }
+  }
+});
+
 Then('FRED and ALFRED retain the economic API inventory and prepare authenticated historical and bulk requests', async () => {
   const expected = ['category', 'category/children', 'category/related', 'category/series', 'category/tags', 'category/related_tags',
     'releases', 'releases/dates', 'release', 'release/dates', 'release/series', 'release/sources', 'release/tags', 'release/related_tags', 'release/tables',
@@ -113,7 +165,7 @@ Then('the default service index retains every packaged operation and reports exe
     if (descriptor.id === 'ollama') assert.ok(catalog.operations.some(operation => operation.path === '/api/generate' && !operation.unavailableReason));
     if (descriptor.id === 'frankfurter') assert.ok(catalog.operations.some(operation => !operation.unavailableReason));
   }
-  assert.equal(count, 13891);
+  assert.equal(count, 17963);
   assert.ok(runnable > 0);
 });
 Then('service inputs preserve standard validation and explicitly use server validation for complex JSON', () => {

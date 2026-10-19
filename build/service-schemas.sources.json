@@ -59,8 +59,10 @@
   },
   {
     "id": "bitbucket",
-    "name": "Bitbucket / Cloud",
-    "url": "https://dac-static.atlassian.com/cloud/bitbucket/swagger.v3.json"
+    "name": "Atlassian / Bitbucket / Cloud",
+    "url": "https://dac-static.atlassian.com/cloud/bitbucket/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/bitbucket/rest/",
+    "provider": "atlassian"
   },
   {
     "id": "gitlab",
@@ -120,13 +122,17 @@
   },
   {
     "id": "jira",
-    "name": "Jira / Cloud",
-    "url": "https://dac-static.atlassian.com/cloud/jira/platform/swagger-v3.v3.json"
+    "name": "Atlassian / Jira / Cloud",
+    "url": "https://dac-static.atlassian.com/cloud/jira/platform/swagger-v3.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/jira/platform/rest/",
+    "provider": "atlassian"
   },
   {
     "id": "confluence",
-    "name": "Confluence / Cloud",
-    "url": "https://dac-static.atlassian.com/cloud/confluence/openapi-v2.v3.json"
+    "name": "Atlassian / Confluence / Cloud",
+    "url": "https://dac-static.atlassian.com/cloud/confluence/openapi-v2.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/confluence/rest/",
+    "provider": "atlassian"
   },
   {
     "id": "vercel",
@@ -260,5 +266,327 @@
     "provenance": "https://github.com/bluesky-social/endpoints-standalone",
     "routing": "bluesky",
     "version": "lexicons-2026-10-19"
+  },
+  {
+    "id": "atlassian-admin-api-access",
+    "provider": "atlassian",
+    "name": "Atlassian / Admin / API Access",
+    "url": "https://dac-static.atlassian.com/cloud/admin/api-access/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/admin/api-access/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-admin-control",
+    "provider": "atlassian",
+    "name": "Atlassian / Admin / Control",
+    "url": "https://dac-static.atlassian.com/cloud/admin/control/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/admin/control/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-admin-dlp",
+    "provider": "atlassian",
+    "name": "Atlassian / Admin / Data Loss Prevention",
+    "url": "https://dac-static.atlassian.com/cloud/admin/dlp/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/admin/dlp/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-admin-organizations",
+    "provider": "atlassian",
+    "name": "Atlassian / Admin / Organizations",
+    "url": "https://dac-static.atlassian.com/cloud/admin/organization/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/admin/organization/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-admin-users",
+    "provider": "atlassian",
+    "name": "Atlassian / Admin / User Management",
+    "url": "https://dac-static.atlassian.com/cloud/admin/user-management/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/admin/user-management/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-admin-provisioning",
+    "provider": "atlassian",
+    "name": "Atlassian / Admin / User Provisioning",
+    "url": "https://dac-static.atlassian.com/cloud/admin/user-provisioning/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/admin/user-provisioning/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-app-migration",
+    "provider": "atlassian",
+    "name": "Atlassian / App Migration",
+    "url": "https://dac-static.atlassian.com/platform/app-migration/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/platform/app-migration/rest/v1/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-assets",
+    "provider": "atlassian",
+    "name": "Atlassian / Assets",
+    "url": "https://dac-static.atlassian.com/cloud/assets/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/assets/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-automation",
+    "provider": "atlassian",
+    "name": "Atlassian / Automation",
+    "url": "https://dac-static.atlassian.com/cloud/automation/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/automation/rest",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-backup-management",
+    "provider": "atlassian",
+    "name": "Atlassian / Backup Management",
+    "url": "https://dac-static.atlassian.com/cloud/backup-management-apis/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/backup-management-apis/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "bamboo",
+    "provider": "atlassian",
+    "name": "Atlassian / Bamboo / Data Center",
+    "url": "https://dac-static.atlassian.com/server/bamboo/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/server/bamboo/rest",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "bitbucket-dc",
+    "provider": "atlassian",
+    "name": "Atlassian / Bitbucket / Data Center",
+    "url": "https://dac-static.atlassian.com/server/bitbucket/10.5.swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/server/bitbucket/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-capacity-planning",
+    "provider": "atlassian",
+    "name": "Atlassian / Capacity Planning",
+    "url": "https://dac-static.atlassian.com/cloud/capacity-planning/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/capacity-planning/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-commerce",
+    "provider": "atlassian",
+    "name": "Atlassian / Commerce",
+    "url": "https://dac-static.atlassian.com/platform/commerce/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/platform/commerce/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-commerce-it",
+    "provider": "atlassian",
+    "name": "Atlassian / Commerce IT",
+    "url": "https://dac-static.atlassian.com/cloud/commerce-it-frontoffice/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/commerce-it-frontoffice/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-compass",
+    "provider": "atlassian",
+    "name": "Atlassian / Compass",
+    "url": "https://dac-static.atlassian.com/cloud/compass/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/compass/rest/v2/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-confluence-v1",
+    "provider": "atlassian",
+    "name": "Atlassian / Confluence / Cloud / v1",
+    "url": "https://dac-static.atlassian.com/cloud/confluence/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/confluence/rest/v1/intro/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "confluence-dc",
+    "provider": "atlassian",
+    "name": "Atlassian / Confluence / Data Center",
+    "url": "https://dac-static.atlassian.com/server/confluence/10.2.19.swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/server/confluence/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "crowd-dc",
+    "provider": "atlassian",
+    "name": "Atlassian / Crowd / Data Center",
+    "url": "https://dac-static.atlassian.com/server/crowd/7.2.swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/server/crowd/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-customer-service-management",
+    "provider": "atlassian",
+    "name": "Atlassian / Customer Service Management",
+    "url": "https://dac-static.atlassian.com/cloud/customer-service-management/api.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/customer-service-management/rest/v1/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-focus",
+    "provider": "atlassian",
+    "name": "Atlassian / Focus",
+    "url": "https://dac-static.atlassian.com/cloud/focus/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/focus/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-forms",
+    "provider": "atlassian",
+    "name": "Atlassian / Forms",
+    "url": "https://dac-static.atlassian.com/cloud/forms/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/forms/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-incidents",
+    "provider": "atlassian",
+    "name": "Atlassian / Incidents",
+    "url": "https://dac-static.atlassian.com/cloud/incidents/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/incidents/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "jira-service-management",
+    "provider": "atlassian",
+    "name": "Atlassian / Jira / Service Management / Cloud",
+    "url": "https://dac-static.atlassian.com/cloud/jira/service-desk/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/jira/service-desk/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "jira-service-management-dc",
+    "provider": "atlassian",
+    "name": "Atlassian / Jira / Service Management / Data Center",
+    "url": "https://dac-static.atlassian.com/server/jira-servicedesk/11.3.swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/server/jira-servicedesk/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "jira-service-management-ops",
+    "provider": "atlassian",
+    "name": "Atlassian / Jira / Service Management / Operations",
+    "url": "https://dac-static.atlassian.com/cloud/jira/service-desk-ops/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/jira/service-desk-ops/rest/v2/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "jira-software",
+    "provider": "atlassian",
+    "name": "Atlassian / Jira / Software / Cloud",
+    "url": "https://dac-static.atlassian.com/cloud/jira/software/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/jira/software/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "jira-dc",
+    "provider": "atlassian",
+    "name": "Atlassian / Jira / Software / Data Center",
+    "url": "https://dac-static.atlassian.com/server/jira/platform/jira_software_dc_11003_swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/server/jira/platform/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-marketplace",
+    "provider": "atlassian",
+    "name": "Atlassian / Marketplace",
+    "url": "https://dac-static.atlassian.com/platform/marketplace/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/platform/marketplace/rest/v2/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-marketplace-product-tags",
+    "provider": "atlassian",
+    "name": "Atlassian / Marketplace / Product Tags",
+    "url": "https://dac-static.atlassian.com/platform/marketplace/swagger.product-tags.v3.json",
+    "provenance": "https://developer.atlassian.com/platform/marketplace/rest/v3/intro/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-migration-api",
+    "provider": "atlassian",
+    "name": "Atlassian / Migration / Public API",
+    "url": "https://dac-static.atlassian.com/platform/migration-api/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/platform/migration-api/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-migration-utilities",
+    "provider": "atlassian",
+    "name": "Atlassian / Migration / Utilities",
+    "url": "https://dac-static.atlassian.com/cloud/migration/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/migration/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "opsgenie",
+    "provider": "atlassian",
+    "name": "Atlassian / Opsgenie",
+    "url": "https://raw.githubusercontent.com/opsgenie/opsgenie-oas/master/swagger.json",
+    "provenance": "https://github.com/opsgenie/opsgenie-oas",
+    "conversion": "swagger2",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-privacy-consent",
+    "provider": "atlassian",
+    "name": "Atlassian / Privacy and Consent",
+    "url": "https://dac-static.atlassian.com/platform/privacy-and-consent-onboarding/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/platform/privacy-and-consent-onboarding/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-security-vulnerabilities",
+    "provider": "atlassian",
+    "name": "Atlassian / Security Vulnerability",
+    "url": "https://dac-static.atlassian.com/platform/security-vulnerability-api/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/platform/security-vulnerability-api/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "statuspage",
+    "provider": "atlassian",
+    "name": "Atlassian / Statuspage",
+    "url": "https://developer.statuspage.io/",
+    "provenance": "https://developer.statuspage.io/",
+    "conversion": "redoc",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-teams",
+    "provider": "atlassian",
+    "name": "Atlassian / Teams",
+    "url": "https://dac-static.atlassian.com/platform/teams/swagger-public-api-v1.v3.json",
+    "provenance": "https://developer.atlassian.com/platform/teams/rest/v1/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "trello",
+    "provider": "atlassian",
+    "name": "Atlassian / Trello",
+    "url": "https://dac-static.atlassian.com/cloud/trello/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/cloud/trello/rest/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-forge-storage",
+    "provider": "atlassian",
+    "name": "Atlassian / Forge / Storage",
+    "url": "https://dac-static.atlassian.com/platform/forge/swagger.v3.json",
+    "provenance": "https://developer.atlassian.com/platform/forge/rest/v1/",
+    "operationIds": "method-path"
+  },
+  {
+    "id": "atlassian-forge-containers",
+    "provider": "atlassian",
+    "name": "Atlassian / Forge / Containers",
+    "url": "https://dac-static.atlassian.com/platform/forge/swagger-containers.v3.json",
+    "provenance": "https://developer.atlassian.com/platform/forge/rest/v2/",
+    "operationIds": "method-path"
   }
 ]
