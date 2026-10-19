@@ -300,6 +300,24 @@ another sort. Use metadata without decoding source documents.
 
 ```
 
+<!-- changelog-commit:09c56bae35a11bbaecc238ad42a04f028a56dfec -->
+### Commit [`09c56ba`](https://github.com/superhero/operations.superduper.solutions/commit/09c56bae35a11bbaecc238ad42a04f028a56dfec)
+
+```text
+fix(schemas): expand info in the OpenAPI overview
+
+Show schema information alongside the expanded HTTP method overview when
+the settings inspector opens. Restore those defaults when it reopens.
+
+```
+
+<!-- changelog-commit:377bfe87570185c3c978edcb7b7bb6c7b6c75cd3 -->
+### Commit [`377bfe8`](https://github.com/superhero/operations.superduper.solutions/commit/377bfe87570185c3c978edcb7b7bb6c7b6c75cd3)
+
+```text
+Merge branch 'develop' into bugfix/alphabetical-schema-defaults
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
