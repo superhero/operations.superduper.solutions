@@ -113,7 +113,7 @@ Then('prompt matching details preserve keyboard navigation', async function () {
   const toggle = page.getByRole('button', { name: 'Review matching details', exact: true });
   await expect(toggle).toBeDisabled();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await searchOperations(page, 'List projects');
+  await searchOperations(page, 'Example array response');
   await expect(prompt).toBeFocused();
   await prompt.press('Shift+Tab');
   await expect(toggle).toBeFocused();
@@ -127,8 +127,8 @@ Then('prompt matching details preserve keyboard navigation', async function () {
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await toggle.press('Tab');
   await expect(prompt).toBeFocused();
-  await expect(prompt).toHaveValue('List projects');
-  await expect(page.getByRole('button', { name: 'Add to workflow: List projects', exact: true })).toBeVisible();
+  await expect(prompt).toHaveValue('Example array response');
+  await expect(page.getByRole('button', { name: 'Add to workflow: Example array response', exact: true })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Progress', exact: true })).toHaveCount(0);
   await page.keyboard.press('Escape');
   if (await page.getByRole('dialog').filter({ has: page.getByRole('navigation', { name: 'Operation catalog', exact: true }) }).isVisible()) await page.keyboard.press('Escape');

@@ -4,5 +4,5 @@
 @toolbar-controls
 Feature: Resizable workflow comments
   Scenario: Comment side and corner handles resize and persist without a native textarea grip
-    Given a workflow with 1 instances of "Get project"
+    Given a workflow with 1 instances of "Example object response"
     Then I can resize a comment from its sides and corners and retain its size

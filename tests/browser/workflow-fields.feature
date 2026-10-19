@@ -7,24 +7,24 @@ Feature: Documented workflow fields and mappings
   Operations expose their documented input and response fields as editable workflow panels.
 
   Scenario: Added operations expose separate schema groups and nested fields
-    Given I add 1 instances of "List projects" from the catalog
-    Then List projects exposes its query parameters and nested project response
-    When I add "Create task" through the workflow catalog
-    Then Create task separates required path and request-body fields
+    Given I add 1 instances of "Example array response" from the catalog
+    Then Example array response exposes its query parameters and nested project response
+    When I add "Example POST body" through the workflow catalog
+    Then Example POST body separates required path and request-body fields
 
   Scenario: A field mapping keeps its endpoints through saving and reloading
-    Given a workflow ready to map Get project to Create task
+    Given a workflow ready to map Example object response to Example POST body
     When I map the project identifier between those operations
     And I name the workflow "Field mapping review" and wait for autosave
     And I reload and reopen the workflow workspace
     Then the project identifier mapping keeps its saved field endpoints
 
   Scenario: Hidden schema branches restore their fields and deleting an owner removes its graph
-    Given a workflow with 1 instances of "List projects"
+    Given a workflow with 1 instances of "Example array response"
     When I hide and restore the root query input
     When I hide and restore the nested project response
     Then the nested response retains its field handles and operation
-    When I delete the List projects owner
+    When I delete the Example array response owner
     Then its schema panels and connections are removed
 
   Scenario: Operation identity and documented response variants have labelled directional ports
@@ -32,14 +32,14 @@ Feature: Documented workflow fields and mappings
     Then the identity row separates top input and bottom response ports
 
   Scenario: Dropping on a data panel snaps to the nearest valid input
-    Given a workflow ready to map Get project to Create task
+    Given a workflow ready to map Example object response to Example POST body
     When I drag the project identifier over the target panel body
     Then a preview points to the project identifier input
     When I drop the mapping on the panel body
     Then one mapping connects the project identifier fields
 
   Scenario: Escape cancels a mapping over a real port and the next drag succeeds
-    Given a workflow ready to map Get project to Create task
+    Given a workflow ready to map Example object response to Example POST body
     When I cancel a project identifier drag over its valid input port
     Then no field mapping or connection preview remains
     When I map the project identifier between those operations
@@ -47,13 +47,13 @@ Feature: Documented workflow fields and mappings
 
   Scenario: Legacy unnamed connections coexist with new schema panels after saving
     Given a legacy workflow with an unnamed operation connection
-    When I add "Create task" through the workflow catalog
+    When I add "Example POST body" through the workflow catalog
     And I name the workflow "Mixed generation workflow" and wait for autosave
     And I reload and reopen the workflow workspace
     Then the legacy connection and new schema panels both remain usable
 
   Scenario: Click-to-connect starts a fresh mapping after Escape cancellation
-    Given a workflow ready to map Get project to Create task
+    Given a workflow ready to map Example object response to Example POST body
     When I cancel a project identifier drag over its valid input port
     Then no field mapping or connection preview remains
     When I map the project identifier by clicking the field handles
@@ -62,7 +62,7 @@ Feature: Documented workflow fields and mappings
     Then one mapping connects the project identifier fields
 
   Scenario: A hidden branch stays hidden after saving and reloads with a restore control
-    Given a workflow with 1 instances of "List projects"
+    Given a workflow with 1 instances of "Example array response"
     When I hide the nested project response
     And I name the workflow "Hidden branch review" and wait for autosave
     And I reload and reopen the workflow workspace
@@ -72,11 +72,11 @@ Feature: Documented workflow fields and mappings
 
   Scenario: Refusing an operation beyond coordinate limits preserves the original plan
     Given an imported legacy workflow near the coordinate limit
-    When I try to add Create task beyond the coordinate limit
+    When I try to add Example POST body beyond the coordinate limit
     Then the refused addition explains the limit and preserves the original graph
 
   Scenario: Custom response properties retain mappings through creation, editing, history and reload
-    Given a workflow with open HTTPBin response objects and Create task
+    Given a workflow with open HTTPBin response objects and Example POST body
     Then open response objects offer additional properties while closed inputs do not
     When I cancel adding a response property
     Then cancelling leaves the response graph unchanged
@@ -86,7 +86,7 @@ Feature: Documented workflow fields and mappings
     Then undo and redo preserve the added property identity
     When I try to add the same response header property again
     Then the duplicate property is refused without changing the graph
-    When I map the added response header to the Create task project identifier
+    When I map the added response header to the Example POST body project identifier
     And I name the workflow "Additional response property review" and wait for autosave
     And I reload and reopen the workflow workspace
     Then the added response property and its mapping retain their saved identities

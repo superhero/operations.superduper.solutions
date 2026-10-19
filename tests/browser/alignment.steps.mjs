@@ -53,10 +53,10 @@ Then('catalog paths, focus and tooltip dismissal behave consistently', async fun
   const tasks = page.locator('[data-catalog-group="tasks"] > .catalog-group > summary');
   await root.click();
   await overview.click();
-  await page.getByRole('button', { name: 'Add to workflow: List projects', exact: true }).click();
-  await expect(operationNodes(page, 'List projects')).toBeFocused();
-  await page.getByRole('button', { name: 'Add to workflow: Get project', exact: true }).click();
-  await expect(operationNodes(page, 'Get project')).toBeFocused();
+  await page.getByRole('button', { name: 'Add to workflow: Example array response', exact: true }).click();
+  await expect(operationNodes(page, 'Example array response')).toBeFocused();
+  await page.getByRole('button', { name: 'Add to workflow: Example object response', exact: true }).click();
+  await expect(operationNodes(page, 'Example object response')).toBeFocused();
   await expect(overview).toHaveAttribute('aria-expanded', 'true');
   await tasks.click();
   await expect(overview).toHaveAttribute('aria-expanded', 'false');
@@ -80,36 +80,36 @@ Then('prompt keyboard controls preserve editing and search deliberately', async 
   await searchOperations(page, '   \n ');
   await expect(page.getByRole('alert')).toHaveCount(0);
   await expect(page.getByRole('navigation', { name: 'Progress', exact: true })).toHaveCount(0);
-  await searchOperations(page, 'List projects');
-  await expect(prompt).toHaveValue('List projects');
+  await searchOperations(page, 'Example array response');
+  await expect(prompt).toHaveValue('Example array response');
   await expect(prompt).toBeFocused();
-  await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', 'List projects');
+  await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', 'Example array response');
   await prompt.press('Shift+Enter');
-  await expect(prompt).toHaveValue('List projects\n');
+  await expect(prompt).toHaveValue('Example array response\n');
   await prompt.dispatchEvent('compositionstart');
   await prompt.evaluate(input => {
-    input.value = 'Get project';
-    input.dispatchEvent(new InputEvent('input', { bubbles: true, data: 'Get project', isComposing: true }));
+    input.value = 'Example object response';
+    input.dispatchEvent(new InputEvent('input', { bubbles: true, data: 'Example object response', isComposing: true }));
   });
   await page.waitForTimeout(250); // Longer than the live matching debounce; unfinished composition must not evaluate.
   await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', '');
   await expect(prompt).toBeFocused();
-  await expect(operationNodes(page, 'Get project')).toHaveCount(0);
+  await expect(operationNodes(page, 'Example object response')).toHaveCount(0);
   await prompt.dispatchEvent('compositionend');
-  await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', 'Get project');
+  await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', 'Example object response');
   await expect(prompt).toBeFocused();
-  const action = page.getByRole('button', { name: 'Add to workflow: Get project', exact: true });
+  const action = page.getByRole('button', { name: 'Add to workflow: Example object response', exact: true });
   await action.focus();
   await action.press('Enter');
-  await expect(operationNodes(page, 'Get project')).toBeFocused();
+  await expect(operationNodes(page, 'Example object response')).toBeFocused();
 });
 
 Then('Unicode titles and decimal estimates can be corrected inline', async function () {
   const page = this.page;
-  await fillField(page, 'Project ID', 'one');
+  await fillField(page, 'Path value', 'one');
   await fillField(page, 'Priority', 'normal');
   await fillField(page, 'Title', '😀'.repeat(121));
-  await fillField(page, 'Estimated hours', '.5');
+  await fillField(page, 'Number value', '.5');
   await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
   const title = await field(page, 'Title');
   await expect(title).toBeFocused();
@@ -146,9 +146,9 @@ Then('mobile navigation protects graph shortcuts and returns useful focus', asyn
   await page.keyboard.press('Delete');
   await page.keyboard.press('ArrowRight');
   await closeCatalog(page);
-  await expect(operationNodes(page, 'List projects')).toHaveCount(2);
-  await chooseCatalogOperation(page, 'List projects', 'workflow');
-  await expect(operationNodes(page, 'List projects')).toHaveCount(3);
+  await expect(operationNodes(page, 'Example array response')).toHaveCount(2);
+  await chooseCatalogOperation(page, 'Example array response', 'workflow');
+  await expect(operationNodes(page, 'Example array response')).toHaveCount(3);
   await expect.poll(() => page.evaluate(() => Boolean(document.activeElement?.closest('.workflow-workspace')))).toBe(true);
 });
 
@@ -163,7 +163,7 @@ Then('document dialogs allow cancellation and storage-error recovery', async fun
   await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused();
   await page.keyboard.press('Delete');
   await page.keyboard.press('Escape');
-  await expect(operationNodes(page, 'List projects')).toHaveCount(2);
+  await expect(operationNodes(page, 'Example array response')).toHaveCount(2);
   await page.getByRole('button', { name: 'New workflow', exact: true }).click();
   await dialog.getByRole('button', { name: 'Save and continue', exact: true }).click();
   await expect(dialog.getByRole('alert')).toContainText('Test storage unavailable');
@@ -171,7 +171,7 @@ Then('document dialogs allow cancellation and storage-error recovery', async fun
   await restoreStorage(page);
   await dialog.getByRole('button', { name: 'Save and continue', exact: true }).click();
   await expect(workflowNameInput(page)).toBeFocused();
-  await expect(operationNodes(page, 'List projects')).toHaveCount(0);
+  await expect(operationNodes(page, 'Example array response')).toHaveCount(0);
   await closeWorkflowDetails(page);
   await page.getByRole('button', { name: 'Open workflow', exact: true }).click();
   dialog = page.getByRole('dialog', { name: 'Saved workflows', exact: true });
@@ -208,7 +208,7 @@ Then('a delayed import cannot supersede New', async function () {
   await expect(workflowNameInput(page)).toBeFocused();
   await page.evaluate(() => window.finishImport());
   await expect(workflow(page).getByRole('alert')).toHaveCount(0);
-  await expect(operationNodes(page, 'List projects')).toHaveCount(0);
+  await expect(operationNodes(page, 'Example array response')).toHaveCount(0);
   await closeWorkflowDetails(page);
   }
 });

@@ -6,7 +6,7 @@ Feature: Reference motion and interruption behavior
     Then prompt focus and navigation hover animate and settle with the motion preference
 
   Scenario: Closing and reopening a schema retains its visible content
-    Given I open the "Create task" operation from the catalog
+    Given I open the "Example POST body" operation from the catalog
     Then report and schema transitions retain content through interruption
 
   Scenario: Native scrollbars stay slim while hovering and scrolling

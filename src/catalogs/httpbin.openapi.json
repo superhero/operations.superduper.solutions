@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "httpbin.org",
-    "version": "1.0.0",
-    "description": "Live HTTP request examples using httpbin.org. These curated example forms choose names and types for arbitrary data that the service accepts; they do not define service-required fields. Each body example asks for a body so its echoed JSON can be mapped in a workflow. TRACE is omitted because browser Fetch forbids it; the local example.com catalog includes a mock TRACE operation."
+    "version": "1.0.1",
+    "description": "HTTP request and response examples using the live httpbin.org /anything endpoint. Query names, input types and body shapes are sample data chosen for these forms, not requirements imposed by httpbin. The service returns the data sent to it. Body examples require input to demonstrate that round trip. Browser Fetch does not allow TRACE."
   },
   "paths": {
     "/anything/methods/get": {
@@ -233,7 +233,7 @@
             "schema": {
               "type": "string",
               "title": "Sample ID",
-              "example": "sample-1"
+              "example": "foo"
             }
           },
           {
@@ -242,7 +242,7 @@
             "schema": {
               "type": "string",
               "title": "Label",
-              "example": "Documentation"
+              "example": "foo"
             }
           },
           {
@@ -298,8 +298,8 @@
                 "type": "string"
               },
               "example": [
-                "docs",
-                "example"
+                "foo",
+                "bar"
               ]
             }
           },
@@ -309,7 +309,7 @@
             "schema": {
               "type": "string",
               "title": "Example header",
-              "example": "workflow-example"
+              "example": "baz"
             }
           }
         ],
@@ -342,31 +342,31 @@
       "post": {
         "operationId": "echoJsonObject",
         "summary": "HTTPBin JSON object",
-        "description": "Send a chosen JSON object body to httpbin. The fields and types are curated examples of arbitrary data accepted by the service. Includes string, integer, number, Boolean, enum, nested object, array and null properties.",
+        "description": "Send sample application/json data to httpbin and inspect the returned request data. The sample fields and types belong to this form; httpbin accepts arbitrary request data.",
         "tags": [
           "Body formats"
         ],
         "requestBody": {
           "required": true,
-          "description": "Provide a body for this example so it can be echoed. The live service itself accepts requests without a body.",
+          "description": "Required by this example form to demonstrate the echoed body; httpbin itself accepts an empty body.",
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ExampleObject"
               },
               "example": {
-                "label": "Documentation",
+                "label": "foo",
                 "count": 3,
                 "ratio": 0.75,
                 "enabled": true,
                 "priority": "normal",
                 "profile": {
-                  "name": "Erik",
+                  "name": "bar",
                   "count": 2
                 },
                 "tags": [
-                  "docs",
-                  "example"
+                  "foo",
+                  "bar"
                 ],
                 "note": null
               }
@@ -387,23 +387,23 @@
                     "Content-Type": "application/json"
                   },
                   "json": {
-                    "label": "Documentation",
+                    "label": "foo",
                     "count": 3,
                     "ratio": 0.75,
                     "enabled": true,
                     "priority": "normal",
                     "profile": {
-                      "name": "Erik",
+                      "name": "bar",
                       "count": 2
                     },
                     "tags": [
-                      "docs",
-                      "example"
+                      "foo",
+                      "bar"
                     ],
                     "note": null
                   },
                   "form": {},
-                  "data": "{\"label\":\"Documentation\",\"count\":3,\"ratio\":0.75,\"enabled\":true,\"priority\":\"normal\",\"profile\":{\"name\":\"Erik\",\"count\":2},\"tags\":[\"docs\",\"example\"],\"note\":null}",
+                  "data": "{\"label\":\"foo\",\"count\":3,\"ratio\":0.75,\"enabled\":true,\"priority\":\"normal\",\"profile\":{\"name\":\"bar\",\"count\":2},\"tags\":[\"foo\",\"bar\"],\"note\":null}",
                   "files": {},
                   "url": "https://httpbin.org/anything/bodies/json-object",
                   "method": "POST",
@@ -419,21 +419,21 @@
       "post": {
         "operationId": "echoJsonArray",
         "summary": "HTTPBin JSON array",
-        "description": "Send a chosen JSON array body to httpbin. The fields and types are curated examples of arbitrary data accepted by the service.",
+        "description": "Send sample application/json data to httpbin and inspect the returned request data. The sample fields and types belong to this form; httpbin accepts arbitrary request data.",
         "tags": [
           "Body formats"
         ],
         "requestBody": {
           "required": true,
-          "description": "Provide a body for this example so it can be echoed. The live service itself accepts requests without a body.",
+          "description": "Required by this example form to demonstrate the echoed body; httpbin itself accepts an empty body.",
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ExampleArray"
               },
               "example": [
-                "docs",
-                "example"
+                "foo",
+                "bar"
               ]
             }
           }
@@ -452,11 +452,11 @@
                     "Content-Type": "application/json"
                   },
                   "json": [
-                    "docs",
-                    "example"
+                    "foo",
+                    "bar"
                   ],
                   "form": {},
-                  "data": "[\"docs\",\"example\"]",
+                  "data": "[\"foo\",\"bar\"]",
                   "files": {},
                   "url": "https://httpbin.org/anything/bodies/json-array",
                   "method": "POST",
@@ -472,19 +472,19 @@
       "post": {
         "operationId": "echoJsonScalar",
         "summary": "HTTPBin JSON scalar",
-        "description": "Send a chosen JSON scalar body to httpbin. The fields and types are curated examples of arbitrary data accepted by the service.",
+        "description": "Send sample application/json data to httpbin and inspect the returned request data. The sample fields and types belong to this form; httpbin accepts arbitrary request data.",
         "tags": [
           "Body formats"
         ],
         "requestBody": {
           "required": true,
-          "description": "Provide a body for this example so it can be echoed. The live service itself accepts requests without a body.",
+          "description": "Required by this example form to demonstrate the echoed body; httpbin itself accepts an empty body.",
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ExampleScalar"
               },
-              "example": "Hello from JSON"
+              "example": "foo"
             }
           }
         },
@@ -501,9 +501,9 @@
                   "headers": {
                     "Content-Type": "application/json"
                   },
-                  "json": "Hello from JSON",
+                  "json": "foo",
                   "form": {},
-                  "data": "\"Hello from JSON\"",
+                  "data": "\"foo\"",
                   "files": {},
                   "url": "https://httpbin.org/anything/bodies/json-scalar",
                   "method": "POST",
@@ -519,19 +519,19 @@
       "post": {
         "operationId": "echoPlainText",
         "summary": "HTTPBin plain text",
-        "description": "Send a chosen plain text body to httpbin. The fields and types are curated examples of arbitrary data accepted by the service.",
+        "description": "Send sample text/plain data to httpbin and inspect the returned request data. The sample fields and types belong to this form; httpbin accepts arbitrary request data.",
         "tags": [
           "Body formats"
         ],
         "requestBody": {
           "required": true,
-          "description": "Provide a body for this example so it can be echoed. The live service itself accepts requests without a body.",
+          "description": "Required by this example form to demonstrate the echoed body; httpbin itself accepts an empty body.",
           "content": {
             "text/plain": {
               "schema": {
                 "$ref": "#/components/schemas/ExampleText"
               },
-              "example": "Hello from plain text"
+              "example": "foo bar baz"
             }
           }
         },
@@ -550,7 +550,7 @@
                   },
                   "json": null,
                   "form": {},
-                  "data": "Hello from plain text",
+                  "data": "foo bar baz",
                   "files": {},
                   "url": "https://httpbin.org/anything/bodies/text",
                   "method": "POST",
@@ -566,21 +566,21 @@
       "post": {
         "operationId": "echoUrlEncoded",
         "summary": "HTTPBin URL-encoded form",
-        "description": "Send a chosen URL-encoded form body to httpbin. The fields and types are curated examples of arbitrary data accepted by the service.",
+        "description": "Send sample application/x-www-form-urlencoded data to httpbin and inspect the returned request data. The sample fields and types belong to this form; httpbin accepts arbitrary request data.",
         "tags": [
           "Body formats"
         ],
         "requestBody": {
           "required": true,
-          "description": "Provide a body for this example so it can be echoed. The live service itself accepts requests without a body.",
+          "description": "Required by this example form to demonstrate the echoed body; httpbin itself accepts an empty body.",
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
                 "$ref": "#/components/schemas/ExampleForm"
               },
               "example": {
-                "name": "Erik",
-                "message": "Hello from a form"
+                "name": "bar",
+                "message": "bar"
               }
             }
           }
@@ -600,8 +600,8 @@
                   },
                   "json": null,
                   "form": {
-                    "name": "Erik",
-                    "message": "Hello from a form"
+                    "name": "bar",
+                    "message": "bar"
                   },
                   "data": "",
                   "files": {},
@@ -619,21 +619,21 @@
       "post": {
         "operationId": "echoMultipart",
         "summary": "HTTPBin multipart text fields",
-        "description": "Send a chosen multipart text fields body to httpbin. The fields and types are curated examples of arbitrary data accepted by the service. This example sends text fields; file uploads are not included.",
+        "description": "Send sample multipart/form-data data to httpbin and inspect the returned request data. The sample fields and types belong to this form; httpbin accepts arbitrary request data. This form contains text fields.",
         "tags": [
           "Body formats"
         ],
         "requestBody": {
           "required": true,
-          "description": "Provide a body for this example so it can be echoed. The live service itself accepts requests without a body.",
+          "description": "Required by this example form to demonstrate the echoed body; httpbin itself accepts an empty body.",
           "content": {
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/ExampleForm"
               },
               "example": {
-                "name": "Erik",
-                "message": "Hello from a form"
+                "name": "bar",
+                "message": "bar"
               }
             }
           }
@@ -653,8 +653,8 @@
                   },
                   "json": null,
                   "form": {
-                    "name": "Erik",
-                    "message": "Hello from a form"
+                    "name": "bar",
+                    "message": "bar"
                   },
                   "data": "",
                   "files": {},
@@ -679,7 +679,7 @@
           "label": {
             "type": "string",
             "title": "Label",
-            "example": "Documentation"
+            "example": "foo"
           },
           "count": {
             "type": "integer",
@@ -721,7 +721,7 @@
               }
             },
             "example": {
-              "name": "Erik",
+              "name": "bar",
               "count": 2
             }
           },
@@ -732,8 +732,8 @@
               "type": "string"
             },
             "example": [
-              "docs",
-              "example"
+              "foo",
+              "bar"
             ]
           },
           "note": {
@@ -743,18 +743,18 @@
           }
         },
         "example": {
-          "label": "Documentation",
+          "label": "foo",
           "count": 3,
           "ratio": 0.75,
           "enabled": true,
           "priority": "normal",
           "profile": {
-            "name": "Erik",
+            "name": "bar",
             "count": 2
           },
           "tags": [
-            "docs",
-            "example"
+            "foo",
+            "bar"
           ],
           "note": null
         }
@@ -766,19 +766,19 @@
           "type": "string"
         },
         "example": [
-          "docs",
-          "example"
+          "foo",
+          "bar"
         ]
       },
       "ExampleScalar": {
         "type": "string",
         "title": "Example scalar",
-        "example": "Hello from JSON"
+        "example": "foo"
       },
       "ExampleText": {
         "type": "string",
         "title": "Text body",
-        "example": "Hello from plain text"
+        "example": "foo bar baz"
       },
       "ExampleForm": {
         "type": "object",
@@ -788,17 +788,17 @@
           "name": {
             "type": "string",
             "title": "Name",
-            "example": "Erik"
+            "example": "bar"
           },
           "message": {
             "type": "string",
             "title": "Message",
-            "example": "Hello from a form"
+            "example": "bar"
           }
         },
         "example": {
-          "name": "Erik",
-          "message": "Hello from a form"
+          "name": "bar",
+          "message": "bar"
         }
       },
       "Echo": {
@@ -1073,7 +1073,7 @@
   "servers": [
     {
       "url": "https://httpbin.org",
-      "description": "Public httpbin request and response service."
+      "description": "Public HTTP request and response testing service."
     }
   ]
 }

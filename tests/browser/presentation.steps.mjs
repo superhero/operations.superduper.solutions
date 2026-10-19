@@ -87,7 +87,7 @@ Then('operations controls retain their complete keyboard focus outline', async f
   await setEvaluationDetails(page);
   await openCatalog(page);
   const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
-  await searchOperations(page, 'Get project');
+  await searchOperations(page, 'Example object response');
   const toggle = page.getByRole('button', { name: 'Review matching details', exact: true });
   for (const theme of ['light', 'dark']) {
     await selectTheme(page, theme);
@@ -113,7 +113,7 @@ Then('operations controls retain their complete keyboard focus outline', async f
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await toggle.press('Enter');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  const suggested = 'Get project';
+  const suggested = 'Example object response';
   const action = page.getByRole('button', { name: `Add to workflow: ${suggested}`, exact: true });
   await expectUnclippedFocus(action);
   await action.press('Enter');
@@ -127,19 +127,19 @@ Then('operations controls retain their complete keyboard focus outline', async f
 
 Then('request fields remain readable and preserve accessible editing in both themes', async function () {
   const page = this.page;
-  await chooseCatalogOperation(page, 'Create task');
-  await expect(workspace(page).getByRole('heading', { name: '1. Create task', exact: true })).toBeVisible();
-  const draft = { 'Project ID': 'visual-draft', Title: 'Preserve this visual draft', Priority: 'normal', 'Estimated hours': '0.5' };
+  await chooseCatalogOperation(page, 'Example POST body');
+  await expect(workspace(page).getByRole('heading', { name: '1. Example POST body', exact: true })).toBeVisible();
+  const draft = { 'Path value': 'visual-draft', Title: 'Preserve this visual draft', Priority: 'normal', 'Number value': '0.5' };
   for (const [label, value] of Object.entries(draft)) {
     await fillField(page, label, value);
     const control = await field(page, label);
     await expect(control).toHaveAccessibleName(label);
-    assert.equal(await control.evaluate(element => element.getAttribute('role') === 'combobox' ? element.getAttribute('aria-required') === 'true' : element.required), label !== 'Estimated hours',
+    assert.equal(await control.evaluate(element => element.getAttribute('role') === 'combobox' ? element.getAttribute('aria-required') === 'true' : element.required), label !== 'Number value',
       `${label} must expose its required state without adding the decorative marker to its accessible name.`);
   }
 
-  const help = workspace(page).getByRole('button', { name: 'About Project ID', exact: true });
-  for (const label of ['Title', 'Priority', 'Estimated hours'])
+  const help = workspace(page).getByRole('button', { name: 'About Path value', exact: true });
+  for (const label of ['Title', 'Priority', 'Number value'])
     await expect(workspace(page).getByRole('button', { name: `About ${label}`, exact: true })).toBeVisible();
   for (const theme of ['light', 'dark']) {
     await applyDisplayedTheme(page, theme);
@@ -166,7 +166,7 @@ Then('request fields remain readable and preserve accessible editing in both the
     for (const { label, minimum, ratio } of contrasts)
       assert.ok(ratio >= minimum, `${theme} ${label} needs readable contrast: ${ratio.toFixed(2)}:1.`);
 
-    const project = await field(page, 'Project ID');
+    const project = await field(page, 'Path value');
     await expectUnclippedFocus(project);
     await expectThemeColors(project.locator('..'), { outlineColor: '--color-ring' });
     await expectThemeColors(help, { color: '--color-background' });
@@ -177,12 +177,12 @@ Then('request fields remain readable and preserve accessible editing in both the
     await page.keyboard.press('Enter');
     await expect(help).toHaveAttribute('aria-expanded', 'true');
     await expectThemeColors(help, { color: '--color-background' });
-    await expect(await field(page, 'Project ID')).toHaveAccessibleDescription(/The identifier of the project to work with\..*Type string.*Required Yes/);
+    await expect(await field(page, 'Path value')).toHaveAccessibleDescription(/The identifier of the project to work with\..*Type string.*Required Yes/);
     await expect(help).toBeFocused();
     await page.keyboard.press('Space');
     await expect(help).toHaveAttribute('aria-expanded', 'false');
     await expectThemeColors(help, { color: '--color-background' });
-    await expect(await field(page, 'Project ID')).toHaveAccessibleDescription('');
+    await expect(await field(page, 'Path value')).toHaveAccessibleDescription('');
     for (const [label, value] of Object.entries(draft)) await expectFieldValue(page, label, value);
 
     const contained = await workspace(page).locator('.joined-field').evaluateAll(rows => rows.every(row => {
@@ -205,15 +205,15 @@ Then('request fields remain readable and preserve accessible editing in both the
 Then('matching menu rows add operations with pointer and keyboard', async function () {
   const page = this.page;
   const catalog = page.getByRole('navigation', { name: 'Operation catalog', exact: true });
-  const action = catalog.getByRole('button', { name: 'Add to workflow: Get project', exact: true });
-  await action.getByText('Get project', { exact: true }).click();
-  await expect(operationNodes(page, 'Get project')).toHaveCount(1);
-  await expect(operationNodes(page, 'Get project')).toBeFocused();
-  await searchOperations(page, 'List projects');
-  await catalog.getByRole('button', { name: 'Add to workflow: List projects', exact: true }).focus();
+  const action = catalog.getByRole('button', { name: 'Add to workflow: Example object response', exact: true });
+  await action.getByText('Example object response', { exact: true }).click();
+  await expect(operationNodes(page, 'Example object response')).toHaveCount(1);
+  await expect(operationNodes(page, 'Example object response')).toBeFocused();
+  await searchOperations(page, 'Example array response');
+  await catalog.getByRole('button', { name: 'Add to workflow: Example array response', exact: true }).focus();
   await page.keyboard.press('Enter');
-  await expect(operationNodes(page, 'List projects')).toHaveCount(1);
-  await expect(operationNodes(page, 'List projects')).toBeFocused();
+  await expect(operationNodes(page, 'Example array response')).toHaveCount(1);
+  await expect(operationNodes(page, 'Example array response')).toBeFocused();
   await expect(catalog.locator('[aria-current="page"]')).toHaveCount(0);
 });
 
@@ -221,32 +221,32 @@ Then('matching menu actions retain their theme colors across evaluations', async
   const page = this.page;
   for (const theme of ['light', 'dark']) {
     await selectTheme(page, theme);
-    await searchOperations(page, 'Get project');
-    const action = page.getByRole('button', { name: 'Add to workflow: Get project', exact: true });
+    await searchOperations(page, 'Example object response');
+    const action = page.getByRole('button', { name: 'Add to workflow: Example object response', exact: true });
     await action.click();
     await expect(action).not.toHaveAttribute('aria-current');
     await page.mouse.move(0, 0);
     await expectThemeColors(action, { color: '--color-catalog-foreground' });
     await expect(action).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-    await searchOperations(page, 'List projects');
+    await searchOperations(page, 'Example array response');
     await expect(action).not.toHaveAttribute('aria-current');
     await action.hover();
     await expectThemeColors(action, { color: '--color-catalog-foreground' });
     await expect(action).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-    await expect(operationNodes(page, 'Get project')).toHaveCount(theme === 'light' ? 1 : 2);
+    await expect(operationNodes(page, 'Example object response')).toHaveCount(theme === 'light' ? 1 : 2);
   }
 });
 
 Then('responsive prompt navigation preserves the workflow and its prompt', async function () {
   const page = this.page;
-  const node = operationNodes(page, 'Get project');
+  const node = operationNodes(page, 'Example object response');
   const id = await node.getAttribute('data-id');
-  await searchOperations(page, 'Get project');
+  await searchOperations(page, 'Example object response');
   for (const width of [1280, 260, 1280]) {
     await page.setViewportSize({ width, height: 844 });
     await openCatalog(page);
-    await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toHaveValue('Get project');
-    await expect(page.getByRole('button', { name: 'Add to workflow: Get project', exact: true })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toHaveValue('Example object response');
+    await expect(page.getByRole('button', { name: 'Add to workflow: Example object response', exact: true })).toBeVisible();
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     await closeCatalog(page);
     await expect(node).toHaveCount(1);
@@ -257,7 +257,7 @@ Then('responsive prompt navigation preserves the workflow and its prompt', async
 
 Then('returning to discovery preserves the graph and a new run starts without stale results', async function () {
   const page = this.page;
-  const project = workspace(page).getByRole('textbox', { name: 'Project ID', exact: true });
+  const project = workspace(page).getByRole('textbox', { name: 'Path value', exact: true });
   await project.fill('project-1');
   await executeOperation(page);
   const body = page.getByRole('region', { name: 'Response body', exact: true });
@@ -265,10 +265,10 @@ Then('returning to discovery preserves the graph and a new run starts without st
   await expect(project).toBeDisabled();
   await expect(workspace(page).getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ })).toHaveCount(0);
   await quitRun(page);
-  await searchOperations(page, 'Create task');
+  await searchOperations(page, 'Example POST body');
   await closeCatalog(page);
-  await expect(operationNodes(page, 'Get project')).toHaveCount(1);
-  await expect(operationNodes(page, 'Create task')).toHaveCount(0);
+  await expect(operationNodes(page, 'Example object response')).toHaveCount(1);
+  await expect(operationNodes(page, 'Example POST body')).toHaveCount(0);
   await workflowAction(page, 'Run');
   await expect(body).toHaveCount(0);
   await expect(project).toHaveValue('');
@@ -283,13 +283,13 @@ Then('actual responses reset with {string} motion when the request changes', asy
   await expect(page.getByRole('region', { name: 'Example response', exact: true })).toHaveCount(0);
   await restartRun(page);
   await expect(body).toHaveCount(0);
-  await page.getByRole('textbox', { name: 'Project ID', exact: true }).fill('project-2');
+  await page.getByRole('textbox', { name: 'Path value', exact: true }).fill('project-2');
   await executeOperation(page);
   await expect(body).toContainText('Website');
   await expect(body).not.toContainText('Documentation');
-  await chooseCatalogOperation(page, 'List projects');
+  await chooseCatalogOperation(page, 'Example array response');
   await expect(body).toHaveCount(0);
-  await fillField(page, 'Project name', 'Documentation');
+  await fillField(page, 'Name', 'Documentation');
   await executeOperation(page);
   await expect(body).toContainText('Documentation');
   await expect(body).not.toContainText('Website');

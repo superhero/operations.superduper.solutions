@@ -167,8 +167,8 @@ Then("workflow example execution displays server data from an actual request", a
     requests.push({ method: route.request().method(), url: route.request().url() });
     await reply(route, received);
   });
-  await chooseCatalogOperation(page, "Get project");
-  await fillField(page, "Project ID", "project-2");
+  await chooseCatalogOperation(page, "Example object response");
+  await fillField(page, "Path value", "project-2");
   await execute(page);
   await expect(responseBody(page)).toContainText("Data from the HTTP endpoint");
   assert.deepEqual(await readBody(page), received);

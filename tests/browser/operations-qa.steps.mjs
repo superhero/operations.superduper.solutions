@@ -140,11 +140,11 @@ Then('the optional Count slider preserves large signed integers and clears witho
 });
 
 for (const [verb, action] of [['increase', 'Increase'], ['decrease', 'Decrease']]) {
-  When(`I ${verb} Estimated hours with its arrow`, async function () {
-    await includeField(this.page, 'Estimated hours');
-    const input = await field(this.page, 'Estimated hours');
+  When(`I ${verb} Number value with its arrow`, async function () {
+    await includeField(this.page, 'Number value');
+    const input = await field(this.page, 'Number value');
     await input.focus();
-    await this.page.getByRole('button', { name: `${action} Estimated hours`, exact: true }).click();
+    await this.page.getByRole('button', { name: `${action} Number value`, exact: true }).click();
     await expect(input).toBeFocused();
     await expect(this.page.getByRole('region', { name: /^(Prepared request|Step \d+ prepared request)$/ })).toHaveCount(0);
   });
@@ -152,10 +152,10 @@ for (const [verb, action] of [['increase', 'Increase'], ['decrease', 'Decrease']
 
 Then('number arrows reveal through hover and focus with the selected motion preference', async function () {
   const page = this.page;
-  await includeField(page, 'Estimated hours');
-  const input = await field(page, 'Estimated hours');
+  await includeField(page, 'Number value');
+  const input = await field(page, 'Number value');
   const other = await field(page, 'Title');
-  const row = page.locator('.joined-field').filter({ has: page.getByRole('spinbutton', { name: 'Estimated hours', exact: true }) });
+  const row = page.locator('.joined-field').filter({ has: page.getByRole('spinbutton', { name: 'Number value', exact: true }) });
   const arrows = row.locator('.field-number-steppers');
   await other.focus();
   await page.mouse.move(0, 0);

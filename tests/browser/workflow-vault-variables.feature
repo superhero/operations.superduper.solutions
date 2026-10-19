@@ -5,5 +5,5 @@
 Feature: Connectable vault variables
   Scenario: Vault variable toolbar selection survives reload without exporting local references
     Given I create a vault in the Secrets settings and save a synthetic credential
-    And a workflow with 1 instances of "Get project"
+    And a workflow with 1 instances of "Example object response"
     Then I can add and connect a vault variable without exposing its value

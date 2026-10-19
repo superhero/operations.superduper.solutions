@@ -128,17 +128,17 @@ Then('workflow history records useful messages and derives legacy titles from th
   const initial = { ...document('history-messages', 'Message examples'), nodes: [] };
   const baseline = await repository(page, 'save', initial, null, 'Create message examples');
   const added = { ...initial, nodes: [{ id: 'project-lookup', type: 'operation', position: { x: 200, y: 100 },
-    data: { operationId: 'demo:getProject', name: 'Get project', description: '', method: 'GET', path: '/projects/{projectId}' } }] };
+    data: { operationId: 'demo:getProject', name: 'Example object response', description: '', method: 'GET', path: '/projects/{projectId}' } }] };
   const addition = await repository(page, 'save', added, baseline.revision);
   const addedGraph = await repository(page, 'inspectGraph', initial.id);
-  assert.match(graphCommit(addedGraph, addition.revision).message, /add.*Get project/i, 'New Git commits must store the useful description.');
+  assert.match(graphCommit(addedGraph, addition.revision).message, /add.*Example object response/i, 'New Git commits must store the useful description.');
   const moved = structuredClone(added);
   moved.nodes[0].position.x += 48;
   const legacyOid = await repository(page, 'legacyGenericVersion', moved);
   const legacyGraph = await repository(page, 'inspectGraph', initial.id);
   assert.equal(graphCommit(legacyGraph, legacyOid).message, 'Update workflow');
   const revisions = await repository(page, 'history', initial.id);
-  assert.match(revisions.find(version => version.oid === legacyOid).message, /mov.*Get project/i);
+  assert.match(revisions.find(version => version.oid === legacyOid).message, /mov.*Example object response/i);
   assert.deepEqual(await repository(page, 'inspectGraph', initial.id), legacyGraph, 'Reading a legacy title must not rewrite any Git objects or references.');
 
   await repository(page, 'undo', initial.id, legacyOid);
@@ -156,8 +156,8 @@ Then('workflow history records useful messages and derives legacy titles from th
   await setMode(page, 'workflow');
   await openWorkflow(page, renamed.name);
   await openHistory(page);
-  await expect(revisionRow(page, addition.revision).locator('.version-description > strong')).toContainText(/add.*Get project/i);
-  await expect(revisionRow(page, legacyOid).locator('.version-description > strong')).toContainText(/mov.*Get project/i);
+  await expect(revisionRow(page, addition.revision).locator('.version-description > strong')).toContainText(/add.*Example object response/i);
+  await expect(revisionRow(page, legacyOid).locator('.version-description > strong')).toContainText(/mov.*Example object response/i);
   await expect(revisionRow(page, fork.revision).locator('.version-description > strong')).toContainText(/Deployment plan/);
   assert.deepEqual(await repository(page, 'inspectGraph', initial.id), forkGraph, 'Displaying derived legacy titles must retain commit SHAs and the complete branch graph.');
   assert.deepEqual(await repository(page, 'inspect', this.historyOther.id), this.historyOtherBefore);

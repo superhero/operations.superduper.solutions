@@ -41,10 +41,10 @@ async function copyCapturedJson(page, activation = "click") {
   return page.evaluate(() => window.jsonClipboardProbe.texts.at(-1));
 }
 
-Given("the Create task JSON report is open at {int} pixels", async function (width) {
+Given("the Example POST body JSON report is open at {int} pixels", async function (width) {
   await this.page.setViewportSize({ width, height: 900 });
-  await chooseCatalogOperation(this.page, "Create task");
-  this.jsonDraft = { "Project ID": "json-review-project", Title: 'Keep "quoted" <task> & \\ draft', Priority: "normal" };
+  await chooseCatalogOperation(this.page, "Example POST body");
+  this.jsonDraft = { "Path value": "json-review-project", Title: 'Keep "quoted" <task> & \\ draft', Priority: "normal" };
   for (const [label, value] of Object.entries(this.jsonDraft)) await fillField(this.page, label, value);
   this.jsonStorage = await storage(this.page);
   await this.page.getByRole("button", { name: "Review operation details", exact: true }).click();

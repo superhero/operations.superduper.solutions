@@ -15,11 +15,11 @@ Feature: Navigation and help primitives
     Then prompt matching details preserve keyboard navigation
 
   Scenario: Nested schema actions keep their own help and disclosure state
-    Given I open the "Get project" operation from the catalog
+    Given I open the "Example object response" operation from the catalog
     Then schema action hints take priority over the disclosure hint
 
   Scenario: Scrolling cancels help that has not opened yet
-    Given I open the "Create task" operation from the catalog
+    Given I open the "Example POST body" operation from the catalog
     Then scrolling cancels a pending operation tooltip
 
   Scenario: Settings scroll independently of a stationary main header

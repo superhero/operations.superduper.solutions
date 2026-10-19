@@ -17,7 +17,7 @@ function fixture(id, name) {
     version: 1, id, name,
     nodes: [100, 460].map((x, index) => ({
       id: `${id}-${index}`, position: { x, y: 140 },
-      data: { operationId: "demo:listProjects", name: "List projects", description: "Review the project list.", method: "GET", path: "/projects" },
+      data: { operationId: "demo:listProjects", name: "Example array response", description: "Review the project list.", method: "GET", path: "/projects" },
     })),
     edges: [{ id: `${id}-connection`, source: `${id}-0`, target: `${id}-1` }],
     viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, dashed: false,

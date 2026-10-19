@@ -32,7 +32,7 @@ function fixture({ connected = true, dashed = false, switchTarget = false, nativ
   if (nativeHandles) {
     for (const item of document.nodes) if (item.id !== 'routing-blocker') {
       item.type = 'operation';
-      item.data = { operationId: 'demo:listProjects', name: 'List projects', description: '', method: 'GET', path: '/projects' };
+      item.data = { operationId: 'demo:listProjects', name: 'Example array response', description: '', method: 'GET', path: '/projects' };
     }
     document.nodes.find(item => item.id === 'routing-blocker').position.y = 280;
   }

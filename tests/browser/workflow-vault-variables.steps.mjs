@@ -37,7 +37,7 @@ Then('I can add and connect a vault variable without exposing its value', async 
   await expect(variable.locator('.utility-row .utility-type')).toHaveText('String');
   await page.getByRole('button', { name: 'Fit View', exact: true }).click();
   const from = variable.getByLabel('Vault variable output (Text)', { exact: true });
-  const to = workflow(page).getByLabel('Project ID input', { exact: true });
+  const to = workflow(page).getByLabel('Path value input', { exact: true });
   await gesture(page, from, to, 'drag');
   const exported = (await readExport(page)).document;
   assert.equal(exported.nodes.find(node => node.type === 'vault').data.credentialId, undefined);
