@@ -52,8 +52,8 @@ Feature: Read-only operation JSON
     And I fold the JSON root and nested operation branches with the keyboard
     Then reviewing JSON has left the operation draft and non-metric local storage unchanged
 
-  Scenario: Settings schema methods are expanded for an operation overview
-    Then the Settings schema viewer expands HTTP methods but keeps their details folded
+  Scenario: Settings schema info and methods are expanded for an overview
+    Then the Settings schema viewer expands info and HTTP methods but keeps operation details folded
 
   Scenario: Schema edit icons fade through opening closing and interruption
     Then schema edit icons fade in and out and respect reduced motion

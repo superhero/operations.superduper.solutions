@@ -30,7 +30,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (!operationsOnly) return undefined;
     const paths = displayedValue && typeof displayedValue === "object" && "paths" in displayedValue ? displayedValue.paths : undefined;
     const methods = ["get", "put", "post", "delete", "options", "head", "patch", "trace"];
-    return ["$", '$["paths"]', ...Object.entries(paths && typeof paths === "object" ? paths : {})
+    return ["$", '$["info"]', '$["paths"]', ...Object.entries(paths && typeof paths === "object" ? paths : {})
       .flatMap(([path, item]) => {
         const branch = `$["paths"][${JSON.stringify(path)}]`;
         return [branch, ...Object.keys(item && typeof item === "object" ? item : {})

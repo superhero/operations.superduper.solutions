@@ -468,7 +468,7 @@ Then("reviewing JSON has left the operation draft and non-metric local storage u
 });
 
 
-Then('the Settings schema viewer expands HTTP methods but keeps their details folded', async function () {
+Then('the Settings schema viewer expands info and HTTP methods but keeps operation details folded', async function () {
   const page = this.page;
   await setMode(page, 'settings');
   const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
@@ -480,6 +480,9 @@ Then('the Settings schema viewer expands HTTP methods but keeps their details fo
   const label = `Full OpenAPI JSON: ${sourceCatalog.document.info.title}`;
   const json = page.getByRole('region', { name: label, exact: true });
   const heading = path => json.getByRole('group', { name: `${label}: ${path}`, exact: true }).locator(':scope > summary');
+  const info = '$["info"]';
+  await expect(heading(info)).toHaveAttribute('aria-expanded', 'true');
+  await expect(json.getByRole('group', { name: `${label}: ${info}`, exact: true })).toContainText(sourceCatalog.document.info.title);
   for (const [path, item] of Object.entries(sourceCatalog.document.paths)) {
     const root = `$["paths"][${JSON.stringify(path)}]`;
     await expect(heading(root)).toHaveAttribute('aria-expanded', 'true');
@@ -490,9 +493,12 @@ Then('the Settings schema viewer expands HTTP methods but keeps their details fo
     }
   }
   const method = '$["paths"]["/projects"]["get"]';
+  await heading(info).click();
+  await expect(heading(info)).toHaveAttribute('aria-expanded', 'false');
   await heading(method).click();
   await expect(heading(method)).toHaveAttribute('aria-expanded', 'false');
   await header.click(); await header.click();
+  await expect(heading(info)).toHaveAttribute('aria-expanded', 'true');
   await expect(heading(method)).toHaveAttribute('aria-expanded', 'true');
   await expect(heading(`${method}["responses"]`)).toHaveAttribute('aria-expanded', 'false');
 });
