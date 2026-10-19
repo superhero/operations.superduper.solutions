@@ -718,6 +718,18 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   await toggle.press('Space');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(card.locator('.schema-metadata')).toBeVisible();
+  const description = card.locator('.schema-description p');
+  await expect(description).toHaveText(sourceCatalog.document.info.description);
+  await expect(card.locator('.schema-metadata dt')).toHaveText(['Operations']);
+  const presentation = await description.evaluate(element => {
+    const style = getComputedStyle(element);
+    return { size: style.fontSize, weight: style.fontWeight, overflow: style.overflow,
+      ellipsis: style.textOverflow, wrapping: style.whiteSpace,
+      truncated: element.scrollWidth > element.clientWidth,
+      fits: element.closest('.schema-card').scrollWidth <= element.closest('.schema-card').clientWidth };
+  });
+  assert.deepEqual(presentation, { size: '12px', weight: '400', overflow: 'hidden', ellipsis: 'ellipsis', wrapping: 'nowrap',
+    truncated: true, fits: true }, 'Long descriptions remain normal-size single-line text with an ellipsis at desktop and mobile widths');
   const schema = card.locator('summary[aria-label="OpenAPI schema"]');
   await expect(schema).toHaveAttribute('aria-expanded', 'false');
   const actions = schema.getByRole('group', { name: `Actions for ${title}`, exact: true });
@@ -808,7 +820,8 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   const telegram = documents.locator('[data-schema-id="telegram"]');
   await telegram.getByRole('button', { name: /^Schema details:/ }).click();
   const metadata = telegram.locator('.schema-metadata');
-  await expect(metadata.locator('dt')).toHaveText(['Server URL', 'Operations']);
+  await expect(metadata.locator('dt')).toHaveText(['Operations']);
+  await expect(telegram.locator('.schema-description p')).toHaveText(schemaIndexes.indexes.find(schema => schema.id === 'telegram').summary.description);
   const { operationCount, unavailableCount } = schemaIndexes.indexes.find(schema => schema.id === 'telegram').summary;
   assert.ok(unavailableCount > 0, 'This schema exercises unsupported-operation metadata');
   const count = metadata.locator('dd').last().locator('span');

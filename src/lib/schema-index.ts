@@ -5,7 +5,7 @@ import type { Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 
 export const schemaIndexVersion = 1;
-export type SchemaSummary = { name: string; serverUrl: string; operationCount: number; unavailableCount?: number };
+export type SchemaSummary = { name: string; description?: string; serverUrl: string; operationCount: number; unavailableCount?: number };
 export type SchemaDiscovery = {
   version: typeof schemaIndexVersion;
   sourceRevision: string;
@@ -23,14 +23,23 @@ export function operationDescriptor(operation: Operation): Operation
     ...(operation.unavailableReason ? { unavailableReason: operation.unavailableReason } : {}) };
 }
 
+export function createSchemaSummary(inspected: { document: Record<string, unknown>; name: string;
+  serverUrl: string; operations: Operation[] }): SchemaSummary
+{
+  const { document, name, serverUrl, operations } = inspected;
+  const info = document.info as { description?: unknown };
+  const description = typeof info.description === "string" ? info.description.trim() : "";
+  return { name, serverUrl, ...(description ? { description } : {}), operationCount: operations.length,
+    unavailableCount: operations.filter(operation => operation.unavailableReason).length };
+}
+
 export function createSchemaDiscovery(inspected: { document: Record<string, unknown>; name: string;
   serverUrl: string; operations: Operation[]; groups: CatalogGroup[] }, sourceRevision: string): SchemaDiscovery
 {
-  const { document, name, serverUrl, operations, groups } = inspected;
+  const { document, serverUrl, operations, groups } = inspected;
   const info = document.info as { title: string; version: string };
   return { version: schemaIndexVersion, sourceRevision,
-    summary: { name, serverUrl, operationCount: operations.length,
-      unavailableCount: operations.filter(operation => operation.unavailableReason).length },
+    summary: createSchemaSummary(inspected),
     document: { openapi: document.openapi, info: { title: info.title, version: info.version },
       servers: [{ url: serverUrl }], paths: {} }, groups, operations: operations.map(operationDescriptor) };
 }
@@ -40,6 +49,7 @@ export function validateSchemaDiscovery(value: unknown, id: string, revision: st
   const index = value as SchemaDiscovery;
   if (!index || index.version !== schemaIndexVersion || index.sourceRevision !== revision || !index.document
     || !index.summary || typeof index.summary.name !== "string" || typeof index.summary.serverUrl !== "string"
+    || (index.summary.description !== undefined && typeof index.summary.description !== "string")
     || !Array.isArray(index.operations) || !Array.isArray(index.groups)
     || index.operations.length !== index.summary.operationCount) throw new Error(`The discovery index for ${id} is invalid or outdated.`);
   const seen = new Set<string>();
