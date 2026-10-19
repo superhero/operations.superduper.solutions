@@ -424,6 +424,29 @@ and schema initialization and migration with focused Gherkin scenarios.
 Merge branch 'develop' into feature/fred-alfred
 ```
 
+<!-- changelog-commit:316f0722fc07ecf7d16794760e373c73ba9350aa -->
+### Commit [`316f072`](https://github.com/superhero/operations.superduper.solutions/commit/316f0722fc07ecf7d16794760e373c73ba9350aa)
+
+```text
+feat(schemas): expand and group Atlassian API catalogs
+
+Group Bitbucket, Jira and Confluence under Atlassian while preserving
+their source data and workflow operation identities. Add 40 published
+Cloud, administration, developer platform and Data Center contracts
+with provenance and locally bundled discovery indexes.
+
+Extract Statuspage's embedded OpenAPI JSON without evaluating page
+scripts. Give new catalogs method/path identities to handle duplicate
+upstream identifiers and path aliases, retaining original IDs for
+inspection and recursive models as local references.
+
+Preserve published authentication, request/response and server
+contracts. Cover pack integrity, alias handling, naming migration,
+ordering, enablement and persisted workflow nodes with focused Gherkin
+scenarios.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
