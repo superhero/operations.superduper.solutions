@@ -161,6 +161,28 @@ removed.
 Merge branch 'develop' into bugfix/empty-workflow-controls
 ```
 
+<!-- changelog-commit:0b56c8042b2401185190203f9ad58548918b5ac1 -->
+### Commit [`0b56c80`](https://github.com/superhero/operations.superduper.solutions/commit/0b56c8042b2401185190203f9ad58548918b5ac1)
+
+```text
+fix(schemas): join disclosure controls and fade edit icons
+
+Join the disclosure arrow to the schema name as its left half-pill and
+share the field outline with the enable switch on the right.
+
+Fade the edit icon in and out as the card changes state, including when
+a toggle interrupts the animation. Disable its interaction immediately
+on closing and respect reduced motion.
+
+```
+
+<!-- changelog-commit:7237d8f2aed017c9ebfacfd877ae500d08c92e4d -->
+### Commit [`7237d8f`](https://github.com/superhero/operations.superduper.solutions/commit/7237d8f2aed017c9ebfacfd877ae500d08c92e4d)
+
+```text
+Merge branch 'develop' into bugfix/schema-card-control-motion
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
