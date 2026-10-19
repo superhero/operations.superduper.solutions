@@ -376,7 +376,9 @@ Then('reduced motion keeps the routed dashes stationary', async function () {
   assert.deepEqual(await dashSnapshot(page), still, 'Reduced motion must freeze every routed dash segment.');
 });
 
-Then('dash length gap and speed update existing routes and previews and pause both connection styles', async function () {
+// This journey checks both connection styles, repeated settings changes and reload.
+// Keep individual Playwright waits short while allowing the complete journey to finish.
+Then('dash length gap and speed update existing routes and previews and pause both connection styles', { timeout: 60_000 }, async function () {
   const page = this.page;
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await expectClearRoute(page);
