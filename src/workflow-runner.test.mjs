@@ -52,8 +52,8 @@ Then("the injectable HTTP executor sends catalog requests and maps actual respon
   };
   try {
     const doc = document(graph("getProject"), graph("createTask"), graph("updateTask"));
-    mapping(doc, output(doc, "getProject", "Project ID"), input(doc, "createTask", "Project ID"));
-    mapping(doc, output(doc, "createTask", "Task ID"), input(doc, "updateTask", "Task ID"));
+    mapping(doc, output(doc, "getProject", "Path value"), input(doc, "createTask", "Path value"));
+    mapping(doc, output(doc, "createTask", "Path value"), input(doc, "updateTask", "Path value"));
     const runner = createRequestRunner(doc, undefined, createWorkflowRequestExecution());
     await submit(runner, { "path:projectId": "request project/1" });
     assert.equal(runner.next().values["path:projectId"], "returned-project");
@@ -161,7 +161,7 @@ Then("workflow runs offer starting choices and end without contacting a service"
     const runner = createWorkflowRunner(doc);
     const choice = runner.next();
     assert.equal(choice.kind, "choice");
-    assert.deepEqual(choice.choices.map(item => item.label), ["Get project 1", "Get project 2"]);
+    assert.deepEqual(choice.choices.map(item => item.label), ["Example object response 1", "Example object response 2"]);
     assert.throws(() => runner.choose("missing"), /starting operations/);
     runner.choose("second");
     const current = runner.next();
@@ -180,12 +180,12 @@ Then("workflow runs offer starting choices and end without contacting a service"
 
 Then("workflow runs validate inputs and pass created task identifiers to later operations", async function () {
   const doc = document(graph("getProject"), graph("createTask"), graph("updateTask"));
-  mapping(doc, output(doc, "getProject", "Project ID"), input(doc, "createTask", "Project ID"));
-  mapping(doc, output(doc, "createTask", "Task ID"), input(doc, "updateTask", "Task ID"));
+  mapping(doc, output(doc, "getProject", "Path value"), input(doc, "createTask", "Path value"));
+  mapping(doc, output(doc, "createTask", "Path value"), input(doc, "updateTask", "Path value"));
   const before = structuredClone(doc);
   const runner = createWorkflowRunner(doc);
   assert.equal(runner.next().operation.id, "demo:getProject");
-  await assert.rejects(() => runner.submit({}), /Project ID: this field is required/);
+  await assert.rejects(() => runner.submit({}), /Path value: this field is required/);
   await assert.rejects(() => runner.submit({ "path:projectId": "missing" }), /not found in this demo/);
   assert.equal((await submit(runner, project)).response.body.name, "Documentation");
   const create = runner.next();
@@ -245,11 +245,11 @@ Then("connected switch operands and inactive branches determine which operations
   const doc = document(graph("getProject"), graph("createTask"),
     utility("switch", "switch", { gates: [{ id: "match", operator: "==", value: "a stale literal" }, { id: "unused", operator: "==", value: "none" }] }),
     utility("cast", "inactive-cast", { targetType: "Text" }), graph("getProject", "inactive"));
-  mapping(doc, output(doc, "getProject", "Project ID"), { id: "switch", handle: "value" });
-  mapping(doc, output(doc, "getProject", "Project ID"), { id: "switch", handle: "gate-value:match" });
-  mapping(doc, { id: "switch", handle: "match" }, input(doc, "createTask", "Project ID"));
+  mapping(doc, output(doc, "getProject", "Path value"), { id: "switch", handle: "value" });
+  mapping(doc, output(doc, "getProject", "Path value"), { id: "switch", handle: "gate-value:match" });
+  mapping(doc, { id: "switch", handle: "match" }, input(doc, "createTask", "Path value"));
   mapping(doc, { id: "switch", handle: "unused" }, { id: "inactive-cast", handle: "value" });
-  mapping(doc, { id: "inactive-cast", handle: "result" }, input(doc, "inactive", "Project ID"));
+  mapping(doc, { id: "inactive-cast", handle: "result" }, input(doc, "inactive", "Path value"));
   const runner = createWorkflowRunner(doc);
   await submit(runner, project);
   assert.equal(runner.next().nodeId, "createTask");
@@ -266,8 +266,8 @@ Then("nested workflow runs import inputs and export results without changing the
   child.id = "saved-child";
   child.name = "Create a task";
   const doc = document(graph("getProject"), createWorkflowGraph(child, { x: 0, y: 0 }, "nested"), graph("updateTask"));
-  mapping(doc, output(doc, "getProject", "Project ID"), input(doc, "nested", "Project ID"));
-  mapping(doc, output(doc, "nested", "Task ID"), input(doc, "updateTask", "Task ID"));
+  mapping(doc, output(doc, "getProject", "Path value"), input(doc, "nested", "Path value"));
+  mapping(doc, output(doc, "nested", "Path value"), input(doc, "updateTask", "Path value"));
   const before = structuredClone(doc);
   child.nodes.find(node => node.type === "operation").data.operationId = "removed-from-original";
   const runner = createWorkflowRunner(doc);
@@ -291,19 +291,19 @@ Then("nested workflow runs import inputs and export results without changing the
 
 Then("workflow output fanout runs each consumer and conflicting contributions fail clearly", async function () {
   const doc = document(graph("getProject"), graph("getProject", "a"), graph("getProject", "b"));
-  mapping(doc, output(doc, "getProject", "Project ID"), input(doc, "a", "Project ID"));
-  mapping(doc, output(doc, "getProject", "Project ID"), input(doc, "b", "Project ID"));
+  mapping(doc, output(doc, "getProject", "Path value"), input(doc, "a", "Path value"));
+  mapping(doc, output(doc, "getProject", "Path value"), input(doc, "b", "Path value"));
   const runner = createWorkflowRunner(doc);
   for (const id of ["getProject", "a", "b"]) { assert.equal(runner.next().nodeId, id); await submit(runner, project); }
   assert.equal(runner.next().kind, "complete");
-  mapping(doc, output(doc, "getProject", "Project name"), input(doc, "a", "Project ID"));
+  mapping(doc, output(doc, "getProject", "Name"), input(doc, "a", "Path value"));
   const conflict = createWorkflowRunner(doc);
   await submit(conflict, project);
   assert.throws(() => conflict.next(), /different values to the same input/);
   assert.throws(() => conflict.next(), /different values to the same input/);
   const disconnected = document(graph("getProject", "one"), graph("getProject", "two"), graph("createTask"));
-  mapping(disconnected, output(disconnected, "one", "Project ID"), input(disconnected, "createTask", "Project ID"));
-  mapping(disconnected, output(disconnected, "two", "Project name"), input(disconnected, "createTask", "Title"));
+  mapping(disconnected, output(disconnected, "one", "Path value"), input(disconnected, "createTask", "Path value"));
+  mapping(disconnected, output(disconnected, "two", "Name"), input(disconnected, "createTask", "Title"));
   const waiting = createWorkflowRunner(disconnected);
   waiting.next(); waiting.choose("one"); await submit(waiting, project);
   assert.throws(() => waiting.next(), /unresolved branch/);
@@ -314,22 +314,22 @@ Then("unavailable operations invalid mapped values and workflow cycles stop with
   bad.nodes[0].data.operationId = "unavailable:operation";
   assert.throws(() => createWorkflowRunner(bad).next(), /unavailable in the registered schemas/);
   const wrongType = document(graph("getProject"), graph("listProjects"));
-  mapping(wrongType, output(wrongType, "getProject", "Project ID"), input(wrongType, "listProjects", "Result limit"));
+  mapping(wrongType, output(wrongType, "getProject", "Path value"), input(wrongType, "listProjects", "Result limit"));
   const typeRun = createWorkflowRunner(wrongType);
   await submit(typeRun, project);
   assert.throws(() => typeRun.next(), /needs an integer value/);
   const invalidPath = document(graph("getProject"));
-  output(invalidPath, "getProject", "Project ID").field.id = "unsupported";
+  output(invalidPath, "getProject", "Path value").field.id = "unsupported";
   const pathRun = createWorkflowRunner(invalidPath);
   await submit(pathRun, project);
   assert.throws(() => pathRun.next(), /unsupported path/);
   const unmapped = document(graph("getProject"));
-  input(unmapped, "getProject", "Project ID").field.id = "unsupported";
+  input(unmapped, "getProject", "Path value").field.id = "unsupported";
   const unmappedRun = createWorkflowRunner(unmapped);
   assert.equal((await submit(unmappedRun, project)).response.body.id, "project-1", "An unused saved field does not block manual inputs.");
   const cycle = document(graph("getProject", "first"), graph("getProject", "second"));
-  mapping(cycle, output(cycle, "first", "Project ID"), input(cycle, "second", "Project ID"));
-  mapping(cycle, output(cycle, "second", "Project ID"), input(cycle, "first", "Project ID"));
+  mapping(cycle, output(cycle, "first", "Path value"), input(cycle, "second", "Path value"));
+  mapping(cycle, output(cycle, "second", "Path value"), input(cycle, "first", "Path value"));
   const cycleRun = createWorkflowRunner(cycle);
   cycleRun.next(); cycleRun.choose("first");
   await submit(cycleRun, project);
@@ -337,14 +337,14 @@ Then("unavailable operations invalid mapped values and workflow cycles stop with
   assert.throws(() => cycleRun.next(), /loops back to a completed operation/);
   await assert.rejects(() => cycleRun.submit(project), /no operation ready/);
   const collection = document(graph("listProjects"), graph("getProject"));
-  mapping(collection, output(collection, "listProjects", "Project ID"), input(collection, "getProject", "Project ID"));
+  mapping(collection, output(collection, "listProjects", "Path value"), input(collection, "getProject", "Path value"));
   const arrayRun = createWorkflowRunner(collection);
   await submit(arrayRun);
   assert.throws(() => arrayRun.next(), /needs a string value/);
   const stale = document(graph("getProject"), graph("createTask"));
-  const staleField = input(stale, "createTask", "Project ID");
+  const staleField = input(stale, "createTask", "Path value");
   staleField.field.id = encodeURIComponent(JSON.stringify(["input:path", "/removedProjectId"]));
-  mapping(stale, output(stale, "getProject", "Project ID"), staleField);
+  mapping(stale, output(stale, "getProject", "Path value"), staleField);
   const staleRun = createWorkflowRunner(stale);
   await submit(staleRun, project);
   assert.throws(() => staleRun.next(), /mapped field.*unsupported by this operation/);
@@ -371,7 +371,7 @@ Then("workflow response mappings support optional values scalar bodies and succe
   const schema = structuredClone(demo);
   schema.paths["/projects/{projectId}"].get.responses = { "2XX": { description: "Project identifier", content: { "application/json": { schema: { type: "string" } } } } };
   const scalar = document(createOperationGraph(operation("getProject"), { x: 0, y: 0 }, "scalar", schema), graph("createTask"));
-  mapping(scalar, output(scalar, "scalar", "Response body"), input(scalar, "createTask", "Project ID"));
+  mapping(scalar, output(scalar, "scalar", "Response body"), input(scalar, "createTask", "Path value"));
   const fixture = createWorkflowDemo();
   const scalarRunner = createRequestRunner(scalar, undefined, { execute(operation, values) {
     return operation.id === "demo:getProject" ? { request: { method: "GET", path: "/projects/project-1", query: {} }, response: {
@@ -385,8 +385,8 @@ Then("workflow response mappings support optional values scalar bodies and succe
 
   const missing = document(graph("getProject"), graph("createTask"),
     utility("switch", "unset", { gates: [{ id: "missing", operator: "is_not_set", value: "" }] }));
-  mapping(missing, output(missing, "getProject", "Project ID"), { id: "unset", handle: "value" });
-  mapping(missing, { id: "unset", handle: "missing" }, input(missing, "createTask", "Project ID"));
+  mapping(missing, output(missing, "getProject", "Path value"), { id: "unset", handle: "value" });
+  mapping(missing, { id: "unset", handle: "missing" }, input(missing, "createTask", "Path value"));
   const missingRunner = createRequestRunner(missing, undefined, { execute(operation, values) {
     return operation.id === "demo:getProject" ? { request: { method: "GET", path: "/projects/project-1", query: {} }, response: {
       status: 200, statusText: "OK", headers: {}, body: {} } }
@@ -396,7 +396,7 @@ Then("workflow response mappings support optional values scalar bodies and succe
   assert.equal(missingRunner.next().nodeId, "createTask");
   assert.deepEqual(missingRunner.next().values, {});
   assert.deepEqual(missingRunner.next().mappedFields, []);
-  await assert.rejects(() => missingRunner.submit({ "body:title": "Missing project", "body:priority": "normal" }), /Project ID: this field is required/);
+  await assert.rejects(() => missingRunner.submit({ "body:title": "Missing project", "body:priority": "normal" }), /Path value: this field is required/);
   await submit(missingRunner, task);
   assert.equal(missingRunner.next().kind, "complete");
 });
@@ -406,20 +406,20 @@ Then("inactive switch operands preserve active gates and missing main values are
     utility("switch", "filter", { gates: [{ id: "never", operator: "==", value: "never-match" }] }),
     utility("switch", "main", { gates: [{ id: "equal", operator: "==", value: "project-1" }, { id: "set", operator: "is_set", value: "" }] }),
     utility("switch", "inactive", { gates: [{ id: "set", operator: "is_set", value: "" }] }));
-  mapping(doc, output(doc, "getProject", "Project ID"), { id: "filter", handle: "value" });
-  mapping(doc, output(doc, "getProject", "Project ID"), { id: "main", handle: "value" });
+  mapping(doc, output(doc, "getProject", "Path value"), { id: "filter", handle: "value" });
+  mapping(doc, output(doc, "getProject", "Path value"), { id: "main", handle: "value" });
   mapping(doc, { id: "filter", handle: "never" }, { id: "main", handle: "gate-value:equal" });
   mapping(doc, { id: "filter", handle: "never" }, { id: "inactive", handle: "value" });
-  mapping(doc, { id: "inactive", handle: "set" }, input(doc, "skipped", "Project ID"));
-  mapping(doc, { id: "main", handle: "equal" }, input(doc, "skipped", "Project ID"));
-  mapping(doc, { id: "main", handle: "set" }, input(doc, "createTask", "Project ID"));
+  mapping(doc, { id: "inactive", handle: "set" }, input(doc, "skipped", "Path value"));
+  mapping(doc, { id: "main", handle: "equal" }, input(doc, "skipped", "Path value"));
+  mapping(doc, { id: "main", handle: "set" }, input(doc, "createTask", "Path value"));
   const runner = createWorkflowRunner(doc);
   await submit(runner, project);
   assert.equal(runner.next().nodeId, "createTask");
   await submit(runner, task);
   assert.equal(runner.next().kind, "complete");
   const noMain = document(graph("getProject"), utility("switch", "switch", { gates: [{ id: "operand", operator: "==", value: "" }] }));
-  mapping(noMain, output(noMain, "getProject", "Project ID"), { id: "switch", handle: "gate-value:operand" });
+  mapping(noMain, output(noMain, "getProject", "Path value"), { id: "switch", handle: "gate-value:operand" });
   const broken = createWorkflowRunner(noMain);
   await submit(broken, project);
   assert.throws(() => broken.next(), /Switch needs a connected input value/);
@@ -864,7 +864,7 @@ Then("response routing prefers exact statuses then ranges then defaults", async 
     const doc = document(createOperationGraph(operation("getProject"), { x: 0, y: 0 }, "source", schema),
       graph("createTask", "exact"), ...(includeRange ? [graph("createTask", "range")] : []), graph("createTask", "fallback"));
     for (const [key, owner] of [["200", "exact"], ...(includeRange ? [["2XX", "range"]] : []), ["default", "fallback"]])
-      mapping(doc, responseField(doc, "source", "/body", key), input(doc, owner, "Project ID"));
+      mapping(doc, responseField(doc, "source", "/body", key), input(doc, owner, "Path value"));
     const fixture = createWorkflowDemo();
     const runner = createRequestRunner(doc, undefined, { execute(operation, values) {
       return operation.id === "demo:getProject" ? { request: { method: "GET", path: "/projects/project-1", query: {} },
@@ -888,7 +888,7 @@ Then("legacy response body properties remain unambiguous beside envelope fields"
   source.nodes.push({ id, type: "data", position: { x: 0, y: 0 }, data: { ownerId: "source", direction: "outputs", label: "Response", fields: [field] } });
   source.edges.push({ id: `schema:${id}`, kind: "schema", source: "source", target: id, sourceHandle: `schema:${id}`, targetHandle: "value" });
   const doc = document(source, graph("createTask", "target"));
-  mapping(doc, output(doc, "source", "Legacy body property"), input(doc, "target", "Project ID"));
+  mapping(doc, output(doc, "source", "Legacy body property"), input(doc, "target", "Path value"));
   const fixture = createWorkflowDemo();
   const runner = createRequestRunner(doc, undefined, { execute(operation, values) {
     return operation.id === "demo:getProject" ? { request: { method: "GET", path: "/projects/project-1", query: {} },

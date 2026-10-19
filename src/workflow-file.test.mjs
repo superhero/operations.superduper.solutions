@@ -72,8 +72,8 @@ Then('uploaded file nodes persist and supply operation inputs', async function (
   const graph = createOperationGraph(operations.find(op=>op.id==='demo:getProject'),{x:0,y:0},'get',demo);
   const node=createUtilityNode('file',{x:0,y:0},'file');
   node.data={file:parse('id.json','"project-1"')};
-  const input=graph.nodes.find(n=>n.type==='data' && n.data.direction==='inputs' && n.data.fields.some(f=>f.label==='Project ID'));
-  const field=input.data.fields.find(f=>f.label==='Project ID');
+  const input=graph.nodes.find(n=>n.type==='data' && n.data.direction==='inputs' && n.data.fields.some(f=>f.label==='Path value'));
+  const field=input.data.fields.find(f=>f.label==='Path value');
   const edge={id:'file-input',kind:'mapping',source:'file',sourceHandle:'value',target:input.id,targetHandle:field.id};
   const doc={version:3,id:'uploaded-file',name:'Upload',nodes:[node,...graph.nodes],edges:[...graph.edges,edge],viewport:{x:0,y:0,zoom:1},snap:true,curved:true,dashed:false};
   assert.equal(isWorkflowConnection(edge,doc.nodes,graph.edges),true);

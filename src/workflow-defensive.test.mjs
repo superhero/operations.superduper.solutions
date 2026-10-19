@@ -72,9 +72,9 @@ Then('an output array with write-only items retains an empty array panel', () =>
 
 Then('renaming a response body panel preserves downstream response mapping', async () => {
   const first = projectGraph('first'), second = projectGraph('second');
-  const source = field(first, 'first', 'outputs', 'Project ID');
+  const source = field(first, 'first', 'outputs', 'Path value');
   renamePanel(first, source.node, 'imported-body-panel');
-  const target = field(second, 'second', 'inputs', 'Project ID');
+  const target = field(second, 'second', 'inputs', 'Path value');
   const doc = document(first, second);
   doc.edges.push({ id: 'project-mapping', kind: 'mapping', source: source.node.id, sourceHandle: source.field.id,
     target: target.node.id, targetHandle: target.field.id });
