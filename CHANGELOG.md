@@ -285,6 +285,21 @@ operation reports and file previews with Gherkin browser checks.
 
 ```
 
+<!-- changelog-commit:b8b9f01f927cb591e8b1c5485b74d9a19e73cb5f -->
+### Commit [`b8b9f01`](https://github.com/superhero/operations.superduper.solutions/commit/b8b9f01f927cb591e8b1c5485b74d9a19e73cb5f)
+
+```text
+fix(schemas): alphabetize the initial schema list
+
+Seed a saved order from displayed names across examples and factory
+schemas instead of pinning examples and falling back to internal IDs.
+
+Upgrade the recognized legacy default once, preserve manual arrangements,
+and mark initialization atomically so renames and deletions cannot trigger
+another sort. Use metadata without decoding source documents.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
