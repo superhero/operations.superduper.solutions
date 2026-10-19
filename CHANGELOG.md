@@ -101,6 +101,28 @@ labels and document the once-only example seeding boundary.
 
 ```
 
+<!-- changelog-commit:24032b7de5703bf3ab625c5be676349757dc9086 -->
+### Commit [`24032b7`](https://github.com/superhero/operations.superduper.solutions/commit/24032b7de5703bf3ab625c5be676349757dc9086)
+
+```text
+feat(schemas): collapse document cards and group schema actions
+
+Keep schema cards closed until opened, with name editing, enablement and
+reordering available in the compact header. Move document actions into
+the schema disclosure header while retaining the full viewer width.
+
+Release the viewer when its card closes and explain the enable switch
+with a tooltip for its current action.
+
+```
+
+<!-- changelog-commit:a3c14fdf5063554939127e796f90d3b14d690e9e -->
+### Commit [`a3c14fd`](https://github.com/superhero/operations.superduper.solutions/commit/a3c14fdf5063554939127e796f90d3b14d690e9e)
+
+```text
+Merge branch 'develop' into feature/schema-card-disclosure
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
