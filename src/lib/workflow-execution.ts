@@ -6,6 +6,7 @@ import { operationForId, operationOrigin, type Operation } from "./catalog.ts";
 import { catalogForOperation } from "./catalog-registry.ts";
 import { prepareRequest, type InputValues, type PreparedRequest } from "./operation-input.ts";
 import { operationServerUrl } from "./schema-documents.ts";
+import { serverUrlHasPlaceholder } from "./server-url.ts";
 import { VaultError, type ApprovedOperation, type CredentialExecutionContext } from "./secrets/types.ts";
 import { approvedOperation } from "./secrets/policy.ts";
 import { validateCredentialContext } from "./secrets/bindings.ts";
@@ -42,6 +43,8 @@ export function workflowExecutionForOperation(operation: Operation | string)
 
 export function workflowRequestUrl(request: PreparedRequest, origin: string): string
 {
+  if (serverUrlHasPlaceholder(origin))
+    throw new Error("The operation server still contains a placeholder. Configure its server variables before running it.");
   const url = new URL(origin);
   if (!["http:", "https:"].includes(url.protocol) || url.username || url.password)
     throw new Error("The operation server must be an absolute HTTP or HTTPS URL without credentials.");

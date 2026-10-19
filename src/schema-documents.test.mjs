@@ -140,6 +140,30 @@ Then("effective servers retain base paths, resolve defaults and follow operation
   delete value.servers;
   delete value.paths["/items"].servers;
   assert.equal(validateSchemaDocument(value, "test").serverUrl, "https://operation.example.test/prefix");
+  const encoded = document({}, { servers: [{ url: "https://{host}:{port}/{base}/bot{botToken}", variables: {
+    host: { default: "api.example.test" }, port: { default: "443" },
+    base: { default: "teams/acme%20ops/%E2%82%AC" }, botToken: { default: "123456:sample-token" },
+  } }] });
+  const original = structuredClone(encoded);
+  assert.equal(validateSchemaDocument(encoded, "test").serverUrl,
+    "https://api.example.test/teams/acme%20ops/%E2%82%AC/bot123456:sample-token");
+  assert.deepEqual(encoded, original);
+  const override = document({}, { servers: [{ url: "https://api.example.test/bot{botToken}",
+    variables: { botToken: { default: "<bot_token>" } } }] });
+  override.paths["/items"].servers = [{ url: "https://path.example.test/ready" }];
+  assert.equal(validateSchemaDocument(override, "test").serverUrl, "https://path.example.test/ready");
+  override.paths["/items"].servers = [{ url: "https://path.example.test/{unconfigured}" }];
+  override.paths["/items"].get.servers = [{ url: "https://operation.example.test/ready" }];
+  assert.equal(validateSchemaDocument(override, "test").serverUrl, "https://operation.example.test/ready");
+});
+
+Then(/^the (document|path|operation) server (.+) is rejected as an unresolved placeholder$/, (level, definition) => {
+  const value = document();
+  const parent = level === "document" ? value : level === "path" ? value.paths["/items"] : value.paths["/items"].get;
+  parent.servers = [JSON.parse(definition)];
+  const original = structuredClone(value);
+  assert.throws(() => validateSchemaDocument(value, "test"), /still contains a placeholder/);
+  assert.deepEqual(value, original, "Reject placeholders without rewriting the original schema.");
 });
 
 Then("local Path Item references retain inherited parameters and server overrides", () => {

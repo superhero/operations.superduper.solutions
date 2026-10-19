@@ -97,11 +97,35 @@ Then("request URLs reject host changes and traversal, retain encoded path values
   } };
   assert.equal(workflowRequestUrl(request, "https://api.example.test/v1/"),
     "https://api.example.test/v1/items/a%2Fb?repeated=one&repeated=two&empty=null&disabled=false");
+  assert.equal(workflowRequestUrl({ method: "GET", path: "/items/%3Cvalue%3E", query: {} }, "https://api.example.test/v1"),
+    "https://api.example.test/v1/items/%3Cvalue%3E");
   for (const path of ["//another.example/items", "/\\another.example/items", "/items\\other", "https://another.example/items",
     "/../items", "/%2e%2E/items", "/items/./more", "/items?changed=true", "/items#fragment", "/items\nmore"])
     assert.throws(() => workflowRequestUrl({ ...request, path }, "https://api.example.test/v1"), /operation path/);
   for (const server of ["file:///local", "https://user:secret@example.test"])
     assert.throws(() => workflowRequestUrl(request, server), /HTTP or HTTPS URL without credentials/);
+});
+
+Then("cached server placeholders are rejected before fetching while configured and encoded URLs stay intact", async () => {
+  const source = catalog();
+  const canonical = extractOperations(source.document, source.id)[0];
+  const sourceIdentity = "cached-server-placeholders";
+  publishPreparedCatalogs([{ catalog: source, operations: [{ ...canonical, deferred: true }], sourceIdentity }]);
+  const requests = [];
+  const executor = createWorkflowRequestExecution(async url => { requests.push(url); return Response.json({ accepted: true }); });
+  const request = { method: "GET", path: "/items", query: {} };
+  for (const origin of ["https://api.example.test/bot<bot_token>", "https://api.example.test/bot%3Cbot_token%3E",
+    "https://api.example.test/{version}", "https://api.example.test/%7bversion%7d"]) {
+    assert.throws(() => workflowRequestUrl(request, origin), /still contains a placeholder/);
+    catalogModule.installOperationModel({ operation: canonical, document: source.document, origin, sourceIdentity, bytes: 1 });
+    await assert.rejects(() => executor.execute(canonical, {}), /still contains a placeholder/);
+  }
+  assert.deepEqual(requests, [], "An encoded placeholder must never become a network destination.");
+  for (const origin of ["https://api.example.test/bot123456:sample-token", "https://api.example.test/teams/acme%20ops/%E2%82%AC"]) {
+    catalogModule.installOperationModel({ operation: canonical, document: source.document, origin, sourceIdentity, bytes: 1 });
+    await executor.execute(canonical, {});
+  }
+  assert.deepEqual(requests, ["https://api.example.test/bot123456:sample-token/items", "https://api.example.test/teams/acme%20ops/%E2%82%AC/items"]);
 });
 
 Then("reports support generated identifiers and referenced path items without leaking other operations", async () => {

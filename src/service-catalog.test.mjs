@@ -6,6 +6,22 @@ import { Then } from '@cucumber/cucumber';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { readServiceSchema, serviceSchemaDescriptors } from './lib/service-schema-packs.ts';
 import { prepareRequest } from './lib/operation-input.ts';
+import { operationServerUrl } from './lib/schema-documents.ts';
+
+Then('Telegram placeholder defaults remain visible in the source and cannot produce an executable endpoint', async () => {
+  const document = await readServiceSchema('telegram');
+  const before = structuredClone(document);
+  const inspected = inspectServiceSchema(document, 'telegram');
+  assert.equal(inspected.operations.length, serviceSchemaDescriptors.find(source => source.id === 'telegram').operations);
+  assert.ok(inspected.operations.every(operation => /server variable botToken still contains a placeholder/.test(operation.unavailableReason)));
+  assert.equal(inspected.serverUrl, '');
+  assert.deepEqual(document, before);
+  document.servers[0].variables.botToken.default = '123456:sample-token';
+  const configured = inspectServiceSchema(document, 'telegram');
+  const getMe = configured.operations.find(operation => operation.path === '/getMe');
+  assert.equal(getMe.unavailableReason, undefined);
+  assert.equal(operationServerUrl(document, getMe), 'https://api.telegram.org/bot123456:sample-token');
+});
 
 Then('the default service index retains every packaged operation and reports execution limits', { timeout: 60_000 }, async () => {
   let count = 0;

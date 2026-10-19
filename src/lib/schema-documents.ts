@@ -5,6 +5,7 @@
 import { parseDocument } from "yaml";
 import { extractOperations, type Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
+import { serverUrlHasPlaceholder } from "./server-url.ts";
 
 export const schemaDocumentMaxBytes = 10 * 1024 * 1024;
 export type SchemaDocumentRecord = {
@@ -128,11 +129,14 @@ function safePath(path: string): void
   }
 }
 
-function serverUrl(servers: unknown, base: string | undefined, context: string): string | undefined
+function serverUrl(servers: unknown, base: () => string | undefined, context: string): string | undefined
 {
-  if (servers === undefined) return base;
+  if (servers === undefined) return base();
   if (!Array.isArray(servers)) invalid(`${context}: servers must be an array.`);
-  if (!servers.length) return base ? new URL(base).origin : undefined;
+  if (!servers.length) {
+    const parent = base();
+    return parent ? new URL(parent).origin : undefined;
+  }
   const selected = object(servers[0], `${context}: first server`);
   if (typeof selected.url !== "string" || !selected.url.trim()) invalid(`${context}: server url must be a nonempty string.`);
   const variables = selected.variables === undefined ? {} : object(selected.variables, `${context}: server variables`);
@@ -141,12 +145,20 @@ function serverUrl(servers: unknown, base: string | undefined, context: string):
     if (typeof variable.default !== "string") invalid(`${context}: server variable ${name} requires a string default.`);
     if (variable.enum !== undefined && (!Array.isArray(variable.enum) || !variable.enum.includes(variable.default)))
       invalid(`${context}: server variable ${name} default must belong to its enum.`);
+    if (serverUrlHasPlaceholder(variable.default))
+      unsupported(`${context}: server variable ${name} still contains a placeholder. Configure it before running this operation.`);
     return variable.default;
   });
+  if (serverUrlHasPlaceholder(expanded))
+    unsupported(`${context}: the server URL still contains a placeholder. Configure it before running this operation.`);
   if (/[{}\\\u0000-\u0020\u007f]/.test(expanded)) unsupported(`${context}: the server URL contains unresolved variables or unsafe characters.`);
   let url: URL;
-  try { url = base ? new URL(expanded, base) : new URL(expanded); }
-  catch { unsupported(`${context}: a usable absolute HTTP or HTTPS server URL is required; relative server URLs need an absolute parent server.`); }
+  try { url = new URL(expanded); }
+  catch {
+    const parent = base();
+    try { url = new URL(expanded, parent); }
+    catch { unsupported(`${context}: a usable absolute HTTP or HTTPS server URL is required; relative server URLs need an absolute parent server.`); }
+  }
   if (!["http:", "https:"].includes(url.protocol) || !url.hostname || url.username || url.password || url.search || url.hash)
     unsupported(`${context}: use an HTTP or HTTPS server URL without credentials, query strings or fragments.`);
   return url.href.replace(/\/$/, "");
@@ -158,8 +170,9 @@ export function operationServerUrl(document: ObjectValue, operation: Pick<Operat
   const paths = object(document.paths, "paths");
   const item = resolve(paths[operation.path], document, operation.path);
   const value = object(item[operation.method.toLowerCase()], `${operation.method} ${operation.path}`);
-  const top = serverUrl(document.servers, undefined, "document");
-  const path = serverUrl(item.servers, top, operation.path);
+  // Resolve ancestors only when inherited or needed as the base of a relative URL.
+  const top = () => serverUrl(document.servers, () => undefined, "document");
+  const path = () => serverUrl(item.servers, top, operation.path);
   const server = serverUrl(value.servers, path, `${operation.method} ${operation.path}`);
   if (!server) unsupported(`${operation.method} ${operation.path}: a usable absolute HTTP or HTTPS server URL is required.`);
   return server;

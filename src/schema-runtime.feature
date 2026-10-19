@@ -15,6 +15,9 @@ Feature: Registered schemas at runtime
   Scenario: Request URLs reject host changes and traversal, retain encoded path values, and omit undefined queries
     Then request URLs reject host changes and traversal, retain encoded path values, and omit undefined queries
 
+  Scenario: Unresolved server placeholders in cached models never reach HTTP execution
+    Then cached server placeholders are rejected before fetching while configured and encoded URLs stay intact
+
   Scenario: Reports support generated identifiers and referenced path items without leaking other operations
     Then reports support generated identifiers and referenced path items without leaking other operations
 
