@@ -138,6 +138,29 @@ browser action so asynchronous Settings restoration cannot close it.
 
 ```
 
+<!-- changelog-commit:c850999cf90e3a87aea09d649900b629f4fda1f5 -->
+### Commit [`c850999`](https://github.com/superhero/operations.superduper.solutions/commit/c850999cf90e3a87aea09d649900b629f4fda1f5)
+
+```text
+fix(workflows): center empty guidance and block empty runs
+
+Center empty-workflow guidance in the visible canvas beside either menu,
+accounting for the reserved scrollbar gutter without resizing the graph.
+Browsing operations closes Settings before opening and focusing Search.
+
+Disable Run for an empty graph and guard the run entry point so keyboard
+shortcuts cannot bypass it. Restore availability as nodes are added or
+removed.
+
+```
+
+<!-- changelog-commit:8c38770cf5926560d22114d0bee623a4b8cd4b50 -->
+### Commit [`8c38770`](https://github.com/superhero/operations.superduper.solutions/commit/8c38770cf5926560d22114d0bee623a4b8cd4b50)
+
+```text
+Merge branch 'develop' into bugfix/empty-workflow-controls
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54

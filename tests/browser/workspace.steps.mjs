@@ -16,6 +16,59 @@ const operationNodes = (page, name) => workflow(page).locator(".svelte-flow__nod
 });
 const connections = page => workflow(page).locator(".svelte-flow__edge:not(.workflow-schema-edge)");
 
+Then('empty workflow guidance stays centered beside menus at {int} pixels with {string} motion', async function (width, motion) {
+  const page = this.page;
+  await page.setViewportSize({ width, height: 844 });
+  await page.emulateMedia({ reducedMotion: motion });
+  await closeCatalog(page);
+  const canvas = page.locator('.workflow-workspace');
+  const browse = canvas.locator('.workflow-empty button');
+  const drawer = page.locator('.settings-drawer');
+  const navigation = page.locator('#side-navigation');
+  const before = await canvas.boundingBox();
+  const center = async (left, right) => {
+    await expect.poll(async () => {
+      const button = await browse.boundingBox();
+      return Math.abs(button.x + button.width / 2 - (left + right) / 2);
+    }).toBeLessThan(1);
+    const button = await browse.boundingBox();
+    assert.ok(Math.abs(button.y + button.height / 2 - before.y - before.height / 2) < 1,
+      'The empty-workflow button remains vertically centered');
+    assert.deepEqual(await canvas.boundingBox(), before, 'Menus do not resize the workflow canvas');
+  };
+  await expect(canvas.locator('.svelte-flow__node')).toHaveCount(0);
+  await center(before.x, before.x + before.width);
+  await openCatalog(page);
+  if (width >= 900) {
+    await expect(navigation).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+    const menu = await navigation.boundingBox();
+    await center(menu.x + menu.width, before.x + before.width);
+    await browse.click();
+    await expect(page.getByRole('navigation', { name: 'Operation catalog', exact: true })).toBeVisible();
+  } else await expect(canvas).toHaveAttribute('inert', '');
+  await closeCatalog(page);
+  await setMode(page, 'settings');
+  await expect(drawer).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+  if (width >= 1150) {
+    await center(before.x, (await drawer.boundingBox()).x);
+    await page.screenshot({ path: `${this.artifactDirectory}/empty-workflow-settings-${width}.png` });
+    await browse.click();
+    await expect(drawer).toBeHidden();
+  } else {
+    await expect(page.locator('.page-content')).toHaveAttribute('inert', '');
+    await setMode(page, 'workflow');
+    await browse.click();
+  }
+  await expect(page.getByRole('navigation', { name: 'Operation catalog', exact: true })).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toBeFocused();
+  if (width >= 900) await expect(navigation).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+  const visibleMenu = await navigation.boundingBox();
+  if (width >= 900) await center(visibleMenu.x + visibleMenu.width, before.x + before.width);
+  await page.screenshot({ path: `${this.artifactDirectory}/empty-workflow-navigation-${width}.png` });
+  await expect(page.getByRole('banner', { includeHidden: true }).getByRole('button', { name: 'Settings', exact: true, includeHidden: true }))
+    .toHaveAttribute('aria-pressed', 'false');
+});
+
 async function openCatalog(page) {
   const mobileClose = page.getByRole('button', { name: 'Close settings', exact: true });
   if (await mobileClose.isVisible()) {
