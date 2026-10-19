@@ -105,6 +105,10 @@ const records = page => page.evaluate(async () => (await import('/lib/schema-sto
 const history = (page, id) => page.evaluate(async id => (await import('/lib/schema-storage.ts')).getSchemaHistory(id), id);
 const liveOperationIds = page => page.evaluate(async () => (await import('/lib/catalog.ts')).operations.map(operation => operation.id));
 async function idle(page) { await expect(panel(page)).toHaveAttribute('aria-busy', 'false'); }
+async function expandCard(page, id) {
+  const toggle = card(page, id).getByRole('button', { name: /^Schema details:/ });
+  if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
+}
 async function upload(page, name, document) {
   await panel(page).locator('input[type=file][aria-label="Upload OpenAPI document"]').setInputFiles({
     name, mimeType: /\.json$/i.test(name) ? 'application/json' : 'application/yaml',
@@ -113,6 +117,7 @@ async function upload(page, name, document) {
   await idle(page);
 }
 async function replace(page, id, name, document) {
+  await expandCard(page, id);
   const chooser = page.waitForEvent('filechooser');
   await card(page, id).getByRole('button', { name: /^Replace / }).click();
   await (await chooser).setFiles({ name, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
@@ -130,6 +135,7 @@ try {
       await enterSchemas(page); await idle(page);
       const record = (await records(page)).find(record => record.id === 'httpbin');
       const schemaCard = card(page, record.id);
+      await expandCard(page, record.id);
       const trigger = schemaCard.locator('summary[aria-label="OpenAPI schema"]');
       const label = `Full OpenAPI JSON: ${record.document.info.title}`;
       const json = schemaCard.getByRole('region', { name: label, exact: true });
@@ -186,6 +192,7 @@ yield "schema management loads its seeded documents in a dedicated worker";
     await upload(page, 'Inventory.JSON', original);
     const first = (await records(page)).find(record => record.document.info.title === title);
     assert.ok(first);
+    await expandCard(page, first.id);
     await expect(card(page, first.id).getByRole('textbox', { name: 'Schema name', exact: true })).toHaveValue(title);
     const operationId = `${first.id}:listInventory`;
     await expect(card(page, first.id)).toContainText('https://schema-smoke.invalid/v1');
@@ -275,6 +282,7 @@ yield "schema replacement records its history and clears stale run results";
     await expect(panel(page).locator('[data-schema-id]')).toHaveCount(initial.length + 3);
     results.duplicateFilenameAndYaml = { sibling: sibling.id, yaml: yamlRecord.id };
 
+    await expandCard(page, first.id);
     const downloadEvent = page.waitForEvent('download');
     await card(page, first.id).getByRole('button', { name: `Download ${title}`, exact: true }).click();
     const download = await downloadEvent;
@@ -535,6 +543,7 @@ yield "schema drag previews keyboard moves cancellation and persistence retain h
     const largeRecord = (await records(page)).find(record => record.document.info.title === 'Large worker schema');
     assert.ok(largeRecord);
     assert.equal((await liveOperationIds(page)).filter(id => id.startsWith(`${largeRecord.id}:`)).length, 1500);
+    await expandCard(page, largeRecord.id);
     await card(page, largeRecord.id).getByRole('button', { name: 'Delete Large worker schema', exact: true }).click();
     await card(page, largeRecord.id).getByRole('group', { name: 'Confirm deletion of Large worker schema', exact: true })
       .getByRole('button', { name: 'Delete', exact: true }).click();

@@ -347,6 +347,7 @@ Then('the Settings schema viewer expands HTTP methods but keeps their details fo
   const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
   await settings.locator('summary[aria-label="Schemas"]').click();
   const card = settings.locator('.schema-card[data-schema-id="demo"]');
+  await card.getByRole('button', { name: /^Schema details:/ }).click();
   const header = card.locator('summary[aria-label="OpenAPI schema"]');
   await header.click();
   const label = `Full OpenAPI JSON: ${sourceCatalog.document.info.title}`;
@@ -367,4 +368,100 @@ Then('the Settings schema viewer expands HTTP methods but keeps their details fo
   await header.click(); await header.click();
   await expect(heading(method)).toHaveAttribute('aria-expanded', 'true');
   await expect(heading(`${method}["responses"]`)).toHaveAttribute('aria-expanded', 'false');
+});
+
+Then('schema cards keep their controls usable and their viewer full width at {int} pixels', async function (width) {
+  const page = this.page;
+  await page.setViewportSize({ width, height: 1000 });
+  await setMode(page, 'settings');
+  const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
+  await settings.locator('summary[aria-label="Schemas"]').click();
+  const documents = settings.getByRole('region', { name: 'OpenAPI documents', exact: true });
+  const card = documents.locator('[data-schema-id="demo"]');
+  const otherCard = documents.locator('[data-schema-id="httpbin"]');
+  const toggle = card.getByRole('button', { name: /^Schema details:/ });
+  const enabled = card.getByRole('switch');
+  const heading = card.locator('.schema-heading');
+  const name = heading.getByRole('textbox', { name: 'Schema name', exact: true });
+  const move = heading.getByRole('button', { name: /^Move / });
+  const title = await name.inputValue();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await expect(otherCard.getByRole('button', { name: /^Schema details:/ })).toHaveAttribute('aria-expanded', 'false');
+  await expect(card.locator('.schema-metadata, .schema-disclosure')).toHaveCount(0);
+  await expect(enabled).toHaveText('');
+  for (const control of [name, enabled, toggle, move]) await expect(control).toBeVisible();
+  const topRow = await heading.evaluate(element => {
+    const field = element.querySelector('.schema-name').getBoundingClientRect();
+    const controls = element.querySelector('.schema-actions').getBoundingClientRect();
+    return { fieldWidth: field.width, gap: controls.left - field.right,
+      sameLine: Math.abs(field.top - controls.top) < 1, fits: element.scrollWidth <= element.clientWidth };
+  });
+  assert.ok(topRow.sameLine && topRow.fits, 'The name and card controls share a single row at every width');
+  assert.ok(topRow.fieldWidth > 0 && Math.abs(topRow.gap - 6) < 1, 'The name fills the space before the controls');
+  await enabled.hover();
+  await expect(page.getByRole('tooltip')).toHaveText('Disable schema');
+  await enabled.click();
+  await expect(enabled).toHaveAttribute('aria-checked', 'false');
+  await name.hover();
+  await enabled.hover();
+  await expect(page.getByRole('tooltip')).toHaveText('Enable schema');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await enabled.click();
+  await expect(enabled).toHaveAttribute('aria-checked', 'true');
+  await toggle.focus();
+  await toggle.press('Space');
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(card.locator('.schema-metadata')).toBeVisible();
+  const schema = card.locator('summary[aria-label="OpenAPI schema"]');
+  await expect(schema).toHaveAttribute('aria-expanded', 'false');
+  const actions = schema.getByRole('group', { name: `Actions for ${title}`, exact: true });
+  for (const action of ['Replace', 'Download', 'Delete'])
+    await expect(actions.getByRole('button', { name: `${action} ${title}`, exact: true })).toBeVisible();
+  await expect(heading.getByRole('button', { name: /^(Replace|Download|Delete) / })).toHaveCount(0);
+  if (width === 1280) {
+    const alignment = await schema.evaluate(element => {
+      const title = element.querySelector('.schema-title').getBoundingClientRect();
+      const actions = element.querySelector('.schema-actions').getBoundingClientRect();
+      return Math.abs(title.top + title.height / 2 - actions.top - actions.height / 2);
+    });
+    assert.ok(alignment < 1, 'Document actions share the OpenAPI schema line');
+  }
+  const download = page.waitForEvent('download');
+  await actions.getByRole('button', { name: `Download ${title}`, exact: true }).click();
+  assert.ok((await download).suggestedFilename().endsWith('.json'));
+  await expect(schema).toHaveAttribute('aria-expanded', 'false');
+  const chooser = page.waitForEvent('filechooser');
+  await actions.getByRole('button', { name: `Replace ${title}`, exact: true }).click();
+  await chooser;
+  await expect(schema).toHaveAttribute('aria-expanded', 'false');
+  await actions.getByRole('button', { name: `Delete ${title}`, exact: true }).click();
+  const confirmation = card.getByRole('group', { name: `Confirm deletion of ${title}`, exact: true });
+  await expect(confirmation).toBeVisible();
+  await expect(schema).toHaveAttribute('aria-expanded', 'false');
+  await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await schema.click();
+  const json = card.getByRole('region', { name: `Full OpenAPI JSON: ${title}`, exact: true });
+  await expect(json).toBeVisible();
+  const viewerWidth = await json.evaluate(element => {
+    const viewer = element.getBoundingClientRect();
+    const card = element.closest('.schema-card');
+    const style = getComputedStyle(card);
+    return { actual: viewer.width, expected: card.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+      fits: card.scrollWidth <= card.clientWidth };
+  });
+  assert.ok(Math.abs(viewerWidth.actual - viewerWidth.expected) < 2, 'The expanded JSON viewer uses the full card width');
+  assert.ok(viewerWidth.fits, 'Schema controls and content fit without horizontal overflow');
+  await page.screenshot({ path: `${this.artifactDirectory}/schema-card-expanded-${width}.png` });
+  await toggle.click();
+  await expect(card.locator('.json-view, .schema-metadata')).toHaveCount(0);
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  await toggle.press('Enter');
+  await expect(schema).toHaveAttribute('aria-expanded', 'false');
+  await expect(card.locator('.json-view')).toHaveCount(0);
+  await expect(otherCard.getByRole('button', { name: /^Schema details:/ })).toHaveAttribute('aria-expanded', 'false');
+  await page.reload();
+  await setMode(page, 'settings');
+  const section = settings.locator('summary[aria-label="Schemas"]');
+  if (await section.getAttribute('aria-expanded') !== 'true') await section.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 });
