@@ -41,3 +41,11 @@ Feature: Read-only operation JSON
 
   Scenario: Settings schema methods are expanded for an operation overview
     Then the Settings schema viewer expands HTTP methods but keeps their details folded
+
+  Scenario Outline: Schema cards keep compact controls and a full-width viewer
+    Then schema cards keep their controls usable and their viewer full width at <width> pixels
+
+    Examples:
+      | width |
+      | 1280  |
+      | 320   |

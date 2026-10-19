@@ -5,15 +5,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
-  import { onDestroy, untrack } from "svelte";
+  import { onDestroy, untrack, type Snippet } from "svelte";
   import Disclosure from "./Disclosure.svelte";
   import MaterialIcon from "./MaterialIcon.svelte";
   import HintButton from "./HintButton.svelte";
   import JsonView from "./JsonView.svelte";
 
-  let { value, load, onRelease, sourceKey = "", validated = false, label = "OpenAPI JSON", title = "OpenAPI schema", copyable = true, pageSize, operationsOnly = false }:
+  let { value, load, onRelease, sourceKey = "", validated = false, label = "OpenAPI JSON", title = "OpenAPI schema", copyable = true, pageSize, operationsOnly = false, actions }:
     { value?: unknown; load?: () => Promise<unknown>; onRelease?: () => void; sourceKey?: string; validated?: boolean;
-      label?: string; title?: string; copyable?: boolean; pageSize?: number; operationsOnly?: boolean } = $props();
+      label?: string; title?: string; copyable?: boolean; pageSize?: number; operationsOnly?: boolean; actions?: Snippet } = $props();
   let schemaOpen = $state(false);
   let schemaLoaded = $state(false);
   let schemaWrap = $state(true);
@@ -124,6 +124,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <HintButton class="schema-action" label="Wrap lines" aria-label="Wrap lines" aria-pressed={schemaWrap} tooltipEnabled={schemaOpen}
         onclick={(event) => { event.preventDefault(); event.stopPropagation(); schemaWrap = !schemaWrap; }}><MaterialIcon name={schemaWrap ? "format_text_wrap" : "format_text_overflow"} size={20} /></HintButton>
     </span>
+    {@render actions?.()}
   {/snippet}
   {#if loading}<p class="schema-loading" role="status" aria-label="Loading schema">···</p>{/if}
   {#if loadError}<div class="schema-load-error"><p role="alert">{loadError}</p><button type="button" onclick={openSource}>Retry</button></div>{/if}

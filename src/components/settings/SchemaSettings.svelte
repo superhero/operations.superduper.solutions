@@ -34,6 +34,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let replacingId = $state<string | null>(null);
   let deletingId = $state<string | null>(null);
   let nameDrafts = $state<Record<string, string | undefined>>({});
+  let expandedCards = $state<Record<string, boolean>>({});
   const queuedNames = new Map<string, { name: string }>();
   let renaming = $state(0);
   let draggingId = $state<string | null>(null);
@@ -85,6 +86,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       server: record.summary.serverUrl,
       operations: record.summary.operationCount
     };
+  }
+
+  function toggleCard(id: string) {
+    expandedCards[id] = !expandedCards[id];
+    if (!expandedCards[id] && deletingId === id) deletingId = null;
   }
 
   async function run(message: string, action: () => Promise<void>) {
@@ -254,19 +260,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                   } else if (event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); }
                 }} />
             </div>
-            <div class="schema-actions" role="group" aria-label={`Actions for ${metadata.title}`}>
-              <Button size="icon-sm" variant="secondary" tooltip={`Replace ${metadata.title}`} aria-label={`Replace ${metadata.title}`} disabled={mutationsDisabled} onclick={() => chooseReplacement(record.id)}>
-                <MaterialIcon name="upload_file" size={20} />
-              </Button>
-              <Button size="icon-sm" variant="secondary" tooltip="Download schema" aria-label={`Download ${metadata.title}`} disabled={working} onclick={() => onDownload(record)}>
-                <MaterialIcon name="download" size={20} />
-              </Button>
-              <button class="schema-enabled" type="button" role="switch" aria-label={`Enable ${metadata.title}`} aria-checked={record.enabled} disabled={mutationsDisabled}
+            <div class="schema-actions" role="group" aria-label={`Card controls for ${metadata.title}`}>
+              <Button class="schema-enabled" size="icon-sm" variant="ghost" role="switch" aria-label={`Enable ${metadata.title}`} aria-checked={record.enabled}
+                tooltip={record.enabled ? "Disable schema" : "Enable schema"} disabled={mutationsDisabled}
                 onclick={() => run("", () => onEnabledChange(record.id, !record.enabled))}>
-                <span>{record.enabled ? "Enabled" : "Disabled"}</span><span class="default-switch" aria-hidden="true"><span></span></span>
-              </button>
-              <Button size="icon-sm" variant="secondary" tooltip={`Delete ${metadata.title}`} aria-label={`Delete ${metadata.title}`} disabled={mutationsDisabled || deletingId === record.id} onclick={() => deletingId = record.id}>
-                <MaterialIcon name="delete" size={20} />
+                <span class="default-switch" aria-hidden="true"><span></span></span>
+              </Button>
+              <Button class="schema-card-toggle" size="icon-sm" variant="secondary" aria-label={`Schema details: ${metadata.title}`}
+                aria-expanded={expandedCards[record.id] ?? false} aria-controls={`schema-details-${record.id}`}
+                tooltip={expandedCards[record.id] ? "Hide schema details" : "Show schema details"} onclick={() => toggleCard(record.id)}>
+                <MaterialIcon name="keyboard_arrow_right" size={18} />
               </Button>
               <Button class="schema-drag-handle" size="icon-sm" variant="secondary" tooltip="Drag to reorder" aria-label={`Move ${metadata.title}`}
                 disabled={mutationsDisabled || records.length < 2} draggable={!mutationsDisabled && records.length > 1}
@@ -277,26 +280,42 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             </div>
           </div>
 
-          <dl class="schema-metadata">
-            <div><dt>Server URL</dt><dd>{metadata.server}</dd></div>
-            <div><dt>Operations</dt><dd>{metadata.operations?.toLocaleString() ?? "—"}</dd></div>
-            {#if metadata.operations !== null && record.summary.unavailableCount}<div><dt>Runnable</dt><dd>{(metadata.operations - record.summary.unavailableCount).toLocaleString()}</dd></div>{/if}
-          </dl>
+          <Reveal open={expandedCards[record.id] ?? false} id={`schema-details-${record.id}`}>
+            <dl class="schema-metadata">
+              <div><dt>Server URL</dt><dd>{metadata.server}</dd></div>
+              <div><dt>Operations</dt><dd>{metadata.operations?.toLocaleString() ?? "—"}</dd></div>
+              {#if metadata.operations !== null && record.summary.unavailableCount}<div><dt>Runnable</dt><dd>{(metadata.operations - record.summary.unavailableCount).toLocaleString()}</dd></div>{/if}
+            </dl>
 
-          <Reveal open={!record.enabled} id={`schema-disabled-${record.id}`}><p class="schema-note">Operations from this document are unavailable until it is enabled.</p></Reveal>
+            <Reveal open={!record.enabled} id={`schema-disabled-${record.id}`}><p class="schema-note">Operations from this document are unavailable until it is enabled.</p></Reveal>
 
-          <JsonSchemaView load={() => onLoad(record.id)} onRelease={() => onRelease(record.id)} sourceKey={record.sourceIdentity}
-            label={`Full OpenAPI JSON: ${metadata.title}`} operationsOnly pageSize={1000} validated />
+            <JsonSchemaView load={() => onLoad(record.id)} onRelease={() => onRelease(record.id)} sourceKey={record.sourceIdentity}
+              label={`Full OpenAPI JSON: ${metadata.title}`} operationsOnly pageSize={1000} validated>
+              {#snippet actions()}
+                <span class="schema-actions" role="group" aria-label={`Actions for ${metadata.title}`}>
+                  <Button size="icon-sm" variant="secondary" tooltip={`Replace ${metadata.title}`} aria-label={`Replace ${metadata.title}`} disabled={mutationsDisabled} onclick={() => chooseReplacement(record.id)}>
+                    <MaterialIcon name="upload_file" size={20} />
+                  </Button>
+                  <Button size="icon-sm" variant="secondary" tooltip="Download schema" aria-label={`Download ${metadata.title}`} disabled={working} onclick={() => onDownload(record)}>
+                    <MaterialIcon name="download" size={20} />
+                  </Button>
+                  <Button size="icon-sm" variant="secondary" tooltip={`Delete ${metadata.title}`} aria-label={`Delete ${metadata.title}`} disabled={mutationsDisabled || deletingId === record.id} onclick={() => deletingId = record.id}>
+                    <MaterialIcon name="delete" size={20} />
+                  </Button>
+                </span>
+              {/snippet}
+            </JsonSchemaView>
 
-          {#if deletingId === record.id}
-            <div class="schema-delete" role="group" aria-label={`Confirm deletion of ${metadata.title}`}>
-              <p>Delete this document and its local history? Saved workflows are retained, but operations from this document will become unavailable.</p>
-              <div class="confirmation-actions">
-                <Button size="sm" variant="secondary" disabled={working} onclick={() => deletingId = null}>Cancel</Button>
-                <Button size="sm" disabled={mutationsDisabled} onclick={() => run(`Deleting ${metadata.title}…`, () => onDelete(record.id))}>Delete</Button>
+            {#if deletingId === record.id}
+              <div class="schema-delete" role="group" aria-label={`Confirm deletion of ${metadata.title}`}>
+                <p>Delete this document and its local history? Saved workflows are retained, but operations from this document will become unavailable.</p>
+                <div class="confirmation-actions">
+                  <Button size="sm" variant="secondary" disabled={working} onclick={() => deletingId = null}>Cancel</Button>
+                  <Button size="sm" disabled={mutationsDisabled} onclick={() => run(`Deleting ${metadata.title}…`, () => onDelete(record.id))}>Delete</Button>
+                </div>
               </div>
-            </div>
-          {/if}
+            {/if}
+          </Reveal>
         </li>
       {/each}
     </ul>
@@ -317,18 +336,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-drag-area { position: relative; min-width: 0; }
   .schema-drag-surface { position: absolute; inset: 0; z-index: 3; }
   .schema-toolbar, .schema-card, .schema-empty { min-width: 0; padding: 16px; border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
-  .schema-heading { --schema-control-size: calc(var(--spacing) * 8); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-  .schema-name { display: flex; flex: 1; min-width: min(100%, 180px); height: var(--schema-control-size); border-radius: 4px; background: var(--color-background); color: var(--color-foreground); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
+  .schema-heading { --schema-control-size: calc(var(--spacing) * 8); display: flex; align-items: center; gap: 6px; }
+  .schema-name { display: flex; flex: 1; min-width: 0; height: var(--schema-control-size); border-radius: 4px; background: var(--color-background); color: var(--color-foreground); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
   .schema-name:focus-within, .schema-name:hover:has(input:enabled) { outline-color: var(--color-ring); }
   .schema-name-icon { display: grid; place-items: center; flex: 0 0 var(--schema-control-size); width: var(--schema-control-size); height: 100%; cursor: text; }
   .schema-name-input { box-sizing: border-box; min-width: 0; width: 100%; height: 100%; padding: 6px 10px; border: 0; border-radius: 0 4px 4px 0; outline: none; background: transparent; color: inherit; font-size: 14px; }
   .schema-empty h3 { margin: 0; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
   .schema-empty p, .schema-note { margin: 6px 0 0; color: var(--color-muted-foreground); font-size: 12px; overflow-wrap: anywhere; }
   .schema-note { color: var(--color-accent); }
-  .schema-actions { --schema-action-gap: 6px; display: flex; align-items: center; flex-wrap: wrap; gap: var(--schema-action-gap); }
+  .schema-actions { display: flex; align-items: center; flex-shrink: 0; gap: 6px; }
   .schema-card { position: relative; }
-  .schema-card :global(.schema-disclosure > summary) { padding-left: 12px; font-size: 12px; }
+  .schema-card > :global(.reveal-panel) { transition-timing-function: ease-in-out, linear; }
+  .schema-card :global(.schema-disclosure > summary) { flex-wrap: wrap; gap: 6px; padding-left: 12px; font-size: 12px; }
   .schema-card :global(.schema-disclosure > summary > .schema-chevron) { width: auto; margin-left: 0; }
+  .schema-card :global(.schema-card-toggle .material-symbols-rounded) { transition: transform 180ms ease-in-out; }
+  .schema-card :global(.schema-card-toggle[aria-expanded="true"] .material-symbols-rounded) { transform: rotate(90deg); }
   .schema-settings :global(.schema-action:is(:hover,:focus-visible):enabled) { background: transparent; color: inherit; }
   .schema-card.dragging { opacity: 0.5; }
   .schema-actions :global(.schema-drag-handle) { cursor: grab; }
@@ -337,11 +359,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-metadata > div { min-width: 0; padding: 8px 10px; border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-background); }
   .schema-metadata dt { margin-bottom: 5px; font-size: 11px; font-weight: 400; color: var(--color-muted-foreground); }
   .schema-metadata dd { min-width: 0; margin: 0; font-size: clamp(16px, 2vw, 21px); font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
-  .schema-enabled { box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 0 0 auto; height: var(--schema-control-size); width: calc(var(--schema-control-size) * 4 + var(--schema-action-gap) * 3); padding: 4px 8px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font-size: 12px; font-weight: 700; text-align: left; }
+  .schema-heading :global(.schema-enabled) { width: 40px; padding: 0; background: transparent; color: inherit; }
   .default-switch { box-sizing: border-box; flex-shrink: 0; width: 40px; height: 24px; padding: 3px; border-radius: 4px; background: var(--color-muted-foreground); transition: background-color 180ms ease-in, transform 180ms ease-in; }
   .default-switch > span { display: block; width: 18px; height: 18px; border-radius: 2px; background: var(--color-surface); transform: translateX(0); transition: transform 180ms ease-in, background-color 180ms ease-in; }
-  .schema-enabled[aria-checked="true"] .default-switch { background: var(--color-catalog-active); }
-  .schema-enabled[aria-checked="true"] .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
+  :global(.schema-enabled[aria-checked="true"]) .default-switch { background: var(--color-catalog-active); }
+  :global(.schema-enabled[aria-checked="true"]) .default-switch > span { transform: translateX(16px); background: var(--color-catalog-active-foreground); }
   .schema-error { display: grid; justify-items: start; gap: 10px; }
   .schema-error p { width: 100%; box-sizing: border-box; margin: 0; padding: 10px 12px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; white-space: pre-line; overflow-wrap: anywhere; }
   .schema-delete { display: grid; gap: 12px; margin-top: 16px; padding: 12px; border-radius: 4px; background: var(--color-background); }
@@ -351,8 +373,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
     .schema-card :global(.schema-disclosure > summary:hover) { transform: scale(min(1.06, var(--hover-scale, 1.06))); }
     .schema-settings :global(.schema-action:hover:enabled) { transform: scale(min(1.10, var(--hover-scale, 1.10))); }
-    .schema-enabled:hover:enabled .default-switch { transform: scale(1.10); }
+    :global(.schema-enabled:hover:enabled) .default-switch { transform: scale(1.10); }
   }
-  @media (prefers-reduced-motion: reduce) { .schema-name, .default-switch, .default-switch > span { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .schema-name, .default-switch, .default-switch > span, .schema-card :global(.schema-card-toggle .material-symbols-rounded) { transition: none; } }
   @media (forced-colors: active) { .schema-name:not(:focus-within):not(:hover) { outline-style: none; } }
 </style>
