@@ -3,6 +3,9 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Default service operation catalogs
+  Scenario: Atlassian catalogs retain published product contracts and unambiguous workflow identities
+    Then the Atlassian collection includes its published product APIs without changing established catalog identities
+
   Scenario: FRED and ALFRED expose economic series historical vintages and their real authentication transports
     Then FRED and ALFRED retain the economic API inventory and prepare authenticated historical and bulk requests
 

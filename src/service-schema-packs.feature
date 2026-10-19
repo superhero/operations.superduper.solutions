@@ -14,3 +14,9 @@ Feature: Bundled service schema integrity
 
   Scenario: Swagger conversion retains external recursive definitions
     Then external Swagger references remain valid after bundling and OpenAPI conversion
+
+  Scenario: Documentation exports preserve the embedded contract without executing page scripts
+    Then embedded ReDoc exports preserve OpenAPI data and reject missing malformed or incomplete contracts
+
+  Scenario: Colliding upstream operation identifiers and path aliases remain independently addressable
+    Then method and path identities preserve aliased operations and recursive models without changing existing contracts

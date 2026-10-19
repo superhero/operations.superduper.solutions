@@ -39,6 +39,18 @@ the official FRED v2 bulk-release endpoint to FRED. ALFRED retains real `/fred`
 routes with vintage and real-time parameters. Refresh both with
 `node build/service-schemas.mjs fred alfred`, then regenerate discovery indexes.
 
+Statuspage publishes its OpenAPI document inside ReDoc documentation. Sources
+marked `conversion: "redoc"` extract only that JSON document with
+`build/redoc-schema.mjs`; documentation scripts are never evaluated. Opsgenie's
+official Swagger 2 document uses the existing Swagger conversion.
+
+New Atlassian sources opt into `operationIds: "method-path"` because upstream
+contracts contain duplicate operation IDs and path aliases. The build expands
+only path and operation references, then assigns `METHOD /path` identifiers.
+Original identifiers and path references remain in `x-upstream-operation-id`
+and `x-upstream-path-ref`; recursive data models remain local references.
+Existing Bitbucket, Jira and Confluence packs retain their original identities.
+
 ## Provider collections
 
 Display names use spaced `/` separators for provider and product levels, such as
@@ -50,3 +62,9 @@ collection covers Compute and Storage; AWS covers S3 and Lambda; Azure covers
 Resource Manager resources. These are named service contracts, not a claim to
 include every product offered by those providers. Source provenance distinguishes
 provider documents from community conversions.
+
+Atlassian Cloud, administration, developer platform and Data Center contracts
+share the `atlassian` provider and `Atlassian / …` display prefix. The
+[service inventory](../../../docs/default-service-schemas.md#atlassian) records
+product scope, complementary API versions and execution limits. Refresh selected
+IDs rather than unrelated providers when updating this collection.

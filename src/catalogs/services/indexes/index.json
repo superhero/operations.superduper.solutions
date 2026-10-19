@@ -29,6 +29,595 @@
       }
     },
     {
+      "id": "atlassian-admin-api-access",
+      "sourceRevision": "ef715e5c27f9a02469088f9e6a4f85602b68043ba8890947f5603ba0e7554a83",
+      "bytes": 8579,
+      "compressedBytes": 1024,
+      "sha256": "200d4149549ae55b1f4f49b80c59166a7eb3f1269a5134fad0d4ee469b2832f5",
+      "summary": {
+        "name": "API Access",
+        "serverUrl": "https://api.atlassian.com/admin/api-access/v1",
+        "description": "API Access REST API Collection",
+        "operationCount": 22,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "atlassian-admin-control",
+      "sourceRevision": "4871c5b2e77beb68202c011dfa1904cd92788e32c9150552352c64234351dc0d",
+      "bytes": 9927,
+      "compressedBytes": 1201,
+      "sha256": "c9aa3092a883a91978d42ac7148d265dc38a0ce9b80bb0710323d797f9ff0f17",
+      "summary": {
+        "name": "Admin Control API",
+        "serverUrl": "https://api.atlassian.com",
+        "description": "API to manage policies and resources. A policy is a set of rules that apply to a specific area and a particular group, allowing an organization to ensure a basic level of compliance, security, and behavior. A resource refers to any asset, entity, or item that the policy aims to govern, regulate, or protect.",
+        "operationCount": 22,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "atlassian-admin-dlp",
+      "sourceRevision": "51295582435550a5d4c504920a1582ebe0cbdf30201b6f6b73b8b26b487f2b1d",
+      "bytes": 3432,
+      "compressedBytes": 634,
+      "sha256": "889ec2f3365364b73d349d596dba3f3d9839a8c89b4d8eb830dfb8c2dac81119",
+      "summary": {
+        "name": "Data Loss Prevention",
+        "serverUrl": "https://api.atlassian.com/admin/dlp/v1",
+        "operationCount": 8,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "atlassian-admin-organizations",
+      "sourceRevision": "270392b944e9ad895c2c6ce6d81db50d5da336d0bb10a0edc47619ae44263bb1",
+      "bytes": 18823,
+      "compressedBytes": 1769,
+      "sha256": "c49c4f058f3339ad9f54716466e5e1a141e27eb29af7407ec64b0a7912520fe9",
+      "summary": {
+        "name": "API for Atlassian Access",
+        "serverUrl": "https://api.atlassian.com/admin",
+        "operationCount": 47,
+        "unavailableCount": 2
+      }
+    },
+    {
+      "id": "atlassian-admin-users",
+      "sourceRevision": "d0307ba411ffef927bf83eae437d09dc040aa4a83385e4b5579ab707ee10f6a4",
+      "bytes": 4176,
+      "compressedBytes": 751,
+      "sha256": "cdad5d347c94a98789cab8e93aa8511f9139bbf17862e33d51a27859b343c1fa",
+      "summary": {
+        "name": "IDv2: User management",
+        "serverUrl": "https://api.atlassian.com",
+        "operationCount": 10,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "atlassian-admin-provisioning",
+      "sourceRevision": "e4577ee13569515109b3b0c4f23849cbb3bd29685d2fcff0edbb0709ec4f7644",
+      "bytes": 10266,
+      "compressedBytes": 1205,
+      "sha256": "3694cc523ac34670f1a8fbdb9f8dae99a19b75d5573cc9109af5c2bef761452d",
+      "summary": {
+        "name": "User provisioning",
+        "serverUrl": "https://api.atlassian.com",
+        "description": "Rest APIs",
+        "operationCount": 24,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "atlassian-app-migration",
+      "sourceRevision": "b24a0654a2f53a586724c2c4d2e323784988dca369af768d0b65ba4c39f4f794",
+      "bytes": 6429,
+      "compressedBytes": 974,
+      "sha256": "eb4a396eb8c11376dce2fa44a4ed27d33596a95ff385bbc566e06cd0459c8d46",
+      "summary": {
+        "name": "App migration",
+        "serverUrl": "",
+        "description": "Endpoints available in Jira and Confluence cloud instances to support app migrations",
+        "operationCount": 11,
+        "unavailableCount": 11
+      }
+    },
+    {
+      "id": "atlassian-assets",
+      "sourceRevision": "b262df791938ce2e4b67e6239b871fc4d9e045e2107b42b0ce00bc131534dcd1",
+      "bytes": 26237,
+      "compressedBytes": 1803,
+      "sha256": "487f4b4d1718e7abc87bd9b66ec8ea71a67002b10b633fbdac8e034546a2b813",
+      "summary": {
+        "name": "REST",
+        "serverUrl": "",
+        "operationCount": 64,
+        "unavailableCount": 64
+      }
+    },
+    {
+      "id": "atlassian-automation",
+      "sourceRevision": "2075606d700985a8ba78baaf83ae736e6e977975c8e1a24ecb055fb8c60d5d34",
+      "bytes": 9849,
+      "compressedBytes": 1080,
+      "sha256": "5457e8e5e6cc4ecad49961b31fb9bfa4337763b7e045f6bb8e05c598001b8342",
+      "summary": {
+        "name": "New public APIs",
+        "serverUrl": "https://api.atlassian.com/automation/public/jira/none",
+        "description": "New public APIs currently offering manual rules and templates functionality",
+        "operationCount": 30,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "atlassian-backup-management",
+      "sourceRevision": "e25ce0cd0ed9e3da5246b469f3caa6f5de3638c601ec43b2c4f8c5518b3523fa",
+      "bytes": 8388,
+      "compressedBytes": 1081,
+      "sha256": "7659a9c8119b1f0d203d88475ab2b62d1e5d10eb686a012640aa28544dac87c2",
+      "summary": {
+        "name": "Ixport Gateway",
+        "serverUrl": "https://api.atlassian.com",
+        "operationCount": 17,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "bamboo",
+      "sourceRevision": "a5f54819ac94622e3855a4a809404b538858fd98ac51690e25960643634a2b4e",
+      "bytes": 168944,
+      "compressedBytes": 9770,
+      "sha256": "c04f1e6e7ae77731f492c301d76ec4efceffd4df966a60f43e031fca3df7448c",
+      "summary": {
+        "name": "Bamboo",
+        "serverUrl": "http://example.com:8085/rest",
+        "description": "This is the reference document for the Atlassian Bamboo REST API. The REST API is for developers who want to: \n\n - integrate Bamboo with other applications;\n\n - create scripts that interact with Bamboo; or\n\n - develop plugins that enhance the Bamboo UI, using REST to interact with the backend. \n\n You can read more about developing Bamboo plugins in the [Bamboo Developer Documentation](https://developer.atlassian.com/bamboo/server/docs/latest/).",
+        "operationCount": 404,
+        "unavailableCount": 233
+      }
+    },
+    {
+      "id": "bitbucket",
+      "sourceRevision": "701ee30fe04d2ac4708fbba10061836d663466e0d72ed9f5df78b4a239d12b2d",
+      "bytes": 133108,
+      "compressedBytes": 8583,
+      "sha256": "5a1cb051ae77b9bd19f94419927d49f9841681ebd14de8662e8ef0327a2d2654",
+      "summary": {
+        "name": "Bitbucket API",
+        "serverUrl": "https://api.bitbucket.org/2.0",
+        "description": "Code against the Bitbucket API to automate simple tasks, embed Bitbucket data into your own site, build mobile or desktop apps, or even add custom UI add-ons into Bitbucket itself using the Connect framework.",
+        "operationCount": 299,
+        "unavailableCount": 299
+      }
+    },
+    {
+      "id": "bitbucket-dc",
+      "sourceRevision": "29bdc3c5ef420a7ec6c500812d114cba7ca7257b596a6b29a06949846965855e",
+      "bytes": 220289,
+      "compressedBytes": 15596,
+      "sha256": "78efb8a87f594596bf9c42fb8b617829bee0b8c82a2cd7cfd9cc37809d98951a",
+      "summary": {
+        "name": "Bitbucket Data Center",
+        "serverUrl": "http://example.com:7990/rest",
+        "description": "This is the reference document for the Atlassian Bitbucket REST API. The REST API is for developers who want to: \n\n - integrate Bitbucket with other applications;\n\n - create scripts that interact with Bitbucket; or\n\n - develop plugins that enhance the Bitbucket UI, using REST to interact with the backend. \n\n You can read more about developing Bitbucket plugins in the [Bitbucket Developer Documentation](https://developer.atlassian.com/bitbucket/server/docs/latest/).",
+        "operationCount": 574,
+        "unavailableCount": 30
+      }
+    },
+    {
+      "id": "atlassian-capacity-planning",
+      "sourceRevision": "892c1816f193f0184726b8fe403ec0ed35bf025c3612cb7b5bd98b33193484af",
+      "bytes": 5950,
+      "compressedBytes": 881,
+      "sha256": "e638e76dfd8c54e2cef78dd15e061634bbcc5b65a579711e1fd06251c4432387",
+      "summary": {
+        "name": "Capacity Planning Public REST API",
+        "serverUrl": "https://api.atlassian.com/ex/capacity-planning/cloudId/v1",
+        "description": "Public REST endpoints for capacity-planning-service, served under https://api.atlassian.com/ex/capacity-planning/{cloudId}/v1.",
+        "operationCount": 11,
+        "unavailableCount": 11
+      }
+    },
+    {
+      "id": "atlassian-commerce",
+      "sourceRevision": "f857bab047794449bede893e617f6d8f07169837197a6848546546b48faa1d08",
+      "bytes": 13605,
+      "compressedBytes": 1683,
+      "sha256": "5a0cdeb7191bdeadd0486c59a06237a2b25d984b1f6002d1674afc13442eefb6",
+      "summary": {
+        "name": "Commerce Cloud REST API",
+        "serverUrl": "https://api.atlassian.com/commerce/api",
+        "operationCount": 40,
+        "unavailableCount": 7
+      }
+    },
+    {
+      "id": "atlassian-commerce-it",
+      "sourceRevision": "ac779ad77abab91b30d49a1194e39fc025122e9e447ee27fbc3cc360314cd78d",
+      "bytes": 2012,
+      "compressedBytes": 526,
+      "sha256": "28ed9c2d95997cb881d3471f40f549a673ce99bef739c7c4f1739adf83a6b033",
+      "summary": {
+        "name": "Contact Management Service",
+        "serverUrl": "https://api.atlassian.com",
+        "description": "Contact Management Service",
+        "operationCount": 4,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "atlassian-compass",
+      "sourceRevision": "8f958b9531ae81c59ba759c978788ed469dae80829eaadf533c9cab4dd7d96bf",
+      "bytes": 6213,
+      "compressedBytes": 1005,
+      "sha256": "c5619a9ac4aa9da14c24760fb1467b0a2a3284fe28096bd25c59de197f82af1f",
+      "summary": {
+        "name": "Compass REST API",
+        "serverUrl": "https://your-domain.atlassian.net/gateway/api",
+        "operationCount": 11,
+        "unavailableCount": 11
+      }
+    },
+    {
+      "id": "confluence",
+      "sourceRevision": "246e0eec8f432eae39c32250a0ca1a32b233c166f86a80ff1de4dac7f92b9380",
+      "bytes": 93778,
+      "compressedBytes": 6308,
+      "sha256": "4209056800bf394702f718084910054e0e8daacf9cedc9b3d7e1914b1d4e3aff",
+      "summary": {
+        "name": "The Confluence Cloud REST API v2",
+        "serverUrl": "https://no-default/wiki/api/v2",
+        "description": "This document describes Confluence's v2 APIs. This is intended to be an iteration on the existing Confluence Cloud REST API with improvements in both endpoint definitions and performance.",
+        "operationCount": 252,
+        "unavailableCount": 252
+      }
+    },
+    {
+      "id": "atlassian-confluence-v1",
+      "sourceRevision": "425d07cb7147488c83e56be050d8a0e038800ccce877c142bdb65f7302370d82",
+      "bytes": 72898,
+      "compressedBytes": 4997,
+      "sha256": "eeb4c659c588a62413136f901a542f363aaa3a47edcf07dd506520c4e7b5920e",
+      "summary": {
+        "name": "The Confluence Cloud REST API",
+        "serverUrl": "",
+        "description": "This document describes the REST API and resources provided by Confluence. The REST APIs are for developers who want to integrate Confluence into their application and for administrators who want to script interactions with the Confluence server.Confluence's REST APIs provide access to resources (data entities) via URI paths. To use a REST API, your application will make an HTTP request and parse the response. The response format is JSON. Your methods will be the standard HTTP methods like GET, PUT, POST and DELETE. Because the REST API is based on open standards, you can use any web development language to access the API.",
+        "operationCount": 130,
+        "unavailableCount": 130
+      }
+    },
+    {
+      "id": "confluence-dc",
+      "sourceRevision": "a20bb68180054070bc809be40c65f7499492f346212081a120e02b3f086de13e",
+      "bytes": 61707,
+      "compressedBytes": 5702,
+      "sha256": "e6450d7d4e3ad3e24a8deda6333b984f37fa5f6d99e61752067f4879c4f8848c",
+      "summary": {
+        "name": "Confluence Data Center",
+        "serverUrl": "http://example.com:7990/confluence",
+        "description": "This is the reference document for the Atlassian Confluence DC REST API. The REST API is for developers who want to: \n\n - integrate Confluence with other applications;\n\n - create scripts that interact with Confluence; or\n\n - develop plugins that enhance the Confluence UI, using REST to interact with the backend. \n\n You can read more about developing Confluence plugins in the [Confluence Developer Documentation](https://developer.atlassian.com/server/confluence/).",
+        "operationCount": 183,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "crowd-dc",
+      "sourceRevision": "8b50d91e187075ac0e0879bf7d02653b033b524b9c380fdcce42bd7d5ee42a12",
+      "bytes": 48614,
+      "compressedBytes": 4370,
+      "sha256": "e56245361101681d632dfe804a08a82de7322ef4382f82074e848326a4c31e6f",
+      "summary": {
+        "name": "Crowd Data Center",
+        "serverUrl": "http://example.com:8095/rest",
+        "description": "This is the reference document for the Atlassian Crowd DC REST API. The REST API is for developers who want to: \\n\\n - integrate Crowd with other applications;\\n\\n - create scripts that interact with Crowd; or\\n\\n - develop plugins that enhance the Crowd UI, using REST to interact with the backend. \\n\\n You can read more about developing Crowd plugins in the [Crowd Developer Documentation](https://developer.atlassian.com/server/crowd/).",
+        "operationCount": 143,
+        "unavailableCount": 2
+      }
+    },
+    {
+      "id": "atlassian-customer-service-management",
+      "sourceRevision": "e4f38a292bbdd3ac6344be7b1bd8a8fbd92007c21480cd2afa671bd8fa6d0e02",
+      "bytes": 29073,
+      "compressedBytes": 1974,
+      "sha256": "00c477c0fb3f4d890047be4d08c213108a7795d5af55a49ebba7607681ef9b7d",
+      "summary": {
+        "name": "Atlassian CSM API",
+        "serverUrl": "",
+        "operationCount": 60,
+        "unavailableCount": 60
+      }
+    },
+    {
+      "id": "atlassian-focus",
+      "sourceRevision": "1c6c34f5e4269cbb6de5ee2460c6cc8b0c7070116742fc194cfddc038285d7a4",
+      "bytes": 13770,
+      "compressedBytes": 1253,
+      "sha256": "147ba0704e6f9cac6e699471face9d9cb21222f5d6a0250922ecb59c60a7489f",
+      "summary": {
+        "name": "Focus REST API",
+        "serverUrl": "",
+        "description": "External API for reading and writing Focus data.",
+        "operationCount": 26,
+        "unavailableCount": 26
+      }
+    },
+    {
+      "id": "atlassian-forge-containers",
+      "sourceRevision": "979f75481a979fd6ca47ecca030206d980319cb72f1b967ef543206b3b49f5f1",
+      "bytes": 21202,
+      "compressedBytes": 2234,
+      "sha256": "2fdd35333da50e4b5254664b5e18c133db6ebe3b447f22057e4715314ac26396",
+      "summary": {
+        "name": "Forge Containers API",
+        "serverUrl": "http://localhost:7072",
+        "description": "The Forge Containers Public API\n\n**Important:** The API base URL should be read from the `FORGE_EGRESS_PROXY_URL` environment variable.\nThe localhost URL in the servers section is for documentation purposes only.",
+        "operationCount": 60,
+        "unavailableCount": 2
+      }
+    },
+    {
+      "id": "atlassian-forge-storage",
+      "sourceRevision": "7d88235425639ebd288e85745f17e6af5691e05ffddb86f5795c545aefe53f99",
+      "bytes": 5904,
+      "compressedBytes": 1005,
+      "sha256": "048fbfa8bdfa9da3a6e369c6386d6984a40a7b9a2a72baa05669e2c8cef65dff",
+      "summary": {
+        "name": "Key-Value Store/Custom Entity Store REST API",
+        "serverUrl": "https://api.atlassian.com/forge/storage/kvs",
+        "description": "Forge provides hosted storage capabilities for storing your app's data:\n- **Key-Value Store** - stores data as key-value pairs\n- **Custom Entity Store** - stores data within custom data structures (entities)\nBoth capabilities have resources that can be used natively, or accessed by remote resources via REST API. For more information about both capabilities,\nsee [storage-api](https://developer.atlassian.com/platform/forge/runtime-reference/storage-api/).",
+        "operationCount": 15,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "atlassian-forms",
+      "sourceRevision": "59bc96a8e30792e5be7af817ac37100d9ffbebdde4d2c3614b288333b0220688",
+      "bytes": 15535,
+      "compressedBytes": 1334,
+      "sha256": "f95c3503766253425d702035f19936f22df33ba58009b07e0996971c50882714",
+      "summary": {
+        "name": "ProForma Forms RESTful API",
+        "serverUrl": "",
+        "operationCount": 34,
+        "unavailableCount": 34
+      }
+    },
+    {
+      "id": "atlassian-incidents",
+      "sourceRevision": "9788e6bd62b45a5a157e5a0854f9586ea9bf18bfe573ea6d6932d5a40e950339",
+      "bytes": 14921,
+      "compressedBytes": 1354,
+      "sha256": "9b39862f228eea852f9295149f249ee0684f010dd08ec4be8057ddb9cb081dcb",
+      "summary": {
+        "name": "JSM Incident API",
+        "serverUrl": "https://api.atlassian.com",
+        "description": "Incident Management APIs for Jira Service Management",
+        "operationCount": 27,
+        "unavailableCount": 27
+      }
+    },
+    {
+      "id": "jira",
+      "sourceRevision": "ae048ce3f43809abb18e96523e22c8adb67b6f720bfc4bf4c59594822c3cb325",
+      "bytes": 233889,
+      "compressedBytes": 18940,
+      "sha256": "19cf7075d31cd8041415f8791c4d39566c54d30ff4f4dd1cabf4de2e418fa6ed",
+      "summary": {
+        "name": "The Jira Cloud platform REST API",
+        "serverUrl": "https://your-domain.atlassian.net",
+        "description": "Jira Cloud platform REST API documentation",
+        "operationCount": 630,
+        "unavailableCount": 623
+      }
+    },
+    {
+      "id": "jira-service-management",
+      "sourceRevision": "e2ff7579a087099e6482b78475730ea508e8933e8349af3b4fe58eb1a9cad944",
+      "bytes": 30606,
+      "compressedBytes": 2407,
+      "sha256": "570d77b5036e205bd17a4e9da0b6e16aeb94f76c79fb09cfb2261fb567d4c8b4",
+      "summary": {
+        "name": "Service Management Public REST API",
+        "serverUrl": "https://your-domain.atlassian.net",
+        "description": "Public REST API for Jira Service Management",
+        "operationCount": 75,
+        "unavailableCount": 1
+      }
+    },
+    {
+      "id": "jira-service-management-dc",
+      "sourceRevision": "27d6db98596167a55360de4566f865ed091c5c83b030663cc8c9300cbf763a07",
+      "bytes": 221590,
+      "compressedBytes": 16695,
+      "sha256": "c745e788832f16903d34bdaf1a18f7fb724b8647765d1d5749eca48505561761",
+      "summary": {
+        "name": "JIRA Service Management REST API Reference",
+        "serverUrl": "http://localhost:2990/rest",
+        "description": "This is the reference document for the REST API and resources provided by Jira Service Management Data Center. The REST APIs are for developers who want to integrate Jira Service Management Data Center with other applications, and for administrators who want to script configuration interactions with Jira Service Management Data Center.## Using the REST API\nNot familiar with the Jira Service Management REST APIs? Start with our [Guide to exploring the Jira Service Management domain model via the REST APIs](https://developer.atlassian.com/display/JIRADEV/Guide+-+Exploring+the+JIRA+Service+Desk+domain+model+via+the+REST+APIs), which will help you get a conceptual understanding of the Jira Service Management Data Center REST APIs.\n\nIf you want instructions on how to use the REST APIs, check out the information on the following topics:\n* [Structure of the REST URIs](/server/jira-servicedesk/info/url-structure)\n* [Authentication](/server/jira-servicedesk/info/authentication)\n* [Expansion](/server/jira-servicedesk/info/expansion)\n* [Special headers](/server/jira-servicedesk/info/special-headers)\n* [Field input formats](/server/jira-servicedesk/info/field-input-formats)\n### Experimental methods\nMethods marked as `EXPERIMENTAL` may change without notice. We are looking for your feedback for these methods. To use experimental methods, you must set this header in your requests: `X-ExperimentalApi : true`. This indicates that you are opting into the experimental preview. Once a resource or method moves out of the experimental phase, then this header will no longer be required nor checked.",
+        "operationCount": 514,
+        "unavailableCount": 387
+      }
+    },
+    {
+      "id": "jira-service-management-ops",
+      "sourceRevision": "c0fb62c243a89256567fdfb82d3667cd779f9a99dff9a9efe5b3a99b375b0d1d",
+      "bytes": 113304,
+      "compressedBytes": 6811,
+      "sha256": "2780b81e7470d4578422519ce081026585df63f3468a02ba9224fc123ce1f73f",
+      "summary": {
+        "name": "JSM Operations API",
+        "serverUrl": "https://api.atlassian.com/jsm/ops",
+        "description": "Operations APIs for Jira Service Management",
+        "operationCount": 240,
+        "unavailableCount": 240
+      }
+    },
+    {
+      "id": "jira-software",
+      "sourceRevision": "c4f7d6166c144f7d2be29caa0cb22f554798c5c022f7cbd778d3553978e7e8e8",
+      "bytes": 44479,
+      "compressedBytes": 3225,
+      "sha256": "3da0f0bc05b858c0bee431f8de46715dbfdceeea3dfdfc38301b81a2626db6df",
+      "summary": {
+        "name": "Jira Software Cloud API",
+        "serverUrl": "https://your-domain.atlassian.net",
+        "description": "Jira Software Cloud REST API documentation",
+        "operationCount": 105,
+        "unavailableCount": 84
+      }
+    },
+    {
+      "id": "jira-dc",
+      "sourceRevision": "81605e461c6c30fda0a24b169a2650a69544f1d7391b8372b211008bf312a435",
+      "bytes": 173689,
+      "compressedBytes": 13975,
+      "sha256": "5bab100b02757891a0b4cf4c5280e52823dd494fe1ce33c4f82b0e663ca799c0",
+      "summary": {
+        "name": "Jira Software Data Center REST API Reference",
+        "serverUrl": "http://localhost:8090/rest",
+        "description": "This is the reference document for the REST API and resources provided by Jira Software Data Center. The REST APIs are for developers who want to integrate Jira Data Center with other applications, and for administrators who want to script configuration interactions with Jira Data Center.\n\nJira Data Center is built upon the Jira platform.  As such there is a natural overlap in functionality between what is provided by Jira Data Center and what is provided by the Jira platform.  If you are after an introductory, high-level view of the Jira REST APIs, then the best place to start is the [Jira REST API home](https://developer.atlassian.com/server/jira/platform/rest-apis/).\n## Using the REST API\nNot familiar with the Jira Data Center REST APIs? Start with our [Guide to exploring the Jira Data Center domain model via the REST APIs](https://developer.atlassian.com/server/jira/platform/tutorials_and_guides/), which will help you get a conceptual understanding of the Jira Data Center REST APIs.\n\nIf you want instructions on how to use the REST APIs, check out the [Appendix](#appendix) at the end of this page (after the resources), where you'll find information on the following topics:\n* [Structure of the REST URIs](#structure)\n* [Authentication](#authentication)\n* [Pagination](#pagination)\n* [Expansion](#expansion)\n* [Special headers](#special-headers)\n* [Field input formats](#fieldformats)\n### Experimental methods\nMethods marked as `EXPERIMENTAL` may change without notice. We are looking for your feedback for these methods. To use experimental methods, you must set this header in your requests: `X-ExperimentalApi : true`. This indicates that you are opting into the experimental preview. Once a resource or method moves out of the experimental phase, then this header will no longer be required nor checked.",
+        "operationCount": 437,
+        "unavailableCount": 402
+      }
+    },
+    {
+      "id": "atlassian-marketplace",
+      "sourceRevision": "7489e7bda44df7b659db8a8b448f1e918afab0ec8164370bac021ae5aed30f0a",
+      "bytes": 60490,
+      "compressedBytes": 4230,
+      "sha256": "b4984bf6445ca499c16598b1e91c0bec17313aab37880e563c21ca21a3ab3c48",
+      "summary": {
+        "name": "Atlassian Marketplace API",
+        "serverUrl": "https://marketplace.atlassian.com/rest/2",
+        "operationCount": 143,
+        "unavailableCount": 109
+      }
+    },
+    {
+      "id": "atlassian-marketplace-product-tags",
+      "sourceRevision": "b2ff5be0cacb2b1ec99fb496c271806513f7b1be71c5c7308ac11d07b3d40660",
+      "bytes": 1402,
+      "compressedBytes": 496,
+      "sha256": "c70e82d311273e5fcd2daa1cf9c3a6355acda5ffb220bb89b19b92b4b0a666a4",
+      "summary": {
+        "name": "Atlassian Marketplace API",
+        "serverUrl": "https://api.atlassian.com",
+        "operationCount": 2,
+        "unavailableCount": 1
+      }
+    },
+    {
+      "id": "atlassian-migration-api",
+      "sourceRevision": "815d5b8d51820aa49d8a77916fd1732b1b2a1b1dd6dc4ca6d5013f271d8b297f",
+      "bytes": 4102,
+      "compressedBytes": 707,
+      "sha256": "55f7388a1d46a6763bdae149b8bf9a8272e4f70d54c7ed92bb9fc91b9285d47a",
+      "summary": {
+        "name": "Migration Public APIs",
+        "serverUrl": "https://api.atlassian.com",
+        "operationCount": 9,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "atlassian-migration-utilities",
+      "sourceRevision": "8bdd7cc1b4f8f01115d78bb5a2db3be0f7b2dc2be9582198ae28efbd0862ae4d",
+      "bytes": 2910,
+      "compressedBytes": 647,
+      "sha256": "e2fac44c1047ef757479375dee0491e818e235ece00b900ef6611b7d7e083623",
+      "summary": {
+        "name": "Migration REST API",
+        "serverUrl": "",
+        "description": "REST API related to migrations from Server or Data Center to Cloud.",
+        "operationCount": 6,
+        "unavailableCount": 6
+      }
+    },
+    {
+      "id": "opsgenie",
+      "sourceRevision": "b692deb7459813317d9586497bd16e72e12b30be3622d227f6c0b8eec84434b4",
+      "bytes": 49946,
+      "compressedBytes": 4253,
+      "sha256": "9360cfbef079285ff501477cacbc947592b8aceec7d0aef03a9b00d9b2b6bf13",
+      "summary": {
+        "name": "Opsgenie REST API",
+        "serverUrl": "https://api.opsgenie.com",
+        "description": "Opsgenie OpenAPI Specification",
+        "operationCount": 170,
+        "unavailableCount": 6
+      }
+    },
+    {
+      "id": "atlassian-privacy-consent",
+      "sourceRevision": "336dd349ab3630eeed6ff061d568260600a42a0a32da502d69946ca8aac64794",
+      "bytes": 1627,
+      "compressedBytes": 592,
+      "sha256": "ca0f21538eb4e35b62d31cbd325b73e231e9fc4ddfed800a1fd2444da6ac9241",
+      "summary": {
+        "name": "ConsentHub API Documentation",
+        "serverUrl": "https://api.atlassian.com/consent-hub",
+        "description": "Welcome to the ConsentHub API documentation. This page documents the REST resources available.",
+        "operationCount": 2,
+        "unavailableCount": 2
+      }
+    },
+    {
+      "id": "atlassian-security-vulnerabilities",
+      "sourceRevision": "83c1eec55cd522f6ecbf863166e2dd5647e23515a5b9b7b34cb93f7e7f7ad816",
+      "bytes": 2243,
+      "compressedBytes": 628,
+      "sha256": "231eb3ffaec87eb40a6c61dc229b526e28da4323c2f9dd58be2117d5d6c0f02f",
+      "summary": {
+        "name": "Security Vulnerability API",
+        "serverUrl": "https://api.atlassian.com/vuln-transparency",
+        "description": "An API to fetch public Atlassian product vulnerabilities, accompanying CVE details, and the vulnerability issue status.",
+        "operationCount": 4,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "statuspage",
+      "sourceRevision": "347dd95cf7ea903307a8b1769efa7aa75fb07972bb51a050b7cceffaa441e911",
+      "bytes": 45327,
+      "compressedBytes": 4069,
+      "sha256": "9b545a28fcf413ee4fcdcb7310ad62989fcfec7d4d1a0ddee00e5945234c4b6f",
+      "summary": {
+        "name": "Statuspage API",
+        "serverUrl": "https://api.statuspage.io/v1",
+        "description": "# Code of Conduct\nPlease don't abuse the API, and please report all feature requests and issues to\nhttps://support.atlassian.com/contact\n\n# Rate Limiting\nEach API token is limited to 1 request / second as measured on a 60 second rolling window.\nTo get this limit increased, please contact us at https://support.atlassian.com/contact\n\nError codes 420 or 429 indicate that you have exceeded the rate limit and the request has been rejected.\n\n# Basics\n\n## HTTPS\nIt's required\n\n## URL Prefix\nIn order to maintain version integrity into the future, the API is versioned. All calls\ncurrently begin with the following prefix:\n\n  https://api.statuspage.io/v1/\n\n## RESTful Interface\nWherever possible, the API seeks to implement repeatable patterns with logical,\nrepresentative URLs and descriptive HTTP verbs. Below are some examples and conventions\nyou will see throughout the documentation.\n\n* Collections are buckets: https://api.statuspage.io/v1/pages/asdf123/incidents.json\n* Elements have unique IDs: https://api.statuspage.io/v1/pages/asdf123/incidents/jklm456.json\n* GET will retrieve information about a collection/element\n* POST will create an element in a collection\n* PATCH will update a single element\n* PUT will replace a single element in a collection (rarely used)\n* DELETE will destroy a single element\n\n## Sending Data\nInformation can be sent in the body as form urlencoded or JSON, but make sure the\nContent-Type header matches the body structure or the server gremlins will be angry.\n\nAll examples are provided in JSON format, however they can easily be converted to form encoding\nif required.  Some examples of how to convert things are below:\n\n    // JSON\n    {\n      \"incident\": {\n        \"name\": \"test incident\",\n        \"components\": [\"8kbf7d35c070\", \"vtnh60py4yd7\"]\n      }\n    }\n\n    // Form Encoded (using curl as an example):\n    curl -X POST https://api.statuspage.io/v1/example \\\n      -d \"incident[name]=test incident\" \\\n      -d \"incident[components][]=8kbf7d35c070\" \\\n      -d \"incident[components][]=vtnh60py4yd7\"\n\n# Authentication\n\n<!-- ReDoc-Inject: <security-definitions> -->",
+        "operationCount": 112,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "atlassian-teams",
+      "sourceRevision": "788af50e234210aef7604eabb6621b7dfe9a2fe44f0a13b5b2a2396b55547261",
+      "bytes": 6753,
+      "compressedBytes": 1123,
+      "sha256": "1547085f523a3ad89d91174b5c0172884c39365db658bedfc113f143064078f3",
+      "summary": {
+        "name": "Teams API",
+        "serverUrl": "https://api.atlassian.com",
+        "description": "Teams API\n\nNote: This REST API is not feature complete. New Teams capabilities are being built in GraphQL. For the full set of features, see the [Teams GraphQL API](https://developer.atlassian.com/platform/teams/teams-graphql-api/introduction/).",
+        "operationCount": 15,
+        "unavailableCount": 1
+      }
+    },
+    {
+      "id": "trello",
+      "sourceRevision": "567720e9a207a5fb8cc910ebf5457bf76594d0119a8c4a30af83bf57074e1b26",
+      "bytes": 72901,
+      "compressedBytes": 6536,
+      "sha256": "5190d48df96f5b45afe01cda51fe91bc2e39113a0ac4c57eb0b62e95fdb9a418",
+      "summary": {
+        "name": "Trello REST API",
+        "serverUrl": "https://api.trello.com/1",
+        "operationCount": 261,
+        "unavailableCount": 28
+      }
+    },
+    {
       "id": "aws-lambda",
       "sourceRevision": "da4be377c6195d8d2a9d6ef71d18ce4b93f21021ec7924e407753535f60ae2a1",
       "bytes": 32946,
@@ -54,20 +643,6 @@
         "description": "<p/>",
         "operationCount": 97,
         "unavailableCount": 91
-      }
-    },
-    {
-      "id": "bitbucket",
-      "sourceRevision": "701ee30fe04d2ac4708fbba10061836d663466e0d72ed9f5df78b4a239d12b2d",
-      "bytes": 133108,
-      "compressedBytes": 8583,
-      "sha256": "5a1cb051ae77b9bd19f94419927d49f9841681ebd14de8662e8ef0327a2d2654",
-      "summary": {
-        "name": "Bitbucket API",
-        "serverUrl": "https://api.bitbucket.org/2.0",
-        "description": "Code against the Bitbucket API to automate simple tasks, embed Bitbucket data into your own site, build mobile or desktop apps, or even add custom UI add-ons into Bitbucket itself using the Connect framework.",
-        "operationCount": 299,
-        "unavailableCount": 299
       }
     },
     {
@@ -138,20 +713,6 @@
         "description": "The Cohere API for interacting with Chat, Embed and Rerank models.",
         "operationCount": 42,
         "unavailableCount": 2
-      }
-    },
-    {
-      "id": "confluence",
-      "sourceRevision": "246e0eec8f432eae39c32250a0ca1a32b233c166f86a80ff1de4dac7f92b9380",
-      "bytes": 93778,
-      "compressedBytes": 6308,
-      "sha256": "4209056800bf394702f718084910054e0e8daacf9cedc9b3d7e1914b1d4e3aff",
-      "summary": {
-        "name": "The Confluence Cloud REST API v2",
-        "serverUrl": "https://no-default/wiki/api/v2",
-        "description": "This document describes Confluence's v2 APIs. This is intended to be an iteration on the existing Confluence Cloud REST API with improvements in both endpoint definitions and performance.",
-        "operationCount": 252,
-        "unavailableCount": 252
       }
     },
     {
@@ -389,20 +950,6 @@
         "description": "Deploy and manage Hugging Face models as production-ready inference endpoints on various cloud providers.",
         "operationCount": 46,
         "unavailableCount": 0
-      }
-    },
-    {
-      "id": "jira",
-      "sourceRevision": "ae048ce3f43809abb18e96523e22c8adb67b6f720bfc4bf4c59594822c3cb325",
-      "bytes": 233889,
-      "compressedBytes": 18940,
-      "sha256": "19cf7075d31cd8041415f8791c4d39566c54d30ff4f4dd1cabf4de2e418fa6ed",
-      "summary": {
-        "name": "The Jira Cloud platform REST API",
-        "serverUrl": "https://your-domain.atlassian.net",
-        "description": "Jira Cloud platform REST API documentation",
-        "operationCount": 630,
-        "unavailableCount": 623
       }
     },
     {

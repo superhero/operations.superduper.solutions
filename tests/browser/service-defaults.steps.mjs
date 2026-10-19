@@ -109,6 +109,41 @@ Then('provider schema names use these paths across saved-label updates', async f
   assert.deepEqual(await stored(page), after, 'Current labels must not be written again on every startup.');
 });
 
+Then('all Atlassian catalogs share the provider prefix and retain a newly disabled product after reload', { timeout: 60_000 }, async function () {
+  const page = this.page;
+  const products = descriptors.filter(source => source.provider === 'atlassian');
+  assert.equal(products.length, 43);
+  await schemas(page);
+  for (const source of products) {
+    await expect(card(page, source.id).locator('.schema-name-label')).toHaveText(source.name);
+    await expect(card(page, source.id).getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+  }
+  await openCatalog(page);
+  for (const source of products) {
+    const heading = page.locator(`[data-catalog-group="${source.id}"] > .catalog-group > summary`);
+    await expect(heading).toContainText(source.name);
+  }
+  await page.locator('[data-catalog-group="statuspage"] > .catalog-group > summary').click();
+  await page.locator('[data-catalog-group="statuspage:tag:pages"] > .catalog-group > summary').click();
+  const operation = page.locator('[data-operation-id="statuspage:GET /pages"] > button');
+  await expect(operation).toBeEnabled();
+  await operation.click();
+  await closeCatalog(page);
+  await expect(page.locator('.svelte-flow__node-operation')).toContainText('Get a list of pages');
+  await expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
+  await schemas(page);
+  await card(page, 'trello').getByRole('switch').click();
+  await expect(card(page, 'trello').getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await expect(page.getByRole('region', { name: 'OpenAPI documents', exact: true })).toHaveAttribute('aria-busy', 'false');
+  await reload(page);
+  await expect(page.locator('.svelte-flow__node-operation')).toContainText('Get a list of pages');
+  await expect(card(page, 'trello').getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await expect(card(page, 'jira').locator('.schema-name-label')).toHaveText('Atlassian / Jira / Cloud');
+  await openCatalog(page);
+  await expect(page.locator('[data-catalog-group="trello"]')).toHaveCount(0);
+  await expect(page.locator('[data-catalog-group="statuspage"] > .catalog-group > summary')).toContainText('Atlassian / Statuspage');
+});
+
 Then('all initial schemas sort by displayed name and keep a manually saved order', async function () {
   const page = this.page;
   const expected = [...bundledCatalogs.map(({ id, name }) => ({ id, name })), ...descriptors]

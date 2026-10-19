@@ -9,11 +9,11 @@ Feature: Default service schemas in the application
       | id                 | previous                          | name                               |
       | aws-lambda         | AWS — Lambda                      | AWS / Lambda                       |
       | aws-s3             | AWS — S3                          | AWS / S3                           |
-      | bitbucket          | Bitbucket Cloud                   | Bitbucket / Cloud                  |
+      | bitbucket          | Bitbucket / Cloud                 | Atlassian / Bitbucket / Cloud      |
       | bluesky-app        | Bluesky — App and AT Protocol      | Bluesky / App and AT Protocol       |
       | bluesky-dms        | Bluesky — Direct messages         | Bluesky / Direct messages          |
       | bluesky-moderation | Bluesky — Ozone moderation        | Bluesky / Ozone moderation         |
-      | confluence         | Confluence Cloud                  | Confluence / Cloud                 |
+      | confluence         | Confluence / Cloud                | Atlassian / Confluence / Cloud     |
       | docker             | Docker Engine                     | Docker / Engine                    |
       | dukascopy          | Dukascopy Trading Tools           | Dukascopy / Trading Tools          |
       | ecb                | ECB Data Portal                   | ECB / Data Portal                  |
@@ -23,13 +23,17 @@ Feature: Default service schemas in the application
       | gemini             | Google Gemini — Interactions      | Google / Gemini / Interactions     |
       | hetzner            | Hetzner Cloud                     | Hetzner / Cloud                    |
       | huggingface        | Hugging Face — Inference Endpoints | Hugging Face / Inference Endpoints |
-      | jira               | Jira Cloud                        | Jira / Cloud                       |
+      | jira               | Jira / Cloud                      | Atlassian / Jira / Cloud           |
       | azure-resources    | Microsoft Azure — Resources       | Microsoft / Azure / Resources      |
       | telegram           | Telegram Bot API                  | Telegram / Bot API                 |
 
   @service-defaults
   Scenario: FRED and ALFRED are separate economic data catalogs with usable workflow nodes
     Then FRED observations and ALFRED vintages are available in separate catalogs and survive workflow reload
+
+  @service-defaults
+  Scenario: Atlassian product names appear consistently in settings and the operation menu
+    Then all Atlassian catalogs share the provider prefix and retain a newly disabled product after reload
 
   @service-defaults
   Scenario: Initial schema order is alphabetical and subsequent manual ordering persists

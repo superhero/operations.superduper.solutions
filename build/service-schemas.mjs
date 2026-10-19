@@ -10,6 +10,8 @@ import { parse } from 'yaml';
 import converter from 'swagger2openapi';
 import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
+import { extractRedocSchema } from './redoc-schema.mjs';
+import { useMethodPathOperationIds } from './service-operation-identities.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const cache = resolve(root, 'tmp/schema-sources');
@@ -24,7 +26,7 @@ let index;
 try { index = JSON.parse(await readFile(indexPath, 'utf8')); } catch { index = []; }
 let running = 0;
 const waiting = [];
-async function download(url) {
+async function download(url, allowHtml = false) {
   if (!url.startsWith('https://')) throw new Error(`Schema references must use HTTPS: ${url}`);
   const filename = resolve(cache, sha(url));
   try { return await readFile(filename, 'utf8'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
@@ -38,7 +40,7 @@ async function download(url) {
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${url}`);
         const text = await response.text();
         if (Buffer.byteLength(text) > 50 * 1024 * 1024) throw new Error(`Schema source exceeds 50 MiB: ${url}`);
-        if (/^\s*(?:<!doctype|<html)/i.test(text)) throw new Error(`Expected a schema but received HTML: ${url}`);
+        if (!allowHtml && /^\s*(?:<!doctype|<html)/i.test(text)) throw new Error(`Expected a schema but received HTML: ${url}`);
         await writeFile(filename, text);
         return text;
       } catch (error) { failure = error; }
@@ -49,8 +51,8 @@ async function download(url) {
 const resolver = { order: 1, canRead: /^https:\/\//i, read: file => download(file.url) };
 for (const source of sources) {
   if (selected.length && !selected.includes(source.id)) continue;
-  const text = source.file ? await readFile(resolve(root, source.file), 'utf8') : await download(source.url);
-  let document = parse(text);
+  const text = source.file ? await readFile(resolve(root, source.file), 'utf8') : await download(source.url, source.conversion === 'redoc');
+  let document = source.conversion === 'redoc' ? extractRedocSchema(text) : parse(text);
   if (source.conversion === 'swagger2') {
     document = await bundleSwaggerReferences(document, source.url, download);
     document = (await converter.convertObj(document, { patch: true, warnOnly: false })).openapi;
@@ -59,6 +61,7 @@ for (const source of sources) {
   document = await RefParser.bundle(source.url ?? resolve(root, source.file), document,
     { resolve: { file: false, http: resolver } });
   if (source.profile === 'fred' || source.profile === 'alfred') document = adaptFredSchema(document, source.profile);
+  if (source.operationIds === 'method-path') document = useMethodPathOperationIds(document);
   if ((typeof document.info?.version !== 'string' || !document.info.version) && source.version) document.info.version = source.version;
   if (typeof document.info?.version !== 'string' || !document.info.version) throw new Error(`${source.id}: missing schema version; specify a documented source snapshot version.`);
   if (!/^3\.(0|1)\./.test(document?.openapi) || !document.info || !document.paths)

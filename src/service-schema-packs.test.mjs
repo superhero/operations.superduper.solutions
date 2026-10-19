@@ -16,9 +16,9 @@ Then('all service schema packs match their size hash and operation inventory', a
   const ids = serviceSchemaDescriptors.map(item => item.id);
   assert.equal(new Set(ids).size, ids.length);
   assert.deepEqual([...new Set(serviceSchemaDescriptors.map(item => item.provider ?? item.id))].sort(), [
-    'anthropic', 'aws', 'azure', 'bitbucket', 'bluesky', 'cloudflare', 'cohere', 'confluence', 'deepseek',
+    'anthropic', 'atlassian', 'aws', 'azure', 'bluesky', 'cloudflare', 'cohere', 'deepseek',
     'digitalocean', 'discord', 'docker', 'dukascopy', 'ecb', 'elevenlabs', 'frankfurter', 'fred', 'gcp',
-    'gemini', 'github', 'gitlab', 'groq', 'hetzner', 'huggingface', 'jira', 'mistral', 'ollama', 'openai',
+    'gemini', 'github', 'gitlab', 'groq', 'hetzner', 'huggingface', 'mistral', 'ollama', 'openai',
     'openrouter', 'render', 'replicate', 'resend', 'telegram', 'together', 'twilio', 'vercel', 'x', 'xai'
   ]);
   for (const descriptor of serviceSchemaDescriptors) {
@@ -47,6 +47,52 @@ Then('all service schema packs match their size hash and operation inventory', a
   assert.deepEqual(await decodeServiceSchema(large.pack, large.descriptor), { description: 'test '.repeat(20_000) });
   await assert.rejects(readServiceSchema('does-not-exist'), /unavailable/);
   await assert.rejects(readServiceSchema(serviceSchemaDescriptors[0].id, { descriptors: serviceSchemaDescriptors, packs: {} }), /unavailable/);
+});
+
+Then('embedded ReDoc exports preserve OpenAPI data and reject missing malformed or incomplete contracts', async () => {
+  const { extractRedocSchema } = await import('../build/redoc-schema.mjs');
+  const document = { openapi: '3.0.3', info: { title: 'Status API', version: '1', description: 'Braces { } and escaped "quotes" \\ are data.' },
+    paths: { '/status': { get: { responses: { '200': { description: 'OK', content: { 'application/json': { schema: { $ref: '#/components/schemas/Status' } } } } } } } },
+    components: { schemas: { Status: { type: 'string', enum: ['operational', 'degraded'] } } } };
+  for (const declaration of ['const', 'let', 'var']) {
+    const before = globalThis.__redocExecuted;
+    const html = `<html><script>${declaration} __redoc_state = ${JSON.stringify({ spec: { data: document }, menu: {} })};\n`
+      + 'globalThis.__redocExecuted = true; Redoc.hydrate(__redoc_state);</script></html>';
+    assert.deepEqual(extractRedocSchema(html), document);
+    assert.equal(globalThis.__redocExecuted, before, 'Only JSON is parsed; surrounding JavaScript must never execute.');
+  }
+  for (const html of ['', '<html>Missing contract</html>', 'const __redoc_state = {"spec":',
+    'const __redoc_state = {spec: {data: {}}};', 'const __redoc_state = {"spec":{"data":[]}};',
+    'const __redoc_state = {"spec":{"data":{"openapi":"2.0","info":{},"paths":{}}}};'])
+    assert.throws(() => extractRedocSchema(html));
+});
+
+Then('method and path identities preserve aliased operations and recursive models without changing existing contracts', async () => {
+  const { useMethodPathOperationIds } = await import('../build/service-operation-identities.mjs');
+  const document = { openapi: '3.0.3', info: { title: 'Aliased API', version: '1' },
+    paths: {
+      '/v1/items/{id}': { parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        get: { operationId: 'read', security: [{ Token: [] }], responses: { '200': { description: 'OK',
+          content: { 'application/json': { schema: { $ref: '#/components/schemas/Item' } } } } } } },
+      '/latest/items/{id}': { $ref: '#/paths/~1v1~1items~1%7Bid%7D' },
+      '/other': { get: { operationId: 'read', responses: { '200': { description: 'OK' } } } },
+    }, components: { schemas: { Item: { type: 'object', properties: {
+      operationId: { type: 'string', example: 'data, not a workflow identity' },
+      child: { $ref: '#/components/schemas/Item' },
+    } } } } };
+  const before = structuredClone(document);
+  const adapted = useMethodPathOperationIds(document);
+  assert.deepEqual(document, before);
+  for (const [path, item] of Object.entries(adapted.paths)) assert.equal(item.get.operationId, `GET ${path}`);
+  assert.equal(adapted.paths['/latest/items/{id}']['x-upstream-path-ref'], document.paths['/latest/items/{id}'].$ref);
+  assert.equal(adapted.paths['/latest/items/{id}'].get['x-upstream-operation-id'], 'read');
+  assert.deepEqual(adapted.paths['/latest/items/{id}'].parameters, document.paths['/v1/items/{id}'].parameters);
+  assert.deepEqual(adapted.paths['/latest/items/{id}'].get.security, [{ Token: [] }]);
+  assert.deepEqual(adapted.components, document.components);
+  assert.equal(adapted.paths['/v1/items/{id}'].get.responses['200'].content['application/json'].schema.$ref, '#/components/schemas/Item');
+  const invalid = structuredClone(document);
+  invalid.paths['/v1/items/{id}'] = { $ref: '#/paths/~1latest~1items~1%7Bid%7D' };
+  assert.throws(() => useMethodPathOperationIds(invalid), /cyclic/);
 });
 Then('service schema decoding rejects corrupt metadata compressed data and JSON', async () => {
   const valid = fixture({ openapi: '3.1.0' });
