@@ -1,6 +1,20 @@
 {
-  "adapterRevision": "2f64d3b656f883a54a51c0650923172a0ef72de61a1e8e2fc2e11686939903d5",
+  "adapterRevision": "bac48ba295d202380d70ee65a58529147f87ec04ea9f339a62c41f5e8b585ec1",
   "indexes": [
+    {
+      "id": "alfred",
+      "sourceRevision": "5c2c4dbbdd9696d2bb9d30ffc7876040a5fb4cbcc7e5c7a1b8e4d3b64f0f0f94",
+      "bytes": 9274,
+      "compressedBytes": 1414,
+      "sha256": "edf35d693d6ce40b674b669a664063bdc21d949750c5f6abbbd952021f7447c8",
+      "summary": {
+        "name": "ALFRED / Archival Federal Reserve Economic Data",
+        "serverUrl": "https://api.stlouisfed.org",
+        "description": "Historical vintages and revisions of US and international economic data. ALFRED uses the FRED v1 API and the same API key. Choose a past realtime_start and realtime_end, or vintage_dates, to retrieve data as it was known then. Without a historical period, the API normally returns the current vintage. Managed by the Federal Reserve Bank of St. Louis.",
+        "operationCount": 31,
+        "unavailableCount": 0
+      }
+    },
     {
       "id": "anthropic",
       "sourceRevision": "c23b4e84fb0d699275f74767c41af4d3c62f1f9457a75bf55e02559abf44e1cd",
@@ -253,16 +267,16 @@
     },
     {
       "id": "fred",
-      "sourceRevision": "4ac00be029bb776d24616e955a9dab397b77ebd83844151a92b63b09b69cb6c7",
-      "bytes": 13654,
-      "compressedBytes": 1723,
-      "sha256": "e942eac784a330af1179e95e5e9c9769fbdaf3f247a1b85ff5aa9bba47a7f38d",
+      "sourceRevision": "232fe449907ea7a784873372620d564a0ce61aa5ed10ce6dd1141037c6c7c91a",
+      "bytes": 10423,
+      "compressedBytes": 1590,
+      "sha256": "4fc1e301c3a9ec73666a5d379f9291e052f7210f13142a17be44b2ad4184382e",
       "summary": {
-        "name": "FRED API",
+        "name": "FRED / Federal Reserve Economic Data",
         "serverUrl": "https://api.stlouisfed.org",
-        "description": "Federal Reserve Economic Data (FRED) web service, published by the Economic Research Division of the Federal Reserve Bank of St. Louis.\n\nThe API exposes economic data series and the categories, releases, sources and tags that organise them, plus the regional data and GeoJSON shape files behind the FRED maps (the /geofred paths).\n\nEvery request needs a free API key, passed as the api_key query parameter: https://fredaccount.stlouisfed.org/apikeys\n\nResponses are XML by default; set file_type=json for JSON.",
-        "operationCount": 35,
-        "unavailableCount": 35
+        "description": "US and international economic time series, observations, releases, categories, sources and tags. Federal Reserve Economic Data is managed by the Federal Reserve Bank of St. Louis. Includes FRED v1, v2 bulk release observations and the existing GeoFRED mapping endpoints. An API key is required.",
+        "operationCount": 36,
+        "unavailableCount": 0
       }
     },
     {

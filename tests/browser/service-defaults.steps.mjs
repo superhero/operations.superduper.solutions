@@ -36,6 +36,34 @@ async function reload(page) {
   await page.locator('#startup-status').waitFor({ state: 'detached', timeout: 30_000 });
   await schemas(page);
 }
+
+Then('FRED observations and ALFRED vintages are available in separate catalogs and survive workflow reload', { timeout: 60_000 }, async function () {
+  const page = this.page;
+  await schemas(page);
+  for (const [id, name] of [['fred', 'FRED / Federal Reserve Economic Data'], ['alfred', 'ALFRED / Archival Federal Reserve Economic Data']]) {
+    await expect(card(page, id).locator('.schema-name-label')).toHaveText(name);
+    await expect(card(page, id).getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+  }
+  await openCatalog(page);
+  for (const [id, operation] of [['fred', 'getSeriesObservations'], ['alfred', 'getSeriesVintagedates']]) {
+    const root = page.locator(`[data-catalog-group="${id}"] > .catalog-group > summary`);
+    if (await root.getAttribute('aria-expanded') !== 'true') await root.click();
+    const series = page.locator(`[data-catalog-group="${id}:tag:Series"] > .catalog-group > summary`);
+    if (await series.getAttribute('aria-expanded') !== 'true') await series.click();
+    const entry = page.locator(`[data-operation-id="${id}:${operation}"] > button`);
+    await expect(entry).toBeEnabled();
+    await entry.click();
+  }
+  await closeCatalog(page);
+  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(2);
+  await expect(page.locator('.svelte-flow__node-operation').filter({ hasText: 'Get the observations or data values' })).toHaveCount(1);
+  await expect(page.locator('.svelte-flow__node-operation').filter({ hasText: 'Get the dates in history' })).toHaveCount(1);
+  await expect(page.locator('.svelte-flow__node-operation').getByRole('alert')).toHaveCount(0);
+  await expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
+  await reload(page);
+  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(2);
+  await expect(page.locator('.svelte-flow__node-operation').getByRole('alert')).toHaveCount(0);
+});
 Then('provider schema names use these paths across saved-label updates', async function (table) {
   const page = this.page;
   const names = table.hashes();
@@ -47,7 +75,9 @@ Then('provider schema names use these paths across saved-label updates', async f
   const ids = () => page.locator('.schema-card').evaluateAll(cards => cards.map(card => card.dataset.schemaId));
   const initial = await ids();
   for (const { id, name } of names) await expect(card(page, id).locator('.schema-name-label')).toHaveText(name);
-  await card(page, 'anthropic').getByRole('button', { name: 'Move Anthropic / Claude', exact: true }).press('ArrowDown');
+  const first = card(page, initial[0]);
+  const firstName = await first.locator('.schema-name-label').textContent();
+  await first.getByRole('button', { name: `Move ${firstName}`, exact: true }).press('ArrowDown');
   const ordered = [initial[1], initial[0], ...initial.slice(2)];
   await expect.poll(ids).toEqual(ordered);
   const before = await stored(page);

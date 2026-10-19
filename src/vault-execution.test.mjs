@@ -13,6 +13,7 @@ import { VaultError, vaultLimits } from "./lib/secrets/types.ts";
 const canary = "credential-CANARY-17";
 const bearer = { name: "Bearer", kind: "bearer", header: "Authorization" };
 const key = { name: "Key", kind: "apiKey", header: "X-Api-Key" };
+const queryKey = { name: "Query", kind: "apiKey", query: "api_key" };
 const baseOperation = () => ({ id: "schema:read", name: "Read", description: "", group: "Items", method: "GET", path: "/items",
   fields: [], bodyRequired: false, security: [[bearer]] });
 const field = (location, name, extra = {}) => ({ key: `${location}:${name}`, location, name, label: name,
@@ -88,6 +89,9 @@ Then("invalid approval case {string} fails closed", async name => {
     "inconsistent security name": () => { operation.security = [[key], [{ ...key, header: "X-Other" }]]; },
     "changed bearer placement": () => { operation.security = [[{ ...bearer, header: "X-Bearer" }]]; },
     "forbidden API key header": () => { operation.security = [[{ ...key, header: "Cookie" }]]; },
+    "duplicate credential query": () => { operation.security = [[queryKey, { ...queryKey, name: "Other" }]]; },
+    "ambiguous key placement": () => { operation.security = [[{ ...queryKey, header: "X-Key" }]]; },
+    "changed bearer to query": () => { operation.security = [[{ name: "Bearer", kind: "bearer", query: "api_key" }]]; },
     "non-JSON metadata": () => { operation.responseExample = new Date(); },
     "accessor metadata": () => { Object.defineProperty(operation, "responseExample", { enumerable: true, get() { assert.fail("Approval must not invoke accessors"); } }); },
     "symbol metadata": () => { operation[Symbol("hidden")] = "unsafe"; },
@@ -106,7 +110,10 @@ Then("invalid approval case {string} fails closed", async name => {
 });
 
 Then("credential bindings reject operation drift in {string} before dispatch", async part => {
-  const state = await fixture();
+  const base = baseOperation();
+  if (["query name", "key placement"].includes(part)) base.security = [[{ ...queryKey, name: "Bearer" }]];
+  const state = await fixture(base);
+  state.credentials[0].kind = "secret";
   const operation = structuredClone(state.descriptor.operation);
   let origin = state.descriptor.origin;
   if (part === "origin") origin = "https://different.example.test/v1";
@@ -116,6 +123,8 @@ Then("credential bindings reject operation drift in {string} before dispatch", a
   if (part === "fields") operation.fields.push(field("query", "extra"));
   if (part === "response") operation.responseMediaType = "text/plain";
   if (part === "header") operation.security = [[{ ...key, name: "Bearer" }]];
+  if (part === "query name") operation.security = [[{ name: "Bearer", kind: "apiKey", query: "another_key" }]];
+  if (part === "key placement") operation.security = [[{ name: "Bearer", kind: "apiKey", header: "api_key" }]];
   state.descriptor = await approvedOperation(operation, origin);
   let calls = 0;
   await assert.rejects(() => execute(state, { fetchRequest: async () => { calls++; return response(); } }), denied);
@@ -162,12 +171,23 @@ Then("credential binding case {string} fails before dispatch", async name => {
   if (name === "no security") delete operation.security;
   if (name === "public auth collision") operation.fields = [field("header", "aUtHoRiZaTiOn")];
   if (name === "public alternate collision") { operation.security.push([key]); operation.fields = [field("header", "x-api-key")]; }
+  if (name === "public query collision") {
+    operation.security = [[bearer, queryKey]];
+    operation.fields = [field("query", "api_key")];
+  }
+  if (name === "public alternate query collision") {
+    operation.security.push([queryKey]); operation.fields = [field("query", "api_key")];
+  }
   if (name === "duplicate public headers") operation.fields = [field("header", "X-Public"), field("header", "x-public")];
   if (name === "unsupported public header") operation.fields = [field("header", "bad header")];
   if (["path value traversal", "path value separator", "unresolved path"].includes(name)) {
     operation.path = "/items/{id}"; operation.fields = [field("path", "id")];
   }
   const state = await fixture(operation);
+  if (name === "public query collision") {
+    state.credentials.push({ id: "query-key", label: "Query key", kind: "apiKey", value: "query-canary" });
+    state.binding.credentials.Query = "query-key";
+  }
   const values = Object.fromEntries(operation.fields.map(value => [value.key, "public"]));
   const mutations = {
     "wrong fingerprint": () => { state.binding.fingerprint = "wrong"; },
@@ -475,4 +495,50 @@ Then('vault variable path previews remove encoded values and invalid structured 
   ]) await assert.rejects(executeCredentialed(nested, { 'body:payload': value }, { ...binding, fingerprint: nested.fingerprint }, credentials,
     { ...options, variables: [{ key: 'body:payload', path, credentialId: id }] }), error => error instanceof VaultError);
   assert.equal(sent, 0);
+});
+
+Then("query credentials reach only the approved URL and stay out of previews and echoed responses", async () => {
+  const operation = baseOperation();
+  operation.path = "/fred/series/observations";
+  operation.fields = [field("query", "series_id", { required: true }), field("query", "tags", { type: "array", schema: { type: "array", items: { type: "string" } } })];
+  operation.security = [[bearer, queryKey], [bearer]];
+  const state = await fixture(operation, "https://api.example.test");
+  const secret = "query-CANARY +&?=/17";
+  const encoded = encodeURIComponent(secret);
+  const formEncoded = new URLSearchParams({ v: secret }).toString().slice(2);
+  state.credentials.push({ id: "query-key", label: "FRED", kind: "apiKey", value: secret });
+  state.binding.credentials.Query = "query-key";
+  const values = { "query:series_id": "GNPCA", "query:tags": '["a","b"]' };
+  const before = structuredClone({ values, descriptor: state.descriptor, binding: state.binding, credentials: state.credentials });
+  const seen = [];
+  const result = await execute(state, { values, fetchRequest: async (url, init) => {
+    seen.push({ url: new URL(url), init });
+    return new Response(JSON.stringify({ [secret]: secret, raw: secret, encoded, formEncoded, request: url, series_id: "GNPCA" }),
+      { headers: { "Content-Type": "application/json", "X-Echo": `${encoded} ${formEncoded}` } });
+  } });
+  assert.deepEqual({ values, descriptor: state.descriptor, binding: state.binding, credentials: state.credentials }, before);
+  assert.deepEqual(seen[0].url.searchParams.getAll("api_key"), [secret]);
+  assert.deepEqual(seen[0].url.searchParams.getAll("tags"), ["a", "b"]);
+  assert.equal(seen[0].url.origin, "https://api.example.test");
+  assert.equal(seen[0].url.pathname, operation.path);
+  assert.equal(seen[0].init.headers.get("authorization"), `Bearer ${canary}`);
+  assert.equal(seen[0].init.headers.has("api_key"), false);
+  assert.equal(seen[0].init.redirect, "error");
+  assert.equal(seen[0].init.credentials, "omit");
+  assert.equal(seen[0].init.referrerPolicy, "no-referrer");
+  assert.equal(seen[0].init.cache, "no-store");
+  assert.deepEqual(result.request.query, { series_id: "GNPCA", tags: ["a", "b"] });
+  assert.equal(result.response.body.series_id, "GNPCA");
+  assert.equal(result.response.redacted, true);
+  for (const value of [secret, encoded, formEncoded, canary]) assert.ok(!JSON.stringify(result).includes(value));
+  state.binding = { ...state.binding, alternative: 1, credentials: { Bearer: "credential-one" } };
+  await execute(state, { values, fetchRequest: async (url, init) => { seen.push({ url: new URL(url), init }); return response(); } });
+  assert.equal(seen[1].url.searchParams.has("api_key"), false, "Unselected alternatives never inject query credentials.");
+  state.binding = before.binding;
+  const edited = structuredClone(operation);
+  edited.security[0][1].query = "other_key";
+  state.descriptor = await approvedOperation(edited, state.descriptor.origin);
+  let requests = 0;
+  await assert.rejects(() => execute(state, { values, fetchRequest: async () => { requests++; return response(); } }), denied);
+  assert.equal(requests, 0, "Changing a query-key destination invalidates the saved binding.");
 });

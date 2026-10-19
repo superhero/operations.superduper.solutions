@@ -23,6 +23,9 @@ Feature: OpenAPI authentication requirements
       | required combined schemes    | absent          | [{"Bearer":[],"Key":[]}]                | [["Bearer","Key"]]                    | required |
       | alternative combined schemes | absent          | [{"Bearer":[],"Key":[]},{"Backup":[]}]  | [["Bearer","Key"],["Backup"]]         | required |
       | same-header alternatives     | absent          | [{"Key":[]},{"Backup":[]}]              | [["Key"],["Backup"]]                   | required |
+      | inherited query API key      | [{"Query":[]}]  | absent                                  | [["Query"]]                           | required |
+      | mixed query and header keys  | absent          | [{"Query":[],"Key":[],"Bearer":[]}]      | [["Query","Key","Bearer"]]            | required |
+      | case-sensitive query keys    | absent          | [{"Query":[],"UpperQuery":[]}]           | [["Query","UpperQuery"]]              | required |
 
   Scenario: Supported metadata survives full schema import without changing anonymous operation shapes
     Then schema import preserves supported authentication metadata and anonymous operation shapes
@@ -68,9 +71,14 @@ Feature: OpenAPI authentication requirements
       | invalid bearer hint  | {"type":"http","scheme":"bearer","bearerFormat":4}  | bearerFormat must be a string      |
       | invalid description  | {"type":"http","scheme":"bearer","description":[]}  | description must be a string       |
       | unknown fields       | {"type":"http","scheme":"bearer","flows":{}}        | unsupported security scheme fields |
-      | query API key        | {"type":"apiKey","in":"query","name":"key"}         | only header API keys               |
-      | cookie API key       | {"type":"apiKey","in":"cookie","name":"key"}        | only header API keys               |
-      | missing placement    | {"type":"apiKey","name":"X-Key"}                     | only header API keys               |
+      | cookie API key       | {"type":"apiKey","in":"cookie","name":"key"}        | only header and query API keys     |
+      | missing placement    | {"type":"apiKey","name":"X-Key"}                     | only header and query API keys     |
+      | missing query name   | {"type":"apiKey","in":"query"}                       | invalid credential query parameter |
+      | empty query name     | {"type":"apiKey","in":"query","name":""}             | invalid credential query parameter |
+      | query separator      | {"type":"apiKey","in":"query","name":"key&other"}    | invalid credential query parameter |
+      | query assignment     | {"type":"apiKey","in":"query","name":"key=value"}    | invalid credential query parameter |
+      | encoded query name   | {"type":"apiKey","in":"query","name":"api%5Fkey"}    | invalid credential query parameter |
+      | query whitespace     | {"type":"apiKey","in":"query","name":"api key"}      | invalid credential query parameter |
       | missing header name  | {"type":"apiKey","in":"header"}                     | invalid credential header name     |
       | empty header name    | {"type":"apiKey","in":"header","name":""}           | invalid credential header name     |
       | whitespace in header | {"type":"apiKey","in":"header","name":"X Key"}      | invalid credential header name     |
@@ -158,3 +166,7 @@ Feature: OpenAPI authentication requirements
 
   Scenario: Undefined security values follow the same inheritance as absent declarations
     Then undefined authentication declarations inherit the root requirements
+
+  Scenario: Combined query API keys cannot overwrite the same parameter
+    Given root authentication absent and operation authentication [{"Query":[],"QueryAlias":[]}]
+    Then authentication extraction fails with "duplicate credential query parameter"

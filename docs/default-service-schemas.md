@@ -1,6 +1,6 @@
 # Default service schemas
 
-The application bundles 42 packs covering 38 providers and 13,859 HTTP operations,
+The application bundles 43 packs covering 38 providers and 13,891 HTTP operations,
 alongside the two examples. Manage them in **Settings → Schemas**. Installation
 loads API descriptions locally; it does not contact provider APIs or supply credentials.
 
@@ -8,6 +8,7 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 
 | Schema | HTTP operations | Source |
 |---|---:|---|
+| ALFRED / Archival Federal Reserve Economic Data | 31 | [Source](https://fred.stlouisfed.org/docs/api/fred/realtime_period.html) |
 | Anthropic / Claude | 144 | [Source](https://github.com/anthropics/anthropic-sdk-typescript/blob/sdk-v0.120.0/.stats.yml) |
 | AWS / Lambda | 66 | [Source](https://github.com/aws/api-models-aws) |
 | AWS / S3 | 97 | [Source](https://github.com/aws/api-models-aws) |
@@ -26,7 +27,7 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 | ECB / Data Portal | 11 | [Source](https://data.ecb.europa.eu/help/api/overview) |
 | ElevenLabs | 418 | [Source](https://api.elevenlabs.io/openapi.json) |
 | Frankfurter | 9 | [Source](https://api.frankfurter.dev/v2/openapi.json) |
-| FRED / GeoFRED | 35 | [Source](https://fred.stlouisfed.org/docs/api/fred/) |
+| FRED / Federal Reserve Economic Data | 36 | [Source](https://fred.stlouisfed.org/docs/api/fred/) |
 | GitHub | 1,242 | [Source](https://raw.githubusercontent.com/github/rest-api-description/main/descriptions-next/api.github.com/api.github.com.yaml) |
 | GitLab | 1,869 | [Source](https://gitlab.com/gitlab-org/gitlab/-/raw/master/doc/api/openapi/openapi_v3.yaml) |
 | Google / Cloud / Compute | 758 | [Source](https://compute.googleapis.com/$discovery/rest?version=v1) |
@@ -66,6 +67,33 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 - Anthropic and Groq artifacts are identified by official SDK metadata. Missing
   version labels are explicitly supplied for Anthropic and Bluesky. The inventory
   retains provenance, including community conversions.
+
+## FRED and ALFRED
+
+FRED covers US and international economic data, not just a region. The Federal
+Reserve Bank of St. Louis manages both FRED and ALFRED. FRED includes the 31 v1
+economic-data endpoints, the v2 bulk-release observations endpoint and the four
+existing GeoFRED endpoints. Existing FRED operation identifiers are retained.
+
+ALFRED exposes the same 31 v1 economic-data endpoints as a separate catalog for
+historical vintages and revisions. It uses the real `/fred` routes on
+`https://api.stlouisfed.org`; there is no separate `/alfred` route or key.
+Set `realtime_start` and `realtime_end` to a past date to retrieve data known on
+that date, or use `vintage_dates` and `output_type` for observation revisions.
+Without a historical period, most endpoints return the current vintage.
+
+[Register a FRED API key](https://fredaccount.stlouisfed.org/apikeys), save it in
+the vault, and select it for the operation's credential binding. The worker sends
+v1 keys as `api_key` query parameters and v2 keys as bearer tokens. Public inputs
+cannot override these parameters, and previews omit authentication values.
+Both catalogs explicitly request JSON for structured workflow outputs. Observation
+values remain strings because the API uses `"."` for missing values. V2 bulk
+requests use `next_cursor` to retrieve subsequent pages; reduce `limit` for large
+responses to stay within the worker's response-size limit.
+
+The base v1 schema is community-maintained. The reproducible
+`build/fred-schema.mjs` adaptation adds documented JSON response structures and
+the official v2 contract; each economic operation links to its official API docs.
 
 ## Execution limits
 

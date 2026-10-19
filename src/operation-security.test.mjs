@@ -13,11 +13,16 @@ const schemes = {
   Key: { type: "apiKey", in: "header", name: "X-Api-Key", description: "Account key" },
   Backup: { type: "apiKey", in: "header", name: "x-api-key" },
   Authorization: { type: "apiKey", in: "header", name: "authorization" },
+  Query: { type: "apiKey", in: "query", name: "api_key" },
+  QueryAlias: { type: "apiKey", in: "query", name: "api_key" },
+  UpperQuery: { type: "apiKey", in: "query", name: "API_KEY" },
 };
 const normalized = {
   Bearer: { name: "Bearer", kind: "bearer", header: "Authorization" },
   Key: { name: "Key", kind: "apiKey", header: "X-Api-Key" },
   Backup: { name: "Backup", kind: "apiKey", header: "x-api-key" },
+  Query: { name: "Query", kind: "apiKey", query: "api_key" },
+  UpperQuery: { name: "UpperQuery", kind: "apiKey", query: "API_KEY" },
 };
 const document = () => ({
   openapi: "3.1.0", info: { title: "Credential API", version: "1" },
