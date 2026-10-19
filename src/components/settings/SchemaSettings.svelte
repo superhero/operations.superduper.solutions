@@ -295,8 +295,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <Reveal open={expandedCards[record.id] ?? false} id={`schema-details-${record.id}`} overflowVisible>
             <dl class="schema-metadata">
               <div><dt>Server URL</dt><dd>{metadata.server}</dd></div>
-              <div><dt>Operations</dt><dd>{metadata.operations?.toLocaleString() ?? "—"}</dd></div>
-              {#if metadata.operations !== null && record.summary.unavailableCount}<div><dt>Runnable</dt><dd>{(metadata.operations - record.summary.unavailableCount).toLocaleString()}</dd></div>{/if}
+              <div><dt>Operations</dt><dd>
+                {#if metadata.operations !== null && record.summary.unavailableCount}
+                  <HintButton label={`${(metadata.operations - record.summary.unavailableCount).toLocaleString()} of ${metadata.operations.toLocaleString()} operations supported.`} labelAsName={false}>
+                    {#snippet child({ props })}
+                      {@const { type: _type, disabled: _disabled, ...hintProps } = props}
+                      <span {...hintProps} tabindex="0">{metadata.operations.toLocaleString()}</span>
+                    {/snippet}
+                  </HintButton>
+                {:else}{metadata.operations?.toLocaleString() ?? "—"}{/if}
+              </dd></div>
             </dl>
 
             <Reveal open={!record.enabled} id={`schema-disabled-${record.id}`}><p class="schema-note">Operations from this document are unavailable until it is enabled.</p></Reveal>
