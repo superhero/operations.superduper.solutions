@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-import { operations } from "./catalog.ts";
+import { operationForId } from "./catalog.ts";
 import { catalogForOperation } from "./catalog-registry.ts";
 
 type Schema = Record<string, unknown>;
@@ -109,7 +109,7 @@ function decode(raw: string, header: Schema, document: Schema, context: string):
 /** Preserve wire headers in results; decode documented values only for mapped response fields. */
 export function responseHeaderReader(operationId: string, status: number, headers: Record<string, string>)
 {
-  const operation = operations.find(item => item.id === operationId);
+  const operation = operationForId(operationId);
   const document = catalogForOperation(operationId)?.document;
   let declarations: Schema | undefined;
   const decoded = new Map<string, unknown>();

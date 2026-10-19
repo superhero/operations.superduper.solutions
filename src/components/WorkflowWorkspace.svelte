@@ -8,14 +8,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { defaultToolbarButtons, type ToolbarButtons } from "$lib/toolbar-settings.ts";
   import { copyWorkflowSelection, pasteWorkflowSelection, type WorkflowClipboard } from "$lib/workflow-clipboard.ts";
   import { defaultKeybindings, shortcutAction, modifierKeys, modifierPressed, type Keybindings } from "$lib/keybindings.ts";
-  import { onMount, setContext, tick, untrack } from "svelte";
+  import { onDestroy, onMount, setContext, tick, untrack } from "svelte";
   import { Background, BackgroundVariant, ConnectionLineType, MarkerType, SvelteFlow, SvelteFlowProvider, addEdge, type Edge, type Node, type Connection } from "@xyflow/svelte";
   import "@xyflow/svelte/dist/style.css";
   import { Button } from "$lib/components/ui/button/index.js";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  import type { Operation } from "$lib/catalog.ts";
+  import { pinOperationModels, type Operation } from "$lib/catalog.ts";
   import { catalogForOperation } from "$lib/catalog-registry.ts";
+  import { createWorkflowSchemaLease, hydrateOperation, getSchemaLibrary } from "$lib/schema-library.ts";
+  import { workflowOperationIds } from "$lib/schema-models.ts";
   import { portableWorkflowDocument, parseWorkflowDocument, validateWorkflowDocument, maxWorkflowFileSize, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowDocumentEdge, type WorkflowField, type SwitchGate, type CastData } from "$lib/workflow-document.ts";
   import { workflowRepository } from "$lib/workflow-repository-client.ts";
   import type { WorkflowRepositoryState, WorkflowRevision } from "$lib/workflow-repository.ts";
@@ -129,6 +131,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const graphBlocked = $derived(!active || !storageReady || actionBusy || navigationModal || dialogOpen || replacementOpen || descriptionOpen || runOpen || historyOpen);
   const keyboardActive = $derived(!graphBlocked);
   const snapshot = $derived(JSON.stringify(documentValue()));
+  const schemaLease = createWorkflowSchemaLease();
+  const runSchemaLease = createWorkflowSchemaLease();
+  const modelIdsKey = $derived([...workflowOperationIds(documentValue())].sort().join("\n"));
+  $effect(() => {
+    modelIdsKey;
+    getSchemaLibrary().revision;
+    if (!storageReady) return;
+    void untrack(() => schemaLease.update(documentValue())).catch(failure => {
+      if (alive) describeFailure("Could not load workflow schemas", failure);
+    });
+  });
+  $effect(() => { if (!runOpen) runSchemaLease.release(); });
+  onDestroy(() => { schemaLease.release(); runSchemaLease.release(); });
   const dirty = $derived(snapshot !== savedSnapshot || saveAttempt !== null);
   const dashPeriod = $derived(workflowDefaults.dashLength + workflowDefaults.dashGap);
   const edgeOptions = $derived({ animated: dashed, markerEnd: { type: MarkerType.ArrowClosed }, type: curved ? "default" : "smoothstep", style: dashed ? "stroke-dasharray: var(--workflow-dash-length, 6) var(--workflow-dash-gap, 4)" : "" });
@@ -419,7 +434,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     }));
   }
 
-  function hydrateSaved(state: WorkflowRepositoryState, focus: "name" | "canvas" | null = null) {
+  async function hydrateSaved(state: WorkflowRepositoryState, focus: "name" | "canvas" | null = null, current: () => boolean = () => true) {
+    await schemaLease.update(state.document);
+    if (!alive || !current()) return;
     hydrate(state.document, true, true, focus);
     persistedRevision = state.revision;
     canUndo = state.canUndo;
@@ -485,7 +502,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         }
       }
       if (startup) reportStartup("canvas");
-      if (restored) hydrateSaved(restored);
+      if (restored) await hydrateSaved(restored, null, () => generation === refreshGeneration);
+      if (!alive || generation !== refreshGeneration) return false;
       storageReady = true;
       return true;
     } catch (failure) {
@@ -539,11 +557,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (!storageReady && !await refreshDocuments()) return;
     if (documentModal || actionBusy) return;
     const nodeId = crypto.randomUUID();
-    let schema: Record<string, unknown> | undefined;
-    try { schema = getOperationReport(operation).schema; }
-    catch { /* The graph shows an unavailable-schema notice for unbundled operations. */ }
-    try { await appendGraph(createOperationGraph(operation, insertionPosition(), nodeId, schema), nodeId, operation.name, 2); }
+    const owner = {};
+    pinOperationModels(owner, new Set([operation.id]));
+    try {
+      const canonical = await hydrateOperation(operation.id);
+      let schema: Record<string, unknown> | undefined;
+      try { schema = getOperationReport(canonical).schema; }
+      catch { /* The graph shows an unavailable-schema notice for unbundled operations. */ }
+      await appendGraph(createOperationGraph(canonical, insertionPosition(), nodeId, schema), nodeId, canonical.name, 2);
+      await schemaLease.update(documentValue());
+    }
     catch (failure) { describeFailure(`Could not add “${operation.name}”`, failure); }
+    finally { pinOperationModels(owner); }
   }
 
   async function addUtility(type: "switch" | "cast" | "comment" | "vault" | "file") {
@@ -560,12 +585,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     catch (failure) { describeFailure(`Could not add “${document.name}”`, failure); }
   }
 
-  export function startRun(document: WorkflowDocument = documentValue()) {
+  export async function startRun(document: WorkflowDocument = documentValue()) {
+    if (actionBusy) return;
+    actionBusy = true;
     try {
-      runDocument = validateWorkflowDocument(document);
+      const validated = validateWorkflowDocument(document);
+      await runSchemaLease.update(validated);
+      runDocument = validated;
       runOpen = true;
       error = "";
     } catch (failure) { describeFailure("Could not run this workflow", failure); }
+    finally { actionBusy = false; }
   }
 
   function describeWorkflow() { descriptionError = ""; descriptionOpen = true; }
@@ -832,7 +862,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       const state = action === "checkout"
         ? await workflowRepository.checkout(id, oid!, persistedRevision)
         : await workflowRepository[action](id, persistedRevision);
-      hydrateSaved(state);
+      await hydrateSaved(state);
       await refreshDocuments();
       if (historyOpen) revisions = await workflowRepository.history(id);
     } catch (failure) {

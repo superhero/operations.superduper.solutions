@@ -27,7 +27,7 @@ async function catalog(write: boolean, run: (transaction: IDBTransaction) => voi
     request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
   });
   try { await new Promise<void>((resolve, reject) => {
-    const transaction = db.transaction(["state", "pending", "removed", "catalog"], write ? "readwrite" : "readonly");
+    const transaction = db.transaction(["state", "pending", "removed", "catalog", "policies"], write ? "readwrite" : "readonly");
     run(transaction); transaction.oncomplete = () => resolve(); transaction.onabort = () => reject(transaction.error);
   }); } finally { db.close(); }
 }
@@ -70,7 +70,7 @@ export async function mutate(mode: string) {
   } else if (mode === "disabled") await setSchemaDocumentEnabled(record.id, false);
   else if (mode === "deleted") await deleteSchemaDocument(record.id);
   else if (mode === "pending" || mode === "removed") await catalog(true, tx => { tx.objectStore(mode).put(true, record.id); });
-  else if (mode === "legacy") await catalog(true, tx => { tx.objectStore("state").delete("vaultPolicy"); });
+  else if (mode === "legacy") await catalog(true, tx => { tx.objectStore("policies").delete(record.id); });
   else throw new Error("Unknown fixture transition");
 }
 export async function backfill() { await loadSchemaDocuments(); return execute(); }
@@ -102,12 +102,12 @@ export async function publicVariable(backfillLegacy = false) {
   let before;
   if (backfillLegacy) {
     await catalog(true, tx => {
-      const request = tx.objectStore("state").get("vaultPolicy");
+      const request = tx.objectStore("policies").get(record.id);
       request.onsuccess = () => {
-        const policies = request.result;
-        delete policies[record.id].version;
-        policies[record.id].fingerprints = [];
-        tx.objectStore("state").put(policies, "vaultPolicy");
+        const policy = request.result;
+        delete policy.version;
+        policy.fingerprints = [];
+        tx.objectStore("policies").put(policy, record.id);
       };
     });
     try { await execute(); before = "unexpected success"; }
@@ -124,9 +124,7 @@ export async function factoryPolicy() {
     const metadata = tx.objectStore("catalog");
     const read = metadata.get(record.id);
     read.onsuccess = () => metadata.put({ ...read.result, factoryDigest: digest }, record.id);
-    const state = tx.objectStore("state");
-    const policies = state.get("vaultPolicy");
-    policies.onsuccess = () => state.put({ ...policies.result, [record.id]: { revision, fingerprints: [descriptor.fingerprint] } }, "vaultPolicy");
+    tx.objectStore("policies").put({ revision, fingerprints: [descriptor.fingerprint] }, record.id);
   });
   await set(digest);
   await assertCurrentSchema(descriptor);

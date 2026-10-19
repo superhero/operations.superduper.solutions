@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-import { operations, type Operation } from "./catalog.ts";
+import { operationForId, operationOrigin, type Operation } from "./catalog.ts";
 import { catalogForOperation } from "./catalog-registry.ts";
 import { prepareRequest, type InputValues, type PreparedRequest } from "./operation-input.ts";
 import { operationServerUrl } from "./schema-documents.ts";
@@ -35,9 +35,9 @@ export function workflowExecutionForOperation(operation: Operation | string)
 {
   const id = typeof operation === "string" ? operation : operation.id;
   const catalog = catalogForOperation(id);
-  const canonical = operations.find(item => item.id === id);
+  const canonical = operationForId(id);
   if (!catalog || !canonical) throw new Error("This operation is not available in the registered schemas.");
-  return { ...catalog.execution, origin: operationServerUrl(catalog.document, canonical) };
+  return { ...catalog.execution, origin: operationOrigin(id) ?? operationServerUrl(catalog.document, canonical) };
 }
 
 export function workflowRequestUrl(request: PreparedRequest, origin: string): string
@@ -82,8 +82,8 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
   return {
     async execute(operation, values, signal, context)
     {
-      const canonical = operations.find(item => item.id === operation.id);
-      if (!canonical || canonical.method !== operation.method || canonical.path !== operation.path)
+      const canonical = operationForId(operation.id);
+      if (operation.deferred || !canonical || canonical.method !== operation.method || canonical.path !== operation.path)
         throw new Error("This operation is not available in the registered schemas.");
       if (context?.variables !== undefined) throw new VaultError("PERMISSION");
       const request = prepareRequest(canonical, values, operation.fields);
@@ -92,7 +92,7 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
         if (!context) throw new VaultError("PERMISSION");
         const { binding } = validateCredentialContext(context);
         const descriptor = await approvedOperation(canonical, origin);
-        if (!operations.includes(canonical) || workflowExecutionForOperation(canonical).origin !== origin || binding.fingerprint !== descriptor.fingerprint
+        if (operationForId(canonical.id) !== canonical || workflowExecutionForOperation(canonical).origin !== origin || binding.fingerprint !== descriptor.fingerprint
           || canonical.security[binding.alternative]?.length !== 0 || Object.keys(binding.credentials).length)
           throw new VaultError("PERMISSION");
       }
@@ -153,8 +153,8 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
   const anonymous = createWorkflowRequestExecution();
   return {
     async execute(operation, values, signal, context) {
-      const canonical = operations.find(item => item.id === operation.id);
-      if (!canonical || canonical.method !== operation.method || canonical.path !== operation.path)
+      const canonical = operationForId(operation.id);
+      if (operation.deferred || !canonical || canonical.method !== operation.method || canonical.path !== operation.path)
         throw new Error("This operation is not available in the registered schemas.");
       const invocation = context ? validateCredentialContext(context) : undefined;
       const hasVariables = invocation?.variables !== undefined;
@@ -163,7 +163,7 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
       const submitted = { ...values };
       const { origin } = workflowExecutionForOperation(canonical);
       const descriptor = await approvedOperation(canonical, origin);
-      if (!operations.includes(canonical) || workflowExecutionForOperation(canonical).origin !== origin
+      if (operationForId(canonical.id) !== canonical || workflowExecutionForOperation(canonical).origin !== origin
         || invocation.binding.fingerprint !== descriptor.fingerprint) throw new VaultError("PERMISSION");
       if (!canonical.security?.length) {
         if (invocation.binding.alternative !== 0 || Object.keys(invocation.binding.credentials).length) throw new VaultError("PERMISSION");

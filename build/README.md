@@ -36,6 +36,13 @@ extra files, directories and symlinks remain unsupported.
 packs with recorded hashes. This refresh is explicit; normal builds use committed
 artifacts and do not download provider schemas.
 
+`schema-indexes.mjs` uses the production adapter to derive compact discovery
+artifacts under `src/catalogs/services/indexes`. After changing a source pack or
+the adapter, run `npm run schemas:index` and commit both sources and derivatives.
+`npm run schemas:index:check` checks deterministic bytes without network access;
+normal builds include that check. `npm run schemas:refresh` refreshes packs and
+indexes together. The manifest binds indexes to source and adapter digests.
+
 `deepseek-schema.mjs` and `dukascopy-schema.mjs` derive OpenAPI snapshots from the
 providers' published structured documentation. Their output belongs in
 `schema-documents`; generated application packs belong in `src/catalogs/services`.

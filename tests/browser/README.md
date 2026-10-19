@@ -164,7 +164,7 @@ It does not advance application clocks or bypass initialization.
 ### Shared fixture bundles
 
 `tests/browser/run.mjs` delegates to the shared Gherkin launcher. It prepares the
-five standalone bundles once per invocation, before starting workers; fixture
+six standalone bundles once per invocation, before starting workers; fixture
 builds remain serial to bound peak memory. Workers read the shared file under
 `tmp/test/browser/`.
 
@@ -186,6 +186,21 @@ peak memory without reducing provider coverage. See
 Cleanup does not depend on a predicted feature count; tag and name filters keep
 the same lifetime rules. Aborting a scenario closes its contexts before later
 work continues, while failed cleanup still fails validation.
+
+### Schema lifecycle and profiling
+
+`schema-lifecycle` exercises the native IndexedDB/Git adapters with tiny counted
+sources: disabled reads, corrupt caches, quota failure, independent factory history,
+authored divergence, interrupted writes and stale replies across tabs.
+`service-defaults` retains the real complete collection, bounds large-document
+rendering and checks closing an inspector while its source reply is pending.
+
+The opt-in `@schema-profile` case measures startup, visible search, toggles and
+inspector release. Chromium CDP captures page and worker heaps and CPU profiles;
+numeric results attach to the scenario. Set `SCHEMA_PROFILE_OUTPUT` to retain raw
+profiles outside temporary test output and `SCHEMA_PROFILE_LABEL` to identify the
+build. Compare identical hosts, browser images, caps and harnesses. Measurements
+are evidence, not fixed millisecond assertions or a complete regression pass.
 
 ### Fixture-only entry pages
 

@@ -37,13 +37,22 @@ export const bundledCatalogs: readonly Catalog[] = [
 ];
 
 export let catalogs: readonly Catalog[] = bundledCatalogs;
+const index = new Map(bundledCatalogs.map(catalog => [catalog.id, catalog]));
+const operationCatalogs = new Map<string, Catalog>();
 
 /** Catalog updates go through updateCatalogs so the operation index changes with them. */
 export function replaceCatalogs(next: readonly Catalog[]): void {
   catalogs = next;
+  index.clear();
+  for (const catalog of next) index.set(catalog.id, catalog);
+  operationCatalogs.clear();
+}
+
+export function setOperationCatalog(operationId: string, catalog?: Catalog): void {
+  if (catalog) operationCatalogs.set(operationId, catalog); else operationCatalogs.delete(operationId);
 }
 
 export function catalogForOperation(operationId: string): Catalog | undefined {
   const separator = operationId.indexOf(":");
-  return separator < 0 ? undefined : catalogs.find(catalog => catalog.id === operationId.slice(0, separator));
+  return separator < 0 ? undefined : operationCatalogs.get(operationId) ?? index.get(operationId.slice(0, separator));
 }

@@ -7,8 +7,10 @@
 
 Separate workers handle:
 
-- **Schemas:** repository access, parsing, validation and operation extraction.
-  The page reuses prepared results instead of repeating this work.
+- **Schemas:** metadata, repository access, parsing, validation and operation
+  extraction. Startup publishes compact discovery indexes for enabled sources;
+  later requests return one canonical model or document. Metadata-only changes
+  do not clone the complete library again.
 - **Workflows:** initialization, loading, autosave and Git history.
 - **Matching:** prompt evaluation, cancelled when newer text or schemas replace
   the pending search.
@@ -25,6 +27,11 @@ Workers are bundled inline to retain a single HTML application. Themes, small
 settings reads and rendering remain on the main thread. Window-only APIs use an
 asynchronous bridge. Workers reduce competing work without guaranteeing smooth
 animation during module loading or rendering.
+
+Matching normalizes candidate names once per enabled catalog revision. Each
+disposable worker receives compact prepared candidates and returns IDs and scores;
+the page retains its original operation references. New text terminates obsolete
+CPU work. Exact scoring, Unicode normalization and tie ordering remain unchanged.
 
 ## Reliability
 

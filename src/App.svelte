@@ -100,6 +100,8 @@
   let dark = $state(document.documentElement.dataset.theme === "dark");
   let palette = $state(palettes.find(option => option.id === document.documentElement.dataset.palette)?.id ?? palettes[0].id);
   const operations = $derived(getSchemaLibrary().operations);
+  const activeCatalogs = $derived(getSchemaLibrary().catalogs);
+  const catalogGroups = $derived(activeCatalogs.flatMap(catalog => catalog.groups));
   let sideNavigation: SideNavigation;
   let workflowWorkspace: WorkflowWorkspace;
   let settingsWorkspace: SettingsWorkspace;
@@ -370,7 +372,7 @@
 <Tooltip.Provider disabled={!tooltips} delayDuration={400} ignoreNonKeyboardFocus disableHoverableContent>
 <BackgroundWave />
 <NativeScrollbars />
-<SideNavigation closeMenuWithEscape={keybindings.closeMenu === "Escape"} bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {evaluationDetails}
+<SideNavigation closeMenuWithEscape={keybindings.closeMenu === "Escape"} bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {evaluationDetails} {catalogGroups}
   workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
   onSelect={selectOperation} />
 <div class="page-content workflow-mode" inert={settingsPresent && compactSettings} class:catalog-open={navigationOpen} class:settings-open={mode === "settings"}>

@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
 import { After, Before, Then } from "@cucumber/cucumber";
 import { operations } from "./lib/catalog.ts";
-import { evaluateOperations } from "./lib/matching.ts";
+import { evaluateOperations, evaluatePreparedOperations, prepareMatchingOperations } from "./lib/matching.ts";
 import { applicationExecutionMetrics } from "./lib/application-workers.ts";
 
 // Resolve only Vite's constructor adapter; exercise the real client and RPC.
@@ -35,7 +35,10 @@ class MatchingWorkerDouble extends EventTarget {
   reply(data) { this.dispatchEvent(new MessageEvent("message", { data })); }
   complete() {
     const request = this.messages.at(-1);
-    this.reply({ kind: "result", id: request.id, value: evaluateOperations(...request.args) });
+    const result = request.method === 'evaluatePrepared' ? evaluatePreparedOperations(...request.args) : evaluateOperations(...request.args);
+    this.reply({ kind: "result", id: request.id, value: request.method === 'evaluatePrepared'
+      ? { candidates: result.candidates.map(({ operation, similarity }) => ({ id: operation.id, similarity })),
+        results: result.results.map(match => match.operation.id) } : result });
   }
 }
 
@@ -81,7 +84,8 @@ Then("background matching sends only identifiers and names and restores the comp
   };
   const pending = evaluateOperationsAsync("List projetcs", operations, signal(this).signal);
   pending.catch(() => {});
-  assert.deepEqual(worker.messages[0].args, ["List projetcs", operations.map(({ id, name }) => ({ id, name }))]);
+  assert.equal(worker.messages[0].method, 'evaluatePrepared');
+  assert.deepEqual(worker.messages[0].args, ["List projetcs", prepareMatchingOperations(operations.map(({ id, name }) => ({ id, name })))]);
   assert.equal(applicationExecutionMetrics().dedicatedWorkers, this.matchingWorkerBaseline + 1);
   worker.complete();
   const { durationMs, ...evaluation } = await pending;
@@ -164,6 +168,11 @@ Then("the operation matching worker evaluates compact descriptors with the norma
       const compact = matches => matches.map(({ operation, similarity }) => ({ operation: { id: operation.id, name: operation.name }, similarity }));
       assert.deepEqual(replies.at(-1), { kind: "result", id: index, value: {
         candidates: compact(expected.candidates), results: compact(expected.results),
+      } });
+      await handler({ data: { kind: 'request', id: index + 10, method: 'evaluatePrepared', args: [query, prepareMatchingOperations(descriptors)] } });
+      assert.deepEqual(replies.at(-1), { kind: 'result', id: index + 10, value: {
+        candidates: expected.candidates.map(({ operation, similarity }) => ({ id: operation.id, similarity })),
+        results: expected.results.map(match => match.operation.id),
       } });
     }
   } finally {

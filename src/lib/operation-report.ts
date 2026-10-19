@@ -66,7 +66,7 @@ function childKind(kind: Kind, key: string, value: unknown): Kind {
 }
 
 /** Keep the selected operation and its local reference closure at their original pointers. */
-export function scopeOperationSchema(document: RecordValue, path: string, method: string): { schema: RecordValue; warnings: string[] } {
+export function scopeOperationSchema(document: RecordValue, path: string, method: string, allowOperationReferences = false): { schema: RecordValue; warnings: string[] } {
   const { item, operation, verb } = operationAt(document, path, method);
   const configuredServers = operation.servers ?? item.servers ?? document.servers;
   const servers = configuredServers === undefined || Array.isArray(configuredServers) && !configuredServers.length
@@ -95,7 +95,7 @@ export function scopeOperationSchema(document: RecordValue, path: string, method
     if (!pointer.startsWith("/") || /~(?:[^01]|$)/.test(pointer))
       return warn("The reference must identify a local JSON pointer.");
     const keys = pointer.slice(1).split("/").map(key => key.replace(/~1/g, "/").replace(/~0/g, "~"));
-    if (keys[0] === "paths" && (keys.length < 3 || keys[1] !== path || methods.has(keys[2]!) && keys[2] !== verb))
+    if (!allowOperationReferences && keys[0] === "paths" && (keys.length < 3 || keys[1] !== path || methods.has(keys[2]!) && keys[2] !== verb))
       return warn("The reference includes operations outside this report.");
     let target: unknown = document;
     let kind: Kind = "object";

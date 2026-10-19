@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-import { operations, type JsonValue, type Operation } from "./catalog.ts";
+import { operationForId, type JsonValue, type Operation } from "./catalog.ts";
 import { catalogForOperation } from "./catalog-registry.ts";
 import { prepareRequest, type InputValues, type PreparedRequest } from "./operation-input.ts";
 import type { WorkflowResponse } from "./workflow-execution.ts";
@@ -25,7 +25,7 @@ export function createWorkflowDemo()
   return {
     execute(operation: Operation, values: InputValues): DemoResult
     {
-      const canonical = operations.find(item => item.id === operation.id);
+      const canonical = operationForId(operation.id);
       if (!canonical || canonical.method !== operation.method || canonical.path !== operation.path
         || catalogForOperation(canonical.id)!.id !== "demo")
         throw new Error("This operation is unavailable in the local demo.");

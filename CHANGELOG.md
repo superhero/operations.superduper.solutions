@@ -2,6 +2,32 @@
 
 ## Latest
 
+<!-- changelog-commit:20e62eb1a8deae984b884ff6051dc4f96a9978a2 -->
+### Commit [`20e62eb`](https://github.com/superhero/operations.superduper.solutions/commit/20e62eb1a8deae984b884ff6051dc4f96a9978a2)
+
+```text
+perf(schemas): load compact indexes and hydrate models on demand
+
+Discover enabled operations without decoding every source or cloning full
+models during startup and metadata changes. Load canonical operation models
+and their reference closures on demand, bound cached working sets, and
+release closed inspectors after their transition.
+
+Preserve independent schema histories and factory ownership across bundled
+updates. Migrate credential policies to targeted revision-bound records;
+discovery descriptors cannot prepare or authorize requests.
+
+Retain exact matching scores with normalized candidates and reusable edit
+distance storage. Record paired browser heaps and CPU profiles, qualify all
+13,859 service models against complete extraction, and cover storage and
+inspection in Chromium, Firefox and WebKit. Native benchmark workers avoid
+distorting tight-loop timings inside the test runner's VM.
+
+Keep the single HTML delivery contract. Precomputed indexes add about 5.5%
+gzip bytes while reducing fresh startup heap from 286 to 46 MiB.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54

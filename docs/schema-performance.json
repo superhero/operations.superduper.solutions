@@ -1,0 +1,1179 @@
+{
+  "date": "2026-10-19",
+  "baselineCommit": "70c484c29a1c1b07aec9263af6c129903493f9ec",
+  "environment": {
+    "host": "sds-01",
+    "image": "mcr.microsoft.com/playwright:v1.63.0-noble",
+    "cpuLimit": 2,
+    "memoryLimitMiB": 3072,
+    "pidsLimit": 512,
+    "nodeHeapLimitMiB": 1800,
+    "jobsAtOnce": 1,
+    "matchingSamplesPerQuery": 5,
+    "timingAssertions": false
+  },
+  "baseline": {
+    "bundleSha256": "d4ad95c8c5e9cd0e0ce59311972c58b32a56e157e99a086b8bc7f96be4df8809",
+    "browser": {
+      "label": "baseline-final",
+      "browser": "153.0.8010.12",
+      "sourcePacks": 42,
+      "operationCount": 13859,
+      "freshStartupMs": 5808.373865,
+      "initialTransfers": {
+        "replies": 2,
+        "documents": 44,
+        "headers": 0,
+        "models": 13892,
+        "operations": 13892,
+        "methods": {
+          "prepareStorage": 1,
+          "load": 1
+        }
+      },
+      "initialHeap": {
+        "page": {
+          "usedSize": 187168372,
+          "totalSize": 198488064,
+          "embedderHeapUsedSize": 11165888,
+          "backingStorageSize": 22140700
+        },
+        "workers": [
+          {
+            "name": "operations-metrics-recorder",
+            "usedSize": 947408,
+            "totalSize": 1310720,
+            "embedderHeapUsedSize": 28768,
+            "backingStorageSize": 349972
+          },
+          {
+            "name": "operations-schema-library",
+            "usedSize": 111270228,
+            "totalSize": 114827264,
+            "embedderHeapUsedSize": 173968,
+            "backingStorageSize": 9045308
+          },
+          {
+            "name": "operations-workflows",
+            "usedSize": 682284,
+            "totalSize": 1572864,
+            "embedderHeapUsedSize": 25360,
+            "backingStorageSize": 298270
+          }
+        ],
+        "dom": {
+          "documents": 2,
+          "nodes": 30312,
+          "jsEventListeners": 2738
+        },
+        "containerBytes": 1328594944,
+        "totalBackingBytes": 31834250,
+        "totalEmbedderBytes": 11393984,
+        "totalUsedBytes": 300068292
+      },
+      "searches": [
+        {
+          "query": "List projects",
+          "durationMs": 971.7151110000013,
+          "visibleMatches": 291,
+          "render": {
+            "windowListeners": {
+              "mousemove": 1,
+              "pointerdown": 1,
+              "pointerup": 2,
+              "touchstart": 1,
+              "touchend": 1,
+              "touchcancel": 1,
+              "mousedown": 1,
+              "mouseup": 1,
+              "click": 1,
+              "auxclick": 1,
+              "dblclick": 1,
+              "contextmenu": 2,
+              "keydown": 1165,
+              "scroll": 1159,
+              "pointercancel": 2,
+              "__playwright_snapshotter_global_listeners_check__": 1,
+              "pagehide": 5,
+              "error": 1,
+              "unhandledrejection": 1,
+              "focus": 1,
+              "pageshow": 3,
+              "__playwright_global_listeners_check__": 1,
+              "beforeunload": 1,
+              "resize": 1,
+              "blur": 2,
+              "keyup": 5
+            },
+            "documents": 2,
+            "nodes": 93674,
+            "jsEventListeners": 8031
+          }
+        },
+        {
+          "query": "Create a new project",
+          "durationMs": 1069.9687830000003,
+          "visibleMatches": 326,
+          "render": {
+            "windowListeners": {
+              "mousemove": 1,
+              "pointerdown": 1,
+              "pointerup": 2,
+              "touchstart": 1,
+              "touchend": 1,
+              "touchcancel": 1,
+              "mousedown": 1,
+              "mouseup": 1,
+              "click": 1,
+              "auxclick": 1,
+              "dblclick": 1,
+              "contextmenu": 2,
+              "keydown": 1262,
+              "scroll": 1256,
+              "pointercancel": 2,
+              "__playwright_snapshotter_global_listeners_check__": 1,
+              "pagehide": 5,
+              "error": 1,
+              "unhandledrejection": 1,
+              "focus": 1,
+              "pageshow": 3,
+              "__playwright_global_listeners_check__": 1,
+              "beforeunload": 1,
+              "resize": 1,
+              "blur": 2,
+              "keyup": 5
+            },
+            "documents": 2,
+            "nodes": 164002,
+            "jsEventListeners": 15676
+          }
+        },
+        {
+          "query": "get",
+          "durationMs": 453.4928820000023,
+          "visibleMatches": 5,
+          "render": {
+            "windowListeners": {
+              "mousemove": 1,
+              "pointerdown": 1,
+              "pointerup": 2,
+              "touchstart": 1,
+              "touchend": 1,
+              "touchcancel": 1,
+              "mousedown": 1,
+              "mouseup": 1,
+              "click": 1,
+              "auxclick": 1,
+              "dblclick": 1,
+              "contextmenu": 2,
+              "keydown": 362,
+              "scroll": 356,
+              "pointercancel": 2,
+              "__playwright_snapshotter_global_listeners_check__": 1,
+              "pagehide": 5,
+              "error": 1,
+              "unhandledrejection": 1,
+              "focus": 1,
+              "pageshow": 3,
+              "__playwright_global_listeners_check__": 1,
+              "beforeunload": 1,
+              "resize": 1,
+              "blur": 2,
+              "keyup": 5
+            },
+            "documents": 2,
+            "nodes": 167090,
+            "jsEventListeners": 17884
+          }
+        }
+      ],
+      "toggleMs": [
+        2460.0417610000004,
+        1475.4922570000017,
+        1521.2978240000011,
+        2163.5027200000004
+      ],
+      "afterToggleTransfers": {
+        "replies": 6,
+        "documents": 220,
+        "headers": 0,
+        "models": 69442,
+        "operations": 69442,
+        "methods": {
+          "prepareStorage": 1,
+          "load": 1,
+          "enabled": 4
+        }
+      },
+      "openInspectorHeap": {
+        "page": {
+          "usedSize": 469683960,
+          "totalSize": 496771072,
+          "embedderHeapUsedSize": 112011120,
+          "backingStorageSize": 22729474
+        },
+        "workers": [
+          {
+            "name": "operations-metrics-recorder",
+            "usedSize": 947408,
+            "totalSize": 1310720,
+            "embedderHeapUsedSize": 28768,
+            "backingStorageSize": 349972
+          },
+          {
+            "name": "operations-schema-library",
+            "usedSize": 111365212,
+            "totalSize": 112992256,
+            "embedderHeapUsedSize": 30632,
+            "backingStorageSize": 9045369
+          },
+          {
+            "name": "operations-workflows",
+            "usedSize": 682284,
+            "totalSize": 1572864,
+            "embedderHeapUsedSize": 25360,
+            "backingStorageSize": 298270
+          }
+        ],
+        "dom": {
+          "documents": 2,
+          "nodes": 269465,
+          "jsEventListeners": 17683
+        },
+        "containerBytes": 1390731264,
+        "totalBackingBytes": 32423085,
+        "totalEmbedderBytes": 112095880,
+        "totalUsedBytes": 582678864
+      },
+      "closedInspectorHeap": {
+        "page": {
+          "usedSize": 470259200,
+          "totalSize": 489168896,
+          "embedderHeapUsedSize": 55723936,
+          "backingStorageSize": 22729433
+        },
+        "workers": [
+          {
+            "name": "operations-metrics-recorder",
+            "usedSize": 947408,
+            "totalSize": 1310720,
+            "embedderHeapUsedSize": 28768,
+            "backingStorageSize": 349972
+          },
+          {
+            "name": "operations-schema-library",
+            "usedSize": 111365212,
+            "totalSize": 112467968,
+            "embedderHeapUsedSize": 30632,
+            "backingStorageSize": 9045369
+          },
+          {
+            "name": "operations-workflows",
+            "usedSize": 682284,
+            "totalSize": 1572864,
+            "embedderHeapUsedSize": 25360,
+            "backingStorageSize": 298270
+          }
+        ],
+        "dom": {
+          "documents": 2,
+          "nodes": 268875,
+          "jsEventListeners": 17683
+        },
+        "containerBytes": 1282924544,
+        "totalBackingBytes": 32423044,
+        "totalEmbedderBytes": 55808696,
+        "totalUsedBytes": 583254104
+      },
+      "closedInspectorViews": 1,
+      "restarts": [
+        {
+          "name": "all",
+          "enabled": 44,
+          "startupMs": 3745.853970999997,
+          "transfers": {
+            "replies": 2,
+            "documents": 44,
+            "headers": 0,
+            "models": 13892,
+            "operations": 13892,
+            "methods": {
+              "prepareStorage": 1,
+              "load": 1
+            }
+          },
+          "heap": {
+            "page": {
+              "usedSize": 187160020,
+              "totalSize": 199274496,
+              "embedderHeapUsedSize": 11118160,
+              "backingStorageSize": 22139304
+            },
+            "workers": [
+              {
+                "name": "operations-metrics-recorder",
+                "usedSize": 948108,
+                "totalSize": 1310720,
+                "embedderHeapUsedSize": 28768,
+                "backingStorageSize": 349972
+              },
+              {
+                "name": "operations-schema-library",
+                "usedSize": 110536376,
+                "totalSize": 113778688,
+                "embedderHeapUsedSize": 27936,
+                "backingStorageSize": 9042987
+              },
+              {
+                "name": "operations-workflows",
+                "usedSize": 682284,
+                "totalSize": 1310720,
+                "embedderHeapUsedSize": 25360,
+                "backingStorageSize": 298270
+              }
+            ],
+            "dom": {
+              "documents": 2,
+              "nodes": 30312,
+              "jsEventListeners": 2738
+            },
+            "containerBytes": 903086080,
+            "totalBackingBytes": 31830533,
+            "totalEmbedderBytes": 11200224,
+            "totalUsedBytes": 299326788
+          }
+        },
+        {
+          "name": "none",
+          "enabled": 0,
+          "startupMs": 3060.4103660000037,
+          "transfers": {
+            "replies": 2,
+            "documents": 44,
+            "headers": 0,
+            "models": 0,
+            "operations": 0,
+            "methods": {
+              "prepareStorage": 1,
+              "load": 1
+            }
+          },
+          "heap": {
+            "page": {
+              "usedSize": 142839256,
+              "totalSize": 159457280,
+              "embedderHeapUsedSize": 10193248,
+              "backingStorageSize": 22135693
+            },
+            "workers": [
+              {
+                "name": "operations-metrics-recorder",
+                "usedSize": 947396,
+                "totalSize": 1310720,
+                "embedderHeapUsedSize": 28768,
+                "backingStorageSize": 349972
+              },
+              {
+                "name": "operations-schema-library",
+                "usedSize": 110999764,
+                "totalSize": 112992256,
+                "embedderHeapUsedSize": 25784,
+                "backingStorageSize": 9043013
+              },
+              {
+                "name": "operations-workflows",
+                "usedSize": 682284,
+                "totalSize": 1310720,
+                "embedderHeapUsedSize": 25360,
+                "backingStorageSize": 298270
+              }
+            ],
+            "dom": {
+              "documents": 2,
+              "nodes": 26824,
+              "jsEventListeners": 2430
+            },
+            "containerBytes": 860487680,
+            "totalBackingBytes": 31826948,
+            "totalEmbedderBytes": 10273160,
+            "totalUsedBytes": 255468700
+          }
+        },
+        {
+          "name": "subset",
+          "enabled": 3,
+          "startupMs": 3038.2118469999987,
+          "transfers": {
+            "replies": 2,
+            "documents": 44,
+            "headers": 0,
+            "models": 42,
+            "operations": 42,
+            "methods": {
+              "prepareStorage": 1,
+              "load": 1
+            }
+          },
+          "heap": {
+            "page": {
+              "usedSize": 143074708,
+              "totalSize": 162078720,
+              "embedderHeapUsedSize": 10230496,
+              "backingStorageSize": 22135377
+            },
+            "workers": [
+              {
+                "name": "operations-schema-library",
+                "usedSize": 110240828,
+                "totalSize": 111943680,
+                "embedderHeapUsedSize": 25712,
+                "backingStorageSize": 9042987
+              },
+              {
+                "name": "operations-metrics-recorder",
+                "usedSize": 947408,
+                "totalSize": 1310720,
+                "embedderHeapUsedSize": 28768,
+                "backingStorageSize": 349972
+              },
+              {
+                "name": "operations-workflows",
+                "usedSize": 682284,
+                "totalSize": 1310720,
+                "embedderHeapUsedSize": 25360,
+                "backingStorageSize": 298270
+              }
+            ],
+            "dom": {
+              "documents": 2,
+              "nodes": 27077,
+              "jsEventListeners": 2451
+            },
+            "containerBytes": 866697216,
+            "totalBackingBytes": 31826606,
+            "totalEmbedderBytes": 10310336,
+            "totalUsedBytes": 254945228
+          }
+        }
+      ]
+    },
+    "matching": {
+      "node": "v26.7.0",
+      "execution": "native-worker",
+      "schemaCount": 42,
+      "operationCount": 13859,
+      "indexPreparationMs": 0.002298999999766238,
+      "searches": [
+        {
+          "query": "List projects",
+          "medianMs": 188.42744700000003,
+          "samplesMs": [
+            188.42744700000003,
+            279.72313099999974,
+            194.7700249999998,
+            176.97698600000058,
+            181.45569700000033
+          ],
+          "candidates": 13859,
+          "results": 289
+        },
+        {
+          "query": "Create a new project",
+          "medianMs": 270.4084609999991,
+          "samplesMs": [
+            308.7352199999996,
+            226.65478100000018,
+            245.00176100000044,
+            287.5019569999995,
+            270.4084609999991
+          ],
+          "candidates": 13859,
+          "results": 325
+        },
+        {
+          "query": "get",
+          "medianMs": 108.93321099999957,
+          "samplesMs": [
+            108.04939099999865,
+            108.28321000000142,
+            108.93321099999957,
+            114.6076549999998,
+            179.22888700000112
+          ],
+          "candidates": 13859,
+          "results": 5
+        },
+        {
+          "query": "List all running virtual machines in the selected project",
+          "medianMs": 581.4849409999988,
+          "samplesMs": [
+            597.591966,
+            470.3564040000001,
+            581.4849409999988,
+            470.51995199999874,
+            599.9831439999998
+          ],
+          "candidates": 13859,
+          "results": 5
+        },
+        {
+          "query": "LIST_projetcs",
+          "medianMs": 177.60019700000157,
+          "samplesMs": [
+            177.60019700000157,
+            176.83181400000103,
+            280.8223909999997,
+            182.23459000000003,
+            176.61294199999975
+          ],
+          "candidates": 13859,
+          "results": 223
+        },
+        {
+          "query": "\u00c9l\u00e9ment \uff27\uff25\uff34 \ud83d\ude00",
+          "medianMs": 169.67891500000042,
+          "samplesMs": [
+            163.8690200000001,
+            269.7071130000004,
+            169.67891500000042,
+            173.09596099999908,
+            164.1468730000015
+          ],
+          "candidates": 13859,
+          "results": 7
+        },
+        {
+          "query": "",
+          "medianMs": 0.0005779999992228113,
+          "samplesMs": [
+            0.001605000001291046,
+            0.001036999999996624,
+            0.0005779999992228113,
+            0.0005409999994299142,
+            0.0005479999999806751
+          ],
+          "candidates": 0,
+          "results": 0
+        },
+        {
+          "query": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "medianMs": 0.0011460000005172333,
+          "samplesMs": [
+            0.0011979999999311985,
+            0.0011770000000979053,
+            0.0011460000005172333,
+            0.0011059999997087289,
+            0.0011180000001331791
+          ],
+          "candidates": 0,
+          "results": 0
+        }
+      ],
+      "profiledSamples": 5299
+    },
+    "profiles": {
+      "page": {
+        "samples": 3314,
+        "nonIdleSampledMs": 6826.222999999995,
+        "garbageCollectionSampledMs": 1099.5309999999995
+      },
+      "operations-schema-library": {
+        "samples": 3426,
+        "nonIdleSampledMs": 1495.1350000000002,
+        "garbageCollectionSampledMs": 26.769999999999996
+      },
+      "search-page": {
+        "samples": 1784,
+        "nonIdleSampledMs": 3014.047,
+        "garbageCollectionSampledMs": 340.4590000000001
+      },
+      "search": {
+        "samples": 5299,
+        "nonIdleSampledMs": 5691.772999999993,
+        "garbageCollectionSampledMs": 96.18400000000004
+      }
+    }
+  },
+  "optimized": {
+    "bundleSha256": "1483efc42fe14a265d27c7ce3f1a5b9cde26edde033fd4037ce3110cf487588a",
+    "browser": {
+      "label": "optimized-final",
+      "browser": "153.0.8010.12",
+      "sourcePacks": 42,
+      "operationCount": 13859,
+      "freshStartupMs": 1300.418286,
+      "initialTransfers": {
+        "replies": 2,
+        "documents": 0,
+        "headers": 44,
+        "models": 0,
+        "operations": 13892,
+        "methods": {
+          "prepareStorage": 1,
+          "load": 1
+        }
+      },
+      "initialHeap": {
+        "page": {
+          "usedSize": 35845940,
+          "totalSize": 37797888,
+          "embedderHeapUsedSize": 10982520,
+          "backingStorageSize": 23321610
+        },
+        "workers": [
+          {
+            "name": "operations-metrics-recorder",
+            "usedSize": 948096,
+            "totalSize": 1310720,
+            "embedderHeapUsedSize": 28768,
+            "backingStorageSize": 349987
+          },
+          {
+            "name": "operations-workflows",
+            "usedSize": 682284,
+            "totalSize": 1572864,
+            "embedderHeapUsedSize": 25360,
+            "backingStorageSize": 298270
+          },
+          {
+            "name": "operations-schema-library",
+            "usedSize": 11126924,
+            "totalSize": 12025856,
+            "embedderHeapUsedSize": 69784,
+            "backingStorageSize": 9631110
+          }
+        ],
+        "dom": {
+          "documents": 2,
+          "nodes": 28497,
+          "jsEventListeners": 2463
+        },
+        "containerBytes": 1106608128,
+        "totalBackingBytes": 33600977,
+        "totalEmbedderBytes": 11106432,
+        "totalUsedBytes": 48603244
+      },
+      "searches": [
+        {
+          "query": "List projects",
+          "durationMs": 578.5342929999997,
+          "visibleMatches": 291,
+          "render": {
+            "windowListeners": {
+              "mousemove": 1,
+              "pointerdown": 1,
+              "pointerup": 2,
+              "touchstart": 1,
+              "touchend": 1,
+              "touchcancel": 1,
+              "mousedown": 1,
+              "mouseup": 1,
+              "click": 1,
+              "auxclick": 1,
+              "dblclick": 1,
+              "contextmenu": 2,
+              "keydown": 714,
+              "scroll": 708,
+              "pointercancel": 2,
+              "__playwright_snapshotter_global_listeners_check__": 1,
+              "pagehide": 5,
+              "error": 1,
+              "unhandledrejection": 1,
+              "focus": 1,
+              "pageshow": 3,
+              "__playwright_global_listeners_check__": 1,
+              "beforeunload": 1,
+              "resize": 1,
+              "blur": 2,
+              "keyup": 5
+            },
+            "documents": 2,
+            "nodes": 71467,
+            "jsEventListeners": 5265
+          }
+        },
+        {
+          "query": "Create a new project",
+          "durationMs": 677.5030409999999,
+          "visibleMatches": 326,
+          "render": {
+            "windowListeners": {
+              "mousemove": 1,
+              "pointerdown": 1,
+              "pointerup": 2,
+              "touchstart": 1,
+              "touchend": 1,
+              "touchcancel": 1,
+              "mousedown": 1,
+              "mouseup": 1,
+              "click": 1,
+              "auxclick": 1,
+              "dblclick": 1,
+              "contextmenu": 2,
+              "keydown": 760,
+              "scroll": 754,
+              "pointercancel": 2,
+              "__playwright_snapshotter_global_listeners_check__": 1,
+              "pagehide": 5,
+              "error": 1,
+              "unhandledrejection": 1,
+              "focus": 1,
+              "pageshow": 3,
+              "__playwright_global_listeners_check__": 1,
+              "beforeunload": 1,
+              "resize": 1,
+              "blur": 2,
+              "keyup": 5
+            },
+            "documents": 2,
+            "nodes": 95785,
+            "jsEventListeners": 7206
+          }
+        },
+        {
+          "query": "get",
+          "durationMs": 302.90000000000055,
+          "visibleMatches": 5,
+          "render": {
+            "windowListeners": {
+              "mousemove": 1,
+              "pointerdown": 1,
+              "pointerup": 2,
+              "touchstart": 1,
+              "touchend": 1,
+              "touchcancel": 1,
+              "mousedown": 1,
+              "mouseup": 1,
+              "click": 1,
+              "auxclick": 1,
+              "dblclick": 1,
+              "contextmenu": 2,
+              "keydown": 340,
+              "scroll": 334,
+              "pointercancel": 2,
+              "__playwright_snapshotter_global_listeners_check__": 1,
+              "pagehide": 5,
+              "error": 1,
+              "unhandledrejection": 1,
+              "focus": 1,
+              "pageshow": 3,
+              "__playwright_global_listeners_check__": 1,
+              "beforeunload": 1,
+              "resize": 1,
+              "blur": 2,
+              "keyup": 5
+            },
+            "documents": 2,
+            "nodes": 98362,
+            "jsEventListeners": 8372
+          }
+        }
+      ],
+      "toggleMs": [
+        184.13087300000007,
+        242.2722219999996,
+        188.512248,
+        170.192105000001
+      ],
+      "afterToggleTransfers": {
+        "replies": 6,
+        "documents": 0,
+        "headers": 46,
+        "models": 0,
+        "operations": 13910,
+        "methods": {
+          "prepareStorage": 1,
+          "load": 1,
+          "enabled": 4
+        }
+      },
+      "openInspectorHeap": {
+        "page": {
+          "usedSize": 51893424,
+          "totalSize": 55623680,
+          "embedderHeapUsedSize": 25674136,
+          "backingStorageSize": 23453913
+        },
+        "workers": [
+          {
+            "name": "operations-metrics-recorder",
+            "usedSize": 948096,
+            "totalSize": 1310720,
+            "embedderHeapUsedSize": 28768,
+            "backingStorageSize": 349987
+          },
+          {
+            "name": "operations-workflows",
+            "usedSize": 682284,
+            "totalSize": 1572864,
+            "embedderHeapUsedSize": 25360,
+            "backingStorageSize": 298270
+          },
+          {
+            "name": "operations-schema-library",
+            "usedSize": 15431108,
+            "totalSize": 16220160,
+            "embedderHeapUsedSize": 26288,
+            "backingStorageSize": 9631116
+          }
+        ],
+        "dom": {
+          "documents": 2,
+          "nodes": 51016,
+          "jsEventListeners": 3023
+        },
+        "containerBytes": 1203613696,
+        "totalBackingBytes": 33733286,
+        "totalEmbedderBytes": 25754552,
+        "totalUsedBytes": 68954912
+      },
+      "closedInspectorHeap": {
+        "page": {
+          "usedSize": 37773788,
+          "totalSize": 39632896,
+          "embedderHeapUsedSize": 12794824,
+          "backingStorageSize": 23402377
+        },
+        "workers": [
+          {
+            "name": "operations-metrics-recorder",
+            "usedSize": 948096,
+            "totalSize": 1310720,
+            "embedderHeapUsedSize": 28768,
+            "backingStorageSize": 349987
+          },
+          {
+            "name": "operations-workflows",
+            "usedSize": 682284,
+            "totalSize": 1572864,
+            "embedderHeapUsedSize": 25360,
+            "backingStorageSize": 298270
+          },
+          {
+            "name": "operations-schema-library",
+            "usedSize": 15431392,
+            "totalSize": 16220160,
+            "embedderHeapUsedSize": 26288,
+            "backingStorageSize": 9631116
+          }
+        ],
+        "dom": {
+          "documents": 2,
+          "nodes": 28625,
+          "jsEventListeners": 2463
+        },
+        "containerBytes": 1158520832,
+        "totalBackingBytes": 33681750,
+        "totalEmbedderBytes": 12875240,
+        "totalUsedBytes": 54835560
+      },
+      "closedInspectorViews": 0,
+      "restarts": [
+        {
+          "name": "all",
+          "enabled": 44,
+          "startupMs": 996.8794959999996,
+          "transfers": {
+            "replies": 2,
+            "documents": 0,
+            "headers": 44,
+            "models": 0,
+            "operations": 13892,
+            "methods": {
+              "prepareStorage": 1,
+              "load": 1
+            }
+          },
+          "heap": {
+            "page": {
+              "usedSize": 35856924,
+              "totalSize": 38060032,
+              "embedderHeapUsedSize": 10978640,
+              "backingStorageSize": 23321591
+            },
+            "workers": [
+              {
+                "name": "operations-schema-library",
+                "usedSize": 10328612,
+                "totalSize": 11763712,
+                "embedderHeapUsedSize": 63008,
+                "backingStorageSize": 9628770
+              },
+              {
+                "name": "operations-workflows",
+                "usedSize": 682284,
+                "totalSize": 1310720,
+                "embedderHeapUsedSize": 25360,
+                "backingStorageSize": 298270
+              },
+              {
+                "name": "operations-metrics-recorder",
+                "usedSize": 948084,
+                "totalSize": 1310720,
+                "embedderHeapUsedSize": 28768,
+                "backingStorageSize": 349987
+              }
+            ],
+            "dom": {
+              "documents": 2,
+              "nodes": 28497,
+              "jsEventListeners": 2463
+            },
+            "containerBytes": 1124585472,
+            "totalBackingBytes": 33598618,
+            "totalEmbedderBytes": 11095776,
+            "totalUsedBytes": 47815904
+          }
+        },
+        {
+          "name": "none",
+          "enabled": 0,
+          "startupMs": 884.5793049999993,
+          "transfers": {
+            "replies": 2,
+            "documents": 0,
+            "headers": 0,
+            "models": 0,
+            "operations": 0,
+            "methods": {
+              "prepareStorage": 1,
+              "load": 1
+            }
+          },
+          "heap": {
+            "page": {
+              "usedSize": 26605980,
+              "totalSize": 27922432,
+              "embedderHeapUsedSize": 10004336,
+              "backingStorageSize": 23320378
+            },
+            "workers": [
+              {
+                "name": "operations-workflows",
+                "usedSize": 682284,
+                "totalSize": 1310720,
+                "embedderHeapUsedSize": 25360,
+                "backingStorageSize": 298270
+              },
+              {
+                "name": "operations-schema-library",
+                "usedSize": 10248784,
+                "totalSize": 10977280,
+                "embedderHeapUsedSize": 25888,
+                "backingStorageSize": 9628373
+              },
+              {
+                "name": "operations-metrics-recorder",
+                "usedSize": 948072,
+                "totalSize": 1310720,
+                "embedderHeapUsedSize": 28768,
+                "backingStorageSize": 349987
+              }
+            ],
+            "dom": {
+              "documents": 2,
+              "nodes": 26461,
+              "jsEventListeners": 2375
+            },
+            "containerBytes": 1072095232,
+            "totalBackingBytes": 33597008,
+            "totalEmbedderBytes": 10084352,
+            "totalUsedBytes": 38485120
+          }
+        },
+        {
+          "name": "subset",
+          "enabled": 3,
+          "startupMs": 881.9954350000007,
+          "transfers": {
+            "replies": 2,
+            "documents": 0,
+            "headers": 3,
+            "models": 0,
+            "operations": 42,
+            "methods": {
+              "prepareStorage": 1,
+              "load": 1
+            }
+          },
+          "heap": {
+            "page": {
+              "usedSize": 26708716,
+              "totalSize": 28446720,
+              "embedderHeapUsedSize": 10080744,
+              "backingStorageSize": 23322112
+            },
+            "workers": [
+              {
+                "name": "operations-schema-library",
+                "usedSize": 10240792,
+                "totalSize": 10715136,
+                "embedderHeapUsedSize": 26448,
+                "backingStorageSize": 9628402
+              },
+              {
+                "name": "operations-workflows",
+                "usedSize": 682284,
+                "totalSize": 1572864,
+                "embedderHeapUsedSize": 25360,
+                "backingStorageSize": 298270
+              },
+              {
+                "name": "operations-metrics-recorder",
+                "usedSize": 948096,
+                "totalSize": 1310720,
+                "embedderHeapUsedSize": 28768,
+                "backingStorageSize": 349987
+              }
+            ],
+            "dom": {
+              "documents": 2,
+              "nodes": 26615,
+              "jsEventListeners": 2381
+            },
+            "containerBytes": 1086353408,
+            "totalBackingBytes": 33598771,
+            "totalEmbedderBytes": 10161320,
+            "totalUsedBytes": 38579888
+          }
+        }
+      ]
+    },
+    "matching": {
+      "node": "v26.7.0",
+      "execution": "native-worker",
+      "schemaCount": 42,
+      "operationCount": 13859,
+      "indexPreparationMs": 43.54574899999989,
+      "searches": [
+        {
+          "query": "List projects",
+          "medianMs": 58.230091999999786,
+          "samplesMs": [
+            56.9989970000006,
+            56.788368000000446,
+            58.230091999999786,
+            88.44376800000009,
+            88.10621300000003
+          ],
+          "candidates": 13859,
+          "results": 289
+        },
+        {
+          "query": "Create a new project",
+          "medianMs": 87.76479100000051,
+          "samplesMs": [
+            88.07269600000018,
+            88.62552200000027,
+            87.76479100000051,
+            87.16301800000019,
+            87.20010899999943
+          ],
+          "candidates": 13859,
+          "results": 325
+        },
+        {
+          "query": "get",
+          "medianMs": 11.690244999999777,
+          "samplesMs": [
+            11.690244999999777,
+            11.64211400000022,
+            11.70018700000037,
+            11.669990000000325,
+            11.70875899999919
+          ],
+          "candidates": 13859,
+          "results": 5
+        },
+        {
+          "query": "List all running virtual machines in the selected project",
+          "medianMs": 250.1198229999991,
+          "samplesMs": [
+            288.33430300000055,
+            248.70450100000016,
+            246.6429159999998,
+            326.9563339999995,
+            250.1198229999991
+          ],
+          "candidates": 13859,
+          "results": 5
+        },
+        {
+          "query": "LIST_projetcs",
+          "medianMs": 57.021553999999014,
+          "samplesMs": [
+            57.021553999999014,
+            56.73604599999999,
+            57.11559600000146,
+            56.38907599999948,
+            57.7342009999993
+          ],
+          "candidates": 13859,
+          "results": 223
+        },
+        {
+          "query": "\u00c9l\u00e9ment \uff27\uff25\uff34 \ud83d\ude00",
+          "medianMs": 60.50926199999958,
+          "samplesMs": [
+            56.51301600000079,
+            74.11428800000067,
+            76.2673450000002,
+            60.50926199999958,
+            48.68765499999972
+          ],
+          "candidates": 13859,
+          "results": 7
+        },
+        {
+          "query": "",
+          "medianMs": 0.0005839999994350364,
+          "samplesMs": [
+            0.001432000000932021,
+            0.0008039999993343372,
+            0.0005839999994350364,
+            0.0005270000001473818,
+            0.0005209999999351567
+          ],
+          "candidates": 0,
+          "results": 0
+        },
+        {
+          "query": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+          "medianMs": 0.0010509999992791563,
+          "samplesMs": [
+            0.0010110000002896413,
+            0.0010840000013558893,
+            0.0010339999989810167,
+            0.0010509999992791563,
+            0.0010860000002139714
+          ],
+          "candidates": 0,
+          "results": 0
+        }
+      ],
+      "profiledSamples": 2081
+    },
+    "profiles": {
+      "page": {
+        "samples": 403,
+        "nonIdleSampledMs": 856.174,
+        "garbageCollectionSampledMs": 4.129
+      },
+      "operations-schema-library": {
+        "samples": 383,
+        "nonIdleSampledMs": 7.380999999999972,
+        "garbageCollectionSampledMs": 0
+      },
+      "search-page": {
+        "samples": 1087,
+        "nonIdleSampledMs": 1765.325,
+        "garbageCollectionSampledMs": 65.61600000000001
+      },
+      "search": {
+        "samples": 2081,
+        "nonIdleSampledMs": 2252.8170000000155,
+        "garbageCollectionSampledMs": 1.053
+      }
+    }
+  }
+}

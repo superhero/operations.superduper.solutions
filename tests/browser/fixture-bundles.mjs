@@ -10,6 +10,7 @@ const entries = {
   vaultFixture: 'vault-storage',
   policyFixture: 'vault-policy',
   kdfFixture: 'vault-kdf',
+  schemaFixture: 'schema-lifecycle',
 };
 
 export async function buildFixtureBundles() {

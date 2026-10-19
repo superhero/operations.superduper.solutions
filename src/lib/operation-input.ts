@@ -140,6 +140,7 @@ export function additionalBodyField(operation: Operation, name: string, type: In
 
 export function prepareRequest(operation: Operation, values: InputValues, workflowFields: InputField[] = operation.fields): PreparedRequest
 {
+  if (operation.deferred) throw new Error("Load this operation's schema before preparing a request.");
   if (operation.unavailableReason) throw new Error(operation.unavailableReason);
   const request: PreparedRequest = { method: operation.method, path: operation.path, query: {} };
   const body: Record<string, JsonValue> = {};

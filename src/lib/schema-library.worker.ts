@@ -2,58 +2,58 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import "./worker-runtime.ts";
-import { createSchemaDocumentId, parseSchemaDocument, schemaDocumentMaxBytes, validateSchemaDocument,
-  type SchemaDocumentRecord } from "./schema-documents.ts";
-import { loadSchemaDocuments, putSchemaDocument, renameSchemaDocument, moveSchemaDocument,
+import { createSchemaDocumentId, parseSchemaDocument, schemaDocumentMaxBytes, validateSchemaDocument } from "./schema-documents.ts";
+import { listSchemaMetadata, readSchemaDiscovery, readSchemaDocument, readSchemaOperation, releaseSchemaDocument,
+  schemaMetadataIdentity, putSchemaDocument, renameSchemaDocument, moveSchemaDocument,
   deleteSchemaDocument, setSchemaDocumentEnabled, configureSchemaDefaults } from "./schema-storage.ts";
 import { serviceSchemaDescriptors, readServiceSchema } from "./service-schema-packs.ts";
+import { serviceIndexDescriptors, readServiceSchemaIndex, schemaAdapterRevision } from "./service-schema-indexes.ts";
 import { inspectServiceSchema } from "./service-catalog.ts";
 import type { SchemaDownload, SchemaLibrarySnapshot } from "./schema-library-types.ts";
 import { serveWorkerRpc } from "./worker-rpc.ts";
 import { prepareStorageNamespaces } from "./storage-namespace.ts";
 
-const serviceIds = new Set(serviceSchemaDescriptors.map(catalog => catalog.id));
-const inspected = new WeakMap<Record<string, unknown>, ReturnType<typeof inspectServiceSchema>>();
-function inspect(document: Record<string, unknown>, id: string) {
-  if (!serviceIds.has(id)) return validateSchemaDocument(document, id);
-  if (!inspected.has(document)) inspected.set(document, inspectServiceSchema(document, id));
-  return inspected.get(document)!;
-}
-configureSchemaDefaults({ catalogs: serviceSchemaDescriptors.map(catalog => ({
-  id: catalog.id, name: catalog.name, file: `${catalog.id}.openapi.json`, revision: catalog.sha256,
-})), read: readServiceSchema, validate: inspect });
+const indexes = new Map(serviceIndexDescriptors.map(index => [index.id, index]));
+configureSchemaDefaults({ adapterRevision: schemaAdapterRevision,
+  catalogs: serviceSchemaDescriptors.map(catalog => ({ id: catalog.id, name: catalog.name,
+    file: `${catalog.id}.openapi.json`, revision: catalog.sha256, bytes: catalog.bytes, summary: indexes.get(catalog.id)!.summary })),
+  read: readServiceSchema, readIndex: readServiceSchemaIndex, validate: inspectServiceSchema,
+  inspectOperation: (document, id, operation) => inspectServiceSchema(document, id, new Set([operation.id]), operation).operations[0]!,
+});
 
-const identities = new WeakMap<Record<string, unknown>, Map<string, Promise<string>>>();
-function sourceIdentity(file: string, document: Record<string, unknown>): Promise<string> {
-  if (!identities.has(document)) identities.set(document, new Map());
-  const entries = identities.get(document)!;
-  if (!entries.has(file)) entries.set(file, crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify([file, document])))
-    .then(bytes => Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, "0")).join("")));
-  return entries.get(file)!;
-}
-async function snapshot(): Promise<SchemaLibrarySnapshot>
+let published = new Map<string, string>();
+async function snapshot(reset = false): Promise<SchemaLibrarySnapshot>
 {
-  const snapshot: SchemaLibrarySnapshot = { records: [], catalogs: [] };
-  for (const record of await loadSchemaDocuments())
+  const records = await listSchemaMetadata();
+  const next = new Map<string, string>();
+  const snapshot: SchemaLibrarySnapshot = { records: [], catalogs: [], active: [] };
+  for (const record of records)
   {
-    const validated = inspect(record.document, record.id);
-    const name = record.displayName ?? validated.name;
-    const groups = record.groups ?? (record.displayName ? validated.groups.map(group => ({ ...group, name })) : validated.groups);
-    snapshot.records.push({ ...record, document: validated.document, summary: { name, serverUrl: validated.serverUrl,
-      operationCount: validated.operations.length, unavailableCount: validated.operations.filter(operation => operation.unavailableReason).length } });
-    if (record.enabled) snapshot.catalogs.push({ catalog: {
-      id: record.id, file: record.file, name, document: validated.document,
-      groups, execution: { kind: "http", origin: validated.serverUrl },
-    }, operations: validated.operations, sourceIdentity: await sourceIdentity(record.file, validated.document) });
+    const identity = schemaMetadataIdentity(record);
+    let summary = record.summary;
+    if (record.enabled)
+    {
+      snapshot.active.push(record.id);
+      next.set(record.id, identity);
+      if (reset || published.get(record.id) !== identity)
+      {
+        const discovery = await readSchemaDiscovery(record.id);
+        summary = discovery.summary;
+        const name = record.displayName ?? summary.name;
+        const groups = record.groups ?? (record.displayName
+          ? discovery.groups.map(group => ({ ...group, name })) : discovery.groups);
+        snapshot.catalogs.push({ catalog: { id: record.id, file: record.file, name, document: discovery.document,
+          groups, execution: { kind: "http", origin: summary.serverUrl } }, operations: discovery.operations, sourceIdentity: identity });
+      }
+    }
+    snapshot.records.push({ id: record.id, file: record.file, enabled: record.enabled,
+      createdAt: record.createdAt, updatedAt: record.updatedAt, sourceIdentity: identity,
+      ...(record.displayName ? { displayName: record.displayName } : {}),
+      summary: summary ? { ...summary, name: record.displayName ?? summary.name }
+        : { name: record.displayName ?? record.file, serverUrl: "", operationCount: null } });
   }
+  published = next;
   return snapshot;
-}
-
-async function findRecord(id: string): Promise<SchemaDocumentRecord>
-{
-  const record = (await loadSchemaDocuments()).find(record => record.id === id);
-  if (!record) throw new Error("This schema is no longer available. Reload the schema list and try again.");
-  return record;
 }
 
 async function readUpload(file: File, id: string): Promise<Record<string, unknown>>
@@ -64,47 +64,40 @@ async function readUpload(file: File, id: string): Promise<Record<string, unknow
 
 serveWorkerRpc({
   prepareStorage: prepareStorageNamespaces,
-  load: snapshot,
-  async upload(file: File)
-  {
+  load: () => snapshot(true),
+  model: readSchemaOperation,
+  document: async (id: string, identity: string) => {
+    try { return (await readSchemaDocument(id, identity)).document; }
+    finally { releaseSchemaDocument(id); }
+  },
+  releaseDocument: releaseSchemaDocument,
+  async upload(file: File) {
     const id = createSchemaDocumentId();
     const document = await readUpload(file, id);
     const now = Date.now();
     await putSchemaDocument({ id, file: file.name, document, enabled: true, createdAt: now, updatedAt: now });
     return snapshot();
   },
-  async replace(id: string, file: File)
-  {
-    const record = await findRecord(id);
+  async replace(id: string, file: File) {
+    const record = await readSchemaDocument(id);
     const document = await readUpload(file, id);
     const { groups: _groups, displayName: _displayName, ...metadata } = record;
     await putSchemaDocument({ ...metadata, document, file: file.name, updatedAt: Date.now() });
     return snapshot();
   },
-  async rename(id: string, name: string)
-  {
-    await renameSchemaDocument(id, name);
-    return snapshot();
+  async rename(id: string, name: string) { await renameSchemaDocument(id, name); return snapshot(); },
+  async move(id: string, targetId: string, placement: "before" | "after") {
+    await moveSchemaDocument(id, targetId, placement); return snapshot();
   },
-  async move(id: string, targetId: string, placement: "before" | "after")
-  {
-    await moveSchemaDocument(id, targetId, placement);
-    return snapshot();
+  async enabled(id: string, enabled: boolean) {
+    await setSchemaDocumentEnabled(id, enabled, { metadataOnly: true }); return snapshot();
   },
-  async enabled(id: string, enabled: boolean)
-  {
-    await setSchemaDocumentEnabled(id, enabled);
-    return snapshot();
-  },
-  async delete(id: string)
-  {
-    await deleteSchemaDocument(id);
-    return snapshot();
-  },
-  async download(id: string): Promise<SchemaDownload>
-  {
-    const record = await findRecord(id);
-    return { text: `${JSON.stringify(record.document, null, 2)}\n`,
-      filename: `${record.file.replace(/\.(?:json|ya?ml)$/i, "").replace(/[^a-z0-9._-]+/gi, "-").toLowerCase() || "schema"}.json` };
+  async delete(id: string) { await deleteSchemaDocument(id); return snapshot(); },
+  async download(id: string, identity: string): Promise<SchemaDownload> {
+    const record = await readSchemaDocument(id, identity);
+    try {
+      return { text: `${JSON.stringify(record.document, null, 2)}\n`,
+        filename: `${record.file.replace(/\.(?:json|ya?ml)$/i, "").replace(/[^a-z0-9._-]+/gi, "-").toLowerCase() || "schema"}.json` };
+    } finally { releaseSchemaDocument(id); }
   },
 });

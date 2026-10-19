@@ -11,9 +11,9 @@
   import { catalogs, type CatalogGroup } from "$lib/catalog-registry.ts";
   import { evaluateOperationsAsync } from "$lib/operation-matching-client.ts";
   import type { OperationMatch } from "$lib/matching.ts";
-  let { closeMenuWithEscape = true, open = $bindable(false), modal = $bindable(false), documentModal = false, operations, evaluationDetails = false, workflows, workflowError, onWorkflowSelect, onWorkflowRetry, onSelect }:
+  let { closeMenuWithEscape = true, open = $bindable(false), modal = $bindable(false), documentModal = false, operations, catalogGroups, evaluationDetails = false, workflows, workflowError, onWorkflowSelect, onWorkflowRetry, onSelect }:
     { closeMenuWithEscape?: boolean; open: boolean; modal?: boolean; documentModal?: boolean; operations: Operation[]; evaluationDetails?: boolean;
-      workflows: WorkflowDocument[]; workflowError: string; onWorkflowSelect: (document: WorkflowDocument) => void; onWorkflowRetry: () => void;
+      catalogGroups?: CatalogGroup[]; workflows: WorkflowDocument[]; workflowError: string; onWorkflowSelect: (document: WorkflowDocument) => void; onWorkflowRetry: () => void;
       onSelect: (operation: Operation) => void } = $props();
   let mobile = $state(false);
   let catalogPath = $state<string[]>([]);
@@ -40,15 +40,29 @@
   const groups: CatalogGroup[] = $derived.by(() => {
     // The operation snapshot changes together with the registered source documents.
     void operations;
-    return catalogs.flatMap(catalog => catalog.groups);
+    return catalogGroups ?? catalogs.flatMap(catalog => catalog.groups);
   });
   const indexedOperations = $derived(new Map(operations.map(operation => [operation.id, operation])));
+  const counts = $derived.by(() => {
+    const counts = new Map<CatalogGroup, { all: number; visible: number }>();
+    function count(group: CatalogGroup) {
+      let all = 0, visible = 0;
+      for (const id of group.operationIds ?? []) if (indexedOperations.has(id)) {
+        all++; if (!matchingIds || matchingIds.has(id)) visible++;
+      }
+      for (const child of group.children ?? []) { const nested = count(child); all += nested.all; visible += nested.visible; }
+      const result = { all, visible }; counts.set(group, result); return result;
+    }
+    for (const group of groups) count(group);
+    return counts;
+  });
   function groupOperations(group: CatalogGroup, filtered = true) {
     return (group.operationIds ?? []).map(id => indexedOperations.get(id))
       .filter((operation): operation is Operation => !!operation && (!filtered || !matchingIds || matchingIds.has(operation.id)));
   }
   function groupCount(group: CatalogGroup, filtered = false): number {
-    return groupOperations(group, filtered).length + (group.children ?? []).reduce((count, child) => count + groupCount(child, filtered), 0);
+    const count = counts.get(group);
+    return (filtered ? count?.visible : count?.all) ?? 0;
   }
   function togglePath(depth: number, id: string, next: boolean) {
     catalogPath = next ? [...catalogPath.slice(0, depth), id] : catalogPath.slice(0, depth);
@@ -182,6 +196,16 @@
   function select(operation: Operation) { navigate(() => onSelect(operation)); }
 </script>
 
+{#snippet operationLabel(operation: Operation)}
+  <span class="catalog-name">{operation.name}</span>
+  <HintButton label="Add to workflow" labelAsName={false} tooltipSide="right">
+    {#snippet child({ props })}
+      {@const { type: _type, tabindex: _tabindex, ...iconProps } = props}
+      <span {...iconProps} class="catalog-action-icon"><MaterialIcon name="add_box" size={24} /></span>
+    {/snippet}
+  </HintButton>
+{/snippet}
+
 {#snippet branch(group: CatalogGroup, depth: number, parentOpen: boolean, parents: string[] = [])}
   {@const count = groupCount(group)}
   {@const path = [...parents, group.id]}
@@ -200,17 +224,17 @@
           <ul class="catalog-operations">
             {#each entries as operation (operation.id)}
               <li data-operation-id={operation.id} data-operation-name={operation.name}>
-                <HintButton class="catalog-operation-action" label={operation.unavailableReason ?? ""} labelAsName={false}
-                  tooltipEnabled={!!operation.unavailableReason} aria-disabled={!!operation.unavailableReason} aria-label={`Add to workflow: ${operation.name}`}
-                  onclick={() => { if (operation.unavailableReason) return; togglePath(depth + 1, operation.id, true); select(operation); }}>
-                  <span class="catalog-name">{operation.name}</span>
-                  <HintButton label="Add to workflow" labelAsName={false} tooltipSide="right">
-                    {#snippet child({ props })}
-                      {@const { type: _type, tabindex: _tabindex, ...iconProps } = props}
-                      <span {...iconProps} class="catalog-action-icon"><MaterialIcon name="add_box" size={24} /></span>
-                    {/snippet}
+                {#if operation.unavailableReason}
+                  <HintButton class="catalog-operation-action" label={operation.unavailableReason} labelAsName={false}
+                    aria-disabled="true" aria-label={`Add to workflow: ${operation.name}`}>
+                    {@render operationLabel(operation)}
                   </HintButton>
-                </HintButton>
+                {:else}
+                  <button class="catalog-operation-action" type="button" aria-disabled="false" aria-label={`Add to workflow: ${operation.name}`}
+                    onclick={() => { togglePath(depth + 1, operation.id, true); select(operation); }}>
+                    {@render operationLabel(operation)}
+                  </button>
+                {/if}
               </li>
             {/each}
           </ul>

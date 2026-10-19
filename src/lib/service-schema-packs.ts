@@ -22,7 +22,7 @@ export async function decodeServiceSchema(pack: string, descriptor: Pick<Service
     throw new Error("The bundled schema pack metadata is invalid.");
   const compressed = Uint8Array.from(atob(encoded), char => char.charCodeAt(0));
   const reader = new Blob([compressed]).stream().pipeThrough(new DecompressionStream("gzip")).getReader();
-  const chunks: Uint8Array[] = [];
+  const bytes = new Uint8Array(descriptor.bytes);
   let length = 0;
   try
   {
@@ -32,14 +32,11 @@ export async function decodeServiceSchema(pack: string, descriptor: Pick<Service
       if (done) break;
       length += value.byteLength;
       if (length > descriptor.bytes) throw new Error("The bundled schema exceeds its recorded size.");
-      chunks.push(value);
+      bytes.set(value, length - value.byteLength);
     }
   }
   finally { await reader.cancel(); }
   if (length !== descriptor.bytes) throw new Error("The bundled schema is incomplete.");
-  const bytes = new Uint8Array(length);
-  let position = 0;
-  for (const chunk of chunks) { bytes.set(chunk, position); position += chunk.length; }
   const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), value => value.toString(16).padStart(2, "0")).join("");
   if (digest !== descriptor.sha256) throw new Error("The bundled schema does not match its recorded hash.");
   const document: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));

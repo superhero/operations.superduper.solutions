@@ -25,16 +25,32 @@ unrelated behavior to `utils.ts`.
 
 ## Persistence
 
-Workflow and authored schema working files are authoritative browser-local content,
+Workflow and schema working files are authoritative browser-local content,
 backed by separate LightningFS Git repositories. Reviewed service defaults use
-integrity-checked bundled packs until editing or history inspection materializes
-a Git copy. `service-schema-packs` decodes packs; `service-catalog` projects their
-operations and explicit execution limits. Metadata databases hold indexes,
+integrity-checked bundled packs until a complete source, model or history is needed.
+Materialized defaults retain factory ownership and append later observed revisions;
+authored edits stop automatic bundle replacement. Metadata databases hold indexes,
 preferences and recovery journals, not editable content copies. Database names
 come from `storage-names.ts`; namespace changes require the verified migration
 path. Preserve serialized writes, Web Locks, expected revisions and interrupted
 write recovery. Follow [local resource management](../../docs/adr/local-resource-management.md)
 for history semantics and content-versus-editor-state boundaries.
+
+## Schema working sets
+
+| Module | Responsibility |
+| --- | --- |
+| `service-schema-packs`, `service-schema-indexes` | Verify compressed source and discovery artifacts |
+| `schema-index` | Versioned compact descriptors; these cannot execute requests |
+| `schema-cache` | Coalesced reads and a source-byte budget for decoded content |
+| `schema-storage` | Targeted persistence, recovery, independent history and canonical policies |
+| `schema-library*` | Worker deltas, on-demand models and source reads |
+| `schema-models`, `catalog*` | Nested workflow dependencies, model pins and current operation lookup |
+
+Startup reads metadata and enabled indexes. A selected operation loads its full
+model and local-reference closure; a settings inspector loads one document and
+releases it on close. Keep revision and adapter checks at these boundaries. Do not
+use public descriptors to authorize credentials or restore an editable document.
 
 ## Settings and caches
 
@@ -58,7 +74,7 @@ use inline bundling; keep heavy parsing, repository work and aggregation there.
 Window-only measurements cross an asynchronous bridge. Preserve native error
 causes and worker cleanup when changing [worker boundaries](../../docs/adr/dedicated-workers.md).
 
-Operation matching sends only operation names and identifiers to its disposable
+Operation matching sends prepared name variants and identifiers to its disposable
 worker. Each new prompt aborts the previous calculation, including its worker;
 completed scores are paired with the original operations on the page.
 
@@ -68,6 +84,11 @@ Update catalog operations and their registry together through the publication
 functions in `catalog.ts`. Enabled schemas may change without rewriting saved
 workflow references; preserve identities and validate execution against available
 operations. See [OpenAPI adaptation](../../docs/adr/openapi-adaptation.md).
+
+`operationDescriptorForId` supports discovery. `operationForId` returns only a
+canonical executable model; call `hydrateOperation` through the schema library
+before adding or executing a deferred operation. Retain workflow leases while
+their models are in use.
 
 ## Verification
 
