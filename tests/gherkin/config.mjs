@@ -74,7 +74,10 @@ export async function createTestConfig(name = process.env.OPERATIONS_TEST_PROFIL
       testTimeout: browser ? 300_000 : 240_000, hookTimeout: 120_000,
       setupFiles: [resolve(root, components ? 'tests/components/component.steps.mjs'
         : browser ? 'tests/gherkin/setup.browser.mjs' : 'tests/gherkin/setup.node.mjs')],
-      server: { deps: { external: ['quickpickle', /[\\/]tests[\\/]gherkin[\\/]quickpickle[\\/]/, ...(browser ? [
+      // Native benchmark workers and source tests must use identical matching
+      // code offsets when V8 merges their coverage under the same file URL.
+      server: { deps: { external: ['quickpickle', /[\\/]tests[\\/]gherkin[\\/]quickpickle[\\/]/,
+        ...(name === 'source' ? [/[\\/]src[\\/]lib[\\/]matching\.ts$/] : []), ...(browser ? [
         /[\\/]tests[\\/]gherkin[\\/](?:native-steps|cucumber-compat|worker-test)\.mjs$/,
       ] : [])] } },
       attachmentsDir: resolve(root, 'tmp/test/attachments'),
