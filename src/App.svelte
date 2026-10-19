@@ -323,6 +323,8 @@
   }
 
   async function browseOperations() {
+    await setMode("workflow");
+    if (mode !== "workflow") return;
     navigationOpen = true;
     await tick();
     await sideNavigation.focusPrompt();
@@ -426,6 +428,8 @@
   @media (min-width: 1150px) { .page-content.settings-open { --workflow-controls-inset: var(--settings-drawer-width); } }
   .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap) { right: var(--workflow-controls-inset); max-width: calc(100% - var(--workflow-controls-inset) - 2rem); transition: right 200ms ease-in-out, max-width 200ms ease-in-out; }
   .page-content :global(.workflow-toolbar) { max-width: calc(100% - var(--workflow-controls-inset) - var(--navigation-inset) - 2rem); }
+  /* The fixed settings drawer spans the viewport, including its reserved scrollbar gutter. */
+  .page-content :global(.workflow-empty) { left: var(--navigation-inset); right: max(0px, calc(var(--workflow-controls-inset) + 100% - 100vw)); transition: left 200ms ease-in-out, right 200ms ease-in-out; }
   .page-content :global(.workflow-control-group) { max-width: 100%; flex-wrap: wrap; }
   .page-content :global(.workflow-minimap .svelte-flow__minimap-svg) { max-width: 100%; height: auto; }
   .page-content :global(.site-header) { margin-left: var(--navigation-inset); width: calc(100% - var(--workflow-controls-inset) - var(--navigation-inset)); transition: width 200ms ease-in-out, margin-left 200ms ease-in-out; }
@@ -440,7 +444,7 @@
     .settings-drawer :global(.workspace) { padding-top: 0; }
   }
   .settings-drawer.open { transform: translateX(0); visibility: visible; transition-delay: 0s; }
-  @media (prefers-reduced-motion: reduce) { .settings-backdrop, .settings-drawer, .page-content :global(.site-header), .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap) { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .settings-backdrop, .settings-drawer, .page-content :global(.site-header), .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap), .page-content :global(.workflow-empty) { transition: none; } }
 
   .settings-recovery {
     display: flex;

@@ -586,7 +586,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 
   export async function startRun(document: WorkflowDocument = documentValue()) {
-    if (actionBusy) return;
+    if (actionBusy || !document.nodes.length) return;
     actionBusy = true;
     try {
       const validated = validateWorkflowDocument(document);
@@ -1060,7 +1060,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         oncopy={() => copySelection()} oncut={() => copySelection(true)} onpaste={() => { void pasteSelection(); }} canPaste={clipboard !== null}
         onremove={removeSelected} onnew={newDocument} onopen={openDocuments}
         onexport={exportDocument} onimport={() => upload.click()} onbrowse={onBrowse}
-        onutility={addUtility} ondescribe={describeWorkflow} onrun={() => startRun()}
+        onutility={addUtility} ondescribe={describeWorkflow} onrun={() => startRun()} canRun={nodes.length > 0}
         canUndo={canUndo || (hasSavedDocument && dirty)} canRedo={canRedo && !dirty} historyBusy={actionBusy || saving}
         onundo={() => changeVersion("undo")} onredo={() => changeVersion("redo")} onhistory={openHistory} />
     </SvelteFlow>
