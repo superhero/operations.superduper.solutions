@@ -67,6 +67,32 @@ Then('service schema decoding rejects corrupt metadata compressed data and JSON'
   }
 });
 
+Then('native and compatible schema decoders retain identical data and corruption guards', async () => {
+  const property = Object.getOwnPropertyDescriptor(Uint8Array, 'fromBase64');
+  const native = Uint8Array.fromBase64;
+  assert.equal(typeof native, 'function', 'The pinned Node runtime must exercise the native decoder.');
+  const document = { openapi: '3.1.0', description: 'Élément 中 𠀀 😀 '.repeat(10_000), paths: {} };
+  const valid = fixture(document);
+  let nativeCalls = 0;
+  try {
+    for (const enabled of [true, false]) {
+      Object.defineProperty(Uint8Array, 'fromBase64', { configurable: true, value: enabled ? value => {
+        nativeCalls++; return native(value);
+      } : undefined });
+      assert.deepEqual(await decodeServiceSchema(valid.pack, valid.descriptor), document);
+      await assert.rejects(decodeServiceSchema(valid.pack, { ...valid.descriptor, sha256: '0'.repeat(64) }), /hash/);
+      await assert.rejects(decodeServiceSchema(valid.pack, { ...valid.descriptor, bytes: 1 }), /recorded size/);
+      await assert.rejects(decodeServiceSchema(valid.pack, { ...valid.descriptor, bytes: valid.descriptor.bytes + 1 }), /incomplete/);
+      await assert.rejects(decodeServiceSchema('data:application/gzip;base64,YmFk', valid.descriptor));
+      await assert.rejects(decodeServiceSchema('data:application/gzip;base64,A', valid.descriptor));
+    }
+    assert.ok(nativeCalls > 0, 'The native path must not silently fall back.');
+  } finally {
+    if (property) Object.defineProperty(Uint8Array, 'fromBase64', property);
+    else delete Uint8Array.fromBase64;
+  }
+});
+
 Then('external Swagger references remain valid after bundling and OpenAPI conversion', async () => {
   const { bundleSwaggerReferences } = await import('../build/swagger-references.mjs');
   const { default: converter } = await import('swagger2openapi');

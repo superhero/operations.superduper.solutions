@@ -8,6 +8,10 @@ heap breakdowns, transfer counts and tested bundle hashes are in
 
 ## Current status and remaining work
 
+The latest pass adds bounded exact search, delegated catalog help and faster
+canonical-model source decoding. See [the runtime follow-up](#bounded-search-catalog-help-and-larger-workflows)
+for the three requested priorities, repeated comparisons and verification.
+
 The loading/storage pass merged in
 [#358](https://github.com/superhero/operations.superduper.solutions/pull/358),
 and the interaction pass in
@@ -364,12 +368,72 @@ SCHEMA_PROFILE_OUTPUT=tmp/schema-follow-up \
   node tests/gherkin/run.mjs source src/schema-interaction.feature --tags @schema-model-profile
 ```
 
-### Next investigation
+### Follow-up selected after that pass
 
-Prioritize a provably bounded edit-distance calculation in compact mode, retaining
+The next pass was selected to prioritize a provably bounded edit-distance calculation in compact mode, retaining
 all above-threshold results and exact top-five ties. Scoring still dominates worker
 CPU after removing full allocation/sorting. Keep the independent oracle and test
 long/Unicode queries. Profile a representative larger workflow before revisiting
 projection caches; the measured 32-operation model work does not justify persistent
 sharing yet. Further menu windowing needs evidence after the hidden-controls fix
 and must preserve native focus and hierarchy. Separate asset delivery remains deferred.
+
+## Bounded search, catalog help and larger workflows
+
+This pass starts from `d94ed2a` and addresses the three requested runtime priorities. Build hashes, runtime hashes and raw samples are in [`search-workflow-performance.json`](search-workflow-performance.json).
+
+Compact matching uses a sound edit-distance band and the current result cutoff. Every result above 0.5 and the exact remaining top-five places retain their original scores and tie ordering. Developer reports still calculate the complete ranking.
+
+Five alternating warm samples in one native worker, comparing the previous compact scorer with the candidate (median and range, milliseconds):
+
+| Query | Before | After |
+| --- | --- | --- |
+| List projects | 51.7 (51.1–60.4) | 9.4 (9.1–14.0) |
+| Create a new project | 82.4 (81.9–123.5) | 34.3 (33.9–52.4) |
+| get | 7.9 (7.7–8.0) | 0.4 (0.3–0.5) |
+| List all running virtual machines in the selected project | 244.2 (237.1–308.7) | 178.9 (165.4–244.0) |
+
+Catalog help uses one library trigger with delegated pointer/focus handling and an explicit anchor. This avoids registering each row and repeatedly copying the library’s trigger map. Rows remain native buttons; hierarchy, Tab order, focus scrolling, unavailable explanations, global tooltip opt-out, touch suppression and closing motion remain covered. A closed/pending hint releases its target after presence ends.
+
+Three sequential production baseline/candidate pairs, alternating order, with three inputs per query per run. Snapshots and CPU profiling are excluded from these timing intervals; values are medians and ranges in milliseconds.
+
+| Query | Input → DOM before | Input → DOM after | Reply → DOM before | Reply → DOM after |
+| --- | --- | --- | --- | --- |
+| List projects | 282 (275–320) | 215 (201–222) | 61 (55–98) | 42 (35–54) |
+| Create a new project | 311 (293–333) | 235 (220–250) | 65 (59–75) | 34 (28–49) |
+| get | 184 (183–187) | 172 (161–174) | 5 (4–6) | 19 (8–21) |
+
+The 150ms typing debounce remains part of the measured wait. Narrow searches remain debounce-bound. Reply-to-DOM improved for the broad queries. The narrow query’s reply-to-DOM interval increased while its overall input-to-DOM latency decreased; this pass does not establish the cause of that phase difference or claim that every publication becomes faster. CDP page counters and a separate bounded rendering trace retain style/layout/paint evidence; these are not field INP measurements.
+
+### Larger workflow restoration
+
+The browser fixture restores 96 distinct supported operations spread across OpenAI and Cloudflare. Every restore uses six schema batches of at most 16 models, with identical IDs and accounted payload bytes. The first measured restore also materializes source histories; subsequent reloads retain those histories.
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| First source-use startup | 2566 (2554–2573) | 2481 (2401–2492) |
+| Persisted workflow reload | 1138 (1086–2144) | 1024 (999–1084) |
+| Persisted model RPC sum | 332 (317–399) | 228 (223–311) |
+
+The worker profile identified base64-to-byte conversion as substantial source-read CPU. The decoder uses the [native byte API](https://tc39.es/proposal-arraybuffer-base64/spec/) when available, with an explicit-loop compatibility path. Compressed packs, versioning, storage and history semantics stay intact. Both paths retain size limits, strict UTF-8, SHA-256 verification and JSON/root validation. No shared mutable canonical projection cache was added.
+
+These are local synthetic workflows with canonical operations and no connection edges. They measure actual browser storage, worker messages, model installation and rendering, unlike the earlier isolated 32-model fixture. They do not qualify physical mobile devices or public-network loading.
+
+### Verification and next work
+
+Nineteen focused source scenarios pass, including the complete service ranking oracle and all 42 audited packs. Five scoped Gherkin coverage scenarios cover the scoring and pack-decoding modules with 100% statements, branches, functions and lines. Eighteen focused browser checks cover native navigation, help lifecycle, closed controls/workers, clearing, cancellation and mobile selection in Chromium, Firefox and WebKit. Build and typechecking pass with the existing vault-node accessibility warning. Heavy profiling remains in the existing serialized service-library group. No CI workflow was changed or monitored; the full regression suite remains CI’s responsibility.
+
+Reproduce the focused evidence in the prepared, capped environment described above:
+
+```sh
+node tests/gherkin/run.mjs source src/schema-performance.feature src/service-schema-packs.feature src/operation-matching.feature
+SCHEMA_PROFILE_OUTPUT=tmp/schema-runtime SCHEMA_PROFILE_LOW_OVERHEAD=1 \
+  node tests/gherkin/run.mjs browser tests/browser/service-defaults.feature \
+  --tags '@menu-runtime-profile or @workflow-runtime-profile'
+```
+
+The native benchmark optionally accepts `SCHEMA_PROFILE_MATCHING_REFERENCE`, a
+trusted baseline matcher module, to alternate current/reference calls in the same
+worker. Keep comparison builds, output directories and labels separate.
+
+Further windowing or canonical-model caches need a measured benefit beyond this pass and must retain focus and model independence. The fixed search debounce is a separate interaction-policy decision. Separate schema delivery remains deferred at the user’s request.

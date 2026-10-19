@@ -39,7 +39,7 @@ function referenceEvaluation(prompt, operations) {
 Then('indexed matching retains exact scores for varied Unicode names and queries', () => {
   let seed = 19;
   const random = maximum => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed % maximum; };
-  const alphabet = ['a', 'b', 'é', 'é', '中', '𝔄', 'A', '_', '1', '🦄'];
+  const alphabet = ['a', 'b', 'é', 'é', '中', '𠀀', '𝔄', 'A', '_', '1', '🦄'];
   const word = () => Array.from({ length: random(17) }, () => alphabet[random(alphabet.length)]).join('');
   const names = ['', 'a', 'aa', 'aaa', 'aaaa', 'prefix shared suffix', 'prefix changed suffix',
     'CaseFold', 'Ｈｅｌｌｏ', '中 文', ...Array.from({ length: 90 }, word)];
@@ -55,6 +55,31 @@ Then('indexed matching retains exact scores for varied Unicode names and queries
   const unread = [{ id: 'unread', get name() { assert.fail('Empty and over-limit queries must not read candidate names'); } }];
   assert.deepEqual(matching.evaluateOperations('', unread), { candidates: [], results: [] });
   assert.deepEqual(matching.evaluateOperations('x'.repeat(257), unread), { candidates: [], results: [] });
+});
+
+Then('compact edit budgets preserve full-ranking results across ties and long names', () => {
+  const names = ['', 'a', 'ab', 'abc', 'abcd', 'abcde', 'abcdef', 'abzz', 'abyy', 'zzcd',
+    'zzzz', 'zzzzzz', 'abc def ghi', 'abc xyz ghi', 'ABCDef', 'ab cd ef',
+    'a'.repeat(256), 'a'.repeat(255) + 'b', 'b'.repeat(256), 'a'.repeat(512),
+    ...Array.from({ length: 40 }, (_, index) => 'a'.repeat(index) + 'b'.repeat(41 - index))];
+  const operations = names.map((name, index) => ({ name, id: `boundary:${String(names.length - index).padStart(3, '0')}` }));
+  // Later ties can displace earlier IDs; changing the scan order must not
+  // change the selected score boundary or the strict > 0.5 threshold.
+  const queries = ['a', 'ab', 'abc', 'abcd', 'abcdef', 'abc xyz ghi', 'z',
+    'a'.repeat(256), 'b'.repeat(256), ...Array.from({ length: 12 }, (_, index) => 'a'.repeat(index + 1) + 'b')];
+  for (const ordered of [operations, [...operations].reverse(), operations.slice(20).concat(operations.slice(0, 20))]) {
+    const prepared = matching.prepareMatchingOperations(ordered);
+    for (const query of queries) {
+      const expected = referenceEvaluation(query, ordered);
+      assert.deepEqual(matching.evaluatePreparedOperations(query, prepared, false), { candidates: [], results: expected.results }, query);
+      assert.deepEqual(matching.evaluatePreparedOperations(query, prepared), expected, query);
+    }
+  }
+  for (const size of [0, 1, 4, 5, 6]) {
+    const available = operations.slice(0, size);
+    assert.deepEqual(matching.evaluatePreparedOperations('abc', matching.prepareMatchingOperations(available), false),
+      { candidates: [], results: referenceEvaluation('abc', available).results });
+  }
 });
 
 Then('the complete service catalogue is profiled with unchanged matching results', { timeout: 120_000 }, async function () {

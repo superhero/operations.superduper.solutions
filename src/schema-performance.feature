@@ -11,3 +11,6 @@ Feature: Measured schema processing
 
   Scenario: Exact matching preserves Unicode and common-affix behavior
     Then indexed matching retains exact scores for varied Unicode names and queries
+
+  Scenario: Bounded matching preserves threshold boundaries and the exact top five
+    Then compact edit budgets preserve full-ranking results across ties and long names
