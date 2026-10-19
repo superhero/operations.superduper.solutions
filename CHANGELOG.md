@@ -205,6 +205,16 @@ navigation with the displayed order.
 Merge branch 'develop' into bugfix/schema-header-actions
 ```
 
+<!-- changelog-commit:991c086c2f1531f19d89b3ca21c0a8ec8d42fb45 -->
+### Commit [`991c086`](https://github.com/superhero/operations.superduper.solutions/commit/991c086c2f1531f19d89b3ca21c0a8ec8d42fb45)
+
+```text
+fix(schemas): preserve header hover outside open cards
+
+Release clipping after a schema card finishes opening so the enlarged header remains visible. Keep clipping during closing and interrupted slides, with immediate behavior for reduced motion.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
