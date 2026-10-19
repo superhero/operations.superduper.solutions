@@ -32,6 +32,13 @@ DeepSeek and Dukascopy publish structured metadata through their documentation.
 Refresh their authored snapshots with `build/deepseek-schema.mjs` and
 `build/dukascopy-schema.mjs` before regenerating the corresponding packs.
 
+FRED and ALFRED share the community-maintained FRED v1 contract.
+`build/fred-schema.mjs` produces separate economic-data and archival profiles,
+selects JSON for workflow outputs, describes documented response fields and adds
+the official FRED v2 bulk-release endpoint to FRED. ALFRED retains real `/fred`
+routes with vintage and real-time parameters. Refresh both with
+`node build/service-schemas.mjs fred alfred`, then regenerate discovery indexes.
+
 ## Provider collections
 
 Display names use spaced `/` separators for provider and product levels, such as

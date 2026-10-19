@@ -3,6 +3,9 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Default service operation catalogs
+  Scenario: FRED and ALFRED expose economic series historical vintages and their real authentication transports
+    Then FRED and ALFRED retain the economic API inventory and prepare authenticated historical and bulk requests
+
   Scenario: Unresolved service servers retain the source and block execution until configured
     Then Telegram placeholder defaults remain visible in the source and cannot produce an executable endpoint
 

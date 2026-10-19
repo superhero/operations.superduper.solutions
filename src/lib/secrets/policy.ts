@@ -91,6 +91,7 @@ function validateOperation(operation: Operation): void
           || !["bearer", "apiKey"].includes(scheme.kind)) throw new VaultError("PERMISSION");
         names.add(scheme.name);
         const definition = scheme.kind === "bearer" ? { type: "http", scheme: "bearer" }
+          : scheme.query !== undefined ? { type: "apiKey", in: "query", name: scheme.query }
           : { type: "apiKey", in: "header", name: scheme.header };
         if (Object.hasOwn(definitions, scheme.name) && canonicalPolicyValue(definitions[scheme.name]) !== canonicalPolicyValue(definition))
           throw new VaultError("PERMISSION");

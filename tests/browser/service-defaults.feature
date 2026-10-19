@@ -17,6 +17,7 @@ Feature: Default service schemas in the application
       | docker             | Docker Engine                     | Docker / Engine                    |
       | dukascopy          | Dukascopy Trading Tools           | Dukascopy / Trading Tools          |
       | ecb                | ECB Data Portal                   | ECB / Data Portal                  |
+      | fred               | FRED / GeoFRED                    | FRED / Federal Reserve Economic Data |
       | gcp-compute        | Google Cloud — Compute            | Google / Cloud / Compute           |
       | gcp-storage        | Google Cloud — Storage            | Google / Cloud / Storage           |
       | gemini             | Google Gemini — Interactions      | Google / Gemini / Interactions     |
@@ -25,6 +26,10 @@ Feature: Default service schemas in the application
       | jira               | Jira Cloud                        | Jira / Cloud                       |
       | azure-resources    | Microsoft Azure — Resources       | Microsoft / Azure / Resources      |
       | telegram           | Telegram Bot API                  | Telegram / Bot API                 |
+
+  @service-defaults
+  Scenario: FRED and ALFRED are separate economic data catalogs with usable workflow nodes
+    Then FRED observations and ALFRED vintages are available in separate catalogs and survive workflow reload
 
   @service-defaults
   Scenario: Initial schema order is alphabetical and subsequent manual ordering persists

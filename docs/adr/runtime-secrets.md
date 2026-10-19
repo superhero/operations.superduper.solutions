@@ -56,14 +56,18 @@ only a local entry ID and supply Text inputs, including nested request fields.
 Portable workflows clear these selections. Values are resolved and validated in
 the worker immediately before dispatch; the runner and request previews contain
 placeholders. Vault variables cannot feed Switch or Cast nodes. The initial authentication scope supports
-Bearer tokens and header API keys; unsupported requirements fail closed.
+Bearer tokens and header or query API keys; unsupported requirements fail closed.
 Credential destinations require HTTPS. HTTP is permitted only for literal
 `localhost`, `127.0.0.1` or `[::1]` destinations when the application's own
 origin is also loopback, to support local development. A hosted application or
 an unavailable application origin cannot enable this exception.
 
 Requests reject redirects, omit browser cookies and referrers, and disable
-caching. Public inputs cannot overwrite credential headers. Credentials selected
+caching. Public inputs cannot overwrite credential headers or query parameters,
+including those declared by an unselected authentication alternative. Query keys
+are injected only into the worker's outgoing URL and omitted from request previews.
+Known raw, percent-encoded and form-encoded credential echoes are scrubbed from
+responses. Credentials selected
 for an operation require no separate destination approval. Schema changes
 invalidate stale operation bindings. Known credential echoes and authentication
 headers are removed before results leave the worker. A redacted result stops

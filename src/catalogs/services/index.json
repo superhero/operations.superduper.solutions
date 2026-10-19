@@ -1,5 +1,22 @@
 [
   {
+    "id": "alfred",
+    "provider": "fred",
+    "name": "ALFRED / Archival Federal Reserve Economic Data",
+    "url": "https://raw.githubusercontent.com/armanobosyan/FRED-OpenAPI-specification/main/fred-schema.json",
+    "provenance": "https://fred.stlouisfed.org/docs/api/fred/realtime_period.html",
+    "sourceKind": "community-adapted",
+    "profile": "alfred",
+    "version": "2.0.0",
+    "openapi": "3.0.3",
+    "operations": 31,
+    "license": null,
+    "sha256": "5c2c4dbbdd9696d2bb9d30ffc7876040a5fb4cbcc7e5c7a1b8e4d3b64f0f0f94",
+    "sourceSha256": "bde48e8ce225e05b7fd5db7c12b14c217c9c44025d198127774dffea235c9786",
+    "bytes": 93266,
+    "compressedBytes": 6126
+  },
+  {
     "id": "anthropic",
     "name": "Anthropic / Claude",
     "url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/anthropic/anthropic-893a61e9c1cd6c69a70d1043c626ed02d12d6a492eb6ca6ef7a84c64cfb15393.yml",
@@ -283,18 +300,19 @@
   },
   {
     "id": "fred",
-    "name": "FRED / GeoFRED",
+    "name": "FRED / Federal Reserve Economic Data",
     "url": "https://raw.githubusercontent.com/armanobosyan/FRED-OpenAPI-specification/main/fred-schema.json",
     "provenance": "https://fred.stlouisfed.org/docs/api/fred/",
-    "sourceKind": "community",
+    "sourceKind": "community-adapted",
+    "profile": "fred",
     "version": "2.0.0",
     "openapi": "3.0.3",
-    "operations": 35,
+    "operations": 36,
     "license": null,
-    "sha256": "4ac00be029bb776d24616e955a9dab397b77ebd83844151a92b63b09b69cb6c7",
+    "sha256": "232fe449907ea7a784873372620d564a0ce61aa5ed10ce6dd1141037c6c7c91a",
     "sourceSha256": "bde48e8ce225e05b7fd5db7c12b14c217c9c44025d198127774dffea235c9786",
-    "bytes": 88681,
-    "compressedBytes": 6770
+    "bytes": 102569,
+    "compressedBytes": 7740
   },
   {
     "id": "github",

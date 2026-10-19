@@ -81,6 +81,9 @@ Feature: Approved credential execution
       | inconsistent security name  |
       | changed bearer placement    |
       | forbidden API key header    |
+      | duplicate credential query |
+      | ambiguous key placement    |
+      | changed bearer to query    |
       | non-JSON metadata           |
       | accessor metadata           |
       | symbol metadata             |
@@ -100,6 +103,8 @@ Feature: Approved credential execution
       | fields        |
       | response      |
       | header        |
+      | query name    |
+      | key placement |
 
   Scenario: Selected credentials work without destination approval
     Then selected alternatives use selected credentials without destination approval
@@ -125,6 +130,8 @@ Feature: Approved credential execution
       | oversized credential  |
       | public auth collision |
       | public alternate collision |
+      | public query collision |
+      | public alternate query collision |
       | duplicate public headers |
       | unsupported public header |
       | path value traversal  |
@@ -216,3 +223,6 @@ Feature: Approved credential execution
 
   Scenario: Vault variable previews cannot reveal URL-encoded secrets
     Then vault variable path previews remove encoded values and invalid structured slots never dispatch
+
+  Scenario: Query API keys are injected only for the selected alternative and common encoded echoes stay private
+    Then query credentials reach only the approved URL and stay out of previews and echoed responses

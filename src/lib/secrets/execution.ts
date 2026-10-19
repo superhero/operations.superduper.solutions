@@ -115,7 +115,9 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       || ![Object.prototype, null].includes(Object.getPrototypeOf(inputSnapshot))
       || Object.values(inputSnapshot).some(value => value !== null && value !== undefined && typeof value !== "string"))
       throw new VaultError("INVALID");
-    secrets = credentialSnapshot.map(credential => credential.value).filter(value => typeof value === "string" && value.length > 0)
+    secrets = [...new Set(credentialSnapshot.map(credential => credential.value)
+      .filter(value => typeof value === "string" && value.length > 0)
+      .flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
       .sort((a, b) => b.length - a.length);
     const approved = await validateApprovedOperation(descriptor);
     const variables = options.variables === undefined ? [] : validateVaultVariableInputs(options.variables);
@@ -125,6 +127,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       || !alternative || !alternative.length && !variables.length || !bindingSnapshot.credentials || Object.keys(bindingSnapshot.credentials).length !== alternative.length)
       throw new VaultError("PERMISSION");
     const injected = new Headers();
+    const injectedQueries = new Map<string, string>();
     for (const scheme of alternative)
     {
       const id = Object.hasOwn(bindingSnapshot.credentials, scheme.name) ? bindingSnapshot.credentials[scheme.name] : undefined;
@@ -135,7 +138,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       if (typeof credential.value !== "string" || !credential.value.length || credential.value !== credential.value.trim()
         || /[^\u0020-\u007e]/.test(credential.value) || new TextEncoder().encode(credential.value).byteLength > vaultLimits.secretBytes)
         throw new VaultError("INVALID");
-      injected.set(scheme.header, scheme.kind === "bearer" ? `Bearer ${credential.value}` : credential.value);
+      if (scheme.query !== undefined) injectedQueries.set(scheme.query, credential.value);
+      else injected.set(scheme.header, scheme.kind === "bearer" ? `Bearer ${credential.value}` : credential.value);
     }
     // Replace only explicit, validated reference slots. Never interpolate secrets into
     // public strings, and never return these decrypted inputs to the page.
@@ -173,11 +177,16 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     const request = prepareRequest(approved.operation, inputSnapshot, fields);
     validateCredentialPath(request.path);
     const url = new URL(`${approved.origin}${request.path}`);
+    const authQueries = new Set((approved.operation.security ?? []).flat().flatMap(scheme => scheme.query === undefined ? [] : [scheme.query]));
     for (const [key, value] of Object.entries(request.query))
+    {
+      if (authQueries.has(key)) throw new VaultError("PERMISSION");
       for (const entry of Array.isArray(value) ? value : [value]) url.searchParams.append(key, String(entry));
+    }
+    for (const [name, value] of injectedQueries) url.searchParams.set(name, value);
     const headers = new Headers({ Accept: approved.operation.responseMediaType ?? "application/json" });
     const publicHeaders = new Set<string>();
-    const authHeaders = new Set((approved.operation.security ?? []).flat().map(scheme => scheme.header.toLowerCase()));
+    const authHeaders = new Set((approved.operation.security ?? []).flat().flatMap(scheme => scheme.header === undefined ? [] : [scheme.header.toLowerCase()]));
     for (const [name, value] of Object.entries(request.headers ?? {}))
     {
       const normalized = name.toLowerCase();
@@ -188,7 +197,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     }
     if (request.body !== undefined && request.contentType !== "multipart/form-data") headers.set("Content-Type", request.contentType ?? "application/json");
     for (const [name, value] of injected) headers.set(name, value);
-    const preview = redactor([...new Set([...secrets, ...secrets.map(secret => encodeURIComponent(secret))])].sort((a, b) => b.length - a.length)).value(request) as PreparedRequest;
+    const preview = redactor(secrets).value(request) as PreparedRequest;
     const body = bodyForRequest(request);
     await options.assertCurrent();
     if (signal.aborted) throw new VaultError("CANCELLED");

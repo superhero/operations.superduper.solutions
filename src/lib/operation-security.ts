@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-export type OperationSecurityScheme = { name: string; kind: "bearer" | "apiKey"; header: string };
+export type OperationSecurityScheme =
+  | { name: string; kind: "bearer" | "apiKey"; header: string; query?: never }
+  | { name: string; kind: "apiKey"; query: string; header?: never };
 /** Alternatives are OR; every scheme within an alternative is required (AND). */
 export type OperationSecurity = OperationSecurityScheme[][];
 
@@ -71,16 +73,26 @@ function scheme(document: ObjectValue, name: string): OperationSecurityScheme
   }
   else if (definition.type === "apiKey")
   {
-    if (definition.in !== "header") throw new Error(`${context}: only header API keys are supported.`);
-    const header = definition.name;
-    if (typeof header !== "string" || !header || invalidHeaderName.test(header)) throw new Error(`${context}: invalid credential header name.`);
-    const normalized = header.toLowerCase();
-    if (unavailableHeaders.has(normalized) || normalized.startsWith("proxy-") || normalized.startsWith("sec-"))
-      throw new Error(`${context}: unsupported credential header ${JSON.stringify(header)}.`);
-    result = { name, kind: "apiKey", header };
+    if (definition.in === "query")
+    {
+      const query = definition.name;
+      if (typeof query !== "string" || !query || /[^A-Za-z0-9_.~-]/.test(query))
+        throw new Error(`${context}: invalid credential query parameter name.`);
+      result = { name, kind: "apiKey", query };
+    }
+    else
+    {
+      if (definition.in !== "header") throw new Error(`${context}: only header and query API keys are supported.`);
+      const header = definition.name;
+      if (typeof header !== "string" || !header || invalidHeaderName.test(header)) throw new Error(`${context}: invalid credential header name.`);
+      const normalized = header.toLowerCase();
+      if (unavailableHeaders.has(normalized) || normalized.startsWith("proxy-") || normalized.startsWith("sec-"))
+        throw new Error(`${context}: unsupported credential header ${JSON.stringify(header)}.`);
+      result = { name, kind: "apiKey", header };
+    }
     keys = ["type", "in", "name", "description"];
   }
-  else throw new Error(`${context}: only HTTP bearer and header API key security schemes are supported.`);
+  else throw new Error(`${context}: only HTTP bearer and header or query API key security schemes are supported.`);
   if (definition.description !== undefined && typeof definition.description !== "string")
     throw new Error(`${context}: description must be a string.`);
   if (Object.keys(definition).some(key => !keys.includes(key) && !key.startsWith("x-")))
@@ -98,14 +110,23 @@ export function extractOperationSecurity(document: ObjectValue, operation: Objec
   {
     const requirement = object(value, `Security alternative ${index + 1}`);
     const headers = new Set<string>();
+    const queries = new Set<string>();
     return Object.entries(requirement).map(([name, scopes]) =>
     {
       if (!Array.isArray(scopes) || scopes.length)
         throw new Error(`Security scheme ${JSON.stringify(name)}: only empty scope arrays are supported for bearer and API key requirements.`);
       const resolved = scheme(document, name);
-      const header = resolved.header.toLowerCase();
-      if (headers.has(header)) throw new Error(`Security alternative ${index + 1}: duplicate credential header ${JSON.stringify(resolved.header)}.`);
-      headers.add(header);
+      if (resolved.query !== undefined)
+      {
+        if (queries.has(resolved.query)) throw new Error(`Security alternative ${index + 1}: duplicate credential query parameter ${JSON.stringify(resolved.query)}.`);
+        queries.add(resolved.query);
+      }
+      else
+      {
+        const header = resolved.header.toLowerCase();
+        if (headers.has(header)) throw new Error(`Security alternative ${index + 1}: duplicate credential header ${JSON.stringify(resolved.header)}.`);
+        headers.add(header);
+      }
       return resolved;
     });
   });

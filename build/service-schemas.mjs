@@ -9,6 +9,7 @@ import RefParser from '@apidevtools/json-schema-ref-parser';
 import { parse } from 'yaml';
 import converter from 'swagger2openapi';
 import { bundleSwaggerReferences } from './swagger-references.mjs';
+import { adaptFredSchema } from './fred-schema.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const cache = resolve(root, 'tmp/schema-sources');
@@ -57,6 +58,7 @@ for (const source of sources) {
   // Bundle rather than dereference: recursive models remain finite JSON.
   document = await RefParser.bundle(source.url ?? resolve(root, source.file), document,
     { resolve: { file: false, http: resolver } });
+  if (source.profile === 'fred' || source.profile === 'alfred') document = adaptFredSchema(document, source.profile);
   if ((typeof document.info?.version !== 'string' || !document.info.version) && source.version) document.info.version = source.version;
   if (typeof document.info?.version !== 'string' || !document.info.version) throw new Error(`${source.id}: missing schema version; specify a documented source snapshot version.`);
   if (!/^3\.(0|1)\./.test(document?.openapi) || !document.info || !document.paths)
