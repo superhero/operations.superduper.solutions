@@ -8,7 +8,7 @@ import { expect } from "@playwright/test";
 import demo from "../../src/catalogs/demo.openapi.json" with { type: "json" };
 import { operations } from "../../src/lib/catalog.ts";
 import { createOperationGraph } from "../../src/lib/workflow-graph.ts";
-import { includeField, openCatalog, setMode, workflow, workflowAction } from "./workspace.steps.mjs";
+import { chooseCatalogOperation, includeField, openCatalog, setMode, workflow, workflowAction } from "./workspace.steps.mjs";
 
 const graph = (name, id = name) => createOperationGraph(operations.find(item => item.id === `demo:${name}`), { x: 0, y: 0 }, id, demo);
 const fixture = (...graphs) => ({ version: 3, id: "runner-browser", name: "Runner browser", nodes: graphs.flatMap(graph => graph.nodes),
@@ -22,6 +22,37 @@ const field = (doc, owner, direction, name) => {
 const mapping = (doc, source, target) => doc.edges.push({ id: `mapping-${doc.edges.length}`, kind: "mapping",
   source: source.id, sourceHandle: source.handle, target: target.id, targetHandle: target.handle });
 const dialog = page => page.getByRole("dialog", { name: "Run workflow: Runner browser", exact: true });
+
+Then('Run workflow is disabled for an empty graph and enabled after adding an operation', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  const canvas = workflow(page);
+  const run = page.getByRole('button', { name: 'Run workflow', exact: true });
+  const view = page.getByRole('dialog', { name: /^Run workflow:/ });
+  await expect(canvas.locator('.svelte-flow__node')).toHaveCount(0);
+  await expect(run).toBeDisabled();
+  await canvas.focus();
+  for (const shortcut of ['Control+r', 'Meta+r']) {
+    await page.keyboard.press(shortcut);
+    await expect(view).toHaveCount(0);
+  }
+  await chooseCatalogOperation(page, 'Example array response', 'workflow');
+  await setMode(page, 'workflow');
+  await expect(run).toBeEnabled();
+  await run.click();
+  await expect(view).toBeVisible();
+  await view.getByRole('button', { name: 'Quit', exact: true }).click();
+  await expect(view).toHaveCount(0);
+  await canvas.focus();
+  await page.keyboard.press('Control+a');
+  await page.keyboard.press('Delete');
+  await expect(canvas.locator('.svelte-flow__node')).toHaveCount(0);
+  await expect(run).toBeDisabled();
+  await canvas.focus();
+  await page.keyboard.press('Control+r');
+  await expect(view).toHaveCount(0);
+});
+
 async function recordExampleRequests(page) {
   const requests = [];
   await page.route("https://example.com/**", async route => {

@@ -10,12 +10,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { Controls, useSvelteFlow, useStore } from "@xyflow/svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  let { buttons = defaultToolbarButtons, oncopy, oncut, onpaste, canPaste = false, canvas, active, settingsOpen = false, placing = false, navigationOpen, snap, curved, dashed, selected, onsnap, oncurved, ondashed, onremove, onnew, onopen, onexport, onimport, onbrowse, onutility, ondescribe, onrun, canUndo, canRedo, historyBusy, onundo, onredo, onhistory }:
+  let { buttons = defaultToolbarButtons, oncopy, oncut, onpaste, canPaste = false, canRun = false, canvas, active, settingsOpen = false, placing = false, navigationOpen, snap, curved, dashed, selected, onsnap, oncurved, ondashed, onremove, onnew, onopen, onexport, onimport, onbrowse, onutility, ondescribe, onrun, canUndo, canRedo, historyBusy, onundo, onredo, onhistory }:
     { buttons?: ToolbarButtons; oncopy: () => void; oncut: () => void; onpaste: () => void; canPaste?: boolean; canvas: HTMLElement | undefined; active: boolean; settingsOpen?: boolean; placing?: boolean; navigationOpen: boolean; snap: boolean; curved: boolean; dashed: boolean; selected: boolean;
       onsnap: () => void; oncurved: () => void; ondashed: () => void; onremove: () => void;
       onnew: () => void; onopen: () => void; onexport: () => void;
       onimport: () => void; onbrowse: () => void; onutility: (type: "switch" | "cast" | "comment" | "vault" | "file") => void;
-      ondescribe: () => void; onrun: () => void; canUndo: boolean; canRedo: boolean; historyBusy: boolean;
+      ondescribe: () => void; onrun: () => void; canRun?: boolean; canUndo: boolean; canRedo: boolean; historyBusy: boolean;
       onundo: () => void; onredo: () => void; onhistory: () => void } = $props();
   $effect(() => { void buttons; void tick().then(() => compactLayout?.()); });
   const { fitView, getInternalNode, getNodes, getViewport, setViewport, zoomIn, zoomOut } = useSvelteFlow();
@@ -229,7 +229,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {/if}
     {#if toolbarButtonGroups[6].buttons.some(key => buttons[key])}
     <div class="workflow-control-group">
-      {#if buttons.run}<HintButton class="svelte-flow__controls-button" aria-label="Run workflow" label="Run workflow" onclick={onrun}><MaterialIcon name="play_arrow" size={18} /></HintButton>{/if}
+      {#if buttons.run}<HintButton class="svelte-flow__controls-button" aria-label="Run workflow" label="Run workflow" disabled={!canRun} onclick={onrun}><MaterialIcon name="play_arrow" size={18} /></HintButton>{/if}
     </div>
     {/if}
   {/snippet}

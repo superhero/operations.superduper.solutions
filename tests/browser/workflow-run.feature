@@ -3,6 +3,9 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Run workflows through the example HTTP endpoint
+  Scenario: An empty workflow cannot start a run
+    Then Run workflow is disabled for an empty graph and enabled after adding an operation
+
   Scenario: Open a saved workflow and choose its starting operation
     Then a saved workflow opens a request run with starting choices and an end control
 

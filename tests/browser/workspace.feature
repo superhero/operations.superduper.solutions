@@ -216,3 +216,12 @@ Feature: Browser operations workspace
   Scenario: Settings blocks a cramped workspace and restores editing as space becomes available
     Given a workflow with 1 instances of "Example array response"
     Then Settings disables the workspace when insufficient space remains
+
+  Scenario Outline: Empty workflow guidance follows the visible workspace
+    Then empty workflow guidance stays centered beside menus at <width> pixels with "<motion>" motion
+
+    Examples:
+      | width | motion        |
+      | 2048  | no-preference |
+      | 1150  | reduce        |
+      | 390   | reduce        |
