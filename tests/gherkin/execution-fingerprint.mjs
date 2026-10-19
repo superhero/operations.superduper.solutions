@@ -9,7 +9,7 @@ import { join, resolve } from 'node:path';
 // recursively, including nested QuickPickle shims and runner configurations.
 export const requiredConfigurationFiles = Object.freeze([
   '.node-version', 'package.json', 'package-lock.json', 'vitest.config.mjs', 'coverage.config.json',
-  'tests/gherkin/config.mjs', 'tests/gherkin/profiles.mjs', 'tests/gherkin/cucumber-compat.mjs',
+  'tests/gherkin/config.mjs', 'tests/gherkin/browser-projects.mjs', 'tests/gherkin/profiles.mjs', 'tests/gherkin/cucumber-compat.mjs',
   'tests/gherkin/execution-fingerprint.mjs', 'tests/gherkin/run.mjs',
   'tests/gherkin/setup.node.mjs', 'tests/gherkin/setup.browser.mjs',
   'tests/gherkin/native-steps.mjs', 'tests/gherkin/worker-test.mjs',

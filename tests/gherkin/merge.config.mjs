@@ -6,8 +6,11 @@ import { root, coverageOptions } from './config.mjs';
 
 // Merge serialized results and raw coverage; no step setup or tests run here.
 const directory = process.env.OPERATIONS_REPORT_DIRECTORY ?? 'tmp/test/report';
-const names = ['source', 'acceptance', 'automation', 'browser-chromium',
-  'browser-firefox', 'browser-webkit', 'components', 'components (chromium)', 'runner'];
+const names = ['source', 'acceptance', 'automation',
+  ...['chromium', 'firefox', 'webkit'].flatMap(engine => {
+    const name = `browser-${engine}`;
+    return [name, `${name}-service-library`, `${name}-application`];
+  }), 'components', 'components (chromium)', 'runner'];
 export default defineConfig({
   root,
   test: {

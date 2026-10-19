@@ -10,6 +10,7 @@ import { parse as parseBlob } from 'flatted';
 import { generateMessages } from '@cucumber/gherkin';
 import { IdGenerator, SourceMediaType } from '@cucumber/messages';
 import { profiles } from '../../tests/gherkin/profiles.mjs';
+import { browserProjects, browserProjectNameForFeature } from '../../tests/gherkin/browser-projects.mjs';
 import { configurationFingerprint, installedToolchain } from '../../tests/gherkin/execution-fingerprint.mjs';
 
 export const requiredProfiles = ['source', 'acceptance', 'automation', 'browser', 'components', 'runner'];
@@ -81,6 +82,8 @@ export function readBlobResults(file, project, root = process.cwd(), features = 
     !Array.isArray(blob[2]) || blob[2].length)
     throw new Error('Invalid or unsuccessful Vitest blob.');
   const actualProject = project === 'components' ? 'components (chromium)' : project;
+  const phasedBrowser = /^browser-(?:chromium|firefox|webkit)$/.test(actualProject)
+    && browserProjects(features, actualProject, 1) !== undefined;
   const cases = [];
   const visited = new Set();
   function visit(task, feature) {
@@ -99,10 +102,12 @@ export function readBlobResults(file, project, root = process.cwd(), features = 
     }
   }
   for (const fileTask of blob[1]) {
-    if (fileTask.projectName !== actualProject) throw new Error('Blob project differs from its declared execution.');
     const path = fileTask.filepath?.replaceAll('\\', '/');
     const matches = features.filter(feature => path === feature || path?.endsWith(`/${feature}`));
     if (matches.length !== 1) throw new Error('Blob contains an unrecognized feature path.');
+    const expectedProject = phasedBrowser ? browserProjectNameForFeature(actualProject, matches[0]) : actualProject;
+    if (fileTask.projectName !== expectedProject)
+      throw new Error('Blob project differs from its declared execution.');
     visit(fileTask, matches[0]);
   }
   const ids = cases.map(item => caseId(item.meta?.gherkin, root));

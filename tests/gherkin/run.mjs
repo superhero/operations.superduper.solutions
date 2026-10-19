@@ -117,7 +117,7 @@ async function execute(name, engine) {
   await Promise.all([resultPath, blobPath, proofPath].map(file => rm(resolve(root, file), { force: true })));
   const environment = { ...process.env, OPERATIONS_TEST_PROFILE: name,
     OPERATIONS_TEST_TAGS: tags, BROWSER_ENGINE: engine,
-    ...(name === profile && features.length ? { OPERATIONS_FEATURES: JSON.stringify(featurePaths) } : {}) };
+    ...(name === 'browser' || name === profile && features.length ? { OPERATIONS_FEATURES: JSON.stringify(featurePaths) } : {}) };
   if (name === 'browser') {
     const runtime = resolve(root, 'tmp/test/browser/.runtime');
     await mkdir(runtime, { recursive: true });

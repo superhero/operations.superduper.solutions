@@ -112,20 +112,13 @@ BeforeAll(async function () {
 
 Before(async function ({ pickle }) {
   const uri = this.info.gherkin.uri;
-  const changed = await enterBrowserFeature(uri);
-  if (changed && uri.endsWith('/service-defaults.feature')) {
-    // Start the complete-library journey without browser-process caches from
-    // hundreds of unrelated scenarios. Contexts and real app startup stay fresh.
-    const engine = browser.browserType();
-    await browser.close();
-    browser = await engine.launch(engine.name() === 'chromium' ? { ignoreDefaultArgs: ['--hide-scrollbars'] } : {});
-  }
+  await enterBrowserFeature(uri);
   this.browser = browser;
   this.baseURL = baseURL;
   this.diagnostics = [];
   // Capture the running browser, including successful runs and parallel workers.
   await this.attach(JSON.stringify({ name: browser.browserType().name(), version: browser.version(),
-    fixtureBundlesFile: this.parameters.fixtureBundlesFile, workerId: process.env.VITEST_POOL_ID ?? '0' }),
+    fixtureBundlesFile: this.parameters.fixtureBundlesFile, processId: process.pid, workerId: process.env.VITEST_POOL_ID ?? '0' }),
     'application/vnd.operations.browser+json');
   const slug = pickle.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 90);
   this.artifactDirectory = resolve('tmp/test/browser', `${slug}-${randomUUID().slice(0, 8)}`);

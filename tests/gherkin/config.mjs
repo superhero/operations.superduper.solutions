@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
 import { quickpickle } from 'quickpickle';
 import { profiles } from './profiles.mjs';
+import { browserProjects } from './browser-projects.mjs';
 
 export const root = resolve(import.meta.dirname, '../..');
 const runnerDirectory = resolve(root, 'tests/gherkin/quickpickle');
@@ -82,6 +83,16 @@ export async function createTestConfig(name = process.env.OPERATIONS_TEST_PROFIL
       ...(name === 'source' && process.env.OPERATIONS_COVERAGE === '1' ? { coverage: coverageOptions() } : {}),
     },
   };
+  if (browser) {
+    const projects = browserProjects(selected, identity, workers);
+    if (projects) {
+      // Inline projects inherit setup/plugins and root reporters. An empty root
+      // include prevents inherited patterns from duplicating either partition.
+      config.test.include = [];
+      delete config.test.name;
+      config.test.projects = projects;
+    }
+  }
   if (components) {
     const { playwright } = await import('@vitest/browser-playwright');
     config.test.browser = {
