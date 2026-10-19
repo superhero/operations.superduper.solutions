@@ -215,6 +215,30 @@ Release clipping after a schema card finishes opening so the enlarged header rem
 
 ```
 
+<!-- changelog-commit:9d886423bbb1369ec003f060e7b8e09a7bd1ef41 -->
+### Commit [`9d88642`](https://github.com/superhero/operations.superduper.solutions/commit/9d886423bbb1369ec003f060e7b8e09a7bd1ef41)
+
+```text
+fix(schemas): move compatibility count into operations tooltip
+
+```
+
+<!-- changelog-commit:971fbb1b35b35391c1e91e5b4259b32a45c90689 -->
+### Commit [`971fbb1`](https://github.com/superhero/operations.superduper.solutions/commit/971fbb1b35b35391c1e91e5b4259b32a45c90689)
+
+```text
+fix(schemas): remove schema name field outline
+
+```
+
+<!-- changelog-commit:b1de0fc8e50cc100ce22819bcb12fbfd472e9c26 -->
+### Commit [`b1de0fc`](https://github.com/superhero/operations.superduper.solutions/commit/b1de0fc8e50cc100ce22819bcb12fbfd472e9c26)
+
+```text
+fix(schemas): guard nullable counts in tooltip content
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54

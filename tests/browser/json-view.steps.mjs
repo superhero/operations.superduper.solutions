@@ -7,6 +7,8 @@ import { expect } from "@playwright/test";
 import { chooseCatalogOperation, expectFieldValue, fillField, setMode } from "./workspace.steps.mjs";
 import { catalogForOperation } from "../../src/lib/catalog-registry.ts";
 import { metricsCacheKey } from "../../src/lib/metrics-cache.ts";
+import schemaIndexes from "../../src/catalogs/services/indexes/index.json" with { type: "json" };
+import { catalogsIndexDatabaseName } from "../../src/lib/storage-names.ts";
 import { finishHeightAnimations, holdHeightAnimations, seekHeightAnimation } from "./height-animation.fixture.mjs";
 
 const jsonLabel = "Operation OpenAPI JSON";
@@ -649,9 +651,40 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   await expect(schema).toHaveAttribute('aria-expanded', 'false');
   await expect(card.locator('.json-view')).toHaveCount(0);
   await expect(otherCard.getByRole('button', { name: /^Schema details:/ })).toHaveAttribute('aria-expanded', 'false');
+  // Install only Telegram alongside the examples when this scenario reloads.
+  await page.evaluate(async databaseName => {
+    const opening = indexedDB.open(databaseName);
+    const database = await new Promise((resolve, reject) => {
+      opening.onsuccess = () => resolve(opening.result);
+      opening.onerror = () => reject(opening.error);
+    });
+    try {
+      await new Promise((resolve, reject) => {
+        const transaction = database.transaction('state', 'readwrite');
+        const store = transaction.objectStore('state');
+        const installed = store.get('serviceDefaults');
+        installed.onsuccess = () => store.put(installed.result.filter(id => id !== 'telegram'), 'serviceDefaults');
+        transaction.oncomplete = resolve;
+        transaction.onabort = () => reject(transaction.error);
+      });
+    } finally { database.close(); }
+  }, catalogsIndexDatabaseName);
   await page.reload();
   await setMode(page, 'settings');
   const section = settings.locator('summary[aria-label="Schemas"]');
   if (await section.getAttribute('aria-expanded') !== 'true') await section.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  const telegram = documents.locator('[data-schema-id="telegram"]');
+  await telegram.getByRole('button', { name: /^Schema details:/ }).click();
+  const metadata = telegram.locator('.schema-metadata');
+  await expect(metadata.locator('dt')).toHaveText(['Server URL', 'Operations']);
+  const { operationCount, unavailableCount } = schemaIndexes.indexes.find(schema => schema.id === 'telegram').summary;
+  assert.ok(unavailableCount > 0, 'This schema exercises unsupported-operation metadata');
+  const count = metadata.locator('dd').last().locator('span');
+  await expect(count).toHaveText(operationCount.toLocaleString());
+  // Scrolling dismisses tooltips; bring the whole metric into view first.
+  await metadata.scrollIntoViewIfNeeded();
+  await metadata.locator('dt').last().hover();
+  await count.hover();
+  await expect(page.getByRole('tooltip')).toHaveText(`${(operationCount - unavailableCount).toLocaleString()} of ${operationCount.toLocaleString()} operations supported.`);
 });
