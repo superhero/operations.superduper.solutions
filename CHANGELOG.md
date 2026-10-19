@@ -395,6 +395,35 @@ folding choices, keyboard focus and the existing pagination budget.
 
 ```
 
+<!-- changelog-commit:ab92bfd9615acce16509fa77edc4da5242864368 -->
+### Commit [`ab92bfd`](https://github.com/superhero/operations.superduper.solutions/commit/ab92bfd9615acce16509fa77edc4da5242864368)
+
+```text
+feat(schemas): add FRED and ALFRED economic data catalogs
+
+Expose the full FRED v1 economic-data inventory and a separate ALFRED
+historical-vintage catalog. Add the documented FRED v2 bulk-release
+endpoint, explicit JSON requests and structured economic-data outputs
+while preserving existing FRED workflow operation identifiers.
+
+Support query API keys inside the vault worker because FRED v1 and
+ALFRED require that transport. Bind the placement to operation approval,
+reject public credential overrides and scrub common URL-encoded echoes
+without returning authentication values in workflow request previews.
+
+Update bundled packs, discovery indexes and usage documentation together.
+Cover credential placement and privacy, both catalogs, persisted nodes,
+and schema initialization and migration with focused Gherkin scenarios.
+
+```
+
+<!-- changelog-commit:d5c9f0ee28ea1f18c19b77c834562686469234dd -->
+### Commit [`d5c9f0e`](https://github.com/superhero/operations.superduper.solutions/commit/d5c9f0ee28ea1f18c19b77c834562686469234dd)
+
+```text
+Merge branch 'develop' into feature/fred-alfred
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
