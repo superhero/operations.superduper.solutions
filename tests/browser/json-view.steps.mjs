@@ -112,7 +112,7 @@ Then('local JSON references reach paginated targets and preserve literal unresol
   await page.locator('summary[aria-label="Schemas"]').click();
   const pointers = [
     '#/components/schemas/Target', '#/x-targets/a~1b~0c/%E2%98%83', '#/x-targets/list/0',
-    '#/x-targets/empty', '#/x-targets/', '#/x-targets/loop', '#',
+    '#/x-targets/list', '#/x-targets/empty', '#/x-targets/', '#/x-targets/loop', '#',
     '#/missing', '#/x-targets/list/01', '#/x-targets/list/-', '#/x-targets/list/length',
     '#/toString', '#/x-targets/a~2b', '#/%ZZ', '#named-anchor', 'https://elsewhere.example/schema.json#/Target',
   ];
@@ -124,7 +124,8 @@ Then('local JSON references reach paginated targets and preserve literal unresol
       ...Object.fromEntries(Array.from({ length: 1200 }, (_, index) => [`x-padding-${index}`, index])),
     } } },
     components: { schemas: { Target: { type: 'object', properties: { name: { type: 'string' } } } } },
-    'x-targets': { 'a/b~c': { '☃': false }, list: [null], empty: {}, '': 'empty property name', loop: { $ref: '#/x-targets/loop' } },
+    'x-targets': { 'a/b~c': { '☃': false }, list: [null, 7, [], { first: true, nested: { value: 1 } }, { second: true }],
+      empty: {}, '': 'empty property name', loop: { $ref: '#/x-targets/loop' } },
   };
   await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({ name: 'references.json',
     mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
@@ -137,13 +138,15 @@ Then('local JSON references reach paginated targets and preserve literal unresol
   const summary = path => group(path).locator(':scope > summary');
   const navigationPath = '$["paths"]["/references"]["get"]["x-navigation"]';
   await summary(navigationPath).click();
-  for (let index = 0; index < pointers.length; index++) await summary(`${navigationPath}[${index}]`).click();
+  await expect(summary(`${navigationPath}[0]`)).toHaveAttribute('aria-expanded', 'true');
+  await expect(summary(`${navigationPath}[1]`)).toHaveAttribute('aria-expanded', 'false');
+  for (let index = 1; index < pointers.length; index++) await summary(`${navigationPath}[${index}]`).click();
   const go = pointer => json.getByRole('button', { name: `Go to ${pointer}`, exact: true }).first();
-  for (const pointer of pointers.slice(7)) {
+  for (const pointer of pointers.slice(8)) {
     await expect(json.getByRole('button', { name: `Go to ${pointer}`, exact: true })).toHaveCount(0);
     await expect(group(navigationPath)).toContainText(JSON.stringify(pointer));
   }
-  await expect(json.locator('.json-reference')).toHaveCount(7);
+  await expect(json.locator('.json-reference')).toHaveCount(8);
   await expect(summary('$["components"]')).toHaveCount(0);
   await expect(json.getByRole('button', { name: 'Load more', exact: true })).toBeVisible();
   await captureReferenceScrolling(page);
@@ -164,14 +167,30 @@ Then('local JSON references reach paginated targets and preserve literal unresol
   await expect(focusedLine).toContainText('"☃": false');
   await go(pointers[2]).click();
   await expectReferenceDestination(page, focusedLine, 'instant');
-  await expect(focusedLine).toHaveText('null');
+  await expect(focusedLine).toHaveText('null,');
   await go(pointers[3]).click();
-  await expectReferenceDestination(page, focusedLine, 'instant');
-  await expect(focusedLine).toHaveText('{');
+  const list = '$["x-targets"]["list"]';
+  await expectReferenceDestination(page, summary(list), 'instant');
+  await summary(list).click();
+  await summary(list).press('Enter');
+  await expect(summary(`${list}[3]`)).toHaveAttribute('aria-expanded', 'true');
+  await expect(summary(`${list}[3]["nested"]`)).toHaveAttribute('aria-expanded', 'false');
+  await expect(summary(`${list}[4]`)).toHaveAttribute('aria-expanded', 'false');
+  await expect(summary(list)).toBeFocused();
+  await summary(`${list}[3]`).click();
+  await summary(`${list}[4]`).click();
+  await summary(list).click();
+  await summary(list).press('Space');
+  await expect(summary(`${list}[3]`)).toHaveAttribute('aria-expanded', 'true');
+  await expect(summary(`${list}[4]`)).toHaveAttribute('aria-expanded', 'true');
+  assert.ok(await json.locator('.json-line').count() < 1200, 'Opening the first object retains bounded pagination.');
   await go(pointers[4]).click();
   await expectReferenceDestination(page, focusedLine, 'instant');
-  await expect(focusedLine).toContainText('"": "empty property name"');
+  await expect(focusedLine).toHaveText('{');
   await go(pointers[5]).click();
+  await expectReferenceDestination(page, focusedLine, 'instant');
+  await expect(focusedLine).toContainText('"": "empty property name"');
+  await go(pointers[6]).click();
   await expectReferenceDestination(page, summary('$["x-targets"]["loop"]'), 'instant');
   await expect(group('$["x-targets"]["loop"]')).toContainText('"#/x-targets/loop"');
   await go('#').click();
@@ -193,6 +212,11 @@ When("I fold the JSON root and nested operation branches with the keyboard", asy
   for (const path of [operation, parameters, `${parameters}[0]`, `${taskSchema}["required"]`, priorityChoices,
     `${operation}["post"]["requestBody"]["content"]["application/json"]["schema"]`])
     await expectOpen(branch(this.page, path), true);
+  await expect(branch(this.page, priorityChoices)).toContainText('"high"');
+  await heading(this.page, priorityChoices).press("Enter");
+  await expectOpen(branch(this.page, priorityChoices), false);
+  await heading(this.page, priorityChoices).press("Space");
+  await expectOpen(branch(this.page, priorityChoices), true);
   await expect(branch(this.page, priorityChoices)).toContainText('"high"');
 
   await heading(this.page, `${parameters}[0]`).focus();
