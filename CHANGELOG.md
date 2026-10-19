@@ -223,6 +223,14 @@ fix(schemas): move compatibility count into operations tooltip
 
 ```
 
+<!-- changelog-commit:971fbb1b35b35391c1e91e5b4259b32a45c90689 -->
+### Commit [`971fbb1`](https://github.com/superhero/operations.superduper.solutions/commit/971fbb1b35b35391c1e91e5b4259b32a45c90689)
+
+```text
+fix(schemas): remove schema name field outline
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
