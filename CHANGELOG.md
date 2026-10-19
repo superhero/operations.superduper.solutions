@@ -318,6 +318,23 @@ the settings inspector opens. Restore those defaults when it reopens.
 Merge branch 'develop' into bugfix/alphabetical-schema-defaults
 ```
 
+<!-- changelog-commit:b1fbc7cbd08e262dac6c7f5fba84b3fcbd7fd454 -->
+### Commit [`b1fbc7c`](https://github.com/superhero/operations.superduper.solutions/commit/b1fbc7cbd08e262dac6c7f5fba84b3fcbd7fd454)
+
+```text
+fix(schemas): standardize provider and product display names
+
+Use slash-separated provider and product levels for Google Cloud, Gemini
+and the other bundled multi-part schema names. Keep source manifests and
+the documented inventory consistent.
+
+Refresh factory display names even when their source digest is unchanged,
+without decoding sources or invalidating document caches for label-only
+updates. Preserve authored names, source identities, history, saved order
+and enablement.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
