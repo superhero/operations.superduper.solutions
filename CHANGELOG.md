@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.54
+
 <!-- changelog-commit:ffbba735591625c9c9f7a59cf1193933c16866d9 -->
 ### Commit [`ffbba73`](https://github.com/superhero/operations.superduper.solutions/commit/ffbba735591625c9c9f7a59cf1193933c16866d9)
 
@@ -17,8 +21,6 @@ feat(schemas): bundle default service catalogs with persistent local ownership
 chore(badges): record schema conversion tool versions
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.53
 
