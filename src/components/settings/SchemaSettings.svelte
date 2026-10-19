@@ -295,7 +295,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <Reveal open={expandedCards[record.id] ?? false} id={`schema-details-${record.id}`} overflowVisible>
             <div class="schema-metadata">
               <div class="schema-description"><p>{metadata.description || "—"}</p></div>
-              <div><dl><dt>Operations</dt><dd>
+              <div class="schema-operation-count"><dl><dt>Operations</dt><dd>
                 {#if metadata.operations !== null && record.summary.unavailableCount}
                   <HintButton label={`${(metadata.operations - record.summary.unavailableCount).toLocaleString()} of ${metadata.operations.toLocaleString()} operations supported.`} labelAsName={false}>
                     {#snippet child({ props })}
@@ -368,7 +368,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-empty p, .schema-note { margin: 6px 0 0; color: var(--color-muted-foreground); font-size: 12px; overflow-wrap: anywhere; }
   .schema-note { color: var(--color-accent); }
   .schema-actions { display: flex; align-items: center; flex-shrink: 0; gap: 6px; }
-  .schema-card { position: relative; }
+  /* Match the four persistent JSON actions (28px each), their 6px gaps and the 14px header inset. */
+  .schema-card { --schema-count-width: calc(4 * 28px + 3 * 6px + 14px); position: relative; }
   .schema-card > :global(.reveal-panel) { transition-timing-function: ease-in-out, linear; }
   .schema-card :global(.schema-disclosure > summary) { flex-wrap: wrap; gap: 6px; padding-left: 12px; font-size: 12px; }
   .schema-card :global(.schema-disclosure > summary > .schema-chevron) { width: auto; margin-left: 0; }
@@ -379,8 +380,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-card.dragging { opacity: 0.5; }
   .schema-actions :global(.schema-drag-handle) { cursor: grab; }
   .schema-actions :global(.schema-drag-handle:active) { cursor: grabbing; }
-  .schema-metadata { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); gap: 12px; margin: 18px 0; }
+  .schema-metadata { display: grid; grid-template-columns: minmax(0, 1fr) var(--schema-count-width); gap: 12px; margin: 18px 0; }
   .schema-metadata > div { min-width: 0; padding: 8px 10px; border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-background); }
+  .schema-operation-count { box-sizing: border-box; justify-self: end; width: var(--schema-count-width); max-width: 100%; }
   .schema-description { display: flex; align-items: center; }
   .schema-description p { min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 400; line-height: 1.5; }
   .schema-metadata dl { margin: 0; }

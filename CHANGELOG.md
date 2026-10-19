@@ -351,6 +351,18 @@ full source documents. Persist the same metadata for authored schemas.
 
 ```
 
+<!-- changelog-commit:bacc2857240a90aa54111c2d9345295ba72663c4 -->
+### Commit [`bacc285`](https://github.com/superhero/operations.superduper.solutions/commit/bacc2857240a90aa54111c2d9345295ba72663c4)
+
+```text
+fix(schemas): align operation counts with schema actions
+
+Size the operation-count pane to the four persistent schema actions and
+header inset, giving the description the remaining row width. Keep the
+compact count aligned to the right when metadata stacks on small screens.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
