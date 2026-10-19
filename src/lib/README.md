@@ -25,8 +25,11 @@ unrelated behavior to `utils.ts`.
 
 ## Persistence
 
-Workflow and schema working files are authoritative browser-local content, backed
-by separate LightningFS Git repositories. Metadata databases hold indexes,
+Workflow and authored schema working files are authoritative browser-local content,
+backed by separate LightningFS Git repositories. Reviewed service defaults use
+integrity-checked bundled packs until editing or history inspection materializes
+a Git copy. `service-schema-packs` decodes packs; `service-catalog` projects their
+operations and explicit execution limits. Metadata databases hold indexes,
 preferences and recovery journals, not editable content copies. Database names
 come from `storage-names.ts`; namespace changes require the verified migration
 path. Preserve serialized writes, Web Locks, expected revisions and interrupted

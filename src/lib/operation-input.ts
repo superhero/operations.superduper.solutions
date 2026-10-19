@@ -44,6 +44,7 @@ function validateJson(input: InputField, value: JsonValue, path: string): void
 function validate(input: InputField, schema: InputSchema, value: JsonValue, path: string): void
 {
   const type = schema.type;
+  if (type === "json") { validateJson(input, value, path); return; }
   if (value === null && (type === "null" || schema.nullable))
   {
     if (!inputAllowsNull(schema)) fail(input, `${path} choose one of the allowed values.`);
@@ -57,6 +58,7 @@ function validate(input: InputField, schema: InputSchema, value: JsonValue, path
     fail(input, `${path} value is outside the allowed range.`);
   if (typeof value === "string" && (schema.minLength !== undefined && [...value].length < schema.minLength
     || schema.maxLength !== undefined && [...value].length > schema.maxLength)) fail(input, `${path} text length is outside the allowed range.`);
+  if (typeof value === "string" && schema.pattern && !new RegExp(schema.pattern, "u").test(value)) fail(input, `${path} does not match the required pattern.`);
   if (schema.enum && !schema.enum.includes(value as string | number | boolean | null)) fail(input, `${path} choose one of the allowed values.`);
   if (type === "array")
   {
@@ -93,7 +95,7 @@ function convert(input: InputField, raw: string | null): JsonValue
     return null;
   }
   let value: JsonValue = raw;
-  if (input.type === "object" || input.type === "array" || input.type === "null")
+  if (input.type === "object" || input.type === "array" || input.type === "null" || input.type === "json")
   {
     try { value = JSON.parse(raw); }
     catch { fail(input, "enter valid JSON."); }
@@ -116,6 +118,7 @@ function convert(input: InputField, raw: string | null): JsonValue
   if (typeof value === "string" && (input.minLength !== undefined && [...value].length < input.minLength
     || input.maxLength !== undefined && [...value].length > input.maxLength)) fail(input, "text length is outside the allowed range.");
   if (input.enum && !input.enum.includes(value as string | number | boolean)) fail(input, "choose one of the allowed values.");
+  validateInputValue(input, value);
   return value;
 }
 
@@ -137,6 +140,7 @@ export function additionalBodyField(operation: Operation, name: string, type: In
 
 export function prepareRequest(operation: Operation, values: InputValues, workflowFields: InputField[] = operation.fields): PreparedRequest
 {
+  if (operation.unavailableReason) throw new Error(operation.unavailableReason);
   const request: PreparedRequest = { method: operation.method, path: operation.path, query: {} };
   const body: Record<string, JsonValue> = {};
   const fields = [...operation.fields];
@@ -160,9 +164,15 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
       continue;
     }
     const value = convert(input, raw!);
-    if (input.location === "path") request.path = request.path.replaceAll(`{${input.name}}`, encodeURIComponent(String(value)));
+    if (input.location === "path") {
+      if (value !== null && typeof value === "object") fail(input, "path values must be primitive values.");
+      request.path = request.path.replaceAll(`{${input.name}}`, encodeURIComponent(String(value)));
+    }
     else if (input.location === "query")
     {
+      if (input.type === "json" && value !== null && typeof value === "object" && !Array.isArray(value)
+        || Array.isArray(value) && value.some(item => item !== null && typeof item === "object"))
+        fail(input, "this structured query serialization is not supported.");
       if (input.type === "object" && value !== null) for (const [name, item] of Object.entries(value as Record<string, JsonValue>))
       {
         if (item !== null && typeof item === "object") fail(input, "deepObject query values must be primitive values.");
@@ -172,6 +182,7 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     }
     else if (input.location === "header")
     {
+      if (value !== null && typeof value === "object") fail(input, "header values must be primitive values.");
       if (/[\r\n]/.test(String(value))) fail(input, "header values cannot contain line breaks.");
       request.headers ??= {};
       set(request.headers, input.name, String(value));

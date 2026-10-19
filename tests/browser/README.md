@@ -24,6 +24,14 @@ opens its run. Pass `"workflow"` when a scenario only needs to add a node.
 `restartRun` starts a new execution; its optional input restoration represents
 re-entering values, not persisted run state.
 
+## Default catalog fixtures
+
+Most scenarios isolate the two example catalogs through the real IndexedDB
+installation record, avoiding unrelated provider setup. The `@service-defaults`
+scenarios exercise all shipped providers, fresh and existing profiles, persistent
+local choices and normal workflow execution. This fixture changes stored setup,
+not the shipped application or its validation.
+
 ## Scenario scope
 
 Palette scenarios check persistence in both themes, then resize the same page

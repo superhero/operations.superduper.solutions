@@ -28,3 +28,14 @@ fields, so their bytes remain image-only. Metadata contains no build timestamps.
 Any change to this finite set must update application acceptance, browser asset
 serving, deployment validation and complete-bundle hashing together. Arbitrary
 extra files, directories and symlinks remain unsupported.
+
+## Service schemas
+
+`service-schemas.sources.json` identifies the default providers and API collections.
+`service-schemas.mjs` fetches, converts and bundles those documents into compressed
+packs with recorded hashes. This refresh is explicit; normal builds use committed
+artifacts and do not download provider schemas.
+
+`deepseek-schema.mjs` and `dukascopy-schema.mjs` derive OpenAPI snapshots from the
+providers' published structured documentation. Their output belongs in
+`schema-documents`; generated application packs belong in `src/catalogs/services`.

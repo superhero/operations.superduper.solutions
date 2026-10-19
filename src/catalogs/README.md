@@ -6,6 +6,17 @@ groups. An `*.openapi.json` file defines requests and responses; its matching
 [catalog-registry.ts](../lib/catalog-registry.ts), including its stable catalog ID
 and execution origin.
 
+## Service packs
+
+[services](services/README.md) contains the reviewed provider library as compressed
+OpenAPI documents and a provenance/integrity index. Refresh these through the
+explicit build tooling; ordinary builds use checked-in packs without downloading
+schemas. Keep credentials and user data out of these files.
+
+Service defaults use factory-backed storage until edited or historical inspection
+requires a Git copy. Existing profiles gain newly introduced defaults; deleted
+entries stay deleted, and authored copies are preserved.
+
 ## Operation identity
 
 Group entries refer to qualified operation IDs such as `demo:listProjects`,

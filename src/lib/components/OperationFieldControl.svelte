@@ -15,8 +15,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     { field: InputField; id: string; value: string; onValueChange: (value: string) => void;
       required?: boolean; disabled?: boolean; invalid?: boolean; active?: boolean; describedBy?: string | undefined;
       multiline?: boolean; portalZIndex?: number } = $props();
-  const structured = $derived(["object", "array", "null"].includes(field.type));
-  const placeholder = $derived(field.type === "object" ? '{"name": "Example"}' : field.type === "array" ? '["example", "values"]' : field.type === "null" ? "null" : "");
+  const structured = $derived(["object", "array", "null", "json"].includes(field.type));
+  const placeholder = $derived(field.type === "object" ? '{"name": "Example"}' : field.type === "array" ? '["example", "values"]' : field.type === "null" ? "null" : field.type === "json" ? "JSON value" : "");
 </script>
 
 {#if field.type === "integer"}

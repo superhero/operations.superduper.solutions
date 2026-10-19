@@ -15,14 +15,27 @@ import type { SchemaCredentialPolicies } from "./secrets/schema-policy-storage.t
 
 if (!("Buffer" in globalThis)) Object.defineProperty(globalThis, "Buffer", { value: Buffer, configurable: true, writable: true });
 
-type SchemaMetadata = Omit<SchemaDocumentRecord, "document"> & { repositoryPath: string };
+type SchemaMetadata = Omit<SchemaDocumentRecord, "document"> & { repositoryPath: string; factoryDigest?: string };
+type SchemaDefaults = {
+  catalogs: readonly { id: string; name: string; file: string; revision: string }[];
+  read: (id: string) => Promise<Record<string, unknown>>;
+  validate: (document: Record<string, unknown>, id: string) => ReturnType<typeof validateSchemaDocument>;
+};
+let defaults: SchemaDefaults | undefined;
+const factoryDocuments = new Map<string, Record<string, unknown>>();
+/** Supply factory documents at the worker boundary; storage remains reusable with authored catalogs. */
+export function configureSchemaDefaults(value: SchemaDefaults): void { defaults = value; }
+function validateLibraryDocument(document: unknown, id: string) {
+  return defaults?.catalogs.some(catalog => catalog.id === id)
+    ? defaults.validate(document as Record<string, unknown>, id) : validateSchemaDocument(document, id);
+}
 type PendingSchema = { metadata: SchemaMetadata; revision: string; previousRevision: string | null };
 interface SchemaDatabase extends DBSchema
 {
   catalog: { key: string; value: SchemaMetadata };
   pending: { key: string; value: PendingSchema };
   removed: { key: string; value: true };
-  state: { key: "seeded" | "order" | "vaultPolicy"; value: boolean | string[] | SchemaCredentialPolicies };
+  state: { key: "seeded" | "order" | "vaultPolicy" | "serviceDefaults"; value: boolean | string[] | SchemaCredentialPolicies };
 }
 type StoreName = "catalog" | "pending" | "removed" | "state";
 type Database = IDBPDatabase<SchemaDatabase>;
@@ -159,9 +172,16 @@ function validateMetadata(value: SchemaMetadata): SchemaMetadata
 
 async function readRecord(metadata: SchemaMetadata): Promise<SchemaDocumentRecord>
 {
-  const { repositoryPath, ...record } = validateMetadata(metadata);
-  const text = await fs().promises.readFile(`${repositoryPath}/${filepath}`, "utf8");
-  const { document } = validateSchemaDocument(JSON.parse(text), record.id);
+  const { repositoryPath, factoryDigest, ...record } = validateMetadata(metadata);
+  let raw: unknown;
+  if (factoryDigest) {
+    const key = `${record.id}:${factoryDigest}`;
+    if (!defaults || !defaults.catalogs.some(catalog => catalog.id === record.id && catalog.revision === factoryDigest))
+      throw new Error(`The factory schema ${record.id} is unavailable.`);
+    if (!factoryDocuments.has(key)) factoryDocuments.set(key, await defaults.read(record.id));
+    raw = factoryDocuments.get(key)!;
+  } else raw = JSON.parse(await fs().promises.readFile(`${repositoryPath}/${filepath}`, "utf8"));
+  const { document } = validateLibraryDocument(raw, record.id);
   return { ...record, document };
 }
 
@@ -178,11 +198,12 @@ function policyMap(value: SchemaDatabase["state"]["value"] | undefined): SchemaC
 
 async function credentialPolicy(record: SchemaDocumentRecord, revision: string): Promise<SchemaCredentialPolicies[string]>
 {
-  const validated = validateSchemaDocument(record.document, record.id);
+  const validated = validateLibraryDocument(record.document, record.id);
   const fingerprints: string[] = [];
   if (record.enabled)
     for (const operation of validated.operations)
     {
+      if (operation.unavailableReason) continue;
       try { fingerprints.push((await approvedOperation(operation, operationServerUrl(validated.document, operation))).fingerprint); }
       catch (error)
       {
@@ -215,7 +236,7 @@ async function backfillCredentialPolicies(database: Database): Promise<void>
   let changed = Object.keys(previous).length !== records.length || saved === undefined;
   for (const metadata of records)
   {
-    const revision = await head(metadata.id);
+    const revision = metadata.factoryDigest ?? await head(metadata.id);
     if (!revision) throw new Error(`Schema ${metadata.id} has no committed revision for credential policy.`);
     const existing = Object.hasOwn(previous, metadata.id) ? previous[metadata.id] : undefined;
     if (existing?.version === 2 && existing.revision === revision && Array.isArray(existing.fingerprints) && (metadata.enabled || !existing.fingerprints.length))
@@ -238,7 +259,7 @@ async function finishPending(database: Database, pending: PendingSchema): Promis
   if (current !== pending.previousRevision && current !== pending.revision)
     throw new Error(`Schema ${id} changed while a previous save was unfinished. Its repository has been preserved.`);
   const text = await versionText(id, pending.revision);
-  const document = validateSchemaDocument(JSON.parse(text), id).document;
+  const document = validateLibraryDocument(JSON.parse(text), id).document;
   const policy = await credentialPolicy({ ...metadata, document }, pending.revision);
   const dir = metadata.repositoryPath;
   await fs().promises.writeFile(`${dir}/${filepath}`, text, "utf8");
@@ -319,17 +340,35 @@ async function initialize(database: Database): Promise<void>
 {
   await recover(database);
   const seeded = await transaction(database, ["state"], "readonly", active => active.objectStore("state").get("seeded"));
-  if (seeded) { await backfillCredentialPolicies(database); return; }
-  // The marker survives deleting every catalog; an interrupted first seed can safely resume.
   const now = Date.now();
-  for (const catalog of bundledCatalogs)
-  {
-    if (await readMetadata(database, catalog.id)) continue;
-    const { document } = validateSchemaDocument(catalog.document, catalog.id);
-    await writeRecord(database, { id: catalog.id, file: catalog.file, document, enabled: true,
-      groups: catalog.groups, createdAt: now, updatedAt: now });
+  if (!seeded) {
+    // The marker survives deleting every example; interrupted seeds can resume.
+    for (const catalog of bundledCatalogs) {
+      if (await readMetadata(database, catalog.id)) continue;
+      const { document } = validateSchemaDocument(catalog.document, catalog.id);
+      await writeRecord(database, { id: catalog.id, file: catalog.file, document, enabled: true,
+        groups: catalog.groups, createdAt: now, updatedAt: now });
+    }
+    await transaction(database, ["state"], "readwrite", async active => { await active.objectStore("state").put(true, "seeded"); });
   }
-  await transaction(database, ["state"], "readwrite", async active => { await active.objectStore("state").put(true, "seeded"); });
+  if (defaults) await transaction(database, ["catalog", "state"], "readwrite", async active => {
+    const store = active.objectStore("state");
+    const previous = await store.get("serviceDefaults");
+    const installed = new Set(Array.isArray(previous) ? previous : []);
+    for (const catalog of defaults!.catalogs) {
+      const existing = await active.objectStore("catalog").get(catalog.id);
+      if (!installed.has(catalog.id) && !existing) {
+        await active.objectStore("catalog").put({ id: catalog.id, file: catalog.file, displayName: catalog.name,
+          repositoryPath: schemaRepositoryPath(catalog.id), factoryDigest: catalog.revision,
+          enabled: true, createdAt: now, updatedAt: now }, catalog.id);
+      } else if (existing?.factoryDigest && existing.factoryDigest !== catalog.revision) {
+        // Unmodified factory copies follow bundled updates; authored Git copies do not.
+        await active.objectStore("catalog").put({ ...existing, factoryDigest: catalog.revision, updatedAt: now }, catalog.id);
+      }
+      installed.add(catalog.id);
+    }
+    await store.put([...installed], "serviceDefaults");
+  });
   await backfillCredentialPolicies(database);
 }
 
@@ -359,7 +398,9 @@ export function loadSchemaDocuments(): Promise<SchemaDocumentRecord[]>
 {
   return serialized(async database => {
     const records = await readOrderedMetadata(database);
-    return Promise.all(records.map(readRecord));
+    const loaded: SchemaDocumentRecord[] = [];
+    for (const record of records) loaded.push(await readRecord(record));
+    return loaded;
   });
 }
 
@@ -384,7 +425,7 @@ export function moveSchemaDocument(id: string, targetId: string, placement: "bef
 
 export function putSchemaDocument(value: SchemaDocumentRecord): Promise<SchemaDocumentRecord>
 {
-  const { document } = validateSchemaDocument(value.document, value.id);
+  const { document } = validateLibraryDocument(value.document, value.id);
   // Snapshot before queuing, so callers cannot mutate an in-flight import.
   const record = structuredClone({ ...value, document });
   validateMetadata({ ...record, repositoryPath: schemaRepositoryPath(record.id) });
@@ -402,11 +443,12 @@ export function renameSchemaDocument(id: string, name: string): Promise<SchemaDo
     if (!metadata) throw new Error("This schema could not be found in this browser.");
     const record = await readRecord(metadata);
     const info = record.document.info as { title: string; version: string };
-    if (info.title === title) return record;
+    if ((record.displayName ?? info.title) === title) return record;
     const document = { ...record.document, info: { ...info, title } };
-    validateSchemaDocument(document, id);
+    validateLibraryDocument(document, id);
     const label = (value: string) => value.replace(/\s+/g, " ");
-    return writeRecord(database, { ...record, document, updatedAt: Date.now() },
+    const { displayName: _displayName, ...authored } = record;
+    return writeRecord(database, { ...authored, document, updatedAt: Date.now() },
       `Rename OpenAPI schema: ${label(info.title)} → ${label(title)}`);
   });
 }
@@ -420,7 +462,7 @@ export function setSchemaDocumentEnabled(id: string, enabled: boolean): Promise<
     const metadata = await readMetadata(database, id);
     if (!metadata) throw new Error("This schema could not be found in this browser.");
     const record = await readRecord(metadata);
-    const revision = await head(id);
+    const revision = metadata.factoryDigest ?? await head(id);
     if (!revision) throw new Error(`Schema ${id} has no committed revision for credential policy.`);
     const policy = await credentialPolicy({ ...record, enabled }, revision);
     await transaction(database, ["catalog", "state"], "readwrite", async active => {
@@ -454,6 +496,8 @@ export function getSchemaHistory(id: string): Promise<SchemaRevision[]>
   schemaRepositoryPath(id);
   return serialized(async database => {
     if (!await readMetadata(database, id)) throw new Error("This schema could not be found in this browser.");
+    const metadata = await readMetadata(database, id);
+    if (metadata?.factoryDigest) await writeRecord(database, await readRecord(metadata));
     return (await git.log({ fs: fs(), dir: schemaRepositoryPath(id), ref: mainRef })).map(({ oid, commit }) => ({
       oid, message: commit.message.trim(), timestamp: commit.committer.timestamp * 1000, parents: commit.parent,
     }));
@@ -465,6 +509,6 @@ export function readSchemaVersion(id: string, oid: string): Promise<Record<strin
   schemaRepositoryPath(id);
   return serialized(async database => {
     if (!await readMetadata(database, id)) throw new Error("This schema could not be found in this browser.");
-    return validateSchemaDocument(JSON.parse(await versionText(id, oid)), id).document;
+    return validateLibraryDocument(JSON.parse(await versionText(id, oid)), id).document;
   });
 }

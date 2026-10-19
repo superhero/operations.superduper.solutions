@@ -12,6 +12,7 @@ export type SchemaDocumentRecord = {
   file: string;
   document: Record<string, unknown>;
   enabled: boolean;
+  displayName?: string;
   groups?: CatalogGroup[];
   createdAt: number;
   updatedAt: number;

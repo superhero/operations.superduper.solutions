@@ -1,0 +1,254 @@
+[
+  {
+    "id": "openai",
+    "name": "OpenAI",
+    "url": "https://raw.githubusercontent.com/openai/openai-openapi/main/openapi.yaml"
+  },
+  {
+    "id": "gemini",
+    "name": "Google Gemini — Interactions",
+    "url": "https://ai.google.dev/static/api/interactions.openapi.json"
+  },
+  {
+    "id": "mistral",
+    "name": "Mistral",
+    "url": "https://raw.githubusercontent.com/mistralai/platform-docs-public/main/openapi.yaml"
+  },
+  {
+    "id": "cohere",
+    "name": "Cohere",
+    "url": "https://raw.githubusercontent.com/cohere-ai/cohere-developer-experience/main/cohere-openapi.yaml"
+  },
+  {
+    "id": "xai",
+    "name": "xAI",
+    "url": "https://api.x.ai/api-docs/openapi.json",
+    "origin": "https://api.x.ai/v1"
+  },
+  {
+    "id": "together",
+    "name": "Together AI",
+    "url": "https://docs.together.ai/openapi.yaml"
+  },
+  {
+    "id": "openrouter",
+    "name": "OpenRouter",
+    "url": "https://openrouter.ai/openapi.json"
+  },
+  {
+    "id": "huggingface",
+    "name": "Hugging Face — Inference Endpoints",
+    "url": "https://api.endpoints.huggingface.cloud/openapi.json",
+    "origin": "https://api.endpoints.huggingface.cloud"
+  },
+  {
+    "id": "replicate",
+    "name": "Replicate",
+    "url": "https://api.replicate.com/openapi.json"
+  },
+  {
+    "id": "elevenlabs",
+    "name": "ElevenLabs",
+    "url": "https://api.elevenlabs.io/openapi.json",
+    "origin": "https://api.elevenlabs.io"
+  },
+  {
+    "id": "github",
+    "name": "GitHub",
+    "url": "https://raw.githubusercontent.com/github/rest-api-description/main/descriptions-next/api.github.com/api.github.com.yaml"
+  },
+  {
+    "id": "bitbucket",
+    "name": "Bitbucket Cloud",
+    "url": "https://dac-static.atlassian.com/cloud/bitbucket/swagger.v3.json"
+  },
+  {
+    "id": "gitlab",
+    "name": "GitLab",
+    "url": "https://gitlab.com/gitlab-org/gitlab/-/raw/master/doc/api/openapi/openapi_v3.yaml"
+  },
+  {
+    "id": "frankfurter",
+    "name": "Frankfurter",
+    "url": "https://api.frankfurter.dev/v2/openapi.json"
+  },
+  {
+    "id": "cloudflare",
+    "name": "Cloudflare",
+    "url": "https://raw.githubusercontent.com/cloudflare/api-schemas/main/openapi.yaml"
+  },
+  {
+    "id": "digitalocean",
+    "name": "DigitalOcean",
+    "url": "https://raw.githubusercontent.com/digitalocean/openapi/main/specification/DigitalOcean-public.v2.yaml"
+  },
+  {
+    "id": "ollama",
+    "name": "Ollama",
+    "url": "https://raw.githubusercontent.com/ollama/ollama/main/docs/openapi.yaml"
+  },
+  {
+    "id": "docker",
+    "name": "Docker Engine",
+    "url": "https://raw.githubusercontent.com/moby/moby/master/api/swagger.yaml",
+    "conversion": "swagger2"
+  },
+  {
+    "id": "telegram",
+    "name": "Telegram Bot API",
+    "url": "https://raw.githubusercontent.com/photon-hq/telegram-api/main/specs/telegram-bot-api.openapi.json"
+  },
+  {
+    "id": "x",
+    "name": "X / Twitter",
+    "url": "https://raw.githubusercontent.com/xdevplatform/xdk/main/latest-openapi.json"
+  },
+  {
+    "id": "discord",
+    "name": "Discord",
+    "url": "https://raw.githubusercontent.com/discord/discord-api-spec/main/specs/openapi.json"
+  },
+  {
+    "id": "twilio",
+    "name": "Twilio",
+    "url": "https://raw.githubusercontent.com/twilio/twilio-oai/main/spec/yaml/twilio_api_v2010.yaml"
+  },
+  {
+    "id": "resend",
+    "name": "Resend",
+    "url": "https://raw.githubusercontent.com/resend/resend-openapi/main/resend.yaml"
+  },
+  {
+    "id": "jira",
+    "name": "Jira Cloud",
+    "url": "https://dac-static.atlassian.com/cloud/jira/platform/swagger-v3.v3.json"
+  },
+  {
+    "id": "confluence",
+    "name": "Confluence Cloud",
+    "url": "https://dac-static.atlassian.com/cloud/confluence/openapi-v2.v3.json"
+  },
+  {
+    "id": "vercel",
+    "name": "Vercel",
+    "url": "https://openapi.vercel.sh/"
+  },
+  {
+    "id": "hetzner",
+    "name": "Hetzner Cloud",
+    "url": "https://docs.hetzner.cloud/cloud.spec.json"
+  },
+  {
+    "id": "render",
+    "name": "Render",
+    "url": "https://api-docs.render.com/openapi/render-public-api-1.json"
+  },
+  {
+    "id": "anthropic",
+    "name": "Anthropic / Claude",
+    "url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/anthropic/anthropic-893a61e9c1cd6c69a70d1043c626ed02d12d6a492eb6ca6ef7a84c64cfb15393.yml",
+    "provenance": "https://github.com/anthropics/anthropic-sdk-typescript/blob/sdk-v0.120.0/.stats.yml",
+    "version": "sdk-v0.120.0"
+  },
+  {
+    "id": "groq",
+    "name": "Groq",
+    "url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/groqcloud/groqcloud-debd965baa031e12228c41e538741fa6055bf2813bcd062840a19f84a17cea95.yml",
+    "provenance": "https://github.com/groq/groq-typescript/blob/v1.6.0/.stats.yml"
+  },
+  {
+    "id": "ecb",
+    "name": "ECB Data Portal",
+    "url": "https://raw.githubusercontent.com/sdmx-twg/sdmx-rest/master/api/sdmx-rest.yaml",
+    "origin": "https://data-api.ecb.europa.eu/service",
+    "provenance": "https://data.ecb.europa.eu/help/api/overview"
+  },
+  {
+    "id": "deepseek",
+    "name": "DeepSeek",
+    "file": "build/schema-documents/deepseek.json",
+    "provenance": "https://api-docs.deepseek.com/api/create-chat-completion/",
+    "conversion": "documentation-metadata"
+  },
+  {
+    "id": "dukascopy",
+    "name": "Dukascopy Trading Tools",
+    "file": "build/schema-documents/dukascopy.json",
+    "provenance": "https://www.dukascopy.com/trading-tools/api/documentation",
+    "conversion": "documentation-metadata"
+  },
+  {
+    "id": "fred",
+    "name": "FRED / GeoFRED",
+    "url": "https://raw.githubusercontent.com/armanobosyan/FRED-OpenAPI-specification/main/fred-schema.json",
+    "provenance": "https://fred.stlouisfed.org/docs/api/fred/",
+    "sourceKind": "community"
+  },
+  {
+    "id": "gcp-storage",
+    "provider": "gcp",
+    "name": "Google Cloud — Storage",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/storage/v1/openapi.yaml",
+    "provenance": "https://storage.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-compute",
+    "provider": "gcp",
+    "name": "Google Cloud — Compute",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/compute/v1/openapi.yaml",
+    "provenance": "https://compute.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-s3",
+    "provider": "aws",
+    "name": "AWS — S3",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/s3/2006-03-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-lambda",
+    "provider": "aws",
+    "name": "AWS — Lambda",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/lambda/2015-03-31/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "azure-resources",
+    "provider": "azure",
+    "name": "Microsoft Azure — Resources",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/resources/resource-manager/Microsoft.Resources/resources/stable/2025-04-01/resources.json",
+    "conversion": "swagger2",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs"
+  },
+  {
+    "id": "bluesky-app",
+    "provider": "bluesky",
+    "name": "Bluesky — App and AT Protocol",
+    "url": "https://endpoints.bsky.app/openapi.bluesky-app.json",
+    "provenance": "https://github.com/bluesky-social/endpoints-standalone",
+    "routing": "bluesky",
+    "version": "lexicons-2026-10-19"
+  },
+  {
+    "id": "bluesky-dms",
+    "provider": "bluesky",
+    "name": "Bluesky — Direct messages",
+    "url": "https://endpoints.bsky.app/openapi.bluesky-dms.json",
+    "provenance": "https://github.com/bluesky-social/endpoints-standalone",
+    "routing": "bluesky",
+    "version": "lexicons-2026-10-19"
+  },
+  {
+    "id": "bluesky-moderation",
+    "provider": "bluesky",
+    "name": "Bluesky — Ozone moderation",
+    "url": "https://endpoints.bsky.app/openapi.ozone-moderation.json",
+    "provenance": "https://github.com/bluesky-social/endpoints-standalone",
+    "routing": "bluesky",
+    "version": "lexicons-2026-10-19"
+  }
+]

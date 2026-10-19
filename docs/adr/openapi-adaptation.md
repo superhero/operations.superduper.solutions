@@ -42,6 +42,18 @@ on first expansion, even for disabled documents. Each opening exposes paths and
 HTTP methods while folding operation bodies and other nested fields. Viewing
 changes neither content nor Git history.
 
+### Default service library
+
+Reviewed service schemas ship as compressed, integrity-checked local packs. Startup
+adds missing defaults to existing profiles without replacing authored documents.
+Installation records survive deletion, so deleted defaults stay deleted.
+
+Unmodified defaults follow bundled revisions while retaining enablement and order.
+Renaming, replacing or requesting history materializes a Git copy; subsequent
+bundled revisions do not overwrite that copy. Display names can identify a provider
+without rewriting its upstream document title. Examples retain their existing
+once-only seeding behavior.
+
 ### Available operations
 
 Bundled examples seed once, preserving the `demo` and `httpbin` IDs and authored
@@ -58,7 +70,7 @@ endpoints remain subject to execution validation.
 
 ### Repository identity
 
-Each document has an immutable ID and its own Git repository at
+Each document has an immutable ID. Authored documents have their own Git repository at
 `/repositories/<id>` in LightningFS `v1/catalogs`. Different files receive distinct
 IDs even when filenames match. The predictably formatted `schema.json` working
 file is authoritative persisted content.
@@ -105,6 +117,19 @@ Effective HTTP(S) server URLs honor document, path and operation overrides and
 server-variable defaults. Joining paths preserves the server base path and
 rejects authority changes or traversal. These checks establish application
 compatibility, not general OpenAPI conformance.
+
+### Reviewed service compatibility
+
+Bundled services retain their complete source documents and operation inventory.
+Supported constraints produce typed controls; advanced JSON Schema rules use a
+JSON input with an explicit notice that the API performs that validation.
+Unsupported authentication, serialization or transports remain visible with an
+execution limitation instead of disappearing from navigation.
+
+OAuth access tokens use bearer transport, retaining declared scopes in the
+approved-operation identity. This does not implement OAuth login or token refresh.
+AWS Signature Version 4 signing is unsupported. Browser CORS, local-network access
+and the API's own authorization rules still apply.
 
 ### Failure handling
 

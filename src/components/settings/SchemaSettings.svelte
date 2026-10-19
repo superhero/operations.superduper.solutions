@@ -278,6 +278,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <dl class="schema-metadata">
             <div><dt>Server URL</dt><dd>{metadata.server}</dd></div>
             <div><dt>Operations</dt><dd>{metadata.operations.toLocaleString()}</dd></div>
+            {#if record.summary.unavailableCount}<div><dt>Runnable</dt><dd>{(metadata.operations - record.summary.unavailableCount).toLocaleString()}</dd></div>{/if}
           </dl>
 
           <Reveal open={!record.enabled} id={`schema-disabled-${record.id}`}><p class="schema-note">Operations from this document are unavailable until it is enabled.</p></Reveal>

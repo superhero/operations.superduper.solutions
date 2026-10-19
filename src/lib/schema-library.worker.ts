@@ -5,23 +5,46 @@ import "./worker-runtime.ts";
 import { createSchemaDocumentId, parseSchemaDocument, schemaDocumentMaxBytes, validateSchemaDocument,
   type SchemaDocumentRecord } from "./schema-documents.ts";
 import { loadSchemaDocuments, putSchemaDocument, renameSchemaDocument, moveSchemaDocument,
-  deleteSchemaDocument, setSchemaDocumentEnabled } from "./schema-storage.ts";
+  deleteSchemaDocument, setSchemaDocumentEnabled, configureSchemaDefaults } from "./schema-storage.ts";
+import { serviceSchemaDescriptors, readServiceSchema } from "./service-schema-packs.ts";
+import { inspectServiceSchema } from "./service-catalog.ts";
 import type { SchemaDownload, SchemaLibrarySnapshot } from "./schema-library-types.ts";
 import { serveWorkerRpc } from "./worker-rpc.ts";
 import { prepareStorageNamespaces } from "./storage-namespace.ts";
 
+const serviceIds = new Set(serviceSchemaDescriptors.map(catalog => catalog.id));
+const inspected = new WeakMap<Record<string, unknown>, ReturnType<typeof inspectServiceSchema>>();
+function inspect(document: Record<string, unknown>, id: string) {
+  if (!serviceIds.has(id)) return validateSchemaDocument(document, id);
+  if (!inspected.has(document)) inspected.set(document, inspectServiceSchema(document, id));
+  return inspected.get(document)!;
+}
+configureSchemaDefaults({ catalogs: serviceSchemaDescriptors.map(catalog => ({
+  id: catalog.id, name: catalog.name, file: `${catalog.id}.openapi.json`, revision: catalog.sha256,
+})), read: readServiceSchema, validate: inspect });
+
+const identities = new WeakMap<Record<string, unknown>, Map<string, Promise<string>>>();
+function sourceIdentity(file: string, document: Record<string, unknown>): Promise<string> {
+  if (!identities.has(document)) identities.set(document, new Map());
+  const entries = identities.get(document)!;
+  if (!entries.has(file)) entries.set(file, crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify([file, document])))
+    .then(bytes => Array.from(new Uint8Array(bytes), byte => byte.toString(16).padStart(2, "0")).join("")));
+  return entries.get(file)!;
+}
 async function snapshot(): Promise<SchemaLibrarySnapshot>
 {
   const snapshot: SchemaLibrarySnapshot = { records: [], catalogs: [] };
   for (const record of await loadSchemaDocuments())
   {
-    const validated = validateSchemaDocument(record.document, record.id);
-    snapshot.records.push({ ...record, document: validated.document, summary: { name: validated.name, serverUrl: validated.serverUrl,
-      operationCount: validated.operations.length } });
+    const validated = inspect(record.document, record.id);
+    const name = record.displayName ?? validated.name;
+    const groups = record.groups ?? (record.displayName ? validated.groups.map(group => ({ ...group, name })) : validated.groups);
+    snapshot.records.push({ ...record, document: validated.document, summary: { name, serverUrl: validated.serverUrl,
+      operationCount: validated.operations.length, unavailableCount: validated.operations.filter(operation => operation.unavailableReason).length } });
     if (record.enabled) snapshot.catalogs.push({ catalog: {
-      id: record.id, file: record.file, name: validated.name, document: validated.document,
-      groups: record.groups ?? validated.groups, execution: { kind: "http", origin: validated.serverUrl },
-    }, operations: validated.operations, sourceIdentity: JSON.stringify([record.file, validated.document]) });
+      id: record.id, file: record.file, name, document: validated.document,
+      groups, execution: { kind: "http", origin: validated.serverUrl },
+    }, operations: validated.operations, sourceIdentity: await sourceIdentity(record.file, validated.document) });
   }
   return snapshot;
 }
@@ -54,7 +77,7 @@ serveWorkerRpc({
   {
     const record = await findRecord(id);
     const document = await readUpload(file, id);
-    const { groups: _groups, ...metadata } = record;
+    const { groups: _groups, displayName: _displayName, ...metadata } = record;
     await putSchemaDocument({ ...metadata, document, file: file.name, updatedAt: Date.now() });
     return snapshot();
   },

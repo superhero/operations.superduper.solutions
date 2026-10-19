@@ -27,7 +27,7 @@ async function catalog(write: boolean, run: (transaction: IDBTransaction) => voi
     request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
   });
   try { await new Promise<void>((resolve, reject) => {
-    const transaction = db.transaction(["state", "pending", "removed"], write ? "readwrite" : "readonly");
+    const transaction = db.transaction(["state", "pending", "removed", "catalog"], write ? "readwrite" : "readonly");
     run(transaction); transaction.oncomplete = () => resolve(); transaction.onabort = () => reject(transaction.error);
   }); } finally { db.close(); }
 }
@@ -116,4 +116,21 @@ export async function publicVariable(backfillLegacy = false) {
   }
   const value = await execute();
   return { before, value };
+}
+
+export async function factoryPolicy() {
+  const digest = "a".repeat(64);
+  const set = async (revision: string) => catalog(true, tx => {
+    const metadata = tx.objectStore("catalog");
+    const read = metadata.get(record.id);
+    read.onsuccess = () => metadata.put({ ...read.result, factoryDigest: digest }, record.id);
+    const state = tx.objectStore("state");
+    const policies = state.get("vaultPolicy");
+    policies.onsuccess = () => state.put({ ...policies.result, [record.id]: { revision, fingerprints: [descriptor.fingerprint] } }, "vaultPolicy");
+  });
+  await set(digest);
+  await assertCurrentSchema(descriptor);
+  await set("b".repeat(64));
+  try { await assertCurrentSchema(descriptor); return "unexpected success"; }
+  catch (error) { return (error as { code: string }).code; }
 }

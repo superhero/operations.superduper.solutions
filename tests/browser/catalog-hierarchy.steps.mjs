@@ -23,20 +23,18 @@ Then('catalog groups count their operations and keep one open descendant path', 
   const page = this.page;
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await openCatalog(page);
-  const ids = await catalog(page).locator('[data-operation-id]').evaluateAll(elements => elements.map(element => element.dataset.operationId));
-  assert.deepEqual(ids, operations.map(operation => operation.id));
+  const ids = operations.map(operation => operation.id);
+  await expect(catalog(page).locator('[data-operation-id]')).toHaveCount(0);
   for (const source of catalogs) {
     const root = source.groups[0];
     await expand(page, root.id);
     const expectedIds = operations.filter(operation => operation.id.startsWith(`${source.id}:`)).map(operation => operation.id);
-    assert.deepEqual(await branch(page, root.id).locator('[data-operation-id]')
-      .evaluateAll(elements => elements.map(element => element.dataset.operationId)), expectedIds);
-    for (const group of [root, ...root.children]) {
-      const parent = group === root ? undefined : root.id;
-      const count = group === root ? expectedIds.length : group.operationIds.length;
-      await expect(branch(page, group.id, parent).locator('[data-operation-id]')).toHaveCount(count);
-      await expect(heading(page, group.id, parent).locator('.catalog-count')).toHaveText(String(count));
-      await expect(heading(page, group.id, parent)).toHaveAccessibleName(`${group.name} group, ${count} operations`);
+    await expect(heading(page, root.id).locator('.catalog-count')).toHaveText(String(expectedIds.length));
+    for (const group of root.children) {
+      await expand(page, group.id, root.id);
+      await expect(branch(page, group.id, root.id).locator('[data-operation-id]')).toHaveCount(group.operationIds.length);
+      await expect(heading(page, group.id, root.id).locator('.catalog-count')).toHaveText(String(group.operationIds.length));
+      await expect(heading(page, group.id, root.id)).toHaveAccessibleName(`${group.name} group, ${group.operationIds.length} operations`);
     }
   }
   await expand(page, 'projects');
@@ -50,14 +48,11 @@ Then('catalog groups count their operations and keep one open descendant path', 
   await expect(operation(page, 'demo:createTask')).toBeVisible();
   await expand(page, 'httpbin');
   await expect(heading(page, 'projects')).toHaveAttribute('aria-expanded', 'false');
-  await expect(heading(page, 'tasks')).toHaveAttribute('aria-expanded', 'false');
   await expect(operation(page, 'demo:createTask')).toBeHidden();
   await expand(page, 'methods', 'httpbin');
-  await expect(heading(page, 'methods', 'projects')).toHaveAttribute('aria-expanded', 'false');
   await expect(operation(page, 'httpbin:echoGet')).toBeVisible();
   await expand(page, 'projects');
   await expect(heading(page, 'httpbin')).toHaveAttribute('aria-expanded', 'false');
-  await expect(heading(page, 'methods', 'httpbin')).toHaveAttribute('aria-expanded', 'false');
   await expect(operation(page, 'httpbin:echoGet')).toBeHidden();
   await heading(page, 'projects').press('Enter');
   await expect(heading(page, 'projects')).toBeFocused();

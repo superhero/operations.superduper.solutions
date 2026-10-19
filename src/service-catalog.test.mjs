@@ -1,0 +1,146 @@
+// Copyright (C) 2026 Erik Landvall
+// SPDX-License-Identifier: AGPL-3.0-only
+// See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import assert from 'node:assert/strict';
+import { Then } from '@cucumber/cucumber';
+import { inspectServiceSchema } from './lib/service-catalog.ts';
+import { readServiceSchema, serviceSchemaDescriptors } from './lib/service-schema-packs.ts';
+import { prepareRequest } from './lib/operation-input.ts';
+
+Then('the default service index retains every packaged operation and reports execution limits', { timeout: 60_000 }, async () => {
+  let count = 0;
+  let runnable = 0;
+  for (const descriptor of serviceSchemaDescriptors) {
+    const document = await readServiceSchema(descriptor.id);
+    const catalog = inspectServiceSchema(document, descriptor.id);
+    assert.equal(catalog.document, document);
+    assert.equal(catalog.operations.length, descriptor.operations, descriptor.id);
+    assert.equal(new Set(catalog.operations.map(operation => operation.id)).size, descriptor.operations, descriptor.id);
+    assert.equal(catalog.groups[0].children.reduce((total, group) => total + group.operationIds.length, 0), descriptor.operations);
+    count += catalog.operations.length;
+    runnable += catalog.operations.filter(operation => !operation.unavailableReason).length;
+    if (descriptor.id === 'ollama') assert.ok(catalog.operations.some(operation => operation.path === '/api/generate' && !operation.unavailableReason));
+    if (descriptor.id === 'frankfurter') assert.ok(catalog.operations.some(operation => !operation.unavailableReason));
+  }
+  assert.equal(count, 13859);
+  assert.ok(runnable > 0);
+});
+Then('service inputs preserve standard validation and explicitly use server validation for complex JSON', () => {
+  const document = { openapi: '3.1.0', info: { title: 'Example service', version: '1' }, servers: [{ url: 'https://example.com' }],
+    paths: { '/items/{id}': { post: { operationId: 'create', parameters: [
+      { name: 'id', in: 'path', required: true, schema: { type: 'string', pattern: '^item-[0-9]+$' } },
+      { name: 'version', in: 'header', required: true, schema: { type: 'string', default: '1' } }
+    ], requestBody: { required: true, content: { 'application/json': { schema: { oneOf: [
+      { type: 'object', required: ['foo'] }, { type: 'object', required: ['bar'] }
+    ] } } } }, responses: { '200': { description: 'Created' } } } } } };
+  const before = JSON.stringify(document);
+  const operation = inspectServiceSchema(document, 'service-test').operations[0];
+  assert.equal(operation.unavailableReason, undefined);
+  assert.equal(operation.fields.find(field => field.name === 'version').defaultValue, '1');
+  assert.equal(operation.fields.find(field => field.location === 'body').type, 'json');
+  assert.match(operation.fields.find(field => field.location === 'body').description, /validated by the API/);
+  const values = { 'path:id': 'item-2', 'header:version': '1', 'body:$': '{"foo":true}' };
+  assert.deepEqual(prepareRequest(operation, values), { method: 'POST', path: '/items/item-2', query: {}, headers: { version: '1' }, body: { foo: true } });
+  assert.throws(() => prepareRequest(operation, { ...values, 'path:id': 'bad' }), /pattern/);
+  assert.throws(() => prepareRequest(operation, { ...values, 'body:$': '{' }), /valid JSON/);
+  assert.equal(JSON.stringify(document), before);
+  const unsupported = structuredClone(document);
+  unsupported.paths['/items/{id}'].post.security = [{ login: [] }];
+  unsupported.components = { securitySchemes: { login: { type: 'http', scheme: 'basic' } } };
+  const unavailable = inspectServiceSchema(unsupported, 'service-test').operations[0];
+  assert.match(unavailable.unavailableReason, /bearer/);
+  assert.throws(() => prepareRequest(unavailable, values), /bearer/);
+});
+
+Then('service OAuth tokens use bearer credentials with scope-bound operation fingerprints', async () => {
+  const { approvedOperation } = await import('./lib/secrets/policy.ts');
+  const document = { openapi: '3.1.0', info: { title: 'OAuth service', version: '1' }, servers: [{ url: 'https://example.com' }],
+    components: { securitySchemes: { login: { type: 'oauth2', flows: { clientCredentials: { tokenUrl: 'https://example.com/token', scopes: { read: 'Read' } } } } } },
+    security: [{ login: ['read'] }], paths: { '/items': { get: { operationId: 'items', responses: { '200': { description: 'OK' } } } } } };
+  const original = JSON.stringify(document);
+  const operation = inspectServiceSchema(document, 'oauth-test').operations[0];
+  assert.equal(operation.unavailableReason, undefined);
+  assert.deepEqual(operation.security, [[{ name: 'login', kind: 'bearer', header: 'Authorization' }]]);
+  assert.deepEqual(operation.oauthScopes, [{ login: ['read'] }]);
+  const first = await approvedOperation(operation, 'https://example.com');
+  const changed = await approvedOperation({ ...operation, oauthScopes: [{ login: ['write'] }] }, 'https://example.com');
+  assert.notEqual(first.fingerprint, changed.fingerprint);
+  assert.equal(JSON.stringify(document), original);
+  document.security = [{ login: [42] }];
+  assert.match(inspectServiceSchema(document, 'oauth-test').operations[0].unavailableReason, /OAuth scopes/);
+  document.security = [null];
+  assert.match(inspectServiceSchema(document, 'oauth-test').operations[0].unavailableReason, /Security requirements/);
+});
+
+Then('service contract guards reject invalid operations without dropping their source', () => {
+  const base = () => ({ openapi: '3.1.0', info: { title: 'Guard fixture' }, servers: [{ url: 'https://example.com' }],
+    paths: { '/items': { get: { responses: {} } } } });
+  assert.throws(() => inspectServiceSchema({}, 'guard'), /must declare/);
+  const empty = base(); empty.paths = { ignored: {} };
+  assert.throws(() => inspectServiceSchema(empty, 'guard'), /no HTTP operations/);
+  const duplicate = base(); duplicate.paths['/other'] = { get: { operationId: 'same' } };
+  duplicate.paths['/items'].get.operationId = 'same';
+  assert.throws(() => inspectServiceSchema(duplicate, 'guard'), /Duplicate/);
+  for (const [patch, expected] of [
+    [{ parameters: {} }, /must be an array/],
+    [{ parameters: [{ in: 'cookie', name: 'token' }] }, /Cookie/],
+    [{ requestBody: { content: { 'text/plain': { schema: { type: 'integer' } } } } }, /text body/],
+    [{ parameters: [{ $ref: '#/missing/path' }] }, /Unresolved/],
+    [{ parameters: [{ $ref: '#/info/title/missing' }] }, /Unresolved/]
+  ]) {
+    const doc = base(); Object.assign(doc.paths['/items'].get, patch);
+    assert.match(inspectServiceSchema(doc, 'guard').operations[0].unavailableReason, expected);
+  }
+  for (const schema of [
+    { type: 'string', enum: [{}] }, { type: 'string', const: {} },
+    { $ref: '#/components/schemas/loop' }, { $ref: 'https://example.com/schema' }
+  ]) {
+    const doc = base(); doc.components = { schemas: { loop: { $ref: '#/components/schemas/loop' } } };
+    doc.paths['/items'].get.parameters = [{ name: 'value', in: 'query', schema }];
+    assert.equal(inspectServiceSchema(doc, 'guard').operations[0].fields[0].type, 'json');
+  }
+});
+
+Then('service reference defaults and form guards preserve their declared behavior', () => {
+  const base = () => ({ openapi: '3.1.0', info: { title: 'References' }, servers: [{ url: 'https://example.com' }],
+    paths: { '/items': { post: { responses: {} } } } });
+  const parameter = schema => ({ name: 'value', in: 'query', required: true, schema });
+  for (const [schema, expected] of [
+    [{ const: 'fixed' }, 'string'],
+    [{ items: { type: 'string' } }, 'array'],
+    [{ oneOf: [{ type: 'object' }, { type: 'string' }], default: 'draft' }, 'json']
+  ]) {
+    const doc = base(); doc.paths['/items'].post.parameters = [parameter(schema)];
+    const input = inspectServiceSchema(doc, 'guard').operations[0].fields[0];
+    assert.equal(input.type, expected);
+    if (expected === 'json') assert.equal(input.defaultValue, '"draft"');
+  }
+  const refs = base();
+  refs.paths['/items'].post.parameters = [parameter({ type: 'string' }), { $ref: '#/paths/~1items/post/parameters/0' }];
+  assert.equal(inspectServiceSchema(refs, 'guard').operations[0].fields.length, 1);
+  const form = base();
+  form.paths['/items'].post.requestBody = { content: { 'application/x-www-form-urlencoded': { schema: { type: 'object' } } } };
+  assert.equal(inspectServiceSchema(form, 'guard').operations[0].unavailableReason, undefined);
+  const required = base();
+  required.paths['/items'].post.requestBody = { content: { 'application/json': { schema: { type: 'object', properties: { name: { type: 'string' } } } } } };
+  assert.equal(inspectServiceSchema(required, 'guard').operations[0].fields[0].required, false);
+  const thrown = base();
+  Object.defineProperty(thrown.paths['/items'].post, 'parameters', { get() { throw 'non-Error failure'; } });
+  assert.equal(inspectServiceSchema(thrown, 'guard').operations[0].unavailableReason, 'non-Error failure');
+});
+
+Then('service request preparation rejects unsupported structured parameter values', () => {
+  const operation = { id: 'guard:request', name: 'Request', group: 'Guard', description: '', method: 'GET', path: '/{value}', fields: [], bodyRequired: false };
+  for (const [location, type, raw, message] of [
+    ['path', 'json', '{}', /path values must be primitive/],
+    ['header', 'json', '[]', /header values must be primitive/],
+    ['query', 'json', '{}', /structured query serialization/],
+    ['query', 'json', '[{}]', /structured query serialization/]
+  ]) {
+    const input = { key: `${location}:value`, name: 'value', label: 'Value', location, type, required: true };
+    assert.throws(() => prepareRequest({ ...operation, fields: [input] }, { [input.key]: raw }), message);
+  }
+  const input = { key: 'query:value', name: 'value', label: 'Value', location: 'query', type: 'json', required: true };
+  assert.deepEqual(prepareRequest({ ...operation, fields: [input] }, { [input.key]: '[1,2]' }).query, { value: [1,2] });
+  assert.deepEqual(prepareRequest({ ...operation, fields: [input] }, { [input.key]: 'null' }).query, { value: null });
+});

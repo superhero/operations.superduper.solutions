@@ -14,6 +14,8 @@ const matchingNames = page => catalog(page).locator('[data-operation-name]').eva
 Then('the sidebar prompt filters operations and hides empty catalog groups', async function () {
   const page = this.page;
   await openCatalog(page);
+  await group(page, 'projects').click();
+  await group(page, 'tasks').click();
   const initialGroups = await catalog(page).locator('[data-catalog-group]').evaluateAll(items => items.map(item => item.dataset.catalogGroup));
   const placement = await Promise.all([page.locator('.catalog-prompt').boundingBox(), catalog(page).boundingBox()]);
   assert.ok(placement.every(Boolean));
@@ -42,10 +44,10 @@ Then('the sidebar prompt filters operations and hides empty catalog groups', asy
 Then('clearing live matching restores the unfiltered catalog and its previous expansion', async function () {
   const page = this.page;
   await openCatalog(page);
-  const initialNames = await matchingNames(page);
-  const initialGroups = await catalog(page).locator('[data-catalog-group]').evaluateAll(items => items.map(item => item.dataset.catalogGroup));
   await group(page, 'projects').click();
   await group(page, 'tasks').click();
+  const initialNames = await matchingNames(page);
+  const initialGroups = await catalog(page).locator('[data-catalog-group]').evaluateAll(items => items.map(item => item.dataset.catalogGroup));
   await searchOperations(page, 'List projects');
   await expect(group(page, 'overview')).toHaveAttribute('aria-expanded', 'true');
   await searchOperations(page, '');
