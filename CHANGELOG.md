@@ -231,6 +231,14 @@ fix(schemas): remove schema name field outline
 
 ```
 
+<!-- changelog-commit:b1de0fc8e50cc100ce22819bcb12fbfd472e9c26 -->
+### Commit [`b1de0fc`](https://github.com/superhero/operations.superduper.solutions/commit/b1de0fc8e50cc100ce22819bcb12fbfd472e9c26)
+
+```text
+fix(schemas): guard nullable counts in tooltip content
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
