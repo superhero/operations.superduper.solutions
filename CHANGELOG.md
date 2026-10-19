@@ -28,6 +28,20 @@ gzip bytes while reducing fresh startup heap from 286 to 46 MiB.
 
 ```
 
+<!-- changelog-commit:97efc3c75e10d5d0c25ebdbc3a5f7cfbb0bce622 -->
+### Commit [`97efc3c`](https://github.com/superhero/operations.superduper.solutions/commit/97efc3c75e10d5d0c25ebdbc3a5f7cfbb0bce622)
+
+```text
+perf(schemas): reuse search indexes and batch workflow models
+
+Retain normalized indexes per schema and reuse completed matching workers. Send matched scores by default while preserving full developer reports and immediate termination of obsolete calculations.
+
+Share navigation tooltip state and skip offscreen row contents while retaining native keyboard navigation. Group canonical workflow models into bounded schema batches with coalesced loads and atomic credential policy publication.
+
+Add focused Gherkin coverage and record resource-capped measurements, including the retained search-worker heap tradeoff.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
