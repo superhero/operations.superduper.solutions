@@ -370,6 +370,65 @@ Then('the Settings schema viewer expands HTTP methods but keeps their details fo
   await expect(heading(`${method}["responses"]`)).toHaveAttribute('aria-expanded', 'false');
 });
 
+Then('schema edit icons fade in and out and respect reduced motion', async function () {
+  const page = this.page;
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await setMode(page, 'settings');
+  await page.locator('summary[aria-label="Schemas"]').click();
+  const card = page.locator('.schema-card[data-schema-id="demo"]');
+  const toggle = card.getByRole('button', { name: /^Schema details:/ });
+  const icon = card.locator('.schema-name-icon');
+  const input = card.getByRole('textbox', { name: 'Schema name', exact: true });
+  await expect(icon).toHaveCSS('opacity', '0');
+  await expect(icon).toBeHidden();
+  await icon.evaluate(element => {
+    // Hold the actual CSS transitions at their start, including delayed visibility.
+    element.__fadeObserver = new MutationObserver(() => {
+      getComputedStyle(element).opacity;
+      for (const animation of element.getAnimations()) animation.pause();
+    });
+    element.__fadeObserver.observe(element, { attributes: true, attributeFilter: ['class'] });
+  });
+  const halfway = () => icon.evaluate(async element => {
+    const animation = element.getAnimations().find(item => item.transitionProperty === 'opacity');
+    if (!animation) throw new Error('The edit icon must have an active opacity transition.');
+    await animation.ready;
+    animation.currentTime = Number(animation.effect.getTiming().duration) / 2;
+    return Number(getComputedStyle(element).opacity);
+  });
+  const finish = () => icon.evaluate(element => element.getAnimations().forEach(animation => animation.finish()));
+  try {
+    await toggle.click();
+    await expect(input).toBeEditable();
+    const opening = await halfway();
+    assert.ok(opening > 0 && opening < 1, 'Opening fades through a partially visible edit icon');
+    await toggle.click();
+    await expect(input).toHaveCount(0);
+    await expect(icon).toHaveAttribute('inert', '');
+    await expect(icon).toHaveAttribute('aria-hidden', 'true');
+    await expect(icon).toHaveCSS('pointer-events', 'none');
+    const closing = await halfway();
+    assert.ok(closing > 0 && closing < opening, 'Closing reverses the unfinished fade');
+    await toggle.click();
+    const reopening = await halfway();
+    assert.ok(reopening > closing && reopening < 1, 'Reopening reverses the fade without jumping to fully visible');
+    await finish();
+    await expect(icon).toHaveCSS('opacity', '1');
+    await toggle.click();
+    const fadingOut = await halfway();
+    assert.ok(fadingOut > 0 && fadingOut < 1, 'Closing a fully open card fades the icon out');
+    await finish();
+    await expect(icon).toBeHidden();
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    for (const open of [true, false]) {
+      await toggle.click();
+      await expect(icon).toHaveCSS('opacity', open ? '1' : '0');
+      assert.equal(await icon.evaluate(element => element.getAnimations().length), 0,
+        'Reduced motion changes icon visibility without a fade');
+    }
+  } finally { await icon.evaluate(element => element.__fadeObserver?.disconnect()); }
+});
+
 Then('schema cards keep their controls usable and their viewer full width at {int} pixels', async function (width) {
   const page = this.page;
   await page.setViewportSize({ width, height: 1000 });
@@ -390,23 +449,28 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   await expect(otherCard.getByRole('button', { name: /^Schema details:/ })).toHaveAttribute('aria-expanded', 'false');
   await expect(card.locator('.schema-metadata, .schema-disclosure')).toHaveCount(0);
   await expect(name).toHaveCount(0);
-  await expect(heading.locator('.schema-name-icon')).toHaveCount(0);
+  await expect(heading.locator('.schema-name-icon')).toBeHidden();
   await expect(enabled).toHaveText('');
   for (const control of [closedName, enabled, toggle, move]) await expect(control).toBeVisible();
   const topRow = await heading.evaluate(element => {
     const field = element.querySelector('.schema-name').getBoundingClientRect();
-    const toggle = element.querySelector('.schema-card-toggle').getBoundingClientRect();
+    const toggleElement = element.querySelector('.schema-card-toggle');
+    const toggle = toggleElement.getBoundingClientRect();
     const name = element.querySelector('.schema-name-label').getBoundingClientRect();
     const enabled = element.querySelector('.schema-enabled');
     const switchBounds = enabled.getBoundingClientRect();
     const style = getComputedStyle(enabled);
-    return { fieldWidth: field.width, gap: field.left - toggle.right,
+    const toggleStyle = getComputedStyle(toggleElement);
+    return { fieldWidth: field.width, gap: name.left - toggle.right,
       sameLine: Math.abs(field.top - toggle.top) < 1, fits: element.scrollWidth <= element.clientWidth,
       connected: Math.abs(name.right - switchBounds.left) < 1 && Math.abs(switchBounds.right - field.right) < 1,
-      radii: [style.borderTopLeftRadius, style.borderTopRightRadius] };
+      radii: [style.borderTopLeftRadius, style.borderTopRightRadius],
+      arrowRadii: [toggleStyle.borderTopLeftRadius, toggleStyle.borderTopRightRadius],
+      arrowConnected: Math.abs(toggle.left - field.left) < 1 };
   });
   assert.ok(topRow.sameLine && topRow.fits, 'The name and card controls share a single row at every width');
-  assert.ok(topRow.fieldWidth > 0 && Math.abs(topRow.gap - 6) < 1, 'The arrow sits immediately left of the name');
+  assert.ok(topRow.fieldWidth > 0 && Math.abs(topRow.gap) < 1 && topRow.arrowConnected, 'The arrow joins the name without a gap');
+  assert.deepEqual(topRow.arrowRadii, ['4px', '0px'], 'The arrow extension has a rounded outer end and square join');
   assert.ok(topRow.connected, 'The enable switch joins the name without a gap');
   assert.deepEqual(topRow.radii, ['0px', '4px'], 'The enable extension has a square join and rounded outer end');
   await enabled.hover();
@@ -478,7 +542,7 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   await toggle.click();
   await expect(card.locator('.json-view, .schema-metadata')).toHaveCount(0);
   await expect(name).toHaveCount(0);
-  await expect(heading.locator('.schema-name-icon')).toHaveCount(0);
+  await expect(heading.locator('.schema-name-icon')).toBeHidden();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await closedName.focus();
   await closedName.press('Enter');

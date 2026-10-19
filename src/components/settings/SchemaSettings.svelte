@@ -245,34 +245,37 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <li class="schema-card" class:dragging={draggingId === record.id} data-schema-id={record.id}
           style:order={previewOrder?.indexOf(record.id)}>
           <div class="schema-heading">
-            <Button class="schema-card-toggle" size="icon-sm" variant="secondary" aria-label={`Schema details: ${metadata.title}`}
-              aria-expanded={expandedCards[record.id] ?? false} aria-controls={`schema-details-${record.id}`}
-              tooltip={expandedCards[record.id] ? "Hide schema details" : "Show schema details"} onclick={() => toggleCard(record.id)}>
-              <MaterialIcon name="keyboard_arrow_right" size={18} />
-            </Button>
             <div class="schema-name">
-              {#if expandedCards[record.id]}
-                <input id={`schema-name-${record.id}`} class="schema-name-input" value={nameDrafts[record.id] ?? metadata.title} aria-label="Schema name" required disabled={mutationsDisabled}
-                  aria-invalid={nameDrafts[record.id] !== undefined && !nameDrafts[record.id]?.trim()}
-                  oninput={event => nameDrafts[record.id] = event.currentTarget.value}
-                  onblur={() => saveName(record.id, metadata.title)}
-                  onkeydown={event => {
-                    if (event.key === "Escape") {
-                      event.preventDefault();
-                      delete nameDrafts[record.id];
-                      event.currentTarget.value = metadata.title;
-                      actionError = "";
-                      event.currentTarget.blur();
-                    } else if (event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); }
-                  }} />
-                <label class="schema-name-icon" for={`schema-name-${record.id}`}><MaterialIcon name="edit_line" size={20} /><span class="sr-only">Schema name</span></label>
-              {:else}
-                <button class="schema-name-label" type="button" aria-label={`Open schema: ${metadata.title}`} aria-expanded="false" aria-controls={`schema-details-${record.id}`}
-                  onclick={event => {
-                    event.currentTarget.closest(".schema-heading")?.querySelector<HTMLButtonElement>(".schema-card-toggle")?.focus({ preventScroll: true });
-                    toggleCard(record.id);
-                  }}>{metadata.title}</button>
-              {/if}
+              <HintButton class="schema-card-toggle" aria-label={`Schema details: ${metadata.title}`}
+                aria-expanded={expandedCards[record.id] ?? false} aria-controls={`schema-details-${record.id}`}
+                label={expandedCards[record.id] ? "Hide schema details" : "Show schema details"} labelAsName={false} onclick={() => toggleCard(record.id)}>
+                <MaterialIcon name="keyboard_arrow_right" size={18} />
+              </HintButton>
+              <div class="schema-name-field" class:editing={expandedCards[record.id] ?? false}>
+                {#if expandedCards[record.id]}
+                  <input id={`schema-name-${record.id}`} class="schema-name-input" value={nameDrafts[record.id] ?? metadata.title} aria-label="Schema name" required disabled={mutationsDisabled}
+                    aria-invalid={nameDrafts[record.id] !== undefined && !nameDrafts[record.id]?.trim()}
+                    oninput={event => nameDrafts[record.id] = event.currentTarget.value}
+                    onblur={() => saveName(record.id, metadata.title)}
+                    onkeydown={event => {
+                      if (event.key === "Escape") {
+                        event.preventDefault();
+                        delete nameDrafts[record.id];
+                        event.currentTarget.value = metadata.title;
+                        actionError = "";
+                        event.currentTarget.blur();
+                      } else if (event.key === "Enter") { event.preventDefault(); event.currentTarget.blur(); }
+                    }} />
+                {:else}
+                  <button class="schema-name-label" type="button" aria-label={`Open schema: ${metadata.title}`} aria-expanded="false" aria-controls={`schema-details-${record.id}`}
+                    onclick={event => {
+                      event.currentTarget.closest(".schema-heading")?.querySelector<HTMLButtonElement>(".schema-card-toggle")?.focus({ preventScroll: true });
+                      toggleCard(record.id);
+                    }}>{metadata.title}</button>
+                {/if}
+                <label class="schema-name-icon" class:visible={expandedCards[record.id] ?? false} for={`schema-name-${record.id}`}
+                  aria-hidden={!expandedCards[record.id]} inert={!expandedCards[record.id]}><MaterialIcon name="edit_line" size={20} /><span class="sr-only">Schema name</span></label>
+              </div>
               <HintButton class="schema-enabled" role="switch" aria-label={`Enable ${metadata.title}`} aria-checked={record.enabled}
                 label={record.enabled ? "Disable schema" : "Enable schema"} labelAsName={false} disabled={mutationsDisabled}
                 onclick={() => run("", () => onEnabledChange(record.id, !record.enabled))}>
@@ -348,8 +351,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-heading { --schema-control-size: calc(var(--spacing) * 8); display: flex; align-items: center; gap: 6px; }
   .schema-name { display: flex; flex: 1; min-width: 0; height: var(--schema-control-size); border-radius: 4px; background: var(--color-background); color: var(--color-foreground); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
   .schema-name:focus-within, .schema-name:hover:has(:enabled) { outline-color: var(--color-ring); }
-  .schema-name-icon { display: grid; place-items: center; flex: 0 0 var(--schema-control-size); width: var(--schema-control-size); height: 100%; cursor: text; }
-  .schema-name-input, .schema-name-label { box-sizing: border-box; flex: 1; min-width: 0; width: 100%; height: 100%; padding: 6px 10px; border: 0; border-radius: 4px 0 0 4px; outline: none; background: transparent; color: inherit; font-size: 14px; }
+  .schema-name-field { position: relative; display: flex; flex: 1; min-width: 0; height: 100%; padding-right: 0; transition: padding-right 180ms ease-in-out; }
+  .schema-name-field.editing { padding-right: var(--schema-control-size); }
+  .schema-name-icon { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: var(--schema-control-size); height: 100%; cursor: text; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 180ms ease-in-out, visibility 0s linear 180ms; }
+  .schema-name-icon.visible { opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s; }
+  .schema-name-input, .schema-name-label { box-sizing: border-box; flex: 1; min-width: 0; width: 100%; height: 100%; padding: 6px 10px; border: 0; border-radius: 0; outline: none; background: transparent; color: inherit; font-size: 14px; }
   .schema-name-label { overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
   .schema-empty h3 { margin: 0; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
   .schema-empty p, .schema-note { margin: 6px 0 0; color: var(--color-muted-foreground); font-size: 12px; overflow-wrap: anywhere; }
@@ -359,7 +365,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-card > :global(.reveal-panel) { transition-timing-function: ease-in-out, linear; }
   .schema-card :global(.schema-disclosure > summary) { flex-wrap: wrap; gap: 6px; padding-left: 12px; font-size: 12px; }
   .schema-card :global(.schema-disclosure > summary > .schema-chevron) { width: auto; margin-left: 0; }
-  .schema-card :global(.schema-card-toggle .material-symbols-rounded) { transition: transform 180ms ease-in-out; }
+  .schema-card :global(.schema-card-toggle) { display: grid; place-items: center; flex: 0 0 var(--schema-control-size); height: 100%; padding: 0; border: 0; border-radius: 4px 0 0 4px; background: transparent; color: inherit; }
+  .schema-card :global(.schema-card-toggle .material-symbols-rounded) { transition: transform 180ms ease-in-out, scale 180ms ease-in-out; }
   .schema-card :global(.schema-card-toggle[aria-expanded="true"] .material-symbols-rounded) { transform: rotate(90deg); }
   .schema-settings :global(.schema-action:is(:hover,:focus-visible):enabled) { background: transparent; color: inherit; }
   .schema-card.dragging { opacity: 0.5; }
@@ -383,8 +390,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
     .schema-card :global(.schema-disclosure > summary:hover) { transform: scale(min(1.06, var(--hover-scale, 1.06))); }
     .schema-settings :global(.schema-action:hover:enabled) { transform: scale(min(1.10, var(--hover-scale, 1.10))); }
+    .schema-card :global(.schema-card-toggle:hover .material-symbols-rounded) { scale: 1.10; }
     :global(.schema-enabled:hover:enabled) .default-switch { transform: scale(1.10); }
   }
-  @media (prefers-reduced-motion: reduce) { .schema-name, .default-switch, .default-switch > span, .schema-card :global(.schema-card-toggle .material-symbols-rounded) { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .schema-name, .schema-name-field, .schema-name-icon, .default-switch, .default-switch > span, .schema-card :global(.schema-card-toggle .material-symbols-rounded) { transition: none; } }
   @media (forced-colors: active) { .schema-name:not(:focus-within):not(:hover) { outline-style: none; } }
 </style>
