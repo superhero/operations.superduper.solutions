@@ -357,8 +357,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-drag-surface { position: absolute; inset: 0; z-index: 3; }
   .schema-toolbar, .schema-card, .schema-empty { min-width: 0; padding: 16px; border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
   .schema-heading { --schema-control-size: calc(var(--spacing) * 8); display: flex; align-items: center; gap: 6px; }
-  .schema-name { display: flex; flex: 1; min-width: 0; height: var(--schema-control-size); border-radius: 4px; background: var(--color-background); color: var(--color-foreground); outline: 3px solid transparent; outline-offset: 3px; transition: outline-color 180ms ease-in; }
-  .schema-name:focus-within, .schema-name:hover:has(:enabled) { outline-color: var(--color-ring); }
+  .schema-name { display: flex; flex: 1; min-width: 0; height: var(--schema-control-size); border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
   .schema-name-field { position: relative; display: flex; flex: 1; min-width: 0; height: 100%; padding-right: 0; transition: padding-right 180ms ease-in-out; }
   .schema-name-field.editing { padding-right: var(--schema-control-size); }
   .schema-name-icon { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: var(--schema-control-size); height: 100%; cursor: text; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 180ms ease-in-out, visibility 0s linear 180ms; }
@@ -401,6 +400,5 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     .schema-card :global(.schema-card-toggle:hover .material-symbols-rounded) { scale: 1.10; }
     :global(.schema-enabled:hover:enabled) .default-switch { transform: scale(1.10); }
   }
-  @media (prefers-reduced-motion: reduce) { .schema-name, .schema-name-field, .schema-name-icon, .default-switch, .default-switch > span, .schema-card :global(.schema-card-toggle .material-symbols-rounded) { transition: none; } }
-  @media (forced-colors: active) { .schema-name:not(:focus-within):not(:hover) { outline-style: none; } }
+  @media (prefers-reduced-motion: reduce) { .schema-name-field, .schema-name-icon, .default-switch, .default-switch > span, .schema-card :global(.schema-card-toggle .material-symbols-rounded) { transition: none; } }
 </style>
