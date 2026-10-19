@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "bdd8c1fcf93ffefe45064242af225dd1578209b4db4fdec6cfc6b3eeab55021d",
+  "adapterRevision": "2f64d3b656f883a54a51c0650923172a0ef72de61a1e8e2fc2e11686939903d5",
   "indexes": [
     {
       "id": "anthropic",
@@ -157,9 +157,9 @@
     {
       "id": "digitalocean",
       "sourceRevision": "4bcce59b45927194934c760b8201d34bcde63a7caea21840aaa2f6dc68c5b0fd",
-      "bytes": 359152,
-      "compressedBytes": 24920,
-      "sha256": "c0960e28cb3cf8d15f189e08e587f65947d379828c516cb8e6b63351bfa3c420",
+      "bytes": 359185,
+      "compressedBytes": 24945,
+      "sha256": "933e0e5385e8311a1ecd54513e48f62cde7b1d8743ef5258263ab8be68a4ad26",
       "summary": {
         "name": "DigitalOcean API",
         "serverUrl": "https://api.digitalocean.com",
@@ -506,15 +506,15 @@
     {
       "id": "telegram",
       "sourceRevision": "f5234e87e6880f87fbba5bd594d80d2d235bac2d9388a47b00b109bc5fe0e6cc",
-      "bytes": 42536,
-      "compressedBytes": 3862,
-      "sha256": "17189dde4eb17a58c659c812f1fcb64f489b1a7422ee939534e7045b8dff66b9",
+      "bytes": 71786,
+      "compressedBytes": 4258,
+      "sha256": "34cea72fc71b1e7ccd91c21bc876accf9da1672199aa4c30e57b62fc4b8294a1",
       "summary": {
         "name": "Telegram Bot API",
-        "serverUrl": "https://api.telegram.org/bot%3Cbot_token%3E",
+        "serverUrl": "",
         "description": "Generated from the official Telegram Bot API documentation using @gramio/schema-parser.",
         "operationCount": 180,
-        "unavailableCount": 2
+        "unavailableCount": 180
       }
     },
     {

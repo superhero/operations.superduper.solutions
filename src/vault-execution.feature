@@ -32,6 +32,9 @@ Feature: Approved credential execution
       | double slash         | "https://api.example.test//admin"       |
       | leading whitespace   | " https://api.example.test"             |
       | unresolved template  | "https://api.example.test/{version}"    |
+      | angle placeholder    | "https://api.example.test/bot<token>"   |
+      | encoded placeholder  | "https://api.example.test/bot%3ctoken%3e" |
+      | encoded template     | "https://api.example.test/%7Bversion%7D" |
 
   Scenario Outline: Development loopback and HTTPS destinations normalize <origin>
     Then credential destination "<origin>" normalizes to "<expected>"
@@ -42,6 +45,7 @@ Feature: Approved credential execution
       | http://localhost:8080/v1             | http://localhost:8080/v1        |
       | http://127.0.0.1/v1                  | http://127.0.0.1/v1             |
       | http://[::1]:8080/v1                 | http://[::1]:8080/v1            |
+      | https://api.example.test/bot123456:sample-token | https://api.example.test/bot123456:sample-token |
 
   Scenario Outline: Cleartext destinations require a loopback application for <case>
     Then application origin "<application>" <outcome> cleartext credential destination "<destination>"

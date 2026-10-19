@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { Operation } from "../catalog.ts";
 import { extractOperationSecurity } from "../operation-security.ts";
+import { serverUrlHasPlaceholder } from "../server-url.ts";
 import { VaultError, type ApprovedOperation } from "./types.ts";
 
 const encoder = new TextEncoder();
@@ -50,7 +51,7 @@ export function validateCredentialPath(path: string, template = false): void
 
 export function normalizeCredentialOrigin(origin: string): string
 {
-  if (typeof origin !== "string" || /[\\\u0000-\u0020\u007f]/.test(origin)) throw new VaultError("PERMISSION");
+  if (typeof origin !== "string" || /[\\\u0000-\u0020\u007f]/.test(origin) || serverUrlHasPlaceholder(origin)) throw new VaultError("PERMISSION");
   const parts = /^(https?):\/\/([^/?#]+)(\/[^?#]*)?$/i.exec(origin);
   if (!parts || /[%@]/.test(parts[2]!)) throw new VaultError("PERMISSION");
   validateCredentialPath(parts[3] ?? "/");

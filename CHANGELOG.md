@@ -363,6 +363,26 @@ compact count aligned to the right when metadata stacks on small screens.
 
 ```
 
+<!-- changelog-commit:f93777ab53ad370a16c2fde228eb03828da6da3d -->
+### Commit [`f93777a`](https://github.com/superhero/operations.superduper.solutions/commit/f93777ab53ad370a16c2fde228eb03828da6da3d)
+
+```text
+fix(schemas): reject unresolved server URL placeholders
+
+Telegram's placeholder bot-token default was being percent-encoded and
+accepted as a usable server. Reject raw and encoded placeholder markers
+before schema adaptation, workflow URL construction and credential approval.
+Retain source templates and ordinary encoded operation input values.
+
+Resolve ancestor servers only when needed so configured absolute overrides
+remain usable despite unconfigured parent templates. Preserve inherited
+base paths for relative overrides.
+
+Regenerate discovery indexes and include the shared URL guard in adapter
+fingerprints so saved profiles receive the corrected execution limits.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54

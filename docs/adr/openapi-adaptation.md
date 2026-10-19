@@ -170,6 +170,15 @@ Effective HTTP(S) server URLs honor document, path and operation overrides and
 server-variable defaults. Joining paths preserves the server base path and
 rejects authority changes or traversal. These checks establish application
 compatibility, not general OpenAPI conformance.
+Absolute overrides do not require unused ancestor variables to be configured;
+relative overrides resolve their parent server only when needed.
+
+Server variables must resolve to concrete values before execution. Unresolved
+angle or brace placeholders, including their percent-encoded forms, are rejected
+during schema adaptation and ordinary or credential-backed request preparation.
+The original source templates remain available for inspection. This prevents
+defaults such as `<bot_token>` from becoming apparently usable
+`/bot%3Cbot_token%3E` endpoints through URL normalization.
 
 ### Reviewed service compatibility
 

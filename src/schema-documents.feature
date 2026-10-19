@@ -42,6 +42,18 @@ Feature: Schema document import and validation
   Scenario: Server definitions require valid URL strings and usable variable defaults
     Then server definitions require valid URL strings and usable variable defaults
 
+  Scenario Outline: Server placeholders are rejected at <level> level for <case>
+    Then the <level> server <definition> is rejected as an unresolved placeholder
+
+    Examples:
+      | level     | case                    | definition                                                                                                        |
+      | document  | angle markers           | {"url":"https://api.example.test/bot<bot_token>"}                                                                  |
+      | path      | placeholder default     | {"url":"https://api.example.test/bot{botToken}","variables":{"botToken":{"default":"<bot_token>"}}}               |
+      | operation | encoded default         | {"url":"https://api.example.test/bot{botToken}","variables":{"botToken":{"default":"%3cbot_token%3e"}}}           |
+      | document  | encoded angle markers   | {"url":"https://api.example.test/bot%3Cbot_token%3E"}                                                              |
+      | operation | nested variable default | {"url":"https://api.example.test/bot{botToken}","variables":{"botToken":{"default":"{token}"}}}                   |
+      | path      | encoded brace markers   | {"url":"https://api.example.test/%7Bversion%7D"}                                                                   |
+
   Scenario: Vendor extensions and empty webhooks remain metadata while executable webhooks and Swagger are rejected
     Then vendor extensions and empty webhooks remain metadata while executable webhooks and Swagger are rejected
 
