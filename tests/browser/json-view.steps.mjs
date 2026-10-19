@@ -383,32 +383,55 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   const enabled = card.getByRole('switch');
   const heading = card.locator('.schema-heading');
   const name = heading.getByRole('textbox', { name: 'Schema name', exact: true });
+  const closedName = heading.locator('.schema-name-label');
   const move = heading.getByRole('button', { name: /^Move / });
-  const title = await name.inputValue();
+  const title = await closedName.innerText();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await expect(otherCard.getByRole('button', { name: /^Schema details:/ })).toHaveAttribute('aria-expanded', 'false');
   await expect(card.locator('.schema-metadata, .schema-disclosure')).toHaveCount(0);
+  await expect(name).toHaveCount(0);
+  await expect(heading.locator('.schema-name-icon')).toHaveCount(0);
   await expect(enabled).toHaveText('');
-  for (const control of [name, enabled, toggle, move]) await expect(control).toBeVisible();
+  for (const control of [closedName, enabled, toggle, move]) await expect(control).toBeVisible();
   const topRow = await heading.evaluate(element => {
     const field = element.querySelector('.schema-name').getBoundingClientRect();
-    const controls = element.querySelector('.schema-actions').getBoundingClientRect();
-    return { fieldWidth: field.width, gap: controls.left - field.right,
-      sameLine: Math.abs(field.top - controls.top) < 1, fits: element.scrollWidth <= element.clientWidth };
+    const toggle = element.querySelector('.schema-card-toggle').getBoundingClientRect();
+    const name = element.querySelector('.schema-name-label').getBoundingClientRect();
+    const enabled = element.querySelector('.schema-enabled');
+    const switchBounds = enabled.getBoundingClientRect();
+    const style = getComputedStyle(enabled);
+    return { fieldWidth: field.width, gap: field.left - toggle.right,
+      sameLine: Math.abs(field.top - toggle.top) < 1, fits: element.scrollWidth <= element.clientWidth,
+      connected: Math.abs(name.right - switchBounds.left) < 1 && Math.abs(switchBounds.right - field.right) < 1,
+      radii: [style.borderTopLeftRadius, style.borderTopRightRadius] };
   });
   assert.ok(topRow.sameLine && topRow.fits, 'The name and card controls share a single row at every width');
-  assert.ok(topRow.fieldWidth > 0 && Math.abs(topRow.gap - 6) < 1, 'The name fills the space before the controls');
+  assert.ok(topRow.fieldWidth > 0 && Math.abs(topRow.gap - 6) < 1, 'The arrow sits immediately left of the name');
+  assert.ok(topRow.connected, 'The enable switch joins the name without a gap');
+  assert.deepEqual(topRow.radii, ['0px', '4px'], 'The enable extension has a square join and rounded outer end');
   await enabled.hover();
   await expect(page.getByRole('tooltip')).toHaveText('Disable schema');
   await enabled.click();
   await expect(enabled).toHaveAttribute('aria-checked', 'false');
-  await name.hover();
+  await closedName.hover();
   await enabled.hover();
   await expect(page.getByRole('tooltip')).toHaveText('Enable schema');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await enabled.click();
   await expect(enabled).toHaveAttribute('aria-checked', 'true');
-  await toggle.focus();
+  await closedName.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(toggle).toBeFocused();
+  await expect(name).toBeEditable();
+  await expect(heading.locator('.schema-name-icon .material-symbols-rounded')).toHaveText('edit_line');
+  const editPlacement = await name.evaluate(input => {
+    const icon = input.nextElementSibling.getBoundingClientRect();
+    return Math.abs(input.getBoundingClientRect().right - icon.left) < 1;
+  });
+  assert.ok(editPlacement, 'The edit icon follows the input when the card is open');
+  await toggle.press('Enter');
+  await expect(name).toHaveCount(0);
+  await expect(closedName).toBeVisible();
   await toggle.press('Space');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(card.locator('.schema-metadata')).toBeVisible();
@@ -454,8 +477,13 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   await page.screenshot({ path: `${this.artifactDirectory}/schema-card-expanded-${width}.png` });
   await toggle.click();
   await expect(card.locator('.json-view, .schema-metadata')).toHaveCount(0);
+  await expect(name).toHaveCount(0);
+  await expect(heading.locator('.schema-name-icon')).toHaveCount(0);
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
-  await toggle.press('Enter');
+  await closedName.focus();
+  await closedName.press('Enter');
+  await expect(name).toBeEditable();
+  await expect(toggle).toBeFocused();
   await expect(schema).toHaveAttribute('aria-expanded', 'false');
   await expect(card.locator('.json-view')).toHaveCount(0);
   await expect(otherCard.getByRole('button', { name: /^Schema details:/ })).toHaveAttribute('aria-expanded', 'false');

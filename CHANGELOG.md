@@ -123,6 +123,21 @@ with a tooltip for its current action.
 Merge branch 'develop' into feature/schema-card-disclosure
 ```
 
+<!-- changelog-commit:5a567a83a9408fd65480ccabafa21d52f07e8263 -->
+### Commit [`5a567a8`](https://github.com/superhero/operations.superduper.solutions/commit/5a567a83a9408fd65480ccabafa21d52f07e8263)
+
+```text
+fix(schemas): join name controls and edit only expanded cards
+
+Move the disclosure arrow left of the name. Collapsed names open the
+card; editing and the right-hand edit icon appear only when expanded.
+Join the enable switch to the name with a shared hover and focus outline.
+
+Make the schema-management test helper check and open its section in one
+browser action so asynchronous Settings restoration cannot close it.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
