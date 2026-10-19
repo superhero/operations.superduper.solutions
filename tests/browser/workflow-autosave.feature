@@ -34,7 +34,7 @@ Feature: Browser workflow autosave
     Then changes from another browser tab are protected from stale autosave
 
   Scenario: Reopening the current edited workflow keeps autosave working for mapped version three plans
-    Given a workflow ready to map Get project to Create task
+    Given a workflow ready to map Example object response to Example POST body
     When I map the project identifier between those operations
     And I describe this workflow as "Preserve mapped version three autosave."
     And I name the workflow "Mapped autosave plan" and wait for autosave

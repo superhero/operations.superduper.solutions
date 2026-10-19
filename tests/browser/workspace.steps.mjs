@@ -245,7 +245,7 @@ When("I review the matching details", async function () {
 Then("the matching details show ranked operation comparisons", async function () {
   const report = this.page.getByRole("region", { name: "Evaluation report", exact: true });
   await expect(report).toBeVisible();
-  await expect(report.getByRole("list", { name: "Proposed operations", exact: true }).locator(".candidate-name").first()).toHaveText("List projects");
+  await expect(report.getByRole("list", { name: "Proposed operations", exact: true }).locator(".candidate-name").first()).toHaveText("Example array response");
   await expect(report.getByRole("list", { name: "Not proposed operations", exact: true })).toBeVisible();
 });
 When("I close the matching details", async function () {
@@ -263,7 +263,7 @@ Then("the five nearest operations are shown", async function () {
   const results = this.page.getByRole("navigation", { name: "Operation catalog", exact: true })
     .getByRole("button", { name: /^Add to workflow:/ });
   await expect(results).toHaveCount(5);
-  await expect(results.filter({ hasText: "Create task" })).toBeVisible();
+  await expect(results.filter({ hasText: "Example POST body" })).toBeVisible();
 });
 When("I choose to edit the prompt", async function () {
   await openCatalog(this.page);
@@ -399,9 +399,9 @@ When("I connect the first operation to the second", async function () {
   const sourceId = await owners.nth(0).getAttribute("data-id");
   const targetId = await owners.nth(1).getAttribute("data-id");
   const source = workflow(this.page).locator(`[data-owner-id=${JSON.stringify(sourceId)}][data-direction="outputs"]`)
-    .getByLabel("Project name output", { exact: true });
+    .getByLabel("Name output", { exact: true });
   const target = workflow(this.page).locator(`[data-owner-id=${JSON.stringify(targetId)}][data-direction="inputs"]`)
-    .getByLabel("Project name input", { exact: true });
+    .getByLabel("Name input", { exact: true });
   await expect(source).toBeVisible();
   await expect(target).toBeVisible();
   await source.click({ trial: true });
@@ -715,7 +715,7 @@ Then('the workflow remains editable beside Settings', async function () {
   await snap.click();
   await expect(snap).toHaveAttribute('aria-pressed', String(wasSnapped !== 'true'));
   const minimap = page.getByRole('group', { name: 'Workflow minimap', exact: true });
-  const owner = operationNodes(page, 'List projects').first();
+  const owner = operationNodes(page, 'Example array response').first();
   const viewport = page.locator('.svelte-flow__viewport');
   const edge = (await drawer.boundingBox()).x;
   await minimap.focus();
@@ -736,7 +736,7 @@ Then('the workflow remains editable beside Settings', async function () {
   await page.keyboard.press('Delete');
   await page.keyboard.press('Control+z');
   await expect(owner).toHaveAttribute('style', moved);
-  await expect(operationNodes(page, 'List projects')).toHaveCount(1);
+  await expect(operationNodes(page, 'Example array response')).toHaveCount(1);
   await expect(drawer).toHaveClass(/open/);
 });
 

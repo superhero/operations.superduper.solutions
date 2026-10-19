@@ -6,6 +6,20 @@ groups. An `*.openapi.json` file defines requests and responses; its matching
 [catalog-registry.ts](../lib/catalog-registry.ts), including its stable catalog ID
 and execution origin.
 
+## The two examples
+
+`demo.openapi.json` illustrates OpenAPI methods, input types and response models.
+Its URLs use [example.com, an IANA documentation domain](https://www.iana.org/help/example-domains).
+The paths and response schemas describe illustrative shapes; there is no backing
+API serving those contracts. Execution sends a real request to that placeholder
+host and can fail or return a different representation.
+
+`httpbin.openapi.json` contains sample requests to the live
+[httpbin request and response service](https://httpbin.org/), using `/anything`.
+The typed query fields and JSON/form shapes are choices made for these example
+forms, rather than requirements imposed by httpbin. Neutral values such as `foo`
+and `bar` demonstrate the request representations and their echoed responses.
+
 ## Service packs
 
 [services](services/README.md) contains the reviewed provider library as compressed
@@ -23,6 +37,8 @@ Group entries refer to qualified operation IDs such as `demo:listProjects`,
 combining the catalog ID with the OpenAPI operation ID. Keep those references
 consistent when changing documents. IDs can already be referenced by saved
 workflows, so renaming one has consequences beyond navigation labels.
+The original project/task IDs and request field names remain for compatibility;
+visible labels describe generic schema examples.
 
 ## Schema compatibility
 
@@ -42,5 +58,7 @@ for replacement and saved-workflow compatibility rules.
 
 ## Verification
 
-Use `npm run test:source` for operation-model checks and the schema browser tests
-under [tests](../../tests/README.md) for persistence and registry behavior.
+Use the focused `src/operations.feature`, `src/operation-report.feature` and
+`src/schema-documents.feature` checks for operation models and navigation.
+Selected schema browser cases under [tests](../../tests/README.md) cover
+persistence and registry behavior; full regression belongs to CI.

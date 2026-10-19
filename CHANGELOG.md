@@ -85,6 +85,22 @@ Schema delivery and canonical model independence remain unchanged.
 
 ```
 
+<!-- changelog-commit:fbc238a2f14dff9e37112fef30e17cd8e2172ca3 -->
+### Commit [`fbc238a`](https://github.com/superhero/operations.superduper.solutions/commit/fbc238a2f14dff9e37112fef30e17cd8e2172ca3)
+
+```text
+fix(examples): describe placeholder schemas and HTTP echo requests plainly
+
+Present the example.com catalog as illustrative OpenAPI shapes rather than
+an implemented projects/tasks service. Describe httpbin forms as arbitrary
+sample requests to its live echo endpoint, and use neutral sample values.
+
+Retain operation IDs, paths, request keys and validation constraints for
+existing workflows. Align existing browser assertions with the visible
+labels and document the once-only example seeding boundary.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54

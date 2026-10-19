@@ -146,11 +146,11 @@ Then("the routing controls comment and description retain their edits", async fu
 });
 
 Given("a reusable saved project workflow and an empty parent plan", async function () {
-  const field = { id: "project-id", label: "Project ID", type: "Text", required: true, description: "A reusable project identifier.", connectable: true };
+  const field = { id: "project-id", label: "Path value", type: "Text", required: true, description: "A reusable project identifier.", connectable: true };
   this.reusableFixture = {
     ...emptyDocument("reusable-project", "Reusable project lookup"), description: "Look up a project by its identifier.",
     nodes: [
-      { id: "lookup-owner", type: "operation", position: { x: 324, y: 140 }, data: { operationId: "demo:getProject", name: "Get project", description: "Inspect a project.", method: "GET", path: "/projects/{projectId}" } },
+      { id: "lookup-owner", type: "operation", position: { x: 324, y: 140 }, data: { operationId: "demo:getProject", name: "Example object response", description: "Inspect a project.", method: "GET", path: "/projects/{projectId}" } },
       { id: "lookup-input", type: "data", position: { x: 0, y: 140 }, data: { ownerId: "lookup-owner", direction: "inputs", label: "Path parameters", fields: [field] } },
       { id: "lookup-output", type: "data", position: { x: 548, y: 140 }, data: { ownerId: "lookup-owner", direction: "outputs", label: "Response · 200", fields: [field] } },
     ],
@@ -182,12 +182,12 @@ Then("the reusable workflow keeps its ports and embedded definition", async func
   await expect(title.locator('strong')).toHaveText(this.reusableFixture.name);
   await expect(title.locator('.material-symbols-rounded')).toHaveText('flowsheet');
   await expectHoverHint(title, this.reusableFixture.description);
-  await expect(referenceNode.locator('.operation-ports.inputs .port-label')).toHaveText('Get project · Path parameters');
-  await expect(referenceNode.locator('.operation-ports.outputs .port-label')).toHaveText('Get project · Response · 200');
+  await expect(referenceNode.locator('.operation-ports.inputs .port-label')).toHaveText('Example object response · Path parameters');
+  await expect(referenceNode.locator('.operation-ports.outputs .port-label')).toHaveText('Example object response · Response · 200');
   await expect(referenceNode.locator('.operation-port .port-type')).toHaveText(['Object', 'Object']);
-  const inputPort = referenceNode.getByLabel('Get project · Path parameters input', { exact: true });
-  const outputPort = referenceNode.getByLabel('Get project · Response · 200 output', { exact: true });
-  await expectHoverHint(inputPort, 'Get project · Path parameters');
+  const inputPort = referenceNode.getByLabel('Example object response · Path parameters input', { exact: true });
+  const outputPort = referenceNode.getByLabel('Example object response · Response · 200 output', { exact: true });
+  await expectHoverHint(inputPort, 'Example object response · Path parameters');
   for (const port of [inputPort, outputPort]) {
     await expect(port).toHaveAttribute('tabindex', '-1');
     await expect(port).toHaveAttribute('aria-disabled', 'true');
@@ -221,16 +221,16 @@ Then("the reusable workflow keeps its ports and embedded definition", async func
     await expect(port).toHaveAttribute('data-handleid', id);
     assert.equal(document.edges.find(edge => edge.id === id)[direction === 'inputs' ? 'targetHandle' : 'sourceHandle'], id);
   }
-  await expect(workflow(page).getByLabel("Project ID input", { exact: true })).toHaveCount(1);
-  await expect(workflow(page).getByLabel("Project ID output", { exact: true })).toHaveCount(1);
+  await expect(workflow(page).getByLabel("Path value input", { exact: true })).toHaveCount(1);
+  await expect(workflow(page).getByLabel("Path value output", { exact: true })).toHaveCount(1);
   const inputPanel = workflow(page).locator('.workflow-data-node[data-direction="inputs"]');
   await inputPanel.locator('.data-title strong').click();
   await page.getByRole('button', { name: 'Remove selected', exact: true }).click();
   await expect(inputPanel).toHaveCount(0);
   await expect(inputPort).toBeHidden();
-  const restore = referenceNode.getByRole('button', { name: 'Restore Get project · Path parameters', exact: true });
+  const restore = referenceNode.getByRole('button', { name: 'Restore Example object response · Path parameters', exact: true });
   await expect(restore).toHaveAttribute('data-side', 'left');
-  await expectHoverHint(restore, 'Restore Get project · Path parameters');
+  await expectHoverHint(restore, 'Restore Example object response · Path parameters');
   await restore.focus();
   await page.keyboard.press('Enter');
   await expect(inputPanel).toBeVisible();

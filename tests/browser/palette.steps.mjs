@@ -456,7 +456,7 @@ Then('prompt fields and badges remain readable while primary actions use the lab
     await setMode(page, 'workflow');
     await openCatalog(page);
     await expectReadable(page.getByRole('textbox', { name: 'Prompt', exact: true }), palette);
-    await searchOperations(page, 'Get project');
+    await searchOperations(page, 'Example object response');
     await expectReadable(page.getByRole('button', { name: 'Review matching details', exact: true }), palette);
     await setMode(page, 'workflow');
     const primary = page.locator('.workflow-empty').getByRole('button', { name: 'Browse operations', exact: true })

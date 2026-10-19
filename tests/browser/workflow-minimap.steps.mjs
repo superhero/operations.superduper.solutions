@@ -30,7 +30,7 @@ async function allNodesVisible(page) {
 Then("the minimap pans zooms and fits with {string} motion without editing operations", async function (motion) {
   const page = this.page;
   await page.emulateMedia({ reducedMotion: motion });
-  await operationNodes(page, "List projects").first().click();
+  await operationNodes(page, "Example array response").first().click();
   const beforeNodes = await positions(page);
   await minimap(page).focus();
   await expect(minimap(page)).toBeFocused();
@@ -46,7 +46,7 @@ Then("the minimap pans zooms and fits with {string} motion without editing opera
   await expect.poll(async () => (await camera(page)).zoom).toBeCloseTo(beforePan.zoom, 3);
   await page.keyboard.press("Delete");
   await page.keyboard.press("Backspace");
-  await expect(operationNodes(page, "List projects")).toHaveCount(2);
+  await expect(operationNodes(page, "Example array response")).toHaveCount(2);
   assert.deepEqual(await positions(page), beforeNodes, "Minimap keys must move the camera without editing node positions.");
   const beforeFit = await camera(page);
   await page.keyboard.press("Home");

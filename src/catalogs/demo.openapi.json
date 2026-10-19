@@ -2,17 +2,17 @@
   "openapi": "3.1.0",
   "info": {
     "title": "example.com",
-    "version": "1.0.0",
-    "description": "Illustrative example operations for exploring methods, request inputs and workflow mappings. Executing an operation sends a real request to https://example.com and displays its response or error. The original operation identities remain compatible with saved workflows."
+    "version": "1.0.1",
+    "description": "Illustrative OpenAPI schemas for HTTP methods, typed inputs and response models. example.com is a documentation domain; these paths have no backing API. Running an operation sends a real request to the placeholder URL, which may fail or return a different response."
   },
   "paths": {
     "/projects": {
       "get": {
         "operationId": "listProjects",
-        "summary": "List projects",
-        "description": "Find projects by name and limit the number of results.",
+        "summary": "Example array response",
+        "description": "Illustrates optional string and integer query inputs and an array response schema.",
         "tags": [
-          "Projects"
+          "Response examples"
         ],
         "parameters": [
           {
@@ -20,7 +20,7 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "title": "Project name",
+              "title": "Name",
               "maxLength": 80
             }
           },
@@ -37,15 +37,15 @@
         ],
         "responses": {
           "200": {
-            "description": "Matching projects",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "array",
                   "example": [
                     {
-                      "id": "project-1",
-                      "name": "Documentation",
+                      "id": "foo",
+                      "name": "foo",
                       "status": "active"
                     }
                   ],
@@ -67,24 +67,24 @@
       ],
       "get": {
         "operationId": "getProject",
-        "summary": "Get project",
-        "description": "Inspect a project and its current status.",
+        "summary": "Example object response",
+        "description": "Illustrates a required path input and an object response schema.",
         "tags": [
-          "Projects"
+          "Response examples"
         ],
         "responses": {
           "200": {
-            "description": "Project details",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "example": {
-                    "id": "project-1",
-                    "name": "Documentation",
+                    "id": "foo",
+                    "name": "foo",
                     "status": "active"
                   },
-                  "title": "Project",
+                  "title": "Example object",
                   "additionalProperties": false,
                   "required": [
                     "id",
@@ -94,12 +94,12 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "title": "Project ID",
-                      "description": "The fictional project identifier."
+                      "title": "Path value",
+                      "description": "An arbitrary string used in the example schema."
                     },
                     "name": {
                       "type": "string",
-                      "title": "Project name"
+                      "title": "Name"
                     },
                     "status": {
                       "type": "string",
@@ -125,10 +125,10 @@
       ],
       "post": {
         "operationId": "createTask",
-        "summary": "Create task",
-        "description": "Add a task to a project with a title, priority and optional estimate.",
+        "summary": "Example POST body",
+        "description": "Illustrates a required path input and a JSON body with string, enum and optional number fields.",
         "tags": [
-          "Tasks"
+          "Request examples"
         ],
         "requestBody": {
           "required": true,
@@ -138,23 +138,24 @@
                 "$ref": "#/components/schemas/NewTask"
               }
             }
-          }
+          },
+          "description": "Required by this example form to demonstrate the request body."
         },
         "responses": {
           "201": {
-            "description": "Task created",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "example": {
-                    "id": "task-1",
-                    "projectId": "project-1",
-                    "title": "Write documentation",
+                    "id": "bar",
+                    "projectId": "foo",
+                    "title": "baz",
                     "priority": "normal",
                     "completed": false
                   },
-                  "title": "Task",
+                  "title": "Example object",
                   "additionalProperties": false,
                   "required": [
                     "id",
@@ -165,12 +166,12 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "title": "Task ID",
-                      "description": "The fictional task identifier."
+                      "title": "Path value",
+                      "description": "An arbitrary string used in the example schema."
                     },
                     "projectId": {
                       "type": "string",
-                      "title": "Project ID"
+                      "title": "Path value"
                     },
                     "title": {
                       "type": "string",
@@ -205,7 +206,7 @@
           "required": true,
           "schema": {
             "type": "string",
-            "title": "Task ID",
+            "title": "Path value",
             "minLength": 1,
             "maxLength": 80
           }
@@ -213,10 +214,10 @@
       ],
       "patch": {
         "operationId": "updateTask",
-        "summary": "Update task",
-        "description": "Change a task's title, priority or completion status.",
+        "summary": "Example PATCH body",
+        "description": "Illustrates a JSON body with optional string, enum and Boolean fields.",
         "tags": [
-          "Tasks"
+          "Request examples"
         ],
         "requestBody": {
           "required": true,
@@ -248,22 +249,23 @@
                 }
               }
             }
-          }
+          },
+          "description": "Required by this example form to demonstrate the request body."
         },
         "responses": {
           "200": {
-            "description": "Updated task",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "example": {
-                    "id": "task-1",
-                    "title": "Write documentation",
+                    "id": "bar",
+                    "title": "baz",
                     "priority": "high",
                     "completed": true
                   },
-                  "title": "Task",
+                  "title": "Example object",
                   "additionalProperties": false,
                   "required": [
                     "id",
@@ -274,12 +276,12 @@
                   "properties": {
                     "id": {
                       "type": "string",
-                      "title": "Task ID",
-                      "description": "The fictional task identifier."
+                      "title": "Path value",
+                      "description": "An arbitrary string used in the example schema."
                     },
                     "projectId": {
                       "type": "string",
-                      "title": "Project ID"
+                      "title": "Path value"
                     },
                     "title": {
                       "type": "string",
@@ -310,13 +312,13 @@
       "get": {
         "operationId": "mockGet",
         "summary": "Example GET request",
-        "description": "Try GET by sending a request to https://example.com.",
+        "description": "Illustrates get request in an OpenAPI document.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Illustrative response schema.",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
@@ -343,13 +345,13 @@
       "post": {
         "operationId": "mockPost",
         "summary": "Example POST request",
-        "description": "Try POST by sending a request to https://example.com.",
+        "description": "Illustrates post request in an OpenAPI document.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Illustrative response schema.",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
@@ -376,13 +378,13 @@
       "put": {
         "operationId": "mockPut",
         "summary": "Example PUT request",
-        "description": "Try PUT by sending a request to https://example.com.",
+        "description": "Illustrates put request in an OpenAPI document.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Illustrative response schema.",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
@@ -409,13 +411,13 @@
       "patch": {
         "operationId": "mockPatch",
         "summary": "Example PATCH request",
-        "description": "Try PATCH by sending a request to https://example.com.",
+        "description": "Illustrates patch request in an OpenAPI document.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Illustrative response schema.",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
@@ -442,13 +444,13 @@
       "delete": {
         "operationId": "mockDelete",
         "summary": "Example DELETE request",
-        "description": "Try DELETE by sending a request to https://example.com.",
+        "description": "Illustrates delete request in an OpenAPI document.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Illustrative response schema.",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
@@ -475,13 +477,13 @@
       "head": {
         "operationId": "mockHead",
         "summary": "Example HEAD request",
-        "description": "Try HEAD by sending a request to https://example.com.",
+        "description": "Illustrates head request in an OpenAPI document.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Response headers without a response body.",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "headers": {
               "Allow": {
                 "description": "Methods accepted by this endpoint.",
@@ -498,13 +500,13 @@
       "options": {
         "operationId": "mockOptions",
         "summary": "Example OPTIONS request",
-        "description": "Try OPTIONS by sending a request to https://example.com.",
+        "description": "Illustrates options request in an OpenAPI document.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Response headers without a response body.",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "headers": {
               "Allow": {
                 "description": "Methods accepted by this endpoint.",
@@ -521,13 +523,13 @@
       "trace": {
         "operationId": "mockTrace",
         "summary": "Example TRACE request",
-        "description": "TRACE example. Browser Fetch does not allow TRACE requests.",
+        "description": "Illustrates TRACE in an OpenAPI document. Browser Fetch does not allow this method.",
         "tags": [
           "HTTP methods"
         ],
         "responses": {
           "200": {
-            "description": "Illustrative response schema.",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
@@ -554,7 +556,7 @@
       "get": {
         "operationId": "mockParameters",
         "summary": "Example query and header inputs",
-        "description": "Try string, integer, number, Boolean, enum, repeated query values and a request header at https://example.com.",
+        "description": "Illustrates a path input, typed query values, repeated query values and a header. Query and header values are serialized as text.",
         "tags": [
           "Input types"
         ],
@@ -566,7 +568,7 @@
             "schema": {
               "type": "string",
               "title": "Sample ID",
-              "example": "sample-1"
+              "example": "foo"
             }
           },
           {
@@ -575,7 +577,7 @@
             "schema": {
               "type": "string",
               "title": "Label",
-              "example": "Documentation"
+              "example": "foo"
             }
           },
           {
@@ -631,8 +633,8 @@
                 "type": "string"
               },
               "example": [
-                "docs",
-                "example"
+                "foo",
+                "bar"
               ]
             }
           },
@@ -642,13 +644,13 @@
             "schema": {
               "type": "string",
               "title": "Example header",
-              "example": "workflow-example"
+              "example": "baz"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Illustrative response schema.",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
@@ -675,31 +677,31 @@
       "post": {
         "operationId": "mockJsonObject",
         "summary": "Example JSON object",
-        "description": "Try JSON object by sending a request to https://example.com. Includes string, integer, number, Boolean, enum, nested object, array and null properties.",
+        "description": "Illustrates json object in an OpenAPI document.",
         "tags": [
           "Body formats"
         ],
         "requestBody": {
           "required": true,
-          "description": "Provide a body for this example so it can be echoed.",
+          "description": "Required by this example form to demonstrate the request body.",
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ExampleObject"
               },
               "example": {
-                "label": "Documentation",
+                "label": "foo",
                 "count": 3,
                 "ratio": 0.75,
                 "enabled": true,
                 "priority": "normal",
                 "profile": {
-                  "name": "Erik",
+                  "name": "bar",
                   "count": 2
                 },
                 "tags": [
-                  "docs",
-                  "example"
+                  "foo",
+                  "bar"
                 ],
                 "note": null
               }
@@ -708,7 +710,7 @@
         },
         "responses": {
           "200": {
-            "description": "Illustrative response schema.",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
@@ -720,23 +722,23 @@
                     "Content-Type": "application/json"
                   },
                   "json": {
-                    "label": "Documentation",
+                    "label": "foo",
                     "count": 3,
                     "ratio": 0.75,
                     "enabled": true,
                     "priority": "normal",
                     "profile": {
-                      "name": "Erik",
+                      "name": "bar",
                       "count": 2
                     },
                     "tags": [
-                      "docs",
-                      "example"
+                      "foo",
+                      "bar"
                     ],
                     "note": null
                   },
                   "form": {},
-                  "data": "{\"label\":\"Documentation\",\"count\":3,\"ratio\":0.75,\"enabled\":true,\"priority\":\"normal\",\"profile\":{\"name\":\"Erik\",\"count\":2},\"tags\":[\"docs\",\"example\"],\"note\":null}",
+                  "data": "{\"label\":\"foo\",\"count\":3,\"ratio\":0.75,\"enabled\":true,\"priority\":\"normal\",\"profile\":{\"name\":\"bar\",\"count\":2},\"tags\":[\"foo\",\"bar\"],\"note\":null}",
                   "files": {},
                   "url": "https://example.com/examples/bodies/json-object",
                   "method": "POST",
@@ -752,28 +754,28 @@
       "post": {
         "operationId": "mockJsonArray",
         "summary": "Example JSON array",
-        "description": "Try JSON array by sending a request to https://example.com.",
+        "description": "Illustrates json array in an OpenAPI document.",
         "tags": [
           "Body formats"
         ],
         "requestBody": {
           "required": true,
-          "description": "Provide a body for this example so it can be echoed.",
+          "description": "Required by this example form to demonstrate the request body.",
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ExampleArray"
               },
               "example": [
-                "docs",
-                "example"
+                "foo",
+                "bar"
               ]
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Illustrative response schema.",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
@@ -785,11 +787,11 @@
                     "Content-Type": "application/json"
                   },
                   "json": [
-                    "docs",
-                    "example"
+                    "foo",
+                    "bar"
                   ],
                   "form": {},
-                  "data": "[\"docs\",\"example\"]",
+                  "data": "[\"foo\",\"bar\"]",
                   "files": {},
                   "url": "https://example.com/examples/bodies/json-array",
                   "method": "POST",
@@ -805,25 +807,25 @@
       "post": {
         "operationId": "mockJsonScalar",
         "summary": "Example JSON scalar",
-        "description": "Try JSON scalar by sending a request to https://example.com.",
+        "description": "Illustrates json scalar in an OpenAPI document.",
         "tags": [
           "Body formats"
         ],
         "requestBody": {
           "required": true,
-          "description": "Provide a body for this example so it can be echoed.",
+          "description": "Required by this example form to demonstrate the request body.",
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ExampleScalar"
               },
-              "example": "Hello from JSON"
+              "example": "foo"
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Illustrative response schema.",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
@@ -834,9 +836,9 @@
                   "headers": {
                     "Content-Type": "application/json"
                   },
-                  "json": "Hello from JSON",
+                  "json": "foo",
                   "form": {},
-                  "data": "\"Hello from JSON\"",
+                  "data": "\"foo\"",
                   "files": {},
                   "url": "https://example.com/examples/bodies/json-scalar",
                   "method": "POST",
@@ -852,25 +854,25 @@
       "post": {
         "operationId": "mockPlainText",
         "summary": "Example plain text",
-        "description": "Try plain text by sending a request to https://example.com.",
+        "description": "Illustrates plain text in an OpenAPI document.",
         "tags": [
           "Body formats"
         ],
         "requestBody": {
           "required": true,
-          "description": "Provide a body for this example so it can be echoed.",
+          "description": "Required by this example form to demonstrate the request body.",
           "content": {
             "text/plain": {
               "schema": {
                 "$ref": "#/components/schemas/ExampleText"
               },
-              "example": "Hello from plain text"
+              "example": "foo bar baz"
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Illustrative response schema.",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
@@ -883,7 +885,7 @@
                   },
                   "json": null,
                   "form": {},
-                  "data": "Hello from plain text",
+                  "data": "foo bar baz",
                   "files": {},
                   "url": "https://example.com/examples/bodies/text",
                   "method": "POST",
@@ -899,28 +901,28 @@
       "post": {
         "operationId": "mockUrlEncoded",
         "summary": "Example URL-encoded form",
-        "description": "Try URL-encoded form by sending a request to https://example.com.",
+        "description": "Illustrates url-encoded form in an OpenAPI document.",
         "tags": [
           "Body formats"
         ],
         "requestBody": {
           "required": true,
-          "description": "Provide a body for this example so it can be echoed.",
+          "description": "Required by this example form to demonstrate the request body.",
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
                 "$ref": "#/components/schemas/ExampleForm"
               },
               "example": {
-                "name": "Erik",
-                "message": "Hello from a form"
+                "name": "bar",
+                "message": "bar"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Illustrative response schema.",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
@@ -933,8 +935,8 @@
                   },
                   "json": null,
                   "form": {
-                    "name": "Erik",
-                    "message": "Hello from a form"
+                    "name": "bar",
+                    "message": "bar"
                   },
                   "data": "",
                   "files": {},
@@ -952,28 +954,28 @@
       "post": {
         "operationId": "mockMultipart",
         "summary": "Example multipart text fields",
-        "description": "Try multipart text fields by sending a request to https://example.com. This example sends text fields; file uploads are not included.",
+        "description": "Illustrates multipart text fields in an OpenAPI document.",
         "tags": [
           "Body formats"
         ],
         "requestBody": {
           "required": true,
-          "description": "Provide a body for this example so it can be echoed.",
+          "description": "Required by this example form to demonstrate the request body.",
           "content": {
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/ExampleForm"
               },
               "example": {
-                "name": "Erik",
-                "message": "Hello from a form"
+                "name": "bar",
+                "message": "bar"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Illustrative response schema.",
+            "description": "Illustrative response schema; the placeholder host does not implement this endpoint.",
             "content": {
               "application/json": {
                 "schema": {
@@ -986,8 +988,8 @@
                   },
                   "json": null,
                   "form": {
-                    "name": "Erik",
-                    "message": "Hello from a form"
+                    "name": "bar",
+                    "message": "bar"
                   },
                   "data": "",
                   "files": {},
@@ -1010,8 +1012,8 @@
         "required": true,
         "schema": {
           "type": "string",
-          "title": "Project ID",
-          "description": "The identifier of the project to work with.",
+          "title": "Path value",
+          "description": "An arbitrary string used in the example schema.",
           "minLength": 1,
           "maxLength": 80
         }
@@ -1043,15 +1045,16 @@
           },
           "estimate": {
             "type": "number",
-            "title": "Estimated hours",
+            "title": "Number value",
             "minimum": 0,
             "maximum": 1000
           }
-        }
+        },
+        "title": "Example request object"
       },
       "Project": {
         "type": "object",
-        "title": "Project",
+        "title": "Example object",
         "additionalProperties": false,
         "required": [
           "id",
@@ -1061,12 +1064,12 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Project ID",
-            "description": "The fictional project identifier."
+            "title": "Path value",
+            "description": "An arbitrary string used in the example schema."
           },
           "name": {
             "type": "string",
-            "title": "Project name"
+            "title": "Name"
           },
           "status": {
             "type": "string",
@@ -1080,7 +1083,7 @@
       },
       "Task": {
         "type": "object",
-        "title": "Task",
+        "title": "Example object",
         "additionalProperties": false,
         "required": [
           "id",
@@ -1091,12 +1094,12 @@
         "properties": {
           "id": {
             "type": "string",
-            "title": "Task ID",
-            "description": "The fictional task identifier."
+            "title": "Path value",
+            "description": "An arbitrary string used in the example schema."
           },
           "projectId": {
             "type": "string",
-            "title": "Project ID"
+            "title": "Path value"
           },
           "title": {
             "type": "string",
@@ -1125,7 +1128,7 @@
           "label": {
             "type": "string",
             "title": "Label",
-            "example": "Documentation"
+            "example": "foo"
           },
           "count": {
             "type": "integer",
@@ -1167,7 +1170,7 @@
               }
             },
             "example": {
-              "name": "Erik",
+              "name": "bar",
               "count": 2
             }
           },
@@ -1178,8 +1181,8 @@
               "type": "string"
             },
             "example": [
-              "docs",
-              "example"
+              "foo",
+              "bar"
             ]
           },
           "note": {
@@ -1189,18 +1192,18 @@
           }
         },
         "example": {
-          "label": "Documentation",
+          "label": "foo",
           "count": 3,
           "ratio": 0.75,
           "enabled": true,
           "priority": "normal",
           "profile": {
-            "name": "Erik",
+            "name": "bar",
             "count": 2
           },
           "tags": [
-            "docs",
-            "example"
+            "foo",
+            "bar"
           ],
           "note": null
         }
@@ -1212,19 +1215,19 @@
           "type": "string"
         },
         "example": [
-          "docs",
-          "example"
+          "foo",
+          "bar"
         ]
       },
       "ExampleScalar": {
         "type": "string",
         "title": "Example scalar",
-        "example": "Hello from JSON"
+        "example": "foo"
       },
       "ExampleText": {
         "type": "string",
         "title": "Text body",
-        "example": "Hello from plain text"
+        "example": "foo bar baz"
       },
       "ExampleForm": {
         "type": "object",
@@ -1234,22 +1237,22 @@
           "name": {
             "type": "string",
             "title": "Name",
-            "example": "Erik"
+            "example": "bar"
           },
           "message": {
             "type": "string",
             "title": "Message",
-            "example": "Hello from a form"
+            "example": "bar"
           }
         },
         "example": {
-          "name": "Erik",
-          "message": "Hello from a form"
+          "name": "bar",
+          "message": "bar"
         }
       },
       "Echo": {
         "type": "object",
-        "title": "Echoed request",
+        "title": "Example response object",
         "properties": {
           "args": {
             "type": "object",
@@ -1259,7 +1262,7 @@
           "headers": {
             "type": "object",
             "title": "Request headers",
-            "description": "Headers observed by the service."
+            "description": "Example headers in the response model."
           },
           "json": {
             "type": "null",
@@ -1290,11 +1293,12 @@
             "type": "string",
             "title": "Origin address"
           }
-        }
+        },
+        "description": "Illustrative request-data response shape; the placeholder host does not implement it."
       },
       "EchoJsonObject": {
         "type": "object",
-        "title": "Echoed request",
+        "title": "Example response object",
         "properties": {
           "args": {
             "type": "object",
@@ -1304,7 +1308,7 @@
           "headers": {
             "type": "object",
             "title": "Request headers",
-            "description": "Headers observed by the service."
+            "description": "Example headers in the response model."
           },
           "json": {
             "$ref": "#/components/schemas/ExampleObject"
@@ -1333,11 +1337,12 @@
             "type": "string",
             "title": "Origin address"
           }
-        }
+        },
+        "description": "Illustrative request-data response shape; the placeholder host does not implement it."
       },
       "EchoJsonArray": {
         "type": "object",
-        "title": "Echoed request",
+        "title": "Example response object",
         "properties": {
           "args": {
             "type": "object",
@@ -1347,7 +1352,7 @@
           "headers": {
             "type": "object",
             "title": "Request headers",
-            "description": "Headers observed by the service."
+            "description": "Example headers in the response model."
           },
           "json": {
             "$ref": "#/components/schemas/ExampleArray"
@@ -1376,11 +1381,12 @@
             "type": "string",
             "title": "Origin address"
           }
-        }
+        },
+        "description": "Illustrative request-data response shape; the placeholder host does not implement it."
       },
       "EchoJsonScalar": {
         "type": "object",
-        "title": "Echoed request",
+        "title": "Example response object",
         "properties": {
           "args": {
             "type": "object",
@@ -1390,7 +1396,7 @@
           "headers": {
             "type": "object",
             "title": "Request headers",
-            "description": "Headers observed by the service."
+            "description": "Example headers in the response model."
           },
           "json": {
             "$ref": "#/components/schemas/ExampleScalar"
@@ -1419,11 +1425,12 @@
             "type": "string",
             "title": "Origin address"
           }
-        }
+        },
+        "description": "Illustrative request-data response shape; the placeholder host does not implement it."
       },
       "EchoUrlEncoded": {
         "type": "object",
-        "title": "Echoed request",
+        "title": "Example response object",
         "properties": {
           "args": {
             "type": "object",
@@ -1433,7 +1440,7 @@
           "headers": {
             "type": "object",
             "title": "Request headers",
-            "description": "Headers observed by the service."
+            "description": "Example headers in the response model."
           },
           "json": {
             "type": "null",
@@ -1463,11 +1470,12 @@
             "type": "string",
             "title": "Origin address"
           }
-        }
+        },
+        "description": "Illustrative request-data response shape; the placeholder host does not implement it."
       },
       "EchoMultipart": {
         "type": "object",
-        "title": "Echoed request",
+        "title": "Example response object",
         "properties": {
           "args": {
             "type": "object",
@@ -1477,7 +1485,7 @@
           "headers": {
             "type": "object",
             "title": "Request headers",
-            "description": "Headers observed by the service."
+            "description": "Example headers in the response model."
           },
           "json": {
             "type": "null",
@@ -1507,14 +1515,15 @@
             "type": "string",
             "title": "Origin address"
           }
-        }
+        },
+        "description": "Illustrative request-data response shape; the placeholder host does not implement it."
       }
     }
   },
   "servers": [
     {
       "url": "https://example.com",
-      "description": "Requests are sent to https://example.com."
+      "description": "Documentation placeholder; the illustrated API is not hosted here."
     }
   ]
 }

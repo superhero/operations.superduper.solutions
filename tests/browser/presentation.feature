@@ -14,26 +14,26 @@ Feature: Discovery and workflow run presentation
       | 1280  |
 
   Scenario: Matching menu rows add operations with pointer and keyboard
-    When I search for the operation "Get project"
+    When I search for the operation "Example object response"
     Then matching menu rows add operations with pointer and keyboard
 
   Scenario: Matching menu actions retain their idle colors across evaluations
     Then matching menu actions retain their theme colors across evaluations
 
   Scenario: Prompt navigation adapts without changing the composed workflow
-    Given I add "Get project" through the workflow catalog
+    Given I add "Example object response" through the workflow catalog
     Then responsive prompt navigation preserves the workflow and its prompt
 
   Scenario: Returning to discovery leaves the workflow unchanged and new runs start fresh
-    When I search for the operation "Get project"
-    And I open the "Get project" result
+    When I search for the operation "Example object response"
+    And I open the "Example object response" result
     Then returning to discovery preserves the graph and a new run starts without stale results
 
   Scenario Outline: New runs clear earlier responses with either motion preference
-    Given I open the "Get project" operation from the catalog
+    Given I open the "Example object response" operation from the catalog
     When I enter these operation inputs:
       | label      | value        |
-      | Project ID | project-1    |
+      | Path value | project-1    |
     And I prepare the request
     Then actual responses reset with "<motion>" motion when the request changes
 

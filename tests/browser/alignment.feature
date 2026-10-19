@@ -10,19 +10,19 @@ Feature: Frontend alignment interactions
     Then prompt keyboard controls preserve editing and search deliberately
 
   Scenario: Unicode validation identifies the field without losing valid decimal input
-    Given I open the "Create task" operation from the catalog
+    Given I open the "Example POST body" operation from the catalog
     Then Unicode titles and decimal estimates can be corrected inline
 
   Scenario: Mobile navigation isolates the selected graph
-    Given a workflow with 2 instances of "List projects"
+    Given a workflow with 2 instances of "Example array response"
     Then mobile navigation protects graph shortcuts and returns useful focus
 
   Scenario: Unsaved changes and removal failures stay inside their dialogs
-    Given a workflow with 2 instances of "List projects"
+    Given a workflow with 2 instances of "Example array response"
     Then document dialogs allow cancellation and storage-error recovery
 
   Scenario: A superseded asynchronous import cannot replace a new document
-    Given a workflow with 2 instances of "List projects"
+    Given a workflow with 2 instances of "Example array response"
     When I name the workflow "Existing plan" and wait for autosave
     Then a delayed import cannot supersede New
 
@@ -30,11 +30,11 @@ Feature: Frontend alignment interactions
     Then ambient and navigation movement honor live reduced motion
 
   Scenario: Repeated nodes and responsive layout retain usable focus
-    Given a workflow with 2 instances of "List projects"
+    Given a workflow with 2 instances of "Example array response"
     Then repeated nodes and short viewports remain usable
 
   Scenario: Dashed connections respond to live motion preferences
-    Given a workflow with 2 instances of "List projects"
+    Given a workflow with 2 instances of "Example array response"
     When I connect the first operation to the second
     And I enable grid snapping and curved dashed connections
     Then connection movement responds without changing the saved plan

@@ -4,8 +4,8 @@
 
 Feature: Explore operations from a local OpenAPI catalog
 
-  Scenario: The demo has generic project and task operations
-    Then the demo exposes four operations grouped as Projects and Tasks
+  Scenario: The demo illustrates response schemas and request bodies
+    Then the demo retains four legacy operation IDs with generic request and response groups
     And preparing a demo task creates an encoded request preview without making a request
 
   Scenario: Shared parameters and local schema references retain their meaning
@@ -97,7 +97,7 @@ Feature: Explore operations from a local OpenAPI catalog
 
     Examples:
       | problem                  | reason                     |
-      | a missing required path  | Project ID: this field     |
+      | a missing required path  | Path value: this field     |
       | a missing required body  | Title: this field          |
       | a blank required value   | Title: this field          |
       | a fractional integer     | Result limit: enter        |
