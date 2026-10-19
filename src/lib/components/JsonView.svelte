@@ -69,6 +69,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   onDestroy(() => navigation++);
 
+  function toggle(path: string, item: JsonValue, next: boolean) {
+    navigation++;
+    expanded[path] = next;
+    if (next && Array.isArray(item)) {
+      const firstObject = item.findIndex(child => child !== null && typeof child === "object" && !Array.isArray(child));
+      if (firstObject !== -1) expanded[childPath(true, path, String(firstObject))] = true;
+    }
+  }
+
   function reference(value: string): Reference | undefined {
     if (!value.startsWith("#")) return;
     let pointer: string;
@@ -136,7 +145,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {@const open = expanded[path] ?? (expandedDefaults?.has(path) ?? true)}
       <Disclosure class="json-branch" {open} lazy={expandedPaths !== undefined || pageSize !== undefined} groupLabel={`${label}: ${path}`}
         label={`${path}: ${entries.length} ${array ? "items" : "properties"}`} tooltipEnabled={false}
-        onToggle={(next) => { navigation++; expanded[path] = next; }}>
+        onToggle={(next) => toggle(path, item, next)}>
         {#snippet summary()}
           <span class="json-toggle" aria-hidden="true"><MaterialIcon name="chevron_forward" size={16} /></span><span class="json-bracket" use:registerTarget={path}>{array ? "[" : "{"}</span>{#if !open}<span class="json-folded">{" … "}</span><span class="json-bracket">{array ? "]" : "}"}</span><span class="json-punctuation">{comma ? "," : ""}</span>{/if}
         {/snippet}

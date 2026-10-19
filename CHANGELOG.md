@@ -383,6 +383,18 @@ fingerprints so saved profiles receive the corrected execution limits.
 
 ```
 
+<!-- changelog-commit:0ad5eb70f382f08e60d1adcc7b9c46997ab2c639 -->
+### Commit [`0ad5eb7`](https://github.com/superhero/operations.superduper.solutions/commit/0ad5eb70f382f08e60d1adcc7b9c46997ab2c639)
+
+```text
+fix(json): expand the first object when opening an array
+
+Opening or reopening an array also unfolds its first object, skipping null,
+primitive and nested-array entries. Preserve other object and nested-field
+folding choices, keyboard focus and the existing pagination budget.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54

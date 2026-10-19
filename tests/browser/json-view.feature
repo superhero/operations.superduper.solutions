@@ -13,7 +13,7 @@ Feature: Read-only operation JSON
       | 1280  |
       | 320   |
 
-  Scenario: Reference navigation reaches paginated targets and handles JSON pointer boundaries
+  Scenario: Reference navigation and first-object expansion preserve pagination and pointer boundaries
     Then local JSON references reach paginated targets and preserve literal unresolved references
 
   Scenario: Native keyboard folding preserves operation inputs
