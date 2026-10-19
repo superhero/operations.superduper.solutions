@@ -215,6 +215,14 @@ Release clipping after a schema card finishes opening so the enlarged header rem
 
 ```
 
+<!-- changelog-commit:9d886423bbb1369ec003f060e7b8e09a7bd1ef41 -->
+### Commit [`9d88642`](https://github.com/superhero/operations.superduper.solutions/commit/9d886423bbb1369ec003f060e7b8e09a7bd1ef41)
+
+```text
+fix(schemas): move compatibility count into operations tooltip
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54
