@@ -34,12 +34,27 @@ a workflow loads its canonical operation models and their local-reference closur
 Current source identity and enablement are checked before publishing a model.
 Credential policy is derived from authoritative content, never a discovery index.
 
+Workflow restoration groups missing models by schema and source identity, with
+at most 16 operations per request. Overlapping loads share pending models.
+The worker shares source materialization, descriptor lookup and one policy
+transaction per batch; every operation retains its own canonical adaptation,
+reference closure and fingerprint. A failed batch publishes no new policies.
+Disabled or changed sources reject obsolete requests, and the page checks source
+identity again before installing returned models.
+
 Metadata changes publish only changed catalogs and active IDs. Reordering alone
 does not rebuild matching inputs or revoke unchanged credential policy. Decoded
 sources use a bounded cache; models used by the current workflow or run remain
 pinned. Size accounting limits retention, not exact JavaScript heap consumption.
 Active workflows may require more models than the cache budget permits to retain
 when idle.
+
+Search normalization reuses unchanged schema descriptors. The navigation shares
+one tooltip controller for its rows and uses browser-managed offscreen rendering
+through `content-visibility: auto`. Real buttons remain in the DOM to preserve
+hierarchy, accessible names, native Tab order and focus-driven scrolling. This
+limits rendering work rather than the number of DOM rows; unsupported CSS falls
+back to ordinary rendering.
 
 ## Schema library
 

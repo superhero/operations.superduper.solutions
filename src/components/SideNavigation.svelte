@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { onMount, tick, untrack } from "svelte";
+  import { flushSync, onMount, tick, untrack } from "svelte";
+  import { Tooltip } from "bits-ui";
   import { flip } from "svelte/animate";
-  import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import Disclosure from "$lib/components/Disclosure.svelte";
   import * as Sheet from "$lib/components/ui/sheet/index.js";
@@ -28,12 +28,15 @@
   $effect(() => { if (!evaluationDetails) matchingOpen = false; });
   let matchingPending = $state(false);
   let matchingError = $state("");
-  let evaluation = $state<{ prompt: string; candidates: OperationMatch[]; results: OperationMatch[]; durationMs: number } | null>(null);
+  let evaluation = $state<{ prompt: string; candidates: OperationMatch[]; results: OperationMatch[]; considered: number; durationMs: number } | null>(null);
   let searchExpansion = $state<Record<string, boolean>>({});
   let retryMatching = $state(0);
   let matchingController: AbortController | undefined;
   let matchingTimer: ReturnType<typeof setTimeout> | undefined;
   let matchingRevision = 0;
+  const tooltip = Tooltip.createTether<{ label: string; side: "top" | "right" }>();
+  let tooltipOpen = $state(false);
+  $effect(() => { if (!open || documentModal) tooltip.close(); });
   const matchingIds = $derived(prompt.trim() ? new Set(evaluation?.results.map(result => result.operation.id) ?? []) : null);
   let destination: (() => void) | null = null;
   let restoreNavigationFocus = false;
@@ -99,6 +102,7 @@
     const query = prompt;
     const snapshot = operations;
     const isComposing = composing;
+    const details = evaluationDetails;
     void retryMatching;
     cancelMatching();
     evaluation = null;
@@ -111,7 +115,7 @@
     const revision = matchingRevision;
     matchingTimer = setTimeout(() => {
       matchingTimer = undefined;
-      void evaluateOperationsAsync(query, snapshot, controller.signal).then(result => {
+      void evaluateOperationsAsync(query, snapshot, controller.signal, details).then(result => {
         if (controller.signal.aborted || revision !== matchingRevision) return;
         evaluation = { prompt: query, ...result };
         matchingPending = false;
@@ -153,6 +157,10 @@
     return () => { cancelled = true; };
   });
   onMount(() => {
+    const dismiss = () => tooltip.close();
+    const navigate = (event: KeyboardEvent) => { if (event.key === "Tab" && tooltipOpen) flushSync(dismiss); };
+    window.addEventListener("scroll", dismiss, true);
+    window.addEventListener("keydown", navigate, true);
     const media = matchMedia("(max-width: 899px)");
     const update = () => {
       const hadFocus = navigation?.contains(document.activeElement) || Boolean(document.activeElement?.closest('[data-slot="sheet-content"]'));
@@ -165,7 +173,11 @@
       });
     };
     update(); media.addEventListener("change", update);
-    return () => { media.removeEventListener("change", update); };
+    return () => {
+      media.removeEventListener("change", update);
+      window.removeEventListener("scroll", dismiss, true);
+      window.removeEventListener("keydown", navigate, true);
+    };
   });
   function focusMenu() {
     document.querySelector<HTMLElement>('[aria-controls="side-navigation"]')?.focus({ preventScroll: true });
@@ -198,12 +210,12 @@
 
 {#snippet operationLabel(operation: Operation)}
   <span class="catalog-name">{operation.name}</span>
-  <HintButton label="Add to workflow" labelAsName={false} tooltipSide="right">
+  <Tooltip.Trigger tether={tooltip} payload={{ label: "Add to workflow", side: "right" }}>
     {#snippet child({ props })}
       {@const { type: _type, tabindex: _tabindex, ...iconProps } = props}
       <span {...iconProps} class="catalog-action-icon"><MaterialIcon name="add_box" size={24} /></span>
     {/snippet}
-  </HintButton>
+  </Tooltip.Trigger>
 {/snippet}
 
 {#snippet branch(group: CatalogGroup, depth: number, parentOpen: boolean, parents: string[] = [])}
@@ -225,10 +237,10 @@
             {#each entries as operation (operation.id)}
               <li data-operation-id={operation.id} data-operation-name={operation.name}>
                 {#if operation.unavailableReason}
-                  <HintButton class="catalog-operation-action" label={operation.unavailableReason} labelAsName={false}
+                  <Tooltip.Trigger tether={tooltip} payload={{ label: operation.unavailableReason, side: "top" }} class="catalog-operation-action"
                     aria-disabled="true" aria-label={`Add to workflow: ${operation.name}`}>
                     {@render operationLabel(operation)}
-                  </HintButton>
+                  </Tooltip.Trigger>
                 {:else}
                   <button class="catalog-operation-action" type="button" aria-disabled="false" aria-label={`Add to workflow: ${operation.name}`}
                     onclick={() => { togglePath(depth + 1, operation.id, true); select(operation); }}>
@@ -270,12 +282,12 @@
             <button class="catalog-operation-action" type="button" aria-label={`Add to workflow: ${workflow.name}`}
               onclick={() => navigate(() => onWorkflowSelect(workflow))}>
               <span class="catalog-name">{workflow.name}</span>
-              <HintButton label="Add to workflow" labelAsName={false} tooltipSide="right">
+              <Tooltip.Trigger tether={tooltip} payload={{ label: "Add to workflow", side: "right" }}>
                 {#snippet child({ props })}
                   {@const { type: _type, tabindex: _tabindex, ...iconProps } = props}
                   <span {...iconProps} class="catalog-action-icon"><MaterialIcon name="add_box" size={24} /></span>
                 {/snippet}
-              </HintButton>
+              </Tooltip.Trigger>
             </button>
           </li>
         {/each}
@@ -283,6 +295,14 @@
     </Disclosure>
   </nav>
 {/snippet}
+
+<Tooltip.Root tether={tooltip} bind:open={tooltipOpen}>
+  {#snippet children({ payload })}
+    <Tooltip.Portal><Tooltip.Content role="tooltip" aria-hidden={!tooltipOpen} class="app-tooltip" side={payload?.side ?? "right"} sideOffset={8} collisionPadding={8}>
+      {payload?.label}<Tooltip.Arrow class="tooltip-arrow" />
+    </Tooltip.Content></Tooltip.Portal>
+  {/snippet}
+</Tooltip.Root>
 
 {#if mobile}
   {#if !documentModal}
@@ -327,6 +347,11 @@
       transform 180ms ease-in, opacity 180ms ease-in, outline-color 180ms ease-in;
   }
   .catalog-name { display: inline-block; }
+  /* Keep native focus order and accessibility while skipping offscreen contents. */
+  .operation-catalog :global(.catalog-operation-action) {
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto var(--navigation-control-size);
+  }
   .operation-catalog :global(summary > .material-symbols-rounded),
   .operation-catalog :global(.catalog-open-operation .material-symbols-rounded) {
     transition: transform 180ms ease-in, color 180ms ease-in;
@@ -334,7 +359,7 @@
 
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
     .operation-catalog :global(summary:not([inert] *)),
-    .operation-catalog :global(.catalog-operation-action:not([inert] *)),
+    .operation-catalog :global(.catalog-operation-action:hover:not([inert] *)),
     .operation-catalog :global(.catalog-open-operation:not(:disabled):not([inert] *)) { will-change: transform; }
     .operation-catalog :global(summary:hover), .operation-catalog :global(.catalog-operation-action:hover) { transform: scale(min(1.10, var(--hover-scale, 1.10))); }
     .operation-catalog :global(.catalog-operation-detail:hover .catalog-open-operation) { transform: scale(min(1.16, var(--hover-scale, 1.16))); }

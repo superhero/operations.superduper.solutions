@@ -15,6 +15,7 @@ import type { SchemaCredentialPolicies } from "./secrets/schema-policy-storage.t
 import type { Operation, OperationModel } from "./catalog.ts";
 import { scopeOperationSchema } from "./operation-report.ts";
 import { createSchemaCache } from "./schema-cache.ts";
+import { schemaModelBatchSize } from "./schema-models.ts";
 import { createSchemaDiscovery, validateSchemaDiscovery, schemaIndexVersion, type SchemaDiscovery, type SchemaSummary } from "./schema-index.ts";
 
 if (!("Buffer" in globalThis)) Object.defineProperty(globalThis, "Buffer", { value: Buffer, configurable: true, writable: true });
@@ -307,35 +308,49 @@ export function releaseSchemaDocument(id: string): void { documents.invalidate(`
 /** Only this worker-owned path can publish policy for a freshly hydrated model. */
 export function readSchemaOperation(operationId: string, expectedIdentity: string): Promise<OperationModel> {
   const id = operationId.slice(0, operationId.indexOf(":"));
+  return readSchemaOperations(id, expectedIdentity, [operationId]).then(models => models[0]!);
+}
+
+/** Bound temporary models and publish policies once, only after the whole batch succeeds. */
+export function readSchemaOperations(id: string, expectedIdentity: string, operationIds: string[]): Promise<OperationModel[]> {
   validateSchemaDocumentId(id);
+  const ids = [...new Set(operationIds)];
+  if (!ids.length || ids.length > schemaModelBatchSize || ids.some(operationId => !operationId.startsWith(`${id}:`)))
+    throw new Error("An operation batch must contain 1 to 16 operations from the same schema.");
   return serialized(async database => {
     const metadata = await readMetadata(database, id);
     if (!metadata?.enabled || schemaMetadataIdentity(metadata) !== expectedIdentity)
       throw new Error("The schema changed while its operation was loading. Try again.");
     const record = await materializedRecord(database, metadata);
-    const descriptor = (await discovery(database, metadata)).operations.find(operation => operation.id === operationId);
-    if (!descriptor) throw new Error("This operation is not available in the registered schemas.");
-    const operation = defaults?.catalogs.some(catalog => catalog.id === id) && defaults.inspectOperation
-      ? defaults.inspectOperation(record.document, id, descriptor)
-      : validateLibraryDocument(record.document, id).operations.find(operation => operation.id === operationId);
-    if (!operation) throw new Error("This operation is not available in the registered schemas.");
-    if (operation.unavailableReason) throw new Error(operation.unavailableReason);
-    const origin = operationServerUrl(record.document, operation);
-    const { schema } = scopeOperationSchema(record.document, operation.path, operation.method, true);
+    const descriptors = new Map((await discovery(database, metadata)).operations.map(operation => [operation.id, operation]));
+    const inspect = defaults?.catalogs.some(catalog => catalog.id === id) && defaults.inspectOperation;
+    const canonical = inspect ? undefined : new Map(validateLibraryDocument(record.document, id).operations.map(operation => [operation.id, operation]));
+    const models: OperationModel[] = [];
+    const approved = new Set<string>();
+    for (const operationId of ids) {
+      const descriptor = descriptors.get(operationId);
+      if (!descriptor) throw new Error("This operation is not available in the registered schemas.");
+      const operation = inspect ? inspect(record.document, id, descriptor) : canonical!.get(operationId);
+      if (!operation) throw new Error("This operation is not available in the registered schemas.");
+      if (operation.unavailableReason) throw new Error(operation.unavailableReason);
+      const origin = operationServerUrl(record.document, operation);
+      const { schema } = scopeOperationSchema(record.document, operation.path, operation.method, true);
+      try { approved.add((await approvedOperation(operation, origin)).fingerprint); }
+      catch (error) { if (!(error instanceof VaultError) || error.code !== "PERMISSION") throw error; }
+      models.push({ operation, document: schema, origin, sourceIdentity: expectedIdentity,
+        bytes: new TextEncoder().encode(JSON.stringify([operation, schema])).byteLength });
+    }
     const revision = metadata.factoryDigest ?? metadata.revision!;
-    let fingerprint: string | undefined;
-    try { fingerprint = (await approvedOperation(operation, origin)).fingerprint; }
-    catch (error) { if (!(error instanceof VaultError) || error.code !== "PERMISSION") throw error; }
-    if (fingerprint) await transaction(database, ["policies"], "readwrite", async active => {
+    if (approved.size) await transaction(database, ["policies"], "readwrite", async active => {
       const previous = await active.objectStore("policies").get(id);
       const fingerprints = previous?.version === 2 && previous.revision === revision
         && previous.adapterRevision === metadata.adapterRevision && Array.isArray(previous.fingerprints)
         ? previous.fingerprints : [];
-      if (!fingerprints.includes(fingerprint!)) await active.objectStore("policies").put({ revision, version: 2,
-        ...(metadata.adapterRevision ? { adapterRevision: metadata.adapterRevision } : {}), fingerprints: [...fingerprints, fingerprint!] }, id);
+      const merged = [...new Set([...fingerprints, ...approved])];
+      if (merged.length !== fingerprints.length) await active.objectStore("policies").put({ revision, version: 2,
+        ...(metadata.adapterRevision ? { adapterRevision: metadata.adapterRevision } : {}), fingerprints: merged }, id);
     });
-    return { operation, document: schema, origin, sourceIdentity: expectedIdentity,
-      bytes: new TextEncoder().encode(JSON.stringify([operation, schema])).byteLength };
+    return models;
   });
 }
 

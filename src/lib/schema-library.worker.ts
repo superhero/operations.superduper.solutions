@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import "./worker-runtime.ts";
 import { createSchemaDocumentId, parseSchemaDocument, schemaDocumentMaxBytes, validateSchemaDocument } from "./schema-documents.ts";
-import { listSchemaMetadata, readSchemaDiscovery, readSchemaDocument, readSchemaOperation, releaseSchemaDocument,
+import { listSchemaMetadata, readSchemaDiscovery, readSchemaDocument, readSchemaOperations, releaseSchemaDocument,
   schemaMetadataIdentity, putSchemaDocument, renameSchemaDocument, moveSchemaDocument,
   deleteSchemaDocument, setSchemaDocumentEnabled, configureSchemaDefaults } from "./schema-storage.ts";
 import { serviceSchemaDescriptors, readServiceSchema } from "./service-schema-packs.ts";
@@ -65,7 +65,7 @@ async function readUpload(file: File, id: string): Promise<Record<string, unknow
 serveWorkerRpc({
   prepareStorage: prepareStorageNamespaces,
   load: () => snapshot(true),
-  model: readSchemaOperation,
+  models: readSchemaOperations,
   document: async (id: string, identity: string) => {
     try { return (await readSchemaDocument(id, identity)).document; }
     finally { releaseSchemaDocument(id); }

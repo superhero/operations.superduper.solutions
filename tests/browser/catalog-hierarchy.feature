@@ -13,3 +13,6 @@ Feature: Nested operation catalog
       | width |
       | 390   |
       | 1280  |
+
+  Scenario: Restoring a workflow loads canonical models in schema batches
+    Then a multi-schema workflow restores through bounded model requests

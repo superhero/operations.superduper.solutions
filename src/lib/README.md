@@ -11,7 +11,7 @@ unrelated behavior to `utils.ts`.
 | Module group | Owns |
 | --- | --- |
 | `catalog*`, `schema-documents`, `schema-library*`, `schema-storage` | OpenAPI compatibility, active operations, schema management and persistence |
-| `matching`, `operation-matching*` | Local operation ranking and cancellable background evaluation for the catalog prompt |
+| `matching`, `matching-index`, `operation-matching*` | Exact ranking, per-schema normalized indexes and cancellable background evaluation |
 | `workflow-document`, `workflow-graph`, `workflow-layout`, connection helpers | Persisted graph validation, operation schema projection and inferred file-output structures |
 | [`flow-routing`](flow-routing/README.md), `workflow-routing*` | Measured orthogonal edge geometry, synchronized dashes and its dedicated worker adapter |
 | `workflow-file*` | Bounded JSON/CSV uploads, dialect options, typed file data and disposable parsing workers |
@@ -45,7 +45,7 @@ for history semantics and content-versus-editor-state boundaries.
 | `schema-cache` | Coalesced reads and a source-byte budget for decoded content |
 | `schema-storage` | Targeted persistence, recovery, independent history and canonical policies |
 | `schema-library*` | Worker deltas, on-demand models and source reads |
-| `schema-models`, `catalog*` | Nested workflow dependencies, model pins and current operation lookup |
+| `schema-models`, `catalog*` | Nested dependencies, coalesced model batches, model pins and current operation lookup |
 
 Startup reads metadata and enabled indexes. A selected operation loads its full
 model and local-reference closure; a settings inspector loads one document and
@@ -74,9 +74,11 @@ use inline bundling; keep heavy parsing, repository work and aggregation there.
 Window-only measurements cross an asynchronous bridge. Preserve native error
 causes and worker cleanup when changing [worker boundaries](../../docs/adr/dedicated-workers.md).
 
-Operation matching sends prepared name variants and identifiers to its disposable
-worker. Each new prompt aborts the previous calculation, including its worker;
-completed scores are paired with the original operations on the page.
+Operation matching reuses completed workers and installs only changed schema
+indexes. Each new prompt aborts the executing previous calculation, including its
+worker. Queries otherwise send only text and a revision token. Matched scores
+are paired with original operations; full scores are requested only for reports.
+Call the evaluator's `dispose()` when its owner ends (including HMR).
 
 ## Operation registry
 
@@ -88,7 +90,8 @@ operations. See [OpenAPI adaptation](../../docs/adr/openapi-adaptation.md).
 `operationDescriptorForId` supports discovery. `operationForId` returns only a
 canonical executable model; call `hydrateOperation` through the schema library
 before adding or executing a deferred operation. Retain workflow leases while
-their models are in use.
+their models are in use. Workflow leases use `hydrateOperations` to group missing
+models by schema in batches of at most 16, sharing overlapping pending requests.
 
 ## Verification
 

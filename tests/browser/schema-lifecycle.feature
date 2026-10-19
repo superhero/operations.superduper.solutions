@@ -20,3 +20,6 @@ Feature: Targeted schema storage and independent history
 
   Scenario: Interrupted factory history commits recover without duplicate revisions
     Then unfinished factory history writes recover before canonical models become usable
+
+  Scenario: Batched canonical models share storage without weakening validation
+    Then schema operation batches preserve canonical models and publish policies atomically

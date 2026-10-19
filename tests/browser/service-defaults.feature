@@ -21,3 +21,7 @@ Feature: Default service schemas in the application
   @service-defaults
   Scenario: Closing an inspector ignores an outstanding source response
     Then a closed schema inspector ignores a delayed source reply and can reopen
+
+  @service-defaults
+  Scenario: Long search menus keep native navigation and one active help popup
+    Then full-library search renders nearby rows and shares tooltip state

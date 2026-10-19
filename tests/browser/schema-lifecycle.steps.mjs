@@ -177,3 +177,56 @@ Then('unfinished factory history writes recover before canonical models become u
   assert.deepEqual(result.recovered[0].parents, [result.original[0].oid]);
   assert.equal(result.version, '2');
 });
+
+Then('schema operation batches preserve canonical models and publish policies atomically', async function () {
+  const evidence = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    const record = (await api.setup(1, 6)).find(record => record.id === 'factory-a');
+    const identity = api.schemaMetadataIdentity(record);
+    const ids = (await api.readSchemaDiscovery(record.id)).operations.map(operation => operation.id);
+    await api.getSchemaHistory(record.id);
+    const nativeTransaction = IDBDatabase.prototype.transaction;
+    let transactions = 0, policyTransactions = 0;
+    IDBDatabase.prototype.transaction = function (stores, ...args) {
+      if (this.name === 'v1/catalogs/index') {
+        transactions++;
+        if ([stores].flat().includes('policies')) policyTransactions++;
+      }
+      return nativeTransaction.call(this, stores, ...args);
+    };
+    let singles, batch, singleCounts, batchCounts;
+    try {
+      singles = [];
+      for (const id of ids) singles.push(await api.readSchemaOperation(id, identity));
+      singleCounts = { transactions, policyTransactions };
+      transactions = policyTransactions = 0;
+      batch = await api.readSchemaOperations(record.id, identity, [...ids, ids[0]]);
+      batchCounts = { transactions, policyTransactions };
+    } finally { IDBDatabase.prototype.transaction = nativeTransaction; }
+    for (const model of batch) await api.assertCurrentSchema(await api.approvedOperation(model.operation, model.origin));
+    await api.editStore('policies', record.id, 'delete-policy');
+    const failures = [];
+    for (const group of [[], ['factory-b:list'], Array.from({ length: 17 }, (_, i) => `factory-a:${i}`), [ids[0], 'factory-a:missing']]) {
+      try { await api.readSchemaOperations(record.id, identity, group); failures.push('unexpected success'); }
+      catch (error) { failures.push(error.message); }
+    }
+    let partialPolicy;
+    try { await api.assertCurrentSchema(await api.approvedOperation(batch[0].operation, batch[0].origin)); }
+    catch (error) { partialPolicy = error.code; }
+    await api.setSchemaDocumentEnabled(record.id, false, { metadataOnly: true });
+    let disabled;
+    try { await api.readSchemaOperations(record.id, identity, ids); }
+    catch (error) { disabled = error.message; }
+    return { singles, batch, singleCounts, batchCounts, failures, partialPolicy, disabled, counters: api.counters() };
+  });
+  assert.deepEqual(evidence.batch, evidence.singles);
+  assert.equal(evidence.batch.length, 6);
+  assert.equal(evidence.batchCounts.policyTransactions, 1);
+  assert.equal(evidence.singleCounts.policyTransactions, 6);
+  assert.ok(evidence.batchCounts.transactions < evidence.singleCounts.transactions / 2);
+  assert.ok(evidence.failures.every(message => /batch|not available/.test(message)));
+  assert.equal(evidence.partialPolicy, 'PERMISSION');
+  assert.match(evidence.disabled, /schema changed/);
+  assert.deepEqual(evidence.counters.reads, { 'factory-a': 1 });
+  await this.attach(JSON.stringify({ single: evidence.singleCounts, batch: evidence.batchCounts }), 'application/json');
+});
