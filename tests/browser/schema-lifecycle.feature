@@ -9,6 +9,9 @@ Feature: Targeted schema storage and independent history
   Scenario: Metadata changes and disabled documents need no source decoding
     Then schema metadata and discovery avoid disabled and unrelated document reads
 
+  Scenario: Schema name changes do not repeat initial alphabetical sorting
+    Then renamed remaining examples retain their order when schema defaults initialize again
+
   Scenario: Derived cache corruption and source read failures remain recoverable
     Then schema cache repair preserves history and retries failed reads
 

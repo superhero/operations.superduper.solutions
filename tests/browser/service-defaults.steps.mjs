@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };
+import { bundledCatalogs } from '../../src/lib/catalog-registry.ts';
 import { setMode, openCatalog, closeCatalog, workflowAction, workspace, fillField } from './workspace.steps.mjs';
 
 const card = (page, id) => page.locator(`[data-schema-id="${id}"]`);
@@ -34,6 +35,41 @@ async function reload(page) {
   await page.locator('#startup-status').waitFor({ state: 'detached', timeout: 30_000 });
   await schemas(page);
 }
+Then('all initial schemas sort by displayed name and keep a manually saved order', async function () {
+  const page = this.page;
+  const expected = [...bundledCatalogs.map(({ id, name }) => ({ id, name })), ...descriptors]
+    .sort((left, right) => left.name.localeCompare(right.name, 'en', { sensitivity: 'base' }));
+  const ids = () => page.locator('.schema-card').evaluateAll(cards => cards.map(card => card.dataset.schemaId));
+  await schemas(page);
+  await expect(page.locator('.schema-card')).toHaveCount(expected.length);
+  assert.deepEqual(await ids(), expected.map(record => record.id));
+  assert.deepEqual(await page.locator('.schema-name-label').allTextContents(), expected.map(record => record.name));
+
+  // Existing installations recorded the examples as the initial order while
+  // leaving factory schemas to an ID-based fallback. Upgrade only that default.
+  await page.evaluate(() => new Promise((resolve, reject) => {
+    const opening = indexedDB.open('v1/catalogs/index');
+    opening.onerror = () => reject(opening.error);
+    opening.onsuccess = () => {
+      const db = opening.result;
+      const tx = db.transaction('state', 'readwrite');
+      tx.objectStore('state').put(['demo', 'httpbin'], 'order');
+      tx.objectStore('state').delete('alphabeticalOrder');
+      tx.oncomplete = () => { db.close(); resolve(); };
+      tx.onabort = () => { db.close(); reject(tx.error); };
+    };
+  }));
+  await reload(page);
+  assert.deepEqual(await ids(), expected.map(record => record.id));
+
+  const first = expected[0];
+  await card(page, first.id).getByRole('button', { name: `Move ${first.name}`, exact: true }).press('ArrowDown');
+  const reordered = [expected[1].id, first.id, ...expected.slice(2).map(record => record.id)];
+  await expect.poll(ids).toEqual(reordered);
+  await reload(page);
+  assert.deepEqual(await ids(), reordered);
+});
+
 Then('all service schemas appear and preserve disablement renames and deletions after reload', { timeout: 120_000 }, async function () {
   const page = this.page;
   await schemas(page);
