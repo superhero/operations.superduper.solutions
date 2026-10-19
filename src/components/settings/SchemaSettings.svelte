@@ -300,7 +300,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                   <HintButton label={`${(metadata.operations - record.summary.unavailableCount).toLocaleString()} of ${metadata.operations.toLocaleString()} operations supported.`} labelAsName={false}>
                     {#snippet child({ props })}
                       {@const { type: _type, disabled: _disabled, ...hintProps } = props}
-                      <span {...hintProps} tabindex="0">{metadata.operations.toLocaleString()}</span>
+                      <span {...hintProps}>{metadata.operations?.toLocaleString() ?? "—"}</span>
                     {/snippet}
                   </HintButton>
                 {:else}{metadata.operations?.toLocaleString() ?? "—"}{/if}
