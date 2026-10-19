@@ -1,9 +1,69 @@
 # Schema performance
 
-Measured on 19 October 2026 against `70c484c` (0.0.54). The optimized build keeps
-all 42 service packs and 13,859 operations, plus the two examples. Numeric samples,
+The first optimization was measured on 19 October 2026 against `70c484c`
+(0.0.54). The optimized build keeps all 42 service packs and 13,859 operations,
+plus the two examples. Numeric samples,
 heap breakdowns, transfer counts and tested bundle hashes are in
 [`schema-performance.json`](schema-performance.json).
+
+## Current status and next work
+
+Both optimization passes are merged into `develop`: the loading/storage changes
+in [#358](https://github.com/superhero/operations.superduper.solutions/pull/358),
+and the four interaction changes in
+[#359](https://github.com/superhero/operations.superduper.solutions/pull/359)
+(`00cf348`). Offscreen menu rendering/shared tooltips, reusable matching workers
+with compact replies, per-schema normalized indexes and batched workflow models
+are implemented. The measurements below distinguish the two passes.
+
+The next priorities are investigations, not promises of additional speedups:
+
+| Order | Work | Evidence and acceptance |
+| --- | --- | --- |
+| 1 | Improve measurement and check startup | Separate app work from tracing/selector overhead; profile the matching worker too. Repeat paired cold/warm startup samples to investigate 1.19s → 1.53s, rather than dismissing or declaring a regression from one pair. Record input, debounce, worker configuration/scoring, DOM publication and next-paint timings separately. |
+| 2 | Reduce remaining UI construction | `content-visibility` skips offscreen contents but leaves all matched buttons, components and trigger registrations mounted. Measure group/disclosure updates and hidden settings controls; reduce unnecessary state/listeners before considering full DOM windowing. Preserve Tab order, focus scrolling, hierarchy, hover outlines and mobile behavior. |
+| 3 | Avoid full result allocation/sorting in compact matching mode | The worker currently evaluates and sorts every candidate even when its reply includes only matches. Benchmark retaining all above-threshold matches plus the exact top five, then sorting their union. Preserve every score, ID-based tie order and report-mode ranking; heuristic shortlists remain outside the contract. |
+| 4 | Bound persistent index retention and cancellation costs | Reuse adds about 4.7 MiB of worker heap. Main-thread index refresh does not immediately update an idle worker, and an active abort requires reinstalling the catalog in its replacement. Measure disable-all, closed-menu and rapid-typing lifecycles before choosing explicit release or another cancellation strategy. Keep actual CPU cancellation and stale-reply rejection. |
+| 5 | Measure large-workflow canonical model costs | Batches reduce messages/transactions, but each operation still gets its own canonical adaptation, reference closure and fingerprint. Measure repeated references, transient/retained heap and batch-size effects before introducing shared immutable projections. Qualify revision, adapter, root, recursion/depth and execution-context keys; never reuse a partial projection as a complete model. |
+
+The next implementation should first improve the focused measurement harness,
+then use those results to select the UI change. Keep the ordinary regression
+traces available. Use one capped job on `sds-01`; full regression and CI following
+remain governed by the existing focused-testing instructions. Any new eager
+preparation belongs inside startup loading, following
+[startup readiness](adr/startup-readiness.md), rather than post-startup idle work.
+
+### New findings from the existing evidence
+
+A read-only inspection of the final search-page CPU profile found about 620ms of
+self samples in Playwright snapshot helpers (`visitNode`, `checkAndReturn` and
+`ensureCachedData`) out of 2,296ms sampled: about 27%. These helpers are present in
+the installed Playwright 1.63.0 snapshot implementation. The browser tests enable
+[tracing with snapshots](../tests/browser/support.mjs). This time is test-harness
+work, so the profile must not be read as pure application CPU or used to subtract
+620ms from any individual search latency. The paired timings remain observations
+under the same harness; native matching/index benchmarks are separate.
+
+The [CPU profiling helper](../tests/browser/schema-profile.fixture.mjs) currently
+attaches to the page and schema-library worker, not the matching worker. It cannot
+attribute browser matching CPU. Also, 336 window keydown listeners remain even
+for the five-match search. Code inspection confirms that the closed Schemas
+[section](../src/components/SettingsWorkspace.svelte) still mounts its cards
+and per-button tooltip controllers; how much of that fixed listener count and
+runtime cost they explain is not yet isolated.
+
+Profile provenance: `final-profile/search-page.cpuprofile`, SHA-256
+`a52615ada52be94d32cfa94259ddaa474456d368af34e0e9469b5c16ba838658`,
+under the local `schema-interaction-performance` evidence directory. This is a
+reanalysis of the saved trace, not a new benchmark or a change to test behavior.
+
+### Deferred delivery change (original item 5)
+
+Separate schema assets remain deferred. Before implementation, agree how the
+single-file/offline distribution will work, define content-addressed pack/index
+versions and integrity checks, and qualify cache updates, eviction, partial
+failures, offline recovery, asset allowlists and deployment/bundle validation.
+Disabling a schema currently saves decoding/preparation, not download bytes.
 
 ## Startup and retention
 
@@ -62,11 +122,12 @@ garbage collection fell from 1.10s to under 10ms. The schema worker spends nearl
 all that interaction waiting after the change. These sampled durations are
 diagnostic observations, not exact CPU accounting.
 
-Search still spends substantial time rendering expanded groups and tooltips.
-Removing tooltip machinery from controls whose tooltips are disabled reduced
-window keydown listeners for “Create a new project” from 1,262 to 760. Further
-navigation virtualization or lazy tooltip construction deserves a separate
-keyboard-accessibility and timing comparison.
+In the first pass, expanded groups and tooltips remained a candidate for further
+rendering work. Removing tooltip machinery from controls whose tooltips are
+disabled reduced window keydown listeners for “Create a new project” from 1,262
+to 760. The
+interaction follow-up below addresses tooltip state and offscreen rendering; the
+next-work section records the remaining DOM and measurement limits.
 
 ## Method and limits
 
@@ -127,8 +188,8 @@ See [OpenAPI adaptation](adr/openapi-adaptation.md),
 
 ## Interaction follow-up
 
-The next four improvements compare `develop` at `4dcf8a7` with
-`feature/schema-interaction-performance`, using the same capped host and browser
+The four delivered interaction improvements compare `develop` at `4dcf8a7` with
+`97efc3c` (merged by #359 as `00cf348`), using the same capped host and browser
 harness. Complete samples, transfer counts, heap breakdowns and build hashes are
 in [`schema-interaction-performance.json`](schema-interaction-performance.json).
 
