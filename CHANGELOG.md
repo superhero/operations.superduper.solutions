@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.55
+
 <!-- changelog-commit:20e62eb1a8deae984b884ff6051dc4f96a9978a2 -->
 ### Commit [`20e62eb`](https://github.com/superhero/operations.superduper.solutions/commit/20e62eb1a8deae984b884ff6051dc4f96a9978a2)
 
@@ -446,8 +450,6 @@ ordering, enablement and persisted workflow nodes with focused Gherkin
 scenarios.
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.54
 
