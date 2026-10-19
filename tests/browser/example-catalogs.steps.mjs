@@ -2,13 +2,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { gunzipSync } from "node:zlib";
 import { Then } from "@cucumber/cucumber";
 import { repository } from "./workflow-storage.fixture.mjs";
 import { expect } from "@playwright/test";
-import { operations } from "../../src/lib/catalog.ts";
-import { catalogForOperation } from "../../src/lib/catalog-registry.ts";
+import { extractOperations, operations } from "../../src/lib/catalog.ts";
+import { bundledCatalogs, catalogForOperation } from "../../src/lib/catalog-registry.ts";
+import legacyRevisions from "../../src/catalogs/example-revisions.json" with { type: "json" };
 import { createOperationGraph } from "../../src/lib/workflow-graph.ts";
-import { chooseCatalogOperation, fillField, includeField, openCatalog, setMode, workflowAction, workspace } from "./workspace.steps.mjs";
+import { chooseCatalogOperation, fillField, includeField, openCatalog, revealCatalogOperation, setMode, workflowAction, workspace } from "./workspace.steps.mjs";
 
 const operation = id => operations.find(item => item.id === id);
 const graph = id => createOperationGraph(operation(id), { x: 0, y: 0 }, id, catalogForOperation(id).document);
@@ -49,6 +53,112 @@ async function submitRun(page, name = "Start workflow") {
   await runDialog(page).getByRole("button", { name, exact: true }).click();
   await expect(runDialog(page).getByRole("status")).toHaveText("Operation completed.");
 }
+
+let legacyExamples;
+async function legacyExamplesFor(version) {
+  legacyExamples ??= readFile(new URL('../fixtures/bundled-examples/legacy.json.gz', import.meta.url))
+    .then(bytes => JSON.parse(gunzipSync(bytes)));
+  const entries = await legacyExamples;
+  const selected = entries.filter(entry => entry.id === 'httpbin' || entry.version === version);
+  for (const entry of selected) {
+    const known = legacyRevisions.find(revision => revision.id === entry.id && revision.sourceCommit === entry.sourceCommit);
+    for (const key of ['document', 'groups']) {
+      const text = `${JSON.stringify(entry[key], null, 2)}\n`;
+      assert.equal(createHash('sha1').update(`blob ${Buffer.byteLength(text)}\0`).update(text).digest('hex'), known[key]);
+    }
+  }
+  return structuredClone(selected);
+}
+
+async function savedExampleState(page) {
+  return page.evaluate(async () => {
+    const api = await import('/schema-lifecycle-fixture.js');
+    const metadata = await api.listSchemaMetadata();
+    const examples = [];
+    for (const record of metadata.filter(record => ['demo', 'httpbin'].includes(record.id))) {
+      examples.push({ record: await api.readSchemaDocument(record.id), history: await api.getSchemaHistory(record.id),
+        names: record.enabled ? (await api.readSchemaDiscovery(record.id)).operations.map(operation => operation.name) : [] });
+    }
+    return { order: metadata.map(record => record.id), examples };
+  });
+}
+
+async function seedLegacyExamples(page, entries, authored = false) {
+  await page.evaluate(async ({ entries, authored }) => {
+    const api = await import('/schema-lifecycle-fixture.js');
+    for (const entry of entries) {
+      const record = await api.readSchemaDocument(entry.id);
+      await api.putSchemaDocument({ ...record, document: entry.document, groups: entry.groups });
+    }
+    if (authored) await api.deleteSchemaDocument('httpbin');
+    else {
+      await api.setSchemaDocumentEnabled('httpbin', false);
+      await api.moveSchemaDocument('httpbin', 'demo', 'before');
+    }
+    // Reproduce a browser installation from before bundled-example version tracking.
+    await api.editStore('state', 'exampleRevisions', 'delete');
+  }, { entries, authored });
+  return savedExampleState(page);
+}
+
+Then('saved {string} examples update their labels and keep saved workflows', async function (version) {
+  const page = this.page;
+  const entries = await legacyExamplesFor(version);
+  const demo = entries.find(entry => entry.id === 'demo');
+  if (version === 'extended') demo.groups[0].name = 'My example category';
+  const before = await seedLegacyExamples(page, entries);
+  assert.ok(before.examples.find(example => example.record.id === 'demo').names.includes('Get project'));
+  const oldOperation = extractOperations(demo.document, 'demo').find(operation => operation.id === 'demo:getProject');
+  const oldGraph = createOperationGraph(oldOperation, { x: 0, y: 0 }, 'saved-example', demo.document);
+  await openRun(page, [oldGraph]);
+  await fillRun(page, 'Path value', 'saved-example');
+  await submitRun(page);
+  assert.equal(this.exampleRequests.at(-1).url, 'https://example.com/projects/saved-example');
+  await runDialog(page).getByRole('button', { name: 'Quit', exact: true }).click();
+
+  const after = await savedExampleState(page);
+  assert.deepEqual(after.order, before.order);
+  for (const example of after.examples) {
+    const original = before.examples.find(entry => entry.record.id === example.record.id);
+    const current = bundledCatalogs.find(catalog => catalog.id === example.record.id);
+    assert.deepEqual(example.record.document, current.document);
+    assert.equal(example.record.enabled, original.record.enabled);
+    assert.equal(example.record.createdAt, original.record.createdAt);
+    assert.deepEqual(example.history.slice(1), original.history);
+    assert.deepEqual(example.history[0].parents, [original.history[0].oid]);
+    assert.match(example.history[0].message, /^Update bundled OpenAPI example:/);
+    assert.deepEqual(example.record.groups, version === 'extended' && current.id === 'demo' ? demo.groups : current.groups);
+    const oldDocument = await page.evaluate(async ({ id, oid }) =>
+      (await import('/schema-lifecycle-fixture.js')).readSchemaVersion(id, oid), { id: current.id, oid: original.history[0].oid });
+    assert.deepEqual(oldDocument, original.record.document);
+  }
+  for (const name of ['Example array response', 'Example object response', 'Example POST body', 'Example PATCH body'])
+    await expect((await revealCatalogOperation(page, name)).getByRole('button', { name: `Add to workflow: ${name}`, exact: true })).toBeVisible();
+  const catalog = page.getByRole('navigation', { name: 'Operation catalog', exact: true });
+  for (const name of ['List projects', 'Get project', 'Create task', 'Update task'])
+    await expect(catalog.getByText(name, { exact: true })).toHaveCount(0);
+  await page.reload();
+  await setMode(page, 'workflow');
+  const repeated = await savedExampleState(page);
+  assert.deepEqual(repeated, after, 'A later startup must not append duplicate migrations');
+});
+
+Then('updating bundled examples preserves edited and deleted schemas', async function () {
+  const page = this.page;
+  const entries = await legacyExamplesFor('extended');
+  const demo = entries.find(entry => entry.id === 'demo');
+  demo.document.info.title = 'My edited examples';
+  demo.document.paths['/projects/{projectId}'].get.summary = 'My custom operation';
+  const before = await seedLegacyExamples(page, entries, true);
+  await page.reload();
+  await setMode(page, 'workflow');
+  assert.deepEqual(await savedExampleState(page), before);
+  await expect((await revealCatalogOperation(page, 'My custom operation'))
+    .getByRole('button', { name: 'Add to workflow: My custom operation', exact: true })).toBeVisible();
+  await setMode(page, 'settings');
+  await page.locator('summary[aria-label="Schemas"]').click();
+  await expect(page.locator('[data-schema-id="httpbin"]')).toHaveCount(0);
+});
 
 Then("both example catalogs prepare typed query and header values", async function () {
   const page = this.page;

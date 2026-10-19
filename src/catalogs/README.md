@@ -50,11 +50,20 @@ contracts, not places for runtime credentials or user-uploaded documents.
 ## Seeding boundary
 
 Bundled catalogs seed the browser-local schema library once, preserving the
-`demo` and `httpbin` IDs. Existing users manage their own repository copies;
-editing a bundled file does not replace those copies, and deleting all documents
-does not trigger reseeding. Enabled documents subsequently supply the live
-operation registry. See [OpenAPI adaptation](../../docs/adr/openapi-adaptation.md)
-for replacement and saved-workflow compatibility rules.
+`demo` and `httpbin` IDs. On startup, known unmodified copies receive updated
+bundled documents as a new commit in their existing schema history. Edited
+documents, custom grouping, enablement, order and deletions are preserved.
+Enabled documents subsequently supply the live operation registry.
+
+[example-revisions.json](example-revisions.json) identifies older stock documents
+and navigation groups from the listed source commits. Each hash is a Git blob ID
+of the parsed JSON serialized with two-space indentation and a final newline,
+matching schema storage. Startup records the current bundled blob IDs so later
+updates can recognize unmodified copies. Once those versions are checked,
+startup skips repository inspection until the bundles change again. Other
+provider schemas continue to use their separate factory-backed update path.
+See [OpenAPI adaptation](../../docs/adr/openapi-adaptation.md) for replacement
+and saved-workflow compatibility rules.
 
 ## Verification
 
