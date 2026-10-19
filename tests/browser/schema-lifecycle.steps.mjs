@@ -8,6 +8,18 @@ Before({ tags: '@schema-lifecycle' }, async function () {
   await this.page.evaluate(async () => { globalThis.schemaFixture = await import('/schema-lifecycle-fixture.js'); });
 });
 
+Then('renamed remaining examples retain their order when schema defaults initialize again', async function () {
+  const records = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setup();
+    for (const id of ['factory-a', 'factory-b']) await api.deleteSchemaDocument(id);
+    await api.renameSchemaDocument('demo', 'Zulu example');
+    await api.renameSchemaDocument('httpbin', 'Alpha echo');
+    return (await api.setup(2)).map(record => ({ id: record.id, name: record.summary.name }));
+  });
+  assert.deepEqual(records, [{ id: 'demo', name: 'Zulu example' }, { id: 'httpbin', name: 'Alpha echo' }]);
+});
+
 Then('schema metadata and discovery avoid disabled and unrelated document reads', async function () {
   const evidence = await this.page.evaluate(async () => {
     const api = globalThis.schemaFixture;

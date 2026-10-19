@@ -56,7 +56,7 @@ interface SchemaDatabase extends DBSchema
   removed: { key: string; value: true };
   indexes: { key: string; value: { identity: string; discovery: SchemaDiscovery } };
   policies: { key: string; value: SchemaCredentialPolicies[string] };
-  state: { key: "seeded" | "order" | "vaultPolicy" | "serviceDefaults" | "exampleRevisions"; value: boolean | string[] | SchemaCredentialPolicies };
+  state: { key: "seeded" | "order" | "vaultPolicy" | "serviceDefaults" | "exampleRevisions" | "alphabeticalOrder"; value: boolean | string[] | SchemaCredentialPolicies };
 }
 type StoreName = "catalog" | "pending" | "removed" | "state" | "indexes" | "policies";
 type Database = IDBPDatabase<SchemaDatabase>;
@@ -603,6 +603,23 @@ async function initialize(database: Database): Promise<void>
       installed.add(catalog.id);
     }
     await store.put([...installed], "serviceDefaults");
+  });
+  await transaction(database, ["catalog", "state"], "readwrite", async active => {
+    const state = active.objectStore("state");
+    if (await state.get("alphabeticalOrder") === true) return;
+    const order = await state.get("order");
+    // Older initializations recorded only the two examples. Preserve complete
+    // saved orders and custom arrangements while upgrading that implicit default.
+    const customOrder = Array.isArray(order) && order.length && !(order.length === bundledCatalogs.length
+      && order.every((id, index) => id === bundledCatalogs[index]!.id));
+    if (!customOrder) {
+      const records = await active.objectStore("catalog").getAll();
+      const name = (record: SchemaMetadata) => record.displayName ?? record.summary?.name ?? record.file;
+      records.sort((left, right) => name(left).localeCompare(name(right), undefined, { sensitivity: "base" })
+        || left.id.localeCompare(right.id));
+      await state.put(records.map(record => record.id), "order");
+    }
+    await state.put(true, "alphabeticalOrder");
   });
 }
 

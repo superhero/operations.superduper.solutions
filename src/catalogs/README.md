@@ -31,6 +31,11 @@ Service defaults use factory-backed storage until edited or historical inspectio
 requires a Git copy. Existing profiles gain newly introduced defaults; deleted
 entries stay deleted, and authored copies are preserved.
 
+The initial schema list sorts all examples and services by displayed name,
+ignoring case. The older implicit examples-first order is upgraded on startup;
+saved custom arrangements remain intact. This changes schema ordering only,
+leaving operations and JSON properties in their existing order.
+
 ## Operation identity
 
 Group entries refer to qualified operation IDs such as `demo:listProjects`,

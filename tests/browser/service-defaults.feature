@@ -4,6 +4,10 @@
 
 Feature: Default service schemas in the application
   @service-defaults
+  Scenario: Initial schema order is alphabetical and subsequent manual ordering persists
+    Then all initial schemas sort by displayed name and keep a manually saved order
+
+  @service-defaults
   Scenario: Fresh profiles include the complete collection and retain local choices
     Then all service schemas appear and preserve disablement renames and deletions after reload
 
