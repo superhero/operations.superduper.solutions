@@ -58,6 +58,86 @@ Then('full-library search renders nearby rows and shares tooltip state', async f
   await this.attach(JSON.stringify({ count, finalId }), 'application/json');
 });
 
+Then('delegated catalog help preserves disabled explanations anchors and dismissal', async function () {
+  const { readFile } = await import('node:fs/promises');
+  const { gunzipSync } = await import('node:zlib');
+  const { setMode } = await import('./workspace.steps.mjs');
+  const index = JSON.parse(gunzipSync(await readFile('src/catalogs/services/indexes/aws-lambda.json.gz')));
+  const unavailable = index.operations.find(operation => operation.unavailableReason);
+  assert.ok(unavailable);
+  const page = this.page;
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await openCatalog(page);
+  await searchOperations(page, unavailable.name);
+  const row = page.locator(`[data-operation-id="${unavailable.id}"] > .catalog-operation-action`);
+  await expect(row).toHaveAttribute('aria-disabled', 'true');
+  await expect(page.locator('.catalog-help-scope[data-tooltip-trigger]')).toHaveCount(1);
+  await expect(page.locator('[data-operation-id] [data-tooltip-trigger]')).toHaveCount(0);
+  await page.locator('#side-navigation').evaluate(async panel => {
+    await Promise.all(panel.getAnimations({ subtree: true }).map(animation => animation.finished.catch(() => {})));
+  });
+  // Programmatic focus follows real keyboard modality, as native Tab does.
+  await page.keyboard.press('Tab');
+  await row.evaluate(element => element.scrollIntoView({ block: 'center' }));
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await row.evaluate(element => element.focus({ preventScroll: true }));
+  await expect(page.getByRole('tooltip')).toHaveText(unavailable.unavailableReason);
+  await expect(row).toHaveAttribute('aria-describedby', /.+/);
+  const icon = row.locator('.catalog-action-icon');
+  await icon.hover();
+  await expect(page.getByRole('tooltip')).toHaveText('Add to workflow');
+  const anchor = await icon.boundingBox(), popup = await page.getByRole('tooltip').boundingBox();
+  assert.ok(popup.x >= anchor.x + anchor.width - 2, 'The add hint stays beside its icon.');
+  await row.locator('.catalog-name').hover();
+  await row.evaluate(async element => {
+    await Promise.all(element.getAnimations().map(animation => animation.finished.catch(() => {})));
+  });
+  await row.locator('.catalog-name').hover({ position: { x: 2, y: 2 } });
+  await expect(page.getByRole('tooltip')).toHaveText(unavailable.unavailableReason);
+  await expect(page.getByRole('tooltip')).toHaveCount(1);
+  await page.mouse.move(950, 10);
+  // The closing animation retains its label and anchor until presence ends.
+  const exiting = page.locator('.app-tooltip[data-state="closed"]');
+  await expect(exiting).toHaveText(unavailable.unavailableReason);
+  await expect(exiting).toHaveCount(0);
+  // Send the real click despite Playwright's aria-disabled actionability guard.
+  await row.click({ force: true });
+  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(0);
+  await icon.hover();
+  await page.locator('#side-navigation').evaluate(panel => panel.dispatchEvent(new Event('scroll')));
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  await icon.dispatchEvent('pointermove', { pointerType: 'touch' });
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  // A logical trigger can resume without a new native pointerenter, including
+  // when a drawer reopens beneath a stationary pointer.
+  await icon.dispatchEvent('pointermove', { pointerType: 'mouse' });
+  await expect(page.getByRole('tooltip')).toHaveText('Add to workflow');
+  for (const enabled of [false, true]) {
+    await setMode(page, 'settings');
+    const heading = page.locator('summary[aria-label="Application"]');
+    if (await heading.getAttribute('aria-expanded') !== 'true') await heading.click();
+    const toggle = page.getByRole('switch', { name: 'Tooltips', exact: true });
+    if (await toggle.getAttribute('aria-checked') !== String(enabled)) await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-checked', String(enabled));
+    await openCatalog(page);
+    await page.locator('#side-navigation, .settings-drawer').evaluateAll(async panels => {
+      await Promise.all(panels.flatMap(panel => panel.getAnimations({ subtree: true }))
+        .map(animation => animation.finished.catch(() => {})));
+    });
+    await page.getByRole('textbox', { name: 'Prompt', exact: true }).evaluate(element => element.blur());
+    await row.evaluate(element => element.scrollIntoView({ block: 'center' }));
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await icon.hover();
+    if (enabled) await expect(page.getByRole('tooltip')).toHaveText('Add to workflow');
+    else {
+      await expect(page.locator('.catalog-help-scope')).toHaveAttribute('data-disabled', '');
+      await expect(page.getByRole('tooltip')).toHaveCount(0);
+    }
+  }
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('tooltip', { name: 'Add to workflow', exact: true })).toHaveCount(0);
+});
+
 Then('a multi-schema workflow restores through bounded model requests', async function () {
   const { operations } = await import('../../src/lib/catalog.ts');
   const selected = ['demo', 'httpbin'].flatMap(schema => operations.filter(operation => operation.id.startsWith(`${schema}:`) && !operation.unavailableReason).slice(0, 8));

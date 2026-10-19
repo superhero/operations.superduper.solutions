@@ -29,7 +29,7 @@ export function prepareMatchingOperations<T extends MatchableOperation>(operatio
   ].map(normalize))] }));
 }
 
-function distance(left: string, right: string, row: Uint32Array): number
+function distance(left: string, right: string, row: Uint32Array, limit = Infinity): number
 {
   let start = 0, leftEnd = left.length, rightEnd = right.length;
   while (start < leftEnd && start < rightEnd && left.charCodeAt(start) === right.charCodeAt(start)) start++;
@@ -40,6 +40,35 @@ function distance(left: string, right: string, row: Uint32Array): number
   {
     [left, right] = [right, left];
     [leftLength, rightLength] = [rightLength, leftLength];
+  }
+  if (limit < rightLength)
+  {
+    // The caller already rejects lengths outside the edit budget.
+    // A path within the edit budget cannot leave this diagonal band. Values
+    // outside it are sentinels, including cells left over from another name.
+    const outside = limit + 1;
+    row.fill(outside, 0, leftLength + 1);
+    for (let column = 0; column <= Math.min(leftLength, limit); column++) row[column] = column;
+    for (let line = 1; line <= rightLength; line++)
+    {
+      const first = Math.max(1, line - limit), last = Math.min(leftLength, line + limit);
+      let diagonal = row[first - 1]!;
+      row[first - 1] = first === 1 ? line : outside;
+      let minimum = row[first - 1]!;
+      const character = right.charCodeAt(start + line - 1);
+      for (let column = first; column <= last; column++)
+      {
+        const above = row[column]!;
+        const value = Math.min(above + 1, row[column - 1]! + 1,
+          diagonal + Number(left.charCodeAt(start + column - 1) !== character));
+        diagonal = above;
+        row[column] = value;
+        minimum = Math.min(minimum, value);
+      }
+      if (last < leftLength) row[last + 1] = outside;
+      if (minimum > limit) return Infinity;
+    }
+    return row[leftLength]! <= limit ? row[leftLength]! : Infinity;
   }
   for (let column = 0; column <= leftLength; column++) row[column] = column;
   for (let line = 1; line <= rightLength; line++)
@@ -69,15 +98,25 @@ export function evaluatePreparedOperations<T extends MatchableOperation>(prompt:
   const compare = (left: OperationMatch<T>, right: OperationMatch<T>) =>
     right.similarity - left.similarity || left.operation.id.localeCompare(right.operation.id);
   for (const { operation, names } of operations) {
+    // Every above-threshold result remains eligible. Below it, retain ties at
+    // the exact last needed top-five score; IDs still decide their final order.
+    const remaining = Math.max(0, topResultCount - candidates.length);
+    const cutoff = details ? 0 : !remaining ? minimumSimilarity
+      : best.length >= remaining ? best[remaining - 1]!.similarity : 0;
     let similarity = 0;
     for (const name of names)
     {
       const length = Math.max(query.length, name.length);
       // A length difference is a lower bound on edit distance. Pruning only
       // variants that cannot improve the current score preserves every score.
-      if (1 - Math.abs(query.length - name.length) / length <= similarity) continue;
-      similarity = Math.max(similarity, 1 - distance(query, name, row) / length);
+      const upper = 1 - Math.abs(query.length - name.length) / length;
+      if (upper <= similarity || upper < cutoff) continue;
+      // Round the edit budget up: floating-point score boundaries must never
+      // discard an equal score. Only successful distances update the score.
+      const limit = details ? Infinity : Math.ceil((1 - Math.max(similarity, cutoff)) * length);
+      similarity = Math.max(similarity, 1 - distance(query, name, row, limit) / length);
     }
+    if (!details && similarity < cutoff) continue;
     if (details || similarity > minimumSimilarity) candidates.push({ operation, similarity });
     else {
       // Only below-threshold rows can fill the remaining top-five places.

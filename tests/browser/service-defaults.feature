@@ -26,6 +26,10 @@ Feature: Default service schemas in the application
   Scenario: Long search menus keep native navigation and one active help popup
     Then full-library search renders nearby rows and shares tooltip state
 
+  @service-defaults @catalog-help
+  Scenario: Catalog help preserves hover keyboard explanations and the tooltip preference
+    Then delegated catalog help preserves disabled explanations anchors and dismissal
+
   @service-defaults @schema-profile @schema-next @chromium-only
   Scenario: Measure repeated startup and untraced search phases
     Then startup and search phases are measured separately from diagnostic profiling
@@ -33,3 +37,11 @@ Feature: Default service schemas in the application
   @service-defaults
   Scenario: Closed settings and search release their controls and worker
     Then closed settings and search retain no inactive controls or matching worker
+
+  @service-defaults @schema-profile @chromium-only @menu-runtime-profile
+  Scenario: Attribute search completion to scoring script style and layout
+    Then repeated menu searches retain their output and record rendering costs
+
+  @service-defaults @schema-profile @chromium-only @workflow-runtime-profile
+  Scenario: Restore a larger workflow through actual storage and worker messages
+    Then a ninety-six-operation workflow restores with bounded canonical models

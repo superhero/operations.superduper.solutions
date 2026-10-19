@@ -14,13 +14,23 @@ const packs = import.meta.glob<string>("../catalogs/services/*.json.gz", {
   query: "?url&inline", import: "default", eager: true,
 });
 
+function base64Bytes(value: string): Uint8Array<ArrayBuffer>
+{
+  const constructor = Uint8Array as typeof Uint8Array & { fromBase64?: (value: string) => Uint8Array<ArrayBuffer> };
+  if (typeof constructor.fromBase64 === "function") return constructor.fromBase64(value);
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index++) bytes[index] = binary.charCodeAt(index);
+  return bytes;
+}
+
 /** Decode one audited pack in the schema worker, without executing source code. */
 export async function decodeServiceSchema(pack: string, descriptor: Pick<ServiceSchemaDescriptor, "bytes" | "sha256">): Promise<Record<string, unknown>>
 {
   const encoded = pack.match(/^data:[^,]*;base64,([A-Za-z0-9+/=]+)$/)?.[1];
   if (!encoded || !Number.isSafeInteger(descriptor.bytes) || descriptor.bytes < 1 || descriptor.bytes > 64 * 1024 * 1024)
     throw new Error("The bundled schema pack metadata is invalid.");
-  const compressed = Uint8Array.from(atob(encoded), char => char.charCodeAt(0));
+  const compressed = base64Bytes(encoded);
   const reader = new Blob([compressed]).stream().pipeThrough(new DecompressionStream("gzip")).getReader();
   const bytes = new Uint8Array(descriptor.bytes);
   let length = 0;

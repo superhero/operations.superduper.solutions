@@ -69,6 +69,22 @@ Cover cancellation ownership, native navigation and Firefox error arguments.
 
 ```
 
+<!-- changelog-commit:a5e3eb448bc1b7684f9b28fe508f1ed141920a9f -->
+### Commit [`a5e3eb4`](https://github.com/superhero/operations.superduper.solutions/commit/a5e3eb448bc1b7684f9b28fe508f1ed141920a9f)
+
+```text
+perf(workspace): accelerate exact search and workflow loading
+
+Bound compact edit-distance work without changing returned scores or ties.
+Delegate catalog help through one library trigger, retaining native row
+navigation, disabled explanations, tooltip preferences and motion.
+
+Decode embedded sources with native bytes and a checked compatibility path.
+Record paired browser/native evidence and actual 96-operation restoration.
+Schema delivery and canonical model independence remain unchanged.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.54

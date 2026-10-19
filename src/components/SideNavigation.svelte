@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { flushSync, onMount, tick, untrack } from "svelte";
-  import { Tooltip } from "bits-ui";
+  import { onMount, tick, untrack } from "svelte";
   import { flip } from "svelte/animate";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import Disclosure from "$lib/components/Disclosure.svelte";
@@ -8,6 +7,7 @@
   import type { Operation } from "$lib/catalog.ts";
   import type { WorkflowDocument } from "$lib/workflow-document.ts";
   import CatalogPrompt from "./CatalogPrompt.svelte";
+  import CatalogHelp from "./CatalogHelp.svelte";
   import { catalogs, type CatalogGroup } from "$lib/catalog-registry.ts";
   import { evaluateOperationsAsync } from "$lib/operation-matching-client.ts";
   import type { OperationMatch } from "$lib/matching.ts";
@@ -35,9 +35,6 @@
   let matchingController: AbortController | undefined;
   let matchingTimer: ReturnType<typeof setTimeout> | undefined;
   let matchingRevision = 0;
-  const tooltip = Tooltip.createTether<{ label: string; side: "top" | "right" }>();
-  let tooltipOpen = $state(false);
-  $effect(() => { if (!open || documentModal) tooltip.close(); });
   const matchingIds = $derived(prompt.trim() ? new Set(evaluation?.results.map(result => result.operation.id) ?? []) : null);
   let destination: (() => void) | null = null;
   let restoreNavigationFocus = false;
@@ -165,10 +162,6 @@
     return () => { cancelled = true; };
   });
   onMount(() => {
-    const dismiss = () => tooltip.close();
-    const navigate = (event: KeyboardEvent) => { if (event.key === "Tab" && tooltipOpen) flushSync(dismiss); };
-    window.addEventListener("scroll", dismiss, true);
-    window.addEventListener("keydown", navigate, true);
     const media = matchMedia("(max-width: 899px)");
     const update = () => {
       const hadFocus = navigation?.contains(document.activeElement) || Boolean(document.activeElement?.closest('[data-slot="sheet-content"]'));
@@ -183,8 +176,6 @@
     update(); media.addEventListener("change", update);
     return () => {
       media.removeEventListener("change", update);
-      window.removeEventListener("scroll", dismiss, true);
-      window.removeEventListener("keydown", navigate, true);
     };
   });
   function focusMenu() {
@@ -218,12 +209,7 @@
 
 {#snippet operationLabel(operation: Operation)}
   <span class="catalog-name">{operation.name}</span>
-  <Tooltip.Trigger tether={tooltip} payload={{ label: "Add to workflow", side: "right" }}>
-    {#snippet child({ props })}
-      {@const { type: _type, tabindex: _tabindex, ...iconProps } = props}
-      <span {...iconProps} class="catalog-action-icon"><MaterialIcon name="add_box" size={24} /></span>
-    {/snippet}
-  </Tooltip.Trigger>
+  <span class="catalog-action-icon"><MaterialIcon name="add_box" size={24} /></span>
 {/snippet}
 
 {#snippet branch(group: CatalogGroup, depth: number, parentOpen: boolean, parents: string[] = [])}
@@ -245,10 +231,10 @@
             {#each entries as operation (operation.id)}
               <li data-operation-id={operation.id} data-operation-name={operation.name}>
                 {#if operation.unavailableReason}
-                  <Tooltip.Trigger tether={tooltip} payload={{ label: operation.unavailableReason, side: "top" }} class="catalog-operation-action"
+                  <button type="button" class="catalog-operation-action"
                     aria-disabled="true" aria-label={`Add to workflow: ${operation.name}`}>
                     {@render operationLabel(operation)}
-                  </Tooltip.Trigger>
+                  </button>
                 {:else}
                   <button class="catalog-operation-action" type="button" aria-disabled="false" aria-label={`Add to workflow: ${operation.name}`}
                     onclick={() => { togglePath(depth + 1, operation.id, true); select(operation); }}>
@@ -265,6 +251,7 @@
 {/snippet}
 
 {#snippet catalog()}
+  <CatalogHelp active={open && !documentModal} operations={indexedOperations} revision={matchingIds}>
   <CatalogPrompt bind:this={promptEditor} value={prompt} pending={matchingPending} error={matchingError} {evaluation}
     {matchingOpen} {evaluationDetails} onChange={changePrompt}
     onMatchingToggle={() => matchingOpen = !matchingOpen} onRetry={() => retryMatching += 1} />
@@ -290,27 +277,15 @@
             <button class="catalog-operation-action" type="button" aria-label={`Add to workflow: ${workflow.name}`}
               onclick={() => navigate(() => onWorkflowSelect(workflow))}>
               <span class="catalog-name">{workflow.name}</span>
-              <Tooltip.Trigger tether={tooltip} payload={{ label: "Add to workflow", side: "right" }}>
-                {#snippet child({ props })}
-                  {@const { type: _type, tabindex: _tabindex, ...iconProps } = props}
-                  <span {...iconProps} class="catalog-action-icon"><MaterialIcon name="add_box" size={24} /></span>
-                {/snippet}
-              </Tooltip.Trigger>
+              <span class="catalog-action-icon"><MaterialIcon name="add_box" size={24} /></span>
             </button>
           </li>
         {/each}
       </ul>
     </Disclosure>
   </nav>
+  </CatalogHelp>
 {/snippet}
-
-<Tooltip.Root tether={tooltip} bind:open={tooltipOpen}>
-  {#snippet children({ payload })}
-    <Tooltip.Portal><Tooltip.Content role="tooltip" aria-hidden={!tooltipOpen} class="app-tooltip" side={payload?.side ?? "right"} sideOffset={8} collisionPadding={8}>
-      {payload?.label}<Tooltip.Arrow class="tooltip-arrow" />
-    </Tooltip.Content></Tooltip.Portal>
-  {/snippet}
-</Tooltip.Root>
 
 {#if mobile}
   {#if !documentModal}

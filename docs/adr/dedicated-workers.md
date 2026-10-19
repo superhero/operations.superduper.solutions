@@ -33,7 +33,10 @@ schemas. Completed searches reuse their worker and its installed indexes. Querie
 send text and a snapshot token; replies include matched IDs and scores. Full
 candidate scores cross the boundary only when developer evaluation details are
 enabled. Compact evaluation retains every above-threshold match and the exact
-remaining top-five places without sorting the complete candidate list. The page
+remaining top-five places without sorting the complete candidate list. Compact
+scoring bounds edit-distance work by the current
+selection boundary, retaining equal-score ties and exact scores for every result;
+the report path still calculates all candidates without this cutoff. The page
 retains its original operation references. New text terminates an executing
 obsolete scorer immediately; its replacement reinstalls the cached indexes.
 When only index installation is in flight, newer queries share that installation
