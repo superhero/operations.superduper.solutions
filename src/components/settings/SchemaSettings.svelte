@@ -222,7 +222,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                   <HintButton class="schema-action" label={deletionReason ?? `Delete ${metadata.title}`} labelAsName={false} aria-label={`Delete ${metadata.title}`}
                     disabled={mutationsDisabled || Boolean(deletionReason) || deletingId === record.id}
                     onclick={() => { if (!deletionReason) deletingId = record.id; }}>
-                    <MaterialIcon name="delete" size={20} />
+                    <MaterialIcon name="delete" size={20} class="schema-delete-icon" />
                   </HintButton>
                 </span>
               {/snippet}
@@ -283,6 +283,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-card :global(.schema-card-toggle .material-symbols-rounded) { transition: transform 180ms ease-in-out, scale 180ms ease-in-out; }
   .schema-card :global(.schema-card-toggle[aria-expanded="true"] .material-symbols-rounded) { transform: rotate(90deg); }
   .schema-settings :global(.schema-action:is(:hover,:focus-visible):enabled) { background: transparent; color: inherit; }
+  .schema-settings :global(.schema-action:disabled .schema-delete-icon) { opacity: 0.5; }
   .schema-metadata { display: grid; grid-template-columns: minmax(0, 1fr) var(--schema-count-width); gap: 12px; margin: 18px 0; }
   .schema-metadata > div { min-width: 0; padding: 8px 10px; border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-background); }
   .schema-operation-count { box-sizing: border-box; justify-self: end; width: var(--schema-count-width); max-width: 100%; }
