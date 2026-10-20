@@ -42,4 +42,5 @@ Schema name folders start collapsed and include disabled records. Leaf labels om
 ancestor names; editing retains the complete path. Renaming opens the destination
 folders. Closing a folder closes its descendant cards and releases their expanded
 viewers; it does not change schema enablement. Upload has its own pane; folders
-and schema rows share the library pane.
+and schema rows share the library pane. Name folders and schema leaves reuse the
+left menu’s connector lines, with the responsive settings inset.

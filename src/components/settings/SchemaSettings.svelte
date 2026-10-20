@@ -183,14 +183,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 {#snippet treeRows(nodes: SchemaNameNode<SchemaLibraryRecord>[])}
   {#each nodes as node (`${node.kind}:${node.id}`)}
     {#if node.kind === "group"}
-      <li class="schema-group" data-schema-group={node.id}>
+      <li class="schema-group tree-branch" data-schema-group={node.id}>
         <Disclosure class="schema-name-group" label={`Schema group: ${node.path.join(" / ")}`} tooltipEnabled={false}
           open={expandedGroups[node.id] ?? false} onToggle={next => toggleGroup(node, next)}>
           {#snippet summary()}
             <MaterialIcon name="keyboard_arrow_right" class="schema-group-chevron" size={18} />
             <span class="schema-group-label">{node.name}</span>
           {/snippet}
-          <ul class="schema-children">{@render treeRows(node.children)}</ul>
+          <ul class="schema-children tree-children">{@render treeRows(node.children)}</ul>
         </Disclosure>
       </li>
     {:else}
@@ -202,7 +202,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 {#snippet schemaCard(record: SchemaLibraryRecord, leafName: string)}
   {@const metadata = details(record)}
   {@const deletionReason = schemaDeletionReason(record)}
-  <li class="schema-card" data-schema-id={record.id}>
+  <li class="schema-card tree-branch" data-schema-id={record.id}>
     <div class="schema-heading">
       <div class="schema-name">
         <HintButton class="schema-card-toggle" aria-label={`Schema details: ${metadata.title}`}
@@ -307,10 +307,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-upload-guidance { flex: 1 1 240px; min-width: 0; margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .schema-status { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .schema-toolbar :global(.upload-action) { height: auto; min-height: 44px; max-width: 100%; padding-block: 12px; white-space: normal; text-align: left; font-weight: 700; background: var(--color-background); color: var(--color-foreground); }
-  .schema-list { --schema-indent: 12px; display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+  .schema-list { --schema-indent: 12px; --tree-indent: var(--schema-indent); --tree-line-inset: calc(var(--schema-indent) * 0.6); --tree-hook-top: 9px; display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
   .schema-toolbar, .schema-list, .schema-empty { min-width: 0; padding: 16px; border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
   .schema-group { min-width: 0; }
-  .schema-children { display: grid; gap: 12px; margin: 0; padding: 12px 0 0 var(--schema-indent); list-style: none; }
+  .schema-children { display: grid; gap: 12px; margin: 0; padding: 12px 0 0; list-style: none; }
   .schema-settings :global(.schema-name-group > summary) { display: flex; align-items: center; gap: 10px; min-height: 32px; padding: 6px 10px; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); list-style: none; font-size: 14px; font-weight: 700; }
   .schema-group-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .schema-settings :global(.schema-group-chevron) { flex-shrink: 0; width: 18px; margin-left: 0; transition: transform 180ms ease-in-out; }
