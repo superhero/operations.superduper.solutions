@@ -46,7 +46,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { defaultKeybindings, type Keybindings } from "$lib/keybindings.ts";
   import LocaleSettings from "./settings/LocaleSettings.svelte";
   import SchemaSettings from "./settings/SchemaSettings.svelte";
-  import { getSchemaLibrary, loadSchemaLibrary, uploadSchema, replaceSchema, renameSchema, moveSchema, setSchemaEnabled, deleteSchema, downloadSchema, loadSchemaSource, releaseSchemaSource,
+  import { getSchemaLibrary, loadSchemaLibrary, uploadSchema, replaceSchema, renameSchema, setSchemaEnabled, deleteSchema, downloadSchema, loadSchemaSource, releaseSchemaSource,
     loadSchemaHistory, loadSchemaRevisionDiff, resolveSchemaConflicts, dismissSchemaIncoming, applyBundledSchemaRevision } from "$lib/schema-library.ts";
   import { defaultLocaleSettings, type LocaleSettings as LocalePreferences } from "$lib/locale-settings.ts";
   import { isValidWorkflowCurveStrength, isValidWorkflowDashLength, isValidWorkflowDashGap, isValidWorkflowDashSpeed, isValidWorkflowGridSize, isValidWorkflowNodeClearance,
@@ -426,7 +426,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <MaterialIcon name="chevron_forward" size={17} />
       {/snippet}
       <SchemaSettings records={schemaLibrary.records} busy={schemaLibrary.busy} ready={schemaLibrary.initialized} error={schemaLibrary.error}
-        onUpload={uploadSchema} onReplace={replaceSchema} onRename={renameSchema} onMove={moveSchema} onEnabledChange={setSchemaEnabled} onDelete={deleteSchema}
+        onUpload={uploadSchema} onReplace={replaceSchema} onRename={renameSchema} onEnabledChange={setSchemaEnabled} onDelete={deleteSchema}
         onDownload={downloadSchema} onRetry={loadSchemaLibrary} onLoad={loadSchemaSource} onRelease={releaseSchemaSource}
         onHistory={loadSchemaHistory} onDiff={loadSchemaRevisionDiff} onResolveUpdate={resolveSchemaConflicts} onDismissUpdate={dismissSchemaIncoming} onBundledUpdate={applyBundledSchemaRevision} />
     </Disclosure>

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { configureSchemaDefaults, listSchemaMetadata, readSchemaDiscovery, readSchemaDocument, readSchemaOperation, readSchemaOperations,
-  releaseSchemaDocument, schemaMetadataIdentity, setSchemaDocumentEnabled, moveSchemaDocument, getSchemaHistory,
+  releaseSchemaDocument, schemaMetadataIdentity, setSchemaDocumentEnabled, getSchemaHistory,
   readSchemaVersion, renameSchemaDocument, deleteSchemaDocument, putSchemaDocument, updateSchemaUpstream,
   getSchemaBranchHistory, getSchemaRevisionDiff, resolveSchemaUpdate, dismissSchemaUpdate, updateSchemaFromBundle } from "../../src/lib/schema-storage.ts";
 import { applySchemaPatches, googleOauthAlternatives } from "../../src/lib/schema-patches.ts";
@@ -12,7 +12,7 @@ import { approvedOperation } from "../../src/lib/secrets/policy.ts";
 import { assertCurrentSchema } from "../../src/lib/secrets/schema-policy-storage.ts";
 
 export { listSchemaMetadata, readSchemaDiscovery, readSchemaDocument, readSchemaOperation, readSchemaOperations, releaseSchemaDocument,
-  schemaMetadataIdentity, setSchemaDocumentEnabled, moveSchemaDocument, getSchemaHistory, readSchemaVersion,
+  schemaMetadataIdentity, setSchemaDocumentEnabled, getSchemaHistory, readSchemaVersion,
   renameSchemaDocument, deleteSchemaDocument, putSchemaDocument, approvedOperation, assertCurrentSchema,
   updateSchemaUpstream, getSchemaBranchHistory, getSchemaRevisionDiff, resolveSchemaUpdate, dismissSchemaUpdate, updateSchemaFromBundle };
 const reads: Record<string, number> = {};

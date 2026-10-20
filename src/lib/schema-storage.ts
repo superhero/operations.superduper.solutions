@@ -62,7 +62,7 @@ interface SchemaDatabase extends DBSchema
   removed: { key: string; value: true };
   indexes: { key: string; value: { identity: string; discovery: SchemaDiscovery } };
   policies: { key: string; value: SchemaCredentialPolicies[string] };
-  state: { key: "seeded" | "order" | "vaultPolicy" | "serviceDefaults" | "exampleRevisions" | "alphabeticalOrder"; value: boolean | string[] | SchemaCredentialPolicies };
+  state: { key: "seeded" | "vaultPolicy" | "serviceDefaults" | "exampleRevisions"; value: boolean | string[] | SchemaCredentialPolicies };
 }
 type StoreName = "catalog" | "pending" | "removed" | "state" | "indexes" | "policies";
 type Database = IDBPDatabase<SchemaDatabase>;
@@ -153,26 +153,13 @@ function readMetadata(database: Database, id: string): Promise<SchemaMetadata | 
   return transaction(database, ["catalog"], "readonly", active => active.objectStore("catalog").get(id));
 }
 
-function orderedMetadata(records: SchemaMetadata[], order: boolean | string[] | SchemaCredentialPolicies | undefined): SchemaMetadata[]
+function readAlphabeticalMetadata(database: Database): Promise<SchemaMetadata[]>
 {
-  records.sort((left, right) => left.createdAt - right.createdAt || left.id.localeCompare(right.id));
-  const remaining = new Map(records.map(record => [record.id, record]));
-  const sorted: SchemaMetadata[] = [];
-  for (const id of Array.isArray(order) ? order : [])
-  {
-    const record = remaining.get(id);
-    if (record) { sorted.push(record); remaining.delete(id); }
-  }
-  return [...sorted, ...remaining.values()];
-}
-
-function readOrderedMetadata(database: Database): Promise<SchemaMetadata[]>
-{
-  return transaction(database, ["catalog", "state"], "readonly", async active => {
-    const [records, order] = await Promise.all([
-      active.objectStore("catalog").getAll(), active.objectStore("state").get("order"),
-    ]);
-    return orderedMetadata(records, order);
+  return transaction(database, ["catalog"], "readonly", async active => {
+    const records = await active.objectStore("catalog").getAll();
+    const name = (record: SchemaMetadata) => record.displayName ?? record.summary?.name ?? record.file;
+    return records.sort((left, right) => name(left).localeCompare(name(right), undefined, { sensitivity: "base" })
+      || left.id.localeCompare(right.id));
   });
 }
 
@@ -271,7 +258,7 @@ async function discovery(database: Database, metadata: SchemaMetadata): Promise<
 /** Metadata-only listing is the normal startup path, including disabled cards. */
 export function listSchemaMetadata(): Promise<SchemaMetadata[]> {
   return serialized(async database => {
-    const records = await readOrderedMetadata(database);
+    const records = await readAlphabeticalMetadata(database);
     for (const record of records) {
       validateMetadata(record);
       let changed = false;
@@ -473,14 +460,7 @@ async function finishPending(database: Database, pending: PendingSchema): Promis
     else if (await head(id, update.ref)) await git.deleteRef({ fs: fs(), dir, ref: update.ref });
   }
   await fs().promises.flush();
-  await transaction(database, ["catalog", "pending", "state", "policies", "indexes"], "readwrite", async active => {
-    if (!await active.objectStore("catalog").get(id))
-    {
-      const [records, order] = await Promise.all([
-        active.objectStore("catalog").getAll(), active.objectStore("state").get("order"),
-      ]);
-      await active.objectStore("state").put([...orderedMetadata(records, order).map(record => record.id), id], "order");
-    }
+  await transaction(database, ["catalog", "pending", "policies", "indexes"], "readwrite", async active => {
     await active.objectStore("catalog").put(metadata, id);
     await active.objectStore("indexes").delete(id);
     await storeCredentialPolicy(active, id, policy);
@@ -676,23 +656,6 @@ async function initialize(database: Database): Promise<void>
     }
     await store.put([...installed], "serviceDefaults");
   });
-  await transaction(database, ["catalog", "state"], "readwrite", async active => {
-    const state = active.objectStore("state");
-    if (await state.get("alphabeticalOrder") === true) return;
-    const order = await state.get("order");
-    // Older initializations recorded only the two examples. Preserve complete
-    // saved orders and custom arrangements while upgrading that implicit default.
-    const customOrder = Array.isArray(order) && order.length && !(order.length === bundledCatalogs.length
-      && order.every((id, index) => id === bundledCatalogs[index]!.id));
-    if (!customOrder) {
-      const records = await active.objectStore("catalog").getAll();
-      const name = (record: SchemaMetadata) => record.displayName ?? record.summary?.name ?? record.file;
-      records.sort((left, right) => name(left).localeCompare(name(right), undefined, { sensitivity: "base" })
-        || left.id.localeCompare(right.id));
-      await state.put(records.map(record => record.id), "order");
-    }
-    await state.put(true, "alphabeticalOrder");
-  });
 }
 
 function serialized<T>(task: (database: Database) => Promise<T>): Promise<T>
@@ -725,29 +688,10 @@ export function loadSchemaDocuments(): Promise<SchemaDocumentRecord[]>
 {
   return serialized(async database => {
     await backfillCredentialPolicies(database);
-    const records = await readOrderedMetadata(database);
+    const records = await readAlphabeticalMetadata(database);
     const loaded: SchemaDocumentRecord[] = [];
     for (const record of records) loaded.push(await readRecord(record));
     return loaded;
-  });
-}
-
-/** Card order is application metadata, independent from document contents and Git history. */
-export function moveSchemaDocument(id: string, targetId: string, placement: "before" | "after"): Promise<void>
-{
-  validateSchemaDocumentId(id);
-  validateSchemaDocumentId(targetId);
-  if (placement !== "before" && placement !== "after") throw new Error("Choose whether to place the schema before or after its target.");
-  return serialized(async database => {
-    const ids = (await readOrderedMetadata(database)).map(record => record.id);
-    if (!ids.includes(id) || !ids.includes(targetId)) throw new Error("This schema could not be found in this browser.");
-    if (id === targetId) return;
-    const reordered = ids.filter(entry => entry !== id);
-    reordered.splice(reordered.indexOf(targetId) + (placement === "after" ? 1 : 0), 0, id);
-    if (reordered.every((entry, index) => entry === ids[index])) return;
-    await transaction(database, ["state"], "readwrite", async active => {
-      await active.objectStore("state").put(reordered, "order");
-    });
   });
 }
 
@@ -925,14 +869,12 @@ export function deleteSchemaDocument(id: string): Promise<void>
 {
   const path = schemaRepositoryPath(id);
   return serialized(async database => {
-    await transaction(database, ["catalog", "pending", "removed", "state", "policies", "indexes"], "readwrite", async active => {
+    await transaction(database, ["catalog", "pending", "removed", "policies", "indexes"], "readwrite", async active => {
       await active.objectStore("removed").put(true, id);
       await active.objectStore("catalog").delete(id);
       await active.objectStore("pending").delete(id);
       await active.objectStore("indexes").delete(id);
       await storeCredentialPolicy(active, id, undefined);
-      const order = await active.objectStore("state").get("order");
-      if (Array.isArray(order)) await active.objectStore("state").put(order.filter(entry => entry !== id), "order");
     });
     documents.invalidate(`${id}:`);
     await removeTree(path);

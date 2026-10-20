@@ -195,11 +195,6 @@ Then('provider schema names use these paths across saved-label updates', async f
   const ids = () => page.locator('.schema-card').evaluateAll(cards => cards.map(card => card.dataset.schemaId));
   const initial = await ids();
   for (const { id, name } of names) await expect(card(page, id).locator('.schema-name-label')).toHaveText(name);
-  const first = card(page, initial[0]);
-  const firstName = await first.locator('.schema-name-label').textContent();
-  await first.getByRole('button', { name: `Move ${firstName}`, exact: true }).press('ArrowDown');
-  const ordered = [initial[1], initial[0], ...initial.slice(2)];
-  await expect.poll(ids).toEqual(ordered);
   const before = await stored(page);
   await page.evaluate(names => new Promise((resolve, reject) => {
     const opening = indexedDB.open('v1/catalogs/index');
@@ -218,7 +213,7 @@ Then('provider schema names use these paths across saved-label updates', async f
   }), names);
   await reload(page);
   for (const { id, name } of names) await expect(card(page, id).locator('.schema-name-label')).toHaveText(name);
-  assert.deepEqual(await ids(), ordered);
+  assert.deepEqual(await ids(), initial);
   const after = await stored(page);
   for (const { id } of names) {
     const { updatedAt: _before, ...original } = before.find(record => record.id === id);
@@ -267,39 +262,54 @@ Then('all Atlassian catalogs share the provider prefix and retain a newly disabl
   await expect(page.locator('[data-catalog-group="statuspage"] > .catalog-group > summary .catalog-name')).toHaveText('Statuspage');
 });
 
-Then('all initial schemas sort by displayed name and keep a manually saved order', async function () {
+Then('schemas always sort by displayed name without manual controls', async function () {
   const page = this.page;
-  const expected = [...bundledCatalogs.map(({ id, name }) => ({ id, name })), ...descriptors]
-    .sort((left, right) => left.name.localeCompare(right.name, 'en', { sensitivity: 'base' }));
-  const ids = () => page.locator('.schema-card').evaluateAll(cards => cards.map(card => card.dataset.schemaId));
+  const expected = [...bundledCatalogs.map(({ id, name }) => ({ id, name })), ...descriptors.map(({ id, name }) => ({ id, name }))];
+  const ordered = () => [...expected].sort((left, right) => left.name.localeCompare(right.name, 'en', { sensitivity: 'base' }) || left.id.localeCompare(right.id));
+  const entries = () => page.locator('.schema-card').evaluateAll(cards => cards.map(card => ({ id: card.dataset.schemaId,
+    name: card.querySelector('.schema-name-input')?.value ?? card.querySelector('.schema-name-label')?.textContent })));
   await schemas(page);
   await expect(page.locator('.schema-card')).toHaveCount(expected.length);
-  assert.deepEqual(await ids(), expected.map(record => record.id));
-  assert.deepEqual(await page.locator('.schema-name-label').allTextContents(), expected.map(record => record.name));
+  assert.deepEqual(await entries(), ordered());
+  await expect(page.getByRole('group', { name: 'Reorder schemas', exact: true })).toHaveCount(0);
+  await expect(page.locator('.schema-card').getByRole('button', { name: /^Move / })).toHaveCount(0);
+  await expect(page.locator('.schema-card [draggable="true"]')).toHaveCount(0);
 
-  // Existing installations recorded the examples as the initial order while
-  // leaving factory schemas to an ID-based fallback. Upgrade only that default.
-  await page.evaluate(() => new Promise((resolve, reject) => {
+  // Complete old arrangements, including stale/duplicate IDs and the old marker,
+  // cannot override alphabetical ordering in an existing profile.
+  await page.evaluate(ids => new Promise((resolve, reject) => {
     const opening = indexedDB.open('v1/catalogs/index');
     opening.onerror = () => reject(opening.error);
     opening.onsuccess = () => {
       const db = opening.result;
       const tx = db.transaction('state', 'readwrite');
-      tx.objectStore('state').put(['demo', 'httpbin'], 'order');
-      tx.objectStore('state').delete('alphabeticalOrder');
+      tx.objectStore('state').put(['missing-schema', ...ids.reverse(), ids[0]], 'order');
+      tx.objectStore('state').put(true, 'alphabeticalOrder');
       tx.oncomplete = () => { db.close(); resolve(); };
       tx.onabort = () => { db.close(); reject(tx.error); };
     };
-  }));
+  }), expected.map(record => record.id));
   await reload(page);
-  assert.deepEqual(await ids(), expected.map(record => record.id));
+  assert.deepEqual(await entries(), ordered());
 
-  const first = expected[0];
-  await card(page, first.id).getByRole('button', { name: `Move ${first.name}`, exact: true }).press('ArrowDown');
-  const reordered = [expected[1].id, first.id, ...expected.slice(2).map(record => record.id)];
-  await expect.poll(ids).toEqual(reordered);
+  await expandSchemaCard(card(page, 'demo'));
+  const input = card(page, 'demo').getByRole('textbox', { name: 'Schema name', exact: true });
+  for (const name of ['Zulu example', 'AAA example']) {
+    await input.fill(name); await input.press('Enter');
+    expected.find(record => record.id === 'demo').name = name;
+    await expect.poll(entries).toEqual(ordered());
+  }
+  const document = { openapi: '3.1.0', info: { title: 'aab uploaded schema', version: '1' },
+    servers: [{ url: 'https://sort.example.test' }], paths: { '/items': { get: { operationId: 'list', responses: { '200': { description: 'OK' } } } } } };
+  await page.getByRole('button', { name: 'Upload OpenAPI document', exact: true }).click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({ name: 'sort.openapi.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
+  await expect(page.locator('.schema-card')).toHaveCount(expected.length + 1);
+  const uploaded = (await entries()).find(record => record.name === document.info.title);
+  assert.ok(uploaded);
+  expected.push(uploaded);
+  await expect.poll(entries).toEqual(ordered());
   await reload(page);
-  assert.deepEqual(await ids(), reordered);
+  assert.deepEqual(await entries(), ordered());
 });
 
 Then('all service schemas appear and preserve disablement renames and deletions after reload', { timeout: 120_000 }, async function () {

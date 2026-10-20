@@ -214,7 +214,6 @@ Then('new factory labels refresh without decoding sources or replacing personal 
     const api = globalThis.schemaFixture;
     await api.setup(1, 1, { 'factory-a': 'Google Cloud — Compute', 'factory-b': 'Google Gemini — Interactions' });
     await api.setSchemaDocumentEnabled('factory-a', false, { metadataOnly: true });
-    await api.moveSchemaDocument('factory-b', 'demo', 'before');
     await api.renameSchemaDocument('factory-b', 'My Gemini API');
     const before = await api.listSchemaMetadata();
     const authoredHistory = await api.getSchemaHistory('factory-b');
@@ -239,7 +238,7 @@ Then('new factory labels refresh without decoding sources or replacing personal 
   assert.deepEqual(result.currentCounters, result.counters);
 });
 
-Then('renamed remaining examples retain their order when schema defaults initialize again', async function () {
+Then('renamed remaining examples sort by name when schema defaults initialize again', async function () {
   const records = await this.page.evaluate(async () => {
     const api = globalThis.schemaFixture;
     await api.setup();
@@ -248,7 +247,7 @@ Then('renamed remaining examples retain their order when schema defaults initial
     await api.renameSchemaDocument('httpbin', 'Alpha echo');
     return (await api.setup(2)).map(record => ({ id: record.id, name: record.summary.name }));
   });
-  assert.deepEqual(records, [{ id: 'demo', name: 'Zulu example' }, { id: 'httpbin', name: 'Alpha echo' }]);
+  assert.deepEqual(records, [{ id: 'httpbin', name: 'Alpha echo' }, { id: 'demo', name: 'Zulu example' }]);
 });
 
 Then('schema metadata and discovery avoid disabled and unrelated document reads', async function () {
@@ -258,7 +257,6 @@ Then('schema metadata and discovery avoid disabled and unrelated document reads'
     const a = records.find(record => record.id === 'factory-a');
     await api.setSchemaDocumentEnabled(a.id, false, { metadataOnly: true });
     await api.readSchemaDiscovery('factory-b');
-    await api.moveSchemaDocument('factory-b', 'demo', 'before');
     const metadataOnly = api.counters();
     let disabled;
     try { await api.readSchemaOperation('factory-a:list', api.schemaMetadataIdentity(a)); }

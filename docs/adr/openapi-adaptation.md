@@ -42,8 +42,8 @@ reference closure and fingerprint. A failed batch publishes no new policies.
 Disabled or changed sources reject obsolete requests, and the page checks source
 identity again before installing returned models.
 
-Metadata changes publish only changed catalogs and active IDs. Reordering alone
-does not rebuild matching inputs or revoke unchanged credential policy. Decoded
+Metadata changes publish only changed catalogs and active IDs. Alphabetical
+ordering does not rebuild matching inputs or revoke unchanged credential policy. Decoded
 sources use a bounded cache; models used by the current workflow or run remain
 pinned. Size accounting limits retention, not exact JavaScript heap consumption.
 Active workflows may require more models than the cache budget permits to retain
@@ -94,7 +94,7 @@ Reviewed service schemas ship as compressed, integrity-checked local packs. Star
 adds missing defaults to existing profiles without replacing authored documents.
 Installation records survive deletion, so deleted defaults stay deleted.
 
-Unmodified defaults follow bundled revisions while retaining enablement and order.
+Unmodified defaults follow bundled revisions while retaining enablement.
 Their Git baseline materializes when a complete source, operation model or history
 is needed. Once materialized, later observed bundled revisions append content
 commits in that schema's repository. Reading history preserves factory ownership;
@@ -212,15 +212,14 @@ metadata. Saved workflows remain untouched.
 
 ### Card ordering
 
-Cards slide into a local preview during dragging. Dropping before or after
-another card saves the order; cancellation restores the original arrangement.
-Order lives in the metadata database's `state` store, outside schema documents
-and Git history.
+Schemas always sort by their current displayed name, case-insensitively, with
+stable schema IDs breaking ties. Settings and the operation catalog use the
+same order after uploads, renames, replacements and reloads. Existing saved
+manual arrangements are ignored. There are no manual ordering controls or
+actions.
 
-Moves resolve the latest order under the same browser lock; dropping in the
-existing position causes no write. New documents append, deletion removes their
-entries, and older metadata without a saved order falls back to creation time
-and stable ID.
+Ordering reads metadata without opening schema documents or adding Git
+revisions. Names refreshed by discovery determine the final library snapshot.
 
 ## Validation
 

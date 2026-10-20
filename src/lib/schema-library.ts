@@ -196,14 +196,6 @@ export function setSchemaEnabled(id: string, enabled: boolean): Promise<void>
   });
 }
 
-export function moveSchema(id: string, targetId: string, placement: "before" | "after"): Promise<void>
-{
-  return run(async () => {
-    findRecord(id);
-    await update("move", [id, targetId, placement]);
-  });
-}
-
 export function deleteSchema(id: string): Promise<void>
 {
   return run(async () => {

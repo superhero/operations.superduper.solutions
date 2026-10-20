@@ -67,8 +67,8 @@ Feature: Default service schemas in the application
     Then all Atlassian catalogs share the provider prefix and retain a newly disabled product after reload
 
   @service-defaults
-  Scenario: Initial schema order is alphabetical and subsequent manual ordering persists
-    Then all initial schemas sort by displayed name and keep a manually saved order
+  Scenario: Schemas remain alphabetical after renames uploads and legacy saved orders
+    Then schemas always sort by displayed name without manual controls
 
   @service-defaults
   Scenario: Fresh profiles include the complete collection and retain local choices

@@ -9,8 +9,8 @@ Feature: Targeted schema storage and independent history
   Scenario: Metadata changes and disabled documents need no source decoding
     Then schema metadata and discovery avoid disabled and unrelated document reads
 
-  Scenario: Schema name changes do not repeat initial alphabetical sorting
-    Then renamed remaining examples retain their order when schema defaults initialize again
+  Scenario: Renamed schemas use their current alphabetical position
+    Then renamed remaining examples sort by name when schema defaults initialize again
 
   Scenario: Factory label changes preserve authored names and canonical source ownership
     Then new factory labels refresh without decoding sources or replacing personal names

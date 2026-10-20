@@ -4,7 +4,7 @@
 import "./worker-runtime.ts";
 import { createSchemaDocumentId, parseSchemaDocument, schemaDocumentMaxBytes, validateSchemaDocument } from "./schema-documents.ts";
 import { listSchemaMetadata, readSchemaDiscovery, readSchemaDocument, readSchemaOperations, releaseSchemaDocument,
-  schemaMetadataIdentity, putSchemaDocument, renameSchemaDocument, moveSchemaDocument,
+  schemaMetadataIdentity, putSchemaDocument, renameSchemaDocument,
   deleteSchemaDocument, setSchemaDocumentEnabled, configureSchemaDefaults, updateSchemaUpstream,
   getSchemaBranchHistory, getSchemaRevisionDiff, resolveSchemaUpdate, dismissSchemaUpdate, updateSchemaFromBundle } from "./schema-storage.ts";
 import { serviceSchemaDescriptors, readServiceSchema, readServiceSchemaUpstream } from "./service-schema-packs.ts";
@@ -36,7 +36,6 @@ async function snapshot(reset = false): Promise<SchemaLibrarySnapshot>
     let summary = record.summary;
     if (record.enabled)
     {
-      snapshot.active.push(record.id);
       next.set(record.id, identity);
       if (reset || published.get(record.id) !== identity)
       {
@@ -59,6 +58,11 @@ async function snapshot(reset = false): Promise<SchemaLibrarySnapshot>
         name: record.displayName ?? summary.name }
         : { name: record.displayName ?? record.file, serverUrl: "", operationCount: null } });
   }
+  // Discovery can refresh a legacy name; use the final displayed names for
+  // both Settings and the operation catalog, including after a rename/upload.
+  snapshot.records.sort((left, right) => left.summary.name.localeCompare(right.summary.name, undefined, { sensitivity: "base" })
+    || left.id.localeCompare(right.id));
+  snapshot.active = snapshot.records.filter(record => record.enabled).map(record => record.id);
   published = next;
   return snapshot;
 }
@@ -108,9 +112,6 @@ serveWorkerRpc({
     return snapshot();
   },
   async rename(id: string, name: string) { await renameSchemaDocument(id, name); return snapshot(); },
-  async move(id: string, targetId: string, placement: "before" | "after") {
-    await moveSchemaDocument(id, targetId, placement); return snapshot();
-  },
   async enabled(id: string, enabled: boolean) {
     await setSchemaDocumentEnabled(id, enabled, { metadataOnly: true }); return snapshot();
   },
