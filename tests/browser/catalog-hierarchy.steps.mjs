@@ -4,9 +4,12 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog } from './workspace.steps.mjs';
+import { openCatalog, searchOperations, setMode } from './workspace.steps.mjs';
 import { operations } from '../../src/lib/catalog.ts';
 import { catalogs } from '../../src/lib/catalog-registry.ts';
+import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };
+import { catalogSchemaHeading } from './catalog-hierarchy.fixture.mjs';
+import { expandSchemaCard } from './schema-card.fixture.mjs';
 
 const catalog = page => page.getByRole('navigation', { name: 'Operation catalog', exact: true });
 const branch = (page, id, root) => (root ? catalog(page).locator(`[data-catalog-group="${root}"]`) : catalog(page))
@@ -18,6 +21,94 @@ async function expand(page, id, root) {
   const summary = heading(page, id, root);
   if (await summary.getAttribute('aria-expanded') !== 'true') await summary.press('Enter');
 }
+
+Then('schema name groups preserve counts search and operation selection', async function () {
+  const page = this.page;
+  await openCatalog(page);
+  const roots = catalog(page).locator(':scope > .catalog-reorder > .catalog-branch > .catalog-group > summary');
+  const labels = await roots.locator('.catalog-name').allTextContents();
+  assert.equal(labels.filter(name => name === 'Google').length, 1);
+  assert.equal(labels.filter(name => name === 'Atlassian').length, 1);
+  assert.ok(labels.every(name => !name.includes('/')));
+  await expect(catalog(page).locator('[data-operation-id]')).toHaveCount(0);
+  const google = roots.filter({ has: page.getByText('Google', { exact: true }) });
+  const googleCount = descriptors.filter(source => source.name.startsWith('Google / ')).reduce((sum, source) => sum + source.operations, 0);
+  await expect(google.locator('.catalog-count')).toHaveText(String(googleCount));
+  const storage = await catalogSchemaHeading(page, 'Google / Cloud / Storage');
+  await expect(storage.locator('xpath=../..')).toHaveAttribute('data-catalog-group', 'gcp-storage');
+  await expect(storage.locator('.catalog-count')).toHaveText(String(descriptors.find(source => source.id === 'gcp-storage').operations));
+  await storage.press('Enter');
+  await expand(page, 'gcp-storage:tag:buckets');
+  const list = operation(page, 'gcp-storage:storage.buckets.list');
+  await expect(list).toBeVisible();
+  await page.screenshot({ path: `${this.artifactDirectory}/schema-groups-${page.viewportSize().width}.png` });
+  // Opening a sibling product closes the Cloud path and clears its descendants.
+  await catalogSchemaHeading(page, 'Google / Gemini / Interactions');
+  await expect(list).toBeHidden();
+  await searchOperations(page, 'storage.buckets.list');
+  await expect(google).toHaveAttribute('aria-expanded', 'true');
+  await expect(list).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toBeFocused();
+  await searchOperations(page, '!!!');
+  await expect(catalog(page).locator('[data-catalog-group]')).toHaveCount(0);
+  // An empty result list has no height; the search field remains available.
+  await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('');
+  await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', '');
+  const interactions = await catalogSchemaHeading(page, 'Google / Gemini / Interactions');
+  await expect(interactions).toHaveAttribute('aria-expanded', 'false');
+  await expect(list).toBeHidden();
+  await searchOperations(page, 'storage.buckets.list');
+  // Unsupported contracts keep their guard when nested and matched.
+  await expect(list).toHaveAttribute('aria-disabled', 'true');
+  await list.press('Enter');
+  const node = page.locator('.svelte-flow__node-operation');
+  await expect(node).toHaveCount(0);
+  await searchOperations(page, 'getSeriesObservations');
+  const supported = operation(page, 'fred:getSeriesObservations');
+  await expect(supported).toHaveAttribute('aria-disabled', 'false');
+  await supported.focus();
+  await expect(supported).toBeFocused();
+  await expect(supported).toBeInViewport();
+  await supported.press('Enter');
+  await expect(node).toHaveCount(1);
+  await expect(node).toContainText('Get the observations or data values');
+  await expect(node).toBeFocused();
+});
+
+Then('schema name groups follow saved schema names and enablement', async function () {
+  const page = this.page;
+  const settings = async () => {
+    await setMode(page, 'settings');
+    const schemas = page.locator('summary[aria-label="Schemas"]');
+    if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+    await expect(page.getByRole('region', { name: 'OpenAPI documents', exact: true })).toHaveAttribute('aria-busy', 'false');
+  };
+  await settings();
+  const storage = page.locator('[data-schema-id="gcp-storage"]');
+  await expandSchemaCard(storage);
+  const name = storage.getByRole('textbox', { name: 'Schema name', exact: true });
+  await name.fill('Local / Files / Storage');
+  await name.press('Enter');
+  await expect(storage.getByRole('button', { name: /^Schema details:/ })).toHaveAttribute('aria-label', 'Schema details: Local / Files / Storage');
+  await openCatalog(page);
+  const renamed = await catalogSchemaHeading(page, 'Local / Files / Storage');
+  await expect(renamed.locator('xpath=../..')).toHaveAttribute('data-catalog-group', 'gcp-storage');
+  await settings();
+  await storage.getByRole('switch').click();
+  await expect(storage.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await expect(page.getByRole('region', { name: 'OpenAPI documents', exact: true })).toHaveAttribute('aria-busy', 'false');
+  await openCatalog(page);
+  await expect(catalog(page).locator('.catalog-name').filter({ hasText: /^Local$/ })).toHaveCount(0);
+  await page.reload();
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await settings();
+  await expect(storage.locator('.schema-name-label')).toHaveText('Local / Files / Storage');
+  await storage.getByRole('switch').click();
+  await expect(storage.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('region', { name: 'OpenAPI documents', exact: true })).toHaveAttribute('aria-busy', 'false');
+  await openCatalog(page);
+  await expect((await catalogSchemaHeading(page, 'Local / Files / Storage')).locator('xpath=../..')).toHaveAttribute('data-catalog-group', 'gcp-storage');
+});
 
 Then('catalog groups count their operations and keep one open descendant path', async function () {
   const page = this.page;

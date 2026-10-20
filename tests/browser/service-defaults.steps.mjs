@@ -9,6 +9,7 @@ import sources from '../../build/service-schemas.sources.json' with { type: 'jso
 import { bundledCatalogs } from '../../src/lib/catalog-registry.ts';
 import { setMode, openCatalog, closeCatalog, workflowAction, workspace, fillField } from './workspace.steps.mjs';
 import { expandSchemaCard } from './schema-card.fixture.mjs';
+import { catalogSchemaHeading } from './catalog-hierarchy.fixture.mjs';
 
 const card = (page, id) => page.locator(`[data-schema-id="${id}"]`);
 async function schemas(page) {
@@ -47,7 +48,7 @@ Then('FRED observations and ALFRED vintages are available in separate catalogs a
   }
   await openCatalog(page);
   for (const [id, operation] of [['fred', 'getSeriesObservations'], ['alfred', 'getSeriesVintagedates']]) {
-    const root = page.locator(`[data-catalog-group="${id}"] > .catalog-group > summary`);
+    const root = await catalogSchemaHeading(page, descriptors.find(source => source.id === id).name);
     if (await root.getAttribute('aria-expanded') !== 'true') await root.click();
     const series = page.locator(`[data-catalog-group="${id}:tag:Series"] > .catalog-group > summary`);
     if (await series.getAttribute('aria-expanded') !== 'true') await series.click();
@@ -121,10 +122,11 @@ Then('all Atlassian catalogs share the provider prefix and retain a newly disabl
   }
   await openCatalog(page);
   for (const source of products) {
-    const heading = page.locator(`[data-catalog-group="${source.id}"] > .catalog-group > summary`);
-    await expect(heading).toContainText(source.name);
+    const heading = await catalogSchemaHeading(page, source.name);
+    await expect(heading.locator('xpath=../..')).toHaveAttribute('data-catalog-group', source.id);
+    await expect(heading.locator('.catalog-name')).toHaveText(source.name.split(' / ').at(-1));
   }
-  await page.locator('[data-catalog-group="statuspage"] > .catalog-group > summary').click();
+  await (await catalogSchemaHeading(page, 'Atlassian / Statuspage')).click();
   await page.locator('[data-catalog-group="statuspage:tag:pages"] > .catalog-group > summary').click();
   const operation = page.locator('[data-operation-id="statuspage:GET /pages"] > button');
   await expect(operation).toBeEnabled();
@@ -141,8 +143,9 @@ Then('all Atlassian catalogs share the provider prefix and retain a newly disabl
   await expect(card(page, 'trello').getByRole('switch')).toHaveAttribute('aria-checked', 'false');
   await expect(card(page, 'jira').locator('.schema-name-label')).toHaveText('Atlassian / Jira / Cloud');
   await openCatalog(page);
+  await catalogSchemaHeading(page, 'Atlassian / Statuspage');
   await expect(page.locator('[data-catalog-group="trello"]')).toHaveCount(0);
-  await expect(page.locator('[data-catalog-group="statuspage"] > .catalog-group > summary')).toContainText('Atlassian / Statuspage');
+  await expect(page.locator('[data-catalog-group="statuspage"] > .catalog-group > summary .catalog-name')).toHaveText('Statuspage');
 });
 
 Then('all initial schemas sort by displayed name and keep a manually saved order', async function () {

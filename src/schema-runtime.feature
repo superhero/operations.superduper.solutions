@@ -6,6 +6,15 @@
 Feature: Registered schemas at runtime
   Catalog changes remain consistent across reports, workflow runners and HTTP execution.
 
+  Scenario: Schema names form nested navigation groups without changing operation categories
+    Then slash-separated schema names form ordered groups without changing their sources
+
+  Scenario: Schemas can share a name or serve as the parent of another schema
+    Then schema name groups retain prefix schemas and duplicate labels independently
+
+  Scenario: Renaming and reordering schemas rebuilds their navigation hierarchy
+    Then schema name grouping follows current labels and order without retaining removed groups
+
   Scenario: Schema validation normalizes a non-Error failure from operation extraction
     Then schema validation normalizes a non-Error failure from operation extraction
 

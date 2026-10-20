@@ -2,6 +2,20 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 Feature: Nested operation catalog
+  @service-defaults
+  Scenario Outline: Slash-separated schema names form browsable provider and product groups
+    When I use a viewport of <width> by 844 pixels
+    Then schema name groups preserve counts search and operation selection
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  @service-defaults
+  Scenario: Renaming and disabling schemas updates their navigation groups
+    Then schema name groups follow saved schema names and enablement
+
   Scenario: Nested paths close siblings and clear descendants
     Then catalog groups count their operations and keep one open descendant path
 

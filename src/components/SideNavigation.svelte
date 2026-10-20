@@ -9,6 +9,7 @@
   import CatalogPrompt from "./CatalogPrompt.svelte";
   import CatalogHelp from "./CatalogHelp.svelte";
   import { catalogs, type CatalogGroup } from "$lib/catalog-registry.ts";
+  import { catalogHierarchy } from "$lib/catalog-hierarchy.ts";
   import { evaluateOperationsAsync } from "$lib/operation-matching-client.ts";
   import type { OperationMatch } from "$lib/matching.ts";
   let { closeMenuWithEscape = true, open = $bindable(false), modal = $bindable(false), documentModal = false, operations, catalogGroups, evaluationDetails = false, workflows, workflowError, onWorkflowSelect, onWorkflowRetry, onSelect }:
@@ -41,7 +42,7 @@
   const groups: CatalogGroup[] = $derived.by(() => {
     // The operation snapshot changes together with the registered source documents.
     void operations;
-    return catalogGroups ?? catalogs.flatMap(catalog => catalog.groups);
+    return catalogHierarchy(catalogGroups ?? catalogs.flatMap(catalog => catalog.groups));
   });
   const indexedOperations = $derived(new Map(operations.map(operation => [operation.id, operation])));
   const counts = $derived.by(() => {

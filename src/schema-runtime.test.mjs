@@ -13,6 +13,67 @@ import { validateSchemaDocument } from "./lib/schema-documents.ts";
 import { createWorkflowRequestExecution, workflowExecutionForOperation, workflowRequestUrl } from "./lib/workflow-execution.ts";
 import { createOperationGraph } from "./lib/workflow-graph.ts";
 import { createWorkflowRunner } from "./lib/workflow-runner.ts";
+import { catalogHierarchy } from "./lib/catalog-hierarchy.ts";
+
+Then("slash-separated schema names form ordered groups without changing their sources", () => {
+  const category = { id: "compute:tag", name: "Instances / actions", description: "", operationIds: ["compute:read"] };
+  const plain = { id: "plain", name: "Plain", description: "", operationIds: ["plain:read"] };
+  const sources = [plain,
+    { id: "compute", name: "Google / Cloud / Compute", description: "Compute API", children: [category] },
+    { id: "storage", name: "Google / Cloud / Storage", description: "", operationIds: ["storage:read"] },
+    { id: "gemini", name: " Google / Gemini // Interactions / ", description: "", operationIds: ["gemini:read"] },
+    { id: "blank", name: "///", description: "", operationIds: ["blank:read"] }];
+  const before = structuredClone(sources);
+  const groups = catalogHierarchy(sources);
+  assert.deepEqual(groups.map(group => group.name), ["Plain", "Google", "///"]);
+  assert.equal(groups[0], plain);
+  assert.deepEqual(groups[1].children.map(group => group.name), ["Cloud", "Gemini"]);
+  const cloud = groups[1].children[0];
+  assert.deepEqual(cloud.children.map(group => [group.id, group.name]), [["compute", "Compute"], ["storage", "Storage"]]);
+  assert.equal(cloud.children[0].children[0], category, "Operation categories are not split by schema naming rules.");
+  assert.equal(cloud.children[0].description, "Compute API");
+  assert.deepEqual(groups[1].children[1].children[0].operationIds, ["gemini:read"]);
+  assert.deepEqual(sources, before);
+  assert.deepEqual(catalogHierarchy([]), []);
+});
+
+Then("schema name groups retain prefix schemas and duplicate labels independently", () => {
+  const sources = [
+    { id: "v1", name: "Atlassian / Confluence / Cloud / v1", description: "", operationIds: ["v1:read"] },
+    { id: "cloud", name: "Atlassian / Confluence / Cloud", description: "", children: [
+      { id: "cloud:tag", name: "Pages", description: "", operationIds: ["cloud:read"] }] },
+    { id: "tags", name: "Atlassian / Marketplace / Product Tags", description: "", operationIds: ["tags:read"] },
+    { id: "market", name: "Atlassian / Marketplace", description: "", operationIds: ["market:read"] },
+    { id: "copy-a", name: "Local / Duplicate", description: "", operationIds: ["a:read"] },
+    { id: "copy-b", name: "Local / Duplicate", description: "", operationIds: ["b:read"] },
+  ];
+  const groups = catalogHierarchy(sources);
+  const cloud = groups[0].children[0].children[0];
+  assert.equal(cloud.id, "cloud");
+  assert.deepEqual(cloud.children.map(group => group.id), ["cloud:tag", "v1"]);
+  const market = groups[0].children[1];
+  assert.equal(market.id, "market");
+  assert.deepEqual(market.operationIds, ["market:read"]);
+  assert.deepEqual(market.children.map(group => group.id), ["tags"]);
+  assert.deepEqual(groups[1].children[0].children.map(group => group.id), ["copy-a", "copy-b"]);
+  const ids = group => [...(group.operationIds ?? []), ...(group.children ?? []).flatMap(ids)];
+  assert.deepEqual(groups.flatMap(ids).sort(), sources.flatMap(ids).sort(), "Each operation remains reachable exactly once.");
+});
+
+Then("schema name grouping follows current labels and order without retaining removed groups", () => {
+  const compute = { id: "compute", name: "Google / Cloud / Compute", description: "", operationIds: ["compute:read"] };
+  const storage = { id: "storage", name: "Google / Cloud / Storage", description: "", operationIds: ["storage:read"] };
+  const first = catalogHierarchy([compute, storage]);
+  const reordered = catalogHierarchy([storage, compute]);
+  assert.equal(first[0].id, reordered[0].id);
+  assert.equal(first[0].children[0].id, reordered[0].children[0].id);
+  assert.deepEqual(reordered[0].children[0].children.map(group => group.id), ["storage", "compute"]);
+  const renamed = catalogHierarchy([{ ...storage, name: "My API" }, { ...compute, name: "Other / Compute" }]);
+  assert.deepEqual(renamed.map(group => group.name), ["My API", "Other"]);
+  assert.equal(renamed[1].children[0].id, "compute");
+  assert.equal(catalogHierarchy([compute])[0].id, first[0].id);
+  assert.deepEqual(catalogHierarchy([{ ...storage, name: "__proto__ / constructor" }])[0].children[0].name, "constructor");
+});
 
 const response = { description: "Success", content: { "application/json": { schema: { type: "object" } } } };
 const fixture = (operation = {}, item = {}) => ({
