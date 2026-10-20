@@ -47,3 +47,6 @@ Feature: Targeted schema storage and independent history
 
   Scenario: Discarding a proposal preserves the current schema and source tips
     Then discarded conflicting schema updates leave current content and ancestry unchanged
+
+  Scenario: Schema changes identify the selected commit and its direct comparison parent
+    Then schema diffs match the selected graph edge for imports corrections and merge parents

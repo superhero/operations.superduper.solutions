@@ -93,9 +93,9 @@ export async function loadSchemaHistory(id: string, limit = 100): Promise<Schema
   return history;
 }
 
-export function loadSchemaRevisionDiff(id: string, oid: string, limit = 200): Promise<SchemaRevisionDiff> {
+export function loadSchemaRevisionDiff(id: string, oid: string, limit = 200, parent?: string): Promise<SchemaRevisionDiff> {
   findRecord(id);
-  return worker.call("revisionDiff", [id, oid, limit]);
+  return worker.call("revisionDiff", [id, oid, limit, parent]);
 }
 
 async function updateReviewedSchema(method: string, args: unknown[]): Promise<void> {

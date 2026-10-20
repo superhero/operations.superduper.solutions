@@ -80,7 +80,9 @@ let initialized = false;
 export type SchemaRevision = { oid: string; message: string; timestamp: number; parents: string[] };
 export type SchemaBranchHistory = { branches: { name: string; oid: string }[]; revisions: SchemaRevision[]; truncated: boolean;
   current: string; incoming?: { revision: string; conflicts: SchemaConflict[] } };
-export type SchemaRevisionDiff = { changes: { path: string; kind: "added" | "removed" | "changed"; before?: string; after?: string }[]; truncated: boolean };
+type SchemaDiffCommit = Pick<SchemaRevision, "oid" | "message">;
+export type SchemaRevisionDiff = { revision: SchemaDiffCommit; parents: SchemaDiffCommit[]; base: SchemaDiffCommit | null;
+  changes: { path: string; kind: "added" | "removed" | "changed"; before?: string; after?: string }[]; truncated: boolean };
 
 export function schemaRepositoryPath(id: string): string
 {
@@ -1012,16 +1014,23 @@ function changePreview(value: unknown, depth = 0): unknown {
   return Object.fromEntries([...entries.slice(0, 8).map(([key, item]) => [key, changePreview(item, depth + 1)]), ...(entries.length > 8 ? [["…", "Preview truncated"]] : [])]);
 }
 
-export function getSchemaRevisionDiff(id: string, oid: string, limit = 200): Promise<SchemaRevisionDiff> {
+export function getSchemaRevisionDiff(id: string, oid: string, limit = 200, parent?: string): Promise<SchemaRevisionDiff> {
   schemaRepositoryPath(id);
-  if (!/^[a-f0-9]{40}$/.test(oid) || !Number.isInteger(limit) || limit < 1 || limit > 1000) throw new Error("Choose a valid bounded schema revision.");
+  if (!/^[a-f0-9]{40}$/.test(oid) || (parent !== undefined && !/^[a-f0-9]{40}$/.test(parent))
+    || !Number.isInteger(limit) || limit < 1 || limit > 1000) throw new Error("Choose a valid bounded schema revision.");
   return serialized(async database => {
     if (!await readMetadata(database, id)) throw new Error("This schema could not be found in this browser.");
-    const { commit } = await git.readCommit({ fs: fs(), dir: schemaRepositoryPath(id), oid });
-    const before = commit.parent[0] ? JSON.parse(await versionText(id, commit.parent[0])) : {};
+    const dir = schemaRepositoryPath(id);
+    const { commit } = await git.readCommit({ fs: fs(), dir, oid });
+    if (parent !== undefined && !commit.parent.includes(parent)) throw new Error("Compare this schema revision with one of its direct parents.");
+    const parents = await Promise.all(commit.parent.map(async oid => ({ oid,
+      message: (await git.readCommit({ fs: fs(), dir, oid })).commit.message.trim() })));
+    const base = parents.find(entry => entry.oid === (parent ?? commit.parent[0])) ?? null;
+    const before = base ? JSON.parse(await versionText(id, base.oid)) : {};
     const after = JSON.parse(await versionText(id, oid));
     const diff = schemaChanges(before, after, limit);
-    return { ...diff, changes: diff.changes.map(change => ({ path: change.path, kind: change.kind,
+    return { ...diff, revision: { oid, message: commit.message.trim() }, parents, base,
+      changes: diff.changes.map(change => ({ path: change.path, kind: change.kind,
       ...(Object.hasOwn(change, "before") ? { before: JSON.stringify(changePreview(change.before), null, 2) } : {}),
       ...(Object.hasOwn(change, "after") ? { after: JSON.stringify(changePreview(change.after), null, 2) } : {}) })) };
   });

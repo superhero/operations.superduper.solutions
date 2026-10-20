@@ -33,7 +33,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     onLoad: (id: string) => Promise<Record<string, unknown>>;
     onRelease: (id: string) => void;
     onHistory?: (id: string, limit: number) => Promise<SchemaBranchHistory>;
-    onDiff?: (id: string, oid: string, limit: number) => Promise<SchemaRevisionDiff>;
+    onDiff?: (id: string, oid: string, limit: number, parent?: string) => Promise<SchemaRevisionDiff>;
     onResolveUpdate?: (id: string, current: string, incoming: string, choices: Record<string, SchemaResolution>) => Promise<void>;
     onDismissUpdate?: (id: string, current: string, incoming: string) => Promise<void>;
     onBundledUpdate?: (id: string) => Promise<void>;
@@ -338,7 +338,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
             {#if onHistory && onDiff}
               <SchemaHistory id={record.id} sourceIdentity={record.sourceIdentity} pending={record.hasPendingUpdate}
-                load={limit => onHistory!(record.id, limit)} loadDiff={(oid, limit) => onDiff!(record.id, oid, limit)}
+                load={limit => onHistory!(record.id, limit)} loadDiff={(oid, limit, parent) => onDiff!(record.id, oid, limit, parent)}
                 onResolve={onResolveUpdate ? (current, incoming, choices) => onResolveUpdate!(record.id, current, incoming, choices) : undefined}
                 onDismiss={onDismissUpdate ? (current, incoming) => onDismissUpdate!(record.id, current, incoming) : undefined}
                 onBundledUpdate={record.bundled && onBundledUpdate ? () => onBundledUpdate!(record.id) : undefined} />

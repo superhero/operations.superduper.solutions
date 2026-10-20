@@ -8,6 +8,47 @@ Before({ tags: '@schema-lifecycle' }, async function () {
   await this.page.evaluate(async () => { globalThis.schemaFixture = await import('/schema-lifecycle-fixture.js'); });
 });
 
+Then('schema diffs match the selected graph edge for imports corrections and merge parents', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setupGoogle();
+    const initial = await api.getSchemaBranchHistory('google-fixture');
+    const published = initial.branches.find(branch => branch.name === 'Published').oid;
+    const correction = await api.getSchemaRevisionDiff('google-fixture', initial.current);
+    const baseline = await api.getSchemaRevisionDiff('google-fixture', published);
+    await api.renameSchemaDocument('google-fixture', 'My Google');
+    const local = await api.getSchemaBranchHistory('google-fixture');
+    await api.updateSchemaUpstream('google-fixture', api.googleDocument(2), 'v2.json');
+    const merged = await api.getSchemaBranchHistory('google-fixture');
+    const current = merged.revisions.find(revision => revision.oid === merged.current);
+    const first = await api.getSchemaRevisionDiff('google-fixture', current.oid);
+    const second = await api.getSchemaRevisionDiff('google-fixture', current.oid, 200, current.parents[1]);
+    let unrelated;
+    try { await api.getSchemaRevisionDiff('google-fixture', current.oid, 200, published); }
+    catch (error) { unrelated = error.message; }
+    return { initial, published, correction, baseline, local, merged, first, second, unrelated,
+      unchanged: await api.getSchemaBranchHistory('google-fixture') };
+  });
+  assert.deepEqual(result.baseline.revision, { oid: result.published, message: result.initial.revisions.find(item => item.oid === result.published).message });
+  assert.equal(result.baseline.base, null);
+  assert.deepEqual(result.baseline.parents, []);
+  assert.equal(result.correction.revision.oid, result.initial.current);
+  assert.equal(result.correction.base.oid, result.published);
+  assert.deepEqual(result.correction.parents.map(parent => parent.oid), [result.published]);
+  assert.equal(result.first.revision.oid, result.merged.current);
+  assert.equal(result.first.base.oid, result.local.current);
+  assert.ok(result.first.changes.some(change => change.path === '/info/version'));
+  assert.equal(result.first.changes.some(change => change.path === '/info/title'), false);
+  assert.equal(result.second.revision.oid, result.merged.current);
+  assert.equal(result.second.base.oid, result.merged.branches.find(branch => branch.name === 'Corrections').oid);
+  assert.deepEqual(result.second.changes.map(change => change.path), ['/info/title']);
+  const commit = result.merged.revisions.find(revision => revision.oid === result.merged.current);
+  assert.deepEqual(result.first.parents.map(parent => parent.oid), commit.parents);
+  assert.deepEqual(result.second.parents, result.first.parents);
+  assert.match(result.unrelated, /direct parents/);
+  assert.deepEqual(result.unchanged, result.merged, 'Inspecting either merge comparison leaves every revision and branch unchanged.');
+});
+
 Then('schema corrections and local edits survive independent published updates', async function () {
   const result = await this.page.evaluate(async () => {
     const api = globalThis.schemaFixture;

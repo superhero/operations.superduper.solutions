@@ -153,9 +153,14 @@ no schema download. Unmodified factory copies continue to follow bundled
 revisions automatically; edited copies are updated explicitly.
 
 **Schema history** shows the actual commit graph, branch tips and bounded
-changed-field previews for a selected revision. It reads blobs on demand and
-does not alter the checkout. More revisions and changes can be loaded up to
-explicit limits; preview truncation does not modify stored documents or exports.
+changed-field previews for a selected revision. The change panel names that
+commit and its comparison parent, and highlights the same parent edge in the
+graph. The first parent is the default; a merge can be compared with either
+direct parent. Comparing revisions does not alter the checkout or Git objects.
+Repeated authentication edits are grouped with expandable field details; root
+imports are presented as starting documents. More revisions and changes can be
+loaded up to explicit limits; partial counts and truncated previews do not
+modify stored documents or exports.
 
 Build-time refreshes apply the same reviewed recipes. To update corrections
 without fetching new provider documents, use
