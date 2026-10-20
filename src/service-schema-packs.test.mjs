@@ -6,6 +6,51 @@ import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { Then } from '@cucumber/cucumber';
 import { decodeServiceSchema, readServiceSchema, serviceSchemaDescriptors } from './lib/service-schema-packs.ts';
+import { adaptGoogleOauthSchema } from '../build/google-oauth-schema.mjs';
+
+Then('Google grant normalization preserves scope alternatives without weakening unrelated authentication', () => {
+  const permissions = { read: 'Read data', write: 'Write data' };
+  const authorizationUrl = 'https://accounts.google.com/o/oauth2/auth';
+  const document = { openapi: '3.0.3', info: { title: 'Google grant fixture', version: 'v1' },
+    components: { securitySchemes: {
+      Oauth2: { type: 'oauth2', flows: { implicit: { authorizationUrl, scopes: permissions } } },
+      Oauth2c: { type: 'oauth2', flows: { authorizationCode: { authorizationUrl, scopes: permissions,
+        tokenUrl: 'https://accounts.google.com/o/oauth2/token' } } },
+      ProjectKey: { type: 'apiKey', in: 'query', name: 'key' },
+    } },
+    security: [{ Oauth2: ['read'], Oauth2c: ['read'], ProjectKey: [] }],
+    paths: { '/items': {
+      get: { security: [{ Oauth2: ['read'], Oauth2c: ['read'] }, { Oauth2: ['write'], Oauth2c: ['write'] }] },
+      post: { security: [{ Oauth2: ['read', 'write'], Oauth2c: ['write', 'read'] }] },
+      options: { security: [] },
+      head: { security: [{}] },
+      delete: { security: [{ ProjectKey: [] }] },
+    } },
+  };
+  const before = structuredClone(document);
+  const adapted = adaptGoogleOauthSchema(document);
+  assert.deepEqual(document, before, 'Source input must remain unchanged.');
+  assert.deepEqual(adaptGoogleOauthSchema(adapted), adapted, 'Repeated adaptation must be byte-stable.');
+  assert.deepEqual(adapted.components, before.components, 'Both original OAuth flow descriptions stay inspectable.');
+  assert.deepEqual(adapted.security, [{ Oauth2c: ['read'], ProjectKey: [] }], 'A separate API key must remain required.');
+  assert.deepEqual(adapted['x-upstream-security'], before.security);
+  assert.deepEqual(adapted.paths['/items'].get.security, [{ Oauth2c: ['read'] }, { Oauth2c: ['write'] }]);
+  assert.deepEqual(adapted.paths['/items'].post.security, [{ Oauth2c: ['write', 'read'] }]);
+  for (const method of ['get', 'post'])
+    assert.deepEqual(adapted.paths['/items'][method]['x-upstream-security'], before.paths['/items'][method].security);
+  for (const method of ['options', 'head', 'delete']) assert.deepEqual(adapted.paths['/items'][method], before.paths['/items'][method]);
+  for (const corrupt of [
+    source => { source.paths['/items'].get.security[0].Oauth2c = ['write']; },
+    source => { source.components.securitySchemes.Oauth2c.flows.authorizationCode.tokenUrl = 'https://example.com/token'; },
+    source => { source.components.securitySchemes.Oauth2.flows.implicit.scopes = {}; },
+    source => { source.paths['/items'].get.security[0].Oauth2c = [42]; },
+    source => { delete source.components.securitySchemes.Oauth2; },
+    source => { source.paths['/items'].get['x-upstream-security'] = []; },
+  ]) {
+    const invalid = structuredClone(document); corrupt(invalid);
+    assert.throws(() => adaptGoogleOauthSchema(invalid), /Google OAuth adaptation/);
+  }
+});
 
 const fixture = data => {
   const bytes = Buffer.isBuffer(data) ? data : Buffer.from(JSON.stringify(data));
@@ -18,7 +63,7 @@ Then('all service schema packs match their size hash and operation inventory', a
   assert.deepEqual([...new Set(serviceSchemaDescriptors.map(item => item.provider ?? item.id))].sort(), [
     'anthropic', 'atlassian', 'aws', 'azure', 'bluesky', 'cloudflare', 'cohere', 'deepseek',
     'digitalocean', 'discord', 'docker', 'dukascopy', 'ecb', 'elevenlabs', 'frankfurter', 'fred', 'gcp',
-    'gemini', 'github', 'gitlab', 'groq', 'hetzner', 'huggingface', 'mistral', 'ollama', 'openai',
+    'gemini', 'github', 'gitlab', 'google', 'groq', 'hetzner', 'huggingface', 'mistral', 'ollama', 'openai',
     'openrouter', 'render', 'replicate', 'resend', 'telegram', 'together', 'twilio', 'vercel', 'x', 'xai'
   ]);
   for (const descriptor of serviceSchemaDescriptors) {

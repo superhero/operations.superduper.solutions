@@ -83,3 +83,13 @@ operations remain in the main API. See the
 [Cloudflare inventory](../../../docs/default-service-schemas.md#cloudflare) for
 the source boundary and protocols outside these OpenAPI contracts. Refresh only
 `cloudflare-realtime-sfu` to update the Connection API.
+
+Google Workspace, YouTube, Analytics and Search Console add 24 contracts under
+the `google` provider. Their APIs.guru Discovery conversions opt into the
+`google-oauth` profile: `build/google-oauth-schema.mjs` collapses the duplicated
+implicit/authorization-code credential pair only when both Google flows and
+scope sets match. Original declarations remain in `x-upstream-security`; both
+OAuth flow descriptions, scope alternatives, paths and operation IDs remain
+available. Generic runtime security checks and existing Google Cloud packs are
+unchanged. The [Google inventory](../../../docs/default-service-schemas.md#google-workspace-and-other-google-products)
+records product scope, version provenance and authentication/upload limits.

@@ -103,6 +103,26 @@ restoration.
 
 ```
 
+<!-- changelog-commit:6d1179e908517fa6efb4908e4b4997885cd1033c -->
+### Commit [`6d1179e`](https://github.com/superhero/operations.superduper.solutions/commit/6d1179e908517fa6efb4908e4b4997885cd1033c)
+
+```text
+feat(catalog): add Google Workspace and product APIs
+
+Bundle 24 Google contracts for Workspace, YouTube, Analytics and Search
+Console with their source provenance and generated discovery indexes.
+
+Normalize only the known duplicated Google OAuth grant pair when both
+grants declare identical scopes. Preserve upstream declarations and all
+scope alternatives without relaxing generic credential validation or
+changing existing cloud schemas.
+
+Cover authenticated Gmail and Drive request assembly, catalog navigation,
+workflow restoration, saved preferences and schema integrity with Gherkin
+scenarios. Keep unsupported binary uploads explicit in the catalog.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.55

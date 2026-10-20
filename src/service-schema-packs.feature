@@ -3,6 +3,9 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Bundled service schema integrity
+  Scenario: Google OAuth grant aliases retain scopes provenance and other required credentials
+    Then Google grant normalization preserves scope alternatives without weakening unrelated authentication
+
   Scenario: Every default pack retains its recorded OpenAPI document
     Then all service schema packs match their size hash and operation inventory
 

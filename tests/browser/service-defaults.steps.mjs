@@ -11,6 +11,50 @@ import { setMode, openCatalog, closeCatalog, workflowAction, workspace, fillFiel
 import { expandSchemaCard } from './schema-card.fixture.mjs';
 import { catalogSchemaHeading, catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
 
+Then('Google Workspace YouTube Analytics and Search Console are grouped and Gmail and Drive nodes survive reload', async function () {
+  const page = this.page;
+  const collection = descriptors.filter(source => source.provider === 'google');
+  assert.equal(collection.length, 24);
+  await schemas(page);
+  for (const source of collection) {
+    await expect(card(page, source.id).locator('.schema-name-label')).toHaveText(source.name);
+    await expect(card(page, source.id).getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+  }
+  await openCatalog(page);
+  for (const name of ['Google / Workspace', 'Google / YouTube', 'Google / Analytics', 'Google / Search Console']) {
+    const group = await catalogSchemaHeading(page, name);
+    const sources = collection.filter(source => source.name === name || source.name.startsWith(`${name} / `));
+    await expect(group.locator('.catalog-count')).toHaveText(String(sources.reduce((count, source) => count + source.operations, 0)));
+  }
+  for (const source of collection) {
+    const group = await catalogSchemaHeading(page, source.name);
+    await expect(group.locator('xpath=../..')).toHaveAttribute('data-catalog-group', source.id);
+  }
+  const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
+  let added = 0;
+  for (const [id, query] of [['google-gmail', 'gmail.users.getProfile'], ['google-drive', 'drive.about.get']]) {
+    await openCatalog(page);
+    await prompt.fill(query);
+    await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', query);
+    const operation = page.locator(`[data-operation-id="${id}:${query}"] > button`);
+    await expect(operation).toHaveAttribute('aria-disabled', 'false');
+    await operation.press('Enter');
+    await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(++added);
+    if (page.viewportSize().width < 900)
+      await expect(page.getByRole('navigation', { name: 'Operation catalog', exact: true })).toBeHidden();
+  }
+  await closeCatalog(page);
+  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(2);
+  await expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
+  await page.reload();
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
+  const nodes = page.locator('.svelte-flow__node-operation');
+  await expect(nodes).toHaveCount(2);
+  await expect(nodes.getByRole('alert')).toHaveCount(0);
+  await expect(nodes.filter({ hasText: 'gmail.users.getProfile' })).toHaveCount(1);
+  await expect(nodes.filter({ hasText: 'drive.about.get' })).toHaveCount(1);
+});
+
 Then('Cloudflare Realtime SFU appears beside the account API and its workflow node survives reload', async function () {
   const page = this.page;
   await schemas(page);

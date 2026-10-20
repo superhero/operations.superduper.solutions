@@ -4,6 +4,16 @@
 
 Feature: Default service schemas in the application
   @service-defaults
+  Scenario Outline: Google Workspace and product catalogs support saved workflows on desktop and mobile
+    When I use a viewport of <width> by 844 pixels
+    Then Google Workspace YouTube Analytics and Search Console are grouped and Gmail and Drive nodes survive reload
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  @service-defaults
   Scenario Outline: Cloudflare Realtime SFU operations can be added and restored on desktop and mobile
     When I use a viewport of <width> by 844 pixels
     Then Cloudflare Realtime SFU appears beside the account API and its workflow node survives reload

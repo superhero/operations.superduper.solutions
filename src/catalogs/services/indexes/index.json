@@ -1624,6 +1624,34 @@
       }
     },
     {
+      "id": "google-analytics-admin",
+      "sourceRevision": "7642fc49124ab689e334b9c6673254761cbf86bb8c1bc9b2127c703ffeb3471c",
+      "bytes": 10892,
+      "compressedBytes": 1300,
+      "sha256": "96f66ef212e36c238674600c42144f73e1bb05ce6159c8388bcf0ca37b19cd84",
+      "summary": {
+        "name": "Google Analytics Admin API",
+        "serverUrl": "https://analyticsadmin.googleapis.com",
+        "description": "Manage properties in Google Analytics. Warning: Creating multiple Customer Applications, Accounts, or Projects to simulate or act as a single Customer Application, Account, or Project (respectively) or to circumvent Service-specific usage limits or quotas is a direct violation of Google Cloud Platform Terms of Service as well as Google APIs Terms of Service. These actions can result in immediate termination of your GCP project(s) without any warning.",
+        "operationCount": 26,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-analytics-data",
+      "sourceRevision": "02ed05d4884c9f09d7aca959eea8103195bcfac60ad52ac13de2265c6203021c",
+      "bytes": 4933,
+      "compressedBytes": 884,
+      "sha256": "59883e177c377c1fed7f741a7a40d26165266b76912744023b823da3d627414b",
+      "summary": {
+        "name": "Google Analytics Data API",
+        "serverUrl": "https://analyticsdata.googleapis.com",
+        "description": "Accesses report data in Google Analytics. Warning: Creating multiple Customer Applications, Accounts, or Projects to simulate or act as a single Customer Application, Account, or Project (respectively) or to circumvent Service-specific usage limits or quotas is a direct violation of Google Cloud Platform Terms of Service as well as Google APIs Terms of Service. These actions can result in immediate termination of your GCP project(s) without any warning.",
+        "operationCount": 10,
+        "unavailableCount": 0
+      }
+    },
+    {
       "id": "gcp-accesscontextmanager",
       "sourceRevision": "e011e759513da4ab8e6eabec31c05a91032b7a7c929e7766f62e6525adb4ed83",
       "bytes": 12699,
@@ -2360,6 +2388,314 @@
         "description": "The Gemini Interactions API allows developers to build generative AI applications using Gemini models. Gemini is our most capable model, built from the ground up to be multimodal. It can generalize and seamlessly understand, operate across, and combine different types of information including language, images, audio, video, and code. You can use the Gemini API for use cases like reasoning across text and images, content generation, dialogue agents, summarization and classification systems, and more.",
         "operationCount": 37,
         "unavailableCount": 37
+      }
+    },
+    {
+      "id": "google-search-console",
+      "sourceRevision": "541d68471cdfe7e966dc8da2f16f0a4be9abbaa6ef9191af19c54f3457c80cff",
+      "bytes": 4637,
+      "compressedBytes": 836,
+      "sha256": "88240caee7737d6906385db29ed093ad102bcbaeb06f4f8c02be2af41af5e8cc",
+      "summary": {
+        "name": "Google Search Console API",
+        "serverUrl": "https://searchconsole.googleapis.com",
+        "description": "The Search Console API provides access to both Search Console data (verified users only) and to public information on an URL basis (anyone)",
+        "operationCount": 11,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-admin-data-transfer",
+      "sourceRevision": "a470c9dafb3caaa92bfd4121f5d9957c1abd3de27f2ce94cc086d033f5549253",
+      "bytes": 2592,
+      "compressedBytes": 614,
+      "sha256": "cb577ebe2ce4f1d366da91e1f28a9d2adef4a6b25588c10cc527eeaa60b75f8f",
+      "summary": {
+        "name": "Admin SDK API",
+        "serverUrl": "https://admin.googleapis.com",
+        "description": "Admin SDK lets administrators of enterprise domains to view and manage resources like user, groups etc. It also provides audit and usage reports of domain.",
+        "operationCount": 5,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-admin-directory",
+      "sourceRevision": "1a2fc6ba76a3c8a6d6caa6d0fc77bb7cce6e6dbbeacbf38d24a7ccdc26e1e9a9",
+      "bytes": 42620,
+      "compressedBytes": 3138,
+      "sha256": "4629531beee7eec70a21f7dfc858e8d7167a5ff78ed3da03eef3be1421bb594e",
+      "summary": {
+        "name": "Admin SDK API",
+        "serverUrl": "https://admin.googleapis.com",
+        "description": "Admin SDK lets administrators of enterprise domains to view and manage resources like user, groups etc. It also provides audit and usage reports of domain.",
+        "operationCount": 123,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-admin-reports",
+      "sourceRevision": "86b449c01221f96e8217a4eaab64f4d10e431c2538f0c728e8b0d57ea39e14f7",
+      "bytes": 3219,
+      "compressedBytes": 740,
+      "sha256": "6836d71ea5c7b18dae970a4ede88b8f8e42b3172d559412a4c462fa8fa48868e",
+      "summary": {
+        "name": "Admin SDK API",
+        "serverUrl": "https://admin.googleapis.com",
+        "description": "Admin SDK lets administrators of enterprise domains to view and manage resources like user, groups etc. It also provides audit and usage reports of domain.",
+        "operationCount": 6,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-apps-script",
+      "sourceRevision": "3324c7e3fd9a55654689158277891579148bfa0f00e693d34edcbd1d63e138bc",
+      "bytes": 5493,
+      "compressedBytes": 792,
+      "sha256": "471f874fb71520008c6ece455ad6ae57c69acb8d4a2c998a8e21b6c4bef7b118",
+      "summary": {
+        "name": "Apps Script API",
+        "serverUrl": "https://script.googleapis.com",
+        "description": "Manages and executes Google Apps Script projects.",
+        "operationCount": 16,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-calendar",
+      "sourceRevision": "1c436cdb34bf03ad098dca42c26c4fcd7247e93f07cec79e6c8270f2ac43ebec",
+      "bytes": 10992,
+      "compressedBytes": 1229,
+      "sha256": "47c87f4551ea37b876ebb275e3db90bae67075e57d77ce7fdfc66fa7ee827184",
+      "summary": {
+        "name": "Calendar API",
+        "serverUrl": "https://www.googleapis.com/calendar/v3",
+        "description": "Manipulates events and other calendar data.",
+        "operationCount": 37,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-chat",
+      "sourceRevision": "a81e1218f7404d24ba5741108ffaef3162162837008a41fcfdc1fbda4a535fd8",
+      "bytes": 5318,
+      "compressedBytes": 913,
+      "sha256": "a890dab13499f1c4e99f3a11927f71fce88f0bcb896e7a09d2527e50ae0cbcb3",
+      "summary": {
+        "name": "Google Chat API",
+        "serverUrl": "https://chat.googleapis.com",
+        "description": "The Google Chat API lets you build Chat apps to integrate your services with Google Chat and manage Chat resources such as spaces, members, and messages.",
+        "operationCount": 17,
+        "unavailableCount": 1
+      }
+    },
+    {
+      "id": "google-classroom",
+      "sourceRevision": "2e046b8fcce6845bece0d6fceb4c91b923586ed059618999491b43db618f5dd8",
+      "bytes": 20294,
+      "compressedBytes": 1589,
+      "sha256": "f7d37b94b1b7e237ed2afbc42906d69a4743dce4369e01600e55250b6678da7b",
+      "summary": {
+        "name": "Google Classroom API",
+        "serverUrl": "https://classroom.googleapis.com",
+        "description": "Manages classes, rosters, and invitations in Google Classroom.",
+        "operationCount": 61,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-docs",
+      "sourceRevision": "d7e367683315ac82ce2d4e4ded9b618945f69e667edf659c62a4e6c9463db649",
+      "bytes": 1391,
+      "compressedBytes": 466,
+      "sha256": "f1a4a66fc52eb7a69cff8c18635ca12d19e60e7bdcc94dcf8ed7214bb1985a96",
+      "summary": {
+        "name": "Google Docs API",
+        "serverUrl": "https://docs.googleapis.com",
+        "description": "Reads and writes Google Docs documents.",
+        "operationCount": 3,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-drive-activity",
+      "sourceRevision": "ef77f32179d8f7e22719f420fb6197300d39f289550ecf0451b3abc114da65db",
+      "bytes": 1000,
+      "compressedBytes": 433,
+      "sha256": "9472a16bed28b504eab2f0268e46280a0dd2a299097e9d1e41f38871b5b39959",
+      "summary": {
+        "name": "Drive Activity API",
+        "serverUrl": "https://driveactivity.googleapis.com",
+        "description": "Provides a historical view of activity in Google Drive.",
+        "operationCount": 1,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-drive",
+      "sourceRevision": "a5e7a65f2499dd01a47926894ff5911d51622ff76560a41ec8fcb7f4248ca0d9",
+      "bytes": 13911,
+      "compressedBytes": 1581,
+      "sha256": "4d2f62f131d018b9d7dc93d9ab858b82d145da9380f69cbf6eeb0d31cc9cafbb",
+      "summary": {
+        "name": "Google Drive API",
+        "serverUrl": "https://www.googleapis.com/drive/v3",
+        "description": "The Google Drive API allows clients to access resources from Google Drive.",
+        "operationCount": 50,
+        "unavailableCount": 2
+      }
+    },
+    {
+      "id": "google-drive-labels",
+      "sourceRevision": "91d29e539306ab3ea63ac317f6e9a137b63a3b7005bedbb8fa8f7ee0a24c0a0a",
+      "bytes": 5626,
+      "compressedBytes": 808,
+      "sha256": "6cf184aabb70c67826e3d8f7e1e6429bc38c166cb8db101080535fdf87b44212",
+      "summary": {
+        "name": "Drive Labels API",
+        "serverUrl": "https://drivelabels.googleapis.com",
+        "description": "An API for managing Drive Labels",
+        "operationCount": 16,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-forms",
+      "sourceRevision": "431e0045283404e38f8270705227360eca4e5393de2a2f62a6a741d43a8e4c35",
+      "bytes": 2943,
+      "compressedBytes": 595,
+      "sha256": "1b8c461febe620c5cdc6195ad5f32b9f0cfe4e58b13ce3fa1fb0a2d7a118f19a",
+      "summary": {
+        "name": "Google Forms API",
+        "serverUrl": "https://forms.googleapis.com",
+        "description": "Reads and writes Google Forms and responses.",
+        "operationCount": 9,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-gmail",
+      "sourceRevision": "f509d7c6b3c6727074e6b2a0158ce9a7a6597b85666de10c39ebad222f780f8f",
+      "bytes": 24942,
+      "compressedBytes": 2028,
+      "sha256": "c0cfb1c550cad2d116261aaf0791e7080d41b92e5c20eeb200cdc9150c8c2ff8",
+      "summary": {
+        "name": "Gmail API",
+        "serverUrl": "https://gmail.googleapis.com",
+        "description": "The Gmail API lets you view and manage Gmail mailbox data like threads, messages, and labels.",
+        "operationCount": 79,
+        "unavailableCount": 6
+      }
+    },
+    {
+      "id": "google-keep",
+      "sourceRevision": "6b43d2db1b1b33124bcec5f4c9a56baddad29f94cc3257ab856584195e2c29a7",
+      "bytes": 2278,
+      "compressedBytes": 598,
+      "sha256": "7a56baddfca9b1ed825599e0ef0fe05bb04e08dbb9a87caff05b437cb095ebae",
+      "summary": {
+        "name": "Google Keep API",
+        "serverUrl": "https://keep.googleapis.com",
+        "description": "The Google Keep API is used in an enterprise environment to manage Google Keep content and resolve issues identified by cloud security software.",
+        "operationCount": 6,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-people",
+      "sourceRevision": "a19230f1bffbdd8e3db1b989cc16695ed248d97f640c1f41f6de8ff5ec1dbc88",
+      "bytes": 7299,
+      "compressedBytes": 974,
+      "sha256": "8cf28f62e1ae69c8995e3b1405717ac7683a67ef747b1e050075471ceda9d4de",
+      "summary": {
+        "name": "People API",
+        "serverUrl": "https://people.googleapis.com",
+        "description": "Provides access to information about profiles and contacts.",
+        "operationCount": 23,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-sheets",
+      "sourceRevision": "bc0eac66b6918c819ae53b6dc4dfd68de5a20622a2808d92aacb7a42b0bcfa77",
+      "bytes": 6167,
+      "compressedBytes": 771,
+      "sha256": "6f0dd61b62e53aba6b8fbd394e9ddfc5f15f51e8b8271ea16d8b8ec2da164843",
+      "summary": {
+        "name": "Google Sheets API",
+        "serverUrl": "https://sheets.googleapis.com",
+        "description": "Reads and writes Google Sheets.",
+        "operationCount": 17,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-slides",
+      "sourceRevision": "ed59f1a0878ed6d96571accefcf3662f6628f4f99818dfc7a035d6b6610c19cf",
+      "bytes": 2182,
+      "compressedBytes": 528,
+      "sha256": "40b4fec993d4e27b9fea8ed3a6d339b975f609d681c07cde053599d92a6b2833",
+      "summary": {
+        "name": "Google Slides API",
+        "serverUrl": "https://slides.googleapis.com",
+        "description": "Reads and writes Google Slides presentations.",
+        "operationCount": 5,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-tasks",
+      "sourceRevision": "825ade1f0cdbe66e3828c68679ff4d148b0949cfc00b7a54534841094637e6a0",
+      "bytes": 4275,
+      "compressedBytes": 707,
+      "sha256": "c25339c027b588fb4386cda68c3cb166188b0b00ae0f9da2eec6dd67dfed2b8a",
+      "summary": {
+        "name": "Google Tasks API",
+        "serverUrl": "https://tasks.googleapis.com",
+        "description": "The Google Tasks API lets you manage your tasks and task lists.",
+        "operationCount": 14,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-vault",
+      "sourceRevision": "e2d51b9702cbc376149ff96f9362881cb7ef37f19515c6ab176be90ca0ac0df8",
+      "bytes": 10250,
+      "compressedBytes": 1246,
+      "sha256": "9a35eb2bfdbbf53606b48796f252e9d1f6f9809e23a561c6ac25f8fd60262bc0",
+      "summary": {
+        "name": "Google Vault API",
+        "serverUrl": "https://vault.googleapis.com",
+        "description": "Retention and eDiscovery for Google Workspace. To work with Vault resources, the account must have the [required Vault privileges](https://support.google.com/vault/answer/2799699) and access to the matter. To access a matter, the account must have created the matter, have the matter shared with them, or have the **View All Matters** privilege. For example, to download an export, an account needs the **Manage Exports** privilege and the matter shared with them.",
+        "operationCount": 32,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-youtube-analytics",
+      "sourceRevision": "42a8b7cd78a09b91f92bf51525a6e0c07207483aa9c2fd72040d7a8fe28bdc35",
+      "bytes": 3209,
+      "compressedBytes": 583,
+      "sha256": "0f2cad24a81dc411bda19f8c4a49e42cdd7ad3d4b97384a832af76784566cf25",
+      "summary": {
+        "name": "YouTube Analytics API",
+        "serverUrl": "https://youtubeanalytics.googleapis.com",
+        "description": "Retrieves your YouTube Analytics data.",
+        "operationCount": 8,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "google-youtube",
+      "sourceRevision": "bbba4d62d69bb6774b131026d8727740c9100fe1eff71a9b576d831ce0fe5850",
+      "bytes": 26065,
+      "compressedBytes": 2371,
+      "sha256": "5ca7b274fb6a25207dac01c7a6de17abf9c94d9945e07ca0753598fac617628f",
+      "summary": {
+        "name": "YouTube Data API v3",
+        "serverUrl": "https://youtube.googleapis.com",
+        "description": "The YouTube Data API v3 is an API that provides access to YouTube data, such as videos, playlists, and channels.",
+        "operationCount": 80,
+        "unavailableCount": 6
       }
     },
     {

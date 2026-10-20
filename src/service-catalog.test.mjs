@@ -11,6 +11,85 @@ import { approvedOperation } from './lib/secrets/policy.ts';
 import { executeCredentialed } from './lib/secrets/execution.ts';
 import { adaptFredSchema } from '../build/fred-schema.mjs';
 
+Then('Google product catalogs retain these collections and prepare scoped Gmail and Drive requests', async table => {
+  const expected = ['google-gmail', 'google-drive', 'google-calendar', 'google-sheets', 'google-docs', 'google-slides',
+    'google-forms', 'google-tasks', 'google-people', 'google-chat', 'google-apps-script', 'google-keep', 'google-classroom',
+    'google-vault', 'google-admin-directory', 'google-admin-reports', 'google-admin-data-transfer', 'google-drive-activity',
+    'google-drive-labels', 'google-youtube', 'google-youtube-analytics', 'google-analytics-admin', 'google-analytics-data',
+    'google-search-console'];
+  const collection = serviceSchemaDescriptors.filter(source => source.provider === 'google');
+  assert.deepEqual(collection.map(source => source.id).sort(), expected.sort());
+  for (const { prefix, count } of table.hashes())
+    assert.equal(collection.filter(source => source.name === prefix || source.name.startsWith(`${prefix} / `)).length, Number(count), prefix);
+  const catalogs = new Map();
+  let supported = 0;
+  for (const source of collection) {
+    assert.equal(source.sourceKind, 'community-adapted');
+    assert.equal(source.profile, 'google-oauth');
+    assert.ok(source.provenance.startsWith('https://'));
+    const document = await readServiceSchema(source.id);
+    const catalog = inspectServiceSchema(document, source.id);
+    catalogs.set(source.id, { document, catalog });
+    assert.equal(catalog.operations.length, source.operations, source.id);
+    assert.equal(new Set(catalog.operations.map(operation => operation.id)).size, source.operations, source.id);
+    assert.ok(catalog.operations.some(operation => !operation.unavailableReason), source.id);
+    for (const operation of catalog.operations) {
+      const raw = document.paths[operation.path][operation.method.toLowerCase()];
+      if (raw['x-upstream-security']) {
+        assert.deepEqual(raw.security, raw['x-upstream-security'].map(requirement => {
+          const { Oauth2: _implicit, ...rest } = requirement;
+          return Object.hasOwn(requirement, 'Oauth2c') ? rest : requirement;
+        }));
+      }
+      if (operation.unavailableReason) {
+        assert.match(operation.unavailableReason, /unsupported binary or streaming media type/, operation.id);
+        continue;
+      }
+      supported++;
+      const declaration = raw.security ?? document.security;
+      if (declaration?.length && declaration.every(alternative => Object.keys(alternative).length)) {
+        assert.ok(operation.security?.every(alternative => alternative.length > 0), operation.id);
+        assert.deepEqual(operation.oauthScopes, declaration, `${operation.id}: every scope alternative stays in the approval.`);
+        assert.ok(operation.security.flat().every(scheme => scheme.name === 'Oauth2c' && scheme.kind === 'bearer'
+          && scheme.header === 'Authorization'), operation.id);
+      }
+    }
+  }
+  assert.equal(collection.reduce((count, source) => count + source.operations, 0), 655);
+  assert.equal(supported, 640, 'Unsupported binary uploads stay visible instead of losing their request bodies.');
+  for (const [id, operationId, values, expectedUrl, response] of [
+    ['google-gmail', 'gmail.users.getProfile', { 'path:userId': 'me' }, 'https://gmail.googleapis.com/gmail/v1/users/me/profile', { emailAddress: 'test@example.com' }],
+    ['google-drive', 'drive.about.get', { 'query:fields': 'user,storageQuota' }, 'https://www.googleapis.com/drive/v3/about?fields=user%2CstorageQuota', { storageQuota: { usage: '123' } }],
+  ]) {
+    const { document, catalog } = catalogs.get(id);
+    const operation = catalog.operations.find(operation => operation.id === `${id}:${operationId}`);
+    assert.equal(operation.unavailableReason, undefined);
+    const descriptor = await approvedOperation(operation, operationServerUrl(document, operation));
+    const alternative = operation.oauthScopes.findIndex(option => option.Oauth2c?.some(scope => scope.endsWith('.readonly')));
+    assert.ok(alternative >= 0, `${id}: a read-only scope option stays available.`);
+    const token = 'synthetic-google-access-token';
+    let requests = 0;
+    const options = { assertCurrent() {}, fetchRequest: async (url, request) => {
+      requests++;
+      assert.equal(String(url), expectedUrl);
+      assert.equal(request.headers.get('Authorization'), `Bearer ${token}`);
+      assert.ok(!String(url).includes(token));
+      return new Response(JSON.stringify(response), { headers: { 'Content-Type': 'application/json' } });
+    } };
+    const binding = { fingerprint: descriptor.fingerprint, alternative, credentials: { Oauth2c: 'google-token' } };
+    await assert.rejects(executeCredentialed(descriptor, values, binding, [], options));
+    assert.equal(requests, 0, 'Private Google operations cannot run without their bound token.');
+    const result = await executeCredentialed(descriptor, values, binding,
+      [{ id: 'google-token', label: 'Google access token', kind: 'secret', value: token }], options);
+    assert.equal(requests, 1);
+    assert.deepEqual(result.response.body, response);
+    assert.ok(!JSON.stringify(result).includes(token));
+    const changed = structuredClone(operation);
+    changed.oauthScopes[alternative].Oauth2c.push('https://www.googleapis.com/auth/additional');
+    assert.notEqual((await approvedOperation(changed, operationServerUrl(document, operation))).fingerprint, descriptor.fingerprint);
+  }
+});
+
 Then('Cloudflare retains its account API and adds the published Realtime SFU contracts with their own credentials', async () => {
   const collection = serviceSchemaDescriptors.filter(source => source.provider === 'cloudflare');
   assert.deepEqual(collection.map(source => source.id), ['cloudflare', 'cloudflare-realtime-sfu']);
@@ -247,7 +326,7 @@ Then('the default service index retains every packaged operation and reports exe
     if (descriptor.id === 'ollama') assert.ok(catalog.operations.some(operation => operation.path === '/api/generate' && !operation.unavailableReason));
     if (descriptor.id === 'frankfurter') assert.ok(catalog.operations.some(operation => !operation.unavailableReason));
   }
-  assert.equal(count, 26465);
+  assert.equal(count, 27120);
   assert.ok(runnable > 0);
 });
 Then('service inputs preserve standard validation and explicitly use server validation for complex JSON', () => {
