@@ -18,6 +18,33 @@ persistent schema name and enablement changes with Gherkin scenarios.
 
 ```
 
+<!-- changelog-commit:dd3b39b1a05ff5e5e89c1e1eec9f3933e8971701 -->
+### Commit [`dd3b39b`](https://github.com/superhero/operations.superduper.solutions/commit/dd3b39b1a05ff5e5e89c1e1eec9f3933e8971701)
+
+```text
+fix(catalog): keep plain schema labels as separate rows
+
+Only collect root labels when they prefix slash-separated schema names.
+Retain individual rows and saved positions for schemas with identical
+plain labels, including multiple uploads from the same server host.
+
+Keep schema prefixes and nested name groups available without changing
+source identities or operation categories.
+
+```
+
+<!-- changelog-commit:c530a27c87275ca8d1917eac057f91ca17c9bf73 -->
+### Commit [`c530a27`](https://github.com/superhero/operations.superduper.solutions/commit/c530a27c87275ca8d1917eac057f91ca17c9bf73)
+
+```text
+fix(schemas): use titles when descriptions are missing
+
+Fall back to the source schema title for missing or blank descriptions.
+Resolve this before applying an editable display name, using the existing
+summary metadata so disabled schemas need no additional document reads.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.55
