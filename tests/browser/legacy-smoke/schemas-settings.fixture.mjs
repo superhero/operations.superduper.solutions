@@ -15,7 +15,7 @@ const directory = world.artifactDirectory;
 const fixtureId = 'virtual:schemas-settings-inspection';
 const title = 'Schema smoke API';
 const makeDocument = (name = title, version = '1.0.0') => ({
-  openapi: '3.1.0', info: { title: name, version },
+  openapi: '3.1.0', info: { title: name, version, description: `Inventory schema version ${version} used by the browser management checks.` },
   servers: [{ url: 'https://schema-smoke.invalid/v1' }],
   tags: [{ name: 'Schema smoke' }],
   paths: { '/items': { get: { operationId: 'listInventory', summary: `List ${name} inventory`, tags: ['Schema smoke'],
@@ -157,8 +157,11 @@ try {
       await root.click();
       await expect(json.getByText('"components"', { exact: true })).toBeVisible();
       const info = json.getByRole('group', { name: `${label}: $["info"]`, exact: true }).locator(':scope > summary');
-      await info.click();
+      await expect(info).toHaveAttribute('aria-expanded', 'true');
       await expect(json.getByText('"title"', { exact: true })).toBeVisible();
+      await info.click();
+      await expect(info).toHaveAttribute('aria-expanded', 'false');
+      await expect(json.getByText('"title"', { exact: true })).not.toBeVisible();
       await trigger.focus(); await trigger.press('Enter');
       await expect(trigger).toHaveAttribute('aria-expanded', 'false');
       await expect(trigger).toBeFocused();
@@ -169,8 +172,8 @@ try {
       await expect(json).not.toBeVisible();
       await trigger.press('Enter');
       await expect(json).toBeVisible();
-      await expect(info).toHaveAttribute('aria-expanded', 'false');
-      await expect(json.getByText('"title"', { exact: true })).not.toBeVisible();
+      await expect(info).toHaveAttribute('aria-expanded', 'true');
+      await expect(json.getByText('"title"', { exact: true })).toBeVisible();
       await trigger.press('Enter'); await expect(json).not.toBeVisible();
       yield 'the full schema document copies intact and its lazy viewer retains focus and resets nested branches';
     } finally { await context.close(); }
@@ -197,7 +200,7 @@ yield "schema management loads its seeded documents in a dedicated worker";
     await expandCard(page, first.id);
     await expect(card(page, first.id).getByRole('textbox', { name: 'Schema name', exact: true })).toHaveValue(title);
     const operationId = `${first.id}:listInventory`;
-    await expect(card(page, first.id)).toContainText('https://schema-smoke.invalid/v1');
+    await expect(card(page, first.id).locator('.schema-description p')).toHaveText(original.info.description);
     await expect(card(page, first.id).getByRole('switch')).toHaveAttribute('aria-checked', 'true');
     await expect.poll(() => liveOperationIds(page)).toContain(operationId);
     assert.equal((await history(page, first.id)).length, 1);
@@ -245,7 +248,7 @@ yield "unrelated schema uploads retain workflow nodes without replaying requests
     await enterSchemas(page);
     const revised = { ...makeDocument(title, '2.0.0'), servers: [{ url: 'https://schema-smoke.invalid/v2' }] };
     await replace(page, first.id, 'Inventory.JSON', revised);
-    await expect(card(page, first.id)).toContainText('https://schema-smoke.invalid/v2');
+    await expect(card(page, first.id).locator('.schema-description p')).toHaveText(revised.info.description);
     const versions = await history(page, first.id);
     assert.equal(versions.length, 2);
     assert.deepEqual(versions[0].parents, [versions[1].oid]);

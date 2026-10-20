@@ -104,7 +104,7 @@ Feature: Documented workflow fields and mappings
     Then the edited response property and mapping retain their saved identities
 
   Scenario: Custom response properties support scalar types and editable nested objects
-    Given a workflow with 1 instances of "HTTPBin GET request"
+    Given a workflow with open HTTPBin response objects and Example POST body
     When I add an Integer property named "limit" to the query values response
     Then the query values response exposes the added Integer output
     When I add an Object property to the query values response

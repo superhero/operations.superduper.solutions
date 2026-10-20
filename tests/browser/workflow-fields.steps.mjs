@@ -282,7 +282,7 @@ async function hideNestedResponse(world) {
 
 async function restoreNestedResponse(world) {
   const response = namedPanel(world.page, world.branchOwnerId, "outputs", "Response body");
-  await response.getByRole("button", { name: "Restore Project", exact: true }).click();
+  await response.getByRole("button", { name: "Restore Example object", exact: true }).click();
   const nested = namedPanel(world.page, world.branchOwnerId, "outputs", "Example object");
   await expect(nested).toBeVisible();
   await expect(nested).not.toHaveClass(/selected/);
@@ -326,7 +326,7 @@ When("I restore the nested project response", async function () { await restoreN
 Then("the nested response remains hidden with its saved fields", async function () {
   await expect(namedPanel(this.page, this.branchOwnerId, "outputs", "Example object")).toHaveCount(0);
   const response = namedPanel(this.page, this.branchOwnerId, "outputs", "Response body");
-  await expect(response.getByRole("button", { name: "Restore Project", exact: true })).toBeVisible();
+  await expect(response.getByRole("button", { name: "Restore Example object", exact: true })).toBeVisible();
   await expect(workflow(this.page).locator(".workflow-schema-edge")).toHaveCount(4);
   const stored = await storedWorkflows(this.page);
   const document = stored.find(item => item.name === "Hidden branch review");
@@ -480,8 +480,10 @@ const graphContent = document => ({ nodes: document.nodes, edges: document.edges
 
 async function editProperties(panel) {
   const edit = panel.getByRole('button', { name: 'Edit properties', exact: true });
+  const done = panel.getByRole('button', { name: 'Done editing properties', exact: true });
+  await expect(edit.or(done)).toBeVisible();
   if (await edit.isVisible()) await edit.click();
-  await expect(panel.getByRole('button', { name: 'Done editing properties', exact: true })).toBeVisible();
+  await expect(done).toBeVisible();
 }
 
 async function addResponseProperty(page, panel, name, type) {

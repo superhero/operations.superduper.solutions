@@ -8,6 +8,7 @@ import descriptors from '../../src/catalogs/services/index.json' with { type: 'j
 import sources from '../../build/service-schemas.sources.json' with { type: 'json' };
 import { bundledCatalogs } from '../../src/lib/catalog-registry.ts';
 import { setMode, openCatalog, closeCatalog, workflowAction, workspace, fillField } from './workspace.steps.mjs';
+import { expandSchemaCard } from './schema-card.fixture.mjs';
 
 const card = (page, id) => page.locator(`[data-schema-id="${id}"]`);
 async function schemas(page) {
@@ -188,18 +189,21 @@ Then('all service schemas appear and preserve disablement renames and deletions 
     const record = records.find(record => record.id === source.id);
     assert.equal(record.factoryDigest, source.sha256, source.id);
     assert.equal(record.enabled, true, source.id);
-    await expect(card(page, source.id).getByRole('textbox', { name: 'Schema name', exact: true })).toHaveValue(source.name);
+    await expect(card(page, source.id).locator('.schema-name-label')).toHaveText(source.name);
   }
   const frankfurter = card(page, 'frankfurter');
+  await expandSchemaCard(frankfurter);
   await frankfurter.locator('.schema-disclosure > summary').click();
   await expect(frankfurter.locator('.json-view')).toContainText('/rates');
   await expect(frankfurter.locator('.json-view')).toContainText('get');
   await frankfurter.getByRole('switch').click();
   await expect(frankfurter.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
-  const name = card(page, 'mistral').getByRole('textbox', { name: 'Schema name', exact: true });
+  const mistral = await expandSchemaCard(card(page, 'mistral'));
+  const name = mistral.getByRole('textbox', { name: 'Schema name', exact: true });
   await name.fill('My Mistral API');
   await name.press('Enter');
   await expect.poll(async () => (await stored(page)).find(record => record.id === 'mistral').displayName).toBeUndefined();
+  await expandSchemaCard(card(page, 'cohere'));
   await card(page, 'cohere').getByRole('button', { name: 'Delete Cohere', exact: true }).click();
   await card(page, 'cohere').getByRole('group', { name: 'Confirm deletion of Cohere', exact: true }).getByRole('button', { name: 'Delete', exact: true }).click();
   await expect(card(page, 'cohere')).toHaveCount(0);
@@ -222,7 +226,7 @@ Then('all service schemas appear and preserve disablement renames and deletions 
     descriptors.find(source => source.id === 'frankfurter').sha256, 'Unmodified defaults follow the bundled revision.');
   await expect(page.locator('[data-schema-id]')).toHaveCount(descriptors.length + 1);
   await expect(card(page, 'frankfurter').getByRole('switch')).toHaveAttribute('aria-checked', 'false');
-  await expect(card(page, 'mistral').getByRole('textbox', { name: 'Schema name', exact: true })).toHaveValue('My Mistral API');
+  await expect(card(page, 'mistral').locator('.schema-name-label')).toHaveText('My Mistral API');
   await expect(card(page, 'cohere')).toHaveCount(0);
   const revised = (await stored(page)).find(record => record.id === 'mistral');
   assert.equal(revised.factoryDigest, undefined, 'Editing a factory document creates an authored Git copy.');
@@ -281,7 +285,7 @@ Then('the default schema migration preserves an existing custom document and dis
   }));
   await reload(page);
   await expect(page.locator('[data-schema-id]')).toHaveCount(descriptors.length + 3);
-  await expect(card(page, custom.id).getByRole('textbox', { name: 'Schema name', exact: true })).toHaveValue('My existing service');
+  await expect(card(page, custom.id).locator('.schema-name-label')).toHaveText('My existing service');
   await expect(card(page, 'demo').getByRole('switch')).toHaveAttribute('aria-checked', 'false');
   assert.deepEqual((await stored(page)).find(record => record.id === custom.id), custom);
 });

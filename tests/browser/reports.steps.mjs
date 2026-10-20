@@ -392,7 +392,7 @@ Then("both reports fit a {int} pixel viewport in the {string} theme", async func
   await expect(header).toHaveAttribute("aria-expanded", "true");
   await expectReportColor(header, "background-color", roles.header);
   await expectReportColor(header, "color", roles.headerText);
-  const schemaActions = ["Copy JSON", "Wrap lines"].map(name => header.getByRole("button", { name, exact: true }));
+  const schemaActions = ["Wrap lines", "Copy JSON"].map(name => header.getByRole("button", { name, exact: true }));
   const schemaActionColors = () => ({ color: roles.header, backgroundColor: roles.headerText });
   for (const action of schemaActions) {
     await action.hover();

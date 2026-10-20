@@ -20,7 +20,7 @@ Feature: Local evaluation and operation reports
       | HTTPBin request      | 79%        | HTTPBin GET request, HTTPBin PUT request, HTTPBin HEAD request, HTTPBin POST request, HTTPBin PATCH request, HTTPBin DELETE request, HTTPBin OPTIONS request, HTTPBin plain text, HTTPBin JSON object | Example OPTIONS request, Example GET request, Example PUT request, HTTPBin JSON scalar, HTTPBin URL-encoded form, HTTPBin multipart text fields, Example HEAD request, Example POST request |
 
   Scenario: Evaluation report values and statuses provide styled accessible hints
-    When I search for the operation "Example array response"
+    When I search for the operation "listProjects"
     And I review the matching details
     Then evaluation values and statuses show styled hints on hover and keyboard focus
 

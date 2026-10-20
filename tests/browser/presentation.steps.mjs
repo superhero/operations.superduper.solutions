@@ -177,7 +177,7 @@ Then('request fields remain readable and preserve accessible editing in both the
     await page.keyboard.press('Enter');
     await expect(help).toHaveAttribute('aria-expanded', 'true');
     await expectThemeColors(help, { color: '--color-background' });
-    await expect(await field(page, 'Path value')).toHaveAccessibleDescription(/The identifier of the project to work with\..*Type string.*Required Yes/);
+    await expect(await field(page, 'Path value')).toHaveAccessibleDescription(/An arbitrary string used in the example schema\..*Type string.*Required Yes/);
     await expect(help).toBeFocused();
     await page.keyboard.press('Space');
     await expect(help).toHaveAttribute('aria-expanded', 'false');

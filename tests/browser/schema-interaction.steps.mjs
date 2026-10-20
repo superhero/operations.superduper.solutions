@@ -5,6 +5,9 @@ import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { openCatalog, searchOperations, setEvaluationDetails } from './workspace.steps.mjs';
+import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };
+import { operations } from '../../src/lib/catalog.ts';
+import { bundledCatalogs } from '../../src/lib/catalog-registry.ts';
 
 Then('full-library search renders nearby rows and shares tooltip state', async function () {
   const page = this.page;
@@ -47,7 +50,8 @@ Then('full-library search renders nearby rows and shares tooltip state', async f
   await expect(page.getByRole('button', { name: 'Review matching details', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Review matching details', exact: true }).click();
   await expect(page.locator('.evaluation-report')).toBeVisible();
-  await expect(page.locator('.evaluation-report .report-metric-value').nth(2)).toHaveText('13892');
+  const operationCount = operations.length + descriptors.reduce((total, source) => total + source.operations, 0);
+  await expect(page.locator('.evaluation-report .report-metric-value').nth(2)).toHaveText(String(operationCount));
   await setEvaluationDetails(page, false);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole('dialog').filter({ has: page.getByRole('navigation', { name: 'Operation catalog', exact: true }) })).toBeVisible();
@@ -177,13 +181,13 @@ Then('closed settings and search retain no inactive controls or matching worker'
   await setMode(page, 'settings');
   const schemas = page.locator('summary[aria-label="Schemas"]');
   await schemas.click();
-  await expect(page.locator('[data-schema-id]')).toHaveCount(44);
-  const name = await page.locator('[data-schema-id="openai"] input[aria-label="Schema name"]').inputValue();
+  await expect(page.locator('[data-schema-id]')).toHaveCount(descriptors.length + bundledCatalogs.length);
+  const name = await page.locator('[data-schema-id="openai"] .schema-name-label').textContent();
   await schemas.click();
   await expect(page.locator('[data-schema-id]')).toHaveCount(0);
   await expect(hiddenInputs).toHaveCount(0);
   await schemas.click();
-  await expect(page.locator('[data-schema-id="openai"] input[aria-label="Schema name"]')).toHaveValue(name);
+  await expect(page.locator('[data-schema-id="openai"] .schema-name-label')).toHaveText(name);
   await openCatalog(page);
   await expect(hiddenInputs).toHaveCount(0);
   await searchOperations(page, 'get');

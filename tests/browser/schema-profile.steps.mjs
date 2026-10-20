@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { openCatalog, closeCatalog, setMode } from './workspace.steps.mjs';
+import { expandSchemaCard } from './schema-card.fixture.mjs';
 import { cpuProfile, heapProfile, observeSchemaTransfers, saveSchemaProfile, renderProfile, observeMatchingTransfers, observeSearchPhases, compareBrowserMatching } from './schema-profile.fixture.mjs';
 import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };
 
@@ -105,6 +106,7 @@ Then('schema lifecycle performance is measured with the complete service collect
   report.afterToggleTransfers = await page.evaluate(() => globalThis.__schemaTransfers);
   await saveSchemaProfile(this, { ...report, stage: 'before-inspection' }, profiles, false);
   const inspector = page.locator('[data-schema-id="openai"]');
+  await expandSchemaCard(inspector);
   const summary = inspector.locator('.schema-disclosure > summary');
   await summary.click();
   await expect(inspector.locator('.json-view')).toBeVisible({ timeout: 30_000 });
@@ -137,6 +139,7 @@ Then('the largest bundled schema can be inspected without retaining its closed v
   await schemas(page);
   const largest = [...descriptors].sort((a, b) => b.bytes - a.bytes)[0];
   const card = page.locator(`[data-schema-id="${largest.id}"]`);
+  await expandSchemaCard(card);
   const heading = card.locator('.schema-disclosure > summary');
   const rows = () => card.locator('.json-line, .json-branch > summary');
   await heading.click();
@@ -184,6 +187,7 @@ Then('a closed schema inspector ignores a delayed source reply and can reopen', 
   await ready(page);
   await schemas(page);
   const card = page.locator('[data-schema-id="frankfurter"]');
+  await expandSchemaCard(card);
   const heading = card.locator('.schema-disclosure > summary');
   await heading.click();
   await page.waitForFunction(() => globalThis.__schemaDocumentPending() === 1);
