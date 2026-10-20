@@ -636,8 +636,8 @@ Then('the scaled schema header keeps its edges visible while card slides stay cl
     animation.currentTime = Number(animation.effect.getTiming().duration) / 2;
     const bounds = element.getBoundingClientRect();
     const inner = element.firstElementChild;
-    const header = inner.querySelector('summary[aria-label="OpenAPI schema"]');
-    const hidden = header.getBoundingClientRect();
+    // The header may already fit; the last row still extends past the sliding grid.
+    const hidden = inner.lastElementChild.getBoundingClientRect();
     return { height: bounds.height, fullHeight: inner.scrollHeight,
       clipped: !element.contains(document.elementFromPoint(hidden.left + hidden.width / 2, hidden.bottom - 1)) };
   });

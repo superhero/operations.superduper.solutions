@@ -437,3 +437,35 @@ trusted baseline matcher module, to alternate current/reference calls in the sam
 worker. Keep comparison builds, output directories and labels separate.
 
 Further windowing or canonical-model caches need a measured benefit beyond this pass and must retain focus and model independence. The fixed search debounce is a separate interaction-policy decision. Separate schema delivery remains deferred at the user’s request.
+
+
+## Schema header color feedback (20 October 2026)
+
+The schema title inherited a 180 ms color transition while the newly revealed
+Wrap lines control already used its target foreground. Existing action buttons
+also transitioned their inherited color. The header and action foreground/background
+pairs now switch together. The wrap fade, arrow rotation, disclosure slide,
+hover scaling and focus-outline transition remain.
+
+Production Chromium measurements on sds-01 used one 2-CPU / 3-GiB job, Node
+26.7.0, Playwright 1.63.0, 1280×900 at 1× DPR and the two example catalogs.
+Three repeated openings per theme gave these click-to-target-title-color values:
+
+| Theme | Before median (range), ms | After median (range), ms | Median reduction |
+| --- | --- | --- | --- |
+| Dark | 206.84 (206.42–214.80) | 7.90 (7.52–12.06) | 198.94 ms / 96.2% |
+| Light | 207.46 (206.48–207.50) | 6.62 (6.15–33.98) | 200.84 ms / 96.8% |
+
+The baseline wrap control was already partly visible after roughly 55–64 ms.
+After the change, title and persistent action colors match on the same sampled
+frame. Closings use the same immediate color-pair swap. First openings per theme
+were recorded separately. These are rAF/computed-color observations from a real
+click; physical display latency and field INP were not measured. Baseline ran
+before candidate on a shared headless host; there are no tail-latency claims.
+
+Separate short Chrome traces retain style/layout/paint attribution. Their aggregate
+costs are similar; the result is faster visual feedback. First-open frame gaps of
+65–86 ms remain; their cause was not isolated in this focused color check. No production listeners,
+workers or caches were added. Raw samples, conditions and trace summaries are in
+[schema-header-feedback.json](schema-header-feedback.json); full diagnostic evidence
+is retained locally in the ignored task directory named there.
