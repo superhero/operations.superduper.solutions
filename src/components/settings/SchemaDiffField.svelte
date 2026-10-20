@@ -31,7 +31,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <details class="field-change" bind:open>
-  <summary><span class="change-kind">{change.kind}</span><code>{change.path}</code></summary>
+  <summary><span class="change-kind">{change.kind}</span><code title={change.path}>{change.path}</code></summary>
   {#if open}
     <div class="field-content" aria-busy={loading}>
       {#if error}<p role="alert">{error}</p><Button size="sm" variant="secondary" disabled={loading} onclick={refresh}>Retry changes</Button>{/if}
@@ -63,7 +63,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <style>
   .field-change, .field-content, .diff-side { min-width: 0; }
   summary { display: flex; gap: 6px; align-items: baseline; min-width: 0; padding: 6px; cursor: pointer; }
-  summary code { min-width: 0; overflow-x: auto; white-space: pre; overflow-wrap: normal; word-break: normal; user-select: text; }
+  summary code { flex: 1; min-width: 0; overflow: clip; text-overflow: ellipsis; white-space: nowrap; overflow-wrap: normal; word-break: normal; user-select: text; }
   .change-kind { flex-shrink: 0; font-size: 11px; color: var(--color-muted-foreground); }
   .field-content { display: grid; gap: 8px; padding: 0 6px 6px; }
   .diff-values { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 8px; min-width: 0; }

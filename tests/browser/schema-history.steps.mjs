@@ -181,13 +181,16 @@ Then('schema history compares any saved commits with lazy colored diffs and pers
     return { beforeTop: before.getBoundingClientRect().top, afterTop: after.getBoundingClientRect().top,
       headingLeft: before.querySelector('.diff-heading').getBoundingClientRect().left, summaryLeft: element.querySelector('summary').getBoundingClientRect().left,
       whiteSpace: getComputedStyle(pre).whiteSpace, pathWhiteSpace: getComputedStyle(path).whiteSpace,
-      scrolledCode: scroller.scrollLeft, scrolledPath: path.scrollLeft };
+      pathOverflow: getComputedStyle(path).overflowX, pathTextOverflow: getComputedStyle(path).textOverflow,
+      pathTruncated: path.scrollWidth > path.clientWidth, scrolledCode: scroller.scrollLeft, scrolledPath: path.scrollLeft };
   });
   assert.ok(Math.abs(layout.beforeTop - layout.afterTop) < 1, 'Before and After headings align.');
   assert.ok(Math.abs(layout.headingLeft - layout.summaryLeft - 6) < 1, 'Diff content follows the same field padding.');
-  assert.equal(layout.whiteSpace, 'pre'); assert.equal(layout.pathWhiteSpace, 'pre');
+  assert.equal(layout.whiteSpace, 'pre'); assert.equal(layout.pathWhiteSpace, 'nowrap');
   assert.ok(layout.scrolledCode > 0, 'Long code lines scroll horizontally.');
-  assert.ok(layout.scrolledPath > 0, 'Long field paths scroll horizontally.');
+  assert.equal(layout.pathOverflow, 'clip'); assert.equal(layout.pathTextOverflow, 'ellipsis');
+  assert.ok(layout.pathTruncated, 'Long field paths are truncated to the available width.');
+  assert.equal(layout.scrolledPath, 0, 'Field path rows cannot scroll horizontally.');
   const codePane = security().locator('[data-side="before"] .diff-code');
   await codePane.evaluate(element => element.scrollLeft = 0);
   await codePane.press('ArrowRight');

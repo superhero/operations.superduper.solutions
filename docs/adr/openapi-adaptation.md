@@ -171,8 +171,9 @@ Comparing revisions never changes checkout, Git objects or schema metadata.
 Changed-field lists contain paths and kinds only. Expanding a field loads actual
 JSON values from the selected immutable blobs and computes aligned line changes
 with line numbers, context, red removals and green additions. Missing sides are
-omitted; null remains a real value. Code and field paths never wrap and scroll
-horizontally. Closing a field releases its rendered content; changing endpoints
+omitted; null remains a real value. Code never wraps and scrolls horizontally.
+Field paths stay on one line, truncate with an ellipsis without scrolling, and
+show the complete path on hover. Closing a field releases its rendered content; changing endpoints
 discards old field requests. Matching work is bounded; very large unmatched
 regions are honestly shown as replacements. Context is folded, and display limits
 (initially 200 rows, expandable to 5,000, with a 512 KiB text budget) are explicit.
