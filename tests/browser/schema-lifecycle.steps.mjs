@@ -8,6 +8,55 @@ Before({ tags: '@schema-lifecycle' }, async function () {
   await this.page.evaluate(async () => { globalThis.schemaFixture = await import('/schema-lifecycle-fixture.js'); });
 });
 
+Then('unchanged bundled revisions preserve factory metadata and authored changes', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    const id = 'google-fixture';
+    const label = 'Google / Cloud / Fixture';
+    const metadata = async () => (await api.listSchemaMetadata()).find(record => record.id === id);
+    await api.setupGoogle(1, false, label);
+    await api.setSchemaDocumentEnabled(id, false, { metadataOnly: true });
+    const history = await api.getSchemaBranchHistory(id);
+    const before = await metadata();
+    const reads = api.counters();
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (value, ...args) {
+      throw new Error(`An unchanged bundle attempted to write ${this.name}.`);
+    };
+    let afterReads;
+    try {
+      await api.updateSchemaFromBundle(id);
+      await api.updateSchemaFromBundle(id);
+      afterReads = api.counters();
+      await api.updateSchemaUpstream(id, api.googleDocument(1), 'google.json');
+    } finally { IDBObjectStore.prototype.put = put; }
+    const after = await metadata();
+    const afterHistory = await api.getSchemaBranchHistory(id);
+    await api.setupGoogle(2, false, label);
+    const advanced = await api.readSchemaDocument(id);
+    await api.renameSchemaDocument(id, 'My Google service');
+    const authored = await metadata();
+    const authoredHistory = await api.getSchemaBranchHistory(id);
+    await api.updateSchemaFromBundle(id);
+    await api.updateSchemaFromBundle(id);
+    return { label, before, after, history, afterHistory, reads, afterReads,
+      advanced, authored, authoredHistory, repeated: await metadata(), repeatedHistory: await api.getSchemaBranchHistory(id) };
+  });
+  assert.equal(result.before.displayName, result.label);
+  assert.ok(result.before.factoryDigest);
+  assert.equal(result.before.enabled, false);
+  assert.deepEqual(result.after, result.before, 'An identical bundle/source changes no metadata, ownership or identity.');
+  assert.deepEqual(result.afterHistory, result.history);
+  assert.deepEqual(result.afterReads, result.reads, 'Applying a current factory bundle reads neither source nor upstream content.');
+  assert.equal(result.advanced.displayName, result.label);
+  assert.equal(result.advanced.document.info.title, 'Google fixture');
+  assert.equal(result.advanced.document.info.version, '2', 'No-op application must preserve automatic bundled updates.');
+  assert.equal(result.advanced.enabled, false);
+  assert.equal(result.authored.summary.name, 'My Google service');
+  assert.deepEqual(result.repeated, result.authored, 'A repeated source preserves local edits and their metadata.');
+  assert.deepEqual(result.repeatedHistory, result.authoredHistory);
+});
+
 Then('schema diffs match the selected graph edge for imports corrections and merge parents', async function () {
   const result = await this.page.evaluate(async () => {
     const api = globalThis.schemaFixture;

@@ -50,3 +50,6 @@ Feature: Targeted schema storage and independent history
 
   Scenario: Schema changes identify the selected commit and its direct comparison parent
     Then schema diffs match the selected graph edge for imports corrections and merge parents
+
+  Scenario: Applying the current bundle preserves schema names ownership and history
+    Then unchanged bundled revisions preserve factory metadata and authored changes

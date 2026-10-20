@@ -746,6 +746,12 @@ export function updateSchemaFromBundle(id: string): Promise<void> {
   return serialized(async database => {
     const source = defaults?.catalogs.find(source => source.id === id);
     if (!source) throw new Error("There is no bundled revision for this schema.");
+    const metadata = await readMetadata(database, id);
+    if (!metadata) throw new Error("This schema could not be found in this browser.");
+    // An unedited factory copy already follows this bundle. Taking the authored
+    // merge path would discard its catalogue label and automatic update ownership.
+    if (metadata.factoryDigest === source.revision && metadata.file === source.file && !metadata.incoming
+      && sameSchemaValue(metadata.patches ?? [], source.patches ?? [])) return;
     const document = defaults!.readUpstream ? await defaults!.readUpstream(id) : await defaults!.read(id);
     await updateUpstream(database, id, document, source.file, source.patches ?? []);
   });
@@ -766,6 +772,10 @@ async function updateUpstream(database: Database, id: string, incomingDocument: 
       : await commitSnapshot(id, incomingDocument, `Update published schema: ${file}`, [previous.upstream]);
     const corrected = upstream === previous.upstream && sameSchemaValue(JSON.parse(await versionText(id, previous.corrected)), correctedDocument) ? previous.corrected
       : await correctedSnapshot(id, upstream, correctedDocument, patches, previous.corrected, incomingDocument);
+    // The working copy may contain local edits. Reapplying its existing source
+    // is still a no-op, unless a pending proposal or source metadata must change.
+    if (!metadata.incoming && upstream === previous.upstream && corrected === previous.corrected
+      && file === metadata.file && sameSchemaValue(patches, metadata.patches ?? [])) return;
     const incoming: IncomingSchema = { base: previous.corrected, upstream, corrected, file, patches };
     const base = JSON.parse(await versionText(id, previous.corrected));
     const merged = mergeSchemaDocuments(base, record.document, correctedDocument);

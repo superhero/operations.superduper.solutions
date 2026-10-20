@@ -38,16 +38,17 @@ export function googleDocument(version = 1, fixed = false): Record<string, any> 
   };
 }
 
-export async function setupGoogle(version = 1, fixed = false) {
+export async function setupGoogle(version = 1, fixed = false, name = "Google fixture") {
   const raw = googleDocument(version, fixed);
   const document = applySchemaPatches(raw, [googleOauthAlternatives]);
   const bytes = new TextEncoder().encode(JSON.stringify(document));
   const revision = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), value => value.toString(16).padStart(2, "0")).join("");
   const id = "google-fixture";
   const index = createSchemaDiscovery(inspectServiceSchema(document, id), revision);
-  configureSchemaDefaults({ adapterRevision, catalogs: [{ id, name: "Google fixture", file: "google.json", revision,
+  configureSchemaDefaults({ adapterRevision, catalogs: [{ id, name, file: "google.json", revision,
     bytes: bytes.length, summary: index.summary, patches: [googleOauthAlternatives] }],
-    read: async () => structuredClone(document), readUpstream: async () => structuredClone(raw),
+    read: async () => { reads[id] = (reads[id] ?? 0) + 1; return structuredClone(document); },
+    readUpstream: async () => { reads[`${id}:upstream`] = (reads[`${id}:upstream`] ?? 0) + 1; return structuredClone(raw); },
     readIndex: async () => structuredClone(index), validate: inspectServiceSchema,
     inspectOperation: (source, id, operation) => inspectServiceSchema(source, id, new Set([operation.id]), operation).operations[0]!,
   });

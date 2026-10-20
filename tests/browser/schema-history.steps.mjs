@@ -58,6 +58,23 @@ Then('schema settings display correction branches diffs and persistent field con
     await expect(changes().locator('.comparison-parent[aria-pressed="true"]')).toContainText(parent.slice(0, 7));
   };
   await expectComparison(corrected, published);
+  const saved = () => page.evaluate(() => new Promise((resolve, reject) => {
+    const request = indexedDB.open('v1/catalogs/index');
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      const read = db.transaction('catalog').objectStore('catalog').get('gcp-speech');
+      read.onsuccess = () => { db.close(); resolve(read.result); };
+      read.onerror = () => { db.close(); reject(read.error); };
+    };
+  }));
+  const beforeApply = await saved();
+  assert.equal(beforeApply.displayName, 'Google / Cloud / Speech to Text');
+  await card.getByRole('button', { name: 'Apply bundled revision', exact: true }).click();
+  await expect(card.getByRole('button', { name: 'Apply bundled revision', exact: true })).toBeEnabled();
+  await expect(card.getByRole('textbox', { name: 'Schema name', exact: true })).toHaveValue(beforeApply.displayName);
+  await expectComparison(corrected, published);
+  assert.deepEqual(await saved(), beforeApply, 'Applying the current bundle preserves its catalogue label and factory ownership.');
   await changes().locator('.change-group > summary').click();
   await expect(changes().locator('.field-change > summary').first()).toContainText('/security');
   await card.locator(`[data-version-oid="${published}"] .version-card`).click();

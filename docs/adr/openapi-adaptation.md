@@ -151,6 +151,10 @@ For a service that ships in the application, **Apply bundled revision** uses the
 same merge process to update an edited copy from the bundled source. It performs
 no schema download. Unmodified factory copies continue to follow bundled
 revisions automatically; edited copies are updated explicitly.
+Applying an already-current factory bundle preserves its catalogue label and
+automatic update ownership without reading its source or publishing metadata.
+Reapplying an identical source to an edited copy also preserves local state;
+pending proposals and changed source metadata still use the update path.
 
 **Schema history** shows the actual commit graph, branch tips and bounded
 changed-field previews for a selected revision. The change panel names that
