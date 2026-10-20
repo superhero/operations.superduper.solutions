@@ -168,7 +168,11 @@ When("I import, export and reimport the near-limit QA workflow", async function 
   this.qaFirstImport = await readExport(this.page);
   assert.ok(this.qaFirstImport.buffer.length <= maxFileSize, "The exported file must fit the import byte limit.");
   await upload.setInputFiles({ name: "exported-workflow.json", mimeType: "application/json", buffer: this.qaFirstImport.buffer });
-  await expect.poll(async () => (await storedWorkflows(this.page)).length).toBe(2);
+  await expect.poll(() => this.page.evaluate(async () => {
+    const fixture = await import('/workflow-repository-fixture.js');
+    // Keep multi-megabyte documents in the browser when only their count matters.
+    return (await fixture.callRepository('list', [])).length;
+  })).toBe(2);
   await expect(replacementDialog(this.page)).toHaveCount(0);
 });
 
