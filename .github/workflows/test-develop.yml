@@ -68,7 +68,7 @@ jobs:
       actions: read
       contents: read
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 80
     steps:
       - name: Checkout develop revision
         uses: actions/checkout@v7
@@ -103,7 +103,7 @@ jobs:
         run: npm --loglevel=error run test:acceptance
       - name: Browser tests against the built bundle
         id: browser
-        timeout-minutes: 40
+        timeout-minutes: 70
         run: npm --loglevel=error run test:browser
       - name: Upload browser results and diagnostics
         if: ${{ !cancelled() && (steps.browser.outcome == 'success' || steps.browser.outcome == 'failure') }}

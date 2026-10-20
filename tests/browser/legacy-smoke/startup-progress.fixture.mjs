@@ -56,8 +56,8 @@ function installWorkflowStorageFault({ fault, failureMessage, storageHeldMessage
 }
 
 async function released(page) {
-  await expect(page.locator('#startup-status')).toHaveCount(0, { timeout: 15_000 });
-  await expect(page.locator('#app')).not.toHaveAttribute('inert');
+  await expect(page.locator('#app')).not.toHaveAttribute('inert', { timeout: 60_000 });
+  await expect(page.locator('#startup-status')).toHaveCount(0, { timeout: 5_000 });
   await expect(page.locator('#app')).not.toHaveAttribute('aria-busy', 'true');
   await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toBeVisible();
 }

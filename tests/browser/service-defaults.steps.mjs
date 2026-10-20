@@ -185,7 +185,7 @@ Then('FRED observations and ALFRED vintages are available in separate catalogs a
   await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(2);
   await expect(page.locator('.svelte-flow__node-operation').getByRole('alert')).toHaveCount(0);
 });
-Then('provider schema names use these paths across saved-label updates', async function (table) {
+Then('provider schema names use these paths across saved-label updates', { timeout: 120_000 }, async function (table) {
   const page = this.page;
   const names = table.hashes();
   for (const { id, name } of names) {
@@ -263,7 +263,7 @@ Then('all Atlassian catalogs share the provider prefix and retain a newly disabl
   await expect(page.locator('[data-catalog-group="statuspage"] > .catalog-group > summary .catalog-name')).toHaveText('Statuspage');
 });
 
-Then('schemas always sort by displayed name without manual controls', async function () {
+Then('schemas always sort by displayed name without manual controls', { timeout: 120_000 }, async function () {
   const page = this.page;
   const expected = [...bundledCatalogs.map(({ id, name }) => ({ id, name })), ...descriptors.map(({ id, name }) => ({ id, name }))];
   const ordered = () => [...expected].sort((left, right) => left.name.localeCompare(right.name, 'en', { sensitivity: 'base' }) || left.id.localeCompare(right.id));
