@@ -94,6 +94,11 @@ before adding or executing a deferred operation. Retain workflow leases while
 their models are in use. Workflow leases use `hydrateOperations` to group missing
 models by schema in batches of at most 16, sharing overlapping pending requests.
 
+Resource navigation skips the generated `Operations` tag folder and places its
+entries directly in the schema's URL resource tree. Other authored categories
+and literal schema/resource names remain. This display normalization also applies
+to cached discovery indexes without rewriting source schemas or operation models.
+
 ## Verification
 
 Add new domain scenarios alongside [source](../README.md) using Cucumber.
