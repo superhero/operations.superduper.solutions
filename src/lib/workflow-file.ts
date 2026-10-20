@@ -3,17 +3,19 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import Papa from "papaparse";
 import type { JsonValue } from "./catalog.ts";
+import { encodeWorkflowBinary, validateWorkflowBinary, maxWorkflowUploadBytes, type WorkflowBinary } from "./workflow-binary.ts";
 
-export const maxWorkflowUploadBytes = 500_000;
+export { maxWorkflowUploadBytes } from "./workflow-binary.ts";
 export type CsvOptions = { delimiter: "auto" | "," | ";" | "\t" | "|"; header: "auto" | "present" | "absent"; quote: '"' | "'" | "none" | "auto" };
 export const defaultCsvOptions: CsvOptions = { delimiter: "auto", header: "auto", quote: "auto" };
-export type UploadedWorkflowFile = { name: string; format: "json" | "csv"; source: string; value: JsonValue;
-  options: CsvOptions; delimiter: string; header: boolean; encoding: string };
+export type UploadedWorkflowFile = { name: string; format: "json" | "csv" | "binary"; source: string; value: JsonValue;
+  original?: WorkflowBinary; options: CsvOptions; delimiter: string; header: boolean; encoding: string };
 export type WorkflowFileData = { file?: UploadedWorkflowFile };
-export type FileValueType = "Text" | "Integer" | "Number" | "Boolean" | "Object" | "Array" | "Null" | "Unknown";
+export type FileValueType = "Text" | "Integer" | "Number" | "Boolean" | "Object" | "Array" | "Null" | "Unknown" | "Binary";
 
 export function fileValueType(file?: UploadedWorkflowFile): FileValueType {
   if (!file) return "Unknown";
+  if (file.format === "binary") return "Binary";
   const value = file.value;
   if (value === null) return "Null";
   if (Array.isArray(value)) return "Array";
@@ -44,12 +46,26 @@ export function validateWorkflowFileData(data: Record<string, unknown>): Workflo
   if (data.file === undefined) return {};
   const file = data.file as UploadedWorkflowFile | null;
   if (!file || typeof file.name !== "string" || !file.name || file.name.length > 255 ||
-    !["json", "csv"].includes(file.format) || !file.name.toLowerCase().endsWith(`.${file.format}`) ||
+    !["json", "csv", "binary"].includes(file.format) || file.format !== "binary" && !file.name.toLowerCase().endsWith(`.${file.format}`) ||
     typeof file.source !== "string" || new TextEncoder().encode(file.source).length > maxWorkflowUploadBytes ||
     typeof file.delimiter !== "string" || typeof file.header !== "boolean" || typeof file.encoding !== "string")
     throw new Error("Invalid uploaded workflow file.");
-  return { file: { name: file.name, format: file.format, source: file.source, value: jsonValue(file.value),
-    options: csvOptions(file.options), delimiter: file.delimiter, header: file.header, encoding: file.encoding } };
+  const original = file.original === undefined ? undefined : validateWorkflowBinary(file.original);
+  const value = file.format === "binary" ? validateWorkflowBinary(file.value) : jsonValue(file.value);
+  if (original && original.name !== file.name || file.format === "binary" && ((value as WorkflowBinary).name !== file.name || file.source !== "" || original))
+    throw new Error("Invalid uploaded workflow file.");
+  return { file: { name: file.name, format: file.format, source: file.source, value,
+    ...(original ? { original } : {}), options: csvOptions(file.options), delimiter: file.delimiter, header: file.header, encoding: file.encoding } };
+}
+
+/** Only JSON and CSV are decoded. All other files retain their original bytes. */
+export function readWorkflowFile(name: string, bytes: Uint8Array, mediaType = "", options = defaultCsvOptions): UploadedWorkflowFile {
+  const original = encodeWorkflowBinary(name, bytes, mediaType);
+  if (/\.(?:json|csv)$/i.test(name)) {
+    const decoded = decodeWorkflowFile(bytes);
+    return { ...parseWorkflowFile(name, decoded.source, options, decoded.encoding), original };
+  }
+  return { name, format: "binary", source: "", value: original, options: csvOptions(options), delimiter: "", header: false, encoding: "binary" };
 }
 
 export function parseWorkflowFile(name: string, source: string, options: CsvOptions = defaultCsvOptions, encoding = "utf-8"): UploadedWorkflowFile {

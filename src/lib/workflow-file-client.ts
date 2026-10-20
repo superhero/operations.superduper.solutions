@@ -21,7 +21,7 @@ export async function parseWorkflowFileAsync(input: File | UploadedWorkflowFile,
           ? await client.call<UploadedWorkflowFile>("upload", [input, options])
           : await client.call<UploadedWorkflowFile>("parse", [input.name, input.source, options, input.encoding]);
         signal.throwIfAborted();
-        return result;
+        return !(input instanceof File) && input.original ? { ...result, original: input.original } : result;
       } catch (error) {
         signal.throwIfAborted();
         if (attempt !== 0 || !(error instanceof Error) || error.name !== "WorkerError") throw error;

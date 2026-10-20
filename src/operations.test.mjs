@@ -374,7 +374,7 @@ Then("unsupported structures and serializations fail during catalog loading", fu
     [{ type: "string", minItems: 1 }, /invalid minItems/],
     [{ type: "null", enum: ["null"] }, /enum values/],
     [{ type: "number", enum: [Infinity] }, /enum values/],
-    [{ type: "array", items: { type: "string", format: "binary" } }, /unsupported schema fields/],
+    [{ type: "array", items: { type: "string", format: "binary" } }, /binary fields require/],
     [{ type: ["string", "integer"] }, /unsupported input type/],
     [{ type: ["string", "integer", "null"] }, /unsupported input type/],
     [{ type: ["null", "null"] }, /unsupported input type/],

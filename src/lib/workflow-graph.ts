@@ -3,9 +3,11 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 import type { Operation } from "./catalog.ts";
+import { fileValueType } from "./workflow-file.ts";
+import { placeUtilityNode } from "./workflow-layout.ts";
 import { validateWorkflowDocument, type SwitchGate, type WorkflowData, type WorkflowDocument,
   type WorkflowDocumentEdge, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
-import { adaptRoutingGates, gateForType, isValueConnection, isWorkflowConnectionTypeCompatible, routingInputTypes, switchGateInput, switchGateLimit,
+import { adaptRoutingGates, gateForType, isFileBinaryConnection, isValueConnection, isWorkflowConnectionTypeCompatible, routingInputTypes, switchGateInput, switchGateLimit,
   switchOperators, switchValueLimit, workflowInputConnected, workflowInterface } from "./workflow-utilities.ts";
 
 type Schema = Record<string, unknown>;
@@ -46,12 +48,12 @@ function resolve(value: unknown, document: Schema, seen: string[] = []): { schem
     ...(typeof value.description === "string" ? { description: value.description } : {}) } };
 }
 
-function shape(value: unknown, document: Schema, seen: string[], depth: number): Shape
+function shape(value: unknown, document: Schema, seen: string[], depth: number, binary = false): Shape
 {
   const result = resolve(value, document, seen);
   const schema = result.schema;
   const types = Array.isArray(schema.type) ? schema.type.filter(type => type !== "null") : [schema.type];
-  const type = types.length === 1 && typeof types[0] === "string" ? labels[types[0]]
+  const type = types.length === 1 && typeof types[0] === "string" ? binary && types[0] === "string" && schema.format === "binary" ? "Binary" : labels[types[0]]
     : schema.type === undefined && object(schema.properties) ? "Object" : undefined;
   const notice = depth > 12 ? "Deeper schema not expanded" : result.notice ||
     (schema.oneOf || schema.anyOf || schema.allOf ? "Alternative or combined schemas not expanded" : undefined) ||
@@ -67,9 +69,9 @@ function schemaArrayBounds(schema: Schema): { min: number; max?: number } {
 }
 
 function project(source: unknown, document: Schema, group: string, label: string, path: string, seen: string[],
-  depth: number, budget: { fields: number; panels: number }, direction: WorkflowData["direction"]): Tree
+  depth: number, budget: { fields: number; panels: number }, direction: WorkflowData["direction"], binary = false): Tree
 {
-  const resolved = shape(source, document, seen, depth);
+  const resolved = shape(source, document, seen, depth, binary);
   const schema = resolved.schema;
   const fields: WorkflowField[] = [];
   const children: Tree["children"] = [];
@@ -80,7 +82,7 @@ function project(source: unknown, document: Schema, group: string, label: string
       notice = "Additional fields not expanded";
       return;
     }
-    const result = shape(value, document, resolved.seen, depth + 1);
+    const result = shape(value, document, resolved.seen, depth + 1, binary);
     if (direction === "outputs" && result.schema.writeOnly === true || direction === "inputs" && result.schema.readOnly === true) return;
     const field: WorkflowField = {
       id: identity(group, fieldPath), label: string(result.schema.title, name).slice(0, 200), type: result.type, required,
@@ -95,7 +97,7 @@ function project(source: unknown, document: Schema, group: string, label: string
       if (budget.panels >= 200) { notice = "Additional schema branches not expanded"; return; }
       budget.panels++;
       children.push({ fieldId: field.id, path: fieldPath,
-        tree: project(value, document, group, field.label, fieldPath, resolved.seen, depth + 1, budget, direction) });
+        tree: project(value, document, group, field.label, fieldPath, resolved.seen, depth + 1, budget, direction, binary) });
     }
   };
   if (!notice)
@@ -157,9 +159,9 @@ function inputGroups(operation: Operation, source: Schema | undefined, pathItem:
   {
     const fields = operation.fields.filter(field => field.location === "body");
     if (fields.length) result.push({ id: "input:body", label: "Request body", schema: operation.bodyValue
-      ? { ...fields[0]!.schema, type: fields[0]!.type } : {
+      ? { ...fields[0]!.schema, type: fields[0]!.type, ...(fields[0]!.format ? { format: fields[0]!.format } : {}) } : {
       type: "object", properties: Object.fromEntries(fields.map(field => [field.name,
-        { ...field.schema, type: field.type, title: field.label, description: field.description }])),
+        { ...field.schema, type: field.type, ...(field.format ? { format: field.format } : {}), title: field.label, description: field.description }])),
       required: fields.filter(field => field.required).map(field => field.name)
     } });
   }
@@ -243,7 +245,8 @@ export function createOperationGraph(operation: Operation, position: { x: number
     const input = direction === "inputs";
     const groups = input ? inputs : outputs;
     const trees = groups.length ? groups.slice(0, 100).map(group => ({ id: group.id,
-      tree: project(group.schema, schemaDocument, group.id, group.label, "", [], 0, budget, direction) })) : [{ id: direction,
+      tree: project(group.schema, schemaDocument, group.id, group.label, "", [], 0, budget, direction,
+        input && group.id === "input:body" && (!!operation.binaryMediaTypes || operation.bodyMediaType === "multipart/form-data")) })) : [{ id: direction,
       tree: { label: input ? "Inputs" : "Outputs", fields: [], children: [], height: 98, span: 98,
         notice: input ? "No input fields documented" : "Response schema not documented" } as Tree }];
     let y = position.y - (trees.reduce((sum, item) => sum + item.tree.span, 0) + (trees.length - 1) * 32) / 2 + 40;
@@ -279,7 +282,7 @@ function fileSchema(values: unknown[], depth = 0): Schema {
 /** Build the same bounded output panels used for operations, rooted at a file node. */
 export function createFileDataGraph(node: Extract<WorkflowDocumentNode, { type: "file" }>): Graph {
   const graph: Graph<DataNode> = { nodes: [], edges: [] };
-  if (!node.data.file) return graph;
+  if (!node.data.file || fileValueType(node.data.file) === "Binary") return graph;
   const tree = project(fileSchema([node.data.file.value]), {}, "file", Array.isArray(node.data.file.value) ? "Array" : "File data", "", [], 0,
     { fields: 0, panels: 0 }, "outputs");
   if (node.data.file.value === null || typeof node.data.file.value !== "object")
@@ -319,10 +322,11 @@ export function updateFileDataGraph(nodeId: string, data: Extract<WorkflowDocume
       return { ...edge, ...(old?.hidden ? { hidden: true } : {}), ...(old?.detached ? { detached: true } : {}) };
     })];
   const index = new Map(result.map(node => [node.id, node]));
-  return { nodes: result, edges: links.filter(edge => {
-    const source = index.get(edge.source), target = index.get(edge.target);
-    return source && target && (edge.kind !== "mapping" || isValueConnection(edge, source, target, links.filter(other => other.id !== edge.id)) &&
-      isWorkflowConnectionTypeCompatible(edge, result, links));
+  const attached = links.filter(edge => index.has(edge.source) && index.has(edge.target));
+  return { nodes: result, edges: attached.filter(edge => {
+    const source = index.get(edge.source)!, target = index.get(edge.target)!;
+    return edge.kind !== "mapping" || isValueConnection(edge, source, target, attached.filter(other => other.id !== edge.id)) &&
+      isWorkflowConnectionTypeCompatible(edge, result, attached);
   }) };
 }
 
@@ -698,6 +702,22 @@ export function createUtilityNode(type: "switch" | "cast" | "comment" | "vault" 
   if (type === "switch") return { ...common, type, data: { gates: [{ id: "gate-1", operator: "==", value: "" }] } };
   if (type === "cast") return { ...common, type, data: { targetType: "Text" } };
   return { ...common, type, data: { text: "" } };
+}
+
+/** Make the original-file conversion visible and persist it as ordinary editable graph nodes. */
+export function insertFileBinaryCast(edge: WorkflowDocumentEdge, nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[], castId: string): Graph | undefined {
+  const target = nodes.find(node => node.id === edge.target);
+  if (target?.type !== "data" || !isFileBinaryConnection(edge, nodes)) return;
+  if (nodes.length >= 500 || edges.length > 998) throw new Error("Adding a binary cast would exceed the workflow node or connection limit.");
+  if (nodes.some(node => node.id === castId) || edges.some(existing => existing.id === `${castId}:input` || existing.id === edge.id))
+    throw new Error("Binary cast IDs must be unique.");
+  const source = nodes.find(node => node.id === edge.source)!;
+  const center = { x: (source.position.x + 360 + target.position.x) / 2, y: (source.position.y + target.position.y) / 2 + 40 };
+  const cast = placeUtilityNode({ id: castId, type: "cast" as const, position: center, data: { targetType: "Binary" as const } }, nodes,
+    { x: center.x - 110, y: center.y - 40, width: 220, height: 80 });
+  return { nodes: [...nodes, cast], edges: [...edges,
+    { id: `${castId}:input`, kind: "mapping", source: edge.source, sourceHandle: "value", target: castId, targetHandle: "value" },
+    { ...edge, source: castId, sourceHandle: "result" }] };
 }
 
 export function addSwitchGate(nodeId: string, gateId: string, nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[]): Graph

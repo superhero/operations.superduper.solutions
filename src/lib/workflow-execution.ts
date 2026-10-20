@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+import { requestBody } from "./request-body.ts";
 import { operationForId, operationOrigin, type Operation } from "./catalog.ts";
 import { catalogForOperation } from "./catalog-registry.ts";
 import { prepareRequest, type InputValues, type PreparedRequest } from "./operation-input.ts";
@@ -56,20 +57,6 @@ export function workflowRequestUrl(request: PreparedRequest, origin: string): st
     for (const item of Array.isArray(value) ? value : [value])
       if (item !== undefined) url.searchParams.append(key, String(item));
   return url.href;
-}
-
-function requestBody(request: PreparedRequest): BodyInit | null
-{
-  if (request.body === undefined) return null;
-  if (request.contentType === "text/plain") return String(request.body);
-  if (request.contentType === "application/x-www-form-urlencoded") return new URLSearchParams(request.body as Record<string, string>);
-  if (request.contentType === "multipart/form-data")
-  {
-    const form = new FormData();
-    for (const [key, value] of Object.entries(request.body as Record<string, string>)) form.append(key, value);
-    return form;
-  }
-  return JSON.stringify(request.body);
 }
 
 function requestFailure(signal: AbortSignal | undefined, timeout: AbortSignal, message: string): Error

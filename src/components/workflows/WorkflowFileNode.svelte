@@ -13,6 +13,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowNodeSelect from "./WorkflowNodeSelect.svelte";
   import { defaultCsvOptions, fileValueType, type CsvOptions, type WorkflowFileData, type UploadedWorkflowFile } from "$lib/workflow-file.ts";
   import { parseWorkflowFileAsync } from "$lib/workflow-file-client.ts";
+  import type { WorkflowBinary } from "$lib/workflow-binary.ts";
   import "./workflow-utility-nodes.css";
   let { id, data, selected }: NodeProps<Node<WorkflowFileData, "file">> = $props();
   const update = getContext<(id: string, data: WorkflowFileData) => void>("workflow-file");
@@ -20,7 +21,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const branchesFor = getContext<(id: string) => Map<string, { id: string; childId: string; label: string; hidden: boolean }> | undefined>("workflow-branches");
   const branch = $derived([...(branchesFor(id)?.values() ?? [])][0]);
   const updateNodeInternals = useUpdateNodeInternals();
-  const layout = $derived(JSON.stringify([branch, data]));
+  const layout = $derived(JSON.stringify([branch, data.file?.format]));
   $effect(() => { layout; untrack(() => updateNodeInternals(id)); });
   let input: HTMLInputElement;
   let pending = $state.raw<File>();
@@ -55,7 +56,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if data.file}
       <span class="file-name">{data.file.name}</span>
     {:else}
-      <HintButton label="Upload JSON or CSV" labelAsName={false} tooltipSide="bottom" class="file-upload" onclick={() => input.click()}>
+      <HintButton label="JSON and CSV as data; any file as binary (up to 500 kB)" labelAsName={false} tooltipSide="bottom" class="file-upload" onclick={() => input.click()}>
         <span>Upload file</span>
       </HintButton>
     {/if}
@@ -63,7 +64,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <Handle id="value" type="source" position={Position.Right} isConnectable={!!data.file}
       isConnectableEnd={false} aria-label={`File output (${type})`} />
     {#if branch?.hidden}<WorkflowRestoreBranch {branch} position={Position.Right} beside />{/if}
-    <input class="file-picker" bind:this={input} type="file" accept=".json,.csv,application/json,text/csv" aria-label="Upload workflow data file"
+    <input class="file-picker" bind:this={input} type="file" aria-label="Upload workflow data file"
       onchange={event => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (file) { pending = file; draftOptions = { ...defaultCsvOptions }; void parse(file, draftOptions); } }} />
   </div>
   {#if pending ? /\.csv$/i.test(pending.name) : data.file?.format === "csv"}
@@ -86,7 +87,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <p>{data.file?.header ? "Header row" : "No header"} · {Array.isArray(data.file?.value) ? data.file.value.length : 0} rows</p>
     </div>
   {/if}
-  {#if data.file}<div class="file-preview nodrag nopan nokey nowheel"><JsonSchemaView value={data.file.value} label="File data" title="Schema" copyable={false} pageSize={1000} /></div>{/if}
+  {#if data.file && type === "Binary"}
+    {@const binary = data.file.value as WorkflowBinary}
+    <p class="file-summary nodrag nopan nokey">{binary.mediaType} · {binary.size.toLocaleString()} bytes</p>
+  {:else if data.file}<div class="file-preview nodrag nopan nokey nowheel"><JsonSchemaView value={data.file.value} label="File data" title="Schema" copyable={false} pageSize={1000} /></div>{/if}
   {#if error}<p class="file-error nodrag nopan nokey" role="alert">{error}</p>{/if}
 </div>
 <style>
@@ -95,6 +99,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.file-upload > span:last-child) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; font-size: 11px; font-weight: 700; }
   .file-picker { display: none; }
+  .file-summary { padding: 4px 12px 8px; margin: 0; font-size: 10px; overflow-wrap: anywhere; }
   .csv-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 8px 12px 4px; border-top: 1px solid var(--color-border); }
   .csv-options label { display: grid; gap: 4px; min-width: 0; font-size: 10px; }
   .csv-options p { grid-column: 1 / -1; margin: 0; font-size: 10px; }

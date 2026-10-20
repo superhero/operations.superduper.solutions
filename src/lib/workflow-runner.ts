@@ -5,7 +5,7 @@
 import { operationForId, type InputField, type InputSchema, type JsonValue, type Operation } from "./catalog.ts";
 import { additionalBodyField, inputAllowsNull, InputValidationError, validateInputValue, type InputValues } from "./operation-input.ts";
 import { validateWorkflowDocument, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
-import { castValue, isFileRowConnection, matchingSwitchGates } from "./workflow-utilities.ts";
+import { castValue, isFileRowConnection, isFileBinaryConnection, matchingSwitchGates } from "./workflow-utilities.ts";
 import { createWorkflowExecution, type WorkflowExecutionResult, type WorkflowResponse, type WorkflowExecutor } from "./workflow-execution.ts";
 import { responseHeaderReader } from "./workflow-response.ts";
 import { isVaultVariableReference, vaultVariablePlaceholder, type VaultVariableInput } from "./secrets/variables.ts";
@@ -268,6 +268,10 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       if (value !== inactive && frame.states.get(ownerId) === "complete")
         throw new Error("This workflow loops back to a completed operation. Remove the cycle before running it again.");
       let rowValue = value;
+      if (isFileBinaryConnection(edge, frame.document.nodes)) {
+        const source = frame.nodes.get(nodeId) as Extract<Node, { type: "file" }>;
+        rowValue = source.data.file!.original ?? value;
+      }
       if (frame.rows && (!frame.rows.active || frame.rows.active.has(targetOwner(frame, edge.target))) &&
         isFileRowConnection(edge, frame.document.nodes, frame.document.edges) && value !== inactive) {
         if (!Array.isArray(value)) throw new Error("An Item connection requires uploaded array data.");
@@ -431,7 +435,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       };
       const value = collect(raw, []);
       const expected = input.type === "integer" ? "number" : input.type;
-      const matches = input.type === "json" ? true : value === null ? inputAllowsNull(input) : expected === "array" ? Array.isArray(value)
+      const matches = input.format === "binary" || input.type === "json" ? true : value === null ? inputAllowsNull(input) : expected === "array" ? Array.isArray(value)
         : typeof value === expected && (expected !== "object" || value !== null && !Array.isArray(value));
       if (!matches || typeof value === "number" && (!Number.isFinite(value) || input.type === "integer" && !Number.isInteger(value)))
         throw new Error(`“${input.label}” needs ${input.type === "integer" ? "an integer" : `a ${input.type}`} value. Check its connection or add a Cast.`);

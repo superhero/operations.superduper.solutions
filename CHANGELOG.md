@@ -123,6 +123,18 @@ scenarios. Keep unsupported binary uploads explicit in the catalog.
 
 ```
 
+<!-- changelog-commit:eae204d4eef9f8bb61f6b69d63b1924269a62db9 -->
+### Commit [`eae204d`](https://github.com/superhero/operations.superduper.solutions/commit/eae204d4eef9f8bb61f6b69d63b1924269a62db9)
+
+```text
+feat(workflow): support binary uploads and automatic file casts
+
+Preserve original file bytes alongside parsed JSON and CSV, and insert a visible Binary cast when a file is connected to a binary input. Persist bounded file envelopes through workflow storage and serialize raw and multipart file bodies consistently in both HTTP executors.
+
+Keep service JSON attachment and query annotations as text, refresh discovery availability, and cover uploads, casts, persistence, transport and worker recovery with Gherkin scenarios.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.55

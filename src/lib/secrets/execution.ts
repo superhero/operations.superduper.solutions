@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { requestBody } from "../request-body.ts";
 import { additionalBodyField, InputValidationError, prepareRequest, type InputValues, type PreparedRequest } from "../operation-input.ts";
 import type { WorkflowExecutionResult, WorkflowResponse } from "../workflow-execution.ts";
 import { validateVaultVariableInputs, vaultVariablePlaceholder, type VaultVariableInput } from "./variables.ts";
@@ -26,20 +27,6 @@ export class CredentialResponseError extends Error
     this.name = "WorkflowResponseError";
     this.response = response;
   }
-}
-
-function bodyForRequest(request: PreparedRequest): BodyInit | null
-{
-  if (request.body === undefined) return null;
-  if (request.contentType === "text/plain") return String(request.body);
-  if (request.contentType === "application/x-www-form-urlencoded") return new URLSearchParams(request.body as Record<string, string>);
-  if (request.contentType === "multipart/form-data")
-  {
-    const form = new FormData();
-    for (const [name, value] of Object.entries(request.body as Record<string, string>)) form.append(name, value);
-    return form;
-  }
-  return JSON.stringify(request.body);
 }
 
 function redactor(secrets: string[])
@@ -198,7 +185,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     if (request.body !== undefined && request.contentType !== "multipart/form-data") headers.set("Content-Type", request.contentType ?? "application/json");
     for (const [name, value] of injected) headers.set(name, value);
     const preview = redactor(secrets).value(request) as PreparedRequest;
-    const body = bodyForRequest(request);
+    const body = requestBody(request);
     await options.assertCurrent();
     if (signal.aborted) throw new VaultError("CANCELLED");
     phase = "request";

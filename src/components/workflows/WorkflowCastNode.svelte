@@ -9,6 +9,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { Handle, Position, type Node, type NodeProps } from "@xyflow/svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { CastData } from "$lib/workflow-document.ts";
+  import { castTypes } from "$lib/workflow-utilities.ts";
   import WorkflowNodeSelect from "./WorkflowNodeSelect.svelte";
   import "./workflow-utility-nodes.css";
 
@@ -30,7 +31,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <div class="utility-row cast-type nodrag nopan nokey">
     <span class="cast-label">To</span>
     <WorkflowNodeSelect label="Cast output type" value={data.targetType} active={editorActive?.() ?? true}
-      choices={[{ value: "Text", label: "Text" }, { value: "Number", label: "Number" }, { value: "Boolean", label: "Boolean" }]}
+      choices={castTypes}
       onchange={type => changeType(id, type as CastData["targetType"])} />
     <Handle id="result" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`${data.targetType} output`} />
   </div>

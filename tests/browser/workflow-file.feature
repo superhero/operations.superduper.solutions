@@ -18,3 +18,11 @@ Feature: File upload nodes
   Scenario: CSV Item attributes connect to scalar inputs and execute once per row
     Given a workflow with 1 instances of "Example array response"
     Then CSV Item connections send correlated scalar requests for every row
+
+  Scenario Outline: Binary uploads survive reload and use the receiving transport
+    Given a workflow with 1 instances of "Example object response"
+    Then file nodes send original bytes through "<transport>" inputs after reload
+    Examples:
+      | transport                |
+      | application/octet-stream |
+      | multipart/form-data      |
