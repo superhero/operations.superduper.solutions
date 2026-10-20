@@ -29,6 +29,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowHistory from "./workflows/WorkflowHistory.svelte";
   import { updateFileDataGraph, createOperationGraph, createUtilityNode, createWorkflowGraph, addAdditionalProperty, getAdditionalPropertyTypes, getEditableAdditionalProperties, updateAdditionalProperty, removeAdditionalProperty, addSwitchGate, updateSwitchGate, removeSwitchGate, schemaBranches, isWorkflowConnection, removeGraphSelection, restoreDataBranch } from "$lib/workflow-graph.ts";
   import { layoutAddedGraph, placeUtilityNode } from "$lib/workflow-layout.ts";
+  import { insertFileBinaryCast } from "$lib/workflow-graph.ts";
   import { orderWorkflowNodes, restoreWorkflowNodeOrder } from "$lib/workflow-focus-order.ts";
   import { adaptRoutingGates, routingInputTypes, workflowDescriptionLimit, workflowInputConnected } from "$lib/workflow-utilities.ts";
   import { getOperationReport } from "$lib/operation-report.ts";
@@ -664,10 +665,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (edges.length >= 1000) { error = "A workflow supports at most 1000 connections."; return null; }
     const fieldMapping = !!connection.sourceHandle || !!connection.targetHandle;
     error = "";
-    return paintEdge({ id: crypto.randomUUID(), source: connection.source, target: connection.target,
+    const edge = { id: crypto.randomUUID(), source: connection.source, target: connection.target,
       ...(connection.sourceHandle ? { sourceHandle: connection.sourceHandle } : {}),
       ...(connection.targetHandle ? { targetHandle: connection.targetHandle } : {}),
-      ...(fieldMapping ? { kind: "mapping" } : {}) });
+      ...(fieldMapping ? { kind: "mapping" as const } : {}) };
+    try {
+      const graph = insertFileBinaryCast(edge, nodes, edges, crypto.randomUUID());
+      if (graph) { applyGraph(graph); return null; }
+    } catch (failure) { describeFailure("Connect file", failure); return null; }
+    return paintEdge(edge);
   }
 
   function connectToPanel(connection: Connection) {

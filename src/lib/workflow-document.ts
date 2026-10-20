@@ -23,7 +23,7 @@ export type ArrayBounds = { min: number; max?: number };
 export type WorkflowField = {
   id: string;
   label: string;
-  type: "Text" | "Integer" | "Number" | "Boolean" | "Object" | "Array" | "Null" | "Unknown";
+  type: "Text" | "Integer" | "Number" | "Boolean" | "Object" | "Array" | "Null" | "Unknown" | "Binary";
   required: boolean;
   description: string;
   connectable: boolean;
@@ -41,7 +41,7 @@ export type WorkflowData = {
 };
 export type SwitchGate = { id: string; operator: "==" | "!=" | ">" | ">=" | "<" | "<=" | "is_set" | "is_not_set"; value: string };
 export type SwitchData = { gates: SwitchGate[] };
-export type CastData = { targetType: "Text" | "Number" | "Boolean" };
+export type CastData = { targetType: "Text" | "Number" | "Boolean" | "Binary" };
 export type VaultVariableData = { credentialId?: string };
 export type CommentData = { text: string; width?: number; height?: number };
 export type WorkflowReferenceData = { workflowId: string; name: string; description: string; snapshot: WorkflowDocument };
@@ -142,7 +142,7 @@ function workflowData(value: Record<string, unknown>, extended: boolean): Workfl
     throw new Error("A data panel supports at most 200 fields.");
   const fields = value.fields.map(value => {
     const field = record(value);
-    if (!["Text", "Integer", "Number", "Boolean", "Object", "Array", "Null", "Unknown"].includes(String(field.type)))
+    if (!["Text", "Integer", "Number", "Boolean", "Object", "Array", "Null", "Unknown", "Binary"].includes(String(field.type)))
       throw new Error("Unsupported workflow field type.");
     const result: WorkflowField = {
       id: text(field.id, "Field ID", 2048), label: text(field.label, "Field label", 200),
@@ -324,7 +324,7 @@ function validateDocument(value: unknown, context: ValidationContext, depth: num
     }
     if (extended && node.type === "cast")
     {
-      if (data.targetType !== "Text" && data.targetType !== "Number" && data.targetType !== "Boolean")
+      if (data.targetType !== "Text" && data.targetType !== "Number" && data.targetType !== "Boolean" && data.targetType !== "Binary")
         throw new Error("A cast target must be Text, Number or Boolean.");
       return { ...common, type: "cast", data: { targetType: data.targetType } };
     }

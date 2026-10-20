@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 import type { BodyMediaType, InputField, InputSchema, JsonValue, Operation } from "./catalog.ts";
+import { validateWorkflowBinary, binaryRequestMediaType } from "./workflow-binary.ts";
 
 export type InputValue = string | null | undefined;
 export type InputValues = Record<string, InputValue>;
@@ -20,6 +21,7 @@ export type PreparedRequest = {
   body?: JsonValue;
   headers?: Record<string, string>;
   contentType?: Exclude<BodyMediaType, "application/json">;
+  bodyFormat?: "binary";
 };
 
 export class InputValidationError extends Error
@@ -44,6 +46,14 @@ function validateJson(input: InputField, value: JsonValue, path: string): void
 function validate(input: InputField, schema: InputSchema, value: JsonValue, path: string): void
 {
   const type = schema.type;
+  if (schema.format === "binary") {
+    let file;
+    try { file = validateWorkflowBinary(value); }
+    catch { fail(input, `${path} must be an uploaded binary file.`); }
+    if (schema.minLength !== undefined && file.size < schema.minLength || schema.maxLength !== undefined && file.size > schema.maxLength)
+      fail(input, `${path} file size is outside the allowed range.`);
+    return;
+  }
   if (type === "json") { validateJson(input, value, path); return; }
   if (value === null && (type === "null" || schema.nullable))
   {
@@ -95,7 +105,7 @@ function convert(input: InputField, raw: string | null): JsonValue
     return null;
   }
   let value: JsonValue = raw;
-  if (input.type === "object" || input.type === "array" || input.type === "null" || input.type === "json")
+  if (input.format === "binary" || input.type === "object" || input.type === "array" || input.type === "null" || input.type === "json")
   {
     try { value = JSON.parse(raw); }
     catch { fail(input, "enter valid JSON."); }
@@ -192,7 +202,8 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     else
     {
       if ((operation.bodyMediaType === "application/x-www-form-urlencoded" || operation.bodyMediaType === "multipart/form-data")
-        && (value === null || typeof value === "object")) fail(input, "form body properties must be primitive text values.");
+        && (value === null || typeof value === "object" && !(operation.bodyMediaType === "multipart/form-data" && input.format === "binary")))
+        fail(input, "form body properties must be primitive text values or declared binary files.");
       set(body, input.name, value);
     }
   }
@@ -202,6 +213,10 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     if (operation.bodySchema) validateInputValue({ key: "body:$", name: "$", label: "Request body", description: "", location: "body",
       type: operation.bodySchema.type, required: operation.bodyRequired, schema: operation.bodySchema }, request.body!);
     if (operation.bodyMediaType && operation.bodyMediaType !== "application/json") request.contentType = operation.bodyMediaType;
+    if (operation.binaryMediaTypes) {
+      request.contentType = binaryRequestMediaType(operation.binaryMediaTypes, request.body!) as BodyMediaType;
+      request.bodyFormat = "binary";
+    }
   }
   return request;
 }

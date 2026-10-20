@@ -11,6 +11,9 @@ the choices and reasoning behind the application and its development practices.
 [Default service schemas](default-service-schemas.md) lists bundled providers,
 selected product scopes and browser execution limits.
 
+[Workflow files](workflow-files.md) explains parsed data, binary uploads and
+automatic file casts.
+
 [Schema performance](schema-performance.md) records the measured discovery,
 matching and retention changes. Its JSON sidecar preserves numeric evidence;
 raw profiles remain generated test artifacts.

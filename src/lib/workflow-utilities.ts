@@ -5,6 +5,7 @@
 import type { CastData, SwitchGate, WorkflowDocument, WorkflowDocumentEdge, WorkflowDocumentNode, WorkflowField } from "./workflow-document.ts";
 
 import { fileValueType } from "./workflow-file.ts";
+import { encodeWorkflowBinary, validateWorkflowBinary, type WorkflowBinary } from "./workflow-binary.ts";
 
 export const switchGateLimit = 32;
 export const switchValueLimit = 4096;
@@ -22,17 +23,27 @@ export const switchOperators = [
   { value: "is_not_set", symbol: "∄", label: "Is not set", unary: true }
 ] satisfies { value: SwitchGate["operator"]; symbol: string; label: string; unary?: boolean }[];
 export const castTypes = [
-  { value: "Text", label: "Text" }, { value: "Number", label: "Number" }, { value: "Boolean", label: "Boolean" }
+  { value: "Text", label: "Text" }, { value: "Number", label: "Number" }, { value: "Boolean", label: "Boolean" }, { value: "Binary", label: "Binary" }
 ] satisfies { value: CastData["targetType"]; label: string }[];
-export type RoutingType = "Text" | "Number" | "Boolean" | "Object" | "Array" | "Null" | "Unknown" | "Mixed";
+export type RoutingType = "Text" | "Number" | "Boolean" | "Object" | "Array" | "Null" | "Unknown" | "Mixed" | "Binary";
 
 export function numericValue(value: unknown): value is string
 {
   return typeof value === "string" && /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value.trim()) && Number.isFinite(Number(value));
 }
 
-export function castValue(value: unknown, type: CastData["targetType"]): string | number | boolean
+export function castValue(value: unknown, type: CastData["targetType"]): string | number | boolean | WorkflowBinary
 {
+  if (type === "Binary") {
+    if (value && typeof value === "object" && "kind" in value && value.kind === "workflow-file") return validateWorkflowBinary(value);
+    const encoded = typeof value === "string" ? value : JSON.stringify(value, (_key, item: unknown) => {
+      if (typeof item === "number" && !Number.isFinite(item) || item === undefined || typeof item === "function" || typeof item === "symbol")
+        throw new Error("Only finite JSON values can be cast to Binary.");
+      return item;
+    });
+    const text = typeof value === "string";
+    return encodeWorkflowBinary(text ? "data.txt" : "data.json", new TextEncoder().encode(encoded), text ? "text/plain" : "application/json");
+  }
   if (!["string", "number", "boolean"].includes(typeof value) || typeof value === "number" && !Number.isFinite(value))
     throw new Error("Only text, finite numbers and booleans can be cast.");
   if (type === "Text") return String(value);
@@ -169,6 +180,15 @@ export function workflowInputConnected(targetId: string, targetHandle: string | 
 }
 
 type ValueConnection = { source: string; target: string; sourceHandle?: string | null; targetHandle?: string | null };
+/** The original node sends bytes to a binary port while its panels keep parsed data. */
+export function isFileBinaryConnection(connection: ValueConnection, nodes: WorkflowDocumentNode[]): boolean {
+  const source = nodes.find(node => node.id === connection.source);
+  const target = nodes.find(node => node.id === connection.target);
+  return source?.type === "file" && connection.sourceHandle === "value" && !!source.data.file
+    && (source.data.file.format === "binary" || !!source.data.file.original)
+    && (target?.type === "cast" && target.data.targetType === "Binary" && connection.targetHandle === "value"
+      || target?.type === "data" && target.data.direction === "inputs" && target.data.fields.some(field => field.id === connection.targetHandle && field.type === "Binary"));
+}
 type ConnectionValueType = WorkflowField["type"] | "Mixed";
 const scalarConnectionType = (type: ConnectionValueType) => ["Text", "Integer", "Number", "Boolean"].includes(type);
 const numericConnectionType = (type: ConnectionValueType) => type === "Integer" || type === "Number";
@@ -213,9 +233,11 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
     return types.size === 1 ? [...types][0]! : types.size ? "Mixed" : "Unknown";
   };
   const compatible = (candidate: ValueConnection): boolean => {
+    if (isFileBinaryConnection(candidate, nodes)) return true;
     const type = outputType(candidate.source, candidate.sourceHandle);
     if (type === "Unknown" || type === "Mixed") return false;
     const target = byId.get(candidate.target)!;
+    if (target.type === "cast" && target.data.targetType === "Binary") return true;
     if (target.type === "data")
     {
       const expected = target.data.fields.find(field => field.id === candidate.targetHandle)!.type;
@@ -266,7 +288,7 @@ export function isValueConnection(connection: { sourceHandle?: string | null; ta
   if (target.type === "data") return target.data.direction === "inputs" &&
     target.data.fields.some(field => field.id === connection.targetHandle && field.connectable);
   if (target.type === "cast") return connection.targetHandle === "value" &&
-    (sourceUtility || !!sourceField && ["Text", "Integer", "Number", "Boolean"].includes(sourceField.itemType ?? sourceField.type));
+    (sourceUtility || !!sourceField && (target.data.targetType === "Binary" || ["Text", "Integer", "Number", "Boolean"].includes(sourceField.itemType ?? sourceField.type)));
   if (target.type !== "switch") return false;
   const gate = target.data.gates.find(gate => switchGateInput(gate.id) === connection.targetHandle);
   if (connection.targetHandle !== "value" && !gate) return false;

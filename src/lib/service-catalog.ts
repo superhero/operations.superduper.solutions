@@ -5,6 +5,7 @@ import type { BodyMediaType, InputField, InputSchema, Operation } from "./catalo
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { extractOperationSecurity } from "./operation-security.ts";
 import { operationServerUrl, validateSchemaDocumentId } from "./schema-documents.ts";
+import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
 
 type Value = Record<string, unknown>;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -40,7 +41,7 @@ function resolve(input: unknown, document: Value): Value
 
 /** Keep familiar controls where their constraints are representable. Other JSON
  * Schema vocabularies remain in the source and use explicit server validation. */
-function inputSchema(input: unknown, document: Value, depth = 0, ancestors = new Set<unknown>()): InputSchema
+function inputSchema(input: unknown, document: Value, depth: number, ancestors: Set<unknown>, binary: boolean): InputSchema
 {
   if (depth > 8 || ancestors.has(input)) return json();
   const shape = resolve(input, document);
@@ -48,7 +49,7 @@ function inputSchema(input: unknown, document: Value, depth = 0, ancestors = new
   if (Array.isArray(variants) && variants.length === 2)
   {
     const nonNull = variants.filter(item => value(item).type !== "null");
-    if (nonNull.length === 1) return { ...inputSchema(nonNull[0], document, depth + 1, ancestors), nullable: true };
+    if (nonNull.length === 1) return { ...inputSchema(nonNull[0], document, depth + 1, ancestors, binary), nullable: true };
   }
   if (Object.keys(shape).some(key => !constraints.has(key) && !annotation.has(key) && !key.startsWith("x-"))) return json();
   const types = Array.isArray(shape.type) ? shape.type.filter(type => type !== "null") : [shape.type];
@@ -58,10 +59,12 @@ function inputSchema(input: unknown, document: Value, depth = 0, ancestors = new
   if (shape.enum !== undefined && (!Array.isArray(shape.enum) || shape.enum.some(item => item !== null && !["string", "number", "boolean"].includes(typeof item)))) return json();
   if (Object.hasOwn(shape, "const") && shape.const !== null && !["string", "number", "boolean"].includes(typeof shape.const)) return json();
   const result: InputSchema = { type: inferred as InputSchema["type"] };
+  if (binary && inferred === "string" && shape.format === "binary") result.format = "binary";
   if (shape.nullable === true || Array.isArray(shape.type) && shape.type.includes("null")) result.nullable = true;
   if (Array.isArray(shape.enum) && shape.enum.every(item => item === null || ["string", "number", "boolean"].includes(typeof item)))
     result.enum = shape.enum as NonNullable<InputSchema["enum"]>;
   if (Object.hasOwn(shape, "const") && (shape.const === null || ["string", "number", "boolean"].includes(typeof shape.const))) result.enum = [shape.const as string | number | boolean | null];
+  if (result.format && (result.nullable || result.enum || shape.pattern !== undefined)) throw new Error("Binary files cannot be nullable, enumerated or pattern-constrained.");
   for (const key of ["minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems"] as const)
     if (typeof shape[key] === "number" && Number.isFinite(shape[key])) result[key] = shape[key];
   if (typeof shape.pattern === "string")
@@ -69,23 +72,23 @@ function inputSchema(input: unknown, document: Value, depth = 0, ancestors = new
     try { new RegExp(shape.pattern, "u"); result.pattern = shape.pattern; } catch { return json(); }
   }
   const next = new Set([...ancestors, input]);
-  if (inferred === "array") result.items = inputSchema(shape.items, document, depth + 1, next);
+  if (inferred === "array") result.items = inputSchema(shape.items, document, depth + 1, next, binary);
   if (inferred === "object")
   {
     const properties = Object.entries(value(shape.properties)).filter(([, property]) => resolve(property, document).readOnly !== true);
     if (properties.length > 200) return json();
-    result.properties = Object.fromEntries(properties.map(([name, property]) => [name, inputSchema(property, document, depth + 1, next)]));
+    result.properties = Object.fromEntries(properties.map(([name, property]) => [name, inputSchema(property, document, depth + 1, next, binary)]));
     if (Array.isArray(shape.required) && shape.required.some(name => typeof name !== "string" || !Object.hasOwn(value(shape.properties), name))) return json();
     result.required = Array.isArray(shape.required) ? shape.required.filter((name): name is string => typeof name === "string" && Object.hasOwn(result.properties!, name)) : [];
     result.additionalProperties = typeof shape.additionalProperties === "boolean" ? shape.additionalProperties
-      : shape.additionalProperties && Object.keys(value(shape.additionalProperties)).length ? inputSchema(shape.additionalProperties, document, depth + 1, next) : true;
+      : shape.additionalProperties && Object.keys(value(shape.additionalProperties)).length ? inputSchema(shape.additionalProperties, document, depth + 1, next, binary) : true;
   }
   return result;
 }
 
-function field(name: string, location: InputField["location"], raw: unknown, required: boolean, document: Value, description: unknown): InputField
+function field(name: string, location: InputField["location"], raw: unknown, required: boolean, document: Value, description: unknown, binary = false): InputField
 {
-  const schema = inputSchema(raw, document);
+  const schema = inputSchema(raw, document, 0, new Set(), binary);
   const shape = resolve(raw, document);
   const defaultValue = required && location !== "body" && ["string", "number", "boolean"].includes(typeof shape.default)
     ? schema.type === "json" ? JSON.stringify(shape.default) : String(shape.default) : undefined;
@@ -174,28 +177,41 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         {
           const body = resolve(source.requestBody, document);
           const content = value(body.content);
-          const mediaType = ["application/json", "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"].find(type => content[type]);
+          const binaryMediaTypes = Object.keys(content).filter(type => {
+            const schema = resolve(value(content[type]).schema, document);
+            return isBinaryMediaType(type) && schema.type === "string" && schema.format === "binary";
+          });
+          const mediaType = ["application/json", "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"].find(type => content[type]) ?? binaryMediaTypes[0];
           if (!mediaType) throw new Error("This request requires an unsupported binary or streaming media type.");
           const schema = resolve(value(content[mediaType]).schema, document);
-          const parsed = inputSchema(schema, document);
+          const binary = mediaType === "multipart/form-data" || mediaType === "application/x-www-form-urlencoded" || binaryMediaTypes.includes(mediaType);
+          const parsed = inputSchema(schema, document, 0, new Set(), binary);
           operation.bodyRequired = body.required === true;
           operation.bodyMediaType = mediaType as BodyMediaType;
           operation.bodySchema = parsed;
+          if (binaryMediaTypes.includes(mediaType)) {
+            if (parsed.format !== "binary" || binaryMediaTypes.some(type => value(content[type]).encoding !== undefined))
+              throw new Error("This binary body requires an unsupported schema or custom encoding.");
+            if (binaryMediaTypes.some(type => JSON.stringify(inputSchema(value(content[type]).schema, document, 0, new Set(), true)) !== JSON.stringify(parsed)))
+              throw new Error("Binary media alternatives must use the same file schema.");
+            operation.binaryMediaTypes = binaryMediaTypes;
+          }
+          else if (mediaType === "application/x-www-form-urlencoded" && containsBinaryInput(parsed)) throw new Error("Binary fields require a raw file body or multipart/form-data.");
           if (mediaType === "text/plain" && parsed.type !== "string") throw new Error("This text body requires an unsupported schema.");
           if (mediaType.endsWith("form-data") || mediaType.endsWith("form-urlencoded"))
-            if (parsed.type !== "object" || Object.values(value(schema.properties)).some(property => resolve(property, document).format === "binary")
+            if (parsed.type !== "object" || value(content[mediaType]).encoding !== undefined
               || Object.values(parsed.properties!).some(property => !primitives.includes(property.type) || property.nullable))
-              throw new Error("This form requires binary or structured fields that are not supported.");
+              throw new Error("This form uses unsupported structured fields or custom part encodings.");
           if (parsed.type === "object" && !parsed.nullable)
             for (const [name, property] of Object.entries(value(schema.properties)))
             {
               if (resolve(property, document).readOnly === true) continue;
-              operation.fields.push(field(name, "body", property, parsed.required!.includes(name), document, undefined));
+              operation.fields.push(field(name, "body", property, parsed.required!.includes(name), document, undefined, binary));
             }
           else
           {
             operation.bodyValue = true;
-            operation.fields.push(field("$", "body", schema, true, document, body.description));
+            operation.fields.push(field("$", "body", schema, true, document, body.description, binary));
           }
         }
         const placeholders = [...path.matchAll(/\{([^{}]+)\}/g)].map(match => match[1]);

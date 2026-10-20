@@ -9,6 +9,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import FieldSelect from "./FieldSelect.svelte";
   import FieldNumber from "./FieldNumber.svelte";
   import FieldInteger from "./FieldInteger.svelte";
+  import OperationBinaryField from "./OperationBinaryField.svelte";
 
   let { field, id, value, onValueChange, required = field.required, disabled = false, invalid = false,
     active = true, describedBy, multiline = false, portalZIndex = 40 }:
@@ -19,7 +20,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const placeholder = $derived(field.type === "object" ? '{"name": "Example"}' : field.type === "array" ? '["example", "values"]' : field.type === "null" ? "null" : field.type === "json" ? "JSON value" : "");
 </script>
 
-{#if field.type === "integer"}
+{#if field.format === "binary"}
+  <OperationBinaryField {id} label={field.label} {value} {onValueChange} {disabled} {active} {invalid} {describedBy} />
+{:else if field.type === "integer"}
   <FieldInteger {id} label={field.label} {value} minimum={field.minimum} maximum={field.maximum}
     options={field.enum?.filter((value): value is number => typeof value === "number")} {onValueChange} {required} {disabled} {invalid} {describedBy} />
 {:else if field.enum || field.type === "boolean"}

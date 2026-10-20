@@ -4,10 +4,12 @@
 
 import { catalogs, replaceCatalogs, setOperationCatalog, type Catalog } from "./catalog-registry.ts";
 import { extractOperationSecurity, type OperationSecurity } from "./operation-security.ts";
+import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type InputSchema = {
   type: "string" | "number" | "integer" | "boolean" | "object" | "array" | "null" | "json";
+  format?: "binary";
   pattern?: string;
   nullable?: boolean;
   enum?: (string | number | boolean | null)[];
@@ -32,7 +34,7 @@ export type InputField = Omit<InputSchema, "properties" | "required" | "items"> 
   required: boolean;
   schema?: InputSchema;
 };
-export type BodyMediaType = "application/json" | "text/plain" | "application/x-www-form-urlencoded" | "multipart/form-data";
+export type BodyMediaType = `${string}/${string}`;
 export type Operation = {
   /** Navigation-only descriptor. Execution requires a separately hydrated model. */
   deferred?: true;
@@ -45,6 +47,7 @@ export type Operation = {
   fields: InputField[];
   bodyRequired: boolean;
   bodyMediaType?: BodyMediaType;
+  binaryMediaTypes?: string[];
   bodyValue?: boolean;
   bodySchema?: InputSchema;
   responseExample?: unknown;
@@ -112,6 +115,7 @@ function inputSchema(value: unknown, document: RecordValue, context: string, dep
   if (shape.nullable !== undefined && typeof shape.nullable !== "boolean") throw new Error(`${context}: nullable must be Boolean.`);
   const nullable = !!union || shape.nullable === true;
   const keys = ["type", "nullable", ...annotations];
+  if (type === "string" && shape.format === "binary") keys.push("format");
   if (primitiveTypes.includes(type)) keys.push("enum");
   if (type === "number" || type === "integer") keys.push("minimum", "maximum");
   if (type === "string") keys.push("minLength", "maxLength");
@@ -120,6 +124,8 @@ function inputSchema(value: unknown, document: RecordValue, context: string, dep
   // Validate misplaced numeric constraints explicitly, keeping useful diagnostics.
   supported(shape, [...keys, "minimum", "maximum", "minLength", "maxLength", "minItems", "maxItems"], context);
   const result: InputSchema = { type, ...(nullable ? { nullable: true } : {}) };
+  if (shape.format === "binary") result.format = "binary";
+  if (result.format && (nullable || shape.enum !== undefined)) throw new Error(`${context}: binary files cannot be nullable or enumerated.`);
   if (shape.enum !== undefined)
   {
     if (!Array.isArray(shape.enum) || !shape.enum.length || shape.enum.some(value =>
@@ -244,7 +250,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
           const input = field(parameter.schema, document, parameter.in as InputField["location"], parameter.name, parameter.required === true);
           const query = input.location === "query";
           const style = query ? input.type === "object" ? "deepObject" : "form" : "simple";
-          if (query && input.type === "object" && parameter.style !== "deepObject"
+          if (containsBinaryInput(input.schema ?? { ...input, required: [] }) || query && input.type === "object" && parameter.style !== "deepObject"
             || parameter.style !== undefined && parameter.style !== style
             || parameter.explode !== undefined && parameter.explode !== query
             || !query && !primitiveTypes.includes(input.type)
@@ -265,6 +271,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
       let bodyMediaType: BodyMediaType | undefined;
       let bodyValue = false;
       let bodySchema: InputSchema | undefined;
+      let binaryMediaTypes: string[] | undefined;
       if (operation.requestBody !== undefined)
       {
         const body = resolve(operation.requestBody, document, `${id}: request body`);
@@ -273,7 +280,11 @@ export function extractOperations(value: unknown, source: string): Operation[]
         bodyRequired = body.required === true;
         const content = object(body.content, `${id}: request content`);
         const mediaTypes = Object.keys(content);
-        if (mediaTypes.length !== 1 || !["application/json", "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"].includes(mediaTypes[0]!))
+        const binary = mediaTypes.length > 0 && mediaTypes.every(type => {
+          const shape = resolve(object(content[type], id).schema ?? {}, document, id);
+          return isBinaryMediaType(type) && shape.type === "string" && shape.format === "binary";
+        });
+        if (!binary && (mediaTypes.length !== 1 || !["application/json", "text/plain", "application/x-www-form-urlencoded", "multipart/form-data"].includes(mediaTypes[0]!)))
           throw new Error(`${id}: choose one supported request media type: application/json, text/plain, application/x-www-form-urlencoded or multipart/form-data.`);
         bodyMediaType = mediaTypes[0] as BodyMediaType;
         const media = object(content[bodyMediaType], id);
@@ -281,10 +292,20 @@ export function extractOperations(value: unknown, source: string): Operation[]
         const shape = resolve(media.schema, document, id);
         const schema = inputSchema(shape, document, id);
         bodySchema = schema;
+        if (binary) {
+          if (mediaTypes.some(type => {
+            const alternative = object(content[type], id);
+            supported(alternative, ["schema", "example", "examples"], id);
+            return JSON.stringify(inputSchema(alternative.schema, document, id)) !== JSON.stringify(schema);
+          }))
+            throw new Error(`${id}: binary media alternatives must use the same file schema.`);
+          binaryMediaTypes = mediaTypes;
+        }
+        else if (bodyMediaType !== "multipart/form-data" && containsBinaryInput(schema)) throw new Error(`${id}: binary fields require a raw file body or multipart/form-data.`);
         if (bodyMediaType === "text/plain" && schema.type !== "string") throw new Error(`${id}: text/plain requires a string schema.`);
         if (bodyMediaType === "application/x-www-form-urlencoded" || bodyMediaType === "multipart/form-data")
           if (schema.type !== "object" || schema.nullable || objectSchemas(schema).some(property => property.nullable || !["string", "number", "integer", "boolean"].includes(property.type)))
-            throw new Error(`${id}: form bodies require named primitive text fields; files and structured fields are unsupported.`);
+            throw new Error(`${id}: form bodies require named primitive text fields or individual binary files; structured fields are unsupported.`);
         if (schema.type === "object" && !schema.nullable)
           for (const [name, property] of Object.entries((shape.properties ?? {}) as RecordValue)) fields.push(field(property, document, "body", name, schema.required!.includes(name)));
         else
@@ -306,6 +327,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
         description: text(operation.description, ""), group: Array.isArray(tags) && tags.length ? tags[0] : "Operations",
         method: method.toUpperCase(), path, fields, bodyRequired, ...responseDetails(operation, document, id) };
       if (bodyMediaType) extracted.bodyMediaType = bodyMediaType;
+      if (binaryMediaTypes) extracted.binaryMediaTypes = binaryMediaTypes;
       if (bodyValue) extracted.bodyValue = true;
       if (bodySchema) extracted.bodySchema = bodySchema;
       const security = extractOperationSecurity(document, operation);

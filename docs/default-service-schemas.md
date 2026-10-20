@@ -283,7 +283,8 @@ credential headers. This opt-in adaptation does not rewrite existing Cloud packs
 
 The contracts add 655 HTTP operations. Of these, 640 pass the current request
 transport checks; 15 Gmail/Drive/Chat/YouTube operations retain an explicit
-unsupported binary/streaming-body limitation. This classification does not
+upload limitation: these converted contracts describe metadata objects under
+binary media types rather than usable raw-file upload contracts. This classification does not
 certify live account access or current provider behavior.
 
 For private user data, bind an OAuth access token with the required scopes from
@@ -291,7 +292,8 @@ the vault to `Oauth2c`. A token is an access token, not an OAuth client secret o
 API key. [Google authorization](https://developers.google.com/workspace/guides/auth-overview)
 still requires the appropriate app configuration, user consent and, where
 applicable, Workspace administrator permissions. These schema additions do not
-implement Google sign-in, token refresh, service-account signing or binary uploads.
+implement Google sign-in, token refresh or service-account signing. Generic
+[binary file transport](workflow-files.md) does not fix the converted Google upload contracts.
 
 ## Cloudflare
 
@@ -451,7 +453,9 @@ the official v2 contract; each economic operation links to its official API docs
 
 Typed controls cover supported constraints. Advanced JSON schemas use a JSON
 input with API-side validation. Unsupported authentication, serialization and
-binary transports remain visible with an execution limitation. AWS signing is
+streaming transports remain visible with an execution limitation. Raw binary
+bodies and individual multipart file fields are supported when declared with
+`type: string`, `format: binary`; see [workflow files](workflow-files.md). AWS signing is
 unsupported. OAuth access tokens use bearer transport; login, token refresh and
 scope acquisition are outside this feature.
 

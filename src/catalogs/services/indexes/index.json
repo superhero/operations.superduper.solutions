@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "bac48ba295d202380d70ee65a58529147f87ec04ea9f339a62c41f5e8b585ec1",
+  "adapterRevision": "56d06b5c0a69ff6b42b108fc6322d22f46df41111d1cce988dc7130e400e8056",
   "indexes": [
     {
       "id": "alfred",
@@ -18,14 +18,14 @@
     {
       "id": "anthropic",
       "sourceRevision": "c23b4e84fb0d699275f74767c41af4d3c62f1f9457a75bf55e02559abf44e1cd",
-      "bytes": 49646,
-      "compressedBytes": 3455,
-      "sha256": "99590aea548fb9ab67077ffc7c13685356dc07ce56795dc7dd9756e2457fffad",
+      "bytes": 49553,
+      "compressedBytes": 3462,
+      "sha256": "8f55b23cbda5d629753c5c07d8bfe7a0598688b985aad0e9ba859c703399e522",
       "summary": {
         "name": "Anthropic API",
         "serverUrl": "https://api.anthropic.com",
         "operationCount": 144,
-        "unavailableCount": 123
+        "unavailableCount": 122
       }
     },
     {
@@ -167,8 +167,8 @@
       "id": "bamboo",
       "sourceRevision": "a5f54819ac94622e3855a4a809404b538858fd98ac51690e25960643634a2b4e",
       "bytes": 168944,
-      "compressedBytes": 9770,
-      "sha256": "c04f1e6e7ae77731f492c301d76ec4efceffd4df966a60f43e031fca3df7448c",
+      "compressedBytes": 9772,
+      "sha256": "6b82ac14b99d00a91b20b6bdf8af7ea6d72c5773a5023bcca54cb77624ea24c2",
       "summary": {
         "name": "Bamboo",
         "serverUrl": "http://example.com:8085/rest",
@@ -194,15 +194,15 @@
     {
       "id": "bitbucket-dc",
       "sourceRevision": "29bdc3c5ef420a7ec6c500812d114cba7ca7257b596a6b29a06949846965855e",
-      "bytes": 220289,
-      "compressedBytes": 15596,
-      "sha256": "78efb8a87f594596bf9c42fb8b617829bee0b8c82a2cd7cfd9cc37809d98951a",
+      "bytes": 219917,
+      "compressedBytes": 15527,
+      "sha256": "361db00a3e2a207fe464ac6d0a9bd8aca2455b90af7cf0d17626a694ebc35583",
       "summary": {
         "name": "Bitbucket Data Center",
         "serverUrl": "http://example.com:7990/rest",
         "description": "This is the reference document for the Atlassian Bitbucket REST API. The REST API is for developers who want to: \n\n - integrate Bitbucket with other applications;\n\n - create scripts that interact with Bitbucket; or\n\n - develop plugins that enhance the Bitbucket UI, using REST to interact with the backend. \n\n You can read more about developing Bitbucket plugins in the [Bitbucket Developer Documentation](https://developer.atlassian.com/bitbucket/server/docs/latest/).",
         "operationCount": 574,
-        "unavailableCount": 30
+        "unavailableCount": 26
       }
     },
     {
@@ -249,9 +249,9 @@
     {
       "id": "atlassian-compass",
       "sourceRevision": "8f958b9531ae81c59ba759c978788ed469dae80829eaadf533c9cab4dd7d96bf",
-      "bytes": 6213,
-      "compressedBytes": 1005,
-      "sha256": "c5619a9ac4aa9da14c24760fb1467b0a2a3284fe28096bd25c59de197f82af1f",
+      "bytes": 6231,
+      "compressedBytes": 962,
+      "sha256": "f13287f403963f4ffc56bfb04348355ffb6e01935d08738289c6ffb2aae27289",
       "summary": {
         "name": "Compass REST API",
         "serverUrl": "https://your-domain.atlassian.net/gateway/api",
@@ -305,8 +305,8 @@
       "id": "crowd-dc",
       "sourceRevision": "8b50d91e187075ac0e0879bf7d02653b033b524b9c380fdcce42bd7d5ee42a12",
       "bytes": 48614,
-      "compressedBytes": 4370,
-      "sha256": "e56245361101681d632dfe804a08a82de7322ef4382f82074e848326a4c31e6f",
+      "compressedBytes": 4377,
+      "sha256": "425a1bf79288a2778b9ac3ce741c27260542609ae496ab314854e6136b2dc6f1",
       "summary": {
         "name": "Crowd Data Center",
         "serverUrl": "http://example.com:8095/rest",
@@ -401,8 +401,8 @@
       "id": "jira",
       "sourceRevision": "ae048ce3f43809abb18e96523e22c8adb67b6f720bfc4bf4c59594822c3cb325",
       "bytes": 233889,
-      "compressedBytes": 18940,
-      "sha256": "19cf7075d31cd8041415f8791c4d39566c54d30ff4f4dd1cabf4de2e418fa6ed",
+      "compressedBytes": 18969,
+      "sha256": "ef6305e4d29fc8e27b5d8e2b255ee55d6bc3ac800effeb4bd28bbbe0ed5c7c68",
       "summary": {
         "name": "The Jira Cloud platform REST API",
         "serverUrl": "https://your-domain.atlassian.net",
@@ -416,7 +416,7 @@
       "sourceRevision": "e2ff7579a087099e6482b78475730ea508e8933e8349af3b4fe58eb1a9cad944",
       "bytes": 30606,
       "compressedBytes": 2407,
-      "sha256": "570d77b5036e205bd17a4e9da0b6e16aeb94f76c79fb09cfb2261fb567d4c8b4",
+      "sha256": "1e1328527ba7fae19182000d50220e7709e38f3f678d4967338d72da46bdf196",
       "summary": {
         "name": "Service Management Public REST API",
         "serverUrl": "https://your-domain.atlassian.net",
@@ -429,8 +429,8 @@
       "id": "jira-service-management-dc",
       "sourceRevision": "27d6db98596167a55360de4566f865ed091c5c83b030663cc8c9300cbf763a07",
       "bytes": 221590,
-      "compressedBytes": 16695,
-      "sha256": "c745e788832f16903d34bdaf1a18f7fb724b8647765d1d5749eca48505561761",
+      "compressedBytes": 16714,
+      "sha256": "c8dee96f8951851c7244a9b0e49d2225ab6d0a2bc232e2aca12d64a9853a80c4",
       "summary": {
         "name": "JIRA Service Management REST API Reference",
         "serverUrl": "http://localhost:2990/rest",
@@ -442,9 +442,9 @@
     {
       "id": "jira-service-management-ops",
       "sourceRevision": "c0fb62c243a89256567fdfb82d3667cd779f9a99dff9a9efe5b3a99b375b0d1d",
-      "bytes": 113304,
-      "compressedBytes": 6811,
-      "sha256": "2780b81e7470d4578422519ce081026585df63f3468a02ba9224fc123ce1f73f",
+      "bytes": 113310,
+      "compressedBytes": 6777,
+      "sha256": "81100d3de5155b21850f4a07ab99887d8c8674ca2b404529eeeb6cea48a2dfb6",
       "summary": {
         "name": "JSM Operations API",
         "serverUrl": "https://api.atlassian.com/jsm/ops",
@@ -471,8 +471,8 @@
       "id": "jira-dc",
       "sourceRevision": "81605e461c6c30fda0a24b169a2650a69544f1d7391b8372b211008bf312a435",
       "bytes": 173689,
-      "compressedBytes": 13975,
-      "sha256": "5bab100b02757891a0b4cf4c5280e52823dd494fe1ce33c4f82b0e663ca799c0",
+      "compressedBytes": 13983,
+      "sha256": "66258f8f550b6e8437de55fa19709a96504b28d051b3a2a67c8bf831b3723ec0",
       "summary": {
         "name": "Jira Software Data Center REST API Reference",
         "serverUrl": "http://localhost:8090/rest",
@@ -484,9 +484,9 @@
     {
       "id": "atlassian-marketplace",
       "sourceRevision": "7489e7bda44df7b659db8a8b448f1e918afab0ec8164370bac021ae5aed30f0a",
-      "bytes": 60490,
-      "compressedBytes": 4230,
-      "sha256": "b4984bf6445ca499c16598b1e91c0bec17313aab37880e563c21ca21a3ab3c48",
+      "bytes": 60498,
+      "compressedBytes": 4202,
+      "sha256": "8b4f902de4a140d5e59282cead5135af124a765812993210e5b7cd15acf26a4a",
       "summary": {
         "name": "Atlassian Marketplace API",
         "serverUrl": "https://marketplace.atlassian.com/rest/2",
@@ -537,15 +537,15 @@
     {
       "id": "opsgenie",
       "sourceRevision": "b692deb7459813317d9586497bd16e72e12b30be3622d227f6c0b8eec84434b4",
-      "bytes": 49946,
-      "compressedBytes": 4253,
-      "sha256": "9360cfbef079285ff501477cacbc947592b8aceec7d0aef03a9b00d9b2b6bf13",
+      "bytes": 49853,
+      "compressedBytes": 4210,
+      "sha256": "267705c1894efd4e9892fc8498a9070a49151208db47f8874cfb1b742066b320",
       "summary": {
         "name": "Opsgenie REST API",
         "serverUrl": "https://api.opsgenie.com",
         "description": "Opsgenie OpenAPI Specification",
         "operationCount": 170,
-        "unavailableCount": 6
+        "unavailableCount": 5
       }
     },
     {
@@ -593,15 +593,15 @@
     {
       "id": "atlassian-teams",
       "sourceRevision": "788af50e234210aef7604eabb6621b7dfe9a2fe44f0a13b5b2a2396b55547261",
-      "bytes": 6753,
-      "compressedBytes": 1123,
-      "sha256": "1547085f523a3ad89d91174b5c0172884c39365db658bedfc113f143064078f3",
+      "bytes": 6660,
+      "compressedBytes": 1073,
+      "sha256": "48ce0dedf04aeafe2300e11a49566ae699350ed9c5f8544b61b414143423fb55",
       "summary": {
         "name": "Teams API",
         "serverUrl": "https://api.atlassian.com",
         "description": "Teams API\n\nNote: This REST API is not feature complete. New Teams capabilities are being built in GraphQL. For the full set of features, see the [Teams GraphQL API](https://developer.atlassian.com/platform/teams/teams-graphql-api/introduction/).",
         "operationCount": 15,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
@@ -1432,15 +1432,15 @@
     {
       "id": "cloudflare",
       "sourceRevision": "5999fa69349d2e160e58bac0f9603f110c2937d67dbf6dac3a1bed9f3859c778",
-      "bytes": 1256565,
-      "compressedBytes": 117347,
-      "sha256": "8f086f5acecdc91a776019260f2464c6e2e97e00cbd19a1091aa6284ef94416a",
+      "bytes": 1255247,
+      "compressedBytes": 117147,
+      "sha256": "05c96e378829367e73404fe122d0f294e2f885736b865aa0087b01ed716c0547",
       "summary": {
         "name": "Cloudflare API",
         "serverUrl": "https://api.cloudflare.com/client/v4",
         "description": "Welcome to Cloudflare's API documentation site. We are experimenting with an updated version of our API documentation - check out [developers.cloudflare.com/api-next/](https://developers.cloudflare.com/api-next/) to test out the new experience.\n\nTo get started using Cloudflare's products and services via the API, refer to [how to interact with Cloudflare](https://developers.cloudflare.com/fundamentals/basic-tasks/interact-with-cloudflare/), which covers using tools like [Terraform](https://developers.cloudflare.com/terraform/#cloudflare-terraform) and the [official SDKs](https://developers.cloudflare.com/fundamentals/api/reference/sdks/) to maintain your Cloudflare resources.\n\nUsing the Cloudflare API requires authentication so that Cloudflare knows who is making requests and what permissions you have. Create an API token to grant access to the API to perform actions. You can also authenticate with [API keys](https://developers.cloudflare.com/fundamentals/api/get-started/keys/), but these keys have [several limitations](https://developers.cloudflare.com/fundamentals/api/get-started/keys/#limitations) that make them less secure than API tokens. Whenever possible, use API tokens to interact with the Cloudflare API.\n\nTo create an API token, from the Cloudflare dashboard, go to My Profile > API Tokens and select Create Token. For more information on how to create and troubleshoot API tokens, refer to\nour [API fundamentals](https://developers.cloudflare.com/fundamentals/api/).\n\nFor information regarding rate limits, refer to our [API Rate Limits](https://developers.cloudflare.com/cloudflare-for-platforms/workers-for-platforms/platform/limits/#api-rate-limits).\n\nTotally new to Cloudflare? [Start here](https://developers.cloudflare.com/fundamentals/get-started/).",
         "operationCount": 3761,
-        "unavailableCount": 78
+        "unavailableCount": 64
       }
     },
     {
@@ -1459,50 +1459,50 @@
     {
       "id": "cohere",
       "sourceRevision": "75a54009440bcf35ba7dfc3141aeb173176448e68f1659d6435cecbd1af41712",
-      "bytes": 10440,
-      "compressedBytes": 1584,
-      "sha256": "75843e34fe35678de48d7a85baf99aa03820d14bed9befca0b4775b2c01fdfcd",
+      "bytes": 10254,
+      "compressedBytes": 1530,
+      "sha256": "2fe951a1dd79efe936f9a447846634e89a9f8de428e7388e73b1f44ff0ca6a5b",
       "summary": {
         "name": "API Reference",
         "serverUrl": "https://api.cohere.com",
         "description": "The Cohere API for interacting with Chat, Embed and Rerank models.",
         "operationCount": 42,
-        "unavailableCount": 2
+        "unavailableCount": 0
       }
     },
     {
       "id": "deepseek",
       "sourceRevision": "56da9a4b5f75e48ad33a9cf92004e21bccd95f0b14eb67572be13b04f10c91ad",
-      "bytes": 3516,
-      "compressedBytes": 813,
-      "sha256": "f47136a4a30a54e177373938917a1c789873b65243322839e5dd72ee5cd31ba1",
+      "bytes": 3423,
+      "compressedBytes": 760,
+      "sha256": "1f4a67ad1e0d639f8c910649c061678511d3c62010b1d10f7b746019f08b86c3",
       "summary": {
         "name": "DeepSeek API",
         "serverUrl": "https://api.deepseek.com",
         "description": "The DeepSeek API. To use the DeepSeek API, please [create an API key first](https://platform.deepseek.com/api_keys).",
         "operationCount": 11,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
       "id": "digitalocean",
       "sourceRevision": "4bcce59b45927194934c760b8201d34bcde63a7caea21840aaa2f6dc68c5b0fd",
-      "bytes": 359185,
-      "compressedBytes": 24945,
-      "sha256": "933e0e5385e8311a1ecd54513e48f62cde7b1d8743ef5258263ab8be68a4ad26",
+      "bytes": 359133,
+      "compressedBytes": 24947,
+      "sha256": "5dc838030d8ba55ab633464780313fe6d4b7626140b69d93ddd033160cb38ae1",
       "summary": {
         "name": "DigitalOcean API",
         "serverUrl": "https://api.digitalocean.com",
         "operationCount": 855,
-        "unavailableCount": 834
+        "unavailableCount": 833
       }
     },
     {
       "id": "discord",
       "sourceRevision": "07512fa28e35b7e6df694f685b0a43fca8fe9e9bddf8da71d6c630171ed4683f",
       "bytes": 64576,
-      "compressedBytes": 5794,
-      "sha256": "1a3f28342dad6133881e1549bf8db1511da7c2c8adae9496a762128bfe5b1bf8",
+      "compressedBytes": 5800,
+      "sha256": "dbf7c9bc22dd6db2b3b1abc4bfb3d19ded21430e629ec9760b99bfbb54be8e9f",
       "summary": {
         "name": "Discord HTTP API (Preview)",
         "serverUrl": "https://discord.com/api/v10",
@@ -1556,15 +1556,15 @@
     {
       "id": "elevenlabs",
       "sourceRevision": "8cee136ec627a5557c61fca7650f69feeeb63d45fc4b1aea097f6f76b69f5c9e",
-      "bytes": 120279,
-      "compressedBytes": 12758,
-      "sha256": "6d750a8b71a2fdfdf3267116d7592d7b94062167231a34b8649057d851609cee",
+      "bytes": 119442,
+      "compressedBytes": 12732,
+      "sha256": "fc2723940f06682327facc15e14f19b42755d67e5a5e4aace794233bba07282f",
       "summary": {
         "name": "ElevenLabs API Documentation",
         "serverUrl": "https://api.elevenlabs.io",
         "description": "This is the documentation for the ElevenLabs API. You can use this API to use our service programmatically, this is done by using your API key. You can find your API key in the dashboard at https://elevenlabs.io/app/settings/api-keys.",
         "operationCount": 418,
-        "unavailableCount": 31
+        "unavailableCount": 22
       }
     },
     {
@@ -1598,23 +1598,23 @@
     {
       "id": "github",
       "sourceRevision": "f9293195f0097a6ae134f8652fca11d15dc26638ee312dd3ce35d5723d56925a",
-      "bytes": 374013,
-      "compressedBytes": 33732,
-      "sha256": "425ede64605c5ca934a82d16259a41fd8e55364033ab9c3df8102acf0dbbf90a",
+      "bytes": 373922,
+      "compressedBytes": 33674,
+      "sha256": "b21922346ce0c4b9c04da84582d8d282e456c89cdbbe771c6e44c2a92b0ce623",
       "summary": {
         "name": "GitHub v3 REST API",
         "serverUrl": "https://api.github.com",
         "description": "GitHub's v3 REST API.",
         "operationCount": 1242,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
       "id": "gitlab",
       "sourceRevision": "e5ab69dc7cbfde3b2f2a6c27faccf33a57dabaa70967bb0b52697633050e13e3",
-      "bytes": 619818,
-      "compressedBytes": 54447,
-      "sha256": "7b00a6fb509d1ace9d861721e735b851c8826790af6f3ed661100355fb54eeda",
+      "bytes": 619662,
+      "compressedBytes": 54567,
+      "sha256": "931f7dc200674304c3d8c284093d66913305ac6d23d0c4c3f56c17d0b97fbbea",
       "summary": {
         "name": "GitLab REST API",
         "serverUrl": "https://gitlab.com",
@@ -2701,15 +2701,15 @@
     {
       "id": "groq",
       "sourceRevision": "24a6ad42e199c84687dc4037a8173f52bdc721c74ed1670c8c58441805ee1cf2",
-      "bytes": 7471,
-      "compressedBytes": 1555,
-      "sha256": "19a88b9015972fb590f88ef011ed92d45a9554c3ecc127ad82039cc8441c9d0d",
+      "bytes": 7378,
+      "compressedBytes": 1552,
+      "sha256": "e8640100895c28bccf6d402ea4684866b6c4f78abeb2af53b7cf93c414566903",
       "summary": {
         "name": "GroqCloud API",
         "serverUrl": "https://api.groq.com",
         "description": "Specification of the Groq cloud API",
         "operationCount": 23,
-        "unavailableCount": 3
+        "unavailableCount": 2
       }
     },
     {
@@ -2924,71 +2924,71 @@
     {
       "id": "mistral",
       "sourceRevision": "622a632d504522df0cd18749ef4aad68535942a0b5e7bb80b4849f901ca4d899",
-      "bytes": 61546,
-      "compressedBytes": 6409,
-      "sha256": "2e3c0a801631b06a894502b0d616a1b870710a8cd9938b47a9631dce70ec9b7b",
+      "bytes": 61453,
+      "compressedBytes": 6433,
+      "sha256": "bca04c870f4917f55626a2f6e6dfa199778f537ab05b753f0678ddf27dfaeeba",
       "summary": {
         "name": "Mistral AI API",
         "serverUrl": "https://api.mistral.ai",
         "description": "Our Chat Completion and Embeddings APIs specification. Create your account on [La Plateforme](https://console.mistral.ai) to get access and read the [docs](https://docs.mistral.ai) to learn how to use it.",
         "operationCount": 173,
-        "unavailableCount": 13
+        "unavailableCount": 12
       }
     },
     {
       "id": "ollama",
       "sourceRevision": "16f3b75a4944e1fb0e5b68fedc30b5974406dc2ac125d07cb33dde6981e2f99b",
-      "bytes": 3908,
-      "compressedBytes": 849,
-      "sha256": "5b4e05ebed2d950a3245196c960232b0b4e9e73ca2baca93ae3637c5164b41a9",
+      "bytes": 3817,
+      "compressedBytes": 800,
+      "sha256": "4980372a2627b2bdb91c8d9eb86d18c1e7b2d89efc17d03fc6131eb94354e2d9",
       "summary": {
         "name": "Ollama API",
         "serverUrl": "http://localhost:11434",
         "description": "OpenAPI specification for the Ollama HTTP API",
         "operationCount": 17,
-        "unavailableCount": 1
+        "unavailableCount": 0
       }
     },
     {
       "id": "openai",
       "sourceRevision": "b7ec5bd5e29c40f0bfa2e53c06ece711a40276653646d9f3db77498d6579ab41",
-      "bytes": 93378,
-      "compressedBytes": 9135,
-      "sha256": "b157ebb0f8bfd6bca53d11f100f9f82cbd6b13a65bed0970371babb670613c83",
+      "bytes": 93006,
+      "compressedBytes": 9111,
+      "sha256": "b6baebfa21f1b1a70dca32fb252ecc623e6b77848f3fc480a5511d9430f916c3",
       "summary": {
         "name": "OpenAI API",
         "serverUrl": "https://api.openai.com/v1",
         "description": "The OpenAI REST API. Please see https://platform.openai.com/docs/api-reference for more details.",
         "operationCount": 360,
-        "unavailableCount": 18
+        "unavailableCount": 14
       }
     },
     {
       "id": "openrouter",
       "sourceRevision": "8e9803815de386067a20d33b094c08a67c10db451178e7cf2f970a6b78ae9960",
-      "bytes": 40367,
-      "compressedBytes": 5014,
-      "sha256": "5e7f0217bd42196f0e1847d94ff2b9d8d0c849b9c9231089646da202c6c19308",
+      "bytes": 40274,
+      "compressedBytes": 4979,
+      "sha256": "76200ea0f4bdf75bce444c4c6d26e939c6f6e4a0fce69bcf5d60d93f3483c77a",
       "summary": {
         "name": "OpenRouter API",
         "serverUrl": "https://openrouter.ai/api/v1",
         "description": "OpenAI-compatible API with additional OpenRouter features",
         "operationCount": 152,
-        "unavailableCount": 2
+        "unavailableCount": 1
       }
     },
     {
       "id": "render",
       "sourceRevision": "97a86252d35cbe6b66c141483ad2cc52a323d8dfb0ecd5d73e11ac8cfc7dc3e3",
-      "bytes": 59223,
-      "compressedBytes": 6171,
-      "sha256": "9dc7113937c327ddce88ad86e17cbffa76faabe08ef4f98962f062fa363cee9d",
+      "bytes": 59130,
+      "compressedBytes": 6142,
+      "sha256": "d7d8e529799b931a82241b225bda5caf9b3aeec08b2e545cf39cb34e1230f0d5",
       "summary": {
         "name": "Render Public API",
         "serverUrl": "https://api.render.com/v1",
         "description": "Manage everything about your Render services",
         "operationCount": 228,
-        "unavailableCount": 25
+        "unavailableCount": 24
       }
     },
     {
@@ -2996,7 +2996,7 @@
       "sourceRevision": "790b5dfeb6e9fffc5c967de5dd30b17e305bad4686ad700ad91650de7a457468",
       "bytes": 9267,
       "compressedBytes": 1289,
-      "sha256": "f0448d5f1393948c5258a2d8fc00d5f0f4f84beebb13b2c97ba3e5da04693bbd",
+      "sha256": "0ced54902da5320a517a698e016ccfecc343c3a20425ee5f078dc6269ae39ebc",
       "summary": {
         "name": "Replicate HTTP API",
         "serverUrl": "https://api.replicate.com/v1",
@@ -3008,15 +3008,15 @@
     {
       "id": "resend",
       "sourceRevision": "951d4cd61d760bfb79e85adf5bb5bec22299eab434ab3b4e87c8d71095a10d5e",
-      "bytes": 35769,
-      "compressedBytes": 3756,
-      "sha256": "c432252d9779a00d886631d6a4ab73ad6ff619bfc1ddca686d60cb31b9ff2c56",
+      "bytes": 35676,
+      "compressedBytes": 3718,
+      "sha256": "7e07a8f60cedfd6b7910cbbf98dcf4969dd552b4861b39b10f7cdf44ce031f79",
       "summary": {
         "name": "Resend",
         "serverUrl": "https://api.resend.com",
         "description": "Resend is the email platform for developers.",
         "operationCount": 142,
-        "unavailableCount": 4
+        "unavailableCount": 3
       }
     },
     {
@@ -3036,23 +3036,23 @@
     {
       "id": "together",
       "sourceRevision": "5e1162180a8e29e07f9d0754f0d82815f493c7cea34b3c9ca2d7bd5b2115c69f",
-      "bytes": 60242,
-      "compressedBytes": 6320,
-      "sha256": "7985b33bd73ef5865c16adbfa3dfca92f73628a89bbb33dc96aaf20974b1e530",
+      "bytes": 60149,
+      "compressedBytes": 6314,
+      "sha256": "b7a927b818449a4b55b82db92effeb750768de73d71a562b9bfc8a529364d7c1",
       "summary": {
         "name": "Together APIs",
         "serverUrl": "https://api.together.ai/v2",
         "description": "The Together REST API. See https://docs.together.ai for more details.",
         "operationCount": 208,
-        "unavailableCount": 3
+        "unavailableCount": 2
       }
     },
     {
       "id": "twilio",
       "sourceRevision": "912992d3da38d4c43e693ae519976c47ea410db67bdebe9997b872a949e7acad",
       "bytes": 93319,
-      "compressedBytes": 6723,
-      "sha256": "931346d0dbdf0f5daf260a03b3d73b3ed15aeade9927f398bc80bcf99d02a933",
+      "compressedBytes": 6729,
+      "sha256": "f9ad540c3558d077eed0fd58d44607b4d68119261a0b3d82a6fb10e15e82229f",
       "summary": {
         "name": "Twilio - Api",
         "serverUrl": "https://api.twilio.com",
@@ -3064,15 +3064,15 @@
     {
       "id": "vercel",
       "sourceRevision": "4d90721d2c1a6799222e55886f3faf3a2fc01c5fe1eacc22b3ba372b65db7665",
-      "bytes": 124138,
-      "compressedBytes": 14301,
-      "sha256": "429b53c7990c7de0b448bab8c18afd761e72bf648e3728a1298df8c42beb6f46",
+      "bytes": 123865,
+      "compressedBytes": 14190,
+      "sha256": "5fdd327b8cfce2a5571513a57f8e3e7d957b7b36e64b6cdb617c9890f13e4903",
       "summary": {
         "name": "Vercel API",
         "serverUrl": "https://api.vercel.com",
         "description": "Vercel combines the best developer experience with an obsessive focus on end-user performance. Our platform enables frontend teams to do their best work.",
         "operationCount": 465,
-        "unavailableCount": 3
+        "unavailableCount": 0
       }
     },
     {
@@ -3093,8 +3093,8 @@
       "id": "xai",
       "sourceRevision": "1361ade8ea7ae8c3931e28410f996fae95eea3cfcaf8e6cd54850c31174be1b0",
       "bytes": 15799,
-      "compressedBytes": 3066,
-      "sha256": "1ca24c8ad7a7c1e4ce2f36756f86c040bf6ba67438d356c769cf7eb080a34aa3",
+      "compressedBytes": 3072,
+      "sha256": "bb496b8ac091051519d5a841f00ca5f3c008faf3becfad8b503770d993e61686",
       "summary": {
         "name": "xAI's REST API",
         "serverUrl": "https://api.x.ai/v1",
