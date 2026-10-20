@@ -49,7 +49,8 @@ async function snapshot(reset = false): Promise<SchemaLibrarySnapshot>
     snapshot.records.push({ id: record.id, file: record.file, enabled: record.enabled,
       createdAt: record.createdAt, updatedAt: record.updatedAt, sourceIdentity: identity,
       ...(record.displayName ? { displayName: record.displayName } : {}),
-      summary: summary ? { ...summary, name: record.displayName ?? summary.name }
+      summary: summary ? { ...summary, description: summary.description?.trim() || summary.name,
+        name: record.displayName ?? summary.name }
         : { name: record.displayName ?? record.file, serverUrl: "", operationCount: null } });
   }
   published = next;
