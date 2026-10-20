@@ -145,6 +145,411 @@ Expose the pinned Codex 0.163.0 protocol in schema settings and search while pre
 
 ```
 
+<!-- changelog-commit:09132a8e2accae202aa4a0ddf9e4f82fed337c5e -->
+### Commit [`09132a8`](https://github.com/superhero/operations.superduper.solutions/commit/09132a8e2accae202aa4a0ddf9e4f82fed337c5e)
+
+```text
+feat(schemas): version corrections and merge published updates
+
+Keep published schema snapshots separate from reviewed corrections and local
+working changes in each browser-local Git repository. Replay corrections over
+new upstream or bundled revisions, merge independent edits, and retain pending
+conflicts for explicit review without replacing the usable working schema.
+
+Show branch ancestry and per-revision field changes on demand in Settings.
+Correct Google OAuth requirements to preserve both security alternatives across
+the Cloud and product packs while retaining scopes and unrelated credentials.
+
+Cover private Google requests, source integrity, structured merges, recovery,
+merge ancestry and responsive conflict review with focused Gherkin scenarios.
+
+```
+
+<!-- changelog-commit:75efc36cdc836a1507f9a3bb49e91e267efcc963 -->
+### Commit [`75efc36`](https://github.com/superhero/operations.superduper.solutions/commit/75efc36cdc836a1507f9a3bb49e91e267efcc963)
+
+```text
+fix(schemas): align history changes with their graph parent
+
+Identify the selected revision and comparison parent in schema history.
+Highlight their actual Git edge and let merge commits compare either
+direct parent without changing the checkout.
+
+Group repeated authentication corrections and treat the initial import
+as a baseline. Keep selection and diffs synchronized while loading.
+
+```
+
+<!-- changelog-commit:e74c56e883af682a589908adb415d4d8522f5c0a -->
+### Commit [`e74c56e`](https://github.com/superhero/operations.superduper.solutions/commit/e74c56e883af682a589908adb415d4d8522f5c0a)
+
+```text
+fix(schemas): keep schema lists alphabetically ordered
+
+Sort schema metadata and published catalog snapshots by their current
+displayed names after uploads, renames and reloads. Ignore saved manual
+arrangements without touching schema content or Git revisions.
+
+Remove drag handles, keyboard moves, preview animations and the manual
+ordering RPC and persistence paths. Update affected browser scenarios
+for automatic ordering and the existing published-source merge history.
+
+```
+
+<!-- changelog-commit:0593bc23602676687c52cfcf2094d95eb41538cd -->
+### Commit [`0593bc2`](https://github.com/superhero/operations.superduper.solutions/commit/0593bc23602676687c52cfcf2094d95eb41538cd)
+
+```text
+fix(schemas): preserve state when applying the current bundle
+
+Treat an already-current factory bundle as a no-op so its catalogue
+label, enablement and automatic update ownership stay intact. Avoid
+publishing identical source revisions over an edited working copy.
+
+Keep pending proposals, changed source metadata and real ancestry merges
+on the update path. Cover unchanged factory and authored state plus the
+Settings action with focused schema history regressions.
+
+```
+
+<!-- changelog-commit:593b3511f662a66c08a54223dec945ef2aa2190b -->
+### Commit [`593b351`](https://github.com/superhero/operations.superduper.solutions/commit/593b3511f662a66c08a54223dec945ef2aa2190b)
+
+```text
+feat(schemas): compare saved commits with colored line diffs
+
+Replace branch badges and parent-only controls with independent commit
+selectors defaulting to the initial import and latest revision. Keep
+uniform graph edges and the selected marker without changing checkout.
+
+Load actual field lines from immutable Git values only when expanded.
+Show aligned context, line numbers and colored additions/removals, omit
+absent sides, and scroll code and paths horizontally. Bound matching work
+and UTF-8 output explicitly while preserving conflict review.
+
+```
+
+<!-- changelog-commit:ece45500d28c13a13506a85362c40b146917f989 -->
+### Commit [`ece4550`](https://github.com/superhero/operations.superduper.solutions/commit/ece45500d28c13a13506a85362c40b146917f989)
+
+```text
+fix(schemas): simplify revision disclosure labels
+
+Rename the disclosure to Schema revisions and remove its trailing history
+icon. Suppress the redundant selected-revision text for schemas while
+preserving the graph marker and workflow history current-version label.
+
+```
+
+<!-- changelog-commit:6a819affeadb65df6cc4dc5ea0439780ceae6e31 -->
+### Commit [`6a819af`](https://github.com/superhero/operations.superduper.solutions/commit/6a819affeadb65df6cc4dc5ea0439780ceae6e31)
+
+```text
+fix(schemas): keep commit selectors in the same order
+
+Use the graph order for both revision menus. Selecting the initial commit
+as the comparison base must not reverse its options relative to the latest
+revision menu. Preserve the independent oldest/latest default selections.
+
+```
+
+<!-- changelog-commit:a663444101408295361080a1734ca7a568b2f145 -->
+### Commit [`a663444`](https://github.com/superhero/operations.superduper.solutions/commit/a663444101408295361080a1734ca7a568b2f145)
+
+```text
+fix(schemas): replace comparison labels with arrows
+
+Place the Material compare_arrows glyph between the revision selectors
+and remove their visible headings. Preserve accessible names, independent
+defaults, shared commit order and the narrow-pane layout.
+
+```
+
+<!-- changelog-commit:f35d15f97d0af3e78e0bc53113fc6f9184e51c16 -->
+### Commit [`f35d15f`](https://github.com/superhero/operations.superduper.solutions/commit/f35d15f97d0af3e78e0bc53113fc6f9184e51c16)
+
+```text
+fix(schemas): truncate changed-field paths with ellipses
+
+Keep changed-field summaries on one line without horizontal scrolling.
+Clip overflowing paths with an ellipsis and expose the full path on hover.
+Preserve horizontal scrolling for the expanded Before and After code panes.
+
+```
+
+<!-- changelog-commit:6d4ea1b889f9a366ee3a2661dfa47cdc7e27c480 -->
+### Commit [`6d4ea1b`](https://github.com/superhero/operations.superduper.solutions/commit/6d4ea1b889f9a366ee3a2661dfa47cdc7e27c480)
+
+```text
+fix(schemas): label diff panes only when both sides exist
+
+Show Before and After headings only for paired schema values. Additions
+and removals already identify their direction in the change row; keep
+their sole pane free of a redundant heading.
+
+```
+
+<!-- changelog-commit:89be8f78758fd7de24a17b777b36730c22a13dad -->
+### Commit [`89be8f7`](https://github.com/superhero/operations.superduper.solutions/commit/89be8f78758fd7de24a17b777b36730c22a13dad)
+
+```text
+fix(schemas): render commit hashes with regular weight
+
+Style commit hashes separately from bold revision descriptions in both
+selector values and their menus. Allow optional label markup in FieldSelect
+while retaining plain text labels for accessibility and typeahead.
+
+```
+
+<!-- changelog-commit:41eeaf69e014559d5730c1dab311dd3c483b9b46 -->
+### Commit [`41eeaf6`](https://github.com/superhero/operations.superduper.solutions/commit/41eeaf69e014559d5730c1dab311dd3c483b9b46)
+
+```text
+fix(schemas): protect defaults and require deactivation before deletion
+
+Keep registered default IDs protected after renames or replacements.
+Validate current enablement in the storage transaction before deleting uploads,
+and explain disabled actions while cancelling stale confirmations in Settings.
+
+Preserve legacy browser migrations, independent Git repositories and saved
+workflows; update the affected management and credential-policy scenarios.
+
+```
+
+<!-- changelog-commit:193e17913386ab04b4a8a6cab239646ce753319a -->
+### Commit [`193e179`](https://github.com/superhero/operations.superduper.solutions/commit/193e17913386ab04b4a8a6cab239646ce753319a)
+
+```text
+fix(schemas): wrap descriptions within two fixed-height lines
+
+Ellipsize long descriptions after the second line while keeping pane height
+independent of content length, including unbroken text on narrow screens.
+
+```
+
+<!-- changelog-commit:76f9c41618985037f038082f77abadb1a4250d25 -->
+### Commit [`76f9c41`](https://github.com/superhero/operations.superduper.solutions/commit/76f9c41618985037f038082f77abadb1a4250d25)
+
+```text
+fix(schemas): dim disabled delete icons to half opacity
+
+Apply foreground opacity to the schema Delete icon only when its button is
+disabled, preserving the existing surface and enabled appearance.
+
+```
+
+<!-- changelog-commit:9a2fd6ab412d838179f1431b6515c2ded5036919 -->
+### Commit [`9a2fd6a`](https://github.com/superhero/operations.superduper.solutions/commit/9a2fd6ab412d838179f1431b6515c2ded5036919)
+
+```text
+fix(schemas): group FRED and ALFRED under Federal Reserve
+
+Use consistent provider paths in descriptors, adapted titles and documentation.
+Regenerate both schema packs and discovery indexes from bundled documents,
+preserving operation identities, authentication contracts and source provenance.
+
+```
+
+<!-- changelog-commit:349b0396da24d8bb0d5d94365607bf53e3fb6147 -->
+### Commit [`349b039`](https://github.com/superhero/operations.superduper.solutions/commit/349b0396da24d8bb0d5d94365607bf53e3fb6147)
+
+```text
+fix(schemas): synchronize header text and action colors
+
+Switch header and action contrast pairs together instead of interpolating
+the title while the wrap control already uses its final foreground. Preserve
+disclosure, icon fade and hover motion, and record the measured color feedback.
+
+Correct the existing slide test to probe the last clipped row rather than
+assuming the OpenAPI header remains below the animated boundary.
+
+```
+
+<!-- changelog-commit:0f9c94ff1cf10c56cdab86b8912622a41b83aae4 -->
+### Commit [`0f9c94f`](https://github.com/superhero/operations.superduper.solutions/commit/0f9c94ff1cf10c56cdab86b8912622a41b83aae4)
+
+```text
+fix(schemas): place schema rows in one shared pane
+
+Move pane styling and padding to the schema list while keeping Upload in its
+own pane and retaining the individual schema controls and responsive widths.
+
+```
+
+<!-- changelog-commit:88214909849d3f78023e3b33aea5f2996f36aad6 -->
+### Commit [`8821490`](https://github.com/superhero/operations.superduper.solutions/commit/88214909849d3f78023e3b33aea5f2996f36aad6)
+
+```text
+feat(schemas): group settings by slash-separated names
+
+Organize schema records into alphabetical, collapsible name folders in the
+shared library pane while keeping Upload separate. Include disabled
+schemas and preserve each record's identity and existing controls.
+
+Keep the full name editable, reveal destination folders on rename, and
+close descendant inspectors when their folder closes. Share the name
+splitter with Operations without changing operation categories.
+
+Cover folder navigation, record changes, reloads and narrow layouts in
+focused Gherkin scenarios, and adapt existing schema navigation helpers.
+
+```
+
+<!-- changelog-commit:5d50948b63fc1d5b7106de14167b0e94b11cf66b -->
+### Commit [`5d50948`](https://github.com/superhero/operations.superduper.solutions/commit/5d50948b63fc1d5b7106de14167b0e94b11cf66b)
+
+```text
+style(schemas): indent expanded card details
+
+Use the same responsive inset for name-tree children and schema card
+foldouts. Keep the right edge aligned and let the JSON viewer fill the
+remaining content width.
+
+Update the existing layout assertion to reflect the indented foldout.
+
+```
+
+<!-- changelog-commit:09e2378114c73d9546e82451edf0c0d6995f2c0d -->
+### Commit [`09e2378`](https://github.com/superhero/operations.superduper.solutions/commit/09e2378114c73d9546e82451edf0c0d6995f2c0d)
+
+```text
+fix(catalog): remove redundant Operations categories
+
+Place entries from generated Operations tags directly in their parent's
+URL resource tree. Apply the navigation normalization to existing cached
+catalogs and uploads without rewriting canonical discovery metadata.
+
+Preserve other categories, literal schema and resource names, operation
+identities, counts and concrete API versions. Update the affected browser
+paths and cover generic-folder removal alongside keyboard and workflow
+navigation.
+
+```
+
+<!-- changelog-commit:069b2a041198ffe1e3cd065fcd242718eef8f9f0 -->
+### Commit [`069b2a0`](https://github.com/superhero/operations.superduper.solutions/commit/069b2a041198ffe1e3cd065fcd242718eef8f9f0)
+
+```text
+style(schemas): show menu tree branches in settings
+
+Share the menu's themed vertical lines and curved branches with Settings
+name folders and schema leaves. Parameterize the connector inset and
+height so each view keeps its existing responsive row geometry.
+
+Retain the Settings card controls, indented details and separate Upload
+pane while making the name hierarchy visible.
+
+```
+
+<!-- changelog-commit:9be89238f83e58b569c455b80a97784cb79e1880 -->
+### Commit [`9be8923`](https://github.com/superhero/operations.superduper.solutions/commit/9be89238f83e58b569c455b80a97784cb79e1880)
+
+```text
+style(schemas): align folder and schema names
+
+Use the same arrow track and text gap for folder headings, schema labels
+and name inputs. Reduce the extra card text padding while keeping the
+existing default folder text position and responsive tree indentation.
+
+```
+
+<!-- changelog-commit:32fce03b3424779814e6b1a13aeebdde11f3bed4 -->
+### Commit [`32fce03`](https://github.com/superhero/operations.superduper.solutions/commit/32fce03b3424779814e6b1a13aeebdde11f3bed4)
+
+```text
+fix(schemas): retain revision content through the closing slide
+
+Clearing the revision graph and diff on toggle shrank the panel before
+its grid animation could finish. Separate pending-reply invalidation from
+data release through Reveal.onClosed.
+
+Keep outgoing content intact while closing, discard stale completions
+after reopening, and release immediately when reduced motion settles the
+panel. Avoid late review completion changing a closing body.
+
+Add a focused Cohere motion regression with reversal and cleanup checks,
+and preserve bounded before/after evidence and the shared lifecycle
+contract in the existing performance documentation.
+
+```
+
+<!-- changelog-commit:e24aae334e1d4b1dd4956d2dcf486dce52fab30c -->
+### Commit [`e24aae3`](https://github.com/superhero/operations.superduper.solutions/commit/e24aae334e1d4b1dd4956d2dcf486dce52fab30c)
+
+```text
+fix(fields): hide the unset integer placeholder
+
+```
+
+<!-- changelog-commit:32a7be76139012af2632a69b1e985a0eba137cad -->
+### Commit [`32a7be7`](https://github.com/superhero/operations.superduper.solutions/commit/32a7be76139012af2632a69b1e985a0eba137cad)
+
+```text
+fix(fields): use the Block icon for Do not send
+
+```
+
+<!-- changelog-commit:edb47fb95d5a5304ced818792f8c00469e03ec06 -->
+### Commit [`edb47fb`](https://github.com/superhero/operations.superduper.solutions/commit/edb47fb95d5a5304ced818792f8c00469e03ec06)
+
+```text
+fix(workflows): bold the server URL in the run notice
+
+```
+
+<!-- changelog-commit:7a8a96f340a3b043f6545ce6391c86966c2e7706 -->
+### Commit [`7a8a96f`](https://github.com/superhero/operations.superduper.solutions/commit/7a8a96f340a3b043f6545ce6391c86966c2e7706)
+
+```text
+fix(workflows): use Backspace for the Quit action
+
+```
+
+<!-- changelog-commit:1838c7e50afadd377dde23d11076f60b1a9cc733 -->
+### Commit [`1838c7e`](https://github.com/superhero/operations.superduper.solutions/commit/1838c7e50afadd377dde23d11076f60b1a9cc733)
+
+```text
+fix(workflows): show schema names in operation run headings
+
+Show the registered schema name before each active operation with a slash
+separator, preserving grouped and renamed labels across workflow steps.
+
+Update existing heading expectations and wait for the new-workflow details
+dialog before closing it in browser setup.
+
+```
+
+<!-- changelog-commit:e9a602836992b547ab094f16515b54cb2e7c3925 -->
+### Commit [`e9a6028`](https://github.com/superhero/operations.superduper.solutions/commit/e9a602836992b547ab094f16515b54cb2e7c3925)
+
+```text
+fix(workflows): remove the To label from Cast nodes
+
+```
+
+<!-- changelog-commit:52a7d0556f2e5d774f9d086c27ce5b6fd1065a09 -->
+### Commit [`52a7d05`](https://github.com/superhero/operations.superduper.solutions/commit/52a7d0556f2e5d774f9d086c27ce5b6fd1065a09)
+
+```text
+fix(workflows): use a 2px border around toolbar button groups
+
+```
+
+<!-- changelog-commit:3e575c533b116132d7bfa22dbb30da1dfbd30cde -->
+### Commit [`3e575c5`](https://github.com/superhero/operations.superduper.solutions/commit/3e575c533b116132d7bfa22dbb30da1dfbd30cde)
+
+```text
+fix(workflows): preserve fractional toolbar widths when packing
+
+Integer width measurements could claim a row fit when native flex layout
+wrapped the Run group, leaving surplus space in the toolbar frame. Measure
+fractional canvas and button bounds and reject rows exceeding real space.
+
+Cover default and fully visible toolbars on both sides of the wrapping
+boundary while retaining the 2px border and existing controls.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.55
