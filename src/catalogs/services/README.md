@@ -74,3 +74,12 @@ share the `atlassian` provider and `Atlassian / …` display prefix. The
 [service inventory](../../../docs/default-service-schemas.md#atlassian) records
 product scope, complementary API versions and execution limits. Refresh selected
 IDs rather than unrelated providers when updating this collection.
+
+Cloudflare's main API and the separate Realtime SFU Connection API share the
+`cloudflare` provider and `Cloudflare / …` prefix. The main API retains its
+existing pack and operation identities. The SFU schema adds 12 operations at
+`rtc.live.cloudflare.com` using an SFU App Secret; its account-level management
+operations remain in the main API. See the
+[Cloudflare inventory](../../../docs/default-service-schemas.md#cloudflare) for
+the source boundary and protocols outside these OpenAPI contracts. Refresh only
+`cloudflare-realtime-sfu` to update the Connection API.

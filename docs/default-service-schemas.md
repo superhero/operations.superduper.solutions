@@ -1,6 +1,6 @@
 # Default service schemas
 
-The application bundles 198 packs covering 36 providers and 26,453 HTTP operations,
+The application bundles 199 packs covering 36 providers and 26,465 HTTP operations,
 alongside the two examples. Manage them in **Settings → Schemas**. Installation
 loads API descriptions locally; it does not contact provider APIs or supply credentials.
 
@@ -111,7 +111,8 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 | Bluesky / App and AT Protocol | 152 | [Source](https://github.com/bluesky-social/endpoints-standalone) |
 | Bluesky / Direct messages | 38 | [Source](https://github.com/bluesky-social/endpoints-standalone) |
 | Bluesky / Ozone moderation | 45 | [Source](https://github.com/bluesky-social/endpoints-standalone) |
-| Cloudflare | 3761 | [Source](https://raw.githubusercontent.com/cloudflare/api-schemas/main/openapi.yaml) |
+| Cloudflare / API | 3761 | [Source](https://github.com/cloudflare/api-schemas) |
+| Cloudflare / Realtime / SFU | 12 | [Source](https://developers.cloudflare.com/realtime/sfu/api/) |
 | Cohere | 42 | [Source](https://raw.githubusercontent.com/cohere-ai/cohere-developer-experience/main/cohere-openapi.yaml) |
 | DeepSeek | 11 | [Source](https://api-docs.deepseek.com/api/create-chat-completion/) |
 | DigitalOcean | 855 | [Source](https://raw.githubusercontent.com/digitalocean/openapi/main/specification/DigitalOcean-public.v2.yaml) |
@@ -223,6 +224,30 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 - Anthropic and Groq artifacts are identified by official SDK metadata. Missing
   version labels are explicitly supplied for Anthropic and Bluesky. The inventory
   retains provenance, including community conversions.
+
+## Cloudflare
+
+Cloudflare publishes most of its REST APIs in one contract. **Cloudflare / API**
+retains the existing 3,761 operations and their workflow identities, including
+DNS, Workers, R2 management, Radar, Browser Rendering, RealtimeKit and SFU/TURN
+application management. These services do not need duplicate product schemas.
+
+**Cloudflare / Realtime / SFU** adds the separate, official
+[Connection API schema](https://developers.cloudflare.com/realtime/static/realtime-api-2024-05-21.yaml).
+Its 12 operations manage sessions, media tracks, DataChannels and WebSocket
+adapters at `https://rtc.live.cloudflare.com/v1`. They authenticate with the SFU
+App Secret as a bearer token, independently of the account API token used to
+create an SFU application. Save that App Secret in the vault and bind it to the
+operation's `secret` credential. HTTP operations alone do not implement WebRTC
+negotiation, media transport or the required trusted backend.
+
+Checked on 2026-10-20: the separate SFU schema complements the main API rather
+than repeating it. TURN credential generation/revocation is documented but does
+not have a separate published OpenAPI document in the checked sources. GraphQL
+analytics and R2's S3-compatible interface use different contracts and are not
+additional OpenAPI catalogs. RealtimeKit and Browser Rendering are already in
+the main schema. This inventory is not a claim that every Cloudflare interface
+is described by OpenAPI.
 
 ## Cloud providers
 

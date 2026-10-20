@@ -87,6 +87,22 @@ and saved schema preferences through focused Gherkin scenarios.
 
 ```
 
+<!-- changelog-commit:d24ee88cf99dcce0d3d03e290957fbad341d1dfc -->
+### Commit [`d24ee88`](https://github.com/superhero/operations.superduper.solutions/commit/d24ee88cf99dcce0d3d03e290957fbad341d1dfc)
+
+```text
+feat(catalog): add Cloudflare Realtime SFU schema
+
+Expose the separate SFU Connection API alongside the account API under a
+shared Cloudflare group. Preserve existing account-operation identities
+and payloads while retaining the SFU App Secret authentication contract.
+
+Include the compressed source, discovery index, source provenance and
+Gherkin coverage for request authentication and desktop/mobile workflow
+restoration.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.55

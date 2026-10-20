@@ -3,6 +3,9 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Default service operation catalogs
+  Scenario: Cloudflare Realtime SFU complements the existing account API with app-secret authentication
+    Then Cloudflare retains its account API and adds the published Realtime SFU contracts with their own credentials
+
   Scenario Outline: Cloud service collections preserve their published contracts and existing schemas
     Then "<provider>" has <count> cloud schemas under "<prefix>" including "<services>"
 

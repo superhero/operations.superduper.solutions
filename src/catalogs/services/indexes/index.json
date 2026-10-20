@@ -1444,6 +1444,19 @@
       }
     },
     {
+      "id": "cloudflare-realtime-sfu",
+      "sourceRevision": "d226d761940a0c3e459a7e1b12e29d14d00f0c591d6a8fe2f070bea1615f51e0",
+      "bytes": 6775,
+      "compressedBytes": 1192,
+      "sha256": "b8d93da07729d69e37887b0381e5677f2e96f43ba9221b7d94187633b1081156",
+      "summary": {
+        "name": "Cloudflare Realtime API",
+        "serverUrl": "https://rtc.live.cloudflare.com/v1",
+        "operationCount": 12,
+        "unavailableCount": 0
+      }
+    },
+    {
       "id": "cohere",
       "sourceRevision": "75a54009440bcf35ba7dfc3141aeb173176448e68f1659d6435cecbd1af41712",
       "bytes": 10440,

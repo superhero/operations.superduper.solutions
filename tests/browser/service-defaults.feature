@@ -4,6 +4,16 @@
 
 Feature: Default service schemas in the application
   @service-defaults
+  Scenario Outline: Cloudflare Realtime SFU operations can be added and restored on desktop and mobile
+    When I use a viewport of <width> by 844 pixels
+    Then Cloudflare Realtime SFU appears beside the account API and its workflow node survives reload
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  @service-defaults
   Scenario Outline: Cloud service collections remain browsable on desktop and mobile
     When I use a viewport of <width> by 844 pixels
     Then the cloud collections retain their provider counts and representative workflow contracts
@@ -24,6 +34,7 @@ Feature: Default service schemas in the application
       | bluesky-dms        | Bluesky — Direct messages         | Bluesky / Direct messages          |
       | bluesky-moderation | Bluesky — Ozone moderation        | Bluesky / Ozone moderation         |
       | confluence         | Confluence / Cloud                | Atlassian / Confluence / Cloud     |
+      | cloudflare         | Cloudflare                        | Cloudflare / API                  |
       | docker             | Docker Engine                     | Docker / Engine                    |
       | dukascopy          | Dukascopy Trading Tools           | Dukascopy / Trading Tools          |
       | ecb                | ECB Data Portal                   | ECB / Data Portal                  |
