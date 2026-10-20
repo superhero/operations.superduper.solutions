@@ -83,6 +83,7 @@ Then('schema history compares any saved commits with lazy colored diffs and pers
   const provenance = () => field('/x-upstream-security').first();
   await security().locator('summary').click();
   await expect(security().locator('.diff-side')).toHaveCount(2);
+  await expect(security().locator('.diff-heading')).toHaveText(['Before', 'After']);
   await expect(security().locator('.diff-line.added').first()).toBeVisible();
   await expect(security().locator('.diff-line.removed').first()).toBeVisible();
   const backgrounds = await security().evaluate(element => ['.added', '.removed'].map(selector => getComputedStyle(element.querySelector(selector)).backgroundColor));
@@ -90,7 +91,7 @@ Then('schema history compares any saved commits with lazy colored diffs and pers
   await provenance().locator('summary').click();
   await expect(provenance().locator('.diff-side')).toHaveCount(1);
   await expect(provenance().locator('.diff-side')).toHaveAttribute('data-side', 'after');
-  await expect(provenance().locator('.diff-heading')).toHaveText('After');
+  await expect(provenance().locator('.diff-heading')).toHaveCount(0);
   await expect(provenance().locator('.diff-line.added').first()).toBeVisible();
   // Reversal is valid, including comparing the root against its descendants.
   await selectCommit('Base commit', corrected);
@@ -100,7 +101,7 @@ Then('schema history compares any saved commits with lazy colored diffs and pers
   await provenance().locator('summary').click();
   await expect(provenance().locator('.diff-side')).toHaveCount(1);
   await expect(provenance().locator('.diff-side')).toHaveAttribute('data-side', 'before');
-  await expect(provenance().locator('.diff-heading')).toHaveText('Before');
+  await expect(provenance().locator('.diff-heading')).toHaveCount(0);
   // Equal endpoints have no diff, rather than treating a root as an addition.
   await selectCommit('Base commit', published);
   await expectComparison(published, published);

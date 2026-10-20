@@ -41,7 +41,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           {#each ["before", "after"] as side}
             {#if side === "before" ? diff.before : diff.after}
               <div class="diff-side" data-side={side}>
-                <strong class="diff-heading">{side === "before" ? "Before" : "After"}</strong>
+                {#if diff.before && diff.after}<strong class="diff-heading">{side === "before" ? "Before" : "After"}</strong>{/if}
                 <!-- svelte-ignore a11y_no_noninteractive_tabindex (Scrollable diff panes need keyboard focus for horizontal scrolling.) -->
                 <div class="diff-code" role="region" aria-label={`${side === "before" ? "Before" : "After"} ${change.path}`} tabindex="0">
                   <pre>{#each diff.rows as row}{@const line = side === "before" ? row.before : row.after}<span class="diff-line" class:added={line?.kind === "added"} class:removed={line?.kind === "removed"} class:gap={row.omitted !== undefined}><span class="line-number" aria-hidden="true">{line?.number ?? ""}</span><span class="line-sign" aria-hidden="true">{line?.kind === "added" ? "+" : line?.kind === "removed" ? "-" : " "}</span><code>{row.omitted !== undefined ? `… ${row.omitted} unchanged lines …` : line?.text || " "}</code></span>{/each}</pre>
