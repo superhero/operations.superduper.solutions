@@ -195,7 +195,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                     <time datetime={new Date(revision.timestamp).toISOString()}>{formatLocalDateTime(revision.timestamp)}</time>
                   </span>
                   {#if showBranches && revision.branches.length}<span class="branch-labels">{#each revision.branches as branch}<span>{branch}</span>{/each}</span>{/if}
-                  {#if revision.oid === currentRevision}<span class="current-version">{currentLabel}</span>{/if}
+                  {#if currentLabel && revision.oid === currentRevision}<span class="current-version">{currentLabel}</span>{/if}
                 </span>
               </button>
             </li>

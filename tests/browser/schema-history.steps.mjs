@@ -47,8 +47,11 @@ Then('schema history compares any saved commits with lazy colored diffs and pers
     await expect(card.locator('svg.version-graph circle.current')).toHaveAttribute('data-commit', revision);
     await expect(card.locator('svg.version-graph circle.current')).toHaveAttribute('r', '6');
   };
-  await card.getByRole('button', { name: 'Schema history', exact: true }).click();
-  await expect(card.getByRole('region', { name: 'Schema version history' })).toBeVisible();
+  const revisionsToggle = () => card.getByRole('button', { name: 'Schema revisions', exact: true });
+  await expect(revisionsToggle().locator('.material-symbols-rounded')).toHaveText('keyboard_arrow_right');
+  await revisionsToggle().click();
+  await expect(card.getByRole('region', { name: 'Schema revisions', exact: true })).toBeVisible();
+  await expect(card.locator('.current-version')).toHaveCount(0);
   await expect(card.getByRole('button', { name: 'Apply bundled revision', exact: true })).toHaveCount(0);
   await expect(card.locator('.branch-heads, .branch-labels, .comparison-version')).toHaveCount(0);
   const initial = await history();
@@ -100,9 +103,9 @@ Then('schema history compares any saved commits with lazy colored diffs and pers
   await expect(name).toHaveValue('My Speech API');
   // Three commits: a fresh disclosure must compare the actual root with latest,
   // including both the earlier correction and the later name change.
-  await card.getByRole('button', { name: 'Schema history', exact: true }).click();
+  await revisionsToggle().click();
   await expect(changes()).toHaveCount(0);
-  await card.getByRole('button', { name: 'Schema history', exact: true }).click();
+  await revisionsToggle().click();
   const renamed = await history();
   await expectComparison(renamed.current, published);
   await expect(changes().locator('.change-group > summary')).toContainText(['Schema information1 field', 'Authentication']);
@@ -145,7 +148,7 @@ Then('schema history compares any saved commits with lazy colored diffs and pers
   await mkdir(this.artifactDirectory, { recursive: true });
   await card.locator('.schema-history').screenshot({ path: `${this.artifactDirectory}/schema-history-desktop.png` });
   await page.setViewportSize({ width: 390, height: 844 });
-  assert.ok(await card.evaluate(element => element.scrollWidth <= element.clientWidth), 'Schema history fits a mobile card.');
+  assert.ok(await card.evaluate(element => element.scrollWidth <= element.clientWidth), 'Schema revisions fit a mobile card.');
   const layout = await security().evaluate(element => {
     const before = element.querySelector('[data-side="before"]'); const after = element.querySelector('[data-side="after"]');
     const path = element.querySelector('summary code');

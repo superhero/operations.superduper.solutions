@@ -156,10 +156,11 @@ automatic update ownership without reading its source or publishing metadata.
 Reapplying an identical source to an edited copy also preserves local state;
 pending proposals and changed source metadata still use the update path.
 
-**Schema history** shows the actual commit graph with a selected marker and
-uniform edges. Branch refs remain stored but are not rendered as badges or card
-borders. Independent **Base** and **Compare** selectors accept any two saved
-commits in that schema's isolated Git repository, including equal and reverse
+**Schema revisions** shows the actual commit graph with a selected marker and
+uniform edges. The disclosure has only its leading chevron, and the selected
+commit has no redundant text label. Branch refs remain stored but are not
+rendered as badges or card borders. Independent **Base** and **Compare** selectors
+accept any two saved commits in that schema's isolated Git repository, including equal and reverse
 comparisons. A fresh disclosure defaults to the original import and latest
 commit. Root discovery can expand the loaded ancestry up to 1,000 commits; if
 the root is still outside that bound the user must choose a base explicitly.

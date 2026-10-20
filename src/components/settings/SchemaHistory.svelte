@@ -112,7 +112,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         else { selected = ""; comparison = undefined; diff = undefined;
           error = "The first commit is outside the 1,000 loaded revisions. Choose a base commit to compare."; }
       }
-    } catch (failure) { if (request === generation) error = failure instanceof Error ? failure.message : "Could not read schema history."; }
+    } catch (failure) { if (request === generation) error = failure instanceof Error ? failure.message : "Could not read schema revisions."; }
     finally { if (request === generation) loading = false; }
   }
 
@@ -152,13 +152,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <div class="schema-history">
   <button type="button" class="history-toggle" aria-expanded={open} aria-controls={`schema-history-${id}`} onclick={() => open = !open}>
     <MaterialIcon name="keyboard_arrow_right" size={18} />
-    <span>Schema history</span>
-    <MaterialIcon name="history" size={20} />
+    <span>Schema revisions</span>
   </button>
   <Reveal {open} id={`schema-history-${id}`}>
     <div class="history-content" aria-busy={loading || acting}>
-      {#if error}<p role="alert">{error}</p><Button size="sm" variant="secondary" disabled={acting} onclick={refresh}>Reload history</Button>{/if}
-      {#if loading && !history}<p role="status">Loading schema history…</p>{/if}
+      {#if error}<p role="alert">{error}</p><Button size="sm" variant="secondary" disabled={acting} onclick={refresh}>Reload revisions</Button>{/if}
+      {#if loading && !history}<p role="status">Loading schema revisions…</p>{/if}
       {#if history}
         {#if history.incoming}
           <section class="merge-review" aria-label="Review schema conflicts">
@@ -184,7 +183,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <div class="history-graph">
           <WorkflowHistory workflowId={id} {revisions} currentRevision={selected}
             busy={acting || loading || loadingDiff} onselect={oid => select(oid)}
-            label="Schema version history" versionsLabel="Saved schema versions" currentLabel="Selected revision" primaryBranch="Working"
+            label="Schema revisions" versionsLabel="Saved schema revisions" currentLabel="" primaryBranch="Working"
             showRevisionIds cardBorders={false} alternateColor="var(--color-muted-foreground)" />
         </div>
         {#if history.truncated && historyLimit < 1000}<Button size="sm" variant="secondary" disabled={loading} onclick={() => { historyLimit += 100; void refresh(); }}>Load more revisions</Button>{/if}
