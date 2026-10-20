@@ -13,12 +13,23 @@ type NameGroup = {
 /** Group schema names without changing source IDs, operation groups or saved order. */
 export function catalogHierarchy(schemas: readonly CatalogGroup[]): CatalogGroup[]
 {
-  const roots = new Map<string, NameGroup>();
-  for (const schema of schemas)
-  {
+  const entries = schemas.map(schema => {
     const parts = schema.name.split("/").map(part => part.trim()).filter(Boolean);
     if (!parts.length) parts.push(schema.name);
-    let siblings = roots;
+    return { schema, parts };
+  });
+  const prefixes = new Set(entries.filter(entry => entry.parts.length > 1).map(entry => entry.parts[0]!));
+  const roots: NameGroup[] = [];
+  const namedRoots = new Map<string, NameGroup>();
+  for (const { schema, parts } of entries)
+  {
+    // Plain labels remain individual rows unless they prefix a slash-separated name.
+    if (parts.length === 1 && !prefixes.has(parts[0]!))
+    {
+      roots.push({ name: parts[0]!, path: parts, schemas: [schema], children: new Map() });
+      continue;
+    }
+    let siblings = namedRoots;
     const path: string[] = [];
     for (const part of parts)
     {
@@ -28,16 +39,17 @@ export function catalogHierarchy(schemas: readonly CatalogGroup[]): CatalogGroup
       {
         group = { name: part, path: [...path], schemas: [], children: new Map() };
         siblings.set(part, group);
+        if (path.length === 1) roots.push(group);
       }
       if (path.length === parts.length) group.schemas.push(schema);
       siblings = group.children;
     }
   }
 
-  function branches(siblings: Map<string, NameGroup>): CatalogGroup[]
+  function branches(siblings: Iterable<NameGroup>): CatalogGroup[]
   {
-    return [...siblings.values()].map(group => {
-      const children = branches(group.children);
+    return [...siblings].map(group => {
+      const children = branches(group.children.values());
       if (group.schemas.length === 1)
       {
         const schema = group.schemas[0]!;
