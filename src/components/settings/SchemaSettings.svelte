@@ -261,7 +261,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-status { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .schema-toolbar :global(.upload-action) { height: auto; min-height: 44px; max-width: 100%; padding-block: 12px; white-space: normal; text-align: left; font-weight: 700; background: var(--color-background); color: var(--color-foreground); }
   .schema-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
-  .schema-toolbar, .schema-card, .schema-empty { min-width: 0; padding: 16px; border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
+  .schema-toolbar, .schema-list, .schema-empty { min-width: 0; padding: 16px; border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
   .schema-heading { --schema-control-size: calc(var(--spacing) * 8); display: flex; align-items: center; gap: 6px; }
   .schema-name { display: flex; flex: 1; min-width: 0; height: var(--schema-control-size); border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
   .schema-name-field { position: relative; display: flex; flex: 1; min-width: 0; height: 100%; padding-right: 0; transition: padding-right 180ms ease-in-out; }
@@ -275,7 +275,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-note { color: var(--color-accent); }
   .schema-actions { display: flex; align-items: center; flex-shrink: 0; gap: 6px; }
   /* Match the four persistent JSON actions (28px each), their 6px gaps and the 14px header inset. */
-  .schema-card { --schema-count-width: calc(4 * 28px + 3 * 6px + 14px); position: relative; }
+  .schema-card { --schema-count-width: calc(4 * 28px + 3 * 6px + 14px); position: relative; min-width: 0; }
   .schema-card > :global(.reveal-panel) { transition-timing-function: ease-in-out, linear; }
   .schema-card :global(.schema-disclosure > summary) { flex-wrap: wrap; gap: 6px; padding-left: 12px; font-size: 12px; }
   .schema-card :global(.schema-disclosure > summary > .schema-chevron) { width: auto; margin-left: 0; }
