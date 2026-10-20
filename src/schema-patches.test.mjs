@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { mergeSchemaDocuments, sameSchemaValue, schemaChanges } from './lib/schema-merge.ts';
-import { applySchemaPatches, googleOauthAlternatives } from './lib/schema-patches.ts';
+import { applySchemaPatches, googleOauthAlternatives, schemaPatchName } from './lib/schema-patches.ts';
 import { schemaLineDiff, schemaPointerValue } from './lib/schema-diff.ts';
 
 Then('schema merges preserve unrelated edits deletions and identical changes', () => {
@@ -30,6 +30,10 @@ Then('schema merge conflicts distinguish missing null arrays and concurrent obje
   const resolved = mergeSchemaDocuments(base, current, incoming, { '/info/title': 'current', '/nullable': 'incoming', '/removed': 'incoming', '/security': 'incoming' });
   assert.deepEqual(resolved, { conflicts: [], document: { info: { title: 'Local' }, nullable: 'new', security: [{ remote: [] }] } });
   assert.throws(() => mergeSchemaDocuments(base, current, incoming, { '/info/title': 'unknown' }), /Choose/);
+  const additions = mergeSchemaDocuments({}, { created: { title: 'Local' } }, { created: { title: 'Published' } });
+  assert.deepEqual(additions, { document: { created: { title: 'Local' } }, conflicts: [
+    { path: '/created', current: { title: 'Local' }, incoming: { title: 'Published' } },
+  ] }, 'Concurrent additions conflict without inventing a base value.');
 });
 
 Then('schema merge paths preserve special keys and bound changed-field reports', () => {
@@ -45,15 +49,30 @@ Then('schema merge paths preserve special keys and bound changed-field reports',
   assert.equal(diff.changes.length, 1);
   assert.equal(diff.truncated, true);
   assert.deepEqual(schemaChanges(base, { 'a/b~c': 1 }).changes, [{ path: '/__proto__', kind: 'removed', before: { safe: 1 } }]);
+  assert.deepEqual(schemaChanges({ removed: null }, { added: null }), { changes: [
+    { path: '/removed', kind: 'removed', before: null }, { path: '/added', kind: 'added', after: null },
+  ], truncated: false }, 'Missing values and explicit null stay distinct in either direction.');
+  assert.deepEqual(schemaChanges('before', 'after'), { changes: [
+    { path: '/', kind: 'changed', before: 'before', after: 'after' },
+  ], truncated: false }, 'A complete value replacement has a root path.');
 });
 
 Then('reviewed schema corrections preserve upstream-fixed data and reject unknown recipes', () => {
   const fixed = { openapi: '3.0.3', security: [{ Oauth2: ['scope'] }, { Oauth2c: ['scope'] }], paths: {} };
+  assert.equal(applySchemaPatches(fixed), fixed, 'Documents without corrections retain their original identity.');
+  assert.equal(applySchemaPatches(fixed, []), fixed);
+  assert.equal(schemaPatchName(googleOauthAlternatives), 'Google OAuth alternatives');
+  assert.equal(schemaPatchName({ id: 'unrecognized', version: 1 }), 'Unknown schema correction');
   assert.deepEqual(applySchemaPatches(fixed, [googleOauthAlternatives]), fixed);
   assert.deepEqual(applySchemaPatches(applySchemaPatches(fixed, [googleOauthAlternatives]), [googleOauthAlternatives]), fixed);
   assert.throws(() => applySchemaPatches(fixed, [{ id: 'arbitrary', version: 1 }]), /unknown/);
   assert.throws(() => applySchemaPatches(fixed, [{ ...googleOauthAlternatives, version: 2 }]), /unknown/);
   assert.throws(() => applySchemaPatches(fixed, [googleOauthAlternatives, googleOauthAlternatives]), /duplicated/);
+  const incomplete = { openapi: '3.1.0', info: { title: 'No paths' } };
+  assert.deepEqual(applySchemaPatches(incomplete, [googleOauthAlternatives]), incomplete);
+  const metadata = { paths: { '/missing': null, '/items': { summary: 'Metadata', get: null, post: [] } } };
+  assert.deepEqual(applySchemaPatches(metadata, [googleOauthAlternatives]), metadata,
+    'Corrections leave non-operation path metadata and malformed entries untouched.');
 });
 
 Then('schema line diffs preserve additions removals context and JSON pointer values', () => {

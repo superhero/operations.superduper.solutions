@@ -15,6 +15,16 @@ import { createOperationGraph } from "./lib/workflow-graph.ts";
 import { createWorkflowRunner } from "./lib/workflow-runner.ts";
 import { catalogHierarchy } from "./lib/catalog-hierarchy.ts";
 import { schemaNameTree } from "./lib/schema-name-tree.ts";
+import { schemaDeletionReason } from "./lib/schema-deletion.ts";
+
+Then("schema deletion protects defaults and permits only inactive uploaded records", () => {
+  for (const enabled of [true, false])
+    assert.equal(schemaDeletionReason({ bundled: true, enabled }), "Default schemas cannot be deleted.");
+  for (const bundled of [false, undefined]) {
+    assert.equal(schemaDeletionReason({ bundled, enabled: true }), "Disable this schema before deleting it.");
+    assert.equal(schemaDeletionReason({ bundled, enabled: false }), null);
+  }
+});
 
 Then("the settings name tree sorts folders and leaves while preserving every schema identity", () => {
   const record = (id, name, enabled = true) => ({ id, summary: { name }, enabled,
@@ -49,6 +59,9 @@ Then("the settings name tree sorts folders and leaves while preserving every sch
   assert.deepEqual(folders(schemaNameTree([record("only", "Plain")])), [], "Removed prefixes leave no stale folders.");
   assert.deepEqual(records, before, "Grouping never mutates stored names, order or enablement.");
   assert.deepEqual(schemaNameTree([]), []);
+  const prefixFirst = schemaNameTree([record("prefix-first", "Tools"), record("nested-last", "Tools / Child")]);
+  assert.deepEqual(prefixFirst.map(node => [node.kind, node.name]), [["schema", "Tools"], ["group", "Tools"]],
+    "A schema sharing a folder name keeps its own row before the folder, regardless of insertion order.");
 });
 
 Then("slash-separated schema names form ordered groups without changing their sources", () => {

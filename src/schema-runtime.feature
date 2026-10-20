@@ -18,6 +18,9 @@ Feature: Registered schemas at runtime
   Scenario: Settings folders use only schema name segments and include disabled records
     Then the settings name tree sorts folders and leaves while preserving every schema identity
 
+  Scenario: Default schemas remain protected and uploaded schemas require deactivation before deletion
+    Then schema deletion protects defaults and permits only inactive uploaded records
+
   Scenario: Schema validation normalizes a non-Error failure from operation extraction
     Then schema validation normalizes a non-Error failure from operation extraction
 

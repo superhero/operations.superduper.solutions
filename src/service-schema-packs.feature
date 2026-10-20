@@ -9,6 +9,9 @@ Feature: Bundled service schema integrity
   Scenario: Google Cloud published sources remain separate from executable corrected schemas
     Then Google Cloud corrections preserve published packs and enable both private bearer alternatives
 
+  Scenario: Corrected schemas must match their reviewed size and digest
+    Then corrected schema packs reject stale revision metadata while retaining the published source
+
   Scenario: Every default pack retains its recorded schema document
     Then all service schema packs match their size hash and operation inventory
 

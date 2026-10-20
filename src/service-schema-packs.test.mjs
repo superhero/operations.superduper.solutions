@@ -109,6 +109,20 @@ const fixture = data => {
   return { pack: `data:application/gzip;base64,${gzipSync(bytes).toString('base64')}`,
     descriptor: { bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') } };
 };
+Then('corrected schema packs reject stale revision metadata while retaining the published source', async () => {
+  const source = serviceSchemaDescriptors.find(source => source.id === 'gcp-speech');
+  const original = await readServiceSchemaUpstream(source.id);
+  const packed = fixture(original);
+  const descriptor = { ...source, ...packed.descriptor };
+  const library = { descriptors: [descriptor], packs: { [`../catalogs/services/${source.id}.json.gz`]: packed.pack } };
+  assert.deepEqual(await readServiceSchema(source.id, library), await readServiceSchema(source.id));
+  for (const stale of [{ effectiveBytes: source.effectiveBytes + 1 }, { effectiveSha256: '0'.repeat(64) }]) {
+    const invalid = { ...library, descriptors: [{ ...descriptor, ...stale }] };
+    await assert.rejects(readServiceSchema(source.id, invalid), /corrected schema does not match its reviewed revision/);
+    assert.deepEqual(await readServiceSchema(source.id, invalid, true), original,
+      'Invalid correction metadata cannot alter the independently verified published source.');
+  }
+});
 Then('all service schema packs match their size hash and operation inventory', async () => {
   const ids = serviceSchemaDescriptors.map(item => item.id);
   assert.equal(new Set(ids).size, ids.length);

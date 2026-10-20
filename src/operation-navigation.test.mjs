@@ -83,6 +83,7 @@ Then('generic Operations tags disappear while literal schema and resource names 
     description: '', operationIds, children });
   const groups = [{ id: 'api', name: 'Operations', description: 'A real schema name', operationIds: ['api:direct'], children: [
     generic('api', ['api:untagged', 'api:root', 'api:literal']),
+    { id: 'api:empty:tag:Operations', name: 'Operations', description: '' },
     { id: 'api:tag:Accounts', name: 'Accounts', description: 'Authored category', operationIds: ['api:tagged'],
       children: [generic('api:nested', ['api:nested'])] },
     { id: 'other', name: 'Operations', description: 'Another schema', children: [generic('other', ['other:read'])] },
