@@ -11,6 +11,39 @@ import { setMode, openCatalog, closeCatalog, workflowAction, workspace, fillFiel
 import { expandSchemaCard } from './schema-card.fixture.mjs';
 import { catalogSchemaHeading, catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
 
+Then('Cloudflare Realtime SFU appears beside the account API and its workflow node survives reload', async function () {
+  const page = this.page;
+  await schemas(page);
+  for (const id of ['cloudflare', 'cloudflare-realtime-sfu']) {
+    const source = descriptors.find(source => source.id === id);
+    await expect(card(page, id).locator('.schema-name-label')).toHaveText(source.name);
+    await expect(card(page, id).getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+  }
+  await openCatalog(page);
+  const root = await catalogSchemaHeading(page, 'Cloudflare');
+  await expect(root.locator('.catalog-count')).toHaveText('3773');
+  const api = await catalogSchemaHeading(page, 'Cloudflare / API');
+  await expect(api.locator('.catalog-count')).toHaveText('3761');
+  const sfu = await catalogSchemaHeading(page, 'Cloudflare / Realtime / SFU');
+  await expect(sfu.locator('.catalog-count')).toHaveText('12');
+  const prompt = page.getByRole('textbox', { name: 'Prompt', exact: true });
+  const query = 'Return the media tracks and DataChannels';
+  await prompt.fill(query);
+  await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', query);
+  const operation = page.locator('[data-operation-id="cloudflare-realtime-sfu:GET /apps/{appId}/sessions/{sessionId}"] > button');
+  await expect(operation).toHaveAttribute('aria-disabled', 'false');
+  await operation.press('Enter');
+  await closeCatalog(page);
+  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(1);
+  await expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
+  await page.reload();
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
+  const node = page.locator('.svelte-flow__node-operation');
+  await expect(node).toHaveCount(1);
+  await expect(node).toContainText('Return the media tracks and DataChannels');
+  await expect(node.getByRole('alert')).toHaveCount(0);
+});
+
 Then('the cloud collections retain their provider counts and representative workflow contracts', async function () {
   const page = this.page;
   await schemas(page);

@@ -11,6 +11,58 @@ import { approvedOperation } from './lib/secrets/policy.ts';
 import { executeCredentialed } from './lib/secrets/execution.ts';
 import { adaptFredSchema } from '../build/fred-schema.mjs';
 
+Then('Cloudflare retains its account API and adds the published Realtime SFU contracts with their own credentials', async () => {
+  const collection = serviceSchemaDescriptors.filter(source => source.provider === 'cloudflare');
+  assert.deepEqual(collection.map(source => source.id), ['cloudflare', 'cloudflare-realtime-sfu']);
+  assert.equal(collection[0].sha256, '5999fa69349d2e160e58bac0f9603f110c2937d67dbf6dac3a1bed9f3859c778',
+    'Existing account API payloads and workflow identities remain unchanged.');
+  const source = collection[1];
+  assert.equal(source.name, 'Cloudflare / Realtime / SFU');
+  assert.equal(source.provenance, 'https://developers.cloudflare.com/realtime/sfu/api/');
+  const document = await readServiceSchema(source.id);
+  const catalog = inspectServiceSchema(document, source.id);
+  const expected = [
+    'POST /apps/{appId}/sessions/new',
+    'POST /apps/{appId}/adapters/websocket/new',
+    'POST /apps/{appId}/adapters/websocket/close',
+    'POST /apps/{appId}/sessions/{sessionId}/tracks/new',
+    'PUT /apps/{appId}/sessions/{sessionId}/renegotiate',
+    'PUT /apps/{appId}/sessions/{sessionId}/tracks/close',
+    'PUT /apps/{appId}/sessions/{sessionId}/tracks/update',
+    'POST /apps/{appId}/sessions/{sessionId}/datachannels/establish',
+    'POST /apps/{appId}/sessions/{sessionId}/datachannels/new',
+    'PUT /apps/{appId}/sessions/{sessionId}/datachannels/update',
+    'PUT /apps/{appId}/sessions/{sessionId}/datachannels/close',
+    'GET /apps/{appId}/sessions/{sessionId}',
+  ];
+  assert.equal(source.operations, expected.length);
+  assert.deepEqual(catalog.operations.map(operation => `${operation.method} ${operation.path}`).sort(), expected.sort());
+  for (const operation of catalog.operations) {
+    assert.equal(operation.id, `${source.id}:${operation.method} ${operation.path}`);
+    assert.equal(operation.unavailableReason, undefined, operation.id);
+    assert.equal(operationServerUrl(document, operation), 'https://rtc.live.cloudflare.com/v1');
+    assert.deepEqual(operation.security, [[{ name: 'secret', kind: 'bearer', header: 'Authorization' }]]);
+  }
+  const session = catalog.operations.find(operation => operation.method === 'GET');
+  const descriptor = await approvedOperation(session, operationServerUrl(document, session));
+  const values = { 'path:appId': 'sample-app', 'path:sessionId': 'sample-session' };
+  const credentials = [{ id: 'app-secret', label: 'SFU App Secret', kind: 'secret', value: 'synthetic-sfu-app-secret' }];
+  let requests = 0;
+  const result = await executeCredentialed(descriptor, values,
+    { fingerprint: descriptor.fingerprint, alternative: 0, credentials: { secret: 'app-secret' } }, credentials, {
+      assertCurrent() {}, fetchRequest: async (url, options) => {
+        requests++;
+        assert.equal(String(url), 'https://rtc.live.cloudflare.com/v1/apps/sample-app/sessions/sample-session');
+        assert.equal(options.method, 'GET');
+        assert.equal(options.headers.get('Authorization'), 'Bearer synthetic-sfu-app-secret');
+        return new Response('{"tracks":[],"dataChannels":[]}', { headers: { 'Content-Type': 'application/json' } });
+      },
+    });
+  assert.equal(requests, 1);
+  assert.deepEqual(result.response.body, { tracks: [], dataChannels: [] });
+  assert.ok(!JSON.stringify(result).includes(credentials[0].value));
+});
+
 Then('{string} has {int} cloud schemas under {string} including {string}', async (provider, count, prefix, services) => {
   const collection = serviceSchemaDescriptors.filter(source => source.provider === provider);
   assert.equal(collection.length, count);
@@ -195,7 +247,7 @@ Then('the default service index retains every packaged operation and reports exe
     if (descriptor.id === 'ollama') assert.ok(catalog.operations.some(operation => operation.path === '/api/generate' && !operation.unavailableReason));
     if (descriptor.id === 'frankfurter') assert.ok(catalog.operations.some(operation => !operation.unavailableReason));
   }
-  assert.equal(count, 26453);
+  assert.equal(count, 26465);
   assert.ok(runnable > 0);
 });
 Then('service inputs preserve standard validation and explicitly use server validation for complex JSON', () => {

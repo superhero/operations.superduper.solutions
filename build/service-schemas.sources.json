@@ -76,8 +76,17 @@
   },
   {
     "id": "cloudflare",
-    "name": "Cloudflare",
-    "url": "https://raw.githubusercontent.com/cloudflare/api-schemas/main/openapi.yaml"
+    "provider": "cloudflare",
+    "name": "Cloudflare / API",
+    "url": "https://raw.githubusercontent.com/cloudflare/api-schemas/main/openapi.yaml",
+    "provenance": "https://github.com/cloudflare/api-schemas"
+  },
+  {
+    "id": "cloudflare-realtime-sfu",
+    "provider": "cloudflare",
+    "name": "Cloudflare / Realtime / SFU",
+    "url": "https://raw.githubusercontent.com/cloudflare/cloudflare-docs/production/public/realtime/static/realtime-api-2024-05-21.yaml",
+    "provenance": "https://developers.cloudflare.com/realtime/sfu/api/"
   },
   {
     "id": "digitalocean",
