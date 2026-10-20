@@ -131,7 +131,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <div class="workflow-run">
   {#if destination}
-    <p class="run-endpoint">Server: {destination.origin}. Each confirmed step sends a request to this service.</p>
+    <p class="run-endpoint">Server: <strong>{destination.origin}</strong>. Each confirmed step sends a request to this service.</p>
   {/if}
   {#if view?.kind === "choice" && !fatal}
     <section aria-label="Starting operation">
