@@ -307,10 +307,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-upload-guidance { flex: 1 1 240px; min-width: 0; margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .schema-status { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .schema-toolbar :global(.upload-action) { height: auto; min-height: 44px; max-width: 100%; padding-block: 12px; white-space: normal; text-align: left; font-weight: 700; background: var(--color-background); color: var(--color-foreground); }
-  .schema-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+  .schema-list { --schema-indent: 12px; display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
   .schema-toolbar, .schema-list, .schema-empty { min-width: 0; padding: 16px; border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
   .schema-group { min-width: 0; }
-  .schema-children { display: grid; gap: 12px; margin: 0; padding: 12px 0 0 12px; list-style: none; }
+  .schema-children { display: grid; gap: 12px; margin: 0; padding: 12px 0 0 var(--schema-indent); list-style: none; }
   .schema-settings :global(.schema-name-group > summary) { display: flex; align-items: center; gap: 10px; min-height: 32px; padding: 6px 10px; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); list-style: none; font-size: 14px; font-weight: 700; }
   .schema-group-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .schema-settings :global(.schema-group-chevron) { flex-shrink: 0; width: 18px; margin-left: 0; transition: transform 180ms ease-in-out; }
@@ -329,7 +329,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-actions { display: flex; align-items: center; flex-shrink: 0; gap: 6px; }
   /* Match the four persistent JSON actions (28px each), their 6px gaps and the 14px header inset. */
   .schema-card { --schema-count-width: calc(4 * 28px + 3 * 6px + 14px); position: relative; min-width: 0; }
-  .schema-card > :global(.reveal-panel) { transition-timing-function: ease-in-out, linear; }
+  .schema-card > :global(.reveal-panel) { margin-left: var(--schema-indent); transition-timing-function: ease-in-out, linear; }
   .schema-card :global(.schema-disclosure > summary) { flex-wrap: wrap; gap: 6px; padding-left: 12px; font-size: 12px; }
   .schema-card :global(.schema-disclosure > summary > .schema-chevron) { width: auto; margin-left: 0; }
   .schema-card :global(.schema-card-toggle) { display: grid; place-items: center; flex: 0 0 var(--schema-control-size); height: 100%; padding: 0; border: 0; border-radius: 4px 0 0 4px; background: transparent; color: inherit; }
@@ -355,7 +355,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-delete { display: grid; gap: 12px; margin-top: 16px; padding: 12px; border-radius: 4px; background: var(--color-background); }
   .schema-delete p { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .confirmation-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
-  @container (max-width: 430px) { .schema-metadata { grid-template-columns: 1fr; } .schema-children { padding-left: 8px; } }
+  @container (max-width: 430px) { .schema-metadata { grid-template-columns: 1fr; } .schema-list { --schema-indent: 8px; } }
   @media (prefers-reduced-motion: reduce) { .schema-settings :global(.schema-group-chevron) { transition: none; } }
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
     .schema-card :global(.schema-disclosure > summary:hover) { transform: scale(min(1.06, var(--hover-scale, 1.06))); }

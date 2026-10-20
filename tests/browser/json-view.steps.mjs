@@ -827,11 +827,14 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   const viewerWidth = await json.evaluate(element => {
     const viewer = element.getBoundingClientRect();
     const card = element.closest('.schema-card');
-    const style = getComputedStyle(card);
-    return { actual: viewer.width, expected: card.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+    const panel = card.querySelector(':scope > .reveal-panel');
+    const heading = card.querySelector('.schema-heading').getBoundingClientRect();
+    return { actual: viewer.width, expected: panel.clientWidth,
+      inset: viewer.left - heading.left, right: Math.abs(viewer.right - heading.right),
       fits: card.scrollWidth <= card.clientWidth };
   });
-  assert.ok(Math.abs(viewerWidth.actual - viewerWidth.expected) < 2, 'The expanded JSON viewer uses the full card width');
+  assert.ok(viewerWidth.inset > 0 && viewerWidth.right < 1, 'The foldout is indented below its header while retaining the right edge');
+  assert.ok(Math.abs(viewerWidth.actual - viewerWidth.expected) < 2, 'The expanded JSON viewer fills the indented content area');
   assert.ok(viewerWidth.fits, 'Schema controls and content fit without horizontal overflow');
   await page.screenshot({ path: `${this.artifactDirectory}/schema-card-expanded-${width}.png` });
   await toggle.click();
