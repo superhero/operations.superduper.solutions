@@ -11,6 +11,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { OperationData } from "$lib/workflow-document.ts";
   import WorkflowRestoreBranch from "./components/workflows/WorkflowRestoreBranch.svelte";
+  import WorkflowNodeSelect from "./components/workflows/WorkflowNodeSelect.svelte";
   import "./components/workflows/workflow-owner-nodes.css";
 
   type Branch = { id: string; childId: string; direction: "inputs" | "outputs"; label: string; hidden: boolean };
@@ -18,18 +19,25 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const updateNodeInternals = useUpdateNodeInternals();
   const branchesFor = getContext<((id: string) => Map<string, Branch> | undefined) | undefined>("workflow-branches");
   const inputConnected = getContext<((id: string, handleId?: string | null) => boolean) | undefined>("workflow-input-connected");
+  const versionsFor = getContext<{
+    choices: (operationId: string) => { value: string; label: string; disabled?: boolean }[];
+    pending: () => boolean;
+    active: () => boolean;
+    select: (nodeId: string, operationId: string) => Promise<void>;
+  } | undefined>("workflow-operation-version");
   let { id, data, selected }: NodeProps<Node<OperationData, "operation">> = $props();
   let hoveredRestore = $state<string>();
   const occurrences = $derived(getNodes().filter(node => node.type === "operation" && node.data.operationId === data.operationId));
   const ordinal = $derived(occurrences.length > 1 ? occurrences.findIndex(node => node.id === id) + 1 : 0);
   const branches = $derived(branchesFor?.(id));
   const connected = $derived(inputConnected?.(id) ?? false);
+  const versions = $derived(versionsFor?.choices(data.operationId) ?? []);
   const ports = $derived({
     inputs: [...(branches?.values() ?? [])].filter(branch => branch.direction === "inputs"),
     outputs: [...(branches?.values() ?? [])].filter(branch => branch.direction === "outputs")
   });
   const portCount = $derived(Math.max(ports.inputs.length, ports.outputs.length));
-  const layout = $derived(JSON.stringify([data.name, ordinal, ports]));
+  const layout = $derived(JSON.stringify([data.name, ordinal, ports, versions]));
 
   $effect(() => {
     layout;
@@ -95,6 +103,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </div>
     {/snippet}
   </HintButton>
+  {#if versions.length > 1}
+    <div class="operation-version">
+      <WorkflowNodeSelect label="API version" value={data.operationId} choices={versions}
+        active={versionsFor?.active() ?? false} disabled={versionsFor?.pending() ?? false}
+        onchange={operationId => { void versionsFor?.select(id, operationId); }} />
+    </div>
+  {/if}
   <span class="sr-only">{data.method} {data.path}. {data.description}</span>
   {@render portRow("outputs")}
 </div>
+
+<style>
+  .operation-version { padding: 0 10px 8px; }
+</style>

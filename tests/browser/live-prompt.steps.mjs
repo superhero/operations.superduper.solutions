@@ -5,7 +5,9 @@ import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { operations } from '../../src/lib/catalog.ts';
+import { catalogs } from '../../src/lib/catalog-registry.ts';
 import { rankOperations } from '../../src/lib/matching.ts';
+import { catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
 import { openCatalog, closeCatalog, searchOperations, workflow, operationNodes } from './workspace.steps.mjs';
 
 const catalog = page => page.getByRole('navigation', { name: 'Operation catalog', exact: true });
@@ -18,7 +20,7 @@ Then('the sidebar prompt filters operations and hides empty catalog groups', asy
   await openCatalog(page);
   await group(page, 'projects').click();
   await group(page, 'tasks').click();
-  const initialGroups = await catalog(page).locator('[data-catalog-group]').evaluateAll(items => items.map(item => item.dataset.catalogGroup));
+  await catalogResourcePath(page, 'tasks', ['tasks']);
   const placement = await Promise.all([page.locator('.catalog-prompt').boundingBox(), catalog(page).boundingBox()]);
   assert.ok(placement.every(Boolean));
   assert.ok(placement[1].y >= placement[0].y + placement[0].height,
@@ -29,7 +31,16 @@ Then('the sidebar prompt filters operations and hides empty catalog groups', asy
   const filteredGroups = await catalog(page).locator('[data-catalog-group]').evaluateAll(items => items.map(item => ({
     id: item.dataset.catalogGroup, matches: item.querySelectorAll('[data-operation-name]').length
   })));
-  assert.ok(filteredGroups.length < initialGroups.length, 'Empty nested categories must be removed.');
+  const matched = new Set(rankOperations('Example array response', operations).map(item => item.operation.id));
+  const ids = group => [...(group.operationIds ?? []), ...(group.children ?? []).flatMap(ids)];
+  async function expectPruned(group, root) {
+    if (!ids(group).some(id => matched.has(id))) await expect(root.locator(`[data-catalog-group=${JSON.stringify(group.id)}]`)).toHaveCount(0);
+    for (const child of group.children ?? []) await expectPruned(child, root);
+  }
+  for (const source of catalogs) {
+    const root = catalog(page).locator(`[data-catalog-group=${JSON.stringify(source.groups[0].id)}]`);
+    for (const child of source.groups[0].children ?? []) await expectPruned(child, root);
+  }
   assert.ok(filteredGroups.every(item => item.matches > 0), 'Each remaining category must contain a matching descendant.');
   for (const summary of await catalog(page).locator('[data-catalog-group] > .catalog-group > summary').all())
     await expect(summary).toHaveAttribute('aria-expanded', 'true');
@@ -46,6 +57,7 @@ Then('clearing live matching restores the unfiltered catalog and its previous ex
   await openCatalog(page);
   await group(page, 'projects').click();
   await group(page, 'tasks').click();
+  await catalogResourcePath(page, 'tasks', ['tasks']);
   const initialNames = await matchingNames(page);
   const initialGroups = await catalog(page).locator('[data-catalog-group]').evaluateAll(items => items.map(item => item.dataset.catalogGroup));
   await searchOperations(page, 'Example array response');

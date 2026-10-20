@@ -5,6 +5,8 @@ import { closeWorkflowDetails, expectWorkflowName, renameWorkflow, workflowNameI
 import assert from "node:assert/strict";
 import { operations } from "../../src/lib/catalog.ts";
 import { catalogs } from "../../src/lib/catalog-registry.ts";
+import { operationNavigation, operationResourceGroups } from "../../src/lib/operation-navigation.ts";
+import { catalogHierarchy } from "../../src/lib/catalog-hierarchy.ts";
 import { seedOperationGraph } from "./workflow-graph.fixture.mjs";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
@@ -117,7 +119,7 @@ export async function revealCatalogOperation(page, name) {
       if (child) return child;
     }
   }
-  const path = target && findPath(catalogs.flatMap(catalog => catalog.groups));
+  const path = target && findPath(operationResourceGroups(catalogHierarchy(catalogs.flatMap(catalog => catalog.groups)), operationNavigation(operations)));
   let scope = catalog;
   let found = !!path || await entry.count() > 0;
   for (const id of path ?? []) {

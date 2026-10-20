@@ -7,6 +7,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { expect } from '@playwright/test';
 import { createFixtureServer, ownedBrowser, openSettings, closeSettings } from './support.mjs';
+import { catalogResourcePath } from '../catalog-hierarchy.fixture.mjs';
 
 // Assertions are advanced by the named steps in legacy-smoke.feature.
 export async function* journey(world, variant) {
@@ -73,12 +74,15 @@ async function openContext(base, name) {
   return { context, page };
 }
 
-async function expandCatalog(page, id) {
+async function expandCatalog(page, id, resource) {
   const root = page.locator(`[data-catalog-group="${id}"]`);
   const header = root.locator(':scope > .catalog-group > summary');
   if (await header.getAttribute('aria-expanded') !== 'true') await header.click();
   for (const child of await root.locator('.catalog-children > .catalog-branch > .catalog-group > summary').all())
-    if (await child.getAttribute('aria-expanded') !== 'true') await child.click();
+    if (await child.getAttribute('aria-expanded') !== 'true') {
+      await child.click();
+      await catalogResourcePath(page, await child.locator('xpath=../..').getAttribute('data-catalog-group'), [resource]);
+    }
 }
 
 async function navigate(page, mode) {
@@ -209,7 +213,7 @@ yield "schema management loads its seeded documents in a dedicated worker";
 
     await navigate(page, 'Workflows');
     await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    await expandCatalog(page, first.id);
+    await expandCatalog(page, first.id, 'items');
     await page.getByRole('button', { name: `Add to workflow: List ${title} inventory`, exact: true }).click();
     const operationNode = page.locator('.svelte-flow__node-operation').filter({ has: page.locator(`[data-operation-name=${JSON.stringify(`List ${title} inventory`)}]`) });
     await expect(operationNode).toBeVisible();
@@ -482,7 +486,7 @@ yield "editable schema names save on blur or Enter without redundant commits";
 
     await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
     const selectedCatalogOperation = page.locator(`[data-operation-id="${yamlRecord.id}:checkHealth"]`);
-    await expandCatalog(page, yamlRecord.id);
+    await expandCatalog(page, yamlRecord.id, 'health');
     await selectedCatalogOperation.getByRole('button', { name: 'Add to workflow: Check YAML schema health', exact: true }).click();
     const yamlNode = page.locator('.svelte-flow__node-operation').filter({ has: page.locator('[data-operation-name="Check YAML schema health"]') });
     await expect(yamlNode).toBeVisible();
