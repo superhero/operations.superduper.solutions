@@ -48,8 +48,8 @@ Feature: Targeted schema storage and independent history
   Scenario: Discarding a proposal preserves the current schema and source tips
     Then discarded conflicting schema updates leave current content and ancestry unchanged
 
-  Scenario: Schema changes identify the selected commit and its direct comparison parent
-    Then schema diffs match the selected graph edge for imports corrections and merge parents
+  Scenario: Any saved schema commits can be compared without changing history
+    Then schema diffs preserve arbitrary comparison endpoints and load exact field changes separately
 
   Scenario: Applying the current bundle preserves schema names ownership and history
     Then unchanged bundled revisions preserve factory metadata and authored changes

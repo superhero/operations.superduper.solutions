@@ -14,6 +14,7 @@ import { createWorkerClient } from "./worker-rpc.ts";
 import { logger } from "./logger.ts";
 import { invalidateVaultExecution } from "./secrets/client.ts";
 import type { SchemaBranchHistory, SchemaRevisionDiff } from "./schema-storage.ts";
+import type { SchemaFieldDiff } from "./schema-diff.ts";
 import type { SchemaResolution } from "./schema-merge.ts";
 
 const state = writable({ records: [] as SchemaLibraryRecord[], operations, catalogs: registeredCatalogs,
@@ -93,9 +94,14 @@ export async function loadSchemaHistory(id: string, limit = 100): Promise<Schema
   return history;
 }
 
-export function loadSchemaRevisionDiff(id: string, oid: string, limit = 200, parent?: string): Promise<SchemaRevisionDiff> {
+export function loadSchemaRevisionDiff(id: string, oid: string, limit = 200, base?: string): Promise<SchemaRevisionDiff> {
   findRecord(id);
-  return worker.call("revisionDiff", [id, oid, limit, parent]);
+  return worker.call("revisionDiff", [id, oid, limit, base]);
+}
+
+export function loadSchemaRevisionFieldDiff(id: string, oid: string, base: string | undefined, path: string, limit: number): Promise<SchemaFieldDiff> {
+  findRecord(id);
+  return worker.call("revisionFieldDiff", [id, oid, base, path, limit]);
 }
 
 async function updateReviewedSchema(method: string, args: unknown[]): Promise<void> {

@@ -6,7 +6,7 @@ import { createSchemaDocumentId, parseSchemaDocument, schemaDocumentMaxBytes, va
 import { listSchemaMetadata, readSchemaDiscovery, readSchemaDocument, readSchemaOperations, releaseSchemaDocument,
   schemaMetadataIdentity, putSchemaDocument, renameSchemaDocument,
   deleteSchemaDocument, setSchemaDocumentEnabled, configureSchemaDefaults, updateSchemaUpstream,
-  getSchemaBranchHistory, getSchemaRevisionDiff, resolveSchemaUpdate, dismissSchemaUpdate, updateSchemaFromBundle } from "./schema-storage.ts";
+  getSchemaBranchHistory, getSchemaRevisionDiff, getSchemaRevisionFieldDiff, resolveSchemaUpdate, dismissSchemaUpdate, updateSchemaFromBundle } from "./schema-storage.ts";
 import { serviceSchemaDescriptors, readServiceSchema, readServiceSchemaUpstream } from "./service-schema-packs.ts";
 import type { SchemaResolution } from "./schema-merge.ts";
 import { serviceIndexDescriptors, readServiceSchemaIndex, schemaAdapterRevision } from "./service-schema-indexes.ts";
@@ -87,6 +87,7 @@ serveWorkerRpc({
     finally { releaseSchemaDocument(id); }
   },
   revisionDiff: getSchemaRevisionDiff,
+  revisionFieldDiff: getSchemaRevisionFieldDiff,
   async bundledUpdate(id: string) { await updateSchemaFromBundle(id); return snapshot(); },
   async resolveUpdate(id: string, current: string, incoming: string, choices: Record<string, SchemaResolution>) {
     await resolveSchemaUpdate(id, current, incoming, choices); return snapshot();

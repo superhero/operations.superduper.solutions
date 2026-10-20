@@ -8,9 +8,9 @@ import { mkdir } from 'node:fs/promises';
 import { setMode } from './workspace.steps.mjs';
 import { expandSchemaCard } from './schema-card.fixture.mjs';
 
-Then('schema settings display correction branches diffs and persistent field conflict choices', async function () {
+Then('schema history compares any saved commits with lazy colored diffs and persistent conflict choices', async function () {
   const page = this.page;
-  // Install just the representative real bundled service in the isolated profile.
+  // Only the representative real bundled service is installed in this profile.
   await page.evaluate(async () => {
     const db = await new Promise((resolve, reject) => { const request = indexedDB.open('v1/catalogs/index'); request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error); });
     await new Promise((resolve, reject) => {
@@ -31,63 +31,81 @@ Then('schema settings display correction branches diffs and persistent field con
     return card;
   };
   let card = await open();
-  const historyToggle = card.getByRole('button', { name: 'Schema history', exact: true });
-  await expect(historyToggle).toHaveAttribute('aria-expanded', 'false');
-  await historyToggle.click();
-  await expect(card.getByRole('region', { name: 'Schema version history' })).toBeVisible();
-  await expect(card.locator('.branch-heads')).toContainText('Published');
-  await expect(card.locator('.branch-heads')).toContainText('Corrections');
-  await expect(card.getByRole('button', { name: 'Apply bundled revision', exact: true })).toBeVisible();
   const changes = () => card.getByRole('region', { name: 'Schema changes' });
+  const history = () => page.evaluate(async () => (await import('/schema-lifecycle-fixture.js')).getSchemaBranchHistory('gcp-speech'));
+  const selectCommit = async (label, oid) => {
+    await changes().getByRole('combobox', { name: label, exact: true }).click();
+    await page.getByRole('option', { name: new RegExp(`^${oid.slice(0, 7)} ·`) }).click();
+    await expect(changes()).toHaveAttribute('aria-busy', 'false');
+  };
+  const expectComparison = async (revision, base) => {
+    await expect(changes()).toHaveAttribute('data-revision', revision);
+    await expect(changes()).toHaveAttribute('data-base', base);
+    await expect(card.locator('[data-version-oid].current')).toHaveAttribute('data-version-oid', revision);
+    await expect(changes().getByRole('combobox', { name: 'Base commit', exact: true })).toContainText(base.slice(0, 7));
+    await expect(changes().getByRole('combobox', { name: 'Compare commit', exact: true })).toContainText(revision.slice(0, 7));
+    await expect(card.locator('svg.version-graph circle.current')).toHaveAttribute('data-commit', revision);
+    await expect(card.locator('svg.version-graph circle.current')).toHaveAttribute('r', '6');
+  };
+  await card.getByRole('button', { name: 'Schema history', exact: true }).click();
+  await expect(card.getByRole('region', { name: 'Schema version history' })).toBeVisible();
+  await expect(card.getByRole('button', { name: 'Apply bundled revision', exact: true })).toHaveCount(0);
+  await expect(card.locator('.branch-heads, .branch-labels, .comparison-version')).toHaveCount(0);
+  const initial = await history();
+  const published = initial.revisions.find(revision => !revision.parents.length).oid;
+  const corrected = initial.current;
+  await expectComparison(corrected, published);
+  const graphStyle = await card.locator('svg.version-graph path').evaluateAll(paths => paths.map(path => getComputedStyle(path).strokeWidth));
+  assert.ok(graphStyle.length); assert.ok(graphStyle.every(width => width === '2px'));
+  assert.ok((await card.locator('.version-card').evaluateAll(cards => cards.map(card => getComputedStyle(card).borderLeftWidth))).every(width => width === '0px'));
   await expect(changes().locator('.change-group > summary')).toHaveText('Google OAuth alternatives11 operations corrected');
   await expect(changes().locator('.change-group')).not.toHaveAttribute('open');
-  await expect(changes().locator('.field-change').first()).toBeHidden();
-  await expect(card.locator('svg.version-graph path')).not.toHaveCount(0);
-  const published = await card.locator('[data-version-oid]').filter({ has: page.locator('.branch-labels', { hasText: 'Published' }) }).getAttribute('data-version-oid');
-  const corrected = await card.locator('[data-version-oid].current').getAttribute('data-version-oid');
-  const expectComparison = async (revision, parent) => {
-    await expect(changes()).toHaveAttribute('data-revision', revision);
-    await expect(changes()).toHaveAttribute('data-base', parent);
-    await expect(card.locator('[data-version-oid].current')).toHaveAttribute('data-version-oid', revision);
-    await expect(card.locator('[data-version-oid].comparison')).toHaveAttribute('data-version-oid', parent);
-    const edge = card.locator('svg.version-graph path.comparison');
-    await expect(edge).toHaveCount(1);
-    await expect(edge).toHaveAttribute('data-child', revision);
-    await expect(edge).toHaveAttribute('data-parent', parent);
-    await expect(changes().locator('.diff-commit')).toContainText(revision.slice(0, 7));
-    await expect(changes().locator('.comparison-parent[aria-pressed="true"]')).toContainText(parent.slice(0, 7));
-  };
-  await expectComparison(corrected, published);
-  const saved = () => page.evaluate(() => new Promise((resolve, reject) => {
-    const request = indexedDB.open('v1/catalogs/index');
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => {
-      const db = request.result;
-      const read = db.transaction('catalog').objectStore('catalog').get('gcp-speech');
-      read.onsuccess = () => { db.close(); resolve(read.result); };
-      read.onerror = () => { db.close(); reject(read.error); };
-    };
-  }));
-  const beforeApply = await saved();
-  assert.equal(beforeApply.displayName, 'Google / Cloud / Speech to Text');
-  await card.getByRole('button', { name: 'Apply bundled revision', exact: true }).click();
-  await expect(card.getByRole('button', { name: 'Apply bundled revision', exact: true })).toBeEnabled();
-  await expect(card.getByRole('textbox', { name: 'Schema name', exact: true })).toHaveValue(beforeApply.displayName);
-  await expectComparison(corrected, published);
-  assert.deepEqual(await saved(), beforeApply, 'Applying the current bundle preserves its catalogue label and factory ownership.');
+  await expect(changes().locator('.field-change .diff-code')).toHaveCount(0);
   await changes().locator('.change-group > summary').click();
-  await expect(changes().locator('.field-change > summary').first()).toContainText('/security');
-  await card.locator(`[data-version-oid="${published}"] .version-card`).click();
-  await expect(changes()).toContainText('Initial schema import. This commit establishes the starting document.');
-  await expect(changes().locator('.import-fields')).not.toHaveAttribute('open');
-  await expect(card.locator('svg.version-graph path.comparison')).toHaveCount(0);
+  const field = path => changes().locator('.field-change').filter({ has: page.locator('summary code', { hasText: new RegExp(`${path}$`) }) });
+  const security = () => field('/security').first();
+  const provenance = () => field('/x-upstream-security').first();
+  await security().locator('summary').click();
+  await expect(security().locator('.diff-side')).toHaveCount(2);
+  await expect(security().locator('.diff-line.added').first()).toBeVisible();
+  await expect(security().locator('.diff-line.removed').first()).toBeVisible();
+  const backgrounds = await security().evaluate(element => ['.added', '.removed'].map(selector => getComputedStyle(element.querySelector(selector)).backgroundColor));
+  assert.notEqual(backgrounds[0], backgrounds[1]);
+  await provenance().locator('summary').click();
+  await expect(provenance().locator('.diff-side')).toHaveCount(1);
+  await expect(provenance().locator('.diff-side')).toHaveAttribute('data-side', 'after');
+  await expect(provenance().locator('.diff-heading')).toHaveText('After');
+  await expect(provenance().locator('.diff-line.added').first()).toBeVisible();
+  // Reversal is valid, including comparing the root against its descendants.
+  await selectCommit('Base commit', corrected);
+  await selectCommit('Compare commit', published);
+  await expectComparison(published, corrected);
+  if (await changes().locator('.change-group').getAttribute('open') === null) await changes().locator('.change-group > summary').click();
+  await provenance().locator('summary').click();
+  await expect(provenance().locator('.diff-side')).toHaveCount(1);
+  await expect(provenance().locator('.diff-side')).toHaveAttribute('data-side', 'before');
+  await expect(provenance().locator('.diff-heading')).toHaveText('Before');
+  // Equal endpoints have no diff, rather than treating a root as an addition.
+  await selectCommit('Base commit', published);
+  await expectComparison(published, published);
+  await expect(changes()).toContainText('No content changes between the selected commits.');
   await card.locator(`[data-version-oid="${corrected}"] .version-card`).click();
   await expectComparison(corrected, published);
+  assert.deepEqual(await history(), initial, 'Browsing and comparing never changes commits or refs.');
+
   const original = await page.evaluate(async oid => (await import('/schema-lifecycle-fixture.js')).readSchemaVersion('gcp-speech', oid), published);
   assert.ok(Object.values(original.paths).some(item => Object.values(item).some(operation => operation?.security?.some(requirement => requirement.Oauth2 && requirement.Oauth2c))));
   const name = card.getByRole('textbox', { name: 'Schema name', exact: true });
   await name.fill('My Speech API'); await name.press('Enter');
   await expect(name).toHaveValue('My Speech API');
+  // Three commits: a fresh disclosure must compare the actual root with latest,
+  // including both the earlier correction and the later name change.
+  await card.getByRole('button', { name: 'Schema history', exact: true }).click();
+  await expect(changes()).toHaveCount(0);
+  await card.getByRole('button', { name: 'Schema history', exact: true }).click();
+  const renamed = await history();
+  await expectComparison(renamed.current, published);
+  await expect(changes().locator('.change-group > summary')).toContainText(['Schema information1 field', 'Authentication']);
   original.info.title = 'New upstream Speech title'; original.info.version = 'manual-update-2';
   await card.getByRole('button', { name: 'Replace My Speech API', exact: true }).click();
   await page.getByLabel('Replace OpenAPI document', { exact: true }).setInputFiles({ name: 'speech-upstream.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(original)) });
@@ -103,30 +121,50 @@ Then('schema settings display correction branches diffs and persistent field con
   await review.getByRole('button', { name: 'Apply update', exact: true }).click();
   await expect(review).toBeHidden();
   await expect(card.getByRole('textbox', { name: 'Schema name', exact: true })).toHaveValue('My Speech API');
-  await expect(card.locator('[data-version-oid].current .branch-labels')).toContainText('Working');
-  const current = await card.locator('[data-version-oid]').filter({ has: page.locator('.branch-labels', { hasText: 'Working' }) }).getAttribute('data-version-oid');
+  const integrated = await history();
+  const current = integrated.current;
   const merged = await page.evaluate(async oid => (await import('/schema-lifecycle-fixture.js')).readSchemaVersion('gcp-speech', oid), current);
-  assert.equal(merged.info.title, 'My Speech API');
-  assert.equal(merged.info.version, 'manual-update-2');
-  assert.ok(Object.values(merged.paths).some(item => Object.values(item).some(operation => operation?.security?.some(requirement => requirement.Oauth2) && operation.security.some(requirement => requirement.Oauth2c))));
-  const parents = changes().locator('.comparison-parent');
-  await expect(parents).toHaveCount(2);
-  const first = await parents.first().getAttribute('data-parent-oid');
-  await expectComparison(current, first);
-  const other = await parents.nth(1).getAttribute('data-parent-oid');
-  await parents.nth(1).click();
+  assert.equal(merged.info.title, 'My Speech API'); assert.equal(merged.info.version, 'manual-update-2');
+  await expectComparison(current, published);
+  const commit = integrated.revisions.find(revision => revision.oid === current);
+  assert.equal(commit.parents.length, 2);
+  const other = commit.parents[1];
+  await selectCommit('Base commit', other);
   await expectComparison(current, other);
   await expect(changes().locator('.field-change > summary')).toHaveCount(1);
   await expect(changes().locator('.field-change > summary')).toContainText('/info/title');
-  // Switching parents keeps the same selected commit and moves only its comparison.
-  await parents.first().click();
-  await expectComparison(current, first);
-  await parents.nth(1).click();
-  await expectComparison(current, other);
+  await changes().locator('.change-group > summary').click();
+  await changes().locator('.field-change > summary').click();
+  await expect(changes().locator('.diff-line.removed')).toContainText('New upstream Speech title');
+  await expect(changes().locator('.diff-line.added')).toContainText('My Speech API');
+  await selectCommit('Base commit', published);
+  await expectComparison(current, published);
+  await changes().locator('.change-group').filter({ has: page.locator('summary strong', { hasText: /^Authentication$/ }) }).locator(':scope > summary').click();
+  await security().locator('summary').click();
+  await expect(security().locator('.diff-line.added').first()).toBeVisible();
   await mkdir(this.artifactDirectory, { recursive: true });
-  await page.screenshot({ path: `${this.artifactDirectory}/schema-history-desktop.png` });
+  await card.locator('.schema-history').screenshot({ path: `${this.artifactDirectory}/schema-history-desktop.png` });
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(card).toBeVisible();
   assert.ok(await card.evaluate(element => element.scrollWidth <= element.clientWidth), 'Schema history fits a mobile card.');
-  await page.screenshot({ path: `${this.artifactDirectory}/schema-history-mobile.png` });
+  const layout = await security().evaluate(element => {
+    const before = element.querySelector('[data-side="before"]'); const after = element.querySelector('[data-side="after"]');
+    const path = element.querySelector('summary code');
+    const pre = before.querySelector('pre'); const scroller = before.querySelector('.diff-code');
+    scroller.scrollLeft = 80; path.scrollLeft = 80;
+    return { beforeTop: before.getBoundingClientRect().top, afterTop: after.getBoundingClientRect().top,
+      headingLeft: before.querySelector('.diff-heading').getBoundingClientRect().left, summaryLeft: element.querySelector('summary').getBoundingClientRect().left,
+      whiteSpace: getComputedStyle(pre).whiteSpace, pathWhiteSpace: getComputedStyle(path).whiteSpace,
+      scrolledCode: scroller.scrollLeft, scrolledPath: path.scrollLeft };
+  });
+  assert.ok(Math.abs(layout.beforeTop - layout.afterTop) < 1, 'Before and After headings align.');
+  assert.ok(Math.abs(layout.headingLeft - layout.summaryLeft - 6) < 1, 'Diff content follows the same field padding.');
+  assert.equal(layout.whiteSpace, 'pre'); assert.equal(layout.pathWhiteSpace, 'pre');
+  assert.ok(layout.scrolledCode > 0, 'Long code lines scroll horizontally.');
+  assert.ok(layout.scrolledPath > 0, 'Long field paths scroll horizontally.');
+  const codePane = security().locator('[data-side="before"] .diff-code');
+  await codePane.evaluate(element => element.scrollLeft = 0);
+  await codePane.press('ArrowRight');
+  await expect.poll(() => codePane.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+  await card.locator('.schema-history').screenshot({ path: `${this.artifactDirectory}/schema-history-mobile.png` });
+  assert.deepEqual(await history(), integrated, 'Comparisons after conflict resolution remain read-only.');
 });

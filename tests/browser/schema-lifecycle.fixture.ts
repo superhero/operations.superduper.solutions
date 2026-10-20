@@ -4,7 +4,7 @@
 import { configureSchemaDefaults, listSchemaMetadata, readSchemaDiscovery, readSchemaDocument, readSchemaOperation, readSchemaOperations,
   releaseSchemaDocument, schemaMetadataIdentity, setSchemaDocumentEnabled, getSchemaHistory,
   readSchemaVersion, renameSchemaDocument, deleteSchemaDocument, putSchemaDocument, updateSchemaUpstream,
-  getSchemaBranchHistory, getSchemaRevisionDiff, resolveSchemaUpdate, dismissSchemaUpdate, updateSchemaFromBundle } from "../../src/lib/schema-storage.ts";
+  getSchemaBranchHistory, getSchemaRevisionDiff, getSchemaRevisionFieldDiff, resolveSchemaUpdate, dismissSchemaUpdate, updateSchemaFromBundle } from "../../src/lib/schema-storage.ts";
 import { applySchemaPatches, googleOauthAlternatives } from "../../src/lib/schema-patches.ts";
 import { inspectServiceSchema } from "../../src/lib/service-catalog.ts";
 import { createSchemaDiscovery } from "../../src/lib/schema-index.ts";
@@ -14,7 +14,7 @@ import { assertCurrentSchema } from "../../src/lib/secrets/schema-policy-storage
 export { listSchemaMetadata, readSchemaDiscovery, readSchemaDocument, readSchemaOperation, readSchemaOperations, releaseSchemaDocument,
   schemaMetadataIdentity, setSchemaDocumentEnabled, getSchemaHistory, readSchemaVersion,
   renameSchemaDocument, deleteSchemaDocument, putSchemaDocument, approvedOperation, assertCurrentSchema,
-  updateSchemaUpstream, getSchemaBranchHistory, getSchemaRevisionDiff, resolveSchemaUpdate, dismissSchemaUpdate, updateSchemaFromBundle };
+  updateSchemaUpstream, getSchemaBranchHistory, getSchemaRevisionDiff, getSchemaRevisionFieldDiff, resolveSchemaUpdate, dismissSchemaUpdate, updateSchemaFromBundle };
 const reads: Record<string, number> = {};
 const indexReads: Record<string, number> = {};
 const failures = new Set<string>();

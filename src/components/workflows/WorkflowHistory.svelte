@@ -11,7 +11,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   let { workflowId, revisions, currentRevision, busy = false, onselect,
     label = "Workflow version history", versionsLabel = "Saved workflow versions", currentLabel = "Current version", primaryBranch = "main", showBranches = false,
-    alternateColor = "var(--color-background)", comparisonRevision = null }: {
+    alternateColor = "var(--color-background)", showRevisionIds = false, cardBorders = true }: {
     workflowId: string;
     revisions: WorkflowRevision[];
     currentRevision: string | null;
@@ -23,7 +23,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     primaryBranch?: string;
     showBranches?: boolean;
     alternateColor?: string;
-    comparisonRevision?: string | null;
+    showRevisionIds?: boolean;
+    cardBorders?: boolean;
   } = $props();
 
   let selecting = $state("");
@@ -160,7 +161,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 </script>
 
-<section class="workflow-history" aria-label={label} aria-busy={busy || selecting !== ""}>
+<section class="workflow-history" class:borderless={!cardBorders} aria-label={label} aria-busy={busy || selecting !== ""}>
   {#if revisions.length}
     <div class="version-scroll">
       <div class="version-tree" style={`--graph-width: ${graph.width}px`} bind:this={treeElement}>
@@ -169,7 +170,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             {#each revision.parents as parent (parent)}
               {#if edgePath(revision.oid, parent)}
                 <path data-child={revision.oid} data-parent={parent} d={edgePath(revision.oid, parent)}
-                  class:comparison={revision.oid === currentRevision && parent === comparisonRevision}
                   stroke={laneColor(graph.lanes.get(revision.oid) ?? 0)} />
               {/if}
             {/each}
@@ -185,18 +185,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         </svg>
         <ol class="version-list" aria-label={versionsLabel}>
           {#each revisions as revision (revision.oid)}
-            <li class:current={revision.oid === currentRevision} class:comparison={revision.oid === comparisonRevision} data-version-oid={revision.oid}>
+            <li class:current={revision.oid === currentRevision} data-version-oid={revision.oid}>
               <button type="button" class="version-card" aria-current={revision.oid === currentRevision ? "true" : undefined}
                 aria-disabled={revision.oid === currentRevision} disabled={busy || selecting !== ""} onclick={() => selectVersion(revision.oid)}>
                 <span class="version-description">
                   <strong>{revision.message.replace(/^Restore workflow version [a-f0-9]{7,40}\b/, "Restore workflow version")}</strong>
                   <span class="version-meta">
-                    {#if showBranches}<code>{revision.oid.slice(0, 7)}</code>{/if}
+                    {#if showBranches || showRevisionIds}<code>{revision.oid.slice(0, 7)}</code>{/if}
                     <time datetime={new Date(revision.timestamp).toISOString()}>{formatLocalDateTime(revision.timestamp)}</time>
                   </span>
                   {#if showBranches && revision.branches.length}<span class="branch-labels">{#each revision.branches as branch}<span>{branch}</span>{/each}</span>{/if}
                   {#if revision.oid === currentRevision}<span class="current-version">{currentLabel}</span>{/if}
-                  {#if revision.oid === comparisonRevision}<span class="comparison-version">Comparison base</span>{/if}
                 </span>
               </button>
             </li>
@@ -217,7 +216,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .version-tree { position: relative; min-width: calc(var(--graph-width) + 190px); }
   .version-graph { position: absolute; inset: 0 auto auto 0; pointer-events: none; overflow: visible; }
   .version-graph path { fill: none; stroke-width: 2; stroke-linecap: round; }
-  .version-graph path.comparison { stroke-width: 4; }
   .version-graph circle { fill: var(--color-background); stroke-width: 2; transition: fill 180ms ease-in, r 180ms ease-in; }
   .version-graph circle:is(.current, .alternative) { fill: var(--color-surface); }
   .version-graph circle.current { fill: var(--color-primary); }
@@ -225,12 +223,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .version-list li { min-width: 0; }
   .version-card { display: block; width: 100%; padding: 10px; border: 0; border-left: 2px solid transparent; border-radius: 4px; background: var(--color-report-card); color: inherit; font: inherit; text-align: left; cursor: pointer; transition: transform 180ms ease-in; }
   .version-card[aria-current="true"] { border-left-color: var(--color-badge-background); cursor: default; }
-  .comparison .version-card { border-left-color: var(--color-muted-foreground); }
+  .borderless .version-card { border-left: 0; }
   .version-description { display: grid; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
   .version-description strong { white-space: pre-line; }
   .version-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; color: var(--color-muted-foreground); font-size: 11px; }
   .current-version { color: var(--color-badge-background); font-size: 11px; font-weight: 700; }
-  .comparison-version { color: var(--color-muted-foreground); font-size: 11px; }
   .branch-labels { display: flex; flex-wrap: wrap; gap: 4px; }
   .branch-labels > span { padding: 2px 6px; border-radius: 3px; background: var(--color-surface); color: var(--color-foreground); font-size: 11px; }
   button:focus-visible { outline: 2px solid var(--color-foreground); outline-offset: 2px; }

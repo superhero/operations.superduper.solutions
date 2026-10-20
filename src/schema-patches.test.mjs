@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { mergeSchemaDocuments, sameSchemaValue, schemaChanges } from './lib/schema-merge.ts';
 import { applySchemaPatches, googleOauthAlternatives } from './lib/schema-patches.ts';
+import { schemaLineDiff, schemaPointerValue } from './lib/schema-diff.ts';
 
 Then('schema merges preserve unrelated edits deletions and identical changes', () => {
   const base = { info: { title: 'Published', version: '1', description: 'Old' }, paths: { '/items': {} }, obsolete: true };
@@ -53,4 +54,67 @@ Then('reviewed schema corrections preserve upstream-fixed data and reject unknow
   assert.throws(() => applySchemaPatches(fixed, [{ id: 'arbitrary', version: 1 }]), /unknown/);
   assert.throws(() => applySchemaPatches(fixed, [{ ...googleOauthAlternatives, version: 2 }]), /unknown/);
   assert.throws(() => applySchemaPatches(fixed, [googleOauthAlternatives, googleOauthAlternatives]), /duplicated/);
+});
+
+Then('schema line diffs preserve additions removals context and JSON pointer values', () => {
+  const before = '[\n  {\n    "Oauth2": ["scope"],\n    "Oauth2c": ["scope"]\n  }\n]';
+  const after = '[\n  {\n    "Oauth2": ["scope"]\n  },\n  {\n    "Oauth2c": ["scope"]\n  }\n]';
+  const diff = schemaLineDiff(before, after);
+  assert.equal(diff.truncated, false);
+  assert.equal(diff.coarse, false);
+  assert.equal(diff.rows.flatMap(row => row.before ? [row.before.text] : []).join('\n'), before);
+  assert.equal(diff.rows.flatMap(row => row.after ? [row.after.text] : []).join('\n'), after);
+  for (const side of ['before', 'after']) {
+    const lines = diff.rows.flatMap(row => row[side] ? [row[side]] : []);
+    assert.deepEqual(lines.map(line => line.number), lines.map((_, index) => index + 1));
+  }
+  assert.ok(diff.rows.some(row => row.before?.kind === 'removed'));
+  assert.ok(diff.rows.some(row => row.after?.kind === 'added'));
+  assert.ok(diff.rows.some(row => row.before?.kind === 'context' && row.after?.kind === 'context'));
+  const addition = schemaLineDiff(undefined, 'null');
+  assert.equal(addition.before, false);
+  assert.equal(addition.after, true);
+  assert.deepEqual(addition.rows, [{ after: { number: 1, kind: 'added', text: 'null' } }]);
+  assert.deepEqual(schemaLineDiff('null', undefined).rows, [{ before: { number: 1, kind: 'removed', text: 'null' } }]);
+  assert.deepEqual(schemaLineDiff('same', 'same').rows, []);
+  // Repeated lines must not disappear or be paired out of order.
+  for (const [left, right] of [['a\na\nb\na', 'a\nb\na\na'], ['one\ntwo\n', 'zero\none\n'], ['', 'x'], ['<script>&', '<b>']]) {
+    const rows = schemaLineDiff(left, right).rows;
+    assert.equal(rows.flatMap(row => row.before ? [row.before.text] : []).join('\n'), left);
+    assert.equal(rows.flatMap(row => row.after ? [row.after.text] : []).join('\n'), right);
+  }
+  const document = JSON.parse('{"a/b~c":{"":null},"__proto__":{"safe":1}}');
+  assert.equal(schemaPointerValue(document, '/a~1b~0c/'), null);
+  assert.equal(schemaPointerValue(document, '/a~1b~0c/missing'), undefined);
+  assert.equal(schemaPointerValue(document, '/__proto__/safe'), 1);
+  assert.equal(schemaPointerValue(document, '/constructor'), undefined);
+  assert.throws(() => schemaPointerValue(document, '/bad~2escape'), /valid/);
+});
+
+Then('schema line diffs fold context and expose bounded output without inventing source values', () => {
+  const lines = Array.from({ length: 100 }, (_, index) => `unchanged ${index}`);
+  const edited = [...lines]; edited[5] = 'first change'; edited[90] = 'last change';
+  const diff = schemaLineDiff(lines.join('\n'), edited.join('\n'));
+  assert.equal(diff.truncated, false);
+  assert.ok(diff.rows.some(row => row.omitted > 0));
+  assert.ok(diff.rows.some(row => row.after?.number === 6 && row.after.text === 'first change'));
+  assert.ok(diff.rows.some(row => row.after?.number === 91 && row.after.text === 'last change'));
+  assert.ok(diff.rows.length < 25);
+  const added = schemaLineDiff(undefined, lines.join('\n'), 2);
+  assert.equal(added.rows.length, 2); assert.equal(added.truncated, true);
+  assert.equal(schemaLineDiff(undefined, lines.join('\n'), 100).truncated, false);
+  const large = schemaLineDiff('a'.repeat(600_000), 'b'.repeat(600_000));
+  assert.equal(large.truncated, true);
+  assert.ok(large.rows.flatMap(row => [row.before?.text ?? '', row.after?.text ?? '']).join('').length <= 512 * 1024);
+  const unicode = schemaLineDiff(undefined, '😀'.repeat(180_000));
+  assert.equal(unicode.textTruncated, true);
+  assert.ok(new TextEncoder().encode(unicode.rows[0].after.text).byteLength <= 512 * 1024);
+  assert.equal(unicode.rows[0].after.text.slice(-2), '😀');
+  const coarse = schemaLineDiff(Array.from({ length: 1200 }, (_, index) => `old ${index}`).join('\n'),
+    Array.from({ length: 1200 }, (_, index) => `new ${index}`).join('\n'), 1500);
+  assert.equal(coarse.coarse, true); assert.equal(coarse.truncated, false);
+  assert.equal(coarse.rows.length, 1200);
+  assert.equal(coarse.rows[1199].before.text, 'old 1199');
+  assert.equal(coarse.rows[1199].after.text, 'new 1199');
+  assert.throws(() => schemaLineDiff('a', 'b', 5001), /1–5000/);
 });

@@ -7,20 +7,23 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { onDestroy, untrack } from "svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import Reveal from "$lib/components/Reveal.svelte";
+  import FieldSelect from "$lib/components/FieldSelect.svelte";
   import { Button } from "$lib/components/ui/button/index.js";
   import WorkflowHistory from "../workflows/WorkflowHistory.svelte";
+  import SchemaDiffField from "./SchemaDiffField.svelte";
   import type { SchemaBranchHistory, SchemaRevisionDiff } from "$lib/schema-storage.ts";
+  import type { SchemaFieldDiff } from "$lib/schema-diff.ts";
   import type { SchemaResolution } from "$lib/schema-merge.ts";
 
-  let { id, sourceIdentity, pending = false, load, loadDiff, onResolve, onDismiss, onBundledUpdate }: {
+  let { id, sourceIdentity, pending = false, load, loadDiff, loadFieldDiff, onResolve, onDismiss }: {
     id: string;
     sourceIdentity: string;
     pending?: boolean | undefined;
     load: (limit: number) => Promise<SchemaBranchHistory>;
-    loadDiff: (oid: string, limit: number, parent?: string) => Promise<SchemaRevisionDiff>;
+    loadDiff: (oid: string, limit: number, base?: string) => Promise<SchemaRevisionDiff>;
+    loadFieldDiff: (oid: string, base: string | undefined, path: string, limit: number) => Promise<SchemaFieldDiff>;
     onResolve?: ((current: string, incoming: string, choices: Record<string, SchemaResolution>) => Promise<void>) | undefined;
     onDismiss?: ((current: string, incoming: string) => Promise<void>) | undefined;
-    onBundledUpdate?: (() => Promise<void>) | undefined;
   } = $props();
   let open = $state(false);
   let history = $state<SchemaBranchHistory>();
@@ -38,6 +41,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let diffGeneration = 0;
   const revisions = $derived(history?.revisions.map(revision => ({ ...revision,
     branches: history!.branches.filter(branch => branch.oid === revision.oid).map(branch => branch.name) })) ?? []);
+  const commitOptions = $derived(revisions.map(revision => ({ value: revision.oid,
+    label: `${revision.oid.slice(0, 7)} · ${revision.message.split("\n")[0]}` })));
   const canResolve = $derived(Boolean(history?.incoming && history.incoming.conflicts.every(conflict => Object.hasOwn(choices, conflict.path))));
   const groups = $derived.by(() => {
     if (!diff) return [];
@@ -69,13 +74,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
   onDestroy(() => { generation++; diffGeneration++; });
 
-  async function select(oid: string, parent?: string) {
+  async function select(oid: string, base = comparison) {
     const request = ++diffGeneration;
-    if (oid !== selected || parent !== comparison) diffLimit = 200;
+    if (oid !== selected || base !== comparison) diffLimit = 200;
     loadingDiff = true;
     error = "";
     try {
-      const next = await loadDiff(oid, diffLimit, parent);
+      const next = await loadDiff(oid, diffLimit, base);
       if (request === diffGeneration) { selected = oid; comparison = next.base?.oid; diff = next; }
     } catch (failure) { if (request === diffGeneration) error = failure instanceof Error ? failure.message : "Could not read schema changes."; }
     finally { if (request === diffGeneration) loadingDiff = false; }
@@ -84,15 +89,29 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   async function refresh() {
     if (!open) return;
     const request = ++generation;
+    diffGeneration++;
+    loadingDiff = false;
     loading = true;
     error = "";
     choices = {};
     try {
-      const next = await load(historyLimit);
+      let next = await load(historyLimit);
+      // Find the actual initial import, rather than mislabelling a page boundary.
+      while (!next.revisions.some(revision => !revision.parents.length) && next.truncated && historyLimit < 1000) {
+        if (request !== generation) return;
+        historyLimit = Math.min(1000, historyLimit + 100);
+        next = await load(historyLimit);
+      }
       if (request !== generation) return;
       history = next;
-      if (next.revisions.some(revision => revision.oid === selected)) await select(selected, comparison);
-      else await select(next.current);
+      if (next.revisions.some(revision => revision.oid === selected) && next.revisions.some(revision => revision.oid === comparison))
+        await select(selected, comparison);
+      else {
+        const first = next.revisions.findLast(revision => !revision.parents.length);
+        if (first) await select(next.revisions[0]!.oid, first.oid);
+        else { selected = ""; comparison = undefined; diff = undefined;
+          error = "The first commit is outside the 1,000 loaded revisions. Choose a base commit to compare."; }
+      }
     } catch (failure) { if (request === generation) error = failure instanceof Error ? failure.message : "Could not read schema history."; }
     finally { if (request === generation) loading = false; }
   }
@@ -114,15 +133,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     finally { acting = false; }
   }
 
-  async function applyBundled() {
-    if (!onBundledUpdate || acting) return;
-    acting = true;
-    error = "";
-    try { await onBundledUpdate(); selected = ""; comparison = undefined; diff = undefined; await refresh(); }
-    catch (failure) { error = failure instanceof Error ? failure.message : "Could not apply the bundled revision."; }
-    finally { acting = false; }
-  }
-
   function preview(value: unknown) {
     const text = JSON.stringify(value, null, 2) ?? "Missing";
     return text.length > 2000 ? `${text.slice(0, 2000)}…` : text;
@@ -130,15 +140,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 {#snippet fields(changes: SchemaRevisionDiff["changes"])}
-  {#each changes as change (change.path)}
-    <details class="field-change">
-      <summary><span class="change-kind">{change.kind}</span><code>{change.path}</code></summary>
-      <div class="conflict-values">
-        <div><strong>Before</strong><pre>{change.before ?? "Missing"}</pre></div>
-        <div><strong>After</strong><pre>{change.after ?? "Missing"}</pre></div>
-      </div>
-    </details>
-  {/each}
+  {#if diff}
+    {#key `${diff.revision.oid}:${diff.base?.oid ?? ""}`}
+      {#each changes as change (change.path)}
+        <SchemaDiffField {change} load={limit => loadFieldDiff(diff!.revision.oid, diff!.base?.oid, change.path, limit)} />
+      {/each}
+    {/key}
+  {/if}
 {/snippet}
 
 <div class="schema-history">
@@ -152,7 +160,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {#if error}<p role="alert">{error}</p><Button size="sm" variant="secondary" disabled={acting} onclick={refresh}>Reload history</Button>{/if}
       {#if loading && !history}<p role="status">Loading schema history…</p>{/if}
       {#if history}
-        {#if onBundledUpdate}<div class="conflict-actions"><Button size="sm" variant="secondary" disabled={acting || loading} onclick={applyBundled}>Apply bundled revision</Button></div>{/if}
         {#if history.incoming}
           <section class="merge-review" aria-label="Review schema conflicts">
             <p>The incoming schema overlaps local changes. Your current schema stays active until you resolve these fields.</p>
@@ -174,45 +181,37 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             </div>
           </section>
         {/if}
-        <div class="branch-heads" aria-label="Schema branches">
-          {#each history.branches as branch}<span><strong>{branch.name}</strong> <code>{branch.oid.slice(0, 7)}</code></span>{/each}
-        </div>
         <div class="history-graph">
-          <WorkflowHistory workflowId={id} {revisions} currentRevision={selected} comparisonRevision={diff?.base?.oid ?? null}
-            busy={acting || loadingDiff} onselect={oid => select(oid)}
-            label="Schema version history" versionsLabel="Saved schema versions" currentLabel="Selected revision" primaryBranch="Working" showBranches alternateColor="var(--color-muted-foreground)" />
+          <WorkflowHistory workflowId={id} {revisions} currentRevision={selected}
+            busy={acting || loading || loadingDiff} onselect={oid => select(oid)}
+            label="Schema version history" versionsLabel="Saved schema versions" currentLabel="Selected revision" primaryBranch="Working"
+            showRevisionIds cardBorders={false} alternateColor="var(--color-muted-foreground)" />
         </div>
         {#if history.truncated && historyLimit < 1000}<Button size="sm" variant="secondary" disabled={loading} onclick={() => { historyLimit += 100; void refresh(); }}>Load more revisions</Button>{/if}
         <section class="revision-diff" aria-label="Schema changes" aria-busy={loadingDiff}
           data-revision={diff?.revision.oid} data-base={diff?.base?.oid}>
-          <h4>Changes</h4>
+          <div class="commit-selectors">
+            <div><label for={`schema-base-${id}`}>Base</label>
+              <FieldSelect id={`schema-base-${id}`} label="Base commit" value={comparison ?? ""} options={[...commitOptions].reverse()}
+                includePlaceholder={!comparison} disabled={loading || loadingDiff || acting}
+                onValueChange={base => { if (base) void select(selected || revisions[0]!.oid, base); }} />
+            </div>
+            <div><label for={`schema-compare-${id}`}>Compare</label>
+              <FieldSelect id={`schema-compare-${id}`} label="Compare commit" value={selected} options={commitOptions}
+                includePlaceholder={!selected} disabled={loading || loadingDiff || acting || !comparison}
+                onValueChange={oid => { if (oid) void select(oid); }} />
+            </div>
+          </div>
           {#if loadingDiff && !diff}<p role="status">Loading changes…</p>{/if}
           {#if diff}
-            <p class="diff-commit"><strong>{diff.revision.message}</strong><code>{diff.revision.oid.slice(0, 7)}</code></p>
-            {#if !diff.base}
-              <p>Initial schema import. This commit establishes the starting document.</p>
-              <details class="import-fields"><summary>Imported schema sections ({diff.changes.length}{diff.truncated ? "+" : ""})</summary>{@render fields(diff.changes)}</details>
-            {:else}
-              <div class="comparison-parents" role="group" aria-label="Comparison parent">
-                <p>Compare with{diff.parents.length > 1 ? " parent" : ""}</p>
-                {#each diff.parents as parent, index (parent.oid)}
-                  <button type="button" class="comparison-parent" aria-pressed={diff.base.oid === parent.oid} disabled={loadingDiff || acting}
-                    data-parent-oid={parent.oid} onclick={() => select(selected, parent.oid)}>
-                    {#if diff.parents.length > 1}<span>{index === 0 ? "First parent" : "Other parent"}</span>{/if}
-                    <strong>{parent.message}</strong><code>{parent.oid.slice(0, 7)}</code>
-                  </button>
-                {/each}
-                {#if !revisions.some(revision => revision.oid === diff!.base!.oid)}<p>The comparison parent is outside the loaded graph. Load more revisions to show its connection.</p>{/if}
-              </div>
-              {#if !diff.changes.length}<p>No content changes compared with this parent.{diff.parents.length > 1 ? " This merge still records the joined branch history." : ""}</p>{/if}
-              {#each groups as group (group.label)}
-                <details class="change-group">
-                  <summary><strong>{group.label}</strong><span>{group.count}</span></summary>
-                  {#if group.correction}<p>The same authentication correction is applied per operation. Added provenance fields retain the original rules.</p>{/if}
-                  {@render fields(group.changes)}
-                </details>
-              {/each}
-            {/if}
+            {#if !diff.changes.length}<p>No content changes between the selected commits.</p>{/if}
+            {#each groups as group (group.label)}
+              <details class="change-group">
+                <summary><strong>{group.label}</strong><span>{group.count}</span></summary>
+                {#if group.correction}<p>The same authentication correction is applied per operation. Added provenance fields retain the original rules.</p>{/if}
+                {@render fields(group.changes)}
+              </details>
+            {/each}
             {#if diff.truncated}
               {#if diffLimit < 1000}<Button size="sm" variant="secondary" disabled={loadingDiff} onclick={() => { diffLimit += 200; void select(selected, comparison); }}>Load more changes</Button>
               {:else}<p>Showing the first 1,000 changed fields.</p>{/if}
@@ -232,17 +231,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .history-toggle[aria-expanded="true"] :global(.material-symbols-rounded:first-child) { transform: rotate(90deg); }
   .history-toggle:focus-visible { outline: 2px solid var(--color-foreground); outline-offset: 2px; }
   .history-content { display: grid; gap: 12px; min-width: 0; padding: 12px; font-size: 12px; }
-  .branch-heads, .conflict-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-  .branch-heads > span { padding: 4px 6px; border-radius: 3px; background: var(--color-surface); }
-  .branch-heads code { font-size: 11px; color: var(--color-muted-foreground); }
-  .diff-commit, .comparison-parent { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; min-width: 0; overflow-wrap: anywhere; }
-  .diff-commit code, .comparison-parent code { color: var(--color-muted-foreground); font-size: 11px; }
-  .comparison-parents { display: grid; gap: 6px; min-width: 0; }
-  .comparison-parent { padding: 8px; border: 0; border-left: 2px solid transparent; border-radius: 4px; background: var(--color-surface); color: inherit; font: inherit; text-align: left; cursor: pointer; }
-  .comparison-parent[aria-pressed="true"] { border-left-color: var(--color-badge-background); }
-  .comparison-parent > span { color: var(--color-muted-foreground); }
-  .comparison-parent:focus-visible { outline: 2px solid var(--color-foreground); outline-offset: 2px; }
-  .change-group, .import-fields { min-width: 0; padding: 4px; border-radius: 4px; background: var(--color-surface); }
+  .conflict-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .commit-selectors { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-width: 0; }
+  .commit-selectors > div { display: grid; gap: 6px; min-width: 0; }
+  .commit-selectors label { font-weight: 700; }
+  .commit-selectors :global(.field-select-trigger) { --field-background: var(--color-surface); --field-foreground: var(--color-foreground); min-height: 36px; padding: 8px; border-radius: 4px; font-size: 12px; }
+  .commit-selectors :global(.field-select-value) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .change-group { min-width: 0; padding: 4px; border-radius: 4px; background: var(--color-surface); }
   .change-group > summary { flex-wrap: wrap; }
   .change-group > summary > span { color: var(--color-muted-foreground); }
   .change-group > p { padding: 6px; color: var(--color-muted-foreground); }
@@ -254,15 +249,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .conflict-values > div { min-width: 0; }
   .conflict-actions { justify-content: flex-end; }
   fieldset { min-width: 0; padding: 8px; border: 1px solid var(--color-muted-foreground); border-radius: 4px; }
-  legend, summary code { overflow-wrap: anywhere; word-break: break-word; }
+  legend { overflow-wrap: anywhere; word-break: break-word; }
   pre { max-height: 200px; margin: 6px 0; padding: 8px; border-radius: 3px; overflow: auto; background: var(--color-surface); color: var(--color-foreground); font-size: 11px; white-space: pre-wrap; overflow-wrap: anywhere; }
   .merge-review pre { background: var(--color-background); }
-  h4, p { margin: 0; }
-  h4 { font-size: 12px; }
+  p { margin: 0; }
   summary { display: flex; gap: 6px; align-items: baseline; cursor: pointer; padding: 6px; }
-  .change-kind { flex-shrink: 0; font-size: 11px; color: var(--color-muted-foreground); }
   [role="alert"] { padding: 10px; border-radius: 4px; background: var(--color-error-background); color: var(--color-error-foreground); overflow-wrap: anywhere; }
   :global(.conflict-actions button[aria-pressed="true"]) { outline: 2px solid var(--color-foreground); outline-offset: -2px; }
-  @container (max-width: 430px) { .conflict-values { grid-template-columns: 1fr; } }
+  @container (max-width: 430px) { .conflict-values, .commit-selectors { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: reduce) { .history-toggle :global(.material-symbols-rounded) { transition: none; } }
 </style>

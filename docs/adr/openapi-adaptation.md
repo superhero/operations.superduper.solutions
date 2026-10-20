@@ -147,24 +147,35 @@ incoming branch and review state survive reload. Decisions must match both
 reviewed revisions; stale decisions cannot replace newer edits. A resolved
 document is validated before its working branch and credential policy change.
 
-For a service that ships in the application, **Apply bundled revision** uses the
-same merge process to update an edited copy from the bundled source. It performs
-no schema download. Unmodified factory copies continue to follow bundled
-revisions automatically; edited copies are updated explicitly.
+The bundled-update API uses the same merge process to update an edited copy from
+the bundled source. It performs no schema download. Unmodified factory copies
+continue to follow bundled revisions automatically; edited copies retain their
+authored content. The history view has no bundled-apply action.
 Applying an already-current factory bundle preserves its catalogue label and
 automatic update ownership without reading its source or publishing metadata.
 Reapplying an identical source to an edited copy also preserves local state;
 pending proposals and changed source metadata still use the update path.
 
-**Schema history** shows the actual commit graph, branch tips and bounded
-changed-field previews for a selected revision. The change panel names that
-commit and its comparison parent, and highlights the same parent edge in the
-graph. The first parent is the default; a merge can be compared with either
-direct parent. Comparing revisions does not alter the checkout or Git objects.
-Repeated authentication edits are grouped with expandable field details; root
-imports are presented as starting documents. More revisions and changes can be
-loaded up to explicit limits; partial counts and truncated previews do not
-modify stored documents or exports.
+**Schema history** shows the actual commit graph with a selected marker and
+uniform edges. Branch refs remain stored but are not rendered as badges or card
+borders. Independent **Base** and **Compare** selectors accept any two saved
+commits in that schema's isolated Git repository, including equal and reverse
+comparisons. A fresh disclosure defaults to the original import and latest
+commit. Root discovery can expand the loaded ancestry up to 1,000 commits; if
+the root is still outside that bound the user must choose a base explicitly.
+Selecting a graph node changes the comparison target while retaining its base.
+Comparing revisions never changes checkout, Git objects or schema metadata.
+
+Changed-field lists contain paths and kinds only. Expanding a field loads actual
+JSON values from the selected immutable blobs and computes aligned line changes
+with line numbers, context, red removals and green additions. Missing sides are
+omitted; null remains a real value. Code and field paths never wrap and scroll
+horizontally. Closing a field releases its rendered content; changing endpoints
+discards old field requests. Matching work is bounded; very large unmatched
+regions are honestly shown as replacements. Context is folded, and display limits
+(initially 200 rows, expandable to 5,000, with a 512 KiB text budget) are explicit.
+These bounds and the changed-field pagination never alter saved content/exports.
+Conflict decisions and their revision checks retain the separate merge review.
 
 Build-time refreshes apply the same reviewed recipes. To update corrections
 without fetching new provider documents, use

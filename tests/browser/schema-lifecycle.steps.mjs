@@ -57,7 +57,7 @@ Then('unchanged bundled revisions preserve factory metadata and authored changes
   assert.deepEqual(result.repeatedHistory, result.authoredHistory);
 });
 
-Then('schema diffs match the selected graph edge for imports corrections and merge parents', async function () {
+Then('schema diffs preserve arbitrary comparison endpoints and load exact field changes separately', async function () {
   const result = await this.page.evaluate(async () => {
     const api = globalThis.schemaFixture;
     await api.setupGoogle();
@@ -72,10 +72,28 @@ Then('schema diffs match the selected graph edge for imports corrections and mer
     const current = merged.revisions.find(revision => revision.oid === merged.current);
     const first = await api.getSchemaRevisionDiff('google-fixture', current.oid);
     const second = await api.getSchemaRevisionDiff('google-fixture', current.oid, 200, current.parents[1]);
-    let unrelated;
-    try { await api.getSchemaRevisionDiff('google-fixture', current.oid, 200, published); }
-    catch (error) { unrelated = error.message; }
-    return { initial, published, correction, baseline, local, merged, first, second, unrelated,
+    const ancestor = await api.getSchemaRevisionDiff('google-fixture', current.oid, 200, published);
+    const reverse = await api.getSchemaRevisionDiff('google-fixture', published, 200, current.oid);
+    const same = await api.getSchemaRevisionDiff('google-fixture', current.oid, 200, current.oid);
+    const field = await api.getSchemaRevisionFieldDiff('google-fixture', current.oid, published, '/paths/~1items/get/security');
+    const added = await api.getSchemaRevisionFieldDiff('google-fixture', current.oid, published, '/paths/~1items/get/x-upstream-security');
+    const removed = await api.getSchemaRevisionFieldDiff('google-fixture', published, current.oid, '/paths/~1items/get/x-upstream-security');
+    const source = await api.readSchemaVersion('google-fixture', published);
+    const target = await api.readSchemaVersion('google-fixture', current.oid);
+    const other = await api.putSchemaDocument({ id: 'unrelated-schema', file: 'other.json', enabled: false, createdAt: 0, updatedAt: 0,
+      document: { openapi: '3.1.0', info: { title: 'Other', version: '1' }, servers: [{ url: 'https://other.example.test' }],
+        paths: { '/other': { get: { responses: { '200': { description: 'OK' } } } } } } });
+    const otherHistory = await api.getSchemaHistory(other.id);
+    const failures = [];
+    for (const args of [[current.oid, otherHistory[0].oid], [otherHistory[0].oid, published], [current.oid, 'bad']]) {
+      try { await api.getSchemaRevisionDiff('google-fixture', args[0], 200, args[1]); failures.push(false); }
+      catch { failures.push(true); }
+    }
+    let invalidField = false;
+    try { await api.getSchemaRevisionFieldDiff('google-fixture', current.oid, published, '/missing'); }
+    catch { invalidField = true; }
+    return { initial, published, correction, baseline, local, merged, first, second, ancestor, reverse, same,
+      field, added, removed, source, target, failures, invalidField,
       unchanged: await api.getSchemaBranchHistory('google-fixture') };
   });
   assert.deepEqual(result.baseline.revision, { oid: result.published, message: result.initial.revisions.find(item => item.oid === result.published).message });
@@ -94,8 +112,25 @@ Then('schema diffs match the selected graph edge for imports corrections and mer
   const commit = result.merged.revisions.find(revision => revision.oid === result.merged.current);
   assert.deepEqual(result.first.parents.map(parent => parent.oid), commit.parents);
   assert.deepEqual(result.second.parents, result.first.parents);
-  assert.match(result.unrelated, /direct parents/);
-  assert.deepEqual(result.unchanged, result.merged, 'Inspecting either merge comparison leaves every revision and branch unchanged.');
+  assert.equal(result.ancestor.base.oid, result.published);
+  assert.ok(result.ancestor.changes.some(change => change.path === '/info/title'));
+  assert.ok(result.ancestor.changes.some(change => change.path === '/paths/~1items/get/security'));
+  assert.ok(result.ancestor.changes.every(change => !Object.hasOwn(change, 'before') && !Object.hasOwn(change, 'after')), 'Collapsed changes carry no source previews.');
+  assert.equal(result.same.base.oid, result.merged.current); assert.deepEqual(result.same.changes, []);
+  assert.equal(result.reverse.revision.oid, result.published);
+  assert.equal(result.reverse.base.oid, result.merged.current);
+  assert.ok(result.reverse.changes.some(change => change.path.endsWith('/x-upstream-security') && change.kind === 'removed'));
+  for (const [side, document] of [['before', result.source], ['after', result.target]]) {
+    const lines = JSON.stringify(document.paths['/items'].get.security, null, 2).split('\n');
+    for (const row of result.field.rows) if (row[side]) assert.equal(row[side].text, lines[row[side].number - 1]);
+  }
+  assert.equal(result.field.truncated, false);
+  assert.ok(result.field.rows.some(row => row.before?.kind === 'removed'));
+  assert.ok(result.field.rows.some(row => row.after?.kind === 'added'));
+  assert.equal(result.added.before, false); assert.equal(result.added.after, true);
+  assert.equal(result.removed.before, true); assert.equal(result.removed.after, false);
+  assert.deepEqual(result.failures, [true, true, true]); assert.equal(result.invalidField, true);
+  assert.deepEqual(result.unchanged, result.merged, 'Comparisons and field expansion leave every revision and branch unchanged.');
 });
 
 Then('schema corrections and local edits survive independent published updates', async function () {

@@ -19,6 +19,7 @@ import { createSchemaCache } from "./schema-cache.ts";
 import { schemaModelBatchSize } from "./schema-models.ts";
 import { applySchemaPatches, schemaPatchName, type SchemaPatch } from "./schema-patches.ts";
 import { mergeSchemaDocuments, sameSchemaValue, schemaChanges, type SchemaConflict, type SchemaResolution } from "./schema-merge.ts";
+import { schemaLineDiff, schemaPointerValue, type SchemaFieldDiff } from "./schema-diff.ts";
 import { createSchemaDiscovery, createSchemaSummary, validateSchemaDiscovery, schemaIndexVersion, type SchemaDiscovery, type SchemaSummary } from "./schema-index.ts";
 
 if (!("Buffer" in globalThis)) Object.defineProperty(globalThis, "Buffer", { value: Buffer, configurable: true, writable: true });
@@ -82,7 +83,7 @@ export type SchemaBranchHistory = { branches: { name: string; oid: string }[]; r
   current: string; incoming?: { revision: string; conflicts: SchemaConflict[] } };
 type SchemaDiffCommit = Pick<SchemaRevision, "oid" | "message">;
 export type SchemaRevisionDiff = { revision: SchemaDiffCommit; parents: SchemaDiffCommit[]; base: SchemaDiffCommit | null;
-  changes: { path: string; kind: "added" | "removed" | "changed"; before?: string; after?: string }[]; truncated: boolean };
+  changes: { path: string; kind: "added" | "removed" | "changed" }[]; truncated: boolean };
 
 export function schemaRepositoryPath(id: string): string
 {
@@ -956,35 +957,43 @@ export function getSchemaBranchHistory(id: string, limit = 100): Promise<SchemaB
   });
 }
 
-/** Compact previews avoid copying an entire components tree into a history row. */
-function changePreview(value: unknown, depth = 0): unknown {
-  if (typeof value === "string") return value.length > 2000 ? `${value.slice(0, 2000)}…` : value;
-  if (!value || typeof value !== "object") return value;
-  if (depth >= 3) return Array.isArray(value) ? `[${value.length} items]` : `{${Object.keys(value).length} properties}`;
-  if (Array.isArray(value)) return [...value.slice(0, 8).map(item => changePreview(item, depth + 1)), ...(value.length > 8 ? ["…"] : [])];
-  const entries = Object.entries(value);
-  return Object.fromEntries([...entries.slice(0, 8).map(([key, item]) => [key, changePreview(item, depth + 1)]), ...(entries.length > 8 ? [["…", "Preview truncated"]] : [])]);
+async function schemaComparison(id: string, oid: string, baseOid?: string) {
+  const dir = schemaRepositoryPath(id);
+  if (!/^[a-f0-9]{40}$/.test(oid) || (baseOid !== undefined && !/^[a-f0-9]{40}$/.test(baseOid)))
+    throw new Error("Choose saved commits from this schema.");
+  const { commit } = await git.readCommit({ fs: fs(), dir, oid });
+  const parents = await Promise.all(commit.parent.map(async oid => ({ oid,
+    message: (await git.readCommit({ fs: fs(), dir, oid })).commit.message.trim() })));
+  const comparison = baseOid ?? commit.parent[0];
+  const base = comparison ? { oid: comparison, message: (await git.readCommit({ fs: fs(), dir, oid: comparison })).commit.message.trim() } : null;
+  const before = base ? JSON.parse(await versionText(id, base.oid)) : {};
+  const after = JSON.parse(await versionText(id, oid));
+  return { revision: { oid, message: commit.message.trim() }, parents, base, before, after };
 }
 
-export function getSchemaRevisionDiff(id: string, oid: string, limit = 200, parent?: string): Promise<SchemaRevisionDiff> {
+/** Any two commits in this schema's isolated repository; inspection never checks out. */
+export function getSchemaRevisionDiff(id: string, oid: string, limit = 200, baseOid?: string): Promise<SchemaRevisionDiff> {
   schemaRepositoryPath(id);
-  if (!/^[a-f0-9]{40}$/.test(oid) || (parent !== undefined && !/^[a-f0-9]{40}$/.test(parent))
-    || !Number.isInteger(limit) || limit < 1 || limit > 1000) throw new Error("Choose a valid bounded schema revision.");
+  if (!Number.isInteger(limit) || limit < 1 || limit > 1000) throw new Error("Choose a valid bounded schema revision.");
   return serialized(async database => {
     if (!await readMetadata(database, id)) throw new Error("This schema could not be found in this browser.");
-    const dir = schemaRepositoryPath(id);
-    const { commit } = await git.readCommit({ fs: fs(), dir, oid });
-    if (parent !== undefined && !commit.parent.includes(parent)) throw new Error("Compare this schema revision with one of its direct parents.");
-    const parents = await Promise.all(commit.parent.map(async oid => ({ oid,
-      message: (await git.readCommit({ fs: fs(), dir, oid })).commit.message.trim() })));
-    const base = parents.find(entry => entry.oid === (parent ?? commit.parent[0])) ?? null;
-    const before = base ? JSON.parse(await versionText(id, base.oid)) : {};
-    const after = JSON.parse(await versionText(id, oid));
+    const { before, after, ...commits } = await schemaComparison(id, oid, baseOid);
     const diff = schemaChanges(before, after, limit);
-    return { ...diff, revision: { oid, message: commit.message.trim() }, parents, base,
-      changes: diff.changes.map(change => ({ path: change.path, kind: change.kind,
-      ...(Object.hasOwn(change, "before") ? { before: JSON.stringify(changePreview(change.before), null, 2) } : {}),
-      ...(Object.hasOwn(change, "after") ? { after: JSON.stringify(changePreview(change.after), null, 2) } : {}) })) };
+    return { ...commits, truncated: diff.truncated, changes: diff.changes.map(({ path, kind }) => ({ path, kind })) };
+  });
+}
+
+/** Expanded fields alone request bounded real line content, not whole schema trees. */
+export function getSchemaRevisionFieldDiff(id: string, oid: string, baseOid: string | undefined, path: string, limit = 200): Promise<SchemaFieldDiff> {
+  schemaRepositoryPath(id);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 5000) throw new Error("Choose 1–5000 diff rows.");
+  return serialized(async database => {
+    if (!await readMetadata(database, id)) throw new Error("This schema could not be found in this browser.");
+    const { before, after } = await schemaComparison(id, oid, baseOid);
+    const left = schemaPointerValue(before, path);
+    const right = schemaPointerValue(after, path);
+    if (sameSchemaValue(left, right)) throw new Error("This field has no changes between the selected commits.");
+    return schemaLineDiff(JSON.stringify(left, null, 2), JSON.stringify(right, null, 2), limit);
   });
 }
 
