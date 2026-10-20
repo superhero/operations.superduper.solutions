@@ -128,7 +128,7 @@ Then('operations controls retain their complete keyboard focus outline', async f
 Then('request fields remain readable and preserve accessible editing in both themes', async function () {
   const page = this.page;
   await chooseCatalogOperation(page, 'Example POST body');
-  await expect(workspace(page).getByRole('heading', { name: '1. Example POST body', exact: true })).toBeVisible();
+  await expect(workspace(page).getByRole('heading', { name: '1. example.com / Example POST body', exact: true })).toBeVisible();
   const draft = { 'Path value': 'visual-draft', Title: 'Preserve this visual draft', Priority: 'normal', 'Number value': '0.5' };
   for (const [label, value] of Object.entries(draft)) {
     await fillField(page, label, value);

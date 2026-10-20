@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { closeWorkflowDetails, expectWorkflowName, renameWorkflow, workflowNameInput } from './workflow-details.fixture.mjs';
+import { closeWorkflowDetails, expectWorkflowName, renameWorkflow, workflowNameInput, workflowDetails } from './workflow-details.fixture.mjs';
 import assert from "node:assert/strict";
 import { operations } from "../../src/lib/catalog.ts";
 import { catalogs } from "../../src/lib/catalog-registry.ts";
@@ -139,6 +139,7 @@ async function chooseCatalogOperation(page, name, mode = "run") {
   if (mode !== "workflow") {
     await setMode(page, "workflow");
     await workflowAction(page, "New");
+    await expect(workflowDetails(page)).toBeVisible();
     await closeWorkflowDetails(page);
   }
   const entry = await revealCatalogOperation(page, name);
@@ -147,7 +148,7 @@ async function chooseCatalogOperation(page, name, mode = "run") {
   await closeCatalog(page);
   if (mode !== "workflow") {
     await workflowAction(page, "Run");
-    await expect(workspace(page).getByRole("heading", { name: `1. ${name}`, exact: true })).toBeVisible();
+    await expect(workspace(page).getByRole("heading", { name: new RegExp(`^1\\. .+ / ${RegExp.escape(name)}$`) })).toBeVisible();
   }
 }
 
@@ -311,7 +312,7 @@ When("I open the {string} result", async function (name) {
   await chooseCatalogOperation(this.page, name);
 });
 Then("the {string} form is displayed", async function (name) {
-  await expect(workspace(this.page).getByRole("heading", { name: `1. ${name}`, exact: true })).toBeVisible();
+  await expect(workspace(this.page).getByRole("heading", { name: new RegExp(`^1\\. .+ / ${RegExp.escape(name)}$`) })).toBeVisible();
   await expect(this.page.getByRole("button", { name: "Start workflow", exact: true })).toBeVisible();
 });
 Then("the five nearest operations are shown", async function () {

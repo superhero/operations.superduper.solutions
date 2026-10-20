@@ -16,6 +16,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import OperationReport from "../reports/OperationReport.svelte";
   import "../reports/reports.css";
   import type { InputField } from "$lib/catalog.ts";
+  import { catalogForOperation } from "$lib/catalog-registry.ts";
   import VaultVariableAccess from "$lib/components/VaultVariableAccess.svelte";
   import { InputValidationError, prepareRequest, type InputValues } from "$lib/operation-input.ts";
   import type { WorkflowDocument } from "$lib/workflow-document.ts";
@@ -144,9 +145,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </div>
     </section>
   {:else if view?.kind === "operation" && !fatal}
+    {@const schemaName = catalogForOperation(view.operation.id)?.name}
     <section aria-label="Current workflow operation">
       <div class="operation-toolbar report-pill context-label">
-        <h3 class="operation-title" bind:this={heading} tabindex="-1">{view.step}. {view.operation.name}</h3>
+        <h3 class="operation-title" bind:this={heading} tabindex="-1">{view.step}. {schemaName ? `${schemaName} / ` : ""}{view.operation.name}</h3>
         <HintButton class="report-toggle" type="button" label="Details" aria-label="Review operation details"
           aria-expanded={operationDetails} aria-controls="run-operation-details" onclick={() => operationDetails = !operationDetails}>
           <MaterialIcon name="article" size={16} />

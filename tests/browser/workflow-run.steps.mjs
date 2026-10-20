@@ -93,7 +93,7 @@ Then("a saved workflow opens a request run with starting choices and an end cont
   await expect(proceed.locator("span").filter({ hasText: /^Proceed$/ })).toBeVisible();
   await expect(proceed).not.toHaveAttribute("title");
   await proceed.click();
-  await expect(run.getByRole("heading", { name: "1. Example object response", exact: true })).toBeVisible();
+  await expect(run.getByRole("heading", { name: "1. example.com / Example object response", exact: true })).toBeVisible();
   await run.getByRole("textbox", { name: "Path value", exact: true }).fill("project-2");
   await run.getByRole("button", { name: "Start workflow", exact: true }).click();
   await expect(run.getByRole("region", { name: "Step 1 response", exact: true })).toContainText("Website");
@@ -155,7 +155,7 @@ Then("the workflow run dialog validates inputs and passes task results to the ne
   await expect(run.getByRole("alert")).toHaveCount(0);
   await run.getByRole("button", { name: "Retry operation", exact: true }).click();
   await run.getByRole("button", { name: "Next operation", exact: true }).click();
-  await expect(run.getByRole("heading", { name: "2. Example POST body", exact: true })).toBeVisible();
+  await expect(run.getByRole("heading", { name: "2. example.com / Example POST body", exact: true })).toBeVisible();
   await expect(project).toHaveValue("project-1");
   await expect(project).toBeDisabled();
   await run.getByRole("textbox", { name: "Title", exact: true }).fill("Browser workflow task");
@@ -191,7 +191,7 @@ Then("the workflow run dialog follows a matching switch gate through a cast", as
   await select(page, "Completed", "true");
   await run.getByRole("button", { name: "Start workflow", exact: true }).click();
   await run.getByRole("button", { name: "Next operation", exact: true }).click();
-  await expect(run.getByRole("heading", { name: "2. Example array response", exact: true })).toBeVisible();
+  await expect(run.getByRole("heading", { name: "2. example.com / Example array response", exact: true })).toBeVisible();
   await expect(run.getByRole("textbox", { name: "Result limit value", exact: true })).toHaveValue("1");
   await expect(run.getByRole("textbox", { name: "Result limit value", exact: true })).toBeDisabled();
   await expect(run.getByRole("slider", { name: "Result limit", exact: true })).toHaveAttribute('aria-valuenow', '1');

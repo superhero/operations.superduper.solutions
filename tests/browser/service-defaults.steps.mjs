@@ -376,7 +376,7 @@ Then('all service schemas appear and preserve disablement renames and default pr
   await closeCatalog(page);
   await workflowAction(page, 'Run');
   const run = workspace(page);
-  await expect(run.getByRole('heading', { name: '1. Generate a response', exact: true })).toBeVisible();
+  await expect(run.getByRole('heading', { name: '1. Ollama / Generate a response', exact: true })).toBeVisible();
   await fillField(page, 'Model', 'test-model');
   await fillField(page, 'Stream', 'false');
   const requests = [];
