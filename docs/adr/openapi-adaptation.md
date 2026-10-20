@@ -191,8 +191,15 @@ the earlier correction. Generic parsing retains strict auth AND semantics.
 ### Available operations
 
 Bundled examples seed once, preserving the `demo` and `httpbin` IDs and authored
-navigation groups. Deleting every document does not reseed them. Schema
-repositories load before workflows are restored.
+navigation groups. Bundled examples and registered service defaults cannot be
+deleted, even after renaming or replacing their content. Uploaded schemas must
+first be disabled before deletion. Settings explain disabled Delete buttons and
+cancel a pending confirmation if the schema is re-enabled. The storage layer
+checks the registered ID and current enablement in the deletion transaction,
+before removing metadata, credential policy, indexes or the schema's Git
+repository. Deleting an upload retains saved workflows and other repositories.
+Missing defaults from older browser installations remain absent; they are not
+reseeded. Schema repositories load before workflows are restored.
 
 Successfully loaded, enabled discovery indexes replace the registry atomically, updating
 navigation, matching and reports immediately. Removed or disabled operations

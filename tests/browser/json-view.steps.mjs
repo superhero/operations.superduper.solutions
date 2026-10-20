@@ -686,7 +686,6 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   const heading = card.locator('.schema-heading');
   const name = heading.getByRole('textbox', { name: 'Schema name', exact: true });
   const closedName = heading.locator('.schema-name-label');
-  const move = heading.getByRole('button', { name: /^Move / });
   const title = await closedName.innerText();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await expect(otherCard.getByRole('button', { name: /^Schema details:/ })).toHaveAttribute('aria-expanded', 'false');
@@ -694,7 +693,7 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   await expect(name).toHaveCount(0);
   await expect(heading.locator('.schema-name-icon')).toBeHidden();
   await expect(enabled).toHaveText('');
-  for (const control of [closedName, enabled, toggle, move]) await expect(control).toBeVisible();
+  for (const control of [closedName, enabled, toggle]) await expect(control).toBeVisible();
   const topRow = await heading.evaluate(element => {
     const field = element.querySelector('.schema-name').getBoundingClientRect();
     const toggleElement = element.querySelector('.schema-card-toggle');
@@ -786,11 +785,9 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   await actions.getByRole('button', { name: `Replace ${title}`, exact: true }).click();
   await chooser;
   await expect(schema).toHaveAttribute('aria-expanded', 'false');
-  await actions.getByRole('button', { name: `Delete ${title}`, exact: true }).click();
-  const confirmation = card.getByRole('group', { name: `Confirm deletion of ${title}`, exact: true });
-  await expect(confirmation).toBeVisible();
+  await expect(actions.getByRole('button', { name: `Delete ${title}`, exact: true })).toBeDisabled();
+  await expect(card.getByRole('group', { name: `Confirm deletion of ${title}`, exact: true })).toHaveCount(0);
   await expect(schema).toHaveAttribute('aria-expanded', 'false');
-  await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
   await schema.locator('.schema-title').click();
   const json = card.getByRole('region', { name: `Full OpenAPI JSON: ${title}`, exact: true });
   await expect(json).toBeVisible();

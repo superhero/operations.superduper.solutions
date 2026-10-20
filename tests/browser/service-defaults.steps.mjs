@@ -312,7 +312,7 @@ Then('schemas always sort by displayed name without manual controls', async func
   assert.deepEqual(await entries(), ordered());
 });
 
-Then('all service schemas appear and preserve disablement renames and deletions after reload', { timeout: 120_000 }, async function () {
+Then('all service schemas appear and preserve disablement renames and default protection after reload', { timeout: 120_000 }, async function () {
   const page = this.page;
   await schemas(page);
   await expect(page.locator('[data-schema-id]')).toHaveCount(descriptors.length + 2);
@@ -336,9 +336,10 @@ Then('all service schemas appear and preserve disablement renames and deletions 
   await name.press('Enter');
   await expect.poll(async () => (await stored(page)).find(record => record.id === 'mistral').displayName).toBeUndefined();
   await expandSchemaCard(card(page, 'cohere'));
-  await card(page, 'cohere').getByRole('button', { name: 'Delete Cohere', exact: true }).click();
-  await card(page, 'cohere').getByRole('group', { name: 'Confirm deletion of Cohere', exact: true }).getByRole('button', { name: 'Delete', exact: true }).click();
-  await expect(card(page, 'cohere')).toHaveCount(0);
+  await expect(card(page, 'cohere').getByRole('button', { name: 'Delete Cohere', exact: true })).toBeDisabled();
+  await card(page, 'cohere').getByRole('switch').click();
+  await expect(card(page, 'cohere').getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await expect(card(page, 'cohere').getByRole('button', { name: 'Delete Cohere', exact: true })).toBeDisabled();
   // Represent a prior packaged revision without modifying the current bundle.
   await page.evaluate(() => new Promise((resolve, reject) => {
     const opening = indexedDB.open('v1/catalogs/index');
@@ -356,10 +357,11 @@ Then('all service schemas appear and preserve disablement renames and deletions 
   await reload(page);
   assert.equal((await stored(page)).find(record => record.id === 'frankfurter').factoryDigest,
     descriptors.find(source => source.id === 'frankfurter').sha256, 'Unmodified defaults follow the bundled revision.');
-  await expect(page.locator('[data-schema-id]')).toHaveCount(descriptors.length + 1);
+  await expect(page.locator('[data-schema-id]')).toHaveCount(descriptors.length + 2);
   await expect(card(page, 'frankfurter').getByRole('switch')).toHaveAttribute('aria-checked', 'false');
   await expect(card(page, 'mistral').locator('.schema-name-label')).toHaveText('My Mistral API');
-  await expect(card(page, 'cohere')).toHaveCount(0);
+  await expect(card(page, 'cohere')).toHaveCount(1);
+  await expect(card(page, 'cohere').getByRole('switch')).toHaveAttribute('aria-checked', 'false');
   const revised = (await stored(page)).find(record => record.id === 'mistral');
   assert.equal(revised.factoryDigest, undefined, 'Editing a factory document creates an authored Git copy.');
   // Exercise an actual newly installed operation through the normal sidebar/run path.

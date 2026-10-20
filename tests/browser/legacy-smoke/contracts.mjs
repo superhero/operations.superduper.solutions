@@ -43,7 +43,7 @@ export const contracts = {
     "interrupted schema writes preserve the old revision or recover the durable commit",
     "schema renames preserve other repositories and persist without redundant commits",
     "schema ordering stays alphabetical across reload renames uploads and legacy preferences",
-    "schema deletion removes only its repository and an intentionally empty catalog stays empty"
+    "schema deletion removes disabled uploads while defaults remain protected"
   ],
   "storage-namespace": [
     "namespace preparation preserves storage contents and requires proof before deleting legacy data"

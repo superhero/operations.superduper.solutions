@@ -15,6 +15,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { SchemaBranchHistory, SchemaRevisionDiff } from "$lib/schema-storage.ts";
   import type { SchemaFieldDiff } from "$lib/schema-diff.ts";
   import type { SchemaResolution } from "$lib/schema-merge.ts";
+  import { schemaDeletionReason } from "$lib/schema-deletion.ts";
 
   let { records, busy = false, ready = true, error = "", onUpload, onReplace, onRename, onEnabledChange, onDelete, onDownload, onRetry, onLoad, onRelease,
     onHistory, onDiff, onFieldDiff, onResolveUpdate, onDismissUpdate }: {
@@ -52,6 +53,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const mutationsDisabled = $derived(working || !ready);
   const displayedError = $derived(actionError || error);
   const acceptedFiles = ".json,.yaml,.yml,application/json,application/yaml,text/yaml";
+  $effect(() => {
+    if (!deletingId) return;
+    const record = records.find(record => record.id === deletingId);
+    if (!record || schemaDeletionReason(record)) deletingId = null;
+  });
   function details(record: SchemaLibraryRecord) {
     return {
       title: record.summary.name,
@@ -143,6 +149,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <ul class="schema-list">
       {#each records as record (record.id)}
         {@const metadata = details(record)}
+        {@const deletionReason = schemaDeletionReason(record)}
         <li class="schema-card" data-schema-id={record.id}>
           <div class="schema-heading">
             <div class="schema-name">
@@ -212,7 +219,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                   <HintButton class="schema-action" label="Download schema" labelAsName={false} aria-label={`Download ${metadata.title}`} disabled={working} onclick={() => onDownload(record)}>
                     <MaterialIcon name="download" size={20} />
                   </HintButton>
-                  <HintButton class="schema-action" label={`Delete ${metadata.title}`} labelAsName={false} aria-label={`Delete ${metadata.title}`} disabled={mutationsDisabled || deletingId === record.id} onclick={() => deletingId = record.id}>
+                  <HintButton class="schema-action" label={deletionReason ?? `Delete ${metadata.title}`} labelAsName={false} aria-label={`Delete ${metadata.title}`}
+                    disabled={mutationsDisabled || Boolean(deletionReason) || deletingId === record.id}
+                    onclick={() => { if (!deletionReason) deletingId = record.id; }}>
                     <MaterialIcon name="delete" size={20} />
                   </HintButton>
                 </span>
@@ -227,7 +236,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                 onDismiss={onDismissUpdate ? (current, incoming) => onDismissUpdate!(record.id, current, incoming) : undefined} />
             {/if}
 
-            {#if deletingId === record.id}
+            {#if deletingId === record.id && !deletionReason}
               <div class="schema-delete" role="group" aria-label={`Confirm deletion of ${metadata.title}`}>
                 <p>Delete this document and its local history? Saved workflows are retained, but operations from this document will become unavailable.</p>
                 <div class="confirmation-actions">

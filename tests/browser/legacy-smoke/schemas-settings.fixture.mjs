@@ -330,11 +330,15 @@ yield "invalid schema documents cannot change existing state";
       return workflowRepository.save({ version: 3, id: 'schema-retained-workflow', name: 'Retained schema workflow',
         nodes: graph.nodes, edges: graph.edges, viewport: { x: 0, y: 0, zoom: 1 }, snap: true, curved: true, dashed: false }, null);
     }, operationId);
+    await card(page, first.id).getByRole('switch').click();
+    await expect(card(page, first.id).getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+    await idle(page);
+    const beforeDeletion = await records(page);
     await card(page, first.id).getByRole('button', { name: `Delete ${title}`, exact: true }).click();
     const confirmation = card(page, first.id).getByRole('group', { name: `Confirm deletion of ${title}`, exact: true });
     await expect(confirmation).toContainText('Saved workflows are retained');
     await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
-    assert.deepEqual(await records(page), beforeInvalid);
+    assert.deepEqual(await records(page), beforeDeletion);
     await card(page, first.id).getByRole('button', { name: `Delete ${title}`, exact: true }).click();
     await confirmation.getByRole('button', { name: 'Delete', exact: true }).click();
     await idle(page);
@@ -469,6 +473,8 @@ yield "schema lists stay alphabetical without manual ordering controls or extra 
     assert.ok(largeRecord);
     assert.equal((await liveOperationIds(page)).filter(id => id.startsWith(`${largeRecord.id}:`)).length, 1500);
     await expandCard(page, largeRecord.id);
+    await card(page, largeRecord.id).getByRole('switch').click();
+    await expect(card(page, largeRecord.id).getByRole('switch')).toHaveAttribute('aria-checked', 'false');
     await card(page, largeRecord.id).getByRole('button', { name: 'Delete Large worker schema', exact: true }).click();
     await card(page, largeRecord.id).getByRole('group', { name: 'Confirm deletion of Large worker schema', exact: true })
       .getByRole('button', { name: 'Delete', exact: true }).click();

@@ -8,6 +8,83 @@ Before({ tags: '@schema-lifecycle' }, async function () {
   await this.page.evaluate(async () => { globalThis.schemaFixture = await import('/schema-lifecycle-fixture.js'); });
 });
 
+Then('deletion preserves default schemas and rejects enabled uploads before removing any saved data', async function () {
+  const evidence = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setup();
+    const stored = async () => {
+      const db = await new Promise((resolve, reject) => {
+        const request = indexedDB.open('v1/catalogs/index');
+        request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
+      });
+      try {
+        const names = ['catalog', 'policies', 'indexes', 'pending', 'removed', 'state'];
+        const tx = db.transaction(names, 'readonly');
+        return JSON.stringify(await Promise.all(names.map(name => new Promise((resolve, reject) => {
+          const request = tx.objectStore(name).getAll();
+          request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
+        }))));
+      } finally { db.close(); }
+    };
+    const refusals = [];
+    const refuse = async (id, reason) => {
+      const before = await stored();
+      const reads = JSON.stringify(api.counters());
+      try { await api.deleteSchemaDocument(id); throw new Error(`Unexpectedly deleted ${id}`); }
+      catch (error) {
+        if (!error.message.includes(reason)) throw error;
+        refusals.push(id);
+      }
+      if (before !== await stored()) throw new Error(`A refused deletion changed saved data for ${id}`);
+      if (reads !== JSON.stringify(api.counters())) throw new Error(`A refused deletion decoded a schema for ${id}`);
+    };
+    for (const id of ['demo', 'httpbin', 'factory-a', 'factory-b']) {
+      await refuse(id, 'Default schemas cannot be deleted');
+      await api.setSchemaDocumentEnabled(id, false, { metadataOnly: true });
+      await refuse(id, 'Default schemas cannot be deleted');
+    }
+    await api.renameSchemaDocument('factory-a', 'My renamed default');
+    const replacement = await api.readSchemaDocument('factory-b');
+    await api.putSchemaDocument({ ...replacement, document: { ...replacement.document,
+      info: { ...replacement.document.info, title: 'My replaced default' } } });
+    for (const id of ['factory-a', 'factory-b']) {
+      const history = await api.getSchemaBranchHistory(id);
+      await refuse(id, 'Default schemas cannot be deleted');
+      if (JSON.stringify(history) !== JSON.stringify(await api.getSchemaBranchHistory(id))) throw new Error(`Changed default history: ${id}`);
+    }
+    const document = { openapi: '3.1.0', info: { title: 'Uploaded fixture', version: '1' },
+      servers: [{ url: 'https://schema.example.test' }],
+      paths: { '/items': { get: { operationId: 'list', responses: { '200': { description: 'OK' } } } } } };
+    const upload = { id: 'uploaded-fixture', file: 'upload.json', document, enabled: true, createdAt: 1, updatedAt: 1 };
+    await api.putSchemaDocument(upload);
+    await api.putSchemaDocument({ ...upload, id: 'other-upload' });
+    await api.readSchemaDiscovery(upload.id);
+    const history = await api.getSchemaBranchHistory(upload.id);
+    await refuse(upload.id, 'Disable this schema before deleting it');
+    if (JSON.stringify(history) !== JSON.stringify(await api.getSchemaBranchHistory(upload.id))) throw new Error('Enabled upload history changed');
+    await api.setSchemaDocumentEnabled(upload.id, false, { metadataOnly: true });
+    // Queue an enable before deletion to emulate a stale disabled client snapshot.
+    const outcomes = await Promise.allSettled([
+      api.setSchemaDocumentEnabled(upload.id, true, { metadataOnly: true }),
+      api.deleteSchemaDocument(upload.id),
+    ]);
+    const concurrent = outcomes.map(outcome => ({ status: outcome.status, error: outcome.reason?.message }));
+    await refuse(upload.id, 'Disable this schema before deleting it');
+    const otherHistory = await api.getSchemaBranchHistory('other-upload');
+    await api.setSchemaDocumentEnabled(upload.id, false, { metadataOnly: true });
+    await api.deleteSchemaDocument(upload.id);
+    const remaining = (await api.listSchemaMetadata()).map(record => record.id).sort();
+    const otherUnchanged = JSON.stringify(otherHistory) === JSON.stringify(await api.getSchemaBranchHistory('other-upload'));
+    return { refusals, concurrent, remaining, otherUnchanged };
+  });
+  assert.equal(evidence.refusals.length, 12);
+  assert.equal(evidence.concurrent[0].status, 'fulfilled');
+  assert.equal(evidence.concurrent[1].status, 'rejected');
+  assert.match(evidence.concurrent[1].error, /Disable this schema before deleting it/);
+  assert.deepEqual(evidence.remaining, ['demo', 'factory-a', 'factory-b', 'httpbin', 'other-upload']);
+  assert.equal(evidence.otherUnchanged, true);
+});
+
 Then('unchanged bundled revisions preserve factory metadata and authored changes', async function () {
   const result = await this.page.evaluate(async () => {
     const api = globalThis.schemaFixture;
@@ -322,16 +399,17 @@ Then('new factory labels refresh without decoding sources or replacing personal 
   assert.deepEqual(result.currentCounters, result.counters);
 });
 
-Then('renamed remaining examples sort by name when schema defaults initialize again', async function () {
+Then('renamed examples and protected defaults sort by name when schema defaults initialize again', async function () {
   const records = await this.page.evaluate(async () => {
     const api = globalThis.schemaFixture;
     await api.setup();
-    for (const id of ['factory-a', 'factory-b']) await api.deleteSchemaDocument(id);
     await api.renameSchemaDocument('demo', 'Zulu example');
     await api.renameSchemaDocument('httpbin', 'Alpha echo');
     return (await api.setup(2)).map(record => ({ id: record.id, name: record.summary.name }));
   });
-  assert.deepEqual(records, [{ id: 'httpbin', name: 'Alpha echo' }, { id: 'demo', name: 'Zulu example' }]);
+  assert.deepEqual(records, [{ id: 'httpbin', name: 'Alpha echo' },
+    { id: 'factory-a', name: 'factory-a v2' }, { id: 'factory-b', name: 'factory-b v2' },
+    { id: 'demo', name: 'Zulu example' }]);
 });
 
 Then('schema metadata and discovery avoid disabled and unrelated document reads', async function () {
@@ -426,10 +504,7 @@ Then('factory revisions retain independent Git ancestry and authored ownership',
     await api.setup(3);
     const after = await api.listSchemaMetadata();
     const authoredHistory = await api.getSchemaHistory('factory-a');
-    await api.deleteSchemaDocument('factory-b');
-    await api.setup(3);
-    const deletedRemainsAbsent = !(await api.listSchemaMetadata()).some(record => record.id === 'factory-b');
-    return { originalA, originalB, updatedA, oldA, retained, authored, authoredHistory, deletedRemainsAbsent,
+    return { originalA, originalB, updatedA, oldA, retained, authored, authoredHistory,
       factoryAfterViewingHistory: beforeRead.find(record => record.id === 'factory-a').factoryDigest,
       authoredMetadata: after.find(record => record.id === 'factory-a') };
   });
@@ -443,7 +518,6 @@ Then('factory revisions retain independent Git ancestry and authored ownership',
   assert.equal(result.authoredMetadata.factoryDigest, undefined);
   assert.equal(result.authoredMetadata.summary.name, 'My authored service');
   assert.equal(result.authoredMetadata.summary.description, 'Description of factory-a v2.');
-  assert.equal(result.deletedRemainsAbsent, true);
 });
 
 Then('schema model loading and credential policies reject a stale source revision', async function () {

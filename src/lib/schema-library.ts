@@ -16,6 +16,7 @@ import { invalidateVaultExecution } from "./secrets/client.ts";
 import type { SchemaBranchHistory, SchemaRevisionDiff } from "./schema-storage.ts";
 import type { SchemaFieldDiff } from "./schema-diff.ts";
 import type { SchemaResolution } from "./schema-merge.ts";
+import { schemaDeletionReason } from "./schema-deletion.ts";
 
 const state = writable({ records: [] as SchemaLibraryRecord[], operations, catalogs: registeredCatalogs,
   revision: "", busy: false, initialized: false, error: "" });
@@ -205,7 +206,8 @@ export function setSchemaEnabled(id: string, enabled: boolean): Promise<void>
 export function deleteSchema(id: string): Promise<void>
 {
   return run(async () => {
-    findRecord(id);
+    const reason = schemaDeletionReason(findRecord(id));
+    if (reason) throw new Error(reason);
     await update("delete", [id]);
   });
 }

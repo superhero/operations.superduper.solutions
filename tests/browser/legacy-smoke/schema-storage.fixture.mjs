@@ -210,13 +210,13 @@ yield "schema renames preserve other repositories and persist without redundant 
   const tie = record("schema-tie", "aaa IMPORTED");
   await put(page, tie);
   assert.deepEqual((await records(page)).slice(0, 2).map(value => value.id), [appended.id, tie.id], "Equivalent displayed names have a stable ID tie-break.");
-  await page.evaluate(id => fixture.deleteSchemaDocument(id), appended.id);
-  await page.evaluate(id => fixture.deleteSchemaDocument(id), tie.id);
+  await page.evaluate(async id => { await fixture.setSchemaDocumentEnabled(id, false); await fixture.deleteSchemaDocument(id); }, appended.id);
+  await page.evaluate(async id => { await fixture.setSchemaDocumentEnabled(id, false); await fixture.deleteSchemaDocument(id); }, tie.id);
   const remaining = await records(page);
   assert.deepEqual(remaining.map(value => value.id), sortedIds(remaining));
 
 yield "schema ordering stays alphabetical across reload renames uploads and legacy preferences";
-  await page.evaluate(id => fixture.deleteSchemaDocument(id), first.id);
+  await page.evaluate(async id => { await fixture.setSchemaDocumentEnabled(id, false); await fixture.deleteSchemaDocument(id); }, first.id);
   assert.equal((await records(page)).some(value => value.id === first.id), false);
   assert.deepEqual(await history(page, second.id), secondBefore);
   assert.equal((await page.evaluate(async id => {
@@ -230,12 +230,15 @@ yield "schema ordering stays alphabetical across reload renames uploads and lega
   assert.ok(!repositories.includes(first.id));
   assert.ok(repositories.includes(second.id));
 
-  for (const value of await records(page)) await page.evaluate(id => fixture.deleteSchemaDocument(id), value.id);
+  for (const value of await records(page)) {
+    if (value.id === "demo" || value.id === "httpbin") continue;
+    await page.evaluate(async id => { await fixture.setSchemaDocumentEnabled(id, false); await fixture.deleteSchemaDocument(id); }, value.id);
+  }
   await page.reload();
   await importFixture(page);
-  assert.deepEqual(await records(page), [], "An intentionally empty catalog must remain empty after reload.");
+  assert.deepEqual((await records(page)).map(value => value.id).sort(), ["demo", "httpbin"], "Deleting uploads retains the protected defaults after reload.");
   assert.equal((await metadata(page)).seeded, true);
-yield "schema deletion removes only its repository and an intentionally empty catalog stays empty";
+yield "schema deletion removes disabled uploads while defaults remain protected";
   assert.deepEqual(failures, []);
 
 }

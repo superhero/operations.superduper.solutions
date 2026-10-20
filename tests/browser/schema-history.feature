@@ -8,3 +8,6 @@ Feature: Schema commit comparisons and correction review
 
   Scenario: Commit comparisons and colored field diffs preserve conflict review and mobile scrolling
     Then schema history compares any saved commits with lazy colored diffs and persistent conflict choices
+
+  Scenario: Settings protect default schemas and require deactivation before upload deletion
+    Then schema settings explain deletion restrictions and cancel confirmation when an upload is reactivated

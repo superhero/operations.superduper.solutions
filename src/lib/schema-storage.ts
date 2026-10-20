@@ -20,6 +20,7 @@ import { schemaModelBatchSize } from "./schema-models.ts";
 import { applySchemaPatches, schemaPatchName, type SchemaPatch } from "./schema-patches.ts";
 import { mergeSchemaDocuments, sameSchemaValue, schemaChanges, type SchemaConflict, type SchemaResolution } from "./schema-merge.ts";
 import { schemaLineDiff, schemaPointerValue, type SchemaFieldDiff } from "./schema-diff.ts";
+import { schemaDeletionReason } from "./schema-deletion.ts";
 import { createSchemaDiscovery, createSchemaSummary, validateSchemaDiscovery, schemaIndexVersion, type SchemaDiscovery, type SchemaSummary } from "./schema-index.ts";
 
 if (!("Buffer" in globalThis)) Object.defineProperty(globalThis, "Buffer", { value: Buffer, configurable: true, writable: true });
@@ -38,11 +39,18 @@ type SchemaDefaults = {
   validate: (document: Record<string, unknown>, id: string) => ReturnType<typeof validateSchemaDocument>;
 };
 let defaults: SchemaDefaults | undefined;
+let defaultSchemaIds = new Set(bundledCatalogs.map(catalog => catalog.id));
 let currentExampleRevisions: Promise<string[]> | undefined;
 const documents = createSchemaCache<Record<string, unknown>>(16 * 1024 * 1024);
 const inspections = new WeakMap<object, Map<string, ReturnType<typeof validateSchemaDocument>>>();
 /** Supply factory documents at the worker boundary; storage remains reusable with authored catalogs. */
-export function configureSchemaDefaults(value: SchemaDefaults): void { defaults = value; initialized = false; }
+export function configureSchemaDefaults(value: SchemaDefaults): void {
+  defaults = value;
+  defaultSchemaIds = new Set([...bundledCatalogs.map(catalog => catalog.id), ...value.catalogs.map(catalog => catalog.id)]);
+  initialized = false;
+}
+/** Registered origin survives authored names, replacements and factory detachment. */
+export function isBundledSchema(id: string): boolean { return defaultSchemaIds.has(id); }
 function validateLibraryDocument(document: unknown, id: string) {
   const cached = document && typeof document === "object" ? inspections.get(document)?.get(id) : undefined;
   if (cached) return cached;
@@ -881,6 +889,10 @@ export function deleteSchemaDocument(id: string): Promise<void>
   const path = schemaRepositoryPath(id);
   return serialized(async database => {
     await transaction(database, ["catalog", "pending", "removed", "policies", "indexes"], "readwrite", async active => {
+      const metadata = await active.objectStore("catalog").get(id);
+      if (!metadata) throw new Error("This schema could not be found in this browser.");
+      const reason = schemaDeletionReason({ bundled: isBundledSchema(id), enabled: metadata.enabled });
+      if (reason) throw new Error(reason);
       await active.objectStore("removed").put(true, id);
       await active.objectStore("catalog").delete(id);
       await active.objectStore("pending").delete(id);

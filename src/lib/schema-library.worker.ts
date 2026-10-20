@@ -5,7 +5,7 @@ import "./worker-runtime.ts";
 import { createSchemaDocumentId, parseSchemaDocument, schemaDocumentMaxBytes, validateSchemaDocument } from "./schema-documents.ts";
 import { listSchemaMetadata, readSchemaDiscovery, readSchemaDocument, readSchemaOperations, releaseSchemaDocument,
   schemaMetadataIdentity, putSchemaDocument, renameSchemaDocument,
-  deleteSchemaDocument, setSchemaDocumentEnabled, configureSchemaDefaults, updateSchemaUpstream,
+  deleteSchemaDocument, setSchemaDocumentEnabled, configureSchemaDefaults, isBundledSchema, updateSchemaUpstream,
   getSchemaBranchHistory, getSchemaRevisionDiff, getSchemaRevisionFieldDiff, resolveSchemaUpdate, dismissSchemaUpdate, updateSchemaFromBundle } from "./schema-storage.ts";
 import { serviceSchemaDescriptors, readServiceSchema, readServiceSchemaUpstream } from "./service-schema-packs.ts";
 import type { SchemaResolution } from "./schema-merge.ts";
@@ -53,7 +53,7 @@ async function snapshot(reset = false): Promise<SchemaLibrarySnapshot>
       ...(record.displayName ? { displayName: record.displayName } : {}),
       ...(record.patches?.length ? { patches: record.patches } : {}),
       ...(record.incoming ? { hasPendingUpdate: true } : {}),
-      ...(indexes.has(record.id) ? { bundled: true } : {}),
+      ...(isBundledSchema(record.id) ? { bundled: true } : {}),
       summary: summary ? { ...summary, description: summary.description?.trim() || summary.name,
         name: record.displayName ?? summary.name }
         : { name: record.displayName ?? record.file, serverUrl: "", operationCount: null } });

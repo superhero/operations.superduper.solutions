@@ -10,7 +10,7 @@ Feature: Targeted schema storage and independent history
     Then schema metadata and discovery avoid disabled and unrelated document reads
 
   Scenario: Renamed schemas use their current alphabetical position
-    Then renamed remaining examples sort by name when schema defaults initialize again
+    Then renamed examples and protected defaults sort by name when schema defaults initialize again
 
   Scenario: Factory label changes preserve authored names and canonical source ownership
     Then new factory labels refresh without decoding sources or replacing personal names
@@ -20,6 +20,9 @@ Feature: Targeted schema storage and independent history
 
   Scenario: Factory history survives updates without overwriting authored changes
     Then factory revisions retain independent Git ancestry and authored ownership
+
+  Scenario: Schema deletion protects defaults and requires current disabled upload metadata
+    Then deletion preserves default schemas and rejects enabled uploads before removing any saved data
 
   Scenario: A schema changed in another tab cannot publish an obsolete model
     Then schema model loading and credential policies reject a stale source revision

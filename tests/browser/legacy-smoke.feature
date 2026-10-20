@@ -118,7 +118,7 @@ Feature: Browser contracts migrated from standalone smoke scripts
     And interrupted schema writes preserve the old revision or recover the durable commit
     And schema renames preserve other repositories and persist without redundant commits
     And schema ordering stays alphabetical across reload renames uploads and legacy preferences
-    And schema deletion removes only its repository and an intentionally empty catalog stays empty
+    And schema deletion removes disabled uploads while defaults remain protected
     And every assertion in the browser journey has completed
 
   @storage-namespace

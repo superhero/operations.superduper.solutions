@@ -8,6 +8,71 @@ import { mkdir } from 'node:fs/promises';
 import { setMode } from './workspace.steps.mjs';
 import { expandSchemaCard } from './schema-card.fixture.mjs';
 
+Then('schema settings explain deletion restrictions and cancel confirmation when an upload is reactivated', async function () {
+  const page = this.page;
+  const open = async () => {
+    await setMode(page, 'settings');
+    const toggle = page.locator('summary[aria-label="Schemas"]');
+    if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
+    return page.getByRole('region', { name: 'OpenAPI documents', exact: true });
+  };
+  const panel = await open();
+  for (const id of ['demo', 'httpbin']) {
+    const card = await expandSchemaCard(panel.locator(`[data-schema-id="${id}"]`));
+    const remove = card.getByRole('button', { name: /^Delete / });
+    await expect(remove).toBeDisabled();
+    await remove.hover();
+    await expect(page.getByRole('tooltip')).toHaveText('Default schemas cannot be deleted.');
+    await card.getByRole('switch').click();
+    await expect(card.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+    await expect(remove).toBeDisabled();
+  }
+  const title = 'Disposable uploaded schema';
+  const document = { openapi: '3.1.0', info: { title, version: '1' },
+    servers: [{ url: 'https://schema.example.test' }],
+    paths: { '/items': { get: { operationId: 'list', responses: { '200': { description: 'OK' } } } } } };
+  await panel.locator('input[type=file][aria-label="Upload OpenAPI document"]').setInputFiles({
+    name: 'upload.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)),
+  });
+  const card = panel.locator('.schema-card').filter({ has: page.locator('.schema-name-label', { hasText: title }) });
+  const id = await card.getAttribute('data-schema-id');
+  const uploaded = panel.locator(`[data-schema-id="${id}"]`);
+  await expandSchemaCard(uploaded);
+  const remove = uploaded.getByRole('button', { name: `Delete ${title}`, exact: true });
+  const enabled = uploaded.getByRole('switch');
+  const confirmation = uploaded.getByRole('group', { name: `Confirm deletion of ${title}`, exact: true });
+  await expect(remove).toBeDisabled();
+  await remove.hover();
+  await expect(page.getByRole('tooltip')).toHaveText('Disable this schema before deleting it.');
+  await enabled.click();
+  await expect(enabled).toHaveAttribute('aria-checked', 'false');
+  await expect(remove).toBeEnabled();
+  await remove.click();
+  await expect(confirmation).toBeVisible();
+  await enabled.click();
+  await expect(enabled).toHaveAttribute('aria-checked', 'true');
+  await expect(confirmation).toHaveCount(0);
+  await expect(remove).toBeDisabled();
+  await enabled.click();
+  await expect(remove).toBeEnabled();
+  await expect(confirmation).toHaveCount(0);
+  await remove.click();
+  await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(uploaded).toBeVisible();
+  await remove.click();
+  await confirmation.getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(uploaded).toHaveCount(0);
+  await page.reload();
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await open();
+  await expect(page.locator(`[data-schema-id="${id}"]`)).toHaveCount(0);
+  for (const id of ['demo', 'httpbin']) {
+    const card = await expandSchemaCard(page.locator(`[data-schema-id="${id}"]`));
+    await expect(card.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+    await expect(card.getByRole('button', { name: /^Delete / })).toBeDisabled();
+  }
+});
+
 Then('schema history compares any saved commits with lazy colored diffs and persistent conflict choices', async function () {
   const page = this.page;
   // Only the representative real bundled service is installed in this profile.

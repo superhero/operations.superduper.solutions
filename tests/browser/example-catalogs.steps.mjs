@@ -90,7 +90,8 @@ async function seedLegacyExamples(page, entries, authored = false) {
       const record = await api.readSchemaDocument(entry.id);
       await api.putSchemaDocument({ ...record, document: entry.document, groups: entry.groups });
     }
-    if (authored) await api.deleteSchemaDocument('httpbin');
+    // Seed an older browser state from when deleting default schemas was allowed.
+    if (authored) await api.editStore('catalog', 'httpbin', 'delete');
     else {
       await api.setSchemaDocumentEnabled('httpbin', false);
     }
