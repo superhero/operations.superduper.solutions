@@ -550,6 +550,21 @@ boundary while retaining the 2px border and existing controls.
 
 ```
 
+<!-- changelog-commit:76399461c0e15a03a08adff97650feb9982bdd85 -->
+### Commit [`7639946`](https://github.com/superhero/operations.superduper.solutions/commit/76399461c0e15a03a08adff97650feb9982bdd85)
+
+```text
+test(catalog): retain both Google OAuth grant alternatives
+
+Replace the obsolete assertion that dropped the implicit grant. Verify
+that published scopes remain intact in separate authentication alternatives
+and exercise scoped Gmail and Drive requests using either bearer grant.
+
+Validation: four focused source scenarios covering Google catalogs, grant
+normalization, corrected cloud packs and idempotent schema patches pass.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.55
