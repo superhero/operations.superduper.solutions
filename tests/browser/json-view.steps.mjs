@@ -746,13 +746,32 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   await expect(card.locator('.schema-metadata dt')).toHaveText(['Operations']);
   const presentation = await description.evaluate(element => {
     const style = getComputedStyle(element);
-    return { size: style.fontSize, weight: style.fontWeight, overflow: style.overflow,
-      ellipsis: style.textOverflow, wrapping: style.whiteSpace,
-      truncated: element.scrollWidth > element.clientWidth,
-      fits: element.closest('.schema-card').scrollWidth <= element.closest('.schema-card').clientWidth };
+    const original = element.textContent;
+    const measure = () => ({ height: element.getBoundingClientRect().height,
+      paneHeight: element.parentElement.getBoundingClientRect().height,
+      truncated: element.scrollHeight > element.clientHeight,
+      fits: element.scrollWidth <= element.clientWidth &&
+        element.closest('.schema-card').scrollWidth <= element.closest('.schema-card').clientWidth });
+    try {
+      element.textContent = 'Short description.';
+      const short = measure();
+      element.textContent = 'The API provides operations for managing resources and their configuration. '.repeat(50);
+      const long = measure();
+      element.textContent = 'x'.repeat(2000);
+      const unbroken = measure();
+      return { size: style.fontSize, weight: style.fontWeight, lineHeight: parseFloat(style.lineHeight),
+        short, long, unbroken };
+    } finally { element.textContent = original; }
   });
-  assert.deepEqual(presentation, { size: '12px', weight: '400', overflow: 'hidden', ellipsis: 'ellipsis', wrapping: 'nowrap',
-    truncated: true, fits: true }, 'Long descriptions remain normal-size single-line text with an ellipsis at desktop and mobile widths');
+  assert.equal(presentation.size, '12px');
+  assert.equal(presentation.weight, '400');
+  assert.equal(presentation.short.truncated, false);
+  for (const text of [presentation.long, presentation.unbroken]) {
+    assert.ok(Math.abs(text.height - 2 * presentation.lineHeight) < 1, 'Long descriptions fill two lines and then truncate');
+    assert.equal(text.truncated, true);
+    assert.equal(text.paneHeight, presentation.short.paneHeight, 'Descriptions cannot stretch the pane');
+    assert.equal(text.fits, true, 'Wrapping also contains long unbroken strings');
+  }
   const schema = card.locator('summary[aria-label="OpenAPI schema"]');
   await expect(schema).toHaveAttribute('aria-expanded', 'false');
   const expectCountAlignment = async () => {

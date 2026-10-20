@@ -286,8 +286,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-metadata { display: grid; grid-template-columns: minmax(0, 1fr) var(--schema-count-width); gap: 12px; margin: 18px 0; }
   .schema-metadata > div { min-width: 0; padding: 8px 10px; border-left: 2px solid var(--color-badge-background); border-radius: 4px; background: var(--color-background); }
   .schema-operation-count { box-sizing: border-box; justify-self: end; width: var(--schema-count-width); max-width: 100%; }
-  .schema-description { display: flex; align-items: center; }
-  .schema-description p { min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 400; line-height: 1.5; }
+  .schema-description { box-sizing: border-box; display: flex; align-items: center; min-height: 52px; }
+  .schema-description p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; min-width: 0; width: 100%; max-height: 3em; margin: 0; overflow: hidden; text-overflow: ellipsis; overflow-wrap: anywhere; white-space: normal; font-size: 12px; font-weight: 400; line-height: 1.5; }
   .schema-metadata dl { margin: 0; }
   .schema-metadata dt { margin-bottom: 5px; font-size: 11px; font-weight: 400; color: var(--color-muted-foreground); }
   .schema-metadata dd { min-width: 0; margin: 0; font-size: clamp(16px, 2vw, 21px); font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
