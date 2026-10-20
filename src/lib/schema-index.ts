@@ -3,9 +3,10 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
+import { isCodexSchema } from "./codex-schema.ts";
 
 export const schemaIndexVersion = 1;
-export type SchemaSummary = { name: string; description?: string; serverUrl: string; operationCount: number; unavailableCount?: number };
+export type SchemaSummary = { name: string; description?: string; serverUrl: string; operationCount: number; unavailableCount?: number; protocol?: "json-rpc" };
 export type SchemaDiscovery = {
   version: typeof schemaIndexVersion;
   sourceRevision: string;
@@ -30,6 +31,7 @@ export function createSchemaSummary(inspected: { document: Record<string, unknow
   const info = document.info as { description?: unknown };
   const description = typeof info.description === "string" ? info.description.trim() : "";
   return { name, serverUrl, ...(description ? { description } : {}), operationCount: operations.length,
+    ...(isCodexSchema(document) ? { protocol: "json-rpc" as const } : {}),
     unavailableCount: operations.filter(operation => operation.unavailableReason).length };
 }
 
@@ -40,7 +42,8 @@ export function createSchemaDiscovery(inspected: { document: Record<string, unkn
   const info = document.info as { title: string; version: string };
   return { version: schemaIndexVersion, sourceRevision,
     summary: createSchemaSummary(inspected),
-    document: { openapi: document.openapi, info: { title: info.title, version: info.version },
+    document: isCodexSchema(document) ? { $schema: document.$schema, info: { title: info.title, version: info.version },
+      "x-codex-app-server": document["x-codex-app-server"] } : { openapi: document.openapi, info: { title: info.title, version: info.version },
       servers: [{ url: serverUrl }], paths: {} }, groups, operations: operations.map(operationDescriptor) };
 }
 

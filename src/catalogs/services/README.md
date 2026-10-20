@@ -1,6 +1,6 @@
 # Default service schemas
 
-Compressed OpenAPI documents retain the upstream schema data and notices. These
+Compressed schema documents retain the upstream schema data and notices. These
 are application inputs, not credentials or live API responses. The schema worker
 verifies each pack's size and SHA-256 before accepting its decoded content.
 
@@ -22,6 +22,14 @@ requests active and bounded retries. Builds use committed packs without fetching
 provider schemas.
 
 ## Formats
+
+Codex App Server retains OpenAI's native JSON Schema bundle from the pinned
+`rust-v0.163.0` release, including client/server requests, responses and events.
+The `codex-app-server` source format adds only catalog annotations (`info` and
+`x-codex-app-server`); it does not convert RPC methods into HTTP paths. The 105
+client methods appear in discovery with execution unavailable until a Codex
+connector is implemented. The full source is inspected and downloaded as JSON
+Schema. [License and notices](licenses) accompany the Apache-2.0 source.
 
 Docker Engine and Azure's Swagger documents are converted to OpenAPI 3. External
 references are bundled into local references; recursive models remain references

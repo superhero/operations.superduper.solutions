@@ -4,7 +4,7 @@
 import index from "../catalogs/services/index.json" with { type: "json" };
 
 export type ServiceSchemaDescriptor = {
-  id: string; name: string; version: string; openapi: string; operations: number;
+  id: string; name: string; version: string; openapi?: string; protocol?: string; operations: number;
   sha256: string; bytes: number; compressedBytes: number;
   url?: string; file?: string; provenance?: string; sourceKind?: string; provider?: string;
 };
@@ -50,7 +50,7 @@ export async function decodeServiceSchema(pack: string, descriptor: Pick<Service
   const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), value => value.toString(16).padStart(2, "0")).join("");
   if (digest !== descriptor.sha256) throw new Error("The bundled schema does not match its recorded hash.");
   const document: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
-  if (!document || typeof document !== "object" || Array.isArray(document)) throw new Error("The bundled schema must contain an OpenAPI document.");
+  if (!document || typeof document !== "object" || Array.isArray(document)) throw new Error("The bundled schema must contain a schema document.");
   return document as Record<string, unknown>;
 }
 

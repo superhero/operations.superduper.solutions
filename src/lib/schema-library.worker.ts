@@ -16,7 +16,7 @@ import { prepareStorageNamespaces } from "./storage-namespace.ts";
 const indexes = new Map(serviceIndexDescriptors.map(index => [index.id, index]));
 configureSchemaDefaults({ adapterRevision: schemaAdapterRevision,
   catalogs: serviceSchemaDescriptors.map(catalog => ({ id: catalog.id, name: catalog.name,
-    file: `${catalog.id}.openapi.json`, revision: catalog.sha256, bytes: catalog.bytes, summary: indexes.get(catalog.id)!.summary })),
+    file: `${catalog.id}.${catalog.protocol === "json-rpc" ? "schema" : "openapi"}.json`, revision: catalog.sha256, bytes: catalog.bytes, summary: indexes.get(catalog.id)!.summary })),
   read: readServiceSchema, readIndex: readServiceSchemaIndex, validate: inspectServiceSchema,
   inspectOperation: (document, id, operation) => inspectServiceSchema(document, id, new Set([operation.id]), operation).operations[0]!,
 });
@@ -43,7 +43,7 @@ async function snapshot(reset = false): Promise<SchemaLibrarySnapshot>
         const groups = record.groups ?? (record.displayName
           ? discovery.groups.map(group => ({ ...group, name })) : discovery.groups);
         snapshot.catalogs.push({ catalog: { id: record.id, file: record.file, name, document: discovery.document,
-          groups, execution: { kind: "http", origin: summary.serverUrl } }, operations: discovery.operations, sourceIdentity: identity });
+          groups, execution: { kind: summary.protocol ?? "http", origin: summary.serverUrl } }, operations: discovery.operations, sourceIdentity: identity });
       }
     }
     snapshot.records.push({ id: record.id, file: record.file, enabled: record.enabled,

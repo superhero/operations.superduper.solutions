@@ -18,6 +18,47 @@ const branch = (page, id, root) => (root ? catalog(page).locator(`[data-catalog-
 const heading = (page, id, root) => branch(page, id, root).locator(':scope > .catalog-group > summary');
 const operation = (page, id) => catalog(page).locator(`[data-operation-id="${id}"] > .catalog-operation-action`);
 
+Then('Codex schema settings preserve native protocol data and block execution', async function () {
+  const page = this.page;
+  await setMode(page, 'settings');
+  await page.locator('summary[aria-label="Schemas"]').click();
+  const card = page.locator('[data-schema-id="codex"]');
+  await expandSchemaCard(card);
+  await expect(card.locator('.schema-description')).toContainText('Codex App Server JSON-RPC protocol');
+  await expect(card.locator('.schema-operation-count dd')).toHaveText('105');
+  await card.locator('.schema-disclosure > summary').click();
+  const viewer = card.getByRole('region', { name: 'Full JSON-RPC JSON: OpenAI / Codex / App Server', exact: true });
+  await expect(viewer).toBeVisible();
+  await expect(card.locator('.schema-disclosure > summary')).toContainText('Codex App Server schema');
+  const downloadPromise = page.waitForEvent('download');
+  await card.getByRole('button', { name: 'Download OpenAI / Codex / App Server', exact: true }).click();
+  const download = await downloadPromise;
+  const { readFile } = await import('node:fs/promises');
+  const document = JSON.parse(await readFile(await download.path(), 'utf8'));
+  assert.equal(document['x-codex-app-server'].protocol, 'json-rpc');
+  assert.equal(document.definitions.ClientRequest.oneOf.length, 105);
+  assert.equal(document.definitions.ServerNotification.oneOf.length, 85);
+  assert.equal(document.paths, undefined);
+  assert.equal(download.suggestedFilename(), 'codex.schema.json');
+  const enabled = card.getByRole('switch');
+  await enabled.click();
+  await expect(enabled).toHaveAttribute('aria-checked', 'false');
+  await openCatalog(page);
+  await expect(catalog(page).locator('[data-catalog-group="codex"]')).toHaveCount(0);
+  await setMode(page, 'settings');
+  await enabled.click();
+  await expect(enabled).toHaveAttribute('aria-checked', 'true');
+  await page.reload();
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await openCatalog(page);
+  await searchOperations(page, 'thread/start');
+  const start = operation(page, 'codex:thread/start');
+  await expect(start).toBeVisible();
+  await expect(start).toHaveAttribute('aria-disabled', 'true');
+  await start.press('Enter');
+  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(0);
+});
+
 async function expand(page, id, root) {
   const summary = heading(page, id, root);
   if (await summary.getAttribute('aria-expanded') !== 'true') await summary.press('Enter');

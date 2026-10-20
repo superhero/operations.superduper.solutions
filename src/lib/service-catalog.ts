@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { BodyMediaType, InputField, InputSchema, Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
+import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
 import { extractOperationSecurity } from "./operation-security.ts";
 import { operationServerUrl, validateSchemaDocumentId } from "./schema-documents.ts";
 import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
@@ -126,6 +127,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
 }
 {
   validateSchemaDocumentId(id);
+  if (isCodexSchema(document)) return inspectCodexSchema(document, id, selected);
   if (!/^3\.(0|1)\.\d+$/.test(text(document.openapi)) || typeof value(document.info).title !== "string" || !Object.keys(value(document.paths)).length)
     throw new Error("The service schema must declare OpenAPI 3.0/3.1, a title and HTTP paths.");
   const operations: Operation[] = [];

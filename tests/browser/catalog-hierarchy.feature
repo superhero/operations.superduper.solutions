@@ -3,6 +3,10 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 Feature: Nested operation catalog
   @service-defaults
+  Scenario: Codex integration schemas are inspectable while execution awaits a connector
+    Then Codex schema settings preserve native protocol data and block execution
+
+  @service-defaults
   Scenario Outline: Slash-separated schema names form browsable provider and product groups
     When I use a viewport of <width> by 844 pixels
     Then schema name groups preserve counts search and operation selection

@@ -7,6 +7,11 @@ import { gzipSync } from 'node:zlib';
 import { Then } from '@cucumber/cucumber';
 import { decodeServiceSchema, readServiceSchema, serviceSchemaDescriptors } from './lib/service-schema-packs.ts';
 import { adaptGoogleOauthSchema } from '../build/google-oauth-schema.mjs';
+import { annotateCodexSchema } from '../build/codex-schema.mjs';
+import { inspectServiceSchema } from './lib/service-catalog.ts';
+import { validateSchemaDocument, operationServerUrl } from './lib/schema-documents.ts';
+import { createSchemaDiscovery, validateSchemaDiscovery } from './lib/schema-index.ts';
+import { codexExecutionLimitation } from './lib/codex-schema.ts';
 
 Then('Google grant normalization preserves scope alternatives without weakening unrelated authentication', () => {
   const permissions = { read: 'Read data', write: 'Write data' };
@@ -85,13 +90,85 @@ Then('all service schema packs match their size hash and operation inventory', a
     }
     references(document);
     const methods = new Set(['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace']);
-    assert.equal(Object.values(document.paths).reduce((count, item) => count + Object.keys(item).filter(key => methods.has(key)).length, 0),
+    assert.equal(descriptor.protocol === 'json-rpc' ? document.definitions.ClientRequest.oneOf.length
+      : Object.values(document.paths).reduce((count, item) => count + Object.keys(item).filter(key => methods.has(key)).length, 0),
       descriptor.operations, descriptor.id);
   }
   const large = fixture({ description: 'test '.repeat(20_000) });
   assert.deepEqual(await decodeServiceSchema(large.pack, large.descriptor), { description: 'test '.repeat(20_000) });
   await assert.rejects(readServiceSchema('does-not-exist'), /unavailable/);
   await assert.rejects(readServiceSchema(serviceSchemaDescriptors[0].id, { descriptors: serviceSchemaDescriptors, packs: {} }), /unavailable/);
+});
+
+Then('the pinned Codex schema preserves requests responses and events with execution unavailable', async () => {
+  const source = serviceSchemaDescriptors.find(source => source.id === 'codex');
+  assert.equal(source.name, 'OpenAI / Codex / App Server');
+  assert.equal(source.version, '0.163.0');
+  assert.equal(source.protocol, 'json-rpc');
+  assert.equal(source.operations, 105);
+  assert.ok(source.url.includes('/openai/codex/rust-v0.163.0/'));
+  const document = await readServiceSchema(source.id);
+  const { info, 'x-codex-app-server': metadata, ...native } = document;
+  assert.equal(info.license.name, 'Apache-2.0');
+  assert.equal(metadata.protocol, 'json-rpc');
+  assert.equal(document.openapi, undefined);
+  assert.equal(document.paths, undefined);
+  assert.equal(document.servers, undefined);
+  assert.equal(native.definitions.ServerRequest.oneOf.length, 10);
+  assert.equal(native.definitions.ServerNotification.oneOf.length, 85);
+  assert.equal(native.definitions.ClientNotification.oneOf.length, 1);
+  const original = structuredClone(native);
+  assert.deepEqual(annotateCodexSchema(native, source), document);
+  assert.deepEqual(native, original, 'Adding catalog annotations preserves every original definition.');
+  const inspected = inspectServiceSchema(document, source.id);
+  const withoutDescription = structuredClone(document);
+  delete withoutDescription.info.description;
+  assert.equal(inspectServiceSchema(withoutDescription, source.id).groups[0].description, '', 'A native bundle does not require an optional description.');
+  assert.deepEqual(validateSchemaDocument(document, source.id), inspected, 'Downloaded native schemas remain importable.');
+  assert.equal(inspected.serverUrl, '');
+  assert.equal(inspected.operations.length, source.operations);
+  for (const method of ['initialize', 'account/login/start', 'account/read', 'model/list', 'thread/start', 'thread/resume', 'turn/start', 'turn/interrupt'])
+    assert.ok(inspected.operations.some(operation => operation.id === `codex:${method}`), method);
+  for (const operation of inspected.operations) {
+    assert.equal(operation.method, 'RPC');
+    assert.equal(operation.unavailableReason, codexExecutionLimitation);
+    assert.throws(() => operationServerUrl(document, operation), /paths/);
+  }
+  const discovery = createSchemaDiscovery(inspected, source.sha256);
+  assert.deepEqual(validateSchemaDiscovery(discovery, source.id, source.sha256), discovery);
+  assert.equal(discovery.summary.protocol, 'json-rpc');
+  assert.equal(discovery.summary.unavailableCount, 105);
+  assert.equal(discovery.document.openapi, undefined);
+  assert.equal(discovery.document.paths, undefined);
+  assert.equal(discovery.document.definitions, undefined, 'Discovery does not copy the full protocol bundle.');
+  assert.ok(discovery.operations.every(operation => operation.deferred && operation.unavailableReason));
+  assert.deepEqual(inspectServiceSchema(document, source.id, new Set(['codex:turn/start'])).operations,
+    inspected.operations.filter(operation => operation.id === 'codex:turn/start'));
+  assert.equal((await readServiceSchema('openai')).openapi, '3.1.0', 'The separate OpenAI HTTP schema remains available.');
+});
+
+Then('Codex inspection rejects incomplete protocols duplicate methods and forged HTTP routes', async () => {
+  const document = await readServiceSchema('codex');
+  for (const corrupt of [
+    value => { value['x-codex-app-server'] = null; },
+    value => { value.info.title = ''; },
+    value => { value.info.version = 'another-version'; },
+    value => { value.$schema = 'another-dialect'; },
+    value => { delete value.definitions.JSONRPCResponse; },
+    value => { value.definitions.ClientRequest.oneOf = []; },
+    value => { value.definitions.ClientRequest.oneOf.push(value.definitions.ClientRequest.oneOf[0]); },
+    value => { value.definitions.ClientRequest.oneOf[0].properties.method.enum = ['initialize', 'another']; },
+    value => { value.definitions.ClientRequest.oneOf[0].properties.method.enum = ['https://example.com']; },
+    value => { value.definitions.ClientRequest.oneOf[0].required = ['method']; },
+    value => { value.openapi = '3.1.0'; value.paths = { '/turn/start': { post: {} } }; },
+  ]) {
+    const invalid = structuredClone(document); corrupt(invalid);
+    assert.throws(() => inspectServiceSchema(invalid, 'codex'), /Invalid Codex App Server schema/);
+    assert.throws(() => validateSchemaDocument(invalid, 'codex'), /Invalid Codex App Server schema/);
+  }
+  const { info: _info, 'x-codex-app-server': _metadata, ...native } = document;
+  assert.throws(() => annotateCodexSchema(native, { id: 'codex', version: '', provenance: 'https://example.com' }), /pinned version/);
+  assert.throws(() => annotateCodexSchema(native, { id: 'codex', version: '0.163.0' }), /provenance/);
 });
 
 Then('embedded ReDoc exports preserve OpenAPI data and reject missing malformed or incomplete contracts', async () => {
@@ -150,7 +227,7 @@ Then('service schema decoding rejects corrupt metadata compressed data and JSON'
   await assert.rejects(decodeServiceSchema('data:application/gzip;base64,YmFk', valid.descriptor));
   for (const value of [null, [], true, 'schema', 12]) {
     const item = fixture(value);
-    await assert.rejects(decodeServiceSchema(item.pack, item.descriptor), /OpenAPI document/);
+    await assert.rejects(decodeServiceSchema(item.pack, item.descriptor), /schema document/);
   }
   for (const bytes of [Buffer.from('{broken'), Buffer.from([255])]) {
     const item = fixture(bytes);

@@ -4,12 +4,15 @@
 import manifest from "../catalogs/services/indexes/index.json" with { type: "json" };
 import { decodeServiceSchema } from "./service-schema-packs.ts";
 import { validateSchemaDiscovery } from "./schema-index.ts";
+import type { SchemaSummary } from "./schema-index.ts";
 
 const packs = import.meta.glob<string>("../catalogs/services/indexes/*.json.gz", {
   query: "?url&inline", import: "default", eager: true,
 });
 export const schemaAdapterRevision = manifest.adapterRevision;
-export const serviceIndexDescriptors = manifest.indexes;
+type IndexDescriptor = { id: string; sourceRevision: string; bytes: number; compressedBytes: number;
+  sha256: string; summary: SchemaSummary };
+export const serviceIndexDescriptors = manifest.indexes as readonly IndexDescriptor[];
 export async function readServiceSchemaIndex(id: string, library: {
   descriptors: readonly typeof serviceIndexDescriptors[number][]; packs: Record<string, string>;
 } = { descriptors: serviceIndexDescriptors, packs })

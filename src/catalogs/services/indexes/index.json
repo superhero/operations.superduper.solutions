@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "56d06b5c0a69ff6b42b108fc6322d22f46df41111d1cce988dc7130e400e8056",
+  "adapterRevision": "b351cd8b84b3868536b32a6a7b31ebacc0f8531e61b130c2e0a0328aee9786ff",
   "indexes": [
     {
       "id": "alfred",
@@ -2961,6 +2961,21 @@
         "description": "The OpenAI REST API. Please see https://platform.openai.com/docs/api-reference for more details.",
         "operationCount": 360,
         "unavailableCount": 14
+      }
+    },
+    {
+      "id": "codex",
+      "sourceRevision": "ef2cf80a7c1e02e63d1ff3565267f3faf1cdcaed315d3717b085de6eb6d7de16",
+      "bytes": 35155,
+      "compressedBytes": 2675,
+      "sha256": "14b12bf8e09f8f373897f5d88f6d078645c2060130153ed025340a9e0532a107",
+      "summary": {
+        "name": "OpenAI / Codex / App Server",
+        "serverUrl": "",
+        "description": "Codex App Server JSON-RPC protocol for authentication, threads, turns, approvals and streamed agent events. Requires a Codex connector; execution is not enabled yet.",
+        "operationCount": 105,
+        "protocol": "json-rpc",
+        "unavailableCount": 105
       }
     },
     {

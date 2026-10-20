@@ -13,6 +13,8 @@ import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
 import { adaptGoogleOauthSchema } from './google-oauth-schema.mjs';
+import { annotateCodexSchema } from './codex-schema.mjs';
+import { inspectCodexSchema } from '../src/lib/codex-schema.ts';
 
 const root = resolve(import.meta.dirname, '..');
 const cache = resolve(root, 'tmp/schema-sources');
@@ -59,14 +61,15 @@ for (const source of sources) {
     document = (await converter.convertObj(document, { patch: true, warnOnly: false })).openapi;
   }
   // Bundle rather than dereference: recursive models remain finite JSON.
-  document = await RefParser.bundle(source.url ?? resolve(root, source.file), document,
+  if (source.format === 'codex-app-server') document = annotateCodexSchema(document, source);
+  else document = await RefParser.bundle(source.url ?? resolve(root, source.file), document,
     { resolve: { file: false, http: resolver } });
   if (source.profile === 'fred' || source.profile === 'alfred') document = adaptFredSchema(document, source.profile);
   if (source.profile === 'google-oauth') document = adaptGoogleOauthSchema(document);
   if (source.operationIds === 'method-path') document = useMethodPathOperationIds(document);
   if ((typeof document.info?.version !== 'string' || !document.info.version) && source.version) document.info.version = source.version;
   if (typeof document.info?.version !== 'string' || !document.info.version) throw new Error(`${source.id}: missing schema version; specify a documented source snapshot version.`);
-  if (!/^3\.(0|1)\./.test(document?.openapi) || !document.info || !document.paths)
+  if (source.format !== 'codex-app-server' && (!/^3\.(0|1)\./.test(document?.openapi) || !document.info || !document.paths))
     throw new Error(`${source.id}: expected an OpenAPI 3.0/3.1 document with info and paths.`);
   if (source.origin) document.servers = [{ url: source.origin }];
   if (source.routing === 'bluesky') {
@@ -87,9 +90,10 @@ for (const source of sources) {
   const json = JSON.stringify(document);
   const bytes = gzipSync(json, { level: 9 });
   await writeFile(resolve(output, `${source.id}.json.gz`), bytes);
-  const operations = Object.values(document.paths).reduce((count, path) => count +
+  const operations = source.format === 'codex-app-server' ? inspectCodexSchema(document, source.id).operations.length : Object.values(document.paths).reduce((count, path) => count +
     Object.keys(path).filter(method => ['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace'].includes(method)).length, 0);
-  const entry = { ...source, version: document.info.version, openapi: document.openapi, operations,
+  const entry = { ...source, version: document.info.version, openapi: document.openapi,
+    ...(source.format === 'codex-app-server' ? { protocol: 'json-rpc' } : {}), operations,
     license: document.info.license ?? null, sha256: sha(json), sourceSha256: sha(text), bytes: Buffer.byteLength(json), compressedBytes: bytes.length };
   index = [...index.filter(item => item.id !== source.id), entry].sort((a, b) => a.name.localeCompare(b.name));
   await writeFile(indexPath, `${JSON.stringify(index, null, 2)}\n`);
