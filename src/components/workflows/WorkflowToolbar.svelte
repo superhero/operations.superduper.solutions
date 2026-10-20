@@ -56,7 +56,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function packedWidth(widths: number[], available: number, gap: number) {
     let row = 0, widest = 0;
     for (const width of widths) {
-      if (row && row + gap + width > available + 0.5) { widest = Math.max(widest, row); row = 0; }
+      if (row && row + gap + width > available) { widest = Math.max(widest, row); row = 0; }
       row = row ? row + gap + width : width;
     }
     return Math.max(widest, row);
@@ -72,12 +72,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       const style = getComputedStyle(toolbar);
       const chrome = ['padding-left', 'padding-right', 'border-left-width', 'border-right-width']
         .reduce((sum, property) => sum + (parseFloat(style.getPropertyValue(property)) || 0), 0);
-      const available = element.clientWidth - (parseFloat(style.right) || 0) -
+      const available = element.getBoundingClientRect().width - (parseFloat(style.right) || 0) -
         (parseFloat(style.getPropertyValue("--navigation-inset")) || 0) -
         parseFloat(style.marginLeft) - parseFloat(style.marginRight) - chrome;
       if (available <= 0) return;
       const widths = [...toolbar.querySelectorAll<HTMLElement>('.workflow-control-group')].map(group =>
-        packedWidth([...group.children].map(button => (button as HTMLElement).offsetWidth), available, parseFloat(getComputedStyle(group).columnGap) || 0));
+        packedWidth([...group.children].map(button => button.getBoundingClientRect().width), available, parseFloat(getComputedStyle(group).columnGap) || 0));
       const width = `${Math.ceil(packedWidth(widths, available, parseFloat(style.columnGap) || 0) + chrome)}px`;
       if (toolbar.style.width !== width) toolbar.style.width = width;
     };

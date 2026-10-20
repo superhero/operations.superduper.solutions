@@ -3,10 +3,12 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { closeWorkflowDetails, expectWorkflowName, renameWorkflow, workflowNameInput, workflowDetails } from './workflow-details.fixture.mjs';
 import assert from "node:assert/strict";
+import { mkdir, writeFile } from "node:fs/promises";
 import { operations } from "../../src/lib/catalog.ts";
 import { catalogs } from "../../src/lib/catalog-registry.ts";
 import { operationNavigation, operationResourceGroups } from "../../src/lib/operation-navigation.ts";
 import { catalogHierarchy } from "../../src/lib/catalog-hierarchy.ts";
+import { defaultToolbarButtons, toolbarButtonLabels } from "../../src/lib/toolbar-settings.ts";
 import { seedOperationGraph } from "./workflow-graph.fixture.mjs";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
@@ -758,6 +760,71 @@ Then('wrapped workflow controls fit their occupied rows', async function () {
         return Math.abs(element.getBoundingClientRect().width - widest - chrome);
       })).toBeLessThanOrEqual(1);
     }
+  }
+});
+
+Then('workflow toolbar frames follow their occupied rows at wrapping boundaries with {string} buttons', async function (visibility) {
+  const page = this.page;
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await setMode(page, 'workflow');
+  await closeCatalog(page);
+  assert.ok(['default', 'all'].includes(visibility));
+  await setMode(page, 'settings');
+  const section = page.locator('summary[aria-label="Toolbar"]');
+  if (await section.getAttribute('aria-expanded') !== 'true') await section.click();
+  const preferences = page.getByRole('group', { name: 'Toolbar button preferences', exact: true });
+  for (const [key, label] of Object.entries(toolbarButtonLabels)) {
+    const enabled = visibility === 'all' || defaultToolbarButtons[key];
+    const toggle = preferences.getByRole('switch', { name: label, exact: true });
+    if (await toggle.getAttribute('aria-checked') !== String(enabled)) await toggle.click();
+  }
+  await setMode(page, 'workflow');
+  const canvas = workflow(page);
+  const toolbar = page.locator('.workflow-toolbar');
+  await expect(toolbar.locator('button')).toHaveCount(visibility === 'all'
+    ? Object.keys(toolbarButtonLabels).length : Object.values(defaultToolbarButtons).filter(Boolean).length);
+  const boundary = await toolbar.evaluate(element => {
+    const style = getComputedStyle(element);
+    return [...element.querySelectorAll('.workflow-control-group')].reduce((sum, group) => sum + group.getBoundingClientRect().width, 0)
+      + (element.querySelectorAll('.workflow-control-group').length - 1) * parseFloat(style.columnGap)
+      + ['paddingLeft', 'paddingRight', 'borderLeftWidth', 'borderRightWidth', 'marginLeft', 'marginRight']
+        .reduce((sum, property) => sum + parseFloat(style[property]), 0);
+  });
+  const samples = [];
+  await mkdir(this.artifactDirectory, { recursive: true });
+  try {
+    for (const offset of [-0.25, -0.5, -1, 0, 0.25, 0.5, 1]) {
+      await canvas.evaluate((element, width) => { element.style.width = `${width}px`; }, boundary + offset);
+      let sample;
+      try {
+        await expect.poll(async () => {
+          sample = await toolbar.evaluate(element => {
+            const style = getComputedStyle(element), frame = element.getBoundingClientRect();
+            const rows = new Map();
+            const groups = [...element.querySelectorAll('.workflow-control-group')].map(group => group.getBoundingClientRect());
+            for (const group of groups) {
+              const key = Math.round(group.top * 10), row = rows.get(key) ?? { left: group.left, right: group.right };
+              row.left = Math.min(row.left, group.left); row.right = Math.max(row.right, group.right); rows.set(key, row);
+            }
+            const chrome = ['paddingLeft', 'paddingRight', 'borderLeftWidth', 'borderRightWidth'].reduce((sum, property) => sum + parseFloat(style[property]), 0);
+            return { width: frame.width, occupied: Math.max(...[...rows.values()].map(row => row.right - row.left)), chrome,
+              rows: rows.size, canvasWidth: element.closest('.workflow-workspace').getBoundingClientRect().width,
+              border: style.borderTopWidth, contained: groups.every(group => group.left >= frame.left && group.right <= frame.right) };
+          });
+          return { compact: Math.abs(sample.width - sample.occupied - sample.chrome) <= 1,
+            rows: sample.rows, border: sample.border, contained: sample.contained };
+        }).toEqual({ compact: true, rows: offset < 0 ? 2 : 1, border: '2px', contained: true });
+      } finally {
+        if (sample) samples.push({ offset, ...sample });
+        if (offset === -0.25 || offset === 0.25) await this.attach(await toolbar.screenshot({
+          path: `${this.artifactDirectory}/${offset < 0 ? 'below' : 'above'}-boundary.png` }), 'image/png');
+      }
+    }
+  } finally {
+    await writeFile(`${this.artifactDirectory}/toolbar-geometry.json`, JSON.stringify({ visibility, boundary, samples }, null, 2));
+    await this.attach(JSON.stringify({ visibility, boundary, samples }, null, 2), 'application/json');
+    await canvas.evaluate(element => { element.style.removeProperty('width'); });
   }
 });
 
