@@ -6,6 +6,7 @@ import { parseDocument } from "yaml";
 import { extractOperations, type Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { serverUrlHasPlaceholder } from "./server-url.ts";
+import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
 
 export const schemaDocumentMaxBytes = 10 * 1024 * 1024;
 export type SchemaDocumentRecord = {
@@ -203,6 +204,7 @@ export function validateSchemaDocument(value: unknown, id: string): {
 {
   validateSchemaDocumentId(id);
   const document = object(jsonValue(value), "document");
+  if (isCodexSchema(document)) return inspectCodexSchema(document, id);
   if (document.swagger === "2.0") unsupported("Only OpenAPI 3.0 and 3.1 documents are supported.");
   if (typeof document.openapi !== "string" || !/^\d+\.\d+\.\d+$/.test(document.openapi))
     invalid("openapi must declare a version such as 3.0.3 or 3.1.0.");

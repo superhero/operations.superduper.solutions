@@ -326,7 +326,9 @@ Then('the default service index retains every packaged operation and reports exe
     if (descriptor.id === 'ollama') assert.ok(catalog.operations.some(operation => operation.path === '/api/generate' && !operation.unavailableReason));
     if (descriptor.id === 'frankfurter') assert.ok(catalog.operations.some(operation => !operation.unavailableReason));
   }
-  assert.equal(count, 27120);
+  assert.equal(count, 27225);
+  assert.equal(serviceSchemaDescriptors.filter(source => source.protocol !== 'json-rpc')
+    .reduce((total, source) => total + source.operations, 0), 27120, 'Existing HTTP inventory remains unchanged.');
   assert.ok(runnable > 0);
 });
 Then('service inputs preserve standard validation and explicitly use server validation for complex JSON', () => {

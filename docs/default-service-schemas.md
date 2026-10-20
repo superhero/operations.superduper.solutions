@@ -1,12 +1,12 @@
 # Default service schemas
 
-The application bundles 223 packs covering 37 providers and 27,120 HTTP operations,
-alongside the two examples. Manage them in **Settings → Schemas**. Installation
+The application bundles 224 packs covering 37 providers, 27,120 HTTP operations
+and 105 Codex JSON-RPC client methods, alongside the two examples. Manage them in **Settings → Schemas**. Installation
 loads API descriptions locally; it does not contact provider APIs or supply credentials.
 
 ## Included contracts
 
-| Schema | HTTP operations | Source |
+| Schema | Operations | Source |
 |---|---:|---|
 | ALFRED / Archival Federal Reserve Economic Data | 31 | [Source](https://fred.stlouisfed.org/docs/api/fred/realtime_period.html) |
 | Anthropic / Claude | 144 | [Source](https://github.com/anthropics/anthropic-sdk-typescript/blob/sdk-v0.120.0/.stats.yml) |
@@ -221,6 +221,7 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 | Mistral | 173 | [Source](https://raw.githubusercontent.com/mistralai/platform-docs-public/main/openapi.yaml) |
 | Ollama | 17 | [Source](https://raw.githubusercontent.com/ollama/ollama/main/docs/openapi.yaml) |
 | OpenAI | 360 | [Source](https://raw.githubusercontent.com/openai/openai-openapi/main/openapi.yaml) |
+| OpenAI / Codex / App Server (JSON-RPC) | 105 | [Source](https://developers.openai.com/codex/app-server/) |
 | OpenRouter | 152 | [Source](https://openrouter.ai/openapi.json) |
 | Render | 228 | [Source](https://api-docs.render.com/openapi/render-public-api-1.json) |
 | Replicate | 36 | [Source](https://api.replicate.com/openapi.json) |
@@ -448,6 +449,19 @@ responses to stay within the worker's response-size limit.
 The base v1 schema is community-maintained. The reproducible
 `build/fred-schema.mjs` adaptation adds documented JSON response structures and
 the official v2 contract; each economic operation links to its official API docs.
+
+## Codex App Server
+
+The Codex pack contains OpenAI's native JSON Schema protocol bundle from release
+`0.163.0`. It covers client requests, server requests, responses and notifications,
+including authentication, models, threads, turns and approvals. Its 105 client
+methods are searchable under **OpenAI → Codex → App Server**. Inspect, copy or
+download the complete bundle through **Settings → Schemas**.
+
+These are JSON-RPC methods rather than HTTP endpoints. They remain visible with
+an execution limitation until Operations has a Codex connector. Adding the schema
+does not start Codex, sign in to ChatGPT or enable subscription access. The
+separate OpenAI HTTP API schema remains unchanged.
 
 ## Execution limits
 

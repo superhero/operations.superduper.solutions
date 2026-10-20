@@ -310,7 +310,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <Reveal open={!record.enabled} id={`schema-disabled-${record.id}`}><p class="schema-note">Operations from this document are unavailable until it is enabled.</p></Reveal>
 
             <JsonSchemaView load={() => onLoad(record.id)} onRelease={() => onRelease(record.id)} sourceKey={record.sourceIdentity}
-              label={`Full OpenAPI JSON: ${metadata.title}`} operationsOnly pageSize={1000} validated>
+              title={record.summary.protocol === "json-rpc" ? "Codex App Server schema" : "OpenAPI schema"}
+              label={`Full ${record.summary.protocol === "json-rpc" ? "JSON-RPC" : "OpenAPI"} JSON: ${metadata.title}`} operationsOnly pageSize={1000} validated>
               {#snippet actions()}
                 <span class="schema-actions" role="group" aria-label={`Actions for ${metadata.title}`}>
                   <HintButton class="schema-action" label={`Replace ${metadata.title}`} labelAsName={false} aria-label={`Replace ${metadata.title}`} disabled={mutationsDisabled} onclick={() => chooseReplacement(record.id)}>

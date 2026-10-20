@@ -3819,6 +3819,25 @@
     "compressedBytes": 425945
   },
   {
+    "id": "codex",
+    "provider": "openai",
+    "name": "OpenAI / Codex / App Server",
+    "url": "https://raw.githubusercontent.com/openai/codex/rust-v0.163.0/codex-rs/app-server-protocol/schema/json/codex_app_server_protocol.schemas.json",
+    "provenance": "https://developers.openai.com/codex/app-server/",
+    "version": "0.163.0",
+    "format": "codex-app-server",
+    "protocol": "json-rpc",
+    "operations": 105,
+    "license": {
+      "name": "Apache-2.0",
+      "url": "https://github.com/openai/codex/blob/rust-v0.163.0/LICENSE"
+    },
+    "sha256": "ef2cf80a7c1e02e63d1ff3565267f3faf1cdcaed315d3717b085de6eb6d7de16",
+    "sourceSha256": "408e09849d5d4931992a4227a7f3eb80b15d24901f84aca0562e816634651a82",
+    "bytes": 385057,
+    "compressedBytes": 61015
+  },
+  {
     "id": "openrouter",
     "name": "OpenRouter",
     "url": "https://openrouter.ai/openapi.json",

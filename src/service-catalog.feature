@@ -32,7 +32,7 @@ Feature: Default service operation catalogs
   Scenario: Unresolved service servers retain the source and block execution until configured
     Then Telegram placeholder defaults remain visible in the source and cannot produce an executable endpoint
 
-  Scenario: Every packaged HTTP operation remains represented
+  Scenario: Every packaged operation remains represented
     Then the default service index retains every packaged operation and reports execution limits
 
   Scenario: Standard inputs and advanced JSON remain usable without altering the source

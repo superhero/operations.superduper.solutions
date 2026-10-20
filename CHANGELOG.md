@@ -135,6 +135,16 @@ Keep service JSON attachment and query annotations as text, refresh discovery av
 
 ```
 
+<!-- changelog-commit:583e00ef1ebfc3a541371d5b56d36fe176b4036a -->
+### Commit [`583e00e`](https://github.com/superhero/operations.superduper.solutions/commit/583e00ef1ebfc3a541371d5b56d36fe176b4036a)
+
+```text
+feat(catalog): bundle the native Codex App Server schema
+
+Expose the pinned Codex 0.163.0 protocol in schema settings and search while preserving its request, response and event definitions. Keep JSON-RPC methods unavailable until a Codex connector exists, and retain the separate OpenAI HTTP catalog.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.55

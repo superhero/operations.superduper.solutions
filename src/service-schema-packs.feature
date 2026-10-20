@@ -6,8 +6,14 @@ Feature: Bundled service schema integrity
   Scenario: Google OAuth grant aliases retain scopes provenance and other required credentials
     Then Google grant normalization preserves scope alternatives without weakening unrelated authentication
 
-  Scenario: Every default pack retains its recorded OpenAPI document
+  Scenario: Every default pack retains its recorded schema document
     Then all service schema packs match their size hash and operation inventory
+
+  Scenario: Codex retains its native integration protocol without inventing HTTP routes
+    Then the pinned Codex schema preserves requests responses and events with execution unavailable
+
+  Scenario: Malformed Codex protocol bundles cannot enter the catalog
+    Then Codex inspection rejects incomplete protocols duplicate methods and forged HTTP routes
 
   Scenario: Corrupt packs cannot become schema documents
     Then service schema decoding rejects corrupt metadata compressed data and JSON
