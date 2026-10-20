@@ -211,7 +211,7 @@ Then("ending a workflow run restores the canvas and leaves its saved graph uncha
   await run.getByRole("textbox", { name: "Path value", exact: true }).fill("project-1");
   await page.keyboard.press("Delete");
   const quit = run.getByRole("button", { name: "Quit", exact: true });
-  await expect(quit.locator(".material-symbols-rounded")).toHaveText("exit_to_app");
+  await expect(quit.locator(".material-symbols-rounded")).toHaveText("backspace");
   await expect(quit.locator("span").filter({ hasText: /^Quit$/ })).toBeVisible();
   await expect(quit).not.toHaveAttribute("title");
   await quit.click();

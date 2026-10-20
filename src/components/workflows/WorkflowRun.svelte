@@ -205,7 +205,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {/if}
   <footer>
     <button type="button" class="run-primary run-action run-quit" onclick={end}>
-      <MaterialIcon name="exit_to_app" size={20} /><span>Quit</span>
+      <MaterialIcon name="backspace" size={20} /><span>Quit</span>
     </button>
     {#if busy}<button type="button" class="run-primary" onclick={() => runner?.cancelPending()}>Cancel request</button>{/if}
     {#if view?.kind === "choice" && !fatal}
