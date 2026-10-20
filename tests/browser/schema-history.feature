@@ -12,6 +12,16 @@ Feature: Schema commit comparisons and correction review
   Scenario: Settings protect default schemas and require deactivation before upload deletion
     Then schema settings explain deletion restrictions and cancel confirmation when an upload is reactivated
 
+  @service-defaults @chromium-only
+  Scenario Outline: Schema revisions retain their content until the closing slide ends
+    When I use a viewport of <width> by 900 pixels
+    Then schema revisions close without collapsing their content early and support reversal and reduced motion
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
   Scenario Outline: Schema settings group only name segments and preserve controls on desktop and mobile
     When I use a viewport of <width> by 844 pixels
     Then schema name folders preserve keyboard access renaming disablement deletion and reload

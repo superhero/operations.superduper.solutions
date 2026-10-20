@@ -1,0 +1,216 @@
+{
+  "baselineCommit": "9be89238f83e58b569c455b80a97784cb79e1880",
+  "candidateProductHashes": {
+    "src/lib/components/Reveal.svelte": "5ea35eb59ad17ea3f78e95787fd41501a21f3731ba760cac184c65cc258af769",
+    "src/components/settings/SchemaHistory.svelte": "9c6e031e23c026c995595537c2caedc3d5ffde6d3685d4b6dbb8586995df7019"
+  },
+  "dataset": {
+    "id": "cohere",
+    "revision": "75a54009440bcf35ba7dfc3141aeb173176448e68f1659d6435cecbd1af41712",
+    "operations": 42,
+    "historyCommits": 1,
+    "enabledCatalogs": "complete bundled defaults",
+    "workflowNodes": 0
+  },
+  "conditions": {
+    "host": "sds-01",
+    "cpus": 2,
+    "memoryBytes": 3221225472,
+    "memorySwapBytes": 3221225472,
+    "nodeHeapMiB": 1800,
+    "pids": 512,
+    "node": "26.7.0",
+    "playwright": "1.63.0",
+    "browser": "153.0.8010.12",
+    "dpr": 1,
+    "theme": "light",
+    "motion": "no-preference",
+    "height": 900,
+    "order": "three baseline samples, then three candidate samples per viewport; separate production builds",
+    "instrumentation": "rAF geometry and row reads with normal Playwright snapshots; separate short CDP diagnostic; routing disables HTTP cache",
+    "scope": "local motion correctness; no INP, CPU-speed or field-performance claim"
+  },
+  "viewports": [
+    {
+      "width": 390,
+      "baseline": {
+        "samples": [
+          {
+            "loadedHeightPx": 284.5,
+            "immediateHeightPx": 24,
+            "immediateLostHeightPx": 260.5,
+            "immediateRevisionRows": 0,
+            "firstFrameHeightPx": 24,
+            "closedRevisionRows": 0,
+            "maxHeaderMovementPx": 0.0
+          },
+          {
+            "loadedHeightPx": 284.5,
+            "immediateHeightPx": 24,
+            "immediateLostHeightPx": 260.5,
+            "immediateRevisionRows": 0,
+            "firstFrameHeightPx": 24,
+            "closedRevisionRows": 0,
+            "maxHeaderMovementPx": 0.0
+          },
+          {
+            "loadedHeightPx": 284.5,
+            "immediateHeightPx": 24,
+            "immediateLostHeightPx": 260.5,
+            "immediateRevisionRows": 0,
+            "firstFrameHeightPx": 24,
+            "closedRevisionRows": 0,
+            "maxHeaderMovementPx": 0.0
+          }
+        ],
+        "immediateLostHeightPx": {
+          "median": 260.5,
+          "range": [
+            260.5,
+            260.5
+          ]
+        },
+        "chromeTraceBoundaryMarksVerified": true
+      },
+      "candidate": {
+        "samples": [
+          {
+            "loadedHeightPx": 284.5,
+            "immediateHeightPx": 284.5,
+            "immediateLostHeightPx": 0.0,
+            "immediateRevisionRows": 1,
+            "firstFrameHeightPx": 284.5,
+            "closedRevisionRows": 0,
+            "maxHeaderMovementPx": 0.0
+          },
+          {
+            "loadedHeightPx": 284.5,
+            "immediateHeightPx": 284.5,
+            "immediateLostHeightPx": 0.0,
+            "immediateRevisionRows": 1,
+            "firstFrameHeightPx": 284.5,
+            "closedRevisionRows": 0,
+            "maxHeaderMovementPx": 0.0
+          },
+          {
+            "loadedHeightPx": 284.5,
+            "immediateHeightPx": 284.5,
+            "immediateLostHeightPx": 0.0,
+            "immediateRevisionRows": 1,
+            "firstFrameHeightPx": 284.5,
+            "closedRevisionRows": 0,
+            "maxHeaderMovementPx": 0.0
+          }
+        ],
+        "immediateLostHeightPx": {
+          "median": 0.0,
+          "range": [
+            0.0,
+            0.0
+          ]
+        },
+        "chromeTraceBoundaryMarksVerified": true
+      }
+    },
+    {
+      "width": 1280,
+      "baseline": {
+        "samples": [
+          {
+            "loadedHeightPx": 172.5,
+            "immediateHeightPx": 24,
+            "immediateLostHeightPx": 148.5,
+            "immediateRevisionRows": 0,
+            "firstFrameHeightPx": 24,
+            "closedRevisionRows": 0,
+            "maxHeaderMovementPx": 0.0
+          },
+          {
+            "loadedHeightPx": 172.5,
+            "immediateHeightPx": 24,
+            "immediateLostHeightPx": 148.5,
+            "immediateRevisionRows": 0,
+            "firstFrameHeightPx": 24,
+            "closedRevisionRows": 0,
+            "maxHeaderMovementPx": 0.0
+          },
+          {
+            "loadedHeightPx": 172.5,
+            "immediateHeightPx": 24,
+            "immediateLostHeightPx": 148.5,
+            "immediateRevisionRows": 0,
+            "firstFrameHeightPx": 24,
+            "closedRevisionRows": 0,
+            "maxHeaderMovementPx": 0.0
+          }
+        ],
+        "immediateLostHeightPx": {
+          "median": 148.5,
+          "range": [
+            148.5,
+            148.5
+          ]
+        },
+        "chromeTraceBoundaryMarksVerified": true
+      },
+      "candidate": {
+        "samples": [
+          {
+            "loadedHeightPx": 172.5,
+            "immediateHeightPx": 172.5,
+            "immediateLostHeightPx": 0.0,
+            "immediateRevisionRows": 1,
+            "firstFrameHeightPx": 172.5,
+            "closedRevisionRows": 0,
+            "maxHeaderMovementPx": 0.0
+          },
+          {
+            "loadedHeightPx": 172.5,
+            "immediateHeightPx": 172.5,
+            "immediateLostHeightPx": 0.0,
+            "immediateRevisionRows": 1,
+            "firstFrameHeightPx": 172.5,
+            "closedRevisionRows": 0,
+            "maxHeaderMovementPx": 0.0
+          },
+          {
+            "loadedHeightPx": 172.5,
+            "immediateHeightPx": 172.5,
+            "immediateLostHeightPx": 0.0,
+            "immediateRevisionRows": 1,
+            "firstFrameHeightPx": 172.5,
+            "closedRevisionRows": 0,
+            "maxHeaderMovementPx": 0.0
+          }
+        ],
+        "immediateLostHeightPx": {
+          "median": 0.0,
+          "range": [
+            0.0,
+            0.0
+          ]
+        },
+        "chromeTraceBoundaryMarksVerified": true
+      }
+    }
+  ],
+  "verification": {
+    "chromiumCases": 5,
+    "firefoxCases": 1,
+    "webkitCases": 1,
+    "typecheck": "0 errors; existing vault ARIA warning",
+    "productionBuild": "passed",
+    "baselineRegression": "both viewports fail on early outgoing-row removal",
+    "candidateRegression": "both viewports pass retention, reversal, reduced motion and teardown"
+  },
+  "buildOutputIdentities": {
+    "baseline": {
+      "javascript": "index-7t1EssEQ.js",
+      "css": "style-DvA-Pmh0.css"
+    },
+    "candidate": {
+      "javascript": "index-ChSNXcnQ.js",
+      "css": "style-DvA-Pmh0.css"
+    }
+  }
+}

@@ -4,9 +4,91 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { setMode } from './workspace.steps.mjs';
 import { expandSchemaCard, revealSchemaCard, expectSchemaName } from './schema-card.fixture.mjs';
+import { captureRevisionClose, traceRevisionClose } from './schema-revisions-motion.fixture.mjs';
+
+Then('schema revisions close without collapsing their content early and support reversal and reduced motion', async function () {
+  const page = this.page;
+  await setMode(page, 'settings');
+  await page.locator('summary[aria-label="Schemas"]').click();
+  const card = await expandSchemaCard(page.locator('[data-schema-id="cohere"]'));
+  const toggle = card.getByRole('button', { name: 'Schema revisions', exact: true });
+  const panel = card.locator('.schema-history > .reveal-panel');
+  const rows = panel.locator('[data-version-oid]');
+  const open = async () => {
+    if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
+    await expect(panel.locator('.revision-diff[data-revision]')).toHaveAttribute('aria-busy', 'false');
+    await expect.poll(() => panel.evaluate(element => element.getAnimations().length)).toBe(0);
+    assert.ok(await rows.count());
+  };
+  await open();
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect(panel).toHaveCSS('transition-duration', '0.24s, 0s');
+  const samples = [];
+  for (let sample = 0; sample < 3; sample++) {
+    await open();
+    samples.push(await captureRevisionClose(panel, toggle));
+  }
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await open();
+  const diagnostic = await traceRevisionClose(this.context, page, `${this.artifactDirectory}/revision-collapse.chrome.json`,
+    () => captureRevisionClose(panel, toggle));
+  const report = { width: page.viewportSize().width, browser: this.browser.version(), motion: 'no-preference',
+    source: 'cohere', samples, diagnostic, instrumentation: 'rAF geometry/row reads; normal Playwright snapshots; CDP in separate diagnostic pass; routing disables HTTP cache' };
+  await writeFile(`${this.artifactDirectory}/revision-collapse.json`, JSON.stringify(report, null, 2));
+  await this.attach(JSON.stringify(report), 'application/json');
+  for (const sample of samples) {
+    assert.equal(sample.immediate.rows, sample.before.rows, 'Closing must retain outgoing revision rows until the slide ends.');
+    assert.ok(sample.frames.some(frame => frame.height > 1 && frame.height < sample.before.height - 1), 'Closing has visible intermediate heights.');
+    assert.ok(sample.frames.every(frame => frame.height < 1 || frame.rows === sample.before.rows), 'The body stays intact throughout the slide.');
+    assert.ok(sample.frames.every(frame => Math.abs(frame.headerTop - sample.before.headerTop) < 1), 'The closing header stays in place.');
+    assert.equal(sample.frames.at(-1).rows, 0, 'Closed revision content is released.');
+  }
+
+  // Pause real CSS transitions so reversal cannot race the test driver.
+  await open();
+  await panel.evaluate(element => {
+    element.__holdRevisionSlide = new MutationObserver(() => {
+      getComputedStyle(element).gridTemplateRows;
+      for (const animation of element.getAnimations()) animation.pause();
+    });
+    element.__holdRevisionSlide.observe(element, { attributes: true, attributeFilter: ['class'] });
+  });
+  const halfway = () => panel.evaluate(async element => {
+    const animation = element.getAnimations().find(item => item.transitionProperty === 'grid-template-rows');
+    if (!animation) throw new Error('A real closing slide must be active.');
+    await animation.ready;
+    animation.currentTime = Number(animation.effect.getTiming().duration) / 2;
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    return { height: element.getBoundingClientRect().height, rows: element.querySelectorAll('[data-version-oid]').length };
+  });
+  try {
+    await toggle.click();
+    const closing = await halfway();
+    assert.ok(closing.height > 0 && closing.rows > 0);
+    await toggle.click();
+    await halfway();
+    await panel.evaluate(element => element.getAnimations().forEach(animation => animation.finish()));
+    await expect(panel.locator('.revision-diff[data-revision]')).toHaveAttribute('aria-busy', 'false');
+    assert.ok(await rows.count(), 'A superseded close cannot clear reopened revisions.');
+    await toggle.click();
+    const repeated = await halfway();
+    assert.ok(repeated.height > 0 && repeated.rows > 0);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(rows).toHaveCount(0);
+    await expect(panel).toHaveAttribute('hidden', '');
+    assert.equal(await panel.evaluate(element => element.getAnimations().length), 0);
+    await open();
+    await toggle.press('Enter');
+    await expect(rows).toHaveCount(0);
+    await expect(toggle).toBeFocused();
+    await open();
+    await card.getByRole('button', { name: /^Schema details:/ }).click();
+    await expect(card.locator('.schema-history')).toHaveCount(0);
+  } finally { await panel.evaluateAll(elements => elements.forEach(element => element.__holdRevisionSlide?.disconnect())); }
+});
 
 Then('schema name folders preserve keyboard access renaming disablement deletion and reload', async function () {
   const page = this.page;

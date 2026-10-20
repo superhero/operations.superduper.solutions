@@ -46,6 +46,9 @@ Pass a page limit for large sources. `JsonView`'s `validated` path accepts only
 owned, immutable JSON that has already passed domain validation; arbitrary inputs
 retain normalization. Formatted copy text is created only when requested.
 
-`Disclosure.onClosed` supports release after animation. Disabling its tooltip
-uses a native summary without instantiating tooltip state; preserve nested-control
-events, keyboard focus and reduced-motion behavior when changing that path.
+`Disclosure.onClosed` and `Reveal.onClosed` support release after animation.
+Invalidate pending replies when closing starts, then release outgoing data in the
+callback so its intrinsic height remains available to the slide. Reopening cancels
+obsolete completions; reduced motion settles and releases without animation.
+Disabling a Disclosure tooltip uses a native summary without instantiating tooltip
+state; preserve nested-control events, keyboard focus and reduced-motion behavior.

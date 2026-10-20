@@ -469,3 +469,39 @@ costs are similar; the result is faster visual feedback. First-open frame gaps o
 workers or caches were added. Raw samples, conditions and trace summaries are in
 [schema-header-feedback.json](schema-header-feedback.json); full diagnostic evidence
 is retained locally in the ignored task directory named there.
+
+
+## Schema revision collapse (20 October 2026)
+
+Closing Schema revisions cleared the loaded graph and diff before the grid
+transition finished. In the real Cohere single-commit history, the first closing
+frame immediately fell to a 24px empty body. This happened in all three recorded
+closes at each viewport; the header did not move, isolating content loss rather
+than a scroll-position jump.
+
+| Viewport | Loaded height | Before: immediate height loss, median (range) | After: immediate height loss, median (range) |
+| --- | --- | --- | --- |
+| 390×900 | 284.5px | 260.5px (260.5–260.5) | 0px (0–0) |
+| 1280×900 | 172.5px | 148.5px (148.5–148.5) | 0px (0–0) |
+
+`Reveal.onClosed` now releases the revision data after the existing 240ms slide.
+Pending replies are invalidated on close; retained outgoing rows remain inert.
+Reopening cancels the obsolete close completion, and reduced motion releases
+content immediately. Retention lasts only through the closing transition.
+
+[Raw sample summaries and build hashes](schema-revisions-motion.json) record the
+production Chromium conditions: one sds-01 job, 2 CPUs, 3GiB memory and combined
+swap limit, 1,800MiB Node heap, Node 26.7.0, Playwright 1.63.0 and 1× DPR. The
+complete bundled library was enabled, with an empty workflow and three warm
+closes per build/viewport in sequential build batches. rAF geometry/row reads and
+normal Playwright snapshots make these instrumented local motion observations;
+separate bounded Chrome rendering traces retain the diagnostic intervals in the
+ignored run evidence. This fixes the shape of the animation; it is not a latency,
+CPU or field Core Web Vitals claim.
+
+The new two-viewport Gherkin regression failed on the original build and passed
+with the fix, including intermediate heights, stable headers, post-close cleanup,
+reversal, reduced motion, keyboard focus and card teardown. Three existing cases
+also passed: revision comparisons/conflicts, header hover/slide and edit-icon
+motion. The revision-comparison case also passed once each in Firefox and
+WebKit. Typecheck and build passed with the existing vault-node ARIA warning.

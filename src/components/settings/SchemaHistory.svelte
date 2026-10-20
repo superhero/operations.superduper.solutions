@@ -70,9 +70,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     sourceIdentity;
     pending;
     if (open) untrack(() => { if (!acting) void refresh(); });
-    else untrack(() => { generation++; diffGeneration++; history = undefined; diff = undefined; selected = ""; comparison = undefined; loadingDiff = false; });
+    // Stop pending replies now; keep the outgoing body intact for the slide.
+    else untrack(() => { generation++; diffGeneration++; });
   });
   onDestroy(() => { generation++; diffGeneration++; });
+
+  function release() {
+    if (open) return;
+    generation++; diffGeneration++;
+    history = undefined; diff = undefined; selected = ""; comparison = undefined;
+    loading = false; loadingDiff = false; choices = {}; error = "";
+  }
 
   async function select(oid: string, base = comparison) {
     const request = ++diffGeneration;
@@ -125,11 +133,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     try {
       if (accept && onResolve) await onResolve(current, incoming, { ...choices });
       else if (!accept && onDismiss) await onDismiss(current, incoming);
+      if (!open) return;
       selected = "";
       comparison = undefined;
       diff = undefined;
       await refresh();
-    } catch (failure) { error = failure instanceof Error ? failure.message : "Could not apply the schema update."; }
+    } catch (failure) { if (open) error = failure instanceof Error ? failure.message : "Could not apply the schema update."; }
     finally { acting = false; }
   }
 
@@ -156,7 +165,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <MaterialIcon name="keyboard_arrow_right" size={18} />
     <span>Schema revisions</span>
   </button>
-  <Reveal {open} id={`schema-history-${id}`}>
+  <Reveal {open} id={`schema-history-${id}`} onClosed={release}>
     <div class="history-content" aria-busy={loading || acting}>
       {#if error}<p role="alert">{error}</p><Button size="sm" variant="secondary" disabled={acting} onclick={refresh}>Reload revisions</Button>{/if}
       {#if loading && !history}<p role="status">Loading schema revisions…</p>{/if}
