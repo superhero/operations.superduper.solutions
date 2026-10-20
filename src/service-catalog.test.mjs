@@ -11,6 +11,36 @@ import { approvedOperation } from './lib/secrets/policy.ts';
 import { executeCredentialed } from './lib/secrets/execution.ts';
 import { adaptFredSchema } from '../build/fred-schema.mjs';
 
+Then('{string} has {int} cloud schemas under {string} including {string}', async (provider, count, prefix, services) => {
+  const collection = serviceSchemaDescriptors.filter(source => source.provider === provider);
+  assert.equal(collection.length, count);
+  for (const id of services.split(',')) assert.ok(collection.some(source => source.id === id), `${provider} includes ${id}`);
+  for (const source of collection) {
+    assert.ok(source.name.startsWith(`${prefix} / `), source.id);
+    assert.ok(source.operations > 0, source.id);
+    assert.ok(source.provenance.startsWith('https://'), source.id);
+    if (provider !== 'azure') assert.equal(source.sourceKind, 'community-conversion', 'Converted contracts must retain their provenance.');
+    else assert.ok(source.url.startsWith('https://raw.githubusercontent.com/Azure/azure-rest-api-specs/'));
+  }
+  const established = {
+    'aws-lambda': 'da4be377c6195d8d2a9d6ef71d18ce4b93f21021ec7924e407753535f60ae2a1',
+    'aws-s3': '2c1283af457c374eea21b36eda33edbebd1d331b8954dff16c332d22881d212d',
+    'gcp-compute': '33803659d1a38271f3b910f3358fe6b248980f11e397b543e51b1ac120ea1cd8',
+    'gcp-storage': '89fce203814a45b34a3f61504d99453530579866c55554b400e0d52dc8d42d8e',
+    'azure-resources': '3229eb7c17e2b7737c4cfafe7671d3729a1f0bb71062f9411473224425637534',
+  };
+  for (const source of collection.filter(source => Object.hasOwn(established, source.id)))
+    assert.equal(source.sha256, established[source.id], `${source.id}: existing workflow contracts stay unchanged.`);
+  const id = { aws: 'aws-ec2', gcp: 'gcp-pubsub', azure: 'azure-keyvault' }[provider];
+  const document = await readServiceSchema(id);
+  const catalog = inspectServiceSchema(document, id);
+  assert.ok(document.components.securitySchemes, `${id}: retain the published authentication.`);
+  assert.equal(catalog.operations.length, collection.find(source => source.id === id).operations);
+  assert.ok(catalog.operations.every(operation => operation.unavailableReason || operation.security?.some(option => option.length)),
+    'Adding service descriptions must not turn authenticated requests into anonymous requests.');
+  if (provider === 'aws') assert.ok(catalog.operations.every(operation => operation.unavailableReason), 'AWS signing remains explicitly unsupported.');
+});
+
 Then('the Atlassian collection includes its published product APIs without changing established catalog identities', async () => {
   const expected = ['bitbucket', 'jira', 'confluence', 'trello', 'statuspage', 'opsgenie', 'bamboo', 'bitbucket-dc', 'confluence-dc', 'crowd-dc',
     'jira-dc', 'jira-software', 'jira-service-management', 'jira-service-management-dc', 'jira-service-management-ops',
@@ -165,7 +195,7 @@ Then('the default service index retains every packaged operation and reports exe
     if (descriptor.id === 'ollama') assert.ok(catalog.operations.some(operation => operation.path === '/api/generate' && !operation.unavailableReason));
     if (descriptor.id === 'frankfurter') assert.ok(catalog.operations.some(operation => !operation.unavailableReason));
   }
-  assert.equal(count, 17963);
+  assert.equal(count, 26453);
   assert.ok(runnable > 0);
 });
 Then('service inputs preserve standard validation and explicitly use server validation for complex JSON', () => {
