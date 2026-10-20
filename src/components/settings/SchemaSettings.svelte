@@ -307,21 +307,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-upload-guidance { flex: 1 1 240px; min-width: 0; margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .schema-status { margin: 0; font-size: 12px; overflow-wrap: anywhere; }
   .schema-toolbar :global(.upload-action) { height: auto; min-height: 44px; max-width: 100%; padding-block: 12px; white-space: normal; text-align: left; font-weight: 700; background: var(--color-background); color: var(--color-foreground); }
-  .schema-list { --schema-indent: 12px; --tree-indent: var(--schema-indent); --tree-line-inset: calc(var(--schema-indent) * 0.6); --tree-hook-top: 9px; display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+  .schema-list { --schema-control-size: calc(var(--spacing) * 8); --schema-label-gap: 6px; --schema-indent: 12px; --tree-indent: var(--schema-indent); --tree-line-inset: calc(var(--schema-indent) * 0.6); --tree-hook-top: 9px; display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
   .schema-toolbar, .schema-list, .schema-empty { min-width: 0; padding: 16px; border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
   .schema-group { min-width: 0; }
   .schema-children { display: grid; gap: 12px; margin: 0; padding: 12px 0 0; list-style: none; }
-  .schema-settings :global(.schema-name-group > summary) { display: flex; align-items: center; gap: 10px; min-height: 32px; padding: 6px 10px; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); list-style: none; font-size: 14px; font-weight: 700; }
+  .schema-settings :global(.schema-name-group > summary) { display: flex; align-items: center; gap: var(--schema-label-gap); min-height: 32px; padding: 6px 10px 6px 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); list-style: none; font-size: 14px; font-weight: 700; }
   .schema-group-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .schema-settings :global(.schema-group-chevron) { flex-shrink: 0; width: 18px; margin-left: 0; transition: transform 180ms ease-in-out; }
+  .schema-settings :global(.schema-group-chevron) { flex-shrink: 0; width: var(--schema-control-size); margin-left: 0; text-align: center; transition: transform 180ms ease-in-out; }
   .schema-settings :global(.schema-name-group > summary[aria-expanded="true"] .schema-group-chevron) { transform: rotate(90deg); }
-  .schema-heading { --schema-control-size: calc(var(--spacing) * 8); display: flex; align-items: center; gap: 6px; }
+  .schema-heading { display: flex; align-items: center; gap: 6px; }
   .schema-name { display: flex; flex: 1; min-width: 0; height: var(--schema-control-size); border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
   .schema-name-field { position: relative; display: flex; flex: 1; min-width: 0; height: 100%; padding-right: 0; transition: padding-right 180ms ease-in-out; }
   .schema-name-field.editing { padding-right: var(--schema-control-size); }
   .schema-name-icon { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: var(--schema-control-size); height: 100%; cursor: text; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 180ms ease-in-out, visibility 0s linear 180ms; }
   .schema-name-icon.visible { opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s; }
-  .schema-name-input, .schema-name-label { box-sizing: border-box; flex: 1; min-width: 0; width: 100%; height: 100%; padding: 6px 10px; border: 0; border-radius: 0; outline: none; background: transparent; color: inherit; font-size: 14px; }
+  .schema-name-input, .schema-name-label { box-sizing: border-box; flex: 1; min-width: 0; width: 100%; height: 100%; padding: 6px 10px 6px var(--schema-label-gap); border: 0; border-radius: 0; outline: none; background: transparent; color: inherit; font-size: 14px; }
   .schema-name-label { overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }
   .schema-empty h3 { margin: 0; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
   .schema-empty p, .schema-note { margin: 6px 0 0; color: var(--color-muted-foreground); font-size: 12px; overflow-wrap: anywhere; }
