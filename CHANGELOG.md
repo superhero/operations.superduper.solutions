@@ -66,6 +66,27 @@ existing navigation journeys to traverse the resource hierarchy.
 
 ```
 
+<!-- changelog-commit:8c6f15e022331d5f622871a359ea17cf00a5f2ce -->
+### Commit [`8c6f15e`](https://github.com/superhero/operations.superduper.solutions/commit/8c6f15e022331d5f622871a359ea17cf00a5f2ce)
+
+```text
+feat(catalog): expand cloud provider schemas
+
+Add 53 AWS, 50 Google Cloud and 12 Azure service contracts with recorded
+provider provenance, API versions, integrity hashes and discovery indexes.
+The library now includes 198 service packs and 26,453 HTTP operations.
+
+Keep all existing provider payloads and workflow identities unchanged.
+AWS and Google use labeled community OpenAPI conversions; Azure's stable
+Swagger documents retain their externally referenced models and examples.
+Document the collection boundaries and existing execution limitations.
+
+Cover provider inventories, original schema digests, authentication guards,
+desktop/mobile browsing, canonical workflow restoration, alphabetical order
+and saved schema preferences through focused Gherkin scenarios.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.55
