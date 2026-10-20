@@ -3,6 +3,14 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Default service operation catalogs
+  Scenario: Google Workspace and product APIs preserve their scoped workflow contracts
+    Then Google product catalogs retain these collections and prepare scoped Gmail and Drive requests
+      | prefix             | count |
+      | Google / Workspace | 19    |
+      | Google / YouTube   | 2     |
+      | Google / Analytics | 2     |
+      | Google / Search Console | 1 |
+
   Scenario: Cloudflare Realtime SFU complements the existing account API with app-secret authentication
     Then Cloudflare retains its account API and adds the published Realtime SFU contracts with their own credentials
 

@@ -2042,6 +2042,46 @@
     "compressedBytes": 323749
   },
   {
+    "id": "google-analytics-admin",
+    "provider": "google",
+    "name": "Google / Analytics / Admin",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/analyticsadmin/v1beta/openapi.yaml",
+    "provenance": "https://analyticsadmin.googleapis.com/$discovery/rest?version=v1beta",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v1beta",
+    "openapi": "3.0.0",
+    "operations": 26,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "7642fc49124ab689e334b9c6673254761cbf86bb8c1bc9b2127c703ffeb3471c",
+    "sourceSha256": "39f0f90cd51b7dbb25e144610319d4a4958f70a7f7ca85c118a33409c74001ca",
+    "bytes": 96231,
+    "compressedBytes": 15077
+  },
+  {
+    "id": "google-analytics-data",
+    "provider": "google",
+    "name": "Google / Analytics / Data",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/analyticsdata/v1beta/openapi.yaml",
+    "provenance": "https://analyticsdata.googleapis.com/$discovery/rest?version=v1beta",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v1beta",
+    "openapi": "3.0.0",
+    "operations": 10,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "02ed05d4884c9f09d7aca959eea8103195bcfac60ad52ac13de2265c6203021c",
+    "sourceSha256": "ee9a540b4b7319ca00a2a490c4cbc8bb7447af87fdc35c17f58ebb8c95a5da4e",
+    "bytes": 93679,
+    "compressedBytes": 17138
+  },
+  {
     "id": "gcp-accesscontextmanager",
     "provider": "gcp",
     "name": "Google / Cloud / Access Context Manager",
@@ -3041,6 +3081,446 @@
     "sourceSha256": "901d2a659084705d57ffabf3401762a062fbd1de79c84553902142a8b0582e76",
     "bytes": 349845,
     "compressedBytes": 53960
+  },
+  {
+    "id": "google-search-console",
+    "provider": "google",
+    "name": "Google / Search Console",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/searchconsole/v1/openapi.yaml",
+    "provenance": "https://searchconsole.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 11,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "541d68471cdfe7e966dc8da2f16f0a4be9abbaa6ef9191af19c54f3457c80cff",
+    "sourceSha256": "359234ef9cfb85cdd052da12cc01f0daad4d1e813a69baa8f93bfa435e5c68f1",
+    "bytes": 37610,
+    "compressedBytes": 7739
+  },
+  {
+    "id": "google-admin-data-transfer",
+    "provider": "google",
+    "name": "Google / Workspace / Admin SDK / Data Transfer",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/admin/datatransfer_v1/openapi.yaml",
+    "provenance": "https://admin.googleapis.com/$discovery/rest?version=datatransfer_v1",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "datatransfer_v1",
+    "openapi": "3.0.0",
+    "operations": 5,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "a470c9dafb3caaa92bfd4121f5d9957c1abd3de27f2ce94cc086d033f5549253",
+    "sourceSha256": "2bd6b7b74f6436bcf0fcb79fe2ddf32cfc5e96c0792259016a3fbf00da174c2c",
+    "bytes": 15752,
+    "compressedBytes": 2934
+  },
+  {
+    "id": "google-admin-directory",
+    "provider": "google",
+    "name": "Google / Workspace / Admin SDK / Directory",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/admin/directory_v1/openapi.yaml",
+    "provenance": "https://admin.googleapis.com/$discovery/rest?version=directory_v1",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "directory_v1",
+    "openapi": "3.0.0",
+    "operations": 123,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "1a2fc6ba76a3c8a6d6caa6d0fc77bb7cce6e6dbbeacbf38d24a7ccdc26e1e9a9",
+    "sourceSha256": "c552cdc7b0b578fec1ea8997bc83ce61d72eb6ef4ea1c6a721301be045170f69",
+    "bytes": 298631,
+    "compressedBytes": 34829
+  },
+  {
+    "id": "google-admin-reports",
+    "provider": "google",
+    "name": "Google / Workspace / Admin SDK / Reports",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/admin/reports_v1/openapi.yaml",
+    "provenance": "https://admin.googleapis.com/$discovery/rest?version=reports_v1",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "reports_v1",
+    "openapi": "3.0.0",
+    "operations": 6,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "86b449c01221f96e8217a4eaab64f4d10e431c2538f0c728e8b0d57ea39e14f7",
+    "sourceSha256": "e9ae37ed2c45dd5aa7759dc2e9f4e151a1d88b08a11ebc8cfafa85af4c33acf3",
+    "bytes": 48078,
+    "compressedBytes": 7772
+  },
+  {
+    "id": "google-apps-script",
+    "provider": "google",
+    "name": "Google / Workspace / Apps Script",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/script/v1/openapi.yaml",
+    "provenance": "https://script.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 16,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "3324c7e3fd9a55654689158277891579148bfa0f00e693d34edcbd1d63e138bc",
+    "sourceSha256": "75e00d921a782d7f4d6070890c066c9127c69053d7010f913d1a2efcc8548941",
+    "bytes": 57673,
+    "compressedBytes": 9331
+  },
+  {
+    "id": "google-calendar",
+    "provider": "google",
+    "name": "Google / Workspace / Calendar",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/calendar/v3/openapi.yaml",
+    "provenance": "https://calendar-json.googleapis.com/$discovery/rest?version=v3",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v3",
+    "openapi": "3.0.0",
+    "operations": 37,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "1c436cdb34bf03ad098dca42c26c4fcd7247e93f07cec79e6c8270f2ac43ebec",
+    "sourceSha256": "beb4c5414ff527249fe660e8d7e49e1a026ff62d0accd6f9b42fcf89ea61f3b7",
+    "bytes": 130086,
+    "compressedBytes": 16813
+  },
+  {
+    "id": "google-chat",
+    "provider": "google",
+    "name": "Google / Workspace / Chat",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/chat/v1/openapi.yaml",
+    "provenance": "https://chat.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 17,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "a81e1218f7404d24ba5741108ffaef3162162837008a41fcfdc1fbda4a535fd8",
+    "sourceSha256": "b63fe36446b451e4e81dea21ca05a4a65e65def6fa3844a8346faac9a2b84cb5",
+    "bytes": 167427,
+    "compressedBytes": 32715
+  },
+  {
+    "id": "google-classroom",
+    "provider": "google",
+    "name": "Google / Workspace / Classroom",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/classroom/v1/openapi.yaml",
+    "provenance": "https://classroom.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 61,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "2e046b8fcce6845bece0d6fceb4c91b923586ed059618999491b43db618f5dd8",
+    "sourceSha256": "62d8ea0f648f98331ba6a6b09a7c5edbfa5a726754ff17ed02f98e011870be19",
+    "bytes": 186632,
+    "compressedBytes": 19735
+  },
+  {
+    "id": "google-docs",
+    "provider": "google",
+    "name": "Google / Workspace / Docs",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/docs/v1/openapi.yaml",
+    "provenance": "https://docs.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 3,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "d7e367683315ac82ce2d4e4ded9b618945f69e667edf659c62a4e6c9463db649",
+    "sourceSha256": "09b2e5ef254c731647bf3cdbb372d10a0f42922de309ae59a07c5ac2fc86de36",
+    "bytes": 153446,
+    "compressedBytes": 25207
+  },
+  {
+    "id": "google-drive-activity",
+    "provider": "google",
+    "name": "Google / Workspace / Drive / Activity",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/driveactivity/v2/openapi.yaml",
+    "provenance": "https://driveactivity.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v2",
+    "openapi": "3.0.0",
+    "operations": 1,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "ef77f32179d8f7e22719f420fb6197300d39f289550ecf0451b3abc114da65db",
+    "sourceSha256": "5728bbbdebe98a9487929c5a028fdf30fcfc9273b954424c08c68a11f40465dc",
+    "bytes": 33296,
+    "compressedBytes": 7323
+  },
+  {
+    "id": "google-drive",
+    "provider": "google",
+    "name": "Google / Workspace / Drive / API",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/drive/v3/openapi.yaml",
+    "provenance": "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v3",
+    "openapi": "3.0.0",
+    "operations": 50,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "a5e7a65f2499dd01a47926894ff5911d51622ff76560a41ec8fcb7f4248ca0d9",
+    "sourceSha256": "5c8ef89b07b57e2a0d941c9512c2fe53ea90f3fcf85a122f679d5649f46f314c",
+    "bytes": 186583,
+    "compressedBytes": 22947
+  },
+  {
+    "id": "google-drive-labels",
+    "provider": "google",
+    "name": "Google / Workspace / Drive / Labels",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/drivelabels/v2/openapi.yaml",
+    "provenance": "https://drivelabels.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v2",
+    "openapi": "3.0.0",
+    "operations": 16,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "91d29e539306ab3ea63ac317f6e9a137b63a3b7005bedbb8fa8f7ee0a24c0a0a",
+    "sourceSha256": "6403fa4e4a03abbd75285d60f9dcb5285c5d6cb33cbf4ce36e4632bf53b9a841",
+    "bytes": 99054,
+    "compressedBytes": 14290
+  },
+  {
+    "id": "google-forms",
+    "provider": "google",
+    "name": "Google / Workspace / Forms",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/forms/v1/openapi.yaml",
+    "provenance": "https://forms.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 9,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "431e0045283404e38f8270705227360eca4e5393de2a2f62a6a741d43a8e4c35",
+    "sourceSha256": "fe57c6be50c901f1483254eb808863e1257d35aec2d831e404bc48f0bc1cf8e6",
+    "bytes": 55314,
+    "compressedBytes": 10875
+  },
+  {
+    "id": "google-gmail",
+    "provider": "google",
+    "name": "Google / Workspace / Gmail",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/gmail/v1/openapi.yaml",
+    "provenance": "https://gmail.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 79,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "f509d7c6b3c6727074e6b2a0158ce9a7a6597b85666de10c39ebad222f780f8f",
+    "sourceSha256": "041154c430d2d9654032888d0d9b2a7357b5b6272b1c8194419719fe5f9348ce",
+    "bytes": 184768,
+    "compressedBytes": 18486
+  },
+  {
+    "id": "google-keep",
+    "provider": "google",
+    "name": "Google / Workspace / Keep",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/keep/v1/openapi.yaml",
+    "provenance": "https://keep.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 6,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "6b43d2db1b1b33124bcec5f4c9a56baddad29f94cc3257ab856584195e2c29a7",
+    "sourceSha256": "0d36e3fe87198bc928890e87f9f32370d561372cdd8db351e70c3e16de82968e",
+    "bytes": 19102,
+    "compressedBytes": 4227
+  },
+  {
+    "id": "google-people",
+    "provider": "google",
+    "name": "Google / Workspace / People",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/people/v1/openapi.yaml",
+    "provenance": "https://people.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 23,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "a19230f1bffbdd8e3db1b989cc16695ed248d97f640c1f41f6de8ff5ec1dbc88",
+    "sourceSha256": "71c928ebd2ded32a38d06f6d700b5938fa3c501a43c35d218178bff82d003a55",
+    "bytes": 120914,
+    "compressedBytes": 16445
+  },
+  {
+    "id": "google-sheets",
+    "provider": "google",
+    "name": "Google / Workspace / Sheets",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/sheets/v4/openapi.yaml",
+    "provenance": "https://sheets.googleapis.com/$discovery/rest?version=v4",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v4",
+    "openapi": "3.0.0",
+    "operations": 17,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "bc0eac66b6918c819ae53b6dc4dfd68de5a20622a2808d92aacb7a42b0bcfa77",
+    "sourceSha256": "5598e24f4f4512bae57e7a06675a47d140012e9399c7d8b673f9c3b390aa68c3",
+    "bytes": 252156,
+    "compressedBytes": 47793
+  },
+  {
+    "id": "google-slides",
+    "provider": "google",
+    "name": "Google / Workspace / Slides",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/slides/v1/openapi.yaml",
+    "provenance": "https://slides.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 5,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "ed59f1a0878ed6d96571accefcf3662f6628f4f99818dfc7a035d6b6610c19cf",
+    "sourceSha256": "1172788dc094bd9567b6ab41c33c832da8aac23331ef461a8c842d6ba0af0dfd",
+    "bytes": 141709,
+    "compressedBytes": 27611
+  },
+  {
+    "id": "google-tasks",
+    "provider": "google",
+    "name": "Google / Workspace / Tasks",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/tasks/v1/openapi.yaml",
+    "provenance": "https://tasks.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 14,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "825ade1f0cdbe66e3828c68679ff4d148b0949cfc00b7a54534841094637e6a0",
+    "sourceSha256": "3fb4e2cfb89de8e7550b9e7e3a3c38b0159df37b124e8ca3e165f8fbce808258",
+    "bytes": 23796,
+    "compressedBytes": 3358
+  },
+  {
+    "id": "google-vault",
+    "provider": "google",
+    "name": "Google / Workspace / Vault",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/vault/v1/openapi.yaml",
+    "provenance": "https://vault.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 32,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "e2d51b9702cbc376149ff96f9362881cb7ef37f19515c6ab176be90ca0ac0df8",
+    "sourceSha256": "efd68f34b918c8a7bfcae808021eff5c3545e0449e7aa0ebef3f095c8581f9bf",
+    "bytes": 79674,
+    "compressedBytes": 11437
+  },
+  {
+    "id": "google-youtube-analytics",
+    "provider": "google",
+    "name": "Google / YouTube / Analytics",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/youtubeAnalytics/v2/openapi.yaml",
+    "provenance": "https://youtubeanalytics.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v2",
+    "openapi": "3.0.0",
+    "operations": 8,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "42a8b7cd78a09b91f92bf51525a6e0c07207483aa9c2fd72040d7a8fe28bdc35",
+    "sourceSha256": "1f629bbfce6768f5ff1017d5e369e474c0261c2dc8236e4c9baaeacafa879aa9",
+    "bytes": 36716,
+    "compressedBytes": 5936
+  },
+  {
+    "id": "google-youtube",
+    "provider": "google",
+    "name": "Google / YouTube / Data",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/youtube/v3/openapi.yaml",
+    "provenance": "https://youtube.googleapis.com/$discovery/rest?version=v3",
+    "sourceKind": "community-adapted",
+    "profile": "google-oauth",
+    "version": "v3",
+    "openapi": "3.0.0",
+    "operations": 80,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "bbba4d62d69bb6774b131026d8727740c9100fe1eff71a9b576d831ce0fe5850",
+    "sourceSha256": "64368a8846394137924f0492053bb05b54049826df83920a8e2eeae2ec30fb12",
+    "bytes": 396331,
+    "compressedBytes": 46695
   },
   {
     "id": "groq",

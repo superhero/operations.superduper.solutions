@@ -1,6 +1,6 @@
 # Default service schemas
 
-The application bundles 199 packs covering 36 providers and 26,465 HTTP operations,
+The application bundles 223 packs covering 37 providers and 27,120 HTTP operations,
 alongside the two examples. Manage them in **Settings → Schemas**. Installation
 loads API descriptions locally; it does not contact provider APIs or supply credentials.
 
@@ -125,6 +125,8 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 | FRED / Federal Reserve Economic Data | 36 | [Source](https://fred.stlouisfed.org/docs/api/fred/) |
 | GitHub | 1242 | [Source](https://raw.githubusercontent.com/github/rest-api-description/main/descriptions-next/api.github.com/api.github.com.yaml) |
 | GitLab | 1869 | [Source](https://gitlab.com/gitlab-org/gitlab/-/raw/master/doc/api/openapi/openapi_v3.yaml) |
+| Google / Analytics / Admin | 26 | [Source](https://analyticsadmin.googleapis.com/$discovery/rest?version=v1beta) |
+| Google / Analytics / Data | 10 | [Source](https://analyticsdata.googleapis.com/$discovery/rest?version=v1beta) |
 | Google / Cloud / Access Context Manager | 22 | [Source](https://accesscontextmanager.googleapis.com/$discovery/rest?version=v1) |
 | Google / Cloud / API Gateway | 15 | [Source](https://apigateway.googleapis.com/$discovery/rest?version=v1) |
 | Google / Cloud / Artifact Registry | 27 | [Source](https://artifactregistry.googleapis.com/$discovery/rest?version=v1) |
@@ -178,6 +180,28 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 | Google / Cloud / Workflows | 8 | [Source](https://workflows.googleapis.com/$discovery/rest?version=v1) |
 | Google / Cloud / Workflows / Executions | 8 | [Source](https://workflowexecutions.googleapis.com/$discovery/rest?version=v1) |
 | Google / Gemini / Interactions | 37 | [Source](https://ai.google.dev/static/api/interactions.openapi.json) |
+| Google / Search Console | 11 | [Source](https://searchconsole.googleapis.com/$discovery/rest?version=v1) |
+| Google / Workspace / Admin SDK / Data Transfer | 5 | [Source](https://admin.googleapis.com/$discovery/rest?version=datatransfer_v1) |
+| Google / Workspace / Admin SDK / Directory | 123 | [Source](https://admin.googleapis.com/$discovery/rest?version=directory_v1) |
+| Google / Workspace / Admin SDK / Reports | 6 | [Source](https://admin.googleapis.com/$discovery/rest?version=reports_v1) |
+| Google / Workspace / Apps Script | 16 | [Source](https://script.googleapis.com/$discovery/rest?version=v1) |
+| Google / Workspace / Calendar | 37 | [Source](https://calendar-json.googleapis.com/$discovery/rest?version=v3) |
+| Google / Workspace / Chat | 17 | [Source](https://chat.googleapis.com/$discovery/rest?version=v1) |
+| Google / Workspace / Classroom | 61 | [Source](https://classroom.googleapis.com/$discovery/rest?version=v1) |
+| Google / Workspace / Docs | 3 | [Source](https://docs.googleapis.com/$discovery/rest?version=v1) |
+| Google / Workspace / Drive / Activity | 1 | [Source](https://driveactivity.googleapis.com/$discovery/rest?version=v2) |
+| Google / Workspace / Drive / API | 50 | [Source](https://www.googleapis.com/discovery/v1/apis/drive/v3/rest) |
+| Google / Workspace / Drive / Labels | 16 | [Source](https://drivelabels.googleapis.com/$discovery/rest?version=v2) |
+| Google / Workspace / Forms | 9 | [Source](https://forms.googleapis.com/$discovery/rest?version=v1) |
+| Google / Workspace / Gmail | 79 | [Source](https://gmail.googleapis.com/$discovery/rest?version=v1) |
+| Google / Workspace / Keep | 6 | [Source](https://keep.googleapis.com/$discovery/rest?version=v1) |
+| Google / Workspace / People | 23 | [Source](https://people.googleapis.com/$discovery/rest?version=v1) |
+| Google / Workspace / Sheets | 17 | [Source](https://sheets.googleapis.com/$discovery/rest?version=v4) |
+| Google / Workspace / Slides | 5 | [Source](https://slides.googleapis.com/$discovery/rest?version=v1) |
+| Google / Workspace / Tasks | 14 | [Source](https://tasks.googleapis.com/$discovery/rest?version=v1) |
+| Google / Workspace / Vault | 32 | [Source](https://vault.googleapis.com/$discovery/rest?version=v1) |
+| Google / YouTube / Analytics | 8 | [Source](https://youtubeanalytics.googleapis.com/$discovery/rest?version=v2) |
+| Google / YouTube / Data | 80 | [Source](https://youtube.googleapis.com/$discovery/rest?version=v3) |
 | Groq | 23 | [Source](https://github.com/groq/groq-typescript/blob/v1.6.0/.stats.yml) |
 | Hetzner / Cloud | 190 | [Source](https://docs.hetzner.cloud/cloud.spec.json) |
 | Hugging Face / Inference Endpoints | 46 | [Source](https://api.endpoints.huggingface.cloud/openapi.json) |
@@ -224,6 +248,50 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 - Anthropic and Groq artifacts are identified by official SDK metadata. Missing
   version labels are explicitly supplied for Anthropic and Bluesky. The inventory
   retains provenance, including community conversions.
+
+## Google Workspace and other Google products
+
+The 24 additional contracts cover Google products outside the Cloud collection:
+
+- **Workspace (19):** Gmail, Drive, Calendar, Sheets, Docs, Slides, Forms, Tasks,
+  People (contacts), Chat, Apps Script, Keep, Classroom, Vault, Admin SDK
+  Directory/Reports/Data Transfer, Drive Activity and Drive Labels.
+- **YouTube (2):** Data and Analytics.
+- **Analytics (2):** Admin and Data.
+- **Search Console (1).**
+
+Names use `Google / Workspace / …`, `Google / YouTube / …`,
+`Google / Analytics / …` and `Google / Search Console`. Drive groups its main
+API, Activity and Labels contracts together. Existing Google Cloud and Gemini
+packs keep their payloads and workflow identities.
+
+These are APIs.guru conversions of official Google Discovery descriptions,
+with a narrow, reproducible `google-oauth` build adaptation. The converted
+snapshots can lag the current provider APIs; the source manifest records the
+exact version and hashes and links to the corresponding official Discovery
+document. Admin SDK uses all three separate Directory, Reports and Data Transfer
+contracts. Analytics Admin/Data use the available `v1beta` conversions.
+
+The conversion lists implicit and authorization-code OAuth grants together as
+though two bearer credentials must be supplied. Both Google grants issue an
+access token for the same API. `build/google-oauth-schema.mjs` collapses only the
+known Google pair with identical scopes into the authorization-code scheme,
+retaining every scope alternative, both original flow descriptions and
+`x-upstream-security` provenance. Unexpected grant definitions or mismatched
+scopes fail generation. Generic security validation still rejects conflicting
+credential headers. This opt-in adaptation does not rewrite existing Cloud packs.
+
+The contracts add 655 HTTP operations. Of these, 640 pass the current request
+transport checks; 15 Gmail/Drive/Chat/YouTube operations retain an explicit
+unsupported binary/streaming-body limitation. This classification does not
+certify live account access or current provider behavior.
+
+For private user data, bind an OAuth access token with the required scopes from
+the vault to `Oauth2c`. A token is an access token, not an OAuth client secret or
+API key. [Google authorization](https://developers.google.com/workspace/guides/auth-overview)
+still requires the appropriate app configuration, user consent and, where
+applicable, Workspace administrator permissions. These schema additions do not
+implement Google sign-in, token refresh, service-account signing or binary uploads.
 
 ## Cloudflare
 

@@ -12,6 +12,7 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
+import { adaptGoogleOauthSchema } from './google-oauth-schema.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const cache = resolve(root, 'tmp/schema-sources');
@@ -61,6 +62,7 @@ for (const source of sources) {
   document = await RefParser.bundle(source.url ?? resolve(root, source.file), document,
     { resolve: { file: false, http: resolver } });
   if (source.profile === 'fred' || source.profile === 'alfred') document = adaptFredSchema(document, source.profile);
+  if (source.profile === 'google-oauth') document = adaptGoogleOauthSchema(document);
   if (source.operationIds === 'method-path') document = useMethodPathOperationIds(document);
   if ((typeof document.info?.version !== 'string' || !document.info.version) && source.version) document.info.version = source.version;
   if (typeof document.info?.version !== 'string' || !document.info.version) throw new Error(`${source.id}: missing schema version; specify a documented source snapshot version.`);
