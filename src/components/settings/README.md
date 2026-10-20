@@ -12,6 +12,7 @@ the single-open-section behavior, appearance and workflow defaults.
 | [ToolbarSettings.svelte](ToolbarSettings.svelte) | Controls individual toolbar-button visibility through app settings; keyboard shortcuts remain available |
 | [LocaleSettings.svelte](LocaleSettings.svelte) | Receives preferences and change/retry callbacks; uses the shared locale formatter for its preview |
 | [SchemaSettings.svelte](SchemaSettings.svelte) | Receives library records and callbacks for upload, replacement, rename, ordering, enablement, deletion and download |
+| [SchemaHistory.svelte](SchemaHistory.svelte) | Loads schema branch ancestry and changed fields on demand; reviews conflicting updates and applies bundled revisions through library callbacks |
 | [SecretsSettings.svelte](SecretsSettings.svelte) | Manages encrypted credentials, destination approvals, unlock methods, backups and locking through the dedicated vault worker |
 | [StorageSettings.svelte](StorageSettings.svelte) | Presents browser resource metrics, availability and collection errors |
 | [MetricsHistoryChart.svelte](MetricsHistoryChart.svelte) | Renders supplied series and intervals, with local metric/range selection |

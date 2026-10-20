@@ -13,6 +13,8 @@ import SchemaLibraryWorker from "./schema-library.worker.ts?worker&inline";
 import { createWorkerClient } from "./worker-rpc.ts";
 import { logger } from "./logger.ts";
 import { invalidateVaultExecution } from "./secrets/client.ts";
+import type { SchemaBranchHistory, SchemaRevisionDiff } from "./schema-storage.ts";
+import type { SchemaResolution } from "./schema-merge.ts";
 
 const state = writable({ records: [] as SchemaLibraryRecord[], operations, catalogs: registeredCatalogs,
   revision: "", busy: false, initialized: false, error: "" });
@@ -82,6 +84,39 @@ export async function loadSchemaSource(id: string): Promise<Record<string, unkno
 
 export function releaseSchemaSource(id: string): void {
   void worker.call("releaseDocument", [id]).catch(error => logger.warn("Could not release a schema document.", error));
+}
+
+export async function loadSchemaHistory(id: string, limit = 100): Promise<SchemaBranchHistory> {
+  const identity = findRecord(id).sourceIdentity;
+  const history = await worker.call<SchemaBranchHistory>("history", [id, limit]);
+  if (findRecord(id).sourceIdentity !== identity) throw new Error("The schema changed while its history was loading. Try again.");
+  return history;
+}
+
+export function loadSchemaRevisionDiff(id: string, oid: string, limit = 200): Promise<SchemaRevisionDiff> {
+  findRecord(id);
+  return worker.call("revisionDiff", [id, oid, limit]);
+}
+
+async function updateReviewedSchema(method: string, args: unknown[]): Promise<void> {
+  let failure: { error: unknown } | undefined;
+  await run(async () => {
+    try { findRecord(args[0] as string); await update(method, args); }
+    catch (error) { failure = { error }; throw error; }
+  });
+  if (failure) throw failure.error;
+}
+
+export function resolveSchemaConflicts(id: string, current: string, incoming: string, choices: Record<string, SchemaResolution>): Promise<void> {
+  return updateReviewedSchema("resolveUpdate", [id, current, incoming, choices]);
+}
+
+export function dismissSchemaIncoming(id: string, current: string, incoming: string): Promise<void> {
+  return updateReviewedSchema("dismissUpdate", [id, current, incoming]);
+}
+
+export function applyBundledSchemaRevision(id: string): Promise<void> {
+  return updateReviewedSchema("bundledUpdate", [id]);
 }
 
 async function update(method: string, args: unknown[] = []): Promise<void>

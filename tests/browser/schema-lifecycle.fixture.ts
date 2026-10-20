@@ -3,7 +3,9 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { configureSchemaDefaults, listSchemaMetadata, readSchemaDiscovery, readSchemaDocument, readSchemaOperation, readSchemaOperations,
   releaseSchemaDocument, schemaMetadataIdentity, setSchemaDocumentEnabled, moveSchemaDocument, getSchemaHistory,
-  readSchemaVersion, renameSchemaDocument, deleteSchemaDocument, putSchemaDocument } from "../../src/lib/schema-storage.ts";
+  readSchemaVersion, renameSchemaDocument, deleteSchemaDocument, putSchemaDocument, updateSchemaUpstream,
+  getSchemaBranchHistory, getSchemaRevisionDiff, resolveSchemaUpdate, dismissSchemaUpdate, updateSchemaFromBundle } from "../../src/lib/schema-storage.ts";
+import { applySchemaPatches, googleOauthAlternatives } from "../../src/lib/schema-patches.ts";
 import { inspectServiceSchema } from "../../src/lib/service-catalog.ts";
 import { createSchemaDiscovery } from "../../src/lib/schema-index.ts";
 import { approvedOperation } from "../../src/lib/secrets/policy.ts";
@@ -11,13 +13,46 @@ import { assertCurrentSchema } from "../../src/lib/secrets/schema-policy-storage
 
 export { listSchemaMetadata, readSchemaDiscovery, readSchemaDocument, readSchemaOperation, readSchemaOperations, releaseSchemaDocument,
   schemaMetadataIdentity, setSchemaDocumentEnabled, moveSchemaDocument, getSchemaHistory, readSchemaVersion,
-  renameSchemaDocument, deleteSchemaDocument, putSchemaDocument, approvedOperation, assertCurrentSchema };
+  renameSchemaDocument, deleteSchemaDocument, putSchemaDocument, approvedOperation, assertCurrentSchema,
+  updateSchemaUpstream, getSchemaBranchHistory, getSchemaRevisionDiff, resolveSchemaUpdate, dismissSchemaUpdate, updateSchemaFromBundle };
 const reads: Record<string, number> = {};
 const indexReads: Record<string, number> = {};
 const failures = new Set<string>();
 const adapterRevision = "a".repeat(64);
 export const counters = () => ({ reads: { ...reads }, indexes: { ...indexReads } });
 export const failRead = (id: string) => failures.add(id);
+
+export function googleDocument(version = 1, fixed = false): Record<string, any> {
+  const scopes = { "https://www.googleapis.com/auth/cloud-platform": "Google Cloud access" };
+  const required = Object.keys(scopes);
+  const authorizationUrl = "https://accounts.google.com/o/oauth2/auth";
+  return { openapi: "3.0.3", info: { title: "Google fixture", version: String(version), description: `Upstream version ${version}.` },
+    servers: [{ url: "https://schema.example.test" }],
+    components: { securitySchemes: {
+      Oauth2: { type: "oauth2", flows: { implicit: { authorizationUrl, scopes } } },
+      Oauth2c: { type: "oauth2", flows: { authorizationCode: { authorizationUrl, tokenUrl: "https://accounts.google.com/o/oauth2/token", scopes } } },
+    } },
+    paths: { "/items": { get: { operationId: "list", summary: "List items", security: fixed
+      ? [{ Oauth2: required }, { Oauth2c: required }] : [{ Oauth2: required, Oauth2c: required }],
+      responses: { "200": { description: `Version ${version}`, content: { "application/json": { schema: { type: "object" } } } } } } } },
+  };
+}
+
+export async function setupGoogle(version = 1, fixed = false) {
+  const raw = googleDocument(version, fixed);
+  const document = applySchemaPatches(raw, [googleOauthAlternatives]);
+  const bytes = new TextEncoder().encode(JSON.stringify(document));
+  const revision = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), value => value.toString(16).padStart(2, "0")).join("");
+  const id = "google-fixture";
+  const index = createSchemaDiscovery(inspectServiceSchema(document, id), revision);
+  configureSchemaDefaults({ adapterRevision, catalogs: [{ id, name: "Google fixture", file: "google.json", revision,
+    bytes: bytes.length, summary: index.summary, patches: [googleOauthAlternatives] }],
+    read: async () => structuredClone(document), readUpstream: async () => structuredClone(raw),
+    readIndex: async () => structuredClone(index), validate: inspectServiceSchema,
+    inspectOperation: (source, id, operation) => inspectServiceSchema(source, id, new Set([operation.id]), operation).operations[0]!,
+  });
+  return listSchemaMetadata();
+}
 
 export async function setup(version = 1, operationCount = 1, names: Record<string, string> = {}) {
   const documents = new Map(["factory-a", "factory-b"].map(id => [id, {

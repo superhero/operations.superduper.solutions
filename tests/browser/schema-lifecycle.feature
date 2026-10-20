@@ -29,3 +29,21 @@ Feature: Targeted schema storage and independent history
 
   Scenario: Batched canonical models share storage without weakening validation
     Then schema operation batches preserve canonical models and publish policies atomically
+
+  Scenario: Reviewed corrections have separate published and working Git ancestry
+    Then schema corrections and local edits survive independent published updates
+
+  Scenario: An upstream-fixed schema no longer needs the local correction
+    Then upstream-fixed authentication preserves both flow choices without duplicate patch content
+
+  Scenario: Conflicting upstream edits wait for current-revision-bound decisions
+    Then schema conflicts survive reload and reject obsolete review decisions
+
+  Scenario: Interrupted correction-branch publication recovers atomically
+    Then interrupted schema correction branches recover without duplicate commits
+
+  Scenario: Identical content still records the newly integrated source ancestry
+    Then already applied schema edits merge their upstream ancestry exactly once
+
+  Scenario: Discarding a proposal preserves the current schema and source tips
+    Then discarded conflicting schema updates leave current content and ancestry unchanged

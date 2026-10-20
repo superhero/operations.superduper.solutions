@@ -309,7 +309,7 @@ Then('all service schemas appear and preserve disablement renames and deletions 
   const records = await stored(page);
   for (const source of descriptors) {
     const record = records.find(record => record.id === source.id);
-    assert.equal(record.factoryDigest, source.sha256, source.id);
+    assert.equal(record.factoryDigest, source.effectiveSha256 ?? source.sha256, source.id);
     assert.equal(record.enabled, true, source.id);
     await expect(card(page, source.id).locator('.schema-name-label')).toHaveText(source.name);
   }

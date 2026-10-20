@@ -9,12 +9,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { formatLocalDateTime } from "$lib/datetime.ts";
   import type { WorkflowRevision } from "$lib/workflow-repository.ts";
 
-  let { workflowId, revisions, currentRevision, busy = false, onselect }: {
+  let { workflowId, revisions, currentRevision, busy = false, onselect,
+    label = "Workflow version history", versionsLabel = "Saved workflow versions", currentLabel = "Current version", primaryBranch = "main", showBranches = false,
+    alternateColor = "var(--color-background)" }: {
     workflowId: string;
     revisions: WorkflowRevision[];
     currentRevision: string | null;
     busy?: boolean;
     onselect: (oid: string) => void | Promise<void>;
+    label?: string;
+    versionsLabel?: string;
+    currentLabel?: string;
+    primaryBranch?: string;
+    showBranches?: boolean;
+    alternateColor?: string;
   } = $props();
 
   let selecting = $state("");
@@ -28,7 +36,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const edgeLanes = new Map<string, Map<string, number>>();
     const pending: Array<string | null> = [];
     const known = new Set(revisions.map(revision => revision.oid));
-    const main = revisions.find(revision => revision.branches.includes("main"));
+    const main = revisions.find(revision => revision.branches.includes(primaryBranch));
     if (main) pending.push(main.oid);
     let laneCount = 1;
 
@@ -104,7 +112,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   function laneColor(lane: number)
   {
-    return lane === 0 ? "var(--color-badge-background)" : "var(--color-background)";
+    return lane === 0 ? "var(--color-badge-background)" : alternateColor;
   }
 
   function edgePath(child: string, parent: string)
@@ -151,7 +159,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 </script>
 
-<section class="workflow-history" aria-label="Workflow version history" aria-busy={busy || selecting !== ""}>
+<section class="workflow-history" aria-label={label} aria-busy={busy || selecting !== ""}>
   {#if revisions.length}
     <div class="version-scroll">
       <div class="version-tree" style={`--graph-width: ${graph.width}px`} bind:this={treeElement}>
@@ -173,7 +181,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             {/if}
           {/each}
         </svg>
-        <ol class="version-list" aria-label="Saved workflow versions">
+        <ol class="version-list" aria-label={versionsLabel}>
           {#each revisions as revision (revision.oid)}
             <li class:current={revision.oid === currentRevision} data-version-oid={revision.oid}>
               <button type="button" class="version-card" aria-current={revision.oid === currentRevision ? "true" : undefined}
@@ -183,7 +191,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                   <span class="version-meta">
                     <time datetime={new Date(revision.timestamp).toISOString()}>{formatLocalDateTime(revision.timestamp)}</time>
                   </span>
-                  {#if revision.oid === currentRevision}<span class="current-version">Current version</span>{/if}
+                  {#if showBranches && revision.branches.length}<span class="branch-labels">{#each revision.branches as branch}<span>{branch}</span>{/each}</span>{/if}
+                  {#if revision.oid === currentRevision}<span class="current-version">{currentLabel}</span>{/if}
                 </span>
               </button>
             </li>
@@ -215,6 +224,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .version-description strong { white-space: pre-line; }
   .version-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 12px; color: var(--color-muted-foreground); font-size: 11px; }
   .current-version { color: var(--color-badge-background); font-size: 11px; font-weight: 700; }
+  .branch-labels { display: flex; flex-wrap: wrap; gap: 4px; }
+  .branch-labels > span { padding: 2px 6px; border-radius: 3px; background: var(--color-surface); color: var(--color-foreground); font-size: 11px; }
   button:focus-visible { outline: 2px solid var(--color-foreground); outline-offset: 2px; }
   button:disabled { color: var(--color-muted-foreground); cursor: not-allowed; }
   p { margin: 0; line-height: 1.6; }

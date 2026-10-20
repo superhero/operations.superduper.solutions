@@ -2056,10 +2056,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "7642fc49124ab689e334b9c6673254761cbf86bb8c1bc9b2127c703ffeb3471c",
+    "sha256": "bf0e7fca8cebcdd64e7a7712886d5b2fb9cdfda9d4c379ec4e5b6dfde2741398",
     "sourceSha256": "39f0f90cd51b7dbb25e144610319d4a4958f70a7f7ca85c118a33409c74001ca",
-    "bytes": 96231,
-    "compressedBytes": 15077
+    "bytes": 93165,
+    "compressedBytes": 15027,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "d695715a8922b22b15fbd7123532fc985b332a53cb98fe7de2204bcc342b81f2",
+    "effectiveBytes": 98635
   },
   {
     "id": "google-analytics-data",
@@ -2076,10 +2084,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "02ed05d4884c9f09d7aca959eea8103195bcfac60ad52ac13de2265c6203021c",
+    "sha256": "d328eef1263de4c16b0952664172a9270ab3c9690d7a73aebdaac0876f42b8d4",
     "sourceSha256": "ee9a540b4b7319ca00a2a490c4cbc8bb7447af87fdc35c17f58ebb8c95a5da4e",
-    "bytes": 93679,
-    "compressedBytes": 17138
+    "bytes": 92189,
+    "compressedBytes": 17109,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "4b72e26789ec1c3a9031768811a4cd091d55ac6fbaa8fe2274e3a4e991413eb6",
+    "effectiveBytes": 94909
   },
   {
     "id": "gcp-accesscontextmanager",
@@ -2088,6 +2104,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/accesscontextmanager/v1/openapi.yaml",
     "provenance": "https://accesscontextmanager.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 22,
@@ -2098,7 +2115,15 @@
     "sha256": "e011e759513da4ab8e6eabec31c05a91032b7a7c929e7766f62e6525adb4ed83",
     "sourceSha256": "e986c1b6970ec0b15805bd4a1f3f2bccdf15e16b3af3ba583ebd2c43deb02784",
     "bytes": 94803,
-    "compressedBytes": 18816
+    "compressedBytes": 18816,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "f51d108c1c1d5539c44a37b73824ba2363a74edb7e9d45f6f667c75857b95d4d",
+    "effectiveBytes": 98081
   },
   {
     "id": "gcp-apigateway",
@@ -2107,6 +2132,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/apigateway/v1/openapi.yaml",
     "provenance": "https://apigateway.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 15,
@@ -2117,7 +2143,15 @@
     "sha256": "21cb801f8d16f381f1c507d27eb63727a21a159226df9c87ddd005517b8b065c",
     "sourceSha256": "8f96b57b075a7354f372d83cef45be6c4365df3cff6bc7ea37becf8249eedffb",
     "bytes": 55666,
-    "compressedBytes": 11096
+    "compressedBytes": 11096,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "1b842cc00d0110c1cd1877c0bf86c497ff6d68dbf9afb2815208b7e963259fee",
+    "effectiveBytes": 57901
   },
   {
     "id": "gcp-artifactregistry",
@@ -2126,6 +2160,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/artifactregistry/v1/openapi.yaml",
     "provenance": "https://artifactregistry.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 27,
@@ -2136,7 +2171,15 @@
     "sha256": "6a4ad5a7aff878f3e021044730ffcbe067f3319a93050f669e18b0cbe6b55881",
     "sourceSha256": "191afc6a88f5723a4c33a9ed5e0766e76758823c74624583cc1fb4657e462331",
     "bytes": 101897,
-    "compressedBytes": 15815
+    "compressedBytes": 15815,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "f0b2069f264e1ec82dd0dd8d9b367c02f38496efd1c0fc91d1ecec8c936a0d0d",
+    "effectiveBytes": 107805
   },
   {
     "id": "gcp-cloudasset",
@@ -2145,6 +2188,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudasset/v1/openapi.yaml",
     "provenance": "https://cloudasset.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 20,
@@ -2155,7 +2199,15 @@
     "sha256": "527fc09b3292ed0cd6032135115ab12c364c646d276d126651d354021d54255c",
     "sourceSha256": "f7c7e3fb44e4996cca0d6a294429b8c415403c3f43975c5e2e6ac0ab2ba88877",
     "bytes": 243878,
-    "compressedBytes": 48787
+    "compressedBytes": 48787,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "bb234bced43bd85d068e2fed63cd8d0ceb093de9d1ac3bd3a6e348d35a8592f8",
+    "effectiveBytes": 246858
   },
   {
     "id": "gcp-bigquery",
@@ -2164,6 +2216,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/bigquery/v2/openapi.yaml",
     "provenance": "https://bigquery.googleapis.com/$discovery/rest?version=v2",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v2",
     "openapi": "3.0.0",
     "operations": 37,
@@ -2174,7 +2227,15 @@
     "sha256": "84a35e70565d01face776e9dddecb1fc1ffda5bdf60e15fe41b96728c71b2b44",
     "sourceSha256": "c50dc2f7db929c2e64e812804fdd97f203a0a29b88fca340403a391c15926ac9",
     "bytes": 336304,
-    "compressedBytes": 69781
+    "compressedBytes": 69781,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "75b5c0076c3187454398758715c83ede652c1f5ebd316a0c4297f617f5c30fb1",
+    "effectiveBytes": 349162
   },
   {
     "id": "gcp-bigquerydatatransfer",
@@ -2183,6 +2244,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/bigquerydatatransfer/v1/openapi.yaml",
     "provenance": "https://bigquerydatatransfer.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 14,
@@ -2193,7 +2255,15 @@
     "sha256": "2a086f8e80440d001d69a4c7cab10aa4467e55dea0a6a707aeea0bb260cd954d",
     "sourceSha256": "a4069c189abf5ab267f38d2890a2729cca493fd1836c4e786eaeffefa7b9db0d",
     "bytes": 57103,
-    "compressedBytes": 9736
+    "compressedBytes": 9736,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "e2e983dd855fc6255f635ddf8ffaefd2c046aa12de01eaeb1c94567b44b7e8c4",
+    "effectiveBytes": 61560
   },
   {
     "id": "gcp-bigtableadmin",
@@ -2202,6 +2272,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/bigtableadmin/v2/openapi.yaml",
     "provenance": "https://bigtableadmin.googleapis.com/$discovery/rest?version=v2",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v2",
     "openapi": "3.0.0",
     "operations": 27,
@@ -2212,7 +2283,15 @@
     "sha256": "2e11a0e384c4232a92965aa7c049b164e300c62b88e46e2729592374348454cb",
     "sourceSha256": "081ace095130a80b8976a26378ca08dd7ca4651b9f1cbe6b81f133e5c756ee54",
     "bytes": 132916,
-    "compressedBytes": 22683
+    "compressedBytes": 22683,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "31eec62d1e2aba92b8968bec4e9e26e8fa5760cb4178e6bc1c2450c685cac389",
+    "effectiveBytes": 154885
   },
   {
     "id": "gcp-cloudbilling",
@@ -2221,6 +2300,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudbilling/v1/openapi.yaml",
     "provenance": "https://cloudbilling.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 18,
@@ -2231,7 +2311,15 @@
     "sha256": "6ba4bb6bbcd2ba010fa66e13d00c3666068f5556d373cab714f941d7d0dfa5eb",
     "sourceSha256": "51c769ddc7c51a5902b4d3b9ed1bfaeafb7375aaf6f9f848fbadff34c892ac55",
     "bytes": 69288,
-    "compressedBytes": 12014
+    "compressedBytes": 12014,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "c8f5f2adf8becb984004efacb8731a7004c141a554a08983ae92a4b64087ed67",
+    "effectiveBytes": 75594
   },
   {
     "id": "gcp-billingbudgets",
@@ -2240,6 +2328,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/billingbudgets/v1/openapi.yaml",
     "provenance": "https://billingbudgets.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 5,
@@ -2250,7 +2339,15 @@
     "sha256": "23fcd584259d51f75c9b3a4c38f34ceb7fb39c4c011b2487d33265defaa7ab95",
     "sourceSha256": "0a85c6761af3a8a91e47d77f597dfaed436426a200150320cc777e80cf90360f",
     "bytes": 27093,
-    "compressedBytes": 6955
+    "compressedBytes": 6955,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "0d9a6ae37e693ed1852219a86a0cd880e71d571598f5f5df7dd5fb7f05e8e259",
+    "effectiveBytes": 28453
   },
   {
     "id": "gcp-cloudbuild",
@@ -2259,6 +2356,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudbuild/v2/openapi.yaml",
     "provenance": "https://cloudbuild.googleapis.com/$discovery/rest?version=v2",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v2",
     "openapi": "3.0.0",
     "operations": 18,
@@ -2269,7 +2367,15 @@
     "sha256": "c83621bc49eb994a2995ed34a5189c3bd86fd6bafaf59b79ae7195e0103f9708",
     "sourceSha256": "0a154b6ec4ff46a75cf3af3c461bcca05deb2226891b95f429759387ce60fc5f",
     "bytes": 99120,
-    "compressedBytes": 18999
+    "compressedBytes": 18999,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "d6d5dd3ea1fefcec763bb00b107916f45f6858bc725ea499dad0242cdbbe3208",
+    "effectiveBytes": 101653
   },
   {
     "id": "gcp-certificatemanager",
@@ -2278,6 +2384,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/certificatemanager/v1/openapi.yaml",
     "provenance": "https://certificatemanager.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 18,
@@ -2288,7 +2395,15 @@
     "sha256": "13a3e677387fa0d358d711d97fda228d0b2ee0655d50d126a5fd5f4fdeb55774",
     "sourceSha256": "d496a4591527645f88b5cf00d6979e1165a4790127969cc9c59d8d4853482902",
     "bytes": 56408,
-    "compressedBytes": 8758
+    "compressedBytes": 8758,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "876e04eeafff3c02aaf8640450eee6c9e9245e795c4d0b98fd721e7fde5b09b5",
+    "effectiveBytes": 59090
   },
   {
     "id": "gcp-compute",
@@ -2297,6 +2412,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/compute/v1/openapi.yaml",
     "provenance": "https://compute.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 758,
@@ -2307,7 +2423,15 @@
     "sha256": "33803659d1a38271f3b910f3358fe6b248980f11e397b543e51b1ac120ea1cd8",
     "sourceSha256": "87af1f7f4b71051e953663c0e8db2a4bf5d9b40c4673eab7835b3e40ea57584b",
     "bytes": 3333793,
-    "compressedBytes": 248599
+    "compressedBytes": 248599,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "650e74aa444884ec0825ab46538ad792482816bc902cde9e29ccdba641750cc1",
+    "effectiveBytes": 3574313
   },
   {
     "id": "gcp-dataflow",
@@ -2316,6 +2440,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dataflow/v1b3/openapi.yaml",
     "provenance": "https://dataflow.googleapis.com/$discovery/rest?version=v1b3",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1b3",
     "openapi": "3.0.0",
     "operations": 41,
@@ -2326,7 +2451,15 @@
     "sha256": "36419ee9e5d95046f1d88c55e5972bdd8065b29f2c8a61268b1128f905e79a86",
     "sourceSha256": "fb8a076a176e5c86c9f5390949f17ac724c4bde6cfbfd663dc6a55d1ebb064fd",
     "bytes": 246009,
-    "compressedBytes": 42668
+    "compressedBytes": 42668,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "9e5dff63064bf624003e64370526b83086bd81b837ab892962b65391035fe075",
+    "effectiveBytes": 261958
   },
   {
     "id": "gcp-dataproc",
@@ -2335,6 +2468,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dataproc/v1/openapi.yaml",
     "provenance": "https://dataproc.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 41,
@@ -2345,7 +2479,15 @@
     "sha256": "8585204bea2f38d0e5582ad752f049330478a662a15122a73ecf3873b082ea0f",
     "sourceSha256": "631df38359d9f691eb52425facb0dade686496faaa21ccc35556931b237dc076",
     "bytes": 239584,
-    "compressedBytes": 41047
+    "compressedBytes": 41047,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "d706a417b6737f34ce0db3d14fb444706af80edf0a70e98ac7ce6f56e5638987",
+    "effectiveBytes": 245693
   },
   {
     "id": "gcp-dns",
@@ -2354,6 +2496,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dns/v1/openapi.yaml",
     "provenance": "https://dns.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 40,
@@ -2364,7 +2507,15 @@
     "sha256": "cc9c3c1a83b5e85d082c54b947499297dbeee01a4071d29155ffc410069b2b76",
     "sourceSha256": "79584793a9eddd6ed770bfc4aa54bafc0922a4a19d04e46d1686d4c2fca198db",
     "bytes": 133629,
-    "compressedBytes": 16791
+    "compressedBytes": 16791,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "3e0adfcd1128646c791f3091f342bda95e05ec5f0205c26810638f2fca1b2be6",
+    "effectiveBytes": 150743
   },
   {
     "id": "gcp-documentai",
@@ -2373,6 +2524,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/documentai/v1/openapi.yaml",
     "provenance": "https://documentai.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 20,
@@ -2383,7 +2535,15 @@
     "sha256": "8d8cd55f6d2f243da12c564841351d54adca3f9812356e89278224237d7fe633",
     "sourceSha256": "00314be444931156793036da6c66935afb3b005572a9320ee04000bcc08b82b0",
     "bytes": 257688,
-    "compressedBytes": 46375
+    "compressedBytes": 46375,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "b1276468e90832656ecb02f9599b4be61a91ee1a33428810dc2415d9942ad95b",
+    "effectiveBytes": 260668
   },
   {
     "id": "gcp-clouderrorreporting",
@@ -2392,6 +2552,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/clouderrorreporting/v1beta1/openapi.yaml",
     "provenance": "https://clouderrorreporting.googleapis.com/$discovery/rest?version=v1beta1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1beta1",
     "openapi": "3.0.0",
     "operations": 6,
@@ -2402,7 +2563,15 @@
     "sha256": "e7511079788f8d918be144c3cf4e18995fd45301e60ac7e04aa4cbe0a2bafed9",
     "sourceSha256": "858fcd3daa68094cee1e174f1823f41339ef71ba054fdc1de9e312a835c0de88",
     "bytes": 31620,
-    "compressedBytes": 6949
+    "compressedBytes": 6949,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "c7d2ac96fb0b44248d297292a92ba36d6940b3b65da771406534a35dc2e8f7f1",
+    "effectiveBytes": 32514
   },
   {
     "id": "gcp-firestore",
@@ -2411,6 +2580,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/firestore/v1/openapi.yaml",
     "provenance": "https://firestore.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 30,
@@ -2421,7 +2591,15 @@
     "sha256": "fe5c4bd0833061e50788cf706516a9a431c681ab9972564ce20ffb329d31aa4f",
     "sourceSha256": "303f5b29b3cc7320f79fb86d94a4704894071472af816da58c18948d574b0204",
     "bytes": 142283,
-    "compressedBytes": 26073
+    "compressedBytes": 26073,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "d65d9111578d7c85951d04887b9b013b76dc8f1a338becda82d7581c638ada32",
+    "effectiveBytes": 150203
   },
   {
     "id": "gcp-cloudfunctions",
@@ -2430,6 +2608,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudfunctions/v2/openapi.yaml",
     "provenance": "https://cloudfunctions.googleapis.com/$discovery/rest?version=v2",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v2",
     "openapi": "3.0.0",
     "operations": 18,
@@ -2440,7 +2619,15 @@
     "sha256": "314203bf15148bef8eb52c450082b50cb06701154a44c72cd37e666ebec6837f",
     "sourceSha256": "38e30a6aae0da8c25c7d6a6ef8124fedcbbc4a355570b57770da77f958e78dc7",
     "bytes": 91494,
-    "compressedBytes": 18225
+    "compressedBytes": 18225,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "911510d81ff6dc642ee2298a32f84b7021812381598b3b20c7f873dceec3b239",
+    "effectiveBytes": 94176
   },
   {
     "id": "gcp-iam",
@@ -2449,6 +2636,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/iam/v2/openapi.yaml",
     "provenance": "https://iam.googleapis.com/$discovery/rest?version=v2",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v2",
     "openapi": "3.0.0",
     "operations": 5,
@@ -2459,7 +2647,15 @@
     "sha256": "f128793aea1a0f2e4e5359ab24a732b5fda2e3070c9a37cdb4b2288a1de25ff9",
     "sourceSha256": "fdfcd6df5b076dd4168fd2954a652c419bd206fbcda89127bc889a15f64709cf",
     "bytes": 28709,
-    "compressedBytes": 6884
+    "compressedBytes": 6884,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "0fa48395c305cdce8a2a6f9706d3c6144f384d74639f7775a856325cd5766743",
+    "effectiveBytes": 29454
   },
   {
     "id": "gcp-iamcredentials",
@@ -2468,6 +2664,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/iamcredentials/v1/openapi.yaml",
     "provenance": "https://iamcredentials.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 4,
@@ -2478,7 +2675,15 @@
     "sha256": "92368dc94208fa8e16ec88906ae080c75c6ef59ac82292d951efee7a78d8d334",
     "sourceSha256": "5b42f103c0a8ae7aae22bbddbf926981a94d0678c1e964a457328a5e6d598c8d",
     "bytes": 16611,
-    "compressedBytes": 3195
+    "compressedBytes": 3195,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "caa82848370a12ee806e63d2d600d87915c2fab71af34e3d938732ff6c45fcfa",
+    "effectiveBytes": 17207
   },
   {
     "id": "gcp-cloudidentity",
@@ -2487,6 +2692,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudidentity/v1/openapi.yaml",
     "provenance": "https://cloudidentity.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 35,
@@ -2497,7 +2703,15 @@
     "sha256": "5f615b6f9b025181ab070f26c04671d6901ec70e505c3136b0aa66c32c3e22e9",
     "sourceSha256": "41c5dffd8c089abe90c8e23fcad49c2d23f8f03255e1643ce81d231a84049490",
     "bytes": 131068,
-    "compressedBytes": 20526
+    "compressedBytes": 20526,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "7ffdb17e31745ce1c6849947d98ca1191b7dbaec404a67377a21382e4ed56d60",
+    "effectiveBytes": 140231
   },
   {
     "id": "gcp-cloudkms",
@@ -2506,6 +2720,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudkms/v1/openapi.yaml",
     "provenance": "https://cloudkms.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 31,
@@ -2516,7 +2731,15 @@
     "sha256": "96b3563ce5e976397064357fab07537d891a82c7f9d281657d5acc2a9b165047",
     "sourceSha256": "1fddebc61d85bb281edb59c1d3dd8790c282ee1fb03e355fb2e79c55f1431833",
     "bytes": 143786,
-    "compressedBytes": 19557
+    "compressedBytes": 19557,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "c2505a0b8ec278ad5759fa9827328573f28793d8d98b6628f929bc99737184d7",
+    "effectiveBytes": 151908
   },
   {
     "id": "gcp-container",
@@ -2525,6 +2748,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/container/v1/openapi.yaml",
     "provenance": "https://container.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 61,
@@ -2535,7 +2759,15 @@
     "sha256": "14876ed0ef32d8483c1ce5914ca3600260e0b710993f21ca250b25398cec18c2",
     "sourceSha256": "c31802bfdc1fdc3d6c05ee5bc0fad5b4bbcfcda3fb1d430e3a896cb820e3b35c",
     "bytes": 274523,
-    "compressedBytes": 41295
+    "compressedBytes": 41295,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "781726fa449b5fc94e6fabf9882e3744a4f00cd4567a091a28e51344af88a25d",
+    "effectiveBytes": 283314
   },
   {
     "id": "gcp-logging",
@@ -2544,6 +2776,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/logging/v2/openapi.yaml",
     "provenance": "https://logging.googleapis.com/$discovery/rest?version=v2",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v2",
     "openapi": "3.0.0",
     "operations": 42,
@@ -2554,7 +2787,15 @@
     "sha256": "1f03caca1333e4f3fffdb089a7582cad8187d8e2b2e0aaeff4b2e6866121c2cd",
     "sourceSha256": "c98043f9813fcfd4f96574545e045a095000de2b42dc9f1cd4cb699ee25d2361",
     "bytes": 181710,
-    "compressedBytes": 32250
+    "compressedBytes": 32250,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "e3cdc9c407863b14cc849d72de3e028fab1c8319bcea90ce80e6d96fe73b97bd",
+    "effectiveBytes": 198680
   },
   {
     "id": "gcp-redis",
@@ -2563,6 +2804,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/redis/v1/openapi.yaml",
     "provenance": "https://redis.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 16,
@@ -2573,7 +2815,15 @@
     "sha256": "4e066afd9de5e546feb748e7658c36cc7d93796d9f7bd03885e48baf50ea3eb6",
     "sourceSha256": "161157da9a49a0946a77192f895dc0c8b610689354e797e6cca6d9f009ca2fbf",
     "bytes": 84422,
-    "compressedBytes": 16794
+    "compressedBytes": 16794,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "ec4a5c3d65ca67947d096b28ee11a258ddb489d73844f67ecb7a4b4a626bab18",
+    "effectiveBytes": 86806
   },
   {
     "id": "gcp-monitoring",
@@ -2582,6 +2832,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/monitoring/v3/openapi.yaml",
     "provenance": "https://monitoring.googleapis.com/$discovery/rest?version=v3",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v3",
     "openapi": "3.0.0",
     "operations": 32,
@@ -2592,7 +2843,15 @@
     "sha256": "add4a5844230b53e291b5af7d405619a459b0c71eef0c16bfa0ee069dd0188ab",
     "sourceSha256": "16c929c91f559c91bba5aa1d86d3044c7445b5da4ed0e7641bb9907328e18a3e",
     "bytes": 211951,
-    "compressedBytes": 42166
+    "compressedBytes": 42166,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "80a99ce72220d7048e9e8c46a4d611c253cc7e6b371f97bd807dfbef677bf862",
+    "effectiveBytes": 223271
   },
   {
     "id": "gcp-networkconnectivity",
@@ -2601,6 +2860,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/networkconnectivity/v1/openapi.yaml",
     "provenance": "https://networkconnectivity.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 30,
@@ -2611,7 +2871,15 @@
     "sha256": "63d70317e3f0cef1a4f5b18fea51e4c4e61ab2d31260fc80a54378bef51c6507",
     "sourceSha256": "99426177c90a917cafeca41cb53f1870165ef777bec82cecf25e2541ac4df2cc",
     "bytes": 128477,
-    "compressedBytes": 20203
+    "compressedBytes": 20203,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "0b02f2274c90ea3d6bc383c3a6b40ce491cda3a4f2f969c85e83d2c1bcc12ae3",
+    "effectiveBytes": 132947
   },
   {
     "id": "gcp-orgpolicy",
@@ -2620,6 +2888,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/orgpolicy/v2/openapi.yaml",
     "provenance": "https://orgpolicy.googleapis.com/$discovery/rest?version=v2",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v2",
     "openapi": "3.0.0",
     "operations": 9,
@@ -2630,7 +2899,15 @@
     "sha256": "896f408f253a59ae128bbcba957ed37bc1ccc182c06bcf95df521c563eac381a",
     "sourceSha256": "1ce9711dc02a145170f724d3056e3e7f27e307ae481f1fbf38f1043ca38cc333",
     "bytes": 33094,
-    "compressedBytes": 7099
+    "compressedBytes": 7099,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "1bb8ef1df027fdcf95ca74b29218e5c53d2d8f5c2e887f711a91a41af2b077f7",
+    "effectiveBytes": 34435
   },
   {
     "id": "gcp-pubsub",
@@ -2639,6 +2916,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/pubsub/v1/openapi.yaml",
     "provenance": "https://pubsub.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 33,
@@ -2649,7 +2927,15 @@
     "sha256": "4124a972512cbc5ce6aeac11f3399bd10bb60318c52677a6697ec20cef2a583e",
     "sourceSha256": "6ae8e56313a1e9b450693bb0fb9c79eff21157d4f834aac2f3bf61d74b62298f",
     "bytes": 109513,
-    "compressedBytes": 18606
+    "compressedBytes": 18606,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "2ab3879cfb88c9ab9b1e5caf0d9c11955cd8b2963b0dfbf77a3012a59f7c3a42",
+    "effectiveBytes": 118027
   },
   {
     "id": "gcp-cloudresourcemanager",
@@ -2658,6 +2944,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudresourcemanager/v3/openapi.yaml",
     "provenance": "https://cloudresourcemanager.googleapis.com/$discovery/rest?version=v3",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v3",
     "openapi": "3.0.0",
     "operations": 28,
@@ -2668,7 +2955,15 @@
     "sha256": "052ef516e28366dfc8b5e636c3728bc9a60ed701c6ee520c11a862a02f5c7165",
     "sourceSha256": "50e1bafdeca91435969584be3941311d495573357651678f9257db7d3820bd84",
     "bytes": 104040,
-    "compressedBytes": 17941
+    "compressedBytes": 17941,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "c399f8ac03448145e3c7255adbe74c0a58c41d77bd514be7ddece29737950812",
+    "effectiveBytes": 110822
   },
   {
     "id": "gcp-run",
@@ -2677,6 +2972,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/run/v2/openapi.yaml",
     "provenance": "https://run.googleapis.com/$discovery/rest?version=v2",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v2",
     "openapi": "3.0.0",
     "operations": 17,
@@ -2687,7 +2983,15 @@
     "sha256": "9c9d68e0e78687ac3e2533579041358d29e92ecd4ab189e904a77e640598994e",
     "sourceSha256": "4cfa712c80f90d782a3152fecc3c8579691f0f7773eb5d8a0a01b3a9793973d0",
     "bytes": 123849,
-    "compressedBytes": 21788
+    "compressedBytes": 21788,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "4beff58f068cd07494963292dba243cb77ca7a0e597be7ef21e3eada88ebca3f",
+    "effectiveBytes": 126382
   },
   {
     "id": "gcp-cloudscheduler",
@@ -2696,6 +3000,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudscheduler/v1/openapi.yaml",
     "provenance": "https://cloudscheduler.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 9,
@@ -2706,7 +3011,15 @@
     "sha256": "96073da25384db492e60a26034ec06f72667336547cf63c37ca0277800941530",
     "sourceSha256": "c4335126313bda8d6fbdddab1ec6885df5cda0451165ccddd379abdbb2710470",
     "bytes": 41377,
-    "compressedBytes": 9247
+    "compressedBytes": 9247,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "c7ee352039a65d1c04b0d4d0197b9531c11d1aa6898d45adf2c70194d2f0d7f3",
+    "effectiveBytes": 42718
   },
   {
     "id": "gcp-secretmanager",
@@ -2715,6 +3028,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/secretmanager/v1/openapi.yaml",
     "provenance": "https://secretmanager.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 15,
@@ -2725,7 +3039,15 @@
     "sha256": "2c9e63522b78bef3743c9e5983bdaca76db3febde42fad11511bb7d9b4e0bb3a",
     "sourceSha256": "472bc1afac8a23465b888971301981885ad68033b7638f052e4423b6f749bb3a",
     "bytes": 58096,
-    "compressedBytes": 11124
+    "compressedBytes": 11124,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "5a731e9800524bdbefbe1e28108aaa5ae0ffc31d99ad71f8b07709aeb35f3b25",
+    "effectiveBytes": 60331
   },
   {
     "id": "gcp-securitycenter",
@@ -2734,6 +3056,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/securitycenter/v1/openapi.yaml",
     "provenance": "https://securitycenter.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 34,
@@ -2744,7 +3067,15 @@
     "sha256": "d8b3c472243d9fbea97708c8894ecea73f87fcbfe6ed38221d3464c76c6b997e",
     "sourceSha256": "3cd66b31b47f75657468ac68809ad0bc0254d5db041a21881a8e201efd211c03",
     "bytes": 295718,
-    "compressedBytes": 55715
+    "compressedBytes": 55715,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "713e7dd3cdf43c8ebc03b4d1b8c4013105b10f50c4a1eb65dedcd130c5380d7e",
+    "effectiveBytes": 300784
   },
   {
     "id": "gcp-dlp",
@@ -2753,6 +3084,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dlp/v2/openapi.yaml",
     "provenance": "https://dlp.googleapis.com/$discovery/rest?version=v2",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v2",
     "openapi": "3.0.0",
     "operations": 28,
@@ -2763,7 +3095,15 @@
     "sha256": "f2446c9bbb9ebf866eb18b3cd5275a5c793c9f797bb239a6e71b406d03fb9a7a",
     "sourceSha256": "707e04ad70666e7888e1afd2a6997b38a190a4f0e075f7944f28fb2d14047d0e",
     "bytes": 271731,
-    "compressedBytes": 53184
+    "compressedBytes": 53184,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "52315ed12d222b98c0a12a16c8cf1bcb730d60b139ca4fdb7e016269ad04f41c",
+    "effectiveBytes": 275903
   },
   {
     "id": "gcp-servicenetworking",
@@ -2772,6 +3112,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/servicenetworking/v1/openapi.yaml",
     "provenance": "https://servicenetworking.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 25,
@@ -2782,7 +3123,15 @@
     "sha256": "1506e4d105489c041a7f8b59d673d3e13b40df1070ad975e89aa78152c91ae97",
     "sourceSha256": "c6b87031a26f71fd3e112b21aa2dfff3e5eb7ea337b558c6d97ee908718dac10",
     "bytes": 183433,
-    "compressedBytes": 38274
+    "compressedBytes": 38274,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "79c4a7dc39341cf748105fd0e85511f9b012eced3a401ee217d0402b48c91eac",
+    "effectiveBytes": 190483
   },
   {
     "id": "gcp-serviceusage",
@@ -2791,6 +3140,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/serviceusage/v1/openapi.yaml",
     "provenance": "https://serviceusage.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 9,
@@ -2801,7 +3151,15 @@
     "sha256": "42772e6dcfe4ae5b9c1b0aae32b7d3ac0cc573cd43ffd3b00c4a2459dcc3771c",
     "sourceSha256": "12637817d26ce65e7b1df72122da6c84b1877af67c5a4877717dbca9ae1a87b1",
     "bytes": 141315,
-    "compressedBytes": 34042
+    "compressedBytes": 34042,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "c9217b7b8d8cdc0bc6d54fdffb153b782ae002487af3f88a842bedccf3e6187b",
+    "effectiveBytes": 143889
   },
   {
     "id": "gcp-spanner",
@@ -2810,6 +3168,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/spanner/v1/openapi.yaml",
     "provenance": "https://spanner.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 40,
@@ -2820,7 +3179,15 @@
     "sha256": "aa254571add51fb40579858ca239a6d36c11e75b519867084d5e08559afcf9c5",
     "sourceSha256": "c224bee50565df3da731805fb6321bfc68d921deb8fb47b9f4fc2a090e1354bc",
     "bytes": 241803,
-    "compressedBytes": 48410
+    "compressedBytes": 48410,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "a991a70ec487618467be24f0f36e7f8dc8c07a16af75e20fb41e2b9d13701cb3",
+    "effectiveBytes": 252651
   },
   {
     "id": "gcp-speech",
@@ -2829,6 +3196,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/speech/v1/openapi.yaml",
     "provenance": "https://speech.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 11,
@@ -2839,7 +3207,15 @@
     "sha256": "bacb2a8c93f89892e822ee321ae1150590334a3aae2252c2efb960a2b30933f7",
     "sourceSha256": "53afa67a860f8e79bb78d1ebfe9cca53c8c6984a3f1ff21c7306d26331a04067",
     "bytes": 59168,
-    "compressedBytes": 12272
+    "compressedBytes": 12272,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "46d2d9f314186ab3cb300ac0dbbdc2e05eebf0589a70358347288e18e57d1e24",
+    "effectiveBytes": 60807
   },
   {
     "id": "gcp-sqladmin",
@@ -2848,6 +3224,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/sqladmin/v1/openapi.yaml",
     "provenance": "https://sqladmin.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 58,
@@ -2858,7 +3235,15 @@
     "sha256": "f986f7aeb56432d3262ca05ebc8166c37bcbe1df25540bfb5faa59ba536234ec",
     "sourceSha256": "443a56cec22b1d81c171869fa0cd271df09abea6a5aa7a4e8f4a8e899580f6fa",
     "bytes": 174501,
-    "compressedBytes": 25476
+    "compressedBytes": 25476,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "638fb7226a800572ff8db005cb0e2de50c85a4f37404eb3b1d943f67fbc0b47a",
+    "effectiveBytes": 190367
   },
   {
     "id": "gcp-storage",
@@ -2867,6 +3252,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/storage/v1/openapi.yaml",
     "provenance": "https://storage.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 76,
@@ -2877,7 +3263,15 @@
     "sha256": "89fce203814a45b34a3f61504d99453530579866c55554b400e0d52dc8d42d8e",
     "sourceSha256": "ef24ef427489aef09bfd7f7abb2c6d9aa3a7267ad82fef1dea37afe8cda7e985",
     "bytes": 202020,
-    "compressedBytes": 20983
+    "compressedBytes": 20983,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "a9a4230a7c6b7bb9c6f8c65a1afac43ce3ea58bb8de9b851e25971e5389fbe7f",
+    "effectiveBytes": 237374
   },
   {
     "id": "gcp-cloudtasks",
@@ -2886,6 +3280,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudtasks/v2/openapi.yaml",
     "provenance": "https://cloudtasks.googleapis.com/$discovery/rest?version=v2",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v2",
     "openapi": "3.0.0",
     "operations": 16,
@@ -2896,7 +3291,15 @@
     "sha256": "52b48ad2153f25d6e68d1645416943003a1c2509af3639169d3e9a58cb79c433",
     "sourceSha256": "c7bf03de19f5866ffebdea25e52df5d4de23f78f90a09ea7351e4ec31f1285d5",
     "bytes": 91464,
-    "compressedBytes": 19595
+    "compressedBytes": 19595,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "8a6be25b1ffd9786c61d077ec2dcaaf82654013daa76c659564275b6fefa352a",
+    "effectiveBytes": 93848
   },
   {
     "id": "gcp-texttospeech",
@@ -2905,6 +3308,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/texttospeech/v1/openapi.yaml",
     "provenance": "https://texttospeech.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 7,
@@ -2915,7 +3319,15 @@
     "sha256": "3c104c400ea22072e12eff54eb140f9834aacedd3218f9ef62b27f0f68909007",
     "sourceSha256": "02236b0045729accd9f5c29fb64883302b35ab4cf26f91dfd9b28007a96fd364",
     "bytes": 25633,
-    "compressedBytes": 6061
+    "compressedBytes": 6061,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "aa2f63cb3ebdace6ef2801006a578af72f745d68d0aac009364399d858d4c148",
+    "effectiveBytes": 26676
   },
   {
     "id": "gcp-cloudtrace",
@@ -2924,6 +3336,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudtrace/v2/openapi.yaml",
     "provenance": "https://cloudtrace.googleapis.com/$discovery/rest?version=v2",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v2",
     "openapi": "3.0.0",
     "operations": 2,
@@ -2934,7 +3347,15 @@
     "sha256": "d154efdb761d02d4550c23c57fdc563a184c437526fdd78a056bcddb6eb5acba",
     "sourceSha256": "b3fd1df87e967fea22c8a57f6b432a86cc62080986d5b462110051d5273c672e",
     "bytes": 21247,
-    "compressedBytes": 5676
+    "compressedBytes": 5676,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "798f322d87c29f7a5d58297f2b0078272983ada327afce70734be05625f0720f",
+    "effectiveBytes": 21787
   },
   {
     "id": "gcp-translate",
@@ -2943,6 +3364,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/translate/v3/openapi.yaml",
     "provenance": "https://translation.googleapis.com/$discovery/rest?version=v3",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v3",
     "openapi": "3.0.0",
     "operations": 31,
@@ -2953,7 +3375,15 @@
     "sha256": "dd03d07d60d631e1c8ee84f606d8346e3967548cb439553a22f1e22e4e9e49b8",
     "sourceSha256": "f2b115d67c0e3cf67bfbf9b921c2039f5e35cdb7e51da7d2bc134980f61f4d00",
     "bytes": 111190,
-    "compressedBytes": 16402
+    "compressedBytes": 16402,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "9dc11d7cee47d03b606132ec5fef2a02740ea98c6669e268fce36293d64d9291",
+    "effectiveBytes": 119477
   },
   {
     "id": "gcp-aiplatform",
@@ -2962,6 +3392,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/aiplatform/v1/openapi.yaml",
     "provenance": "https://aiplatform.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 169,
@@ -2972,7 +3403,15 @@
     "sha256": "369d1419a46fc2507efa4a9aa732cfc8e2f75aece02cd0b1fa4da2cb57c65c00",
     "sourceSha256": "0b640d35256481f2298b783eaa56532964df7aa94ce39cc796fad4ee601edc9f",
     "bytes": 1108842,
-    "compressedBytes": 174549
+    "compressedBytes": 174549,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "78a3f43465972276ab6a6642aa237a3bf36afbc3e27bf6cb4b7ded22bb7000b8",
+    "effectiveBytes": 1135038
   },
   {
     "id": "gcp-discoveryengine",
@@ -2981,6 +3420,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/discoveryengine/v1beta/openapi.yaml",
     "provenance": "https://discoveryengine.googleapis.com/$discovery/rest?version=v1beta",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1beta",
     "openapi": "3.0.0",
     "operations": 34,
@@ -2991,7 +3431,15 @@
     "sha256": "f08928bff49cb157dfffc97c20b23f58a3e5d5e3e6dadbc0fef442423b7c9ad9",
     "sourceSha256": "4d404a16601507d6c9139fce95d73291542b8ccb7c1b66050bbb52e64ff15bb0",
     "bytes": 280128,
-    "compressedBytes": 47126
+    "compressedBytes": 47126,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "17958f9643885d8ff0953bc62b3deeebb5941a7904c7ad3d752c4cb30405dce0",
+    "effectiveBytes": 285194
   },
   {
     "id": "gcp-vision",
@@ -3000,6 +3448,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/vision/v1/openapi.yaml",
     "provenance": "https://vision.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 23,
@@ -3010,7 +3459,15 @@
     "sha256": "48d0ef9cfd8bf2119dbf17aeb48fbf8af64c9219839b61001eb86c8409971e01",
     "sourceSha256": "075854b2c7b21242db98a411447f9cbfd0eeb5fc64123d6d9d6f5d518d849df7",
     "bytes": 275581,
-    "compressedBytes": 46174
+    "compressedBytes": 46174,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "058a7ab34a8abb1018750cbc01023d842914be78d27d2250a0355c8bede4bb73",
+    "effectiveBytes": 281791
   },
   {
     "id": "gcp-vpcaccess",
@@ -3019,6 +3476,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/vpcaccess/v1/openapi.yaml",
     "provenance": "https://vpcaccess.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 7,
@@ -3029,7 +3487,15 @@
     "sha256": "20b86ddd2ab455dfbd570b6f80e0c517aa4d07b10847f838171cdd1f574c4d67",
     "sourceSha256": "f2c47de511f8ec14741526f5bb5b5115427b5411b83758945c2779aa50e182be",
     "bytes": 21736,
-    "compressedBytes": 4709
+    "compressedBytes": 4709,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "a74a0938e9e1a2b2504eb2337690380f18f549fcb5bb2ce1b91b116854c51116",
+    "effectiveBytes": 22779
   },
   {
     "id": "gcp-workflows",
@@ -3038,6 +3504,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/workflows/v1/openapi.yaml",
     "provenance": "https://workflows.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 8,
@@ -3048,7 +3515,15 @@
     "sha256": "c4f6718fd5fdb8420c57c8c2ae7df747a472cc59971f4454a06a8f4dd6dfcb6e",
     "sourceSha256": "2eac0117251ecd500a923c87e2eec3c62a39769ede17d2fd0e7a5826fc538adb",
     "bytes": 26905,
-    "compressedBytes": 6006
+    "compressedBytes": 6006,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "cadc7f616f63d8ef1e205ff3ac5528e57ade1b1f3131aa2aeae6008ca65d94c9",
+    "effectiveBytes": 28097
   },
   {
     "id": "gcp-workflowexecutions",
@@ -3057,6 +3532,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/workflowexecutions/v1/openapi.yaml",
     "provenance": "https://workflowexecutions.googleapis.com/$discovery/rest?version=v1",
     "sourceKind": "community-conversion",
+    "profile": "google-oauth",
     "version": "v1",
     "openapi": "3.0.0",
     "operations": 8,
@@ -3067,7 +3543,15 @@
     "sha256": "592244eb4b7d8237cc3679dd66e7ad44aefc63a834cf29b0d9ab0edbc46a1287",
     "sourceSha256": "1d15e1f28a899f306283cdbdf207e4378054e24790e49837fecfc837dbc26cab",
     "bytes": 34243,
-    "compressedBytes": 7096
+    "compressedBytes": 7096,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "236ea964f6f0ab33362554dbbcb25e7a3d7e424c6871cf8cff2a06a324a84488",
+    "effectiveBytes": 35435
   },
   {
     "id": "gemini",
@@ -3097,10 +3581,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "541d68471cdfe7e966dc8da2f16f0a4be9abbaa6ef9191af19c54f3457c80cff",
+    "sha256": "b5bda0d91476a60a36d1b022ecf72e72c8b07e1d4ab684096b445621e3cb9a90",
     "sourceSha256": "359234ef9cfb85cdd052da12cc01f0daad4d1e813a69baa8f93bfa435e5c68f1",
-    "bytes": 37610,
-    "compressedBytes": 7739
+    "bytes": 36372,
+    "compressedBytes": 7708,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "e5e998eb18cea68d86632e13f0b62b9bc95f54dafe4f45bb42612592f65e6b25",
+    "effectiveBytes": 38592
   },
   {
     "id": "google-admin-data-transfer",
@@ -3117,10 +3609,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "a470c9dafb3caaa92bfd4121f5d9957c1abd3de27f2ce94cc086d033f5549253",
+    "sha256": "a78ed14709c5a5a40e29275f82b225a4a97dbcede70b92c5dc3b7f114919cc06",
     "sourceSha256": "2bd6b7b74f6436bcf0fcb79fe2ddf32cfc5e96c0792259016a3fbf00da174c2c",
-    "bytes": 15752,
-    "compressedBytes": 2934
+    "bytes": 14993,
+    "compressedBytes": 2905,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "11cc64e797a5dbdd0df404d5e634f4e23cf9729fda331a713ef7742393d8953f",
+    "effectiveBytes": 16382
   },
   {
     "id": "google-admin-directory",
@@ -3137,10 +3637,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "1a2fc6ba76a3c8a6d6caa6d0fc77bb7cce6e6dbbeacbf38d24a7ccdc26e1e9a9",
+    "sha256": "4874f0b51028593f0ae17d6c939f4e00629201c8304cc57832174af59ca1f8d5",
     "sourceSha256": "c552cdc7b0b578fec1ea8997bc83ce61d72eb6ef4ea1c6a721301be045170f69",
-    "bytes": 298631,
-    "compressedBytes": 34829
+    "bytes": 281128,
+    "compressedBytes": 34382,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "870837ae6134d1c4549ec17c640518afe4bbc5bf4b5a1b0c3d5d6c8b1c67155c",
+    "effectiveBytes": 312993
   },
   {
     "id": "google-admin-reports",
@@ -3157,10 +3665,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "86b449c01221f96e8217a4eaab64f4d10e431c2538f0c728e8b0d57ea39e14f7",
+    "sha256": "182dad077eec7abdc245217d88c21b2ea8728d44e36dc688b40e6045d75dc8db",
     "sourceSha256": "e9ae37ed2c45dd5aa7759dc2e9f4e151a1d88b08a11ebc8cfafa85af4c33acf3",
-    "bytes": 48078,
-    "compressedBytes": 7772
+    "bytes": 47472,
+    "compressedBytes": 7743,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "228615adc2f2abd9be8e6e0af468bffa1dff9f30c13eaee543efb150eacb6f54",
+    "effectiveBytes": 48534
   },
   {
     "id": "google-apps-script",
@@ -3177,10 +3693,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "3324c7e3fd9a55654689158277891579148bfa0f00e693d34edcbd1d63e138bc",
+    "sha256": "0b7d2ba0a0e3b73c7c02f5afb6042e34da479ea05c2377267c99e02dbc840779",
     "sourceSha256": "75e00d921a782d7f4d6070890c066c9127c69053d7010f913d1a2efcc8548941",
-    "bytes": 57673,
-    "compressedBytes": 9331
+    "bytes": 55176,
+    "compressedBytes": 9168,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "67561113af54eca2ff823ba739814fa36f1aff2fa0bc2fd0b9c1c29e822c0b12",
+    "effectiveBytes": 59753
   },
   {
     "id": "google-calendar",
@@ -3197,10 +3721,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "1c436cdb34bf03ad098dca42c26c4fcd7247e93f07cec79e6c8270f2ac43ebec",
+    "sha256": "48db876c8e0ae74fc014f8d2e9ab9ae76f1f1ba7b00c9f829d07fd99f94e75da",
     "sourceSha256": "beb4c5414ff527249fe660e8d7e49e1a026ff62d0accd6f9b42fcf89ea61f3b7",
-    "bytes": 130086,
-    "compressedBytes": 16813
+    "bytes": 124666,
+    "compressedBytes": 16694,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "f45cfb3ee1e20148cd6512fb681a452f24a6d333e3d38b6518339f3c09a6673c",
+    "effectiveBytes": 134545
   },
   {
     "id": "google-chat",
@@ -3217,10 +3749,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "a81e1218f7404d24ba5741108ffaef3162162837008a41fcfdc1fbda4a535fd8",
+    "sha256": "d5967d2901ed7e6894fd1e5680218d9e8cdcf8a3ba4f52c873e4bef56fd1079d",
     "sourceSha256": "b63fe36446b451e4e81dea21ca05a4a65e65def6fa3844a8346faac9a2b84cb5",
-    "bytes": 167427,
-    "compressedBytes": 32715
+    "bytes": 163700,
+    "compressedBytes": 32558,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "376ea9392e52f5c11e643539539645636b450103da8f97bc5b8cace6fe1a9d39",
+    "effectiveBytes": 170694
   },
   {
     "id": "google-classroom",
@@ -3237,10 +3777,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "2e046b8fcce6845bece0d6fceb4c91b923586ed059618999491b43db618f5dd8",
+    "sha256": "2e4e44ac7f752de3b6efde779916bd1d113ece0428b3f7ad89dfb4eb96bcc410",
     "sourceSha256": "62d8ea0f648f98331ba6a6b09a7c5edbfa5a726754ff17ed02f98e011870be19",
-    "bytes": 186632,
-    "compressedBytes": 19735
+    "bytes": 176520,
+    "compressedBytes": 19101,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "ab5828ea51c1be917cc94d3dfd9c485590cb9198e60608122ca21802697b1c13",
+    "effectiveBytes": 195165
   },
   {
     "id": "google-docs",
@@ -3257,10 +3805,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "d7e367683315ac82ce2d4e4ded9b618945f69e667edf659c62a4e6c9463db649",
+    "sha256": "128b112058e23f902d3653cb338a7534ebc973b382b51405732f6b6d1aef9398",
     "sourceSha256": "09b2e5ef254c731647bf3cdbb372d10a0f42922de309ae59a07c5ac2fc86de36",
-    "bytes": 153446,
-    "compressedBytes": 25207
+    "bytes": 152731,
+    "compressedBytes": 25173,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "b44eba46faf3780312bca085a83f30fd18b7a30f489aa309f05d2f2288580581",
+    "effectiveBytes": 154078
   },
   {
     "id": "google-drive-activity",
@@ -3277,10 +3833,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "ef77f32179d8f7e22719f420fb6197300d39f289550ecf0451b3abc114da65db",
+    "sha256": "c9ce52a4819578491bf3a7716596b5398cab8c93d8a3bf67ceb8105fc6337fa3",
     "sourceSha256": "5728bbbdebe98a9487929c5a028fdf30fcfc9273b954424c08c68a11f40465dc",
-    "bytes": 33296,
-    "compressedBytes": 7323
+    "bytes": 33137,
+    "compressedBytes": 7306,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "671bc349c4d68952d1f35448bce71cbde1fc98e123ec6ce83a3990cefaa40f87",
+    "effectiveBytes": 33429
   },
   {
     "id": "google-drive",
@@ -3297,10 +3861,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "a5e7a65f2499dd01a47926894ff5911d51622ff76560a41ec8fcb7f4248ca0d9",
+    "sha256": "39719d4844e4bfc5fbcd05d1ab7101a26dc52cab61c943ab59be136638a8ca8b",
     "sourceSha256": "5c8ef89b07b57e2a0d941c9512c2fe53ea90f3fcf85a122f679d5649f46f314c",
-    "bytes": 186583,
-    "compressedBytes": 22947
+    "bytes": 174924,
+    "compressedBytes": 22693,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "3eb1cb005a27f06c51a7f3880dcb3fa7ffdec18f30f3343202f503b6110f03c7",
+    "effectiveBytes": 196870
   },
   {
     "id": "google-drive-labels",
@@ -3317,10 +3889,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "91d29e539306ab3ea63ac317f6e9a137b63a3b7005bedbb8fa8f7ee0a24c0a0a",
+    "sha256": "1faf1e6a8217e6058620972d4494cfe0e305f901c42badd812aec15f039463e6",
     "sourceSha256": "6403fa4e4a03abbd75285d60f9dcb5285c5d6cb33cbf4ce36e4632bf53b9a841",
-    "bytes": 99054,
-    "compressedBytes": 14290
+    "bytes": 95892,
+    "compressedBytes": 14189,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "1d2c311b9ec8b5f47a2f9122350f340341c53f02e58711fccf51b6c107e0af71",
+    "effectiveBytes": 101790
   },
   {
     "id": "google-forms",
@@ -3337,10 +3917,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "431e0045283404e38f8270705227360eca4e5393de2a2f62a6a741d43a8e4c35",
+    "sha256": "a9936080b6b9a48216415dd321d6c669ca346b64e493acceeb4a8fff88c7269e",
     "sourceSha256": "fe57c6be50c901f1483254eb808863e1257d35aec2d831e404bc48f0bc1cf8e6",
-    "bytes": 55314,
-    "compressedBytes": 10875
+    "bytes": 52575,
+    "compressedBytes": 10791,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "01982d9f462c5f17e38923c17dca62f36558afad71f1f3d44945e7fa8d6c1515",
+    "effectiveBytes": 57796
   },
   {
     "id": "google-gmail",
@@ -3357,10 +3945,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "f509d7c6b3c6727074e6b2a0158ce9a7a6597b85666de10c39ebad222f780f8f",
+    "sha256": "6ff771291cc593d02455fb03a3df1a30d23b7ea152a256d18694555876e79999",
     "sourceSha256": "041154c430d2d9654032888d0d9b2a7357b5b6272b1c8194419719fe5f9348ce",
-    "bytes": 184768,
-    "compressedBytes": 18486
+    "bytes": 168459,
+    "compressedBytes": 18094,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "ce3d1b266163f6bcdd13342d06cae5e2daad26bd0d13e43522d08e6b3f2b3032",
+    "effectiveBytes": 198943
   },
   {
     "id": "google-keep",
@@ -3377,10 +3973,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "6b43d2db1b1b33124bcec5f4c9a56baddad29f94cc3257ab856584195e2c29a7",
+    "sha256": "05bb859c47196bb9415488263dd5c5a0adf41e099bf86cc8d65ae9743f3ae3a8",
     "sourceSha256": "0d36e3fe87198bc928890e87f9f32370d561372cdd8db351e70c3e16de82968e",
-    "bytes": 19102,
-    "compressedBytes": 4227
+    "bytes": 18516,
+    "compressedBytes": 4202,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "017e0fb74039342ffc3c984070f049174288a4eab58a3a16696d1bb6e1333306",
+    "effectiveBytes": 19536
   },
   {
     "id": "google-people",
@@ -3397,10 +4001,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "a19230f1bffbdd8e3db1b989cc16695ed248d97f640c1f41f6de8ff5ec1dbc88",
+    "sha256": "f7a8ed0f3e7314bfd15e9535525af86329ed48b2837ffed4903aaa8aa2311ced",
     "sourceSha256": "71c928ebd2ded32a38d06f6d700b5938fa3c501a43c35d218178bff82d003a55",
-    "bytes": 120914,
-    "compressedBytes": 16445
+    "bytes": 117329,
+    "compressedBytes": 16286,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "e3b634cf1b0abeb7e6a46b0b8fd7f2132e0e0c7552efefe7e136b9db82150f4d",
+    "effectiveBytes": 123899
   },
   {
     "id": "google-sheets",
@@ -3417,10 +4029,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "bc0eac66b6918c819ae53b6dc4dfd68de5a20622a2808d92aacb7a42b0bcfa77",
+    "sha256": "e59763d21310e95afedec5e34cd2c20cd1b8e3eae0e3ccd8ae56788db54259fc",
     "sourceSha256": "5598e24f4f4512bae57e7a06675a47d140012e9399c7d8b673f9c3b390aa68c3",
-    "bytes": 252156,
-    "compressedBytes": 47793
+    "bytes": 248391,
+    "compressedBytes": 47630,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "fd3a8b14d3bff12cd15f7f0417b4b1fb63deb31292a51b4696469298a8246778",
+    "effectiveBytes": 255456
   },
   {
     "id": "google-slides",
@@ -3437,10 +4057,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "ed59f1a0878ed6d96571accefcf3662f6628f4f99818dfc7a035d6b6610c19cf",
+    "sha256": "99b0a0b170c31028d0473af9b9ff2cee60e64fb6f1505afb26dcf850946bc468",
     "sourceSha256": "1172788dc094bd9567b6ab41c33c832da8aac23331ef461a8c842d6ba0af0dfd",
-    "bytes": 141709,
-    "compressedBytes": 27611
+    "bytes": 140118,
+    "compressedBytes": 27558,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "79bee2a52ede614d98a363a699f836534bbf71860b0b93348e956444934d4149",
+    "effectiveBytes": 143156
   },
   {
     "id": "google-tasks",
@@ -3457,10 +4085,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "825ade1f0cdbe66e3828c68679ff4d148b0949cfc00b7a54534841094637e6a0",
+    "sha256": "8fb4f425f62f835cdea5769168e437b8a9554b44f493d4a95f4b1d8051939c34",
     "sourceSha256": "3fb4e2cfb89de8e7550b9e7e3a3c38b0159df37b124e8ca3e165f8fbce808258",
-    "bytes": 23796,
-    "compressedBytes": 3358
+    "bytes": 22452,
+    "compressedBytes": 3322,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "e8d7eac86594d595e93e453d0ca14d45615e4978f098c0a5b586e2293338cafb",
+    "effectiveBytes": 24786
   },
   {
     "id": "google-vault",
@@ -3477,10 +4113,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "e2d51b9702cbc376149ff96f9362881cb7ef37f19515c6ab176be90ca0ac0df8",
+    "sha256": "230866cc6fa85143b92c641c3df934524d0993c0c862853c7a27ec3d349c79df",
     "sourceSha256": "efd68f34b918c8a7bfcae808021eff5c3545e0449e7aa0ebef3f095c8581f9bf",
-    "bytes": 79674,
-    "compressedBytes": 11437
+    "bytes": 76655,
+    "compressedBytes": 11373,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "82668a2bd1d3a884c2a8ceb9330046e0693e16cc1970c5f05fd002a1b578b367",
+    "effectiveBytes": 81959
   },
   {
     "id": "google-youtube-analytics",
@@ -3497,10 +4141,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "42a8b7cd78a09b91f92bf51525a6e0c07207483aa9c2fd72040d7a8fe28bdc35",
+    "sha256": "c03f0f070d2c6b5aa9dedf2770a988f0d226924944318c42273afadc3bd3cb79",
     "sourceSha256": "1f629bbfce6768f5ff1017d5e369e474c0261c2dc8236e4c9baaeacafa879aa9",
-    "bytes": 36716,
-    "compressedBytes": 5936
+    "bytes": 33860,
+    "compressedBytes": 5866,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "3429fe9de96422d813eb527bd74ae040372b32f947e58e79ae2c0b7ff187f286",
+    "effectiveBytes": 39340
   },
   {
     "id": "google-youtube",
@@ -3517,10 +4169,18 @@
       "name": "Creative Commons Attribution 3.0",
       "url": "http://creativecommons.org/licenses/by/3.0/"
     },
-    "sha256": "bbba4d62d69bb6774b131026d8727740c9100fe1eff71a9b576d831ce0fe5850",
+    "sha256": "4beaaccb69ce93f3edcf4153c7a79030c7455825f73f9ae98dda47e205ed57cb",
     "sourceSha256": "64368a8846394137924f0492053bb05b54049826df83920a8e2eeae2ec30fb12",
-    "bytes": 396331,
-    "compressedBytes": 46695
+    "bytes": 382160,
+    "compressedBytes": 46475,
+    "patches": [
+      {
+        "id": "google-oauth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "1fea92aedfb6713b9b61a7aeb6ea523dea30689c054725e02c0e2a5edb0174bc",
+    "effectiveBytes": 408504
   },
   {
     "id": "groq",

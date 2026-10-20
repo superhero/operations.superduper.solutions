@@ -72,7 +72,7 @@ and YAML upload, renaming, enablement, replacement, normalized JSON download and
 confirmed deletion. Settings sections remain alphabetically ordered. Full source
 editing and remote Git integration are outside this version.
 
-The name is always editable; changes save on blur. Renaming changes only
+Cards start folded. Opening a card makes its name editable; changes save on blur. Renaming changes only
 `info.title` and creates a descriptive commit in the existing repository,
 preserving its ID and other content.
 
@@ -105,6 +105,65 @@ until needed; local history does not invent unseen upstream revisions.
 Display names can identify a provider without rewriting its upstream document
 title. Examples retain their existing once-only seeding behavior.
 
+### Reviewed corrections and upstream updates
+
+Published service snapshots and application corrections are separate. For a
+corrected service, its compressed pack retains the published OpenAPI document
+after reference bundling/conversion. The manifest records the original pack
+digest, the versioned correction recipes and the effective document's digest and
+size. Discovery indexes and executable models use that effective revision.
+The complete uncorrected source stays available in its local Git history.
+
+The first correction changes Google's duplicated OAuth requirements from an AND
+entry to separate alternatives in the `security` array. Both flow definitions,
+required scopes and unrelated AND credentials remain intact. This is OpenAPI's
+[security alternative syntax](https://spec.openapis.org/oas/v3.0.3.html#security-requirement-object),
+not JSON Schema `oneOf`. The correction accepts only the reviewed Google flow
+endpoints and matching scopes, records the prior requirement and rejects an
+existing conflicting provenance extension. It applies to the 52 Google Cloud
+and 24 Google product packs. An already-correct upstream document needs no
+duplicate correction content.
+
+Each materialized schema repository uses these local branches:
+
+| Git branch | Settings label | Content |
+| --- | --- | --- |
+| `upstream` | Published | Observed published snapshots, without application corrections |
+| `corrections` | Corrections | Reviewed corrections replayed over the selected published revision |
+| `main` | Working | The effective schema, including local edits such as its name |
+| `incoming` | Incoming | A proposed corrected update awaiting conflict decisions, when necessary |
+
+Existing linear histories remain intact; migration does not invent missing old
+published revisions. Branches materialize on first source/model/history access,
+not while listing disabled schemas. Opening history again makes no commit.
+
+Uploading a replacement imports a new published snapshot into the same
+repository. Reviewed corrections are reapplied, then a structured three-way merge
+compares the previous corrected baseline, current working document and new
+corrected source. Independent edits merge automatically. Arrays are atomic, and
+overlapping edits produce explicit field conflicts instead of text conflict
+markers or an arbitrary winner. The current schema remains usable while the
+incoming branch and review state survive reload. Decisions must match both
+reviewed revisions; stale decisions cannot replace newer edits. A resolved
+document is validated before its working branch and credential policy change.
+
+For a service that ships in the application, **Apply bundled revision** uses the
+same merge process to update an edited copy from the bundled source. It performs
+no schema download. Unmodified factory copies continue to follow bundled
+revisions automatically; edited copies are updated explicitly.
+
+**Schema history** shows the actual commit graph, branch tips and bounded
+changed-field previews for a selected revision. It reads blobs on demand and
+does not alter the checkout. More revisions and changes can be loaded up to
+explicit limits; preview truncation does not modify stored documents or exports.
+
+Build-time refreshes apply the same reviewed recipes. To update corrections
+without fetching new provider documents, use
+`node build/service-schemas.mjs --from-bundled --profile=google-oauth`, followed
+by `npm run schemas:index`. The one-time migration of earlier Google packs
+restores their recorded original requirements only when those exactly explain
+the earlier correction. Generic parsing retains strict auth AND semantics.
+
 ### Available operations
 
 Bundled examples seed once, preserving the `demo` and `httpbin` IDs and authored
@@ -126,8 +185,10 @@ Each document has an immutable ID. Authored documents have their own Git reposit
 IDs even when filenames match. The predictably formatted `schema.json` working
 file is authoritative persisted content.
 
-Import creates the first commit; replacement commits to the same repository.
-Identical content adds no commit. Historical reads use immutable Git blobs
+Import creates the first commit; corrected factory schemas retain separate source
+and correction commits. Upstream replacement and local edits use the same repository.
+Identical content adds no commit unless a new source ancestry must be integrated;
+repeating the same update does not create another merge. Historical reads use immutable Git blobs
 without changing the working file.
 
 ### Metadata and recovery
@@ -140,7 +201,7 @@ does not erase authoritative Git content. Enablement remains outside Git.
 
 A serialized queue and browser lock protect writes across tabs. Immutable Git
 objects are flushed before publishing a recovery journal, allowing the working
-file, index, branch reference and metadata to be finalized after interruption.
+file, index, all affected branch references and metadata to be finalized after interruption.
 Deletion records a tombstone before removing only the selected repository and
 metadata. Saved workflows remain untouched.
 

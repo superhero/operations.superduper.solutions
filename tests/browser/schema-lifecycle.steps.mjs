@@ -8,6 +8,166 @@ Before({ tags: '@schema-lifecycle' }, async function () {
   await this.page.evaluate(async () => { globalThis.schemaFixture = await import('/schema-lifecycle-fixture.js'); });
 });
 
+Then('schema corrections and local edits survive independent published updates', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setupGoogle();
+    const before = await api.getSchemaBranchHistory('google-fixture');
+    const published = before.branches.find(branch => branch.name === 'Published').oid;
+    const corrected = before.branches.find(branch => branch.name === 'Corrections').oid;
+    const raw = await api.readSchemaVersion('google-fixture', published);
+    const patched = await api.readSchemaVersion('google-fixture', corrected);
+    const patchDiff = await api.getSchemaRevisionDiff('google-fixture', corrected);
+    await api.renameSchemaDocument('google-fixture', 'My Google service');
+    const incoming = api.googleDocument(2);
+    incoming.paths['/new'] = { get: { operationId: 'new', responses: { '200': { description: 'Added upstream' } } } };
+    await api.updateSchemaUpstream('google-fixture', incoming, 'google-v2.json');
+    const record = await api.readSchemaDocument('google-fixture');
+    const history = await api.getSchemaBranchHistory('google-fixture');
+    const again = await api.getSchemaBranchHistory('google-fixture');
+    await api.updateSchemaUpstream('google-fixture', incoming, 'google-v2.json');
+    const repeated = await api.getSchemaBranchHistory('google-fixture');
+    const metadata = (await api.listSchemaMetadata()).find(record => record.id === 'google-fixture');
+    const model = await api.readSchemaOperation('google-fixture:list', api.schemaMetadataIdentity(metadata));
+    await api.assertCurrentSchema(await api.approvedOperation(model.operation, model.origin));
+    return { before, raw, patched, patchDiff, record, history, again, repeated, security: model.operation.security };
+  });
+  assert.equal(result.raw.paths['/items'].get.security.length, 1);
+  assert.deepEqual(Object.keys(result.raw.paths['/items'].get.security[0]), ['Oauth2', 'Oauth2c']);
+  assert.equal(result.patched.paths['/items'].get.security.length, 2);
+  assert.ok(result.patchDiff.changes.some(change => change.path === '/paths/~1items/get/security'));
+  assert.equal(result.record.document.info.title, 'My Google service');
+  assert.equal(result.record.document.info.version, '2');
+  assert.ok(result.record.document.paths['/new']);
+  assert.equal(result.security.length, 2);
+  assert.equal(result.history.incoming, undefined);
+  assert.deepEqual(result.again, result.history);
+  assert.deepEqual(result.repeated, result.history, 'The same published snapshot does not create duplicate commits.');
+  assert.deepEqual(result.history.branches.map(branch => branch.name), ['Working', 'Published', 'Corrections']);
+  const rank = new Map(result.history.revisions.map((revision, index) => [revision.oid, index]));
+  for (const revision of result.history.revisions) for (const parent of revision.parents)
+    assert.ok(rank.get(parent) > rank.get(revision.oid), 'Parents follow children even with identical timestamps.');
+  assert.ok(result.history.revisions.some(revision => revision.parents.length === 2));
+});
+
+Then('upstream-fixed authentication preserves both flow choices without duplicate patch content', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setupGoogle();
+    await api.renameSchemaDocument('google-fixture', 'Personal Google');
+    await api.setupGoogle(2, true);
+    await api.updateSchemaFromBundle('google-fixture');
+    const history = await api.getSchemaBranchHistory('google-fixture');
+    const corrected = history.branches.find(branch => branch.name === 'Corrections').oid;
+    return { history, diff: await api.getSchemaRevisionDiff('google-fixture', corrected), document: (await api.readSchemaDocument('google-fixture')).document };
+  });
+  assert.equal(result.document.info.title, 'Personal Google');
+  assert.equal(result.document.info.version, '2');
+  assert.equal(result.document.paths['/items'].get.security.length, 2);
+  assert.equal(Object.hasOwn(result.document.paths['/items'].get, 'x-upstream-security'), false);
+  assert.deepEqual(result.diff.changes, []);
+  assert.ok(result.history.revisions.some(revision => /Upstream already includes/.test(revision.message)));
+});
+
+Then('schema conflicts survive reload and reject obsolete review decisions', async function () {
+  const review = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setupGoogle();
+    await api.renameSchemaDocument('google-fixture', 'Local name');
+    const incoming = api.googleDocument(2); incoming.info.title = 'New published name';
+    await api.updateSchemaUpstream('google-fixture', incoming, 'v2.json');
+    return { history: await api.getSchemaBranchHistory('google-fixture'), document: (await api.readSchemaDocument('google-fixture')).document };
+  });
+  assert.equal(review.document.info.title, 'Local name');
+  assert.equal(review.document.info.version, '1');
+  assert.deepEqual(review.history.incoming.conflicts.map(item => item.path), ['/info/title']);
+  await this.page.reload();
+  const result = await this.page.evaluate(async previous => {
+    const api = await import('/schema-lifecycle-fixture.js');
+    await api.setupGoogle();
+    const reloaded = await api.getSchemaBranchHistory('google-fixture');
+    const record = await api.readSchemaDocument('google-fixture');
+    record.document.info.description = 'Changed after review';
+    await api.putSchemaDocument(record);
+    let obsolete;
+    try { await api.resolveSchemaUpdate('google-fixture', previous.current, previous.incoming.revision, { '/info/title': 'incoming' }); }
+    catch (error) { obsolete = error.message; }
+    const fresh = await api.getSchemaBranchHistory('google-fixture');
+    await api.resolveSchemaUpdate('google-fixture', fresh.current, fresh.incoming.revision, { '/info/title': 'current', '/info/description': 'current' });
+    return { reloaded, obsolete, document: (await api.readSchemaDocument('google-fixture')).document, history: await api.getSchemaBranchHistory('google-fixture') };
+  }, review.history);
+  assert.deepEqual(result.reloaded, review.history);
+  assert.match(result.obsolete, /schema changed/i);
+  assert.equal(result.document.info.title, 'Local name');
+  assert.equal(result.document.info.version, '2');
+  assert.equal(result.document.info.description, 'Changed after review');
+  assert.equal(result.history.incoming, undefined);
+  assert.equal(result.history.branches.some(branch => branch.name === 'Incoming'), false);
+});
+
+Then('interrupted schema correction branches recover without duplicate commits', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setupGoogle();
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (value, ...args) {
+      if (this.name === 'catalog' && value.id === 'google-fixture' && value.historyDigest === value.factoryDigest)
+        throw new DOMException('Interrupted correction publication', 'QuotaExceededError');
+      return put.call(this, value, ...args);
+    };
+    let failure;
+    try { await api.getSchemaBranchHistory('google-fixture'); } catch (error) { failure = error.message; }
+    finally { IDBObjectStore.prototype.put = put; }
+    const recovered = await api.getSchemaBranchHistory('google-fixture');
+    const again = await api.getSchemaBranchHistory('google-fixture');
+    return { failure, recovered, again, document: (await api.readSchemaDocument('google-fixture')).document };
+  });
+  assert.match(result.failure, /Interrupted correction publication/);
+  assert.equal(result.recovered.revisions.length, 2);
+  assert.deepEqual(result.again, result.recovered);
+  assert.equal(result.document.paths['/items'].get.security.length, 2);
+});
+
+Then('already applied schema edits merge their upstream ancestry exactly once', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setupGoogle();
+    const record = await api.readSchemaDocument('google-fixture');
+    // A local edit independently matches the later published version exactly.
+    record.document.info.version = '2'; record.document.info.description = 'Upstream version 2.';
+    record.document.paths['/items'].get.responses['200'].description = 'Version 2';
+    await api.putSchemaDocument(record);
+    const before = await api.getSchemaBranchHistory('google-fixture');
+    await api.updateSchemaUpstream('google-fixture', api.googleDocument(2), 'v2.json');
+    const merged = await api.getSchemaBranchHistory('google-fixture');
+    const diff = await api.getSchemaRevisionDiff('google-fixture', merged.current);
+    await api.updateSchemaUpstream('google-fixture', api.googleDocument(2), 'v2.json');
+    return { before, merged, diff, repeated: await api.getSchemaBranchHistory('google-fixture') };
+  });
+  const incoming = result.merged.branches.find(branch => branch.name === 'Corrections').oid;
+  const merge = result.merged.revisions.find(revision => revision.oid === result.merged.current);
+  assert.deepEqual(merge.parents, [result.before.current, incoming]);
+  assert.deepEqual(result.diff.changes, []);
+  assert.deepEqual(result.repeated, result.merged);
+});
+
+Then('discarded conflicting schema updates leave current content and ancestry unchanged', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setupGoogle();
+    await api.renameSchemaDocument('google-fixture', 'Local service');
+    const before = await api.getSchemaBranchHistory('google-fixture');
+    const original = (await api.readSchemaDocument('google-fixture')).document;
+    const incoming = api.googleDocument(2); incoming.info.title = 'Conflicting upstream';
+    await api.updateSchemaUpstream('google-fixture', incoming, 'v2.json');
+    const review = await api.getSchemaBranchHistory('google-fixture');
+    await api.dismissSchemaUpdate('google-fixture', review.current, review.incoming.revision);
+    return { before, original, after: await api.getSchemaBranchHistory('google-fixture'), document: (await api.readSchemaDocument('google-fixture')).document };
+  });
+  assert.deepEqual(result.after, result.before);
+  assert.deepEqual(result.document, result.original);
+});
+
 Then('new factory labels refresh without decoding sources or replacing personal names', async function () {
   const result = await this.page.evaluate(async () => {
     const api = globalThis.schemaFixture;

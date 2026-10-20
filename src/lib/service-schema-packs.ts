@@ -2,14 +2,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import index from "../catalogs/services/index.json" with { type: "json" };
+import { applySchemaPatches, type SchemaPatch } from "./schema-patches.ts";
 
 export type ServiceSchemaDescriptor = {
   id: string; name: string; version: string; openapi?: string; protocol?: string; operations: number;
   sha256: string; bytes: number; compressedBytes: number;
   url?: string; file?: string; provenance?: string; sourceKind?: string; provider?: string;
+  patches?: SchemaPatch[]; effectiveSha256?: string; effectiveBytes?: number;
 };
 
-export const serviceSchemaDescriptors: readonly ServiceSchemaDescriptor[] = index;
+export const serviceSchemaDescriptors: readonly ServiceSchemaDescriptor[] = index as ServiceSchemaDescriptor[];
 const packs = import.meta.glob<string>("../catalogs/services/*.json.gz", {
   query: "?url&inline", import: "default", eager: true,
 });
@@ -56,10 +58,21 @@ export async function decodeServiceSchema(pack: string, descriptor: Pick<Service
 
 export async function readServiceSchema(id: string, library: {
   descriptors: readonly ServiceSchemaDescriptor[]; packs: Record<string, string>;
-} = { descriptors: serviceSchemaDescriptors, packs }): Promise<Record<string, unknown>>
+} = { descriptors: serviceSchemaDescriptors, packs }, upstream = false): Promise<Record<string, unknown>>
 {
   const descriptor = library.descriptors.find(descriptor => descriptor.id === id);
   const pack = library.packs[`../catalogs/services/${id}.json.gz`];
   if (!descriptor || !pack) throw new Error(`The bundled schema ${id} is unavailable.`);
-  return decodeServiceSchema(pack, descriptor);
+  const original = await decodeServiceSchema(pack, descriptor);
+  if (upstream || !descriptor.patches?.length) return original;
+  const document = applySchemaPatches(original, descriptor.patches);
+  const bytes = new TextEncoder().encode(JSON.stringify(document));
+  const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)), value => value.toString(16).padStart(2, "0")).join("");
+  if (bytes.byteLength !== descriptor.effectiveBytes || digest !== descriptor.effectiveSha256)
+    throw new Error("The corrected schema does not match its reviewed revision. Rebuild the bundled schema indexes.");
+  return document;
+}
+
+export function readServiceSchemaUpstream(id: string): Promise<Record<string, unknown>> {
+  return readServiceSchema(id, undefined, true);
 }

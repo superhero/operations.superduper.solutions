@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "b351cd8b84b3868536b32a6a7b31ebacc0f8531e61b130c2e0a0328aee9786ff",
+  "adapterRevision": "6e24708f48447c51bd1801d9ecde60e2f3db550f6a8c8e297eb427b45abdb870",
   "indexes": [
     {
       "id": "alfred",
@@ -1625,10 +1625,10 @@
     },
     {
       "id": "google-analytics-admin",
-      "sourceRevision": "7642fc49124ab689e334b9c6673254761cbf86bb8c1bc9b2127c703ffeb3471c",
+      "sourceRevision": "d695715a8922b22b15fbd7123532fc985b332a53cb98fe7de2204bcc342b81f2",
       "bytes": 10892,
       "compressedBytes": 1300,
-      "sha256": "96f66ef212e36c238674600c42144f73e1bb05ce6159c8388bcf0ca37b19cd84",
+      "sha256": "ce72c328613544a3b58541267e4cb25f6b45e7c8cad0d0845d51688b421cd63b",
       "summary": {
         "name": "Google Analytics Admin API",
         "serverUrl": "https://analyticsadmin.googleapis.com",
@@ -1639,10 +1639,10 @@
     },
     {
       "id": "google-analytics-data",
-      "sourceRevision": "02ed05d4884c9f09d7aca959eea8103195bcfac60ad52ac13de2265c6203021c",
+      "sourceRevision": "4b72e26789ec1c3a9031768811a4cd091d55ac6fbaa8fe2274e3a4e991413eb6",
       "bytes": 4933,
-      "compressedBytes": 884,
-      "sha256": "59883e177c377c1fed7f741a7a40d26165266b76912744023b823da3d627414b",
+      "compressedBytes": 886,
+      "sha256": "ad9a2082938cc22f76306ef4662e3e1b230c08783799df1e8136b2f6ed4bbe07",
       "summary": {
         "name": "Google Analytics Data API",
         "serverUrl": "https://analyticsdata.googleapis.com",
@@ -1653,727 +1653,727 @@
     },
     {
       "id": "gcp-accesscontextmanager",
-      "sourceRevision": "e011e759513da4ab8e6eabec31c05a91032b7a7c929e7766f62e6525adb4ed83",
-      "bytes": 12699,
-      "compressedBytes": 1364,
-      "sha256": "1c49cc1f49d07d0ee910a61b00f925d833851d28e98146b7021e34b994f1a90e",
+      "sourceRevision": "f51d108c1c1d5539c44a37b73824ba2363a74edb7e9d45f6f667c75857b95d4d",
+      "bytes": 10652,
+      "compressedBytes": 1312,
+      "sha256": "e003933c2b1904f8d112188b5ba1a5ee452415e77ed0601c4bc60dfb2a58ce8f",
       "summary": {
         "name": "Access Context Manager API",
         "serverUrl": "https://accesscontextmanager.googleapis.com",
         "description": "An API for setting attribute based access control to requests to Google Cloud services. *Warning:* Do not mix *v1alpha* and *v1* API usage in the same access policy. The v1alpha API supports new Access Context Manager features, which may have different attributes or behaviors that are not supported by v1. The practice of mixed API usage within a policy may result in the inability to update that policy, including any access levels or service perimeters belonging to it. It is not recommended to use both v1 and v1alpha for modifying policies with critical service perimeters. Modifications using v1alpha should be limited to policies with non-production/non-critical service perimeters.",
         "operationCount": 22,
-        "unavailableCount": 22
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-apigateway",
-      "sourceRevision": "21cb801f8d16f381f1c507d27eb63727a21a159226df9c87ddd005517b8b065c",
-      "bytes": 6760,
-      "compressedBytes": 776,
-      "sha256": "ac3361bc02429418805e0a00ccc49889592eb6f4295d2ea6e46957e0b10fe9a5",
+      "sourceRevision": "1b842cc00d0110c1cd1877c0bf86c497ff6d68dbf9afb2815208b7e963259fee",
+      "bytes": 5364,
+      "compressedBytes": 720,
+      "sha256": "7a056e4bee8c180f16022139b15c84bb7d83ca3bf3c8553dcb73985d6393d9a9",
       "summary": {
         "name": "API Gateway API",
         "serverUrl": "https://apigateway.googleapis.com",
         "operationCount": 15,
-        "unavailableCount": 15
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-artifactregistry",
-      "sourceRevision": "6a4ad5a7aff878f3e021044730ffcbe067f3319a93050f669e18b0cbe6b55881",
-      "bytes": 14042,
-      "compressedBytes": 1172,
-      "sha256": "5b4a594dcf078d7cd01a182f55ff696a775223d333cb3cebb6ed3c63cc28f440",
+      "sourceRevision": "f0b2069f264e1ec82dd0dd8d9b367c02f38496efd1c0fc91d1ecec8c936a0d0d",
+      "bytes": 11995,
+      "compressedBytes": 1133,
+      "sha256": "02a84e07a676ad07a805c6cae04a12a3f2705f40b93e5a9de87e02f408938943",
       "summary": {
         "name": "Artifact Registry API",
         "serverUrl": "https://artifactregistry.googleapis.com",
         "description": "Store and manage build artifacts in a scalable and integrated service built on Google infrastructure.",
         "operationCount": 27,
-        "unavailableCount": 27
+        "unavailableCount": 5
       }
     },
     {
       "id": "gcp-cloudasset",
-      "sourceRevision": "527fc09b3292ed0cd6032135115ab12c364c646d276d126651d354021d54255c",
-      "bytes": 8496,
-      "compressedBytes": 1035,
-      "sha256": "bfccb76f4c391edeb11b66e914124d347a0b84944da04cb2dec1e4cf4df05d85",
+      "sourceRevision": "bb234bced43bd85d068e2fed63cd8d0ceb093de9d1ac3bd3a6e348d35a8592f8",
+      "bytes": 6635,
+      "compressedBytes": 970,
+      "sha256": "325d585369a5bd58221727c32bbe997f76e6fc02d7864086eac53ca3dde56b2f",
       "summary": {
         "name": "Cloud Asset API",
         "serverUrl": "https://cloudasset.googleapis.com",
         "description": "The Cloud Asset API manages the history and inventory of Google Cloud resources.",
         "operationCount": 20,
-        "unavailableCount": 20
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-bigquery",
-      "sourceRevision": "84a35e70565d01face776e9dddecb1fc1ffda5bdf60e15fe41b96728c71b2b44",
-      "bytes": 14928,
-      "compressedBytes": 1409,
-      "sha256": "cb5b3603b4d7340f2d5596721b24cc29313daa9d6b57c7a59271fe59a222d207",
+      "sourceRevision": "75b5c0076c3187454398758715c83ede652c1f5ebd316a0c4297f617f5c30fb1",
+      "bytes": 11579,
+      "compressedBytes": 1357,
+      "sha256": "52591e12c26ff595d6b6d4655e5ed13ac9a038cf603355faf13ebe89b52a4424",
       "summary": {
         "name": "BigQuery API",
         "serverUrl": "https://bigquery.googleapis.com/bigquery/v2",
         "description": "A data platform for customers to create, manage, share and query data.",
         "operationCount": 37,
-        "unavailableCount": 37
+        "unavailableCount": 1
       }
     },
     {
       "id": "gcp-bigquerydatatransfer",
-      "sourceRevision": "2a086f8e80440d001d69a4c7cab10aa4467e55dea0a6a707aeea0bb260cd954d",
-      "bytes": 7415,
-      "compressedBytes": 853,
-      "sha256": "18da51c2b85cdfffacd7394494e19d4bb13c72ebeffb370527f03933e0e67cb5",
+      "sourceRevision": "e2e983dd855fc6255f635ddf8ffaefd2c046aa12de01eaeb1c94567b44b7e8c4",
+      "bytes": 6112,
+      "compressedBytes": 800,
+      "sha256": "988e54596d8bbdd1af7535a860ed164b2e6efaba4afb64b35e554c34562e727e",
       "summary": {
         "name": "BigQuery Data Transfer API",
         "serverUrl": "https://bigquerydatatransfer.googleapis.com",
         "description": "Schedule queries or transfer external data from SaaS applications to Google BigQuery on a regular basis.",
         "operationCount": 14,
-        "unavailableCount": 14
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-bigtableadmin",
-      "sourceRevision": "2e11a0e384c4232a92965aa7c049b164e300c62b88e46e2729592374348454cb",
-      "bytes": 12522,
-      "compressedBytes": 1100,
-      "sha256": "fb1cd9cc32f4d3371e223a18f8f853d8ff262d2cf0acaad14f514718c853ad1c",
+      "sourceRevision": "31eec62d1e2aba92b8968bec4e9e26e8fa5760cb4178e6bc1c2450c685cac389",
+      "bytes": 10010,
+      "compressedBytes": 1038,
+      "sha256": "1a22c22b28328f41bd5e794447b12868ca05817c2a90ff33542d882e82a54203",
       "summary": {
         "name": "Cloud Bigtable Admin API",
         "serverUrl": "https://bigtableadmin.googleapis.com",
         "description": "Administer your Cloud Bigtable tables and instances.",
         "operationCount": 27,
-        "unavailableCount": 27
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-cloudbilling",
-      "sourceRevision": "6ba4bb6bbcd2ba010fa66e13d00c3666068f5556d373cab714f941d7d0dfa5eb",
-      "bytes": 8368,
-      "compressedBytes": 967,
-      "sha256": "6d48960e29d98595ee675b0602f0d7adda5aadc5170118a86f81054e272a503c",
+      "sourceRevision": "c8f5f2adf8becb984004efacb8731a7004c141a554a08983ae92a4b64087ed67",
+      "bytes": 6693,
+      "compressedBytes": 905,
+      "sha256": "0680903243bb66228e97bf75955e8a4992f909fd3b4960b8a38f1b3b8ced6b82",
       "summary": {
         "name": "Cloud Billing API",
         "serverUrl": "https://cloudbilling.googleapis.com",
         "description": "Allows developers to manage billing for their Google Cloud Platform projects programmatically.",
         "operationCount": 18,
-        "unavailableCount": 18
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-billingbudgets",
-      "sourceRevision": "23fcd584259d51f75c9b3a4c38f34ceb7fb39c4c011b2487d33265defaa7ab95",
-      "bytes": 3024,
-      "compressedBytes": 639,
-      "sha256": "d140cfdc8bffc91130d1d8c1b3a1102935e07e27b06feb68d1262f977691ca08",
+      "sourceRevision": "0d9a6ae37e693ed1852219a86a0cd880e71d571598f5f5df7dd5fb7f05e8e259",
+      "bytes": 2559,
+      "compressedBytes": 584,
+      "sha256": "9f8501a735df09421c4a56737b73e5f1b92fd2e921a09cab61b5f5f6efdf35a3",
       "summary": {
         "name": "Cloud Billing Budget API",
         "serverUrl": "https://billingbudgets.googleapis.com",
         "description": "The Cloud Billing Budget API stores Cloud Billing budgets, which define a budget plan and the rules to execute as spend is tracked against that plan.",
         "operationCount": 5,
-        "unavailableCount": 5
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-cloudbuild",
-      "sourceRevision": "c83621bc49eb994a2995ed34a5189c3bd86fd6bafaf59b79ae7195e0103f9708",
-      "bytes": 8732,
-      "compressedBytes": 946,
-      "sha256": "4d5f6f5fd779891ea064d80338a7892cc8b2d476247b5fe5916ea13f757afe15",
+      "sourceRevision": "d6d5dd3ea1fefcec763bb00b107916f45f6858bc725ea499dad0242cdbbe3208",
+      "bytes": 7150,
+      "compressedBytes": 881,
+      "sha256": "5df500b9ccd297d742d5398bf22ef99901d0ba0aa0dd2638332e16af8aa48458",
       "summary": {
         "name": "Cloud Build API",
         "serverUrl": "https://cloudbuild.googleapis.com",
         "description": "Creates and manages builds on Google Cloud Platform.",
         "operationCount": 18,
-        "unavailableCount": 17
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-certificatemanager",
-      "sourceRevision": "13a3e677387fa0d358d711d97fda228d0b2ee0655d50d126a5fd5f4fdeb55774",
-      "bytes": 9229,
-      "compressedBytes": 819,
-      "sha256": "78a3c5fd09fcb4e310ab1e2aee4933fd2be6efc7fec8b45d04a4806c59314b83",
+      "sourceRevision": "876e04eeafff3c02aaf8640450eee6c9e9245e795c4d0b98fd721e7fde5b09b5",
+      "bytes": 7554,
+      "compressedBytes": 759,
+      "sha256": "38a3dacc97b793363d21387e27f33471107f40479c56ce3adb80c4d182b0df5c",
       "summary": {
         "name": "Certificate Manager API",
         "serverUrl": "https://certificatemanager.googleapis.com",
         "operationCount": 18,
-        "unavailableCount": 18
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-compute",
-      "sourceRevision": "33803659d1a38271f3b910f3358fe6b248980f11e397b543e51b1ac120ea1cd8",
-      "bytes": 330020,
-      "compressedBytes": 16805,
-      "sha256": "94a824ef3bf5b73e683b063f3a1840ea4120d01ffa2ce2b59938e306aeb6784b",
+      "sourceRevision": "650e74aa444884ec0825ab46538ad792482816bc902cde9e29ccdba641750cc1",
+      "bytes": 259524,
+      "compressedBytes": 16478,
+      "sha256": "394f60230ee3fe133c34c915ba214060e641c9e987d5b9e9c6bc8c3ee42f5cd1",
       "summary": {
         "name": "Compute Engine API",
         "serverUrl": "https://compute.googleapis.com/compute/v1",
         "description": "Creates and runs virtual machines on Google Cloud Platform.",
         "operationCount": 758,
-        "unavailableCount": 758
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-dataflow",
-      "sourceRevision": "36419ee9e5d95046f1d88c55e5972bdd8065b29f2c8a61268b1128f905e79a86",
-      "bytes": 18235,
-      "compressedBytes": 1337,
-      "sha256": "81efa93dd97c16888ab8d7bba10eff5b0e9cdf72cedb4641e12c5117fcbf37cb",
+      "sourceRevision": "9e5dff63064bf624003e64370526b83086bd81b837ab892962b65391035fe075",
+      "bytes": 14421,
+      "compressedBytes": 1269,
+      "sha256": "29c731613c531c63d2502cd25d15b3fb9d1d7323ea412f2dcf81b6901706587d",
       "summary": {
         "name": "Dataflow API",
         "serverUrl": "https://dataflow.googleapis.com",
         "description": "Manages Google Cloud Dataflow projects on Google Cloud Platform.",
         "operationCount": 41,
-        "unavailableCount": 41
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-dataproc",
-      "sourceRevision": "8585204bea2f38d0e5582ad752f049330478a662a15122a73ecf3873b082ea0f",
-      "bytes": 18277,
-      "compressedBytes": 1404,
-      "sha256": "9fb8cce9529d57943e9821b32f0cf2f3bc2acfb2d13b23ba720a0fcb5b2a726c",
+      "sourceRevision": "d706a417b6737f34ce0db3d14fb444706af80edf0a70e98ac7ce6f56e5638987",
+      "bytes": 14463,
+      "compressedBytes": 1339,
+      "sha256": "a592c58723242596f2174e4029071c24ae521f327994115abc6907c65decbdc8",
       "summary": {
         "name": "Cloud Dataproc API",
         "serverUrl": "https://dataproc.googleapis.com",
         "description": "Manages Hadoop-based clusters and jobs on Google Cloud Platform.",
         "operationCount": 41,
-        "unavailableCount": 41
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-dns",
-      "sourceRevision": "cc9c3c1a83b5e85d082c54b947499297dbeee01a4071d29155ffc410069b2b76",
-      "bytes": 16358,
-      "compressedBytes": 1341,
-      "sha256": "ea8d11e7aa1a2b9b05c07bcaf7be4d6b7406e6f451ba8b03f4507530fb3d340e",
+      "sourceRevision": "3e0adfcd1128646c791f3091f342bda95e05ec5f0205c26810638f2fca1b2be6",
+      "bytes": 12637,
+      "compressedBytes": 1272,
+      "sha256": "3e716ac4a0a97e32651bdb6c26b431e04bd53ef735fb38e421c03b0b6f4e1258",
       "summary": {
         "name": "Cloud DNS API",
         "serverUrl": "https://dns.googleapis.com",
         "operationCount": 40,
-        "unavailableCount": 40
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-documentai",
-      "sourceRevision": "8d8cd55f6d2f243da12c564841351d54adca3f9812356e89278224237d7fe633",
-      "bytes": 10078,
-      "compressedBytes": 1045,
-      "sha256": "f2b48ab63bb85acd817ed0558ac70362916e834ba5da2ee7d1b238a8caaaa98c",
+      "sourceRevision": "b1276468e90832656ecb02f9599b4be61a91ee1a33428810dc2415d9942ad95b",
+      "bytes": 8217,
+      "compressedBytes": 989,
+      "sha256": "f59cfe6c59e2a816b2f71998eaa072f4a3091d2f21a6aa56d1e081eebbbbad85",
       "summary": {
         "name": "Cloud Document AI API",
         "serverUrl": "https://documentai.googleapis.com",
         "description": "Service to parse structured information from unstructured or semi-structured documents using state-of-the-art Google AI such as natural language, computer vision, translation, and AutoML.",
         "operationCount": 20,
-        "unavailableCount": 20
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-clouderrorreporting",
-      "sourceRevision": "e7511079788f8d918be144c3cf4e18995fd45301e60ac7e04aa4cbe0a2bafed9",
-      "bytes": 3499,
-      "compressedBytes": 691,
-      "sha256": "925c889273042158f86031179d3bde78d3e1f9853f405c9613f8cae8af4e27d0",
+      "sourceRevision": "c7d2ac96fb0b44248d297292a92ba36d6940b3b65da771406534a35dc2e8f7f1",
+      "bytes": 2941,
+      "compressedBytes": 640,
+      "sha256": "fc4dd977ddf33f6a20e0ddc80eca0a96248b45025949ea77cd45101eeb5eeb4f",
       "summary": {
         "name": "Error Reporting API",
         "serverUrl": "https://clouderrorreporting.googleapis.com",
         "description": "Groups and counts similar errors from cloud services and applications, reports new errors, and provides access to error groups and their associated errors.",
         "operationCount": 6,
-        "unavailableCount": 6
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-firestore",
-      "sourceRevision": "fe5c4bd0833061e50788cf706516a9a431c681ab9972564ce20ffb329d31aa4f",
-      "bytes": 13450,
-      "compressedBytes": 1195,
-      "sha256": "ce55d337758e7648e3937dd1a619fb92a7c69d86c797a022c325a920212570d7",
+      "sourceRevision": "d65d9111578d7c85951d04887b9b013b76dc8f1a338becda82d7581c638ada32",
+      "bytes": 10659,
+      "compressedBytes": 1135,
+      "sha256": "34c063f9ef457b998bb5b4ad4487f33173ad551a70b0025a9e28ae232f862982",
       "summary": {
         "name": "Cloud Firestore API",
         "serverUrl": "https://firestore.googleapis.com",
         "description": "Accesses the NoSQL document database built for automatic scaling, high performance, and ease of application development.",
         "operationCount": 30,
-        "unavailableCount": 30
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-cloudfunctions",
-      "sourceRevision": "314203bf15148bef8eb52c450082b50cb06701154a44c72cd37e666ebec6837f",
-      "bytes": 9075,
-      "compressedBytes": 950,
-      "sha256": "136e86423377067c82a1ca59e3ef03d751fa07d42775af461a4604b1d595e2c7",
+      "sourceRevision": "911510d81ff6dc642ee2298a32f84b7021812381598b3b20c7f873dceec3b239",
+      "bytes": 7400,
+      "compressedBytes": 893,
+      "sha256": "9700a09f4840502ed4500ec40a4a79b0a1d0e533b7b2fb07bf1186682ba811e5",
       "summary": {
         "name": "Cloud Functions API",
         "serverUrl": "https://cloudfunctions.googleapis.com",
         "description": "Manages lightweight user-provided functions executed in response to events.",
         "operationCount": 18,
-        "unavailableCount": 18
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-iam",
-      "sourceRevision": "f128793aea1a0f2e4e5359ab24a732b5fda2e3070c9a37cdb4b2288a1de25ff9",
-      "bytes": 2602,
-      "compressedBytes": 665,
-      "sha256": "9894d63ed03c87364f3c05cbdbf4d2b9e240cbf698825a4af5359f112683899e",
+      "sourceRevision": "0fa48395c305cdce8a2a6f9706d3c6144f384d74639f7775a856325cd5766743",
+      "bytes": 2137,
+      "compressedBytes": 619,
+      "sha256": "7e8b9e2e74f0d6758d93003ba257188c5ff18c55e70976061597ed25c0149e01",
       "summary": {
         "name": "Identity and Access Management (IAM) API",
         "serverUrl": "https://iam.googleapis.com",
         "description": "Manages identity and access control for Google Cloud Platform resources, including the creation of service accounts, which you can use to authenticate to Google and make API calls.",
         "operationCount": 5,
-        "unavailableCount": 5
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-iamcredentials",
-      "sourceRevision": "92368dc94208fa8e16ec88906ae080c75c6ef59ac82292d951efee7a78d8d334",
-      "bytes": 2720,
-      "compressedBytes": 627,
-      "sha256": "d300d885c3169cd5535d91e764220a3458cb1861d152690282bb12f3ada288ed",
+      "sourceRevision": "caa82848370a12ee806e63d2d600d87915c2fab71af34e3d938732ff6c45fcfa",
+      "bytes": 2348,
+      "compressedBytes": 577,
+      "sha256": "aacf70ccd0eb5d50a2517e06b949b579786140b16eeb05b9a7a64e17f9b43f31",
       "summary": {
         "name": "IAM Service Account Credentials API",
         "serverUrl": "https://iamcredentials.googleapis.com",
         "description": "Creates short-lived credentials for impersonating IAM service accounts. To enable this API, you must enable the IAM API (iam.googleapis.com).",
         "operationCount": 4,
-        "unavailableCount": 4
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-cloudidentity",
-      "sourceRevision": "5f615b6f9b025181ab070f26c04671d6901ec70e505c3136b0aa66c32c3e22e9",
-      "bytes": 15319,
-      "compressedBytes": 1343,
-      "sha256": "7d92e2b2dc3431203de6032ab5fce0b73dac8adbb1b8bd8c49f0a17c848fcb53",
+      "sourceRevision": "7ffdb17e31745ce1c6849947d98ca1191b7dbaec404a67377a21382e4ed56d60",
+      "bytes": 12435,
+      "compressedBytes": 1280,
+      "sha256": "4a16c265a6fdfbfbf84b09d3eba08479fff36d9f8b169c0d3561e442980d232a",
       "summary": {
         "name": "Cloud Identity API",
         "serverUrl": "https://cloudidentity.googleapis.com",
         "description": "API for provisioning and managing identity resources.",
         "operationCount": 35,
-        "unavailableCount": 31
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-cloudkms",
-      "sourceRevision": "96b3563ce5e976397064357fab07537d891a82c7f9d281657d5acc2a9b165047",
-      "bytes": 15239,
-      "compressedBytes": 1240,
-      "sha256": "d08a725e87f7a3a99314dbb9930f36ca087b20c89c395e9943d38837f08d136d",
+      "sourceRevision": "c2505a0b8ec278ad5759fa9827328573f28793d8d98b6628f929bc99737184d7",
+      "bytes": 12355,
+      "compressedBytes": 1180,
+      "sha256": "1a3366fbc341c7d1333b62c58fc74748dbe8e0b3fc83d9973b1738bb11aea624",
       "summary": {
         "name": "Cloud Key Management Service (KMS) API",
         "serverUrl": "https://cloudkms.googleapis.com",
         "description": "Manages keys and performs cryptographic operations in a central cloud service, for direct use by other cloud resources and applications.",
         "operationCount": 31,
-        "unavailableCount": 31
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-container",
-      "sourceRevision": "14876ed0ef32d8483c1ce5914ca3600260e0b710993f21ca250b25398cec18c2",
-      "bytes": 27982,
-      "compressedBytes": 1899,
-      "sha256": "df313cabb17be4b038a5b976c3036482f39080f207efad364ef1b1a00126f158",
+      "sourceRevision": "781726fa449b5fc94e6fabf9882e3744a4f00cd4567a091a28e51344af88a25d",
+      "bytes": 22494,
+      "compressedBytes": 1816,
+      "sha256": "79099e346a5e13756f3324bc3c2e43f3d1caba5cafee7a44983b91e709563228",
       "summary": {
         "name": "Kubernetes Engine API",
         "serverUrl": "https://container.googleapis.com",
         "description": "Builds and manages container-based applications, powered by the open source Kubernetes technology.",
         "operationCount": 61,
-        "unavailableCount": 59
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-logging",
-      "sourceRevision": "1f03caca1333e4f3fffdb089a7582cad8187d8e2b2e0aaeff4b2e6866121c2cd",
-      "bytes": 16534,
-      "compressedBytes": 1382,
-      "sha256": "8d2532afab8db8e1c1c52cdf23abd40dcaef36d3514b9120bc5d5d7ca6c88848",
+      "sourceRevision": "e3cdc9c407863b14cc849d72de3e028fab1c8319bcea90ce80e6d96fe73b97bd",
+      "bytes": 12627,
+      "compressedBytes": 1308,
+      "sha256": "d9138fc44fb498ce15932936fa6410d28afdb6970f807d3d06e42f00360ba2b8",
       "summary": {
         "name": "Cloud Logging API",
         "serverUrl": "https://logging.googleapis.com",
         "description": "Writes log entries and manages your Cloud Logging configuration.",
         "operationCount": 42,
-        "unavailableCount": 42
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-redis",
-      "sourceRevision": "4e066afd9de5e546feb748e7658c36cc7d93796d9f7bd03885e48baf50ea3eb6",
-      "bytes": 6992,
-      "compressedBytes": 847,
-      "sha256": "0e6614df7ce959718bf3f9b0dbe7550fb11bcafab8bb6715f987489905fdfa1f",
+      "sourceRevision": "ec4a5c3d65ca67947d096b28ee11a258ddb489d73844f67ecb7a4b4a626bab18",
+      "bytes": 5503,
+      "compressedBytes": 789,
+      "sha256": "fd25ad3c107ad94fddef643ad932df4a6c2e585d73ee5174f2ad2f5aa1e0e750",
       "summary": {
         "name": "Google Cloud Memorystore for Redis API",
         "serverUrl": "https://redis.googleapis.com",
         "description": "Creates and manages Redis instances on the Google Cloud Platform.",
         "operationCount": 16,
-        "unavailableCount": 16
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-monitoring",
-      "sourceRevision": "add4a5844230b53e291b5af7d405619a459b0c71eef0c16bfa0ee069dd0188ab",
-      "bytes": 13909,
-      "compressedBytes": 1174,
-      "sha256": "00752f1ee488f8d7de7c7d7dbc11a8c5270f1316df5285db0e9a51123cafeae2",
+      "sourceRevision": "80a99ce72220d7048e9e8c46a4d611c253cc7e6b371f97bd807dfbef677bf862",
+      "bytes": 10932,
+      "compressedBytes": 1112,
+      "sha256": "2021c0c50f1ebbfcecf139690e4c09df001f440867d64b9e882c961ace35a7ef",
       "summary": {
         "name": "Cloud Monitoring API",
         "serverUrl": "https://monitoring.googleapis.com",
         "description": "Manages your Cloud Monitoring data and configurations.",
         "operationCount": 32,
-        "unavailableCount": 32
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-networkconnectivity",
-      "sourceRevision": "63d70317e3f0cef1a4f5b18fea51e4c4e61ab2d31260fc80a54378bef51c6507",
-      "bytes": 15181,
-      "compressedBytes": 1153,
-      "sha256": "d2a8ba8f87ec013c264fcd78f40acc3c0e0bd3dbfe5a521922956affa81e270a",
+      "sourceRevision": "0b02f2274c90ea3d6bc383c3a6b40ce491cda3a4f2f969c85e83d2c1bcc12ae3",
+      "bytes": 12390,
+      "compressedBytes": 1091,
+      "sha256": "2b42aad6009876cca2881087f9627cf596be8baab79a94beaf59c950f568fa90",
       "summary": {
         "name": "Network Connectivity API",
         "serverUrl": "https://networkconnectivity.googleapis.com",
         "description": "This API enables connectivity with and between Google Cloud resources.",
         "operationCount": 30,
-        "unavailableCount": 30
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-orgpolicy",
-      "sourceRevision": "896f408f253a59ae128bbcba957ed37bc1ccc182c06bcf95df521c563eac381a",
-      "bytes": 4470,
-      "compressedBytes": 742,
-      "sha256": "3b484f91f45807d94d2ae81e01f200238d1440dbe45c156dd9b47f320bad7216",
+      "sourceRevision": "1bb8ef1df027fdcf95ca74b29218e5c53d2d8f5c2e887f711a91a41af2b077f7",
+      "bytes": 3633,
+      "compressedBytes": 688,
+      "sha256": "6962d164403ab990036d27c44ca4aefe7ca6361a59ca92ebd26e912d47c919a1",
       "summary": {
         "name": "Organization Policy API",
         "serverUrl": "https://orgpolicy.googleapis.com",
         "description": "The Organization Policy API allows users to configure governance rules on their Google Cloud resources across the resource hierarchy.",
         "operationCount": 9,
-        "unavailableCount": 9
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-pubsub",
-      "sourceRevision": "4124a972512cbc5ce6aeac11f3399bd10bb60318c52677a6697ec20cef2a583e",
-      "bytes": 12992,
-      "compressedBytes": 1197,
-      "sha256": "c93a59068049e50351cd6524f230481936337de6e0e91c7e0cf925f28343bb65",
+      "sourceRevision": "2ab3879cfb88c9ab9b1e5caf0d9c11955cd8b2963b0dfbf77a3012a59f7c3a42",
+      "bytes": 9922,
+      "compressedBytes": 1132,
+      "sha256": "a3ab9fee289b2c9c87684bc2cb966a737f43241f39bd520edf363dcc2d6e4553",
       "summary": {
         "name": "Cloud Pub/Sub API",
         "serverUrl": "https://pubsub.googleapis.com",
         "description": "Provides reliable, many-to-many, asynchronous messaging between applications.",
         "operationCount": 33,
-        "unavailableCount": 33
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-cloudresourcemanager",
-      "sourceRevision": "052ef516e28366dfc8b5e636c3728bc9a60ed701c6ee520c11a862a02f5c7165",
-      "bytes": 12956,
-      "compressedBytes": 1196,
-      "sha256": "668e743a178730c334e6075bf57431166129e82848f4c7bc3ef479fa10fee47f",
+      "sourceRevision": "c399f8ac03448145e3c7255adbe74c0a58c41d77bd514be7ddece29737950812",
+      "bytes": 10351,
+      "compressedBytes": 1136,
+      "sha256": "f869d7df820fde8b10daab0569d82a00ea98e31b93c899699a9227024f9e5056",
       "summary": {
         "name": "Cloud Resource Manager API",
         "serverUrl": "https://cloudresourcemanager.googleapis.com",
         "description": "Creates, reads, and updates metadata for Google Cloud Platform resource containers.",
         "operationCount": 28,
-        "unavailableCount": 28
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-run",
-      "sourceRevision": "9c9d68e0e78687ac3e2533579041358d29e92ecd4ab189e904a77e640598994e",
-      "bytes": 7668,
-      "compressedBytes": 983,
-      "sha256": "5dd405f02c52a6c8519ea30f26150e02314e2ff43cd3f728f30d910fd862566d",
+      "sourceRevision": "4beff58f068cd07494963292dba243cb77ca7a0e597be7ef21e3eada88ebca3f",
+      "bytes": 6086,
+      "compressedBytes": 924,
+      "sha256": "5e6283e755d1615c825b3951bed04e9e4dd7f1ee894bc657e814c874066ae142",
       "summary": {
         "name": "Cloud Run Admin API",
         "serverUrl": "https://run.googleapis.com",
         "description": "Deploy and manage user provided container images that scale automatically based on incoming requests. The Cloud Run Admin API v1 follows the Knative Serving API specification, while v2 is aligned with Google Cloud AIP-based API standards, as described in https://google.aip.dev/.",
         "operationCount": 17,
-        "unavailableCount": 17
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-cloudscheduler",
-      "sourceRevision": "96073da25384db492e60a26034ec06f72667336547cf63c37ca0277800941530",
-      "bytes": 4411,
-      "compressedBytes": 683,
-      "sha256": "f24b2e84df66d952ea4fed2c7de6cbb9424fc181885d59bc25c73b83192c5fdb",
+      "sourceRevision": "c7ee352039a65d1c04b0d4d0197b9531c11d1aa6898d45adf2c70194d2f0d7f3",
+      "bytes": 3574,
+      "compressedBytes": 626,
+      "sha256": "284e0b4cd04aebbcb55ad92dab837e64ab3f3d64cafbe17e20ee13c7e9667e93",
       "summary": {
         "name": "Cloud Scheduler API",
         "serverUrl": "https://cloudscheduler.googleapis.com",
         "description": "Creates and manages jobs run on a regular recurring schedule.",
         "operationCount": 9,
-        "unavailableCount": 9
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-secretmanager",
-      "sourceRevision": "2c9e63522b78bef3743c9e5983bdaca76db3febde42fad11511bb7d9b4e0bb3a",
-      "bytes": 6961,
-      "compressedBytes": 868,
-      "sha256": "f467e7115ab3caedbef29b486bc56d739d88d155f0e5e89a75f37c56b71db6c9",
+      "sourceRevision": "5a731e9800524bdbefbe1e28108aaa5ae0ffc31d99ad71f8b07709aeb35f3b25",
+      "bytes": 5565,
+      "compressedBytes": 815,
+      "sha256": "e0fb636972ed7978c93c94feb04c9eaf847be51faa594815d992babcffc06f81",
       "summary": {
         "name": "Secret Manager API",
         "serverUrl": "https://secretmanager.googleapis.com",
         "description": "Stores sensitive data such as API keys, passwords, and certificates. Provides convenience while improving security.",
         "operationCount": 15,
-        "unavailableCount": 15
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-securitycenter",
-      "sourceRevision": "d8b3c472243d9fbea97708c8894ecea73f87fcbfe6ed38221d3464c76c6b997e",
-      "bytes": 16544,
-      "compressedBytes": 1377,
-      "sha256": "d72e4af06ba9754f2e36a16bce82f830bda3029132d071cb8b6c3c1da7d7e880",
+      "sourceRevision": "713e7dd3cdf43c8ebc03b4d1b8c4013105b10f50c4a1eb65dedcd130c5380d7e",
+      "bytes": 13381,
+      "compressedBytes": 1319,
+      "sha256": "d28f591faa503bc352547e0ff6641496c93b8fa722cdfce1b8afb1167827e3ef",
       "summary": {
         "name": "Security Command Center API",
         "serverUrl": "https://securitycenter.googleapis.com",
         "description": "Security Command Center API provides access to temporal views of assets and findings within an organization.",
         "operationCount": 34,
-        "unavailableCount": 34
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-dlp",
-      "sourceRevision": "f2446c9bbb9ebf866eb18b3cd5275a5c793c9f797bb239a6e71b406d03fb9a7a",
-      "bytes": 11855,
-      "compressedBytes": 1185,
-      "sha256": "a26756c1ac246f0fc48a55abbffe675b060c3f5d85409480afd0bc952c681095",
+      "sourceRevision": "52315ed12d222b98c0a12a16c8cf1bcb730d60b139ca4fdb7e016269ad04f41c",
+      "bytes": 9250,
+      "compressedBytes": 1123,
+      "sha256": "33126d4c968913b83e84d5a0cd7923f7d99ff9cbcefada1c639c9a448193e880",
       "summary": {
         "name": "Sensitive Data Protection (DLP)",
         "serverUrl": "https://dlp.googleapis.com",
         "description": "Discover and protect your sensitive data. A fully managed service designed to help you discover, classify, and protect your valuable data assets with ease.",
         "operationCount": 28,
-        "unavailableCount": 28
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-servicenetworking",
-      "sourceRevision": "1506e4d105489c041a7f8b59d673d3e13b40df1070ad975e89aa78152c91ae97",
-      "bytes": 12148,
-      "compressedBytes": 1131,
-      "sha256": "a1573c12e1f4ea5837e3f1c5c748c6dc7ab1dfbc1a53c92c9acdce8ca281d3d2",
+      "sourceRevision": "79c4a7dc39341cf748105fd0e85511f9b012eced3a401ee217d0402b48c91eac",
+      "bytes": 9822,
+      "compressedBytes": 1069,
+      "sha256": "46ca079c9e2d87db436091201c9e809cb95938cdb144fa4011f8ebe141c6a078",
       "summary": {
         "name": "Service Networking API",
         "serverUrl": "https://servicenetworking.googleapis.com",
         "description": "Provides automatic management of network configurations necessary for certain services.",
         "operationCount": 25,
-        "unavailableCount": 25
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-serviceusage",
-      "sourceRevision": "42772e6dcfe4ae5b9c1b0aae32b7d3ac0cc573cd43ffd3b00c4a2459dcc3771c",
-      "bytes": 4344,
-      "compressedBytes": 735,
-      "sha256": "85955eaa29714fe74f053b60bd79c96c0bb75be014164b88a8de90aad880f6e3",
+      "sourceRevision": "c9217b7b8d8cdc0bc6d54fdffb153b782ae002487af3f88a842bedccf3e6187b",
+      "bytes": 3507,
+      "compressedBytes": 680,
+      "sha256": "546254e6309987a52d4963d055e9a8e701b7427d9cd5016082fa5c3e68c8bd26",
       "summary": {
         "name": "Service Usage API",
         "serverUrl": "https://serviceusage.googleapis.com",
         "description": "Enables services that service consumers want to use on Google Cloud Platform, lists the available or enabled services, or disables services that service consumers no longer use.",
         "operationCount": 9,
-        "unavailableCount": 9
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-spanner",
-      "sourceRevision": "aa254571add51fb40579858ca239a6d36c11e75b519867084d5e08559afcf9c5",
-      "bytes": 17595,
-      "compressedBytes": 1357,
-      "sha256": "2c5443782a74523517d27c9b31889aeb780fbbce05fe597267cd83f15f9b3ce2",
+      "sourceRevision": "a991a70ec487618467be24f0f36e7f8dc8c07a16af75e20fb41e2b9d13701cb3",
+      "bytes": 13874,
+      "compressedBytes": 1295,
+      "sha256": "59c2cd141507fd1556387c411b92a65a4aef365b2adefe20629c183e267755a0",
       "summary": {
         "name": "Cloud Spanner API",
         "serverUrl": "https://spanner.googleapis.com",
         "description": "Cloud Spanner is a managed, mission-critical, globally consistent and scalable relational database service.",
         "operationCount": 40,
-        "unavailableCount": 40
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-speech",
-      "sourceRevision": "bacb2a8c93f89892e822ee321ae1150590334a3aae2252c2efb960a2b30933f7",
-      "bytes": 5044,
-      "compressedBytes": 779,
-      "sha256": "0eeb6288e5daf3f7876fbe9c67320a216546522cd175abd658bb809edb9109f5",
+      "sourceRevision": "46d2d9f314186ab3cb300ac0dbbdc2e05eebf0589a70358347288e18e57d1e24",
+      "bytes": 4020,
+      "compressedBytes": 724,
+      "sha256": "bd0457dfbca550ad04b263a194691cedde5a1cae40ee918d53f0ca84ae009652",
       "summary": {
         "name": "Cloud Speech-to-Text API",
         "serverUrl": "https://speech.googleapis.com",
         "description": "Converts audio to text by applying powerful neural network models.",
         "operationCount": 11,
-        "unavailableCount": 11
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-sqladmin",
-      "sourceRevision": "f986f7aeb56432d3262ca05ebc8166c37bcbe1df25540bfb5faa59ba536234ec",
-      "bytes": 23258,
-      "compressedBytes": 1881,
-      "sha256": "1e69826bb6f734c0f7a523e3a9d8565bc23e5b7ec24cabd86579f71452210e73",
+      "sourceRevision": "638fb7226a800572ff8db005cb0e2de50c85a4f37404eb3b1d943f67fbc0b47a",
+      "bytes": 17863,
+      "compressedBytes": 1804,
+      "sha256": "5cf4b3bc684136ed09aae1ea5abd55cef7921231f8e014ad4aa2bde05c312a99",
       "summary": {
         "name": "Cloud SQL Admin API",
         "serverUrl": "https://sqladmin.googleapis.com",
         "description": "API for Cloud SQL database instance management",
         "operationCount": 58,
-        "unavailableCount": 58
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-storage",
-      "sourceRevision": "89fce203814a45b34a3f61504d99453530579866c55554b400e0d52dc8d42d8e",
-      "bytes": 30201,
-      "compressedBytes": 2195,
-      "sha256": "63c27a44ccde56637aca58bc6124e329d59e900002b09d14e87a86e4286787b5",
+      "sourceRevision": "a9a4230a7c6b7bb9c6f8c65a1afac43ce3ea58bb8de9b851e25971e5389fbe7f",
+      "bytes": 23225,
+      "compressedBytes": 2133,
+      "sha256": "4a4b9e56643966e57384de9bcc5f3f6591aeaa899c2f10f1fa3caf6fadb464b2",
       "summary": {
         "name": "Cloud Storage JSON API",
         "serverUrl": "https://storage.googleapis.com/storage/v1",
         "description": "Stores and retrieves potentially large, immutable data objects.",
         "operationCount": 76,
-        "unavailableCount": 76
+        "unavailableCount": 1
       }
     },
     {
       "id": "gcp-cloudtasks",
-      "sourceRevision": "52b48ad2153f25d6e68d1645416943003a1c2509af3639169d3e9a58cb79c433",
-      "bytes": 7305,
-      "compressedBytes": 846,
-      "sha256": "539b978e99f647538890c623dfa84ebe9141a1c007c23d7007a392530b705ba1",
+      "sourceRevision": "8a6be25b1ffd9786c61d077ec2dcaaf82654013daa76c659564275b6fefa352a",
+      "bytes": 5816,
+      "compressedBytes": 786,
+      "sha256": "1ab645c95eae7a40e4a7c7b72ca5af1611a5c8556be75072ff913448b0a44921",
       "summary": {
         "name": "Cloud Tasks API",
         "serverUrl": "https://cloudtasks.googleapis.com",
         "description": "Manages the execution of large numbers of distributed requests.",
         "operationCount": 16,
-        "unavailableCount": 16
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-texttospeech",
-      "sourceRevision": "3c104c400ea22072e12eff54eb140f9834aacedd3218f9ef62b27f0f68909007",
-      "bytes": 3750,
-      "compressedBytes": 733,
-      "sha256": "021b7ef71ecc59033b0a7dd8e9b13d117ee3f4d4d919e954e660aa5bc41c621e",
+      "sourceRevision": "aa2f63cb3ebdace6ef2801006a578af72f745d68d0aac009364399d858d4c148",
+      "bytes": 3099,
+      "compressedBytes": 675,
+      "sha256": "f8d01174320d77b31fcb8742bed01928bc51cbf3c088cb44f3ce923df8fee268",
       "summary": {
         "name": "Cloud Text-to-Speech API",
         "serverUrl": "https://texttospeech.googleapis.com",
         "description": "Synthesizes natural-sounding speech by applying powerful neural network models.",
         "operationCount": 7,
-        "unavailableCount": 7
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-cloudtrace",
-      "sourceRevision": "d154efdb761d02d4550c23c57fdc563a184c437526fdd78a056bcddb6eb5acba",
-      "bytes": 2094,
-      "compressedBytes": 682,
-      "sha256": "a86efac8f4994a08e74d44334dad493fe27aa29f3183f5d97e2eb25ca4209bac",
+      "sourceRevision": "798f322d87c29f7a5d58297f2b0078272983ada327afce70734be05625f0720f",
+      "bytes": 1908,
+      "compressedBytes": 630,
+      "sha256": "0f8d1ab28f4bfb7b100f6a8c059b264c543b4783ca7160f687da923ef5a968d4",
       "summary": {
         "name": "Cloud Trace API",
         "serverUrl": "https://cloudtrace.googleapis.com",
         "description": "Sends application trace data to Cloud Trace for viewing. Trace data is collected for all App Engine applications by default. Trace data from other applications can be provided using this API. This library is used to interact with the Cloud Trace API directly. If you are looking to instrument your application for Cloud Trace, we recommend using OpenTelemetry.",
         "operationCount": 2,
-        "unavailableCount": 2
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-translate",
-      "sourceRevision": "dd03d07d60d631e1c8ee84f606d8346e3967548cb439553a22f1e22e4e9e49b8",
-      "bytes": 13943,
-      "compressedBytes": 1163,
-      "sha256": "ed024243bad88051078ba1792fc0d429c69303f741d5e5841f0e9f3632de966d",
+      "sourceRevision": "9dc11d7cee47d03b606132ec5fef2a02740ea98c6669e268fce36293d64d9291",
+      "bytes": 11059,
+      "compressedBytes": 1104,
+      "sha256": "48f2425d71eedb760190e56f4bd254575fdf3dd2de2ec75363cdfd1a8d424620",
       "summary": {
         "name": "Cloud Translation API",
         "serverUrl": "https://translation.googleapis.com",
         "description": "Integrates text translation into your website or application.",
         "operationCount": 31,
-        "unavailableCount": 31
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-aiplatform",
-      "sourceRevision": "369d1419a46fc2507efa4a9aa732cfc8e2f75aece02cd0b1fa4da2cb57c65c00",
-      "bytes": 79064,
-      "compressedBytes": 4447,
-      "sha256": "bdf55785b9e7e7c9e05e04295bf3c5361e9b2f5a118032dfbea4e215d7b1fd5b",
+      "sourceRevision": "78a3f43465972276ab6a6642aa237a3bf36afbc3e27bf6cb4b7ded22bb7000b8",
+      "bytes": 63345,
+      "compressedBytes": 4310,
+      "sha256": "9bf2ee09542256adab1710a56f7da9dfef961807ede0d60dab2f2a6e3e8c079c",
       "summary": {
         "name": "Vertex AI API",
         "serverUrl": "https://aiplatform.googleapis.com",
         "description": "Train high-quality custom machine learning models with minimal machine learning expertise and effort.",
         "operationCount": 169,
-        "unavailableCount": 169
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-discoveryengine",
-      "sourceRevision": "f08928bff49cb157dfffc97c20b23f58a3e5d5e3e6dadbc0fef442423b7c9ad9",
-      "bytes": 17888,
-      "compressedBytes": 1294,
-      "sha256": "8246a7a9bcd2da92ddcc7e7625fbe58f98151cecfbaa1c32fffc7b7e6884fdd5",
+      "sourceRevision": "17958f9643885d8ff0953bc62b3deeebb5941a7904c7ad3d752c4cb30405dce0",
+      "bytes": 14725,
+      "compressedBytes": 1235,
+      "sha256": "d01fccbfc2a0a8a5e05a4701ed2ed226218da1d41e72e6640689e4e09e3d29eb",
       "summary": {
         "name": "Discovery Engine API",
         "serverUrl": "https://discoveryengine.googleapis.com",
         "description": "Discovery Engine API.",
         "operationCount": 34,
-        "unavailableCount": 34
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-vision",
-      "sourceRevision": "48d0ef9cfd8bf2119dbf17aeb48fbf8af64c9219839b61001eb86c8409971e01",
-      "bytes": 10272,
-      "compressedBytes": 1094,
-      "sha256": "171f7b748d11a3cc851e4f53f246c6b634cf8513c6379273470da33d1ccd39b5",
+      "sourceRevision": "058a7ab34a8abb1018750cbc01023d842914be78d27d2250a0355c8bede4bb73",
+      "bytes": 8132,
+      "compressedBytes": 1039,
+      "sha256": "47fafa878126e17a97c28077e82f17bf552cf67ab5fe4898797b7bdbceb81a0d",
       "summary": {
         "name": "Cloud Vision API",
         "serverUrl": "https://vision.googleapis.com",
         "description": "Integrates Google Vision features, including image labeling, face, logo, and landmark detection, optical character recognition (OCR), and detection of explicit content, into applications.",
         "operationCount": 23,
-        "unavailableCount": 23
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-vpcaccess",
-      "sourceRevision": "20b86ddd2ab455dfbd570b6f80e0c517aa4d07b10847f838171cdd1f574c4d67",
-      "bytes": 3489,
-      "compressedBytes": 630,
-      "sha256": "52e481a469d23d7f39d386725d725b23411eb1413f57fc774e82931572ca2289",
+      "sourceRevision": "a74a0938e9e1a2b2504eb2337690380f18f549fcb5bb2ce1b91b116854c51116",
+      "bytes": 2838,
+      "compressedBytes": 574,
+      "sha256": "a76080ff485c707aca633c339207a67b39eb718614a5c94222729656c2ad5255",
       "summary": {
         "name": "Serverless VPC Access API",
         "serverUrl": "https://vpcaccess.googleapis.com",
         "description": "API for managing VPC access connectors.",
         "operationCount": 7,
-        "unavailableCount": 7
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-workflows",
-      "sourceRevision": "c4f6718fd5fdb8420c57c8c2ae7df747a472cc59971f4454a06a8f4dd6dfcb6e",
-      "bytes": 4004,
-      "compressedBytes": 670,
-      "sha256": "d2e6057330d83e56d3fc62c45e75e1ff1d5afcd192f9c0047eae983af9d1a936",
+      "sourceRevision": "cadc7f616f63d8ef1e205ff3ac5528e57ade1b1f3131aa2aeae6008ca65d94c9",
+      "bytes": 3260,
+      "compressedBytes": 611,
+      "sha256": "1ec3e07170c3c6986db5f758977ed1e0a22f7f3d91ed8d568708023aa725d51a",
       "summary": {
         "name": "Workflows API",
         "serverUrl": "https://workflows.googleapis.com",
         "description": "Manage workflow definitions. To execute workflows and manage executions, see the Workflows Executions API.",
         "operationCount": 8,
-        "unavailableCount": 8
+        "unavailableCount": 0
       }
     },
     {
       "id": "gcp-workflowexecutions",
-      "sourceRevision": "592244eb4b7d8237cc3679dd66e7ad44aefc63a834cf29b0d9ab0edbc46a1287",
-      "bytes": 4745,
-      "compressedBytes": 681,
-      "sha256": "ea8b8d4df15714693538ffe21226972fa3ddfca63c73918bbd9750f2db7f81be",
+      "sourceRevision": "236ea964f6f0ab33362554dbbcb25e7a3d7e424c6871cf8cff2a06a324a84488",
+      "bytes": 4001,
+      "compressedBytes": 629,
+      "sha256": "8c264fedd4893e9d0c931e27d1c3c52197d073b7d9df44861150def177166db3",
       "summary": {
         "name": "Workflow Executions API",
         "serverUrl": "https://workflowexecutions.googleapis.com",
         "description": "Execute workflows created with Workflows API.",
         "operationCount": 8,
-        "unavailableCount": 8
+        "unavailableCount": 0
       }
     },
     {
@@ -2392,10 +2392,10 @@
     },
     {
       "id": "google-search-console",
-      "sourceRevision": "541d68471cdfe7e966dc8da2f16f0a4be9abbaa6ef9191af19c54f3457c80cff",
+      "sourceRevision": "e5e998eb18cea68d86632e13f0b62b9bc95f54dafe4f45bb42612592f65e6b25",
       "bytes": 4637,
-      "compressedBytes": 836,
-      "sha256": "88240caee7737d6906385db29ed093ad102bcbaeb06f4f8c02be2af41af5e8cc",
+      "compressedBytes": 835,
+      "sha256": "80cdf2472260110f6bb1e47e87134958e7ce6969702a76f457a3365e51f6cfb4",
       "summary": {
         "name": "Google Search Console API",
         "serverUrl": "https://searchconsole.googleapis.com",
@@ -2406,10 +2406,10 @@
     },
     {
       "id": "google-admin-data-transfer",
-      "sourceRevision": "a470c9dafb3caaa92bfd4121f5d9957c1abd3de27f2ce94cc086d033f5549253",
+      "sourceRevision": "11cc64e797a5dbdd0df404d5e634f4e23cf9729fda331a713ef7742393d8953f",
       "bytes": 2592,
-      "compressedBytes": 614,
-      "sha256": "cb577ebe2ce4f1d366da91e1f28a9d2adef4a6b25588c10cc527eeaa60b75f8f",
+      "compressedBytes": 615,
+      "sha256": "60f00e4f950dcd6d7455a130ee99abda4cc3202bfc45307c8f271440eed38150",
       "summary": {
         "name": "Admin SDK API",
         "serverUrl": "https://admin.googleapis.com",
@@ -2420,10 +2420,10 @@
     },
     {
       "id": "google-admin-directory",
-      "sourceRevision": "1a2fc6ba76a3c8a6d6caa6d0fc77bb7cce6e6dbbeacbf38d24a7ccdc26e1e9a9",
+      "sourceRevision": "870837ae6134d1c4549ec17c640518afe4bbc5bf4b5a1b0c3d5d6c8b1c67155c",
       "bytes": 42620,
-      "compressedBytes": 3138,
-      "sha256": "4629531beee7eec70a21f7dfc858e8d7167a5ff78ed3da03eef3be1421bb594e",
+      "compressedBytes": 3144,
+      "sha256": "59d943d4fb1e30b202ae017b27f11d0137342f3aad9b6628df44ea571e397551",
       "summary": {
         "name": "Admin SDK API",
         "serverUrl": "https://admin.googleapis.com",
@@ -2434,10 +2434,10 @@
     },
     {
       "id": "google-admin-reports",
-      "sourceRevision": "86b449c01221f96e8217a4eaab64f4d10e431c2538f0c728e8b0d57ea39e14f7",
+      "sourceRevision": "228615adc2f2abd9be8e6e0af468bffa1dff9f30c13eaee543efb150eacb6f54",
       "bytes": 3219,
-      "compressedBytes": 740,
-      "sha256": "6836d71ea5c7b18dae970a4ede88b8f8e42b3172d559412a4c462fa8fa48868e",
+      "compressedBytes": 737,
+      "sha256": "cecc53e4461cbc6d1a498625091e73b2f06536e3ec3eb95bd2790b724b0c09d5",
       "summary": {
         "name": "Admin SDK API",
         "serverUrl": "https://admin.googleapis.com",
@@ -2448,10 +2448,10 @@
     },
     {
       "id": "google-apps-script",
-      "sourceRevision": "3324c7e3fd9a55654689158277891579148bfa0f00e693d34edcbd1d63e138bc",
+      "sourceRevision": "67561113af54eca2ff823ba739814fa36f1aff2fa0bc2fd0b9c1c29e822c0b12",
       "bytes": 5493,
-      "compressedBytes": 792,
-      "sha256": "471f874fb71520008c6ece455ad6ae57c69acb8d4a2c998a8e21b6c4bef7b118",
+      "compressedBytes": 791,
+      "sha256": "49943b216399018edfaf89463e88f33ea60d1e5348977351ad8b7ac4b7ae0e64",
       "summary": {
         "name": "Apps Script API",
         "serverUrl": "https://script.googleapis.com",
@@ -2462,10 +2462,10 @@
     },
     {
       "id": "google-calendar",
-      "sourceRevision": "1c436cdb34bf03ad098dca42c26c4fcd7247e93f07cec79e6c8270f2ac43ebec",
+      "sourceRevision": "f45cfb3ee1e20148cd6512fb681a452f24a6d333e3d38b6518339f3c09a6673c",
       "bytes": 10992,
-      "compressedBytes": 1229,
-      "sha256": "47c87f4551ea37b876ebb275e3db90bae67075e57d77ce7fdfc66fa7ee827184",
+      "compressedBytes": 1231,
+      "sha256": "b08b3b82651db2b1505e8b22a458ff69c5a466bc241672482f12a71257a53275",
       "summary": {
         "name": "Calendar API",
         "serverUrl": "https://www.googleapis.com/calendar/v3",
@@ -2476,10 +2476,10 @@
     },
     {
       "id": "google-chat",
-      "sourceRevision": "a81e1218f7404d24ba5741108ffaef3162162837008a41fcfdc1fbda4a535fd8",
+      "sourceRevision": "376ea9392e52f5c11e643539539645636b450103da8f97bc5b8cace6fe1a9d39",
       "bytes": 5318,
-      "compressedBytes": 913,
-      "sha256": "a890dab13499f1c4e99f3a11927f71fce88f0bcb896e7a09d2527e50ae0cbcb3",
+      "compressedBytes": 915,
+      "sha256": "a436868dd9d350e1980f250e41b24c23260cd4959be8685e8b6a14f85428816f",
       "summary": {
         "name": "Google Chat API",
         "serverUrl": "https://chat.googleapis.com",
@@ -2490,10 +2490,10 @@
     },
     {
       "id": "google-classroom",
-      "sourceRevision": "2e046b8fcce6845bece0d6fceb4c91b923586ed059618999491b43db618f5dd8",
+      "sourceRevision": "ab5828ea51c1be917cc94d3dfd9c485590cb9198e60608122ca21802697b1c13",
       "bytes": 20294,
-      "compressedBytes": 1589,
-      "sha256": "f7d37b94b1b7e237ed2afbc42906d69a4743dce4369e01600e55250b6678da7b",
+      "compressedBytes": 1590,
+      "sha256": "839a04c1fcf7a2b8359cc50b3fb4f9622fdae55c5ba1b70d83e49ffdfe5ec153",
       "summary": {
         "name": "Google Classroom API",
         "serverUrl": "https://classroom.googleapis.com",
@@ -2504,10 +2504,10 @@
     },
     {
       "id": "google-docs",
-      "sourceRevision": "d7e367683315ac82ce2d4e4ded9b618945f69e667edf659c62a4e6c9463db649",
+      "sourceRevision": "b44eba46faf3780312bca085a83f30fd18b7a30f489aa309f05d2f2288580581",
       "bytes": 1391,
-      "compressedBytes": 466,
-      "sha256": "f1a4a66fc52eb7a69cff8c18635ca12d19e60e7bdcc94dcf8ed7214bb1985a96",
+      "compressedBytes": 467,
+      "sha256": "c8e2477a5c432da42afd53d2727aa1c481b14007e40d7b115be86e96e52c954c",
       "summary": {
         "name": "Google Docs API",
         "serverUrl": "https://docs.googleapis.com",
@@ -2518,10 +2518,10 @@
     },
     {
       "id": "google-drive-activity",
-      "sourceRevision": "ef77f32179d8f7e22719f420fb6197300d39f289550ecf0451b3abc114da65db",
+      "sourceRevision": "671bc349c4d68952d1f35448bce71cbde1fc98e123ec6ce83a3990cefaa40f87",
       "bytes": 1000,
-      "compressedBytes": 433,
-      "sha256": "9472a16bed28b504eab2f0268e46280a0dd2a299097e9d1e41f38871b5b39959",
+      "compressedBytes": 432,
+      "sha256": "46e43ef2314df7d6e050196be3c4301812b0e1f9aaf07c20a1d955ecf109dc99",
       "summary": {
         "name": "Drive Activity API",
         "serverUrl": "https://driveactivity.googleapis.com",
@@ -2532,10 +2532,10 @@
     },
     {
       "id": "google-drive",
-      "sourceRevision": "a5e7a65f2499dd01a47926894ff5911d51622ff76560a41ec8fcb7f4248ca0d9",
+      "sourceRevision": "3eb1cb005a27f06c51a7f3880dcb3fa7ffdec18f30f3343202f503b6110f03c7",
       "bytes": 13911,
-      "compressedBytes": 1581,
-      "sha256": "4d2f62f131d018b9d7dc93d9ab858b82d145da9380f69cbf6eeb0d31cc9cafbb",
+      "compressedBytes": 1577,
+      "sha256": "91ce1e640a779b16cd66fdb1d130833481574e25ca5c837b930fd19564f93e40",
       "summary": {
         "name": "Google Drive API",
         "serverUrl": "https://www.googleapis.com/drive/v3",
@@ -2546,10 +2546,10 @@
     },
     {
       "id": "google-drive-labels",
-      "sourceRevision": "91d29e539306ab3ea63ac317f6e9a137b63a3b7005bedbb8fa8f7ee0a24c0a0a",
+      "sourceRevision": "1d2c311b9ec8b5f47a2f9122350f340341c53f02e58711fccf51b6c107e0af71",
       "bytes": 5626,
-      "compressedBytes": 808,
-      "sha256": "6cf184aabb70c67826e3d8f7e1e6429bc38c166cb8db101080535fdf87b44212",
+      "compressedBytes": 811,
+      "sha256": "039cc47ed685ff17722e7d296a5ea5945a60e08797027df81530d6d7df0a8224",
       "summary": {
         "name": "Drive Labels API",
         "serverUrl": "https://drivelabels.googleapis.com",
@@ -2560,10 +2560,10 @@
     },
     {
       "id": "google-forms",
-      "sourceRevision": "431e0045283404e38f8270705227360eca4e5393de2a2f62a6a741d43a8e4c35",
+      "sourceRevision": "01982d9f462c5f17e38923c17dca62f36558afad71f1f3d44945e7fa8d6c1515",
       "bytes": 2943,
-      "compressedBytes": 595,
-      "sha256": "1b8c461febe620c5cdc6195ad5f32b9f0cfe4e58b13ce3fa1fb0a2d7a118f19a",
+      "compressedBytes": 596,
+      "sha256": "453c9cfd3609fc03eaeb47a9bdbc35bc06e19d2ad7867978e8c3379bd49f0b2e",
       "summary": {
         "name": "Google Forms API",
         "serverUrl": "https://forms.googleapis.com",
@@ -2574,10 +2574,10 @@
     },
     {
       "id": "google-gmail",
-      "sourceRevision": "f509d7c6b3c6727074e6b2a0158ce9a7a6597b85666de10c39ebad222f780f8f",
+      "sourceRevision": "ce3d1b266163f6bcdd13342d06cae5e2daad26bd0d13e43522d08e6b3f2b3032",
       "bytes": 24942,
-      "compressedBytes": 2028,
-      "sha256": "c0cfb1c550cad2d116261aaf0791e7080d41b92e5c20eeb200cdc9150c8c2ff8",
+      "compressedBytes": 2025,
+      "sha256": "f5f5639d90bb7630253ec779d912e3868d48b654e2af9739af75143e265dadcb",
       "summary": {
         "name": "Gmail API",
         "serverUrl": "https://gmail.googleapis.com",
@@ -2588,10 +2588,10 @@
     },
     {
       "id": "google-keep",
-      "sourceRevision": "6b43d2db1b1b33124bcec5f4c9a56baddad29f94cc3257ab856584195e2c29a7",
+      "sourceRevision": "017e0fb74039342ffc3c984070f049174288a4eab58a3a16696d1bb6e1333306",
       "bytes": 2278,
-      "compressedBytes": 598,
-      "sha256": "7a56baddfca9b1ed825599e0ef0fe05bb04e08dbb9a87caff05b437cb095ebae",
+      "compressedBytes": 600,
+      "sha256": "0c77accc48f97aa66ab9f99cf233f9b6a194a11ac0ae56c951672aac8e0282b1",
       "summary": {
         "name": "Google Keep API",
         "serverUrl": "https://keep.googleapis.com",
@@ -2602,10 +2602,10 @@
     },
     {
       "id": "google-people",
-      "sourceRevision": "a19230f1bffbdd8e3db1b989cc16695ed248d97f640c1f41f6de8ff5ec1dbc88",
+      "sourceRevision": "e3b634cf1b0abeb7e6a46b0b8fd7f2132e0e0c7552efefe7e136b9db82150f4d",
       "bytes": 7299,
-      "compressedBytes": 974,
-      "sha256": "8cf28f62e1ae69c8995e3b1405717ac7683a67ef747b1e050075471ceda9d4de",
+      "compressedBytes": 970,
+      "sha256": "92fe1e0669a6b92fc09ce0c30af72cfeb10ce824ef018c597b0333221c1c096d",
       "summary": {
         "name": "People API",
         "serverUrl": "https://people.googleapis.com",
@@ -2616,10 +2616,10 @@
     },
     {
       "id": "google-sheets",
-      "sourceRevision": "bc0eac66b6918c819ae53b6dc4dfd68de5a20622a2808d92aacb7a42b0bcfa77",
+      "sourceRevision": "fd3a8b14d3bff12cd15f7f0417b4b1fb63deb31292a51b4696469298a8246778",
       "bytes": 6167,
-      "compressedBytes": 771,
-      "sha256": "6f0dd61b62e53aba6b8fbd394e9ddfc5f15f51e8b8271ea16d8b8ec2da164843",
+      "compressedBytes": 774,
+      "sha256": "5f71830f3430e8382134115b3ebc79c26f2e868afb69f257340faa7a68c21082",
       "summary": {
         "name": "Google Sheets API",
         "serverUrl": "https://sheets.googleapis.com",
@@ -2630,10 +2630,10 @@
     },
     {
       "id": "google-slides",
-      "sourceRevision": "ed59f1a0878ed6d96571accefcf3662f6628f4f99818dfc7a035d6b6610c19cf",
+      "sourceRevision": "79bee2a52ede614d98a363a699f836534bbf71860b0b93348e956444934d4149",
       "bytes": 2182,
-      "compressedBytes": 528,
-      "sha256": "40b4fec993d4e27b9fea8ed3a6d339b975f609d681c07cde053599d92a6b2833",
+      "compressedBytes": 529,
+      "sha256": "a9c6038f6b451dd3a55977b3e9460c9fb4b4a2d1428b934c45476e133feb128b",
       "summary": {
         "name": "Google Slides API",
         "serverUrl": "https://slides.googleapis.com",
@@ -2644,10 +2644,10 @@
     },
     {
       "id": "google-tasks",
-      "sourceRevision": "825ade1f0cdbe66e3828c68679ff4d148b0949cfc00b7a54534841094637e6a0",
+      "sourceRevision": "e8d7eac86594d595e93e453d0ca14d45615e4978f098c0a5b586e2293338cafb",
       "bytes": 4275,
       "compressedBytes": 707,
-      "sha256": "c25339c027b588fb4386cda68c3cb166188b0b00ae0f9da2eec6dd67dfed2b8a",
+      "sha256": "c61a94345e09f073c7a74ba3fec3de55e5c5681ab731ea0c5134be548d329e70",
       "summary": {
         "name": "Google Tasks API",
         "serverUrl": "https://tasks.googleapis.com",
@@ -2658,10 +2658,10 @@
     },
     {
       "id": "google-vault",
-      "sourceRevision": "e2d51b9702cbc376149ff96f9362881cb7ef37f19515c6ab176be90ca0ac0df8",
+      "sourceRevision": "82668a2bd1d3a884c2a8ceb9330046e0693e16cc1970c5f05fd002a1b578b367",
       "bytes": 10250,
       "compressedBytes": 1246,
-      "sha256": "9a35eb2bfdbbf53606b48796f252e9d1f6f9809e23a561c6ac25f8fd60262bc0",
+      "sha256": "2317d55a18d28e90e9d8b43848e75957fb10ddc10e117ad08deb3711cd02bdb4",
       "summary": {
         "name": "Google Vault API",
         "serverUrl": "https://vault.googleapis.com",
@@ -2672,10 +2672,10 @@
     },
     {
       "id": "google-youtube-analytics",
-      "sourceRevision": "42a8b7cd78a09b91f92bf51525a6e0c07207483aa9c2fd72040d7a8fe28bdc35",
+      "sourceRevision": "3429fe9de96422d813eb527bd74ae040372b32f947e58e79ae2c0b7ff187f286",
       "bytes": 3209,
-      "compressedBytes": 583,
-      "sha256": "0f2cad24a81dc411bda19f8c4a49e42cdd7ad3d4b97384a832af76784566cf25",
+      "compressedBytes": 582,
+      "sha256": "10e0864c5c9764fc9cd1a0eaa4655d1aa3a3ebe821aa62156b0a2de3100050af",
       "summary": {
         "name": "YouTube Analytics API",
         "serverUrl": "https://youtubeanalytics.googleapis.com",
@@ -2686,10 +2686,10 @@
     },
     {
       "id": "google-youtube",
-      "sourceRevision": "bbba4d62d69bb6774b131026d8727740c9100fe1eff71a9b576d831ce0fe5850",
+      "sourceRevision": "1fea92aedfb6713b9b61a7aeb6ea523dea30689c054725e02c0e2a5edb0174bc",
       "bytes": 26065,
-      "compressedBytes": 2371,
-      "sha256": "5ca7b274fb6a25207dac01c7a6de17abf9c94d9945e07ca0753598fac617628f",
+      "compressedBytes": 2369,
+      "sha256": "12a7bdcf690a854aea2478226b6633e12beeff93397ed51fd437a2c9acb40326",
       "summary": {
         "name": "YouTube Data API v3",
         "serverUrl": "https://youtube.googleapis.com",

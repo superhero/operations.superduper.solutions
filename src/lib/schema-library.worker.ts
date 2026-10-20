@@ -5,8 +5,10 @@ import "./worker-runtime.ts";
 import { createSchemaDocumentId, parseSchemaDocument, schemaDocumentMaxBytes, validateSchemaDocument } from "./schema-documents.ts";
 import { listSchemaMetadata, readSchemaDiscovery, readSchemaDocument, readSchemaOperations, releaseSchemaDocument,
   schemaMetadataIdentity, putSchemaDocument, renameSchemaDocument, moveSchemaDocument,
-  deleteSchemaDocument, setSchemaDocumentEnabled, configureSchemaDefaults } from "./schema-storage.ts";
-import { serviceSchemaDescriptors, readServiceSchema } from "./service-schema-packs.ts";
+  deleteSchemaDocument, setSchemaDocumentEnabled, configureSchemaDefaults, updateSchemaUpstream,
+  getSchemaBranchHistory, getSchemaRevisionDiff, resolveSchemaUpdate, dismissSchemaUpdate, updateSchemaFromBundle } from "./schema-storage.ts";
+import { serviceSchemaDescriptors, readServiceSchema, readServiceSchemaUpstream } from "./service-schema-packs.ts";
+import type { SchemaResolution } from "./schema-merge.ts";
 import { serviceIndexDescriptors, readServiceSchemaIndex, schemaAdapterRevision } from "./service-schema-indexes.ts";
 import { inspectServiceSchema } from "./service-catalog.ts";
 import type { SchemaDownload, SchemaLibrarySnapshot } from "./schema-library-types.ts";
@@ -16,8 +18,9 @@ import { prepareStorageNamespaces } from "./storage-namespace.ts";
 const indexes = new Map(serviceIndexDescriptors.map(index => [index.id, index]));
 configureSchemaDefaults({ adapterRevision: schemaAdapterRevision,
   catalogs: serviceSchemaDescriptors.map(catalog => ({ id: catalog.id, name: catalog.name,
-    file: `${catalog.id}.${catalog.protocol === "json-rpc" ? "schema" : "openapi"}.json`, revision: catalog.sha256, bytes: catalog.bytes, summary: indexes.get(catalog.id)!.summary })),
-  read: readServiceSchema, readIndex: readServiceSchemaIndex, validate: inspectServiceSchema,
+    file: `${catalog.id}.${catalog.protocol === "json-rpc" ? "schema" : "openapi"}.json`, revision: catalog.effectiveSha256 ?? catalog.sha256,
+    bytes: catalog.effectiveBytes ?? catalog.bytes, ...(catalog.patches ? { patches: catalog.patches } : {}), summary: indexes.get(catalog.id)!.summary })),
+  read: readServiceSchema, readUpstream: readServiceSchemaUpstream, readIndex: readServiceSchemaIndex, validate: inspectServiceSchema,
   inspectOperation: (document, id, operation) => inspectServiceSchema(document, id, new Set([operation.id]), operation).operations[0]!,
 });
 
@@ -49,6 +52,9 @@ async function snapshot(reset = false): Promise<SchemaLibrarySnapshot>
     snapshot.records.push({ id: record.id, file: record.file, enabled: record.enabled,
       createdAt: record.createdAt, updatedAt: record.updatedAt, sourceIdentity: identity,
       ...(record.displayName ? { displayName: record.displayName } : {}),
+      ...(record.patches?.length ? { patches: record.patches } : {}),
+      ...(record.incoming ? { hasPendingUpdate: true } : {}),
+      ...(indexes.has(record.id) ? { bundled: true } : {}),
       summary: summary ? { ...summary, description: summary.description?.trim() || summary.name,
         name: record.displayName ?? summary.name }
         : { name: record.displayName ?? record.file, serverUrl: "", operationCount: null } });
@@ -60,13 +66,30 @@ async function snapshot(reset = false): Promise<SchemaLibrarySnapshot>
 async function readUpload(file: File, id: string): Promise<Record<string, unknown>>
 {
   if (file.size > schemaDocumentMaxBytes) throw new Error("Schema files must be no larger than 10 MiB.");
-  return validateSchemaDocument(parseSchemaDocument(await file.text(), file.name), id).document;
+  const document = parseSchemaDocument(await file.text(), file.name);
+  // Published service contracts may need their reviewed correction before
+  // execution. Importing that source must use the same service inspection as
+  // its canonical worker path, rather than the restricted authored adapter.
+  return (indexes.has(id) ? inspectServiceSchema(document as Record<string, unknown>, id)
+    : validateSchemaDocument(document, id)).document;
 }
 
 serveWorkerRpc({
   prepareStorage: prepareStorageNamespaces,
   load: () => snapshot(true),
   models: readSchemaOperations,
+  history: async (id: string, limit: number) => {
+    try { return await getSchemaBranchHistory(id, limit); }
+    finally { releaseSchemaDocument(id); }
+  },
+  revisionDiff: getSchemaRevisionDiff,
+  async bundledUpdate(id: string) { await updateSchemaFromBundle(id); return snapshot(); },
+  async resolveUpdate(id: string, current: string, incoming: string, choices: Record<string, SchemaResolution>) {
+    await resolveSchemaUpdate(id, current, incoming, choices); return snapshot();
+  },
+  async dismissUpdate(id: string, current: string, incoming: string) {
+    await dismissSchemaUpdate(id, current, incoming); return snapshot();
+  },
   document: async (id: string, identity: string) => {
     try { return (await readSchemaDocument(id, identity)).document; }
     finally { releaseSchemaDocument(id); }
@@ -80,10 +103,8 @@ serveWorkerRpc({
     return snapshot();
   },
   async replace(id: string, file: File) {
-    const record = await readSchemaDocument(id);
     const document = await readUpload(file, id);
-    const { groups: _groups, displayName: _displayName, ...metadata } = record;
-    await putSchemaDocument({ ...metadata, document, file: file.name, updatedAt: Date.now() });
+    await updateSchemaUpstream(id, document, file.name);
     return snapshot();
   },
   async rename(id: string, name: string) { await renameSchemaDocument(id, name); return snapshot(); },

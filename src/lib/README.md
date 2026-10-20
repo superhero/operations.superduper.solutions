@@ -44,6 +44,7 @@ for history semantics and content-versus-editor-state boundaries.
 | `schema-index` | Versioned compact descriptors; these cannot execute requests |
 | `schema-cache` | Coalesced reads and a source-byte budget for decoded content |
 | `schema-storage` | Targeted persistence, recovery, independent history and canonical policies |
+| `schema-patches`, `schema-merge` | Versioned reviewed corrections, structured upstream/local merges and bounded changed-field reports |
 | `schema-library*` | Worker deltas, on-demand models and source reads |
 | `schema-models`, `catalog*` | Nested dependencies, coalesced model batches, model pins and current operation lookup |
 

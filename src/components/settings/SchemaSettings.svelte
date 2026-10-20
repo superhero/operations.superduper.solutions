@@ -11,9 +11,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import HintButton from "$lib/components/HintButton.svelte";
   import JsonSchemaView from "$lib/components/JsonSchemaView.svelte";
   import Reveal from "$lib/components/Reveal.svelte";
+  import SchemaHistory from "./SchemaHistory.svelte";
   import type { SchemaLibraryRecord } from "$lib/schema-library-types.ts";
+  import type { SchemaBranchHistory, SchemaRevisionDiff } from "$lib/schema-storage.ts";
+  import type { SchemaResolution } from "$lib/schema-merge.ts";
 
-  let { records, busy = false, ready = true, error = "", onUpload, onReplace, onRename, onMove, onEnabledChange, onDelete, onDownload, onRetry, onLoad, onRelease }: {
+  let { records, busy = false, ready = true, error = "", onUpload, onReplace, onRename, onMove, onEnabledChange, onDelete, onDownload, onRetry, onLoad, onRelease,
+    onHistory, onDiff, onResolveUpdate, onDismissUpdate, onBundledUpdate }: {
     records: SchemaLibraryRecord[];
     busy?: boolean;
     ready?: boolean;
@@ -28,6 +32,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     onRetry: () => Promise<void>;
     onLoad: (id: string) => Promise<Record<string, unknown>>;
     onRelease: (id: string) => void;
+    onHistory?: (id: string, limit: number) => Promise<SchemaBranchHistory>;
+    onDiff?: (id: string, oid: string, limit: number) => Promise<SchemaRevisionDiff>;
+    onResolveUpdate?: (id: string, current: string, incoming: string, choices: Record<string, SchemaResolution>) => Promise<void>;
+    onDismissUpdate?: (id: string, current: string, incoming: string) => Promise<void>;
+    onBundledUpdate?: (id: string) => Promise<void>;
   } = $props();
 
   let uploadInput: HTMLInputElement;
@@ -326,6 +335,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                 </span>
               {/snippet}
             </JsonSchemaView>
+
+            {#if onHistory && onDiff}
+              <SchemaHistory id={record.id} sourceIdentity={record.sourceIdentity} pending={record.hasPendingUpdate}
+                load={limit => onHistory!(record.id, limit)} loadDiff={(oid, limit) => onDiff!(record.id, oid, limit)}
+                onResolve={onResolveUpdate ? (current, incoming, choices) => onResolveUpdate!(record.id, current, incoming, choices) : undefined}
+                onDismiss={onDismissUpdate ? (current, incoming) => onDismissUpdate!(record.id, current, incoming) : undefined}
+                onBundledUpdate={record.bundled && onBundledUpdate ? () => onBundledUpdate!(record.id) : undefined} />
+            {/if}
 
             {#if deletingId === record.id}
               <div class="schema-delete" role="group" aria-label={`Confirm deletion of ${metadata.title}`}>
