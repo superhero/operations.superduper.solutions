@@ -727,6 +727,614 @@
     "compressedBytes": 34309
   },
   {
+    "id": "aws-apigatewayv2",
+    "provider": "aws",
+    "name": "AWS / API Gateway / HTTP and WebSocket",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/apigatewayv2/2018-11-29/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2018-11-29",
+    "openapi": "3.0.0",
+    "operations": 72,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "fec5b78bf48681187bd549d526da351d49a8e04d76e99a3248c37deb20c50f18",
+    "sourceSha256": "dcb635027e79e66a88a46322a75a652d51511cb78f7316599df6edd25cb7f7e8",
+    "bytes": 386074,
+    "compressedBytes": 47572
+  },
+  {
+    "id": "aws-apigateway",
+    "provider": "aws",
+    "name": "AWS / API Gateway / REST",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/apigateway/2015-07-09/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2015-07-09",
+    "openapi": "3.0.0",
+    "operations": 120,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "356f372e1b3a48d7a22aed61c7c0797dc8af5c4ed550ac8e8babab68d83b8917",
+    "sourceSha256": "b38e21b01a2eab0363c36ee4266efaef995d760f19fb6225bb34004bbf6cb470",
+    "bytes": 392645,
+    "compressedBytes": 47931
+  },
+  {
+    "id": "aws-athena",
+    "provider": "aws",
+    "name": "AWS / Athena",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/athena/2017-05-18/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2017-05-18",
+    "openapi": "3.0.0",
+    "operations": 68,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "1f4e7736ea3b962dd749aa5746575c4845f91a175d334c6974c505bfeee9c1ff",
+    "sourceSha256": "cfd32ff656fe94c1aadbde70a071478706d8dafdabe58791f095c1a8980fb08e",
+    "bytes": 259011,
+    "compressedBytes": 29321
+  },
+  {
+    "id": "aws-autoscaling",
+    "provider": "aws",
+    "name": "AWS / Auto Scaling",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/autoscaling/2011-01-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2011-01-01",
+    "openapi": "3.0.0",
+    "operations": 130,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "3dfd2af80a4764189fc0d3ea5a28bc9479e45447b1aae5efddf26d60a919ae3f",
+    "sourceSha256": "afede5724cba405d5c2e74811e262cf18c1fb2f00220ec25d34844c5160460d1",
+    "bytes": 621183,
+    "compressedBytes": 81658
+  },
+  {
+    "id": "aws-backup",
+    "provider": "aws",
+    "name": "AWS / Backup",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/backup/2018-11-15/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2018-11-15",
+    "openapi": "3.0.0",
+    "operations": 72,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "421781af6fbb43cf42a8d55dfbe68431a0df8c08d47afdd9c52404281a5e5990",
+    "sourceSha256": "8e8bb24810515b456a0f3d9dd7335a963724f61e175bc8e7e7aaad4124c5c65b",
+    "bytes": 346573,
+    "compressedBytes": 43200
+  },
+  {
+    "id": "aws-batch",
+    "provider": "aws",
+    "name": "AWS / Batch",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/batch/2016-08-10/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2016-08-10",
+    "openapi": "3.0.0",
+    "operations": 24,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "d3b0ea44f93b92609c9766312593952f9fb10b8cbbd0c294445e8538c6ff86e2",
+    "sourceSha256": "d0ff1b6d9e45f8d2f6eeb4eea80541fcd53dad2fe6404377e9c379629785dbcc",
+    "bytes": 388567,
+    "compressedBytes": 62461
+  },
+  {
+    "id": "aws-budgets",
+    "provider": "aws",
+    "name": "AWS / Budgets",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/budgets/2016-10-20/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2016-10-20",
+    "openapi": "3.0.0",
+    "operations": 23,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "53960528036628b78617ff8ed599d3b17b8fc0621acee9b2042d5daf222af954",
+    "sourceSha256": "d23ff724b39063155f08c9a897faed78d37d28a9f8026fdc7c135b03cbc23c40",
+    "bytes": 107549,
+    "compressedBytes": 12277
+  },
+  {
+    "id": "aws-cloudformation",
+    "provider": "aws",
+    "name": "AWS / CloudFormation",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/cloudformation/2010-05-15/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2010-05-15",
+    "openapi": "3.0.0",
+    "operations": 140,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "4a68c9cffa40499b55c50b970591ff86129e779b0ef9e8bdfcaef552ebc14e3f",
+    "sourceSha256": "cbc89071b2a1f82426db9c4a0d16788f13752c6f527b85507901fd76a8a47c2d",
+    "bytes": 799346,
+    "compressedBytes": 104048
+  },
+  {
+    "id": "aws-cloudfront",
+    "provider": "aws",
+    "name": "AWS / CloudFront",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/cloudfront/2020-05-31/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2020-05-31",
+    "openapi": "3.0.0",
+    "operations": 106,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "527e9cfea40ed42d0bdb7efbfd7b62a72ea18bb7a9e495f172d96c84e9fba6ca",
+    "sourceSha256": "5faba00e57ef0af89609f6e45e48fbf28a879d43920b1039c3035578d1d62f53",
+    "bytes": 623245,
+    "compressedBytes": 79291
+  },
+  {
+    "id": "aws-cloudtrail",
+    "provider": "aws",
+    "name": "AWS / CloudTrail",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/cloudtrail/2013-11-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2013-11-01",
+    "openapi": "3.0.0",
+    "operations": 46,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "8d2daf1667f87143c7310a436a53e35517a8679054cf84b3e295bddc497019d8",
+    "sourceSha256": "0240a617f76689ff993cf1c1e2b8281bdc6caa1aaf4686cfe19d4c9e145d6da2",
+    "bytes": 283903,
+    "compressedBytes": 33335
+  },
+  {
+    "id": "aws-logs",
+    "provider": "aws",
+    "name": "AWS / CloudWatch / Logs",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/logs/2014-03-28/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2014-03-28",
+    "openapi": "3.0.0",
+    "operations": 51,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "738f035ec0d944b378fa9f82c98c4f4af7689cbe4816aa07064b4831a88886b6",
+    "sourceSha256": "f614ca1065e622d12f2b1614e058679349a9c5e242422fee7e0f770c3a20ed16",
+    "bytes": 211713,
+    "compressedBytes": 27917
+  },
+  {
+    "id": "aws-monitoring",
+    "provider": "aws",
+    "name": "AWS / CloudWatch / Metrics",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/monitoring/2010-08-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2010-08-01",
+    "openapi": "3.0.0",
+    "operations": 76,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "85ff979bad127aab83a73b775f9905aac586238122296feb00b685d8deff936a",
+    "sourceSha256": "ebef8efd176d4d90d4708a975f4e337ed4337a27d1ee473574559e9cbe8a4f53",
+    "bytes": 383244,
+    "compressedBytes": 53372
+  },
+  {
+    "id": "aws-codebuild",
+    "provider": "aws",
+    "name": "AWS / CodeBuild",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/codebuild/2016-10-06/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2016-10-06",
+    "openapi": "3.0.0",
+    "operations": 45,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "0e6b6a34f533bb23aef8395ee8b4b1c968dff7940c2e501672ce755ebb17553d",
+    "sourceSha256": "7409cd7fe899fc73af6a994060f01303fa8fa462991c70d1b931f18f1b883b81",
+    "bytes": 255794,
+    "compressedBytes": 34788
+  },
+  {
+    "id": "aws-codepipeline",
+    "provider": "aws",
+    "name": "AWS / CodePipeline",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/codepipeline/2015-07-09/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2015-07-09",
+    "openapi": "3.0.0",
+    "operations": 39,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "5cc1dc46e043c2a4abdbb902cbff0a14e441bd3245ea93ac9695716caf6824b1",
+    "sourceSha256": "9e95307d4e7cbf4f9c34f01afc53282e328c84f246af34b57ae9a8b7fcc63ae6",
+    "bytes": 194121,
+    "compressedBytes": 25986
+  },
+  {
+    "id": "aws-cognito-idp",
+    "provider": "aws",
+    "name": "AWS / Cognito / User Pools",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/cognito-idp/2016-04-18/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2016-04-18",
+    "openapi": "3.0.0",
+    "operations": 103,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "ba12458942a09007e006e4406e4aa86577b23b7b14ef07618da8a9b277a57e98",
+    "sourceSha256": "19e1e272bae8d2441860656fb5229685c9f7bcac2b045912ca484059b37acdc2",
+    "bytes": 641131,
+    "compressedBytes": 70882
+  },
+  {
+    "id": "aws-comprehend",
+    "provider": "aws",
+    "name": "AWS / Comprehend",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/comprehend/2017-11-27/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2017-11-27",
+    "openapi": "3.0.0",
+    "operations": 84,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "93f4ec0615f3af4ec36b57402ba5546693ebf41575fb61b334a38075be84905a",
+    "sourceSha256": "0f82bff16c6408a4ed11c84ca42d59462c00a7fabe524dd273c6cf6d74f0f44d",
+    "bytes": 432358,
+    "compressedBytes": 41456
+  },
+  {
+    "id": "aws-ce",
+    "provider": "aws",
+    "name": "AWS / Cost Explorer",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/ce/2017-10-25/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2017-10-25",
+    "openapi": "3.0.0",
+    "operations": 38,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "73470bd31bb69e4c637bd5e031c47906412bd2ec3e3c4f3ed067dd51adcc10b1",
+    "sourceSha256": "b34851cc94ba8158ef199c4705da3a55108f21cf599fadf68eef613c7869fb96",
+    "bytes": 278776,
+    "compressedBytes": 36382
+  },
+  {
+    "id": "aws-firehose",
+    "provider": "aws",
+    "name": "AWS / Data Firehose",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/firehose/2015-08-04/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2015-08-04",
+    "openapi": "3.0.0",
+    "operations": 12,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "d4ce44694309b05adfc13f5ff0304ef1a357340252c0aa8335df84d93c062522",
+    "sourceSha256": "d7f92f586d6f7042f1b11b8ef05c7f219527ff3d5e1a80c895f5e524dc9a8938",
+    "bytes": 185889,
+    "compressedBytes": 26473
+  },
+  {
+    "id": "aws-dynamodb",
+    "provider": "aws",
+    "name": "AWS / DynamoDB",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/dynamodb/2012-08-10/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2012-08-10",
+    "openapi": "3.0.0",
+    "operations": 53,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "edf78af7371e27e8b8440b0587d04830d881d8681558787f406ffdfe713108e0",
+    "sourceSha256": "0236c0164cd34dee448dd13222746f2ac29ce0c9006663c8544b383a4591392f",
+    "bytes": 460735,
+    "compressedBytes": 66178
+  },
+  {
+    "id": "aws-ec2",
+    "provider": "aws",
+    "name": "AWS / EC2",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/ec2/2016-11-15/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2016-11-15",
+    "openapi": "3.0.0",
+    "operations": 1188,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "ea5b1da045efed071bd26efab3b896f71282f662cc1e1683194d66023d3cfd04",
+    "sourceSha256": "4b4da0ce2b0c6ab3d0fe912f4472532c09749481ce4cb2dc03e60660fcefee77",
+    "bytes": 4730525,
+    "compressedBytes": 531488
+  },
+  {
+    "id": "aws-ecr",
+    "provider": "aws",
+    "name": "AWS / ECR",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/ecr/2015-09-21/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2015-09-21",
+    "openapi": "3.0.0",
+    "operations": 41,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "fbeab5c68abfe83723d66352c751edc87347a72204c1b68e6607c1043250d01b",
+    "sourceSha256": "40087f6c59f07bfc315ba6846ab6ed6cfc5361a38637a9d8855cc34c2adc2765",
+    "bytes": 185567,
+    "compressedBytes": 20183
+  },
+  {
+    "id": "aws-ecs",
+    "provider": "aws",
+    "name": "AWS / ECS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/ecs/2014-11-13/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2014-11-13",
+    "openapi": "3.0.0",
+    "operations": 56,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "4bf57dddad6c0cc36532b5b8fa76f9c110f786db7172982f133f5b4e7171d314",
+    "sourceSha256": "6de2389dd8386e6bd43f0f230724909b1475e6be6fc8db9237d58fe7aba302c6",
+    "bytes": 582220,
+    "compressedBytes": 88265
+  },
+  {
+    "id": "aws-elasticfilesystem",
+    "provider": "aws",
+    "name": "AWS / EFS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/elasticfilesystem/2015-02-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2015-02-01",
+    "openapi": "3.0.0",
+    "operations": 30,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "dade2231707fbb8542eaecdf0215aa791cb409dd608c7ee8336c4f1dee408bf2",
+    "sourceSha256": "fb9df1d57d591b6f9af74733a7d3a6301f7adf8c324a814fbaba226566d24c29",
+    "bytes": 152163,
+    "compressedBytes": 24538
+  },
+  {
+    "id": "aws-eks",
+    "provider": "aws",
+    "name": "AWS / EKS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/eks/2017-11-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2017-11-01",
+    "openapi": "3.0.0",
+    "operations": 35,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "476f3cff5ca1a16490dcf49ef5aee2c1041b9a1fa71289ae9ed5e5f7f643d302",
+    "sourceSha256": "586aed26ac973ed9da25f7d11e6673d767fb934ed4b7ef9d165767604f2ae009",
+    "bytes": 244360,
+    "compressedBytes": 37095
+  },
+  {
+    "id": "aws-elasticloadbalancingv2",
+    "provider": "aws",
+    "name": "AWS / Elastic Load Balancing",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/elasticloadbalancingv2/2015-12-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2015-12-01",
+    "openapi": "3.0.0",
+    "operations": 68,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "9bb94556618707f774795169f97fedcdc28f89a69a39627c6c14500ed5d6ada5",
+    "sourceSha256": "cc928509dbdb05f4f8bedb9e1093a0643ae3e9cfd1bad3bb1f17f466d8193ca1",
+    "bytes": 282272,
+    "compressedBytes": 31804
+  },
+  {
+    "id": "aws-elasticache",
+    "provider": "aws",
+    "name": "AWS / ElastiCache",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/elasticache/2015-02-02/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2015-02-02",
+    "openapi": "3.0.0",
+    "operations": 130,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "f73df542876aded5810cd60675f944fa512810eb4875ab4b05e9cca1a42d3f7e",
+    "sourceSha256": "730685d51cf7e4c1f830cbfdda023c37a665c11a20f081fd9b3f2bd6ec9d38ca",
+    "bytes": 675482,
+    "compressedBytes": 73824
+  },
+  {
+    "id": "aws-events",
+    "provider": "aws",
+    "name": "AWS / EventBridge",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/events/2015-10-07/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2015-10-07",
+    "openapi": "3.0.0",
+    "operations": 51,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "f8db1a08e00a64700d8561f161bb4df554a848193db9e5128b00f7be72f895d9",
+    "sourceSha256": "99625f4517dc6196fd55264b882ce4ce4db0e44b99f9c46eb06040a615b9ae6a",
+    "bytes": 226862,
+    "compressedBytes": 29192
+  },
+  {
+    "id": "aws-fsx",
+    "provider": "aws",
+    "name": "AWS / FSx",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/fsx/2018-03-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2018-03-01",
+    "openapi": "3.0.0",
+    "operations": 41,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "34700f933d923f7e41dd007eac9345e3ad706486bde3df7a1cf9bea6bd84aa85",
+    "sourceSha256": "5c3266c87d22ccb22e8051f2f49df629762b09b86ec6350150ac76d5bb5ef0d0",
+    "bytes": 406012,
+    "compressedBytes": 62942
+  },
+  {
+    "id": "aws-glue",
+    "provider": "aws",
+    "name": "AWS / Glue",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/glue/2017-03-31/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2017-03-31",
+    "openapi": "3.0.0",
+    "operations": 202,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "27f1694cedeb25ce41ed5dc9b119ddd7953e18e4a96677498ca0ab7801ceceb6",
+    "sourceSha256": "76f941f3406a4c05602be11b8d440a5ec238ccfce2fc720838644e332378cc5e",
+    "bytes": 1004097,
+    "compressedBytes": 119312
+  },
+  {
+    "id": "aws-iam",
+    "provider": "aws",
+    "name": "AWS / IAM",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/iam/2010-05-08/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2010-05-08",
+    "openapi": "3.0.0",
+    "operations": 318,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "75b86d2d22322f224d07485f0a74f0927ec4b6bb90d6f4108c6cf98f89132b3d",
+    "sourceSha256": "f96be26bcfb5daca6aa3f74e920de0857ef032aa43e1b50a52de2f16e80d96c0",
+    "bytes": 1265127,
+    "compressedBytes": 105396
+  },
+  {
+    "id": "aws-kinesis",
+    "provider": "aws",
+    "name": "AWS / Kinesis",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/kinesis/2013-12-02/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2013-12-02",
+    "openapi": "3.0.0",
+    "operations": 28,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "bd4ea6c0e6f082d9b9fbbce188a623c034dee5ffa136b5d3aaa2325ead224ba5",
+    "sourceSha256": "8a0a452912bfbf6d3e2393835bbcabe60034ffd9d4163d899a7e8baa217ae62c",
+    "bytes": 163123,
+    "compressedBytes": 22370
+  },
+  {
+    "id": "aws-kms",
+    "provider": "aws",
+    "name": "AWS / KMS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/kms/2014-11-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2014-11-01",
+    "openapi": "3.0.0",
+    "operations": 50,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "f0c9733d4dd7ce2c51e3a49dea35531a37711c1ef2fecc09aa12615cf0500cb4",
+    "sourceSha256": "3fa52a80dbffd1d19e7b5e8c7eba44dfc6541f4294712addd0d2e2ab7c153372",
+    "bytes": 487481,
+    "compressedBytes": 67149
+  },
+  {
     "id": "aws-lambda",
     "provider": "aws",
     "name": "AWS / Lambda",
@@ -746,6 +1354,139 @@
     "compressedBytes": 53669
   },
   {
+    "id": "aws-opensearch",
+    "provider": "aws",
+    "name": "AWS / OpenSearch",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/opensearch/2021-01-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2021-01-01",
+    "openapi": "3.0.0",
+    "operations": 54,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "01d0ee509fc29cefc2403b8dff507be3bba690f3583710fe9b95bedb5a519d9e",
+    "sourceSha256": "d537e000277e9c960befad3110df5c2c174927dde71f4f1fb3f4cfa0b8f236e8",
+    "bytes": 328909,
+    "compressedBytes": 43252
+  },
+  {
+    "id": "aws-organizations",
+    "provider": "aws",
+    "name": "AWS / Organizations",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/organizations/2016-11-28/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2016-11-28",
+    "openapi": "3.0.0",
+    "operations": 55,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "a16e015497cbd98a09e67d6321e123d68bfb0fa916af5ccab77d815dfcb37f3c",
+    "sourceSha256": "d9b363677673bbcc2df38e2e3d78074aecaaac971081d7c71143e044174f50e4",
+    "bytes": 324960,
+    "compressedBytes": 34248
+  },
+  {
+    "id": "aws-polly",
+    "provider": "aws",
+    "name": "AWS / Polly",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/polly/2016-06-10/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2016-06-10",
+    "openapi": "3.0.0",
+    "operations": 9,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "62fa911eba1d9141664783718fa74d34c1ba257025cd72df5a057e54d796ff55",
+    "sourceSha256": "7308cacb7da4a95d11264a335030fe6f8328c3b383a5cfc23e535a27db98d2f0",
+    "bytes": 55206,
+    "compressedBytes": 8687
+  },
+  {
+    "id": "aws-rds",
+    "provider": "aws",
+    "name": "AWS / RDS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/rds/2014-10-31/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2014-10-31",
+    "openapi": "3.0.0",
+    "operations": 286,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "c21871f272a1f369d3802e13d76f0625eac5dfc240c320f38c3a547da1901be5",
+    "sourceSha256": "98ecba13962fe584aa696192c509e4be6349c31b08efcbf331b04b0af9e37a06",
+    "bytes": 1805535,
+    "compressedBytes": 222036
+  },
+  {
+    "id": "aws-redshift",
+    "provider": "aws",
+    "name": "AWS / Redshift",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/redshift/2012-12-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2012-12-01",
+    "openapi": "3.0.0",
+    "operations": 246,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "d6271729a44df045024d5dff64e01968f4d1def0470f8aec3eac648fc8ec8b28",
+    "sourceSha256": "9cadf958d4d8e9eab504ff198b42ef68562576190ed6f8eda7e14dc9109a930c",
+    "bytes": 921159,
+    "compressedBytes": 96590
+  },
+  {
+    "id": "aws-rekognition",
+    "provider": "aws",
+    "name": "AWS / Rekognition",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/rekognition/2016-06-27/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2016-06-27",
+    "openapi": "3.0.0",
+    "operations": 72,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "eb61aa3f8f2f58f7890b06fd3af72bddddb454e7f372bcecadd2eb7fcbf2194f",
+    "sourceSha256": "cdead0011ac2ca6d89ae65d6797083a87ee5c4d56f2e3ffd3a6bdc2d375f5f9e",
+    "bytes": 518893,
+    "compressedBytes": 72856
+  },
+  {
+    "id": "aws-route53",
+    "provider": "aws",
+    "name": "AWS / Route 53",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/route53/2013-04-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2013-04-01",
+    "openapi": "3.0.0",
+    "operations": 70,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "37318a19920c0dec9289bd37adf2508e4e619aebb1d195fcf3b06d5a9c2e406c",
+    "sourceSha256": "d773387958a187f8f1b8c217cf0059dccbdd5d5cf16372dbcd41475b60b44206",
+    "bytes": 447841,
+    "compressedBytes": 71369
+  },
+  {
     "id": "aws-s3",
     "provider": "aws",
     "name": "AWS / S3",
@@ -763,6 +1504,272 @@
     "sourceSha256": "043afe0dc9212eb5512743fbcf4d56ac72f5f6bb79663d509a370b599cb157c0",
     "bytes": 779174,
     "compressedBytes": 113486
+  },
+  {
+    "id": "aws-s3control",
+    "provider": "aws",
+    "name": "AWS / S3 / Control",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/s3control/2018-08-20/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2018-08-20",
+    "openapi": "3.0.0",
+    "operations": 64,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "983b1815b0cd68eaf86d6cd316ba6177013be242600789992bf0d9cb83808e32",
+    "sourceSha256": "b77d761b0be0aa33826182d7e2a566c5d605801d5e0125b7aa770a519e118207",
+    "bytes": 341817,
+    "compressedBytes": 43734
+  },
+  {
+    "id": "aws-sagemaker",
+    "provider": "aws",
+    "name": "AWS / SageMaker",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/sagemaker/2017-07-24/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2017-07-24",
+    "openapi": "3.0.0",
+    "operations": 304,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "2847fe69e459daa1eeafb95e2dffd5a52cee372709c718ff8f2e52ca6103ae09",
+    "sourceSha256": "c59fe2efe51aba45841c617851c5f8ae03617bdf539e0980127eb59208e52d6c",
+    "bytes": 1776189,
+    "compressedBytes": 251904
+  },
+  {
+    "id": "aws-runtime-sagemaker",
+    "provider": "aws",
+    "name": "AWS / SageMaker / Runtime",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/runtime.sagemaker/2017-05-13/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2017-05-13",
+    "openapi": "3.0.0",
+    "operations": 2,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "d8a12efce47afa804033ea5428ae5168ebb8e100397672464aecc0ca6a16b7bf",
+    "sourceSha256": "912f2d9a7076b49d0b46462a120207ec693c29aadbf68bf530064c0ac826f51a",
+    "bytes": 19803,
+    "compressedBytes": 4252
+  },
+  {
+    "id": "aws-secretsmanager",
+    "provider": "aws",
+    "name": "AWS / Secrets Manager",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/secretsmanager/2017-10-17/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2017-10-17",
+    "openapi": "3.0.0",
+    "operations": 22,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "1c7ad235b89a6ebf714a9116d5be5055aced880a9227adabfb76a43a0c06f795",
+    "sourceSha256": "ad4d7db5a51d0c11aab8d7751c4f19475a47f1b3b9d8aa9aacc54de266346ca2",
+    "bytes": 155412,
+    "compressedBytes": 21209
+  },
+  {
+    "id": "aws-sesv2",
+    "provider": "aws",
+    "name": "AWS / SES",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/sesv2/2019-09-27/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2019-09-27",
+    "openapi": "3.0.0",
+    "operations": 87,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "d8193d3b10ba22cf265b0fe76ff4474dbe8eb052a8b407c96eeda4d20b564aa5",
+    "sourceSha256": "0d6df7185ed1e5fe01d9240af61fed579435a5fb9696db3074a187280bcac2be",
+    "bytes": 398329,
+    "compressedBytes": 54514
+  },
+  {
+    "id": "aws-sns",
+    "provider": "aws",
+    "name": "AWS / SNS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/sns/2010-03-31/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2010-03-31",
+    "openapi": "3.0.0",
+    "operations": 84,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "14a210cbd1167e49aeb461e4ba8bff533c7bb6473f7cb8ff91f83beaf932f195",
+    "sourceSha256": "a00fb09864096aabf90ec41cab56fe90bf968671a6bd2bf53407b33c43e71d04",
+    "bytes": 307584,
+    "compressedBytes": 36079
+  },
+  {
+    "id": "aws-sqs",
+    "provider": "aws",
+    "name": "AWS / SQS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/sqs/2012-11-05/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2012-11-05",
+    "openapi": "3.0.0",
+    "operations": 46,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "5ba8e13697b8c58dd867c87318478c346afe694fdf47ccecae7404474d6b890b",
+    "sourceSha256": "603a85901e582c4832c14c3ed58dca52d79ad39f7905fd402a29b1cac82fe332",
+    "bytes": 266392,
+    "compressedBytes": 36726
+  },
+  {
+    "id": "aws-states",
+    "provider": "aws",
+    "name": "AWS / Step Functions",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/states/2016-11-23/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2016-11-23",
+    "openapi": "3.0.0",
+    "operations": 34,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "015f7480d4276fe656b24c7dcd8880473ec534e0ea37445dc417cacfb830165e",
+    "sourceSha256": "76601f2d21171acf7c9f0fee328589f2e1cdcd4cc9a4b53139016bea17af81fa",
+    "bytes": 186934,
+    "compressedBytes": 21171
+  },
+  {
+    "id": "aws-sts",
+    "provider": "aws",
+    "name": "AWS / STS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/sts/2011-06-15/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2011-06-15",
+    "openapi": "3.0.0",
+    "operations": 16,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "57abe7038ef9b4425e87706ef402117db67fa6822947457f49ec1d1abb78b022",
+    "sourceSha256": "9ee29721aae3fadd22e0b1743989de73331cba8bf641543a61cf1b64f1c47109",
+    "bytes": 203472,
+    "compressedBytes": 23731
+  },
+  {
+    "id": "aws-ssm",
+    "provider": "aws",
+    "name": "AWS / Systems Manager",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/ssm/2014-11-06/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2014-11-06",
+    "openapi": "3.0.0",
+    "operations": 138,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "ea1da9646ab7a272056e2f0d41fb933a0efc86c777f8aaefd35c111678cc7628",
+    "sourceSha256": "8b9ddff5bc32e71b8af159d6110b355578b0a9e2417ad6442517ff85b959a0f2",
+    "bytes": 862547,
+    "compressedBytes": 121708
+  },
+  {
+    "id": "aws-textract",
+    "provider": "aws",
+    "name": "AWS / Textract",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/textract/2018-06-27/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2018-06-27",
+    "openapi": "3.0.0",
+    "operations": 13,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "d3c0dbdf67385e256a951ed8d08661a9168c2432820433a46c6d3caa3f8b58a3",
+    "sourceSha256": "f57240c13958c630041916d62d0e7636a6dbfe9361886921c9b11718a2762de5",
+    "bytes": 121414,
+    "compressedBytes": 17194
+  },
+  {
+    "id": "aws-transcribe",
+    "provider": "aws",
+    "name": "AWS / Transcribe",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/transcribe/2017-10-26/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2017-10-26",
+    "openapi": "3.0.0",
+    "operations": 39,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "b5cb42260d51188fefc2765402bd2e3fc1229467a15831d7972478268b6a3855",
+    "sourceSha256": "fe76d9ad4cc84e2e1df470b3d14b6daf6db276817ede028697091c6d89db5e63",
+    "bytes": 273091,
+    "compressedBytes": 29688
+  },
+  {
+    "id": "aws-transfer",
+    "provider": "aws",
+    "name": "AWS / Transfer Family",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/transfer/2018-11-05/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2018-11-05",
+    "openapi": "3.0.0",
+    "operations": 59,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "dd19a58db893773435f113141bcc8972b0d9373bac3f0f88eb5e07d0b4337efc",
+    "sourceSha256": "1a03526230910bc58a3b25a187b80fbbe56bb242d066a17ad2c3fbdf54ecbee2",
+    "bytes": 328727,
+    "compressedBytes": 46501
+  },
+  {
+    "id": "aws-translate",
+    "provider": "aws",
+    "name": "AWS / Translate",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/translate/2017-07-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion",
+    "version": "2017-07-01",
+    "openapi": "3.0.0",
+    "operations": 19,
+    "license": {
+      "name": "Apache 2.0 License",
+      "url": "http://www.apache.org/licenses/"
+    },
+    "sha256": "1f9b0d20961033124575dd053bf84a7a63ba22d85816406cc7aaaf6cefa0e433",
+    "sourceSha256": "cc17649ae2cebe30cb2345d17fa18dfce2943cf0f8872c670ff0ea43d533818b",
+    "bytes": 99651,
+    "compressedBytes": 13337
   },
   {
     "id": "bluesky-app",
@@ -1018,6 +2025,215 @@
     "compressedBytes": 323749
   },
   {
+    "id": "gcp-accesscontextmanager",
+    "provider": "gcp",
+    "name": "Google / Cloud / Access Context Manager",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/accesscontextmanager/v1/openapi.yaml",
+    "provenance": "https://accesscontextmanager.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 22,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "e011e759513da4ab8e6eabec31c05a91032b7a7c929e7766f62e6525adb4ed83",
+    "sourceSha256": "e986c1b6970ec0b15805bd4a1f3f2bccdf15e16b3af3ba583ebd2c43deb02784",
+    "bytes": 94803,
+    "compressedBytes": 18816
+  },
+  {
+    "id": "gcp-apigateway",
+    "provider": "gcp",
+    "name": "Google / Cloud / API Gateway",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/apigateway/v1/openapi.yaml",
+    "provenance": "https://apigateway.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 15,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "21cb801f8d16f381f1c507d27eb63727a21a159226df9c87ddd005517b8b065c",
+    "sourceSha256": "8f96b57b075a7354f372d83cef45be6c4365df3cff6bc7ea37becf8249eedffb",
+    "bytes": 55666,
+    "compressedBytes": 11096
+  },
+  {
+    "id": "gcp-artifactregistry",
+    "provider": "gcp",
+    "name": "Google / Cloud / Artifact Registry",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/artifactregistry/v1/openapi.yaml",
+    "provenance": "https://artifactregistry.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 27,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "6a4ad5a7aff878f3e021044730ffcbe067f3319a93050f669e18b0cbe6b55881",
+    "sourceSha256": "191afc6a88f5723a4c33a9ed5e0766e76758823c74624583cc1fb4657e462331",
+    "bytes": 101897,
+    "compressedBytes": 15815
+  },
+  {
+    "id": "gcp-cloudasset",
+    "provider": "gcp",
+    "name": "Google / Cloud / Asset Inventory",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudasset/v1/openapi.yaml",
+    "provenance": "https://cloudasset.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 20,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "527fc09b3292ed0cd6032135115ab12c364c646d276d126651d354021d54255c",
+    "sourceSha256": "f7c7e3fb44e4996cca0d6a294429b8c415403c3f43975c5e2e6ac0ab2ba88877",
+    "bytes": 243878,
+    "compressedBytes": 48787
+  },
+  {
+    "id": "gcp-bigquery",
+    "provider": "gcp",
+    "name": "Google / Cloud / BigQuery",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/bigquery/v2/openapi.yaml",
+    "provenance": "https://bigquery.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion",
+    "version": "v2",
+    "openapi": "3.0.0",
+    "operations": 37,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "84a35e70565d01face776e9dddecb1fc1ffda5bdf60e15fe41b96728c71b2b44",
+    "sourceSha256": "c50dc2f7db929c2e64e812804fdd97f203a0a29b88fca340403a391c15926ac9",
+    "bytes": 336304,
+    "compressedBytes": 69781
+  },
+  {
+    "id": "gcp-bigquerydatatransfer",
+    "provider": "gcp",
+    "name": "Google / Cloud / BigQuery / Data Transfer",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/bigquerydatatransfer/v1/openapi.yaml",
+    "provenance": "https://bigquerydatatransfer.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 14,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "2a086f8e80440d001d69a4c7cab10aa4467e55dea0a6a707aeea0bb260cd954d",
+    "sourceSha256": "a4069c189abf5ab267f38d2890a2729cca493fd1836c4e786eaeffefa7b9db0d",
+    "bytes": 57103,
+    "compressedBytes": 9736
+  },
+  {
+    "id": "gcp-bigtableadmin",
+    "provider": "gcp",
+    "name": "Google / Cloud / Bigtable / Admin",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/bigtableadmin/v2/openapi.yaml",
+    "provenance": "https://bigtableadmin.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion",
+    "version": "v2",
+    "openapi": "3.0.0",
+    "operations": 27,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "2e11a0e384c4232a92965aa7c049b164e300c62b88e46e2729592374348454cb",
+    "sourceSha256": "081ace095130a80b8976a26378ca08dd7ca4651b9f1cbe6b81f133e5c756ee54",
+    "bytes": 132916,
+    "compressedBytes": 22683
+  },
+  {
+    "id": "gcp-cloudbilling",
+    "provider": "gcp",
+    "name": "Google / Cloud / Billing",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudbilling/v1/openapi.yaml",
+    "provenance": "https://cloudbilling.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 18,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "6ba4bb6bbcd2ba010fa66e13d00c3666068f5556d373cab714f941d7d0dfa5eb",
+    "sourceSha256": "51c769ddc7c51a5902b4d3b9ed1bfaeafb7375aaf6f9f848fbadff34c892ac55",
+    "bytes": 69288,
+    "compressedBytes": 12014
+  },
+  {
+    "id": "gcp-billingbudgets",
+    "provider": "gcp",
+    "name": "Google / Cloud / Billing / Budgets",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/billingbudgets/v1/openapi.yaml",
+    "provenance": "https://billingbudgets.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 5,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "23fcd584259d51f75c9b3a4c38f34ceb7fb39c4c011b2487d33265defaa7ab95",
+    "sourceSha256": "0a85c6761af3a8a91e47d77f597dfaed436426a200150320cc777e80cf90360f",
+    "bytes": 27093,
+    "compressedBytes": 6955
+  },
+  {
+    "id": "gcp-cloudbuild",
+    "provider": "gcp",
+    "name": "Google / Cloud / Build",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudbuild/v2/openapi.yaml",
+    "provenance": "https://cloudbuild.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion",
+    "version": "v2",
+    "openapi": "3.0.0",
+    "operations": 18,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "c83621bc49eb994a2995ed34a5189c3bd86fd6bafaf59b79ae7195e0103f9708",
+    "sourceSha256": "0a154b6ec4ff46a75cf3af3c461bcca05deb2226891b95f429759387ce60fc5f",
+    "bytes": 99120,
+    "compressedBytes": 18999
+  },
+  {
+    "id": "gcp-certificatemanager",
+    "provider": "gcp",
+    "name": "Google / Cloud / Certificate Manager",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/certificatemanager/v1/openapi.yaml",
+    "provenance": "https://certificatemanager.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 18,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "13a3e677387fa0d358d711d97fda228d0b2ee0655d50d126a5fd5f4fdeb55774",
+    "sourceSha256": "d496a4591527645f88b5cf00d6979e1165a4790127969cc9c59d8d4853482902",
+    "bytes": 56408,
+    "compressedBytes": 8758
+  },
+  {
     "id": "gcp-compute",
     "provider": "gcp",
     "name": "Google / Cloud / Compute",
@@ -1037,6 +2253,557 @@
     "compressedBytes": 248599
   },
   {
+    "id": "gcp-dataflow",
+    "provider": "gcp",
+    "name": "Google / Cloud / Dataflow",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dataflow/v1b3/openapi.yaml",
+    "provenance": "https://dataflow.googleapis.com/$discovery/rest?version=v1b3",
+    "sourceKind": "community-conversion",
+    "version": "v1b3",
+    "openapi": "3.0.0",
+    "operations": 41,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "36419ee9e5d95046f1d88c55e5972bdd8065b29f2c8a61268b1128f905e79a86",
+    "sourceSha256": "fb8a076a176e5c86c9f5390949f17ac724c4bde6cfbfd663dc6a55d1ebb064fd",
+    "bytes": 246009,
+    "compressedBytes": 42668
+  },
+  {
+    "id": "gcp-dataproc",
+    "provider": "gcp",
+    "name": "Google / Cloud / Dataproc",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dataproc/v1/openapi.yaml",
+    "provenance": "https://dataproc.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 41,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "8585204bea2f38d0e5582ad752f049330478a662a15122a73ecf3873b082ea0f",
+    "sourceSha256": "631df38359d9f691eb52425facb0dade686496faaa21ccc35556931b237dc076",
+    "bytes": 239584,
+    "compressedBytes": 41047
+  },
+  {
+    "id": "gcp-dns",
+    "provider": "gcp",
+    "name": "Google / Cloud / DNS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dns/v1/openapi.yaml",
+    "provenance": "https://dns.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 40,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "cc9c3c1a83b5e85d082c54b947499297dbeee01a4071d29155ffc410069b2b76",
+    "sourceSha256": "79584793a9eddd6ed770bfc4aa54bafc0922a4a19d04e46d1686d4c2fca198db",
+    "bytes": 133629,
+    "compressedBytes": 16791
+  },
+  {
+    "id": "gcp-documentai",
+    "provider": "gcp",
+    "name": "Google / Cloud / Document AI",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/documentai/v1/openapi.yaml",
+    "provenance": "https://documentai.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 20,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "8d8cd55f6d2f243da12c564841351d54adca3f9812356e89278224237d7fe633",
+    "sourceSha256": "00314be444931156793036da6c66935afb3b005572a9320ee04000bcc08b82b0",
+    "bytes": 257688,
+    "compressedBytes": 46375
+  },
+  {
+    "id": "gcp-clouderrorreporting",
+    "provider": "gcp",
+    "name": "Google / Cloud / Error Reporting",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/clouderrorreporting/v1beta1/openapi.yaml",
+    "provenance": "https://clouderrorreporting.googleapis.com/$discovery/rest?version=v1beta1",
+    "sourceKind": "community-conversion",
+    "version": "v1beta1",
+    "openapi": "3.0.0",
+    "operations": 6,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "e7511079788f8d918be144c3cf4e18995fd45301e60ac7e04aa4cbe0a2bafed9",
+    "sourceSha256": "858fcd3daa68094cee1e174f1823f41339ef71ba054fdc1de9e312a835c0de88",
+    "bytes": 31620,
+    "compressedBytes": 6949
+  },
+  {
+    "id": "gcp-firestore",
+    "provider": "gcp",
+    "name": "Google / Cloud / Firestore",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/firestore/v1/openapi.yaml",
+    "provenance": "https://firestore.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 30,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "fe5c4bd0833061e50788cf706516a9a431c681ab9972564ce20ffb329d31aa4f",
+    "sourceSha256": "303f5b29b3cc7320f79fb86d94a4704894071472af816da58c18948d574b0204",
+    "bytes": 142283,
+    "compressedBytes": 26073
+  },
+  {
+    "id": "gcp-cloudfunctions",
+    "provider": "gcp",
+    "name": "Google / Cloud / Functions",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudfunctions/v2/openapi.yaml",
+    "provenance": "https://cloudfunctions.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion",
+    "version": "v2",
+    "openapi": "3.0.0",
+    "operations": 18,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "314203bf15148bef8eb52c450082b50cb06701154a44c72cd37e666ebec6837f",
+    "sourceSha256": "38e30a6aae0da8c25c7d6a6ef8124fedcbbc4a355570b57770da77f958e78dc7",
+    "bytes": 91494,
+    "compressedBytes": 18225
+  },
+  {
+    "id": "gcp-iam",
+    "provider": "gcp",
+    "name": "Google / Cloud / IAM",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/iam/v2/openapi.yaml",
+    "provenance": "https://iam.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion",
+    "version": "v2",
+    "openapi": "3.0.0",
+    "operations": 5,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "f128793aea1a0f2e4e5359ab24a732b5fda2e3070c9a37cdb4b2288a1de25ff9",
+    "sourceSha256": "fdfcd6df5b076dd4168fd2954a652c419bd206fbcda89127bc889a15f64709cf",
+    "bytes": 28709,
+    "compressedBytes": 6884
+  },
+  {
+    "id": "gcp-iamcredentials",
+    "provider": "gcp",
+    "name": "Google / Cloud / IAM / Credentials",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/iamcredentials/v1/openapi.yaml",
+    "provenance": "https://iamcredentials.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 4,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "92368dc94208fa8e16ec88906ae080c75c6ef59ac82292d951efee7a78d8d334",
+    "sourceSha256": "5b42f103c0a8ae7aae22bbddbf926981a94d0678c1e964a457328a5e6d598c8d",
+    "bytes": 16611,
+    "compressedBytes": 3195
+  },
+  {
+    "id": "gcp-cloudidentity",
+    "provider": "gcp",
+    "name": "Google / Cloud / Identity",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudidentity/v1/openapi.yaml",
+    "provenance": "https://cloudidentity.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 35,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "5f615b6f9b025181ab070f26c04671d6901ec70e505c3136b0aa66c32c3e22e9",
+    "sourceSha256": "41c5dffd8c089abe90c8e23fcad49c2d23f8f03255e1643ce81d231a84049490",
+    "bytes": 131068,
+    "compressedBytes": 20526
+  },
+  {
+    "id": "gcp-cloudkms",
+    "provider": "gcp",
+    "name": "Google / Cloud / Key Management",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudkms/v1/openapi.yaml",
+    "provenance": "https://cloudkms.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 31,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "96b3563ce5e976397064357fab07537d891a82c7f9d281657d5acc2a9b165047",
+    "sourceSha256": "1fddebc61d85bb281edb59c1d3dd8790c282ee1fb03e355fb2e79c55f1431833",
+    "bytes": 143786,
+    "compressedBytes": 19557
+  },
+  {
+    "id": "gcp-container",
+    "provider": "gcp",
+    "name": "Google / Cloud / Kubernetes Engine",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/container/v1/openapi.yaml",
+    "provenance": "https://container.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 61,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "14876ed0ef32d8483c1ce5914ca3600260e0b710993f21ca250b25398cec18c2",
+    "sourceSha256": "c31802bfdc1fdc3d6c05ee5bc0fad5b4bbcfcda3fb1d430e3a896cb820e3b35c",
+    "bytes": 274523,
+    "compressedBytes": 41295
+  },
+  {
+    "id": "gcp-logging",
+    "provider": "gcp",
+    "name": "Google / Cloud / Logging",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/logging/v2/openapi.yaml",
+    "provenance": "https://logging.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion",
+    "version": "v2",
+    "openapi": "3.0.0",
+    "operations": 42,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "1f03caca1333e4f3fffdb089a7582cad8187d8e2b2e0aaeff4b2e6866121c2cd",
+    "sourceSha256": "c98043f9813fcfd4f96574545e045a095000de2b42dc9f1cd4cb699ee25d2361",
+    "bytes": 181710,
+    "compressedBytes": 32250
+  },
+  {
+    "id": "gcp-redis",
+    "provider": "gcp",
+    "name": "Google / Cloud / Memorystore / Redis",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/redis/v1/openapi.yaml",
+    "provenance": "https://redis.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 16,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "4e066afd9de5e546feb748e7658c36cc7d93796d9f7bd03885e48baf50ea3eb6",
+    "sourceSha256": "161157da9a49a0946a77192f895dc0c8b610689354e797e6cca6d9f009ca2fbf",
+    "bytes": 84422,
+    "compressedBytes": 16794
+  },
+  {
+    "id": "gcp-monitoring",
+    "provider": "gcp",
+    "name": "Google / Cloud / Monitoring",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/monitoring/v3/openapi.yaml",
+    "provenance": "https://monitoring.googleapis.com/$discovery/rest?version=v3",
+    "sourceKind": "community-conversion",
+    "version": "v3",
+    "openapi": "3.0.0",
+    "operations": 32,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "add4a5844230b53e291b5af7d405619a459b0c71eef0c16bfa0ee069dd0188ab",
+    "sourceSha256": "16c929c91f559c91bba5aa1d86d3044c7445b5da4ed0e7641bb9907328e18a3e",
+    "bytes": 211951,
+    "compressedBytes": 42166
+  },
+  {
+    "id": "gcp-networkconnectivity",
+    "provider": "gcp",
+    "name": "Google / Cloud / Network Connectivity",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/networkconnectivity/v1/openapi.yaml",
+    "provenance": "https://networkconnectivity.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 30,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "63d70317e3f0cef1a4f5b18fea51e4c4e61ab2d31260fc80a54378bef51c6507",
+    "sourceSha256": "99426177c90a917cafeca41cb53f1870165ef777bec82cecf25e2541ac4df2cc",
+    "bytes": 128477,
+    "compressedBytes": 20203
+  },
+  {
+    "id": "gcp-orgpolicy",
+    "provider": "gcp",
+    "name": "Google / Cloud / Organization Policy",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/orgpolicy/v2/openapi.yaml",
+    "provenance": "https://orgpolicy.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion",
+    "version": "v2",
+    "openapi": "3.0.0",
+    "operations": 9,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "896f408f253a59ae128bbcba957ed37bc1ccc182c06bcf95df521c563eac381a",
+    "sourceSha256": "1ce9711dc02a145170f724d3056e3e7f27e307ae481f1fbf38f1043ca38cc333",
+    "bytes": 33094,
+    "compressedBytes": 7099
+  },
+  {
+    "id": "gcp-pubsub",
+    "provider": "gcp",
+    "name": "Google / Cloud / PubSub",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/pubsub/v1/openapi.yaml",
+    "provenance": "https://pubsub.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 33,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "4124a972512cbc5ce6aeac11f3399bd10bb60318c52677a6697ec20cef2a583e",
+    "sourceSha256": "6ae8e56313a1e9b450693bb0fb9c79eff21157d4f834aac2f3bf61d74b62298f",
+    "bytes": 109513,
+    "compressedBytes": 18606
+  },
+  {
+    "id": "gcp-cloudresourcemanager",
+    "provider": "gcp",
+    "name": "Google / Cloud / Resource Manager",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudresourcemanager/v3/openapi.yaml",
+    "provenance": "https://cloudresourcemanager.googleapis.com/$discovery/rest?version=v3",
+    "sourceKind": "community-conversion",
+    "version": "v3",
+    "openapi": "3.0.0",
+    "operations": 28,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "052ef516e28366dfc8b5e636c3728bc9a60ed701c6ee520c11a862a02f5c7165",
+    "sourceSha256": "50e1bafdeca91435969584be3941311d495573357651678f9257db7d3820bd84",
+    "bytes": 104040,
+    "compressedBytes": 17941
+  },
+  {
+    "id": "gcp-run",
+    "provider": "gcp",
+    "name": "Google / Cloud / Run",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/run/v2/openapi.yaml",
+    "provenance": "https://run.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion",
+    "version": "v2",
+    "openapi": "3.0.0",
+    "operations": 17,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "9c9d68e0e78687ac3e2533579041358d29e92ecd4ab189e904a77e640598994e",
+    "sourceSha256": "4cfa712c80f90d782a3152fecc3c8579691f0f7773eb5d8a0a01b3a9793973d0",
+    "bytes": 123849,
+    "compressedBytes": 21788
+  },
+  {
+    "id": "gcp-cloudscheduler",
+    "provider": "gcp",
+    "name": "Google / Cloud / Scheduler",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudscheduler/v1/openapi.yaml",
+    "provenance": "https://cloudscheduler.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 9,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "96073da25384db492e60a26034ec06f72667336547cf63c37ca0277800941530",
+    "sourceSha256": "c4335126313bda8d6fbdddab1ec6885df5cda0451165ccddd379abdbb2710470",
+    "bytes": 41377,
+    "compressedBytes": 9247
+  },
+  {
+    "id": "gcp-secretmanager",
+    "provider": "gcp",
+    "name": "Google / Cloud / Secret Manager",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/secretmanager/v1/openapi.yaml",
+    "provenance": "https://secretmanager.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 15,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "2c9e63522b78bef3743c9e5983bdaca76db3febde42fad11511bb7d9b4e0bb3a",
+    "sourceSha256": "472bc1afac8a23465b888971301981885ad68033b7638f052e4423b6f749bb3a",
+    "bytes": 58096,
+    "compressedBytes": 11124
+  },
+  {
+    "id": "gcp-securitycenter",
+    "provider": "gcp",
+    "name": "Google / Cloud / Security Command Center",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/securitycenter/v1/openapi.yaml",
+    "provenance": "https://securitycenter.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 34,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "d8b3c472243d9fbea97708c8894ecea73f87fcbfe6ed38221d3464c76c6b997e",
+    "sourceSha256": "3cd66b31b47f75657468ac68809ad0bc0254d5db041a21881a8e201efd211c03",
+    "bytes": 295718,
+    "compressedBytes": 55715
+  },
+  {
+    "id": "gcp-dlp",
+    "provider": "gcp",
+    "name": "Google / Cloud / Sensitive Data Protection",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dlp/v2/openapi.yaml",
+    "provenance": "https://dlp.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion",
+    "version": "v2",
+    "openapi": "3.0.0",
+    "operations": 28,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "f2446c9bbb9ebf866eb18b3cd5275a5c793c9f797bb239a6e71b406d03fb9a7a",
+    "sourceSha256": "707e04ad70666e7888e1afd2a6997b38a190a4f0e075f7944f28fb2d14047d0e",
+    "bytes": 271731,
+    "compressedBytes": 53184
+  },
+  {
+    "id": "gcp-servicenetworking",
+    "provider": "gcp",
+    "name": "Google / Cloud / Service Networking",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/servicenetworking/v1/openapi.yaml",
+    "provenance": "https://servicenetworking.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 25,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "1506e4d105489c041a7f8b59d673d3e13b40df1070ad975e89aa78152c91ae97",
+    "sourceSha256": "c6b87031a26f71fd3e112b21aa2dfff3e5eb7ea337b558c6d97ee908718dac10",
+    "bytes": 183433,
+    "compressedBytes": 38274
+  },
+  {
+    "id": "gcp-serviceusage",
+    "provider": "gcp",
+    "name": "Google / Cloud / Service Usage",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/serviceusage/v1/openapi.yaml",
+    "provenance": "https://serviceusage.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 9,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "42772e6dcfe4ae5b9c1b0aae32b7d3ac0cc573cd43ffd3b00c4a2459dcc3771c",
+    "sourceSha256": "12637817d26ce65e7b1df72122da6c84b1877af67c5a4877717dbca9ae1a87b1",
+    "bytes": 141315,
+    "compressedBytes": 34042
+  },
+  {
+    "id": "gcp-spanner",
+    "provider": "gcp",
+    "name": "Google / Cloud / Spanner",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/spanner/v1/openapi.yaml",
+    "provenance": "https://spanner.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 40,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "aa254571add51fb40579858ca239a6d36c11e75b519867084d5e08559afcf9c5",
+    "sourceSha256": "c224bee50565df3da731805fb6321bfc68d921deb8fb47b9f4fc2a090e1354bc",
+    "bytes": 241803,
+    "compressedBytes": 48410
+  },
+  {
+    "id": "gcp-speech",
+    "provider": "gcp",
+    "name": "Google / Cloud / Speech to Text",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/speech/v1/openapi.yaml",
+    "provenance": "https://speech.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 11,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "bacb2a8c93f89892e822ee321ae1150590334a3aae2252c2efb960a2b30933f7",
+    "sourceSha256": "53afa67a860f8e79bb78d1ebfe9cca53c8c6984a3f1ff21c7306d26331a04067",
+    "bytes": 59168,
+    "compressedBytes": 12272
+  },
+  {
+    "id": "gcp-sqladmin",
+    "provider": "gcp",
+    "name": "Google / Cloud / SQL Admin",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/sqladmin/v1/openapi.yaml",
+    "provenance": "https://sqladmin.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 58,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "f986f7aeb56432d3262ca05ebc8166c37bcbe1df25540bfb5faa59ba536234ec",
+    "sourceSha256": "443a56cec22b1d81c171869fa0cd271df09abea6a5aa7a4e8f4a8e899580f6fa",
+    "bytes": 174501,
+    "compressedBytes": 25476
+  },
+  {
     "id": "gcp-storage",
     "provider": "gcp",
     "name": "Google / Cloud / Storage",
@@ -1054,6 +2821,196 @@
     "sourceSha256": "ef24ef427489aef09bfd7f7abb2c6d9aa3a7267ad82fef1dea37afe8cda7e985",
     "bytes": 202020,
     "compressedBytes": 20983
+  },
+  {
+    "id": "gcp-cloudtasks",
+    "provider": "gcp",
+    "name": "Google / Cloud / Tasks",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudtasks/v2/openapi.yaml",
+    "provenance": "https://cloudtasks.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion",
+    "version": "v2",
+    "openapi": "3.0.0",
+    "operations": 16,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "52b48ad2153f25d6e68d1645416943003a1c2509af3639169d3e9a58cb79c433",
+    "sourceSha256": "c7bf03de19f5866ffebdea25e52df5d4de23f78f90a09ea7351e4ec31f1285d5",
+    "bytes": 91464,
+    "compressedBytes": 19595
+  },
+  {
+    "id": "gcp-texttospeech",
+    "provider": "gcp",
+    "name": "Google / Cloud / Text to Speech",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/texttospeech/v1/openapi.yaml",
+    "provenance": "https://texttospeech.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 7,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "3c104c400ea22072e12eff54eb140f9834aacedd3218f9ef62b27f0f68909007",
+    "sourceSha256": "02236b0045729accd9f5c29fb64883302b35ab4cf26f91dfd9b28007a96fd364",
+    "bytes": 25633,
+    "compressedBytes": 6061
+  },
+  {
+    "id": "gcp-cloudtrace",
+    "provider": "gcp",
+    "name": "Google / Cloud / Trace",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudtrace/v2/openapi.yaml",
+    "provenance": "https://cloudtrace.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion",
+    "version": "v2",
+    "openapi": "3.0.0",
+    "operations": 2,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "d154efdb761d02d4550c23c57fdc563a184c437526fdd78a056bcddb6eb5acba",
+    "sourceSha256": "b3fd1df87e967fea22c8a57f6b432a86cc62080986d5b462110051d5273c672e",
+    "bytes": 21247,
+    "compressedBytes": 5676
+  },
+  {
+    "id": "gcp-translate",
+    "provider": "gcp",
+    "name": "Google / Cloud / Translation",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/translate/v3/openapi.yaml",
+    "provenance": "https://translation.googleapis.com/$discovery/rest?version=v3",
+    "sourceKind": "community-conversion",
+    "version": "v3",
+    "openapi": "3.0.0",
+    "operations": 31,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "dd03d07d60d631e1c8ee84f606d8346e3967548cb439553a22f1e22e4e9e49b8",
+    "sourceSha256": "f2b115d67c0e3cf67bfbf9b921c2039f5e35cdb7e51da7d2bc134980f61f4d00",
+    "bytes": 111190,
+    "compressedBytes": 16402
+  },
+  {
+    "id": "gcp-aiplatform",
+    "provider": "gcp",
+    "name": "Google / Cloud / Vertex AI",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/aiplatform/v1/openapi.yaml",
+    "provenance": "https://aiplatform.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 169,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "369d1419a46fc2507efa4a9aa732cfc8e2f75aece02cd0b1fa4da2cb57c65c00",
+    "sourceSha256": "0b640d35256481f2298b783eaa56532964df7aa94ce39cc796fad4ee601edc9f",
+    "bytes": 1108842,
+    "compressedBytes": 174549
+  },
+  {
+    "id": "gcp-discoveryengine",
+    "provider": "gcp",
+    "name": "Google / Cloud / Vertex AI / Search",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/discoveryengine/v1beta/openapi.yaml",
+    "provenance": "https://discoveryengine.googleapis.com/$discovery/rest?version=v1beta",
+    "sourceKind": "community-conversion",
+    "version": "v1beta",
+    "openapi": "3.0.0",
+    "operations": 34,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "f08928bff49cb157dfffc97c20b23f58a3e5d5e3e6dadbc0fef442423b7c9ad9",
+    "sourceSha256": "4d404a16601507d6c9139fce95d73291542b8ccb7c1b66050bbb52e64ff15bb0",
+    "bytes": 280128,
+    "compressedBytes": 47126
+  },
+  {
+    "id": "gcp-vision",
+    "provider": "gcp",
+    "name": "Google / Cloud / Vision",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/vision/v1/openapi.yaml",
+    "provenance": "https://vision.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 23,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "48d0ef9cfd8bf2119dbf17aeb48fbf8af64c9219839b61001eb86c8409971e01",
+    "sourceSha256": "075854b2c7b21242db98a411447f9cbfd0eeb5fc64123d6d9d6f5d518d849df7",
+    "bytes": 275581,
+    "compressedBytes": 46174
+  },
+  {
+    "id": "gcp-vpcaccess",
+    "provider": "gcp",
+    "name": "Google / Cloud / VPC Access",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/vpcaccess/v1/openapi.yaml",
+    "provenance": "https://vpcaccess.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 7,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "20b86ddd2ab455dfbd570b6f80e0c517aa4d07b10847f838171cdd1f574c4d67",
+    "sourceSha256": "f2c47de511f8ec14741526f5bb5b5115427b5411b83758945c2779aa50e182be",
+    "bytes": 21736,
+    "compressedBytes": 4709
+  },
+  {
+    "id": "gcp-workflows",
+    "provider": "gcp",
+    "name": "Google / Cloud / Workflows",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/workflows/v1/openapi.yaml",
+    "provenance": "https://workflows.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 8,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "c4f6718fd5fdb8420c57c8c2ae7df747a472cc59971f4454a06a8f4dd6dfcb6e",
+    "sourceSha256": "2eac0117251ecd500a923c87e2eec3c62a39769ede17d2fd0e7a5826fc538adb",
+    "bytes": 26905,
+    "compressedBytes": 6006
+  },
+  {
+    "id": "gcp-workflowexecutions",
+    "provider": "gcp",
+    "name": "Google / Cloud / Workflows / Executions",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/workflowexecutions/v1/openapi.yaml",
+    "provenance": "https://workflowexecutions.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion",
+    "version": "v1",
+    "openapi": "3.0.0",
+    "operations": 8,
+    "license": {
+      "name": "Creative Commons Attribution 3.0",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    },
+    "sha256": "592244eb4b7d8237cc3679dd66e7ad44aefc63a834cf29b0d9ab0edbc46a1287",
+    "sourceSha256": "1d15e1f28a899f306283cdbdf207e4378054e24790e49837fecfc837dbc26cab",
+    "bytes": 34243,
+    "compressedBytes": 7096
   },
   {
     "id": "gemini",
@@ -1112,6 +3069,134 @@
     "compressedBytes": 14270
   },
   {
+    "id": "azure-app-service",
+    "provider": "azure",
+    "name": "Microsoft / Azure / App Service",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/web/resource-manager/Microsoft.Web/AppService/stable/2026-07-15/openapi.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/web/resource-manager/Microsoft.Web/AppService/stable/2026-07-15/openapi.json",
+    "conversion": "swagger2",
+    "version": "2026-07-15",
+    "openapi": "3.0.0",
+    "operations": 704,
+    "license": null,
+    "sha256": "a4667a581be4897ab9d5a572f3f3c608442d7ab990f47e863fe986a60c5fb819",
+    "sourceSha256": "e815aae0941df0c080aa2a0e5eb4731ca8a137ebfae953e649568b41308cbabd",
+    "bytes": 1962147,
+    "compressedBytes": 168314
+  },
+  {
+    "id": "azure-compute",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Compute",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/compute/resource-manager/Microsoft.Compute/Compute/stable/2026-04-01/ComputeRP.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/compute/resource-manager/Microsoft.Compute/Compute/stable/2026-04-01/ComputeRP.json",
+    "conversion": "swagger2",
+    "version": "2026-04-01",
+    "openapi": "3.0.0",
+    "operations": 205,
+    "license": null,
+    "sha256": "0a553ebf1aa82d163875d8cb3af50e02c65f9d771d0341379f2e800afe322fe1",
+    "sourceSha256": "9b05d8485f2e9e9311a364ecf9033e5c070044b9051b70ad82d6cdfd389e8cf9",
+    "bytes": 1595867,
+    "compressedBytes": 140641
+  },
+  {
+    "id": "azure-cosmos-db",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Cosmos DB",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/cosmos-db/resource-manager/Microsoft.DocumentDB/DocumentDB/stable/2026-03-15/openapi.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/cosmos-db/resource-manager/Microsoft.DocumentDB/DocumentDB/stable/2026-03-15/openapi.json",
+    "conversion": "swagger2",
+    "version": "2026-03-15",
+    "openapi": "3.0.0",
+    "operations": 237,
+    "license": null,
+    "sha256": "41b0ee0d49d0c484d66b81ed9115438fb45a57f5f0f96d16079fda7a84371717",
+    "sourceSha256": "8e2ae27e14553e04b3152de7aec4cf5e4b8cb551242a94d17fca69b82b74ae9b",
+    "bytes": 881061,
+    "compressedBytes": 67613
+  },
+  {
+    "id": "azure-eventgrid",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Event Grid",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/eventgrid/resource-manager/Microsoft.EventGrid/EventGrid/stable/2025-02-15/EventGrid.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/eventgrid/resource-manager/Microsoft.EventGrid/EventGrid/stable/2025-02-15/EventGrid.json",
+    "conversion": "swagger2",
+    "version": "2025-02-15",
+    "openapi": "3.0.0",
+    "operations": 170,
+    "license": null,
+    "sha256": "08622bcbdec69b39057e298e06bf8a51c7ca1e339c9becbae2cc129b1fb8aad1",
+    "sourceSha256": "c42d8387eca80fa2d79cb1438dcb5ed1f919cda8de091d1241402f74741446e6",
+    "bytes": 551699,
+    "compressedBytes": 40245
+  },
+  {
+    "id": "azure-keyvault",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Key Vault / Management",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/resource-manager/Microsoft.KeyVault/KeyVault/stable/2026-05-15/openapi.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/keyvault/resource-manager/Microsoft.KeyVault/KeyVault/stable/2026-05-15/openapi.json",
+    "conversion": "swagger2",
+    "version": "2026-05-15",
+    "openapi": "3.0.0",
+    "operations": 48,
+    "license": null,
+    "sha256": "b874fd11a2e158341794bd17d7f87bfbcaf5a9696ab069a952feb629fb759db1",
+    "sourceSha256": "bd7abd994935675571c030ecb531d39f1eb7b83a3505a5ba8594a25847bdc07e",
+    "bytes": 197912,
+    "compressedBytes": 20905
+  },
+  {
+    "id": "azure-aks",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Kubernetes Service",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/containerservice/resource-manager/Microsoft.ContainerService/aks/stable/2026-08-01/managedClusters.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/containerservice/resource-manager/Microsoft.ContainerService/aks/stable/2026-08-01/managedClusters.json",
+    "conversion": "swagger2",
+    "version": "2026-08-01",
+    "openapi": "3.0.0",
+    "operations": 69,
+    "license": null,
+    "sha256": "c2399e32c006cbff240ecf29d72a4c280b8181c1a3f86eaa7fd322537f55b9c8",
+    "sourceSha256": "769625cd957b9d236f5a8af0af93e131ed53b5bd9d7022aeb5e8b88495f5e47d",
+    "bytes": 669478,
+    "compressedBytes": 69086
+  },
+  {
+    "id": "azure-load-balancers",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Networking / Load Balancers",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/network/resource-manager/Microsoft.Network/Network/stable/2026-03-01/loadBalancer.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/network/resource-manager/Microsoft.Network/Network/stable/2026-03-01/loadBalancer.json",
+    "conversion": "swagger2",
+    "version": "2026-03-01",
+    "openapi": "3.0.0",
+    "operations": 27,
+    "license": null,
+    "sha256": "9639b0ec38547dac1576f7578c98fa1732371d809fbe165df076e8904a0e0b19",
+    "sourceSha256": "b90c4fa94b6636d67ddd918e80bf184e85d7ff2c6370e0967723a4cbcda0d055",
+    "bytes": 310586,
+    "compressedBytes": 26663
+  },
+  {
+    "id": "azure-virtual-networks",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Networking / Virtual Networks",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/network/resource-manager/Microsoft.Network/Network/stable/2026-03-01/virtualNetwork.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/network/resource-manager/Microsoft.Network/Network/stable/2026-03-01/virtualNetwork.json",
+    "conversion": "swagger2",
+    "version": "2026-03-01",
+    "openapi": "3.0.0",
+    "operations": 245,
+    "license": null,
+    "sha256": "2338e0744ecf413dc324b058b784689477754112b8459d440cb9e060a1d28405",
+    "sourceSha256": "0bfb316d7cbbecc06ae43c2cf57ed134d456e5b12607f9eab61c1a798d6452c5",
+    "bytes": 1172770,
+    "compressedBytes": 91068
+  },
+  {
     "id": "azure-resources",
     "provider": "azure",
     "name": "Microsoft / Azure / Resources",
@@ -1126,6 +3211,70 @@
     "sourceSha256": "399d827f9a8e5f82b89922f2155c2f8c34017a5764c3e2c492f743ee9a23fe62",
     "bytes": 103637,
     "compressedBytes": 13230
+  },
+  {
+    "id": "azure-servicebus",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Service Bus",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/servicebus/resource-manager/Microsoft.ServiceBus/ServiceBus/stable/2026-01-01/servicebus.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/servicebus/resource-manager/Microsoft.ServiceBus/ServiceBus/stable/2026-01-01/servicebus.json",
+    "conversion": "swagger2",
+    "version": "2026-01-01",
+    "openapi": "3.0.0",
+    "operations": 70,
+    "license": null,
+    "sha256": "433c766188c3003da5c0a63f1743fe9ce94dc378f92f65f059fd83e702925a53",
+    "sourceSha256": "caa6b9b8c9afb745f59abb76fb9a255cade1779eda76f466a02e70fcda7b6a0d",
+    "bytes": 252315,
+    "compressedBytes": 24182
+  },
+  {
+    "id": "azure-sql-databases",
+    "provider": "azure",
+    "name": "Microsoft / Azure / SQL / Databases",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/sql/resource-manager/Microsoft.Sql/SQL/stable/2025-01-01/databases.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/sql/resource-manager/Microsoft.Sql/SQL/stable/2025-01-01/databases.json",
+    "conversion": "swagger2",
+    "version": "2025-01-01",
+    "openapi": "3.0.0",
+    "operations": 14,
+    "license": null,
+    "sha256": "0eb4b56378105ba6df44e2a3ef465123b43d481628373c67729253329b2753b9",
+    "sourceSha256": "affeea28bd51ab94f64c05e422640c321aeec319d8d0177fa22f2f890f637b0e",
+    "bytes": 172453,
+    "compressedBytes": 14734
+  },
+  {
+    "id": "azure-sql-servers",
+    "provider": "azure",
+    "name": "Microsoft / Azure / SQL / Servers",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/sql/resource-manager/Microsoft.Sql/SQL/stable/2025-01-01/servers.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/sql/resource-manager/Microsoft.Sql/SQL/stable/2025-01-01/servers.json",
+    "conversion": "swagger2",
+    "version": "2025-01-01",
+    "openapi": "3.0.0",
+    "operations": 9,
+    "license": null,
+    "sha256": "85547b9bf5bd56b64c5a63919ccbd72cfb7eff2f9ac7a0f7e5bd26860872abe0",
+    "sourceSha256": "079945975676fb3638317b83a43675804185b85edc9715d17df2fe9112c09d13",
+    "bytes": 64791,
+    "compressedBytes": 8273
+  },
+  {
+    "id": "azure-storage",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Storage",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/storage/resource-manager/Microsoft.Storage/Storage/stable/2026-09-01/openapi.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/storage/resource-manager/Microsoft.Storage/Storage/stable/2026-09-01/openapi.json",
+    "conversion": "swagger2",
+    "version": "2026-09-01",
+    "openapi": "3.0.0",
+    "operations": 139,
+    "license": null,
+    "sha256": "1d7d79f7f92243d8ebae47902207e461b51ede51a596512f835a081289ae27f7",
+    "sourceSha256": "9b3aeac07a8682e7adc3055adbde5da2d5cfb3670891856b7733535ce4d0eef0",
+    "bytes": 906392,
+    "compressedBytes": 84215
   },
   {
     "id": "mistral",

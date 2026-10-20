@@ -588,5 +588,925 @@
     "url": "https://dac-static.atlassian.com/platform/forge/swagger-containers.v3.json",
     "provenance": "https://developer.atlassian.com/platform/forge/rest/v2/",
     "operationIds": "method-path"
+  },
+  {
+    "id": "aws-apigateway",
+    "provider": "aws",
+    "name": "AWS / API Gateway / REST",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/apigateway/2015-07-09/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-apigatewayv2",
+    "provider": "aws",
+    "name": "AWS / API Gateway / HTTP and WebSocket",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/apigatewayv2/2018-11-29/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-ec2",
+    "provider": "aws",
+    "name": "AWS / EC2",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/ec2/2016-11-15/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-autoscaling",
+    "provider": "aws",
+    "name": "AWS / Auto Scaling",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/autoscaling/2011-01-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-elasticloadbalancingv2",
+    "provider": "aws",
+    "name": "AWS / Elastic Load Balancing",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/elasticloadbalancingv2/2015-12-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-cloudfront",
+    "provider": "aws",
+    "name": "AWS / CloudFront",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/cloudfront/2020-05-31/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-cloudformation",
+    "provider": "aws",
+    "name": "AWS / CloudFormation",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/cloudformation/2010-05-15/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-route53",
+    "provider": "aws",
+    "name": "AWS / Route 53",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/route53/2013-04-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-ecr",
+    "provider": "aws",
+    "name": "AWS / ECR",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/ecr/2015-09-21/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-ecs",
+    "provider": "aws",
+    "name": "AWS / ECS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/ecs/2014-11-13/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-eks",
+    "provider": "aws",
+    "name": "AWS / EKS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/eks/2017-11-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-rds",
+    "provider": "aws",
+    "name": "AWS / RDS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/rds/2014-10-31/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-dynamodb",
+    "provider": "aws",
+    "name": "AWS / DynamoDB",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/dynamodb/2012-08-10/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-elasticache",
+    "provider": "aws",
+    "name": "AWS / ElastiCache",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/elasticache/2015-02-02/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-redshift",
+    "provider": "aws",
+    "name": "AWS / Redshift",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/redshift/2012-12-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-athena",
+    "provider": "aws",
+    "name": "AWS / Athena",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/athena/2017-05-18/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-s3control",
+    "provider": "aws",
+    "name": "AWS / S3 / Control",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/s3control/2018-08-20/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-states",
+    "provider": "aws",
+    "name": "AWS / Step Functions",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/states/2016-11-23/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-sqs",
+    "provider": "aws",
+    "name": "AWS / SQS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/sqs/2012-11-05/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-sns",
+    "provider": "aws",
+    "name": "AWS / SNS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/sns/2010-03-31/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-events",
+    "provider": "aws",
+    "name": "AWS / EventBridge",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/events/2015-10-07/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-kinesis",
+    "provider": "aws",
+    "name": "AWS / Kinesis",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/kinesis/2013-12-02/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-firehose",
+    "provider": "aws",
+    "name": "AWS / Data Firehose",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/firehose/2015-08-04/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-batch",
+    "provider": "aws",
+    "name": "AWS / Batch",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/batch/2016-08-10/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-glue",
+    "provider": "aws",
+    "name": "AWS / Glue",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/glue/2017-03-31/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-logs",
+    "provider": "aws",
+    "name": "AWS / CloudWatch / Logs",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/logs/2014-03-28/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-monitoring",
+    "provider": "aws",
+    "name": "AWS / CloudWatch / Metrics",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/monitoring/2010-08-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-cloudtrail",
+    "provider": "aws",
+    "name": "AWS / CloudTrail",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/cloudtrail/2013-11-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-iam",
+    "provider": "aws",
+    "name": "AWS / IAM",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/iam/2010-05-08/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-sts",
+    "provider": "aws",
+    "name": "AWS / STS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/sts/2011-06-15/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-kms",
+    "provider": "aws",
+    "name": "AWS / KMS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/kms/2014-11-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-secretsmanager",
+    "provider": "aws",
+    "name": "AWS / Secrets Manager",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/secretsmanager/2017-10-17/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-ssm",
+    "provider": "aws",
+    "name": "AWS / Systems Manager",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/ssm/2014-11-06/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-cognito-idp",
+    "provider": "aws",
+    "name": "AWS / Cognito / User Pools",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/cognito-idp/2016-04-18/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-organizations",
+    "provider": "aws",
+    "name": "AWS / Organizations",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/organizations/2016-11-28/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-sesv2",
+    "provider": "aws",
+    "name": "AWS / SES",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/sesv2/2019-09-27/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-sagemaker",
+    "provider": "aws",
+    "name": "AWS / SageMaker",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/sagemaker/2017-07-24/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-runtime-sagemaker",
+    "provider": "aws",
+    "name": "AWS / SageMaker / Runtime",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/runtime.sagemaker/2017-05-13/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-opensearch",
+    "provider": "aws",
+    "name": "AWS / OpenSearch",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/opensearch/2021-01-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-codebuild",
+    "provider": "aws",
+    "name": "AWS / CodeBuild",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/codebuild/2016-10-06/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-codepipeline",
+    "provider": "aws",
+    "name": "AWS / CodePipeline",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/codepipeline/2015-07-09/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-ce",
+    "provider": "aws",
+    "name": "AWS / Cost Explorer",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/ce/2017-10-25/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-budgets",
+    "provider": "aws",
+    "name": "AWS / Budgets",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/budgets/2016-10-20/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-backup",
+    "provider": "aws",
+    "name": "AWS / Backup",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/backup/2018-11-15/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-fsx",
+    "provider": "aws",
+    "name": "AWS / FSx",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/fsx/2018-03-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-elasticfilesystem",
+    "provider": "aws",
+    "name": "AWS / EFS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/elasticfilesystem/2015-02-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-transfer",
+    "provider": "aws",
+    "name": "AWS / Transfer Family",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/transfer/2018-11-05/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-rekognition",
+    "provider": "aws",
+    "name": "AWS / Rekognition",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/rekognition/2016-06-27/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-textract",
+    "provider": "aws",
+    "name": "AWS / Textract",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/textract/2018-06-27/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-comprehend",
+    "provider": "aws",
+    "name": "AWS / Comprehend",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/comprehend/2017-11-27/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-translate",
+    "provider": "aws",
+    "name": "AWS / Translate",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/translate/2017-07-01/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-polly",
+    "provider": "aws",
+    "name": "AWS / Polly",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/polly/2016-06-10/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "aws-transcribe",
+    "provider": "aws",
+    "name": "AWS / Transcribe",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/transcribe/2017-10-26/openapi.yaml",
+    "provenance": "https://github.com/aws/api-models-aws",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-run",
+    "provider": "gcp",
+    "name": "Google / Cloud / Run",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/run/v2/openapi.yaml",
+    "provenance": "https://run.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-cloudfunctions",
+    "provider": "gcp",
+    "name": "Google / Cloud / Functions",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudfunctions/v2/openapi.yaml",
+    "provenance": "https://cloudfunctions.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-container",
+    "provider": "gcp",
+    "name": "Google / Cloud / Kubernetes Engine",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/container/v1/openapi.yaml",
+    "provenance": "https://container.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-artifactregistry",
+    "provider": "gcp",
+    "name": "Google / Cloud / Artifact Registry",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/artifactregistry/v1/openapi.yaml",
+    "provenance": "https://artifactregistry.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-cloudbuild",
+    "provider": "gcp",
+    "name": "Google / Cloud / Build",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudbuild/v2/openapi.yaml",
+    "provenance": "https://cloudbuild.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-cloudresourcemanager",
+    "provider": "gcp",
+    "name": "Google / Cloud / Resource Manager",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudresourcemanager/v3/openapi.yaml",
+    "provenance": "https://cloudresourcemanager.googleapis.com/$discovery/rest?version=v3",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-iam",
+    "provider": "gcp",
+    "name": "Google / Cloud / IAM",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/iam/v2/openapi.yaml",
+    "provenance": "https://iam.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-iamcredentials",
+    "provider": "gcp",
+    "name": "Google / Cloud / IAM / Credentials",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/iamcredentials/v1/openapi.yaml",
+    "provenance": "https://iamcredentials.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-serviceusage",
+    "provider": "gcp",
+    "name": "Google / Cloud / Service Usage",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/serviceusage/v1/openapi.yaml",
+    "provenance": "https://serviceusage.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-apigateway",
+    "provider": "gcp",
+    "name": "Google / Cloud / API Gateway",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/apigateway/v1/openapi.yaml",
+    "provenance": "https://apigateway.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-pubsub",
+    "provider": "gcp",
+    "name": "Google / Cloud / PubSub",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/pubsub/v1/openapi.yaml",
+    "provenance": "https://pubsub.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-cloudscheduler",
+    "provider": "gcp",
+    "name": "Google / Cloud / Scheduler",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudscheduler/v1/openapi.yaml",
+    "provenance": "https://cloudscheduler.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-cloudtasks",
+    "provider": "gcp",
+    "name": "Google / Cloud / Tasks",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudtasks/v2/openapi.yaml",
+    "provenance": "https://cloudtasks.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-workflows",
+    "provider": "gcp",
+    "name": "Google / Cloud / Workflows",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/workflows/v1/openapi.yaml",
+    "provenance": "https://workflows.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-workflowexecutions",
+    "provider": "gcp",
+    "name": "Google / Cloud / Workflows / Executions",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/workflowexecutions/v1/openapi.yaml",
+    "provenance": "https://workflowexecutions.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-bigquery",
+    "provider": "gcp",
+    "name": "Google / Cloud / BigQuery",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/bigquery/v2/openapi.yaml",
+    "provenance": "https://bigquery.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-bigquerydatatransfer",
+    "provider": "gcp",
+    "name": "Google / Cloud / BigQuery / Data Transfer",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/bigquerydatatransfer/v1/openapi.yaml",
+    "provenance": "https://bigquerydatatransfer.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-dataflow",
+    "provider": "gcp",
+    "name": "Google / Cloud / Dataflow",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dataflow/v1b3/openapi.yaml",
+    "provenance": "https://dataflow.googleapis.com/$discovery/rest?version=v1b3",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-dataproc",
+    "provider": "gcp",
+    "name": "Google / Cloud / Dataproc",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dataproc/v1/openapi.yaml",
+    "provenance": "https://dataproc.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-sqladmin",
+    "provider": "gcp",
+    "name": "Google / Cloud / SQL Admin",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/sqladmin/v1/openapi.yaml",
+    "provenance": "https://sqladmin.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-firestore",
+    "provider": "gcp",
+    "name": "Google / Cloud / Firestore",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/firestore/v1/openapi.yaml",
+    "provenance": "https://firestore.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-spanner",
+    "provider": "gcp",
+    "name": "Google / Cloud / Spanner",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/spanner/v1/openapi.yaml",
+    "provenance": "https://spanner.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-bigtableadmin",
+    "provider": "gcp",
+    "name": "Google / Cloud / Bigtable / Admin",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/bigtableadmin/v2/openapi.yaml",
+    "provenance": "https://bigtableadmin.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-redis",
+    "provider": "gcp",
+    "name": "Google / Cloud / Memorystore / Redis",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/redis/v1/openapi.yaml",
+    "provenance": "https://redis.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-secretmanager",
+    "provider": "gcp",
+    "name": "Google / Cloud / Secret Manager",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/secretmanager/v1/openapi.yaml",
+    "provenance": "https://secretmanager.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-cloudkms",
+    "provider": "gcp",
+    "name": "Google / Cloud / Key Management",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudkms/v1/openapi.yaml",
+    "provenance": "https://cloudkms.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-logging",
+    "provider": "gcp",
+    "name": "Google / Cloud / Logging",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/logging/v2/openapi.yaml",
+    "provenance": "https://logging.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-monitoring",
+    "provider": "gcp",
+    "name": "Google / Cloud / Monitoring",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/monitoring/v3/openapi.yaml",
+    "provenance": "https://monitoring.googleapis.com/$discovery/rest?version=v3",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-cloudtrace",
+    "provider": "gcp",
+    "name": "Google / Cloud / Trace",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudtrace/v2/openapi.yaml",
+    "provenance": "https://cloudtrace.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-clouderrorreporting",
+    "provider": "gcp",
+    "name": "Google / Cloud / Error Reporting",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/clouderrorreporting/v1beta1/openapi.yaml",
+    "provenance": "https://clouderrorreporting.googleapis.com/$discovery/rest?version=v1beta1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-dns",
+    "provider": "gcp",
+    "name": "Google / Cloud / DNS",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dns/v1/openapi.yaml",
+    "provenance": "https://dns.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-certificatemanager",
+    "provider": "gcp",
+    "name": "Google / Cloud / Certificate Manager",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/certificatemanager/v1/openapi.yaml",
+    "provenance": "https://certificatemanager.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-networkconnectivity",
+    "provider": "gcp",
+    "name": "Google / Cloud / Network Connectivity",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/networkconnectivity/v1/openapi.yaml",
+    "provenance": "https://networkconnectivity.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-servicenetworking",
+    "provider": "gcp",
+    "name": "Google / Cloud / Service Networking",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/servicenetworking/v1/openapi.yaml",
+    "provenance": "https://servicenetworking.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-vpcaccess",
+    "provider": "gcp",
+    "name": "Google / Cloud / VPC Access",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/vpcaccess/v1/openapi.yaml",
+    "provenance": "https://vpcaccess.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-aiplatform",
+    "provider": "gcp",
+    "name": "Google / Cloud / Vertex AI",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/aiplatform/v1/openapi.yaml",
+    "provenance": "https://aiplatform.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-discoveryengine",
+    "provider": "gcp",
+    "name": "Google / Cloud / Vertex AI / Search",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/discoveryengine/v1beta/openapi.yaml",
+    "provenance": "https://discoveryengine.googleapis.com/$discovery/rest?version=v1beta",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-vision",
+    "provider": "gcp",
+    "name": "Google / Cloud / Vision",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/vision/v1/openapi.yaml",
+    "provenance": "https://vision.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-translate",
+    "provider": "gcp",
+    "name": "Google / Cloud / Translation",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/translate/v3/openapi.yaml",
+    "provenance": "https://translation.googleapis.com/$discovery/rest?version=v3",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-speech",
+    "provider": "gcp",
+    "name": "Google / Cloud / Speech to Text",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/speech/v1/openapi.yaml",
+    "provenance": "https://speech.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-texttospeech",
+    "provider": "gcp",
+    "name": "Google / Cloud / Text to Speech",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/texttospeech/v1/openapi.yaml",
+    "provenance": "https://texttospeech.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-documentai",
+    "provider": "gcp",
+    "name": "Google / Cloud / Document AI",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/documentai/v1/openapi.yaml",
+    "provenance": "https://documentai.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-dlp",
+    "provider": "gcp",
+    "name": "Google / Cloud / Sensitive Data Protection",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dlp/v2/openapi.yaml",
+    "provenance": "https://dlp.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-securitycenter",
+    "provider": "gcp",
+    "name": "Google / Cloud / Security Command Center",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/securitycenter/v1/openapi.yaml",
+    "provenance": "https://securitycenter.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-cloudasset",
+    "provider": "gcp",
+    "name": "Google / Cloud / Asset Inventory",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudasset/v1/openapi.yaml",
+    "provenance": "https://cloudasset.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-cloudbilling",
+    "provider": "gcp",
+    "name": "Google / Cloud / Billing",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudbilling/v1/openapi.yaml",
+    "provenance": "https://cloudbilling.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-billingbudgets",
+    "provider": "gcp",
+    "name": "Google / Cloud / Billing / Budgets",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/billingbudgets/v1/openapi.yaml",
+    "provenance": "https://billingbudgets.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-orgpolicy",
+    "provider": "gcp",
+    "name": "Google / Cloud / Organization Policy",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/orgpolicy/v2/openapi.yaml",
+    "provenance": "https://orgpolicy.googleapis.com/$discovery/rest?version=v2",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-accesscontextmanager",
+    "provider": "gcp",
+    "name": "Google / Cloud / Access Context Manager",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/accesscontextmanager/v1/openapi.yaml",
+    "provenance": "https://accesscontextmanager.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "gcp-cloudidentity",
+    "provider": "gcp",
+    "name": "Google / Cloud / Identity",
+    "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudidentity/v1/openapi.yaml",
+    "provenance": "https://cloudidentity.googleapis.com/$discovery/rest?version=v1",
+    "sourceKind": "community-conversion"
+  },
+  {
+    "id": "azure-compute",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Compute",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/compute/resource-manager/Microsoft.Compute/Compute/stable/2026-04-01/ComputeRP.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/compute/resource-manager/Microsoft.Compute/Compute/stable/2026-04-01/ComputeRP.json",
+    "conversion": "swagger2"
+  },
+  {
+    "id": "azure-virtual-networks",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Networking / Virtual Networks",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/network/resource-manager/Microsoft.Network/Network/stable/2026-03-01/virtualNetwork.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/network/resource-manager/Microsoft.Network/Network/stable/2026-03-01/virtualNetwork.json",
+    "conversion": "swagger2"
+  },
+  {
+    "id": "azure-load-balancers",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Networking / Load Balancers",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/network/resource-manager/Microsoft.Network/Network/stable/2026-03-01/loadBalancer.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/network/resource-manager/Microsoft.Network/Network/stable/2026-03-01/loadBalancer.json",
+    "conversion": "swagger2"
+  },
+  {
+    "id": "azure-storage",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Storage",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/storage/resource-manager/Microsoft.Storage/Storage/stable/2026-09-01/openapi.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/storage/resource-manager/Microsoft.Storage/Storage/stable/2026-09-01/openapi.json",
+    "conversion": "swagger2"
+  },
+  {
+    "id": "azure-keyvault",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Key Vault / Management",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/keyvault/resource-manager/Microsoft.KeyVault/KeyVault/stable/2026-05-15/openapi.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/keyvault/resource-manager/Microsoft.KeyVault/KeyVault/stable/2026-05-15/openapi.json",
+    "conversion": "swagger2"
+  },
+  {
+    "id": "azure-aks",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Kubernetes Service",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/containerservice/resource-manager/Microsoft.ContainerService/aks/stable/2026-08-01/managedClusters.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/containerservice/resource-manager/Microsoft.ContainerService/aks/stable/2026-08-01/managedClusters.json",
+    "conversion": "swagger2"
+  },
+  {
+    "id": "azure-app-service",
+    "provider": "azure",
+    "name": "Microsoft / Azure / App Service",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/web/resource-manager/Microsoft.Web/AppService/stable/2026-07-15/openapi.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/web/resource-manager/Microsoft.Web/AppService/stable/2026-07-15/openapi.json",
+    "conversion": "swagger2"
+  },
+  {
+    "id": "azure-cosmos-db",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Cosmos DB",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/cosmos-db/resource-manager/Microsoft.DocumentDB/DocumentDB/stable/2026-03-15/openapi.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/cosmos-db/resource-manager/Microsoft.DocumentDB/DocumentDB/stable/2026-03-15/openapi.json",
+    "conversion": "swagger2"
+  },
+  {
+    "id": "azure-sql-servers",
+    "provider": "azure",
+    "name": "Microsoft / Azure / SQL / Servers",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/sql/resource-manager/Microsoft.Sql/SQL/stable/2025-01-01/servers.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/sql/resource-manager/Microsoft.Sql/SQL/stable/2025-01-01/servers.json",
+    "conversion": "swagger2"
+  },
+  {
+    "id": "azure-sql-databases",
+    "provider": "azure",
+    "name": "Microsoft / Azure / SQL / Databases",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/sql/resource-manager/Microsoft.Sql/SQL/stable/2025-01-01/databases.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/sql/resource-manager/Microsoft.Sql/SQL/stable/2025-01-01/databases.json",
+    "conversion": "swagger2"
+  },
+  {
+    "id": "azure-servicebus",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Service Bus",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/servicebus/resource-manager/Microsoft.ServiceBus/ServiceBus/stable/2026-01-01/servicebus.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/servicebus/resource-manager/Microsoft.ServiceBus/ServiceBus/stable/2026-01-01/servicebus.json",
+    "conversion": "swagger2"
+  },
+  {
+    "id": "azure-eventgrid",
+    "provider": "azure",
+    "name": "Microsoft / Azure / Event Grid",
+    "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/eventgrid/resource-manager/Microsoft.EventGrid/EventGrid/stable/2025-02-15/EventGrid.json",
+    "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/eventgrid/resource-manager/Microsoft.EventGrid/EventGrid/stable/2025-02-15/EventGrid.json",
+    "conversion": "swagger2"
   }
 ]

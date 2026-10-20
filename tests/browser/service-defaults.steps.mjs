@@ -11,6 +11,46 @@ import { setMode, openCatalog, closeCatalog, workflowAction, workspace, fillFiel
 import { expandSchemaCard } from './schema-card.fixture.mjs';
 import { catalogSchemaHeading, catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
 
+Then('the cloud collections retain their provider counts and representative workflow contracts', async function () {
+  const page = this.page;
+  await schemas(page);
+  for (const [provider, count, representative] of [['aws', 55, 'aws-ec2'], ['gcp', 52, 'gcp-pubsub'], ['azure', 13, 'azure-keyvault']]) {
+    const collection = descriptors.filter(source => source.provider === provider);
+    assert.equal(collection.length, count);
+    const source = collection.find(source => source.id === representative);
+    await expect(card(page, representative).locator('.schema-name-label')).toHaveText(source.name);
+    await expect(card(page, representative).getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+  }
+  await openCatalog(page);
+  for (const [provider, name, representative] of [['aws', 'AWS', 'aws-ec2'], ['gcp', 'Google / Cloud', 'gcp-pubsub'], ['azure', 'Microsoft / Azure', 'azure-keyvault']]) {
+    const collection = descriptors.filter(source => source.provider === provider);
+    const heading = await catalogSchemaHeading(page, name);
+    await expect(heading.locator('.catalog-count')).toHaveText(String(collection.reduce((total, source) => total + source.operations, 0)));
+    const source = collection.find(source => source.id === representative);
+    const product = await catalogSchemaHeading(page, source.name);
+    await expect(product.locator('xpath=../..')).toHaveAttribute('data-catalog-group', representative);
+    await expect(product.locator('.catalog-count')).toHaveText(String(source.operations));
+  }
+  await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('DescribeInstances');
+  await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', 'DescribeInstances');
+  const aws = page.locator('[data-operation-id="aws-ec2:GET_DescribeInstances"] > button');
+  await expect(aws).toHaveAttribute('aria-disabled', 'true');
+  await aws.press('Enter');
+  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(0);
+  await page.getByRole('textbox', { name: 'Prompt', exact: true }).fill('Vaults_ListBySubscription');
+  await expect(page.locator('.catalog-prompt')).toHaveAttribute('data-evaluated-prompt', 'Vaults_ListBySubscription');
+  const azure = page.locator('[data-operation-id="azure-keyvault:Vaults_ListBySubscription"] > button');
+  await expect(azure).toHaveAttribute('aria-disabled', 'false');
+  await azure.press('Enter');
+  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(1);
+  await closeCatalog(page);
+  await expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
+  await page.reload();
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(1);
+  await expect(page.locator('.svelte-flow__node-operation').getByRole('alert')).toHaveCount(0);
+});
+
 const card = (page, id) => page.locator(`[data-schema-id="${id}"]`);
 async function schemas(page) {
   await setMode(page, 'settings');

@@ -3,6 +3,15 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Default service operation catalogs
+  Scenario Outline: Cloud service collections preserve their published contracts and existing schemas
+    Then "<provider>" has <count> cloud schemas under "<prefix>" including "<services>"
+
+    Examples:
+      | provider | count | prefix            | services                                                                                                                   |
+      | aws      | 55    | AWS               | aws-ec2,aws-dynamodb,aws-ecs,aws-eks,aws-rds,aws-states,aws-sqs,aws-iam,aws-kms,aws-sagemaker                                    |
+      | gcp      | 52    | Google / Cloud    | gcp-run,gcp-container,gcp-bigquery,gcp-firestore,gcp-pubsub,gcp-secretmanager,gcp-cloudbuild,gcp-aiplatform,gcp-cloudbilling       |
+      | azure    | 13    | Microsoft / Azure | azure-compute,azure-virtual-networks,azure-storage,azure-keyvault,azure-aks,azure-app-service,azure-cosmos-db,azure-sql-databases |
+
   Scenario: Atlassian catalogs retain published product contracts and unambiguous workflow identities
     Then the Atlassian collection includes its published product APIs without changing established catalog identities
 

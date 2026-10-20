@@ -1,6 +1,6 @@
 # Default service schemas
 
-The application bundles 83 packs covering 36 providers and 17,963 HTTP operations,
+The application bundles 198 packs covering 36 providers and 26,453 HTTP operations,
 alongside the two examples. Manage them in **Settings → Schemas**. Installation
 loads API descriptions locally; it does not contact provider APIs or supply credentials.
 
@@ -53,12 +53,65 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 | Atlassian / Statuspage | 112 | [Source](https://developer.statuspage.io/) |
 | Atlassian / Teams | 15 | [Source](https://developer.atlassian.com/platform/teams/rest/v1/) |
 | Atlassian / Trello | 261 | [Source](https://developer.atlassian.com/cloud/trello/rest/) |
+| AWS / API Gateway / HTTP and WebSocket | 72 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / API Gateway / REST | 120 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Athena | 68 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Auto Scaling | 130 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Backup | 72 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Batch | 24 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Budgets | 23 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / CloudFormation | 140 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / CloudFront | 106 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / CloudTrail | 46 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / CloudWatch / Logs | 51 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / CloudWatch / Metrics | 76 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / CodeBuild | 45 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / CodePipeline | 39 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Cognito / User Pools | 103 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Comprehend | 84 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Cost Explorer | 38 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Data Firehose | 12 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / DynamoDB | 53 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / EC2 | 1188 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / ECR | 41 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / ECS | 56 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / EFS | 30 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / EKS | 35 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Elastic Load Balancing | 68 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / ElastiCache | 130 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / EventBridge | 51 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / FSx | 41 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Glue | 202 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / IAM | 318 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Kinesis | 28 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / KMS | 50 | [Source](https://github.com/aws/api-models-aws) |
 | AWS / Lambda | 66 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / OpenSearch | 54 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Organizations | 55 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Polly | 9 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / RDS | 286 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Redshift | 246 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Rekognition | 72 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Route 53 | 70 | [Source](https://github.com/aws/api-models-aws) |
 | AWS / S3 | 97 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / S3 / Control | 64 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / SageMaker | 304 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / SageMaker / Runtime | 2 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Secrets Manager | 22 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / SES | 87 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / SNS | 84 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / SQS | 46 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Step Functions | 34 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / STS | 16 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Systems Manager | 138 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Textract | 13 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Transcribe | 39 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Transfer Family | 59 | [Source](https://github.com/aws/api-models-aws) |
+| AWS / Translate | 19 | [Source](https://github.com/aws/api-models-aws) |
 | Bluesky / App and AT Protocol | 152 | [Source](https://github.com/bluesky-social/endpoints-standalone) |
 | Bluesky / Direct messages | 38 | [Source](https://github.com/bluesky-social/endpoints-standalone) |
 | Bluesky / Ozone moderation | 45 | [Source](https://github.com/bluesky-social/endpoints-standalone) |
-| Cloudflare | 3,761 | [Source](https://raw.githubusercontent.com/cloudflare/api-schemas/main/openapi.yaml) |
+| Cloudflare | 3761 | [Source](https://raw.githubusercontent.com/cloudflare/api-schemas/main/openapi.yaml) |
 | Cohere | 42 | [Source](https://raw.githubusercontent.com/cohere-ai/cohere-developer-experience/main/cohere-openapi.yaml) |
 | DeepSeek | 11 | [Source](https://api-docs.deepseek.com/api/create-chat-completion/) |
 | DigitalOcean | 855 | [Source](https://raw.githubusercontent.com/digitalocean/openapi/main/specification/DigitalOcean-public.v2.yaml) |
@@ -69,15 +122,77 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 | ElevenLabs | 418 | [Source](https://api.elevenlabs.io/openapi.json) |
 | Frankfurter | 9 | [Source](https://api.frankfurter.dev/v2/openapi.json) |
 | FRED / Federal Reserve Economic Data | 36 | [Source](https://fred.stlouisfed.org/docs/api/fred/) |
-| GitHub | 1,242 | [Source](https://raw.githubusercontent.com/github/rest-api-description/main/descriptions-next/api.github.com/api.github.com.yaml) |
-| GitLab | 1,869 | [Source](https://gitlab.com/gitlab-org/gitlab/-/raw/master/doc/api/openapi/openapi_v3.yaml) |
+| GitHub | 1242 | [Source](https://raw.githubusercontent.com/github/rest-api-description/main/descriptions-next/api.github.com/api.github.com.yaml) |
+| GitLab | 1869 | [Source](https://gitlab.com/gitlab-org/gitlab/-/raw/master/doc/api/openapi/openapi_v3.yaml) |
+| Google / Cloud / Access Context Manager | 22 | [Source](https://accesscontextmanager.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / API Gateway | 15 | [Source](https://apigateway.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Artifact Registry | 27 | [Source](https://artifactregistry.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Asset Inventory | 20 | [Source](https://cloudasset.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / BigQuery | 37 | [Source](https://bigquery.googleapis.com/$discovery/rest?version=v2) |
+| Google / Cloud / BigQuery / Data Transfer | 14 | [Source](https://bigquerydatatransfer.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Bigtable / Admin | 27 | [Source](https://bigtableadmin.googleapis.com/$discovery/rest?version=v2) |
+| Google / Cloud / Billing | 18 | [Source](https://cloudbilling.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Billing / Budgets | 5 | [Source](https://billingbudgets.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Build | 18 | [Source](https://cloudbuild.googleapis.com/$discovery/rest?version=v2) |
+| Google / Cloud / Certificate Manager | 18 | [Source](https://certificatemanager.googleapis.com/$discovery/rest?version=v1) |
 | Google / Cloud / Compute | 758 | [Source](https://compute.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Dataflow | 41 | [Source](https://dataflow.googleapis.com/$discovery/rest?version=v1b3) |
+| Google / Cloud / Dataproc | 41 | [Source](https://dataproc.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / DNS | 40 | [Source](https://dns.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Document AI | 20 | [Source](https://documentai.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Error Reporting | 6 | [Source](https://clouderrorreporting.googleapis.com/$discovery/rest?version=v1beta1) |
+| Google / Cloud / Firestore | 30 | [Source](https://firestore.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Functions | 18 | [Source](https://cloudfunctions.googleapis.com/$discovery/rest?version=v2) |
+| Google / Cloud / IAM | 5 | [Source](https://iam.googleapis.com/$discovery/rest?version=v2) |
+| Google / Cloud / IAM / Credentials | 4 | [Source](https://iamcredentials.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Identity | 35 | [Source](https://cloudidentity.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Key Management | 31 | [Source](https://cloudkms.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Kubernetes Engine | 61 | [Source](https://container.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Logging | 42 | [Source](https://logging.googleapis.com/$discovery/rest?version=v2) |
+| Google / Cloud / Memorystore / Redis | 16 | [Source](https://redis.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Monitoring | 32 | [Source](https://monitoring.googleapis.com/$discovery/rest?version=v3) |
+| Google / Cloud / Network Connectivity | 30 | [Source](https://networkconnectivity.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Organization Policy | 9 | [Source](https://orgpolicy.googleapis.com/$discovery/rest?version=v2) |
+| Google / Cloud / PubSub | 33 | [Source](https://pubsub.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Resource Manager | 28 | [Source](https://cloudresourcemanager.googleapis.com/$discovery/rest?version=v3) |
+| Google / Cloud / Run | 17 | [Source](https://run.googleapis.com/$discovery/rest?version=v2) |
+| Google / Cloud / Scheduler | 9 | [Source](https://cloudscheduler.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Secret Manager | 15 | [Source](https://secretmanager.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Security Command Center | 34 | [Source](https://securitycenter.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Sensitive Data Protection | 28 | [Source](https://dlp.googleapis.com/$discovery/rest?version=v2) |
+| Google / Cloud / Service Networking | 25 | [Source](https://servicenetworking.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Service Usage | 9 | [Source](https://serviceusage.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Spanner | 40 | [Source](https://spanner.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Speech to Text | 11 | [Source](https://speech.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / SQL Admin | 58 | [Source](https://sqladmin.googleapis.com/$discovery/rest?version=v1) |
 | Google / Cloud / Storage | 76 | [Source](https://storage.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Tasks | 16 | [Source](https://cloudtasks.googleapis.com/$discovery/rest?version=v2) |
+| Google / Cloud / Text to Speech | 7 | [Source](https://texttospeech.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Trace | 2 | [Source](https://cloudtrace.googleapis.com/$discovery/rest?version=v2) |
+| Google / Cloud / Translation | 31 | [Source](https://translation.googleapis.com/$discovery/rest?version=v3) |
+| Google / Cloud / Vertex AI | 169 | [Source](https://aiplatform.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Vertex AI / Search | 34 | [Source](https://discoveryengine.googleapis.com/$discovery/rest?version=v1beta) |
+| Google / Cloud / Vision | 23 | [Source](https://vision.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / VPC Access | 7 | [Source](https://vpcaccess.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Workflows | 8 | [Source](https://workflows.googleapis.com/$discovery/rest?version=v1) |
+| Google / Cloud / Workflows / Executions | 8 | [Source](https://workflowexecutions.googleapis.com/$discovery/rest?version=v1) |
 | Google / Gemini / Interactions | 37 | [Source](https://ai.google.dev/static/api/interactions.openapi.json) |
 | Groq | 23 | [Source](https://github.com/groq/groq-typescript/blob/v1.6.0/.stats.yml) |
 | Hetzner / Cloud | 190 | [Source](https://docs.hetzner.cloud/cloud.spec.json) |
 | Hugging Face / Inference Endpoints | 46 | [Source](https://api.endpoints.huggingface.cloud/openapi.json) |
+| Microsoft / Azure / App Service | 704 | [Source](https://github.com/Azure/azure-rest-api-specs/blob/main/specification/web/resource-manager/Microsoft.Web/AppService/stable/2026-07-15/openapi.json) |
+| Microsoft / Azure / Compute | 205 | [Source](https://github.com/Azure/azure-rest-api-specs/blob/main/specification/compute/resource-manager/Microsoft.Compute/Compute/stable/2026-04-01/ComputeRP.json) |
+| Microsoft / Azure / Cosmos DB | 237 | [Source](https://github.com/Azure/azure-rest-api-specs/blob/main/specification/cosmos-db/resource-manager/Microsoft.DocumentDB/DocumentDB/stable/2026-03-15/openapi.json) |
+| Microsoft / Azure / Event Grid | 170 | [Source](https://github.com/Azure/azure-rest-api-specs/blob/main/specification/eventgrid/resource-manager/Microsoft.EventGrid/EventGrid/stable/2025-02-15/EventGrid.json) |
+| Microsoft / Azure / Key Vault / Management | 48 | [Source](https://github.com/Azure/azure-rest-api-specs/blob/main/specification/keyvault/resource-manager/Microsoft.KeyVault/KeyVault/stable/2026-05-15/openapi.json) |
+| Microsoft / Azure / Kubernetes Service | 69 | [Source](https://github.com/Azure/azure-rest-api-specs/blob/main/specification/containerservice/resource-manager/Microsoft.ContainerService/aks/stable/2026-08-01/managedClusters.json) |
+| Microsoft / Azure / Networking / Load Balancers | 27 | [Source](https://github.com/Azure/azure-rest-api-specs/blob/main/specification/network/resource-manager/Microsoft.Network/Network/stable/2026-03-01/loadBalancer.json) |
+| Microsoft / Azure / Networking / Virtual Networks | 245 | [Source](https://github.com/Azure/azure-rest-api-specs/blob/main/specification/network/resource-manager/Microsoft.Network/Network/stable/2026-03-01/virtualNetwork.json) |
 | Microsoft / Azure / Resources | 40 | [Source](https://github.com/Azure/azure-rest-api-specs) |
+| Microsoft / Azure / Service Bus | 70 | [Source](https://github.com/Azure/azure-rest-api-specs/blob/main/specification/servicebus/resource-manager/Microsoft.ServiceBus/ServiceBus/stable/2026-01-01/servicebus.json) |
+| Microsoft / Azure / SQL / Databases | 14 | [Source](https://github.com/Azure/azure-rest-api-specs/blob/main/specification/sql/resource-manager/Microsoft.Sql/SQL/stable/2025-01-01/databases.json) |
+| Microsoft / Azure / SQL / Servers | 9 | [Source](https://github.com/Azure/azure-rest-api-specs/blob/main/specification/sql/resource-manager/Microsoft.Sql/SQL/stable/2025-01-01/servers.json) |
+| Microsoft / Azure / Storage | 139 | [Source](https://github.com/Azure/azure-rest-api-specs/blob/main/specification/storage/resource-manager/Microsoft.Storage/Storage/stable/2026-09-01/openapi.json) |
 | Mistral | 173 | [Source](https://raw.githubusercontent.com/mistralai/platform-docs-public/main/openapi.yaml) |
 | Ollama | 17 | [Source](https://raw.githubusercontent.com/ollama/ollama/main/docs/openapi.yaml) |
 | OpenAI | 360 | [Source](https://raw.githubusercontent.com/openai/openai-openapi/main/openapi.yaml) |
@@ -94,8 +209,9 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 
 ## Scope decisions
 
-- Google Cloud covers Compute and Storage; AWS covers S3 and Lambda; Azure covers
-  Resource Manager Resources. Each provider publishes separate product contracts.
+- Cloud collections contain 55 AWS, 52 Google Cloud and 13 Azure contracts, with
+  the product and API boundaries described below. Each provider publishes
+  separate product contracts.
 - Gemini uses Interactions; Hugging Face uses Inference Endpoints. These names do
   not imply every API offered by the provider.
 - Bluesky uses official App/AT Protocol, chat and Ozone documents. Server selection
@@ -107,6 +223,71 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 - Anthropic and Groq artifacts are identified by official SDK metadata. Missing
   version labels are explicitly supplied for Anthropic and Bluesky. The inventory
   retains provenance, including community conversions.
+
+## Cloud providers
+
+The collection was expanded on 2026-10-20 using the existing pack and discovery
+index pipeline. The original S3, Lambda, Google Compute/Storage and Azure
+Resources documents, digests and operation IDs are unchanged. New factory
+schemas appear automatically; local names, enablement, ordering and deletions
+continue to follow browser-local settings.
+
+### AWS
+
+The 55 contracts cover EC2, Auto Scaling, load balancing, API Gateway REST and
+HTTP/WebSocket management, CloudFront, Route 53, CloudFormation, ECR/ECS/EKS,
+RDS, DynamoDB, ElastiCache, Redshift, Athena, S3 and its control API, EFS/FSx,
+Backup, Transfer Family, Step Functions, SQS/SNS, EventBridge, Kinesis, Firehose,
+Batch, Glue, CloudWatch logs/metrics, CloudTrail, IAM/STS, KMS, Secrets Manager,
+Systems Manager, Cognito user pools, Organizations, SES, CodeBuild/CodePipeline,
+Cost Explorer/Budgets, SageMaker management/runtime, OpenSearch, Rekognition,
+Textract, Comprehend, Translate, Polly and Transcribe.
+
+These are the OpenAPI conversions in
+[APIs.guru](https://github.com/APIs-guru/openapi-directory/tree/main/APIs/amazonaws.com).
+AWS itself publishes [Smithy models](https://github.com/aws/api-models-aws).
+The manifest labels the converted sources explicitly and preserves their API
+versions, security schemes, notices and service endpoints. This is broad
+coverage of available conversions, rather than a complete or continuously
+current inventory of every AWS product. AWS Signature Version 4 signing remains
+unsupported; the schemas do not make signed requests executable.
+
+### Google Cloud
+
+The 52 contracts include Compute/Storage, Cloud Run, Functions, Kubernetes Engine,
+Artifact Registry, Build, Resource Manager, IAM and credentials, Service Usage,
+API Gateway, PubSub, Scheduler/Tasks, Workflows and executions, BigQuery and data
+transfer, Dataflow/Dataproc, SQL Admin, Firestore/Spanner, Bigtable administration,
+Memorystore Redis, Secret Manager, Key Management, Logging/Monitoring,
+Trace/Error Reporting, DNS, certificate/network services, Vertex AI/Search,
+Vision, Translation, Speech/Text to Speech, Document AI, Sensitive Data Protection,
+Security Command Center, Asset Inventory, Billing/Budgets, Organization Policy,
+Access Context Manager and Identity.
+
+Sources are [APIs.guru OpenAPI conversions](https://github.com/APIs-guru/openapi-directory/tree/main/APIs/googleapis.com)
+of Google's [Discovery descriptions](https://developers.google.com/discovery/v1/reference/apis/list).
+The manifest links each contract to its provider Discovery endpoint. Available
+versions follow the preferred provider version where the conversion exists;
+Discovery Engine currently uses the available `v1beta` conversion. These snapshots
+do not imply coverage of every current provider method. Source OAuth requirements
+and URI templates remain intact, including explicit execution limits where the
+application cannot represent them. Some conversions declare two OAuth credential
+schemes that both use `Authorization`; these operations retain an explicit
+duplicate-credential limitation rather than becoming anonymously executable.
+
+### Microsoft Azure
+
+The smaller Azure collection covers Resources, Compute, virtual networks and
+load balancers, Storage, Key Vault management, Kubernetes Service, App Service,
+Cosmos DB, SQL servers/databases, Service Bus and Event Grid. These are control
+plane REST contracts: SQL management does not implement the SQL wire protocol,
+and Key Vault management does not include its separate data-plane secret APIs.
+
+Each source is a stable, versioned Swagger document from
+[Azure's official API specifications](https://github.com/Azure/azure-rest-api-specs).
+Conversion retains external recursive definitions and vendor examples as local
+references. The source manifest records the exact service profile and API version;
+authentication and browser access restrictions still apply.
 
 ## Atlassian
 

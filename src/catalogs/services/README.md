@@ -57,11 +57,17 @@ Display names use spaced `/` separators for provider and product levels, such as
 `Google / Cloud / Compute` and `Microsoft / Azure / Resources`. Factory-owned
 labels refresh on startup; user-authored names retain their saved values.
 
-Cloud providers expose separate API descriptions. The initial Google Cloud
-collection covers Compute and Storage; AWS covers S3 and Lambda; Azure covers
-Resource Manager resources. These are named service contracts, not a claim to
-include every product offered by those providers. Source provenance distinguishes
-provider documents from community conversions.
+Cloud providers expose separate API descriptions. AWS includes 55 contracts,
+Google Cloud 52, and Azure 13. They cover compute, storage, databases, networking,
+identity, messaging and other service families; the
+[cloud inventory](../../../docs/default-service-schemas.md#cloud-providers)
+records the boundaries and conversion provenance. Existing S3, Lambda, Google
+Compute/Storage and Azure Resources packs retain their payloads and identities.
+
+AWS and Google Cloud use community OpenAPI conversions of provider models and
+Discovery documents. Azure uses its official Swagger documents, converted with
+the same recursive-reference bundling as the existing Resources pack. Adding a
+description does not add a signing protocol or expand execution support.
 
 Atlassian Cloud, administration, developer platform and Data Center contracts
 share the `atlassian` provider and `Atlassian / …` display prefix. The

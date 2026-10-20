@@ -4,6 +4,16 @@
 
 Feature: Default service schemas in the application
   @service-defaults
+  Scenario Outline: Cloud service collections remain browsable on desktop and mobile
+    When I use a viewport of <width> by 844 pixels
+    Then the cloud collections retain their provider counts and representative workflow contracts
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  @service-defaults
   Scenario: Provider names use product paths and refresh saved factory labels
     Then provider schema names use these paths across saved-label updates
       | id                 | previous                          | name                               |
