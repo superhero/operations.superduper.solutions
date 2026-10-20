@@ -42,8 +42,8 @@ Then("the production page contains the operation catalog and execution results",
 
 Then("the production page contains the separate example catalogs", function ()
 {
-  assert.match(html, /List projects/);
-  assert.match(html, /Create task/);
+  assert.match(html, /Example array response/);
+  assert.match(html, /Example POST body/);
   assert.match(html, /example\.com/);
   assert.match(html, /httpbin\.org/);
   assert.match(html, /Example TRACE request/);
