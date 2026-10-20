@@ -22,11 +22,13 @@ Then("slash-separated schema names form ordered groups without changing their so
     { id: "compute", name: "Google / Cloud / Compute", description: "Compute API", children: [category] },
     { id: "storage", name: "Google / Cloud / Storage", description: "", operationIds: ["storage:read"] },
     { id: "gemini", name: " Google / Gemini // Interactions / ", description: "", operationIds: ["gemini:read"] },
+    { id: "plain-copy", name: "Plain", description: "", operationIds: ["plain-copy:read"] },
     { id: "blank", name: "///", description: "", operationIds: ["blank:read"] }];
   const before = structuredClone(sources);
   const groups = catalogHierarchy(sources);
-  assert.deepEqual(groups.map(group => group.name), ["Plain", "Google", "///"]);
+  assert.deepEqual(groups.map(group => group.name), ["Plain", "Google", "Plain", "///"]);
   assert.equal(groups[0], plain);
+  assert.equal(groups[2], sources[4], "Plain duplicate labels retain their own rows and saved positions.");
   assert.deepEqual(groups[1].children.map(group => group.name), ["Cloud", "Gemini"]);
   const cloud = groups[1].children[0];
   assert.deepEqual(cloud.children.map(group => [group.id, group.name]), [["compute", "Compute"], ["storage", "Storage"]]);
@@ -39,6 +41,7 @@ Then("slash-separated schema names form ordered groups without changing their so
 
 Then("schema name groups retain prefix schemas and duplicate labels independently", () => {
   const sources = [
+    { id: "atlassian", name: "Atlassian", description: "", operationIds: ["atlassian:read"] },
     { id: "v1", name: "Atlassian / Confluence / Cloud / v1", description: "", operationIds: ["v1:read"] },
     { id: "cloud", name: "Atlassian / Confluence / Cloud", description: "", children: [
       { id: "cloud:tag", name: "Pages", description: "", operationIds: ["cloud:read"] }] },
