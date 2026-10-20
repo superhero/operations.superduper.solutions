@@ -15,6 +15,9 @@ Feature: Registered schemas at runtime
   Scenario: Renaming and reordering schemas rebuilds their navigation hierarchy
     Then schema name grouping follows current labels and order without retaining removed groups
 
+  Scenario: Settings folders use only schema name segments and include disabled records
+    Then the settings name tree sorts folders and leaves while preserving every schema identity
+
   Scenario: Schema validation normalizes a non-Error failure from operation extraction
     Then schema validation normalizes a non-Error failure from operation extraction
 

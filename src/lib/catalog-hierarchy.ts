@@ -10,12 +10,16 @@ type NameGroup = {
   children: Map<string, NameGroup>;
 };
 
+export function schemaNameParts(name: string): string[] {
+  const parts = name.split("/").map(part => part.trim()).filter(Boolean);
+  return parts.length ? parts : [name];
+}
+
 /** Group schema names without changing source IDs, operation groups or saved order. */
 export function catalogHierarchy(schemas: readonly CatalogGroup[]): CatalogGroup[]
 {
   const entries = schemas.map(schema => {
-    const parts = schema.name.split("/").map(part => part.trim()).filter(Boolean);
-    if (!parts.length) parts.push(schema.name);
+    const parts = schemaNameParts(schema.name);
     return { schema, parts };
   });
   const prefixes = new Set(entries.filter(entry => entry.parts.length > 1).map(entry => entry.parts[0]!));

@@ -6,7 +6,100 @@ import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { setMode } from './workspace.steps.mjs';
-import { expandSchemaCard } from './schema-card.fixture.mjs';
+import { expandSchemaCard, revealSchemaCard, expectSchemaName } from './schema-card.fixture.mjs';
+
+Then('schema name folders preserve keyboard access renaming disablement deletion and reload', async function () {
+  const page = this.page;
+  const open = async () => {
+    await setMode(page, 'settings');
+    const toggle = page.locator('summary[aria-label="Schemas"]');
+    if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
+    const section = page.getByRole('region', { name: 'OpenAPI documents', exact: true });
+    await expect(section).toHaveAttribute('aria-busy', 'false');
+    return section;
+  };
+  let section = await open();
+  const group = name => section.locator(`summary[aria-label=${JSON.stringify(`Schema group: ${name}`)}]`);
+  const ids = new Map();
+  for (const title of ['Tools / Files / First', 'Tools / Files / Second', 'Tools / Other']) {
+    const document = { openapi: '3.1.0', info: { title, version: '1', description: `Description of ${title}` },
+      servers: [{ url: 'https://tree.example.test' }], paths: { '/v1/unrelated/resource': {
+        get: { operationId: 'list', tags: ['Ignored / Tag'], responses: { '200': { description: 'OK' } } },
+      } } };
+    await section.locator('input[type=file][aria-label="Upload OpenAPI document"]').setInputFiles({
+      name: 'tree.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)),
+    });
+    const card = section.locator('.schema-card').filter({ has: page.locator(`.schema-name-label[aria-label=${JSON.stringify(`Open schema: ${title}`)}]`) });
+    await expect(card).toHaveCount(1);
+    ids.set(title, await card.getAttribute('data-schema-id'));
+    await expect(section).toHaveAttribute('aria-busy', 'false');
+  }
+  const card = title => section.locator(`[data-schema-id="${ids.get(title)}"]`);
+  const first = card('Tools / Files / First');
+  const second = card('Tools / Files / Second');
+  await expect(section.locator('.schema-list')).toHaveCount(1);
+  await expect(section.locator('.schema-list .schema-toolbar')).toHaveCount(0);
+  await expect(section.locator('.schema-toolbar').getByRole('button', { name: 'Upload OpenAPI document', exact: true })).toBeVisible();
+  await expect(section.locator('[data-schema-group]')).toHaveCount(2);
+  await expect(group('Tools')).toHaveAttribute('aria-expanded', 'false');
+  await expect(group('Tools / Files')).toBeHidden();
+  await expect(first).toBeHidden();
+  await expect(section.locator('[data-schema-id="demo"]')).toBeVisible();
+  await group('Tools').press('Enter');
+  await expect(group('Tools / Files')).toBeVisible();
+  await expect(group('Tools / Files')).toHaveAttribute('aria-expanded', 'false');
+  await group('Tools / Files').press('Space');
+  await expectSchemaName(first, 'Tools / Files / First');
+  await expectSchemaName(second, 'Tools / Files / Second');
+  await first.getByRole('switch').click();
+  await expect(first.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await expect(first).toBeVisible();
+  await first.getByRole('button', { name: 'Open schema: Tools / Files / First', exact: true }).click();
+  const name = first.getByRole('textbox', { name: 'Schema name', exact: true });
+  await expect(name).toHaveValue('Tools / Files / First');
+  await first.locator('.schema-disclosure > summary .schema-title').click();
+  await expect(first.locator('.json-view')).toContainText('/v1/unrelated/resource');
+  await name.fill('Moved / Things / Renamed');
+  await name.press('Enter');
+  await expect(first.getByRole('textbox', { name: 'Schema name', exact: true })).toHaveValue('Moved / Things / Renamed');
+  await expect(group('Moved')).toHaveAttribute('aria-expanded', 'true');
+  await expect(group('Moved / Things')).toHaveAttribute('aria-expanded', 'true');
+  await expect(first.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await expect(second).toBeVisible();
+  await first.locator('.schema-disclosure > summary .schema-title').click();
+  await expect(first.locator('.json-view')).toBeVisible();
+  await group('Moved').press('Enter');
+  await expect(first).toBeHidden();
+  await expect(first.locator('.json-view')).toHaveCount(0);
+  await group('Moved').press('Enter');
+  await expect(group('Moved / Things')).toHaveAttribute('aria-expanded', 'false');
+  await group('Moved / Things').press('Enter');
+  await expectSchemaName(first, 'Moved / Things / Renamed');
+  await expect(first.getByRole('button', { name: /^Schema details:/ })).toHaveAttribute('aria-expanded', 'false');
+  await expect(first.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await expandSchemaCard(second);
+  await second.getByRole('switch').click();
+  await expect(second.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await second.getByRole('button', { name: 'Delete Tools / Files / Second', exact: true }).click();
+  await second.getByRole('group', { name: 'Confirm deletion of Tools / Files / Second', exact: true }).getByRole('button', { name: 'Delete', exact: true }).click();
+  await expect(second).toHaveCount(0);
+  await expect(group('Tools / Files')).toHaveCount(0);
+  await expectSchemaName(card('Tools / Other'), 'Tools / Other');
+  await page.reload();
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
+  section = await open();
+  await expect(group('Moved')).toHaveAttribute('aria-expanded', 'false');
+  await revealSchemaCard(first);
+  await expectSchemaName(first, 'Moved / Things / Renamed');
+  await expect(first.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await expect(second).toHaveCount(0);
+  await group('Tools').press('Enter');
+  await expect(section.locator('.schema-list')).toBeInViewport();
+  const bounds = await section.locator('.schema-list').evaluate(element => ({ width: element.clientWidth, content: element.scrollWidth }));
+  assert.ok(bounds.content <= bounds.width + 1, 'Nested folders fit the pane without horizontal overflow.');
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await section.screenshot({ path: `${this.artifactDirectory}/schema-name-tree-${page.viewportSize().width}.png` });
+});
 
 Then('schema settings explain deletion restrictions and cancel confirmation when an upload is reactivated', async function () {
   const page = this.page;
@@ -187,10 +280,11 @@ Then('schema history compares any saved commits with lazy colored diffs and pers
   assert.ok(Object.values(original.paths).some(item => Object.values(item).some(operation => operation?.security?.some(requirement => requirement.Oauth2 && requirement.Oauth2c))));
   const name = card.getByRole('textbox', { name: 'Schema name', exact: true });
   await name.fill('My Speech API'); await name.press('Enter');
+  await expect(page.getByRole('region', { name: 'OpenAPI documents', exact: true })).toHaveAttribute('aria-busy', 'false');
   await expect(name).toHaveValue('My Speech API');
   // Three commits: a fresh disclosure must compare the actual root with latest,
   // including both the earlier correction and the later name change.
-  await revisionsToggle().click();
+  if (await revisionsToggle().getAttribute('aria-expanded') === 'true') await revisionsToggle().click();
   await expect(changes()).toHaveCount(0);
   await revisionsToggle().click();
   const renamed = await history();

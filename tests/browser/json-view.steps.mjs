@@ -10,6 +10,7 @@ import { metricsCacheKey } from "../../src/lib/metrics-cache.ts";
 import schemaIndexes from "../../src/catalogs/services/indexes/index.json" with { type: "json" };
 import { catalogsIndexDatabaseName } from "../../src/lib/storage-names.ts";
 import { finishHeightAnimations, holdHeightAnimations, seekHeightAnimation } from "./height-animation.fixture.mjs";
+import { expandSchemaCard } from "./schema-card.fixture.mjs";
 
 const jsonLabel = "Operation OpenAPI JSON";
 const sourceCatalog = catalogForOperation("demo:createTask");
@@ -869,7 +870,7 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   if (await section.getAttribute('aria-expanded') !== 'true') await section.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   const telegram = documents.locator('[data-schema-id="telegram"]');
-  await telegram.getByRole('button', { name: /^Schema details:/ }).click();
+  await expandSchemaCard(telegram);
   const metadata = telegram.locator('.schema-metadata');
   await expect(metadata.locator('dt')).toHaveText(['Operations']);
   await expect(telegram.locator('.schema-description p')).toHaveText(schemaIndexes.indexes.find(schema => schema.id === 'telegram').summary.description);

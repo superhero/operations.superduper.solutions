@@ -10,7 +10,7 @@ import { catalogs } from '../../src/lib/catalog-registry.ts';
 import { operationNavigation, operationResourceGroups, navigationOperations } from '../../src/lib/operation-navigation.ts';
 import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };
 import { catalogSchemaHeading, catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
-import { expandSchemaCard } from './schema-card.fixture.mjs';
+import { expandSchemaCard, revealSchemaCard, expectSchemaName } from './schema-card.fixture.mjs';
 
 const catalog = page => page.getByRole('navigation', { name: 'Operation catalog', exact: true });
 const branch = (page, id, root) => (root ? catalog(page).locator(`[data-catalog-group="${root}"]`) : catalog(page))
@@ -137,6 +137,7 @@ Then('schema name groups follow saved schema names and enablement', async functi
   const renamed = await catalogSchemaHeading(page, 'Local / Files / Storage');
   await expect(renamed.locator('xpath=../..')).toHaveAttribute('data-catalog-group', 'gcp-storage');
   await settings();
+  await revealSchemaCard(storage);
   await storage.getByRole('switch').click();
   await expect(storage.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
   await expect(page.getByRole('region', { name: 'OpenAPI documents', exact: true })).toHaveAttribute('aria-busy', 'false');
@@ -145,7 +146,8 @@ Then('schema name groups follow saved schema names and enablement', async functi
   await page.reload();
   await page.locator('#startup-status').waitFor({ state: 'detached' });
   await settings();
-  await expect(storage.locator('.schema-name-label')).toHaveText('Local / Files / Storage');
+  await revealSchemaCard(storage);
+  await expectSchemaName(storage, 'Local / Files / Storage');
   await storage.getByRole('switch').click();
   await expect(storage.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByRole('region', { name: 'OpenAPI documents', exact: true })).toHaveAttribute('aria-busy', 'false');
