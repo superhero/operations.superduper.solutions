@@ -191,7 +191,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           data-revision={diff?.revision.oid} data-base={diff?.base?.oid}>
           <div class="commit-selectors">
             <div><label for={`schema-base-${id}`}>Base</label>
-              <FieldSelect id={`schema-base-${id}`} label="Base commit" value={comparison ?? ""} options={[...commitOptions].reverse()}
+              <FieldSelect id={`schema-base-${id}`} label="Base commit" value={comparison ?? ""} options={commitOptions}
                 includePlaceholder={!comparison} disabled={loading || loadingDiff || acting}
                 onValueChange={base => { if (base) void select(selected || revisions[0]!.oid, base); }} />
             </div>

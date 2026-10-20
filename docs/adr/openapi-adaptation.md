@@ -161,8 +161,9 @@ uniform edges. The disclosure has only its leading chevron, and the selected
 commit has no redundant text label. Branch refs remain stored but are not
 rendered as badges or card borders. Independent **Base** and **Compare** selectors
 accept any two saved commits in that schema's isolated Git repository, including equal and reverse
-comparisons. A fresh disclosure defaults to the original import and latest
-commit. Root discovery can expand the loaded ancestry up to 1,000 commits; if
+comparisons. Both menus retain the graph's newest-first commit order. A fresh
+disclosure selects the original import on the left and latest commit on the right
+without reordering either list. Root discovery can expand the loaded ancestry up to 1,000 commits; if
 the root is still outside that bound the user must choose a base explicitly.
 Selecting a graph node changes the comparison target while retaining its base.
 Comparing revisions never changes checkout, Git objects or schema metadata.

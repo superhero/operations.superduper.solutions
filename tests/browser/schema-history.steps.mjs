@@ -108,6 +108,17 @@ Then('schema history compares any saved commits with lazy colored diffs and pers
   await revisionsToggle().click();
   const renamed = await history();
   await expectComparison(renamed.current, published);
+  const optionOrders = [];
+  for (const label of ['Base commit', 'Compare commit']) {
+    const selector = changes().getByRole('combobox', { name: label, exact: true });
+    await selector.click();
+    await expect(page.getByRole('option')).toHaveCount(renamed.revisions.length);
+    optionOrders.push((await page.getByRole('option').locator('.field-select-option-label').allTextContents()).map(text => text.slice(0, 7)));
+    await selector.press('Escape');
+  }
+  assert.deepEqual(optionOrders[0], optionOrders[1], 'Both commit menus retain the same order regardless of their selected items.');
+  assert.deepEqual(optionOrders[0], await card.locator('.version-meta code').allTextContents(), 'Both menus follow the visible commit graph order.');
+  await expectComparison(renamed.current, published);
   await expect(changes().locator('.change-group > summary')).toContainText(['Schema information1 field', 'Authentication']);
   original.info.title = 'New upstream Speech title'; original.info.version = 'manual-update-2';
   await card.getByRole('button', { name: 'Replace My Speech API', exact: true }).click();
