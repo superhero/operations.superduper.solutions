@@ -455,6 +455,9 @@ jobs:
           rm -rf tmp/validation/coverage/v8
           cp -a tmp/test/report/. tmp/validation/test-report/
           cp -a tmp/test/badges tmp/validation/test-report/
+          # Empty generated folders have no upload payload; retain every file for strict verification.
+          find tmp/validation/bundle tmp/validation/coverage tmp/validation/test-report \
+            -mindepth 1 -depth -type d -empty -delete
           node .github/scripts/validation-artifacts.mjs create "$REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$PR_HEAD_SHA" "$TESTED_SHA" tmp/validation/bundle tmp/validation/coverage tmp/validation/test-report/index.html tmp/validation/validation-manifest.json
           printf 'run_attempt=%s\n' "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
         id: validation-proof

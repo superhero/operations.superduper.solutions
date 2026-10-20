@@ -29,6 +29,7 @@ Feature: Carry complete validation through integration and release
     And exactly one fresh proof is published after all validation artifacts
     And release artifacts remain bound to the exact tested checkout
     And report badges are generated from passing results and travel with validated reports
+    And artifact staging removes only empty generated directories
     Examples:
       | target  |
       | release |

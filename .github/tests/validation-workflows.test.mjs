@@ -3,9 +3,12 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readlinkSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { parseDocument } from "yaml";
+import { inventory } from "../scripts/validation-artifacts.mjs";
 
 const requiredSuites = [
   "test:automation", "typecheck", "test:source:coverage", "test:runner", "test:coverage",
@@ -218,6 +221,59 @@ Then("exactly one fresh proof is published after all validation artifacts", func
     assert.ok(steps.indexOf(artifact) < steps.indexOf(upload), `${name} must upload successfully before proof publication`);
     requiresSuccess(artifact);
   }
+});
+
+Then("artifact staging removes only empty generated directories", function ()
+{
+  const { create } = validationProof(this.validationWorkflow.jobs);
+  const proof = create.run.indexOf("node .github/scripts/validation-artifacts.mjs create");
+  assert.ok(proof > 0, "The real staging commands must precede proof creation");
+  const root = mkdtempSync(join(tmpdir(), "operations-artifact-staging-"));
+  const write = (path, value) => {
+    const destination = join(root, path);
+    mkdirSync(dirname(destination), { recursive: true });
+    writeFileSync(destination, value);
+  };
+  const entries = directory => Object.entries(inventory(join(root, directory))).sort();
+  try
+  {
+    write("dist/index.html", "tested bundle\n");
+    write("dist/_headers", "tested headers\n");
+    write("tmp/test/coverage/index.html", "source coverage\n");
+    write("tmp/test/coverage/coverage-summary.json", "source coverage totals\n");
+    write("tmp/test/report/index.html", "combined report\n");
+    write("tmp/test/report/ui/assets/index.js", "tested report JavaScript\n");
+    write("tmp/test/report/coverage/index.html", "merged coverage\n");
+    write("tmp/test/badges/test-coverage.svg", "tested coverage badge\n");
+    write("tmp/test/badges/test-scenarios.svg", "tested scenario badge\n");
+    const expected = {
+      bundle: entries("dist"), coverage: entries("tmp/test/coverage"),
+      "test-report": [...entries("tmp/test/report"), ...entries("tmp/test/badges")
+        .map(([path, hash]) => [`badges/${path}`, hash])].sort(),
+    };
+    for (const directory of ["dist/assets", "tmp/test/coverage/cache/empty",
+      "tmp/test/report/ui/empty", "tmp/test/badges/pending"])
+      mkdirSync(join(root, directory), { recursive: true });
+    write("tmp/test/coverage/v8/raw.json", "unpublished raw counters\n");
+    const outside = join(root, "outside/empty");
+    mkdirSync(outside, { recursive: true });
+    symlinkSync(outside, join(root, "tmp/test/report/linked-output"));
+    const result = spawnSync("bash", ["-euc", create.run.slice(0, proof)],
+      { cwd: root, encoding: "utf8", timeout: 30000 });
+    assert.equal(result.status, 0, result.stderr);
+    const link = join(root, "tmp/validation/test-report/linked-output");
+    assert.ok(lstatSync(link).isSymbolicLink(), "Staging must leave symlinks for strict verification");
+    assert.equal(readlinkSync(link), outside);
+    assert.ok(existsSync(outside), "Empty directories outside the staged outputs must remain intact");
+    rmSync(link);
+    for (const name of validationArtifacts)
+      assert.deepEqual(entries(`tmp/validation/${name}`), expected[name], `${name} must preserve every file and hash`);
+    symlinkSync(outside, link);
+    assert.throws(() => inventory(join(root, "tmp/validation/test-report")), /symlink/);
+    assert.ok(existsSync(join(root, "tmp/test/coverage/v8/raw.json")), "Staging must not alter original evidence");
+    assert.equal(existsSync(join(root, "tmp/validation/coverage/v8")), false);
+  }
+  finally { rmSync(root, { recursive: true, force: true }); }
 });
 
 Then("release artifacts remain bound to the exact tested checkout", function ()
