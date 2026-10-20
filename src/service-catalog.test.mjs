@@ -36,10 +36,9 @@ Then('Google product catalogs retain these collections and prepare scoped Gmail 
     for (const operation of catalog.operations) {
       const raw = document.paths[operation.path][operation.method.toLowerCase()];
       if (raw['x-upstream-security']) {
-        assert.deepEqual(raw.security, raw['x-upstream-security'].map(requirement => {
-          const { Oauth2: _implicit, ...rest } = requirement;
-          return Object.hasOwn(requirement, 'Oauth2c') ? rest : requirement;
-        }));
+        assert.deepEqual(raw.security, raw['x-upstream-security'].flatMap(({ Oauth2, Oauth2c, ...required }) => [
+          { ...required, Oauth2 }, { ...required, Oauth2c },
+        ]), `${operation.id}: both published grants remain separate alternatives with their original scopes.`);
       }
       if (operation.unavailableReason) {
         assert.match(operation.unavailableReason, /unsupported binary or streaming media type/, operation.id);
@@ -48,9 +47,9 @@ Then('Google product catalogs retain these collections and prepare scoped Gmail 
       supported++;
       const declaration = raw.security ?? document.security;
       if (declaration?.length && declaration.every(alternative => Object.keys(alternative).length)) {
-        assert.ok(operation.security?.every(alternative => alternative.length > 0), operation.id);
+        assert.ok(operation.security?.every(alternative => alternative.length === 1), operation.id);
         assert.deepEqual(operation.oauthScopes, declaration, `${operation.id}: every scope alternative stays in the approval.`);
-        assert.ok(operation.security.flat().every(scheme => scheme.name === 'Oauth2c' && scheme.kind === 'bearer'
+        assert.ok(operation.security.flat().every(scheme => ['Oauth2', 'Oauth2c'].includes(scheme.name) && scheme.kind === 'bearer'
           && scheme.header === 'Authorization'), operation.id);
       }
     }
@@ -65,28 +64,30 @@ Then('Google product catalogs retain these collections and prepare scoped Gmail 
     const operation = catalog.operations.find(operation => operation.id === `${id}:${operationId}`);
     assert.equal(operation.unavailableReason, undefined);
     const descriptor = await approvedOperation(operation, operationServerUrl(document, operation));
-    const alternative = operation.oauthScopes.findIndex(option => option.Oauth2c?.some(scope => scope.endsWith('.readonly')));
-    assert.ok(alternative >= 0, `${id}: a read-only scope option stays available.`);
-    const token = 'synthetic-google-access-token';
-    let requests = 0;
-    const options = { assertCurrent() {}, fetchRequest: async (url, request) => {
-      requests++;
-      assert.equal(String(url), expectedUrl);
-      assert.equal(request.headers.get('Authorization'), `Bearer ${token}`);
-      assert.ok(!String(url).includes(token));
-      return new Response(JSON.stringify(response), { headers: { 'Content-Type': 'application/json' } });
-    } };
-    const binding = { fingerprint: descriptor.fingerprint, alternative, credentials: { Oauth2c: 'google-token' } };
-    await assert.rejects(executeCredentialed(descriptor, values, binding, [], options));
-    assert.equal(requests, 0, 'Private Google operations cannot run without their bound token.');
-    const result = await executeCredentialed(descriptor, values, binding,
-      [{ id: 'google-token', label: 'Google access token', kind: 'secret', value: token }], options);
-    assert.equal(requests, 1);
-    assert.deepEqual(result.response.body, response);
-    assert.ok(!JSON.stringify(result).includes(token));
-    const changed = structuredClone(operation);
-    changed.oauthScopes[alternative].Oauth2c.push('https://www.googleapis.com/auth/additional');
-    assert.notEqual((await approvedOperation(changed, operationServerUrl(document, operation))).fingerprint, descriptor.fingerprint);
+    for (const scheme of ['Oauth2', 'Oauth2c']) {
+      const alternative = operation.oauthScopes.findIndex(option => option[scheme]?.some(scope => scope.endsWith('.readonly')));
+      assert.ok(alternative >= 0, `${id}: ${scheme} retains a read-only scope option.`);
+      const token = 'synthetic-google-access-token';
+      let requests = 0;
+      const options = { assertCurrent() {}, fetchRequest: async (url, request) => {
+        requests++;
+        assert.equal(String(url), expectedUrl);
+        assert.equal(request.headers.get('Authorization'), `Bearer ${token}`);
+        assert.ok(!String(url).includes(token));
+        return new Response(JSON.stringify(response), { headers: { 'Content-Type': 'application/json' } });
+      } };
+      const binding = { fingerprint: descriptor.fingerprint, alternative, credentials: { [scheme]: 'google-token' } };
+      await assert.rejects(executeCredentialed(descriptor, values, binding, [], options));
+      assert.equal(requests, 0, 'Private Google operations cannot run without their bound token.');
+      const result = await executeCredentialed(descriptor, values, binding,
+        [{ id: 'google-token', label: 'Google access token', kind: 'secret', value: token }], options);
+      assert.equal(requests, 1);
+      assert.deepEqual(result.response.body, response);
+      assert.ok(!JSON.stringify(result).includes(token));
+      const changed = structuredClone(operation);
+      changed.oauthScopes[alternative][scheme].push('https://www.googleapis.com/auth/additional');
+      assert.notEqual((await approvedOperation(changed, operationServerUrl(document, operation))).fingerprint, descriptor.fingerprint);
+    }
   }
 });
 
