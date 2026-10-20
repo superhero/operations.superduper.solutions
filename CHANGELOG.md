@@ -565,6 +565,22 @@ normalization, corrected cloud packs and idempotent schema patches pass.
 
 ```
 
+<!-- changelog-commit:48437fb6af3e24619b8ae57aeb7c960d084452b6 -->
+### Commit [`48437fb`](https://github.com/superhero/operations.superduper.solutions/commit/48437fb6af3e24619b8ae57aeb7c960d084452b6)
+
+```text
+test(schemas): cover revision integrity and lifecycle boundaries
+
+Exercise deletion protection, empty generic operation tags, prefix-name
+collisions, concurrent additions and null versus missing diff values.
+Cover correction names, inert malformed paths, no-patch identity and
+reviewed revision size/hash rejection without changing the source data.
+
+Validation: 37 focused Gherkin scenarios pass with 100% statements,
+branches, functions and lines across the six affected schema helpers.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.55
