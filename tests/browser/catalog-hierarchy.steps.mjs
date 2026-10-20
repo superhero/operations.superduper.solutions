@@ -7,8 +7,9 @@ import { expect } from '@playwright/test';
 import { openCatalog, searchOperations, setMode } from './workspace.steps.mjs';
 import { operations } from '../../src/lib/catalog.ts';
 import { catalogs } from '../../src/lib/catalog-registry.ts';
+import { operationNavigation, operationResourceGroups, navigationOperations } from '../../src/lib/operation-navigation.ts';
 import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };
-import { catalogSchemaHeading } from './catalog-hierarchy.fixture.mjs';
+import { catalogSchemaHeading, catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
 import { expandSchemaCard } from './schema-card.fixture.mjs';
 
 const catalog = page => page.getByRole('navigation', { name: 'Operation catalog', exact: true });
@@ -39,6 +40,7 @@ Then('schema name groups preserve counts search and operation selection', async 
   await expect(storage.locator('.catalog-count')).toHaveText(String(descriptors.find(source => source.id === 'gcp-storage').operations));
   await storage.press('Enter');
   await expand(page, 'gcp-storage:tag:buckets');
+  await catalogResourcePath(page, 'gcp-storage:tag:buckets', ['b']);
   const list = operation(page, 'gcp-storage:storage.buckets.list');
   await expect(list).toBeVisible();
   await page.screenshot({ path: `${this.artifactDirectory}/schema-groups-${page.viewportSize().width}.png` });
@@ -121,26 +123,33 @@ Then('catalog groups count their operations and keep one open descendant path', 
     await expand(page, root.id);
     const expectedIds = operations.filter(operation => operation.id.startsWith(`${source.id}:`)).map(operation => operation.id);
     await expect(heading(page, root.id).locator('.catalog-count')).toHaveText(String(expectedIds.length));
-    for (const group of root.children) {
+    const index = operationNavigation(operations);
+    const total = group => (group.operationIds?.length ?? 0) + (group.children ?? []).reduce((sum, child) => sum + total(child), 0);
+    async function inspect(group) {
       await expand(page, group.id, root.id);
-      await expect(branch(page, group.id, root.id).locator('[data-operation-id]')).toHaveCount(group.operationIds.length);
-      await expect(heading(page, group.id, root.id).locator('.catalog-count')).toHaveText(String(group.operationIds.length));
-      await expect(heading(page, group.id, root.id)).toHaveAccessibleName(`${group.name} group, ${group.operationIds.length} operations`);
+      await expect(heading(page, group.id, root.id).locator('.catalog-count')).toHaveText(String(total(group)));
+      await expect(heading(page, group.id, root.id)).toHaveAccessibleName(`${group.name} group, ${total(group)} operations`);
+      await expect(branch(page, group.id, root.id).locator('[data-operation-id]')).toHaveCount(navigationOperations(group.operationIds ?? [], index, null).length);
+      for (const child of group.children ?? []) await inspect(child);
     }
+    for (const group of operationResourceGroups(root.children, index)) await inspect(group);
   }
   await expand(page, 'projects');
   await expect(heading(page, 'httpbin')).toHaveAttribute('aria-expanded', 'false');
   await expand(page, 'overview');
+  await catalogResourcePath(page, 'overview', ['projects']);
   await expect(operation(page, 'demo:listProjects')).toBeVisible();
   await expect(operation(page, 'demo:getProject')).toBeVisible();
   await expand(page, 'tasks');
   await expect(heading(page, 'overview')).toHaveAttribute('aria-expanded', 'false');
   await expect(operation(page, 'demo:getProject')).toBeHidden();
+  await catalogResourcePath(page, 'tasks', ['projects', 'tasks']);
   await expect(operation(page, 'demo:createTask')).toBeVisible();
   await expand(page, 'httpbin');
   await expect(heading(page, 'projects')).toHaveAttribute('aria-expanded', 'false');
   await expect(operation(page, 'demo:createTask')).toBeHidden();
   await expand(page, 'methods', 'httpbin');
+  await catalogResourcePath(page, 'methods', ['anything', 'methods', 'get'], 'httpbin');
   await expect(operation(page, 'httpbin:echoGet')).toBeVisible();
   await expand(page, 'projects');
   await expect(heading(page, 'httpbin')).toHaveAttribute('aria-expanded', 'false');
@@ -158,6 +167,7 @@ Then('nested catalog entries add operations to the workflow with useful focus', 
   await openCatalog(page);
   await expand(page, 'projects');
   await expand(page, 'tasks');
+  await catalogResourcePath(page, 'tasks', ['projects', 'tasks']);
   await expect(operation(page, 'demo:createTask')).toHaveAccessibleName('Add to workflow: Example POST body');
   await operation(page, 'demo:createTask').press('Enter');
   const nodes = page.locator('.svelte-flow__node-operation');
@@ -167,6 +177,7 @@ Then('nested catalog entries add operations to the workflow with useful focus', 
   await openCatalog(page);
   await expand(page, 'projects');
   await expand(page, 'overview');
+  await catalogResourcePath(page, 'overview', ['projects']);
   await expect(operation(page, 'demo:listProjects')).toHaveAccessibleName('Add to workflow: Example array response');
   await operation(page, 'demo:listProjects').press('Space');
   await expect(nodes).toHaveCount(2);

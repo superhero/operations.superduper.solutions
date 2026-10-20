@@ -10,6 +10,7 @@
   import CatalogHelp from "./CatalogHelp.svelte";
   import { catalogs, type CatalogGroup } from "$lib/catalog-registry.ts";
   import { catalogHierarchy } from "$lib/catalog-hierarchy.ts";
+  import { operationNavigation, operationResourceGroups, navigationOperations } from "$lib/operation-navigation.ts";
   import { evaluateOperationsAsync } from "$lib/operation-matching-client.ts";
   import type { OperationMatch } from "$lib/matching.ts";
   let { closeMenuWithEscape = true, open = $bindable(false), modal = $bindable(false), documentModal = false, operations, catalogGroups, evaluationDetails = false, workflows, workflowError, onWorkflowSelect, onWorkflowRetry, onSelect }:
@@ -36,15 +37,16 @@
   let matchingController: AbortController | undefined;
   let matchingTimer: ReturnType<typeof setTimeout> | undefined;
   let matchingRevision = 0;
-  const matchingIds = $derived(prompt.trim() ? new Set(evaluation?.results.map(result => result.operation.id) ?? []) : null);
+  const matchingIds = $derived(prompt.trim() ? new Map(evaluation?.results.map((result, rank) => [result.operation.id, rank]) ?? []) : null);
   let destination: (() => void) | null = null;
   let restoreNavigationFocus = false;
+  const operationIndex = $derived(operationNavigation(operations));
   const groups: CatalogGroup[] = $derived.by(() => {
     // The operation snapshot changes together with the registered source documents.
     void operations;
-    return catalogHierarchy(catalogGroups ?? catalogs.flatMap(catalog => catalog.groups));
+    return operationResourceGroups(catalogHierarchy(catalogGroups ?? catalogs.flatMap(catalog => catalog.groups)), operationIndex);
   });
-  const indexedOperations = $derived(new Map(operations.map(operation => [operation.id, operation])));
+  const indexedOperations = $derived(operationIndex.byId);
   const counts = $derived.by(() => {
     const counts = new Map<CatalogGroup, { all: number; visible: number }>();
     function count(group: CatalogGroup) {
@@ -59,8 +61,7 @@
     return counts;
   });
   function groupOperations(group: CatalogGroup, filtered = true) {
-    return (group.operationIds ?? []).map(id => indexedOperations.get(id))
-      .filter((operation): operation is Operation => !!operation && (!filtered || !matchingIds || matchingIds.has(operation.id)));
+    return navigationOperations(group.operationIds ?? [], operationIndex, filtered ? matchingIds : null);
   }
   function groupCount(group: CatalogGroup, filtered = false): number {
     const count = counts.get(group);

@@ -45,6 +45,27 @@ summary metadata so disabled schemas need no additional document reads.
 
 ```
 
+<!-- changelog-commit:7e738edd0726f04f687d4c2eab88c31a915aaf30 -->
+### Commit [`7e738ed`](https://github.com/superhero/operations.superduper.solutions/commit/7e738edd0726f04f687d4c2eab88c31a915aaf30)
+
+```text
+feat(catalog): group resources and select operation API versions
+
+Nest operations under their literal URL resources, omitting version segments
+and pure path parameters from navigation. Share one menu action for versions
+of the same schema, method and URI template; search selects its best match.
+
+Load the chosen canonical contract from a workflow-node version selector.
+Preserve compatible mappings, stable panel identities, hidden branches and
+legacy control links while keeping concrete operation IDs in saved history.
+Discard delayed replacements after their owner or source changes.
+
+Cover resource grouping, version isolation, canonical execution, desktop and
+mobile browsing, history and portability with Gherkin scenarios. Adapt the
+existing navigation journeys to traverse the resource hierarchy.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.55

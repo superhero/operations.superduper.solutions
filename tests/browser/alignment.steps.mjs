@@ -8,6 +8,7 @@ import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { openCatalog, closeCatalog, chooseCatalogOperation, field, fillField, workflow, workflowAction, workspace, operationNodes, connections, searchOperations } from './workspace.steps.mjs';
 import { expectThemeColors } from './theme-colors.mjs';
+import { catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
 
 // Capture before input so a busy browser cannot finish short motion before
 // Playwright sees it. Keep the real animation running with only its clock held.
@@ -53,6 +54,7 @@ Then('catalog paths, focus and tooltip dismissal behave consistently', async fun
   const tasks = page.locator('[data-catalog-group="tasks"] > .catalog-group > summary');
   await root.click();
   await overview.click();
+  await catalogResourcePath(page, 'overview', ['projects']);
   await page.getByRole('button', { name: 'Add to workflow: Example array response', exact: true }).click();
   await expect(operationNodes(page, 'Example array response')).toBeFocused();
   await page.getByRole('button', { name: 'Add to workflow: Example object response', exact: true }).click();

@@ -44,6 +44,23 @@ categories alongside the nested schemas, such as Confluence Cloud and Cloud v1.
 Grouping uses the current labels and saved order without changing schema IDs,
 documents or operation categories; closed branches remain lazy.
 
+Within the existing operation categories, literal URL resources form nested
+groups. For example, `/v1/foo/{id}/bar` appears under **foo → bar**: version
+segments such as `v1`, `v2`, `version1` and `version-2`, path parameters and query
+strings do not become headings. Parameters remain operation inputs. Resource
+names such as `versions` are retained.
+
+Versions of the same method and endpoint in one schema share a menu action.
+The workflow node's **API version** selector loads the concrete version's inputs,
+outputs and request path; compatible mappings and panel positions are retained.
+An unfiltered menu uses the first supported declared version, and search chooses
+the best matching supported version. Unsupported contracts remain guarded.
+Different schemas, URI templates and query variants stay separate. Counts retain
+the number of concrete operations, including versions. Saved workflows and
+history keep the original version-specific operation IDs; navigation never
+rewrites source paths. Legacy owner-to-owner workflows retain that representation
+when their API version changes.
+
 ## Operation identity
 
 Group entries refer to qualified operation IDs such as `demo:listProjects`,

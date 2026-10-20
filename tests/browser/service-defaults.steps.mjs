@@ -9,7 +9,7 @@ import sources from '../../build/service-schemas.sources.json' with { type: 'jso
 import { bundledCatalogs } from '../../src/lib/catalog-registry.ts';
 import { setMode, openCatalog, closeCatalog, workflowAction, workspace, fillField } from './workspace.steps.mjs';
 import { expandSchemaCard } from './schema-card.fixture.mjs';
-import { catalogSchemaHeading } from './catalog-hierarchy.fixture.mjs';
+import { catalogSchemaHeading, catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
 
 const card = (page, id) => page.locator(`[data-schema-id="${id}"]`);
 async function schemas(page) {
@@ -52,6 +52,7 @@ Then('FRED observations and ALFRED vintages are available in separate catalogs a
     if (await root.getAttribute('aria-expanded') !== 'true') await root.click();
     const series = page.locator(`[data-catalog-group="${id}:tag:Series"] > .catalog-group > summary`);
     if (await series.getAttribute('aria-expanded') !== 'true') await series.click();
+    await catalogResourcePath(page, `${id}:tag:Series`, ['fred', 'series', id === 'fred' ? 'observations' : 'vintagedates']);
     const entry = page.locator(`[data-operation-id="${id}:${operation}"] > button`);
     await expect(entry).toBeEnabled();
     await entry.click();
@@ -128,6 +129,7 @@ Then('all Atlassian catalogs share the provider prefix and retain a newly disabl
   }
   await (await catalogSchemaHeading(page, 'Atlassian / Statuspage')).click();
   await page.locator('[data-catalog-group="statuspage:tag:pages"] > .catalog-group > summary').click();
+  await catalogResourcePath(page, 'statuspage:tag:pages', ['pages']);
   const operation = page.locator('[data-operation-id="statuspage:GET /pages"] > button');
   await expect(operation).toBeEnabled();
   await operation.click();
@@ -238,12 +240,8 @@ Then('all service schemas appear and preserve disablement renames and deletions 
   await openCatalog(page);
   const root = page.locator('[data-catalog-group="ollama"] > .catalog-group > summary');
   await root.click();
-  const groups = page.locator('[data-catalog-group="ollama"] .catalog-children > .catalog-branch > .catalog-group > summary');
-  for (const heading of await groups.all()) {
-    await heading.click();
-    const entry = page.locator('[data-operation-id="ollama:generate"] > button');
-    if (await entry.isVisible()) { await entry.click(); break; }
-  }
+  await catalogResourcePath(page, 'ollama:tag:Operations', ['api', 'generate']);
+  await page.locator('[data-operation-id="ollama:generate"] > button').click();
   await expect(page.locator('.svelte-flow__node-operation')).toContainText('Generate a response');
   await closeCatalog(page);
   await workflowAction(page, 'Run');

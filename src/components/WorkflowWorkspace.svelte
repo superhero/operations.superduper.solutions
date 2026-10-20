@@ -18,6 +18,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { catalogForOperation } from "$lib/catalog-registry.ts";
   import { createWorkflowSchemaLease, hydrateOperation, getSchemaLibrary } from "$lib/schema-library.ts";
   import { workflowOperationIds } from "$lib/schema-models.ts";
+  import { operationNavigation } from "$lib/operation-navigation.ts";
+  import { updateOperationVersion } from "$lib/workflow-operation-version.ts";
   import { portableWorkflowDocument, parseWorkflowDocument, validateWorkflowDocument, maxWorkflowFileSize, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowDocumentEdge, type WorkflowField, type SwitchGate, type CastData } from "$lib/workflow-document.ts";
   import { workflowRepository } from "$lib/workflow-repository-client.ts";
   import type { WorkflowRepositoryState, WorkflowRevision } from "$lib/workflow-repository.ts";
@@ -150,6 +152,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const branches = $derived(schemaBranches(nodes, edges));
   const inputTypes = $derived(routingInputTypes(nodes, edges));
   const workflowNames = $derived(new Map(documents.map(document => [document.id, document.name])));
+  const operationIndex = $derived(operationNavigation(getSchemaLibrary().operations));
+  let changingOperationVersion = $state(false);
+
+  setContext("workflow-operation-version", {
+    choices: (operationId: string) => (operationIndex.variants.get(operationId) ?? []).map(operation => ({
+      value: operation.id, label: operationIndex.paths.get(operation.id)!.version,
+      disabled: Boolean(operation.unavailableReason),
+    })),
+    pending: () => changingOperationVersion,
+    active: () => keyboardActive,
+    select: changeOperationVersion,
+  });
 
   setContext("workflow-branches", (nodeId: string) => branches.get(nodeId));
   // Reference titles follow live names without changing their embedded definitions.
@@ -569,6 +583,34 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     }
     catch (failure) { describeFailure(`Could not add “${operation.name}”`, failure); }
     finally { pinOperationModels(owner); }
+  }
+
+  async function changeOperationVersion(nodeId: string, operationId: string) {
+    if (!keyboardActive || changingOperationVersion) return;
+    const node = nodes.find(node => node.id === nodeId);
+    if (!node || node.type !== "operation" || node.data.operationId === operationId) return;
+    const previousId = node.data.operationId;
+    const target = operationIndex.variants.get(previousId)?.find(operation => operation.id === operationId && !operation.unavailableReason);
+    if (!target) return;
+    const revision = getSchemaLibrary().revision;
+    const workflowId = id;
+    const owner = {};
+    changingOperationVersion = true;
+    pinOperationModels(owner, new Set([operationId]));
+    try {
+      const canonical = await hydrateOperation(operationId);
+      const current = nodes.find(node => node.id === nodeId);
+      if (!alive || !keyboardActive || id !== workflowId || current?.type !== "operation" ||
+        current.data !== node.data || getSchemaLibrary().revision !== revision) return;
+      const graph = updateOperationVersion(nodeId, canonical, getOperationReport(canonical).schema, nodes, edges);
+      const nextVersion = Math.max(version, 2) as 2 | 3;
+      validateWorkflowDocument({ ...documentValue(), version: nextVersion, ...graph });
+      version = nextVersion;
+      applyPropertyGraph(graph);
+      await schemaLease.update(documentValue());
+      error = "";
+    } catch (failure) { describeFailure("Could not change API version", failure); }
+    finally { changingOperationVersion = false; pinOperationModels(owner); }
   }
 
   async function addUtility(type: "switch" | "cast" | "comment" | "vault" | "file") {
