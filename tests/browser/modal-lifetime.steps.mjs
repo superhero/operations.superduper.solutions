@@ -139,18 +139,27 @@ Then('dismissing mobile navigation preserves reading position with {string} moti
       .map(animation => animation.finished.catch(() => {})));
   });
   const drawer = page.locator('.settings-drawer');
-  const readingPosition = await drawer.evaluate(element => Math.min(250, element.scrollHeight - element.clientHeight));
-  assert.ok(readingPosition > 0, 'The fixture must provide a nonzero reading position to preserve.');
-  await drawer.evaluate((element, top) => element.scrollTo({ top, behavior: 'instant' }), readingPosition);
-  await expect.poll(() => drawer.evaluate(element => element.scrollTop)).toBe(readingPosition);
-  await setMode(page, 'workflow');
-  await openCatalog(page);
-  await page.keyboard.press('Escape');
-  await expect(sheet(page)).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Open navigation', exact: true })).toBeFocused();
-  await setMode(page, 'settings');
-  assert.equal(await drawer.evaluate(element => element.scrollTop), readingPosition);
-
+  const positions = await drawer.evaluate(element => {
+    const maximum = element.scrollHeight - element.clientHeight;
+    return [Math.min(250, maximum), Math.max(0, maximum - 1)];
+  });
+  for (const readingPosition of positions) {
+    assert.ok(readingPosition > 0, 'The fixture must provide a nonzero reading position to preserve.');
+    await drawer.evaluate((element, top) => element.scrollTo({ top, behavior: 'instant' }), readingPosition);
+    await expect.poll(() => drawer.evaluate(element => element.scrollTop)).toBe(readingPosition);
+    await setMode(page, 'workflow');
+    await openCatalog(page);
+    await page.keyboard.press('Escape');
+    await expect(sheet(page)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Open navigation', exact: true })).toBeFocused();
+    await setMode(page, 'settings');
+    await drawer.evaluate(async element => {
+      await Promise.allSettled(element.getAnimations({ subtree: true })
+        .filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity)
+        .map(animation => animation.finished));
+    });
+    await expect.poll(() => drawer.evaluate(element => element.scrollTop)).toBe(readingPosition);
+  }
 });
 
 Then('animated navigation completes dismissal before changing workspace or adding an operation', async function () {

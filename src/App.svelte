@@ -78,6 +78,8 @@
     return () => media.removeEventListener("change", update);
   });
   let settingsDrawer: HTMLElement;
+  let settingsContent: HTMLElement;
+  let settingsContentHeight = $state<number>();
   $effect(() => {
     if (!settingsPresent) return;
     const root = document.documentElement;
@@ -118,6 +120,9 @@
     const request = ++modeRequest;
     if (mode === "workflow" && !await workflowWorkspace.flushPendingChanges()) return;
     if (request !== modeRequest) return;
+    // Lazy sections collapse while inactive. Retain their space and suspend
+    // scroll anchoring until they reopen so neither can move the reading position.
+    if (mode === "settings") settingsContentHeight = settingsContent.getBoundingClientRect().height;
     if (next === "settings") settingsPresent = true;
     mode = next;
     if (next === "settings" || matchMedia("(max-width: 899px)").matches) navigationOpen = false;
@@ -129,6 +134,13 @@
       await tick();
     }
     await focusDestination();
+    if (next === "settings") {
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      await Promise.allSettled(settingsDrawer.getAnimations({ subtree: true })
+        .filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity)
+        .map(animation => animation.finished));
+      if (request === modeRequest) settingsContentHeight = undefined;
+    }
   }
 
   async function toggleSettings() {
@@ -400,7 +412,7 @@
   <div class="settings-backdrop" class:open={mode === "settings"} aria-hidden="true"></div>
 {/if}
 <div class="settings-drawer-host">
-  <aside id="settings-panel" bind:this={settingsDrawer} class="settings-drawer" class:open={mode === "settings"} aria-label="Application settings" inert={mode !== "settings"}>
+  <aside id="settings-panel" bind:this={settingsDrawer} class="settings-drawer" class:open={mode === "settings"} class:preserving-scroll={settingsContentHeight !== undefined} aria-label="Application settings" inert={mode !== "settings"}>
     {#if compactSettings}
       <div class="settings-mobile-header">
         <HintButton tooltipSide="left" label="Close settings" aria-label="Close settings" onclick={toggleSettings}>
@@ -408,7 +420,8 @@
         </HintButton>
       </div>
     {/if}
-    <SettingsWorkspace active={settingsPresent} bind:this={settingsWorkspace} {dark} onTheme={toggleTheme} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
+    <div bind:this={settingsContent} style:min-height={settingsContentHeight === undefined ? undefined : `${settingsContentHeight}px`}>
+      <SettingsWorkspace active={settingsPresent} bind:this={settingsWorkspace} {dark} onTheme={toggleTheme} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
           {toolbarButtons} {toolbarButtonsError} onToolbarButtonsChange={selectToolbarButtons} onRetryToolbarButtons={() => selectToolbarButtons(toolbarButtons)}
           {keybindings} {keybindingsError} onKeybindingsChange={selectKeybindings} onRetryKeybindings={() => selectKeybindings(keybindings)}
           {locale} {localeError} onLocaleChange={selectLocale} onRetryLocale={() => selectLocale(locale)}
@@ -416,6 +429,7 @@
           {developerToolbar} {developerToolbarError} onDeveloperToolbarChange={selectDeveloperToolbar}
           {evaluationDetails} {evaluationDetailsError} onEvaluationDetailsChange={selectEvaluationDetails}
           onWorkflowDefaultsChange={selectWorkflowDefaults} onRetryWorkflowDefaults={() => selectWorkflowDefaults(workflowDefaults)} />
+    </div>
   </aside>
 </div>
 </Tooltip.Provider>
@@ -437,6 +451,7 @@
   .settings-backdrop.open { opacity: 1; }
   .settings-drawer-host { position: fixed; z-index: 25; top: 0; right: 0; bottom: 0; width: var(--settings-drawer-width); overflow: clip; pointer-events: none; }
   .settings-drawer { --app-header-height: 0px; height: 100%; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; pointer-events: auto; background: var(--color-surface); border-left: 1px solid var(--color-border); transform: translateX(100%); visibility: hidden; transition: transform 200ms ease-in-out, visibility 0s linear 200ms; }
+  .settings-drawer.preserving-scroll { overflow-anchor: none; }
   .settings-mobile-header { position: sticky; top: 0; z-index: 20; display: flex; justify-content: flex-end; align-items: center; height: 64px; padding-inline: var(--content-padding); background: var(--color-surface); }
   .settings-mobile-header :global(button) { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; background: transparent; color: var(--color-foreground); }
   @media (max-width: 1149px) {
