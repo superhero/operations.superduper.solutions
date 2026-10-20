@@ -2,6 +2,22 @@
 
 ## Latest
 
+<!-- changelog-commit:fbc4b203069864002bf39ac8f036c134c5d204e7 -->
+### Commit [`fbc4b20`](https://github.com/superhero/operations.superduper.solutions/commit/fbc4b203069864002bf39ac8f036c134c5d204e7)
+
+```text
+feat(catalog): group schemas by slash-separated names
+
+Turn schema display-name paths into nested provider and product branches
+in the operation menu. Keep source IDs and operation categories intact,
+including schemas that also serve as prefixes of other schema names.
+
+Retain saved ordering, enabled-schema counts, lazy disclosures and search
+expansion. Cover desktop and mobile browsing, keyboard selection and
+persistent schema name and enablement changes with Gherkin scenarios.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.55

@@ -36,6 +36,14 @@ ignoring case. The older implicit examples-first order is upgraded on startup;
 saved custom arrangements remain intact. This changes schema ordering only,
 leaving operations and JSON properties in their existing order.
 
+In the operation menu, slash-separated schema names form nested groups. For
+example, `Google / Cloud / Storage` appears under **Google → Cloud → Storage**.
+Each group counts operations in its enabled descendant schemas, and search
+opens matching paths. A schema that is also a name prefix keeps its own operation
+categories alongside the nested schemas, such as Confluence Cloud and Cloud v1.
+Grouping uses the current labels and saved order without changing schema IDs,
+documents or operation categories; closed branches remain lazy.
+
 ## Operation identity
 
 Group entries refer to qualified operation IDs such as `demo:listProjects`,
