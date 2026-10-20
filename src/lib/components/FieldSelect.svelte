@@ -6,11 +6,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <script lang="ts">
   import { Select } from "bits-ui";
+  import type { Snippet } from "svelte";
   import MaterialIcon from "./MaterialIcon.svelte";
 
-  let { id, label, value, options, includePlaceholder = true, required = false, disabled = false, invalid = false, active = true, describedBy, portalZIndex = 40, onValueChange }:
+  let { id, label, value, options, includePlaceholder = true, required = false, disabled = false, invalid = false, active = true, describedBy, portalZIndex = 40, renderLabel, onValueChange }:
     { id: string; label: string; value: string; options: Array<string | number | boolean | null | { value: string; label: string }>; includePlaceholder?: boolean; required?: boolean;
-      disabled?: boolean; invalid?: boolean; active?: boolean; describedBy?: string | undefined; portalZIndex?: number; onValueChange: (value: string) => void } = $props();
+      disabled?: boolean; invalid?: boolean; active?: boolean; describedBy?: string | undefined; portalZIndex?: number;
+      renderLabel?: Snippet<[{ value: string; label: string }]>; onValueChange: (value: string) => void } = $props();
   let open = $state(false);
   const items = $derived([
     ...(includePlaceholder ? [{ value: "", label: "Select…" }] : []),
@@ -18,14 +20,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       ? option : { value: String(option), label: String(option) })
       .filter(option => option.value !== "").map(option => [option.value, option])).values()
   ]);
+  const selectedItem = $derived(items.find(item => item.value === value));
 
   $effect(() => { if (!active || disabled) open = false; });
 </script>
 
+{#snippet itemLabel(item: { value: string; label: string })}{#if renderLabel && item.value}{@render renderLabel(item)}{:else}{item.label}{/if}{/snippet}
+
 <Select.Root type="single" {value} {onValueChange} name={id} {required} {disabled} {items} bind:open>
   <Select.Trigger {id} class="field-select-trigger" type="button" role="combobox" aria-label={label}
     aria-required={required} aria-invalid={invalid || undefined} aria-describedby={describedBy}>
-    <span class="field-select-value" class:placeholder={value === ""}>{items.find(item => item.value === value)?.label ?? (value || "Select…")}</span>
+    <span class="field-select-value" class:placeholder={value === ""}>{#if selectedItem}{@render itemLabel(selectedItem)}{:else}{value || "Select…"}{/if}</span>
     <MaterialIcon name="expand_more" size={20} />
   </Select.Trigger>
   <Select.Portal>
@@ -34,7 +39,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {#each items as item (item.value)}
           <Select.Item value={item.value} label={item.label} class="field-select-option">
             {#snippet children({ selected })}
-              <span class="field-select-option-label" class:placeholder={item.value === ""}>{item.label}</span>
+              <span class="field-select-option-label" class:placeholder={item.value === ""}>{@render itemLabel(item)}</span>
               <span class="field-select-check" aria-hidden="true">{#if selected}<MaterialIcon name="check" size={18} />{/if}</span>
             {/snippet}
           </Select.Item>

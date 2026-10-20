@@ -139,6 +139,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 </script>
 
+{#snippet commitLabel(item: { value: string; label: string })}<span class="commit-hash">{item.value.slice(0, 7)}</span><span class="commit-subject">{item.label.slice(7)}</span>{/snippet}
+
 {#snippet fields(changes: SchemaRevisionDiff["changes"])}
   {#if diff}
     {#key `${diff.revision.oid}:${diff.base?.oid ?? ""}`}
@@ -190,11 +192,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <section class="revision-diff" aria-label="Schema changes" aria-busy={loadingDiff}
           data-revision={diff?.revision.oid} data-base={diff?.base?.oid}>
           <div class="commit-selectors">
-            <FieldSelect id={`schema-base-${id}`} label="Base commit" value={comparison ?? ""} options={commitOptions}
+            <FieldSelect id={`schema-base-${id}`} label="Base commit" value={comparison ?? ""} options={commitOptions} renderLabel={commitLabel}
               includePlaceholder={!comparison} disabled={loading || loadingDiff || acting}
               onValueChange={base => { if (base) void select(selected || revisions[0]!.oid, base); }} />
             <MaterialIcon name="compare_arrows" size={24} class="comparison-symbol" />
-            <FieldSelect id={`schema-compare-${id}`} label="Compare commit" value={selected} options={commitOptions}
+            <FieldSelect id={`schema-compare-${id}`} label="Compare commit" value={selected} options={commitOptions} renderLabel={commitLabel}
               includePlaceholder={!selected} disabled={loading || loadingDiff || acting || !comparison}
               onValueChange={oid => { if (oid) void select(oid); }} />
           </div>
@@ -230,6 +232,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .conflict-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
   .commit-selectors { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; min-width: 0; }
   .commit-selectors :global(.comparison-symbol) { place-self: center; }
+  .commit-hash { font-weight: 400; }
+  .commit-subject { font-weight: 700; }
   .commit-selectors :global(.field-select-trigger) { --field-background: var(--color-surface); --field-foreground: var(--color-foreground); min-height: 36px; padding: 8px; border-radius: 4px; font-size: 12px; }
   .commit-selectors :global(.field-select-value) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .change-group { min-width: 0; padding: 4px; border-radius: 4px; background: var(--color-surface); }

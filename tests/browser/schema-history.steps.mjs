@@ -32,6 +32,13 @@ Then('schema history compares any saved commits with lazy colored diffs and pers
   };
   let card = await open();
   const changes = () => card.getByRole('region', { name: 'Schema changes' });
+  const expectCommitWeights = async container => {
+    const hashes = await container.locator('.commit-hash').evaluateAll(elements => elements.map(element => getComputedStyle(element).fontWeight));
+    const subjects = await container.locator('.commit-subject').evaluateAll(elements => elements.map(element => getComputedStyle(element).fontWeight));
+    assert.ok(hashes.length && hashes.length === subjects.length, 'Each formatted commit includes a hash and description.');
+    assert.ok(hashes.every(weight => weight === '400'), 'Commit hashes use regular weight.');
+    assert.ok(subjects.every(weight => weight === '700'), 'Commit descriptions remain bold.');
+  };
   const history = () => page.evaluate(async () => (await import('/schema-lifecycle-fixture.js')).getSchemaBranchHistory('gcp-speech'));
   const selectCommit = async (label, oid) => {
     await changes().getByRole('combobox', { name: label, exact: true }).click();
@@ -59,6 +66,7 @@ Then('schema history compares any saved commits with lazy colored diffs and pers
   const corrected = initial.current;
   await expectComparison(corrected, published);
   const selectors = () => changes().locator('.commit-selectors');
+  await expectCommitWeights(selectors());
   await expect(selectors().locator('label')).toHaveCount(0);
   await expect(selectors().locator('.comparison-symbol')).toHaveText('compare_arrows');
   await page.evaluate(() => document.fonts.ready);
@@ -127,6 +135,7 @@ Then('schema history compares any saved commits with lazy colored diffs and pers
     const selector = changes().getByRole('combobox', { name: label, exact: true });
     await selector.click();
     await expect(page.getByRole('option')).toHaveCount(renamed.revisions.length);
+    await expectCommitWeights(page.getByRole('option'));
     optionOrders.push((await page.getByRole('option').locator('.field-select-option-label').allTextContents()).map(text => text.slice(0, 7)));
     await selector.press('Escape');
   }
