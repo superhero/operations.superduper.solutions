@@ -581,6 +581,39 @@ branches, functions and lines across the six affected schema helpers.
 
 ```
 
+<!-- changelog-commit:f4ff9e9e2b9119692678b5dfce934b5eec8de358 -->
+### Commit [`f4ff9e9`](https://github.com/superhero/operations.superduper.solutions/commit/f4ff9e9e2b9119692678b5dfce934b5eec8de358)
+
+```text
+fix(ui): align save status with the toolbar border
+
+Include the toolbar frame border in the header status inset so the saved
+indicator stays aligned with the rightmost control at narrow widths.
+
+Validation: the existing responsive focus regression fails against the
+previous inset and passes after this two-pixel correction.
+
+```
+
+<!-- changelog-commit:c825d7e9379f10cf31043de1dcf402b750bf1a65 -->
+### Commit [`c825d7e`](https://github.com/superhero/operations.superduper.solutions/commit/c825d7e9379f10cf31043de1dcf402b750bf1a65)
+
+```text
+fix(ci): allow complete browser validation to finish
+
+The release run hit its 40-minute browser limit after completing 373 of
+522 registered browser cases. Allow 70 minutes inside an 80-minute
+application job across release, main, support and manual develop runs.
+
+Give complete-library reload journeys the existing 120-second step budget.
+Wait for cold startup readiness before the separate five-second loader
+removal assertion. Retain all suites, case assertions and coverage gates.
+
+Validation: five focused browser scenarios and all 18 validation-workflow
+contracts pass. Production build passes. Full regression remains in CI.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.55
