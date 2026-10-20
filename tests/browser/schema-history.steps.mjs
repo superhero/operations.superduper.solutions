@@ -58,6 +58,19 @@ Then('schema history compares any saved commits with lazy colored diffs and pers
   const published = initial.revisions.find(revision => !revision.parents.length).oid;
   const corrected = initial.current;
   await expectComparison(corrected, published);
+  const selectors = () => changes().locator('.commit-selectors');
+  await expect(selectors().locator('label')).toHaveCount(0);
+  await expect(selectors().locator('.comparison-symbol')).toHaveText('compare_arrows');
+  await page.evaluate(() => document.fonts.ready);
+  const controls = await selectors().evaluate(element => {
+    const base = element.querySelector('[aria-label="Base commit"]').getBoundingClientRect();
+    const icon = element.querySelector('.comparison-symbol').getBoundingClientRect();
+    const compare = element.querySelector('[aria-label="Compare commit"]').getBoundingClientRect();
+    return { between: base.right <= icon.left && icon.right <= compare.left,
+      centered: Math.abs(base.top + base.height / 2 - icon.top - icon.height / 2) < 1, iconWidth: icon.width };
+  });
+  assert.ok(controls.between && controls.centered, 'The comparison glyph sits centered between the selectors.');
+  assert.ok(controls.iconWidth > 0 && controls.iconWidth <= 25, 'The bundled font renders an icon rather than the ligature text.');
   const graphStyle = await card.locator('svg.version-graph path').evaluateAll(paths => paths.map(path => getComputedStyle(path).strokeWidth));
   assert.ok(graphStyle.length); assert.ok(graphStyle.every(width => width === '2px'));
   assert.ok((await card.locator('.version-card').evaluateAll(cards => cards.map(card => getComputedStyle(card).borderLeftWidth))).every(width => width === '0px'));

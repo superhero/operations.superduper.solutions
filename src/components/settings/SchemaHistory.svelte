@@ -190,16 +190,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <section class="revision-diff" aria-label="Schema changes" aria-busy={loadingDiff}
           data-revision={diff?.revision.oid} data-base={diff?.base?.oid}>
           <div class="commit-selectors">
-            <div><label for={`schema-base-${id}`}>Base</label>
-              <FieldSelect id={`schema-base-${id}`} label="Base commit" value={comparison ?? ""} options={commitOptions}
-                includePlaceholder={!comparison} disabled={loading || loadingDiff || acting}
-                onValueChange={base => { if (base) void select(selected || revisions[0]!.oid, base); }} />
-            </div>
-            <div><label for={`schema-compare-${id}`}>Compare</label>
-              <FieldSelect id={`schema-compare-${id}`} label="Compare commit" value={selected} options={commitOptions}
-                includePlaceholder={!selected} disabled={loading || loadingDiff || acting || !comparison}
-                onValueChange={oid => { if (oid) void select(oid); }} />
-            </div>
+            <FieldSelect id={`schema-base-${id}`} label="Base commit" value={comparison ?? ""} options={commitOptions}
+              includePlaceholder={!comparison} disabled={loading || loadingDiff || acting}
+              onValueChange={base => { if (base) void select(selected || revisions[0]!.oid, base); }} />
+            <MaterialIcon name="compare_arrows" size={24} class="comparison-symbol" />
+            <FieldSelect id={`schema-compare-${id}`} label="Compare commit" value={selected} options={commitOptions}
+              includePlaceholder={!selected} disabled={loading || loadingDiff || acting || !comparison}
+              onValueChange={oid => { if (oid) void select(oid); }} />
           </div>
           {#if loadingDiff && !diff}<p role="status">Loading changes…</p>{/if}
           {#if diff}
@@ -231,9 +228,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .history-toggle:focus-visible { outline: 2px solid var(--color-foreground); outline-offset: 2px; }
   .history-content { display: grid; gap: 12px; min-width: 0; padding: 12px; font-size: 12px; }
   .conflict-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-  .commit-selectors { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-width: 0; }
-  .commit-selectors > div { display: grid; gap: 6px; min-width: 0; }
-  .commit-selectors label { font-weight: 700; }
+  .commit-selectors { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; min-width: 0; }
+  .commit-selectors :global(.comparison-symbol) { place-self: center; }
   .commit-selectors :global(.field-select-trigger) { --field-background: var(--color-surface); --field-foreground: var(--color-foreground); min-height: 36px; padding: 8px; border-radius: 4px; font-size: 12px; }
   .commit-selectors :global(.field-select-value) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .change-group { min-width: 0; padding: 4px; border-radius: 4px; background: var(--color-surface); }
