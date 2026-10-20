@@ -159,7 +159,7 @@ async function reload(page) {
 Then('FRED observations and ALFRED vintages are available in separate catalogs and survive workflow reload', { timeout: 60_000 }, async function () {
   const page = this.page;
   await schemas(page);
-  for (const [id, name] of [['fred', 'FRED / Federal Reserve Economic Data'], ['alfred', 'ALFRED / Archival Federal Reserve Economic Data']]) {
+  for (const [id, name] of [['fred', 'Federal Reserve / FRED'], ['alfred', 'Federal Reserve / ALFRED']]) {
     await expect(card(page, id).locator('.schema-name-label')).toHaveText(name);
     await expect(card(page, id).getByRole('switch')).toHaveAttribute('aria-checked', 'true');
   }

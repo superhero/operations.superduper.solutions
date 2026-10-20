@@ -8,7 +8,6 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 
 | Schema | Operations | Source |
 |---|---:|---|
-| ALFRED / Archival Federal Reserve Economic Data | 31 | [Source](https://fred.stlouisfed.org/docs/api/fred/realtime_period.html) |
 | Anthropic / Claude | 144 | [Source](https://github.com/anthropics/anthropic-sdk-typescript/blob/sdk-v0.120.0/.stats.yml) |
 | Atlassian / Admin / API Access | 22 | [Source](https://developer.atlassian.com/cloud/admin/api-access/rest/) |
 | Atlassian / Admin / Control | 22 | [Source](https://developer.atlassian.com/cloud/admin/control/rest/) |
@@ -121,8 +120,9 @@ loads API descriptions locally; it does not contact provider APIs or supply cred
 | Dukascopy / Trading Tools | 1 | [Source](https://www.dukascopy.com/trading-tools/api/documentation) |
 | ECB / Data Portal | 11 | [Source](https://data.ecb.europa.eu/help/api/overview) |
 | ElevenLabs | 418 | [Source](https://api.elevenlabs.io/openapi.json) |
+| Federal Reserve / ALFRED | 31 | [Source](https://fred.stlouisfed.org/docs/api/fred/realtime_period.html) |
+| Federal Reserve / FRED | 36 | [Source](https://fred.stlouisfed.org/docs/api/fred/) |
 | Frankfurter | 9 | [Source](https://api.frankfurter.dev/v2/openapi.json) |
-| FRED / Federal Reserve Economic Data | 36 | [Source](https://fred.stlouisfed.org/docs/api/fred/) |
 | GitHub | 1242 | [Source](https://raw.githubusercontent.com/github/rest-api-description/main/descriptions-next/api.github.com/api.github.com.yaml) |
 | GitLab | 1869 | [Source](https://gitlab.com/gitlab-org/gitlab/-/raw/master/doc/api/openapi/openapi_v3.yaml) |
 | Google / Analytics / Admin | 26 | [Source](https://analyticsadmin.googleapis.com/$discovery/rest?version=v1beta) |

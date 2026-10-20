@@ -2,20 +2,6 @@
   "adapterRevision": "6e24708f48447c51bd1801d9ecde60e2f3db550f6a8c8e297eb427b45abdb870",
   "indexes": [
     {
-      "id": "alfred",
-      "sourceRevision": "5c2c4dbbdd9696d2bb9d30ffc7876040a5fb4cbcc7e5c7a1b8e4d3b64f0f0f94",
-      "bytes": 9274,
-      "compressedBytes": 1414,
-      "sha256": "edf35d693d6ce40b674b669a664063bdc21d949750c5f6abbbd952021f7447c8",
-      "summary": {
-        "name": "ALFRED / Archival Federal Reserve Economic Data",
-        "serverUrl": "https://api.stlouisfed.org",
-        "description": "Historical vintages and revisions of US and international economic data. ALFRED uses the FRED v1 API and the same API key. Choose a past realtime_start and realtime_end, or vintage_dates, to retrieve data as it was known then. Without a historical period, the API normally returns the current vintage. Managed by the Federal Reserve Bank of St. Louis.",
-        "operationCount": 31,
-        "unavailableCount": 0
-      }
-    },
-    {
       "id": "anthropic",
       "sourceRevision": "c23b4e84fb0d699275f74767c41af4d3c62f1f9457a75bf55e02559abf44e1cd",
       "bytes": 49553,
@@ -1568,6 +1554,34 @@
       }
     },
     {
+      "id": "alfred",
+      "sourceRevision": "c808723c74b00cf4c21bb295588b3bef793c91b4974e5155c57fb8d490934bc5",
+      "bytes": 9205,
+      "compressedBytes": 1402,
+      "sha256": "acb9e4ff08e3f4e507824b063cb32d64a8be06d1132096a70e8813fa64b204be",
+      "summary": {
+        "name": "Federal Reserve / ALFRED",
+        "serverUrl": "https://api.stlouisfed.org",
+        "description": "Historical vintages and revisions of US and international economic data. ALFRED uses the FRED v1 API and the same API key. Choose a past realtime_start and realtime_end, or vintage_dates, to retrieve data as it was known then. Without a historical period, the API normally returns the current vintage. Managed by the Federal Reserve Bank of St. Louis.",
+        "operationCount": 31,
+        "unavailableCount": 0
+      }
+    },
+    {
+      "id": "fred",
+      "sourceRevision": "ff1f2e5c5deb3620ae2716168fc929d2d560b2ed89be250ae6ec111b8d42ba66",
+      "bytes": 10381,
+      "compressedBytes": 1590,
+      "sha256": "e38bbe8eb8fcd876c515f4c861ee7c23cd97bc65ba020bc1ca37128616ed1cb8",
+      "summary": {
+        "name": "Federal Reserve / FRED",
+        "serverUrl": "https://api.stlouisfed.org",
+        "description": "US and international economic time series, observations, releases, categories, sources and tags. Federal Reserve Economic Data is managed by the Federal Reserve Bank of St. Louis. Includes FRED v1, v2 bulk release observations and the existing GeoFRED mapping endpoints. An API key is required.",
+        "operationCount": 36,
+        "unavailableCount": 0
+      }
+    },
+    {
       "id": "frankfurter",
       "sourceRevision": "5ba0aa5e8ea6226971acaacd06068ccfe84507adb0942e5d6f8b5409f1849aab",
       "bytes": 2828,
@@ -1578,20 +1592,6 @@
         "serverUrl": "https://api.frankfurter.dev/v2",
         "description": "Frankfurter is an open-source API for current and historical foreign exchange rates published by central banks.",
         "operationCount": 9,
-        "unavailableCount": 0
-      }
-    },
-    {
-      "id": "fred",
-      "sourceRevision": "232fe449907ea7a784873372620d564a0ce61aa5ed10ce6dd1141037c6c7c91a",
-      "bytes": 10423,
-      "compressedBytes": 1590,
-      "sha256": "4fc1e301c3a9ec73666a5d379f9291e052f7210f13142a17be44b2ad4184382e",
-      "summary": {
-        "name": "FRED / Federal Reserve Economic Data",
-        "serverUrl": "https://api.stlouisfed.org",
-        "description": "US and international economic time series, observations, releases, categories, sources and tags. Federal Reserve Economic Data is managed by the Federal Reserve Bank of St. Louis. Includes FRED v1, v2 bulk release observations and the existing GeoFRED mapping endpoints. An API key is required.",
-        "operationCount": 36,
         "unavailableCount": 0
       }
     },

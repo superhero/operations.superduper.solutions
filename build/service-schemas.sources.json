@@ -203,7 +203,7 @@
   },
   {
     "id": "fred",
-    "name": "FRED / Federal Reserve Economic Data",
+    "name": "Federal Reserve / FRED",
     "url": "https://raw.githubusercontent.com/armanobosyan/FRED-OpenAPI-specification/main/fred-schema.json",
     "provenance": "https://fred.stlouisfed.org/docs/api/fred/",
     "sourceKind": "community-adapted",
@@ -212,7 +212,7 @@
   {
     "id": "alfred",
     "provider": "fred",
-    "name": "ALFRED / Archival Federal Reserve Economic Data",
+    "name": "Federal Reserve / ALFRED",
     "url": "https://raw.githubusercontent.com/armanobosyan/FRED-OpenAPI-specification/main/fred-schema.json",
     "provenance": "https://fred.stlouisfed.org/docs/api/fred/realtime_period.html",
     "sourceKind": "community-adapted",

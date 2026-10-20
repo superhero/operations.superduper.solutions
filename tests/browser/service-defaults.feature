@@ -48,7 +48,8 @@ Feature: Default service schemas in the application
       | docker             | Docker Engine                     | Docker / Engine                    |
       | dukascopy          | Dukascopy Trading Tools           | Dukascopy / Trading Tools          |
       | ecb                | ECB Data Portal                   | ECB / Data Portal                  |
-      | fred               | FRED / GeoFRED                    | FRED / Federal Reserve Economic Data |
+      | fred               | FRED / Federal Reserve Economic Data | Federal Reserve / FRED            |
+      | alfred             | ALFRED / Archival Federal Reserve Economic Data | Federal Reserve / ALFRED |
       | gcp-compute        | Google Cloud — Compute            | Google / Cloud / Compute           |
       | gcp-storage        | Google Cloud — Storage            | Google / Cloud / Storage           |
       | gemini             | Google Gemini — Interactions      | Google / Gemini / Interactions     |

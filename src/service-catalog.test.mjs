@@ -237,7 +237,7 @@ Then('FRED and ALFRED retain the economic API inventory and prepare authenticate
     const catalog = inspectServiceSchema(document, id);
     assert.equal(catalog.operations.length, id === 'fred' ? 36 : 31);
     assert.ok(catalog.operations.filter(operation => operation.path.startsWith('/fred/')).every(operation => !operation.unavailableReason));
-    assert.match(catalog.name, id === 'fred' ? /FRED \/ Federal Reserve Economic Data/ : /ALFRED \/ Archival Federal Reserve Economic Data/);
+    assert.equal(catalog.name, `Federal Reserve / ${id.toUpperCase()}`);
     const observations = catalog.operations.find(operation => operation.path === '/fred/series/observations');
     assert.equal(observations.id, `${id}:getSeriesObservations`, 'Existing FRED workflow identities stay stable.');
     assert.deepEqual(observations.security, [[{ name: 'ApiKeyAuth', kind: 'apiKey', query: 'api_key' }]]);
