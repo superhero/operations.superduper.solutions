@@ -108,4 +108,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .output-type { margin-left: auto; }
   .key-type { margin-left: auto; }
   .key-input { min-height: 32px; font-size: 11px; }
+  .workflow-processing-node .key-input { border-top: 0; border-bottom: 1px solid var(--color-border); }
+  .workflow-processing-node .key-input ~ .processing-output { border-top: 0; }
 </style>
