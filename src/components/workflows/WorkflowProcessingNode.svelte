@@ -21,7 +21,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const definition = $derived(processingDefinition(kind, data));
   const choices = $derived(processingOperations.filter(operation => operation.kind === kind).map(operation => ({ value: operation.id, label: operation.label })));
   const inputType = $derived(inputTypeFor(id));
-  const inputLabel = $derived(kind === "transform" ? definition.inputLabel ?? definition.inputs.join(" / ") : inputType);
+  const inputLabel = $derived(kind === "transform" ? definition.inputLabel ?? definition.inputs.join(" | ") : inputType);
   const outputType = $derived(processingOutputType(kind, data, inputType));
   const active = $derived(editorActive?.() ?? true);
   const family = $derived(kind[0]!.toUpperCase() + kind.slice(1));
