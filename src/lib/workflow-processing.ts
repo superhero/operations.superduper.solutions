@@ -87,7 +87,7 @@ export function processingInputTypes(kind: ProcessingKind, data: ProcessingData,
   if (handle === "value") return definition.inputs;
   if (definition.id === "array_filter" && (handle === "success" || handle === "failure")) return anyValue;
   if (handle === "key" && definition.key) return textBinary;
-  if (handle === "expected" && (kind === "assert" || definition.id === "array_filter"))
+  if (handle === "expected" && (kind === "assert" || definition.id === "array_filter" && Object.hasOwn(data.parameters, "operator")))
     return processingConditionUsesExpected(data.parameters.operator ?? "") ? processingExpectedTypes(data, definition.id === "array_filter" ? "JSON" : inputType) : undefined;
   const field = definition.parameters.find(field => field.connectable && field.name === handle);
   return field ? field.type ? processingTypeAlternatives(field.type) : textInput : undefined;

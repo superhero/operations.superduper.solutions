@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { describeWorkflowChange } from './lib/workflow-change-message.ts';
+import { defaultProcessingData } from './lib/workflow-processing.ts';
 
 const workflow = (nodes = [], edges = []) => ({ version: 3, id: 'message-workflow', name: 'Project delivery', description: '', nodes, edges,
   viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, dashed: false });
@@ -167,6 +168,20 @@ Then('workflow change messages describe rewired utility and legacy connections',
   assert.equal(describe(oldGraph, wired), 'Connect “Get project” to “Create deployment”');
   assert.equal(describe(wired, wired), 'Save workflow');
   assert.equal(describe(wired, oldGraph), 'Disconnect “Get project” to “Create deployment”');
+});
+
+Then('workflow history distinguishes both assertion outcomes and legacy processing outputs', () => {
+  const assertion = utility('assert', 'assert', defaultProcessingData('assert'));
+  const filter = utility('trim', 'filter', defaultProcessingData('filter', 'trim'));
+  const signing = utility('sign', 'transform', defaultProcessingData('transform', 'hmac_sha256'));
+  const cast = utility('cast', 'cast', { targetType: 'Text' });
+  const before = workflow([assertion, filter, signing, cast]);
+  for (const [source, handle, label] of [['assert', 'success', 'Assert · Success'], ['assert', 'failure', 'Assert · Failure'], ['trim', 'item', 'Trim text · Item'], ['trim', 'result', 'Trim text · Result']]) {
+    const connected = { ...before, edges: [mapping('processing-link', source, handle, 'cast', 'value')] };
+    assert.equal(describe(before, connected), `Connect ${label} to Cast · Input`);
+  }
+  const keyed = { ...before, edges: [mapping('signing-link', 'cast', 'result', 'sign', 'key')] };
+  assert.equal(describe(before, keyed), 'Connect Cast · Result to Sign HMAC-SHA256 · Signing key');
 });
 
 Then('workflow change messages suppress connections removed with their nodes', function () {

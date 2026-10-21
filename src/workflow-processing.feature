@@ -5,6 +5,18 @@
 Feature: Explicit workflow processing and assertion routing
   Transform, Filter and Assert are independent nodes with typed, bounded behavior.
 
+  Scenario: Array callback recipes validate every captured operand before processing
+    Then array callback recipes reject malformed steps captures and nested iteration
+
+  Scenario: Array callback graph boundaries cannot be escaped
+    Then array callback graphs reject foreign steps ambiguous operands and escaping captures
+
+  Scenario: Processing ports honor declared value contracts
+    Then processing contracts retain integer unions and reject invalid connected data
+
+  Scenario: Processing runners isolate missing branches and cancellation
+    Then processing runners propagate empty inactive and stopped branches without stale results
+
   Scenario: Filter array creates a complete default assertion path
     Then adding an array assertion wires Is set and preserves existing graph ownership
 

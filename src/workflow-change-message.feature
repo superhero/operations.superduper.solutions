@@ -25,6 +25,9 @@ Feature: Workflow history describes completed edits
   Scenario: Utility connections name their input output and gate endpoints
     Then workflow change messages describe rewired utility and legacy connections
 
+  Scenario: Processing connections distinguish assertion outcomes and retained legacy labels
+    Then workflow history distinguishes both assertion outcomes and legacy processing outputs
+
   Scenario: Removed nodes and hidden branches already explain their disappearing connections
     Then workflow change messages suppress connections removed with their nodes
 

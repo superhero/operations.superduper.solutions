@@ -32,8 +32,9 @@ for (const name of ["checkbox_input", "label_open"]) {
   markdown.renderer.rules[name] = (tokens, index, options, env, renderer) => {
     const token = tokens[index]!;
     const attribute = name === "checkbox_input" ? "id" : "for";
-    const value = token.attrGet(attribute);
-    if (value) token.attrSet(attribute, `${env?.docId ?? "markdown"}-${value}`);
+    // The configured tasklist plugin supplies both attributes; renderMarkdown
+    // always supplies the escaped document namespace.
+    token.attrSet(attribute, `${env!.docId}-${token.attrGet(attribute)}`);
     return renderer.renderToken(tokens, index, options);
   };
 }

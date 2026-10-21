@@ -11,6 +11,16 @@ import { approvedOperation } from './lib/secrets/policy.ts';
 import { executeCredentialed } from './lib/secrets/execution.ts';
 import { adaptFredSchema } from '../build/fred-schema.mjs';
 
+Then('anonymous service operations reject permission metadata without a security declaration', () => {
+  const document = { openapi: '3.1.0', info: { title: 'Anonymous', version: '1' }, servers: [{ url: 'https://example.com' }],
+    paths: { '/items': { get: { operationId: 'read', responses: { '200': { description: 'OK' } } } } } };
+  assert.equal(inspectServiceSchema(document, 'anonymous').operations[0].unavailableReason, undefined);
+  document['x-credential-permissions'] = [{ Bearer: ['read'] }];
+  const operation = inspectServiceSchema(document, 'anonymous').operations[0];
+  assert.match(operation.unavailableReason, /Credential permissions must match/);
+  assert.equal(operation.credentialPermissions, undefined);
+});
+
 Then('Google product catalogs retain these collections and prepare scoped Gmail and Drive requests', async table => {
   const expected = ['google-gmail', 'google-drive', 'google-calendar', 'google-sheets', 'google-docs', 'google-slides',
     'google-forms', 'google-tasks', 'google-people', 'google-chat', 'google-apps-script', 'google-keep', 'google-classroom',

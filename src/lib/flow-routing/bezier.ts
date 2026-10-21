@@ -127,5 +127,7 @@ export function bezierDrawing(route: Route, edge: EdgeEndpoints & { source?: str
       i++;
     }
   }
+  // Coincident endpoints can collapse every checked backbone span to a point.
+  if (!curves.length) curves.push([points[0]!, points[0]!, points[0]!, points[0]!]);
   return drawing(curves);
 }
