@@ -15,6 +15,13 @@ async function openHistory(page) {
   const browser = page.locator('summary[aria-label="Browser"]');
   if (await browser.getAttribute('aria-expanded') !== 'true') await browser.click();
   await expect(browser.locator('..').getByRole('region', { name: 'Errors', exact: true })).toHaveCount(0);
+  // Dashboard construction replaces the compact building status and moves Logs.
+  // Wait for that handoff before a pointer click can land at stale coordinates.
+  await expect(browser.locator('..').locator('.storage-dashboard')).toBeVisible();
+  await expect(browser.locator('..').locator('.storage-building')).toHaveCount(0);
+  await browser.locator('..').locator(':scope > .disclosure-panel').evaluate(async panel => {
+    await Promise.allSettled(panel.getAnimations().map(animation => animation.finished));
+  });
   const logs = page.locator('summary[aria-label="Logs"]');
   await logs.click();
   await expect(browser).toHaveAttribute('aria-expanded', 'false');

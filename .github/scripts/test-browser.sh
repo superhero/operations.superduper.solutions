@@ -27,7 +27,7 @@ image="mcr.microsoft.com/playwright:v${version}-noble"
 node_binary="$(readlink -f "$(command -v node)")"
 memory=2g
 processes=256
-if [[ "${GITHUB_ACTIONS:-}" == true ]]; then memory=4g; processes=512; fi
+if [[ "${GITHUB_ACTIONS:-}" == true ]]; then memory=5g; processes=512; fi
 runner_arguments=()
 if (( $# == 0 )) && [[ "${BROWSER_ENGINE:-chromium}" == chromium ]]; then runner_arguments+=(--with-components); fi
 echo "Browser tests: image=$image, output=tmp/test, memory=$memory."
@@ -49,5 +49,17 @@ docker run --rm --init --network=none --read-only --shm-size=1g \
   --mount "type=bind,source=$PWD/tmp/test,target=/workspace/tmp/test" \
   --mount "type=bind,source=$node_binary,target=/usr/local/bin/node,readonly" \
   --workdir /workspace "$image" \
-  node tests/browser/run.mjs "${runner_arguments[@]}" "$@" \
+  bash -c '
+    node tests/browser/run.mjs "$@"
+    browser_status=$?
+    # A cgroup may kill one test worker without terminating the container.
+    # Preserve its exit status and report the native memory evidence either way.
+    for browser_counter in memory.max memory.peak memory.events; do
+      if [[ -r "/sys/fs/cgroup/$browser_counter" ]]; then
+        printf "Browser container %s:\n" "$browser_counter"
+        cat "/sys/fs/cgroup/$browser_counter"
+      fi
+    done
+    exit "$browser_status"
+  ' -- "${runner_arguments[@]}" "$@" \
   2>&1 | tee tmp/test/browser/runner.log
