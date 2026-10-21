@@ -197,6 +197,30 @@ allow the browser harness to use an installed Chromium variant.
 
 ```
 
+<!-- changelog-commit:6fc68d62dbabcda46d747ccd40392264361a7838 -->
+### Commit [`6fc68d6`](https://github.com/superhero/operations.superduper.solutions/commit/6fc68d62dbabcda46d747ccd40392264361a7838)
+
+```text
+fix(ui): reposition signing node dividers
+
+```
+
+<!-- changelog-commit:866293f80485821718103387de80c03dd5e0a28f -->
+### Commit [`866293f`](https://github.com/superhero/operations.superduper.solutions/commit/866293f80485821718103387de80c03dd5e0a28f)
+
+```text
+fix(ui): place processing settings divider above parameters
+
+```
+
+<!-- changelog-commit:ce4c58c5ef7a3a981fa2f8b5c248e609df75c06d -->
+### Commit [`ce4c58c`](https://github.com/superhero/operations.superduper.solutions/commit/ce4c58c5ef7a3a981fa2f8b5c248e609df75c06d)
+
+```text
+fix(ui): group JWT key ID with signing key
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
