@@ -77,3 +77,12 @@ Feature: Workflow utility controls and reusable plans
   Scenario: Utility nodes use nearby empty space and center the viewport
     Given a workflow with 1 instances of "Example array response"
     Then newly added utility nodes occupy nearby free space and become centered
+
+  Scenario Outline: Inline Markdown editing shares formatted output and preserved source
+    Given I use a viewport of <width> by 900 pixels
+    Then comment editing styles Markdown inline and retains the source and mdit formatting
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |

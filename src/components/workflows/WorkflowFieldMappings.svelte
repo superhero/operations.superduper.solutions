@@ -130,8 +130,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <p class="mapping-help">Use one field name per level. For array items, use 0 for the first item, 1 for the second.</p>
         {/if}
         <div class="mapping-actions">
-          <button type="submit" class="mapping-button" disabled={!active}><MaterialIcon name="check" size={16} />Save mapping</button>
           <button type="button" class="mapping-button" onclick={close}><MaterialIcon name="backspace" size={16} />Cancel</button>
+          <button type="submit" class="mapping-button" disabled={!active}><MaterialIcon name="check" size={16} />Save mapping</button>
         </div>
         {#if error}<p id={`${id}-mapping-error`} class="mapping-error" role="alert">{error}</p>{/if}
       </form>
@@ -159,6 +159,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .path-field { display: grid; gap: 4px; min-width: 0; }
   .path-level > :global(.utility-action) { align-self: end; margin-bottom: 1px; }
   .mapping-button { display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 28px; padding: 5px 7px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font: inherit; }
-  .mapping-actions { display: flex; gap: 5px; margin-top: 4px; }
+  .mapping-actions { display: flex; justify-content: space-between; gap: 5px; margin-top: 4px; }
   .mapping-error { margin: 0; color: var(--color-error-foreground); overflow-wrap: anywhere; }
 </style>

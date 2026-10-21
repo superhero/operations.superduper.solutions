@@ -279,9 +279,9 @@ export class VaultSession {
     await this.save(values); return this.list();
   }
 
-  async checkAssertion(expression: import("./processing.ts").PrivateExpression, data: import("../workflow-processing.ts").ProcessingData): Promise<boolean> {
+  async checkAssertion(expression: import("./processing.ts").PrivateExpression, data: import("../workflow-processing.ts").ProcessingData, parameters?: Record<string, import("./processing.ts").PrivateExpression>): Promise<boolean> {
     const generation = this.generation;
-    const result = await checkPrivateAssertion(expression, data, await this.records());
+    const result = await checkPrivateAssertion(expression, data, await this.records(), parameters);
     this.guard(generation);
     await this.assertCurrent();
     return result;

@@ -711,6 +711,8 @@ Then('private assertion session decisions remain guarded by the vault session', 
   assert.equal(await session.checkAssertion(expression, predicate), true);
   predicate.parameters.operator = 'equals'; predicate.parameters.expected = 'different';
   assert.equal(await session.checkAssertion(expression, predicate), false);
+  assert.equal(await session.checkAssertion(expression, predicate, { expected: expression }), true);
+  await assert.rejects(session.checkAssertion(expression, predicate, { key_id: expression }), code('INVALID'));
   session.lock();
-  await assert.rejects(session.checkAssertion(expression, predicate), code('LOCKED'));
+  await assert.rejects(session.checkAssertion(expression, predicate, { expected: expression }), code('LOCKED'));
 });

@@ -59,7 +59,7 @@ const doc = (nodes, edges = []) => ({ version: 3, id: 'processing', name: 'Proce
 const uuid = '10000000-0000-4000-8000-000000000001';
 const secret = 'processing-secret-canary';
 const credential = { id: uuid, label: 'Synthetic key', kind: 'secret', value: secret, grants: [] };
-const executor = () => ({ process: processWorkflowValue, assertPrivate: (source, configuration) => checkPrivateAssertion(source, configuration, [credential]), dispose() {} });
+const executor = () => ({ process: processWorkflowValue, assertPrivate: (source, configuration, _signal, parameters) => checkPrivateAssertion(source, configuration, [credential], parameters), dispose() {} });
 const project = operations.find(operation => operation.id === 'demo:mockPlainText');
 const projectGraph = (id = 'target') => createOperationGraph(project, { x: 700, y: 0 }, id, demo);
 const field = (graph, label = 'Request body') => {
@@ -651,4 +651,39 @@ Then('scalar assertions ignore saved field paths while structured assertions kee
   assert.equal(await apply("assert", "expect", { count: 42 }, { path: "/missing", operator: "is_set" }), false);
   assert.equal(await apply("assert", "expect", 42, { operator: "is_set", expected: "unused" }), true);
   assert.equal(await apply("assert", "expect", null, { operator: "is_not_set", expected: "unused" }), true);
+});
+
+Then('assertion expectations accept typed connections and compare supplied public and private values', async () => {
+  const configuration = data('assert', 'expect', { operator: 'equals', expected: 'manual' });
+  for (const value of [42, "42", false, null, { a: 1 }, [1, 2]]) {
+    assert.equal(await processWorkflowValue('assert', configuration, value, undefined, { expected: value }), true);
+  }
+  assert.equal(await processWorkflowValue('assert', configuration, 42, undefined, { expected: "42" }), false, 'Connected text is never parsed as JSON.');
+  assert.equal(configuration.parameters.expected, 'manual');
+  const assertion = processNode('assert', 'expect', { operator: 'equals' });
+  const nodes = [file(42), file(42, 'number'), file('42', 'text'), assertion];
+  const main = edge('file', 'assert', 'value');
+  assert.equal(isWorkflowConnection(edge('number', 'assert', 'value', 'expected'), nodes, [main]), true);
+  assert.equal(isWorkflowConnection(edge('text', 'assert', 'value', 'expected'), nodes, [main]), false);
+  assert.deepEqual(processingInputTypes('assert', data('assert', 'expect', { operator: 'greater_than' }), 'expected', 'Unknown'), ['Number']);
+  assert.deepEqual(processingInputTypes('assert', data('assert', 'expect', { operator: 'starts_with' }), 'expected', 'Unknown'), ['Text']);
+  assert.equal(processingInputTypes('assert', data('assert', 'expect'), 'expected', 'Number'), undefined);
+  const runner = createWorkflowRunner(doc(nodes.filter(node => node.id !== 'text'), [main, edge('number', 'assert', 'value', 'expected')]), undefined, createWorkflowDemo(), executor());
+  assert.equal((await runner.nextAsync()).kind, 'complete');
+  assert.equal(runner.processingResults.find(row => row.nodeId === 'assert').matched, true);
+  runner.end();
+  const privateExpected = { kind: 'credential', id: uuid };
+  assert.equal(await checkPrivateAssertion({ kind: 'literal', value: secret }, configuration, [credential], { expected: privateExpected }), true);
+  assert.equal(await checkPrivateAssertion({ kind: 'literal', value: 'different' }, configuration, [credential], { expected: privateExpected }), false);
+  const vault = { id: 'vault', type: 'vault', position: { x: 0, y: 0 }, data: { credentialId: uuid } };
+  const privateRunner = createWorkflowRunner(doc([vault, file(secret, 'expected-source'), assertion], [edge('vault', 'assert', 'value'), edge('expected-source', 'assert', 'value', 'expected')]), undefined, createWorkflowDemo(), executor());
+  await privateRunner.nextAsync();
+  assert.equal(privateRunner.processingResults.find(row => row.nodeId === 'assert').matched, true);
+  assert.ok(!JSON.stringify(privateRunner.processingResults).includes(secret));
+  privateRunner.end();
+  const privateExpectedRunner = createWorkflowRunner(doc([vault, file('different'), assertion], [edge('file', 'assert', 'value'), edge('vault', 'assert', 'value', 'expected')]), undefined, createWorkflowDemo(), executor());
+  await privateExpectedRunner.nextAsync();
+  assert.equal(privateExpectedRunner.processingResults.find(row => row.nodeId === 'assert').matched, false);
+  assert.ok(!JSON.stringify(privateExpectedRunner.processingResults).includes(secret));
+  privateExpectedRunner.end();
 });

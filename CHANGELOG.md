@@ -269,6 +269,54 @@ fix(workflows): show only relevant assertion fields
 
 ```
 
+<!-- changelog-commit:d310c3ec2d85889d575cf830d791e0e6fbbb594f -->
+### Commit [`d310c3e`](https://github.com/superhero/operations.superduper.solutions/commit/d310c3ec2d85889d575cf830d791e0e6fbbb594f)
+
+```text
+feat(comments): adopt markdown-it and styled Markdown editing
+
+```
+
+<!-- changelog-commit:f506a8f822f92b5cb4cd6709a0ae11cdf4a9dcfd -->
+### Commit [`f506a8f`](https://github.com/superhero/operations.superduper.solutions/commit/f506a8f822f92b5cb4cd6709a0ae11cdf4a9dcfd)
+
+```text
+feat(comments): enable images through mdit plugins
+
+```
+
+<!-- changelog-commit:539eff664fb61631aa1b680232b0d4d1039eea62 -->
+### Commit [`539eff6`](https://github.com/superhero/operations.superduper.solutions/commit/539eff664fb61631aa1b680232b0d4d1039eea62)
+
+```text
+feat(workflows): connect typed assertion expected values
+
+```
+
+<!-- changelog-commit:10f1f9a2f93221390612c9442f69264ebbff9edc -->
+### Commit [`10f1f9a`](https://github.com/superhero/operations.superduper.solutions/commit/10f1f9a2f93221390612c9442f69264ebbff9edc)
+
+```text
+chore(workflows): integrate Assert inputs with Markdown comments
+
+```
+
+<!-- changelog-commit:59db2e1cfdb760b0cadd7214a6343becef3c5603 -->
+### Commit [`59db2e1`](https://github.com/superhero/operations.superduper.solutions/commit/59db2e1cfdb760b0cadd7214a6343becef3c5603)
+
+```text
+fix(ui): separate mapping cancel and save actions
+
+```
+
+<!-- changelog-commit:6f2eea0c081d9aa78b6a9ce514d8f574c98500ba -->
+### Commit [`6f2eea0`](https://github.com/superhero/operations.superduper.solutions/commit/6f2eea0c081d9aa78b6a9ce514d8f574c98500ba)
+
+```text
+chore(deps): add Markdown editor dependency badges
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

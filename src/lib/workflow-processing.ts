@@ -16,7 +16,7 @@ const jsonConnectionTypes = [...jsonTypes, "Integer"] as const;
 const anyValue = ["Text", "Number", "Integer", "Boolean", "Object", "Array", "Null", "Binary", "Unknown"] as const;
 const parameter = (name: string, label: string, initial = "", options?: readonly string[]): Parameter => ({ name, label, initial, ...(options ? { options } : {}) });
 const predicates = ["equals", "not_equal", "greater_than", "at_least", "less_than", "at_most", "contains", "starts_with", "ends_with", "is_set", "is_not_set", "is_type"] as const;
-const condition = [parameter("path", "Field path (JSON pointer)"), parameter("operator", "Condition", "is_set", predicates), parameter("expected", "Expected value (JSON or text)")];
+const condition = [parameter("path", "Field path (JSON pointer)"), parameter("operator", "Condition", "is_set", predicates), parameter("expected", "Expected value")];
 export const processingOperations: readonly Definition[] = [
   { id: "utf8_encode", kind: "transform", label: "Encode UTF-8", inputs: ["Text"], output: "Binary", parameters: [] },
   { id: "utf8_decode", kind: "transform", label: "Decode UTF-8", inputs: ["Binary"], output: "Text", parameters: [] },
@@ -35,7 +35,7 @@ export const processingOperations: readonly Definition[] = [
   { id: "select_field", kind: "filter", label: "Select field", inputs: ["Object", "Array"], output: "Unknown", parameters: [parameter("path", "Field path (JSON pointer)"), parameter("type", "Result type", "Text", anyValue)] },
   { id: "array_range", kind: "filter", label: "Array range", inputs: ["Array"], output: "Array", parameters: [parameter("start", "Start (inclusive)", "0"), parameter("end", "End (exclusive)")] },
   { id: "array_filter", kind: "filter", label: "Filter array", inputs: ["Array"], output: "Array", parameters: condition },
-  { id: "expect", kind: "assert", label: "Assert", inputs: anyValue, output: "input", parameters: condition },
+  { id: "expect", kind: "assert", label: "Assert", inputs: anyValue, output: "input", parameters: condition.map(field => field.name === "expected" ? { ...field, connectable: true } : field) },
 ];
 export const processingValueLimit = 500_000;
 const jsonEncoder = new TextEncoder();
@@ -71,10 +71,11 @@ export function processingOutputType(kind: ProcessingKind, data: ProcessingData,
   const output = processingDefinition(kind, data).output;
   return output === "input" ? input : output === "Unknown" ? data.parameters.type as ProcessingType : output;
 }
-export function processingInputTypes(kind: ProcessingKind, data: ProcessingData, handle: string | null | undefined): readonly ProcessingType[] | undefined {
+export function processingInputTypes(kind: ProcessingKind, data: ProcessingData, handle: string | null | undefined, inputType: ProcessingType | "Mixed" = "Unknown"): readonly ProcessingType[] | undefined {
   const definition = processingDefinition(kind, data);
   if (handle === "value") return definition.inputs;
   if (handle === "key" && definition.key) return textBinary;
+  if (handle === "expected" && kind === "assert") return processingConditionUsesExpected(data.parameters.operator ?? "") ? processingExpectedTypes(data, inputType) : undefined;
   return definition.parameters.some(field => field.connectable && field.name === handle) ? textInput : undefined;
 }
 /** JSON is a known union, unlike an unresolved Unknown or Mixed output. Number includes Integer. */
@@ -144,6 +145,14 @@ export function processingPointer(value: unknown, pointer: string): unknown {
   return current;
 }
 const expectedValue = (value: string): unknown => { try { return JSON.parse(value); } catch { return value; } };
+export function processingExpectedTypes(data: ProcessingData, inputType: ProcessingType | "Mixed"): readonly ProcessingType[] {
+  const operator = data.parameters.operator;
+  if (["greater_than", "at_least", "less_than", "at_most"].includes(operator ?? "")) return ["Number"];
+  if (["starts_with", "ends_with", "is_type"].includes(operator ?? "")) return ["Text"];
+  const checkedType = data.parameters.path && processingConditionUsesPath(inputType) ? "Unknown" : inputType;
+  if (operator === "contains") return checkedType === "Text" ? textInput : anyValue;
+  return checkedType === "Unknown" || checkedType === "Mixed" ? anyValue : processingTypeAlternatives(checkedType);
+}
 export function processingConditionUsesPath(type: ProcessingType | "Mixed"): boolean {
   return ["Object", "Array", "Unknown", "Mixed", "JSON"].includes(type);
 }
@@ -189,6 +198,7 @@ function index(value: string, fallback?: number): number | undefined {
 /** Pure bounded operation implementation, shared by public and private workers. */
 export async function processWorkflowValue(kind: ProcessingKind, raw: ProcessingData, value: unknown, key?: unknown, parameters?: Record<string, unknown>): Promise<unknown> {
   let data = validateProcessingData(kind, raw);
+  let connectedExpected: { value: unknown } | undefined;
   const definition = processingDefinition(kind, data);
   if (parameters !== undefined) {
     if (!plain(parameters)) throw new Error("Invalid connected processing parameters.");
@@ -196,6 +206,11 @@ export async function processWorkflowValue(kind: ProcessingKind, raw: Processing
     for (const [name, value] of Object.entries(parameters)) {
       const field = definition.parameters.find(field => field.name === name && field.connectable);
       if (!field) throw new Error("Unknown connected processing parameter.");
+      if (kind === "assert" && name === "expected") {
+        validateProcessingValue(value);
+        connectedExpected = { value };
+        continue;
+      }
       if (typeof value !== "string") throw new Error(`${field.label} needs a Text value.`);
       supplied[name] = value;
     }
@@ -206,7 +221,7 @@ export async function processWorkflowValue(kind: ProcessingKind, raw: Processing
   const inputType = processingValueType(value);
   if (!definition.inputs.includes(inputType) && !(inputType === "Integer" && definition.inputs.includes("Number"))) throw new Error(`${definition.label} does not accept ${inputType} input.`);
   const operation = data.operation;
-  if (kind === "assert") return matchesProcessingCondition(value, processingConditionUsesPath(inputType) ? p : { ...p, path: "" });
+  if (kind === "assert") return matchesProcessingCondition(value, processingConditionUsesPath(inputType) ? p : { ...p, path: "" }, connectedExpected ? connectedExpected.value : expectedValue(p.expected!));
   let result: unknown;
   if (operation === "utf8_encode") result = encodeWorkflowBinary("data.txt", bytes(value), "text/plain");
   else if (operation === "utf8_decode") {

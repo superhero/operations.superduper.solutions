@@ -3,70 +3,47 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
 import { Then } from "@cucumber/cucumber";
-import { commentBlocks } from "./components/workflows/workflow-comment-markdown.ts";
+import { renderMarkdown } from "./lib/markdown.ts";
+const render = text => renderMarkdown(text, "comment-test");
 
-const text = text => ({ type: "text", text });
-const paragraph = value => ({ type: "paragraph", children: [text(value)] });
-
-Then("workflow comment previews support headings paragraphs lists quotes and code", function () {
-  assert.deepEqual(commentBlocks("# Plan\n\nReview the fields.\nKeep this line.\n## Checks ##\n- First\n- Second\n1. One\n2) Two\n\n> Remember\n> the inputs\n\n---\n\n```json\n{\"id\":1}\n```\n\n~~~\nraw code\n~~~~"), [
-    { type: "heading", level: 1, children: [text("Plan")] },
-    paragraph("Review the fields.\nKeep this line."),
-    { type: "heading", level: 2, children: [text("Checks")] },
-    { type: "list", ordered: false, items: [[text("First")], [text("Second")]] },
-    { type: "list", ordered: true, items: [[text("One")], [text("Two")]] },
-    { type: "quote", children: [text("Remember\nthe inputs")] },
-    { type: "rule" },
-    { type: "code", text: '{"id":1}' },
-    { type: "code", text: "raw code" },
-  ]);
-  assert.deepEqual(commentBlocks("Paragraph\n> Quote\nAfter quote\n***\n### Heading\n+ Item\n~~~\nCode"), [
-    paragraph("Paragraph"), { type: "quote", children: [text("Quote")] }, paragraph("After quote"),
-    { type: "rule" }, { type: "heading", level: 3, children: [text("Heading")] },
-    { type: "list", ordered: false, items: [[text("Item")]] }, { type: "code", text: "Code" },
-  ]);
-  assert.deepEqual(commentBlocks("___\n* * *\n- - -"), [{ type: "rule" }, { type: "rule" }, { type: "rule" }]);
+Then("workflow comment previews support headings paragraphs lists quotes and code", () => {
+  const html = render('# Plan\n\nReview the fields.\nKeep this line.\n\n- First\n  - Nested\n\n3. Third\n\n> Remember\n> the inputs\n\n---\n\n```json\n{"id":1}\n```');
+  for (const pattern of [/<h1>Plan<\/h1>/, /Review the fields.<br>\nKeep this line./, /<ul>/, /Nested/, /<ol start="3">/, /<blockquote>/, /<hr>/, /<pre><code class="language-json">/]) assert.match(html, pattern);
+  assert.match(render('| Name | Value |\n| --- | --- |\n| item | 1 |'), /<table>/);
 });
-
-Then("workflow comment previews support emphasis code and safe links", function () {
-  assert.deepEqual(commentBlocks("Before **bold** __also bold__ *emphasis* _also emphasis_ ~~old~~ `value` after"), [{
-    type: "paragraph", children: [text("Before "), { type: "strong", children: [text("bold")] }, text(" "),
-      { type: "strong", children: [text("also bold")] }, text(" "), { type: "em", children: [text("emphasis")] }, text(" "),
-      { type: "em", children: [text("also emphasis")] }, text(" "), { type: "del", children: [text("old")] }, text(" "),
-      { type: "code", text: "value" }, text(" after")],
-  }]);
-  for (const [url, expected] of [["https://example.com", "https://example.com/"], ["http://example.com/docs", "http://example.com/docs"], ["mailto:review@example.com", "mailto:review@example.com"]]) {
-    assert.deepEqual(commentBlocks(`[**Guide**](${url})`), [{ type: "paragraph", children: [{ type: "link", href: expected,
-      children: [{ type: "strong", children: [text("Guide")] }] }] }]);
+Then("workflow comment previews support emphasis code and safe links", () => {
+  const html = render('Before **bold** __also bold__ *emphasis* _also emphasis_ ~~old~~ `value`');
+  for (const pattern of [/<strong>bold<\/strong>/, /<em>emphasis<\/em>/, /<s>old<\/s>/, /<code>value<\/code>/]) assert.match(html, pattern);
+  for (const url of ['https://example.com', 'http://example.com/docs', 'mailto:review@example.com']) {
+    const link = render(`[**Guide**](${url})`);
+    assert.match(link, /<a href="/); assert.match(link, /target="_blank"/); assert.match(link, /rel="noopener noreferrer"/); assert.match(link, /<strong>Guide<\/strong>/);
   }
-  assert.deepEqual(commentBlocks("__~~*nested*~~__"), [{ type: "paragraph", children: [{ type: "strong", children: [
-    { type: "del", children: [{ type: "em", children: [text("nested")] }] },
-  ] }] }]);
 });
-
-Then("workflow comment previews do not interpret raw HTML images or unsafe links", function () {
+Then("workflow comment previews render Markdown images while rejecting raw HTML and unsafe links", () => {
   const raw = '<script>globalThis.executed = true</script><img src="https://example.com/track" onerror="alert(1)">';
-  assert.deepEqual(commentBlocks(raw), [paragraph(raw)]);
-  for (const destination of ["javascript:alert", "data:text/html,unsafe", "file:///etc/passwd", "/relative", "not-a-url", "https://example.com/\u0000bad", "https://example.com/\u007fbad"]) {
-    const value = `[Bad](${destination})`;
-    assert.deepEqual(commentBlocks(value), [paragraph(value)], destination);
-  }
-  const image = "![Tracking image](https://example.com/tracker.png)";
-  assert.deepEqual(commentBlocks(image), [paragraph(image)]);
-  assert.deepEqual(commentBlocks("```html\n" + raw + "\n```"), [{ type: "code", text: raw }]);
+  const html = render(raw);
+  assert.ok(!/<(?:script|img)\b/.test(html)); assert.match(html, /&lt;script&gt;/);
+  for (const url of ['javascript:alert', 'data:text/html,unsafe', 'file:///etc/passwd', '/relative', 'not-a-url', 'https://example.com/%00bad', 'https://example.com/%7fbad', 'jav&#x61;script:alert(1)']) assert.ok(!render(`[Bad](${url})`).includes('<a '), url);
+  const image = render('![Diagram =300x200](https://example.com/diagram.png "Diagram title")');
+  for (const pattern of [/<img /, /src="https:\/\/example.com\/diagram.png"/, /alt="Diagram"/, /title="Diagram title"/, /width="300"/, /height="200"/, /loading="lazy"/]) assert.match(image, pattern);
+  for (const url of ['javascript:alert', 'data:text/html,unsafe', 'file:///etc/passwd']) assert.ok(!render(`![Bad](${url})`).includes('<img'), url);
+  assert.match(render('```html\n'+raw+'\n```'), /&lt;script&gt;/);
 });
-
-Then("workflow comment previews retain incomplete formatting and normalize line endings", function () {
-  assert.deepEqual(commentBlocks(" \r\n\r\n"), []);
-  assert.deepEqual(commentBlocks("First\r\nSecond\rThird"), [paragraph("First\nSecond\nThird")]);
-  for (const value of ["**unfinished", "[unfinished](", "`unfinished", "![unfinished", "#No heading"]) {
-    assert.deepEqual(commentBlocks(value), [paragraph(value)]);
-  }
-  assert.deepEqual(commentBlocks("```\nkeep\nall\nlines"), [{ type: "code", text: "keep\nall\nlines" }]);
-  assert.deepEqual(commentBlocks("```\n```"), [{ type: "code", text: "" }]);
-  assert.deepEqual(commentBlocks("> Last quote"), [{ type: "quote", children: [text("Last quote")] }]);
-  assert.deepEqual(commentBlocks("- Last item"), [{ type: "list", ordered: false, items: [[text("Last item")]] }]);
-  assert.deepEqual(commentBlocks("Paragraph\n```\ncode\n```"), [paragraph("Paragraph"), { type: "code", text: "code" }]);
+Then("workflow comment previews retain incomplete formatting and normalize line endings", () => {
+  assert.equal(render(' \r\n\r\n'), '');
+  assert.equal(render('First\r\nSecond\rThird'), render('First\nSecond\nThird'));
+  for (const value of ['**unfinished', '[unfinished](', '`unfinished', '![unfinished', '#No heading']) assert.ok(render(value).includes(value));
+  assert.match(render('```\nkeep\nall\nlines'), /<pre><code>keep\nall\nlines\n?<\/code><\/pre>/);
+});
+Then("workflow comments render mdit extensions with independent safe identifiers", () => {
+  const text = '- [x] Done\n- [ ] Next\n\n==highlight== ++inserted++ H~2~O x^2^ note[^ref]\n\n[^ref]: Detail';
+  const first = renderMarkdown(text, 'first'), second = renderMarkdown(text, 'second');
+  for (const pattern of [/<input[^>]*checked="checked"/, /disabled="disabled"/, /<mark>highlight<\/mark>/, /<ins>inserted<\/ins>/, /<sub>2<\/sub>/, /<sup>2<\/sup>/, /class="footnotes"/]) assert.match(first, pattern);
+  const ids = html => [...html.matchAll(/ id="([^"]+)"/g)].map(match => match[1]);
+  assert.ok(ids(first).length >= 4); assert.ok(ids(first).every(id => !ids(second).includes(id)));
+  for (const match of first.matchAll(/(?:for|href)="(?:#)?(markdown-[^"]+|footnote[^"]+)"/g)) assert.ok(ids(first).includes(match[1]), match[1]);
+  assert.equal(renderMarkdown(text, 'first'), first);
+  assert.ok(!/<script/.test(renderMarkdown(text, '\"><script>alert(1)</script>')));
 });
 
 Then("comment dimensions persist and reject invalid sizes", async function () {

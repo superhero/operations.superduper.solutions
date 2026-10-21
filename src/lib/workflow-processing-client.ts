@@ -6,7 +6,7 @@ import type { ProcessingData, ProcessingKind } from "./workflow-processing.ts";
 import type { PrivateExpression } from "./secrets/processing.ts";
 export type ProcessingExecutor = {
   process: (kind: ProcessingKind, data: ProcessingData, value: unknown, key?: unknown, parameters?: Record<string, unknown>) => Promise<unknown>;
-  assertPrivate: (expression: PrivateExpression, data: ProcessingData, signal?: AbortSignal) => Promise<boolean>;
+  assertPrivate: (expression: PrivateExpression, data: ProcessingData, signal?: AbortSignal, parameters?: Record<string, PrivateExpression>) => Promise<boolean>;
   dispose: () => void;
 };
 /** One lazily created public worker per run. Private values use only the vault. */
@@ -22,10 +22,10 @@ export function createProcessingExecutor(): ProcessingExecutor {
       }
       return client.call("process", [kind, data, value, key, parameters]);
     },
-    async assertPrivate(expression, data, signal) {
+    async assertPrivate(expression, data, signal, parameters) {
       const { vaultCall } = await import("./secrets/client.ts");
       if (closed) throw new Error("Workflow processing was cancelled.");
-      return vaultCall("checkAssertion", [expression, data], signal);
+      return vaultCall("checkAssertion", [expression, data, parameters], signal);
     },
     dispose() { closed = true; client?.dispose(true); client = undefined; },
   };

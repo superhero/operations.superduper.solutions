@@ -8,7 +8,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { getContext, untrack } from "svelte";
   import { Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  import { defaultProcessingData, processingConditionUsesPath, processingConditionUsesExpected, processingDefinition, processingInputTypes, processingOperations, processingOutputType, processingTypeLabel, type ProcessingData, type ProcessingKind } from "$lib/workflow-processing.ts";
+  import { defaultProcessingData, processingConditionUsesPath, processingConditionUsesExpected, processingDefinition, processingInputTypes, processingTypeAlternatives, processingOperations, processingOutputType, processingTypeLabel, type ProcessingData, type ProcessingKind } from "$lib/workflow-processing.ts";
   import type { RoutingType } from "$lib/workflow-utilities.ts";
   import WorkflowNodeSelect from "./WorkflowNodeSelect.svelte";
   import WorkflowFieldMappings from "./WorkflowFieldMappings.svelte";
@@ -35,6 +35,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const layout = $derived(`${data.operation}:${data.parameters.type ?? ""}:${inputLabel}:${outputType}:${fields.map(field => field.name).join(",")}`);
   $effect(() => { layout; untrack(() => updateNodeInternals(id)); });
   function parameter(name: string, value: string) { edit(id, { ...data, parameters: { ...data.parameters, [name]: value } }); }
+  function fieldTypes(name: string): string {
+    const types = processingInputTypes(kind, data, name, inputType) ?? [];
+    const jsonTypes = processingTypeAlternatives("JSON");
+    return types.includes("Unknown") ? "Any" : types.length === jsonTypes.length && jsonTypes.every(type => types.includes(type))
+      ? processingTypeLabel("JSON") : types.map(processingTypeLabel).join(" | ");
+  }
   const choiceLabel = (value: string) => /^(HS256|RS256|UTF-8)$/.test(value) ? value : value.replace(/_/g, " ").replace(/^./, letter => letter.toUpperCase());
 </script>
 
@@ -67,7 +73,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <div class="processing-parameter workflow-node-field nodrag nopan nokey" class:key-id={field.name === "key_id"}>
         <label class="parameter-label">
           <span class="parameter-caption">{field.label}
-            {#if field.connectable}<span class="utility-type">{processingInputTypes(kind, data, field.name)?.join(" | ")}</span>{/if}
+            {#if field.connectable}<span class="utility-type">{fieldTypes(field.name)}</span>{/if}
           </span>
           <span class="parameter-control">
           {#if field.options}
@@ -86,7 +92,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         </label>
         {#if field.connectable}
           <Handle id={field.name} type="target" position={Position.Left} isConnectableStart={false} class="parameter-input-handle"
-            isConnectableEnd={!connected} aria-disabled={connected} aria-label={`${field.label} input (${processingInputTypes(kind, data, field.name)?.join(" | ")})`} />
+            isConnectableEnd={!connected} aria-disabled={connected} aria-label={`${field.label} input (${fieldTypes(field.name)})`} />
         {/if}
       </div>
   {/each}

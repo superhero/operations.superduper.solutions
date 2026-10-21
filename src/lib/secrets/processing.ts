@@ -99,7 +99,12 @@ export async function resolvePrivateExpression(expression: PrivateExpression, cr
   try { return await resolve(validatePrivateExpression(expression)); }
   catch (error) { throw error instanceof VaultError ? error : new VaultError("INVALID"); }
 }
-export async function checkPrivateAssertion(expression: PrivateExpression, data: ProcessingData, credentials: readonly VaultCredential[]): Promise<boolean> {
-  try { return await processWorkflowValue("assert", validateProcessingData("assert", data), await resolvePrivateExpression(expression, credentials)) as boolean; }
-  catch (error) { throw error instanceof VaultError ? error : new VaultError("INVALID"); }
+export async function checkPrivateAssertion(expression: PrivateExpression, data: ProcessingData, credentials: readonly VaultCredential[], parameters?: Record<string, PrivateExpression>): Promise<boolean> {
+  try {
+    if (parameters !== undefined && (!parameters || typeof parameters !== "object" || Array.isArray(parameters)
+      || Object.keys(parameters).some(name => name !== "expected"))) throw new VaultError("INVALID");
+    const resolved = parameters === undefined ? undefined : Object.fromEntries(await Promise.all(Object.entries(parameters)
+      .map(async ([name, value]) => [name, await resolvePrivateExpression(value, credentials)])));
+    return await processWorkflowValue("assert", validateProcessingData("assert", data), await resolvePrivateExpression(expression, credentials), undefined, resolved) as boolean;
+  } catch (error) { throw error instanceof VaultError ? error : new VaultError("INVALID"); }
 }

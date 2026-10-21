@@ -263,8 +263,19 @@ the marker without closing the dialog or discarding later history.
 
 Switch uses the first matching gate, with connected operands replacing manual
 values. Removing a gate removes its mappings; the last gate cannot be removed.
-Cast converts primitives to Text, Number or Boolean. Comment Markdown escapes
-text and permits safe links, never raw HTML.
+Cast converts primitives to Text, Number or Boolean. Comments store Markdown
+source unchanged. Editing uses CodeMirror's Markdown language support: source
+markers remain visible while headings, emphasis and inline code are styled.
+The editor exists only during editing and releases its view/listeners on exit;
+contenteditable focus participates in the existing grouped autosave history.
+
+Viewing uses the shared `src/lib/markdown.ts` markdown-it configuration, replacing
+the custom comment parser. CommonMark/GFM blocks and tables are supplemented by
+the mdit tasklist, footnote, mark, ins, sub and sup plugins. Markdown images use
+the mdit img-size and img-lazyload plugins, and fit inside the comment width.
+Raw HTML stays escaped and links permit only HTTP(S) and mailto. Plugin-generated
+task and footnote identifiers are scoped to each rendered comment. Plugin extensions must preserve these
+[markdown-it safety rules](https://github.com/markdown-it/markdown-it/blob/master/docs/safety.md).
 
 Transform, Filter and Assert are separate node types. Their validated, versioned
 operation definitions provide the selector choices, configuration fields and port
@@ -332,6 +343,13 @@ field-path editor appears only for structured or unresolved input types; scalar
 inputs are checked directly, ignoring any retained path from an earlier
 configuration. The expected-value editor appears only for conditions that use
 it; Is set and Is not set hide it while preserving the saved value for reuse.
+Expected value also accepts one connection, which disables its manual editor.
+Its badge and connection compatibility follow the condition and checked type:
+numeric comparisons require Number, text comparisons and type checks require
+Text, and equality uses the known checked type. Unresolved nested values use
+Any, while a known JSON union uses JsonValue. Connected values retain their
+original types; private operands are compared inside the vault. Changing the
+condition or path removes incompatible operand connections through Undo history.
 The unmatched output leaves its connected input unsupplied and editable in the next
 operation, including through another utility node. Assertion failure is ordinary
 data flow, including when Failure has no connection; it does not raise an
