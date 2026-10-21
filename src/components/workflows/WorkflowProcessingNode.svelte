@@ -60,27 +60,29 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#each definition.parameters as field (field.name)}
       {@const connected = !!field.connectable && inputConnected(id, field.name)}
       <div class="processing-parameter workflow-node-field nodrag nopan nokey" class:key-id={field.name === "key_id"}>
-        <label for={`${id}-${field.name}`}>{field.label}
-          {#if field.connectable}<span class="utility-type">{processingInputTypes(kind, data, field.name)?.join(" | ")}</span>{/if}
+        <label class="parameter-label">
+          <span class="parameter-caption">{field.label}
+            {#if field.connectable}<span class="utility-type">{processingInputTypes(kind, data, field.name)?.join(" | ")}</span>{/if}
+          </span>
+          <span class="parameter-control">
+          {#if field.options}
+            <WorkflowNodeSelect label={field.label} value={data.parameters[field.name] ?? ""} {active}
+              choices={field.options.map(value => ({ value, label: choiceLabel(value) }))} onchange={value => parameter(field.name, value)} />
+          {:else if field.multiline}
+            <textarea id={`${id}-${field.name}`} class="utility-value nowheel" aria-label={field.label} rows="3" wrap="off" maxlength="16000"
+              value={data.parameters[field.name]} oninput={event => parameter(field.name, event.currentTarget.value)}></textarea>
+          {:else}
+            <input id={`${id}-${field.name}`} class="utility-value" aria-label={field.label} maxlength="4096"
+              disabled={connected || field.name === "expected" && ["is_set", "is_not_set"].includes(data.parameters.operator!)}
+              inputmode={field.name === "start" || field.name === "end" ? "numeric" : "text"}
+              value={data.parameters[field.name]} oninput={event => parameter(field.name, event.currentTarget.value)} />
+          {/if}
+          </span>
         </label>
-        <div class="parameter-control">
         {#if field.connectable}
           <Handle id={field.name} type="target" position={Position.Left} isConnectableStart={false} class="parameter-input-handle"
             isConnectableEnd={!connected} aria-disabled={connected} aria-label={`${field.label} input (${processingInputTypes(kind, data, field.name)?.join(" | ")})`} />
         {/if}
-        {#if field.options}
-          <WorkflowNodeSelect label={field.label} value={data.parameters[field.name] ?? ""} {active}
-            choices={field.options.map(value => ({ value, label: choiceLabel(value) }))} onchange={value => parameter(field.name, value)} />
-        {:else if field.multiline}
-          <textarea id={`${id}-${field.name}`} class="utility-value nowheel" aria-label={field.label} rows="3" wrap="off" maxlength="16000"
-            value={data.parameters[field.name]} oninput={event => parameter(field.name, event.currentTarget.value)}></textarea>
-        {:else}
-          <input id={`${id}-${field.name}`} class="utility-value" aria-label={field.label} maxlength="4096"
-            disabled={connected || field.name === "expected" && ["is_set", "is_not_set"].includes(data.parameters.operator!)}
-            inputmode={field.name === "start" || field.name === "end" ? "numeric" : "text"}
-            value={data.parameters[field.name]} oninput={event => parameter(field.name, event.currentTarget.value)} />
-        {/if}
-        </div>
       </div>
   {/each}
   {/if}
@@ -98,10 +100,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <style>
   .workflow-processing-node { width: 300px; }
   .utility-title strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .processing-parameter { display: grid; gap: 5px; min-width: 0; padding: 6px 12px; }
-  .processing-parameter label { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 10px; color: var(--color-muted-foreground); }
-  .parameter-control { position: relative; }
-  .parameter-control :global(.parameter-input-handle) { left: -12px; }
+  .processing-parameter { position: relative; display: grid; min-width: 0; padding: 6px 12px; }
+  .parameter-caption { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 10px; color: var(--color-muted-foreground); }
+  .parameter-label { display: grid; gap: 5px; min-width: 0; }
+  .parameter-control { display: block; min-width: 0; }
+  .processing-parameter :global(.parameter-input-handle) { left: 0; top: auto; bottom: 21px; transform: translate(-50%, 50%); }
   .processing-parameter .utility-value { width: 100%; min-height: 30px; padding: 6px 8px; font-size: 11px; }
   textarea.utility-value { height: 76px; resize: vertical; max-height: 180px; }
   .processing-output { min-height: 32px; border-top: 1px solid var(--color-border); font-size: 11px; }
