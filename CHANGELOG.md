@@ -60,6 +60,18 @@ Route original assertion input through Success or Failure. Leave unmatched conne
 Merge branch 'develop' into feature/workflow-processing-nodes
 ```
 
+<!-- changelog-commit:030a8ffdc6740dd72a2f9cebc0a2730285b696a6 -->
+### Commit [`030a8ff`](https://github.com/superhero/operations.superduper.solutions/commit/030a8ffdc6740dd72a2f9cebc0a2730285b696a6)
+
+```text
+feat(workflow): add an optional Stop node
+
+End the run normally when Stop receives a value, including in nested workflows. Keep unmatched Assert and inactive Switch connections inactive, and release processing resources before another step is prepared.
+
+Expose the input-only node in the toolbar, history, Undo and portable workflows. Cover routing and restoration with focused source and browser scenarios.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

@@ -18,7 +18,7 @@ import { processingDefinition, processingPreview } from "./workflow-processing.t
 
 type Node = WorkflowDocumentNode;
 type DataNode = Extract<Node, { type: "data" }>;
-type Owner = Exclude<Node, { type: "data" | "switch" | "cast" | "comment" | "vault" | "file" | "transform" | "filter" | "assert" }>;
+type Owner = Exclude<Node, { type: "data" | "switch" | "cast" | "comment" | "vault" | "file" | "transform" | "filter" | "assert" | "stop" }>;
 type OperationNode = Exclude<Owner, { type: "workflow" }>;
 type RoutingNode = Extract<Node, { type: "switch" | "cast" | "transform" | "filter" | "assert" }>;
 type State = "idle" | "queued" | "running" | "complete" | "skipped";
@@ -266,6 +266,13 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     return processing ??= createProcessingExecutor();
   };
 
+  function endRun(reason: string) {
+    stopped = true;
+    pending?.abort(); processingController?.abort(); processing?.dispose();
+    current = undefined; choice = undefined; terminalError = undefined;
+    stack.length = 0; message = reason;
+  }
+
   function queue(frame: Frame, id: string)
   {
     if (!frame.started && frame.rows) {
@@ -279,6 +286,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
 
   function emit(frame: Frame, nodeId: string, handle: string, value: unknown)
   {
+    if (stopped) return;
     const key = port(nodeId, handle);
     if (value !== inactive && value !== unsupplied) frame.values.set(key, isStaticSource(frame, nodeId) ? value : structuredClone(value));
     else frame.values.delete(key);
@@ -297,6 +305,11 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         if (!Array.isArray(value)) throw new Error("An Item connection requires uploaded array data.");
         rowValue = frame.rows.index < value.length ? value[frame.rows.index] : inactive;
       }
+      if (rowValue !== inactive && rowValue !== unsupplied && frame.nodes.get(edge.target)?.type === "stop") {
+        frame.states.set(edge.target, "complete");
+        endRun("Workflow stopped.");
+        return;
+      }
       frame.contributions.set(edge.id, rowValue === inactive ? { state: "inactive" } : rowValue === unsupplied ? { state: "empty" } : { state: "value", value: structuredClone(rowValue) });
     }
   }
@@ -307,6 +320,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     const headers = response && node.type !== "workflow" ? responseHeaderReader(node.data.operationId, response.status, response.headers) : undefined;
     for (const panel of dataNodes(frame, node.id, "outputs")) for (const field of panel.data.fields)
     {
+      if (stopped) return;
       let value: unknown = inactive;
       if (child && field.endpoint)
       {
@@ -328,12 +342,15 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
   function settle(frame: Frame)
   {
     for (const node of frame.document.nodes) {
+      if (stopped) return;
       if (node.type === "file" && !node.hidden && frame.states.get(node.id) === "idle") {
         frame.states.set(node.id, "complete");
         if (node.data.file) {
           emit(frame, node.id, "value", node.data.file.value);
-          for (const panel of dataNodes(frame, node.id, "outputs")) for (const field of panel.data.fields)
+          for (const panel of dataNodes(frame, node.id, "outputs")) for (const field of panel.data.fields) {
+            if (stopped) return;
             emit(frame, panel.id, field.id, field.connectable ? fileProjection(node, field) : inactive);
+          }
         }
       }
       if (node.type !== "vault" || node.hidden || frame.states.get(node.id) !== "idle") continue;
@@ -355,6 +372,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       for (const node of frame.document.nodes.filter((node): node is Owner | RoutingNode =>
         isOwner(node) || node.type === "switch" || node.type === "cast" || node.type === "transform" || node.type === "filter" || node.type === "assert"))
       {
+        if (stopped) return;
         if (node.hidden || frame.states.get(node.id) !== "idle" || !incoming(frame, node.id).length ||
           frame.rows?.active && !frame.rows.active.has(node.id)) continue;
         const input = inputs(frame, node.id);
@@ -546,12 +564,13 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         const frame = stack.at(-1);
         if (!frame) { stopped = true; processing?.dispose(); return { kind: "complete", message }; }
         settle(frame);
+        if (stopped) return { kind: "complete", message };
         if (!frame.started)
         {
           const roots = frame.owners.filter(node => !incoming(frame, node.id).some(edge => !isStaticSource(frame, edge.source)));
           const candidates = roots.length ? roots : frame.owners;
           if (!candidates.length) {
-            if (frame.document.nodes.some(node => ["transform", "filter", "assert"].includes(node.type!))) { frame.started = true; continue; }
+            if (frame.document.nodes.some(node => ["transform", "filter", "assert", "stop"].includes(node.type!))) { frame.started = true; continue; }
             throw new Error("This workflow has no operations to run. Add an operation first.");
           }
           if (candidates.length > 1)
@@ -675,7 +694,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       pending?.abort();
       if (processingController) { processingController.abort(); processing?.dispose(); processing = undefined; }
     },
-    end() { stopped = true; pending?.abort(); processingController?.abort(); processing?.dispose(); current = undefined; choice = undefined; terminalError = undefined; stack.length = 0; message = "Run ended."; },
+    end() { endRun("Run ended."); },
     get done() { return stopped; }
   };
 }

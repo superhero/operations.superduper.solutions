@@ -46,6 +46,7 @@ function labels(document: WorkflowDocument)
     if (node.type === undefined || node.type === "operation") return `${quote(node.data.name)}${ordinal}`;
     if (node.type === "workflow") return `Workflow ${quote(node.data.name)}${ordinal}`;
     if (node.type === "comment") return `Comment${ordinal}${node.data.text.trim() ? ` ${quote(node.data.text)}` : ""}`;
+    if (node.type === "stop") return `Stop${ordinal}`;
     if (node.type === "transform" || node.type === "filter" || node.type === "assert") return `${processingDefinition(node.type, node.data).label}${ordinal}`;
     return `${node.type === "file" ? "File upload" : node.type === "vault" ? "Vault variable" : node.type === "switch" ? "Switch" : "Cast"}${ordinal}`;
   };
@@ -67,6 +68,7 @@ function labels(document: WorkflowDocument)
       return `${label} · Input`;
     }
     if (node.type === "cast") return `${label} · ${handle === "result" ? "Result" : "Input"}`;
+    if (node.type === "stop") return `${label} · Input`;
     if (node.type === "transform" || node.type === "filter" || node.type === "assert") return `${label} · ${handle === "success" ? "Success" : handle === "failure" ? "Failure" : handle === "key" ? "Signing key" : handle === "result" ? "Result" : "Input"}`;
     return label;
   };

@@ -7,7 +7,7 @@ import { Then } from '@cucumber/cucumber';
 import { defaultProcessingData, processingOperations, processWorkflowValue, processingPointer, validateProcessingData, validateProcessingValue, processingOutputType, processingPreview } from './lib/workflow-processing.ts';
 import { encodeWorkflowBinary, workflowBinaryBlob } from './lib/workflow-binary.ts';
 import { defaultCsvOptions, parseWorkflowFile, readWorkflowFile } from './lib/workflow-file.ts';
-import { createUtilityNode, createOperationGraph, createFileDataGraph, isWorkflowConnection, insertFileBinaryCast } from './lib/workflow-graph.ts';
+import { createUtilityNode, createOperationGraph, createFileDataGraph, createWorkflowGraph, isWorkflowConnection, insertFileBinaryCast } from './lib/workflow-graph.ts';
 import { isWorkflowConnectionTypeCompatible, routingInputTypes } from './lib/workflow-utilities.ts';
 import { validateWorkflowDocument, portableWorkflowDocument, parseWorkflowDocument } from './lib/workflow-document.ts';
 import { copyWorkflowSelection, pasteWorkflowSelection } from './lib/workflow-clipboard.ts';
@@ -46,6 +46,95 @@ function targetDocument(nodes, edges, from, handle = 'result') {
   return doc([...nodes, ...graph.nodes], [...edges, ...graph.edges, edge(from, input.nodeId, handle, input.handle)]);
 }
 const bytes = async value => new Uint8Array(await workflowBinaryBlob(value).arrayBuffer());
+const stopNode = () => createUtilityNode('stop', { x: 650, y: 0 }, 'stop');
+
+Then('Stop nodes retain documents clipboard and input-only connection identities', () => {
+  const source = file('original'), stop = stopNode(), proposed = edge('file', 'stop', 'value');
+  const graph = doc([source, stop], [proposed]);
+  assert.deepEqual(parseWorkflowDocument(JSON.stringify(graph)), graph);
+  assert.deepEqual(portableWorkflowDocument(graph), graph);
+  assert.ok(pasteWorkflowSelection(copyWorkflowSelection(graph, ['stop'], []), 32).nodes.some(node => node.type === 'stop'));
+  assert.equal(isWorkflowConnection(proposed, graph.nodes, []), true);
+  assert.equal(isWorkflowConnection({ ...proposed, targetHandle: 'result' }, graph.nodes, []), false);
+  assert.equal(isWorkflowConnection(edge('stop', 'file', 'result'), graph.nodes, []), false);
+  const assertion = processNode('assert', 'expect');
+  assert.equal(isWorkflowConnection(edge('assert', 'stop', 'failure'), [assertion, stop], []), true);
+  assert.match(describeWorkflowChange(doc([]), doc([stop])), /Add.*Stop/);
+  assert.match(describeWorkflowChange(doc([source, stop]), graph), /Stop.*Input/);
+  assert.throws(() => validateWorkflowDocument(doc([{ ...stop, data: { unknown: true } }])));
+  assert.throws(() => validateWorkflowDocument({ ...doc([stop]), version: 2 }));
+});
+
+Then('matched assertions stop immediately before another operation is prepared', async () => {
+  for (const [expected, active, other] of [['other', 'failure', 'success'], ['original', 'success', 'failure']]) {
+    let disposed = 0;
+    const graph = targetDocument([stopNode(), file('original'), processNode('assert', 'expect', { operator: 'equals', expected })],
+      [edge('file', 'assert', 'value'), edge('assert', 'stop', active)], 'assert', other);
+    const runner = createWorkflowRunner(graph, 'target', createWorkflowDemo(), { ...executor(), dispose() { disposed++; } });
+    assert.deepEqual(await runner.nextAsync(), { kind: 'complete', message: 'Workflow stopped.' });
+    assert.equal(runner.done, true);
+    assert.equal(disposed, 1);
+    assert.deepEqual(await runner.nextAsync(), { kind: 'complete', message: 'Workflow stopped.' });
+    await assert.rejects(runner.submit({ 'body:$': 'must not send' }), /no operation ready/);
+  }
+});
+
+Then('unmatched inactive hidden and detached connections never activate Stop', async () => {
+  for (const [expected, active, other] of [['original', 'success', 'failure'], ['other', 'failure', 'success']]) {
+    const graph = targetDocument([file('original'), processNode('assert', 'expect', { operator: 'equals', expected }), stopNode()],
+      [edge('file', 'assert', 'value'), edge('assert', 'stop', other)], 'assert', active);
+    const runner = createWorkflowRunner(graph, 'target', createWorkflowDemo(), executor());
+    const next = await runner.nextAsync();
+    assert.equal(next.values['body:$'], 'original');
+    await runner.submit(next.values);
+    assert.equal((await runner.nextAsync()).message, 'Workflow complete.');
+  }
+  const switchNode = { ...createUtilityNode('switch', { x: 300, y: 0 }, 'switch'), data: { gates: [{ id: 'gate-1', operator: '==', value: 'other' }] } };
+  const switched = createWorkflowRunner(doc([file('original'), switchNode, stopNode()], [edge('file', 'switch', 'value'), edge('switch', 'stop', 'gate-1')]), undefined, createWorkflowDemo());
+  assert.equal((await switched.nextAsync()).message, 'Workflow complete.');
+  const hidden = { ...stopNode(), hidden: true };
+  assert.equal((await createWorkflowRunner(doc([file('original'), hidden]), undefined, createWorkflowDemo()).nextAsync()).message, 'Workflow complete.');
+  for (const [stop, connection] of [[hidden, edge('file', 'stop', 'value')], [stopNode(), { ...edge('file', 'stop', 'value'), detached: true }], [stopNode(), { ...edge('file', 'stop', 'value'), hidden: true }]])
+    assert.throws(() => validateWorkflowDocument(doc([file('original'), stop], [connection])));
+  assert.equal((await createWorkflowRunner(doc([stopNode()]), undefined, createWorkflowDemo()).nextAsync()).message, 'Workflow complete.');
+});
+
+Then('Stop accepts empty falsy binary and private inputs without processing or decryption', async () => {
+  const fail = async () => assert.fail('Stop must not compute or decrypt its input');
+  for (const source of [0, false, null, '', [], {}, encodeWorkflowBinary('bytes.bin', Uint8Array.of(0, 255))].map(value => file(value)).concat([
+    { id: 'vault', type: 'vault', position: { x: 0, y: 0 }, data: { credentialId: uuid } }
+  ])) {
+    const runner = createWorkflowRunner(doc([source, stopNode()], [edge(source.id, 'stop', 'value')]), undefined, createWorkflowDemo(), { process: fail, assertPrivate: fail, dispose() {} });
+    assert.equal((await runner.nextAsync()).message, 'Workflow stopped.');
+    assert.deepEqual(runner.processingResults, []);
+  }
+});
+
+Then('an operation response connected to Stop prevents the following request', async () => {
+  const first = projectGraph('first'), second = projectGraph('second'), input = field(second);
+  const panel = first.nodes.find(node => node.type === 'data' && node.data.direction === 'outputs' && node.data.fields.some(field => field.connectable && JSON.parse(decodeURIComponent(field.id))[1] === '/body/data'));
+  assert.ok(panel, 'The example response exposes its data value');
+  const output = panel.data.fields.find(field => field.connectable && JSON.parse(decodeURIComponent(field.id))[1] === '/body/data');
+  let requests = 0;
+  const demoExecution = createWorkflowDemo();
+  const execution = { execute(...args) { requests++; return demoExecution.execute(...args); } };
+  const graph = doc([...first.nodes, ...second.nodes, stopNode()], [...first.edges, ...second.edges,
+    edge(panel.id, input.nodeId, output.id, input.handle), edge(panel.id, 'stop', output.id)]);
+  const runner = createWorkflowRunner(graph, 'first', execution);
+  const next = await runner.nextAsync();
+  await runner.submit({ ...next.values, 'body:$': 'original' });
+  assert.deepEqual(await runner.nextAsync(), { kind: 'complete', message: 'Workflow stopped.' });
+  assert.equal(requests, 1);
+});
+
+Then('Stop inside a nested workflow ends the complete run', async () => {
+  const child = doc([file('original'), stopNode()], [edge('file', 'stop', 'value')]);
+  const nested = createWorkflowGraph(child, { x: 0, y: 0 }, 'nested');
+  const after = projectGraph('after');
+  const runner = createWorkflowRunner(doc([...nested.nodes, ...after.nodes], [...nested.edges, ...after.edges]), 'nested', createWorkflowDemo());
+  assert.deepEqual(await runner.nextAsync(), { kind: 'complete', message: 'Workflow stopped.' });
+  assert.equal(runner.done, true);
+});
 
 Then('workflow encoders preserve UTF-8 Base64 Base64url and hexadecimal values', async () => {
   const input = '🙂é', expected = Uint8Array.of(240, 159, 153, 130, 195, 169);

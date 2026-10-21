@@ -3,6 +3,23 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @workflow-processing
 Feature: Workflow processing controls and execution
+  Scenario Outline: Stop supports editing and restoration
+    When I use a viewport of <width> by 900 pixels
+    Then Stop can be added undone exported and restored with only an input
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  Scenario Outline: Stop follows the matched assertion outcome
+    Then Stop connected to assertion Failure <outcome> the run without an error
+
+    Examples:
+      | outcome   |
+      | ends      |
+      | preserves |
+
   Scenario Outline: Independent processing nodes retain configuration history and restoration
     When I use a viewport of <width> by 900 pixels
     Then Transform Filter and Assert can be configured undone exported and restored
