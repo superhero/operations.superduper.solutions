@@ -3,6 +3,9 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Bundled service schema integrity
+  Scenario: Permission metadata cannot silently authenticate an anonymous operation
+    Then anonymous service operations reject permission metadata without a security declaration
+
   Scenario: DigitalOcean bearer permissions no longer block private credential dispatch
     Then DigitalOcean published permissions become canonical metadata and dispatch private unchanged bearer tokens
 

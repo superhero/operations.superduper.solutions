@@ -6,6 +6,9 @@
 Feature: Approved credential execution
   Credentials leave the worker only for an explicitly approved operation and selected authentication alternative.
 
+  Scenario: Private JSON values retain their request body types
+    Then private JSON expressions retain null and structured values in approved request bodies
+
   Scenario: Approval fingerprints bind complete immutable operation definitions
     Then credential approval fingerprints bind complete immutable operation definitions
 

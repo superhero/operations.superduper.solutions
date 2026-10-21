@@ -107,8 +107,9 @@ function security(document: Value, source: Value, operation: Operation): Operati
     : source.security === undefined ? document : {};
   if (!Array.isArray(declaration)) {
     const result = extractOperationSecurity(document, source);
-    const permissions = extractCredentialPermissions(permissionSource["x-credential-permissions"], result);
-    if (permissions) operation.credentialPermissions = permissions;
+    // With no security declaration, supplied permission metadata is rejected.
+    // A valid permissions result requires an array declaration handled below.
+    extractCredentialPermissions(permissionSource["x-credential-permissions"], result);
     return result;
   }
   const schemes = value(value(document.components).securitySchemes);

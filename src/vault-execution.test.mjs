@@ -9,6 +9,7 @@ import { CredentialResponseError, executeCredentialed } from "./lib/secrets/exec
 import { InputValidationError } from "./lib/operation-input.ts";
 import { extractOperations } from "./lib/catalog.ts";
 import { VaultError, vaultLimits } from "./lib/secrets/types.ts";
+import { vaultVariablePlaceholder } from "./lib/secrets/variables.ts";
 
 const canary = "credential-CANARY-17";
 const bearer = { name: "Bearer", kind: "bearer", header: "Authorization" };
@@ -40,6 +41,22 @@ const denied = error => error instanceof VaultError && error.code === "PERMISSIO
 async function execute(state, { values = {}, fetchRequest = async () => response(), ...options } = {}) {
   return executeCredentialed(state.descriptor, values, state.binding, state.credentials, { assertCurrent() {}, fetchRequest, ...options });
 }
+
+Then('private JSON expressions retain null and structured values in approved request bodies', async () => {
+  const operation = { ...baseOperation(), method: 'POST', bodyRequired: true, bodyValue: true, bodyMediaType: 'application/json',
+    fields: [field('body', '$', { type: 'json', required: true, schema: { type: 'json', nullable: true } })],
+    bodySchema: { type: 'json', nullable: true } };
+  const state = await fixture(operation);
+  for (const value of [null, { enabled: false, values: [0, 'safe'] }]) {
+    let requests = 0, sentBody;
+    await execute(state, { values: { 'body:$': vaultVariablePlaceholder },
+      variables: [{ key: 'body:$', path: [], expression: { kind: 'literal', value } }],
+      fetchRequest: async (_url, request) => { requests++; sentBody = request.body; return response(); } });
+    assert.equal(requests, 1);
+    assert.equal(typeof sentBody, 'string');
+    assert.deepEqual(JSON.parse(sentBody), value);
+  }
+});
 
 Then("credential approval fingerprints bind complete immutable operation definitions", async () => {
   const operation = baseOperation();

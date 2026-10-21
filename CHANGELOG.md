@@ -548,6 +548,35 @@ prefix before reaching the rest of the scenario.
 
 ```
 
+<!-- changelog-commit:1acc50e8d0adcea010e61719b249a07e769f07f1 -->
+### Commit [`1acc50e`](https://github.com/superhero/operations.superduper.solutions/commit/1acc50e8d0adcea010e61719b249a07e769f07f1)
+
+```text
+fix(workflow): guard callback ports and degenerate curve drawings
+
+Keep obsolete inline predicate operands off callback-based Filter array
+nodes, while retaining compatibility with saved inline filters. Preserve a
+finite drawable path when coincident endpoints exhaust the curve budget.
+
+Exercise callback ownership, capture validation, processing contracts,
+cancellation, private JSON bodies and routing boundaries. Remove fallbacks
+that cannot occur under the validated Markdown, security and row contracts
+so the release coverage gate checks reachable behavior.
+
+```
+
+<!-- changelog-commit:9d2c156003286ed935531241486e023cb0be6e53 -->
+### Commit [`9d2c156`](https://github.com/superhero/operations.superduper.solutions/commit/9d2c156003286ed935531241486e023cb0be6e53)
+
+```text
+build(schemas): refresh the adapter discovery fingerprint
+
+Regenerate the discovery manifest after the service adapter invariant
+simplification. The compressed catalog indexes are unchanged; update the
+source fingerprint so the build verifies the equivalent generated output.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
