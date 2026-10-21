@@ -182,6 +182,21 @@ Undo history and execution behavior.
 
 ```
 
+<!-- changelog-commit:79b39bd0e4d872fac8a6b5fb3ada08e4801291cf -->
+### Commit [`79b39bd`](https://github.com/superhero/operations.superduper.solutions/commit/79b39bd0e4d872fac8a6b5fb3ada08e4801291cf)
+
+```text
+fix(ui): prevent dropdown hover scroll after opening
+
+Keep pointer hover over clipped options from forcing the select list to
+scroll after opening. Preserve direct clicking and explicit wheel, touch
+and keyboard scrolling, and release cached hover geometry with the popup.
+
+Record the reproduced Brave movement and focused cross-browser checks;
+allow the browser harness to use an installed Chromium variant.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
