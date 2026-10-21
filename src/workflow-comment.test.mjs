@@ -40,6 +40,7 @@ Then("workflow comments render mdit extensions with independent safe identifiers
   const first = renderMarkdown(text, 'first'), second = renderMarkdown(text, 'second');
   for (const pattern of [/<input[^>]*checked="checked"/, /disabled="disabled"/, /<mark>highlight<\/mark>/, /<ins>inserted<\/ins>/, /<sub>2<\/sub>/, /<sup>2<\/sup>/, /class="footnotes"/]) assert.match(first, pattern);
   const ids = html => [...html.matchAll(/ id="([^"]+)"/g)].map(match => match[1]);
+  assert.equal(new Set(ids(first)).size, ids(first).length, 'Task and footnote identifiers must also be unique within one comment.');
   assert.ok(ids(first).length >= 4); assert.ok(ids(first).every(id => !ids(second).includes(id)));
   for (const match of first.matchAll(/(?:for|href)="(?:#)?(markdown-[^"]+|footnote[^"]+)"/g)) assert.ok(ids(first).includes(match[1]), match[1]);
   assert.equal(renderMarkdown(text, 'first'), first);

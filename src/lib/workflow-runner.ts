@@ -430,7 +430,6 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
               ...(arrayFilter ? { predicate: structuredClone(arrayFilter.predicate) } : {}) } } satisfies PrivateProcessingReference;
             else result = await (await processor()).process(node.type, node.data, value, key, Object.keys(parameters).length ? parameters : undefined, arrayFilter?.predicate);
             controller.signal.throwIfAborted();
-            if (stopped) return;
             if (node.type === "assert") {
               emit(frame, node.id, "success", result ? value : unsupplied);
               emit(frame, node.id, "failure", result ? unsupplied : value);

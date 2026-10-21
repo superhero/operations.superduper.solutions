@@ -128,7 +128,7 @@ export function routingInputTypes(nodes: WorkflowDocumentNode[], edges: Workflow
         else if (source?.type === "data" && source.data.direction === "outputs")
         {
           const field = source.data.fields.find(field => field.id === edge.sourceHandle);
-          const type = isFileRowConnection(edge, nodes, edges) ? field?.itemType ?? "Unknown" : field?.type ?? "Unknown";
+          const type = isFileRowConnection(edge, nodes, edges) ? field!.itemType! : field?.type ?? "Unknown";
           outputs = [type === "Integer" ? "Number" : type];
         }
         for (const type of outputs) if (!types.get(edge.target)!.has(type))

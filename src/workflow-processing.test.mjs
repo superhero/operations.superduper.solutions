@@ -4,12 +4,12 @@
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { Then } from '@cucumber/cucumber';
-import { defaultProcessingData, processingOperations, processingInputTypes, processWorkflowValue, processingPointer, validateProcessingData, validateProcessingValue, processingOutputType, processingTypeLabel, processingPreview } from './lib/workflow-processing.ts';
+import { defaultProcessingData, processingOperations, processingInputTypes, processingExpectedTypes, processWorkflowValue, processingPointer, validateProcessingData, validateProcessingValue, processingOutputType, processingTypeLabel, processingPreview } from './lib/workflow-processing.ts';
 import { readFieldMappings, writeFieldMappings } from './lib/workflow-field-mappings.ts';
 import { encodeWorkflowBinary, workflowBinaryBlob } from './lib/workflow-binary.ts';
 import { defaultCsvOptions, parseWorkflowFile, readWorkflowFile } from './lib/workflow-file.ts';
 import { createUtilityNode, createOperationGraph, createFileDataGraph, createWorkflowGraph, isWorkflowConnection, insertFileBinaryCast, canAddArrayFilterAssertion, addArrayFilterAssertion, removeGraphSelection } from './lib/workflow-graph.ts';
-import { isWorkflowConnectionTypeCompatible, routingInputTypes } from './lib/workflow-utilities.ts';
+import { isWorkflowConnectionTypeCompatible, isFileRowConnection, matchesSwitchGate, routingInputTypes } from './lib/workflow-utilities.ts';
 import { validateWorkflowDocument, portableWorkflowDocument, parseWorkflowDocument } from './lib/workflow-document.ts';
 import { copyWorkflowSelection, pasteWorkflowSelection } from './lib/workflow-clipboard.ts';
 import { describeWorkflowChange } from './lib/workflow-change-message.ts';
@@ -22,7 +22,7 @@ import { executeCredentialed } from './lib/secrets/execution.ts';
 import { checkPrivateAssertion, containsPrivateValue, privateExpressionFor, resolvePrivateExpression, validatePrivateExpression } from './lib/secrets/processing.ts';
 import { validateVaultVariableInputs, vaultVariablePlaceholder } from './lib/secrets/variables.ts';
 import { arrayFilterPlans } from './lib/workflow-array-filter.ts';
-import { validateArrayPredicate } from './lib/workflow-array-predicate.ts';
+import { validateArrayPredicate, filterArrayWithPredicate } from './lib/workflow-array-predicate.ts';
 
 const data = (kind, operation, parameters = {}) => ({ ...defaultProcessingData(kind, operation), parameters: {
   ...defaultProcessingData(kind, operation).parameters,
@@ -88,6 +88,149 @@ function arrayAssertionGraph(input, { cast = true, operator = 'greater_than', ex
     edge('filter', cast ? 'cast' : 'assert', 'item'), ...(cast ? [edge('cast', 'assert')] : []),
     edge('assert', 'filter', invert ? 'failure' : 'success', 'success'), edge('assert', 'filter', invert ? 'success' : 'failure', 'failure')]);
 }
+
+Then('array callback recipes reject malformed steps captures and nested iteration', async () => {
+  const assertion = { type: 'assert', data: data('assert', 'expect', { operator: 'equals' }), bindings: {} };
+  const recipe = { steps: [assertion], keep: 'success' };
+  for (const value of [null, [], {}, { ...recipe, extra: true }, { ...recipe, keep: 'other' },
+    { ...recipe, steps: null }, { ...recipe, steps: [] }, { ...recipe, steps: Array(33).fill(assertion) },
+    { ...recipe, steps: [null] }, { ...recipe, steps: [{ type: 'cast', targetType: 'Number' }] },
+    ...[[], Object.fromEntries(Array.from({ length: 17 }, (_, i) => [String(i), 'capture'])),
+      { value: 'capture' }, { unsupported: 'capture' }, { expected: 42 }, { expected: '' }, { expected: 'x'.repeat(513) }]
+      .map(bindings => ({ ...recipe, steps: [{ ...assertion, bindings }] })),
+    { ...recipe, steps: [{ type: 'filter', data: data('filter', 'array_filter'), bindings: {} }, assertion] }])
+    assert.throws(() => validateArrayPredicate(value), /Invalid|Nested|must end/);
+  await assert.rejects(filterArrayWithPredicate({}, recipe, {}, processWorkflowValue), /Array input/);
+  const captured = { ...recipe, steps: [{ ...assertion, bindings: { expected: 'cutoff' } }] };
+  for (const captures of [null, [], {}, { other: false }, { cutoff: false, extra: 1 }])
+    await assert.rejects(filterArrayWithPredicate([0, false, null], captured, captures, processWorkflowValue), /unresolved input/);
+  assert.deepEqual(await filterArrayWithPredicate([0, false, null], captured, { cutoff: false }, processWorkflowValue), [false]);
+  assert.deepEqual(await filterArrayWithPredicate([0, false, null], captured, { cutoff: null }, processWorkflowValue), [null]);
+  for (const [type, operation] of [['transform', 'json_stringify'], ['filter', 'trim']])
+    assert.throws(() => validatePrivateExpression({ kind: 'process', type, data: data(type, operation),
+      value: { kind: 'literal', value: 'x' }, predicate: recipe }), error => error.code === 'INVALID');
+});
+
+Then('array callback graphs reject foreign steps ambiguous operands and escaping captures', () => {
+  const reject = (change, message) => { const graph = arrayAssertionGraph([1, 2]); change(graph); assert.throws(() => arrayFilterPlans(graph), message); };
+  reject(graph => { graph.edges.find(link => link.sourceHandle === 'item').targetHandle = 'expected'; }, /bounded processing paths/);
+  reject(graph => { graph.edges.find(link => link.source === 'cast').target = 'cast'; }, /one item input/);
+  reject(graph => { graph.nodes = graph.nodes.map(node => node.id === 'cast' ? { ...stopNode(), id: 'cast' } : node); }, /final Assert/);
+  reject(graph => { graph.edges.push(edge('file', 'cast', 'value', 'value', 'duplicate-main')); }, /one item input/);
+  reject(graph => { graph.edges.push(edge('file', 'cast', 'value', 'key')); }, /Unsupported.*operand/);
+  reject(graph => { graph.edges.push(edge('file', 'assert', 'value', 'expected', 'operand-one'), edge('file', 'assert', 'value', 'expected', 'operand-two')); }, /one source/);
+  reject(graph => { graph.edges.push(edge('filter', 'assert', 'result', 'expected')); }, /own item path/);
+  reject(graph => { graph.nodes.push(processNode('filter', 'array_filter', {}, 'other-filter')); graph.edges.push(edge('other-filter', 'assert', 'item', 'expected')); }, /own item path/);
+});
+
+Then('processing contracts retain integer unions and reject invalid connected data', async () => {
+  const array = data('filter', 'array_filter');
+  for (const handle of ['success', 'failure']) assert.ok(processingInputTypes('filter', array, handle).includes('Binary'));
+  assert.equal(processingInputTypes('filter', array, 'expected'), undefined);
+  assert.ok(processingInputTypes('filter', data('filter', 'array_filter', { operator: 'equals' }), 'expected').includes('Object'));
+  assert.equal(processingTypeLabel('Text'), 'Text');
+  const draft = { ...data('assert', 'expect'), parameters: {} };
+  assert.deepEqual(processingExpectedTypes(draft, 'Number'), ['Number']);
+  assert.deepEqual(processingInputTypes('assert', draft, 'expected', 'Number'), ['Number']);
+  assert.ok(processingExpectedTypes(data('assert', 'expect', { path: '/value', operator: 'equals' }), 'Object').includes('Binary'));
+  assert.deepEqual(processingExpectedTypes(data('assert', 'expect', { operator: 'contains' }), 'Text'), ['Text']);
+  assert.ok(processingExpectedTypes(data('assert', 'expect', { operator: 'contains' }), 'Array').includes('Binary'));
+  assert.ok(processingExpectedTypes(data('assert', 'expect', { operator: 'contains' }), 'JSON').includes('Object'));
+  assert.equal(matchesSwitchGate(4, { id: 'number', operator: '>', value: '3' }, 'JSON'), true);
+  for (const parameters of [null, []]) await assert.rejects(processWorkflowValue('filter', data('filter', 'trim'), ' x ', undefined, parameters), /Invalid connected/);
+  // A declared result contract must catch an inconsistent adapter instead of silently mistyping a connection.
+  const definition = processingOperations.find(operation => operation.id === 'trim'), output = definition.output;
+  try {
+    definition.output = 'Number';
+    await assert.rejects(processWorkflowValue('filter', data('filter', 'trim'), ' x '), /Number output type/);
+    definition.output = 'Unknown';
+    assert.equal(await processWorkflowValue('filter', data('filter', 'trim'), ' x '), 'x');
+    definition.output = 'Integer';
+    await assert.rejects(processWorkflowValue('filter', data('filter', 'trim'), ' x '), /Integer output type/);
+    const graph = doc([file(' x '), processNode('filter', 'trim'), processNode('assert', 'expect')], [edge('file', 'filter', 'value'), edge('filter', 'assert')]);
+    assert.equal(routingInputTypes(graph.nodes, graph.edges).get('assert'), 'Number');
+  } finally { definition.output = output; }
+  const parsing = processingOperations.find(operation => operation.id === 'json_parse'), parsedOutput = parsing.output;
+  try {
+    parsing.output = 'Number';
+    assert.equal(await processWorkflowValue('transform', data('transform', 'json_parse'), '7'), 7, 'An Integer result satisfies a declared Number output.');
+  } finally { parsing.output = parsedOutput; }
+  const vault = { id: 'vault', type: 'vault', position: { x: 0, y: 0 }, data: { credentialId: uuid } };
+  const assertion = processNode('assert', 'expect', { operator: 'is_set' });
+  assert.equal(routingInputTypes([vault, assertion], [edge('vault', 'assert', 'value')]).get('assert'), 'Text');
+  assert.equal(isWorkflowConnectionTypeCompatible(edge('vault', 'assert', 'value', 'expected'), [vault, assertion], []), false);
+  const first = createUtilityNode('switch', { x: 0, y: 0 }, 'first'), second = createUtilityNode('switch', { x: 0, y: 0 }, 'second');
+  const cycles = [edge('first', 'second', first.data.gates[0].id), edge('second', 'first', second.data.gates[0].id)];
+  assert.equal(isWorkflowConnectionTypeCompatible(edge('first', 'assert', first.data.gates[0].id), [first, second, assertion], cycles), false);
+  const left = processNode('assert', 'expect', {}, 'left'), right = processNode('assert', 'expect', {}, 'right');
+  const processingCycle = [edge('left', 'right', 'success'), edge('right', 'left', 'success')];
+  assert.equal(isWorkflowConnectionTypeCompatible(edge('left', 'assert', 'success'), [left, right, assertion], processingCycle), false);
+  const fileNode = file([1]), panel = { id: 'column', type: 'data', position: { x: 0, y: 0 }, data: { ownerId: 'file', direction: 'outputs', label: 'Column', fields: [{ id: 'column-value', label: 'Value', type: 'Array', itemType: 'Integer', connectable: true }] } };
+  const inputs = assertion.data, declaration = processingOperations.find(operation => operation.id === 'expect'), accepted = declaration.inputs;
+  try {
+    declaration.inputs = ['Array', 'Number'];
+    assert.equal(isFileRowConnection(edge('column', 'assert', 'column-value'), [fileNode, panel, assertion]), true, 'Integer row items satisfy a Number input.');
+    declaration.inputs = ['Array'];
+    assert.equal(isFileRowConnection(edge('column', 'assert', 'column-value'), [fileNode, panel, assertion]), false, 'An Array-only input keeps the complete column.');
+  } finally { declaration.inputs = accepted; }
+  assert.equal(assertion.data, inputs);
+});
+
+Then('processing runners propagate empty inactive and stopped branches without stale results', async () => {
+  for (const type of ['assert', 'switch']) {
+    const next = type === 'assert' ? processNode('assert', 'expect', {}, 'next') : createUtilityNode('switch', { x: 0, y: 0 }, 'next');
+    const graph = doc([file(0), processNode('assert', 'expect', { operator: 'greater_than', expected: '1' }), next], [edge('file', 'assert', 'value'), edge('assert', 'next', 'success')]);
+    const runner = createWorkflowRunner(graph, undefined, createWorkflowDemo(), executor());
+    assert.equal((await runner.nextAsync()).kind, 'complete');
+    assert.equal(runner.processingResults.length, 1, 'An unsupplied branch stays available for manual input without running downstream nodes.');
+    runner.end();
+  }
+  for (const type of ['assert', 'filter']) {
+    const choice = createUtilityNode('switch', { x: 0, y: 0 }, 'choice');
+    choice.data.gates[0].operator = 'is_set';
+    const target = processNode(type, type === 'assert' ? 'expect' : 'trim');
+    const graph = doc([file(null), choice, target], [edge('file', 'choice', 'value'), edge('choice', type, choice.data.gates[0].id)]);
+    const runner = createWorkflowRunner(graph, undefined, createWorkflowDemo(), executor());
+    assert.equal((await runner.nextAsync()).kind, 'complete');
+    assert.deepEqual(runner.processingResults, [], 'Inactive branches must not execute processing.');
+    runner.end();
+  }
+  for (const missing of ['value', 'key']) {
+    const graph = doc([file('x'), processNode('transform', 'hmac_sha256')], [edge('file', 'transform', 'value', missing === 'value' ? 'key' : 'value')]);
+    const runner = createWorkflowRunner(graph, undefined, createWorkflowDemo(), executor());
+    await assert.rejects(runner.nextAsync(), missing === 'value' ? /connected input value/ : /signing key/);
+    runner.end();
+  }
+  const stopped = createWorkflowRunner(doc([file('stop'), stopNode(), file('later', 'later')], [edge('file', 'stop', 'value')]), undefined, createWorkflowDemo(), executor());
+  assert.deepEqual(await stopped.nextAsync(), { kind: 'complete', message: 'Workflow stopped.' }); assert.equal(stopped.done, true);
+  const projectedSource = file({ first: 'stop', second: 'later' });
+  const projected = createFileDataGraph(projectedSource);
+  const stoppedBeforeProjection = createWorkflowRunner(doc([projectedSource, ...projected.nodes, stopNode()], [...projected.edges, edge('file', 'stop', 'value')]), undefined, createWorkflowDemo(), executor());
+  assert.deepEqual(await stoppedBeforeProjection.nextAsync(), { kind: 'complete', message: 'Workflow stopped.' });
+  const conversion = createUtilityNode('cast', { x: 0, y: 0 }, 'cast');
+  const stoppedAfterCast = createWorkflowRunner(doc([file('stop'), conversion, stopNode(), processNode('filter', 'trim')],
+    [edge('file', 'cast', 'value'), edge('cast', 'stop'), edge('file', 'filter', 'value')]), undefined, createWorkflowDemo(), executor());
+  assert.deepEqual(await stoppedAfterCast.nextAsync(), { kind: 'complete', message: 'Workflow stopped.' });
+  assert.equal(stoppedAfterCast.done, true); assert.deepEqual(stoppedAfterCast.processingResults, []);
+  for (const method of ['end', 'cancelPending']) {
+    let finish, started, disposals = 0;
+    const ready = new Promise(resolve => { started = resolve; });
+    const graph = doc([file(' x '), processNode('filter', 'trim')], [edge('file', 'filter', 'value')]);
+    const runner = createWorkflowRunner(graph, undefined, createWorkflowDemo(), { ...executor(), process: () => { started(); return new Promise(resolve => { finish = resolve; }); }, dispose() { disposals++; } });
+    const pending = runner.nextAsync(); await ready;
+    assert.throws(() => runner.next(), error => typeof error === 'symbol');
+    runner[method](); finish('x');
+    await assert.rejects(pending);
+    assert.deepEqual(runner.processingResults, []); assert.ok(disposals > 0);
+    runner.end();
+  }
+  const graph = doc([file(' x '), processNode('filter', 'trim')], [edge('file', 'filter', 'value')]);
+  const unavailable = createWorkflowRunner(graph, undefined, createWorkflowDemo());
+  await assert.rejects(unavailable.nextAsync(), /worker/i); unavailable.end();
+  const cancelled = createWorkflowRunner(graph, undefined, createWorkflowDemo());
+  const pending = cancelled.nextAsync(); cancelled.cancelPending();
+  await assert.rejects(pending, /cancelled/i); cancelled.end();
+});
 
 Then('adding an array assertion wires Is set and preserves existing graph ownership', async () => {
   const original = doc([file([0, false, '', null, 'kept']), processNode('filter', 'array_filter', { operator: 'equals', expected: 'old' }), file('old', 'operand')],

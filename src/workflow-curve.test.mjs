@@ -82,3 +82,69 @@ Then('routed curves restore diagonal Beziers and retain authored steering points
   }
   assert.deepEqual(route, before);
 });
+
+Then('curved drawings project off-stroke controls and retain bounded quadratic extrema', () => {
+  const edge = { sourceX: 0, sourceY: 0, sourcePosition: 'right', targetX: 200, targetY: 100, targetPosition: 'left' };
+  const route = { points: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }, { x: 200, y: 100 }], length: 300, status: 'routed' };
+  for (const strength of [0, 100 / 3, 5000 / 96, 100, 200]) {
+    const result = bezierDrawing(route, edge, strength, [], true), curves = cubics(result.path);
+    for (const probe of [{ x: 37, y: 23 }, { x: 103, y: 27 }, { x: 171, y: 84 }, { x: -10, y: -20 }]) {
+      const projected = result.locate(probe);
+      const samples = curves.flatMap(curve => Array.from({ length: 2049 }, (_, i) => at(curve, i / 2048)));
+      assert.ok(samples.some(sample => Math.hypot(sample.x - projected.x, sample.y - projected.y) < 0.2), 'A control must project onto its visible cubic.');
+      const nearest = Math.min(...samples.map(sample => Math.hypot(sample.x - probe.x, sample.y - probe.y)));
+      assert.ok(Math.hypot(projected.x - probe.x, projected.y - probe.y) <= nearest + 0.05, 'Projection must refine the nearest cached sample.');
+    }
+    for (const curve of curves) for (let i = 0; i <= 100; i++) {
+      const point = at(curve, i / 100);
+      assert.ok(Number.isFinite(point.x) && Number.isFinite(point.y));
+      assert.ok(point.x >= -64 && point.x <= 264 && point.y >= -64 && point.y <= 164);
+    }
+  }
+});
+
+Then('curved drawings open only the facing buffers of top and bottom ports', () => {
+  for (const down of [true, false]) {
+    const nodes = [{ id: 'source', x: -20, y: down ? 0 : 160, width: 40, height: 40 },
+      { id: 'target', x: 60, y: down ? 160 : 0, width: 40, height: 40 }];
+    const edge = { id: 'vertical', source: 'source', target: 'target', sourceX: 0, sourceY: down ? 40 : 160,
+      targetX: 80, targetY: down ? 160 : 40, sourcePosition: down ? 'bottom' : 'top', targetPosition: down ? 'top' : 'bottom' };
+    const route = routeEdges({ nodes, edges: [edge] }, { nodePadding: 16 }).get(edge.id);
+    assert.equal(route.status, 'routed');
+    const padded = nodes.map(node => ({ ...node, x: node.x - 16, y: node.y - 16, width: node.width + 32, height: node.height + 32 }));
+    const result = bezierDrawing(route, edge, 100, padded);
+    for (const curve of cubics(result.path)) for (let i = 0; i <= 100; i++) {
+      const point = at(curve, i / 100);
+      for (const node of nodes) assert.ok(!(point.x > node.x + 1e-6 && point.x < node.x + node.width - 1e-6 && point.y > node.y + 1e-6 && point.y < node.y + node.height - 1e-6), 'Only a facing port buffer may be crossed.');
+    }
+  }
+});
+
+const crowdedDrawing = (points, strength = 100) => bezierDrawing({ points, length: 0, status: 'routed' },
+  { sourceX: points[0].x, sourceY: points[0].y, targetX: points.at(-1).x, targetY: points.at(-1).y, sourcePosition: 'right', targetPosition: 'left' }, strength,
+  Array.from({ length: 8193 }, (_, i) => ({ id: `far-${i}`, x: 10_000 + i, y: 10_000, width: 1, height: 1 })));
+
+Then('curved drawings fall back to their checked route when obstacle certification is exhausted', () => {
+  const points = [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }, { x: 200, y: 100 }];
+  const before = structuredClone(points), result = crowdedDrawing(points);
+  for (const curve of cubics(result.path)) {
+    assert.deepEqual(curve[0], curve[1]); assert.deepEqual(curve[2], curve[3]);
+    for (let i = 0; i <= 10; i++) {
+      const point = at(curve, i / 10);
+      assert.ok(Math.abs(point.y) < 1e-7 && point.x >= -1e-7 && point.x <= 100 + 1e-7 || Math.abs(point.x - 100) < 1e-7 && point.y >= -1e-7 && point.y <= 100 + 1e-7 || Math.abs(point.y - 100) < 1e-7 && point.x >= 100 - 1e-7 && point.x <= 200 + 1e-7,
+        'Budget exhaustion must retain the already checked backbone.');
+    }
+  }
+  assert.deepEqual(points, before);
+});
+
+Then('coincident curved connections retain finite paths labels and controls', () => {
+  const point = { x: 0, y: 0 }, points = [point, { ...point }];
+  for (const crowded of [false, true]) {
+    const result = crowded ? crowdedDrawing(points) : bezierDrawing({ points, length: 0, status: 'routed' },
+      { sourceX: 0, sourceY: 0, targetX: 0, targetY: 0, sourcePosition: 'right', targetPosition: 'left' }, 0, []);
+    assert.deepEqual(result.midpoint, point);
+    assert.deepEqual(result.locate({ x: 1, y: 1 }), point);
+    assert.ok(cubics(result.path).flat().every(value => Number.isFinite(value.x) && Number.isFinite(value.y)));
+  }
+});
