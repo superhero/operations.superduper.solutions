@@ -169,6 +169,19 @@ the existing trigger styling.
 
 ```
 
+<!-- changelog-commit:8695f78e7da6565ef3e892e49ba77506955c6fd2 -->
+### Commit [`8695f78`](https://github.com/superhero/operations.superduper.solutions/commit/8695f78e7da6565ef3e892e49ba77506955c6fd2)
+
+```text
+feat(workflow): edit field mappings without JSON
+
+Replace the raw mapping dictionary with source-to-name rows and a guided
+editor for nested fields and array items. Save and Cancel keep incomplete
+drafts out of workflow state while retaining the existing mapping format,
+Undo history and execution behavior.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
