@@ -455,18 +455,38 @@ Then('one manual drag survives history navigation reload and import and can be r
   assert.deepEqual(routeOf((await readExport(page)).document), authored, 'Reset must itself be undoable.');
 });
 
-Then('toggling curved connections hides segment controls and restores the authored route', async function () {
+Then('curved connections retain editable anchors and preserve adjustments across styles', async function () {
   const page = this.page;
   const before = (await readExport(page)).document, original = await geometry(page), versions = await history(page, before);
   await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
-  await expect(controls(page)).toHaveCount(0);
   await expect(path(page)).not.toHaveAttribute('d', original.d);
+  await reveal(page);
+  await expect(controls(page)).toHaveCount(routeOf(before).length - 1);
   assert.deepEqual(routeOf((await readExport(page)).document), routeOf(before));
   await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
   await expect(path(page)).toHaveAttribute('d', original.d);
   await reveal(page);
   await expect(controls(page)).toHaveCount(routeOf(before).length - 1);
   assert.deepEqual(await history(page, before), versions, 'A display preference must not rewrite authored route history.');
+  await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
+  await drag(page, 2, -24);
+  await assertAttached(page);
+  const moved = (await readExport(page)).document;
+  assert.notDeepEqual(routeOf(moved), routeOf(before), 'Curved mode must support actual pointer editing.');
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await saved(page);
+  assert.deepEqual(routeOf((await readExport(page)).document), routeOf(before));
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  await saved(page);
+  assert.deepEqual(routeOf((await readExport(page)).document), routeOf(moved));
+  await page.reload();
+  await setMode(page, 'workflow');
+  assert.deepEqual(routeOf((await readExport(page)).document), routeOf(moved));
+  await assertAttached(page);
+  await hoverReset(page);
+  await edge(page).getByRole('button', { name: 'Reset connection route', exact: true }).click();
+  await saved(page);
+  assert.equal(routeOf((await readExport(page)).document), undefined);
 });
 
 Given('an imported manual routing workflow with delayed worker replies', async function () {

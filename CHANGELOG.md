@@ -383,6 +383,23 @@ with schema restoration so its icon, tooltip and interaction stay aligned.
 
 ```
 
+<!-- changelog-commit:6459adaafed156c1971d4ebf8dc7166e5e80155e -->
+### Commit [`6459ada`](https://github.com/superhero/operations.superduper.solutions/commit/6459adaafed156c1971d4ebf8dc7166e5e80155e)
+
+```text
+fix(workflow): route curved connections around nodes
+
+Curved edges bypassed measured obstacle routing and drew assertion returns
+through their endpoint nodes. Use the existing checked route for both
+styles, including connection previews, hit areas and label positions.
+Curve strength rounds the shared bends where clearance permits.
+
+Expose the existing segment controls in curved mode and retain authored
+routes through style changes, Undo, reload and reset. Keep one routing
+worker active for either style, preserving its bounded search and caches.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

@@ -14,7 +14,7 @@ export function routingScene(nodes, edges, getInternalNode) {
   }
   const connections = [];
   for (const edge of edges) {
-    if (edge.hidden || edge.detached || ![undefined, 'smoothstep'].includes(edge.type)) continue;
+    if (edge.hidden || edge.detached || ![undefined, 'default', 'smoothstep'].includes(edge.type)) continue;
     const sourceNode = visible.get(edge.source);
     const targetNode = visible.get(edge.target);
     if (!sourceNode || !targetNode) continue;

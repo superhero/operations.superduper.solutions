@@ -1,7 +1,8 @@
 # Workflow edge routing
 
-This module routes orthogonal workflow edges around measured node rectangles,
-reduces crossings within bounded work, and keeps attached edges and connection
+This module routes both workflow edge styles around measured node rectangles
+using a shared orthogonal backbone, reduces crossings within bounded work,
+and keeps attached edges and connection
 previews aligned while asynchronous routing catches up. Automatic geometry is
 derived editor state. Explicit segment adjustments are saved as authored routes.
 
@@ -38,8 +39,11 @@ Existing routes supply their ID and points. No geometry helper reads the DOM.
 The XYFlow adapter imports `@xyflow/system`; the routing and drawing algorithms
 are independent of Svelte, XYFlow, and browser globals.
 
-Use `bendRadius` from `path.js` when rendering: it is four diagram units. The
-low-level `roundedSegments` default remains eight for reference compatibility;
+Use `bendRadius` from `path.js` for orthogonal rendering: it is four diagram units.
+Curved connections use the same routed backbone with a strength-controlled
+radius (0–100 diagram units). Both styles clamp rounding against the same
+clearance obstacles, use matching hit areas/previews, and expose segment controls.
+The low-level `roundedSegments` default remains eight for reference compatibility;
 path and dash helpers default to sharp corners. Pass the rendered dash-plus-gap
 period to `dashSegments`, including when user settings change dash size. It is
 not limited to the default period of ten.
@@ -105,11 +109,14 @@ worker registration, and terminate the worker when the scope unmounts or the
 worker fails. Connection validation and final graph edits belong to the host.
 
 Mount `RoutingScope` inside `SvelteFlowProvider`, surrounding `SvelteFlow`, and
-register `RoutedEdge` as the `smoothstep` edge renderer. Supply a client with
+register `RoutedEdge` as the `smoothstep` edge renderer. The host's curved renderer
+also delegates to `RoutedEdge`, supplying its radius and temporary curve fallback.
+Supply a client with
 `calculate`/`dispose`, an error callback, and the host's validated connection
 resolver. `RoutedConnection` draws the raw pointer; the host draws the faint
-resolved target with the same `previewPath` geometry. Curved paths can supply
-their own curve function. The application keeps its configurable curve strength
+resolved target with the same `previewPath` geometry. Both previews prefer the
+shared checked route; a supplied curve function is only a temporary fallback.
+The application keeps its configurable curve strength
 and stricter live-handle eligibility checks.
 
 Supply `onroutechange(id, points)` to persist completed adjustments; `undefined`
@@ -117,14 +124,15 @@ points reset the edge. The host's `editable` flag disables segment controls when
 the canvas is unavailable for editing. Selection and pointer previews never
 invoke this callback.
 
-`workflow-routing-client.ts` supplies a tracked, inline RPC worker. Disabling
-orthogonal routing, leaving the workspace, or replacing the graph terminates it
+`workflow-routing-client.ts` supplies a tracked, inline RPC worker. Leaving the
+workspace or replacing the graph terminates it
 immediately; there are no writes to drain. A failure preserves its error cause
-and leaves ordinary paths usable until routing is reactivated.
+and leaves ordinary paths usable until the workspace is reopened. Switching
+connection styles reuses the worker and its checked geometry.
 
 ## Manual adjustments
 
-Hover or select an orthogonal edge to expose segment handles. Horizontal runs
+Hover or select an edge in either style to expose segment handles. Horizontal runs
 move vertically; vertical runs move horizontally. Terminal and straight edges
 gain endpoint stubs when needed. Pointer motion stops at the configured node
 clearance, including obstacles crossed by adjoining segments. A fast pointer
@@ -143,7 +151,7 @@ clearance state or worker cache. Undo, redo, import and export preserve authored
 routes. Moving nodes projects those anchors onto the current ports without
 rewriting the saved intent. If a route becomes blocked, automatic routing
 temporarily takes over; the authored route returns when feasible. Curved mode
-also retains the authored route for switching back.
+draws and edits the same authored route with its configured bend radius.
 
 The scope keeps pointer updates transient and retains a completed draft until
 its matching worker reply arrives. Geometry or clearance changes cancel an

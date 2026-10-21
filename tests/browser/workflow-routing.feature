@@ -45,7 +45,7 @@ Feature: Measured workflow connection routing
 
   Scenario: Curved connections retain the configured curve strength
     Given an imported routing workflow with a blocking node
-    Then changing curve strength changes its control points without changing its endpoints
+    Then changing curve strength changes safe routed bends without changing its endpoints
 
   Scenario: Routing remains derived geometry across save reload and undo
     Given an imported routing workflow with a blocking node

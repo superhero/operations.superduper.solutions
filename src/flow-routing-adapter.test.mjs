@@ -91,6 +91,7 @@ routingScenario(
       { ...edge, id: 'hidden-edge', hidden: true },
       { ...edge, id: 'detached', detached: true },
       { ...edge, id: 'curved', type: 'default' },
+      { ...edge, id: 'custom', type: 'custom' },
       { ...edge, id: 'hidden-target', target: 'hidden' },
       { ...edge, id: 'not-ready', target: 'unmeasured' },
       { ...edge, id: 'deleted', target: 'missing' },
@@ -100,7 +101,7 @@ routingScenario(
     const scene = routingScene(nodes, edges, id => lookup.get(id));
     return () => {
       assert.deepEqual(scene.nodes.map(node => node.id), ['source', 'target']);
-      assert.deepEqual(scene.edges.map(edge => edge.id), ['visible']);
+      assert.deepEqual(scene.edges.map(edge => edge.id), ['visible', 'curved']);
       assert.equal(scene.edges[0].sourcePosition, 'bottom');
       assert.equal(scene.edges[0].targetPosition, 'top');
     };
