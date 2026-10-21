@@ -3,7 +3,7 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Safe workflow comment previews
-  Comments render useful formatting as an escaped text tree without loading resources.
+  Comments use markdown-it and mdit plugins without loading external resources.
 
   Scenario: Common block and inline formatting retains comment content
     Then workflow comment previews support headings paragraphs lists quotes and code
@@ -14,6 +14,9 @@ Feature: Safe workflow comment previews
 
   Scenario: Incomplete Markdown and line endings preserve readable annotations
     Then workflow comment previews retain incomplete formatting and normalize line endings
+
+  Scenario: Markdown extensions share safe rendering across comment surfaces
+    Then workflow comments render mdit extensions with independent safe identifiers
 
   Scenario: Comment sizes are bounded and survive document round trips
     Then comment dimensions persist and reject invalid sizes

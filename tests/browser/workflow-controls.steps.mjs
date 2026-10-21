@@ -112,7 +112,7 @@ When("I write a safely formatted workflow comment", async function () {
   await expectHoverHint(preview, 'Click or press Enter to edit');
   await expect(preview).toHaveAttribute('tabindex', '0');
   await preview.click();
-  await expect(input).toHaveValue(controlComment);
+  await expect(input).toHaveText(controlComment, { useInnerText: true });
   await input.press("Escape");
   await expect(input).toHaveCount(0);
 });
@@ -531,4 +531,49 @@ Then('newly added utility nodes occupy nearby free space and become centered', a
       assert.ok(bounds.right <= other.x || other.right <= bounds.x || bounds.bottom <= other.y || other.bottom <= bounds.y, 'New utility nodes must not overlap existing nodes.');
     assert.notEqual(await viewport.getAttribute('style'), before);
   }
+});
+
+Then('comment editing styles Markdown inline and retains the source and mdit formatting', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  await page.getByLabel('Import workflow file', { exact: true }).setInputFiles({ name: 'markdown.json', mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ version: 3, id: 'markdown-editing', name: 'Markdown editing',
+      nodes: [{ id: 'comment', type: 'comment', position: { x: 20, y: 60 }, data: { text: '', width: 320, height: 600 } }],
+      edges: [], viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: true, dashed: false })) });
+  const comment = node(page, 'comment');
+  const input = comment.getByRole('textbox', { name: 'Comment text (Markdown)', exact: true });
+  const text = '# Foo\n\n`bar`\n\n**baz**\n\n_qux_\n\n- [x] Done\n\n==highlight== ++inserted++ H~2~O x^2^\n\nnote[^n]\n\n[^n]: detail';
+  await input.fill(text);
+  await expect(input).toBeFocused();
+  await expect(comment.locator('textarea')).toHaveCount(0);
+  const formatting = await input.evaluate(root => {
+    const styles = {};
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    for (let text = walker.nextNode(); text; text = walker.nextNode()) {
+      for (const word of ['Foo', 'bar', 'baz', 'qux']) if (text.textContent.includes(word)) {
+        const style = getComputedStyle(text.parentElement);
+        styles[word] = { weight: Number(style.fontWeight), italic: style.fontStyle, background: style.backgroundColor };
+      }
+    }
+    return styles;
+  });
+  assert.ok(formatting.Foo.weight >= 600 && formatting.baz.weight >= 600);
+  assert.equal(formatting.qux.italic, 'italic');
+  assert.notEqual(formatting.bar.background, 'rgba(0, 0, 0, 0)');
+  await input.press('Control+Enter');
+  await expect(comment.locator('.comment-markdown h1')).toHaveText('Foo');
+  await expect(comment.locator('.comment-markdown mark')).toHaveText('highlight');
+  await expect(comment.locator('.comment-markdown ins')).toHaveText('inserted');
+  await expect(comment.locator('.comment-markdown .footnotes')).toContainText('detail');
+  await expect(comment.locator('.comment-markdown input[type="checkbox"]')).toBeChecked();
+  await expect(comment.locator('.comment-markdown input[type="checkbox"]')).toBeDisabled();
+  assert.equal((await readExport(page)).document.nodes[0].data.text, text);
+  await comment.getByRole('button', { name: 'Edit comment text', exact: true }).click();
+  await expect(input).toBeFocused();
+  await input.press('Escape');
+  await expect(input).toHaveCount(0);
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(comment.locator('.comment-markdown mark')).toHaveText('highlight');
+  assert.equal((await readExport(page)).document.nodes[0].data.text, text);
 });

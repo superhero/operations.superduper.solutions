@@ -495,12 +495,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const hidden = () => { if (window.document.visibilityState === "hidden") void flushAutosave(); };
     const pageHidden = () => { void flushAutosave(); };
     const input = (event: Event) => {
-      const target = event.target;
-      if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement)) return;
+      const target = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>('[contenteditable="true"]') ?? event.target : event.target;
+      if (!(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
+        || target instanceof HTMLElement && target.isContentEditable)) return;
       if (target instanceof HTMLInputElement && target.type === "file") return;
       if (!canvas?.contains(target) && target.id !== "workflow-name" && target.id !== "workflow-description") return;
       textEditTarget = target;
       textEditing = true;
+    };
+    const editableFocus = (event: FocusEvent) => {
+      if (event.target instanceof HTMLElement && event.target.isContentEditable) input(event);
     };
     const blur = (event: FocusEvent) => {
       if (event.target === textEditTarget) { textEditTarget = null; textEditing = false; }
@@ -508,6 +512,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     window.addEventListener("pagehide", pageHidden);
     window.document.addEventListener("visibilitychange", hidden);
     window.document.addEventListener("input", input, true);
+    window.document.addEventListener("focusin", editableFocus, true);
     window.document.addEventListener("focusout", blur, true);
     return () => {
       alive = false;
@@ -516,6 +521,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       window.removeEventListener("pagehide", pageHidden);
       window.document.removeEventListener("visibilitychange", hidden);
       window.document.removeEventListener("input", input, true);
+      window.document.removeEventListener("focusin", editableFocus, true);
       window.document.removeEventListener("focusout", blur, true);
     };
   });
