@@ -88,6 +88,14 @@ fix(ui): label the Cast tooltip as Cast type
 
 ```
 
+<!-- changelog-commit:2726d9e106a536bbca12a43685e90c7e2039dcea -->
+### Commit [`2726d9e`](https://github.com/superhero/operations.superduper.solutions/commit/2726d9e106a536bbca12a43685e90c7e2039dcea)
+
+```text
+fix(workflow): show expected Transform input types
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
