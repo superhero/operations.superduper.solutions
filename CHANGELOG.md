@@ -592,6 +592,21 @@ workers through sampling, tab handoff and duplicate lifecycle events.
 
 ```
 
+<!-- changelog-commit:c0aabd6608514a7cd9718215948f02995ecca978 -->
+### Commit [`c0aabd6`](https://github.com/superhero/operations.superduper.solutions/commit/c0aabd6608514a7cd9718215948f02995ecca978)
+
+```text
+ci(browser): stabilize release browser validation
+
+Wait for Browser settings construction to settle before clicking Logs so
+the dashboard cannot move the target under the pointer.
+
+Give the two CI browser workers 5 GiB while retaining CPU and Node heap
+caps. Report cgroup peak and OOM counters after execution, preserving the
+runner status so individual worker kills remain visible.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
