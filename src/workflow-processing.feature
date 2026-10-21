@@ -66,6 +66,15 @@ Feature: Explicit workflow processing and assertion routing
   Scenario: Filters preserve Unicode characters array order and exclusive ranges
     Then workflow filters trim slice and select values with explicit predicates
 
+  Scenario: Selected fields retain JSON types without a result-type setting
+    Then Select field restores legacy settings as JsonValue and preserves each selected value
+
+  Scenario: Filter bounds and paths accept typed connections with manual fallback
+    Then connected Filter bounds and paths retain types execution and saved manual values
+
+  Scenario: Filter expectations preserve connected types and private operands
+    Then Filter array connections follow the condition and keep private comparisons opaque
+
   Scenario: Invalid operations parameters and input formats fail before producing output
     Then workflow processing rejects malformed configuration values encodings and limits
 

@@ -32,7 +32,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const fields = $derived(definition.parameters.filter(field =>
     !(kind === "assert" && field.name === "path" && !processingConditionUsesPath(inputType))
     && !(field.name === "expected" && !processingConditionUsesExpected(data.parameters.operator ?? ""))));
-  const layout = $derived(`${data.operation}:${data.parameters.type ?? ""}:${inputLabel}:${outputType}:${fields.map(field => field.name).join(",")}`);
+  const layout = $derived(`${data.operation}:${inputLabel}:${outputType}:${fields.map(field => `${field.name}:${fieldTypes(field.name)}`).join(",")}`);
   $effect(() => { layout; untrack(() => updateNodeInternals(id)); });
   function parameter(name: string, value: string) { edit(id, { ...data, parameters: { ...data.parameters, [name]: value } }); }
   function fieldTypes(name: string): string {
@@ -77,7 +77,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           </span>
           <span class="parameter-control">
           {#if field.options}
-            <WorkflowNodeSelect label={field.label} tooltip={kind === "assert" && field.name === "operator" ? "Assertion condition" : field.label} value={data.parameters[field.name] ?? ""} {active}
+            <WorkflowNodeSelect label={field.label} tooltip={field.name === "operator" ? `${kind === "assert" ? "Assertion" : "Filter"} condition` : field.label} value={data.parameters[field.name] ?? ""} {active}
               choices={field.options.map(value => ({ value, label: choiceLabel(value) }))} onchange={value => parameter(field.name, value)} />
           {:else if field.multiline}
             <textarea id={`${id}-${field.name}`} class="utility-value nowheel" aria-label={field.label} rows="3" wrap="off" maxlength="16000"

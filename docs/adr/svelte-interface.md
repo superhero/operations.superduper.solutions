@@ -332,11 +332,22 @@ processing inputs, without falling back to disabled manual values.
 Filter trims either or both ends of text, selects a substring or a field by JSON
 pointer, selects an array range or keeps array items matching a predicate. Older
 Select field Transform nodes load as Filter nodes with the same identity,
-configuration and connections; older private recipes remain executable.
+configuration and connections; older private recipes remain executable. Select
+field returns JsonValue without a result-type selector. Older selected result
+types are removed on load without coercing or narrowing the actual result;
+downstream ports check the value under their receiving type assumption.
 Text indices count Unicode
 code points; ranges include their start and exclude their end, with negative
 indices counting from the end. Array filtering retains input order. Predicates
 use explicit field paths and comparisons; equality preserves value types.
+Substring and Array range bounds accept Integer connections. Select field and
+Filter array paths accept Text connections. Filter array's Expected value
+accepts Number for numeric comparisons, Text for text comparisons and type
+checks, and JsonValue for general comparisons. Is set and Is not set hide the
+unused expectation and its port. Each connected parameter shows its type badge
+and disables manual editing, retaining the saved value for disconnection or
+Undo. Connected comparisons preserve their original value types, including
+inside private vault recipes; strings are never parsed as JSON implicitly.
 
 Assert passes the original input unchanged through Success or Failure. The
 field-path editor appears only for structured or unresolved input types; scalar

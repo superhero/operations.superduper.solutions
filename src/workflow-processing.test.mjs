@@ -226,7 +226,7 @@ Then('Select field is a Filter while old Transform nodes and private recipes pre
     assert.equal(await resolvePrivateExpression(expression, [{ ...credential, value: '{"profile":{"name":"Alice"}}' }]), 'Alice');
   }
   assert.equal(await apply('filter', 'select_field', [{ value: 42 }], { path: '/0/value', type: 'Number' }), 42);
-  await assert.rejects(apply('filter', 'select_field', { value: 'text' }, { path: '/value', type: 'Number' }), /selected Number output type/);
+  assert.equal(await apply('filter', 'select_field', { value: 'text' }, { path: '/value', type: 'Number' }), 'text');
 });
 
 Then('Parse JSON accepts every JSON type and restores old selected types without narrowing output', async () => {
@@ -263,9 +263,10 @@ Then('known JSON alternatives connect to matching ports and retain their types t
   const trim = processNode('filter', 'trim');
   const arrayRange = processNode('filter', 'array_range', {}, 'range');
   const binary = processNode('transform', 'utf8_decode', {}, 'binary');
-  const unknown = processNode('filter', 'select_field', { type: 'Unknown' }, 'unknown');
-  const nodes = [parse, ports, assertion, switched, cast, trim, arrayRange, binary, unknown];
-  for (const [source, handle, edges] of [['transform', 'result', []], ['assert', 'success', [edge('transform', 'assert')]],
+  const selection = processNode('filter', 'select_field', { type: 'Unknown' }, 'selection');
+  const unknown = processNode('assert', 'expect', {}, 'unknown');
+  const nodes = [parse, ports, assertion, switched, cast, trim, arrayRange, binary, selection, unknown];
+  for (const [source, handle, edges] of [['transform', 'result', []], ['selection', 'result', []], ['assert', 'success', [edge('transform', 'assert')]],
     ['assert', 'failure', [edge('transform', 'assert')]], ['switch', 'gate-1', [edge('transform', 'switch')]]])
     for (const type of types)
       assert.equal(isWorkflowConnection(edge(source, 'ports', handle, type), nodes, edges), type !== 'Binary', `${source}/${handle} → ${type}`);
@@ -275,7 +276,7 @@ Then('known JSON alternatives connect to matching ports and retain their types t
   for (const target of ['filter', 'range', 'cast', 'assert', 'switch'])
     assert.equal(isWorkflowConnection(edge('transform', target), nodes, []), true, target);
   assert.equal(isWorkflowConnection(edge('transform', 'binary'), nodes, []), false);
-  assert.equal(isWorkflowConnection(edge('unknown', 'filter'), nodes, []), false, 'Unknown must not become a wildcard.');
+  assert.equal(isWorkflowConnection(edge('unknown', 'filter', 'success'), nodes, []), false, 'Unknown must not become a wildcard.');
   const downstream = [edge('assert', 'ports', 'success', 'Object')];
   assert.equal(isWorkflowConnection(edge('transform', 'assert'), nodes, downstream), true);
   const textOnly = nodes.map(node => node.id === 'transform' ? processNode('transform', 'base64_encode') : node);
@@ -419,6 +420,109 @@ Then('workflow filters trim slice and select values with explicit predicates', a
     assert.equal(await apply('assert', 'expect', value, { operator, expected }), match, operator);
   assert.equal(await apply('assert', 'expect', {}, { path: '/missing', operator: 'is_not_set' }), true);
   assert.equal(await apply('assert', 'expect', {}, { path: '/missing', operator: 'is_type', expected: 'unknown' }), true);
+});
+
+Then('Select field restores legacy settings as JsonValue and preserves each selected value', async () => {
+  const configuration = data('filter', 'select_field', { path: '/value' });
+  assert.deepEqual(configuration.parameters, { path: '/value' });
+  assert.equal(processingTypeLabel(processingOutputType('filter', configuration, 'Object')), 'JsonValue');
+  for (const type of ['Text', 'Number', 'Integer', 'Boolean', 'Object', 'Array', 'Null', 'Binary', 'Unknown']) {
+    const legacy = { ...configuration, parameters: { ...configuration.parameters, type } };
+    assert.deepEqual(validateProcessingData('filter', legacy), configuration);
+    const graph = doc([{ ...processNode('filter', 'select_field'), data: legacy }]);
+    assert.deepEqual(parseWorkflowDocument(JSON.stringify(graph)).nodes[0].data, configuration);
+    assert.deepEqual(portableWorkflowDocument(graph).nodes[0].data, configuration);
+  }
+  for (const value of [{ id: 42 }, [1, false], '42', '', 42, 1.5, false, true, null])
+    assert.deepEqual(await processWorkflowValue('filter', configuration, { value }), value);
+  assert.throws(() => validateProcessingData('filter', { ...configuration, parameters: { path: '/value', type: 'invalid' } }));
+  const selected = await processWorkflowValue('filter', configuration, { value: 42 });
+  await assert.rejects(processWorkflowValue('filter', data('filter', 'trim'), selected), /does not accept Integer/);
+});
+
+Then('connected Filter bounds and paths retain types execution and saved manual values', async () => {
+  for (const [operation, input, expected] of [['substring', 'a🙂bcd', '🙂bc'], ['array_range', [0, 1, 2, 3, 4], [1, 2, 3]]]) {
+    const filter = processNode('filter', operation, { start: '0', end: '2' });
+    const nodes = [file(input), file(1, 'start'), file(-1, 'end'), file('1', 'text'), file(1.5, 'fraction'), filter];
+    const main = edge('file', 'filter', 'value');
+    for (const handle of ['start', 'end']) {
+      assert.deepEqual(processingInputTypes('filter', filter.data, handle), ['Integer']);
+      for (const source of ['start', 'text', 'fraction'])
+        assert.equal(isWorkflowConnection(edge(source, 'filter', 'value', handle), nodes, [main]), source === 'start');
+    }
+    const graph = doc(nodes, [main, edge('start', 'filter', 'value', 'start'), edge('end', 'filter', 'value', 'end')]);
+    assert.deepEqual(parseWorkflowDocument(JSON.stringify(graph)), graph);
+    assert.deepEqual(portableWorkflowDocument(graph), graph);
+    const runner = createWorkflowRunner(graph, undefined, createWorkflowDemo(), executor());
+    assert.equal((await runner.nextAsync()).kind, 'complete');
+    assert.deepEqual(JSON.parse(runner.processingResults.find(row => row.nodeId === 'filter').preview), expected);
+    runner.end();
+    assert.deepEqual(filter.data.parameters, { start: '0', end: '2' });
+    assert.deepEqual(await processWorkflowValue('filter', filter.data, input), operation === 'substring' ? 'a🙂' : [0, 1]);
+    for (const value of ['1', 1.5, null, NaN, Number.MAX_SAFE_INTEGER + 1])
+      await assert.rejects(processWorkflowValue('filter', filter.data, input, undefined, { start: value }), /needs an Integer/);
+  }
+  const filter = processNode('filter', 'select_field', { path: '/manual' });
+  const graph = targetDocument([file({ connected: 'hello', manual: 'fallback' }), file('/connected', 'path'), filter],
+    [edge('file', 'filter', 'value'), edge('path', 'filter', 'value', 'path')], 'filter');
+  assert.deepEqual(processingInputTypes('filter', filter.data, 'path'), ['Text']);
+  const runner = createWorkflowRunner(graph, 'target', createWorkflowDemo(), executor());
+  assert.equal((await runner.nextAsync()).values['body:$'], 'hello');
+  runner.end();
+  assert.equal(await processWorkflowValue('filter', filter.data, { manual: 'fallback' }), 'fallback');
+  await assert.rejects(processWorkflowValue('filter', filter.data, {}, undefined, { path: 1 }), /needs a Text/);
+  await assert.rejects(processWorkflowValue('filter', filter.data, {}, undefined, { path: 'x'.repeat(4097) }), /Invalid processing parameters/);
+  const assertion = processNode('assert', 'expect', { operator: 'equals', expected: 'different' });
+  const unmatched = createWorkflowRunner(targetDocument([file({ manual: 'fallback' }), file('/manual', 'path'), assertion, filter],
+    [edge('file', 'filter', 'value'), edge('path', 'assert', 'value'), edge('assert', 'filter', 'success', 'path')], 'filter'), 'target', createWorkflowDemo(), executor());
+  assert.equal((await unmatched.nextAsync()).mappedFields.includes('body:$'), false, 'An unmatched connected path cannot fall back to its manual value.');
+  unmatched.end();
+});
+
+Then('Filter array connections follow the condition and keep private comparisons opaque', async () => {
+  const configuration = data('filter', 'array_filter', { path: '/value', operator: 'equals', expected: 'manual' });
+  const values = [42, '42', false, null, { a: 1 }, [1, 2]];
+  const input = values.map(value => ({ value }));
+  for (const value of values)
+    assert.deepEqual(await processWorkflowValue('filter', configuration, input, undefined, { expected: value }), [{ value }]);
+  assert.equal(configuration.parameters.expected, 'manual');
+  const filter = processNode('filter', 'array_filter', configuration.parameters);
+  const nodes = [file(input), file(42, 'number'), file('42', 'text'), filter];
+  for (const [operator, accepted] of [['greater_than', ['Number']], ['starts_with', ['Text']], ['is_type', ['Text']], ['is_set', undefined], ['is_not_set', undefined]]) {
+    const changed = { ...filter, data: data('filter', 'array_filter', { ...configuration.parameters, operator }) };
+    assert.deepEqual(processingInputTypes('filter', changed.data, 'expected'), accepted);
+    for (const source of ['number', 'text'])
+      assert.equal(isWorkflowConnection(edge(source, 'filter', 'value', 'expected'), [...nodes.slice(0, -1), changed], []),
+        !!accepted && accepted.includes(source === 'number' ? 'Number' : 'Text'));
+  }
+  assert.deepEqual(processingInputTypes('filter', configuration, 'expected'), ['Object', 'Text', 'Number', 'Boolean', 'Array', 'Null', 'Integer']);
+  const contains = data('filter', 'array_filter', { path: '/items', operator: 'contains' });
+  assert.deepEqual(processingInputTypes('filter', contains, 'expected'), processingInputTypes('filter', configuration, 'expected'));
+  assert.deepEqual(await processWorkflowValue('filter', contains, [{ items: [{ id: 1 }] }, { items: [{ id: 2 }] }], undefined,
+    { expected: { id: 2 } }), [{ items: [{ id: 2 }] }]);
+  assert.deepEqual(await processWorkflowValue('filter', configuration, [{ other: false }, { other: 'false' }], undefined,
+    { path: '/other', expected: false }), [{ other: false }]);
+  const runner = createWorkflowRunner(doc(nodes, [edge('file', 'filter', 'value'), edge('number', 'filter', 'value', 'expected')]), undefined, createWorkflowDemo(), executor());
+  assert.equal((await runner.nextAsync()).kind, 'complete');
+  assert.deepEqual(JSON.parse(runner.processingResults[0].preview), [{ value: 42 }]);
+  runner.end();
+  const vault = { id: 'vault', type: 'vault', position: { x: 0, y: 0 }, data: { credentialId: uuid } };
+  const privateRunner = createWorkflowRunner(targetDocument([file([secret, 'other']), vault, processNode('filter', 'array_filter', { operator: 'equals' }), processNode('transform', 'json_stringify')],
+    [edge('file', 'filter', 'value'), edge('vault', 'filter', 'value', 'expected'), edge('filter', 'transform')], 'transform'), 'target', createWorkflowDemo(),
+    { ...executor(), process: async () => assert.fail('Private filters cannot execute in the public worker.') });
+  const next = await privateRunner.nextAsync();
+  assert.equal(next.values['body:$'], vaultVariablePlaceholder);
+  assert.ok(!JSON.stringify([next.values, privateRunner.processingResults]).includes(secret));
+  assert.equal(await resolvePrivateExpression(next.vaultVariables[0].expression, [credential]), JSON.stringify([secret]));
+  const expression = { kind: 'process', type: 'filter', data: data('filter', 'substring'), value: { kind: 'credential', id: uuid },
+    parameters: { start: { kind: 'literal', value: 1 }, end: { kind: 'literal', value: -1 } } };
+  assert.equal(await resolvePrivateExpression(expression, [credential]), secret.slice(1, -1));
+  const privatePath = { kind: 'process', type: 'filter', data: data('filter', 'array_filter', { path: '/manual', operator: 'equals' }),
+    value: { kind: 'literal', value: [{ value: 0 }, { value: false }] },
+    parameters: { path: { kind: 'credential', id: uuid }, expected: { kind: 'literal', value: false } } };
+  assert.deepEqual(await resolvePrivateExpression(privatePath, [{ ...credential, value: '/value' }]), [{ value: false }]);
+  await assert.rejects(resolvePrivateExpression({ ...expression, parameters: { start: { kind: 'literal', value: '1' } } }, [credential]), { code: 'INVALID' });
+  privateRunner.end();
 });
 
 Then('workflow processing rejects malformed configuration values encodings and limits', async () => {
