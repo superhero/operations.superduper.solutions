@@ -26,13 +26,13 @@ export const processingOperations: readonly Definition[] = [
   ]),
   { id: "json_parse", kind: "transform", label: "Parse JSON", inputs: ["Text"], output: "JSON", parameters: [] },
   { id: "json_stringify", kind: "transform", label: "Serialize JSON", inputs: anyValue.filter(type => type !== "Binary"), inputLabel: "JSON", output: "Text", parameters: [] },
-  { id: "select_field", kind: "transform", label: "Select field", inputs: ["Object", "Array"], output: "Unknown", parameters: [parameter("path", "Field path (JSON pointer)"), parameter("type", "Result type", "Text", anyValue)] },
   { id: "map_fields", kind: "transform", label: "Map fields", inputs: ["Object", "Array"], output: "Object", parameters: [{ name: "fields", label: "Output names to source paths (JSON)", initial: '{"value":""}', multiline: true }] },
   { id: "sha256", kind: "transform", label: "Hash SHA-256", inputs: textBinary, output: "Text", parameters: [parameter("format", "Output encoding", "hex", ["hex", "base64", "base64url"])] },
   { id: "hmac_sha256", kind: "transform", label: "Sign HMAC-SHA256", inputs: textBinary, output: "Text", key: true, parameters: [parameter("format", "Output encoding", "hex", ["hex", "base64", "base64url"])] },
   { id: "jwt_sign", kind: "transform", label: "Sign JWT", inputs: ["Object"], output: "Text", key: true, parameters: [parameter("algorithm", "Algorithm", "HS256", ["HS256", "RS256"]), parameter("key_id", "Key ID (optional)")] },
   { id: "trim", kind: "filter", label: "Trim text", inputs: ["Text"], output: "Text", parameters: [parameter("side", "Trim", "both", ["both", "start", "end"])] },
   { id: "substring", kind: "filter", label: "Substring", inputs: ["Text"], output: "Text", parameters: [parameter("start", "Start (inclusive)", "0"), parameter("end", "End (exclusive)")] },
+  { id: "select_field", kind: "filter", label: "Select field", inputs: ["Object", "Array"], output: "Unknown", parameters: [parameter("path", "Field path (JSON pointer)"), parameter("type", "Result type", "Text", anyValue)] },
   { id: "array_range", kind: "filter", label: "Array range", inputs: ["Array"], output: "Array", parameters: [parameter("start", "Start (inclusive)", "0"), parameter("end", "End (exclusive)")] },
   { id: "array_filter", kind: "filter", label: "Filter array", inputs: ["Array"], output: "Array", parameters: condition },
   { id: "expect", kind: "assert", label: "Assert", inputs: anyValue, output: "input", parameters: condition },
@@ -43,6 +43,8 @@ const plain = (value: unknown): value is Record<string, unknown> => !!value && t
   && [Object.prototype, null].includes(Object.getPrototypeOf(value));
 
 export function processingDefinition(kind: ProcessingKind, data: ProcessingData): Definition {
+  // Read older nodes and private recipes after Select field moved to Filter.
+  if (kind === "transform" && data.operation === "select_field") kind = "filter";
   const definition = processingOperations.find(operation => operation.kind === kind && operation.id === data.operation);
   if (!definition) throw new Error("Unknown processing operation.");
   return definition;

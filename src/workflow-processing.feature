@@ -30,6 +30,9 @@ Feature: Explicit workflow processing and assertion routing
   Scenario: JSON translation and field mapping retain types and safe property names
     Then workflow translation parses serializes selects and maps data without mutation
 
+  Scenario: Select field belongs to Filter and preserves older saved processing
+    Then Select field is a Filter while old Transform nodes and private recipes preserve their behavior
+
   Scenario: Parse JSON accepts every JSON value and restores legacy nodes
     Then Parse JSON accepts every JSON type and restores old selected types without narrowing output
 

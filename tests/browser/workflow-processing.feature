@@ -3,6 +3,15 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @workflow-processing
 Feature: Workflow processing controls and execution
+  Scenario Outline: Select field belongs to Filter and restores older nodes
+    When I use a viewport of <width> by 900 pixels
+    Then Select field is offered by Filter and old Transform nodes restore and execute as Filter
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
   Scenario Outline: Parse JSON connects directly without a result-type selection
     When I use a viewport of <width> by 900 pixels
     Then Parse JSON restores without a type selector and connects directly to a matching input
