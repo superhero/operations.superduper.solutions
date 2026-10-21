@@ -68,7 +68,7 @@ Then('workflow shortcut preferences persist, prevent conflicts and preserve text
   const input = workflow(page).locator('.svelte-flow__node-comment [contenteditable="true"]');
   await input.fill('Text editing');
   await input.press('Control+a');
-  await expect.poll(() => input.evaluate(element => element.selectionEnd - element.selectionStart)).toBe(12);
+  await expect.poll(() => input.evaluate(() => window.getSelection()?.toString())).toBe('Text editing');
   await input.press('Control+q');
   await expect(selected(page)).toHaveCount(0);
   panel = await preferences(page);
