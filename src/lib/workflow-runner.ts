@@ -15,6 +15,7 @@ import { VaultError, type CredentialBinding } from "./secrets/types.ts";
 import { containsPrivateValue, isPrivateProcessingReference, privateExpressionFor, type PrivateProcessingReference } from "./secrets/processing.ts";
 import type { ProcessingExecutor } from "./workflow-processing-client.ts";
 import { processingDefinition, processingPreview } from "./workflow-processing.ts";
+import { arrayFilterPlans, type ArrayFilterPlan } from "./workflow-array-filter.ts";
 
 type Node = WorkflowDocumentNode;
 type DataNode = Extract<Node, { type: "data" }>;
@@ -28,6 +29,7 @@ type Frame = {
   edges: WorkflowDocument["edges"]; contributions: Map<string, Contribution>; states: Map<string, State>;
   rows?: { index: number; count: number; start?: string; active?: Set<string> };
   queue: string[]; started: boolean; parent: Frame | undefined; call: Owner | undefined;
+  arrayFilters: Map<string, ArrayFilterPlan>;
 };
 export type WorkflowVisit = {
   kind: "operation"; id: string; nodeId: string; workflowName: string; operation: Operation;
@@ -151,12 +153,15 @@ function mergeMapped(previous: unknown, next: unknown): unknown
 function createFrame(document: WorkflowDocument, parent?: Frame, call?: Owner, rowIndex = 0): Frame
 {
   const nodes = new Map(document.nodes.map(node => [node.id, node]));
-  const edges = document.edges.filter(edge => edge.kind !== "schema" && !edge.hidden && !edge.detached
-    && !nodes.get(edge.source)?.hidden && !nodes.get(edge.target)?.hidden);
+  const arrayFilters = arrayFilterPlans(document);
+  const internalEdges = new Set([...arrayFilters.values()].flatMap(plan => [...plan.edges]));
+  const internalNodes = new Set([...arrayFilters.values()].flatMap(plan => [...plan.nodes]));
+  const edges = [...document.edges.filter(edge => !internalEdges.has(edge.id) && edge.kind !== "schema" && !edge.hidden && !edge.detached
+    && !nodes.get(edge.source)?.hidden && !nodes.get(edge.target)?.hidden), ...[...arrayFilters.values()].flatMap(plan => plan.captures)];
   const hasRows = edges.some(edge => isFileRowConnection(edge, document.nodes, document.edges));
   return { document, nodes, owners: document.nodes.filter(node => !node.hidden && isOwner(node)) as Owner[],
     values: new Map(), edges, contributions: new Map(edges.map(edge => [edge.id, { state: "pending" }])),
-    states: new Map(document.nodes.map(node => [node.id, "idle"])), queue: [], started: false, parent, call,
+    states: new Map(document.nodes.map(node => [node.id, internalNodes.has(node.id) ? "complete" : "idle"])), queue: [], started: false, parent, call, arrayFilters,
     ...(hasRows ? { rows: { index: rowIndex, count: 1 } } : {}) };
 }
 
@@ -403,9 +408,11 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
           if (!input.values.has(port(node.id, "value"))) throw new Error("Processing needs a connected input value.");
           const key = input.values.get(port(node.id, "key"));
           const definition = processingDefinition(node.type, node.data);
+          const arrayFilter = frame.arrayFilters.get(node.id);
           if (definition.key && !input.values.has(port(node.id, "key"))) throw new Error("Connect a signing key before running this transformation.");
-          const parameters = Object.fromEntries(definition.parameters.filter(field => field.connectable && input.values.has(port(node.id, field.name)))
-            .map(field => [field.name, input.values.get(port(node.id, field.name))]));
+          const parameters = arrayFilter ? Object.fromEntries(arrayFilter.captures.map(edge => [edge.targetHandle!, input.values.get(port(node.id, edge.targetHandle!))]))
+            : Object.fromEntries(definition.parameters.filter(field => field.connectable && input.values.has(port(node.id, field.name)))
+              .map(field => [field.name, input.values.get(port(node.id, field.name))]));
           frame.states.set(node.id, "running");
           const controller = new AbortController();
           processingController = controller;
@@ -419,8 +426,9 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
             else if (privateInput) result = { referenceToken: runId, vaultProcessing: { kind: "process", type: node.type,
               data: structuredClone(node.data), value: privateExpressionFor(value, runId),
               ...(key === undefined ? {} : { key: privateExpressionFor(key, runId) }),
-              ...(Object.keys(parameters).length ? { parameters: Object.fromEntries(Object.entries(parameters).map(([name, value]) => [name, privateExpressionFor(value, runId)])) } : {}) } } satisfies PrivateProcessingReference;
-            else result = await (await processor()).process(node.type, node.data, value, key, Object.keys(parameters).length ? parameters : undefined);
+              ...(Object.keys(parameters).length ? { parameters: Object.fromEntries(Object.entries(parameters).map(([name, value]) => [name, privateExpressionFor(value, runId)])) } : {}),
+              ...(arrayFilter ? { predicate: structuredClone(arrayFilter.predicate) } : {}) } } satisfies PrivateProcessingReference;
+            else result = await (await processor()).process(node.type, node.data, value, key, Object.keys(parameters).length ? parameters : undefined, arrayFilter?.predicate);
             controller.signal.throwIfAborted();
             if (stopped) return;
             if (node.type === "assert") {

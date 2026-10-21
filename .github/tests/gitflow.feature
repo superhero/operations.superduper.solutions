@@ -76,6 +76,32 @@ Feature: Gitflow validation and guarded merging
       | history unavailable | release/1.2.3  | rejected | reserving target release       |
       | invalid history     | release/1.2.3  | rejected | reserving target release       |
 
+  Scenario Outline: Tagged working releases accept stabilization only while verified unpublished
+    Given a tagged working release is "<state>"
+    When Gitflow validates "<source>" into "release/1.2.3"
+    Then Gitflow validation is "<outcome>"
+    And the Gitflow error explains "<reason>"
+
+    Examples:
+      | state                      | source        | outcome  | reason                            |
+      | unpublished                | bugfix/editor | accepted |                                   |
+      | unpublished                | docs/readme   | accepted |                                   |
+      | draft                      | bugfix/editor | accepted |                                   |
+      | on main                    | bugfix/editor | rejected | already exists                    |
+      | published                  | bugfix/editor | rejected | published release                 |
+      | published                  | docs/readme   | rejected | published release                 |
+      | unrelated tag              | bugfix/editor | rejected | does not contain its reserved tag |
+      | merged                     | bugfix/editor | rejected | already exists                    |
+      | main unavailable           | bugfix/editor | rejected | already on main                   |
+      | invalid main comparison    | bugfix/editor | rejected | Invalid main ancestry             |
+      | target unavailable         | bugfix/editor | rejected | reserved tag belongs              |
+      | invalid target comparison  | bugfix/editor | rejected | Invalid tag ancestry              |
+      | publication unavailable    | bugfix/editor | rejected | inspect publication               |
+      | invalid publication        | bugfix/editor | rejected | inspect publication               |
+      | invalid publication record | bugfix/editor | rejected | inspect publication               |
+      | history unavailable        | bugfix/editor | rejected | reserving target release          |
+      | invalid history            | bugfix/editor | rejected | reserving target release          |
+
   Scenario Outline: Release branches require plain numeric versions
     Given a repository without released versions or active release branches
     When Gitflow validates "release/<version>" into "main"

@@ -3,6 +3,33 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @workflow-processing
 Feature: Workflow processing controls and execution
+  Scenario Outline: Filter array adds and restores a connected Is set assertion
+    When I use a viewport of <width> by 900 pixels
+    Then the Filter array assertion shortcut creates a reversible connected default assertion
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  Scenario Outline: Filter bounds and selected fields support typed connections
+    When I use a viewport of <width> by 900 pixels
+    Then Filter bound and path connections disable manual editing and selected fields return JsonValue
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  Scenario Outline: Filter array uses an external per-item assertion
+    When I use a viewport of <width> by 900 pixels
+    Then Filter array evaluates external assertions with reversible cast typing and original items
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
   Scenario Outline: Selected options below the fold are visible as soon as Transform opens
     When I use a viewport of <width> by 540 pixels
     Then reopening Transform with an offscreen selection keeps its first visible frame stable at vertical position <y>

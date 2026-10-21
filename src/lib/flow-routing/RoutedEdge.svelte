@@ -6,25 +6,30 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { getContext } from 'svelte';
   import { BaseEdge, getSmoothStepPath, type EdgeProps } from '@xyflow/svelte';
-  import { routingContext, type RoutingContext } from './context.ts';
+  import { routingContext, type DrawRoute, type RoutingContext } from './context.ts';
   import { bendRadius, routePath, routeMidpoint, projectRoute } from './path.js';
   import { dashSegments } from './dashes.js';
   import SegmentControls from './SegmentControls.svelte';
   import './dashes.css';
 
-  let props: EdgeProps = $props();
+  let { radius = bendRadius, splitDashes = true, fallback, drawRoute, ...props }: EdgeProps & {
+    radius?: number; splitDashes?: boolean; fallback?: [string, number, number]; drawRoute?: DrawRoute | undefined;
+  } = $props();
   const routing = getContext<RoutingContext | undefined>(routingContext);
   let hovered = $state(false);
   let focused = $state(false);
   let group: SVGGElement;
   const obstacles = $derived(routing?.obstacles() ?? []);
   const projected = $derived(projectRoute(routing?.route(props.id), props));
-  const segments = $derived(props.animated ? dashSegments(projected, routing?.dashPeriod() ?? 10, bendRadius, obstacles) : []);
+  const drawing = $derived(projected && drawRoute?.(projected, props, obstacles, Boolean(routing?.manual(props.id) || routing?.route(props.id)?.manualState === 'applied')));
+  const segments = $derived(props.animated && splitDashes ? dashSegments(projected, routing?.dashPeriod() ?? 10, radius, obstacles) : []);
   const geometry = $derived.by((): [string, number, number] => {
+    if (drawing) return [drawing.path, drawing.midpoint.x, drawing.midpoint.y];
     if (projected) {
-      const midpoint = routeMidpoint(projected, bendRadius, obstacles)!;
-      return [routePath(projected, bendRadius, obstacles)!, midpoint.x, midpoint.y];
+      const midpoint = routeMidpoint(projected, radius, obstacles)!;
+      return [routePath(projected, radius, obstacles)!, midpoint.x, midpoint.y];
     }
+    if (fallback) return fallback;
     const [path, x, y] = getSmoothStepPath({ ...props, borderRadius: bendRadius, stepPosition: 1 });
     return [path, x, y];
   });
@@ -46,6 +51,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </g>
 {/if}
 {#if routing?.editable() && projected && (hovered || focused || props.selected || routing.dragging(props.id))}
-  <SegmentControls id={props.id} route={projected} {routing} />
+  <SegmentControls id={props.id} route={projected} {routing} {radius} {obstacles} drawing={drawing || undefined} />
 {/if}
 </g>

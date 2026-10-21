@@ -3,11 +3,12 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { JsonValue } from "./catalog.ts";
 import { encodeWorkflowBinary, validateWorkflowBinary, type WorkflowBinary } from "./workflow-binary.ts";
+import { filterArrayWithPredicate, type ArrayPredicate } from "./workflow-array-predicate.ts";
 
 export type ProcessingKind = "transform" | "filter" | "assert";
 export type ProcessingType = "Text" | "Number" | "Integer" | "Boolean" | "Object" | "Array" | "Null" | "Binary" | "Unknown" | "Mixed" | "JSON";
 export type ProcessingData = { version: 1; operation: string; parameters: Record<string, string> };
-type Parameter = { name: string; label: string; initial: string; options?: readonly string[]; multiline?: boolean; connectable?: boolean };
+type Parameter = { name: string; label: string; initial: string; options?: readonly string[]; multiline?: boolean; connectable?: boolean; type?: ProcessingType };
 type Definition = { id: string; kind: ProcessingKind; label: string; inputs: readonly ProcessingType[]; inputLabel?: string; output: ProcessingType | "input"; key?: boolean; parameters: readonly Parameter[] };
 const textBinary = ["Text", "Binary"] as const;
 const textInput = ["Text"] as const;
@@ -17,6 +18,10 @@ const anyValue = ["Text", "Number", "Integer", "Boolean", "Object", "Array", "Nu
 const parameter = (name: string, label: string, initial = "", options?: readonly string[]): Parameter => ({ name, label, initial, ...(options ? { options } : {}) });
 const predicates = ["equals", "not_equal", "greater_than", "at_least", "less_than", "at_most", "contains", "starts_with", "ends_with", "is_set", "is_not_set", "is_type"] as const;
 const condition = [parameter("path", "Field path (JSON pointer)"), parameter("operator", "Condition", "is_set", predicates), parameter("expected", "Expected value")];
+const range: readonly Parameter[] = [
+  { ...parameter("start", "Start (inclusive)", "0"), connectable: true, type: "Integer" },
+  { ...parameter("end", "End (exclusive)"), connectable: true, type: "Integer" },
+];
 export const processingOperations: readonly Definition[] = [
   { id: "utf8_encode", kind: "transform", label: "Encode UTF-8", inputs: ["Text"], output: "Binary", parameters: [] },
   { id: "utf8_decode", kind: "transform", label: "Decode UTF-8", inputs: ["Binary"], output: "Text", parameters: [] },
@@ -31,10 +36,10 @@ export const processingOperations: readonly Definition[] = [
   { id: "hmac_sha256", kind: "transform", label: "Sign HMAC-SHA256", inputs: textBinary, output: "Text", key: true, parameters: [parameter("format", "Output encoding", "hex", ["hex", "base64", "base64url"])] },
   { id: "jwt_sign", kind: "transform", label: "Sign JWT", inputs: ["Object"], output: "Text", key: true, parameters: [{ ...parameter("key_id", "Key ID (optional)"), connectable: true }, parameter("algorithm", "Algorithm", "HS256", ["HS256", "RS256"])] },
   { id: "trim", kind: "filter", label: "Trim text", inputs: ["Text"], output: "Text", parameters: [parameter("side", "Trim", "both", ["both", "start", "end"])] },
-  { id: "substring", kind: "filter", label: "Substring", inputs: ["Text"], output: "Text", parameters: [parameter("start", "Start (inclusive)", "0"), parameter("end", "End (exclusive)")] },
-  { id: "select_field", kind: "filter", label: "Select field", inputs: ["Object", "Array"], output: "Unknown", parameters: [parameter("path", "Field path (JSON pointer)"), parameter("type", "Result type", "Text", anyValue)] },
-  { id: "array_range", kind: "filter", label: "Array range", inputs: ["Array"], output: "Array", parameters: [parameter("start", "Start (inclusive)", "0"), parameter("end", "End (exclusive)")] },
-  { id: "array_filter", kind: "filter", label: "Filter array", inputs: ["Array"], output: "Array", parameters: condition },
+  { id: "substring", kind: "filter", label: "Substring", inputs: ["Text"], output: "Text", parameters: range },
+  { id: "select_field", kind: "filter", label: "Select field", inputs: ["Object", "Array"], output: "JSON", parameters: [{ ...parameter("path", "Field path (JSON pointer)"), connectable: true }] },
+  { id: "array_range", kind: "filter", label: "Array range", inputs: ["Array"], output: "Array", parameters: range },
+  { id: "array_filter", kind: "filter", label: "Filter array", inputs: ["Array"], output: "Array", parameters: [] },
   { id: "expect", kind: "assert", label: "Assert", inputs: anyValue, output: "input", parameters: condition.map(field => field.name === "expected" ? { ...field, connectable: true } : field) },
 ];
 export const processingValueLimit = 500_000;
@@ -47,6 +52,9 @@ export function processingDefinition(kind: ProcessingKind, data: ProcessingData)
   if (kind === "transform" && data.operation === "select_field") kind = "filter";
   const definition = processingOperations.find(operation => operation.kind === kind && operation.id === data.operation);
   if (!definition) throw new Error("Unknown processing operation.");
+  // Saved inline predicates and private recipes remain executable until rewired.
+  if (definition.id === "array_filter" && Object.hasOwn(data.parameters, "operator"))
+    return { ...definition, parameters: condition.map(field => field.name === "operator" ? field : { ...field, connectable: true }) };
   return definition;
 }
 export function defaultProcessingData(kind: ProcessingKind, operation = kind === "transform" ? "base64_encode" : kind === "filter" ? "trim" : "expect"): ProcessingData {
@@ -61,6 +69,9 @@ export function validateProcessingData(kind: ProcessingKind, value: unknown): Pr
   // Earlier documents required a result type. Keep them readable without narrowing JSON.parse.
   if (definition.id === "json_parse" && entries.length === 1 && entries[0]![0] === "type"
     && jsonTypes.some(type => type === entries[0]![1])) entries = [];
+  // A selected field has no statically known type. Retain older saved nodes without narrowing their result.
+  if (definition.id === "select_field" && entries.some(([name, value]) => name === "type" && anyValue.some(type => type === value)))
+    entries = entries.filter(([name]) => name !== "type");
   if (entries.length !== definition.parameters.length || entries.some(([name, value]) => {
     const field = definition.parameters.find(field => field.name === name);
     return !field || typeof value !== "string" || value.length > (field.multiline ? 16000 : 4096) || field.options && !field.options.includes(value);
@@ -69,14 +80,17 @@ export function validateProcessingData(kind: ProcessingKind, value: unknown): Pr
 }
 export function processingOutputType(kind: ProcessingKind, data: ProcessingData, input: ProcessingType): ProcessingType {
   const output = processingDefinition(kind, data).output;
-  return output === "input" ? input : output === "Unknown" ? data.parameters.type as ProcessingType : output;
+  return output === "input" ? input : output;
 }
 export function processingInputTypes(kind: ProcessingKind, data: ProcessingData, handle: string | null | undefined, inputType: ProcessingType | "Mixed" = "Unknown"): readonly ProcessingType[] | undefined {
   const definition = processingDefinition(kind, data);
   if (handle === "value") return definition.inputs;
+  if (definition.id === "array_filter" && (handle === "success" || handle === "failure")) return anyValue;
   if (handle === "key" && definition.key) return textBinary;
-  if (handle === "expected" && kind === "assert") return processingConditionUsesExpected(data.parameters.operator ?? "") ? processingExpectedTypes(data, inputType) : undefined;
-  return definition.parameters.some(field => field.connectable && field.name === handle) ? textInput : undefined;
+  if (handle === "expected" && (kind === "assert" || definition.id === "array_filter"))
+    return processingConditionUsesExpected(data.parameters.operator ?? "") ? processingExpectedTypes(data, definition.id === "array_filter" ? "JSON" : inputType) : undefined;
+  const field = definition.parameters.find(field => field.connectable && field.name === handle);
+  return field ? field.type ? processingTypeAlternatives(field.type) : textInput : undefined;
 }
 /** JSON is a known union, unlike an unresolved Unknown or Mixed output. Number includes Integer. */
 export function processingTypeAlternatives(type: ProcessingType): readonly ProcessingType[] {
@@ -149,12 +163,12 @@ export function processingExpectedTypes(data: ProcessingData, inputType: Process
   const operator = data.parameters.operator;
   if (["greater_than", "at_least", "less_than", "at_most"].includes(operator ?? "")) return ["Number"];
   if (["starts_with", "ends_with", "is_type"].includes(operator ?? "")) return ["Text"];
-  const checkedType = data.parameters.path && processingConditionUsesPath(inputType) ? "Unknown" : inputType;
-  if (operator === "contains") return checkedType === "Text" ? textInput : anyValue;
+  const checkedType = data.parameters.path && processingConditionUsesPath(inputType) && inputType !== "JSON" ? "Unknown" : inputType;
+  if (operator === "contains") return checkedType === "Text" ? textInput : checkedType === "JSON" ? jsonConnectionTypes : anyValue;
   return checkedType === "Unknown" || checkedType === "Mixed" ? anyValue : processingTypeAlternatives(checkedType);
 }
 export function processingConditionUsesPath(type: ProcessingType | "Mixed"): boolean {
-  return ["Object", "Array", "Unknown", "Mixed", "JSON"].includes(type);
+  return ["Object", "Array", "JSON"].includes(type);
 }
 export function processingConditionUsesExpected(operator: string): boolean {
   return operator !== "is_set" && operator !== "is_not_set";
@@ -196,23 +210,34 @@ function index(value: string, fallback?: number): number | undefined {
 }
 
 /** Pure bounded operation implementation, shared by public and private workers. */
-export async function processWorkflowValue(kind: ProcessingKind, raw: ProcessingData, value: unknown, key?: unknown, parameters?: Record<string, unknown>): Promise<unknown> {
+export async function processWorkflowValue(kind: ProcessingKind, raw: ProcessingData, value: unknown, key?: unknown, parameters?: Record<string, unknown>, predicate?: ArrayPredicate): Promise<unknown> {
   let data = validateProcessingData(kind, raw);
   let connectedExpected: { value: unknown } | undefined;
   const definition = processingDefinition(kind, data);
+  if (predicate !== undefined) {
+    if (kind !== "filter" || data.operation !== "array_filter") throw new Error("Only Filter array accepts an assertion path.");
+    return filterArrayWithPredicate(value, predicate, parameters ?? {}, processWorkflowValue);
+  }
+  if (data.operation === "array_filter" && !Object.hasOwn(data.parameters, "operator"))
+    throw new Error("Connect Filter array Assertion through Assert and return its outcomes to Keep and Remove.");
   if (parameters !== undefined) {
     if (!plain(parameters)) throw new Error("Invalid connected processing parameters.");
     const supplied: Record<string, string> = {};
     for (const [name, value] of Object.entries(parameters)) {
       const field = definition.parameters.find(field => field.name === name && field.connectable);
       if (!field) throw new Error("Unknown connected processing parameter.");
-      if (kind === "assert" && name === "expected") {
+      if ((kind === "assert" || definition.id === "array_filter") && name === "expected") {
         validateProcessingValue(value);
         connectedExpected = { value };
         continue;
       }
-      if (typeof value !== "string") throw new Error(`${field.label} needs a Text value.`);
-      supplied[name] = value;
+      if (field.type === "Integer") {
+        if (typeof value !== "number" || !Number.isSafeInteger(value)) throw new Error(`${field.label} needs an Integer value.`);
+        supplied[name] = String(value);
+      } else {
+        if (typeof value !== "string") throw new Error(`${field.label} needs a Text value.`);
+        supplied[name] = value;
+      }
     }
     if (Object.keys(supplied).length) data = validateProcessingData(kind, { ...data, parameters: { ...data.parameters, ...supplied } });
   }
@@ -271,7 +296,7 @@ export async function processWorkflowValue(kind: ProcessingKind, raw: Processing
   else if (operation === "substring") result = Array.from(value as string).slice(index(p.start!, 0), index(p.end!)).join("");
   else if (operation === "array_range") result = (value as unknown[]).slice(index(p.start!, 0), index(p.end!));
   else {
-    const expected = expectedValue(p.expected!);
+    const expected = connectedExpected ? connectedExpected.value : expectedValue(p.expected!);
     result = (value as unknown[]).filter(item => matchesProcessingCondition(item, p, expected));
   }
   validateProcessingValue(result);

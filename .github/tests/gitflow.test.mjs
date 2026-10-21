@@ -11,6 +11,7 @@ import { releasedContent } from "./released-content.test.mjs";
 const TAGS = `${API}/tags?per_page=100`;
 const BRANCHES = `${API}/git/matching-refs/heads/`;
 const CLOSED_PULLS = `${API}/pulls?state=closed&base=main&per_page=100`;
+const RELEASES = `${API}/releases?per_page=100`;
 const MERGE = ["pr", "merge", "123", "--repo", REPOSITORY,
   "--merge", "--match-head-commit", SHA];
 
@@ -103,11 +104,34 @@ Given("the release stabilization target is {string}", function (state)
     const tags = state === "tagged" ? [{ name: version }] : [];
     const responses = [get(TAGS, {}, state === "tags unavailable" ? unavailable :
       { pages: state === "invalid tags" ? [{}] : state === "invalid tag record" ? [[{}]] : [[], tags] })];
+    if (state === "tagged") responses.push(get(`${API}/compare/${version}...main`, { behind_by: 0 }));
     if (["tagged", "tags unavailable", "invalid tags", "invalid tag record"].includes(state) ||
       !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) return responses;
     const closed = state.startsWith("merged ") ? [mergedRelease(version, state.slice(7))] : [];
     responses.push(get(CLOSED_PULLS, {}, state === "history unavailable" ? unavailable :
       { pages: state === "invalid history" ? [{}] : [[], closed] }));
+    return responses;
+  };
+});
+
+Given("a tagged working release is {string}", function (state)
+{
+  this.policyResponses = base => {
+    const version = base.replace(/^release\//, "");
+    const unavailable = { exit_code: 1, stderr: "GitHub unavailable" };
+    const responses = [get(TAGS, [{ name: version }]),
+      get(`${API}/compare/${version}...main`, state === "invalid main comparison" ? {} :
+        { behind_by: state === "on main" ? 0 : 1 }, state === "main unavailable" ? unavailable : {})];
+    if (["on main", "main unavailable", "invalid main comparison"].includes(state)) return responses;
+    responses.push(get(`${API}/compare/${version}...${base}`, state === "invalid target comparison" ? {} :
+      { behind_by: state === "unrelated tag" ? 1 : 0 }, state === "target unavailable" ? unavailable : {}));
+    if (["unrelated tag", "target unavailable", "invalid target comparison"].includes(state)) return responses;
+    const releases = ["published", "draft"].includes(state) ? [{ tag_name: version, draft: state === "draft" }] : [];
+    responses.push(get(RELEASES, {}, state === "publication unavailable" ? unavailable :
+      { pages: state === "invalid publication" ? [{}] : state === "invalid publication record" ? [[{}]] : [[], releases] }));
+    if (["published", "publication unavailable", "invalid publication", "invalid publication record"].includes(state)) return responses;
+    responses.push(get(CLOSED_PULLS, {}, state === "history unavailable" ? unavailable :
+      { pages: state === "invalid history" ? [{}] : [[], state === "merged" ? [mergedRelease(version)] : []] }));
     return responses;
   };
 });
@@ -189,6 +213,8 @@ function hotfixSynchronization(state, base)
   if (base === "main") return responses;
   if (base.startsWith("release/"))
   {
+    if (target === "tagged" && /^release\/(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(base))
+      responses.push(get(`${API}/compare/${targetVersion}...main`, { behind_by: 0 }));
     if (!/^release\/(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(base) || target === "tagged") return responses;
     if (tagged) responses.push(get(CLOSED_PULLS, closed, failure === "target lookup" ? unavailable : {}));
     if (target === "merged" || failure === "target lookup") return responses;

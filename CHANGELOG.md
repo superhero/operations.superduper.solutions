@@ -317,6 +317,225 @@ chore(deps): add Markdown editor dependency badges
 
 ```
 
+<!-- changelog-commit:1425c2a674ff4cdf3127b010f80fd7711096eb5d -->
+### Commit [`1425c2a`](https://github.com/superhero/operations.superduper.solutions/commit/1425c2a674ff4cdf3127b010f80fd7711096eb5d)
+
+```text
+feat(workflow): connect typed Filter parameters
+
+Allow slice bounds, field paths and array-filter expectations to receive
+typed connections. Preserve manual settings while connected, validate
+integer bounds, and keep private operands inside vault processing.
+
+Select field now returns JsonValue without a result-type selector. Restore
+older selected-type settings without narrowing the value, allowing direct
+connections under the receiving input type assumption.
+
+```
+
+<!-- changelog-commit:7f7a75a3077b285a27bb64a346b20179fd298ac3 -->
+### Commit [`7f7a75a`](https://github.com/superhero/operations.superduper.solutions/commit/7f7a75a3077b285a27bb64a346b20179fd298ac3)
+
+```text
+fix(ui): hide Assert field paths until structured input is connected
+
+Show the field-path editor only for Object, Array or JsonValue inputs.
+Keep disconnected and unresolved assertions focused on their condition
+while preserving any saved path for a later structured connection.
+
+```
+
+<!-- changelog-commit:f24f7f2bd3434dd42a75b400b49a730f9e92f701 -->
+### Commit [`f24f7f2`](https://github.com/superhero/operations.superduper.solutions/commit/f24f7f2bd3434dd42a75b400b49a730f9e92f701)
+
+```text
+feat(workflow): filter arrays through scoped Assert paths
+
+Expose Item and Success/Failure callback ports instead of another condition
+editor. Cast and processing nodes feed one Assert; returned outcomes keep
+or discard original items in order. Casts resolve assertion/return types.
+
+Compile bounded item paths once and evaluate each array in one worker call
+with one result preview. Capture external operands once, preserve private
+processing inside the vault, and reuse the same Cast implementation.
+Reject incomplete paths, escapes and ordinary cycles; cancel pending work
+when the run ends.
+
+Keep saved inline predicates executable until rewired. Connecting a new
+callback clears their old operands and settings through Undo history.
+
+```
+
+<!-- changelog-commit:b3c43276cebdd5aecffdb151c315fb52e6646713 -->
+### Commit [`b3c4327`](https://github.com/superhero/operations.superduper.solutions/commit/b3c43276cebdd5aecffdb151c315fb52e6646713)
+
+```text
+feat(workflow): add Filter array assertion shortcut
+
+Name the predicate ports Assertion, Keep and Remove while preserving
+saved connection identities. Add the existing branch action beside an
+unconnected Assertion to create an Is set Assert and wire its input and
+both returns in one undoable edit.
+
+Keep existing paths intact, replace legacy inline predicates when adding,
+and place the new node clear of existing content. Share the branch action
+with schema restoration so its icon, tooltip and interaction stay aligned.
+
+```
+
+<!-- changelog-commit:6459adaafed156c1971d4ebf8dc7166e5e80155e -->
+### Commit [`6459ada`](https://github.com/superhero/operations.superduper.solutions/commit/6459adaafed156c1971d4ebf8dc7166e5e80155e)
+
+```text
+fix(workflow): route curved connections around nodes
+
+Curved edges bypassed measured obstacle routing and drew assertion returns
+through their endpoint nodes. Use the existing checked route for both
+styles, including connection previews, hit areas and label positions.
+Curve strength rounds the shared bends where clearance permits.
+
+Expose the existing segment controls in curved mode and retain authored
+routes through style changes, Undo, reload and reset. Keep one routing
+worker active for either style, preserving its bounded search and caches.
+
+```
+
+<!-- changelog-commit:5f9318be86abb55d40e25694e2eef6498c7353e8 -->
+### Commit [`5f9318b`](https://github.com/superhero/operations.superduper.solutions/commit/5f9318be86abb55d40e25694e2eef6498c7353e8)
+
+```text
+fix(workflow): restore diagonal curves and live curve settings
+
+Rounded orthogonal paths made curved mode look almost unchanged. Restore
+the original diagonal Bezier for clear connections and fit smooth,
+clearance-checked detours around obstructing nodes. Bound drawing work and
+detour extrema, and place existing anchor controls on the actual curve.
+Use the same geometry for previews, completed paths and labels.
+
+Apply explicit Curved lines changes in Settings to the open workflow as
+well as the default. Keep startup/import flags and existing authored route
+storage, Undo, reset and worker ownership intact.
+
+```
+
+<!-- changelog-commit:f97b64dbf633aeabda9fdf4b0b67418aef76dc79 -->
+### Commit [`f97b64d`](https://github.com/superhero/operations.superduper.solutions/commit/f97b64dbf633aeabda9fdf4b0b67418aef76dc79)
+
+```text
+fix(workflow): apply dash and snap settings to the open canvas
+
+Apply explicit changes to all three display switches through the same
+update path as the toolbar. Settings previously changed only the current
+curve mode, leaving existing workflows dashed or snapped.
+
+Keep untouched drafts unsaved and retain saved or imported flags when
+unrelated defaults change. Cover rendered stroke styles, pointer movement
+and reload at narrow and desktop widths.
+
+```
+
+<!-- changelog-commit:fc9b6512e3acc8cfc02200c10d0bdbb935481d05 -->
+### Commit [`fc9b651`](https://github.com/superhero/operations.superduper.solutions/commit/fc9b6512e3acc8cfc02200c10d0bdbb935481d05)
+
+```text
+chore: refresh dependency badges
+```
+
+<!-- changelog-commit:890784b669a8dd3d0236b01ff9b47e49744ff358 -->
+### Commit [`890784b`](https://github.com/superhero/operations.superduper.solutions/commit/890784b669a8dd3d0236b01ff9b47e49744ff358)
+
+```text
+chore(release): integrate workflow editor updates
+
+Carry the current develop snapshot into the existing release branch,
+including typed Assert operands, processing nodes and Markdown comments.
+Retain both histories and every changelog entry. The resulting tree is
+identical to develop at 3e814279.
+
+Keep the existing 0.0.56 tag unchanged; main promotion remains deferred.
+
+```
+
+<!-- changelog-commit:4d15d1d3b35b83c7e65d08a23615c6f72310ba8a -->
+### Commit [`4d15d1d`](https://github.com/superhero/operations.superduper.solutions/commit/4d15d1d3b35b83c7e65d08a23615c6f72310ba8a)
+
+```text
+chore: refresh dependency badges
+```
+
+<!-- changelog-commit:b8650258fb2c741674a13204f9c33add32acf654 -->
+### Commit [`b865025`](https://github.com/superhero/operations.superduper.solutions/commit/b8650258fb2c741674a13204f9c33add32acf654)
+
+```text
+chore: refresh dependency badges
+```
+
+<!-- changelog-commit:73d7c86a27c8344e5aa849319f69df52301a362f -->
+### Commit [`73d7c86`](https://github.com/superhero/operations.superduper.solutions/commit/73d7c86a27c8344e5aa849319f69df52301a362f)
+
+```text
+fix(settings): use three dot styles for Browser building status
+
+```
+
+<!-- changelog-commit:24cc0857d1ee738f9d246743170345d44e8a78c8 -->
+### Commit [`24cc085`](https://github.com/superhero/operations.superduper.solutions/commit/24cc0857d1ee738f9d246743170345d44e8a78c8)
+
+```text
+fix(workflows): show array bounds in Items labels and restore type badges
+
+```
+
+<!-- changelog-commit:0a0ebfbfa25273b68c3a2d199eedecc77f58691f -->
+### Commit [`0a0ebfb`](https://github.com/superhero/operations.superduper.solutions/commit/0a0ebfbfa25273b68c3a2d199eedecc77f58691f)
+
+```text
+feat: group toolbar settings in a three-column layout
+
+```
+
+<!-- changelog-commit:5a207b2ca695d8393b0c32ec83b3d12279534d37 -->
+### Commit [`5a207b2`](https://github.com/superhero/operations.superduper.solutions/commit/5a207b2ca695d8393b0c32ec83b3d12279534d37)
+
+```text
+fix: keep toolbar group headings inside compact column cards
+
+```
+
+<!-- changelog-commit:bde96d84423fe8e21b653ce0c4de45c5dfd53a43 -->
+### Commit [`bde96d8`](https://github.com/superhero/operations.superduper.solutions/commit/bde96d84423fe8e21b653ce0c4de45c5dfd53a43)
+
+```text
+chore(history): reconcile superseded development branches
+
+Record the histories of the previous release integration and two schema
+branches whose application changes already reached develop through merged
+PRs. Their only later badge update matches the main synchronization.
+
+Also retain four superseded local tips: Browser dots became the current
+three-dot wave, array bounds and type badges retain later item types, and
+toolbar grouping and contained headings retain their later styling.
+Preserve the current tree so cleanup does not restore earlier UI versions.
+
+```
+
+<!-- changelog-commit:140736f7f6c1902e1177497bda761559cd1c1e44 -->
+### Commit [`140736f`](https://github.com/superhero/operations.superduper.solutions/commit/140736f7f6c1902e1177497bda761559cd1c1e44)
+
+```text
+fix(ci): validate stabilization of unpublished tagged releases
+
+Allow fixes into a tagged working release only while its tag belongs to
+that branch, is absent from main, has no published GitHub Release and has
+no merged release or hotfix into main. Fail closed on unverifiable API
+responses, preserve the existing tag and keep publication reservations.
+
+Document this distinction and cover unpublished, published, unrelated and
+unverifiable targets. Add the missing Markdown/editor dependency badges
+to the README so the release automation inventory matches the manifest.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

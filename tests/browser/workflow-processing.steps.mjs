@@ -34,6 +34,210 @@ async function choose(page, node, label, option) {
   await page.getByRole('option', { name: option, exact: true }).click();
 }
 
+Then('Filter bound and path connections disable manual editing and selected fields return JsonValue', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  const auxiliary = (value, id, y) => ({ ...source(value), id, position: { x: 100, y } });
+  const card = id => workflow(page).locator(`.svelte-flow__node[data-id="${id}"]`);
+  const handle = (id, name) => card(id).locator(`.svelte-flow__handle[data-handleid="${name}"]`);
+  await loadGraphFixture(page, document([source('a🙂bcd'), auxiliary(1, 'start', 100), auxiliary(-1, 'end', 600),
+    processor('filter', 'substring', { start: '0', end: '2' })],
+  [connection('source', 'filter', 'value'), connection('end', 'filter', 'value', 'end')]));
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  const filter = card('filter');
+  const start = filter.getByLabel('Start (inclusive)', { exact: true });
+  await expect(filter.locator('.processing-parameter .utility-type')).toHaveText(['Integer', 'Integer']);
+  await expect(handle('filter', 'start')).toHaveAttribute('aria-label', 'Start (inclusive) input (Integer)');
+  await expect(start).toBeEditable();
+  await expect(filter.getByLabel('End (exclusive)', { exact: true })).toBeDisabled();
+  await gesture(page, handle('start', 'value'), handle('filter', 'start'));
+  await expect(start).toBeDisabled();
+  await saved(page);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(start).toBeEditable();
+  await expect(start).toHaveValue('0');
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  await expect(start).toBeDisabled();
+  await saved(page);
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(start).toBeDisabled();
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await expect(panel(page).getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
+  await panel(page).getByText('Processing results (1)', { exact: true }).click();
+  await expect(panel(page).getByRole('region', { name: 'Substring result' })).toContainText('"🙂bc"');
+  await panel(page).getByRole('button', { name: 'Quit', exact: true }).click();
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await choose(page, filter, 'Filter operation', 'Array range');
+  await expect(filter.locator('.utility-title .utility-type')).toHaveText('Array');
+  await expect(filter.locator('.processing-parameter .utility-type')).toHaveText(['Integer', 'Integer']);
+
+  const selection = { ...processor('filter', 'select_field', { path: '/manual', type: 'Number' }), id: 'selection' };
+  await loadGraphFixture(page, document([source({ profile: { name: '  hello  ' } }), auxiliary('/profile/name', 'path', 100), selection, processor('filter', 'trim', {}, 900)],
+    [connection('source', 'selection', 'value'), connection('selection', 'filter')]));
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  const selected = card('selection'), path = selected.getByLabel('Field path (JSON pointer)', { exact: true });
+  await expect(selected.getByRole('combobox', { name: 'Result type', exact: true })).toHaveCount(0);
+  await expect(selected.locator('.output-type')).toHaveText('JsonValue');
+  await expect(handle('selection', 'result')).toHaveAttribute('aria-label', 'Filter result (JsonValue)');
+  await expect(selected.locator('.processing-parameter .utility-type')).toHaveText('Text');
+  await handle('selection', 'path').hover();
+  await expect(page.getByRole('tooltip')).toHaveText('Field path (JSON pointer) input (Text)');
+  await gesture(page, handle('path', 'value'), handle('selection', 'path'));
+  await expect(path).toBeDisabled();
+  await expect(path).toHaveValue('/manual');
+  await saved(page);
+  const exported = (await readExport(page)).document;
+  assert.deepEqual(exported.nodes.find(node => node.id === 'selection').data.parameters, { path: '/manual' });
+  assert.equal(exported.nodes.some(node => node.type === 'cast'), false);
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await expect(panel(page).getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
+  await panel(page).getByText('Processing results (2)', { exact: true }).click();
+  await expect(panel(page).getByRole('region', { name: 'Trim text result' })).toContainText('"hello"');
+  await expect(panel(page).getByRole('alert')).toHaveCount(0);
+});
+
+Then('Filter array evaluates external assertions with reversible cast typing and original items', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  const card = id => workflow(page).locator('.svelte-flow__node[data-id="' + id + '"]');
+  const port = (id, handle) => card(id).locator('.svelte-flow__handle[data-handleid="' + handle + '"]');
+  const filter = { ...processor('filter', 'array_filter', {}, 500), position: { x: 500, y: 200 } };
+  const assertion = { ...processor('assert', 'expect', { operator: 'greater_than', expected: '1' }, 1000), position: { x: 1000, y: 200 } };
+  const cast = { id: 'cast', type: 'cast', position: { x: 500, y: 600 }, data: { targetType: 'Number' } };
+  const operand = { ...source(2), id: 'operand', position: { x: 100, y: 600 } };
+  const nodes = [source(['0', '2', '3']), filter, assertion, cast, operand];
+  const main = connection('source', 'filter', 'value');
+  const legacy = { ...filter, data: { ...filter.data, parameters: { path: '', operator: 'greater_than', expected: '1' } } };
+  await loadGraphFixture(page, document(nodes.map(node => node.id === 'filter' ? legacy : node), [main, connection('operand', 'filter', 'value', 'expected')]));
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await expect(card('filter').getByRole('combobox', { name: 'Condition', exact: true })).toHaveCount(0);
+  await expect(card('filter').getByLabel('Field path (JSON pointer)', { exact: true })).toHaveCount(0);
+  await expect(card('filter').locator('.processing-output .utility-type')).toHaveText(['Unknown', 'Unknown', 'Unknown', 'Array']);
+  await expect(port('filter', 'item')).toHaveAttribute('aria-label', 'Filter array assertion (Unknown)');
+  await gesture(page, port('filter', 'item'), port('assert', 'value'));
+  await expect(card('filter').getByLabel('Expected value', { exact: true })).toHaveCount(0);
+  await saved(page);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(card('filter').getByLabel('Expected value', { exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  await expect(card('filter').getByLabel('Expected value', { exact: true })).toHaveCount(0);
+  await gesture(page, port('assert', 'success'), port('filter', 'success'));
+  await gesture(page, port('assert', 'failure'), port('filter', 'failure'));
+  await expect(card('assert').locator('.utility-title .utility-type')).toHaveText('Unknown');
+  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array keep input (Unknown)');
+  await saved(page);
+  // Replace the direct item input with an explicit Cast while retaining both returns.
+  const returns = [connection('assert', 'filter', 'success', 'success'), connection('assert', 'filter', 'failure', 'failure')];
+  await loadGraphFixture(page, document(nodes, [main, ...returns]));
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await gesture(page, port('filter', 'item'), port('cast', 'value'));
+  await gesture(page, port('cast', 'result'), port('assert', 'value'));
+  await expect(card('assert').locator('.utility-title .utility-type')).toHaveText('Number');
+  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array keep input (Number)');
+  await expect(port('filter', 'failure')).toHaveAttribute('aria-label', 'Filter array remove input (Number)');
+  await saved(page);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array keep input (Unknown)');
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array keep input (Number)');
+  await saved(page);
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array keep input (Number)');
+  await page.evaluate(() => {
+    const NativeWorker = window.Worker;
+    window.__arrayFilterCalls = 0;
+    window.Worker = class extends NativeWorker {
+      constructor(url, options) { super(url, options); this.isProcessing = options?.name === 'workflow-processing'; }
+      postMessage(message, ...args) { if (this.isProcessing && message?.kind === 'request') window.__arrayFilterCalls++; return super.postMessage(message, ...args); }
+    };
+  });
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await expect(panel(page).getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
+  await panel(page).getByText('Processing results (1)', { exact: true }).click();
+  assert.deepEqual(JSON.parse(await panel(page).getByRole('region', { name: 'Filter array result' }).locator('pre').textContent()), ['2', '3']);
+  assert.equal(await page.evaluate(() => window.__arrayFilterCalls), 1);
+  await expect(panel(page).getByRole('alert')).toHaveCount(0);
+  await panel(page).getByRole('button', { name: 'Quit', exact: true }).click();
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await gesture(page, port('operand', 'value'), port('assert', 'expected'));
+  await expect(card('assert').getByLabel('Expected value', { exact: true })).toBeDisabled();
+  await saved(page);
+  const exported = (await readExport(page)).document;
+  assert.deepEqual(exported.nodes.find(node => node.id === 'filter').data.parameters, {});
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await expect(panel(page).getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
+  await panel(page).getByText('Processing results (1)', { exact: true }).click();
+  assert.deepEqual(JSON.parse(await panel(page).getByRole('region', { name: 'Filter array result' }).locator('pre').textContent()), ['3']);
+  await panel(page).getByRole('button', { name: 'Quit', exact: true }).click();
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await workflow(page).screenshot({ path: this.artifactDirectory + '/array-assertion-loop.png' });
+});
+
+Then('the Filter array assertion shortcut creates a reversible connected default assertion', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  const filter = workflow(page).locator('.svelte-flow__node[data-id="filter"]');
+  const assertions = workflow(page).locator('.svelte-flow__node-assert');
+  const shortcut = filter.getByRole('button', { name: 'Add assertion', exact: true });
+  await loadGraphFixture(page, document([source([0, false, '', null, 'kept']), processor('filter', 'array_filter')], [connection('source', 'filter', 'value')]));
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await expect(filter.locator('.processing-output > span:first-child')).toHaveText(['Assertion', 'Keep', 'Remove', 'Result']);
+  await expect(shortcut.locator('.material-symbols-rounded')).toHaveText('add_location');
+  await shortcut.hover();
+  await expect(page.getByRole('tooltip')).toHaveText('Add assertion');
+  const before = (await readExport(page)).document;
+  await shortcut.click();
+  await expect(assertions).toHaveCount(1);
+  await expect(shortcut).toHaveCount(0);
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await expect(assertions.getByRole('combobox', { name: 'Condition', exact: true }).locator('.select-label')).toHaveText('Is set');
+  await expect(assertions.getByLabel('Expected value', { exact: true })).toHaveCount(0);
+  await expect(assertions.getByLabel('Field path (JSON pointer)', { exact: true })).toHaveCount(0);
+  await expect(filter.locator('.processing-output .utility-type')).toHaveText(['Unknown', 'Unknown', 'Unknown', 'Array']);
+  await saved(page);
+  const added = (await readExport(page)).document;
+  assert.equal(added.nodes.length, before.nodes.length + 1);
+  assert.equal(added.edges.length, before.edges.length + 3);
+  const assertion = added.nodes.find(node => node.type === 'assert');
+  assert.equal(assertion.data.parameters.operator, 'is_set');
+  for (const node of before.nodes) assert.deepEqual(added.nodes.find(item => item.id === node.id).position, node.position);
+  assert.deepEqual(added.edges.filter(edge => edge.id !== before.edges[0].id).map(({ source, sourceHandle, target, targetHandle }) => [source, sourceHandle, target, targetHandle]), [
+    ['filter', 'item', assertion.id, 'value'], [assertion.id, 'success', 'filter', 'success'], [assertion.id, 'failure', 'filter', 'failure']
+  ]);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(assertions).toHaveCount(0);
+  await expect(shortcut).toBeVisible();
+  await saved(page);
+  assert.equal((await readExport(page)).document.edges.length, before.edges.length);
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  await expect(assertions).toHaveCount(1);
+  await expect(shortcut).toHaveCount(0);
+  await saved(page);
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(assertions.getByRole('combobox', { name: 'Condition', exact: true }).locator('.select-label')).toHaveText('Is set');
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await expect(panel(page).getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
+  await panel(page).getByText('Processing results (1)', { exact: true }).click();
+  assert.deepEqual(JSON.parse(await panel(page).getByRole('region', { name: 'Filter array result' }).locator('pre').textContent()), [0, false, '', 'kept']);
+  await panel(page).getByRole('button', { name: 'Quit', exact: true }).click();
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await workflow(page).screenshot({ path: this.artifactDirectory + '/filter-assertion-shortcut.png' });
+  await assertions.locator('.utility-title strong').click();
+  await workflow(page).focus();
+  await page.keyboard.press('Delete');
+  await expect(assertions).toHaveCount(0);
+  await expect(shortcut).toBeVisible();
+  await shortcut.focus();
+  await page.keyboard.press('Enter');
+  await expect(assertions).toHaveCount(1);
+  await expect(shortcut).toHaveCount(0);
+});
+
 Then('reopening Transform with an offscreen selection keeps its first visible frame stable at vertical position {int}', async function (y) {
   const page = this.page;
   await setMode(page, 'workflow');
@@ -291,7 +495,7 @@ Then('Select field is offered by Filter and old Transform nodes restore and exec
   const filter = workflow(page).locator('[data-processing-kind="filter"]');
   await choose(page, filter, 'Filter operation', 'Select field');
   await expect(filter.locator('.utility-title .utility-type')).toHaveText('Object | Array');
-  await expect(filter.locator('.svelte-flow__handle.target')).toHaveAttribute('aria-label', 'Filter input (Object | Array)');
+  await expect(filter.locator('.svelte-flow__handle.target[data-handleid="value"]')).toHaveAttribute('aria-label', 'Filter input (Object | Array)');
   const legacy = document([source({ profile: { name: 'Alice' } }), processor('transform', 'select_field', { path: '/profile/name' })],
     [connection('source', 'transform', 'value')]);
   await loadGraphFixture(page, legacy);
@@ -303,7 +507,7 @@ Then('Select field is offered by Filter and old Transform nodes restore and exec
   await page.reload();
   await setMode(page, 'workflow');
   await expect(filter.getByLabel('Field path (JSON pointer)', { exact: true })).toHaveValue('/profile/name');
-  await expect(filter.locator('.output-type')).toHaveText('Text');
+  await expect(filter.locator('.output-type')).toHaveText('JsonValue');
   await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
   const run = panel(page);
   await expect(run.getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();

@@ -120,16 +120,26 @@ preferences. Missing or invalid values fall back independently: dashed lines,
 curved lines, snapping and node symbols start enabled.
 Load defaults before the editor mounts and apply them to
 new workflows and the untouched initial canvas. Existing, edited and imported
-workflows retain their flags; toolbar changes do not alter application defaults.
+workflows restore their own flags; toolbar changes do not alter application defaults.
 
 Grid size accepts whole pixels from 1–32, defaulting to 8. It applies immediately
 to placement and center snapping on every canvas without repositioning nodes or
 changing workflow documents. Decorative dots retain independent 24px spacing.
 Dash length and gap accept 1–128 px, defaulting to 8 and 16 respectively.
 Dash speed accepts 0–512 px/s, defaulting to 64; zero pauses motion.
-Curve strength accepts 0–200%, defaulting to 100%. Node clearance accepts
-0–128 diagram units, defaulting to 16, and applies to orthogonal routing and
-manual segment adjustments.
+Curve strength accepts 0–200%, defaulting to 100%, and controls Bézier handles.
+Clear connections retain their original diagonal cubic shape. Blocked paths
+use smooth cubic detours fitted to the checked route, with conservative curve
+bounds keeping them outside nodes. Node clearance accepts 0–128 diagram units,
+defaulting to 16, and applies to both connection styles and manual adjustments.
+Both styles share the same worker-routed corridors, editable segment anchors
+and saved manual routes. Style changes redraw existing geometry without
+replacing the routing worker or rewriting authored anchors.
+Explicit changes to Curved lines, Dashed lines and Snap to grid in Settings
+also update the open workflow and its saved display preferences, using the same
+updates as the toolbar. Changing snapping does not reposition existing nodes.
+Unrelated defaults leave these flags alone; startup and imports restore their
+own flags. Updating an untouched canvas does not create a saved workflow.
 
 ### Locale
 
@@ -332,17 +342,51 @@ processing inputs, without falling back to disabled manual values.
 Filter trims either or both ends of text, selects a substring or a field by JSON
 pointer, selects an array range or keeps array items matching a predicate. Older
 Select field Transform nodes load as Filter nodes with the same identity,
-configuration and connections; older private recipes remain executable.
+configuration and connections; older private recipes remain executable. Select
+field returns JsonValue without a result-type selector. Older selected result
+types are removed on load without coercing or narrowing the actual result;
+downstream ports check the value under their receiving type assumption.
 Text indices count Unicode
 code points; ranges include their start and exclude their end, with negative
 indices counting from the end. Array filtering retains input order. Predicates
 use explicit field paths and comparisons; equality preserves value types.
+Substring and Array range bounds accept Integer connections. Select field paths
+accept Text connections. Connected parameters show type badges, disable manual
+editing and retain their saved values for disconnection or Undo.
+
+Filter array delegates its predicate to a separate Assert. Its main input and
+result are Array; Assertion emits an Unknown value for each element. A bounded
+path of Cast, Transform or other Filter operations ends at one Assert. Connect
+its Success outcome to Keep and Failure to Remove. Keep retains the original
+array item and Remove discards it. Swapping the returns inverts the selection.
+Casting affects the assertion without changing retained items or their order.
+Unknown item/return badges resolve on the assertion side when a Cast supplies a
+known type. No duplicate condition editor appears in Filter array.
+
+An unconnected Assertion offers the same add-location button as hidden schema
+branches. It creates an Assert with Is set selected and wires all three
+connections in one undoable edit, without moving existing nodes. The button
+returns when the assertion path is deleted. Older saved inline predicates and
+private recipes remain executable until an assertion path replaces them;
+connected legacy operands remain visible until then. Wiring the callback clears
+the old predicate and its operand connections as one undoable change.
+
+The runner compiles each item path once and evaluates the array in one worker
+request, producing one bounded result preview rather than per-item graph state
+or rendering. Paths are limited to 32 processing steps and 100,000 item/step
+evaluations. Both outcomes return to the same filter; branching outside the
+item path, nested filter callbacks and ordinary routing cycles are rejected.
+External predicate operands are captured once, preserving their value types.
+Private arrays or operands execute entirely inside vault processing; no item
+values or predicate intermediates are returned to the page. Ending the run
+cancels its public worker and discards pending results.
 
 Assert passes the original input unchanged through Success or Failure. The
-field-path editor appears only for structured or unresolved input types; scalar
-inputs are checked directly, ignoring any retained path from an earlier
-configuration. The expected-value editor appears only for conditions that use
-it; Is set and Is not set hide it while preserving the saved value for reuse.
+field-path editor appears only for connected Object, Array or JsonValue inputs.
+Disconnected, scalar and unresolved inputs hide it while retaining its saved
+path; scalar inputs are checked directly. The expected-value editor appears only
+for conditions that use it; Is set and Is not set hide it while preserving the
+saved value for reuse.
 Expected value also accepts one connection, which disables its manual editor.
 Its badge and connection compatibility follow the condition and checked type:
 numeric comparisons require Number, text comparisons and type checks require

@@ -191,6 +191,7 @@
 
   function selectWorkflowDefaults(next: WorkflowDefaults) {
     settingsEdits.workflowDefaults += 1;
+    workflowWorkspace?.applyDisplayDefaults(next, workflowDefaults);
     workflowDefaults = { ...next };
     workflowDefaultsError = "";
     const request = ++workflowDefaultsSave;

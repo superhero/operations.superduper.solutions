@@ -7,6 +7,8 @@ import { expect } from '@playwright/test';
 import { readExport, setMode, workflow } from './workspace.steps.mjs';
 import { closeWorkflowDetails, workflowNameInput } from './workflow-details.fixture.mjs';
 import { repository, storedWorkflows } from './workflow-storage.fixture.mjs';
+import { loadGraphFixture } from './workflow-graph.fixture.mjs';
+import { createUtilityNode } from '../../src/lib/workflow-graph.ts';
 
 const freshDefaults = { dashed: true, curved: true, snap: true, nodeSymbols: true, gridSize: 8, dashLength: 8, dashGap: 16, dashSpeed: 64, curveStrength: 100, nodeClearance: 16 };
 const disabledDefaults = { dashed: false, curved: false, snap: false, gridSize: 12, dashLength: 6, dashGap: 4, dashSpeed: 20, curveStrength: 50, nodeClearance: 12, nodeSymbols: true };
@@ -134,6 +136,10 @@ Then('Settings sections open exclusively with the current workflow defaults in a
 });
 
 When('I save different workflow defaults', async function () {
+  await setDefaults(this.page, disabledDefaults);
+  await setMode(this.page, 'workflow');
+  await expectWorkflowOptions(this.page, disabledDefaults);
+  assert.deepEqual(await storedWorkflows(this.page), [], 'Settings switches must not save an untouched canvas.');
   await setDefaults(this.page, enabledDefaults);
 });
 
@@ -191,7 +197,7 @@ Then('the defaults survive reload and initialize untouched and new workflows', a
   assert.deepEqual(options((await storedWorkflows(page))[0]), options(enabledDefaults));
 });
 
-Then('workflow options remain independent from the saved defaults', async function () {
+Then('unrelated defaults preserve saved flags and imports restore their own options', async function () {
   const page = this.page;
   const original = { dashed: false, curved: false, snap: true };
   await setMode(page, 'workflow');
@@ -218,7 +224,7 @@ Then('workflow options remain independent from the saved defaults', async functi
   assert.deepEqual(await storedDefaults(page), enabledDefaults, 'Toolbar changes must only change the current workflow.');
   await setDefaults(page, disabledDefaults);
   await setMode(page, 'workflow');
-  await expectWorkflowOptions(page, { ...enabledDefaults, dashed: false });
+  await expectWorkflowOptions(page, disabledDefaults);
   const importedOptions = { dashed: true, curved: false, snap: true };
   await page.getByLabel('Import workflow file', { exact: true }).setInputFiles({ name: 'own-options.json', mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify({ version: 3, id: 'import-own-options', name: 'Imported options', description: '', nodes: [], edges: [],
@@ -227,6 +233,139 @@ Then('workflow options remain independent from the saved defaults', async functi
   assert.deepEqual(options((await readExport(page)).document), importedOptions);
   assert.deepEqual(await storedDefaults(page), disabledDefaults);
   assert.deepEqual(options((await storedWorkflows(page)).find(document => document.id === saved.id)), original);
+});
+
+Then('workflow display switches update rendered lines and grid movement at width {int}', { timeout: 60_000 }, async function (width) {
+  const page = this.page;
+  await page.setViewportSize({ width, height: 900 });
+  await setWorkflowGridSize(page, 32);
+  await setMode(page, 'workflow');
+  await loadGraphFixture(page, { version: 3, id: 'display-switches', name: 'Display switches', description: '',
+    nodes: [createUtilityNode('cast', { x: 80, y: 120 }, 'display-source'), createUtilityNode('cast', { x: 480, y: 180 }, 'display-target')],
+    edges: [{ id: 'display-edge', kind: 'mapping', source: 'display-source', sourceHandle: 'result', target: 'display-target', targetHandle: 'value' }],
+    viewport: { x: 0, y: 0, zoom: 1 }, snap: true, curved: true, dashed: true });
+  await workflow(page).getByRole('button', { name: 'Fit View', exact: true }).click();
+  const saved = () => expect(page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
+  const baseline = (await readExport(page)).document;
+  const history = await repository(page, 'history', baseline.id);
+  const edge = workflow(page).locator('.svelte-flow__edge[data-id="display-edge"]');
+  const node = workflow(page).locator('.svelte-flow__node[data-id="display-source"]');
+  const capture = () => node.evaluate(async element => {
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const matrix = new DOMMatrix(getComputedStyle(element).transform);
+    const zoom = new DOMMatrix(getComputedStyle(element.closest('.svelte-flow__viewport')).transform).a;
+    return { x: matrix.e, y: matrix.f, width: element.offsetWidth, height: element.offsetHeight, zoom };
+  });
+  const position = ({ x, y }) => ({ x, y });
+  const setting = async (key, enabled) => {
+    await openDefaults(page);
+    const control = settings(page).getByRole('switch', { name: settingLabels[key], exact: true });
+    if (await control.getAttribute('aria-checked') !== String(enabled)) await control.click();
+    await expect.poll(async () => (await storedDefaults(page))[key]).toBe(enabled);
+    await setMode(page, 'workflow');
+    await expect(workflow(page).getByRole('button', { name: toolbarLabels[key], exact: true })).toHaveAttribute('aria-pressed', String(enabled));
+  };
+  const lines = async (curved, dashed) => {
+    await expect(edge.locator('.svelte-flow__edge-interaction')).toHaveAttribute('d', curved ? /^M.* C/ : /^M .* L/);
+    const base = edge.locator('.flow-routing-path');
+    if (dashed && !curved) {
+      // SVG horizontal strokes have a zero-height box, which Playwright calls hidden.
+      await expect(edge.locator('.flow-routing-dash').first()).toBeAttached();
+      await expect(base).toBeHidden();
+    } else {
+      await expect(edge.locator('.flow-routing-dash')).toHaveCount(0);
+      await expect(base).toBeVisible();
+    }
+    const visible = edge.locator('.svelte-flow__edge-path:not(.flow-routing-dash-base)');
+    assert.ok(await visible.count() > 0, 'Switching styles must leave a visible connection.');
+    for (const path of await visible.all()) {
+      await expect(path).not.toHaveCSS('display', 'none');
+      await expect(path).toHaveCSS('visibility', 'visible');
+      await expect(path).toHaveCSS('stroke-dasharray', dashed ? '8px, 16px' : 'none');
+    }
+    if (!dashed) {
+      await expect(edge).not.toHaveClass(/\banimated\b/);
+      await expect(base).toHaveCSS('animation-name', 'none');
+    }
+  };
+  for (const curved of [false, true]) {
+    await setting('curved', curved);
+    for (const dashed of [false, true]) {
+      await setting('dashed', dashed);
+      await lines(curved, dashed);
+      const toggle = workflow(page).getByRole('button', { name: 'Dashed connections', exact: true });
+      await toggle.click();
+      await lines(curved, !dashed);
+      await toggle.click();
+      await lines(curved, dashed);
+      assert.equal((await storedDefaults(page)).dashed, dashed, 'The toolbar must not change defaults.');
+    }
+    const toggle = workflow(page).getByRole('button', { name: 'Curved connections', exact: true });
+    await toggle.click();
+    await lines(!curved, true);
+    await toggle.click();
+    await lines(curved, true);
+  }
+  await saved();
+  const styled = (await readExport(page)).document;
+  assert.equal(styled.id, baseline.id);
+  assert.deepEqual(styled.nodes, baseline.nodes, 'Display switches must not move or replace nodes.');
+  assert.deepEqual(styled.edges, baseline.edges, 'Display switches must retain connections and authored anchors.');
+  assert.deepEqual(await repository(page, 'history', baseline.id), history, 'Display switches must not create workflow revisions.');
+
+  const drag = async (dx, dy) => {
+    const geometry = await capture(), bounds = await node.boundingBox();
+    const start = { x: Math.round(bounds.x + bounds.width / 2), y: Math.round(bounds.y + 16 * geometry.zoom) };
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    let before, delta;
+    try {
+      // XYFlow establishes the pointer offset only after its drag threshold.
+      start.x += 4; start.y += 4;
+      await page.mouse.move(start.x, start.y);
+      before = await capture();
+      // Whole screen pixels avoid browser mouse-coordinate rounding at fit-view zoom.
+      delta = { x: Math.round(dx * before.zoom), y: Math.round(dy * before.zoom) };
+      await page.mouse.move(start.x + delta.x, start.y + delta.y, { steps: 8 });
+    }
+    finally { await page.mouse.up(); }
+    return { before, after: await capture(), delta: { x: delta.x / before.zoom, y: delta.y / before.zoom } };
+  };
+  const free = async () => {
+    const { before, after, delta } = await drag(17, 11);
+    assert.ok(Math.abs(after.x - before.x - delta.x) < 1 && Math.abs(after.y - before.y - delta.y) < 1,
+      `With snapping off a node must follow the pointer: ${JSON.stringify({ before, after, delta })}`);
+  };
+  const beforeSnap = await capture();
+  await setting('snap', false);
+  assert.deepEqual(position(await capture()), position(beforeSnap), 'Turning snapping off must not reposition nodes.');
+  await free();
+  const beforeEnable = await capture();
+  await setting('snap', true);
+  assert.deepEqual(position(await capture()), position(beforeEnable), 'Turning snapping on must not reposition nodes.');
+  const { after } = await drag(17, 11);
+  for (const [axis, size] of [['x', 'width'], ['y', 'height']]) {
+    const center = after[axis] + after[size] / 2;
+    assert.ok(Math.abs(center - Math.round(center / 32) * 32) < 0.55, 'Enabled snapping must move the node center onto the configured grid.');
+  }
+  const snapToggle = workflow(page).getByRole('button', { name: 'Snap to grid', exact: true });
+  await snapToggle.click();
+  await expect(snapToggle).toHaveAttribute('aria-pressed', 'false');
+  await free();
+  assert.equal((await storedDefaults(page)).snap, true, 'The toolbar must only change the current workflow.');
+  await setting('snap', false);
+  await setting('dashed', false);
+  await setting('curved', false);
+  await lines(false, false);
+  await saved();
+  const final = (await readExport(page)).document;
+  assert.deepEqual(options(final), { snap: false, curved: false, dashed: false });
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expectWorkflowOptions(page, final);
+  await lines(false, false);
+  assert.deepEqual((await readExport(page)).document.nodes, final.nodes, 'Reload must retain the released coordinates.');
+  await free();
 });
 
 Then('saved workflow defaults {string} normalize after reload without changing valid fields',

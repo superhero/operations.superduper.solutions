@@ -29,7 +29,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowHistory from "./workflows/WorkflowHistory.svelte";
   import { updateFileDataGraph, createOperationGraph, createUtilityNode, createWorkflowGraph, addAdditionalProperty, getAdditionalPropertyTypes, getEditableAdditionalProperties, updateAdditionalProperty, removeAdditionalProperty, addSwitchGate, updateSwitchGate, removeSwitchGate, schemaBranches, isWorkflowConnection, removeGraphSelection, restoreDataBranch } from "$lib/workflow-graph.ts";
   import { layoutAddedGraph, placeUtilityNode } from "$lib/workflow-layout.ts";
-  import { insertFileBinaryCast } from "$lib/workflow-graph.ts";
+  import { insertFileBinaryCast, canAddArrayFilterAssertion, addArrayFilterAssertion } from "$lib/workflow-graph.ts";
   import { orderWorkflowNodes, restoreWorkflowNodeOrder } from "$lib/workflow-focus-order.ts";
   import { adaptRoutingGates, routingInputTypes, workflowDescriptionLimit, workflowInputConnected } from "$lib/workflow-utilities.ts";
   import { getOperationReport } from "$lib/operation-report.ts";
@@ -178,8 +178,25 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   setContext("workflow-curve-strength", () => workflowDefaults.curveStrength);
   setContext("workflow-connection-options", () => ({ curved, strength: workflowDefaults.curveStrength,
     style: `${edgeOptions.style}; marker-end: url(#${connectionMarkerId})` }));
-  setContext("workflow-input-type", (nodeId: string) => inputTypes.get(nodeId) ?? "Unknown");
+  setContext("workflow-input-type", (nodeId: string, handle = "value") => {
+    if (handle === "value") return inputTypes.get(nodeId) ?? "Unknown";
+    const edge = edges.find(edge => edge.kind === "mapping" && !edge.hidden && !edge.detached && edge.target === nodeId && edge.targetHandle === handle);
+    return edge ? inputTypes.get(edge.source) ?? "Unknown" : "Unknown";
+  });
   setContext("workflow-input-connected", (nodeId: string, handleId?: string | null) => workflowInputConnected(nodeId, handleId, edges));
+  setContext("workflow-filter-assertion", {
+    available: (nodeId: string) => canAddArrayFilterAssertion(nodeId, nodes, edges),
+    add: (nodeId: string) => {
+      if (!keyboardActive || placement) return;
+      try {
+        const assertionId = crypto.randomUUID();
+        const graph = addArrayFilterAssertion(nodeId, assertionId, nodes, edges);
+        validateWorkflowDocument({ ...documentValue(), ...graph });
+        applyGraph(graph, true);
+        error = "";
+      } catch (failure) { describeFailure("Add assertion", failure); }
+    }
+  });
   setContext("workflow-add-property", {
     types: (nodeId: string) => getAdditionalPropertyTypes(nodes, nodeId, propertySchema(nodeId)),
     editable: (nodeId: string) => getEditableAdditionalProperties(nodes, nodeId, propertySchema(nodeId)),
@@ -709,7 +726,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (edge) { edges = addEdge(edge, edges); adaptGates(); }
   }
 
-  function adaptGates() { nodes = adaptRoutingGates(nodes, edges).map(graphNode); }
+  function adaptGates() {
+    const upgraded = new Set(nodes.filter(node => node.type === "filter" && node.data.operation === "array_filter"
+      && Object.hasOwn(node.data.parameters, "operator") && edges.some(edge => edge.kind === "mapping" &&
+        (edge.source === node.id && edge.sourceHandle === "item" || edge.target === node.id && (edge.targetHandle === "success" || edge.targetHandle === "failure"))))
+      .map(node => node.id));
+    if (upgraded.size) {
+      // Switching a saved inline predicate to an Assert path is one undoable edit.
+      edges = edges.filter(edge => !upgraded.has(edge.target) || edge.targetHandle !== "path" && edge.targetHandle !== "expected");
+      nodes = nodes.map(node => node.type === "filter" && upgraded.has(node.id) ? { ...node, data: { ...node.data, parameters: {} } } : node);
+    }
+    nodes = adaptRoutingGates(nodes, edges).map(graphNode);
+  }
 
   function copySelection(cut = false) {
     const copied = copyWorkflowSelection(documentValue(), nodes.filter(node => node.selected).map(node => node.id), edges.filter(edge => edge.selected).map(edge => edge.id));
@@ -747,14 +775,25 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     return false;
   }
 
-  function switchCurve() {
-    curved = !curved;
-    edges = edges.map(edge => ({ ...edge, type: curved ? "default" : "smoothstep" }));
+  function setDisplayOptions(options: Partial<Pick<WorkflowDefaults, "snap" | "curved" | "dashed">>) {
+    if (options.snap !== undefined) snap = options.snap;
+    if (options.curved !== undefined) curved = options.curved;
+    if (options.dashed !== undefined) dashed = options.dashed;
+    if (options.curved !== undefined || options.dashed !== undefined) edges = edges.map(paintEdge);
   }
 
-  function switchDashes() {
-    dashed = !dashed;
-    edges = edges.map(edge => ({ ...edge, animated: dashed, style: edgeOptions.style }));
+  export function applyDisplayDefaults(next: WorkflowDefaults, previous: WorkflowDefaults) {
+    const untouched = storageReady && !hasSavedDocument && !dirty && !saving && initialDraft !== null;
+    const changed: Partial<Pick<WorkflowDefaults, "snap" | "curved" | "dashed">> = {};
+    for (const key of ["snap", "curved", "dashed"] as const) {
+      if (next[key] !== previous[key]) changed[key] = next[key];
+    }
+    setDisplayOptions(changed);
+    if (untouched) {
+      // Settings can initialize a blank canvas without creating a saved workflow.
+      savedSnapshot = JSON.stringify(documentValue());
+      initialDraft = JSON.parse(savedSnapshot);
+    }
   }
 
   function cancelAutosave() {
@@ -1095,7 +1134,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if activated}
   {#key revision}
     <SvelteFlowProvider>
-    <RoutingScope enabled={active && !curved} editable={keyboardActive} {dashPeriod}
+    <RoutingScope enabled={active} editable={keyboardActive} {dashPeriod}
       options={{ nodePadding: workflowDefaults.nodeClearance }}
       onroutechange={(id, points) => {
         if (!keyboardActive) return;
@@ -1107,7 +1146,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       }}
       createClient={createWorkflowRoutingClient} resolveConnection={state => connectionSnap?.preview(state) ?? state}
       onerror={cause => {
-        const failure = new Error("Workflow edge routing stopped. Standard connection paths remain available. Reopen the workflow or switch curved connections on and off to retry.", { cause });
+        const failure = new Error("Workflow edge routing stopped. Standard connection paths remain available. Reopen the workflow to retry.", { cause });
         error = failure.message;
         logger.error(failure.message, failure);
       }}>
@@ -1132,7 +1171,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <WorkflowConnectionSnap bind:this={connectionSnap} isValidConnection={validConnection} active={keyboardActive} {curved} {dashed} curveStrength={workflowDefaults.curveStrength} markerEnd={`url(#${connectionMarkerId})`} />
       {#if nodes.length}<WorkflowMinimap active={keyboardActive} />{/if}
       <WorkflowToolbar buttons={toolbarButtons} bind:this={toolbar} {canvas} {active} {settingsOpen} {navigationOpen} {snap} {curved} {dashed} {selected} placing={placement !== null}
-        onsnap={() => snap = !snap} oncurved={switchCurve} ondashed={switchDashes}
+        onsnap={() => setDisplayOptions({ snap: !snap })} oncurved={() => setDisplayOptions({ curved: !curved })} ondashed={() => setDisplayOptions({ dashed: !dashed })}
         oncopy={() => copySelection()} oncut={() => copySelection(true)} onpaste={() => { void pasteSelection(); }} canPaste={clipboard !== null}
         onremove={removeSelected} onnew={newDocument} onopen={openDocuments}
         onexport={exportDocument} onimport={() => upload.click()} onbrowse={onBrowse}

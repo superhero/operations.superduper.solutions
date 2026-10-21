@@ -444,7 +444,7 @@ Then('dash length gap and speed update existing routes and previews and pause bo
   assert.deepEqual(await repository(page, 'history', baseline.id), history);
 
   await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
-  await expect(route(page)).toHaveAttribute('d', / C/);
+  await expect(route(page)).toHaveAttribute('d', /^M.* C/);
   await expect(curvedPaths).toHaveCount(2);
   await saved(page);
   baseline = (await readExport(page)).document;
@@ -486,21 +486,26 @@ async function changeCurveStrength(page, value) {
   await setMode(page, 'workflow');
 }
 
-Then('changing curve strength changes its control points without changing its endpoints', async function () {
+Then('changing curve strength changes safe routed bends without changing its endpoints', async function () {
   const page = this.page;
+  // Leave room for different radii; tight corridors legitimately clamp both
+  // strengths to the same sharp bend and cannot prove this setting changes.
+  await dragNode(page, 'routing-blocker', 0, 300);
+  await dragNode(page, 'routing-target', 0, -180);
   await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
   const values = [];
   for (const strength of [50, 200]) {
     await changeCurveStrength(page, strength);
-    await expect(route(page)).toHaveAttribute('d', / C/);
-    values.push((await route(page).getAttribute('d')).match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi).map(Number));
+    await expect(route(page)).toHaveAttribute('d', /^M.* C/);
+    await expectClearRoute(page);
+    values.push(await route(page).getAttribute('d'));
     const errors = await endpointErrors(page);
     assert.ok(errors.source < 1 && errors.target < 1, 'Curved paths must retain measured endpoints.');
   }
-  assert.deepEqual(values[0].slice(0, 2), values[1].slice(0, 2));
-  assert.deepEqual(values[0].slice(-2), values[1].slice(-2));
-  const weak = values[0][2] - values[0][0], strong = values[1][2] - values[1][0];
-  assert.ok(Math.abs(strong / weak - 4) < 0.001, 'The configured strength must scale the curve control distance.');
+  assert.notEqual(values[0], values[1], 'Strength must change safe bends without changing the routed corridor.');
+  await changeCurveStrength(page, 0);
+  await expect(route(page)).not.toHaveAttribute('d', / A/);
+  await expectClearRoute(page);
   await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
   await expectClearRoute(page);
 });
@@ -558,11 +563,12 @@ Then('pending routing work closes with the canvas and reopening creates one fres
   await expect.poll(async () => (await live()).length).toBe(1);
   assert.equal((await observations()).length, before + 1, 'Reopening must create exactly one fresh routing worker.');
   await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
-  await expect.poll(async () => (await live()).length).toBe(0);
+  await expectClearRoute(page);
+  await expect.poll(async () => (await live()).length).toBe(1);
   await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
   await expectClearRoute(page);
   await expect.poll(async () => (await live()).length).toBe(1);
-  assert.equal((await observations()).length, before + 2, 'Returning to orthogonal routing must replace its disposed worker.');
+  assert.equal((await observations()).length, before + 1, 'Switching styles must reuse the same routing worker.');
 });
 
 async function settledGhost(page, target) {

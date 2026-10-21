@@ -140,7 +140,11 @@ export function projectRoute(route, edge) {
     status: route.status ?? 'routed' };
 }
 
-export function previewPath(route, edge, radius = 0, obstacles = []) {
+export function previewRoute(route, edge) {
   if (!edge || !route?.points?.length || route.points[0].x !== edge.sourceX || route.points[0].y !== edge.sourceY) return null;
-  return routePath(projectRoute(route, edge), radius, obstacles);
+  return projectRoute(route, edge);
+}
+
+export function previewPath(route, edge, radius = 0, obstacles = []) {
+  return routePath(previewRoute(route, edge), radius, obstacles);
 }

@@ -5,6 +5,21 @@
 Feature: Explicit workflow processing and assertion routing
   Transform, Filter and Assert are independent nodes with typed, bounded behavior.
 
+  Scenario: Filter array creates a complete default assertion path
+    Then adding an array assertion wires Is set and preserves existing graph ownership
+
+  Scenario: Array filtering uses an isolated assertion path for each original item
+    Then array item assertion paths keep original values order and resolved cast types
+
+  Scenario: Array assertion paths retain typed public and private operands
+    Then array assertion paths capture connected operands without leaking private values
+
+  Scenario: Array assertion callbacks stay bounded and cancellable
+    Then array assertion callbacks reject incomplete escaping cyclic and excessive paths
+
+  Scenario: Array assertion paths reuse field selection and private keyed transforms
+    Then array predicates reuse pure processing and keep intermediate transformations private
+
   Scenario: Connected assertion expectations preserve types and private comparisons
     Then assertion expectations accept typed connections and compare supplied public and private values
 
@@ -65,6 +80,15 @@ Feature: Explicit workflow processing and assertion routing
 
   Scenario: Filters preserve Unicode characters array order and exclusive ranges
     Then workflow filters trim slice and select values with explicit predicates
+
+  Scenario: Selected fields retain JSON types without a result-type setting
+    Then Select field restores legacy settings as JsonValue and preserves each selected value
+
+  Scenario: Filter bounds and paths accept typed connections with manual fallback
+    Then connected Filter bounds and paths retain types execution and saved manual values
+
+  Scenario: Filter expectations preserve connected types and private operands
+    Then Filter array connections follow the condition and keep private comparisons opaque
 
   Scenario: Invalid operations parameters and input formats fail before producing output
     Then workflow processing rejects malformed configuration values encodings and limits
