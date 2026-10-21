@@ -101,6 +101,14 @@ The fix is validated before merging into the release. After release validation,
 `release` merges into `main`; a synchronization PR then carries `main` back into
 `develop`.
 
+A version tag reserves that version for publication. A tagged working release
+may still receive stabilization fixes and documentation while its tag belongs
+to that release branch, is absent from `main`, has no published GitHub Release,
+and has no merged release or hotfix PR into `main`. Failed or incomplete API
+verification blocks the update. Stabilization leaves the existing tag unchanged;
+published versions remain closed to changes, and the tag continues to prevent
+republishing that version through a new release PR.
+
 ### Validation and release
 
 Integration workflows share one queue across development, release, main and

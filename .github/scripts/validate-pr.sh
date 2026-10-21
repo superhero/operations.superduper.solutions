@@ -50,12 +50,34 @@ load_closed_main_prs() {
     fail "Could not inspect closed main PRs reserving $1."
 }
 validate_release_target() {
-  local target_version target_released
+  local target_version target_released comparison behind releases
   target_version="${base_branch#*/}"
   bash "$(dirname "${BASH_SOURCE[0]}")/validate-semver.sh" "$target_version" >/dev/null ||
     fail "Invalid target release version '$target_version'."
   if jq -e --arg version "$target_version" 'index($version) != null' <<< "$tags" >/dev/null; then
-    fail "Target release '$base_branch' already exists as a tag or merged release."
+    # A tag reserves the version, but a tagged working release can still be
+    # stabilized before publication. Never move the tag or permit a published
+    # release to acquire more changes.
+    comparison="$(gh api "repos/$repository/compare/$target_version...main")" ||
+      fail "Could not check whether target release '$base_branch' is already on main."
+    behind="$(jq -ers 'select(length == 1) | .[0] | select(type == "object") |
+      .behind_by | select(type == "number" and . >= 0 and floor == .)' <<< "$comparison")" ||
+      fail "Invalid main ancestry for target release '$base_branch'."
+    [[ "$behind" != 0 ]] || fail "Target release '$base_branch' already exists on main."
+    comparison="$(gh api "repos/$repository/compare/$target_version...$base_branch")" ||
+      fail "Could not verify the reserved tag belongs to target release '$base_branch'."
+    behind="$(jq -ers 'select(length == 1) | .[0] | select(type == "object") |
+      .behind_by | select(type == "number" and . >= 0 and floor == .)' <<< "$comparison")" ||
+      fail "Invalid tag ancestry for target release '$base_branch'."
+    [[ "$behind" == 0 ]] || fail "Target release '$base_branch' does not contain its reserved tag '$target_version'."
+    releases="$(gh api --paginate "repos/$repository/releases?per_page=100" |
+      jq -cse 'if length > 0 and all(.[]; type == "array" and
+        all(.[]; type == "object" and (.tag_name | type == "string" and length > 0) and (.draft | type == "boolean")))
+        then [.[][]] else error("Expected pages of repository releases") end')" ||
+      fail "Could not inspect publication of target release '$base_branch'."
+    if jq -e --arg version "$target_version" 'any(.[]; .tag_name == $version and .draft == false)' <<< "$releases" >/dev/null; then
+      fail "Target release '$base_branch' already exists as a published release."
+    fi
   fi
   load_closed_main_prs "target release '$base_branch'"
   target_released="$(jq -r --arg repository "$repository" --arg version "$target_version" '
