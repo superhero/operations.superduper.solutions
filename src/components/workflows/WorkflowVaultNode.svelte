@@ -4,8 +4,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
+  import Handle from "./WorkflowHandle.svelte";
   import { getContext, onMount } from "svelte";
-  import { Handle, Position, type Node, type NodeProps } from "@xyflow/svelte";
+  import { Position, type Node, type NodeProps } from "@xyflow/svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import WorkflowNodeSelect from "./WorkflowNodeSelect.svelte";
   import { readVaultKeys, subscribeVaultLock } from "$lib/secrets/client.ts";

@@ -4,8 +4,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
+  import Handle from "./WorkflowHandle.svelte";
   import { getContext, untrack } from "svelte";
-  import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
+  import { Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import { defaultProcessingData, processingDefinition, processingInputTypes, processingOperations, processingOutputType, processingTypeLabel, type ProcessingData, type ProcessingKind } from "$lib/workflow-processing.ts";
   import type { RoutingType } from "$lib/workflow-utilities.ts";
@@ -43,7 +44,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </div>
   {#if kind !== "assert"}
     <div class="utility-row nodrag nopan nokey">
-      <WorkflowNodeSelect label={`${family} operation`} value={data.operation} {choices} {active}
+      <WorkflowNodeSelect label={`${family} operation`} tooltip={kind === "transform" ? "Transformation" : "Filter"} value={data.operation} {choices} {active}
         onchange={operation => edit(id, defaultProcessingData(kind, operation))} />
     </div>
   {/if}

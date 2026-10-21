@@ -15,7 +15,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 .workflow-utility-node .utility-action { display: grid; place-items: center; flex-shrink: 0; width: 26px; height: 28px; padding: 0; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
 .workflow-utility-node .utility-action:hover:not(:disabled) { background: var(--color-secondary-hover); color: var(--color-secondary-hover-foreground); }
 .workflow-utility-node .utility-action:disabled { background: var(--color-disabled); color: var(--color-disabled-foreground); }
-.workflow-utility-node .svelte-flow__handle { width: 12px; height: 12px; border: 2px solid var(--color-surface); background: var(--color-emphasis); }
+.workflow-utility-node .svelte-flow__handle { pointer-events: auto; width: 12px; height: 12px; border: 2px solid var(--color-surface); background: var(--color-emphasis); }
 .workflow-utility-node .svelte-flow__handle.target { background: var(--color-foreground); }
 .workflow-utility-node .utility-value { min-width: 0; width: 100%; min-height: 30px; padding: 6px 8px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font: inherit; }
 .workflow-utility-node .utility-value:disabled { background: var(--color-disabled); color: var(--color-disabled-foreground); opacity: 1; cursor: not-allowed; }
