@@ -125,7 +125,7 @@ Then('CSV Item connections send correlated scalar requests for every row', async
   await page.getByRole('button',{name:'Run workflow',exact:true}).click();
   const run=page.getByRole('dialog',{name:/^Run workflow:/});
   for (const [index,name] of ['Documentation','Website'].entries()) {
-    await expect(run.getByRole('heading',{name:`${index+1}. Example array response`,exact:true})).toBeVisible();
+    await expect(run.getByRole('heading',{name:`${index+1}. example.com / Example array response`,exact:true})).toBeVisible();
     await expect(run.getByRole('textbox',{name:'Name',exact:true})).toHaveValue(name);
     await expect(run.getByRole('textbox',{name:'Result limit value',exact:true})).toHaveValue(String(index+1));
     await run.getByRole('button',{name:index?'Run operation':'Start workflow',exact:true}).click();

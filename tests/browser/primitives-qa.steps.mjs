@@ -63,9 +63,12 @@ Then('expanding a nested catalog item does not clip its parent', async function 
     assert.ok(maximumOverflow <= 1, `The parent clipped growing nested content by ${maximumOverflow}px.`);
     await resumeHeightAnimations(childPanel);
     await expect.poll(() => group.evaluate(element => element.getAnimations({ subtree: true }).length)).toBe(0);
-    const finalChildOverflow = await childPanel.evaluate(element =>
-      element.querySelector('.catalog-operations').getBoundingClientRect().bottom - element.getBoundingClientRect().bottom);
-    assert.ok(finalChildOverflow <= 1, `The expanded child clipped its operation list by ${finalChildOverflow}px.`);
+    const finalChildOverflow = await childPanel.evaluate(element => {
+      const contents = [...element.querySelectorAll(':scope > .catalog-children, :scope > .catalog-operations')];
+      if (!contents.length) throw new Error('The expanded child must render its catalog contents.');
+      return Math.max(...contents.map(content => content.getBoundingClientRect().bottom)) - element.getBoundingClientRect().bottom;
+    });
+    assert.ok(finalChildOverflow <= 1, `The expanded child clipped its catalog contents by ${finalChildOverflow}px.`);
     await restoreChild();
     restoreChild = undefined;
     await group.locator(':scope > summary').press('Enter');
