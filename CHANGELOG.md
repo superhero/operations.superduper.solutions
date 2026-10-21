@@ -156,6 +156,19 @@ fix(ui): shorten JSON type badges to JsonValue
 
 ```
 
+<!-- changelog-commit:68d3f8fce5052f3014ad5ecab1d189060644325a -->
+### Commit [`68d3f8f`](https://github.com/superhero/operations.superduper.solutions/commit/68d3f8fce5052f3014ad5ecab1d189060644325a)
+
+```text
+fix(ui): share scrollable select option lists
+
+Reuse the form/settings option list for compact workflow controls.
+Keep long menus inside the viewport and expose native scrollbars so
+users can scroll directly while preserving keyboard selection and
+the existing trigger styling.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
