@@ -12,6 +12,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { RoutingType } from "$lib/workflow-utilities.ts";
   import WorkflowNodeSelect from "./WorkflowNodeSelect.svelte";
   import WorkflowFieldMappings from "./WorkflowFieldMappings.svelte";
+  import WorkflowBranchAction from "./WorkflowBranchAction.svelte";
   import "./workflow-utility-nodes.css";
 
   let { id, type, data, selected }: NodeProps<Node<ProcessingData, ProcessingKind>> = $props();
@@ -19,10 +20,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const editorActive = getContext<(() => boolean) | undefined>("workflow-editor-active");
   const inputConnected = getContext<(id: string, handle?: string) => boolean>("workflow-input-connected");
   const inputTypeFor = getContext<(id: string, handle?: string) => RoutingType>("workflow-input-type");
+  const assertion = getContext<{ available: (id: string) => boolean; add: (id: string) => void }>("workflow-filter-assertion");
   const kind = $derived(type as ProcessingKind);
   const definition = $derived(processingDefinition(kind, data));
   const arrayFilter = $derived(kind === "filter" && data.operation === "array_filter");
-  const returns = $derived(["success", "failure"].map(handle => ({ handle, label: handle === "success" ? "Success" : "Failure", type: processingTypeLabel(inputTypeFor(id, handle)) })));
+  const returns = $derived(["success", "failure"].map(handle => ({ handle, label: handle === "success" ? "Keep" : "Remove", type: processingTypeLabel(inputTypeFor(id, handle)) })));
   const choices = $derived(processingOperations.filter(operation => operation.kind === kind).map(operation => ({ value: operation.id, label: operation.label })));
   const inputType = $derived(inputTypeFor(id));
   const inputLabel = $derived(kind !== "assert" ? definition.inputLabel ?? definition.inputs.join(" | ") : processingTypeLabel(inputType));
@@ -100,13 +102,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {/each}
   {/if}
   {#if arrayFilter}
-    <div class="utility-row processing-output"><span>Item</span><span class="utility-type output-type">Unknown</span>
-      <Handle id="item" type="source" position={Position.Right} isConnectableEnd={false} aria-label="Filter array item (Unknown)"
-        tooltip="Each array item, evaluated separately. Connect through Cast or processing nodes to Assert." /></div>
+    <div class="utility-row processing-output"><span>Assertion</span><span class="utility-type output-type">Unknown</span>
+      <Handle id="item" type="source" position={Position.Right} isConnectableEnd={false} aria-label="Filter array assertion (Unknown)"
+        tooltip="Each array item, evaluated separately. Connect through Cast or processing nodes to Assert." />
+      {#if assertion.available(id)}
+        <WorkflowBranchAction label="Add assertion" position={Position.Right} beside disabled={!active} onclick={() => assertion.add(id)} />
+      {/if}
+    </div>
     {#each returns as field (field.handle)}
       <div class="utility-row processing-output"><span>{field.label}</span><span class="utility-type output-type">{field.type}</span>
         <Handle id={field.handle} type="target" position={Position.Left} isConnectableStart={false}
-          isConnectableEnd={!inputConnected(id, field.handle)} aria-disabled={inputConnected(id, field.handle)} aria-label={`Filter array ${field.handle} input (${field.type})`}
+          isConnectableEnd={!inputConnected(id, field.handle)} aria-disabled={inputConnected(id, field.handle)} aria-label={`Filter array ${field.label.toLowerCase()} input (${field.type})`}
           tooltip={field.handle === "success" ? "Return the Assert outcome that keeps the original array item." : "Return the Assert outcome that discards the original array item."} /></div>
     {/each}
   {/if}

@@ -345,17 +345,21 @@ accept Text connections. Connected parameters show type badges, disable manual
 editing and retain their saved values for disconnection or Undo.
 
 Filter array delegates its predicate to a separate Assert. Its main input and
-result are Array; Item emits an Unknown value for each element. A bounded path
-of Cast, Transform or other Filter operations ends at one Assert. Return that
-Assert's two outcomes to the filter's Success and Failure inputs: Success keeps
-the original array item and Failure discards it. Swapping the returns inverts
-the selection. Casting affects the assertion without changing retained items
-or their order. Unknown item/return badges resolve on the assertion side when
-a Cast supplies a known type. No duplicate condition editor appears in Filter
-array. Older saved inline predicates/private recipes remain executable until
-an assertion path replaces them; connected legacy operands remain visible until
-then. Wiring the callback clears the old predicate and its operand connections
-as one undoable change.
+result are Array; Assertion emits an Unknown value for each element. A bounded
+path of Cast, Transform or other Filter operations ends at one Assert. Connect
+its Success outcome to Keep and Failure to Remove. Keep retains the original
+array item and Remove discards it. Swapping the returns inverts the selection.
+Casting affects the assertion without changing retained items or their order.
+Unknown item/return badges resolve on the assertion side when a Cast supplies a
+known type. No duplicate condition editor appears in Filter array.
+
+An unconnected Assertion offers the same add-location button as hidden schema
+branches. It creates an Assert with Is set selected and wires all three
+connections in one undoable edit, without moving existing nodes. The button
+returns when the assertion path is deleted. Older saved inline predicates and
+private recipes remain executable until an assertion path replaces them;
+connected legacy operands remain visible until then. Wiring the callback clears
+the old predicate and its operand connections as one undoable change.
 
 The runner compiles each item path once and evaluates the array in one worker
 request, producing one bounded result preview rather than per-item graph state

@@ -5,6 +5,9 @@
 Feature: Explicit workflow processing and assertion routing
   Transform, Filter and Assert are independent nodes with typed, bounded behavior.
 
+  Scenario: Filter array creates a complete default assertion path
+    Then adding an array assertion wires Is set and preserves existing graph ownership
+
   Scenario: Array filtering uses an isolated assertion path for each original item
     Then array item assertion paths keep original values order and resolved cast types
 

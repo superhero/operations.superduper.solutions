@@ -29,7 +29,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowHistory from "./workflows/WorkflowHistory.svelte";
   import { updateFileDataGraph, createOperationGraph, createUtilityNode, createWorkflowGraph, addAdditionalProperty, getAdditionalPropertyTypes, getEditableAdditionalProperties, updateAdditionalProperty, removeAdditionalProperty, addSwitchGate, updateSwitchGate, removeSwitchGate, schemaBranches, isWorkflowConnection, removeGraphSelection, restoreDataBranch } from "$lib/workflow-graph.ts";
   import { layoutAddedGraph, placeUtilityNode } from "$lib/workflow-layout.ts";
-  import { insertFileBinaryCast } from "$lib/workflow-graph.ts";
+  import { insertFileBinaryCast, canAddArrayFilterAssertion, addArrayFilterAssertion } from "$lib/workflow-graph.ts";
   import { orderWorkflowNodes, restoreWorkflowNodeOrder } from "$lib/workflow-focus-order.ts";
   import { adaptRoutingGates, routingInputTypes, workflowDescriptionLimit, workflowInputConnected } from "$lib/workflow-utilities.ts";
   import { getOperationReport } from "$lib/operation-report.ts";
@@ -184,6 +184,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     return edge ? inputTypes.get(edge.source) ?? "Unknown" : "Unknown";
   });
   setContext("workflow-input-connected", (nodeId: string, handleId?: string | null) => workflowInputConnected(nodeId, handleId, edges));
+  setContext("workflow-filter-assertion", {
+    available: (nodeId: string) => canAddArrayFilterAssertion(nodeId, nodes, edges),
+    add: (nodeId: string) => {
+      if (!keyboardActive || placement) return;
+      try {
+        const assertionId = crypto.randomUUID();
+        const graph = addArrayFilterAssertion(nodeId, assertionId, nodes, edges);
+        validateWorkflowDocument({ ...documentValue(), ...graph });
+        applyGraph(graph, true);
+        error = "";
+      } catch (failure) { describeFailure("Add assertion", failure); }
+    }
+  });
   setContext("workflow-add-property", {
     types: (nodeId: string) => getAdditionalPropertyTypes(nodes, nodeId, propertySchema(nodeId)),
     editable: (nodeId: string) => getEditableAdditionalProperties(nodes, nodeId, propertySchema(nodeId)),

@@ -114,7 +114,7 @@ Then('Filter array evaluates external assertions with reversible cast typing and
   await expect(card('filter').getByRole('combobox', { name: 'Condition', exact: true })).toHaveCount(0);
   await expect(card('filter').getByLabel('Field path (JSON pointer)', { exact: true })).toHaveCount(0);
   await expect(card('filter').locator('.processing-output .utility-type')).toHaveText(['Unknown', 'Unknown', 'Unknown', 'Array']);
-  await expect(port('filter', 'item')).toHaveAttribute('aria-label', 'Filter array item (Unknown)');
+  await expect(port('filter', 'item')).toHaveAttribute('aria-label', 'Filter array assertion (Unknown)');
   await gesture(page, port('filter', 'item'), port('assert', 'value'));
   await expect(card('filter').getByLabel('Expected value', { exact: true })).toHaveCount(0);
   await saved(page);
@@ -125,7 +125,7 @@ Then('Filter array evaluates external assertions with reversible cast typing and
   await gesture(page, port('assert', 'success'), port('filter', 'success'));
   await gesture(page, port('assert', 'failure'), port('filter', 'failure'));
   await expect(card('assert').locator('.utility-title .utility-type')).toHaveText('Unknown');
-  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array success input (Unknown)');
+  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array keep input (Unknown)');
   await saved(page);
   // Replace the direct item input with an explicit Cast while retaining both returns.
   const returns = [connection('assert', 'filter', 'success', 'success'), connection('assert', 'filter', 'failure', 'failure')];
@@ -134,17 +134,17 @@ Then('Filter array evaluates external assertions with reversible cast typing and
   await gesture(page, port('filter', 'item'), port('cast', 'value'));
   await gesture(page, port('cast', 'result'), port('assert', 'value'));
   await expect(card('assert').locator('.utility-title .utility-type')).toHaveText('Number');
-  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array success input (Number)');
-  await expect(port('filter', 'failure')).toHaveAttribute('aria-label', 'Filter array failure input (Number)');
+  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array keep input (Number)');
+  await expect(port('filter', 'failure')).toHaveAttribute('aria-label', 'Filter array remove input (Number)');
   await saved(page);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
-  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array success input (Unknown)');
+  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array keep input (Unknown)');
   await page.getByRole('button', { name: 'Redo', exact: true }).click();
-  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array success input (Number)');
+  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array keep input (Number)');
   await saved(page);
   await page.reload();
   await setMode(page, 'workflow');
-  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array success input (Number)');
+  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array keep input (Number)');
   await page.evaluate(() => {
     const NativeWorker = window.Worker;
     window.__arrayFilterCalls = 0;
@@ -174,6 +174,68 @@ Then('Filter array evaluates external assertions with reversible cast typing and
   await page.getByRole('button', { name: 'Fit View', exact: true }).click();
   await mkdir(this.artifactDirectory, { recursive: true });
   await workflow(page).screenshot({ path: this.artifactDirectory + '/array-assertion-loop.png' });
+});
+
+Then('the Filter array assertion shortcut creates a reversible connected default assertion', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  const filter = workflow(page).locator('.svelte-flow__node[data-id="filter"]');
+  const assertions = workflow(page).locator('.svelte-flow__node-assert');
+  const shortcut = filter.getByRole('button', { name: 'Add assertion', exact: true });
+  await loadGraphFixture(page, document([source([0, false, '', null, 'kept']), processor('filter', 'array_filter')], [connection('source', 'filter', 'value')]));
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await expect(filter.locator('.processing-output > span:first-child')).toHaveText(['Assertion', 'Keep', 'Remove', 'Result']);
+  await expect(shortcut.locator('.material-symbols-rounded')).toHaveText('add_location');
+  await shortcut.hover();
+  await expect(page.getByRole('tooltip')).toHaveText('Add assertion');
+  const before = (await readExport(page)).document;
+  await shortcut.click();
+  await expect(assertions).toHaveCount(1);
+  await expect(shortcut).toHaveCount(0);
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await expect(assertions.getByRole('combobox', { name: 'Condition', exact: true }).locator('.select-label')).toHaveText('Is set');
+  await expect(assertions.getByLabel('Expected value', { exact: true })).toHaveCount(0);
+  await expect(assertions.getByLabel('Field path (JSON pointer)', { exact: true })).toHaveCount(0);
+  await expect(filter.locator('.processing-output .utility-type')).toHaveText(['Unknown', 'Unknown', 'Unknown', 'Array']);
+  await saved(page);
+  const added = (await readExport(page)).document;
+  assert.equal(added.nodes.length, before.nodes.length + 1);
+  assert.equal(added.edges.length, before.edges.length + 3);
+  const assertion = added.nodes.find(node => node.type === 'assert');
+  assert.equal(assertion.data.parameters.operator, 'is_set');
+  for (const node of before.nodes) assert.deepEqual(added.nodes.find(item => item.id === node.id).position, node.position);
+  assert.deepEqual(added.edges.filter(edge => edge.id !== before.edges[0].id).map(({ source, sourceHandle, target, targetHandle }) => [source, sourceHandle, target, targetHandle]), [
+    ['filter', 'item', assertion.id, 'value'], [assertion.id, 'success', 'filter', 'success'], [assertion.id, 'failure', 'filter', 'failure']
+  ]);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(assertions).toHaveCount(0);
+  await expect(shortcut).toBeVisible();
+  await saved(page);
+  assert.equal((await readExport(page)).document.edges.length, before.edges.length);
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  await expect(assertions).toHaveCount(1);
+  await expect(shortcut).toHaveCount(0);
+  await saved(page);
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(assertions.getByRole('combobox', { name: 'Condition', exact: true }).locator('.select-label')).toHaveText('Is set');
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await expect(panel(page).getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
+  await panel(page).getByText('Processing results (1)', { exact: true }).click();
+  assert.deepEqual(JSON.parse(await panel(page).getByRole('region', { name: 'Filter array result' }).locator('pre').textContent()), [0, false, '', 'kept']);
+  await panel(page).getByRole('button', { name: 'Quit', exact: true }).click();
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await workflow(page).screenshot({ path: this.artifactDirectory + '/filter-assertion-shortcut.png' });
+  await assertions.locator('.utility-title strong').click();
+  await workflow(page).focus();
+  await page.keyboard.press('Delete');
+  await expect(assertions).toHaveCount(0);
+  await expect(shortcut).toBeVisible();
+  await shortcut.focus();
+  await page.keyboard.press('Enter');
+  await expect(assertions).toHaveCount(1);
+  await expect(shortcut).toHaveCount(0);
 });
 
 Then('reopening Transform with an offscreen selection keeps its first visible frame stable at vertical position {int}', async function (y) {
