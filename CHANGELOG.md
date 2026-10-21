@@ -333,6 +333,18 @@ connections under the receiving input type assumption.
 
 ```
 
+<!-- changelog-commit:7f7a75a3077b285a27bb64a346b20179fd298ac3 -->
+### Commit [`7f7a75a`](https://github.com/superhero/operations.superduper.solutions/commit/7f7a75a3077b285a27bb64a346b20179fd298ac3)
+
+```text
+fix(ui): hide Assert field paths until structured input is connected
+
+Show the field-path editor only for Object, Array or JsonValue inputs.
+Keep disconnected and unresolved assertions focused on their condition
+while preserving any saved path for a later structured connection.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
