@@ -413,8 +413,9 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
             const privateInput = containsPrivateValue(value, runId) || containsPrivateValue(key, runId) || containsPrivateValue(parameters, runId);
             let result: unknown;
             if (node.type === "assert") result = privateInput
-              ? await (await processor()).assertPrivate(privateExpressionFor(value, runId), node.data, controller.signal)
-              : await (await processor()).process(node.type, node.data, value);
+              ? await (await processor()).assertPrivate(privateExpressionFor(value, runId), node.data, controller.signal,
+                Object.fromEntries(Object.entries(parameters).map(([name, value]) => [name, privateExpressionFor(value, runId)])))
+              : await (await processor()).process(node.type, node.data, value, undefined, parameters);
             else if (privateInput) result = { referenceToken: runId, vaultProcessing: { kind: "process", type: node.type,
               data: structuredClone(node.data), value: privateExpressionFor(value, runId),
               ...(key === undefined ? {} : { key: privateExpressionFor(key, runId) }),
