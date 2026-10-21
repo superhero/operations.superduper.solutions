@@ -434,6 +434,108 @@ and reload at narrow and desktop widths.
 
 ```
 
+<!-- changelog-commit:fc9b6512e3acc8cfc02200c10d0bdbb935481d05 -->
+### Commit [`fc9b651`](https://github.com/superhero/operations.superduper.solutions/commit/fc9b6512e3acc8cfc02200c10d0bdbb935481d05)
+
+```text
+chore: refresh dependency badges
+```
+
+<!-- changelog-commit:890784b669a8dd3d0236b01ff9b47e49744ff358 -->
+### Commit [`890784b`](https://github.com/superhero/operations.superduper.solutions/commit/890784b669a8dd3d0236b01ff9b47e49744ff358)
+
+```text
+chore(release): integrate workflow editor updates
+
+Carry the current develop snapshot into the existing release branch,
+including typed Assert operands, processing nodes and Markdown comments.
+Retain both histories and every changelog entry. The resulting tree is
+identical to develop at 3e814279.
+
+Keep the existing 0.0.56 tag unchanged; main promotion remains deferred.
+
+```
+
+<!-- changelog-commit:4d15d1d3b35b83c7e65d08a23615c6f72310ba8a -->
+### Commit [`4d15d1d`](https://github.com/superhero/operations.superduper.solutions/commit/4d15d1d3b35b83c7e65d08a23615c6f72310ba8a)
+
+```text
+chore: refresh dependency badges
+```
+
+<!-- changelog-commit:b8650258fb2c741674a13204f9c33add32acf654 -->
+### Commit [`b865025`](https://github.com/superhero/operations.superduper.solutions/commit/b8650258fb2c741674a13204f9c33add32acf654)
+
+```text
+chore: refresh dependency badges
+```
+
+<!-- changelog-commit:73d7c86a27c8344e5aa849319f69df52301a362f -->
+### Commit [`73d7c86`](https://github.com/superhero/operations.superduper.solutions/commit/73d7c86a27c8344e5aa849319f69df52301a362f)
+
+```text
+fix(settings): use three dot styles for Browser building status
+
+```
+
+<!-- changelog-commit:24cc0857d1ee738f9d246743170345d44e8a78c8 -->
+### Commit [`24cc085`](https://github.com/superhero/operations.superduper.solutions/commit/24cc0857d1ee738f9d246743170345d44e8a78c8)
+
+```text
+fix(workflows): show array bounds in Items labels and restore type badges
+
+```
+
+<!-- changelog-commit:0a0ebfbfa25273b68c3a2d199eedecc77f58691f -->
+### Commit [`0a0ebfb`](https://github.com/superhero/operations.superduper.solutions/commit/0a0ebfbfa25273b68c3a2d199eedecc77f58691f)
+
+```text
+feat: group toolbar settings in a three-column layout
+
+```
+
+<!-- changelog-commit:5a207b2ca695d8393b0c32ec83b3d12279534d37 -->
+### Commit [`5a207b2`](https://github.com/superhero/operations.superduper.solutions/commit/5a207b2ca695d8393b0c32ec83b3d12279534d37)
+
+```text
+fix: keep toolbar group headings inside compact column cards
+
+```
+
+<!-- changelog-commit:bde96d84423fe8e21b653ce0c4de45c5dfd53a43 -->
+### Commit [`bde96d8`](https://github.com/superhero/operations.superduper.solutions/commit/bde96d84423fe8e21b653ce0c4de45c5dfd53a43)
+
+```text
+chore(history): reconcile superseded development branches
+
+Record the histories of the previous release integration and two schema
+branches whose application changes already reached develop through merged
+PRs. Their only later badge update matches the main synchronization.
+
+Also retain four superseded local tips: Browser dots became the current
+three-dot wave, array bounds and type badges retain later item types, and
+toolbar grouping and contained headings retain their later styling.
+Preserve the current tree so cleanup does not restore earlier UI versions.
+
+```
+
+<!-- changelog-commit:140736f7f6c1902e1177497bda761559cd1c1e44 -->
+### Commit [`140736f`](https://github.com/superhero/operations.superduper.solutions/commit/140736f7f6c1902e1177497bda761559cd1c1e44)
+
+```text
+fix(ci): validate stabilization of unpublished tagged releases
+
+Allow fixes into a tagged working release only while its tag belongs to
+that branch, is absent from main, has no published GitHub Release and has
+no merged release or hotfix into main. Fail closed on unverifiable API
+responses, preserve the existing tag and keep publication reservations.
+
+Document this distinction and cover unpublished, published, unrelated and
+unverifiable targets. Add the missing Markdown/editor dependency badges
+to the README so the release automation inventory matches the manifest.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
