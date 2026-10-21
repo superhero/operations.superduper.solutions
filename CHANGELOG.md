@@ -317,6 +317,22 @@ chore(deps): add Markdown editor dependency badges
 
 ```
 
+<!-- changelog-commit:1425c2a674ff4cdf3127b010f80fd7711096eb5d -->
+### Commit [`1425c2a`](https://github.com/superhero/operations.superduper.solutions/commit/1425c2a674ff4cdf3127b010f80fd7711096eb5d)
+
+```text
+feat(workflow): connect typed Filter parameters
+
+Allow slice bounds, field paths and array-filter expectations to receive
+typed connections. Preserve manual settings while connected, validate
+integer bounds, and keep private operands inside vault processing.
+
+Select field now returns JsonValue without a result-type selector. Restore
+older selected-type settings without narrowing the value, allowing direct
+connections under the receiving input type assumption.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
