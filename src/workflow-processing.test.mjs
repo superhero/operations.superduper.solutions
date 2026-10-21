@@ -186,7 +186,7 @@ Then('array assertion callbacks reject incomplete escaping cyclic and excessive 
   ]) assert.throws(() => arrayFilterPlans(graph), /array|Array|Return|operand|Assert/);
   const predicate = arrayFilterPlans(original).get('filter').predicate;
   assert.throws(() => validateArrayPredicate({ ...predicate, steps: [...predicate.steps, predicate.steps[0]] }), /must end at Assert/);
-  await assert.rejects(processWorkflowValue('filter', data('filter', 'array_filter'), [1]), /Connect Filter array Item/);
+  await assert.rejects(processWorkflowValue('filter', data('filter', 'array_filter'), [1]), /Connect Filter array Assertion/);
   await assert.rejects(processWorkflowValue('transform', data('transform', 'base64_encode'), 'x', undefined, undefined, predicate), /Only Filter array/);
   const long = { ...predicate, steps: [...Array.from({ length: 31 }, () => ({ type: 'cast', targetType: 'Number' })), predicate.steps.at(-1)] };
   await assert.rejects(processWorkflowValue('filter', data('filter', 'array_filter'), Array(4000).fill(1), undefined, {}, long), /processing limit/);
