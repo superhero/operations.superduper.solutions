@@ -112,6 +112,18 @@ fix(ui): separate known type alternatives with pipes
 
 ```
 
+<!-- changelog-commit:c1f4560ed2b96f298dde08f19b67ccb4a11edb75 -->
+### Commit [`c1f4560`](https://github.com/superhero/operations.superduper.solutions/commit/c1f4560ed2b96f298dde08f19b67ccb4a11edb75)
+
+```text
+fix(workflow): infer Parse JSON output alternatives
+
+Expose all JSON value types and allow direct wiring to matching typed
+inputs while retaining runtime validation. Preserve saved nodes and private
+recipes by dropping their obsolete result-type setting when loading.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
