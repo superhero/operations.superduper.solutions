@@ -96,6 +96,14 @@ fix(workflow): show expected Transform input types
 
 ```
 
+<!-- changelog-commit:11882f1a0a604cc557cc1074b1e599b99a25789e -->
+### Commit [`11882f1`](https://github.com/superhero/operations.superduper.solutions/commit/11882f1a0a604cc557cc1074b1e599b99a25789e)
+
+```text
+fix(ui): use shared badges for processing output types
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
