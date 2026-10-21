@@ -72,6 +72,14 @@ Expose the input-only node in the toolbar, history, Undo and portable workflows.
 
 ```
 
+<!-- changelog-commit:1c3aa5fb3c9b526ac2034f0c3df5644ae3b3eaa3 -->
+### Commit [`1c3aa5f`](https://github.com/superhero/operations.superduper.solutions/commit/1c3aa5fb3c9b526ac2034f0c3df5644ae3b3eaa3)
+
+```text
+fix(ui): use antenna icon for Cast
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
