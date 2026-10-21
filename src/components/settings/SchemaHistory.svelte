@@ -111,7 +111,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         next = await load(historyLimit);
       }
       if (request !== generation) return;
-      history = next;
       if (next.revisions.some(revision => revision.oid === selected) && next.revisions.some(revision => revision.oid === comparison))
         await select(selected, comparison);
       else {
@@ -120,6 +119,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         else { selected = ""; comparison = undefined; diff = undefined;
           error = "The first commit is outside the 1,000 loaded revisions. Choose a base commit to compare."; }
       }
+      // Publish the initial rows and controls with their comparison ready.
+      if (request === generation) history = next;
     } catch (failure) { if (request === generation) error = failure instanceof Error ? failure.message : "Could not read schema revisions."; }
     finally { if (request === generation) loading = false; }
   }

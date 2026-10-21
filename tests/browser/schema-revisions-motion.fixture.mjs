@@ -4,6 +4,48 @@
 import assert from 'node:assert/strict';
 import { writeFile } from 'node:fs/promises';
 
+/** Observe the first colors and enablement of asynchronously loaded revisions. */
+export async function captureRevisionOpen(panel, toggle) {
+  await toggle.scrollIntoViewIfNeeded();
+  await toggle.focus();
+  await panel.evaluate(element => {
+    const button = element.previousElementSibling;
+    element.__revisionOpen = new Promise(resolve => {
+      const observer = new MutationObserver(() => {
+        if (button.getAttribute('aria-expanded') !== 'true') return;
+        observer.disconnect();
+        const start = performance.now();
+        const frames = [];
+        let readyAt;
+        const frame = () => {
+          const diff = element.querySelector('.revision-diff');
+          const controls = [...element.querySelectorAll('.commit-selectors [role="combobox"]')].map(control => {
+            const style = getComputedStyle(control);
+            return { disabled: control.disabled, background: style.backgroundColor, color: style.color };
+          });
+          const busy = element.querySelector('.history-content')?.getAttribute('aria-busy') === 'true';
+          const ready = diff?.dataset.revision && diff.getAttribute('aria-busy') === 'false' && !busy;
+          if (ready && readyAt === undefined) readyAt = performance.now();
+          frames.push({ ms: performance.now() - start, height: element.getBoundingClientRect().height,
+            controls, busy, current: element.querySelector('.version-card[aria-current="true"]')?.closest('[data-version-oid]')?.dataset.versionOid,
+            revision: diff?.dataset.revision });
+          if ((readyAt !== undefined && performance.now() - readyAt >= 300) || performance.now() - start > 5000)
+            resolve({ ready: Boolean(ready), frames });
+          else requestAnimationFrame(frame);
+        };
+        requestAnimationFrame(frame);
+      });
+      observer.observe(button, { attributes: true, attributeFilter: ['aria-expanded'] });
+    });
+  });
+  await toggle.click();
+  return panel.evaluate(async element => {
+    const result = await element.__revisionOpen;
+    delete element.__revisionOpen;
+    return result;
+  });
+}
+
 /** Observe an actual toggle click without putting automation calls between frames. */
 export async function captureRevisionClose(panel, toggle) {
   await toggle.scrollIntoViewIfNeeded();
@@ -45,7 +87,7 @@ export async function captureRevisionClose(panel, toggle) {
 }
 
 /** A short Chrome rendering trace, separate from the three frame observations. */
-export async function traceRevisionClose(context, page, path, action) {
+export async function traceRevisionClose(context, page, path, action, motion = 'collapse') {
   const session = await context.newCDPSession(page);
   const events = [];
   session.on('Tracing.dataCollected', ({ value }) => events.push(...value));
@@ -56,9 +98,9 @@ export async function traceRevisionClose(context, page, path, action) {
       includedCategories: ['devtools.timeline', 'blink.user_timing'], recordMode: 'recordUntilFull', traceBufferSizeInKb: 4096,
     } });
     recording = true;
-    await page.evaluate(() => performance.mark('revision-collapse-start'));
+    await page.evaluate(name => performance.mark(name), `revision-${motion}-start`);
     const result = await action();
-    await page.evaluate(() => performance.mark('revision-collapse-end'));
+    await page.evaluate(name => performance.mark(name), `revision-${motion}-end`);
     await session.send('Tracing.end'); recording = false;
     assert.notEqual((await completed).dataLossOccurred, true);
     const text = JSON.stringify({ traceEvents: events });

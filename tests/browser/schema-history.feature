@@ -13,6 +13,16 @@ Feature: Schema commit comparisons and correction review
     Then schema settings explain deletion restrictions and cancel confirmation when an upload is reactivated
 
   @service-defaults @chromium-only
+  Scenario Outline: Schema revisions open with their initial comparison ready
+    When I use a viewport of <width> by 900 pixels
+    Then schema revisions open without flashing disabled comparison controls
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  @service-defaults @chromium-only
   Scenario Outline: Schema revisions retain their content until the closing slide ends
     When I use a viewport of <width> by 900 pixels
     Then schema revisions close without collapsing their content early and support reversal and reduced motion

@@ -505,3 +505,42 @@ reversal, reduced motion, keyboard focus and card teardown. Three existing cases
 also passed: revision comparisons/conflicts, header hover/slide and edit-icon
 motion. The revision-comparison case also passed once each in Firefox and
 WebKit. Typecheck and build passed with the existing vault-node ARIA warning.
+
+
+## Schema revision opening colors (21 October 2026)
+
+Opening Schema revisions published its graph before the initial comparison
+finished loading. The commit selectors therefore mounted disabled, and the
+selected revision was briefly unset. Once the comparison arrived, the selectors
+transitioned from disabled colors into their final colors. Frame observations
+reproduced this in all three opens at both viewports.
+
+| Viewport | Before: frames with incorrect colors, median (range) | After | Before: disabled frames, median (range) | After |
+| --- | --- | --- | --- | --- |
+| 390×900 | 12 (12–12) | 0 (0–0) | 1 (1–1) | 0 (0–0) |
+| 1280×900 | 12 (12–15) | 0 (0–0) | 1 (1–3) | 0 (0–0) |
+
+`SchemaHistory` now publishes the initial history after awaiting its comparison,
+with the existing request-generation guard. Rows, current selection and ready
+selectors appear together. The loading status remains available while reading;
+subsequent comparison requests retain their existing disabled behavior. This
+changes publication order without adding requests, timers or retained caches.
+The existing 240ms slide and close-time data release remain unchanged.
+
+[Opening observations and build hashes](schema-revisions-opening.json) describe
+three baseline opens followed by three candidate opens per viewport in separate
+production build batches: real Cohere single-commit history, complete bundled
+defaults, empty workflow, light theme, 1× DPR, Chromium153/Playwright1.63.0 and
+Node26.7.0. One sds-01 job used2CPUs,4GiB memory and combined swap(no swap),
+512pids,512MiB browser-worker Node old space and1800MiB build old space.
+rAF geometry/computed-color reads and normal Playwright snapshots make these
+instrumented correctness observations; separate bounded Chrome traces preserve
+the diagnostic interval. Routing disables HTTP cache. Frame counts are neither
+physical display timings nor latency, CPU or field-performance improvements.
+
+The new two-viewport regression failed against the original implementation and
+passed after the fix. All five focused Chromium scenarios passed, also covering
+close/reversal, reduced motion, keyboard focus, teardown and comparison/conflict
+review. Desktop/mobile screenshots retain the existing layout. Typecheck had
+zero errors; production build passed with the existing vault-node ARIA warning.
+No full suite or coverage run was performed for this correction.

@@ -1,0 +1,113 @@
+{
+  "baselineCommit": "0e5640b0883a469d3ab9abb497ccdc78f3b3e9f5",
+  "candidateProductHash": "cb01ceb2919583b2d8e1a3cb9ecedcbd42531994172b293a164e98a12ae5672e",
+  "conditions": {
+    "host": "sds-01",
+    "cpus": 2,
+    "memoryBytes": 4294967296,
+    "memorySwapBytes": 4294967296,
+    "pids": 512,
+    "node": "26.7.0",
+    "playwright": "1.63.0",
+    "browserWorkerOldSpaceMiB": 512,
+    "buildOldSpaceMiB": 1800,
+    "theme": "light",
+    "dpr": 1,
+    "motion": "no-preference",
+    "enabledCatalogs": "complete bundled defaults",
+    "workflowNodes": 0,
+    "source": "cohere",
+    "historyCommits": 1,
+    "height": 900,
+    "order": "three baseline opens then three candidate opens per viewport in sequential production build batches",
+    "scope": "instrumented color/enablement correctness; not latency, CPU or physical display timing"
+  },
+  "viewports": [
+    {
+      "width": 390,
+      "baseline": [
+        {
+          "disabledFrames": 1,
+          "wrongColorFrames": 12,
+          "unselectedFrames": 1
+        },
+        {
+          "disabledFrames": 1,
+          "wrongColorFrames": 12,
+          "unselectedFrames": 1
+        },
+        {
+          "disabledFrames": 1,
+          "wrongColorFrames": 12,
+          "unselectedFrames": 1
+        }
+      ],
+      "candidate": [
+        {
+          "disabledFrames": 0,
+          "wrongColorFrames": 0,
+          "unselectedFrames": 0
+        },
+        {
+          "disabledFrames": 0,
+          "wrongColorFrames": 0,
+          "unselectedFrames": 0
+        },
+        {
+          "disabledFrames": 0,
+          "wrongColorFrames": 0,
+          "unselectedFrames": 0
+        }
+      ],
+      "browser": "153.0.8010.12"
+    },
+    {
+      "width": 1280,
+      "baseline": [
+        {
+          "disabledFrames": 3,
+          "wrongColorFrames": 15,
+          "unselectedFrames": 3
+        },
+        {
+          "disabledFrames": 1,
+          "wrongColorFrames": 12,
+          "unselectedFrames": 1
+        },
+        {
+          "disabledFrames": 1,
+          "wrongColorFrames": 12,
+          "unselectedFrames": 1
+        }
+      ],
+      "candidate": [
+        {
+          "disabledFrames": 0,
+          "wrongColorFrames": 0,
+          "unselectedFrames": 0
+        },
+        {
+          "disabledFrames": 0,
+          "wrongColorFrames": 0,
+          "unselectedFrames": 0
+        },
+        {
+          "disabledFrames": 0,
+          "wrongColorFrames": 0,
+          "unselectedFrames": 0
+        }
+      ],
+      "browser": "153.0.8010.12"
+    }
+  ],
+  "validation": {
+    "browserScenarios": 5,
+    "typecheckErrors": 0,
+    "productionBuild": true,
+    "warning": "existing WorkflowVaultNode ARIA warning"
+  },
+  "buildHashes": {
+    "baseline": "b4c8bfff87b8e11724f7b24f25913464ecda788212c18be282a25f53df536c7e",
+    "candidate": "e1a65fe15a444c5a374c50c9c8e675c552281920bb02dd533f65764681c128d0"
+  }
+}
