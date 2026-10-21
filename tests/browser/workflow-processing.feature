@@ -3,6 +3,15 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @workflow-processing
 Feature: Workflow processing controls and execution
+  Scenario Outline: JWT key inputs are typed and connected Key ID disables manual editing
+    When I use a viewport of <width> by 900 pixels
+    Then JWT shows signing key types and uses a connected Key ID with reversible manual editing
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
   Scenario Outline: Select field belongs to Filter and restores older nodes
     When I use a viewport of <width> by 900 pixels
     Then Select field is offered by Filter and old Transform nodes restore and execute as Filter

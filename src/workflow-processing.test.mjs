@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { Then } from '@cucumber/cucumber';
-import { defaultProcessingData, processingOperations, processWorkflowValue, processingPointer, validateProcessingData, validateProcessingValue, processingOutputType, processingTypeLabel, processingPreview } from './lib/workflow-processing.ts';
+import { defaultProcessingData, processingOperations, processingInputTypes, processWorkflowValue, processingPointer, validateProcessingData, validateProcessingValue, processingOutputType, processingTypeLabel, processingPreview } from './lib/workflow-processing.ts';
 import { encodeWorkflowBinary, workflowBinaryBlob } from './lib/workflow-binary.ts';
 import { defaultCsvOptions, parseWorkflowFile, readWorkflowFile } from './lib/workflow-file.ts';
 import { createUtilityNode, createOperationGraph, createFileDataGraph, createWorkflowGraph, isWorkflowConnection, insertFileBinaryCast } from './lib/workflow-graph.ts';
@@ -297,6 +297,80 @@ Then('workflow cryptographic transforms match SHA256 HMAC and signed JWT contrac
   const weak = await crypto.subtle.generateKey({ name: 'RSASSA-PKCS1-v1_5', modulusLength: 1024, publicExponent: Uint8Array.of(1, 0, 1), hash: 'SHA-256' }, true, ['sign', 'verify']);
   const weakDer = encodeWorkflowBinary('weak.der', new Uint8Array(await crypto.subtle.exportKey('pkcs8', weak.privateKey)));
   await assert.rejects(apply('transform', 'jwt_sign', {}, { algorithm: 'RS256' }, weakDer), /2048/);
+});
+
+Then('JWT key and Key ID ports preserve their declared types identity and manual fallback', () => {
+  const jwt = processNode('transform', 'jwt_sign', { key_id: 'manual-id' });
+  assert.deepEqual(processingInputTypes('transform', jwt.data, 'key'), ['Text', 'Binary']);
+  assert.deepEqual(processingInputTypes('transform', jwt.data, 'key_id'), ['Text']);
+  assert.equal(processingInputTypes('transform', jwt.data, 'algorithm'), undefined);
+  const sources = [file('id', 'text'), file(42, 'number'), file({}, 'object'),
+    { ...file('', 'binary'), data: { file: readWorkflowFile('key.bin', Uint8Array.of(0, 255)) } },
+    { id: 'vault', type: 'vault', position: { x: 0, y: 0 }, data: { credentialId: uuid } }];
+  for (const source of sources) {
+    const nodes = [source, jwt];
+    assert.equal(isWorkflowConnection(edge(source.id, 'transform', 'value', 'key'), nodes, []), ['text', 'binary', 'vault'].includes(source.id), source.id);
+    assert.equal(isWorkflowConnection(edge(source.id, 'transform', 'value', 'key_id'), nodes, []), ['text', 'vault'].includes(source.id), source.id);
+  }
+  const connected = edge('text', 'transform', 'value', 'key_id');
+  const graph = doc([sources[0], jwt], [connected]);
+  assert.deepEqual(parseWorkflowDocument(JSON.stringify(graph)), graph);
+  assert.deepEqual(portableWorkflowDocument(graph), graph);
+  const pasted = pasteWorkflowSelection(copyWorkflowSelection(graph, ['text', 'transform'], []));
+  assert.equal(validateWorkflowDocument(doc(pasted.nodes, pasted.edges)).edges[0].targetHandle, 'key_id');
+  assert.match(describeWorkflowChange({ ...graph, edges: [] }, graph), /Key ID/);
+  assert.equal(isWorkflowConnection(connected, graph.nodes, graph.edges), false, 'Only one source may supply Key ID.');
+  const changed = processNode('transform', 'hmac_sha256');
+  assert.throws(() => validateWorkflowDocument(doc([sources[0], changed], [connected])), /Mappings must connect/);
+});
+
+Then('connected JWT Key IDs override manual values without coercion or fallback on unmatched routes', async () => {
+  const key = '01234567890123456789012345678901';
+  const payload = { sub: 'subject' };
+  const configuration = data('transform', 'jwt_sign', { key_id: 'manual-id' });
+  for (const [connected, expected] of [[undefined, 'manual-id'], ['connected-id', 'connected-id'], ['', undefined]]) {
+    const nodes = [file(payload), file(key, 'signing-key'), { ...processNode('transform', 'jwt_sign'), data: configuration }];
+    const edges = [edge('file', 'transform', 'value'), edge('signing-key', 'transform', 'value', 'key')];
+    if (connected !== undefined) { nodes.push(file(connected, 'kid')); edges.push(edge('kid', 'transform', 'value', 'key_id')); }
+    const runner = createWorkflowRunner(targetDocument(nodes, edges, 'transform'), 'target', createWorkflowDemo(), executor());
+    const next = await runner.nextAsync(), token = next.values['body:$'];
+    const [header, claims, signature] = token.split('.');
+    assert.deepEqual(JSON.parse(Buffer.from(header, 'base64url')), { alg: 'HS256', typ: 'JWT', ...(expected === undefined ? {} : { kid: expected }) });
+    assert.deepEqual(JSON.parse(Buffer.from(claims, 'base64url')), payload);
+    assert.equal(signature, createHmac('sha256', key).update(`${header}.${claims}`).digest('base64url'));
+    assert.equal(configuration.parameters.key_id, 'manual-id');
+    runner.end();
+  }
+  for (const parameters of [{ key_id: 42 }, { key_id: null }, { key_id: {} }, { algorithm: 'RS256' }, { key_id: 'x'.repeat(4097) }])
+    await assert.rejects(processWorkflowValue('transform', configuration, payload, key, parameters));
+  const assertion = processNode('assert', 'expect', { operator: 'equals', expected: 'different' });
+  const jwt = { ...processNode('transform', 'jwt_sign'), data: configuration };
+  const graph = targetDocument([file(payload), file(key, 'signing-key'), file('id', 'kid'), assertion, jwt],
+    [edge('file', 'transform', 'value'), edge('signing-key', 'transform', 'value', 'key'), edge('kid', 'assert', 'value'), edge('assert', 'transform', 'success', 'key_id')], 'transform');
+  const runner = createWorkflowRunner(graph, 'target', createWorkflowDemo(), executor());
+  const next = await runner.nextAsync();
+  assert.equal(next.mappedFields.includes('body:$'), false);
+  assert.equal(next.values['body:$'], undefined, 'An unmatched connected Key ID must not use the hidden manual value.');
+  runner.end();
+});
+
+Then('JWT parameter references remain private and reject unsupported parameter recipes', async () => {
+  const kid = 'private-key-id-canary', key = '01234567890123456789012345678901';
+  const vault = { id: 'kid', type: 'vault', position: { x: 0, y: 0 }, data: { credentialId: uuid } };
+  const graph = targetDocument([file({ sub: 'subject' }), file(key, 'signing-key'), vault, processNode('transform', 'jwt_sign', { key_id: 'manual-id' })],
+    [edge('file', 'transform', 'value'), edge('signing-key', 'transform', 'value', 'key'), edge('kid', 'transform', 'value', 'key_id')], 'transform');
+  const runner = createWorkflowRunner(graph, 'target', createWorkflowDemo(), { ...executor(), process: async () => assert.fail('Private Key ID must not be processed in the public worker.') });
+  const next = await runner.nextAsync();
+  assert.equal(next.values['body:$'], vaultVariablePlaceholder);
+  assert.ok(!JSON.stringify([next, runner.processingResults]).includes(kid));
+  const expression = next.vaultVariables[0].expression;
+  assert.deepEqual(expression.parameters.key_id, { kind: 'credential', id: uuid });
+  const token = await resolvePrivateExpression(expression, [{ ...credential, value: kid }]);
+  assert.equal(JSON.parse(Buffer.from(token.split('.')[0], 'base64url')).kid, kid);
+  for (const parameters of [null, [], { algorithm: { kind: 'literal', value: 'RS256' } }, { key_id: {} }])
+    assert.throws(() => validatePrivateExpression({ ...expression, parameters }), { code: 'INVALID' });
+  await assert.rejects(resolvePrivateExpression({ ...expression, parameters: { key_id: { kind: 'literal', value: 42 } } }, [credential]), { code: 'INVALID' });
+  runner.end();
 });
 
 Then('workflow filters trim slice and select values with explicit predicates', async () => {
