@@ -345,6 +345,27 @@ while preserving any saved path for a later structured connection.
 
 ```
 
+<!-- changelog-commit:f24f7f2bd3434dd42a75b400b49a730f9e92f701 -->
+### Commit [`f24f7f2`](https://github.com/superhero/operations.superduper.solutions/commit/f24f7f2bd3434dd42a75b400b49a730f9e92f701)
+
+```text
+feat(workflow): filter arrays through scoped Assert paths
+
+Expose Item and Success/Failure callback ports instead of another condition
+editor. Cast and processing nodes feed one Assert; returned outcomes keep
+or discard original items in order. Casts resolve assertion/return types.
+
+Compile bounded item paths once and evaluate each array in one worker call
+with one result preview. Capture external operands once, preserve private
+processing inside the vault, and reuse the same Cast implementation.
+Reject incomplete paths, escapes and ordinary cycles; cancel pending work
+when the run ends.
+
+Keep saved inline predicates executable until rewired. Connecting a new
+callback clears their old operands and settings through Undo history.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
