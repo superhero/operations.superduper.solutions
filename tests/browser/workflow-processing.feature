@@ -3,6 +3,17 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @workflow-processing
 Feature: Workflow processing controls and execution
+  Scenario Outline: Selected options below the fold are visible as soon as Transform opens
+    When I use a viewport of <width> by 540 pixels
+    Then reopening Transform with an offscreen selection keeps its first visible frame stable at vertical position <y>
+
+    Examples:
+      | width | y   |
+      | 390   | 20  |
+      | 1280  | 20  |
+      | 390   | 220 |
+      | 1280  | 220 |
+
   Scenario Outline: Map fields can be configured without JSON syntax
     When I use a viewport of <width> by 900 pixels
     Then field mapping rows support editing nesting cancellation history and real execution

@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { createHmac } from 'node:crypto';
 import { expect } from '@playwright/test';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { setMode, readExport, workflow } from './workspace.steps.mjs';
 import { loadGraphFixture } from './workflow-graph.fixture.mjs';
 import { defaultProcessingData } from '../../src/lib/workflow-processing.ts';
@@ -33,6 +33,95 @@ async function choose(page, node, label, option) {
   await node.getByRole('combobox', { name: label, exact: true }).click();
   await page.getByRole('option', { name: option, exact: true }).click();
 }
+
+Then('reopening Transform with an offscreen selection keeps its first visible frame stable at vertical position {int}', async function (y) {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await loadGraphFixture(page, document([{ ...processor('transform', 'jwt_sign'), position: { x: 20, y } }], []));
+  const trigger = workflow(page).getByRole('combobox', { name: 'Transform operation', exact: true });
+  const samples = [];
+  // Warm reopens, after trigger hover settles, isolate selected-item placement.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await trigger.hover();
+    await trigger.evaluate(async element => { await Promise.all(element.getAnimations().map(animation => animation.finished.catch(() => {}))); });
+    await page.evaluate(() => {
+      window.__selectOpening = new Promise(resolve => {
+        const frames = [];
+        let started = false, remaining = 20;
+        document.addEventListener('pointerdown', () => { started = true; }, { once: true, capture: true });
+        function frame(time) {
+          const content = document.querySelector('.workflow-node-select-options');
+          const viewport = content?.querySelector('[data-select-viewport]');
+          const selected = content?.querySelector('[aria-selected="true"]');
+          if (started && content && viewport && selected) {
+            const popup = content.getBoundingClientRect(), item = selected.getBoundingClientRect(), clip = viewport.getBoundingClientRect();
+            if (popup.width && popup.height && popup.y >= 0 && popup.bottom <= innerHeight && getComputedStyle(content).visibility !== 'hidden')
+              frames.push({ time, x: popup.x, y: popup.y, width: popup.width, height: popup.height, scroll: viewport.scrollTop,
+                outerScroll: content.scrollTop, viewportY: clip.y - popup.y,
+                item: item.y - clip.y, selectedVisible: item.top >= clip.top - 1 && item.bottom <= clip.bottom + 1,
+                pageScroll: document.scrollingElement.scrollTop });
+          }
+          if (started && --remaining <= 0) resolve(frames); else requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+      });
+    });
+    await trigger.click();
+    const bounds = await page.locator('.workflow-node-select-options [data-select-viewport]').boundingBox();
+    await page.mouse.move(bounds.x + 24, bounds.y + 1);
+    samples.push(await page.evaluate(() => window.__selectOpening));
+    await trigger.press('Escape');
+  }
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await writeFile(`${this.artifactDirectory}/select-opening-${process.env.SELECT_OPEN_PROFILE ?? 'regression'}.json`, JSON.stringify({ viewport: page.viewportSize(), samples }, null, 2));
+  if (process.env.SELECT_OPEN_PROFILE) {
+    // Separate attribution from the geometry samples; do not time this trace.
+    const client = await page.context().newCDPSession(page);
+    await client.send('Tracing.start', { categories: 'devtools.timeline,blink.user_timing', transferMode: 'ReturnAsStream' });
+    await trigger.click();
+    await expect(page.getByRole('option', { name: 'Sign JWT', exact: true })).toBeInViewport({ ratio: 0.9 });
+    const bounds = await page.locator('.workflow-node-select-options [data-select-viewport]').boundingBox();
+    await page.mouse.move(bounds.x + 24, bounds.y + 1);
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const complete = new Promise(resolve => client.once('Tracing.tracingComplete', resolve));
+    await client.send('Tracing.end');
+    const { stream } = await complete;
+    const chunks = [];
+    while (true) {
+      const chunk = await client.send('IO.read', { handle: stream });
+      chunks.push(Buffer.from(chunk.data, chunk.base64Encoded ? 'base64' : 'utf8'));
+      if (chunk.eof) break;
+    }
+    await client.send('IO.close', { handle: stream });
+    await writeFile(`${this.artifactDirectory}/select-opening-${process.env.SELECT_OPEN_PROFILE}.trace.json`, Buffer.concat(chunks));
+    await client.detach();
+    await trigger.press('Escape');
+  }
+  for (const frames of samples) {
+    assert.ok(frames.length >= 2, 'Capture visible opening frames.');
+    assert.ok(frames.every(frame => frame.selectedVisible), `The selected option must be visible from the first frame: ${JSON.stringify(frames)}`);
+    assert.ok(frames.every(frame => frame.outerScroll === 0), `Only the option viewport may scroll: ${JSON.stringify(frames)}`);
+    assert.equal(new Set(frames.map(frame => frame.scroll)).size, 1, 'Hovering must not change the option scroll offset.');
+    for (const property of ['x', 'y', 'width', 'height', 'viewportY', 'item', 'pageScroll']) {
+      const values = frames.map(frame => frame[property]);
+      assert.ok(Math.max(...values) - Math.min(...values) <= 1, `Opening must not shift ${property}: ${JSON.stringify(frames)}`);
+    }
+  }
+  await trigger.click();
+  const viewport = page.locator('.workflow-node-select-options [data-select-viewport]');
+  const label = await viewport.evaluate(element => {
+    const top = element.getBoundingClientRect().top + 1;
+    return [...element.querySelectorAll('[role="option"]')].find(option => {
+      const bounds = option.getBoundingClientRect();
+      return bounds.top <= top && bounds.bottom > top;
+    })?.getAttribute('data-label');
+  });
+  assert.ok(label, 'A partly visible option remains clickable.');
+  const bounds = await viewport.boundingBox();
+  await page.mouse.click(bounds.x + 24, bounds.y + 1);
+  await expect(trigger).toContainText(label);
+});
 
 Then('field mapping rows support editing nesting cancellation history and real execution', async function () {
   const page = this.page;
