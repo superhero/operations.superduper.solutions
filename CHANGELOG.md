@@ -31,6 +31,16 @@ verify that activation survives reload, and run its generation operation.
 
 ```
 
+<!-- changelog-commit:37b6bb0a1fbe4e0640f090282982bb33659a920b -->
+### Commit [`37b6bb0`](https://github.com/superhero/operations.superduper.solutions/commit/37b6bb0a1fbe4e0640f090282982bb33659a920b)
+
+```text
+fix(auth): preserve DigitalOcean bearer permissions
+
+Apply a versioned schema correction without changing the published pack. Retain per-alternative permissions in canonical credential approval, reject stale bindings, and expose the correction in schema revisions.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
