@@ -8,7 +8,7 @@ import { validateWorkflowFileData, type WorkflowFileData } from "./workflow-file
 import { normalizeManualRoute } from "./flow-routing/manual.js";
 import { validateCredentialBinding } from "./secrets/bindings.ts";
 import type { CredentialBinding } from "./secrets/types.ts";
-import { validateProcessingData, type ProcessingData } from "./workflow-processing.ts";
+import { processingDefinition, validateProcessingData, type ProcessingData } from "./workflow-processing.ts";
 
 export type OperationData = {
   operationId: string;
@@ -332,8 +332,10 @@ function validateDocument(value: unknown, context: ValidationContext, depth: num
         throw new Error("A cast target must be Text, Number or Boolean.");
       return { ...common, type: "cast", data: { targetType: data.targetType } };
     }
-    if (extended && (node.type === "transform" || node.type === "filter" || node.type === "assert"))
-      return { ...common, type: node.type, data: validateProcessingData(node.type, data) };
+    if (extended && (node.type === "transform" || node.type === "filter" || node.type === "assert")) {
+      const configuration = validateProcessingData(node.type, data);
+      return { ...common, type: processingDefinition(node.type, configuration).kind, data: configuration };
+    }
     if (extended && node.type === "stop") {
       if (Object.keys(data).length) throw new Error("Stop nodes do not have configuration fields.");
       return { ...common, type: "stop", data: {} };

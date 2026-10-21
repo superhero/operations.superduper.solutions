@@ -33,6 +33,41 @@ async function choose(page, node, label, option) {
   await page.getByRole('option', { name: option, exact: true }).click();
 }
 
+Then('Select field is offered by Filter and old Transform nodes restore and execute as Filter', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  await loadGraphFixture(page, document([processor('transform', 'base64_encode')], []));
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  const transform = workflow(page).locator('[data-processing-kind="transform"]');
+  await transform.getByRole('combobox', { name: 'Transform operation', exact: true }).click();
+  await expect(page.getByRole('option', { name: 'Select field', exact: true })).toHaveCount(0);
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'Filter', exact: true }).click();
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  const filter = workflow(page).locator('[data-processing-kind="filter"]');
+  await choose(page, filter, 'Filter operation', 'Select field');
+  await expect(filter.locator('.utility-title .utility-type')).toHaveText('Object | Array');
+  await expect(filter.locator('.svelte-flow__handle.target')).toHaveAttribute('aria-label', 'Filter input (Object | Array)');
+  const legacy = document([source({ profile: { name: 'Alice' } }), processor('transform', 'select_field', { path: '/profile/name' })],
+    [connection('source', 'transform', 'value')]);
+  await loadGraphFixture(page, legacy);
+  await expect(transform).toHaveCount(0);
+  await expect(filter.getByRole('combobox', { name: 'Filter operation', exact: true })).toContainText('Select field');
+  const exported = (await readExport(page)).document;
+  assert.deepEqual(exported.nodes.find(node => node.id === 'transform'), { ...legacy.nodes[1], type: 'filter' });
+  assert.deepEqual(exported.edges, legacy.edges);
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(filter.getByLabel('Field path (JSON pointer)', { exact: true })).toHaveValue('/profile/name');
+  await expect(filter.locator('.output-type')).toHaveText('Text');
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  const run = panel(page);
+  await expect(run.getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
+  await run.getByText('Processing results (1)', { exact: true }).click();
+  await expect(run.getByRole('region', { name: 'Select field result' })).toContainText('"Alice"');
+  await expect(run.getByRole('alert')).toHaveCount(0);
+});
+
 Then('Parse JSON restores without a type selector and connects directly to a matching input', async function () {
   const page = this.page;
   await setMode(page, 'workflow');
@@ -80,7 +115,7 @@ Then('Transform input labels follow its selected operation before any connection
   const handle = transform.locator('.utility-title .svelte-flow__handle.target');
   await expect(badge).toHaveText('Text | Binary');
   for (const [operation, expected] of [
-    ['Decode UTF-8', 'Binary'], ['Parse JSON', 'Text'], ['Select field', 'Object | Array'],
+    ['Decode UTF-8', 'Binary'], ['Parse JSON', 'Text'],
     ['Sign JWT', 'Object'], ['Serialize JSON', 'JSON'], ['Encode Base64', 'Text | Binary']
   ]) {
     await choose(page, transform, 'Transform operation', operation);

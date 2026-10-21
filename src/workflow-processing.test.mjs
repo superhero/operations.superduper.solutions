@@ -157,8 +157,8 @@ Then('workflow translation parses serializes selects and maps data without mutat
   const before = structuredClone(original);
   assert.deepEqual(await apply('transform', 'json_parse', JSON.stringify(original)), original);
   assert.equal(await apply('transform', 'json_stringify', original), JSON.stringify(original));
-  assert.equal(await apply('transform', 'select_field', original, { path: '/profile/id', type: 'Number' }), 42);
-  assert.equal(await apply('transform', 'select_field', original, { path: '/a~1b/~0name' }), 'escaped');
+  assert.equal(await apply('filter', 'select_field', original, { path: '/profile/id', type: 'Number' }), 42);
+  assert.equal(await apply('filter', 'select_field', original, { path: '/a~1b/~0name' }), 'escaped');
   assert.deepEqual(await apply('transform', 'map_fields', original, { fields: '{"userId":"/profile/id","label":"/profile/name"}' }), { userId: 42, label: 'Alice' });
   const mapped = await apply('transform', 'map_fields', original, { fields: '{"__proto__":"/profile/id"}' });
   assert.equal(Object.hasOwn(mapped, '__proto__'), true);
@@ -168,6 +168,37 @@ Then('workflow translation parses serializes selects and maps data without mutat
     assert.deepEqual(await apply('transform', 'json_parse', JSON.stringify(value)), value);
   assert.equal(processingPointer(original, '/constructor'), undefined);
   assert.equal(await apply('transform', 'json_parse', '1.5'), 1.5);
+});
+
+Then('Select field is a Filter while old Transform nodes and private recipes preserve their behavior', async () => {
+  assert.equal(processingOperations.find(operation => operation.id === 'select_field').kind, 'filter');
+  const configuration = data('filter', 'select_field', { path: '/profile/name' });
+  assert.throws(() => validateProcessingData('assert', configuration), /Unknown processing operation/);
+  assert.throws(() => validateProcessingData('filter', data('transform', 'json_parse')), /Unknown processing operation/);
+  const selection = { ...processNode('filter', 'select_field', { path: '/profile/name' }, 'selection'), type: 'transform' };
+  const graph = targetDocument([file({ profile: { name: 'Alice' } }), selection], [edge('file', 'selection', 'value')], 'selection');
+  const before = structuredClone(graph);
+  const restored = parseWorkflowDocument(JSON.stringify(graph));
+  const migrated = restored.nodes.find(node => node.id === 'selection');
+  assert.equal(migrated.type, 'filter');
+  assert.deepEqual(migrated, { ...selection, type: 'filter' });
+  assert.deepEqual(restored.edges, graph.edges);
+  assert.deepEqual(graph, before);
+  assert.deepEqual(portableWorkflowDocument(graph), restored);
+  const pasted = pasteWorkflowSelection(copyWorkflowSelection(graph, ['selection'], []), 32);
+  assert.equal(validateWorkflowDocument(doc(pasted.nodes, pasted.edges)).nodes[0].type, 'filter');
+  const runner = createWorkflowRunner(graph, 'target', createWorkflowDemo(), executor());
+  const next = await runner.nextAsync();
+  assert.equal(next.values['body:$'], 'Alice');
+  assert.ok(next.mappedFields.includes('body:$'));
+  runner.end();
+  const parsed = { kind: 'process', type: 'transform', data: data('transform', 'json_parse'), value: { kind: 'credential', id: uuid } };
+  for (const type of ['transform', 'filter']) {
+    const expression = { kind: 'process', type, data: configuration, value: parsed };
+    assert.equal(await resolvePrivateExpression(expression, [{ ...credential, value: '{"profile":{"name":"Alice"}}' }]), 'Alice');
+  }
+  assert.equal(await apply('filter', 'select_field', [{ value: 42 }], { path: '/0/value', type: 'Number' }), 42);
+  await assert.rejects(apply('filter', 'select_field', { value: 'text' }, { path: '/value', type: 'Number' }), /selected Number output type/);
 });
 
 Then('Parse JSON accepts every JSON type and restores old selected types without narrowing output', async () => {
@@ -204,7 +235,7 @@ Then('known JSON alternatives connect to matching ports and retain their types t
   const trim = processNode('filter', 'trim');
   const arrayRange = processNode('filter', 'array_range', {}, 'range');
   const binary = processNode('transform', 'utf8_decode', {}, 'binary');
-  const unknown = processNode('transform', 'select_field', { type: 'Unknown' }, 'unknown');
+  const unknown = processNode('filter', 'select_field', { type: 'Unknown' }, 'unknown');
   const nodes = [parse, ports, assertion, switched, cast, trim, arrayRange, binary, unknown];
   for (const [source, handle, edges] of [['transform', 'result', []], ['assert', 'success', [edge('transform', 'assert')]],
     ['assert', 'failure', [edge('transform', 'assert')]], ['switch', 'gate-1', [edge('transform', 'switch')]]])
@@ -300,7 +331,7 @@ Then('workflow processing rejects malformed configuration values encodings and l
     ['transform', 'base64url_decode', 'Zh'], ['transform', 'base64url_decode', '+/=='], ['transform', 'base64url_decode', 'x'],
     ['transform', 'hex_decode', 'a'], ['transform', 'hex_decode', 'gg'], ['transform', 'utf8_decode', encodeWorkflowBinary('bad.bin', Uint8Array.of(255))],
     ['transform', 'utf8_encode', 42], ['transform', 'json_parse', 'invalid'],
-    ['transform', 'select_field', {}, { path: '/missing' }], ['transform', 'select_field', {}, { path: 'invalid' }], ['transform', 'select_field', {}, { path: '/~2' }],
+    ['filter', 'select_field', {}, { path: '/missing' }], ['filter', 'select_field', {}, { path: 'invalid' }], ['filter', 'select_field', {}, { path: '/~2' }],
     ['transform', 'map_fields', {}, { fields: 'invalid' }], ['transform', 'map_fields', {}, { fields: '[]' }], ['transform', 'map_fields', {}, { fields: '{"a":1}' }],
     ['transform', 'map_fields', {}, { fields: '{"a":"/missing"}' }], ['filter', 'substring', 'a', { start: '1.5' }], ['filter', 'array_range', [], { end: 'a' }],
     ['transform', 'hmac_sha256', 'input', {}, null], ['transform', 'jwt_sign', {}, { algorithm: 'RS256' }, 'not a PEM key'],

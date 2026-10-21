@@ -269,7 +269,7 @@ text and permits safe links, never raw HTML.
 Transform, Filter and Assert are separate node types. Their validated, versioned
 operation definitions provide the selector choices, configuration fields and port
 types. A configured card names its action, such as Encode Base64 or Substring.
-Transform's input badge and port label show the types accepted by its selected
+Transform and Filter input badges and port labels show the types accepted by the selected
 operation before and after wiring, such as `Text | Binary` or `Object | Array`. JSON
 serialization displays JSON. Connected-type inference still determines the
 types propagated through the graph.
@@ -277,7 +277,7 @@ Configurations participate in workflow history, Undo, clipboard and portable
 documents; existing document versions retain their prior behavior.
 
 Transform supports UTF-8, Base64/Base64url and hexadecimal encoding/decoding,
-JSON parsing/serialization, JSON-pointer selection, field mapping, SHA-256,
+JSON parsing/serialization, field mapping, SHA-256,
 HMAC-SHA256 and JWT signing. JSON parsing has no result-type selector: its known
 output alternatives are `Object | Text | Number | Boolean | Array | Null`, with
 Integer included in Number. A matching receiving port may assume one of these
@@ -288,8 +288,11 @@ declares its output type. Field mappings construct an object from output names a
 JSON pointers. Binary values retain exact bytes; connecting an original file
 to a binary-only processing input inserts the visible Binary Cast.
 
-Filter trims either or both ends of text, selects a substring, selects an array
-range or keeps array items matching a predicate. Text indices count Unicode
+Filter trims either or both ends of text, selects a substring or a field by JSON
+pointer, selects an array range or keeps array items matching a predicate. Older
+Select field Transform nodes load as Filter nodes with the same identity,
+configuration and connections; older private recipes remain executable.
+Text indices count Unicode
 code points; ranges include their start and exclude their end, with negative
 indices counting from the end. Array filtering retains input order. Predicates
 use explicit field paths and comparisons; equality preserves value types.
