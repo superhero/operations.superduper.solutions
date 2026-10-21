@@ -8,7 +8,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { getContext, untrack } from "svelte";
   import { Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  import { defaultProcessingData, processingDefinition, processingInputTypes, processingOperations, processingOutputType, processingTypeLabel, type ProcessingData, type ProcessingKind } from "$lib/workflow-processing.ts";
+  import { defaultProcessingData, processingConditionUsesPath, processingConditionUsesExpected, processingDefinition, processingInputTypes, processingOperations, processingOutputType, processingTypeLabel, type ProcessingData, type ProcessingKind } from "$lib/workflow-processing.ts";
   import type { RoutingType } from "$lib/workflow-utilities.ts";
   import WorkflowNodeSelect from "./WorkflowNodeSelect.svelte";
   import WorkflowFieldMappings from "./WorkflowFieldMappings.svelte";
@@ -29,7 +29,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const active = $derived(editorActive?.() ?? true);
   const family = $derived(kind[0]!.toUpperCase() + kind.slice(1));
   const updateNodeInternals = useUpdateNodeInternals();
-  const layout = $derived(`${data.operation}:${data.parameters.type ?? ""}:${inputLabel}:${outputType}`);
+  const fields = $derived(definition.parameters.filter(field =>
+    !(kind === "assert" && field.name === "path" && !processingConditionUsesPath(inputType))
+    && !(field.name === "expected" && !processingConditionUsesExpected(data.parameters.operator ?? ""))));
+  const layout = $derived(`${data.operation}:${data.parameters.type ?? ""}:${inputLabel}:${outputType}:${fields.map(field => field.name).join(",")}`);
   $effect(() => { layout; untrack(() => updateNodeInternals(id)); });
   function parameter(name: string, value: string) { edit(id, { ...data, parameters: { ...data.parameters, [name]: value } }); }
   const choiceLabel = (value: string) => /^(HS256|RS256|UTF-8)$/.test(value) ? value : value.replace(/_/g, " ").replace(/^./, letter => letter.toUpperCase());
@@ -59,7 +62,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if data.operation === "map_fields"}
     <WorkflowFieldMappings {id} value={data.parameters.fields ?? "{}"} {active} onchange={value => parameter("fields", value)} />
   {:else}
-  {#each definition.parameters as field (field.name)}
+  {#each fields as field (field.name)}
       {@const connected = !!field.connectable && inputConnected(id, field.name)}
       <div class="processing-parameter workflow-node-field nodrag nopan nokey" class:key-id={field.name === "key_id"}>
         <label class="parameter-label">
@@ -75,7 +78,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
               value={data.parameters[field.name]} oninput={event => parameter(field.name, event.currentTarget.value)}></textarea>
           {:else}
             <input id={`${id}-${field.name}`} class="utility-value" aria-label={field.label} maxlength="4096"
-              disabled={connected || field.name === "expected" && ["is_set", "is_not_set"].includes(data.parameters.operator!)}
+              disabled={connected}
               inputmode={field.name === "start" || field.name === "end" ? "numeric" : "text"}
               value={data.parameters[field.name]} oninput={event => parameter(field.name, event.currentTarget.value)} />
           {/if}

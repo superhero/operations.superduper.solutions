@@ -5,6 +5,9 @@
 Feature: Explicit workflow processing and assertion routing
   Transform, Filter and Assert are independent nodes with typed, bounded behavior.
 
+  Scenario: Scalar assertions check their input without a field path
+    Then scalar assertions ignore saved field paths while structured assertions keep them
+
   Scenario: Stop nodes persist as input-only workflow nodes
     Then Stop nodes retain documents clipboard and input-only connection identities
 

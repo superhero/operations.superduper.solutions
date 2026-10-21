@@ -328,7 +328,11 @@ indices counting from the end. Array filtering retains input order. Predicates
 use explicit field paths and comparisons; equality preserves value types.
 
 Assert passes the original input unchanged through Success or Failure. The
-unmatched output leaves its connected input unsupplied and editable in the next
+field-path editor appears only for structured or unresolved input types; scalar
+inputs are checked directly, ignoring any retained path from an earlier
+configuration. The expected-value editor appears only for conditions that use
+it; Is set and Is not set hide it while preserving the saved value for reuse.
+The unmatched output leaves its connected input unsupplied and editable in the next
 operation, including through another utility node. Assertion failure is ordinary
 data flow, including when Failure has no connection; it does not raise an
 assertion error or automatically skip the next operation. Switch retains its
