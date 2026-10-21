@@ -148,6 +148,14 @@ execution without exposing private parameter values.
 
 ```
 
+<!-- changelog-commit:e138e88f2992d416c315512ccc2b44ee62422fde -->
+### Commit [`e138e88`](https://github.com/superhero/operations.superduper.solutions/commit/e138e88f2992d416c315512ccc2b44ee62422fde)
+
+```text
+fix(ui): shorten JSON type badges to JsonValue
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
