@@ -69,17 +69,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </div>
   {#if pending ? /\.csv$/i.test(pending.name) : data.file?.format === "csv"}
     <div class="csv-options nodrag nopan nokey nowheel">
-      <label>Delimiter
+      <label class="workflow-node-field">Delimiter
         <WorkflowNodeSelect label="CSV delimiter" value={options.delimiter} active={editorActive()}
           choices={[{ value: "auto", label: "Auto" }, { value: ",", label: "Comma" }, { value: ";", label: "Semicolon" }, { value: "\t", label: "Tab" }, { value: "|", label: "Pipe" }]}
           onchange={delimiter => configure({ delimiter: delimiter as CsvOptions["delimiter"] })} />
       </label>
-      <label>Header
+      <label class="workflow-node-field">Header
         <WorkflowNodeSelect label="CSV header" value={options.header} active={editorActive()}
           choices={[{ value: "auto", label: "Auto" }, { value: "present", label: "First row" }, { value: "absent", label: "No header" }]}
           onchange={header => configure({ header: header as CsvOptions["header"] })} />
       </label>
-      <label>Quotes
+      <label class="workflow-node-field">Quotes
         <WorkflowNodeSelect label="CSV quotes" value={options.quote} active={editorActive()}
           choices={[{ value: "auto", label: "Auto" }, { value: "none", label: "None" }, { value: '"', label: "Double" }, { value: "'", label: "Single" }]}
           onchange={quote => configure({ quote: quote as CsvOptions["quote"] })} />

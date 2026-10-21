@@ -21,3 +21,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 .workflow-utility-node .utility-value:disabled { background: var(--color-disabled); color: var(--color-disabled-foreground); opacity: 1; cursor: not-allowed; }
 .workflow-utility-node .utility-value:disabled::placeholder { color: var(--color-disabled-foreground); }
 @media (prefers-reduced-motion: reduce) { .workflow-utility-node, .workflow-utility-node .utility-action, .workflow-utility-node .utility-value { transition: none; } }
+
+/* Keep the control highlighted while crossing its label and spacing. */
+.workflow-node-field:hover :is(input, textarea, .workflow-node-select):enabled { outline-color: var(--color-ring); outline-style: solid; }
