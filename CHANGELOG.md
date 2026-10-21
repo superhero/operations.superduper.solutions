@@ -80,6 +80,14 @@ fix(ui): use antenna icon for Cast
 
 ```
 
+<!-- changelog-commit:aaa1b734a707cc36302c5d3114ea55fccc828952 -->
+### Commit [`aaa1b73`](https://github.com/superhero/operations.superduper.solutions/commit/aaa1b734a707cc36302c5d3114ea55fccc828952)
+
+```text
+fix(ui): label the Cast tooltip as Cast type
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
