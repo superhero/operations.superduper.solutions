@@ -281,6 +281,10 @@ The popup caps its height to available viewport space and its inner viewport own
 native scrolling, with a visible scrollbar. Wheel input stays inside the list;
 keyboard navigation, disabled options, node tooltips and compact styling retain
 their existing behavior.
+Hovering a partly clipped option leaves the list and active highlight in place;
+the visible portion remains clickable. Wheel/touch scrolling and keyboard
+navigation still reveal options normally. Hover geometry is cached until the
+row changes or the viewport scrolls/resizes, and released when the popup closes.
 
 Transform supports UTF-8, Base64/Base64url and hexadecimal encoding/decoding,
 JSON parsing/serialization, field mapping, SHA-256,

@@ -31,6 +31,22 @@ See [the follow-up evidence](#rendering-and-matching-follow-up) for samples,
 limitations, checks and the next investigation. The stored JSON includes discarded
 experiment results so an unretained prototype cannot be mistaken for delivered code.
 
+### Workflow dropdown opening (21 October 2026)
+
+Opening Transform with an option below the fold exposed a clipped first row.
+Moving the pointer into it triggered Bits UI's automatic highlighted-item scroll,
+making the list move after opening. In Brave 154, three repeated openings at
+390×540 and 1280×540 each moved the options by 10px. The shared select now keeps
+clipped-row hover from changing the highlight; the same captures show 0px movement
+and one scroll event instead of two. The visible part of a clipped option remains
+clickable, while wheel, touch and keyboard scrolling retain their handlers.
+
+Geometry checks are cached between row, scroll and resize changes; the observer
+and cached element release with the popup. These are instrumented spatial
+observations, with separate Chrome timeline attribution, not latency or memory
+benchmarks. Conditions, raw shift samples, hashes and limitations are in
+[`workflow-select-performance.json`](workflow-select-performance.json).
+
 ### Measurement correction
 
 The previous saved page profile contained about 620ms of self samples in

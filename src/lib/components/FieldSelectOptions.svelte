@@ -14,13 +14,38 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     label: string; items: Option[]; portalZIndex?: number; variant?: "field" | "node";
     renderLabel?: Snippet<[{ value: string; label: string }]> | undefined;
   } = $props();
+  let viewport = $state<HTMLElement | null>(null);
+  let hoveredItem: HTMLElement | null = null;
+  let clippedItem = false;
+  const resetHover = () => { hoveredItem = null; clippedItem = false; };
+  $effect(() => {
+    if (!viewport) return;
+    const observer = new ResizeObserver(resetHover);
+    observer.observe(viewport);
+    return () => { observer.disconnect(); resetHover(); };
+  });
+
+  function keepClippedHoverStill(event: PointerEvent) {
+    if (event.pointerType === "touch" || !(event.target instanceof Element)) return;
+    const list = event.currentTarget as HTMLElement;
+    const item = event.target.closest<HTMLElement>("[data-select-item]");
+    if (item !== hoveredItem) {
+      hoveredItem = item;
+      clippedItem = !!item && (item.offsetTop < list.scrollTop
+        || item.offsetTop + item.offsetHeight > list.scrollTop + list.clientHeight);
+    }
+    // Bits UI scrolls newly highlighted items into view, including pointer hovers.
+    // A clipped row must remain still under the pointer; click and keys still work.
+    if (clippedItem) event.stopPropagation();
+  }
 </script>
 
 <Select.Portal>
   <Select.Content class={variant === "node" ? "select-options workflow-node-select-options nodrag nopan nokey nowheel" : "select-options field-select-content"}
     style={`z-index: ${portalZIndex}`} data-variant={variant} aria-label={label} side="bottom" sideOffset={variant === "node" ? 5 : 4}
     align="start" collisionPadding={variant === "node" ? 10 : 12} preventScroll={false}>
-    <Select.Viewport class="select-options-viewport field-select-viewport">
+    <Select.Viewport class="select-options-viewport field-select-viewport" bind:ref={viewport}
+      onpointermovecapture={keepClippedHoverStill} onpointerleave={resetHover} onscroll={resetHover}>
       {#each items as item (item.value)}
         <Select.Item value={item.value} label={item.label} disabled={item.disabled ?? false}
           class={variant === "node" ? "select-option workflow-node-select-option" : "select-option field-select-option"}>
