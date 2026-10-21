@@ -536,6 +536,18 @@ to the README so the release automation inventory matches the manifest.
 
 ```
 
+<!-- changelog-commit:320d47388a28e0116b032a30bad92928497ab6f5 -->
+### Commit [`320d473`](https://github.com/superhero/operations.superduper.solutions/commit/320d47388a28e0116b032a30bad92928497ab6f5)
+
+```text
+test(workflow): match the renamed array assertion port
+
+Keep the bounds and cancellation regression aligned with the Assertion
+connector label. Release validation stopped on the obsolete Item error
+prefix before reaching the rest of the scenario.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
