@@ -10,11 +10,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     ViewportPortal, type Connection, type InternalNode, type XYPosition, type Position } from "@xyflow/svelte";
   import { nearestWorkflowInput, type WorkflowConnectionState, type WorkflowConnectionEnd,
     type WorkflowHandle } from "$lib/workflow-connection-snap.ts";
-  import { workflowCurve, workflowCurveRadius } from "$lib/workflow-curve.ts";
+  import { workflowCurve } from "$lib/workflow-curve.ts";
+  import { bezierDrawing } from "$lib/flow-routing/bezier.ts";
   import { defaultWorkflowSettings } from "$lib/app-settings.ts";
   import { routingContext, type RoutingContext } from "$lib/flow-routing/context.ts";
   import { connectionGeometry } from "$lib/flow-routing/geometry.js";
-  import { bendRadius, previewPath } from "$lib/flow-routing/path.js";
+  import { bendRadius, previewPath, previewRoute } from "$lib/flow-routing/path.js";
 
   let { isValidConnection, active = true, curved = false, dashed = false, curveStrength = defaultWorkflowSettings.curveStrength, markerEnd }:
     { isValidConnection: (connection: Connection) => boolean; active?: boolean; curved?: boolean;
@@ -86,7 +87,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (!resolved.inProgress || !resolved.isValid || !resolved.toNode) return "";
     const geometry = connectionGeometry(resolved)!;
     const points = { ...geometry, sourcePosition: geometry.sourcePosition as Position, targetPosition: geometry.targetPosition as Position };
-    return previewPath(routing?.preview(), points, curved ? workflowCurveRadius(curveStrength) : bendRadius, routing?.obstacles() ?? []) ??
+    const route = previewRoute(routing?.preview(), points);
+    if (curved && route) return bezierDrawing(route, geometry, curveStrength, routing?.obstacles() ?? []).path;
+    return previewPath(routing?.preview(), points, bendRadius, routing?.obstacles() ?? []) ??
       (curved ? workflowCurve(points, curveStrength)[0] :
       getSmoothStepPath({ ...points, borderRadius: bendRadius, stepPosition: 1 })[0]);
   });

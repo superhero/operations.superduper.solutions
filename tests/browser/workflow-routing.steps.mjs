@@ -444,7 +444,7 @@ Then('dash length gap and speed update existing routes and previews and pause bo
   assert.deepEqual(await repository(page, 'history', baseline.id), history);
 
   await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
-  await expect(route(page)).toHaveAttribute('d', /^M .* L/);
+  await expect(route(page)).toHaveAttribute('d', /^M.* C/);
   await expect(curvedPaths).toHaveCount(2);
   await saved(page);
   baseline = (await readExport(page)).document;
@@ -496,7 +496,7 @@ Then('changing curve strength changes safe routed bends without changing its end
   const values = [];
   for (const strength of [50, 200]) {
     await changeCurveStrength(page, strength);
-    await expect(route(page)).toHaveAttribute('d', /^M .* A/);
+    await expect(route(page)).toHaveAttribute('d', /^M.* C/);
     await expectClearRoute(page);
     values.push(await route(page).getAttribute('d'));
     const errors = await endpointErrors(page);

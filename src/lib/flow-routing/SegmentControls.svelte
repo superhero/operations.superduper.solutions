@@ -10,11 +10,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import MaterialIcon from '../components/MaterialIcon.svelte';
   import { segmentHandles, type SegmentHandle } from './manual.js';
   import { routeMidpoint } from './path.js';
-  import type { RoutingContext } from './context.ts';
+  import type { EdgeDrawing, RoutingContext } from './context.ts';
   import type { NodeRect, Route } from './types.js';
 
-  let { id, route, routing, radius = 0, obstacles = [] }: {
-    id: string; route: Route; routing: RoutingContext; radius?: number; obstacles?: NodeRect[];
+  let { id, route, routing, radius = 0, obstacles = [], drawing }: {
+    id: string; route: Route; routing: RoutingContext; radius?: number; obstacles?: NodeRect[]; drawing?: EdgeDrawing | undefined;
   } = $props();
   const flow = useSvelteFlow();
   const zoom = $derived(flow.getZoom());
@@ -25,9 +25,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let keyboard = $state.raw<{ index: number; axis: 'x' | 'y'; coordinate: number } | null>(null);
   const handles = $derived.by(() => {
     const active = routing.dragHandle(id);
-    return active ? [active] : segmentHandles(route);
+    return (active ? [active] : segmentHandles(route)).map(handle => ({ ...handle, ...drawing?.locate?.(handle) }));
   });
-  const middle = $derived(routeMidpoint(route, radius, obstacles));
+  const middle = $derived(drawing?.midpoint ?? routeMidpoint(route, radius, obstacles));
   const moving = $derived(Boolean(pointer || keyboard));
 
   function position(event: PointerEvent) {

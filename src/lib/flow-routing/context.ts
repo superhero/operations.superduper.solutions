@@ -1,10 +1,12 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import type { NodeRect, Point, Route, RoutingEdge } from './types.js';
+import type { EdgeEndpoints, NodeRect, Point, Route, RoutingEdge } from './types.js';
 import type { SegmentHandle } from './manual.js';
 
 export const routingContext = Symbol('svelte-flow-routing');
+export type EdgeDrawing = { path: string; midpoint: Point; locate?: (point: Point) => Point };
+export type DrawRoute = (route: Route, edge: EdgeEndpoints & { source?: string | undefined; target?: string | undefined }, obstacles: NodeRect[], authored: boolean) => EdgeDrawing;
 export interface RoutingContext {
   route(id: string): Route | undefined;
   /** Node bounds plus clearance, shared by every rounded renderer. */

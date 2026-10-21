@@ -30,6 +30,7 @@ declaration module), or the main type re-exports in `router.js`.
 | `handoff.js` | Transfers the latest displayed snap projection to a new edge, including reversed native drags and delayed replies |
 | `manual.js` | Validates authored routes, exposes segment midpoints, and clamps segment movement to a continuous clearance-safe interval |
 | `clearance.js` | Shares obstacle bounds and terminal exemptions between automatic routing and manual editing |
+| `bezier.ts` | Restores direct diagonal cubics where clear and fits certified smooth detours to routed guides; projects visible controls onto the stroke |
 
 `NodeRect` is `{ id, x, y, width, height }` in absolute diagram coordinates.
 `RoutingEdge` carries an ID, source and optional target node IDs, numeric source
@@ -40,9 +41,15 @@ The XYFlow adapter imports `@xyflow/system`; the routing and drawing algorithms
 are independent of Svelte, XYFlow, and browser globals.
 
 Use `bendRadius` from `path.js` for orthogonal rendering: it is four diagram units.
-Curved connections use the same routed backbone with a strength-controlled
-radius (0–100 diagram units). Both styles clamp rounding against the same
-clearance obstacles, use matching hit areas/previews, and expose segment controls.
+Curved connections keep the original strength-controlled Bézier when it is
+clear. Otherwise they fit smooth cubic spans through the routed guides, allowing
+diagonal travel instead of rounding each orthogonal elbow. Recursive convex-hull
+bounds certify clearance; an 8192-check drawing budget and ten subdivision levels
+bound the fit. Analytic extrema keep detours within 64 units of the checked
+corridor instead of creating oversized loops. Uncertified spans retain the safe
+backbone locally. Facing port
+buffers allow the terminal exit while node bodies and other faces stay protected.
+Both styles use matching hit areas/previews and expose segment controls.
 The low-level `roundedSegments` default remains eight for reference compatibility;
 path and dash helpers default to sharp corners. Pass the rendered dash-plus-gap
 period to `dashSegments`, including when user settings change dash size. It is
@@ -110,7 +117,8 @@ worker fails. Connection validation and final graph edits belong to the host.
 
 Mount `RoutingScope` inside `SvelteFlowProvider`, surrounding `SvelteFlow`, and
 register `RoutedEdge` as the `smoothstep` edge renderer. The host's curved renderer
-also delegates to `RoutedEdge`, supplying its radius and temporary curve fallback.
+also delegates to `RoutedEdge`, supplying its checked Bézier drawing and temporary
+curve fallback.
 Supply a client with
 `calculate`/`dispose`, an error callback, and the host's validated connection
 resolver. `RoutedConnection` draws the raw pointer; the host draws the faint
@@ -151,7 +159,8 @@ clearance state or worker cache. Undo, redo, import and export preserve authored
 routes. Moving nodes projects those anchors onto the current ports without
 rewriting the saved intent. If a route becomes blocked, automatic routing
 temporarily takes over; the authored route returns when feasible. Curved mode
-draws and edits the same authored route with its configured bend radius.
+uses the same authored guides to fit its Bézier shape. Controls are positioned
+on the actual curve, including diagonal spans, and retain their constrained axes.
 
 The scope keeps pointer updates transient and retains a completed draft until
 its matching worker reply arrives. Geometry or clearance changes cancel an
