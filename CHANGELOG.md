@@ -245,6 +245,30 @@ fix(ui): show Assert output types and remove node header tooltips
 
 ```
 
+<!-- changelog-commit:8f7dcdb3dbf2bd3f66c3c3d4b94abed1a4e12413 -->
+### Commit [`8f7dcdb`](https://github.com/superhero/operations.superduper.solutions/commit/8f7dcdb3dbf2bd3f66c3c3d4b94abed1a4e12413)
+
+```text
+fix(ui): describe node selectors and connector types
+
+```
+
+<!-- changelog-commit:5cb3cbd63d3e8480cccde187ce0812f9f1d1be86 -->
+### Commit [`5cb3cbd`](https://github.com/superhero/operations.superduper.solutions/commit/5cb3cbd63d3e8480cccde187ce0812f9f1d1be86)
+
+```text
+fix(ui): explain Assert controls and passthrough connections
+
+```
+
+<!-- changelog-commit:be00fb9633f92be0263b90791208a0d6e8f801f4 -->
+### Commit [`be00fb9`](https://github.com/superhero/operations.superduper.solutions/commit/be00fb9633f92be0263b90791208a0d6e8f801f4)
+
+```text
+fix(workflows): show only relevant assertion fields
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

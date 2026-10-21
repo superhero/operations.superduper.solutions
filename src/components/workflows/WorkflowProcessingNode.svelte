@@ -4,10 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
+  import Handle from "./WorkflowHandle.svelte";
   import { getContext, untrack } from "svelte";
-  import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
+  import { Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  import { defaultProcessingData, processingDefinition, processingInputTypes, processingOperations, processingOutputType, processingTypeLabel, type ProcessingData, type ProcessingKind } from "$lib/workflow-processing.ts";
+  import { defaultProcessingData, processingConditionUsesPath, processingConditionUsesExpected, processingDefinition, processingInputTypes, processingOperations, processingOutputType, processingTypeLabel, type ProcessingData, type ProcessingKind } from "$lib/workflow-processing.ts";
   import type { RoutingType } from "$lib/workflow-utilities.ts";
   import WorkflowNodeSelect from "./WorkflowNodeSelect.svelte";
   import WorkflowFieldMappings from "./WorkflowFieldMappings.svelte";
@@ -28,7 +29,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const active = $derived(editorActive?.() ?? true);
   const family = $derived(kind[0]!.toUpperCase() + kind.slice(1));
   const updateNodeInternals = useUpdateNodeInternals();
-  const layout = $derived(`${data.operation}:${data.parameters.type ?? ""}:${inputLabel}:${outputType}`);
+  const fields = $derived(definition.parameters.filter(field =>
+    !(kind === "assert" && field.name === "path" && !processingConditionUsesPath(inputType))
+    && !(field.name === "expected" && !processingConditionUsesExpected(data.parameters.operator ?? ""))));
+  const layout = $derived(`${data.operation}:${data.parameters.type ?? ""}:${inputLabel}:${outputType}:${fields.map(field => field.name).join(",")}`);
   $effect(() => { layout; untrack(() => updateNodeInternals(id)); });
   function parameter(name: string, value: string) { edit(id, { ...data, parameters: { ...data.parameters, [name]: value } }); }
   const choiceLabel = (value: string) => /^(HS256|RS256|UTF-8)$/.test(value) ? value : value.replace(/_/g, " ").replace(/^./, letter => letter.toUpperCase());
@@ -37,13 +41,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <div class="workflow-utility-node workflow-processing-node" class:selected class:jwt-sign={data.operation === "jwt_sign"} data-processing-kind={kind}>
   <div class="utility-title">
     <Handle id="value" type="target" position={Position.Left} isConnectableStart={false}
+      tooltip={kind === "assert" ? `Value to check (${inputLabel}). Passed through unchanged on Success or Failure.` : undefined}
       isConnectableEnd={!inputConnected(id, "value")} aria-disabled={inputConnected(id, "value")} aria-label={`${family} input (${inputLabel})`} />
     <MaterialIcon name={kind === "transform" ? "transform" : kind === "filter" ? "filter_alt" : "fact_check"} size={20} />
     <strong>{definition.label}</strong><span class="utility-type">{inputLabel}</span>
   </div>
   {#if kind !== "assert"}
     <div class="utility-row nodrag nopan nokey">
-      <WorkflowNodeSelect label={`${family} operation`} value={data.operation} {choices} {active}
+      <WorkflowNodeSelect label={`${family} operation`} tooltip={kind === "transform" ? "Transformation" : "Filter"} value={data.operation} {choices} {active}
         onchange={operation => edit(id, defaultProcessingData(kind, operation))} />
     </div>
   {/if}
@@ -57,7 +62,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if data.operation === "map_fields"}
     <WorkflowFieldMappings {id} value={data.parameters.fields ?? "{}"} {active} onchange={value => parameter("fields", value)} />
   {:else}
-  {#each definition.parameters as field (field.name)}
+  {#each fields as field (field.name)}
       {@const connected = !!field.connectable && inputConnected(id, field.name)}
       <div class="processing-parameter workflow-node-field nodrag nopan nokey" class:key-id={field.name === "key_id"}>
         <label class="parameter-label">
@@ -66,14 +71,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           </span>
           <span class="parameter-control">
           {#if field.options}
-            <WorkflowNodeSelect label={field.label} value={data.parameters[field.name] ?? ""} {active}
+            <WorkflowNodeSelect label={field.label} tooltip={kind === "assert" && field.name === "operator" ? "Assertion condition" : field.label} value={data.parameters[field.name] ?? ""} {active}
               choices={field.options.map(value => ({ value, label: choiceLabel(value) }))} onchange={value => parameter(field.name, value)} />
           {:else if field.multiline}
             <textarea id={`${id}-${field.name}`} class="utility-value nowheel" aria-label={field.label} rows="3" wrap="off" maxlength="16000"
               value={data.parameters[field.name]} oninput={event => parameter(field.name, event.currentTarget.value)}></textarea>
           {:else}
             <input id={`${id}-${field.name}`} class="utility-value" aria-label={field.label} maxlength="4096"
-              disabled={connected || field.name === "expected" && ["is_set", "is_not_set"].includes(data.parameters.operator!)}
+              disabled={connected}
               inputmode={field.name === "start" || field.name === "end" ? "numeric" : "text"}
               value={data.parameters[field.name]} oninput={event => parameter(field.name, event.currentTarget.value)} />
           {/if}
@@ -88,9 +93,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {/if}
   {#if kind === "assert"}
     <div class="utility-row processing-output"><span>Success</span><span class="utility-type output-type">{outputType}</span>
-      <Handle id="success" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`Assertion success (${outputType})`} /></div>
+      <Handle tooltip={`Original input when the assertion passes (${outputType})`} id="success" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`Assertion success (${outputType})`} /></div>
     <div class="utility-row processing-output"><span>Failure</span><span class="utility-type output-type">{outputType}</span>
-      <Handle id="failure" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`Assertion failure (${outputType})`} /></div>
+      <Handle tooltip={`Original input when the assertion fails (${outputType})`} id="failure" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`Assertion failure (${outputType})`} /></div>
   {:else}
     <div class="utility-row processing-output"><span>Result</span><span class="utility-type output-type">{outputType}</span>
       <Handle id="result" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`${family} result (${outputType})`} /></div>

@@ -144,6 +144,12 @@ export function processingPointer(value: unknown, pointer: string): unknown {
   return current;
 }
 const expectedValue = (value: string): unknown => { try { return JSON.parse(value); } catch { return value; } };
+export function processingConditionUsesPath(type: ProcessingType | "Mixed"): boolean {
+  return ["Object", "Array", "Unknown", "Mixed", "JSON"].includes(type);
+}
+export function processingConditionUsesExpected(operator: string): boolean {
+  return operator !== "is_set" && operator !== "is_not_set";
+}
 export function matchesProcessingCondition(value: unknown, parameters: Record<string, string>, expected = expectedValue(parameters.expected!)): boolean {
   const input = processingPointer(value, parameters.path!);
   const operator = parameters.operator;
@@ -200,7 +206,7 @@ export async function processWorkflowValue(kind: ProcessingKind, raw: Processing
   const inputType = processingValueType(value);
   if (!definition.inputs.includes(inputType) && !(inputType === "Integer" && definition.inputs.includes("Number"))) throw new Error(`${definition.label} does not accept ${inputType} input.`);
   const operation = data.operation;
-  if (kind === "assert") return matchesProcessingCondition(value, p);
+  if (kind === "assert") return matchesProcessingCondition(value, processingConditionUsesPath(inputType) ? p : { ...p, path: "" });
   let result: unknown;
   if (operation === "utf8_encode") result = encodeWorkflowBinary("data.txt", bytes(value), "text/plain");
   else if (operation === "utf8_decode") {

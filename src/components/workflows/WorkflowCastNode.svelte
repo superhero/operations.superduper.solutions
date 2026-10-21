@@ -5,8 +5,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
+  import Handle from "./WorkflowHandle.svelte";
   import { getContext } from "svelte";
-  import { Handle, Position, type Node, type NodeProps } from "@xyflow/svelte";
+  import { Position, type Node, type NodeProps } from "@xyflow/svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { CastData } from "$lib/workflow-document.ts";
   import { castTypes, type RoutingType } from "$lib/workflow-utilities.ts";

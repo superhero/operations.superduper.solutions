@@ -5,8 +5,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
+  import Handle from "./WorkflowHandle.svelte";
   import { getContext, untrack } from "svelte";
-  import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
+  import { Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import FieldNumber from "$lib/components/FieldNumber.svelte";

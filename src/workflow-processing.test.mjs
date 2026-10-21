@@ -640,3 +640,15 @@ Then('private processing bounds recipes and derived result retention', async () 
   for (let i = 0; i < 3; i++) parsed = { kind: 'array', items: [parsed] };
   await assert.rejects(resolvePrivateExpression(parsed, [nestedCredential]), { code: 'LIMIT' });
 });
+
+Then('scalar assertions ignore saved field paths while structured assertions keep them', async () => {
+  for (const value of [42, "hello", true, null]) {
+    assert.equal(await apply("assert", "expect", value, { path: "/old/field", operator: "equals", expected: JSON.stringify(value) }), true);
+  }
+  assert.equal(await apply("assert", "expect", 42, { path: "/old/field", operator: "greater_than", expected: "40" }), true);
+  assert.equal(await apply("assert", "expect", { count: 42 }, { path: "/count", operator: "equals", expected: "42" }), true);
+  assert.equal(await apply("assert", "expect", [42], { path: "/0", operator: "equals", expected: "42" }), true);
+  assert.equal(await apply("assert", "expect", { count: 42 }, { path: "/missing", operator: "is_set" }), false);
+  assert.equal(await apply("assert", "expect", 42, { operator: "is_set", expected: "unused" }), true);
+  assert.equal(await apply("assert", "expect", null, { operator: "is_not_set", expected: "unused" }), true);
+});

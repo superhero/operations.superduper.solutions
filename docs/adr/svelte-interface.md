@@ -281,6 +281,12 @@ The popup caps its height to available viewport space and its inner viewport own
 native scrolling, with a visible scrollbar. Wheel input stays inside the list;
 keyboard navigation, disabled options, node tooltips and compact styling retain
 their existing behavior.
+Selector tooltips describe the control's purpose rather than repeating its value
+(for example, Transformation or Assertion condition). Node headers have neither
+tooltips nor native title popups. Utility connector tooltips identify their
+purpose and types; Assert additionally explains that Success and Failure each
+pass the original input through unchanged. Connected inputs remain hoverable
+without allowing an additional incoming connection.
 Hovering a partly clipped option leaves the list and active highlight in place;
 the visible portion remains clickable. Wheel/touch scrolling and keyboard
 navigation still reveal options normally. Hover geometry is cached until the
@@ -322,7 +328,11 @@ indices counting from the end. Array filtering retains input order. Predicates
 use explicit field paths and comparisons; equality preserves value types.
 
 Assert passes the original input unchanged through Success or Failure. The
-unmatched output leaves its connected input unsupplied and editable in the next
+field-path editor appears only for structured or unresolved input types; scalar
+inputs are checked directly, ignoring any retained path from an earlier
+configuration. The expected-value editor appears only for conditions that use
+it; Is set and Is not set hide it while preserving the saved value for reuse.
+The unmatched output leaves its connected input unsupplied and editable in the next
 operation, including through another utility node. Assertion failure is ordinary
 data flow, including when Failure has no connection; it does not raise an
 assertion error or automatically skip the next operation. Switch retains its
