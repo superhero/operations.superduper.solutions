@@ -204,7 +204,7 @@ Then('Select field is a Filter while old Transform nodes and private recipes pre
 Then('Parse JSON accepts every JSON type and restores old selected types without narrowing output', async () => {
   const configuration = data('transform', 'json_parse');
   assert.deepEqual(configuration.parameters, {});
-  assert.equal(processingTypeLabel(processingOutputType('transform', configuration, 'Text')), 'Object | Text | Number | Boolean | Array | Null');
+  assert.equal(processingTypeLabel(processingOutputType('transform', configuration, 'Text')), 'JsonValue');
   for (const value of [{ answer: 42 }, [], [false, null], 'text', '', 42, 1.5, false, true, null])
     assert.deepEqual(await processWorkflowValue('transform', configuration, JSON.stringify(value)), value);
   for (const type of ['Object', 'Array', 'Text', 'Number', 'Boolean', 'Null']) {

@@ -127,7 +127,7 @@ Then('Parse JSON restores without a type selector and connects directly to a mat
   const filter = workflow(page).locator('[data-processing-kind="filter"]');
   const output = transform.locator('.svelte-flow__handle.source');
   const badge = transform.locator('.output-type');
-  const label = 'Object | Text | Number | Boolean | Array | Null';
+  const label = 'JsonValue';
   await expect(transform.getByRole('combobox', { name: 'Result type', exact: true })).toHaveCount(0);
   await expect(badge).toHaveText(label);
   await expect(output).toHaveAttribute('aria-label', `Transform result (${label})`);

@@ -13,7 +13,6 @@ const textBinary = ["Text", "Binary"] as const;
 const textInput = ["Text"] as const;
 const jsonTypes = ["Object", "Text", "Number", "Boolean", "Array", "Null"] as const;
 const jsonConnectionTypes = [...jsonTypes, "Integer"] as const;
-const jsonTypeLabel = jsonTypes.join(" | ");
 const anyValue = ["Text", "Number", "Integer", "Boolean", "Object", "Array", "Null", "Binary", "Unknown"] as const;
 const parameter = (name: string, label: string, initial = "", options?: readonly string[]): Parameter => ({ name, label, initial, ...(options ? { options } : {}) });
 const predicates = ["equals", "not_equal", "greater_than", "at_least", "less_than", "at_most", "contains", "starts_with", "ends_with", "is_set", "is_not_set", "is_type"] as const;
@@ -83,7 +82,7 @@ export function processingTypeAlternatives(type: ProcessingType): readonly Proce
   return type === "JSON" ? jsonConnectionTypes : [type];
 }
 export function processingTypeLabel(type: ProcessingType): string {
-  return type === "JSON" ? jsonTypeLabel : type;
+  return type === "JSON" ? "JsonValue" : type;
 }
 export function processingValueType(value: unknown): ProcessingType {
   if (value === null) return "Null";

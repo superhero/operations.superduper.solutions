@@ -279,8 +279,9 @@ documents; existing document versions retain their prior behavior.
 Transform supports UTF-8, Base64/Base64url and hexadecimal encoding/decoding,
 JSON parsing/serialization, field mapping, SHA-256,
 HMAC-SHA256 and JWT signing. JSON parsing has no result-type selector: its known
-output alternatives are `Object | Text | Number | Boolean | Array | Null`, with
-Integer included in Number. A matching receiving port may assume one of these
+output alternatives are `Object | Text | Number | Boolean | Array | Null`, shown
+as `JsonValue` in type badges and port labels. Integer is included in Number.
+A matching receiving port may assume one of these
 types; the executor validates the actual value without inserting a cast. The
 union stays available through Assert and Switch. Earlier saved Parse JSON nodes
 discard their obsolete result-type setting when loaded. Field selection still
