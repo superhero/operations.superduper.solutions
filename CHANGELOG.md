@@ -400,6 +400,24 @@ worker active for either style, preserving its bounded search and caches.
 
 ```
 
+<!-- changelog-commit:5f9318be86abb55d40e25694e2eef6498c7353e8 -->
+### Commit [`5f9318b`](https://github.com/superhero/operations.superduper.solutions/commit/5f9318be86abb55d40e25694e2eef6498c7353e8)
+
+```text
+fix(workflow): restore diagonal curves and live curve settings
+
+Rounded orthogonal paths made curved mode look almost unchanged. Restore
+the original diagonal Bezier for clear connections and fit smooth,
+clearance-checked detours around obstructing nodes. Bound drawing work and
+detour extrema, and place existing anchor controls on the actual curve.
+Use the same geometry for previews, completed paths and labels.
+
+Apply explicit Curved lines changes in Settings to the open workflow as
+well as the default. Keep startup/import flags and existing authored route
+storage, Undo, reset and worker ownership intact.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
