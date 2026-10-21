@@ -75,7 +75,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="utility-row processing-output"><span>Failure</span>
       <Handle id="failure" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`Assertion failure (${outputType})`} /></div>
   {:else}
-    <div class="utility-row processing-output"><span>Result</span><span class="output-type">{outputType}</span>
+    <div class="utility-row processing-output"><span>Result</span><span class="utility-type output-type">{outputType}</span>
       <Handle id="result" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`${family} result (${outputType})`} /></div>
   {/if}
 </div>
@@ -88,6 +88,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .processing-parameter .utility-value { width: 100%; min-height: 30px; padding: 6px 8px; font-size: 11px; }
   textarea.utility-value { height: 76px; resize: vertical; max-height: 180px; }
   .processing-output { min-height: 32px; border-top: 1px solid var(--color-border); font-size: 11px; }
-  .output-type, .key-state { margin-left: auto; color: var(--color-muted-foreground); font-size: 10px; }
+  .output-type { margin-left: auto; }
+  .key-state { margin-left: auto; color: var(--color-muted-foreground); font-size: 10px; }
   .key-input { min-height: 32px; font-size: 11px; }
 </style>
