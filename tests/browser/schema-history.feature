@@ -6,6 +6,16 @@
 Feature: Schema commit comparisons and correction review
   Schema settings show source ancestry, corrections and merge decisions without eager document loading.
 
+  @service-defaults @chromium-only
+  Scenario Outline: DigitalOcean corrections appear as separate reviewable schema revisions
+    When I use a viewport of <width> by 900 pixels
+    Then DigitalOcean revisions compare published security with retained token permissions
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
   Scenario: Commit comparisons and colored field diffs preserve conflict review and mobile scrolling
     Then schema history compares any saved commits with lazy colored diffs and persistent conflict choices
 

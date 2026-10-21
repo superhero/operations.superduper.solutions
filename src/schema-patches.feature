@@ -17,6 +17,12 @@ Feature: Reviewable schema corrections and structured upstream merges
   Scenario: Resolved upstream corrections are not applied twice
     Then reviewed schema corrections preserve upstream-fixed data and reject unknown recipes
 
+  Scenario: DigitalOcean permissions remain reviewable across correction and upstream update
+    Then DigitalOcean corrections retain permissions provenance and authentication alternatives
+
+  Scenario: DigitalOcean corrections are limited to the reviewed bearer contract
+    Then DigitalOcean corrections reject changed provider contracts and metadata collisions
+
   Scenario: Schema field diffs preserve exact lines and distinguish absent sides
     Then schema line diffs preserve additions removals context and JSON pointer values
 

@@ -3,10 +3,12 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives"; version: 1 };
+export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions"; version: 1 };
 export const googleOauthAlternatives: SchemaPatch = { id: "google-oauth-alternatives", version: 1 };
+export const digitalOceanBearerPermissions: SchemaPatch = { id: "digitalocean-bearer-permissions", version: 1 };
 export function schemaPatchName(patch: SchemaPatch): string {
-  return patch.id === "google-oauth-alternatives" ? "Google OAuth alternatives" : "Unknown schema correction";
+  return patch.id === "google-oauth-alternatives" ? "Google OAuth alternatives"
+    : patch.id === "digitalocean-bearer-permissions" ? "DigitalOcean bearer permissions" : "Unknown schema correction";
 }
 
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -48,16 +50,54 @@ function googleAlternatives(document: Record<string, any>): void {
       if (methods.has(method) && object(operation)) adapt(operation);
 }
 
+/** DigitalOcean documents token permissions in non-OAuth security arrays. Keep
+ * them as approval metadata while restoring OpenAPI's empty bearer arrays. */
+function digitalOceanPermissions(document: Record<string, any>): void {
+  function adapt(target: Record<string, any>) {
+    if (!Array.isArray(target.security)) return;
+    let changed = false;
+    const permissions: Record<string, string[]>[] = [];
+    const security = target.security.map((requirement: unknown) => {
+      if (!object(requirement) || !Object.hasOwn(requirement, "bearer_auth")) {
+        permissions.push({});
+        return requirement;
+      }
+      const required = requirement.bearer_auth;
+      if (!scopes(required) || required.some(permission => !/^[a-z][a-z0-9_-]*:[a-z][a-z0-9_-]*$/.test(permission)))
+        throw new Error("DigitalOcean bearer adaptation requires resource:action permission strings.");
+      if (!required.length) { permissions.push({}); return requirement; }
+      const scheme = document.components?.securitySchemes?.bearer_auth;
+      if (!/^3\.(0|1)\.\d+$/.test(document.openapi) || scheme?.type !== "http" || scheme.scheme !== "bearer"
+        || !Array.isArray(document.servers) || !document.servers.some(server => server?.url === "https://api.digitalocean.com"))
+        throw new Error("DigitalOcean bearer adaptation requires the reviewed DigitalOcean server and HTTP bearer scheme.");
+      changed = true;
+      permissions.push({ bearer_auth: [...required] });
+      return { ...requirement, bearer_auth: [] };
+    });
+    if (!changed) return;
+    if (Object.hasOwn(target, "x-upstream-security") || Object.hasOwn(target, "x-credential-permissions"))
+      throw new Error("DigitalOcean bearer adaptation cannot overwrite permission metadata or upstream security provenance.");
+    target["x-upstream-security"] = target.security;
+    target["x-credential-permissions"] = permissions;
+    target.security = security;
+  }
+  adapt(document);
+  for (const item of Object.values(document.paths ?? {}))
+    if (object(item)) for (const [method, operation] of Object.entries(item))
+      if (methods.has(method) && object(operation)) adapt(operation);
+}
+
 /** Preserve the published document. Reapplying a resolved correction is a no-op. */
 export function applySchemaPatches(input: Record<string, unknown>, patches: readonly SchemaPatch[] = []): Record<string, unknown> {
   if (!patches.length) return input;
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (patch?.id !== "google-oauth-alternatives" || patch.version !== 1 || seen.has(patch.id))
+    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
-    googleAlternatives(document);
+    if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
+    else digitalOceanPermissions(document);
   }
   return document;
 }

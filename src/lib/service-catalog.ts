@@ -4,7 +4,7 @@
 import type { BodyMediaType, InputField, InputSchema, Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
-import { extractOperationSecurity } from "./operation-security.ts";
+import { extractCredentialPermissions, extractOperationSecurity } from "./operation-security.ts";
 import { operationServerUrl, validateSchemaDocumentId } from "./schema-documents.ts";
 import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
 
@@ -102,8 +102,15 @@ function field(name: string, location: InputField["location"], raw: unknown, req
  * scope requirements in the approved operation; no login flow is synthesized. */
 function security(document: Value, source: Value, operation: Operation): Operation["security"]
 {
-  const declaration = source.security ?? document.security;
-  if (!Array.isArray(declaration)) return extractOperationSecurity(document, source);
+  const declaration = source.security === undefined ? document.security : source.security;
+  const permissionSource = Object.hasOwn(source, "x-credential-permissions") ? source
+    : source.security === undefined ? document : {};
+  if (!Array.isArray(declaration)) {
+    const result = extractOperationSecurity(document, source);
+    const permissions = extractCredentialPermissions(permissionSource["x-credential-permissions"], result);
+    if (permissions) operation.credentialPermissions = permissions;
+    return result;
+  }
   const schemes = value(value(document.components).securitySchemes);
   const normalizedSchemes = { ...schemes };
   let oauth = false;
@@ -119,7 +126,10 @@ function security(document: Value, source: Value, operation: Operation): Operati
     }));
   });
   if (oauth) operation.oauthScopes = declaration.map(raw => Object.fromEntries(Object.entries(raw).map(([name, scopes]) => [name, [...scopes as string[]]])));
-  return extractOperationSecurity({ ...document, components: { ...value(document.components), securitySchemes: normalizedSchemes } }, { security: requirements });
+  const result = extractOperationSecurity({ ...document, components: { ...value(document.components), securitySchemes: normalizedSchemes } }, { security: requirements });
+  const permissions = extractCredentialPermissions(permissionSource["x-credential-permissions"], result);
+  if (permissions) operation.credentialPermissions = permissions;
+  return result;
 }
 
 export function inspectServiceSchema(document: Value, id: string, selected?: ReadonlySet<string>, location?: Pick<Operation, "path" | "method">): {

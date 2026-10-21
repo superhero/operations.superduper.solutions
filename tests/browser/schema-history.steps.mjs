@@ -9,6 +9,32 @@ import { setMode } from './workspace.steps.mjs';
 import { expandSchemaCard, revealSchemaCard, expectSchemaName } from './schema-card.fixture.mjs';
 import { captureRevisionClose, captureRevisionOpen, traceRevisionClose } from './schema-revisions-motion.fixture.mjs';
 
+Then('DigitalOcean revisions compare published security with retained token permissions', async function () {
+  const page = this.page;
+  await setMode(page, 'settings');
+  await page.locator('summary[aria-label="Schemas"]').click();
+  const card = await expandSchemaCard(page.locator('[data-schema-id="digitalocean"]'));
+  await card.getByRole('button', { name: 'Schema revisions', exact: true }).click();
+  const history = card.locator('.schema-history');
+  await expect(history.locator('[data-version-oid]')).toHaveCount(2);
+  await expect(history.getByText('Apply schema corrections: DigitalOcean bearer permissions', { exact: true })).toBeVisible();
+  const diff = history.locator('.revision-diff');
+  await expect(diff).toHaveAttribute('aria-busy', 'false');
+  assert.notEqual(await diff.getAttribute('data-revision'), await diff.getAttribute('data-base'));
+  await expect(diff.getByRole('combobox', { name: 'Base commit', exact: true })).toContainText('Import published schema: DigitalOcean');
+  await expect(diff.getByRole('combobox', { name: 'Compare commit', exact: true })).toContainText('DigitalOcean bearer permissions');
+  const group = diff.locator('.change-group').filter({ has: page.locator(':scope > summary strong', { hasText: 'Authentication' }) });
+  await group.locator(':scope > summary').click();
+  const permission = group.locator('.field-change').filter({ has: page.locator(':scope > summary code[title$="/x-credential-permissions"]') }).first();
+  await permission.locator(':scope > summary').click();
+  await expect(permission.locator('.field-content')).toHaveAttribute('aria-busy', 'false');
+  await expect(permission.locator('[data-side="before"]')).toHaveCount(0);
+  await expect(permission.locator('[data-side="after"] .diff-line.added').filter({ hasText: 'bearer_auth' })).toHaveCount(1);
+  await expect(permission.locator('[data-side="after"]')).toContainText('action_gateway:read');
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await card.screenshot({ path: `${this.artifactDirectory}/digitalocean-correction.png` });
+});
+
 Then('schema revisions open without flashing disabled comparison controls', async function () {
   const page = this.page;
   await setMode(page, 'settings');

@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 import { catalogs, replaceCatalogs, setOperationCatalog, type Catalog } from "./catalog-registry.ts";
-import { extractOperationSecurity, type OperationSecurity } from "./operation-security.ts";
+import { extractOperationSecurity, type CredentialPermissions, type OperationSecurity } from "./operation-security.ts";
 import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
@@ -55,6 +55,7 @@ export type Operation = {
   security?: OperationSecurity;
   unavailableReason?: string;
   oauthScopes?: Record<string, string[]>[];
+  credentialPermissions?: CredentialPermissions;
 };
 
 type RecordValue = Record<string, unknown>;

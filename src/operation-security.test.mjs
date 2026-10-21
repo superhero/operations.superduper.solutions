@@ -3,10 +3,45 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from "node:assert/strict";
 import { Given, Then } from "@cucumber/cucumber";
-import { extractOperationSecurity, securityRequiresCredentials } from "./lib/operation-security.ts";
+import { extractCredentialPermissions, extractOperationSecurity, securityRequiresCredentials } from "./lib/operation-security.ts";
+import { inspectServiceSchema } from "./lib/service-catalog.ts";
+import { approvedOperation } from "./lib/secrets/policy.ts";
 import { extractOperations } from "./lib/catalog.ts";
 import { bundledCatalogs } from "./lib/catalog-registry.ts";
 import { validateSchemaDocument } from "./lib/schema-documents.ts";
+
+Then('credential permission metadata is validated at schema loading and private approval', async () => {
+  const security = [[{ name: 'Token', kind: 'bearer', header: 'Authorization' }], [], [{ name: 'Key', kind: 'apiKey', query: 'key' }]];
+  const permissions = [{ Token: ['droplet:read', 'droplet:create'] }, {}, {}];
+  const copied = extractCredentialPermissions(permissions, security);
+  assert.deepEqual(copied, permissions);
+  assert.notEqual(copied[0].Token, permissions[0].Token);
+  assert.equal(extractCredentialPermissions(undefined, undefined), undefined);
+  assert.deepEqual(extractCredentialPermissions([], []), []);
+  const source = { openapi: '3.0.3', info: { title: 'Permissions', version: '1' }, servers: [{ url: 'https://api.example.test' }],
+    components: { securitySchemes: { Token: { type: 'http', scheme: 'bearer' }, Key: { type: 'apiKey', in: 'query', name: 'key' } } },
+    security: [{ Token: [] }, {}, { Key: [] }], 'x-credential-permissions': permissions, paths: { '/items': { get: {} } } };
+  const model = inspectServiceSchema(source, 'permissions').operations[0];
+  assert.equal(model.unavailableReason, undefined);
+  assert.deepEqual(model.credentialPermissions, permissions);
+  assert.deepEqual((await approvedOperation(model, source.servers[0].url)).operation.credentialPermissions, permissions);
+  for (const invalid of [null, {}, [], [null, {}, {}], [[], {}, {}], [{ Token: [] }, {}, {}], [{ Token: null }, {}, {}],
+    [{ Token: [1] }, {}, {}], [{ Token: [''] }, {}, {}], [{ Token: [' '] }, {}, {}], [{ Token: [' read'] }, {}, {}],
+    [{ Missing: ['read'] }, {}, {}], [{}, { Token: ['read'] }, {}], [{}, {}, { Key: ['read'] }]]) {
+    assert.throws(() => extractCredentialPermissions(invalid, security), /Credential permissions/);
+    const bad = structuredClone(source); bad['x-credential-permissions'] = invalid;
+    assert.match(inspectServiceSchema(bad, 'permissions').operations[0].unavailableReason, /Credential permissions/);
+    await assert.rejects(approvedOperation({ ...model, credentialPermissions: invalid }, source.servers[0].url), { code: 'PERMISSION' });
+  }
+  assert.throws(() => extractCredentialPermissions([{}], undefined), /match the security/);
+  await assert.rejects(approvedOperation({ ...model, security: undefined }, source.servers[0].url), { code: 'PERMISSION' });
+  const absent = structuredClone(source); delete absent.security;
+  assert.match(inspectServiceSchema(absent, 'permissions').operations[0].unavailableReason, /match the security/);
+  const overridden = structuredClone(source); overridden.paths['/items'].get.security = [];
+  assert.equal(inspectServiceSchema(overridden, 'permissions').operations[0].credentialPermissions, undefined);
+  overridden.paths['/items'].get['x-credential-permissions'] = null;
+  assert.match(inspectServiceSchema(overridden, 'permissions').operations[0].unavailableReason, /Credential permissions/);
+});
 
 const schemes = {
   Bearer: { type: "http", scheme: "bearer", bearerFormat: "JWT", description: "Access token", "x-display": "Token" },

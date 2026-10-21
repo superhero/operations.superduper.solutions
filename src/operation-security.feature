@@ -6,6 +6,9 @@
 Feature: OpenAPI authentication requirements
   Imported operations describe supported credentials without granting permission to use them.
 
+  Scenario: Credential permission metadata cannot bypass canonical security validation
+    Then credential permission metadata is validated at schema loading and private approval
+
   Scenario Outline: Effective authentication preserves <case>
     Given root authentication <root> and operation authentication <operation>
     Then normalized authentication is <expected> and credentials are <required>

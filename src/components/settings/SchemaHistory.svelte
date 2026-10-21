@@ -48,7 +48,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (!diff) return [];
     const grouped = new Map<string, SchemaRevisionDiff["changes"]>();
     for (const change of diff.changes) {
-      const category = /\/(security|x-upstream-security)$/.test(change.path) ? "Authentication"
+      const category = /\/(security|x-upstream-security|x-credential-permissions)$/.test(change.path) ? "Authentication"
         : change.path.startsWith("/info/") ? "Schema information"
         : change.path.startsWith("/paths/") ? "Operations"
         : change.path.startsWith("/components/") ? "Data models and definitions" : "Other fields";
