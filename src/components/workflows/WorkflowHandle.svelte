@@ -9,11 +9,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { ComponentProps } from "svelte";
   import HintButton from "$lib/components/HintButton.svelte";
 
-  let props: ComponentProps<typeof Handle> = $props();
+  let { tooltip, ...props }: ComponentProps<typeof Handle> & { tooltip?: string | undefined } = $props();
 </script>
 
 <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node"
-  label={props["aria-label"] ?? `${props.type} connection`} labelAsName={false} tabindex={-1}>
+  label={tooltip ?? props["aria-label"] ?? `${props.type} connection`} labelAsName={false} tabindex={-1}>
   {#snippet child({ props: tooltipProps })}
     <!-- Keep the graph handle ID and its built-in click-to-connect handler. -->
     {@const { id: _id, type: _type, disabled: _disabled, tabindex: _tabindex, onclick: _onclick, ...hintProps } = tooltipProps}

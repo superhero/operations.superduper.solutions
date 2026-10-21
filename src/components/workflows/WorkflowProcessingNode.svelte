@@ -38,6 +38,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <div class="workflow-utility-node workflow-processing-node" class:selected class:jwt-sign={data.operation === "jwt_sign"} data-processing-kind={kind}>
   <div class="utility-title">
     <Handle id="value" type="target" position={Position.Left} isConnectableStart={false}
+      tooltip={kind === "assert" ? `Value to check (${inputLabel}). Passed through unchanged on Success or Failure.` : undefined}
       isConnectableEnd={!inputConnected(id, "value")} aria-disabled={inputConnected(id, "value")} aria-label={`${family} input (${inputLabel})`} />
     <MaterialIcon name={kind === "transform" ? "transform" : kind === "filter" ? "filter_alt" : "fact_check"} size={20} />
     <strong>{definition.label}</strong><span class="utility-type">{inputLabel}</span>
@@ -67,7 +68,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           </span>
           <span class="parameter-control">
           {#if field.options}
-            <WorkflowNodeSelect label={field.label} value={data.parameters[field.name] ?? ""} {active}
+            <WorkflowNodeSelect label={field.label} tooltip={kind === "assert" && field.name === "operator" ? "Assertion condition" : field.label} value={data.parameters[field.name] ?? ""} {active}
               choices={field.options.map(value => ({ value, label: choiceLabel(value) }))} onchange={value => parameter(field.name, value)} />
           {:else if field.multiline}
             <textarea id={`${id}-${field.name}`} class="utility-value nowheel" aria-label={field.label} rows="3" wrap="off" maxlength="16000"
@@ -89,9 +90,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {/if}
   {#if kind === "assert"}
     <div class="utility-row processing-output"><span>Success</span><span class="utility-type output-type">{outputType}</span>
-      <Handle id="success" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`Assertion success (${outputType})`} /></div>
+      <Handle tooltip={`Original input when the assertion passes (${outputType})`} id="success" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`Assertion success (${outputType})`} /></div>
     <div class="utility-row processing-output"><span>Failure</span><span class="utility-type output-type">{outputType}</span>
-      <Handle id="failure" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`Assertion failure (${outputType})`} /></div>
+      <Handle tooltip={`Original input when the assertion fails (${outputType})`} id="failure" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`Assertion failure (${outputType})`} /></div>
   {:else}
     <div class="utility-row processing-output"><span>Result</span><span class="utility-type output-type">{outputType}</span>
       <Handle id="result" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`${family} result (${outputType})`} /></div>
