@@ -69,7 +69,10 @@ function labels(document: WorkflowDocument)
     }
     if (node.type === "cast") return `${label} · ${handle === "result" ? "Result" : "Input"}`;
     if (node.type === "stop") return `${label} · Input`;
-    if (node.type === "transform" || node.type === "filter" || node.type === "assert") return `${label} · ${handle === "success" ? "Success" : handle === "failure" ? "Failure" : handle === "key" ? "Signing key" : handle === "result" ? "Result" : "Input"}`;
+    if (node.type === "transform" || node.type === "filter" || node.type === "assert") {
+      const parameter = processingDefinition(node.type, node.data).parameters.find(field => field.name === handle && field.connectable);
+      return `${label} · ${handle === "success" ? "Success" : handle === "failure" ? "Failure" : handle === "key" ? "Signing key" : handle === "result" ? "Result" : parameter?.label ?? "Input"}`;
+    }
     return label;
   };
   return { nodes, parents, node: nodeLabel,

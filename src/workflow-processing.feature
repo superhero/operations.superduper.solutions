@@ -45,6 +45,15 @@ Feature: Explicit workflow processing and assertion routing
   Scenario: Hashing and keyed signing match independent vectors
     Then workflow cryptographic transforms match SHA256 HMAC and signed JWT contracts
 
+  Scenario: JWT auxiliary ports retain types and saved connection identities
+    Then JWT key and Key ID ports preserve their declared types identity and manual fallback
+
+  Scenario: JWT Key ID connections override manual settings during execution
+    Then connected JWT Key IDs override manual values without coercion or fallback on unmatched routes
+
+  Scenario: JWT Key ID connections preserve private processing boundaries
+    Then JWT parameter references remain private and reject unsupported parameter recipes
+
   Scenario: Filters preserve Unicode characters array order and exclusive ranges
     Then workflow filters trim slice and select values with explicit predicates
 

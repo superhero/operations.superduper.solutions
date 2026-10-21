@@ -5,7 +5,7 @@ import { createWorkerClient } from "./worker-rpc.ts";
 import type { ProcessingData, ProcessingKind } from "./workflow-processing.ts";
 import type { PrivateExpression } from "./secrets/processing.ts";
 export type ProcessingExecutor = {
-  process: (kind: ProcessingKind, data: ProcessingData, value: unknown, key?: unknown) => Promise<unknown>;
+  process: (kind: ProcessingKind, data: ProcessingData, value: unknown, key?: unknown, parameters?: Record<string, unknown>) => Promise<unknown>;
   assertPrivate: (expression: PrivateExpression, data: ProcessingData, signal?: AbortSignal) => Promise<boolean>;
   dispose: () => void;
 };
@@ -14,13 +14,13 @@ export function createProcessingExecutor(): ProcessingExecutor {
   let client: ReturnType<typeof createWorkerClient> | undefined;
   let closed = false;
   return {
-    async process(kind, data, value, key) {
+    async process(kind, data, value, key, parameters) {
       if (!client) {
         const { default: ProcessingWorker } = await import("./workflow-processing.worker.ts?worker&inline");
         if (closed) throw new Error("Workflow processing was cancelled.");
         client = createWorkerClient(() => new ProcessingWorker({ name: "workflow-processing" }), { reportErrors: false, scope: "workflow-processing" });
       }
-      return client.call("process", [kind, data, value, key]);
+      return client.call("process", [kind, data, value, key, parameters]);
     },
     async assertPrivate(expression, data, signal) {
       const { vaultCall } = await import("./secrets/client.ts");

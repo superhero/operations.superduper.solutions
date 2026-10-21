@@ -6,7 +6,7 @@ import type { CastData, SwitchGate, WorkflowDocument, WorkflowDocumentEdge, Work
 
 import { fileValueType } from "./workflow-file.ts";
 import { encodeWorkflowBinary, validateWorkflowBinary, type WorkflowBinary } from "./workflow-binary.ts";
-import { processingDefinition, processingOutputType, processingTypeAlternatives } from "./workflow-processing.ts";
+import { processingDefinition, processingInputTypes, processingOutputType, processingTypeAlternatives } from "./workflow-processing.ts";
 
 export const switchGateLimit = 32;
 export const switchValueLimit = 4096;
@@ -265,8 +265,8 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
   const compatibleType = (candidate: ValueConnection, type: ConnectionValueType): boolean => {
     const target = byId.get(candidate.target)!;
     if (target.type === "transform" || target.type === "filter" || target.type === "assert") {
-      if (candidate.targetHandle === "key") return type === "Text" || type === "Binary";
-      const accepted = processingDefinition(target.type, target.data).inputs;
+      const accepted = processingInputTypes(target.type, target.data, candidate.targetHandle);
+      if (!accepted) return false;
       const source = byId.get(candidate.source)!;
       if (accepted.includes("Array") && source.type === "data" && source.data.fields.find(field => field.id === candidate.sourceHandle)?.itemType
         && !isFileRowConnection(candidate, nodes, edges)) return true;
@@ -318,16 +318,16 @@ export function isValueConnection(connection: { sourceHandle?: string | null; ta
   if (source.type === "vault") return connection.sourceHandle === "value" && (target.type === "data" &&
     target.data.direction === "inputs" && target.data.fields.some(field => field.id === connection.targetHandle && field.connectable && field.type === "Text")
     || target.type === "stop" && connection.targetHandle === "value"
-    || (target.type === "transform" || target.type === "filter" || target.type === "assert") && (connection.targetHandle === "value"
-      || connection.targetHandle === "key" && processingDefinition(target.type, target.data).key === true));
+    || (target.type === "transform" || target.type === "filter" || target.type === "assert")
+      && !!processingInputTypes(target.type, target.data, connection.targetHandle));
   const processingSource = source.type === "transform" || source.type === "filter" ? connection.sourceHandle === "result"
     : source.type === "assert" && (connection.sourceHandle === "success" || connection.sourceHandle === "failure");
   const sourceUtility = source.type === "file" ? !!source.data.file && connection.sourceHandle === "value" : source.type === "cast" ? connection.sourceHandle === "result" : source.type === "switch" &&
     source.data.gates.some(gate => gate.id === connection.sourceHandle);
   if (!sourceField && !sourceUtility && !processingSource) return false;
   if (target.type === "stop") return connection.targetHandle === "value";
-  if (target.type === "transform" || target.type === "filter" || target.type === "assert") return connection.targetHandle === "value"
-    || connection.targetHandle === "key" && processingDefinition(target.type, target.data).key === true;
+  if (target.type === "transform" || target.type === "filter" || target.type === "assert")
+    return !!processingInputTypes(target.type, target.data, connection.targetHandle);
   if (target.type === "data") return target.data.direction === "inputs" &&
     target.data.fields.some(field => field.id === connection.targetHandle && field.connectable);
   if (target.type === "cast") return connection.targetHandle === "value" &&

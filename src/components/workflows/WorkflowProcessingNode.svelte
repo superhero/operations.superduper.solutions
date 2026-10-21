@@ -7,7 +7,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { getContext, untrack } from "svelte";
   import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  import { defaultProcessingData, processingDefinition, processingOperations, processingOutputType, processingTypeLabel, type ProcessingData, type ProcessingKind } from "$lib/workflow-processing.ts";
+  import { defaultProcessingData, processingDefinition, processingInputTypes, processingOperations, processingOutputType, processingTypeLabel, type ProcessingData, type ProcessingKind } from "$lib/workflow-processing.ts";
   import type { RoutingType } from "$lib/workflow-utilities.ts";
   import WorkflowNodeSelect from "./WorkflowNodeSelect.svelte";
   import "./workflow-utility-nodes.css";
@@ -23,6 +23,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const inputType = $derived(inputTypeFor(id));
   const inputLabel = $derived(kind !== "assert" ? definition.inputLabel ?? definition.inputs.join(" | ") : processingTypeLabel(inputType));
   const outputType = $derived(processingTypeLabel(processingOutputType(kind, data, inputType)));
+  const keyTypes = $derived(processingInputTypes(kind, data, "key")?.join(" | "));
   const active = $derived(editorActive?.() ?? true);
   const family = $derived(kind[0]!.toUpperCase() + kind.slice(1));
   const updateNodeInternals = useUpdateNodeInternals();
@@ -48,13 +49,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if definition.key}
     <div class="utility-row key-input">
       <Handle id="key" type="target" position={Position.Left} isConnectableStart={false}
-        isConnectableEnd={!inputConnected(id, "key")} aria-disabled={inputConnected(id, "key")} aria-label="Signing key input" />
-      <span>Signing key</span><span class="key-state">{inputConnected(id, "key") ? "Connected" : "Connect a key"}</span>
+        isConnectableEnd={!inputConnected(id, "key")} aria-disabled={inputConnected(id, "key")} aria-label={`Signing key input (${keyTypes})`} />
+      <span>Signing key</span><span class="utility-type key-type">{keyTypes}</span>
     </div>
   {/if}
   {#each definition.parameters as field (field.name)}
+      {@const connected = !!field.connectable && inputConnected(id, field.name)}
       <div class="processing-parameter nodrag nopan nokey">
-        <label for={`${id}-${field.name}`}>{field.label}</label>
+        <label for={`${id}-${field.name}`}>{field.label}
+          {#if field.connectable}<span class="utility-type">{processingInputTypes(kind, data, field.name)?.join(" | ")}</span>{/if}
+        </label>
+        <div class="parameter-control">
+        {#if field.connectable}
+          <Handle id={field.name} type="target" position={Position.Left} isConnectableStart={false} class="parameter-input-handle"
+            isConnectableEnd={!connected} aria-disabled={connected} aria-label={`${field.label} input (${processingInputTypes(kind, data, field.name)?.join(" | ")})`} />
+        {/if}
         {#if field.options}
           <WorkflowNodeSelect label={field.label} value={data.parameters[field.name] ?? ""} {active}
             choices={field.options.map(value => ({ value, label: choiceLabel(value) }))} onchange={value => parameter(field.name, value)} />
@@ -63,10 +72,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             value={data.parameters[field.name]} oninput={event => parameter(field.name, event.currentTarget.value)}></textarea>
         {:else}
           <input id={`${id}-${field.name}`} class="utility-value" aria-label={field.label} maxlength="4096"
-            disabled={field.name === "expected" && ["is_set", "is_not_set"].includes(data.parameters.operator!)}
+            disabled={connected || field.name === "expected" && ["is_set", "is_not_set"].includes(data.parameters.operator!)}
             inputmode={field.name === "start" || field.name === "end" ? "numeric" : "text"}
             value={data.parameters[field.name]} oninput={event => parameter(field.name, event.currentTarget.value)} />
         {/if}
+        </div>
       </div>
   {/each}
   {#if kind === "assert"}
@@ -84,11 +94,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .workflow-processing-node { width: 300px; }
   .utility-title strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .processing-parameter { display: grid; gap: 5px; min-width: 0; padding: 6px 12px; }
-  .processing-parameter label { font-size: 10px; color: var(--color-muted-foreground); }
+  .processing-parameter label { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 10px; color: var(--color-muted-foreground); }
+  .parameter-control { position: relative; }
+  .parameter-control :global(.parameter-input-handle) { left: -12px; }
   .processing-parameter .utility-value { width: 100%; min-height: 30px; padding: 6px 8px; font-size: 11px; }
   textarea.utility-value { height: 76px; resize: vertical; max-height: 180px; }
   .processing-output { min-height: 32px; border-top: 1px solid var(--color-border); font-size: 11px; }
   .output-type { margin-left: auto; }
-  .key-state { margin-left: auto; color: var(--color-muted-foreground); font-size: 10px; }
+  .key-type { margin-left: auto; }
   .key-input { min-height: 32px; font-size: 11px; }
 </style>

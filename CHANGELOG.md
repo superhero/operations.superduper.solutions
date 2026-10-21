@@ -136,6 +136,18 @@ executable and show the expected input types for the selected Filter action.
 
 ```
 
+<!-- changelog-commit:f5890bc811c61f9f4ce758c4097bcee4cc23b121 -->
+### Commit [`f5890bc`](https://github.com/superhero/operations.superduper.solutions/commit/f5890bc811c61f9f4ce758c4097bcee4cc23b121)
+
+```text
+feat(workflow): connect JWT Key ID inputs
+
+Show signing-key types and allow Key ID connections to override the saved
+manual value. Preserve typed graph identities, undo, and private worker
+execution without exposing private parameter values.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

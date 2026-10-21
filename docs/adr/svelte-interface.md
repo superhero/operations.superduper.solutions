@@ -288,6 +288,14 @@ declares its output type. Field mappings construct an object from output names a
 JSON pointers. Binary values retain exact bytes; connecting an original file
 to a binary-only processing input inserts the visible Binary Cast.
 
+Signing-key ports show their accepted `Text | Binary` types. JWT Key ID also
+has a Text input port: a connection disables manual editing and supplies the
+header's `kid` during execution. Disconnecting restores the saved manual value;
+connected empty text omits `kid`. Connected parameters retain their own types
+and bounds and remain opaque when supplied by vault values. Unmatched Assert
+outputs and inactive Switch branches follow the same routing rules as other
+processing inputs, without falling back to disabled manual values.
+
 Filter trims either or both ends of text, selects a substring or a field by JSON
 pointer, selects an array range or keeps array items matching a predicate. Older
 Select field Transform nodes load as Filter nodes with the same identity,

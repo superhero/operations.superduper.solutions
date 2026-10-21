@@ -7,9 +7,10 @@ import { encodeWorkflowBinary, validateWorkflowBinary, type WorkflowBinary } fro
 export type ProcessingKind = "transform" | "filter" | "assert";
 export type ProcessingType = "Text" | "Number" | "Integer" | "Boolean" | "Object" | "Array" | "Null" | "Binary" | "Unknown" | "Mixed" | "JSON";
 export type ProcessingData = { version: 1; operation: string; parameters: Record<string, string> };
-type Parameter = { name: string; label: string; initial: string; options?: readonly string[]; multiline?: boolean };
+type Parameter = { name: string; label: string; initial: string; options?: readonly string[]; multiline?: boolean; connectable?: boolean };
 type Definition = { id: string; kind: ProcessingKind; label: string; inputs: readonly ProcessingType[]; inputLabel?: string; output: ProcessingType | "input"; key?: boolean; parameters: readonly Parameter[] };
 const textBinary = ["Text", "Binary"] as const;
+const textInput = ["Text"] as const;
 const jsonTypes = ["Object", "Text", "Number", "Boolean", "Array", "Null"] as const;
 const jsonConnectionTypes = [...jsonTypes, "Integer"] as const;
 const jsonTypeLabel = jsonTypes.join(" | ");
@@ -29,7 +30,7 @@ export const processingOperations: readonly Definition[] = [
   { id: "map_fields", kind: "transform", label: "Map fields", inputs: ["Object", "Array"], output: "Object", parameters: [{ name: "fields", label: "Output names to source paths (JSON)", initial: '{"value":""}', multiline: true }] },
   { id: "sha256", kind: "transform", label: "Hash SHA-256", inputs: textBinary, output: "Text", parameters: [parameter("format", "Output encoding", "hex", ["hex", "base64", "base64url"])] },
   { id: "hmac_sha256", kind: "transform", label: "Sign HMAC-SHA256", inputs: textBinary, output: "Text", key: true, parameters: [parameter("format", "Output encoding", "hex", ["hex", "base64", "base64url"])] },
-  { id: "jwt_sign", kind: "transform", label: "Sign JWT", inputs: ["Object"], output: "Text", key: true, parameters: [parameter("algorithm", "Algorithm", "HS256", ["HS256", "RS256"]), parameter("key_id", "Key ID (optional)")] },
+  { id: "jwt_sign", kind: "transform", label: "Sign JWT", inputs: ["Object"], output: "Text", key: true, parameters: [parameter("algorithm", "Algorithm", "HS256", ["HS256", "RS256"]), { ...parameter("key_id", "Key ID (optional)"), connectable: true }] },
   { id: "trim", kind: "filter", label: "Trim text", inputs: ["Text"], output: "Text", parameters: [parameter("side", "Trim", "both", ["both", "start", "end"])] },
   { id: "substring", kind: "filter", label: "Substring", inputs: ["Text"], output: "Text", parameters: [parameter("start", "Start (inclusive)", "0"), parameter("end", "End (exclusive)")] },
   { id: "select_field", kind: "filter", label: "Select field", inputs: ["Object", "Array"], output: "Unknown", parameters: [parameter("path", "Field path (JSON pointer)"), parameter("type", "Result type", "Text", anyValue)] },
@@ -70,6 +71,12 @@ export function validateProcessingData(kind: ProcessingKind, value: unknown): Pr
 export function processingOutputType(kind: ProcessingKind, data: ProcessingData, input: ProcessingType): ProcessingType {
   const output = processingDefinition(kind, data).output;
   return output === "input" ? input : output === "Unknown" ? data.parameters.type as ProcessingType : output;
+}
+export function processingInputTypes(kind: ProcessingKind, data: ProcessingData, handle: string | null | undefined): readonly ProcessingType[] | undefined {
+  const definition = processingDefinition(kind, data);
+  if (handle === "value") return definition.inputs;
+  if (handle === "key" && definition.key) return textBinary;
+  return definition.parameters.some(field => field.connectable && field.name === handle) ? textInput : undefined;
 }
 /** JSON is a known union, unlike an unresolved Unknown or Mixed output. Number includes Integer. */
 export function processingTypeAlternatives(type: ProcessingType): readonly ProcessingType[] {
@@ -175,8 +182,21 @@ function index(value: string, fallback?: number): number | undefined {
 }
 
 /** Pure bounded operation implementation, shared by public and private workers. */
-export async function processWorkflowValue(kind: ProcessingKind, raw: ProcessingData, value: unknown, key?: unknown): Promise<unknown> {
-  const data = validateProcessingData(kind, raw), definition = processingDefinition(kind, data), p = data.parameters;
+export async function processWorkflowValue(kind: ProcessingKind, raw: ProcessingData, value: unknown, key?: unknown, parameters?: Record<string, unknown>): Promise<unknown> {
+  let data = validateProcessingData(kind, raw);
+  const definition = processingDefinition(kind, data);
+  if (parameters !== undefined) {
+    if (!plain(parameters)) throw new Error("Invalid connected processing parameters.");
+    const supplied: Record<string, string> = {};
+    for (const [name, value] of Object.entries(parameters)) {
+      const field = definition.parameters.find(field => field.name === name && field.connectable);
+      if (!field) throw new Error("Unknown connected processing parameter.");
+      if (typeof value !== "string") throw new Error(`${field.label} needs a Text value.`);
+      supplied[name] = value;
+    }
+    if (Object.keys(supplied).length) data = validateProcessingData(kind, { ...data, parameters: { ...data.parameters, ...supplied } });
+  }
+  const p = data.parameters;
   validateProcessingValue(value);
   const inputType = processingValueType(value);
   if (!definition.inputs.includes(inputType) && !(inputType === "Integer" && definition.inputs.includes("Number"))) throw new Error(`${definition.label} does not accept ${inputType} input.`);

@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
+import { createHmac } from 'node:crypto';
 import { expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { setMode, readExport, workflow } from './workspace.steps.mjs';
@@ -32,6 +33,55 @@ async function choose(page, node, label, option) {
   await node.getByRole('combobox', { name: label, exact: true }).click();
   await page.getByRole('option', { name: option, exact: true }).click();
 }
+
+Then('JWT shows signing key types and uses a connected Key ID with reversible manual editing', async function () {
+  const page = this.page, key = '01234567890123456789012345678901';
+  await setMode(page, 'workflow');
+  const payload = { ...source({ sub: 'subject' }), position: { x: 100, y: 100 } };
+  const signingKey = { ...source(key), id: 'signing-key', position: { x: 100, y: 350 } };
+  const kid = { ...source('connected-id'), id: 'kid', position: { x: 100, y: 600 } };
+  await loadGraphFixture(page, document([payload, signingKey, kid, processor('transform', 'jwt_sign', { key_id: 'manual-id' }, 600)],
+    [connection('source', 'transform', 'value'), connection('signing-key', 'transform', 'value', 'key')]));
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  const jwt = workflow(page).locator('[data-processing-kind="transform"]');
+  const input = jwt.getByLabel('Key ID (optional)', { exact: true });
+  const handle = jwt.locator('.svelte-flow__handle[data-handleid="key_id"]');
+  await expect(jwt.locator('.key-type')).toHaveText('Text | Binary');
+  await expect(jwt.locator('.svelte-flow__handle[data-handleid="key"]')).toHaveAttribute('aria-label', 'Signing key input (Text | Binary)');
+  await expect(handle).toHaveAttribute('aria-label', 'Key ID (optional) input (Text)');
+  await expect(input).toBeEditable();
+  await expect(input).toHaveValue('manual-id');
+  await gesture(page, workflow(page).locator('.svelte-flow__node[data-id="kid"] .svelte-flow__handle.source'), handle);
+  await expect(input).toBeDisabled();
+  await saved(page);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(input).toBeEditable();
+  await expect(input).toHaveValue('manual-id');
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  await expect(input).toBeDisabled();
+  await saved(page);
+  const exported = (await readExport(page)).document;
+  assert.equal(exported.nodes.find(node => node.id === 'transform').data.parameters.key_id, 'manual-id');
+  assert.ok(exported.edges.some(edge => edge.target === 'transform' && edge.targetHandle === 'key_id'));
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(input).toBeDisabled();
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  const run = panel(page);
+  await expect(run.getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
+  await run.getByText('Processing results (1)', { exact: true }).click();
+  const token = JSON.parse(await run.getByRole('region', { name: 'Sign JWT result' }).locator('pre').textContent());
+  const [header, claims, signature] = token.split('.');
+  assert.deepEqual(JSON.parse(Buffer.from(header, 'base64url')), { alg: 'HS256', typ: 'JWT', kid: 'connected-id' });
+  assert.equal(signature, createHmac('sha256', key).update(`${header}.${claims}`).digest('base64url'));
+  await run.getByRole('button', { name: 'Quit', exact: true }).click();
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await choose(page, jwt, 'Transform operation', 'Sign HMAC-SHA256');
+  await expect(handle).toHaveCount(0);
+  await expect(jwt.locator('.key-type')).toHaveText('Text | Binary');
+  await saved(page);
+  assert.ok(!(await readExport(page)).document.edges.some(edge => edge.targetHandle === 'key_id'));
+});
 
 Then('Select field is offered by Filter and old Transform nodes restore and execute as Filter', async function () {
   const page = this.page;
@@ -276,7 +326,7 @@ Then('the real vault worker checks a private transformation without returning it
     const fixture = await import('/vault-storage-fixture.js');
     return fixture.checkProcessingAssertion();
   });
-  assert.deepEqual(result, { matched: true, unmatched: false });
+  assert.deepEqual(result, { matched: true, unmatched: false, jwtKeyId: true, manualKeyId: false });
   assert.ok(!JSON.stringify(result).includes('private-processing-browser-canary'));
 });
 

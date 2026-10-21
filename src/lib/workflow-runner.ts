@@ -389,7 +389,8 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         frame.states.set(node.id, "complete");
         const value = input.values.get(port(node.id, "value"));
         const mainInactive = input.inactivePorts.has(port(node.id, "value"));
-        if (input.emptyPorts.has(port(node.id, "value")) || input.emptyPorts.has(port(node.id, "key"))) {
+        const emptyProcessingInput = (node.type === "transform" || node.type === "filter" || node.type === "assert") && input.emptyPorts.size > 0;
+        if (input.emptyPorts.has(port(node.id, "value")) || emptyProcessingInput) {
           const handles = node.type === "assert" ? ["success", "failure"] : node.type === "switch" ? node.data.gates.map(gate => gate.id) : ["result"];
           for (const handle of handles) emit(frame, node.id, handle, unsupplied);
           continue;
@@ -401,20 +402,24 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
           }
           if (!input.values.has(port(node.id, "value"))) throw new Error("Processing needs a connected input value.");
           const key = input.values.get(port(node.id, "key"));
-          if (processingDefinition(node.type, node.data).key && !input.values.has(port(node.id, "key"))) throw new Error("Connect a signing key before running this transformation.");
+          const definition = processingDefinition(node.type, node.data);
+          if (definition.key && !input.values.has(port(node.id, "key"))) throw new Error("Connect a signing key before running this transformation.");
+          const parameters = Object.fromEntries(definition.parameters.filter(field => field.connectable && input.values.has(port(node.id, field.name)))
+            .map(field => [field.name, input.values.get(port(node.id, field.name))]));
           frame.states.set(node.id, "running");
           const controller = new AbortController();
           processingController = controller;
           processingTask = (async () => {
-            const privateInput = containsPrivateValue(value, runId) || containsPrivateValue(key, runId);
+            const privateInput = containsPrivateValue(value, runId) || containsPrivateValue(key, runId) || containsPrivateValue(parameters, runId);
             let result: unknown;
             if (node.type === "assert") result = privateInput
               ? await (await processor()).assertPrivate(privateExpressionFor(value, runId), node.data, controller.signal)
               : await (await processor()).process(node.type, node.data, value);
             else if (privateInput) result = { referenceToken: runId, vaultProcessing: { kind: "process", type: node.type,
               data: structuredClone(node.data), value: privateExpressionFor(value, runId),
-              ...(key === undefined ? {} : { key: privateExpressionFor(key, runId) }) } } satisfies PrivateProcessingReference;
-            else result = await (await processor()).process(node.type, node.data, value, key);
+              ...(key === undefined ? {} : { key: privateExpressionFor(key, runId) }),
+              ...(Object.keys(parameters).length ? { parameters: Object.fromEntries(Object.entries(parameters).map(([name, value]) => [name, privateExpressionFor(value, runId)])) } : {}) } } satisfies PrivateProcessingReference;
+            else result = await (await processor()).process(node.type, node.data, value, key, Object.keys(parameters).length ? parameters : undefined);
             controller.signal.throwIfAborted();
             if (stopped) return;
             if (node.type === "assert") {

@@ -26,8 +26,16 @@ export async function checkProcessingAssertion() {
   const matched = await vaultCall("checkAssertion", [expression, predicate]);
   predicate.parameters.expected = "different";
   const unmatched = await vaultCall("checkAssertion", [expression, predicate]);
+  const jwt = { kind: "process" as const, type: "transform" as const, data: defaultProcessingData("transform", "jwt_sign"),
+    value: { kind: "literal" as const, value: { sub: "subject" } }, key: { kind: "literal" as const, value: "01234567890123456789012345678901" },
+    parameters: { key_id: { kind: "credential" as const, id: values[0]!.id } } };
+  jwt.data.parameters.key_id = "manual-id";
+  predicate.parameters.expected = btoa(JSON.stringify({ alg: "HS256", typ: "JWT", kid: "private-processing-browser-canary" })).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") + ".";
+  const jwtKeyId = await vaultCall("checkAssertion", [jwt, predicate]);
+  predicate.parameters.expected = btoa(JSON.stringify({ alg: "HS256", typ: "JWT", kid: "manual-id" })).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") + ".";
+  const manualKeyId = await vaultCall("checkAssertion", [jwt, predicate]);
   await lockVault();
-  return { matched, unmatched };
+  return { matched, unmatched, jwtKeyId, manualKeyId };
 }
 
 export const synthetic = { password: "browser-VAULT-password-9182", bearer: "browser-BEARER-canary-9182",
