@@ -202,6 +202,33 @@ tests are needed.
 
 ## Dependency packages
 
+<a href="https://www.npmjs.com/package/@codemirror/commands"><img src=".github/badges/version-dependency-codemirror--commands.svg" alt="@codemirror/commands declared version"></a>
+<a href="https://www.npmjs.com/package/@codemirror/lang-markdown"><img src=".github/badges/version-dependency-codemirror--lang-markdown.svg" alt="@codemirror/lang-markdown declared version"></a>
+<a href="https://www.npmjs.com/package/@codemirror/language"><img src=".github/badges/version-dependency-codemirror--language.svg" alt="@codemirror/language declared version"></a>
+<a href="https://www.npmjs.com/package/@codemirror/state"><img src=".github/badges/version-dependency-codemirror--state.svg" alt="@codemirror/state declared version"></a>
+<a href="https://www.npmjs.com/package/@codemirror/view"><img src=".github/badges/version-dependency-codemirror--view.svg" alt="@codemirror/view declared version"></a>
+<a href="https://www.npmjs.com/package/@lezer/highlight"><img src=".github/badges/version-dependency-lezer--highlight.svg" alt="@lezer/highlight declared version"></a>
+
+Provide the comment editor's Markdown syntax highlighting, document state,
+selection, keyboard commands and editing view.
+
+---
+
+<a href="https://www.npmjs.com/package/markdown-it"><img src=".github/badges/version-dependency-markdown-it.svg" alt="markdown-it declared version"></a>
+<a href="https://www.npmjs.com/package/@mdit/plugin-footnote"><img src=".github/badges/version-dependency-mdit--plugin-footnote.svg" alt="@mdit/plugin-footnote declared version"></a>
+<a href="https://www.npmjs.com/package/@mdit/plugin-img-lazyload"><img src=".github/badges/version-dependency-mdit--plugin-img-lazyload.svg" alt="@mdit/plugin-img-lazyload declared version"></a>
+<a href="https://www.npmjs.com/package/@mdit/plugin-img-size"><img src=".github/badges/version-dependency-mdit--plugin-img-size.svg" alt="@mdit/plugin-img-size declared version"></a>
+<a href="https://www.npmjs.com/package/@mdit/plugin-ins"><img src=".github/badges/version-dependency-mdit--plugin-ins.svg" alt="@mdit/plugin-ins declared version"></a>
+<a href="https://www.npmjs.com/package/@mdit/plugin-mark"><img src=".github/badges/version-dependency-mdit--plugin-mark.svg" alt="@mdit/plugin-mark declared version"></a>
+<a href="https://www.npmjs.com/package/@mdit/plugin-sub"><img src=".github/badges/version-dependency-mdit--plugin-sub.svg" alt="@mdit/plugin-sub declared version"></a>
+<a href="https://www.npmjs.com/package/@mdit/plugin-sup"><img src=".github/badges/version-dependency-mdit--plugin-sup.svg" alt="@mdit/plugin-sup declared version"></a>
+<a href="https://www.npmjs.com/package/@mdit/plugin-tasklist"><img src=".github/badges/version-dependency-mdit--plugin-tasklist.svg" alt="@mdit/plugin-tasklist declared version"></a>
+
+Render stored Markdown with shared extensions for footnotes, images, inserted
+and highlighted text, subscripts, superscripts and task lists.
+
+---
+
 <a href="https://www.npmjs.com/package/@cucumber/gherkin"><img src=".github/badges/version-dependency-cucumber--gherkin.svg" alt="@cucumber/gherkin declared version"></a>
 
 Parses Gherkin features and scenario-outline examples. Independent case discovery
