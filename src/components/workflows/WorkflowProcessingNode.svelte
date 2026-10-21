@@ -10,6 +10,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { defaultProcessingData, processingDefinition, processingInputTypes, processingOperations, processingOutputType, processingTypeLabel, type ProcessingData, type ProcessingKind } from "$lib/workflow-processing.ts";
   import type { RoutingType } from "$lib/workflow-utilities.ts";
   import WorkflowNodeSelect from "./WorkflowNodeSelect.svelte";
+  import WorkflowFieldMappings from "./WorkflowFieldMappings.svelte";
   import "./workflow-utility-nodes.css";
 
   let { id, type, data, selected }: NodeProps<Node<ProcessingData, ProcessingKind>> = $props();
@@ -53,6 +54,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <span>Signing key</span><span class="utility-type key-type">{keyTypes}</span>
     </div>
   {/if}
+  {#if data.operation === "map_fields"}
+    <WorkflowFieldMappings {id} value={data.parameters.fields ?? "{}"} {active} onchange={value => parameter("fields", value)} />
+  {:else}
   {#each definition.parameters as field (field.name)}
       {@const connected = !!field.connectable && inputConnected(id, field.name)}
       <div class="processing-parameter nodrag nopan nokey">
@@ -79,6 +83,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         </div>
       </div>
   {/each}
+  {/if}
   {#if kind === "assert"}
     <div class="utility-row processing-output"><span>Success</span>
       <Handle id="success" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`Assertion success (${outputType})`} /></div>

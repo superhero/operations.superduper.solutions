@@ -291,8 +291,13 @@ A matching receiving port may assume one of these
 types; the executor validates the actual value without inserting a cast. The
 union stays available through Assert and Switch. Earlier saved Parse JSON nodes
 discard their obsolete result-type setting when loaded. Field selection still
-declares its output type. Field mappings construct an object from output names and source
-JSON pointers. Binary values retain exact bytes; connecting an original file
+declares its output type. Map fields uses editable source → new-name rows,
+with Add/Remove and atomic Save/Cancel. Sources are the entire input or literal
+field/item names entered one level at a time, with zero-based array positions.
+Only listed fields appear in the result. The editor escapes JSON pointers
+internally and preserves the existing saved mapping format and executor;
+duplicate names and existing size limits are validated before saving.
+Binary values retain exact bytes; connecting an original file
 to a binary-only processing input inserts the visible Binary Cast.
 
 Signing-key ports show their accepted `Text | Binary` types. JWT Key ID also

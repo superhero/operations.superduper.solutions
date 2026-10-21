@@ -34,6 +34,67 @@ async function choose(page, node, label, option) {
   await page.getByRole('option', { name: option, exact: true }).click();
 }
 
+Then('field mapping rows support editing nesting cancellation history and real execution', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  const input = { ...source({ profile: { name: 'Alice' }, members: [{ age: 0 }] }), position: { x: -500, y: 20 } };
+  const mapping = { ...processor('transform', 'map_fields', { fields: '{"legacy":"/profile/name"}' }), position: { x: 20, y: 20 } };
+  await loadGraphFixture(page, document([input, mapping], [connection('source', 'transform', 'value')]));
+  const node = workflow(page).locator('[data-processing-kind="transform"]');
+  await expect(node.locator('textarea')).toHaveCount(0);
+  await expect(node.getByRole('list', { name: 'Field mappings' })).toContainText('profile › name');
+  await node.getByRole('button', { name: 'Edit mapping legacy', exact: true }).click();
+  await node.getByRole('textbox', { name: 'New field name', exact: true }).fill('Customer name');
+  await node.getByRole('button', { name: 'Save mapping', exact: true }).click();
+  await expect(node.getByRole('button', { name: 'Edit mapping Customer name', exact: true })).toBeVisible();
+
+  await node.getByRole('button', { name: 'Add mapping', exact: true }).click();
+  await node.getByRole('textbox', { name: 'New field name', exact: true }).fill('Customer name');
+  await node.getByRole('textbox', { name: 'Source field 1', exact: true }).fill('members');
+  await node.getByRole('button', { name: 'Add nested field', exact: true }).click();
+  await node.getByRole('textbox', { name: 'Source field 2', exact: true }).fill('0');
+  await node.getByRole('button', { name: 'Add nested field', exact: true }).click();
+  await node.getByRole('textbox', { name: 'Source field 3', exact: true }).fill('age');
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await node.screenshot({ path: `${this.artifactDirectory}/field-mapping-editor.png` });
+  await node.getByRole('button', { name: 'Save mapping', exact: true }).click();
+  await expect(node.getByRole('alert')).toHaveText('That new field name is already used. Choose a different name.');
+  await node.getByRole('textbox', { name: 'New field name', exact: true }).fill('First age');
+  await node.getByRole('textbox', { name: 'New field name', exact: true }).press('Enter');
+  await expect(node.getByRole('button', { name: 'Edit mapping First age', exact: true })).toContainText('members › 0 › age');
+
+  await node.getByRole('button', { name: 'Add mapping', exact: true }).click();
+  await node.getByRole('textbox', { name: 'New field name', exact: true }).fill('Discard this draft');
+  await choose(page, node, 'Copy from', 'Entire input');
+  await expect(node.getByRole('textbox', { name: 'Source field 1', exact: true })).toHaveCount(0);
+  await node.getByRole('textbox', { name: 'New field name', exact: true }).press('Escape');
+  await expect(node.getByRole('button', { name: 'Add mapping', exact: true })).toBeFocused();
+  await expect(node.getByRole('listitem')).toHaveCount(2);
+
+  await node.getByRole('button', { name: 'Remove mapping First age', exact: true }).click();
+  await saved(page);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(node.getByRole('button', { name: 'Edit mapping First age', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  await expect(node.getByRole('button', { name: 'Edit mapping First age', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await saved(page);
+  const exported = (await readExport(page)).document;
+  assert.deepEqual(JSON.parse(exported.nodes.find(node => node.id === 'transform').data.parameters.fields),
+    { 'Customer name': '/profile/name', 'First age': '/members/0/age' });
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await node.screenshot({ path: `${this.artifactDirectory}/field-mappings.png` });
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(node.getByRole('listitem')).toHaveCount(2);
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  const run = panel(page);
+  await expect(run.getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
+  await run.getByText('Processing results (1)', { exact: true }).click();
+  assert.deepEqual(JSON.parse(await run.getByRole('region', { name: 'Map fields result' }).locator('pre').textContent()),
+    { 'Customer name': 'Alice', 'First age': 0 });
+});
+
 Then('long workflow dropdowns scroll inside their popup without moving the canvas', async function () {
   const page = this.page;
   await setMode(page, 'workflow');

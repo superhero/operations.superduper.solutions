@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { Then } from '@cucumber/cucumber';
 import { defaultProcessingData, processingOperations, processingInputTypes, processWorkflowValue, processingPointer, validateProcessingData, validateProcessingValue, processingOutputType, processingTypeLabel, processingPreview } from './lib/workflow-processing.ts';
+import { readFieldMappings, writeFieldMappings } from './lib/workflow-field-mappings.ts';
 import { encodeWorkflowBinary, workflowBinaryBlob } from './lib/workflow-binary.ts';
 import { defaultCsvOptions, parseWorkflowFile, readWorkflowFile } from './lib/workflow-file.ts';
 import { createUtilityNode, createOperationGraph, createFileDataGraph, createWorkflowGraph, isWorkflowConnection, insertFileBinaryCast } from './lib/workflow-graph.ts';
@@ -23,6 +24,33 @@ import { validateVaultVariableInputs, vaultVariablePlaceholder } from './lib/sec
 
 const data = (kind, operation, parameters = {}) => ({ ...defaultProcessingData(kind, operation), parameters: { ...defaultProcessingData(kind, operation).parameters, ...parameters } });
 const apply = (kind, operation, value, parameters = {}, key) => processWorkflowValue(kind, data(kind, operation, parameters), value, key);
+
+Then('field mapping rows preserve literal names nesting array items and saved execution', async () => {
+  const original = { profile: { name: 'Alice' }, members: [{ age: 0, active: false }], 'a/b': { '~key': null }, '': 'empty key' };
+  const mappings = [
+    { name: 'Customer name', path: ['profile', 'name'] },
+    { name: 'Age', path: ['members', '0', 'age'] },
+    { name: 'Active', path: ['members', '0', 'active'] },
+    { name: '__proto__', path: ['a/b', '~key'] },
+    { name: 'Empty key', path: [''] },
+    { name: 'Entire input', path: [] },
+  ];
+  const fields = writeFieldMappings(mappings);
+  assert.deepEqual(readFieldMappings(fields), mappings);
+  assert.deepEqual(JSON.parse(fields), JSON.parse('{"Customer name":"/profile/name","Age":"/members/0/age","Active":"/members/0/active","__proto__":"/a~1b/~0key","Empty key":"/","Entire input":""}'));
+  const result = await apply('transform', 'map_fields', original, { fields });
+  assert.deepEqual(result, Object.fromEntries([['Customer name', 'Alice'], ['Age', 0], ['Active', false], ['__proto__', null], ['Empty key', 'empty key'], ['Entire input', original]]));
+  assert.equal(Object.getPrototypeOf(result), Object.prototype);
+  assert.deepEqual(original.members, [{ age: 0, active: false }]);
+  const legacy = '{ "value": "", "literal.name": "/a~1b/~0key", "": "/" }';
+  assert.deepEqual(JSON.parse(writeFieldMappings(readFieldMappings(legacy))), JSON.parse(legacy));
+  assert.deepEqual(readFieldMappings('{}'), []);
+  assert.throws(() => writeFieldMappings([{ name: 'same', path: [] }, { name: 'same', path: ['profile'] }]), /already used/);
+  assert.throws(() => writeFieldMappings(Array.from({ length: 201 }, (_, index) => ({ name: String(index), path: [] }))), /at most 200/);
+  assert.throws(() => writeFieldMappings([{ name: 'x'.repeat(16000), path: [] }]), /too large/);
+  for (const invalid of ['invalid', 'null', '[]', '{"a":1}', '{"a":"profile.name"}', '{"a":"/bad~2escape"}'])
+    assert.throws(() => readFieldMappings(invalid), /could not be read/);
+});
 const file = (value, id = 'file') => ({ id, type: 'file', position: { x: 0, y: 0 }, data: { file: parseWorkflowFile('input.json', JSON.stringify(value), defaultCsvOptions) } });
 const processNode = (kind, operation, parameters = {}, id = kind) => ({ ...createUtilityNode(kind, { x: 320, y: 0 }, id), data: data(kind, operation, parameters) });
 const edge = (source, target, sourceHandle = 'result', targetHandle = 'value', id = `${source}-${sourceHandle}-${target}-${targetHandle}`) => ({ id, kind: 'mapping', source, sourceHandle, target, targetHandle });
