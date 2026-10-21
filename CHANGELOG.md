@@ -229,6 +229,14 @@ fix(ui): keep node field hover continuous across labels
 
 ```
 
+<!-- changelog-commit:0ea4bf64d3b8ccf57e2f30b293dfc053f9d123da -->
+### Commit [`0ea4bf6`](https://github.com/superhero/operations.superduper.solutions/commit/0ea4bf64d3b8ccf57e2f30b293dfc053f9d123da)
+
+```text
+fix(ui): nest workflow controls inside their labels
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
