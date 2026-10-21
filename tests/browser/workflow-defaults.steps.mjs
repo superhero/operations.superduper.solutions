@@ -191,7 +191,7 @@ Then('the defaults survive reload and initialize untouched and new workflows', a
   assert.deepEqual(options((await storedWorkflows(page))[0]), options(enabledDefaults));
 });
 
-Then('workflow options remain independent from the saved defaults', async function () {
+Then('non-curve defaults preserve current saved and imported workflow options', async function () {
   const page = this.page;
   const original = { dashed: false, curved: false, snap: true };
   await setMode(page, 'workflow');
@@ -218,7 +218,7 @@ Then('workflow options remain independent from the saved defaults', async functi
   assert.deepEqual(await storedDefaults(page), enabledDefaults, 'Toolbar changes must only change the current workflow.');
   await setDefaults(page, disabledDefaults);
   await setMode(page, 'workflow');
-  await expectWorkflowOptions(page, { ...enabledDefaults, dashed: false });
+  await expectWorkflowOptions(page, { ...enabledDefaults, dashed: false, curved: false });
   const importedOptions = { dashed: true, curved: false, snap: true };
   await page.getByLabel('Import workflow file', { exact: true }).setInputFiles({ name: 'own-options.json', mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify({ version: 3, id: 'import-own-options', name: 'Imported options', description: '', nodes: [], edges: [],

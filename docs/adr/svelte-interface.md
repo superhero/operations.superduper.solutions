@@ -120,20 +120,24 @@ preferences. Missing or invalid values fall back independently: dashed lines,
 curved lines, snapping and node symbols start enabled.
 Load defaults before the editor mounts and apply them to
 new workflows and the untouched initial canvas. Existing, edited and imported
-workflows retain their flags; toolbar changes do not alter application defaults.
+workflows restore their own flags; toolbar changes do not alter application defaults.
 
 Grid size accepts whole pixels from 1–32, defaulting to 8. It applies immediately
 to placement and center snapping on every canvas without repositioning nodes or
 changing workflow documents. Decorative dots retain independent 24px spacing.
 Dash length and gap accept 1–128 px, defaulting to 8 and 16 respectively.
 Dash speed accepts 0–512 px/s, defaulting to 64; zero pauses motion.
-Curve strength accepts 0–200%, defaulting to 100%. It controls the radius of
-obstacle-safe bends in curved connections (0–100 diagram units), clamped by
-adjacent runs and node clearance. Node clearance accepts 0–128 diagram units,
+Curve strength accepts 0–200%, defaulting to 100%, and controls Bézier handles.
+Clear connections retain their original diagonal cubic shape. Blocked paths
+use smooth cubic detours fitted to the checked route, with conservative curve
+bounds keeping them outside nodes. Node clearance accepts 0–128 diagram units,
 defaulting to 16, and applies to both connection styles and manual adjustments.
 Both styles share the same worker-routed corridors, editable segment anchors
 and saved manual routes. Style changes redraw existing geometry without
 replacing the routing worker or rewriting authored anchors.
+An explicit change to Curved lines in Settings also updates the open workflow
+and its saved display preference. Startup and imports still restore their own
+flags; other defaults retain their existing scope.
 
 ### Locale
 

@@ -191,6 +191,7 @@
 
   function selectWorkflowDefaults(next: WorkflowDefaults) {
     settingsEdits.workflowDefaults += 1;
+    if (next.curved !== workflowDefaults.curved) workflowWorkspace?.setCurvedConnections(next.curved);
     workflowDefaults = { ...next };
     workflowDefaultsError = "";
     const request = ++workflowDefaultsSave;

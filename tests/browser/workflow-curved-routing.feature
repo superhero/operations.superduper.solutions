@@ -8,6 +8,7 @@ Feature: Curved assertion loop routing
     Given a curved Filter array assertion loop at width <width>
     Then its curved returns avoid node bodies and support reversible anchor adjustments
     And a curved return uses the same safe snapped preview when connected
+    And the Settings curve switch changes the open workflow immediately
 
     Examples:
       | width |

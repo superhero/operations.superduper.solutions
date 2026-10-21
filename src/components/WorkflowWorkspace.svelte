@@ -776,7 +776,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 
   function switchCurve() {
-    curved = !curved;
+    setCurvedConnections(!curved);
+  }
+
+  export function setCurvedConnections(enabled: boolean) {
+    curved = enabled;
     edges = edges.map(edge => ({ ...edge, type: curved ? "default" : "smoothstep" }));
   }
 

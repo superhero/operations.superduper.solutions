@@ -6,11 +6,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { getContext } from "svelte";
   import type { EdgeProps } from "@xyflow/svelte";
-  import { workflowCurve, workflowCurveRadius } from "$lib/workflow-curve.ts";
+  import { workflowCurve } from "$lib/workflow-curve.ts";
+  import { bezierDrawing } from "$lib/flow-routing/bezier.ts";
   import RoutedEdge from "$lib/flow-routing/RoutedEdge.svelte";
 
   let props: EdgeProps = $props();
   const strength = getContext<() => number>("workflow-curve-strength");
 </script>
 
-<RoutedEdge {...props} radius={workflowCurveRadius(strength())} splitDashes={false} fallback={workflowCurve(props, strength())} />
+<RoutedEdge {...props} splitDashes={false} fallback={workflowCurve(props, strength())}
+  drawRoute={(route, points, obstacles, authored) => bezierDrawing(route, points, strength(), obstacles, authored)} />

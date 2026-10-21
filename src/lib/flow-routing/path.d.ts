@@ -46,3 +46,8 @@ export function previewPath(
   radius?: number,
   obstacles?: readonly Rectangle[]
 ): string | null;
+
+export function previewRoute(
+  route: (Polyline & { status?: Route["status"] }) | null | undefined,
+  edge: EdgeEndpoints | null | undefined
+): Route | null;

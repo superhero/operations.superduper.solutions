@@ -8,8 +8,8 @@ Feature: Workflow connection curve geometry
   Scenario: Routed curves avoid nodes around assertion returns
     Then curved routing keeps assertion return paths outside nodes at every strength
 
-  Scenario: Routed curve strength preserves shared editable anchors
-    Then routed curve strength scales safe bends while preserving the same anchors
+  Scenario: Routed curves restore diagonal spans and preserve editable anchors
+    Then routed curves restore diagonal Beziers and retain authored steering points
 
   Scenario: Curves follow every port orientation with centered labels
     Then workflow curves follow every port orientation and keep their label at the cubic midpoint

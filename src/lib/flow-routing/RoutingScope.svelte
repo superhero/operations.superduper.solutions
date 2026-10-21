@@ -85,7 +85,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const current = draft;
     if (current?.id !== id || !current.drag || !current.handle) return;
     const moved = moveSegment(current.drag, coordinate);
-    draft = { ...current, route: moved.route,
+    const changed = JSON.stringify(moved.route.points) !== JSON.stringify(current.drag.original);
+    draft = { ...current, route: { ...moved.route, ...(changed ? { manualState: 'applied' as const } : {}) },
       handle: { ...current.handle, [current.drag.axis]: moved.coordinate } };
   }
 
