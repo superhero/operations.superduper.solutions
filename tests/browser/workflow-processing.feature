@@ -3,6 +3,15 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @workflow-processing
 Feature: Workflow processing controls and execution
+  Scenario Outline: Map fields can be configured without JSON syntax
+    When I use a viewport of <width> by 900 pixels
+    Then field mapping rows support editing nesting cancellation history and real execution
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
   Scenario Outline: Long workflow option lists support normal scrolling
     When I use a viewport of <width> by 540 pixels
     Then long workflow dropdowns scroll inside their popup without moving the canvas

@@ -30,6 +30,9 @@ Feature: Explicit workflow processing and assertion routing
   Scenario: JSON translation and field mapping retain types and safe property names
     Then workflow translation parses serializes selects and maps data without mutation
 
+  Scenario: Guided field mapping preserves saved paths names and value types
+    Then field mapping rows preserve literal names nesting array items and saved execution
+
   Scenario: Select field belongs to Filter and preserves older saved processing
     Then Select field is a Filter while old Transform nodes and private recipes preserve their behavior
 
