@@ -3,7 +3,7 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @workflow-manual-routing
 @toolbar-controls
-Feature: Manually adjusting orthogonal workflow connections
+Feature: Manually adjusting workflow connections
   Scenario: Hover and selection expose accessible controls at every segment midpoint
     Given an imported manual routing workflow at zoom 1
     Then its segment controls follow hover and selection and describe their allowed motion
@@ -48,9 +48,9 @@ Feature: Manually adjusting orthogonal workflow connections
     Given an imported automatic connection for manual routing
     Then one manual drag survives history navigation reload and import and can be reset
 
-  Scenario: Curved mode preserves the authored orthogonal route
+  Scenario: Curved and orthogonal modes share authored routes and editing
     Given an imported manual routing workflow at zoom 1
-    Then toggling curved connections hides segment controls and restores the authored route
+    Then curved connections retain editable anchors and preserve adjustments across styles
 
   Scenario: Pending manual edits survive later cancellations dialogs and delayed replies
     Given an imported manual routing workflow with delayed worker replies

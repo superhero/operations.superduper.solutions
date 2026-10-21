@@ -1123,7 +1123,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if activated}
   {#key revision}
     <SvelteFlowProvider>
-    <RoutingScope enabled={active && !curved} editable={keyboardActive} {dashPeriod}
+    <RoutingScope enabled={active} editable={keyboardActive} {dashPeriod}
       options={{ nodePadding: workflowDefaults.nodeClearance }}
       onroutechange={(id, points) => {
         if (!keyboardActive) return;
@@ -1135,7 +1135,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       }}
       createClient={createWorkflowRoutingClient} resolveConnection={state => connectionSnap?.preview(state) ?? state}
       onerror={cause => {
-        const failure = new Error("Workflow edge routing stopped. Standard connection paths remain available. Reopen the workflow or switch curved connections on and off to retry.", { cause });
+        const failure = new Error("Workflow edge routing stopped. Standard connection paths remain available. Reopen the workflow to retry.", { cause });
         error = failure.message;
         logger.error(failure.message, failure);
       }}>

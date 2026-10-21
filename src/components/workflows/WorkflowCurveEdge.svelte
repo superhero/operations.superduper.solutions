@@ -5,14 +5,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
   import { getContext } from "svelte";
-  import { BaseEdge, type EdgeProps } from "@xyflow/svelte";
-  import { workflowCurve } from "$lib/workflow-curve.ts";
+  import type { EdgeProps } from "@xyflow/svelte";
+  import { workflowCurve, workflowCurveRadius } from "$lib/workflow-curve.ts";
+  import RoutedEdge from "$lib/flow-routing/RoutedEdge.svelte";
 
   let props: EdgeProps = $props();
   const strength = getContext<() => number>("workflow-curve-strength");
-  const curve = $derived(workflowCurve(props, strength()));
 </script>
 
-<BaseEdge id={props.id} path={curve[0]} labelX={curve[1]} labelY={curve[2]}
-  label={props.label ?? ""} labelStyle={props.labelStyle ?? ""} style={props.style ?? ""}
-  markerStart={props.markerStart ?? ""} markerEnd={props.markerEnd ?? ""} interactionWidth={props.interactionWidth ?? 20} />
+<RoutedEdge {...props} radius={workflowCurveRadius(strength())} splitDashes={false} fallback={workflowCurve(props, strength())} />

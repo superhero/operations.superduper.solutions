@@ -8,6 +8,9 @@ type CurvePoints = {
   targetX: number; targetY: number; targetPosition: Position;
 };
 
+/** Curved routes share the obstacle-checked backbone; strength softens its bends. */
+export const workflowCurveRadius = (strength: number): number => Math.max(0, Math.min(200, strength)) / 2;
+
 /** Scale both forward and backward control points; 50 preserves the original curve. */
 export function workflowCurve(points: CurvePoints, strength: number): [string, number, number] {
   const source = { x: points.sourceX, y: points.sourceY };
