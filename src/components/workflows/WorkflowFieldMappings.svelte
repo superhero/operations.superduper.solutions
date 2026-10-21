@@ -98,25 +98,27 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {:else}<p class="mapping-help">No fields yet. Add a mapping to choose what goes in the result.</p>{/if}
     {#if open}
       <form class="mapping-editor" aria-label={editing === null ? "Add field mapping" : "Edit field mapping"} onsubmit={save}>
-        <div class="mapping-field workflow-node-field">
-          <label for={`${id}-mapping-name`}>New field name</label>
+        <label class="mapping-field workflow-node-field">
+          <span class="mapping-label">New field name</span>
           <input id={`${id}-mapping-name`} class="utility-value" bind:this={nameInput} bind:value={name} disabled={!active} maxlength="4096"
             placeholder="e.g. Customer name" onkeydown={cancelOnEscape} aria-invalid={!!error} aria-describedby={error ? `${id}-mapping-error` : undefined} />
-        </div>
-        <div class="mapping-field workflow-node-field">
+        </label>
+        <label class="mapping-field workflow-node-field">
           <span class="mapping-label">Copy from</span>
           <WorkflowNodeSelect label="Copy from" value={path.length ? "field" : "input"} {active} disabled={!active}
             choices={[{ value: "input", label: "Entire input" }, { value: "field", label: "A field or array item" }]}
             onchange={source => path = source === "input" ? [] : [""]} />
-        </div>
+        </label>
         {#if path.length}
           <div class="mapping-path nowheel">
             {#each path as part, index (index)}
               <div class="path-level workflow-node-field">
-                <label for={`${id}-mapping-path-${index}`}>{index === 0 ? "Source field" : "Inside that field"}</label>
-                <input id={`${id}-mapping-path-${index}`} class="utility-value" aria-label={`Source field ${index + 1}`} disabled={!active}
-                  maxlength="4096" value={part} placeholder={index === 0 ? "e.g. profile" : "e.g. name"} onkeydown={cancelOnEscape}
-                  oninput={event => path[index] = event.currentTarget.value} />
+                <label class="path-field workflow-node-field">
+                  <span class="mapping-label">{index === 0 ? "Source field" : "Inside that field"}</span>
+                  <input id={`${id}-mapping-path-${index}`} class="utility-value" aria-label={`Source field ${index + 1}`} disabled={!active}
+                    maxlength="4096" value={part} placeholder={index === 0 ? "e.g. profile" : "e.g. name"} onkeydown={cancelOnEscape}
+                    oninput={event => path[index] = event.currentTarget.value} />
+                </label>
                 <HintButton type="button" class="utility-action" label={`Remove source level ${index + 1}`} disabled={!active}
                   tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" onclick={() => path = path.filter((_, current) => current !== index)}><MaterialIcon name="close" size={16} /></HintButton>
               </div>
@@ -154,7 +156,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .mapping-field { display: grid; gap: 5px; min-width: 0; }
   .mapping-path { display: grid; gap: 5px; max-height: 200px; overflow: auto; overscroll-behavior: contain; }
   .path-level { display: grid; grid-template-columns: minmax(0, 1fr) 26px; gap: 4px; padding-left: 8px; border-left: 1px solid var(--color-border); }
-  .path-level label { grid-column: 1 / -1; }
+  .path-field { display: grid; gap: 4px; min-width: 0; }
+  .path-level > :global(.utility-action) { align-self: end; margin-bottom: 1px; }
   .mapping-button { display: flex; align-items: center; justify-content: center; gap: 5px; min-height: 28px; padding: 5px 7px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font: inherit; }
   .mapping-actions { display: flex; gap: 5px; margin-top: 4px; }
   .mapping-error { margin: 0; color: var(--color-error-foreground); overflow-wrap: anywhere; }
