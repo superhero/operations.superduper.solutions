@@ -187,6 +187,8 @@ without fetching new provider documents, use
 by `npm run schemas:index`. The one-time migration of earlier Google packs
 restores their recorded original requirements only when those exactly explain
 the earlier correction. Generic parsing retains strict auth AND semantics.
+For the DigitalOcean correction, select `--profile=digitalocean-permissions`
+instead; published packs remain unchanged in either case.
 
 ### Available operations
 
@@ -281,6 +283,16 @@ execution limitation instead of disappearing from navigation.
 
 OAuth access tokens use bearer transport, retaining declared scopes in the
 approved-operation identity. This does not implement OAuth login or token refresh.
+DigitalOcean's reviewed `digitalocean-bearer-permissions` correction retains its
+published nonempty bearer requirements in `x-upstream-security` and moves token
+permissions into `x-credential-permissions`, aligned with the `security`
+alternatives. The effective bearer requirements use empty arrays; unrelated
+credentials and anonymous alternatives keep their original meaning. Canonical
+operation models retain these permissions in private approval fingerprints, so
+changed permissions invalidate existing credential bindings. Tokens pass through
+unchanged; the provider enforces their permissions. This correction uses the same
+published/corrections/working Git history and upstream merge path as Google.
+Generic bearer and API-key parsing still rejects nonempty security arrays.
 AWS Signature Version 4 signing is unsupported. Browser CORS, local-network access
 and the API's own authorization rules still apply.
 

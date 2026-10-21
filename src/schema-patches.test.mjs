@@ -4,7 +4,8 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { mergeSchemaDocuments, sameSchemaValue, schemaChanges } from './lib/schema-merge.ts';
-import { applySchemaPatches, googleOauthAlternatives, schemaPatchName } from './lib/schema-patches.ts';
+import { applySchemaPatches, digitalOceanBearerPermissions, googleOauthAlternatives, schemaPatchName } from './lib/schema-patches.ts';
+import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { schemaLineDiff, schemaPointerValue } from './lib/schema-diff.ts';
 
 Then('schema merges preserve unrelated edits deletions and identical changes', () => {
@@ -73,6 +74,77 @@ Then('reviewed schema corrections preserve upstream-fixed data and reject unknow
   const metadata = { paths: { '/missing': null, '/items': { summary: 'Metadata', get: null, post: [] } } };
   assert.deepEqual(applySchemaPatches(metadata, [googleOauthAlternatives]), metadata,
     'Corrections leave non-operation path metadata and malformed entries untouched.');
+});
+
+const digitalOceanFixture = () => ({ openapi: '3.0.0', info: { title: 'DigitalOcean', version: '2' },
+  servers: [{ url: 'https://api.digitalocean.com' }], components: { securitySchemes: {
+    bearer_auth: { type: 'http', scheme: 'bearer' },
+    inference_bearer_auth: { type: 'http', scheme: 'bearer' },
+    Project: { type: 'apiKey', in: 'header', name: 'X-Project' },
+  } }, security: [{ bearer_auth: ['account:read'] }], paths: { '/v2/items': {
+    get: { security: [{ bearer_auth: ['droplet:read'], Project: [] }, {}, { inference_bearer_auth: [] }, { bearer_auth: [] }] },
+    post: {}, head: { security: [] }, options: { security: [{}] }, delete: { security: [{ Project: [] }] },
+  } },
+});
+
+Then('DigitalOcean corrections retain permissions provenance and authentication alternatives', () => {
+  const source = digitalOceanFixture(), before = structuredClone(source);
+  const corrected = applySchemaPatches(source, [digitalOceanBearerPermissions]);
+  assert.deepEqual(source, before);
+  assert.equal(schemaPatchName(digitalOceanBearerPermissions), 'DigitalOcean bearer permissions');
+  assert.deepEqual(corrected.security, [{ bearer_auth: [] }]);
+  assert.deepEqual(corrected['x-upstream-security'], before.security);
+  assert.deepEqual(corrected['x-credential-permissions'], [{ bearer_auth: ['account:read'] }]);
+  const operation = corrected.paths['/v2/items'].get;
+  assert.deepEqual(operation.security, [{ bearer_auth: [], Project: [] }, {}, { inference_bearer_auth: [] }, { bearer_auth: [] }]);
+  assert.deepEqual(operation['x-credential-permissions'], [{ bearer_auth: ['droplet:read'] }, {}, {}, {}]);
+  assert.deepEqual(operation['x-upstream-security'], before.paths['/v2/items'].get.security);
+  for (const method of ['post', 'head', 'options', 'delete'])
+    assert.deepEqual(corrected.paths['/v2/items'][method], before.paths['/v2/items'][method]);
+  assert.deepEqual(applySchemaPatches(corrected, [digitalOceanBearerPermissions]), corrected);
+  const models = inspectServiceSchema(corrected, 'digitalocean').operations;
+  assert.ok(models.every(model => !model.unavailableReason));
+  assert.deepEqual(models.find(model => model.method === 'POST').credentialPermissions, [{ bearer_auth: ['account:read'] }]);
+  assert.deepEqual(models.find(model => model.method === 'GET').credentialPermissions, operation['x-credential-permissions']);
+  for (const method of ['HEAD', 'OPTIONS', 'DELETE'])
+    assert.equal(models.find(model => model.method === method).credentialPermissions, undefined, 'Explicit overrides do not inherit root permissions.');
+  const incoming = structuredClone(source); incoming.info.version = '3'; incoming.paths['/v2/new'] = { get: {} };
+  const local = structuredClone(corrected); local.info.title = 'My DO account';
+  const update = mergeSchemaDocuments(corrected, local, applySchemaPatches(incoming, [digitalOceanBearerPermissions]));
+  assert.deepEqual(update.conflicts, []);
+  assert.equal(update.document.info.title, local.info.title);
+  assert.equal(update.document.info.version, '3');
+  assert.deepEqual(update.document['x-credential-permissions'], corrected['x-credential-permissions']);
+  const fixed = structuredClone(source); fixed.security = [{ bearer_auth: [] }]; fixed.paths = {};
+  assert.deepEqual(applySchemaPatches(fixed, [digitalOceanBearerPermissions]), fixed, 'An upstream empty-array fix is not patched again.');
+  assert.deepEqual(applySchemaPatches({ paths: { '/bad': null, '/metadata': { summary: 'metadata', get: null } } }, [digitalOceanBearerPermissions]),
+    { paths: { '/bad': null, '/metadata': { summary: 'metadata', get: null } } });
+});
+
+Then('DigitalOcean corrections reject changed provider contracts and metadata collisions', () => {
+  for (const corrupt of [
+    doc => { doc.security[0].bearer_auth = null; },
+    doc => { doc.security[0].bearer_auth = [42]; },
+    doc => { doc.security[0].bearer_auth = ['']; },
+    doc => { doc.security[0].bearer_auth = ['future-format']; },
+    doc => { delete doc.components.securitySchemes.bearer_auth; },
+    doc => { doc.components.securitySchemes.bearer_auth = { type: 'apiKey', in: 'header', name: 'Authorization' }; },
+    doc => { doc.components.securitySchemes.bearer_auth.scheme = 'basic'; },
+    doc => { doc.servers = [{ url: 'https://example.com' }]; },
+    doc => { delete doc.servers; },
+    doc => { doc.openapi = '2.0'; },
+    doc => { doc['x-upstream-security'] = []; },
+    doc => { doc['x-credential-permissions'] = []; },
+  ]) {
+    const doc = digitalOceanFixture(); corrupt(doc);
+    assert.throws(() => applySchemaPatches(doc, [digitalOceanBearerPermissions]), /DigitalOcean bearer adaptation/);
+  }
+  assert.throws(() => applySchemaPatches({}, [digitalOceanBearerPermissions, digitalOceanBearerPermissions]), /duplicated/);
+  assert.throws(() => applySchemaPatches({}, [{ ...digitalOceanBearerPermissions, version: 2 }]), /unknown/);
+  const unrelated = digitalOceanFixture(); unrelated.paths['/v2/items'].delete.security = [{ Project: ['project:read'] }];
+  const corrected = applySchemaPatches(unrelated, [digitalOceanBearerPermissions]);
+  assert.deepEqual(corrected.paths['/v2/items'].delete, unrelated.paths['/v2/items'].delete);
+  assert.match(inspectServiceSchema(corrected, 'digitalocean').operations.find(model => model.method === 'DELETE').unavailableReason, /only empty scope arrays/);
 });
 
 Then('schema line diffs preserve additions removals context and JSON pointer values', () => {

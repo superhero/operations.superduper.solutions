@@ -3,6 +3,9 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Bundled service schema integrity
+  Scenario: DigitalOcean bearer permissions no longer block private credential dispatch
+    Then DigitalOcean published permissions become canonical metadata and dispatch private unchanged bearer tokens
+
   Scenario: Google OAuth grant aliases retain scopes provenance and other required credentials
     Then Google grant normalization preserves scope alternatives without weakening unrelated authentication
 

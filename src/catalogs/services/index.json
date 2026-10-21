@@ -1872,6 +1872,7 @@
   {
     "id": "digitalocean",
     "name": "DigitalOcean",
+    "profile": "digitalocean-permissions",
     "url": "https://raw.githubusercontent.com/digitalocean/openapi/main/specification/DigitalOcean-public.v2.yaml",
     "version": "2.0",
     "openapi": "3.0.0",
@@ -1883,7 +1884,15 @@
     "sha256": "4bcce59b45927194934c760b8201d34bcde63a7caea21840aaa2f6dc68c5b0fd",
     "sourceSha256": "c7008f88f67b6f4249a0ec3831246ec0725bbe3ce1abfcef1ea5448f4c5f4cf9",
     "bytes": 3227177,
-    "compressedBytes": 443622
+    "compressedBytes": 443622,
+    "patches": [
+      {
+        "id": "digitalocean-bearer-permissions",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "5626dec576f33c3e55f04713ea83242bb246bec91c4bb623587a6a900b378738",
+    "effectiveBytes": 3317876
   },
   {
     "id": "discord",

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { Operation } from "../catalog.ts";
-import { extractOperationSecurity } from "../operation-security.ts";
+import { extractCredentialPermissions, extractOperationSecurity } from "../operation-security.ts";
 import { serverUrlHasPlaceholder } from "../server-url.ts";
 import { VaultError, type ApprovedOperation } from "./types.ts";
 
@@ -102,6 +102,7 @@ function validateOperation(operation: Operation): void
     const normalized = extractOperationSecurity({ components: { securitySchemes: definitions }, security: requirements }, {});
     if (canonicalPolicyValue(normalized) !== canonicalPolicyValue(operation.security)) throw new VaultError("PERMISSION");
   }
+  extractCredentialPermissions(operation.credentialPermissions, operation.security);
 }
 
 /** Approval binds the entire sanitized operation, including input/auth metadata and base path. */

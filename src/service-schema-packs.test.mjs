@@ -12,6 +12,79 @@ import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { validateSchemaDocument, operationServerUrl } from './lib/schema-documents.ts';
 import { createSchemaDiscovery, validateSchemaDiscovery } from './lib/schema-index.ts';
 import { codexExecutionLimitation } from './lib/codex-schema.ts';
+import { extractOperationSecurity } from './lib/operation-security.ts';
+
+Then('DigitalOcean published permissions become canonical metadata and dispatch private unchanged bearer tokens', async () => {
+  const { executeCredentialed } = await import('./lib/secrets/execution.ts');
+  const { approvedOperation } = await import('./lib/secrets/policy.ts');
+  const source = serviceSchemaDescriptors.find(source => source.id === 'digitalocean');
+  assert.deepEqual(source.patches, [{ id: 'digitalocean-bearer-permissions', version: 1 }]);
+  const published = await readServiceSchemaUpstream(source.id);
+  const corrected = await readServiceSchema(source.id);
+  assert.equal(source.sha256, '4bcce59b45927194934c760b8201d34bcde63a7caea21840aaa2f6dc68c5b0fd', 'The published pack stays immutable.');
+  assert.equal(createHash('sha256').update(JSON.stringify(published)).digest('hex'), source.sha256);
+  assert.equal(createHash('sha256').update(JSON.stringify(corrected)).digest('hex'), source.effectiveSha256);
+  assert.equal(Buffer.byteLength(JSON.stringify(corrected)), source.effectiveBytes);
+  const originalModels = inspectServiceSchema(published, source.id).operations;
+  const correctedModels = inspectServiceSchema(corrected, source.id).operations;
+  const authErrors = document => Object.values(document.paths).flatMap(item => Object.entries(item)
+    .filter(([method]) => ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'].includes(method)))
+    .filter(([, operation]) => { try { extractOperationSecurity(document, operation); return false; } catch { return true; } }).length;
+  assert.equal(originalModels.length, 855);
+  assert.equal(correctedModels.length, 855);
+  assert.equal(authErrors(published), 831);
+  assert.equal(authErrors(corrected), 0);
+  assert.equal(originalModels.filter(operation => /only empty scope arrays/.test(operation.unavailableReason ?? '')).length, 828);
+  assert.ok(correctedModels.every(operation => !/security|authentication|scope arrays/i.test(operation.unavailableReason ?? '')));
+  let permissionOperations = 0, permissionAlternatives = 0;
+  for (const [path, item] of Object.entries(published.paths)) for (const [method, operation] of Object.entries(item)) {
+    if (!['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'].includes(method)) continue;
+    const requirements = operation.security ?? published.security;
+    if (!requirements?.some(requirement => requirement.bearer_auth?.length)) continue;
+    permissionOperations++;
+    permissionAlternatives += requirements.filter(requirement => requirement.bearer_auth?.length).length;
+    const effective = corrected.paths[path][method];
+    assert.deepEqual(effective['x-upstream-security'], requirements);
+    assert.deepEqual(effective['x-credential-permissions'], requirements.map(requirement => requirement.bearer_auth?.length
+      ? { bearer_auth: requirement.bearer_auth } : {}));
+    const model = correctedModels.find(candidate => candidate.path === path && candidate.method === method.toUpperCase());
+    if (!model.unavailableReason) assert.deepEqual(model.credentialPermissions, effective['x-credential-permissions']);
+  }
+  assert.equal(permissionOperations, 831);
+  assert.equal(permissionAlternatives, 835);
+  const secret = 'do-test-token-canary.exact_bytes+/_-';
+  const credential = { id: 'do-token', label: 'DO token', kind: 'secret', value: secret, grants: [] };
+  for (const [id, path, permission] of [['digitalocean:account_get', '/v2/account', 'account:read'], ['digitalocean:droplets_list', '/v2/droplets', 'droplet:read']]) {
+    const operation = correctedModels.find(operation => operation.id === id);
+    assert.match(originalModels.find(operation => operation.id === id).unavailableReason, /only empty scope arrays/);
+    assert.equal(operation.unavailableReason, undefined);
+    assert.deepEqual(operation.credentialPermissions, [{ bearer_auth: [permission] }]);
+    const descriptor = await approvedOperation(operation, 'https://api.digitalocean.com');
+    assert.deepEqual(descriptor.operation.credentialPermissions, operation.credentialPermissions);
+    const binding = { fingerprint: descriptor.fingerprint, alternative: 0, credentials: { bearer_auth: credential.id } };
+    let calls = 0;
+    const result = await executeCredentialed(descriptor, {}, binding, [credential], { assertCurrent() {}, fetchRequest: async (url, init) => {
+      calls++;
+      assert.equal(String(url), `https://api.digitalocean.com${path}`);
+      assert.equal(init.method, 'GET');
+      assert.equal(init.headers.get('Authorization'), `Bearer ${secret}`);
+      assert.equal(init.credentials, 'omit');
+      return new Response(JSON.stringify({ status: 'ok', reflected: secret }), { headers: { 'Content-Type': 'application/json' } });
+    } });
+    assert.equal(calls, 1);
+    assert.ok(!JSON.stringify(result).includes(secret), 'Private results scrub echoed tokens.');
+    assert.ok(!JSON.stringify(descriptor).includes(secret), 'Approvals retain permissions without tokens.');
+    const changed = await approvedOperation({ ...operation, credentialPermissions: [{ bearer_auth: [permission, 'account:write'] }] }, descriptor.origin);
+    assert.notEqual(changed.fingerprint, descriptor.fingerprint);
+    await assert.rejects(executeCredentialed(changed, {}, binding, [credential], { assertCurrent() {}, fetchRequest: async () => {
+      assert.fail('A stale permission binding must be rejected before fetch.');
+    } }), { code: 'PERMISSION' });
+  }
+  console.log(JSON.stringify({ provider: 'digitalocean', operations: correctedModels.length, independentAuthBefore: 831,
+    independentAuthAfter: 0, primaryFailuresBefore: originalModels.filter(operation => operation.unavailableReason).length,
+    primaryFailuresAfter: correctedModels.filter(operation => operation.unavailableReason).length,
+    limitations: [...new Set(correctedModels.flatMap(operation => operation.unavailableReason ? [operation.unavailableReason] : []))] }));
+});
 
 Then('Google grant normalization preserves scope alternatives without weakening unrelated authentication', () => {
   const permissions = { read: 'Read data', write: 'Write data' };
