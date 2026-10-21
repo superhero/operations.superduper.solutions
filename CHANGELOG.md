@@ -418,6 +418,22 @@ storage, Undo, reset and worker ownership intact.
 
 ```
 
+<!-- changelog-commit:f97b64dbf633aeabda9fdf4b0b67418aef76dc79 -->
+### Commit [`f97b64d`](https://github.com/superhero/operations.superduper.solutions/commit/f97b64dbf633aeabda9fdf4b0b67418aef76dc79)
+
+```text
+fix(workflow): apply dash and snap settings to the open canvas
+
+Apply explicit changes to all three display switches through the same
+update path as the toolbar. Settings previously changed only the current
+curve mode, leaving existing workflows dashed or snapped.
+
+Keep untouched drafts unsaved and retain saved or imported flags when
+unrelated defaults change. Cover rendered stroke styles, pointer movement
+and reload at narrow and desktop widths.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
