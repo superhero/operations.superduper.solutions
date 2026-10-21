@@ -245,6 +245,14 @@ fix(ui): show Assert output types and remove node header tooltips
 
 ```
 
+<!-- changelog-commit:8f7dcdb3dbf2bd3f66c3c3d4b94abed1a4e12413 -->
+### Commit [`8f7dcdb`](https://github.com/superhero/operations.superduper.solutions/commit/8f7dcdb3dbf2bd3f66c3c3d4b94abed1a4e12413)
+
+```text
+fix(ui): describe node selectors and connector types
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
