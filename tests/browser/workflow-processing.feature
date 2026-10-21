@@ -3,6 +3,15 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @workflow-processing
 Feature: Workflow processing controls and execution
+  Scenario Outline: Long workflow option lists support normal scrolling
+    When I use a viewport of <width> by 540 pixels
+    Then long workflow dropdowns scroll inside their popup without moving the canvas
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
   Scenario Outline: JWT key inputs are typed and connected Key ID disables manual editing
     When I use a viewport of <width> by 900 pixels
     Then JWT shows signing key types and uses a connected Key ID with reversible manual editing

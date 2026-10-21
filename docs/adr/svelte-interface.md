@@ -276,6 +276,12 @@ types propagated through the graph.
 Configurations participate in workflow history, Undo, clipboard and portable
 documents; existing document versions retain their prior behavior.
 
+Workflow node selects reuse the scrolling option list from form/settings selects.
+The popup caps its height to available viewport space and its inner viewport owns
+native scrolling, with a visible scrollbar. Wheel input stays inside the list;
+keyboard navigation, disabled options, node tooltips and compact styling retain
+their existing behavior.
+
 Transform supports UTF-8, Base64/Base64url and hexadecimal encoding/decoding,
 JSON parsing/serialization, field mapping, SHA-256,
 HMAC-SHA256 and JWT signing. JSON parsing has no result-type selector: its known
