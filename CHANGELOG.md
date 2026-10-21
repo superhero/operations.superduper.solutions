@@ -213,6 +213,14 @@ fix(ui): place processing settings divider above parameters
 
 ```
 
+<!-- changelog-commit:ce4c58c5ef7a3a981fa2f8b5c248e609df75c06d -->
+### Commit [`ce4c58c`](https://github.com/superhero/operations.superduper.solutions/commit/ce4c58c5ef7a3a981fa2f8b5c248e609df75c06d)
+
+```text
+fix(ui): group JWT key ID with signing key
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
