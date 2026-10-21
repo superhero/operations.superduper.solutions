@@ -87,8 +87,9 @@ its own JSON, blob and proof filenames; another run of that engine replaces them
 Filtered or stale results cannot supply complete release evidence.
 
 Local containers use one browser worker, 2 CPUs and 2 GiB, without extra swap.
-GitHub Actions uses two workers within 2 CPUs and 4 GiB. Inspect host headroom
-before increasing a development budget.
+GitHub Actions uses two workers within 2 CPUs and 5 GiB. The runner logs the
+container's memory limit, peak and OOM counters while preserving the test exit
+status. Inspect host headroom before increasing a development budget.
 
 The error-history fixture runs the real IndexedDB store and recording worker on
 an isolated test page. Its scenarios cover multi-tab deduplication, FIFO eviction,
