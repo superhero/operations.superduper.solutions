@@ -26,7 +26,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <div class="utility-title">
     <Handle id="value" type="target" position={Position.Left} isConnectableStart={false}
       isConnectableEnd={!connected} aria-disabled={connected} aria-label={`Cast input (${inputType})`} />
-    <MaterialIcon name="transform" size={20} /><strong>Cast</strong><span class="utility-type">{inputType}</span>
+    <MaterialIcon name="settings_input_antenna" size={20} /><strong>Cast</strong><span class="utility-type">{inputType}</span>
   </div>
   <div class="utility-row cast-type nodrag nopan nokey">
     <WorkflowNodeSelect label="Cast output type" value={data.targetType} active={editorActive?.() ?? true}
