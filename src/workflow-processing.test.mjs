@@ -21,8 +21,12 @@ import { approvedOperation } from './lib/secrets/policy.ts';
 import { executeCredentialed } from './lib/secrets/execution.ts';
 import { checkPrivateAssertion, containsPrivateValue, privateExpressionFor, resolvePrivateExpression, validatePrivateExpression } from './lib/secrets/processing.ts';
 import { validateVaultVariableInputs, vaultVariablePlaceholder } from './lib/secrets/variables.ts';
+import { arrayFilterPlans } from './lib/workflow-array-filter.ts';
+import { validateArrayPredicate } from './lib/workflow-array-predicate.ts';
 
-const data = (kind, operation, parameters = {}) => ({ ...defaultProcessingData(kind, operation), parameters: { ...defaultProcessingData(kind, operation).parameters, ...parameters } });
+const data = (kind, operation, parameters = {}) => ({ ...defaultProcessingData(kind, operation), parameters: {
+  ...defaultProcessingData(kind, operation).parameters,
+  ...(operation === 'array_filter' && Object.keys(parameters).length ? { path: '', operator: 'is_set', expected: '' } : {}), ...parameters } });
 const apply = (kind, operation, value, parameters = {}, key) => processWorkflowValue(kind, data(kind, operation, parameters), value, key);
 
 Then('field mapping rows preserve literal names nesting array items and saved execution', async () => {
@@ -75,6 +79,109 @@ function targetDocument(nodes, edges, from, handle = 'result') {
 }
 const bytes = async value => new Uint8Array(await workflowBinaryBlob(value).arrayBuffer());
 const stopNode = () => createUtilityNode('stop', { x: 650, y: 0 }, 'stop');
+
+function arrayAssertionGraph(input, { cast = true, operator = 'greater_than', expected = '1', invert = false } = {}) {
+  const filter = processNode('filter', 'array_filter');
+  const assertion = processNode('assert', 'expect', { operator, expected });
+  const conversion = { ...createUtilityNode('cast', { x: 600, y: 0 }, 'cast'), data: { targetType: 'Number' } };
+  return doc([file(input), filter, ...(cast ? [conversion] : []), assertion], [edge('file', 'filter', 'value'),
+    edge('filter', cast ? 'cast' : 'assert', 'item'), ...(cast ? [edge('cast', 'assert')] : []),
+    edge('assert', 'filter', invert ? 'failure' : 'success', 'success'), edge('assert', 'filter', invert ? 'success' : 'failure', 'failure')]);
+}
+
+Then('array item assertion paths keep original values order and resolved cast types', async () => {
+  for (const invert of [false, true]) {
+    const graph = arrayAssertionGraph(['0', '2', '3', '2'], { invert });
+    assert.deepEqual(parseWorkflowDocument(JSON.stringify(graph)), graph);
+    assert.deepEqual(portableWorkflowDocument(graph), graph);
+    const copied = pasteWorkflowSelection(copyWorkflowSelection(graph, graph.nodes.map(node => node.id), []));
+    assert.equal(validateWorkflowDocument(doc(copied.nodes, copied.edges)).edges.length, graph.edges.length);
+    assert.equal(routingInputTypes(graph.nodes, graph.edges).get('assert'), 'Number');
+    for (const link of graph.edges) assert.equal(isWorkflowConnection(link, graph.nodes, graph.edges.filter(edge => edge.id !== link.id)), true, link.id);
+    let calls = 0;
+    const runner = createWorkflowRunner(graph, undefined, createWorkflowDemo(), { ...executor(), process: (...args) => { calls++; return processWorkflowValue(...args); } });
+    assert.equal((await runner.nextAsync()).kind, 'complete');
+    assert.deepEqual(JSON.parse(runner.processingResults[0].preview), invert ? ['0'] : ['2', '3', '2']);
+    assert.equal(calls, 1, 'The complete array runs in one processing call.');
+    assert.equal(runner.processingResults.length, 1, 'Individual item evaluations do not create UI result rows.');
+    runner.end();
+  }
+  for (const input of [[], [0, false, '', null, 'kept']]) {
+    const graph = arrayAssertionGraph(input, { cast: false, operator: 'is_set' });
+    assert.equal(routingInputTypes(graph.nodes, graph.edges).get('assert'), 'Unknown');
+    const runner = createWorkflowRunner(graph, undefined, createWorkflowDemo(), executor());
+    await runner.nextAsync();
+    assert.deepEqual(JSON.parse(runner.processingResults[0].preview), input.filter(value => value !== null));
+    runner.end();
+  }
+});
+
+Then('array assertion paths capture connected operands without leaking private values', async () => {
+  const graph = arrayAssertionGraph([secret, 'other'], { cast: false, operator: 'equals' });
+  graph.nodes.push({ id: 'vault', type: 'vault', position: { x: 0, y: 200 }, data: { credentialId: uuid } });
+  graph.edges.push(edge('vault', 'assert', 'value', 'expected'));
+  const output = processNode('transform', 'json_stringify');
+  const complete = targetDocument([...graph.nodes, output], [...graph.edges, edge('filter', 'transform')], 'transform');
+  const runner = createWorkflowRunner(complete, 'target', createWorkflowDemo(), { ...executor(), process: async () => assert.fail('Private array filtering must remain inside the vault.') });
+  const next = await runner.nextAsync();
+  assert.equal(next.values['body:$'], vaultVariablePlaceholder);
+  assert.ok(!JSON.stringify([next.values, runner.processingResults]).includes(secret));
+  assert.equal(await resolvePrivateExpression(next.vaultVariables[0].expression, [credential]), JSON.stringify([secret]));
+  runner.end();
+  const publicGraph = arrayAssertionGraph([0, 2, 4]);
+  publicGraph.nodes.push(file(2, 'operand'));
+  publicGraph.edges.push(edge('operand', 'assert', 'value', 'expected'));
+  const publicRunner = createWorkflowRunner(publicGraph, undefined, createWorkflowDemo(), executor());
+  await publicRunner.nextAsync();
+  assert.deepEqual(JSON.parse(publicRunner.processingResults[0].preview), [4]);
+  publicRunner.end();
+});
+
+Then('array assertion callbacks reject incomplete escaping cyclic and excessive paths', async () => {
+  const original = arrayAssertionGraph([1, 2]);
+  for (const graph of [
+    { ...original, edges: original.edges.filter(edge => edge.targetHandle !== 'failure') },
+    { ...original, nodes: [...original.nodes, stopNode()], edges: [...original.edges, edge('assert', 'stop', 'success')] },
+    { ...original, edges: [...original.edges, edge('cast', 'assert', 'result', 'expected')] },
+  ]) assert.throws(() => arrayFilterPlans(graph), /array|Array|Return|operand|Assert/);
+  const predicate = arrayFilterPlans(original).get('filter').predicate;
+  assert.throws(() => validateArrayPredicate({ ...predicate, steps: [...predicate.steps, predicate.steps[0]] }), /must end at Assert/);
+  await assert.rejects(processWorkflowValue('filter', data('filter', 'array_filter'), [1]), /Connect Filter array Item/);
+  await assert.rejects(processWorkflowValue('transform', data('transform', 'base64_encode'), 'x', undefined, undefined, predicate), /Only Filter array/);
+  const long = { ...predicate, steps: [...Array.from({ length: 31 }, () => ({ type: 'cast', targetType: 'Number' })), predicate.steps.at(-1)] };
+  await assert.rejects(processWorkflowValue('filter', data('filter', 'array_filter'), Array(4000).fill(1), undefined, {}, long), /processing limit/);
+  let release;
+  const runner = createWorkflowRunner(original, undefined, createWorkflowDemo(), { ...executor(), process: () => new Promise(resolve => { release = resolve; }) });
+  const pending = runner.nextAsync();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  runner.end(); release([2]);
+  await assert.rejects(pending);
+  assert.equal(runner.processingResults.length, 0);
+});
+
+Then('array predicates reuse pure processing and keep intermediate transformations private', async () => {
+  const graph = arrayAssertionGraph([{ value: '0' }, { value: '2' }, { value: '3' }]);
+  graph.nodes.push(processNode('filter', 'select_field', { path: '/value' }, 'selection'));
+  graph.edges = graph.edges.filter(edge => edge.sourceHandle !== 'item');
+  graph.edges.push(edge('filter', 'selection', 'item'), edge('selection', 'cast'));
+  for (const link of graph.edges) assert.equal(isWorkflowConnection(link, graph.nodes, graph.edges.filter(edge => edge.id !== link.id)), true, link.id);
+  const runner = createWorkflowRunner(graph, undefined, createWorkflowDemo(), executor());
+  await runner.nextAsync();
+  assert.deepEqual(JSON.parse(runner.processingResults[0].preview), [{ value: '2' }, { value: '3' }]);
+  runner.end();
+  const keyed = arrayAssertionGraph(['a', 'b'], { cast: false, operator: 'equals', expected: createHmac('sha256', secret).update('a').digest('hex') });
+  keyed.nodes.push(processNode('transform', 'hmac_sha256'), { id: 'key', type: 'vault', position: { x: 0, y: 100 }, data: { credentialId: uuid } });
+  keyed.edges = keyed.edges.filter(edge => edge.sourceHandle !== 'item');
+  keyed.edges.push(edge('filter', 'transform', 'item'), edge('transform', 'assert'), edge('key', 'transform', 'value', 'key'));
+  const finish = processNode('transform', 'json_stringify', {}, 'finish');
+  const privateRunner = createWorkflowRunner(targetDocument([...keyed.nodes, finish], [...keyed.edges, edge('filter', 'finish')], 'finish'), 'target', createWorkflowDemo(),
+    { ...executor(), process: async () => assert.fail('Private keyed item processing cannot enter the public worker.') });
+  const next = await privateRunner.nextAsync();
+  assert.equal(next.values['body:$'], vaultVariablePlaceholder);
+  assert.equal(await resolvePrivateExpression(next.vaultVariables[0].expression, [credential]), '["a"]');
+  assert.ok(!JSON.stringify([next.values, privateRunner.processingResults]).includes(secret));
+  privateRunner.end();
+});
 
 Then('Stop nodes retain documents clipboard and input-only connection identities', () => {
   const source = file('original'), stop = stopNode(), proposed = edge('file', 'stop', 'value');

@@ -340,14 +340,32 @@ Text indices count Unicode
 code points; ranges include their start and exclude their end, with negative
 indices counting from the end. Array filtering retains input order. Predicates
 use explicit field paths and comparisons; equality preserves value types.
-Substring and Array range bounds accept Integer connections. Select field and
-Filter array paths accept Text connections. Filter array's Expected value
-accepts Number for numeric comparisons, Text for text comparisons and type
-checks, and JsonValue for general comparisons. Is set and Is not set hide the
-unused expectation and its port. Each connected parameter shows its type badge
-and disables manual editing, retaining the saved value for disconnection or
-Undo. Connected comparisons preserve their original value types, including
-inside private vault recipes; strings are never parsed as JSON implicitly.
+Substring and Array range bounds accept Integer connections. Select field paths
+accept Text connections. Connected parameters show type badges, disable manual
+editing and retain their saved values for disconnection or Undo.
+
+Filter array delegates its predicate to a separate Assert. Its main input and
+result are Array; Item emits an Unknown value for each element. A bounded path
+of Cast, Transform or other Filter operations ends at one Assert. Return that
+Assert's two outcomes to the filter's Success and Failure inputs: Success keeps
+the original array item and Failure discards it. Swapping the returns inverts
+the selection. Casting affects the assertion without changing retained items
+or their order. Unknown item/return badges resolve on the assertion side when
+a Cast supplies a known type. No duplicate condition editor appears in Filter
+array. Older saved inline predicates/private recipes remain executable until
+an assertion path replaces them; connected legacy operands remain visible until
+then. Wiring the callback clears the old predicate and its operand connections
+as one undoable change.
+
+The runner compiles each item path once and evaluates the array in one worker
+request, producing one bounded result preview rather than per-item graph state
+or rendering. Paths are limited to 32 processing steps and 100,000 item/step
+evaluations. Both outcomes return to the same filter; branching outside the
+item path, nested filter callbacks and ordinary routing cycles are rejected.
+External predicate operands are captured once, preserving their value types.
+Private arrays or operands execute entirely inside vault processing; no item
+values or predicate intermediates are returned to the page. Ending the run
+cancels its public worker and discards pending results.
 
 Assert passes the original input unchanged through Success or Failure. The
 field-path editor appears only for connected Object, Array or JsonValue inputs.

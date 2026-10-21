@@ -5,6 +5,18 @@
 Feature: Explicit workflow processing and assertion routing
   Transform, Filter and Assert are independent nodes with typed, bounded behavior.
 
+  Scenario: Array filtering uses an isolated assertion path for each original item
+    Then array item assertion paths keep original values order and resolved cast types
+
+  Scenario: Array assertion paths retain typed public and private operands
+    Then array assertion paths capture connected operands without leaking private values
+
+  Scenario: Array assertion callbacks stay bounded and cancellable
+    Then array assertion callbacks reject incomplete escaping cyclic and excessive paths
+
+  Scenario: Array assertion paths reuse field selection and private keyed transforms
+    Then array predicates reuse pure processing and keep intermediate transformations private
+
   Scenario: Connected assertion expectations preserve types and private comparisons
     Then assertion expectations accept typed connections and compare supplied public and private values
 

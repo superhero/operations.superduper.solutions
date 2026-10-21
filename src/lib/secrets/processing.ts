@@ -6,10 +6,11 @@ import { processingDefinition, processWorkflowValue, validateProcessingData, val
 import { canonicalPolicyValue } from "./policy.ts";
 import { VaultError, type VaultCredential } from "./types.ts";
 import { isVaultVariableReference } from "./variables.ts";
+import { arrayPredicateCaptures, validateArrayPredicate, type ArrayPredicate } from "../workflow-array-predicate.ts";
 
 export type PrivateExpression = { kind: "credential"; id: string } | { kind: "literal"; value: JsonValue }
   | { kind: "array"; items: PrivateExpression[] } | { kind: "object"; entries: Record<string, PrivateExpression> }
-  | { kind: "process"; type: "transform" | "filter"; data: ProcessingData; value: PrivateExpression; key?: PrivateExpression; parameters?: Record<string, PrivateExpression> };
+  | { kind: "process"; type: "transform" | "filter"; data: ProcessingData; value: PrivateExpression; key?: PrivateExpression; parameters?: Record<string, PrivateExpression>; predicate?: ArrayPredicate };
 export type PrivateProcessingReference = { vaultProcessing: PrivateExpression; referenceToken: string };
 export function isPrivateProcessingReference(value: unknown, token: string): value is PrivateProcessingReference {
   return !!value && typeof value === "object" && Object.keys(value).length === 2 && Object.hasOwn(value, "vaultProcessing")
@@ -52,17 +53,23 @@ export function validatePrivateExpression(value: unknown): PrivateExpression {
         return { kind: "object", entries: Object.fromEntries(Object.entries(value.entries).map(([name, entry]) => [name, visit(entry, depth + 1)])) };
       }
       if (value.kind !== "process" || !["transform", "filter"].includes(value.type)) throw new VaultError("INVALID");
-      keys(["kind", "type", "data", "value", ...(Object.hasOwn(value, "key") ? ["key"] : []), ...(Object.hasOwn(value, "parameters") ? ["parameters"] : [])]);
+      keys(["kind", "type", "data", "value", ...(Object.hasOwn(value, "key") ? ["key"] : []), ...(Object.hasOwn(value, "parameters") ? ["parameters"] : []),
+        ...(Object.hasOwn(value, "predicate") ? ["predicate"] : [])]);
       const data = validateProcessingData(value.type, value.data);
+      let predicate: ArrayPredicate | undefined;
+      if (Object.hasOwn(value, "predicate")) {
+        if (value.type !== "filter" || data.operation !== "array_filter") throw new VaultError("INVALID");
+        predicate = validateArrayPredicate(value.predicate);
+      }
       let parameters: Record<string, PrivateExpression> | undefined;
       if (Object.hasOwn(value, "parameters")) {
-        const fields = processingDefinition(value.type, data).parameters.filter(field => field.connectable);
+        const fields = predicate ? [...arrayPredicateCaptures(predicate)] : processingDefinition(value.type, data).parameters.filter(field => field.connectable).map(field => field.name);
         if (!value.parameters || typeof value.parameters !== "object" || Array.isArray(value.parameters)
-          || Object.keys(value.parameters).some(name => !fields.some(field => field.name === name))) throw new VaultError("INVALID");
+          || Object.keys(value.parameters).some(name => !fields.includes(name))) throw new VaultError("INVALID");
         parameters = Object.fromEntries(Object.entries(value.parameters).map(([name, entry]) => [name, visit(entry, depth + 1)]));
       }
       return { kind: "process", type: value.type, data, value: visit(value.value, depth + 1),
-        ...(Object.hasOwn(value, "key") ? { key: visit(value.key, depth + 1) } : {}), ...(parameters ? { parameters } : {}) };
+        ...(Object.hasOwn(value, "key") ? { key: visit(value.key, depth + 1) } : {}), ...(parameters ? { parameters } : {}), ...(predicate ? { predicate } : {}) };
     }
     return visit(JSON.parse(serialized), 0);
   } catch (error) { throw error instanceof VaultError ? error : new VaultError("INVALID"); }
@@ -92,7 +99,7 @@ export async function resolvePrivateExpression(expression: PrivateExpression, cr
     else if (value.kind === "array") result = await Promise.all(value.items.map(resolve));
     else if (value.kind === "object") result = Object.fromEntries(await Promise.all(Object.entries(value.entries).map(async ([key, entry]) => [key, await resolve(entry)])));
     else result = await processWorkflowValue(value.type, value.data, await resolve(value.value), value.key ? await resolve(value.key) : undefined,
-      value.parameters ? Object.fromEntries(await Promise.all(Object.entries(value.parameters).map(async ([name, entry]) => [name, await resolve(entry)]))) : undefined);
+      value.parameters ? Object.fromEntries(await Promise.all(Object.entries(value.parameters).map(async ([name, entry]) => [name, await resolve(entry)]))) : undefined, value.predicate);
     collect(result);
     return result;
   }

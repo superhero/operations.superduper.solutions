@@ -12,9 +12,9 @@ Feature: Workflow processing controls and execution
       | 390   |
       | 1280  |
 
-  Scenario Outline: Filter array connections follow the selected condition
+  Scenario Outline: Filter array uses an external per-item assertion
     When I use a viewport of <width> by 900 pixels
-    Then Filter array operand types visibility and connections follow reversible condition changes
+    Then Filter array evaluates external assertions with reversible cast typing and original items
 
     Examples:
       | width |
