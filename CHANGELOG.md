@@ -2,6 +2,35 @@
 
 ## Latest
 
+<!-- changelog-commit:1380178edebd71807fb603262a2652f0f860cc08 -->
+### Commit [`1380178`](https://github.com/superhero/operations.superduper.solutions/commit/1380178edebd71807fb603262a2652f0f860cc08)
+
+```text
+fix(schemas): avoid disabled flash when revisions open
+
+Publish the initial history after its comparison finishes so revision rows,
+the current marker and selectors appear in their ready state together.
+Keep stale-response rejection and the existing close lifecycle intact.
+
+Cover the first rendered control colors and selection at desktop and mobile
+widths, with bounded observations documenting the reproduced flash.
+
+```
+
+<!-- changelog-commit:2c6cade7a5ab67b3fe668172d4bd91ac5c9a2385 -->
+### Commit [`2c6cade`](https://github.com/superhero/operations.superduper.solutions/commit/2c6cade7a5ab67b3fe668172d4bd91ac5c9a2385)
+
+```text
+fix(schemas): disable Ollama by default
+
+Allow factory registration to specify initial enablement and start Ollama
+off on first installation. Keep saved enablement choices intact.
+
+Update the existing fresh-profile check to activate Ollama explicitly,
+verify that activation survives reload, and run its generation operation.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
