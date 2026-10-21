@@ -614,6 +614,42 @@ contracts pass. Production build passes. Full regression remains in CI.
 
 ```
 
+<!-- changelog-commit:38b4e974c7f2603cae607912df4af7c1696f57fc -->
+### Commit [`38b4e97`](https://github.com/superhero/operations.superduper.solutions/commit/38b4e974c7f2603cae607912df4af7c1696f57fc)
+
+```text
+test(browser): follow schema trees and corrected Google operations
+
+Reveal the Codex settings branch before reenabling its schema. Verify
+that corrected Google operations can be added alongside FRED on desktop
+and mobile, and retain resource-folder animation containment assertions.
+Update CSV execution headings to include their schema name.
+
+Validation: all six affected browser examples pass.
+
+```
+
+<!-- changelog-commit:0e5a3a94410f6c4944d64b84d290c0b2119c10a2 -->
+### Commit [`0e5a3a9`](https://github.com/superhero/operations.superduper.solutions/commit/0e5a3a94410f6c4944d64b84d290c0b2119c10a2)
+
+```text
+fix(ci): bound browser heaps and isolate complete libraries
+
+Keep every feature using complete service defaults in the exclusive
+library phase, including catalog hierarchy, revisions and API versions.
+Discover tagged features in the scheduling contract to catch omissions.
+
+Limit Node old space to 512 MiB inside the shared browser container and
+attach effective worker heap limits to reports. A paired six-case check
+peaked at 3.39 GiB before and 2.32 GiB after under the same 4 GiB limit;
+the long CI worker kill was not reproduced in that focused sample.
+
+Validation: six affected browser examples, six workflow-run cases and
+five resource/provenance contracts pass. Full release validation remains
+in CI.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.55
