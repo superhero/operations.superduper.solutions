@@ -178,7 +178,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   setContext("workflow-curve-strength", () => workflowDefaults.curveStrength);
   setContext("workflow-connection-options", () => ({ curved, strength: workflowDefaults.curveStrength,
     style: `${edgeOptions.style}; marker-end: url(#${connectionMarkerId})` }));
-  setContext("workflow-input-type", (nodeId: string) => inputTypes.get(nodeId) ?? "Unknown");
+  setContext("workflow-input-type", (nodeId: string, handle = "value") => {
+    if (handle === "value") return inputTypes.get(nodeId) ?? "Unknown";
+    const edge = edges.find(edge => edge.kind === "mapping" && !edge.hidden && !edge.detached && edge.target === nodeId && edge.targetHandle === handle);
+    return edge ? inputTypes.get(edge.source) ?? "Unknown" : "Unknown";
+  });
   setContext("workflow-input-connected", (nodeId: string, handleId?: string | null) => workflowInputConnected(nodeId, handleId, edges));
   setContext("workflow-add-property", {
     types: (nodeId: string) => getAdditionalPropertyTypes(nodes, nodeId, propertySchema(nodeId)),
@@ -709,7 +713,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (edge) { edges = addEdge(edge, edges); adaptGates(); }
   }
 
-  function adaptGates() { nodes = adaptRoutingGates(nodes, edges).map(graphNode); }
+  function adaptGates() {
+    const upgraded = new Set(nodes.filter(node => node.type === "filter" && node.data.operation === "array_filter"
+      && Object.hasOwn(node.data.parameters, "operator") && edges.some(edge => edge.kind === "mapping" &&
+        (edge.source === node.id && edge.sourceHandle === "item" || edge.target === node.id && (edge.targetHandle === "success" || edge.targetHandle === "failure"))))
+      .map(node => node.id));
+    if (upgraded.size) {
+      // Switching a saved inline predicate to an Assert path is one undoable edit.
+      edges = edges.filter(edge => !upgraded.has(edge.target) || edge.targetHandle !== "path" && edge.targetHandle !== "expected");
+      nodes = nodes.map(node => node.type === "filter" && upgraded.has(node.id) ? { ...node, data: { ...node.data, parameters: {} } } : node);
+    }
+    nodes = adaptRoutingGates(nodes, edges).map(graphNode);
+  }
 
   function copySelection(cut = false) {
     const copied = copyWorkflowSelection(documentValue(), nodes.filter(node => node.selected).map(node => node.id), edges.filter(edge => edge.selected).map(edge => edge.id));

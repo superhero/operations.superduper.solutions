@@ -97,51 +97,83 @@ Then('Filter bound and path connections disable manual editing and selected fiel
   await expect(panel(page).getByRole('alert')).toHaveCount(0);
 });
 
-Then('Filter array operand types visibility and connections follow reversible condition changes', async function () {
+Then('Filter array evaluates external assertions with reversible cast typing and original items', async function () {
   const page = this.page;
   await setMode(page, 'workflow');
-  await loadGraphFixture(page, document([source([{ id: 1 }, { id: 4 }]), { ...source(3), id: 'expected', position: { x: 100, y: 100 } },
-    processor('filter', 'array_filter', { path: '/id', operator: 'greater_than', expected: '0' })], [connection('source', 'filter', 'value')]));
+  const card = id => workflow(page).locator('.svelte-flow__node[data-id="' + id + '"]');
+  const port = (id, handle) => card(id).locator('.svelte-flow__handle[data-handleid="' + handle + '"]');
+  const filter = { ...processor('filter', 'array_filter', {}, 500), position: { x: 500, y: 200 } };
+  const assertion = { ...processor('assert', 'expect', { operator: 'greater_than', expected: '1' }, 1000), position: { x: 1000, y: 200 } };
+  const cast = { id: 'cast', type: 'cast', position: { x: 500, y: 600 }, data: { targetType: 'Number' } };
+  const operand = { ...source(2), id: 'operand', position: { x: 100, y: 600 } };
+  const nodes = [source(['0', '2', '3']), filter, assertion, cast, operand];
+  const main = connection('source', 'filter', 'value');
+  const legacy = { ...filter, data: { ...filter.data, parameters: { path: '', operator: 'greater_than', expected: '1' } } };
+  await loadGraphFixture(page, document(nodes.map(node => node.id === 'filter' ? legacy : node), [main, connection('operand', 'filter', 'value', 'expected')]));
   await page.getByRole('button', { name: 'Fit View', exact: true }).click();
-  const filter = workflow(page).locator('[data-processing-kind="filter"]');
-  const expected = filter.getByLabel('Expected value', { exact: true });
-  const handle = filter.locator('.svelte-flow__handle[data-handleid="expected"]');
-  await expect(filter.locator('.processing-parameter .utility-type')).toHaveText(['Text', 'Number']);
-  await expect(filter.locator('.output-type')).toHaveText('Array');
-  await expect(handle).toHaveAttribute('aria-label', 'Expected value input (Number)');
-  await gesture(page, workflow(page).locator('.svelte-flow__node[data-id="expected"] .svelte-flow__handle.source'), handle);
-  await expect(expected).toBeDisabled();
+  await expect(card('filter').getByRole('combobox', { name: 'Condition', exact: true })).toHaveCount(0);
+  await expect(card('filter').getByLabel('Field path (JSON pointer)', { exact: true })).toHaveCount(0);
+  await expect(card('filter').locator('.processing-output .utility-type')).toHaveText(['Unknown', 'Unknown', 'Unknown', 'Array']);
+  await expect(port('filter', 'item')).toHaveAttribute('aria-label', 'Filter array item (Unknown)');
+  await gesture(page, port('filter', 'item'), port('assert', 'value'));
+  await expect(card('filter').getByLabel('Expected value', { exact: true })).toHaveCount(0);
   await saved(page);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(card('filter').getByLabel('Expected value', { exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  await expect(card('filter').getByLabel('Expected value', { exact: true })).toHaveCount(0);
+  await gesture(page, port('assert', 'success'), port('filter', 'success'));
+  await gesture(page, port('assert', 'failure'), port('filter', 'failure'));
+  await expect(card('assert').locator('.utility-title .utility-type')).toHaveText('Unknown');
+  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array success input (Unknown)');
+  await saved(page);
+  // Replace the direct item input with an explicit Cast while retaining both returns.
+  const returns = [connection('assert', 'filter', 'success', 'success'), connection('assert', 'filter', 'failure', 'failure')];
+  await loadGraphFixture(page, document(nodes, [main, ...returns]));
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await gesture(page, port('filter', 'item'), port('cast', 'value'));
+  await gesture(page, port('cast', 'result'), port('assert', 'value'));
+  await expect(card('assert').locator('.utility-title .utility-type')).toHaveText('Number');
+  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array success input (Number)');
+  await expect(port('filter', 'failure')).toHaveAttribute('aria-label', 'Filter array failure input (Number)');
+  await saved(page);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array success input (Unknown)');
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array success input (Number)');
+  await saved(page);
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(port('filter', 'success')).toHaveAttribute('aria-label', 'Filter array success input (Number)');
+  await page.evaluate(() => {
+    const NativeWorker = window.Worker;
+    window.__arrayFilterCalls = 0;
+    window.Worker = class extends NativeWorker {
+      constructor(url, options) { super(url, options); this.isProcessing = options?.name === 'workflow-processing'; }
+      postMessage(message, ...args) { if (this.isProcessing && message?.kind === 'request') window.__arrayFilterCalls++; return super.postMessage(message, ...args); }
+    };
+  });
   await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
   await expect(panel(page).getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
   await panel(page).getByText('Processing results (1)', { exact: true }).click();
-  assert.deepEqual(JSON.parse(await panel(page).getByRole('region', { name: 'Filter array result' }).locator('pre').textContent()), [{ id: 4 }]);
+  assert.deepEqual(JSON.parse(await panel(page).getByRole('region', { name: 'Filter array result' }).locator('pre').textContent()), ['2', '3']);
+  assert.equal(await page.evaluate(() => window.__arrayFilterCalls), 1);
+  await expect(panel(page).getByRole('alert')).toHaveCount(0);
   await panel(page).getByRole('button', { name: 'Quit', exact: true }).click();
   await page.getByRole('button', { name: 'Fit View', exact: true }).click();
-  await choose(page, filter, 'Condition', 'Starts with');
-  await expect(filter.locator('.processing-parameter .utility-type')).toHaveText(['Text', 'Text']);
-  await expect(expected).toBeEditable();
+  await gesture(page, port('operand', 'value'), port('assert', 'expected'));
+  await expect(card('assert').getByLabel('Expected value', { exact: true })).toBeDisabled();
   await saved(page);
-  assert.ok(!(await readExport(page)).document.edges.some(edge => edge.targetHandle === 'expected'));
-  await page.getByRole('button', { name: 'Undo', exact: true }).click();
-  await expect(expected).toBeDisabled();
-  await expect(handle).toHaveAttribute('aria-label', 'Expected value input (Number)');
-  await choose(page, filter, 'Condition', 'Is set');
-  await expect(expected).toHaveCount(0);
-  await expect(handle).toHaveCount(0);
-  await saved(page);
-  await page.getByRole('button', { name: 'Undo', exact: true }).click();
-  await expect(expected).toBeDisabled();
-  await choose(page, filter, 'Condition', 'Equals');
-  await expect(handle).toHaveAttribute('aria-label', 'Expected value input (JsonValue)');
-  await expect(filter.locator('.processing-parameter .utility-type')).toHaveText(['Text', 'JsonValue']);
-  await expect(expected).toBeDisabled();
-  await saved(page);
-  assert.equal((await readExport(page)).document.nodes.find(node => node.id === 'filter').data.parameters.expected, '0');
-  await page.reload();
-  await setMode(page, 'workflow');
-  await expect(expected).toBeDisabled();
-  await expect(handle).toHaveAttribute('aria-label', 'Expected value input (JsonValue)');
+  const exported = (await readExport(page)).document;
+  assert.deepEqual(exported.nodes.find(node => node.id === 'filter').data.parameters, {});
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await expect(panel(page).getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
+  await panel(page).getByText('Processing results (1)', { exact: true }).click();
+  assert.deepEqual(JSON.parse(await panel(page).getByRole('region', { name: 'Filter array result' }).locator('pre').textContent()), ['3']);
+  await panel(page).getByRole('button', { name: 'Quit', exact: true }).click();
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await workflow(page).screenshot({ path: this.artifactDirectory + '/array-assertion-loop.png' });
 });
 
 Then('reopening Transform with an offscreen selection keeps its first visible frame stable at vertical position {int}', async function (y) {

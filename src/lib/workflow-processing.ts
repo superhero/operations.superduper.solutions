@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { JsonValue } from "./catalog.ts";
 import { encodeWorkflowBinary, validateWorkflowBinary, type WorkflowBinary } from "./workflow-binary.ts";
+import { filterArrayWithPredicate, type ArrayPredicate } from "./workflow-array-predicate.ts";
 
 export type ProcessingKind = "transform" | "filter" | "assert";
 export type ProcessingType = "Text" | "Number" | "Integer" | "Boolean" | "Object" | "Array" | "Null" | "Binary" | "Unknown" | "Mixed" | "JSON";
@@ -38,7 +39,7 @@ export const processingOperations: readonly Definition[] = [
   { id: "substring", kind: "filter", label: "Substring", inputs: ["Text"], output: "Text", parameters: range },
   { id: "select_field", kind: "filter", label: "Select field", inputs: ["Object", "Array"], output: "JSON", parameters: [{ ...parameter("path", "Field path (JSON pointer)"), connectable: true }] },
   { id: "array_range", kind: "filter", label: "Array range", inputs: ["Array"], output: "Array", parameters: range },
-  { id: "array_filter", kind: "filter", label: "Filter array", inputs: ["Array"], output: "Array", parameters: condition.map(field => field.name === "operator" ? field : { ...field, connectable: true }) },
+  { id: "array_filter", kind: "filter", label: "Filter array", inputs: ["Array"], output: "Array", parameters: [] },
   { id: "expect", kind: "assert", label: "Assert", inputs: anyValue, output: "input", parameters: condition.map(field => field.name === "expected" ? { ...field, connectable: true } : field) },
 ];
 export const processingValueLimit = 500_000;
@@ -51,6 +52,9 @@ export function processingDefinition(kind: ProcessingKind, data: ProcessingData)
   if (kind === "transform" && data.operation === "select_field") kind = "filter";
   const definition = processingOperations.find(operation => operation.kind === kind && operation.id === data.operation);
   if (!definition) throw new Error("Unknown processing operation.");
+  // Saved inline predicates and private recipes remain executable until rewired.
+  if (definition.id === "array_filter" && Object.hasOwn(data.parameters, "operator"))
+    return { ...definition, parameters: condition.map(field => field.name === "operator" ? field : { ...field, connectable: true }) };
   return definition;
 }
 export function defaultProcessingData(kind: ProcessingKind, operation = kind === "transform" ? "base64_encode" : kind === "filter" ? "trim" : "expect"): ProcessingData {
@@ -81,6 +85,7 @@ export function processingOutputType(kind: ProcessingKind, data: ProcessingData,
 export function processingInputTypes(kind: ProcessingKind, data: ProcessingData, handle: string | null | undefined, inputType: ProcessingType | "Mixed" = "Unknown"): readonly ProcessingType[] | undefined {
   const definition = processingDefinition(kind, data);
   if (handle === "value") return definition.inputs;
+  if (definition.id === "array_filter" && (handle === "success" || handle === "failure")) return anyValue;
   if (handle === "key" && definition.key) return textBinary;
   if (handle === "expected" && (kind === "assert" || definition.id === "array_filter"))
     return processingConditionUsesExpected(data.parameters.operator ?? "") ? processingExpectedTypes(data, definition.id === "array_filter" ? "JSON" : inputType) : undefined;
@@ -205,10 +210,16 @@ function index(value: string, fallback?: number): number | undefined {
 }
 
 /** Pure bounded operation implementation, shared by public and private workers. */
-export async function processWorkflowValue(kind: ProcessingKind, raw: ProcessingData, value: unknown, key?: unknown, parameters?: Record<string, unknown>): Promise<unknown> {
+export async function processWorkflowValue(kind: ProcessingKind, raw: ProcessingData, value: unknown, key?: unknown, parameters?: Record<string, unknown>, predicate?: ArrayPredicate): Promise<unknown> {
   let data = validateProcessingData(kind, raw);
   let connectedExpected: { value: unknown } | undefined;
   const definition = processingDefinition(kind, data);
+  if (predicate !== undefined) {
+    if (kind !== "filter" || data.operation !== "array_filter") throw new Error("Only Filter array accepts an assertion path.");
+    return filterArrayWithPredicate(value, predicate, parameters ?? {}, processWorkflowValue);
+  }
+  if (data.operation === "array_filter" && !Object.hasOwn(data.parameters, "operator"))
+    throw new Error("Connect Filter array Item through Assert and return its Success and Failure outcomes.");
   if (parameters !== undefined) {
     if (!plain(parameters)) throw new Error("Invalid connected processing parameters.");
     const supplied: Record<string, string> = {};
