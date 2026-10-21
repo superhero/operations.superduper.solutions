@@ -32,6 +32,29 @@ async function choose(page, node, label, option) {
   await page.getByRole('option', { name: option, exact: true }).click();
 }
 
+Then('Transform input labels follow its selected operation before any connection', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  await page.getByRole('button', { name: 'Transform', exact: true }).click();
+  const transform = workflow(page).locator('[data-processing-kind="transform"]');
+  const badge = transform.locator('.utility-title .utility-type');
+  const handle = transform.locator('.utility-title .svelte-flow__handle.target');
+  await expect(badge).toHaveText('Text / Binary');
+  for (const [operation, expected] of [
+    ['Decode UTF-8', 'Binary'], ['Parse JSON', 'Text'], ['Select field', 'Object / Array'],
+    ['Sign JWT', 'Object'], ['Serialize JSON', 'JSON'], ['Encode Base64', 'Text / Binary']
+  ]) {
+    await choose(page, transform, 'Transform operation', operation);
+    await expect(badge).toHaveText(expected);
+    await expect(handle).toHaveAttribute('aria-label', `Transform input (${expected})`);
+  }
+  await saved(page);
+  assert.equal((await readExport(page)).document.edges.length, 0);
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(badge).toHaveText('Text / Binary');
+});
+
 Then('Stop can be added undone exported and restored with only an input', async function () {
   const page = this.page;
   await setMode(page, 'workflow');
@@ -160,6 +183,8 @@ Then('a file filter transform and assertion complete without an HTTP operation o
   await loadGraphFixture(page, document([source('  abc  '), processor('filter', 'trim', {}, 500), processor('transform', 'base64_encode', {}, 900),
     processor('assert', 'expect', { operator: 'equals', expected: 'YWJj' }, 1300)],
   [connection('source', 'filter', 'value'), connection('filter', 'transform'), connection('transform', 'assert')]));
+  await expect(workflow(page).locator('[data-processing-kind="transform"] .utility-title .utility-type')).toHaveText('Text / Binary');
+  await expect(workflow(page).locator('[data-processing-kind="assert"] .utility-title .utility-type')).toHaveText('Text');
   assert.equal(await page.evaluate(() => window.__processingWorkers.length), 0);
   await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
   const run = panel(page);

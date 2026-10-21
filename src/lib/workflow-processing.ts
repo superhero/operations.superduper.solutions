@@ -8,7 +8,7 @@ export type ProcessingKind = "transform" | "filter" | "assert";
 export type ProcessingType = "Text" | "Number" | "Integer" | "Boolean" | "Object" | "Array" | "Null" | "Binary" | "Unknown" | "Mixed";
 export type ProcessingData = { version: 1; operation: string; parameters: Record<string, string> };
 type Parameter = { name: string; label: string; initial: string; options?: readonly string[]; multiline?: boolean };
-type Definition = { id: string; kind: ProcessingKind; label: string; inputs: readonly ProcessingType[]; output: ProcessingType | "input"; key?: boolean; parameters: readonly Parameter[] };
+type Definition = { id: string; kind: ProcessingKind; label: string; inputs: readonly ProcessingType[]; inputLabel?: string; output: ProcessingType | "input"; key?: boolean; parameters: readonly Parameter[] };
 const textBinary = ["Text", "Binary"] as const;
 const anyValue = ["Text", "Number", "Integer", "Boolean", "Object", "Array", "Null", "Binary", "Unknown"] as const;
 const parameter = (name: string, label: string, initial = "", options?: readonly string[]): Parameter => ({ name, label, initial, ...(options ? { options } : {}) });
@@ -22,7 +22,7 @@ export const processingOperations: readonly Definition[] = [
     { id: `${encoding}_decode`, kind: "transform" as const, label: `Decode ${encoding === "hex" ? "hexadecimal" : encoding === "base64" ? "Base64" : "Base64url"}`, inputs: ["Text" as const], output: "Binary" as const, parameters: [] },
   ]),
   { id: "json_parse", kind: "transform", label: "Parse JSON", inputs: ["Text"], output: "Unknown", parameters: [parameter("type", "Result type", "Object", ["Object", "Array", "Text", "Number", "Boolean", "Null"])] },
-  { id: "json_stringify", kind: "transform", label: "Serialize JSON", inputs: anyValue.filter(type => type !== "Binary"), output: "Text", parameters: [] },
+  { id: "json_stringify", kind: "transform", label: "Serialize JSON", inputs: anyValue.filter(type => type !== "Binary"), inputLabel: "JSON", output: "Text", parameters: [] },
   { id: "select_field", kind: "transform", label: "Select field", inputs: ["Object", "Array"], output: "Unknown", parameters: [parameter("path", "Field path (JSON pointer)"), parameter("type", "Result type", "Text", anyValue)] },
   { id: "map_fields", kind: "transform", label: "Map fields", inputs: ["Object", "Array"], output: "Object", parameters: [{ name: "fields", label: "Output names to source paths (JSON)", initial: '{"value":""}', multiline: true }] },
   { id: "sha256", kind: "transform", label: "Hash SHA-256", inputs: textBinary, output: "Text", parameters: [parameter("format", "Output encoding", "hex", ["hex", "base64", "base64url"])] },
