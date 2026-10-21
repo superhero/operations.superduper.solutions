@@ -50,7 +50,8 @@ Then('full-library search renders nearby rows and shares tooltip state', async f
   await expect(page.getByRole('button', { name: 'Review matching details', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Review matching details', exact: true }).click();
   await expect(page.locator('.evaluation-report')).toBeVisible();
-  const operationCount = operations.length + descriptors.reduce((total, source) => total + source.operations, 0);
+  const operationCount = operations.length + descriptors.filter(source => source.id !== 'ollama')
+    .reduce((total, source) => total + source.operations, 0);
   await expect(page.locator('.evaluation-report .report-metric-value').nth(2)).toHaveText(String(operationCount));
   await setEvaluationDetails(page, false);
   await page.setViewportSize({ width: 390, height: 844 });

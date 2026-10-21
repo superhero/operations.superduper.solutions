@@ -44,6 +44,16 @@ export async function expectHoverHint(trigger, text) {
   await expect(tooltip).toHaveCount(0);
 }
 
+export async function expectNoHeaderHint(trigger) {
+  const page = trigger.page();
+  await page.mouse.move(0, 0);
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
+  await expect(trigger).not.toHaveAttribute('title');
+  expect(await trigger.evaluate(element => element.closest('[data-tooltip-trigger], [title]') === null)).toBe(true);
+  await trigger.hover();
+  await expect(page.getByRole('tooltip')).toHaveCount(0);
+}
+
 async function expectResponseEnvelope(panel, bodyType) {
   await expect(panel.locator('.data-field .field-name')).toHaveText([
     /^Status\s*\*\s*$/, /^Status message\s*\*\s*$/, /^Response body\s*\*\s*$/, /^Response headers\s*\*\s*$/
@@ -156,9 +166,8 @@ Then("Example array response exposes its query parameters and nested project res
   const projectId = fieldRow(nested, "Path value");
   await expect(projectId.locator(".required")).toHaveText("*");
   await expect(workflow(this.page).locator('.svelte-flow__node[title], .svelte-flow__node [title]')).toHaveCount(0);
-  await expectHoverHint(operationNodes(this.page, 'Example array response').locator('.operation-title-row'),
-    'GET /projects\nIllustrates optional string and integer query inputs and an array response schema.');
-  await expectHoverHint(nested.locator('.data-title strong'), 'Example object');
+  await expectNoHeaderHint(operationNodes(this.page, 'Example array response').locator('.operation-title-row'));
+  await expectNoHeaderHint(nested.locator('.data-title strong'));
   await expectHoverHint(projectId, /arbitrary string used in the example schema[\s\S]*Required/);
   await expectHoverHint(projectId.locator('.required'), 'Required');
   assert.ok(await projectId.evaluate(element => element.tabIndex < 0), 'Field hints must preserve the native node tab order.');
@@ -702,12 +711,12 @@ When('I cancel editing the response header property', async function () {
   await panel.getByRole('button', { name: `Edit property ${this.additionalPropertyName}`, exact: true }).click();
   await expect(panel.getByRole('textbox', { name: 'Property name', exact: true })).toHaveValue(this.additionalPropertyName);
   const propertyType = panel.getByRole('combobox', { name: 'Property type', exact: true });
-  await expectHoverHint(propertyType, 'Text');
+  await expectHoverHint(propertyType, 'Property type');
   await panel.getByRole('textbox', { name: 'Property name', exact: true }).focus();
   await this.page.keyboard.press('Tab');
   await expect(propertyType).toBeFocused();
   await expect(this.page.getByRole('tooltip')).toHaveClass(/\bapp-tooltip\b/);
-  await expect(this.page.getByRole('tooltip')).toHaveText('Text');
+  await expect(this.page.getByRole('tooltip')).toHaveText('Property type');
   await this.page.keyboard.press('Escape');
   await expect(this.page.getByRole('tooltip')).toHaveCount(0);
   await expect(propertyType).toBeFocused();

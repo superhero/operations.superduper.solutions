@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { closeCatalog, connections, openCatalog, readExport, setMode, workflow } from "./workspace.steps.mjs";
-import { expectHoverHint } from "./workflow-fields.steps.mjs";
+import { expectHoverHint, expectNoHeaderHint } from "./workflow-fields.steps.mjs";
 import { gesture as connect } from "./workflow-single-input.steps.mjs";
 
 const node = (page, type) => workflow(page).locator(`.svelte-flow__node-${type}`);
@@ -188,7 +188,7 @@ Then("the reusable workflow keeps its ports and embedded definition", async func
   const title = referenceNode.locator('.operation-title-row');
   await expect(title.locator('strong')).toHaveText(this.reusableFixture.name);
   await expect(title.locator('.material-symbols-rounded')).toHaveText('flowsheet');
-  await expectHoverHint(title, this.reusableFixture.description);
+  await expectNoHeaderHint(title);
   await expect(referenceNode.locator('.operation-ports.inputs .port-label')).toHaveText('Example object response · Path parameters');
   await expect(referenceNode.locator('.operation-ports.outputs .port-label')).toHaveText('Example object response · Response · 200');
   await expect(referenceNode.locator('.operation-port .port-type')).toHaveText(['Object', 'Object']);
