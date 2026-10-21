@@ -8,6 +8,7 @@ import { authenticateManifest, sealSnapshot, validateSnapshot } from "./format.t
 import { approvedOperation } from "./policy.ts";
 import { publicVaultKeys } from "./key-index.ts";
 import { executeCredentialed } from "./execution.ts";
+import { checkPrivateAssertion } from "./processing.ts";
 import { VaultError, passwordProfile, vaultLimits, recoveryKeyBytes, recoveryKeyCharacters } from "./types.ts";
 import type { ApprovedOperation, CredentialBinding, CredentialSummary, CryptoContext, Enrollment,
   KeyEnvelope, UnlockProof, VaultCredential, VaultSnapshot, VaultStatus, VaultKey } from "./types.ts";
@@ -276,6 +277,14 @@ export class VaultSession {
     if (!value || !value.grants.some(item => item.id === grantId)) throw new VaultError("INVALID");
     value.grants = value.grants.filter(item => item.id !== grantId);
     await this.save(values); return this.list();
+  }
+
+  async checkAssertion(expression: import("./processing.ts").PrivateExpression, data: import("../workflow-processing.ts").ProcessingData): Promise<boolean> {
+    const generation = this.generation;
+    const result = await checkPrivateAssertion(expression, data, await this.records());
+    this.guard(generation);
+    await this.assertCurrent();
+    return result;
   }
 
   async execute(descriptor: ApprovedOperation, values: InputValues, binding: CredentialBinding, signal?: AbortSignal, variables?: import("./variables.ts").VaultVariableInput[]) {

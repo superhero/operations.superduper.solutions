@@ -5,6 +5,7 @@ import { requestBody } from "../request-body.ts";
 import { additionalBodyField, InputValidationError, prepareRequest, type InputValues, type PreparedRequest } from "../operation-input.ts";
 import type { WorkflowExecutionResult, WorkflowResponse } from "../workflow-execution.ts";
 import { validateVaultVariableInputs, vaultVariablePlaceholder, type VaultVariableInput } from "./variables.ts";
+import { resolvePrivateExpression } from "./processing.ts";
 import { validateApprovedOperation, validateCredentialPath } from "./policy.ts";
 import { VaultError, vaultLimits, type ApprovedOperation, type CredentialBinding, type VaultCredential } from "./types.ts";
 
@@ -133,16 +134,17 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     const structured = new Map<string, unknown>();
     const fields = [...approved.operation.fields];
     for (const variable of variables) {
-      const credential = credentialSnapshot.find(item => item.id === variable.credentialId);
+      const resolved = await resolvePrivateExpression(variable.expression ?? { kind: "credential", id: variable.credentialId! }, credentialSnapshot, secrets);
       let field = fields.find(item => item.key === variable.key);
       if (!field && variable.key.startsWith("body:")) {
         field = additionalBodyField(approved.operation, variable.key.slice(5), "string");
         if (field) fields.push(field);
       }
-      if (!credential || !field || !Object.hasOwn(inputSnapshot, variable.key)) throw new VaultError("PERMISSION");
+      if (!field || !Object.hasOwn(inputSnapshot, variable.key)) throw new VaultError("PERMISSION");
       if (!variable.path.length) {
-        if (field.type !== "string" || inputSnapshot[variable.key] !== vaultVariablePlaceholder) throw new VaultError("INVALID");
-        inputSnapshot[variable.key] = credential.value;
+        if (inputSnapshot[variable.key] !== vaultVariablePlaceholder) throw new VaultError("INVALID");
+        if (variable.credentialId && field.type !== "string") throw new VaultError("INVALID");
+        inputSnapshot[variable.key] = resolved === null ? null : typeof resolved === "object" ? JSON.stringify(resolved) : String(resolved);
       } else {
         if (!["object", "array"].includes(field.type)) throw new VaultError("INVALID");
         if (!structured.has(variable.key)) {
@@ -157,9 +159,10 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         const last = variable.path.at(-1)!;
         if (!parent || typeof parent !== "object" || !Object.hasOwn(parent, last) || (parent as Record<string, unknown>)[last] !== vaultVariablePlaceholder)
           throw new VaultError("INVALID");
-        Object.defineProperty(parent, last, { value: credential.value, enumerable: true, writable: true, configurable: true });
+        Object.defineProperty(parent, last, { value: resolved, enumerable: true, writable: true, configurable: true });
       }
     }
+    secrets = [...new Set(secrets.flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length);
     for (const [key, value] of structured) inputSnapshot[key] = JSON.stringify(value);
     const request = prepareRequest(approved.operation, inputSnapshot, fields);
     validateCredentialPath(request.path);

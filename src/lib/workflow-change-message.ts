@@ -5,6 +5,7 @@
 import type { SwitchGate, WorkflowDocument, WorkflowDocumentEdge, WorkflowDocumentNode } from "./workflow-document.ts";
 import { switchOperators } from "./workflow-utilities.ts";
 import { normalizeManualRoute } from "./flow-routing/manual.js";
+import { processingDefinition } from "./workflow-processing.ts";
 
 const excerpt = (value: string, limit = 72): string => {
   const text = value.trim().replace(/\s+/g, " ");
@@ -45,6 +46,7 @@ function labels(document: WorkflowDocument)
     if (node.type === undefined || node.type === "operation") return `${quote(node.data.name)}${ordinal}`;
     if (node.type === "workflow") return `Workflow ${quote(node.data.name)}${ordinal}`;
     if (node.type === "comment") return `Comment${ordinal}${node.data.text.trim() ? ` ${quote(node.data.text)}` : ""}`;
+    if (node.type === "transform" || node.type === "filter" || node.type === "assert") return `${processingDefinition(node.type, node.data).label}${ordinal}`;
     return `${node.type === "file" ? "File upload" : node.type === "vault" ? "Vault variable" : node.type === "switch" ? "Switch" : "Cast"}${ordinal}`;
   };
   const endpoint = (id: string, handle?: string): string => {
@@ -65,6 +67,7 @@ function labels(document: WorkflowDocument)
       return `${label} · Input`;
     }
     if (node.type === "cast") return `${label} · ${handle === "result" ? "Result" : "Input"}`;
+    if (node.type === "transform" || node.type === "filter" || node.type === "assert") return `${label} · ${handle === "success" ? "Success" : handle === "failure" ? "Failure" : handle === "key" ? "Signing key" : handle === "result" ? "Result" : "Input"}`;
     return label;
   };
   return { nodes, parents, node: nodeLabel,
@@ -150,6 +153,10 @@ export function describeWorkflowChange(before: WorkflowDocument | null, after: W
       if (node.data.width !== old.data.width || node.data.height !== old.data.height) add("Resize", label);
       if (node.data.text !== old.data.text)
         add("Edit comment", `${previous.node(old).replace(/^Comment\s*/, "") || "text"} to ${node.data.text.trim() ? quote(node.data.text) : "empty text"}`);
+    }
+    else if ((node.type === "transform" || node.type === "filter" || node.type === "assert") && old.type === node.type)
+    {
+      if (!same(old.data, node.data)) add("Configure", label);
     }
     else if (node.type === "cast" && old.type === "cast")
     {

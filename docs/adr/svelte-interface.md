@@ -266,6 +266,57 @@ values. Removing a gate removes its mappings; the last gate cannot be removed.
 Cast converts primitives to Text, Number or Boolean. Comment Markdown escapes
 text and permits safe links, never raw HTML.
 
+Transform, Filter and Assert are separate node types. Their validated, versioned
+operation definitions provide the selector choices, configuration fields and port
+types. A configured card names its action, such as Encode Base64 or Substring.
+Configurations participate in workflow history, Undo, clipboard and portable
+documents; existing document versions retain their prior behavior.
+
+Transform supports UTF-8, Base64/Base64url and hexadecimal encoding/decoding,
+JSON parsing/serialization, JSON-pointer selection, field mapping, SHA-256,
+HMAC-SHA256 and JWT signing. JSON parsing and field selection declare their
+output type. Field mappings construct an object from output names and source
+JSON pointers. Binary values retain exact bytes; connecting an original file
+to a binary-only processing input inserts the visible Binary Cast.
+
+Filter trims either or both ends of text, selects a substring, selects an array
+range or keeps array items matching a predicate. Text indices count Unicode
+code points; ranges include their start and exclude their end, with negative
+indices counting from the end. Array filtering retains input order. Predicates
+use explicit field paths and comparisons; equality preserves value types.
+
+Assert passes the original input unchanged through Success or Failure. The
+unmatched output leaves its connected input unsupplied and editable in the next
+operation, including through another utility node. Assertion failure is ordinary
+data flow, including when Failure has no connection; it does not raise an
+assertion error or automatically skip the next operation. Switch retains its
+existing branch-routing behavior.
+
+Processing runs on demand through asynchronous runner advancement. One public
+worker is created lazily per run and terminated on completion, cancellation or
+closure. Substantial encoding, parsing, filtering and cryptography stay outside
+rendering. Operation-free processing chains are supported. Result previews are
+bounded and rendered only when their section opens.
+
+Vault-backed inputs propagate opaque processing recipes. The vault worker
+validates and evaluates them during request injection; original and derived
+secrets remain absent from public previews and are scrubbed from responses.
+Private assertions return only a predicate decision, then preserve the original
+opaque reference on their selected output. Session checks apply after evaluation.
+No general decryption method is exposed. Portable documents clear vault selections.
+
+JWT signing selects HS256 or RS256 explicitly, with an optional key ID. HS256
+requires at least 32 key bytes; RS256 imports PKCS8 PEM/DER keys of at least 2048
+bits, following [JWA](https://www.rfc-editor.org/rfc/rfc7518.html#section-3).
+Caller-supplied claim objects determine the signed payload. Provider connection
+profiles continue to own issuer/audience rules, expiry, acquisition and destination
+binding; see [JWT practices](https://www.rfc-editor.org/rfc/rfc8725.html).
+
+The processing worker/client adapters use the same browser-verification boundary
+as file worker adapters. Source coverage includes the pure operation and private
+recipe logic; browser scenarios exercise real worker creation, disposal and vault
+RPC. Development verification remains focused on these contracts.
+
 Nested workflows embed validated snapshots, remaining portable and independent
 of deleted originals. Interfaces expose unsupplied inputs and documented outputs;
 endpoint identities match the embedded graph. Document size, aggregate graph

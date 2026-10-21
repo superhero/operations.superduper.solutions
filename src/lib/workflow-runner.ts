@@ -12,14 +12,17 @@ import { isVaultVariableReference, vaultVariablePlaceholder, type VaultVariableI
 import { approvedOperation } from "./secrets/policy.ts";
 import { workflowExecutionForOperation } from "./workflow-execution.ts";
 import { VaultError, type CredentialBinding } from "./secrets/types.ts";
+import { containsPrivateValue, isPrivateProcessingReference, privateExpressionFor, type PrivateProcessingReference } from "./secrets/processing.ts";
+import type { ProcessingExecutor } from "./workflow-processing-client.ts";
+import { processingDefinition, processingPreview } from "./workflow-processing.ts";
 
 type Node = WorkflowDocumentNode;
 type DataNode = Extract<Node, { type: "data" }>;
-type Owner = Exclude<Node, { type: "data" | "switch" | "cast" | "comment" | "vault" | "file" }>;
+type Owner = Exclude<Node, { type: "data" | "switch" | "cast" | "comment" | "vault" | "file" | "transform" | "filter" | "assert" }>;
 type OperationNode = Exclude<Owner, { type: "workflow" }>;
-type RoutingNode = Extract<Node, { type: "switch" | "cast" }>;
+type RoutingNode = Extract<Node, { type: "switch" | "cast" | "transform" | "filter" | "assert" }>;
 type State = "idle" | "queued" | "running" | "complete" | "skipped";
-type Contribution = { state: "pending" | "inactive" | "value"; value?: unknown };
+type Contribution = { state: "pending" | "inactive" | "empty" | "value"; value?: unknown };
 type Frame = {
   document: WorkflowDocument; nodes: Map<string, Node>; owners: Owner[]; values: Map<string, unknown>;
   edges: WorkflowDocument["edges"]; contributions: Map<string, Contribution>; states: Map<string, State>;
@@ -38,6 +41,8 @@ export type WorkflowStep = WorkflowVisit | { kind: "choice"; workflowName: strin
 export type WorkflowExecution = WorkflowExecutionResult & { operation: Operation; step: number; workflowName: string };
 const port = (node: string, handle: string) => JSON.stringify([node, handle]);
 const inactive = Symbol("inactive branch");
+const unsupplied = Symbol("manual input");
+const processingWait = Symbol("background processing");
 const inputTypes: Partial<Record<WorkflowField["type"], InputSchema["type"]>> = {
   Text: "string", Integer: "integer", Number: "number", Boolean: "boolean", Object: "object", Array: "array", Null: "null"
 };
@@ -175,7 +180,7 @@ function rowCount(frame: Frame, start: string): { count: number; active: Set<str
     changed = false;
     for (const edge of frame.edges) {
       const source = frame.nodes.get(edge.source)!;
-      if (relevant.has(targetOwner(frame, edge.target)) && ["switch", "cast"].includes(source.type!) && !relevant.has(source.id)) {
+      if (relevant.has(targetOwner(frame, edge.target)) && ["switch", "cast", "transform", "filter", "assert"].includes(source.type!) && !relevant.has(source.id)) {
         relevant.add(source.id); changed = true;
       }
     }
@@ -204,7 +209,7 @@ function incoming(frame: Frame, id: string)
   return frame.edges.filter(edge => targetOwner(frame, edge.target) === id);
 }
 
-function inputs(frame: Frame, id: string): { ready: boolean; inactive: boolean; inactivePorts: Set<string>; values: Map<string, unknown> }
+function inputs(frame: Frame, id: string): { ready: boolean; inactive: boolean; inactivePorts: Set<string>; emptyPorts: Set<string>; values: Map<string, unknown> }
 {
   const grouped = new Map<string, Contribution[]>();
   for (const edge of incoming(frame, id))
@@ -216,11 +221,15 @@ function inputs(frame: Frame, id: string): { ready: boolean; inactive: boolean; 
   let ready = true;
   let inactive = false;
   const inactivePorts = new Set<string>();
+  const emptyPorts = new Set<string>();
   for (const [key, contributions] of grouped)
   {
     if (contributions.some(item => item.state === "pending")) { ready = false; continue; }
     const supplied = contributions.filter(item => item.state === "value");
-    if (!supplied.length) { inactive = true; inactivePorts.add(key); }
+    if (!supplied.length) {
+      if (contributions.some(item => item.state === "empty")) emptyPorts.add(key);
+      else { inactive = true; inactivePorts.add(key); }
+    }
     else
     {
       if (supplied.some(item => JSON.stringify(item.value) !== JSON.stringify(supplied[0]!.value)))
@@ -228,12 +237,12 @@ function inputs(frame: Frame, id: string): { ready: boolean; inactive: boolean; 
       values.set(key, supplied[0]!.value);
     }
   }
-  return { ready, inactive, inactivePorts, values };
+  return { ready, inactive, inactivePorts, emptyPorts, values };
 }
 
 /** A step-driven runner: only submit sends an operation request. */
 export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: string,
-  execution: WorkflowExecutor = createWorkflowExecution())
+  execution: WorkflowExecutor = createWorkflowExecution(), processing?: ProcessingExecutor)
 {
   const document = validateWorkflowDocument(value);
   const runId = crypto.randomUUID();
@@ -246,6 +255,16 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
   let terminalError: string | undefined;
   let message = "Workflow complete.";
   let pending: AbortController | undefined;
+  let processingTask: Promise<void> | undefined;
+  let processingController: AbortController | undefined;
+  let advancing: Promise<WorkflowStep> | undefined;
+  const processingResults: { nodeId: string; name: string; preview: string; matched?: boolean }[] = [];
+  const processor = async () => {
+    if (processing) return processing;
+    const { createProcessingExecutor } = await import("./workflow-processing-client.ts");
+    if (stopped || processingController?.signal.aborted) throw new Error("Workflow processing was cancelled.");
+    return processing ??= createProcessingExecutor();
+  };
 
   function queue(frame: Frame, id: string)
   {
@@ -261,23 +280,24 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
   function emit(frame: Frame, nodeId: string, handle: string, value: unknown)
   {
     const key = port(nodeId, handle);
-    if (value !== inactive) frame.values.set(key, isStaticSource(frame, nodeId) ? value : structuredClone(value));
+    if (value !== inactive && value !== unsupplied) frame.values.set(key, isStaticSource(frame, nodeId) ? value : structuredClone(value));
+    else frame.values.delete(key);
     for (const edge of frame.edges.filter(edge => edge.source === nodeId && (edge.sourceHandle ?? "") === handle))
     {
       const ownerId = targetOwner(frame, edge.target);
-      if (value !== inactive && frame.states.get(ownerId) === "complete")
+      if (value !== inactive && value !== unsupplied && frame.states.get(ownerId) === "complete")
         throw new Error("This workflow loops back to a completed operation. Remove the cycle before running it again.");
       let rowValue = value;
-      if (isFileBinaryConnection(edge, frame.document.nodes)) {
+      if (value !== unsupplied && isFileBinaryConnection(edge, frame.document.nodes)) {
         const source = frame.nodes.get(nodeId) as Extract<Node, { type: "file" }>;
         rowValue = source.data.file!.original ?? value;
       }
       if (frame.rows && (!frame.rows.active || frame.rows.active.has(targetOwner(frame, edge.target))) &&
-        isFileRowConnection(edge, frame.document.nodes, frame.document.edges) && value !== inactive) {
+        isFileRowConnection(edge, frame.document.nodes, frame.document.edges) && value !== inactive && value !== unsupplied) {
         if (!Array.isArray(value)) throw new Error("An Item connection requires uploaded array data.");
         rowValue = frame.rows.index < value.length ? value[frame.rows.index] : inactive;
       }
-      frame.contributions.set(edge.id, rowValue === inactive ? { state: "inactive" } : { state: "value", value: structuredClone(rowValue) });
+      frame.contributions.set(edge.id, rowValue === inactive ? { state: "inactive" } : rowValue === unsupplied ? { state: "empty" } : { state: "value", value: structuredClone(rowValue) });
     }
   }
 
@@ -333,7 +353,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     {
       let changed = false;
       for (const node of frame.document.nodes.filter((node): node is Owner | RoutingNode =>
-        isOwner(node) || node.type === "switch" || node.type === "cast"))
+        isOwner(node) || node.type === "switch" || node.type === "cast" || node.type === "transform" || node.type === "filter" || node.type === "assert"))
       {
         if (node.hidden || frame.states.get(node.id) !== "idle" || !incoming(frame, node.id).length ||
           frame.rows?.active && !frame.rows.active.has(node.id)) continue;
@@ -351,6 +371,46 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
         frame.states.set(node.id, "complete");
         const value = input.values.get(port(node.id, "value"));
         const mainInactive = input.inactivePorts.has(port(node.id, "value"));
+        if (input.emptyPorts.has(port(node.id, "value")) || input.emptyPorts.has(port(node.id, "key"))) {
+          const handles = node.type === "assert" ? ["success", "failure"] : node.type === "switch" ? node.data.gates.map(gate => gate.id) : ["result"];
+          for (const handle of handles) emit(frame, node.id, handle, unsupplied);
+          continue;
+        }
+        if (node.type === "transform" || node.type === "filter" || node.type === "assert") {
+          if (input.inactive) {
+            for (const handle of node.type === "assert" ? ["success", "failure"] : ["result"]) emit(frame, node.id, handle, inactive);
+            continue;
+          }
+          if (!input.values.has(port(node.id, "value"))) throw new Error("Processing needs a connected input value.");
+          const key = input.values.get(port(node.id, "key"));
+          if (processingDefinition(node.type, node.data).key && !input.values.has(port(node.id, "key"))) throw new Error("Connect a signing key before running this transformation.");
+          frame.states.set(node.id, "running");
+          const controller = new AbortController();
+          processingController = controller;
+          processingTask = (async () => {
+            const privateInput = containsPrivateValue(value, runId) || containsPrivateValue(key, runId);
+            let result: unknown;
+            if (node.type === "assert") result = privateInput
+              ? await (await processor()).assertPrivate(privateExpressionFor(value, runId), node.data, controller.signal)
+              : await (await processor()).process(node.type, node.data, value);
+            else if (privateInput) result = { referenceToken: runId, vaultProcessing: { kind: "process", type: node.type,
+              data: structuredClone(node.data), value: privateExpressionFor(value, runId),
+              ...(key === undefined ? {} : { key: privateExpressionFor(key, runId) }) } } satisfies PrivateProcessingReference;
+            else result = await (await processor()).process(node.type, node.data, value, key);
+            controller.signal.throwIfAborted();
+            if (stopped) return;
+            if (node.type === "assert") {
+              emit(frame, node.id, "success", result ? value : unsupplied);
+              emit(frame, node.id, "failure", result ? unsupplied : value);
+            } else emit(frame, node.id, "result", result);
+            frame.states.set(node.id, "complete");
+            const output = node.type === "assert" ? value : result;
+            processingResults.push({ nodeId: node.id, name: processingDefinition(node.type, node.data).label,
+              preview: containsPrivateValue(output, runId) ? vaultVariablePlaceholder : processingPreview(output),
+              ...(node.type === "assert" ? { matched: Boolean(result) } : {}) });
+          })().catch(error => { frame.states.set(node.id, "idle"); throw error; }).finally(() => { processingTask = undefined; processingController = undefined; });
+          throw processingWait;
+        }
         if (node.type === "switch" && !mainInactive && !input.values.has(port(node.id, "value")))
           throw new Error("Switch needs a connected input value.");
         if (node.type === "cast") emit(frame, node.id, "result", input.inactive ? inactive : castValue(value, node.data.targetType));
@@ -425,6 +485,10 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     for (const [input, raw] of mapped)
     {
       const collect = (value: unknown, path: string[]): unknown => {
+        if (isPrivateProcessingReference(value, runId)) {
+          vaultVariables.push({ key: input.key, path, expression: value.vaultProcessing });
+          return vaultVariablePlaceholder;
+        }
         if (isVaultVariableReference(value, runId)) {
           vaultVariables.push({ key: input.key, path, credentialId: value.vaultVariable });
           return vaultVariablePlaceholder;
@@ -435,7 +499,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       };
       const value = collect(raw, []);
       const expected = input.type === "integer" ? "number" : input.type;
-      const matches = input.format === "binary" || input.type === "json" ? true : value === null ? inputAllowsNull(input) : expected === "array" ? Array.isArray(value)
+      const matches = containsPrivateValue(raw, runId) || input.format === "binary" || input.type === "json" ? true : value === null ? inputAllowsNull(input) : expected === "array" ? Array.isArray(value)
         : typeof value === expected && (expected !== "object" || value !== null && !Array.isArray(value));
       if (!matches || typeof value === "number" && (!Number.isFinite(value) || input.type === "integer" && !Number.isInteger(value)))
         throw new Error(`“${input.label}” needs ${input.type === "integer" ? "an integer" : `a ${input.type}`} value. Check its connection or add a Cast.`);
@@ -470,6 +534,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
 
   function next(): WorkflowStep
   {
+    if (processingTask) throw processingWait;
     if (terminalError) throw new Error(terminalError);
     if (stopped) return { kind: "complete", message };
     if (current) return current.visit;
@@ -479,13 +544,16 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       while (true)
       {
         const frame = stack.at(-1);
-        if (!frame) { stopped = true; return { kind: "complete", message }; }
+        if (!frame) { stopped = true; processing?.dispose(); return { kind: "complete", message }; }
         settle(frame);
         if (!frame.started)
         {
           const roots = frame.owners.filter(node => !incoming(frame, node.id).some(edge => !isStaticSource(frame, edge.source)));
           const candidates = roots.length ? roots : frame.owners;
-          if (!candidates.length) throw new Error("This workflow has no operations to run. Add an operation first.");
+          if (!candidates.length) {
+            if (frame.document.nodes.some(node => ["transform", "filter", "assert"].includes(node.type!))) { frame.started = true; continue; }
+            throw new Error("This workflow has no operations to run. Add an operation first.");
+          }
           if (candidates.length > 1)
           {
             choice = { frame, ids: candidates.map(node => node.id) };
@@ -548,6 +616,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
     }
     catch (error)
     {
+      if (error === processingWait) throw error;
       terminalError = (error as Error).message;
       throw error;
     }
@@ -555,6 +624,20 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
 
   return {
     next, choose,
+    nextAsync(): Promise<WorkflowStep> {
+      if (advancing) return advancing;
+      advancing = (async () => {
+        while (true) {
+          try { return next(); }
+          catch (error) {
+            if (error !== processingWait || !processingTask) throw error;
+            await processingTask;
+          }
+        }
+      })().finally(() => { advancing = undefined; });
+      return advancing;
+    },
+    get processingResults() { return structuredClone(processingResults); },
     async submit(values: InputValues, binding?: CredentialBinding | null): Promise<WorkflowExecution>
     {
       if (!current || stopped || terminalError) throw new Error("There is no operation ready to run.");
@@ -588,8 +671,11 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       catch (error) { terminalError = (error as Error).message; }
       return { ...result, operation: completed.visit.operation, step: completed.visit.step, workflowName: completed.visit.workflowName };
     },
-    cancelPending() { pending?.abort(); },
-    end() { stopped = true; pending?.abort(); current = undefined; choice = undefined; terminalError = undefined; stack.length = 0; message = "Run ended."; },
+    cancelPending() {
+      pending?.abort();
+      if (processingController) { processingController.abort(); processing?.dispose(); processing = undefined; }
+    },
+    end() { stopped = true; pending?.abort(); processingController?.abort(); processing?.dispose(); current = undefined; choice = undefined; terminalError = undefined; stack.length = 0; message = "Run ended."; },
     get done() { return stopped; }
   };
 }

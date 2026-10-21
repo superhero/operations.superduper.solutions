@@ -11,7 +11,7 @@ import type { VaultFailure, VaultMethod, VaultReply } from "./protocol.ts";
 
 const send = (reply: VaultReply) => self.postMessage(reply);
 const methods = new Set<VaultMethod>(["status", "unlock", "prepareCreate", "confirmCreate", "keys", "list", "copyCredential", "put", "remove",
-  "grant", "revoke", "execute", "backup", "restore", "addMethod", "removeMethod", "rotate"]);
+  "grant", "revoke", "execute", "checkAssertion", "backup", "restore", "addMethod", "removeMethod", "rotate"]);
 let busy = false;
 let controller: AbortController | undefined;
 let activeId: number | undefined;
