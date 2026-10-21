@@ -50,6 +50,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { WorkflowFileData } from "$lib/workflow-file.ts";
   import WorkflowVaultNode from "./workflows/WorkflowVaultNode.svelte";
   import WorkflowCastNode from "./workflows/WorkflowCastNode.svelte";
+  import WorkflowProcessingNode from "./workflows/WorkflowProcessingNode.svelte";
+  import type { ProcessingData, ProcessingKind } from "$lib/workflow-processing.ts";
+  import { isValueConnection, isWorkflowConnectionTypeCompatible } from "$lib/workflow-utilities.ts";
   import WorkflowCommentNode from "./workflows/WorkflowCommentNode.svelte";
   import WorkflowReferenceNode from "./workflows/WorkflowReferenceNode.svelte";
   import WorkflowRun from "./workflows/WorkflowRun.svelte";
@@ -58,7 +61,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   let { toolbarButtons = defaultToolbarButtons, keybindings = defaultKeybindings, active, settingsOpen = false, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
     { toolbarButtons?: ToolbarButtons; keybindings?: Keybindings; active: boolean; settingsOpen?: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
-  const nodeTypes = { file: WorkflowFileNode, vault: WorkflowVaultNode, operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
+  const nodeTypes = { file: WorkflowFileNode, vault: WorkflowVaultNode, operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode,
+    transform: WorkflowProcessingNode, filter: WorkflowProcessingNode, assert: WorkflowProcessingNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
   const edgeTypes = { default: WorkflowCurveEdge, smoothstep: RoutedEdge };
   type CanvasNode<T> = T extends WorkflowDocumentNode ? Node<T["data"], NonNullable<T["type"]>> & { type: NonNullable<T["type"]> } : never;
   type GraphNode = CanvasNode<WorkflowDocumentNode>;
@@ -202,6 +206,22 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   });
   setContext("workflow-cast-type", (nodeId: string, targetType: CastData["targetType"]) => {
     if (keyboardActive) applyGraph({ nodes: nodes.map(node => node.id === nodeId && node.type === "cast" ? { ...node, data: { targetType } } : node), edges }, true);
+  });
+  setContext("workflow-processing", (nodeId: string, data: ProcessingData) => {
+    if (!keyboardActive) return;
+    const current = nodes.find(node => node.id === nodeId);
+    if (current?.type !== "transform" && current?.type !== "filter" && current?.type !== "assert") return;
+    const changed = nodes.map(node => node.id === nodeId ? { ...current, data } : node);
+    let connections = edges;
+    if (current.data.operation !== data.operation || current.data.parameters.type !== data.parameters.type) {
+      const affected = new Set([nodeId]);
+      for (const id of affected) for (const edge of connections) if (edge.kind === "mapping" && edge.source === id) affected.add(edge.target);
+      const byId = new Map(changed.map(node => [node.id, node]));
+      connections = connections.filter(edge => edge.kind !== "mapping" || !affected.has(edge.source) && !affected.has(edge.target)
+        || isValueConnection(edge, byId.get(edge.source)!, byId.get(edge.target)!, connections.filter(other => other.id !== edge.id))
+          && isWorkflowConnectionTypeCompatible(edge, changed, connections));
+    }
+    applyGraph({ nodes: changed, edges: connections }, true);
   });
   setContext("workflow-file", (nodeId: string, data: WorkflowFileData) => {
     if (!keyboardActive) return;
@@ -614,7 +634,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     finally { changingOperationVersion = false; pinOperationModels(owner); }
   }
 
-  async function addUtility(type: "switch" | "cast" | "comment" | "vault" | "file") {
+  async function addUtility(type: "switch" | "cast" | "comment" | "vault" | "file" | ProcessingKind) {
     if (!keyboardActive) return;
     const nodeId = crypto.randomUUID();
     await appendGraph({ nodes: [createUtilityNode(type, insertionPosition(), nodeId)], edges: [] }, nodeId, type, 3, true);

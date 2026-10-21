@@ -82,3 +82,6 @@ Feature: Browser vault session lifecycle
 
   Scenario: Malformed public key indexes cannot leak additional record fields
     Then public vault key indexes validate IDs labels kinds and membership and discard extra fields
+
+  Scenario: Private assertion sessions check values without returning them and respect locking
+    Then private assertion session decisions remain guarded by the vault session
