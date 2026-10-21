@@ -11,8 +11,16 @@ Feature: Browser-local workflow defaults
     And workflow defaults recover after a failed settings save
     Then the defaults survive reload and initialize untouched and new workflows
 
-  Scenario: Non-curve defaults preserve current saved and imported workflow options
-    Then non-curve defaults preserve current saved and imported workflow options
+  Scenario: Unrelated defaults preserve saved flags and imports restore their own options
+    Then unrelated defaults preserve saved flags and imports restore their own options
+
+  Scenario Outline: Settings and toolbar display switches update the open workflow immediately
+    Then workflow display switches update rendered lines and grid movement at width <width>
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
 
   Scenario: Missing and malformed workflow defaults fall back independently for each option and grid size
     Then saved workflow defaults "invalid booleans" normalize after reload without changing valid fields

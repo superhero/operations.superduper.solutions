@@ -135,9 +135,11 @@ defaulting to 16, and applies to both connection styles and manual adjustments.
 Both styles share the same worker-routed corridors, editable segment anchors
 and saved manual routes. Style changes redraw existing geometry without
 replacing the routing worker or rewriting authored anchors.
-An explicit change to Curved lines in Settings also updates the open workflow
-and its saved display preference. Startup and imports still restore their own
-flags; other defaults retain their existing scope.
+Explicit changes to Curved lines, Dashed lines and Snap to grid in Settings
+also update the open workflow and its saved display preferences, using the same
+updates as the toolbar. Changing snapping does not reposition existing nodes.
+Unrelated defaults leave these flags alone; startup and imports restore their
+own flags. Updating an untouched canvas does not create a saved workflow.
 
 ### Locale
 

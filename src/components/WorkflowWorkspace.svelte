@@ -775,18 +775,25 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     return false;
   }
 
-  function switchCurve() {
-    setCurvedConnections(!curved);
+  function setDisplayOptions(options: Partial<Pick<WorkflowDefaults, "snap" | "curved" | "dashed">>) {
+    if (options.snap !== undefined) snap = options.snap;
+    if (options.curved !== undefined) curved = options.curved;
+    if (options.dashed !== undefined) dashed = options.dashed;
+    if (options.curved !== undefined || options.dashed !== undefined) edges = edges.map(paintEdge);
   }
 
-  export function setCurvedConnections(enabled: boolean) {
-    curved = enabled;
-    edges = edges.map(edge => ({ ...edge, type: curved ? "default" : "smoothstep" }));
-  }
-
-  function switchDashes() {
-    dashed = !dashed;
-    edges = edges.map(edge => ({ ...edge, animated: dashed, style: edgeOptions.style }));
+  export function applyDisplayDefaults(next: WorkflowDefaults, previous: WorkflowDefaults) {
+    const untouched = storageReady && !hasSavedDocument && !dirty && !saving && initialDraft !== null;
+    const changed: Partial<Pick<WorkflowDefaults, "snap" | "curved" | "dashed">> = {};
+    for (const key of ["snap", "curved", "dashed"] as const) {
+      if (next[key] !== previous[key]) changed[key] = next[key];
+    }
+    setDisplayOptions(changed);
+    if (untouched) {
+      // Settings can initialize a blank canvas without creating a saved workflow.
+      savedSnapshot = JSON.stringify(documentValue());
+      initialDraft = JSON.parse(savedSnapshot);
+    }
   }
 
   function cancelAutosave() {
@@ -1164,7 +1171,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <WorkflowConnectionSnap bind:this={connectionSnap} isValidConnection={validConnection} active={keyboardActive} {curved} {dashed} curveStrength={workflowDefaults.curveStrength} markerEnd={`url(#${connectionMarkerId})`} />
       {#if nodes.length}<WorkflowMinimap active={keyboardActive} />{/if}
       <WorkflowToolbar buttons={toolbarButtons} bind:this={toolbar} {canvas} {active} {settingsOpen} {navigationOpen} {snap} {curved} {dashed} {selected} placing={placement !== null}
-        onsnap={() => snap = !snap} oncurved={switchCurve} ondashed={switchDashes}
+        onsnap={() => setDisplayOptions({ snap: !snap })} oncurved={() => setDisplayOptions({ curved: !curved })} ondashed={() => setDisplayOptions({ dashed: !dashed })}
         oncopy={() => copySelection()} oncut={() => copySelection(true)} onpaste={() => { void pasteSelection(); }} canPaste={clipboard !== null}
         onremove={removeSelected} onnew={newDocument} onopen={openDocuments}
         onexport={exportDocument} onimport={() => upload.click()} onbrowse={onBrowse}
