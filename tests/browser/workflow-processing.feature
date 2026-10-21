@@ -3,6 +3,15 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @workflow-processing
 Feature: Workflow processing controls and execution
+  Scenario Outline: Transform shows the expected input types of its selected operation
+    When I use a viewport of <width> by 900 pixels
+    Then Transform input labels follow its selected operation before any connection
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
   Scenario Outline: Stop supports editing and restoration
     When I use a viewport of <width> by 900 pixels
     Then Stop can be added undone exported and restored with only an input

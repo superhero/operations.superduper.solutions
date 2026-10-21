@@ -21,6 +21,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const definition = $derived(processingDefinition(kind, data));
   const choices = $derived(processingOperations.filter(operation => operation.kind === kind).map(operation => ({ value: operation.id, label: operation.label })));
   const inputType = $derived(inputTypeFor(id));
+  const inputLabel = $derived(kind === "transform" ? definition.inputLabel ?? definition.inputs.join(" / ") : inputType);
   const outputType = $derived(processingOutputType(kind, data, inputType));
   const active = $derived(editorActive?.() ?? true);
   const family = $derived(kind[0]!.toUpperCase() + kind.slice(1));
@@ -34,9 +35,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <div class="workflow-utility-node workflow-processing-node" class:selected data-processing-kind={kind}>
   <div class="utility-title">
     <Handle id="value" type="target" position={Position.Left} isConnectableStart={false}
-      isConnectableEnd={!inputConnected(id, "value")} aria-disabled={inputConnected(id, "value")} aria-label={`${family} input (${inputType})`} />
+      isConnectableEnd={!inputConnected(id, "value")} aria-disabled={inputConnected(id, "value")} aria-label={`${family} input (${inputLabel})`} />
     <MaterialIcon name={kind === "transform" ? "transform" : kind === "filter" ? "filter_alt" : "fact_check"} size={20} />
-    <strong title={`${family}: ${definition.label}`}>{definition.label}</strong><span class="utility-type">{inputType}</span>
+    <strong title={`${family}: ${definition.label}`}>{definition.label}</strong><span class="utility-type">{inputLabel}</span>
   </div>
   {#if kind !== "assert"}
     <div class="utility-row nodrag nopan nokey">

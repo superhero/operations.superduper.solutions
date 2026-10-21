@@ -269,6 +269,10 @@ text and permits safe links, never raw HTML.
 Transform, Filter and Assert are separate node types. Their validated, versioned
 operation definitions provide the selector choices, configuration fields and port
 types. A configured card names its action, such as Encode Base64 or Substring.
+Transform's input badge and port label show the types accepted by its selected
+operation before and after wiring, such as Text / Binary or Object / Array. JSON
+serialization displays JSON. Connected-type inference still determines the
+types propagated through the graph.
 Configurations participate in workflow history, Undo, clipboard and portable
 documents; existing document versions retain their prior behavior.
 
