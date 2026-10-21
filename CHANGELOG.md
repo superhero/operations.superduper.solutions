@@ -366,6 +366,23 @@ callback clears their old operands and settings through Undo history.
 
 ```
 
+<!-- changelog-commit:b3c43276cebdd5aecffdb151c315fb52e6646713 -->
+### Commit [`b3c4327`](https://github.com/superhero/operations.superduper.solutions/commit/b3c43276cebdd5aecffdb151c315fb52e6646713)
+
+```text
+feat(workflow): add Filter array assertion shortcut
+
+Name the predicate ports Assertion, Keep and Remove while preserving
+saved connection identities. Add the existing branch action beside an
+unconnected Assertion to create an Is set Assert and wire its input and
+both returns in one undoable edit.
+
+Keep existing paths intact, replace legacy inline predicates when adding,
+and place the new node clear of existing content. Share the branch action
+with schema restoration so its icon, tooltip and interaction stay aligned.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
