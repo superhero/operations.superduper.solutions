@@ -124,6 +124,18 @@ recipes by dropping their obsolete result-type setting when loading.
 
 ```
 
+<!-- changelog-commit:77c14a85231ca2722299a1382c036a2c91ba08f5 -->
+### Commit [`77c14a8`](https://github.com/superhero/operations.superduper.solutions/commit/77c14a85231ca2722299a1382c036a2c91ba08f5)
+
+```text
+fix(workflow): move field selection to Filter
+
+Offer Select field under Filter and migrate older Transform nodes without
+changing their configuration or connections. Keep legacy private recipes
+executable and show the expected input types for the selected Filter action.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
