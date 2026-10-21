@@ -104,6 +104,14 @@ fix(ui): use shared badges for processing output types
 
 ```
 
+<!-- changelog-commit:e2029c930bb2ae40b0425866f34e7e09de2071cc -->
+### Commit [`e2029c9`](https://github.com/superhero/operations.superduper.solutions/commit/e2029c930bb2ae40b0425866f34e7e09de2071cc)
+
+```text
+fix(ui): separate known type alternatives with pipes
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
