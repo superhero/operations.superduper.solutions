@@ -5,6 +5,25 @@
 Feature: Explicit workflow processing and assertion routing
   Transform, Filter and Assert are independent nodes with typed, bounded behavior.
 
+  Scenario: Stop nodes persist as input-only workflow nodes
+    Then Stop nodes retain documents clipboard and input-only connection identities
+
+  Scenario: Matched assertion outcomes activate Stop before the next step
+    Then matched assertions stop immediately before another operation is prepared
+
+  Scenario: Only supplied active connections trigger Stop
+    Then unmatched inactive hidden and detached connections never activate Stop
+
+  Scenario: Stop consumes any input without computing or decrypting it
+    Then Stop accepts empty falsy binary and private inputs without processing or decryption
+
+  Scenario: Stop after an operation prevents later requests
+    Then an operation response connected to Stop prevents the following request
+
+  Scenario: Stop ends the run across nested workflow boundaries
+    Then Stop inside a nested workflow ends the complete run
+
+
   Scenario: Encoding operations preserve Unicode and exact binary bytes
     Then workflow encoders preserve UTF-8 Base64 Base64url and hexadecimal values
 

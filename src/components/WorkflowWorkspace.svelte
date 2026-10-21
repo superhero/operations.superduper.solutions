@@ -50,6 +50,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { WorkflowFileData } from "$lib/workflow-file.ts";
   import WorkflowVaultNode from "./workflows/WorkflowVaultNode.svelte";
   import WorkflowCastNode from "./workflows/WorkflowCastNode.svelte";
+  import WorkflowStopNode from "./workflows/WorkflowStopNode.svelte";
   import WorkflowProcessingNode from "./workflows/WorkflowProcessingNode.svelte";
   import type { ProcessingData, ProcessingKind } from "$lib/workflow-processing.ts";
   import { isValueConnection, isWorkflowConnectionTypeCompatible } from "$lib/workflow-utilities.ts";
@@ -62,7 +63,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let { toolbarButtons = defaultToolbarButtons, keybindings = defaultKeybindings, active, settingsOpen = false, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
     { toolbarButtons?: ToolbarButtons; keybindings?: Keybindings; active: boolean; settingsOpen?: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
   const nodeTypes = { file: WorkflowFileNode, vault: WorkflowVaultNode, operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode,
-    transform: WorkflowProcessingNode, filter: WorkflowProcessingNode, assert: WorkflowProcessingNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
+    transform: WorkflowProcessingNode, filter: WorkflowProcessingNode, assert: WorkflowProcessingNode, stop: WorkflowStopNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
   const edgeTypes = { default: WorkflowCurveEdge, smoothstep: RoutedEdge };
   type CanvasNode<T> = T extends WorkflowDocumentNode ? Node<T["data"], NonNullable<T["type"]>> & { type: NonNullable<T["type"]> } : never;
   type GraphNode = CanvasNode<WorkflowDocumentNode>;
@@ -634,7 +635,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     finally { changingOperationVersion = false; pinOperationModels(owner); }
   }
 
-  async function addUtility(type: "switch" | "cast" | "comment" | "vault" | "file" | ProcessingKind) {
+  async function addUtility(type: "switch" | "cast" | "comment" | "vault" | "file" | "stop" | ProcessingKind) {
     if (!keyboardActive) return;
     const nodeId = crypto.randomUUID();
     await appendGraph({ nodes: [createUtilityNode(type, insertionPosition(), nodeId)], edges: [] }, nodeId, type, 3, true);

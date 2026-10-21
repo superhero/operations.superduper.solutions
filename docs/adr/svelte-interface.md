@@ -292,6 +292,14 @@ data flow, including when Failure has no connection; it does not raise an
 assertion error or automatically skip the next operation. Switch retains its
 existing branch-routing behavior.
 
+Stop has one value input and no output or configuration. Any supplied value,
+including false, zero, null, empty data or an opaque vault reference, ends the
+whole run normally with “Workflow stopped.” This also applies inside nested
+workflows. Unmatched Assert outputs and inactive Switch outputs do not activate
+Stop. For example, connect Assert Failure to Stop when a failed expectation
+should end execution. Delivery ends the run before another operation is prepared,
+clears pending steps and releases processing resources without decrypting input.
+
 Processing runs on demand through asynchronous runner advancement. One public
 worker is created lazily per run and terminated on completion, cancellation or
 closure. Substantial encoding, parsing, filtering and cryptography stay outside

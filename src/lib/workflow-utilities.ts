@@ -132,7 +132,7 @@ export function matchingSwitchGates(input: unknown, gates: SwitchGate[], type: R
 export function routingInputTypes(nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[]): Map<string, RoutingType>
 {
   const byId = new Map(nodes.map(node => [node.id, node]));
-  const types = new Map(nodes.filter(node => ["switch", "cast", "transform", "filter", "assert"].includes(node.type!)).map(node => [node.id, new Set<RoutingType>()]));
+  const types = new Map(nodes.filter(node => ["switch", "cast", "transform", "filter", "assert", "stop"].includes(node.type!)).map(node => [node.id, new Set<RoutingType>()]));
   const incoming = edges.filter(edge => edge.kind === "mapping" && types.has(edge.target) && edge.targetHandle === "value" &&
     !edge.hidden && !edge.detached && !byId.get(edge.source)?.hidden && !byId.get(edge.target)?.hidden);
   for (const fallback of [false, true])
@@ -251,6 +251,7 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
     return types.size === 1 ? [...types][0]! : types.size ? "Mixed" : "Unknown";
   };
   const compatible = (candidate: ValueConnection): boolean => {
+    if (byId.get(candidate.target)?.type === "stop") return true;
     if (isFileBinaryConnection(candidate, nodes)) return true;
     const type = outputType(candidate.source, candidate.sourceHandle);
     if (type === "Unknown" || type === "Mixed") return false;
@@ -308,6 +309,7 @@ export function isValueConnection(connection: { sourceHandle?: string | null; ta
     ? source.data.fields.find(field => field.id === connection.sourceHandle && field.connectable) : undefined;
   if (source.type === "vault") return connection.sourceHandle === "value" && (target.type === "data" &&
     target.data.direction === "inputs" && target.data.fields.some(field => field.id === connection.targetHandle && field.connectable && field.type === "Text")
+    || target.type === "stop" && connection.targetHandle === "value"
     || (target.type === "transform" || target.type === "filter" || target.type === "assert") && (connection.targetHandle === "value"
       || connection.targetHandle === "key" && processingDefinition(target.type, target.data).key === true));
   const processingSource = source.type === "transform" || source.type === "filter" ? connection.sourceHandle === "result"
@@ -315,6 +317,7 @@ export function isValueConnection(connection: { sourceHandle?: string | null; ta
   const sourceUtility = source.type === "file" ? !!source.data.file && connection.sourceHandle === "value" : source.type === "cast" ? connection.sourceHandle === "result" : source.type === "switch" &&
     source.data.gates.some(gate => gate.id === connection.sourceHandle);
   if (!sourceField && !sourceUtility && !processingSource) return false;
+  if (target.type === "stop") return connection.targetHandle === "value";
   if (target.type === "transform" || target.type === "filter" || target.type === "assert") return connection.targetHandle === "value"
     || connection.targetHandle === "key" && processingDefinition(target.type, target.data).key === true;
   if (target.type === "data") return target.data.direction === "inputs" &&

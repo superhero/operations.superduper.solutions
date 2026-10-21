@@ -32,6 +32,61 @@ async function choose(page, node, label, option) {
   await page.getByRole('option', { name: option, exact: true }).click();
 }
 
+Then('Stop can be added undone exported and restored with only an input', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  await page.getByRole('button', { name: 'Stop', exact: true }).click();
+  const stop = workflow(page).locator('.workflow-stop-node');
+  await expect(stop).toBeVisible();
+  await expect(stop.locator('.svelte-flow__handle.target')).toHaveCount(1);
+  await expect(stop.locator('.svelte-flow__handle.source')).toHaveCount(0);
+  await saved(page);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(stop).toHaveCount(0);
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  await expect(stop).toBeVisible();
+  await saved(page);
+  const exported = (await readExport(page)).document;
+  assert.deepEqual(exported.nodes.find(node => node.type === 'stop').data, {});
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(stop).toBeVisible();
+  assert.equal((await readExport(page)).document.nodes.filter(node => node.type === 'stop').length, 1);
+});
+
+Then(/^Stop connected to assertion Failure (ends|preserves) the run without an error$/, async function (outcome) {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  let requests = 0;
+  await page.route('https://example.com/**', async route => {
+    requests++;
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) });
+  });
+  const operation = operations.find(operation => operation.id === 'demo:mockPlainText');
+  const graph = createOperationGraph(operation, { x: 1200, y: 300 }, 'target', catalogForOperation(operation.id).document);
+  const input = graph.nodes.find(node => node.type === 'data' && node.data.direction === 'inputs' && node.data.fields.some(field => field.connectable && field.type === 'Text'));
+  const handle = input.data.fields.find(field => field.connectable && field.type === 'Text').id;
+  const stop = { id: 'stop', type: 'stop', position: { x: 900, y: 100 }, data: {} };
+  await loadGraphFixture(page, document([source('original'), processor('assert', 'expect', { operator: 'equals', expected: outcome === 'ends' ? 'other' : 'original' }), stop, ...graph.nodes],
+    [connection('source', 'assert', 'value'), connection('assert', 'stop', 'failure'), connection('assert', input.id, 'success', handle), ...graph.edges]));
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  const run = panel(page);
+  if (outcome === 'ends') {
+    await expect(run.getByRole('heading', { name: 'Workflow stopped.', exact: true })).toBeVisible();
+    await expect(run.getByRole('button', { name: 'Start workflow', exact: true })).toHaveCount(0);
+    assert.equal(requests, 0);
+  } else {
+    const field = run.locator('form').getByRole('textbox').first();
+    await expect(field).toHaveValue('original');
+    await run.getByRole('button', { name: 'Start workflow', exact: true }).click();
+    await expect(run.getByText('Operation completed.', { exact: true })).toBeVisible();
+    await run.getByRole('button', { name: 'Next operation', exact: true }).click();
+    await expect(run.getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
+    assert.equal(requests, 1);
+  }
+  await expect(run.getByRole('alert')).toHaveCount(0);
+});
+
 Then('Transform Filter and Assert can be configured undone exported and restored', async function () {
   const page = this.page;
   await setMode(page, 'workflow');
