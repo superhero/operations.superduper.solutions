@@ -7,12 +7,14 @@ import { tasklist } from "@mdit/plugin-tasklist";
 import { mark } from "@mdit/plugin-mark";
 import { ins } from "@mdit/plugin-ins";
 import { sub } from "@mdit/plugin-sub";
+import { imgLazyload } from "@mdit/plugin-img-lazyload";
+import { imgSize } from "@mdit/plugin-img-size";
 import { sup } from "@mdit/plugin-sup";
 
 // One configuration for every rendered Markdown surface. Raw HTML remains text;
-// plugins generate only their fixed markup, never user-defined HTML attributes.
+// Plugins generate their supported markup; arbitrary source HTML stays disabled.
 const markdown = new MarkdownIt({ html: false, breaks: true, maxNesting: 20 })
-  .use(footnote).use(tasklist, { disabled: true }).use(mark).use(ins).use(sub).use(sup);
+  .use(footnote).use(tasklist, { disabled: true }).use(mark).use(ins).use(sub).use(sup).use(imgSize).use(imgLazyload);
 markdown.validateLink = href => {
   if (/[\u0000-\u0020\u007f]|%(?:0[0-9a-f]|1[0-9a-f]|7f)/i.test(href)) return false;
   try { return ["http:", "https:", "mailto:"].includes(new URL(href).protocol); }
@@ -35,12 +37,6 @@ for (const name of ["checkbox_input", "label_open"]) {
     return renderer.renderToken(tokens, index, options);
   };
 }
-// Preserve the annotation contract: opening a comment never fetches an image.
-markdown.renderer.rules.image = (tokens, index) => {
-  const token = tokens[index]!;
-  return markdown.utils.escapeHtml(`![${token.content}](${token.attrGet("src") ?? ""})`);
-};
-
 export function renderMarkdown(text: string, scope: string): string {
   // Footnote IDs are unique to a rendered surface and cannot inject attributes.
   const docId = Array.from(scope, char => char.codePointAt(0)!.toString(16)).join("-");

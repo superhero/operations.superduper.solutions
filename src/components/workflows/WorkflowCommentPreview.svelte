@@ -29,6 +29,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .comment-markdown :global(pre code) { padding: 0; }
   .comment-markdown :global(a) { color: var(--color-foreground); text-decoration: underline; text-underline-offset: 2px; }
   .comment-markdown :global(hr) { border: 0; border-top: 1px solid var(--color-border); }
+  .comment-markdown :global(img) { max-width: 100%; object-fit: contain; }
   .comment-markdown :global(table) { border-collapse: collapse; width: 100%; }
   .comment-markdown :global(:is(th,td)) { padding: 4px 6px; border: 1px solid var(--color-border); text-align: left; }
   .comment-markdown :global(mark) { background: var(--color-emphasis); color: var(--color-background); }

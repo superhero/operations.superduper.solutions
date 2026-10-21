@@ -19,12 +19,14 @@ Then("workflow comment previews support emphasis code and safe links", () => {
     assert.match(link, /<a href="/); assert.match(link, /target="_blank"/); assert.match(link, /rel="noopener noreferrer"/); assert.match(link, /<strong>Guide<\/strong>/);
   }
 });
-Then("workflow comment previews do not interpret raw HTML images or unsafe links", () => {
+Then("workflow comment previews render Markdown images while rejecting raw HTML and unsafe links", () => {
   const raw = '<script>globalThis.executed = true</script><img src="https://example.com/track" onerror="alert(1)">';
   const html = render(raw);
   assert.ok(!/<(?:script|img)\b/.test(html)); assert.match(html, /&lt;script&gt;/);
   for (const url of ['javascript:alert', 'data:text/html,unsafe', 'file:///etc/passwd', '/relative', 'not-a-url', 'https://example.com/%00bad', 'https://example.com/%7fbad', 'jav&#x61;script:alert(1)']) assert.ok(!render(`[Bad](${url})`).includes('<a '), url);
-  assert.ok(!render('![Tracking image](https://example.com/tracker.png)').includes('<img'));
+  const image = render('![Diagram =300x200](https://example.com/diagram.png "Diagram title")');
+  for (const pattern of [/<img /, /src="https:\/\/example.com\/diagram.png"/, /alt="Diagram"/, /title="Diagram title"/, /width="300"/, /height="200"/, /loading="lazy"/]) assert.match(image, pattern);
+  for (const url of ['javascript:alert', 'data:text/html,unsafe', 'file:///etc/passwd']) assert.ok(!render(`![Bad](${url})`).includes('<img'), url);
   assert.match(render('```html\n'+raw+'\n```'), /&lt;script&gt;/);
 });
 Then("workflow comment previews retain incomplete formatting and normalize line endings", () => {

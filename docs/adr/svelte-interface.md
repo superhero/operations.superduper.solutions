@@ -271,10 +271,10 @@ contenteditable focus participates in the existing grouped autosave history.
 
 Viewing uses the shared `src/lib/markdown.ts` markdown-it configuration, replacing
 the custom comment parser. CommonMark/GFM blocks and tables are supplemented by
-the mdit tasklist, footnote, mark, ins, sub and sup plugins. Raw HTML stays escaped,
-links permit only HTTP(S) and mailto, and images remain literal text so opening a
-comment does not fetch resources. Plugin-generated task and footnote identifiers
-are scoped to each rendered comment. Plugin extensions must preserve these
+the mdit tasklist, footnote, mark, ins, sub and sup plugins. Markdown images use
+the mdit img-size and img-lazyload plugins, and fit inside the comment width.
+Raw HTML stays escaped and links permit only HTTP(S) and mailto. Plugin-generated
+task and footnote identifiers are scoped to each rendered comment. Plugin extensions must preserve these
 [markdown-it safety rules](https://github.com/markdown-it/markdown-it/blob/master/docs/safety.md).
 
 Transform, Filter and Assert are separate node types. Their validated, versioned

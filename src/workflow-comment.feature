@@ -3,14 +3,14 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Safe workflow comment previews
-  Comments use markdown-it and mdit plugins without loading external resources.
+  Comments use markdown-it and mdit plugins with image sizing and lazy loading.
 
   Scenario: Common block and inline formatting retains comment content
     Then workflow comment previews support headings paragraphs lists quotes and code
     And workflow comment previews support emphasis code and safe links
 
-  Scenario: Untrusted markup and unsafe destinations remain literal text
-    Then workflow comment previews do not interpret raw HTML images or unsafe links
+  Scenario: Markdown images render while untrusted markup and unsafe destinations stay blocked
+    Then workflow comment previews render Markdown images while rejecting raw HTML and unsafe links
 
   Scenario: Incomplete Markdown and line endings preserve readable annotations
     Then workflow comment previews retain incomplete formatting and normalize line endings

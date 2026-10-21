@@ -76,6 +76,8 @@
     "@isomorphic-git/lightning-fs": "4.10.3",
     "@lezer/highlight": "1.2.5",
     "@mdit/plugin-footnote": "1.1.2",
+    "@mdit/plugin-img-lazyload": "1.1.2",
+    "@mdit/plugin-img-size": "1.1.2",
     "@mdit/plugin-ins": "2.1.2",
     "@mdit/plugin-mark": "2.1.2",
     "@mdit/plugin-sub": "1.1.2",
