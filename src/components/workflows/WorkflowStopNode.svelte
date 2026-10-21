@@ -8,13 +8,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { Handle, Position, type Node, type NodeProps } from "@xyflow/svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { StopData } from "$lib/workflow-document.ts";
+  import type { RoutingType } from "$lib/workflow-utilities.ts";
+  import { processingTypeLabel } from "$lib/workflow-processing.ts";
   import "./workflow-utility-nodes.css";
 
   let { id, selected }: NodeProps<Node<StopData, "stop">> = $props();
   const inputConnected = getContext<(id: string, handle: string) => boolean>("workflow-input-connected");
-  const inputTypeFor = getContext<(id: string) => string>("workflow-input-type");
+  const inputTypeFor = getContext<(id: string) => RoutingType>("workflow-input-type");
   const connected = $derived(inputConnected(id, "value"));
-  const inputType = $derived(inputTypeFor(id));
+  const inputType = $derived(processingTypeLabel(inputTypeFor(id)));
 </script>
 
 <div class="workflow-utility-node workflow-stop-node" class:selected>

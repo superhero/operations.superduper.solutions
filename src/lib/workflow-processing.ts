@@ -5,11 +5,14 @@ import type { JsonValue } from "./catalog.ts";
 import { encodeWorkflowBinary, validateWorkflowBinary, type WorkflowBinary } from "./workflow-binary.ts";
 
 export type ProcessingKind = "transform" | "filter" | "assert";
-export type ProcessingType = "Text" | "Number" | "Integer" | "Boolean" | "Object" | "Array" | "Null" | "Binary" | "Unknown" | "Mixed";
+export type ProcessingType = "Text" | "Number" | "Integer" | "Boolean" | "Object" | "Array" | "Null" | "Binary" | "Unknown" | "Mixed" | "JSON";
 export type ProcessingData = { version: 1; operation: string; parameters: Record<string, string> };
 type Parameter = { name: string; label: string; initial: string; options?: readonly string[]; multiline?: boolean };
 type Definition = { id: string; kind: ProcessingKind; label: string; inputs: readonly ProcessingType[]; inputLabel?: string; output: ProcessingType | "input"; key?: boolean; parameters: readonly Parameter[] };
 const textBinary = ["Text", "Binary"] as const;
+const jsonTypes = ["Object", "Text", "Number", "Boolean", "Array", "Null"] as const;
+const jsonConnectionTypes = [...jsonTypes, "Integer"] as const;
+const jsonTypeLabel = jsonTypes.join(" | ");
 const anyValue = ["Text", "Number", "Integer", "Boolean", "Object", "Array", "Null", "Binary", "Unknown"] as const;
 const parameter = (name: string, label: string, initial = "", options?: readonly string[]): Parameter => ({ name, label, initial, ...(options ? { options } : {}) });
 const predicates = ["equals", "not_equal", "greater_than", "at_least", "less_than", "at_most", "contains", "starts_with", "ends_with", "is_set", "is_not_set", "is_type"] as const;
@@ -21,7 +24,7 @@ export const processingOperations: readonly Definition[] = [
     { id: `${encoding}_encode`, kind: "transform" as const, label: `Encode ${encoding === "hex" ? "hexadecimal" : encoding === "base64" ? "Base64" : "Base64url"}`, inputs: textBinary, output: "Text" as const, parameters: [] },
     { id: `${encoding}_decode`, kind: "transform" as const, label: `Decode ${encoding === "hex" ? "hexadecimal" : encoding === "base64" ? "Base64" : "Base64url"}`, inputs: ["Text" as const], output: "Binary" as const, parameters: [] },
   ]),
-  { id: "json_parse", kind: "transform", label: "Parse JSON", inputs: ["Text"], output: "Unknown", parameters: [parameter("type", "Result type", "Object", ["Object", "Array", "Text", "Number", "Boolean", "Null"])] },
+  { id: "json_parse", kind: "transform", label: "Parse JSON", inputs: ["Text"], output: "JSON", parameters: [] },
   { id: "json_stringify", kind: "transform", label: "Serialize JSON", inputs: anyValue.filter(type => type !== "Binary"), inputLabel: "JSON", output: "Text", parameters: [] },
   { id: "select_field", kind: "transform", label: "Select field", inputs: ["Object", "Array"], output: "Unknown", parameters: [parameter("path", "Field path (JSON pointer)"), parameter("type", "Result type", "Text", anyValue)] },
   { id: "map_fields", kind: "transform", label: "Map fields", inputs: ["Object", "Array"], output: "Object", parameters: [{ name: "fields", label: "Output names to source paths (JSON)", initial: '{"value":""}', multiline: true }] },
@@ -52,7 +55,10 @@ export function validateProcessingData(kind: ProcessingKind, value: unknown): Pr
   if (!plain(value) || value.version !== 1 || typeof value.operation !== "string" || !plain(value.parameters)
     || Object.keys(value).some(key => !["version", "operation", "parameters"].includes(key))) throw new Error("Invalid processing configuration.");
   const definition = processingDefinition(kind, value as ProcessingData);
-  const entries = Object.entries(value.parameters);
+  let entries = Object.entries(value.parameters);
+  // Earlier documents required a result type. Keep them readable without narrowing JSON.parse.
+  if (definition.id === "json_parse" && entries.length === 1 && entries[0]![0] === "type"
+    && jsonTypes.some(type => type === entries[0]![1])) entries = [];
   if (entries.length !== definition.parameters.length || entries.some(([name, value]) => {
     const field = definition.parameters.find(field => field.name === name);
     return !field || typeof value !== "string" || value.length > (field.multiline ? 16000 : 4096) || field.options && !field.options.includes(value);
@@ -62,6 +68,13 @@ export function validateProcessingData(kind: ProcessingKind, value: unknown): Pr
 export function processingOutputType(kind: ProcessingKind, data: ProcessingData, input: ProcessingType): ProcessingType {
   const output = processingDefinition(kind, data).output;
   return output === "input" ? input : output === "Unknown" ? data.parameters.type as ProcessingType : output;
+}
+/** JSON is a known union, unlike an unresolved Unknown or Mixed output. Number includes Integer. */
+export function processingTypeAlternatives(type: ProcessingType): readonly ProcessingType[] {
+  return type === "JSON" ? jsonConnectionTypes : [type];
+}
+export function processingTypeLabel(type: ProcessingType): string {
+  return type === "JSON" ? jsonTypeLabel : type;
 }
 export function processingValueType(value: unknown): ProcessingType {
   if (value === null) return "Null";
@@ -222,7 +235,7 @@ export async function processWorkflowValue(kind: ProcessingKind, raw: Processing
   validateProcessingValue(result);
   const expected = processingOutputType(kind, data, inputType);
   const actual = processingValueType(result);
-  if (expected !== "Unknown" && actual !== expected && !(expected === "Number" && actual === "Integer")) throw new Error(`The result does not match the selected ${expected} output type.`);
+  if (expected !== "Unknown" && expected !== "JSON" && actual !== expected && !(expected === "Number" && actual === "Integer")) throw new Error(`The result does not match the selected ${expected} output type.`);
   return result;
 }
 

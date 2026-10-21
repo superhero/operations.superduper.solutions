@@ -6,7 +6,7 @@ import type { CastData, SwitchGate, WorkflowDocument, WorkflowDocumentEdge, Work
 
 import { fileValueType } from "./workflow-file.ts";
 import { encodeWorkflowBinary, validateWorkflowBinary, type WorkflowBinary } from "./workflow-binary.ts";
-import { processingDefinition, processingOutputType } from "./workflow-processing.ts";
+import { processingDefinition, processingOutputType, processingTypeAlternatives } from "./workflow-processing.ts";
 
 export const switchGateLimit = 32;
 export const switchValueLimit = 4096;
@@ -26,7 +26,7 @@ export const switchOperators = [
 export const castTypes = [
   { value: "Text", label: "Text" }, { value: "Number", label: "Number" }, { value: "Boolean", label: "Boolean" }, { value: "Binary", label: "Binary" }
 ] satisfies { value: CastData["targetType"]; label: string }[];
-export type RoutingType = "Text" | "Number" | "Boolean" | "Object" | "Array" | "Null" | "Unknown" | "Mixed" | "Binary";
+export type RoutingType = "Text" | "Number" | "Boolean" | "Object" | "Array" | "Null" | "Unknown" | "Mixed" | "Binary" | "JSON";
 
 export function numericValue(value: unknown): value is string
 {
@@ -65,7 +65,7 @@ export function castValue(value: unknown, type: CastData["targetType"]): string 
 
 export function operatorsForType(type: RoutingType)
 {
-  if (type === "Unknown" || type === "Number") return switchOperators;
+  if (type === "Unknown" || type === "Number" || type === "JSON") return switchOperators;
   return switchOperators.filter(operator => "unary" in operator ||
     ["Text", "Boolean", "Mixed"].includes(type) && ["==", "!="].includes(operator.value));
 }
@@ -94,6 +94,7 @@ function valueType(input: unknown): RoutingType
 export function matchesSwitchGate(input: unknown, gate: SwitchGate, type: RoutingType = valueType(input),
   gateValues: Map<string, unknown> = new Map()): boolean
 {
+  if (type === "JSON") type = valueType(input);
   if (!operatorsForType(type).some(option => option.value === gate.operator)) return false;
   if (gate.operator === "is_set") return input !== undefined && input !== null;
   if (gate.operator === "is_not_set") return input === undefined || input === null;
@@ -148,11 +149,13 @@ export function routingInputTypes(nodes: WorkflowDocumentNode[], edges: Workflow
         if (source?.type === "file") { const type = fileValueType(source.data.file); outputs = [type === "Integer" ? "Number" : type]; }
         else if (source?.type === "vault") outputs = ["Text"];
         else if (source?.type === "cast") outputs = [source.data.targetType];
-        else if (source?.type === "transform" || source?.type === "filter" || source?.type === "assert")
-          outputs = [...(types.get(source.id) ?? [])].map(type => {
+        else if (source?.type === "transform" || source?.type === "filter" || source?.type === "assert") {
+          const inputs = processingDefinition(source.type, source.data).output === "input" ? types.get(source.id)! : ["Unknown" as const];
+          outputs = [...inputs].map(type => {
             const output = processingOutputType(source.type, source.data, type);
             return output === "Integer" ? "Number" : output;
           });
+        }
         else if (source?.type === "switch") outputs = types.get(source.id)!;
         else if (source?.type === "data" && source.data.direction === "outputs")
         {
@@ -197,7 +200,7 @@ export function isFileBinaryConnection(connection: ValueConnection, nodes: Workf
       || target?.type === "transform" && connection.targetHandle === "value" && processingDefinition(target.type, target.data).inputs.every(type => type === "Binary")
       || target?.type === "data" && target.data.direction === "inputs" && target.data.fields.some(field => field.id === connection.targetHandle && field.type === "Binary"));
 }
-type ConnectionValueType = WorkflowField["type"] | "Mixed";
+type ConnectionValueType = WorkflowField["type"] | "Mixed" | "JSON";
 const scalarConnectionType = (type: ConnectionValueType) => ["Text", "Integer", "Number", "Boolean"].includes(type);
 const numericConnectionType = (type: ConnectionValueType) => type === "Integer" || type === "Number";
 
@@ -253,8 +256,13 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
   const compatible = (candidate: ValueConnection): boolean => {
     if (byId.get(candidate.target)?.type === "stop") return true;
     if (isFileBinaryConnection(candidate, nodes)) return true;
-    const type = outputType(candidate.source, candidate.sourceHandle);
-    if (type === "Unknown" || type === "Mixed") return false;
+    const output = outputType(candidate.source, candidate.sourceHandle);
+    if (output === "Unknown" || output === "Mixed") return false;
+    // A known union can connect under the receiving port's type assumption.
+    // The executor checks the actual value; connecting never casts it.
+    return processingTypeAlternatives(output).some(type => compatibleType(candidate, type));
+  };
+  const compatibleType = (candidate: ValueConnection, type: ConnectionValueType): boolean => {
     const target = byId.get(candidate.target)!;
     if (target.type === "transform" || target.type === "filter" || target.type === "assert") {
       if (candidate.targetHandle === "key") return type === "Text" || type === "Binary";
@@ -276,8 +284,8 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
     }
     if (!scalarConnectionType(type)) return false;
     if (target.type === "cast" || candidate.targetHandle === "value" || !mainInputs(target.id).length) return true;
-    const expected = outputType(target.id, undefined);
-    return type === expected || numericConnectionType(type) && numericConnectionType(expected);
+    return processingTypeAlternatives(outputType(target.id, undefined)).some(expected =>
+      type === expected || numericConnectionType(type) && numericConnectionType(expected));
   };
   if (!compatible(connection)) return false;
   if (!["switch", "transform", "filter", "assert"].includes(byId.get(connection.target)!.type!) || connection.targetHandle !== "value") return true;

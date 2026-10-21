@@ -12,6 +12,7 @@ import { parseWorkflowFile } from '../../src/lib/workflow-file.ts';
 import { operations } from '../../src/lib/catalog.ts';
 import { catalogForOperation } from '../../src/lib/catalog-registry.ts';
 import { createOperationGraph } from '../../src/lib/workflow-graph.ts';
+import { gesture } from './workflow-single-input.steps.mjs';
 
 const configuration = (kind, operation, parameters = {}) => {
   const value = defaultProcessingData(kind, operation);
@@ -31,6 +32,44 @@ async function choose(page, node, label, option) {
   await node.getByRole('combobox', { name: label, exact: true }).click();
   await page.getByRole('option', { name: option, exact: true }).click();
 }
+
+Then('Parse JSON restores without a type selector and connects directly to a matching input', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  await loadGraphFixture(page, document([source(JSON.stringify('  hello  ')), processor('transform', 'json_parse', { type: 'Object' }),
+    processor('filter', 'trim', {}, 900)], [connection('source', 'transform', 'value')]));
+  const transform = workflow(page).locator('[data-processing-kind="transform"]');
+  const filter = workflow(page).locator('[data-processing-kind="filter"]');
+  const output = transform.locator('.svelte-flow__handle.source');
+  const badge = transform.locator('.output-type');
+  const label = 'Object | Text | Number | Boolean | Array | Null';
+  await expect(transform.getByRole('combobox', { name: 'Result type', exact: true })).toHaveCount(0);
+  await expect(badge).toHaveText(label);
+  await expect(output).toHaveAttribute('aria-label', `Transform result (${label})`);
+  await saved(page);
+  assert.deepEqual((await readExport(page)).document.nodes.find(node => node.type === 'transform').data.parameters, {});
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(badge).toHaveText(label);
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  const fits = await badge.evaluate(element => {
+    const badge = element.getBoundingClientRect(), card = element.closest('.workflow-processing-node').getBoundingClientRect();
+    return badge.left >= card.left && badge.right <= card.right;
+  });
+  assert.equal(fits, true, 'Known type alternatives remain inside the processing card.');
+  await gesture(page, output, filter.locator('.svelte-flow__handle.target'));
+  await expect(filter.locator('.svelte-flow__handle.target')).toHaveAttribute('aria-disabled', 'true');
+  await saved(page);
+  const exported = (await readExport(page)).document;
+  assert.equal(exported.nodes.some(node => node.type === 'cast'), false);
+  assert.ok(exported.edges.some(edge => edge.source === 'transform' && edge.target === 'filter'));
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  const run = panel(page);
+  await expect(run.getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
+  await run.getByText('Processing results (2)', { exact: true }).click();
+  await expect(run.getByRole('region', { name: 'Trim text result' })).toContainText('"hello"');
+  await expect(run.getByRole('alert')).toHaveCount(0);
+});
 
 Then('Transform input labels follow its selected operation before any connection', async function () {
   const page = this.page;

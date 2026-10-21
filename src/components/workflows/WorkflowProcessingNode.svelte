@@ -7,7 +7,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { getContext, untrack } from "svelte";
   import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  import { defaultProcessingData, processingDefinition, processingOperations, processingOutputType, type ProcessingData, type ProcessingKind } from "$lib/workflow-processing.ts";
+  import { defaultProcessingData, processingDefinition, processingOperations, processingOutputType, processingTypeLabel, type ProcessingData, type ProcessingKind } from "$lib/workflow-processing.ts";
   import type { RoutingType } from "$lib/workflow-utilities.ts";
   import WorkflowNodeSelect from "./WorkflowNodeSelect.svelte";
   import "./workflow-utility-nodes.css";
@@ -21,12 +21,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const definition = $derived(processingDefinition(kind, data));
   const choices = $derived(processingOperations.filter(operation => operation.kind === kind).map(operation => ({ value: operation.id, label: operation.label })));
   const inputType = $derived(inputTypeFor(id));
-  const inputLabel = $derived(kind === "transform" ? definition.inputLabel ?? definition.inputs.join(" | ") : inputType);
-  const outputType = $derived(processingOutputType(kind, data, inputType));
+  const inputLabel = $derived(kind === "transform" ? definition.inputLabel ?? definition.inputs.join(" | ") : processingTypeLabel(inputType));
+  const outputType = $derived(processingTypeLabel(processingOutputType(kind, data, inputType)));
   const active = $derived(editorActive?.() ?? true);
   const family = $derived(kind[0]!.toUpperCase() + kind.slice(1));
   const updateNodeInternals = useUpdateNodeInternals();
-  const layout = $derived(`${data.operation}:${data.parameters.type ?? ""}`);
+  const layout = $derived(`${data.operation}:${data.parameters.type ?? ""}:${inputLabel}:${outputType}`);
   $effect(() => { layout; untrack(() => updateNodeInternals(id)); });
   function parameter(name: string, value: string) { edit(id, { ...data, parameters: { ...data.parameters, [name]: value } }); }
   const choiceLabel = (value: string) => /^(HS256|RS256|UTF-8)$/.test(value) ? value : value.replace(/_/g, " ").replace(/^./, letter => letter.toUpperCase());
