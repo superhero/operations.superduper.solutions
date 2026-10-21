@@ -457,19 +457,19 @@ Then('Transform Filter and Assert can be configured undone exported and restored
   }
   await page.getByRole('button', { name: 'Assert', exact: true }).click();
   await page.getByRole('button', { name: 'Fit View', exact: true }).click();
-  await expect(assertion.getByLabel('Expected value (JSON or text)', { exact: true })).toBeDisabled();
+  await expect(assertion.getByLabel('Expected value', { exact: true })).toHaveCount(0);
   await choose(page, assertion, 'Condition', 'Equals');
-  await expect(assertion.getByLabel('Expected value (JSON or text)', { exact: true })).toBeEnabled();
+  await expect(assertion.getByLabel('Expected value', { exact: true })).toBeEnabled();
   await saved(page);
-  await assertion.getByLabel('Expected value (JSON or text)', { exact: true }).fill('abc');
+  await assertion.getByLabel('Expected value', { exact: true }).fill('abc');
   await saved(page);
   let exported = (await readExport(page)).document;
   assert.deepEqual(exported.nodes.filter(node => ['transform', 'filter', 'assert'].includes(node.type)).map(node => node.type).sort(), ['assert', 'filter', 'transform']);
   assert.equal(exported.nodes.find(node => node.type === 'filter').data.parameters.end, '3');
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
-  await expect(assertion.getByLabel('Expected value (JSON or text)', { exact: true })).toHaveValue('');
+  await expect(assertion.getByLabel('Expected value', { exact: true })).toHaveValue('');
   await page.getByRole('button', { name: 'Redo', exact: true }).click();
-  await expect(assertion.getByLabel('Expected value (JSON or text)', { exact: true })).toHaveValue('abc');
+  await expect(assertion.getByLabel('Expected value', { exact: true })).toHaveValue('abc');
   await saved(page);
   await page.reload();
   await setMode(page, 'workflow');

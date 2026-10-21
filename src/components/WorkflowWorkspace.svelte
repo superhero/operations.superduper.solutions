@@ -214,7 +214,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (current?.type !== "transform" && current?.type !== "filter" && current?.type !== "assert") return;
     const changed = nodes.map(node => node.id === nodeId ? { ...current, data } : node);
     let connections = edges;
-    if (current.data.operation !== data.operation || current.data.parameters.type !== data.parameters.type) {
+    if (current.data.operation !== data.operation || current.data.parameters.type !== data.parameters.type
+      || current.data.parameters.operator !== data.parameters.operator || current.data.parameters.path !== data.parameters.path) {
       const affected = new Set([nodeId]);
       for (const id of affected) for (const edge of connections) if (edge.kind === "mapping" && edge.source === id) affected.add(edge.target);
       const byId = new Map(changed.map(node => [node.id, node]));

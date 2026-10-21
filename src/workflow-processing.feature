@@ -5,6 +5,9 @@
 Feature: Explicit workflow processing and assertion routing
   Transform, Filter and Assert are independent nodes with typed, bounded behavior.
 
+  Scenario: Connected assertion expectations preserve types and private comparisons
+    Then assertion expectations accept typed connections and compare supplied public and private values
+
   Scenario: Scalar assertions check their input without a field path
     Then scalar assertions ignore saved field paths while structured assertions keep them
 

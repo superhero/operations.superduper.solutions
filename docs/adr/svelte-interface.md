@@ -332,6 +332,13 @@ field-path editor appears only for structured or unresolved input types; scalar
 inputs are checked directly, ignoring any retained path from an earlier
 configuration. The expected-value editor appears only for conditions that use
 it; Is set and Is not set hide it while preserving the saved value for reuse.
+Expected value also accepts one connection, which disables its manual editor.
+Its badge and connection compatibility follow the condition and checked type:
+numeric comparisons require Number, text comparisons and type checks require
+Text, and equality uses the known checked type. Unresolved nested values use
+Any, while a known JSON union uses JsonValue. Connected values retain their
+original types; private operands are compared inside the vault. Changing the
+condition or path removes incompatible operand connections through Undo history.
 The unmatched output leaves its connected input unsupplied and editable in the next
 operation, including through another utility node. Assertion failure is ordinary
 data flow, including when Failure has no connection; it does not raise an

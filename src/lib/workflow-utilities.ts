@@ -265,7 +265,8 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
   const compatibleType = (candidate: ValueConnection, type: ConnectionValueType): boolean => {
     const target = byId.get(candidate.target)!;
     if (target.type === "transform" || target.type === "filter" || target.type === "assert") {
-      const accepted = processingInputTypes(target.type, target.data, candidate.targetHandle);
+      const main = mainInputs(target.id);
+      const accepted = processingInputTypes(target.type, target.data, candidate.targetHandle, main.length === 1 ? outputType(main[0]!.source, main[0]!.sourceHandle) : "Unknown");
       if (!accepted) return false;
       const source = byId.get(candidate.source)!;
       if (accepted.includes("Array") && source.type === "data" && source.data.fields.find(field => field.id === candidate.sourceHandle)?.itemType
