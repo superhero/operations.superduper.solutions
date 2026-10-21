@@ -10,7 +10,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 .workflow-utility-node .utility-title { position: relative; display: flex; align-items: center; gap: 8px; min-height: 42px; padding: 8px 12px; }
 .workflow-utility-node .utility-title strong { min-width: 0; flex: 1; font-size: 12px; font-weight: 650; overflow-wrap: anywhere; }
 .workflow-utility-node .material-symbols-rounded { font-variation-settings: "FILL" 1; }
-.workflow-utility-node .utility-type { flex-shrink: 0; padding: 0 5px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); font-size: 10px; line-height: 18px; }
+.workflow-utility-node .utility-type { flex-shrink: 0; max-width: 65%; padding: 0 5px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-badge-foreground); font-size: 10px; line-height: 18px; }
 .workflow-utility-node .utility-row { position: relative; display: flex; align-items: center; gap: 6px; min-height: 46px; padding: 7px 12px; border-top: 1px solid var(--color-border); font-size: 11px; }
 .workflow-utility-node .utility-action { display: grid; place-items: center; flex-shrink: 0; width: 26px; height: 28px; padding: 0; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); }
 .workflow-utility-node .utility-action:hover:not(:disabled) { background: var(--color-secondary-hover); color: var(--color-secondary-hover-foreground); }

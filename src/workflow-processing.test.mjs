@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { createHmac } from 'node:crypto';
 import { Then } from '@cucumber/cucumber';
-import { defaultProcessingData, processingOperations, processWorkflowValue, processingPointer, validateProcessingData, validateProcessingValue, processingOutputType, processingPreview } from './lib/workflow-processing.ts';
+import { defaultProcessingData, processingOperations, processWorkflowValue, processingPointer, validateProcessingData, validateProcessingValue, processingOutputType, processingTypeLabel, processingPreview } from './lib/workflow-processing.ts';
 import { encodeWorkflowBinary, workflowBinaryBlob } from './lib/workflow-binary.ts';
 import { defaultCsvOptions, parseWorkflowFile, readWorkflowFile } from './lib/workflow-file.ts';
 import { createUtilityNode, createOperationGraph, createFileDataGraph, createWorkflowGraph, isWorkflowConnection, insertFileBinaryCast } from './lib/workflow-graph.ts';
@@ -164,10 +164,85 @@ Then('workflow translation parses serializes selects and maps data without mutat
   assert.equal(Object.hasOwn(mapped, '__proto__'), true);
   assert.equal(Object.getPrototypeOf(mapped), Object.prototype);
   assert.deepEqual(original, before);
-  for (const [value, type] of [[[], 'Array'], [null, 'Null'], [42, 'Number'], [false, 'Boolean'], ['text', 'Text']])
-    assert.deepEqual(await apply('transform', 'json_parse', JSON.stringify(value), { type }), value);
+  for (const value of [[], null, 42, false, 'text'])
+    assert.deepEqual(await apply('transform', 'json_parse', JSON.stringify(value)), value);
   assert.equal(processingPointer(original, '/constructor'), undefined);
-  assert.equal(await apply('transform', 'json_parse', '1.5', { type: 'Number' }), 1.5);
+  assert.equal(await apply('transform', 'json_parse', '1.5'), 1.5);
+});
+
+Then('Parse JSON accepts every JSON type and restores old selected types without narrowing output', async () => {
+  const configuration = data('transform', 'json_parse');
+  assert.deepEqual(configuration.parameters, {});
+  assert.equal(processingTypeLabel(processingOutputType('transform', configuration, 'Text')), 'Object | Text | Number | Boolean | Array | Null');
+  for (const value of [{ answer: 42 }, [], [false, null], 'text', '', 42, 1.5, false, true, null])
+    assert.deepEqual(await processWorkflowValue('transform', configuration, JSON.stringify(value)), value);
+  for (const type of ['Object', 'Array', 'Text', 'Number', 'Boolean', 'Null']) {
+    const legacy = { ...configuration, parameters: { type } };
+    const original = structuredClone(legacy);
+    assert.deepEqual(validateProcessingData('transform', legacy), configuration);
+    assert.equal(await processWorkflowValue('transform', legacy, 'false'), false);
+    assert.deepEqual(legacy, original, 'Normalizing a stored node must not mutate its source.');
+    const graph = doc([{ ...processNode('transform', 'json_parse'), data: legacy }]);
+    assert.deepEqual(parseWorkflowDocument(JSON.stringify(graph)).nodes[0].data, configuration);
+    assert.deepEqual(portableWorkflowDocument(graph).nodes[0].data, configuration);
+    const pasted = pasteWorkflowSelection(copyWorkflowSelection(graph, ['transform'], []), 32);
+    assert.deepEqual(validateWorkflowDocument(doc(pasted.nodes, pasted.edges)).nodes[0].data, configuration);
+  }
+  for (const parameters of [{ type: 'Binary' }, { type: 'Unknown' }, { type: 42 }, { type: 'Object', extra: '' }])
+    assert.throws(() => validateProcessingData('transform', { ...configuration, parameters }), /Invalid processing parameters/);
+  await assert.rejects(processWorkflowValue('transform', configuration, '1e400'), /finite JSON/);
+});
+
+Then('known JSON alternatives connect to matching ports and retain their types through routing', () => {
+  const parse = processNode('transform', 'json_parse');
+  const types = ['Object', 'Array', 'Text', 'Number', 'Integer', 'Boolean', 'Null', 'Binary'];
+  const ports = { id: 'ports', type: 'data', position: { x: 900, y: 0 }, data: { ownerId: 'target', direction: 'inputs', label: 'Inputs',
+    fields: types.map(type => ({ id: type, label: type, type, connectable: true, required: false, description: '' })) } };
+  const assertion = processNode('assert', 'expect');
+  const switched = createUtilityNode('switch', { x: 600, y: 0 }, 'switch');
+  const cast = createUtilityNode('cast', { x: 600, y: 300 }, 'cast');
+  const trim = processNode('filter', 'trim');
+  const arrayRange = processNode('filter', 'array_range', {}, 'range');
+  const binary = processNode('transform', 'utf8_decode', {}, 'binary');
+  const unknown = processNode('transform', 'select_field', { type: 'Unknown' }, 'unknown');
+  const nodes = [parse, ports, assertion, switched, cast, trim, arrayRange, binary, unknown];
+  for (const [source, handle, edges] of [['transform', 'result', []], ['assert', 'success', [edge('transform', 'assert')]],
+    ['assert', 'failure', [edge('transform', 'assert')]], ['switch', 'gate-1', [edge('transform', 'switch')]]])
+    for (const type of types)
+      assert.equal(isWorkflowConnection(edge(source, 'ports', handle, type), nodes, edges), type !== 'Binary', `${source}/${handle} → ${type}`);
+  const routes = [edge('transform', 'assert'), edge('assert', 'switch', 'success'), edge('switch', 'cast', 'gate-1')];
+  const inferred = routingInputTypes(nodes, routes);
+  for (const id of ['assert', 'switch', 'cast']) assert.equal(inferred.get(id), 'JSON', id);
+  for (const target of ['filter', 'range', 'cast', 'assert', 'switch'])
+    assert.equal(isWorkflowConnection(edge('transform', target), nodes, []), true, target);
+  assert.equal(isWorkflowConnection(edge('transform', 'binary'), nodes, []), false);
+  assert.equal(isWorkflowConnection(edge('unknown', 'filter'), nodes, []), false, 'Unknown must not become a wildcard.');
+  const downstream = [edge('assert', 'ports', 'success', 'Object')];
+  assert.equal(isWorkflowConnection(edge('transform', 'assert'), nodes, downstream), true);
+  const textOnly = nodes.map(node => node.id === 'transform' ? processNode('transform', 'base64_encode') : node);
+  assert.equal(isWorkflowConnection(edge('transform', 'assert'), textOnly, downstream), false, 'Downstream type checks remain active.');
+});
+
+Then('parsed values satisfy receiving inputs at runtime without casting and stay private in vault recipes', async () => {
+  for (const value of ['hello', 42, false, {}, [], null]) {
+    const graph = targetDocument([file(JSON.stringify(value)), processNode('transform', 'json_parse')],
+      [edge('file', 'transform', 'value')], 'transform');
+    const runner = createWorkflowRunner(graph, 'target', createWorkflowDemo(), executor());
+    if (typeof value === 'string') {
+      const next = await runner.nextAsync();
+      assert.equal(next.values['body:$'], value);
+      assert.ok(next.mappedFields.includes('body:$'));
+    } else await assert.rejects(runner.nextAsync(), /needs a string value/);
+    runner.end();
+  }
+  await assert.rejects(apply('filter', 'trim', await apply('transform', 'json_parse', '{}')), /does not accept Object/);
+  const configuration = data('transform', 'json_parse', { type: 'Object' });
+  const expression = { kind: 'process', type: 'transform', data: configuration, value: { kind: 'credential', id: uuid } };
+  const privateCredential = { ...credential, value: JSON.stringify('private-json-value') };
+  assert.deepEqual(validatePrivateExpression(expression).data.parameters, {});
+  assert.equal(await resolvePrivateExpression(expression, [privateCredential]), 'private-json-value');
+  assert.equal(await checkPrivateAssertion(expression, data('assert', 'expect', { operator: 'is_type', expected: 'text' }), [privateCredential]), true);
+  assert.ok(!JSON.stringify(expression).includes('private-json-value'));
 });
 
 Then('workflow cryptographic transforms match SHA256 HMAC and signed JWT contracts', async () => {
@@ -224,7 +299,7 @@ Then('workflow processing rejects malformed configuration values encodings and l
     ['transform', 'base64_decode', 'Zh=='], ['transform', 'base64_decode', 'Zg'], ['transform', 'base64_decode', 'Zg==\n'],
     ['transform', 'base64url_decode', 'Zh'], ['transform', 'base64url_decode', '+/=='], ['transform', 'base64url_decode', 'x'],
     ['transform', 'hex_decode', 'a'], ['transform', 'hex_decode', 'gg'], ['transform', 'utf8_decode', encodeWorkflowBinary('bad.bin', Uint8Array.of(255))],
-    ['transform', 'utf8_encode', 42], ['transform', 'json_parse', 'invalid'], ['transform', 'json_parse', '[]'],
+    ['transform', 'utf8_encode', 42], ['transform', 'json_parse', 'invalid'],
     ['transform', 'select_field', {}, { path: '/missing' }], ['transform', 'select_field', {}, { path: 'invalid' }], ['transform', 'select_field', {}, { path: '/~2' }],
     ['transform', 'map_fields', {}, { fields: 'invalid' }], ['transform', 'map_fields', {}, { fields: '[]' }], ['transform', 'map_fields', {}, { fields: '{"a":1}' }],
     ['transform', 'map_fields', {}, { fields: '{"a":"/missing"}' }], ['filter', 'substring', 'a', { start: '1.5' }], ['filter', 'array_range', [], { end: 'a' }],

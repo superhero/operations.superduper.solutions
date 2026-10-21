@@ -30,6 +30,15 @@ Feature: Explicit workflow processing and assertion routing
   Scenario: JSON translation and field mapping retain types and safe property names
     Then workflow translation parses serializes selects and maps data without mutation
 
+  Scenario: Parse JSON accepts every JSON value and restores legacy nodes
+    Then Parse JSON accepts every JSON type and restores old selected types without narrowing output
+
+  Scenario: Parse JSON connects directly under a matching receiving type assumption
+    Then known JSON alternatives connect to matching ports and retain their types through routing
+
+  Scenario: Parse JSON preserves runtime type checks and private processing
+    Then parsed values satisfy receiving inputs at runtime without casting and stay private in vault recipes
+
   Scenario: Hashing and keyed signing match independent vectors
     Then workflow cryptographic transforms match SHA256 HMAC and signed JWT contracts
 

@@ -9,17 +9,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { Handle, Position, type Node, type NodeProps } from "@xyflow/svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { CastData } from "$lib/workflow-document.ts";
-  import { castTypes } from "$lib/workflow-utilities.ts";
+  import { castTypes, type RoutingType } from "$lib/workflow-utilities.ts";
+  import { processingTypeLabel } from "$lib/workflow-processing.ts";
   import WorkflowNodeSelect from "./WorkflowNodeSelect.svelte";
   import "./workflow-utility-nodes.css";
 
   let { id, data, selected }: NodeProps<Node<CastData, "cast">> = $props();
   const changeType = getContext<(id: string, targetType: CastData["targetType"]) => void>("workflow-cast-type");
-  const inputTypeFor = getContext<(id: string) => string>("workflow-input-type");
+  const inputTypeFor = getContext<(id: string) => RoutingType>("workflow-input-type");
   const editorActive = getContext<(() => boolean) | undefined>("workflow-editor-active");
   const inputConnected = getContext<((id: string, handleId?: string | null) => boolean) | undefined>("workflow-input-connected");
   const connected = $derived(inputConnected?.(id, "value") ?? false);
-  const inputType = $derived(inputTypeFor(id));
+  const inputType = $derived(processingTypeLabel(inputTypeFor(id)));
 </script>
 
 <div class="workflow-utility-node workflow-cast-node" class:selected>
