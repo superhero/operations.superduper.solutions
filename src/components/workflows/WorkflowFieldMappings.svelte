@@ -98,17 +98,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {:else}<p class="mapping-help">No fields yet. Add a mapping to choose what goes in the result.</p>{/if}
     {#if open}
       <form class="mapping-editor" aria-label={editing === null ? "Add field mapping" : "Edit field mapping"} onsubmit={save}>
-        <label for={`${id}-mapping-name`}>New field name</label>
-        <input id={`${id}-mapping-name`} class="utility-value" bind:this={nameInput} bind:value={name} disabled={!active} maxlength="4096"
-          placeholder="e.g. Customer name" onkeydown={cancelOnEscape} aria-invalid={!!error} aria-describedby={error ? `${id}-mapping-error` : undefined} />
-        <span class="mapping-label">Copy from</span>
-        <WorkflowNodeSelect label="Copy from" value={path.length ? "field" : "input"} {active} disabled={!active}
-          choices={[{ value: "input", label: "Entire input" }, { value: "field", label: "A field or array item" }]}
-          onchange={source => path = source === "input" ? [] : [""]} />
+        <div class="mapping-field workflow-node-field">
+          <label for={`${id}-mapping-name`}>New field name</label>
+          <input id={`${id}-mapping-name`} class="utility-value" bind:this={nameInput} bind:value={name} disabled={!active} maxlength="4096"
+            placeholder="e.g. Customer name" onkeydown={cancelOnEscape} aria-invalid={!!error} aria-describedby={error ? `${id}-mapping-error` : undefined} />
+        </div>
+        <div class="mapping-field workflow-node-field">
+          <span class="mapping-label">Copy from</span>
+          <WorkflowNodeSelect label="Copy from" value={path.length ? "field" : "input"} {active} disabled={!active}
+            choices={[{ value: "input", label: "Entire input" }, { value: "field", label: "A field or array item" }]}
+            onchange={source => path = source === "input" ? [] : [""]} />
+        </div>
         {#if path.length}
           <div class="mapping-path nowheel">
             {#each path as part, index (index)}
-              <div class="path-level">
+              <div class="path-level workflow-node-field">
                 <label for={`${id}-mapping-path-${index}`}>{index === 0 ? "Source field" : "Inside that field"}</label>
                 <input id={`${id}-mapping-path-${index}`} class="utility-value" aria-label={`Source field ${index + 1}`} disabled={!active}
                   maxlength="4096" value={part} placeholder={index === 0 ? "e.g. profile" : "e.g. name"} onkeydown={cancelOnEscape}
@@ -147,6 +151,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .mapping-summary:disabled, .mapping-button:disabled { color: var(--color-disabled-foreground); cursor: not-allowed; }
   .mapping-editor { display: grid; gap: 5px; min-width: 0; padding-top: 8px; border-top: 1px solid var(--color-border); }
   .mapping-editor label, .mapping-label { color: var(--color-muted-foreground); font-size: 10px; }
+  .mapping-field { display: grid; gap: 5px; min-width: 0; }
   .mapping-path { display: grid; gap: 5px; max-height: 200px; overflow: auto; overscroll-behavior: contain; }
   .path-level { display: grid; grid-template-columns: minmax(0, 1fr) 26px; gap: 4px; padding-left: 8px; border-left: 1px solid var(--color-border); }
   .path-level label { grid-column: 1 / -1; }

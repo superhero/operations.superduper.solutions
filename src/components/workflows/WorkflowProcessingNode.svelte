@@ -59,7 +59,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {:else}
   {#each definition.parameters as field (field.name)}
       {@const connected = !!field.connectable && inputConnected(id, field.name)}
-      <div class="processing-parameter nodrag nopan nokey" class:key-id={field.name === "key_id"}>
+      <div class="processing-parameter workflow-node-field nodrag nopan nokey" class:key-id={field.name === "key_id"}>
         <label for={`${id}-${field.name}`}>{field.label}
           {#if field.connectable}<span class="utility-type">{processingInputTypes(kind, data, field.name)?.join(" | ")}</span>{/if}
         </label>

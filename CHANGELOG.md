@@ -221,6 +221,14 @@ fix(ui): group JWT key ID with signing key
 
 ```
 
+<!-- changelog-commit:9a3e8f51f519d7efe4d6c934c744ff69a867227e -->
+### Commit [`9a3e8f5`](https://github.com/superhero/operations.superduper.solutions/commit/9a3e8f51f519d7efe4d6c934c744ff69a867227e)
+
+```text
+fix(ui): keep node field hover continuous across labels
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
