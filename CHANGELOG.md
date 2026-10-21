@@ -237,6 +237,14 @@ fix(ui): nest workflow controls inside their labels
 
 ```
 
+<!-- changelog-commit:55bf1af1b2db6cb3f828857654fca93ed23b8a55 -->
+### Commit [`55bf1af`](https://github.com/superhero/operations.superduper.solutions/commit/55bf1af1b2db6cb3f828857654fca93ed23b8a55)
+
+```text
+fix(ui): show Assert output types and remove node header tooltips
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

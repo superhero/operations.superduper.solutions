@@ -39,7 +39,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <Handle id="value" type="target" position={Position.Left} isConnectableStart={false}
       isConnectableEnd={!inputConnected(id, "value")} aria-disabled={inputConnected(id, "value")} aria-label={`${family} input (${inputLabel})`} />
     <MaterialIcon name={kind === "transform" ? "transform" : kind === "filter" ? "filter_alt" : "fact_check"} size={20} />
-    <strong title={`${family}: ${definition.label}`}>{definition.label}</strong><span class="utility-type">{inputLabel}</span>
+    <strong>{definition.label}</strong><span class="utility-type">{inputLabel}</span>
   </div>
   {#if kind !== "assert"}
     <div class="utility-row nodrag nopan nokey">
@@ -87,9 +87,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {/each}
   {/if}
   {#if kind === "assert"}
-    <div class="utility-row processing-output"><span>Success</span>
+    <div class="utility-row processing-output"><span>Success</span><span class="utility-type output-type">{outputType}</span>
       <Handle id="success" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`Assertion success (${outputType})`} /></div>
-    <div class="utility-row processing-output"><span>Failure</span>
+    <div class="utility-row processing-output"><span>Failure</span><span class="utility-type output-type">{outputType}</span>
       <Handle id="failure" type="source" position={Position.Right} isConnectableEnd={false} aria-label={`Assertion failure (${outputType})`} /></div>
   {:else}
     <div class="utility-row processing-output"><span>Result</span><span class="utility-type output-type">{outputType}</span>

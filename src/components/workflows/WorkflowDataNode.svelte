@@ -110,12 +110,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       class="structural-port" isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
       onmousedown={blockPointer} ontouchstart={blockPointer} aria-disabled="true" aria-label={`${panelLabel} ${data.array ? "array" : "object"}`} />
     <MaterialIcon name={data.array ? "data_array" : "data_object"} size={20} />
-    <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={panelLabel} labelAsName={false}>
-      {#snippet child({ props })}
-        {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
-        <strong {...hintProps} data-label={panelLabel}>{input ? panelLabel.replace(/ parameters$/i, "") : panelLabel.replace(/^Response · .+$/, "Response")}</strong>
-      {/snippet}
-    </HintButton>
+    <strong data-label={panelLabel}>{input ? panelLabel.replace(/ parameters$/i, "") : panelLabel.replace(/^Response · .+$/, "Response")}</strong>
   </div>
 {/snippet}
 
