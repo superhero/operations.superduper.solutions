@@ -253,6 +253,14 @@ fix(ui): describe node selectors and connector types
 
 ```
 
+<!-- changelog-commit:5cb3cbd63d3e8480cccde187ce0812f9f1d1be86 -->
+### Commit [`5cb3cbd`](https://github.com/superhero/operations.superduper.solutions/commit/5cb3cbd63d3e8480cccde187ce0812f9f1d1be86)
+
+```text
+fix(ui): explain Assert controls and passthrough connections
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
