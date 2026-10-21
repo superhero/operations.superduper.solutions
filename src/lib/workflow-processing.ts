@@ -163,7 +163,7 @@ export function processingExpectedTypes(data: ProcessingData, inputType: Process
   return checkedType === "Unknown" || checkedType === "Mixed" ? anyValue : processingTypeAlternatives(checkedType);
 }
 export function processingConditionUsesPath(type: ProcessingType | "Mixed"): boolean {
-  return ["Object", "Array", "Unknown", "Mixed", "JSON"].includes(type);
+  return ["Object", "Array", "JSON"].includes(type);
 }
 export function processingConditionUsesExpected(operator: string): boolean {
   return operator !== "is_set" && operator !== "is_not_set";

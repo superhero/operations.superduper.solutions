@@ -350,10 +350,11 @@ Undo. Connected comparisons preserve their original value types, including
 inside private vault recipes; strings are never parsed as JSON implicitly.
 
 Assert passes the original input unchanged through Success or Failure. The
-field-path editor appears only for structured or unresolved input types; scalar
-inputs are checked directly, ignoring any retained path from an earlier
-configuration. The expected-value editor appears only for conditions that use
-it; Is set and Is not set hide it while preserving the saved value for reuse.
+field-path editor appears only for connected Object, Array or JsonValue inputs.
+Disconnected, scalar and unresolved inputs hide it while retaining its saved
+path; scalar inputs are checked directly. The expected-value editor appears only
+for conditions that use it; Is set and Is not set hide it while preserving the
+saved value for reuse.
 Expected value also accepts one connection, which disables its manual editor.
 Its badge and connection compatibility follow the condition and checked type:
 numeric comparisons require Number, text comparisons and type checks require
