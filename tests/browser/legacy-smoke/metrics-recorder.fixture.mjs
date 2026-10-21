@@ -9,6 +9,9 @@ import { resolve } from 'node:path';
 import { expect } from '@playwright/test';
 import { createFixtureServer, ownedBrowser, openSettings, waitForApplicationReady } from './support.mjs';
 
+const nativeExecution = page => ({ threads: page.workers().length + 1, dedicatedWorkers: page.workers().length });
+const nativeWorkerNames = page => Promise.all(page.workers().map(worker => worker.evaluate(() => globalThis.name)));
+
 // Assertions are advanced by the named steps in legacy-smoke.feature.
 export async function* journey(world, variant) {
 
@@ -97,16 +100,21 @@ try {
   };
   await sample(100, start, 1);
   const initial = await page.evaluate(() => window.recorderProbe.state);
+  const execution = nativeExecution(page);
+  results.workerUrls = page.workers().map(worker => worker.url());
+  results.workerNames = await nativeWorkerNames(page);
+  for (const name of ['operations-schema-library', 'operations-workflows', 'operations-metrics-recorder'])
+    assert.ok(results.workerNames.includes(name), `The application owns its ${name} context.`);
   assert.equal(initial.report.memory.used, 512);
-  assert.deepEqual(initial.report.execution, { threads: 4, dedicatedWorkers: 3 });
-  for (const [key, value] of [['execution.threads', 4], ['execution.dedicatedWorkers', 3]])
+  assert.deepEqual(initial.report.execution, execution);
+  for (const [key, value] of [['execution.threads', execution.threads], ['execution.dedicatedWorkers', execution.dedicatedWorkers]])
     assert.deepEqual(initial.activeBar.metrics[key], { open: value, high: value, low: value, close: value, count: 1 });
   assert.equal(initial.activeBar.metrics['execution.mainThread'], undefined);
   assert.equal(initial.report.repositories.items.find(item => item.id === 'metrics-isolation').metrics.head, workflow.revision);
   await openSettings(page);
   await page.locator('summary[aria-label="Browser"]').click();
   const processing = page.getByRole('region', { name: 'Processing', exact: true });
-  await expect(processing.locator('dt').filter({ hasText: /^Threads$/ }).locator('xpath=following-sibling::dd[1]')).toHaveText('4');
+  await expect(processing.locator('dt').filter({ hasText: /^Threads$/ }).locator('xpath=following-sibling::dd[1]')).toHaveText(String(execution.threads));
   // Generate an actual long task only in this isolated browser context.
   results.longTaskDuration = await page.evaluate(() => new Promise((resolve, reject) => {
     const observer = new PerformanceObserver(list => {
@@ -138,7 +146,7 @@ yield "worker measurements retain native processing values while incomplete bars
   results.saved = await loadHistory();
   assert.equal(results.saved.length, 1);
   assert.deepEqual(results.saved[0].metrics['application.total'], active);
-  for (const [key, value] of [['execution.threads', 4], ['execution.dedicatedWorkers', 3]])
+  for (const [key, value] of [['execution.threads', execution.threads], ['execution.dedicatedWorkers', execution.dedicatedWorkers]])
     assert.deepEqual(results.saved[0].metrics[key], { open: value, high: value, low: value, close: value, count: 3 });
   for (const key of ['processing.longTasks', 'processing.blockingTime']) {
     const candle = results.saved[0].metrics[key];
@@ -171,8 +179,9 @@ yield "completed metrics bars persist exactly once without mutating workflows";
   await subscribe(follower);
   await expect.poll(() => follower.evaluate(() => window.recorderProbe.state.activeBar?.metrics['application.total']?.count)).toBe(1);
   assert.equal(await follower.evaluate(() => window.recorderProbe.calls), 0, 'A second tab follows without measuring independently.');
+  const followerExecution = nativeExecution(follower);
   assert.deepEqual(await follower.evaluate(async () => (await import('/lib/application-workers.ts')).applicationExecutionMetrics()),
-    { threads: 4, dedicatedWorkers: 3 }, 'Each tab owns schema, workflow, and recorder workers, including the waiting follower.');
+    followerExecution, 'Each tab reports its actual dedicated workers, including the waiting follower.');
   const followerWorker = follower.workers().find(worker => worker.url().includes('metrics-recorder.worker'));
   assert.ok(followerWorker);
   await followerWorker.evaluate(timestamp => { globalThis.probeNow = timestamp; Date.now = () => globalThis.probeNow; }, start + quarter + 1000);
@@ -184,7 +193,9 @@ yield "completed metrics bars persist exactly once without mutating workflows";
   await expect.poll(() => page.evaluate(() => window.recorderProbe.state.bars.length)).toBe(2);
   results.saved = await loadHistory(); assert.equal(results.saved.length, 2);
   assert.deepEqual(results.saved[1].metrics['application.total'], results.handoff);
-  assert.deepEqual(results.saved[1].metrics['execution.dedicatedWorkers'], { open: 3, high: 3, low: 3, close: 3, count: 2 },
+  assert.deepEqual(results.saved[1].metrics['execution.dedicatedWorkers'], { open: execution.dedicatedWorkers,
+    high: Math.max(execution.dedicatedWorkers, followerExecution.dedicatedWorkers),
+    low: Math.min(execution.dedicatedWorkers, followerExecution.dedicatedWorkers), close: followerExecution.dedicatedWorkers, count: 2 },
     'Worker counts describe the recording tab, not a sum across leader and follower.');
   results.gitAfterHandoff = await page.evaluate(async () => (await import('/metrics-recorder-fixture.js')).inspect());
   assert.equal(results.gitAfterHandoff.commits, 2); assert.equal(results.gitAfterHandoff.files.length, 2);
@@ -273,19 +284,29 @@ yield "one recorder owns sampling across tabs and hands over complete aggregates
   results.cacheReload = { restoredTotal: restored.pageMemory.total, freshTotal: refreshedCache.pageMemory.total,
     previewBars: restored.bars.length, authoritativeBars: refreshedCache.bars.length };
 yield "cached metrics remain a preview until durable history and fresh measurements arrive";
-  results.executionLifecycle = await page.evaluate(async () => {
-    const { applicationExecutionMetrics } = await import('/lib/application-workers.ts');
-    const counts = [applicationExecutionMetrics()];
+  const lifecycleExecution = nativeExecution(page);
+  const recorderCount = (await nativeWorkerNames(page)).filter(name =>
+    ['operations-metrics-recorder', 'operations-error-history'].includes(name)).length;
+  assert.ok(recorderCount >= 1, 'The metrics recorder owns a native execution context.');
+  const registeredExecution = () => page.evaluate(async () => (await import('/lib/application-workers.ts')).applicationExecutionMetrics());
+  results.executionLifecycle = [await registeredExecution()];
+  await page.evaluate(() => {
     window.dispatchEvent(new PageTransitionEvent('pagehide'));
     window.dispatchEvent(new PageTransitionEvent('pagehide'));
-    counts.push(applicationExecutionMetrics());
-    window.dispatchEvent(new PageTransitionEvent('pageshow'));
-    window.dispatchEvent(new PageTransitionEvent('pageshow'));
-    counts.push(applicationExecutionMetrics());
-    return counts;
   });
+  // Active recorders suspend; duplicate events must not add or leak contexts.
+  const suspendedExecution = { threads: lifecycleExecution.threads - recorderCount, dedicatedWorkers: lifecycleExecution.dedicatedWorkers - recorderCount };
+  await expect.poll(() => nativeExecution(page)).toEqual(suspendedExecution);
+  results.executionLifecycle.push(await registeredExecution());
+  await page.evaluate(() => {
+    window.dispatchEvent(new PageTransitionEvent('pageshow'));
+    window.dispatchEvent(new PageTransitionEvent('pageshow'));
+  });
+  await expect.poll(() => nativeExecution(page)).toEqual(lifecycleExecution);
+  await expect.poll(registeredExecution).toEqual(lifecycleExecution);
+  results.executionLifecycle.push(await registeredExecution());
   assert.deepEqual(results.executionLifecycle, [
-    { threads: 4, dedicatedWorkers: 3 }, { threads: 3, dedicatedWorkers: 2 }, { threads: 4, dedicatedWorkers: 3 },
+    lifecycleExecution, suspendedExecution, lifecycleExecution,
   ]);
 yield "page lifecycle events maintain accurate worker accounting";
   }

@@ -577,6 +577,21 @@ source fingerprint so the build verifies the equivalent generated output.
 
 ```
 
+<!-- changelog-commit:69cb6568dac0d3b0eb97eeee4f93c4246063069b -->
+### Commit [`69cb656`](https://github.com/superhero/operations.superduper.solutions/commit/69cb6568dac0d3b0eb97eeee4f93c4246063069b)
+
+```text
+test(browser): match current editor and worker contracts
+
+Expect the disabled Ollama factory to stay out of search totals and use
+native rich-text selection instead of textarea offsets for comments.
+
+Check that node headings have no hints while property controls describe
+their purpose. Compare reported execution counts with actual browser
+workers through sampling, tab handoff and duplicate lifecycle events.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
