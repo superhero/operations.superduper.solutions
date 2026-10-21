@@ -34,6 +34,50 @@ async function choose(page, node, label, option) {
   await page.getByRole('option', { name: option, exact: true }).click();
 }
 
+Then('long workflow dropdowns scroll inside their popup without moving the canvas', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  await page.getByRole('button', { name: 'Transform', exact: true }).click();
+  const node = workflow(page).locator('[data-processing-kind="transform"]');
+  const trigger = node.getByRole('combobox', { name: 'Transform operation', exact: true });
+  const canvas = workflow(page).locator('.svelte-flow__viewport');
+  await trigger.click();
+  const list = page.getByRole('listbox', { name: 'Transform operation', exact: true });
+  const viewport = list.locator('[data-select-viewport]');
+  const geometry = await viewport.evaluate(element => ({
+    height: element.clientHeight, scrollHeight: element.scrollHeight, scrollbar: getComputedStyle(element).scrollbarWidth,
+    webkitScrollbar: CSS.supports('selector(::-webkit-scrollbar)') ? getComputedStyle(element, '::-webkit-scrollbar').display : undefined,
+    outerHeight: element.parentElement.clientHeight, outerScrollHeight: element.parentElement.scrollHeight,
+  }));
+  assert.ok(geometry.height < geometry.scrollHeight, `The option viewport must own scrolling: ${JSON.stringify(geometry)}`);
+  assert.notEqual(geometry.scrollbar, 'none', 'The popup must show a scrollbar.');
+  assert.notEqual(geometry.webkitScrollbar, 'none', 'WebKit scrollbars must remain visible.');
+  const bounds = await list.boundingBox(), size = page.viewportSize();
+  assert.ok(bounds.height <= 320 && bounds.x >= 0 && bounds.y >= 0 && bounds.x + bounds.width <= size.width && bounds.y + bounds.height <= size.height);
+  await viewport.evaluate(element => { element.scrollTop = 0; });
+  await viewport.hover({ position: { x: 24, y: 24 } });
+  const initial = await viewport.evaluate(element => element.scrollTop);
+  const before = await canvas.getAttribute('style');
+  await page.mouse.wheel(0, 600);
+  await expect.poll(() => viewport.evaluate(element => element.scrollTop)).toBeGreaterThan(initial);
+  const last = list.getByRole('option', { name: 'Sign JWT', exact: true });
+  await expect(last).toBeInViewport({ ratio: 0.9 });
+  await expect(canvas).toHaveAttribute('style', before);
+  await last.click();
+  await expect(trigger).toContainText('Sign JWT');
+  await trigger.press('Space');
+  await trigger.press('Home');
+  await trigger.press('Enter');
+  await expect(trigger).toContainText('Encode UTF-8');
+  await trigger.press('Space');
+  await trigger.press('End');
+  await trigger.press('Escape');
+  await expect(trigger).toBeFocused();
+  await expect(trigger).toContainText('Encode UTF-8');
+  await saved(page);
+  assert.equal((await readExport(page)).document.nodes.find(node => node.type === 'transform').data.operation, 'utf8_encode');
+});
+
 Then('JWT shows signing key types and uses a connected Key ID with reversible manual editing', async function () {
   const page = this.page, key = '01234567890123456789012345678901';
   await setMode(page, 'workflow');
