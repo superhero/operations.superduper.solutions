@@ -5,7 +5,7 @@
 import type { Operation } from "./catalog.ts";
 import { fileValueType } from "./workflow-file.ts";
 import { defaultProcessingData, type ProcessingKind } from "./workflow-processing.ts";
-import { placeUtilityNode } from "./workflow-layout.ts";
+import { placeUtilityNode, type WorkflowLayoutNode } from "./workflow-layout.ts";
 import { validateWorkflowDocument, type SwitchGate, type WorkflowData, type WorkflowDocument,
   type WorkflowDocumentEdge, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
 import { adaptRoutingGates, gateForType, isFileBinaryConnection, isValueConnection, isWorkflowConnectionTypeCompatible, routingInputTypes, switchGateInput, switchGateLimit,
@@ -704,6 +704,35 @@ export function createUtilityNode(type: "switch" | "cast" | "comment" | "vault" 
   if (type === "cast") return { ...common, type, data: { targetType: "Text" } };
   if (type === "transform" || type === "filter" || type === "assert") return { ...common, type, data: defaultProcessingData(type) };
   return { ...common, type, data: { text: "" } };
+}
+
+export function canAddArrayFilterAssertion(nodeId: string, nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[]): boolean {
+  const node = nodes.find(node => node.id === nodeId);
+  return node?.type === "filter" && node.data.operation === "array_filter" && !node.hidden && !edges.some(edge => edge.kind === "mapping" &&
+    (edge.source === nodeId && edge.sourceHandle === "item" || edge.target === nodeId && (edge.targetHandle === "success" || edge.targetHandle === "failure")));
+}
+
+/** Add a complete, editable predicate without replacing any existing assertion path. */
+export function addArrayFilterAssertion(nodeId: string, assertionId: string, nodes: WorkflowLayoutNode[], edges: WorkflowDocumentEdge[]): Graph {
+  if (!canAddArrayFilterAssertion(nodeId, nodes, edges)) return { nodes, edges };
+  const filter = nodes.find(node => node.id === nodeId)!;
+  const connections = edges.filter(edge => edge.target !== nodeId || edge.targetHandle !== "path" && edge.targetHandle !== "expected");
+  const added: WorkflowDocumentEdge[] = [
+    { id: `${assertionId}:assertion`, kind: "mapping", source: nodeId, sourceHandle: "item", target: assertionId, targetHandle: "value" },
+    { id: `${assertionId}:keep`, kind: "mapping", source: assertionId, sourceHandle: "success", target: nodeId, targetHandle: "success" },
+    { id: `${assertionId}:remove`, kind: "mapping", source: assertionId, sourceHandle: "failure", target: nodeId, targetHandle: "failure" }
+  ];
+  if (nodes.length >= 500 || connections.length + added.length > 1000)
+    throw new Error("Adding an assertion would exceed the workflow node or connection limit.");
+  if (nodes.some(node => node.id === assertionId) || edges.some(edge => added.some(link => link.id === edge.id)))
+    throw new Error("Assertion node and connection IDs must be unique.");
+  const area = { x: filter.position.x + (filter.measured?.width || filter.width || 300) + 96, y: filter.position.y + 80, width: 300, height: 180 };
+  const assertion = createUtilityNode("assert", { x: area.x, y: area.y }, assertionId);
+  const { position } = placeUtilityNode({ ...assertion, width: area.width, height: area.height }, nodes, area);
+  return {
+    nodes: [...nodes.map(node => node.id === nodeId && node.type === "filter" ? { ...node, data: { ...node.data, parameters: {} } } : node), { ...assertion, position }],
+    edges: [...connections, ...added]
+  };
 }
 
 /** Make the original-file conversion visible and persist it as ordinary editable graph nodes. */

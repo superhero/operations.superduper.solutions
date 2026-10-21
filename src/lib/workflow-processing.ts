@@ -219,7 +219,7 @@ export async function processWorkflowValue(kind: ProcessingKind, raw: Processing
     return filterArrayWithPredicate(value, predicate, parameters ?? {}, processWorkflowValue);
   }
   if (data.operation === "array_filter" && !Object.hasOwn(data.parameters, "operator"))
-    throw new Error("Connect Filter array Item through Assert and return its Success and Failure outcomes.");
+    throw new Error("Connect Filter array Assertion through Assert and return its outcomes to Keep and Remove.");
   if (parameters !== undefined) {
     if (!plain(parameters)) throw new Error("Invalid connected processing parameters.");
     const supplied: Record<string, string> = {};

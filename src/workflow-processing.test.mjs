@@ -8,7 +8,7 @@ import { defaultProcessingData, processingOperations, processingInputTypes, proc
 import { readFieldMappings, writeFieldMappings } from './lib/workflow-field-mappings.ts';
 import { encodeWorkflowBinary, workflowBinaryBlob } from './lib/workflow-binary.ts';
 import { defaultCsvOptions, parseWorkflowFile, readWorkflowFile } from './lib/workflow-file.ts';
-import { createUtilityNode, createOperationGraph, createFileDataGraph, createWorkflowGraph, isWorkflowConnection, insertFileBinaryCast } from './lib/workflow-graph.ts';
+import { createUtilityNode, createOperationGraph, createFileDataGraph, createWorkflowGraph, isWorkflowConnection, insertFileBinaryCast, canAddArrayFilterAssertion, addArrayFilterAssertion, removeGraphSelection } from './lib/workflow-graph.ts';
 import { isWorkflowConnectionTypeCompatible, routingInputTypes } from './lib/workflow-utilities.ts';
 import { validateWorkflowDocument, portableWorkflowDocument, parseWorkflowDocument } from './lib/workflow-document.ts';
 import { copyWorkflowSelection, pasteWorkflowSelection } from './lib/workflow-clipboard.ts';
@@ -88,6 +88,46 @@ function arrayAssertionGraph(input, { cast = true, operator = 'greater_than', ex
     edge('filter', cast ? 'cast' : 'assert', 'item'), ...(cast ? [edge('cast', 'assert')] : []),
     edge('assert', 'filter', invert ? 'failure' : 'success', 'success'), edge('assert', 'filter', invert ? 'success' : 'failure', 'failure')]);
 }
+
+Then('adding an array assertion wires Is set and preserves existing graph ownership', async () => {
+  const original = doc([file([0, false, '', null, 'kept']), processNode('filter', 'array_filter', { operator: 'equals', expected: 'old' }), file('old', 'operand')],
+    [edge('file', 'filter', 'value'), edge('operand', 'filter', 'value', 'expected')]);
+  const before = structuredClone(original);
+  assert.equal(canAddArrayFilterAssertion('filter', original.nodes, original.edges), true);
+  const added = addArrayFilterAssertion('filter', 'new-assert', original.nodes, original.edges);
+  const graph = validateWorkflowDocument({ ...original, ...added });
+  assert.deepEqual(original, before, 'The shortcut must not mutate its source snapshot.');
+  assert.deepEqual(graph.nodes.find(node => node.id === 'filter').data.parameters, {});
+  assert.deepEqual(graph.nodes.find(node => node.id === 'new-assert').data, defaultProcessingData('assert'));
+  assert.equal(graph.nodes.find(node => node.id === 'new-assert').data.parameters.operator, 'is_set');
+  assert.equal(graph.edges.some(edge => edge.targetHandle === 'expected'), false);
+  for (const node of original.nodes) assert.deepEqual(graph.nodes.find(item => item.id === node.id).position, node.position);
+  assert.deepEqual(graph.edges.slice(-3).map(({ source, sourceHandle, target, targetHandle }) => [source, sourceHandle, target, targetHandle]), [
+    ['filter', 'item', 'new-assert', 'value'], ['new-assert', 'success', 'filter', 'success'], ['new-assert', 'failure', 'filter', 'failure']
+  ]);
+  for (const link of graph.edges) assert.equal(isWorkflowConnection(link, graph.nodes, graph.edges.filter(edge => edge.id !== link.id)), true);
+  assert.match(describeWorkflowChange({ ...graph, edges: graph.edges.slice(0, -3) }, graph), /Assertion.*Success.*Keep.*Failure.*Remove/);
+  const runner = createWorkflowRunner(graph, undefined, createWorkflowDemo(), executor());
+  assert.equal((await runner.nextAsync()).kind, 'complete');
+  assert.deepEqual(JSON.parse(runner.processingResults[0].preview), [0, false, '', 'kept']);
+  runner.end();
+  const roundtrip = parseWorkflowDocument(JSON.stringify(graph));
+  assert.equal(arrayFilterPlans(roundtrip).get('filter').predicate.steps[0].data.parameters.operator, 'is_set');
+  const blocked = addArrayFilterAssertion('filter', 'duplicate', graph.nodes, graph.edges);
+  assert.equal(blocked.nodes, graph.nodes);
+  assert.equal(blocked.edges, graph.edges);
+  for (const link of graph.edges.slice(-3)) assert.equal(canAddArrayFilterAssertion('filter', graph.nodes, [link]), false);
+  const removed = removeGraphSelection({ nodes: [{ id: 'new-assert' }], edges: [] }, graph.nodes, graph.edges);
+  assert.equal(canAddArrayFilterAssertion('filter', removed.nodes, removed.edges), true);
+  const obstacle = { ...createUtilityNode('comment', { x: 716, y: 80 }, 'obstacle'), width: 300, height: 300 };
+  const placed = addArrayFilterAssertion('filter', 'placed', [...removed.nodes, obstacle], removed.edges).nodes.at(-1);
+  assert.ok(placed.position.x + 300 + 24 <= obstacle.position.x || placed.position.x >= obstacle.position.x + 300 + 24 ||
+    placed.position.y + 180 + 24 <= obstacle.position.y || placed.position.y >= obstacle.position.y + 300 + 24, 'Place the new Assert clear of existing nodes.');
+  assert.throws(() => addArrayFilterAssertion('filter', 'filter', original.nodes, original.edges), /unique/);
+  assert.throws(() => addArrayFilterAssertion('filter', 'collision', original.nodes, [...original.edges, edge('file', 'operand', 'value', 'value', 'collision:keep')]), /unique/);
+  assert.throws(() => addArrayFilterAssertion('filter', 'limited', [...original.nodes, ...Array.from({ length: 497 }, (_, i) => createUtilityNode('comment', { x: 0, y: 0 }, `extra-${i}`))], original.edges), /limit/);
+  assert.throws(() => addArrayFilterAssertion('filter', 'limited', original.nodes, Array.from({ length: 998 }, (_, i) => edge('file', 'operand', 'value', 'value', `extra-${i}`))), /limit/);
+});
 
 Then('array item assertion paths keep original values order and resolved cast types', async () => {
   for (const invert of [false, true]) {

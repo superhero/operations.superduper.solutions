@@ -20,7 +20,7 @@ export function arrayFilterPlans(document: WorkflowDocument): Map<string, ArrayF
     const returns = edges.filter(edge => edge.target === root.id && isArrayFilterReturn(root, edge.targetHandle));
     if (!item.length && !returns.length) continue;
     if (item.length !== 1 || returns.length !== 2 || new Set(returns.map(edge => edge.targetHandle)).size !== 2)
-      throw new Error("Connect Filter array Item through Assert, then return both Success and Failure.");
+      throw new Error("Connect Filter array Assertion through Assert, then return Success to Keep and Failure to Remove.");
     const nodes = new Set<string>(), internal = new Set<string>(), captures: WorkflowDocumentEdge[] = [];
     const steps: ArrayPredicate["steps"] = [];
     let current = item[0]!;
