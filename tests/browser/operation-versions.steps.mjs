@@ -27,7 +27,8 @@ async function addVersionedOperation(page) {
   await openCatalog(page);
   const root = await catalogSchemaHeading(page, 'versions.example.test');
   await root.press('Enter');
-  const foo = await catalogResourcePath(page, `${id}:tag:Operations`, ['foo']);
+  await expect(page.locator(`[data-catalog-group="${id}:tag:Operations"]`)).toHaveCount(0);
+  const foo = await catalogResourcePath(page, id, ['foo']);
   // Both versions share one action. The descendant is lazy and has no parameter/version heading.
   await expect(foo.locator('[data-operation-id]')).toHaveCount(1);
   await expect(foo.locator('[data-operation-id]')).toHaveAttribute('data-operation-id', `${id}:readV1`);
@@ -136,12 +137,14 @@ Then('Anthropic operations follow their nested resources without altering their 
   await openCatalog(page);
   const root = await catalogSchemaHeading(page, 'Anthropic / Claude');
   await root.press('Enter');
-  const operations = page.locator('[data-catalog-group="anthropic:tag:Operations"]');
-  const batches = await catalogResourcePath(page, 'anthropic:tag:Operations', ['messages', 'batches']);
+  await expect(page.locator('[data-catalog-group="anthropic:tag:Operations"]')).toHaveCount(0);
+  const operations = page.locator('[data-catalog-group="anthropic"]');
+  const batches = await catalogResourcePath(page, 'anthropic', ['messages', 'batches']);
   await expect(batches.locator(':scope > .catalog-group > summary .catalog-name')).toHaveText('batches');
-  await catalogResourcePath(page, 'anthropic:tag:Operations', ['messages', 'batches', 'results']);
+  await catalogResourcePath(page, 'anthropic', ['messages', 'batches', 'results']);
   const result = operations.locator('[data-operation-id="anthropic:message_batches_results"]');
   await expect(result).toBeVisible();
   const labels = await operations.locator('.catalog-name').allTextContents();
-  assert.ok(!labels.some(name => name === 'v1' || name.startsWith('{')));
+  assert.ok(!labels.some(name => name === 'Operations' || name === 'v1' || name.startsWith('{')));
+  await page.screenshot({ path: `${this.artifactDirectory}/anthropic-resource-navigation.png` });
 });

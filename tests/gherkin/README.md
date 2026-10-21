@@ -39,6 +39,13 @@ owned contexts. Completed screenshots and traces become report attachments;
 unavailable captures remain explicit diagnostics. SIGINT/SIGTERM request
 cancellation and cleanup; interrupted runs remain unsuccessful.
 
+Features using the complete service library run in an exclusive phase before
+application scenarios. The scheduling contract discovers `@service-defaults`
+tags so new library features must join that phase. Browser containers cap Node
+old space at 512 MiB per process, leaving room for Chromium and native allocations
+inside the shared container limit. Worker attachments record the effective V8
+heap limit for diagnosing resource failures.
+
 ## Reports and coverage
 
 Each suite writes JSON and a Vitest blob under `tmp/test`. `merge.config.mjs`

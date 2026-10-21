@@ -81,7 +81,7 @@ export function adaptFredSchema(input, profile) {
   if (!['fred', 'alfred'].includes(profile)) throw new Error(`Unknown FRED profile: ${profile}`);
   const document = structuredClone(input);
   const archive = profile === 'alfred';
-  document.info.title = archive ? 'ALFRED / Archival Federal Reserve Economic Data' : 'FRED / Federal Reserve Economic Data';
+  document.info.title = archive ? 'Federal Reserve / ALFRED' : 'Federal Reserve / FRED';
   document.info.description = archive
     ? 'Historical vintages and revisions of US and international economic data. ALFRED uses the FRED v1 API and the same API key. '
       + 'Choose a past realtime_start and realtime_end, or vintage_dates, to retrieve data as it was known then. '

@@ -4,9 +4,13 @@
 import type { PreparedCatalog } from "./catalog.ts";
 import type { SchemaDocumentRecord } from "./schema-documents.ts";
 import type { SchemaSummary } from "./schema-index.ts";
+import type { SchemaPatch } from "./schema-patches.ts";
 
 export type SchemaLibraryRecord = Omit<SchemaDocumentRecord, "document"> & {
   sourceIdentity: string;
+  patches?: SchemaPatch[];
+  hasPendingUpdate?: boolean;
+  bundled?: boolean;
   summary: Omit<SchemaSummary, "operationCount"> & { operationCount: number | null };
 };
 export type SchemaLibrarySnapshot = { records: SchemaLibraryRecord[]; catalogs: PreparedCatalog[]; active: string[] };

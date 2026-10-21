@@ -1,0 +1,519 @@
+{
+  "date": "2026-10-20",
+  "baselineCommit": "9a2fd6ab412d838179f1431b6515c2ded5036919",
+  "component": "src/lib/components/JsonSchemaView.svelte",
+  "baselineComponentSha256": "28507633b0187ffcd8f748af805141b38f5172c4f5642315eee54aafc7ebee41",
+  "candidateComponentSha256": "227756fc7b830b58165291c20df6770c32705c7b71e0052f72d3e448f757733e",
+  "conditions": {
+    "host": "sds-01",
+    "cpus": 2,
+    "memoryAndSwapBytes": 3221225472,
+    "nodeHeapMiB": 1800,
+    "pids": 512,
+    "node": "26.7.0",
+    "playwright": "1.63.0",
+    "engine": "bundled Chromium",
+    "productionBuild": true,
+    "viewport": [
+      1280,
+      900
+    ],
+    "dpr": 1,
+    "themes": [
+      "dark",
+      "light"
+    ],
+    "motion": "no-preference",
+    "catalogs": [
+      "demo",
+      "httpbin"
+    ],
+    "workflow": "empty",
+    "network": "isolated Playwright routing; HTTP cache disabled",
+    "order": "baseline then candidate, three repeated openings/closings per theme; no alternating build order",
+    "clock": "page performance.now from capture-phase real click to sampled computed color within 1 RGB channel unit of target",
+    "timingCapture": "rAF/computed-style sampling, minimal Playwright trace without snapshots/screenshots/sources; separate Chrome trace",
+    "samplingBoundary": "First opening per theme separate; repeats use the same live profile with normal disclosure release. Samples are not physical screen presentation or field INP."
+  },
+  "summary": {
+    "dark": {
+      "open": {
+        "baseline": {
+          "titleAt": {
+            "median": 206.83999998867512,
+            "min": 206.42000000178814,
+            "max": 214.79500000178814,
+            "n": 3
+          },
+          "copyAt": {
+            "median": 224.5849999934435,
+            "min": 223.51500000059605,
+            "max": 233.875,
+            "n": 3
+          }
+        },
+        "candidate": {
+          "titleAt": {
+            "median": 7.899999991059303,
+            "min": 7.524999991059303,
+            "max": 12.060000002384186,
+            "n": 3
+          },
+          "copyAt": {
+            "median": 7.899999991059303,
+            "min": 7.524999991059303,
+            "max": 12.060000002384186,
+            "n": 3
+          }
+        },
+        "titleSavingMs": 198.9399999976158,
+        "titleSavingPercent": 96.18062270765236
+      },
+      "close": {
+        "baseline": {
+          "titleAt": {
+            "median": 208.73499999940395,
+            "min": 207.5700000077486,
+            "max": 210.01999999582767,
+            "n": 3
+          },
+          "copyAt": {
+            "median": 208.73499999940395,
+            "min": 207.5700000077486,
+            "max": 210.01999999582767,
+            "n": 3
+          }
+        },
+        "candidate": {
+          "titleAt": {
+            "median": 14.995000004768372,
+            "min": 13.54500000178814,
+            "max": 15.140000000596046,
+            "n": 3
+          },
+          "copyAt": {
+            "median": 14.995000004768372,
+            "min": 13.54500000178814,
+            "max": 15.140000000596046,
+            "n": 3
+          }
+        },
+        "titleSavingMs": 193.73999999463558,
+        "titleSavingPercent": 92.81625026717552
+      }
+    },
+    "light": {
+      "open": {
+        "baseline": {
+          "titleAt": {
+            "median": 207.46000000834465,
+            "min": 206.48499999940395,
+            "max": 207.5,
+            "n": 3
+          },
+          "copyAt": {
+            "median": 223.73499999940395,
+            "min": 223.23499999940395,
+            "max": 224.1300000101328,
+            "n": 3
+          }
+        },
+        "candidate": {
+          "titleAt": {
+            "median": 6.625,
+            "min": 6.154999986290932,
+            "max": 33.979999989271164,
+            "n": 3
+          },
+          "copyAt": {
+            "median": 6.625,
+            "min": 6.154999986290932,
+            "max": 33.979999989271164,
+            "n": 3
+          }
+        },
+        "titleSavingMs": 200.83500000834465,
+        "titleSavingPercent": 96.80661332317868
+      },
+      "close": {
+        "baseline": {
+          "titleAt": {
+            "median": 212.51999999582767,
+            "min": 202.14000000059605,
+            "max": 215.24500000476837,
+            "n": 3
+          },
+          "copyAt": {
+            "median": 212.51999999582767,
+            "min": 202.14000000059605,
+            "max": 215.24500000476837,
+            "n": 3
+          }
+        },
+        "candidate": {
+          "titleAt": {
+            "median": 18.83499999344349,
+            "min": 14.899999991059303,
+            "max": 21.860000014305115,
+            "n": 3
+          },
+          "copyAt": {
+            "median": 18.83499999344349,
+            "min": 14.899999991059303,
+            "max": 21.860000014305115,
+            "n": 3
+          }
+        },
+        "titleSavingMs": 193.6850000023842,
+        "titleSavingPercent": 91.13730472717238
+      }
+    }
+  },
+  "samples": {
+    "baseline": [
+      {
+        "theme": "dark",
+        "kind": "first-open",
+        "open": true,
+        "titleAt": 289.5199999958277,
+        "copyAt": 239.60999999940395,
+        "wrapAt": 102.87999999523163,
+        "maxFrameGap": 65.5549999922514
+      },
+      {
+        "theme": "dark",
+        "kind": "first-close",
+        "open": false,
+        "titleAt": 210.39500001072884,
+        "copyAt": 210.39500001072884,
+        "wrapAt": null,
+        "maxFrameGap": 24.520000010728836
+      },
+      {
+        "theme": "dark",
+        "kind": "warm-0-open",
+        "open": true,
+        "titleAt": 206.42000000178814,
+        "copyAt": 223.51500000059605,
+        "wrapAt": 55.15500000119209,
+        "maxFrameGap": 35.19499999284744
+      },
+      {
+        "theme": "dark",
+        "kind": "warm-0-close",
+        "open": false,
+        "titleAt": 208.73499999940395,
+        "copyAt": 208.73499999940395,
+        "wrapAt": null,
+        "maxFrameGap": 21.135000005364418
+      },
+      {
+        "theme": "dark",
+        "kind": "warm-1-open",
+        "open": true,
+        "titleAt": 206.83999998867512,
+        "copyAt": 224.5849999934435,
+        "wrapAt": 55.32999999821186,
+        "maxFrameGap": 36.650000005960464
+      },
+      {
+        "theme": "dark",
+        "kind": "warm-1-close",
+        "open": false,
+        "titleAt": 207.5700000077486,
+        "copyAt": 207.5700000077486,
+        "wrapAt": null,
+        "maxFrameGap": 22.24500000476837
+      },
+      {
+        "theme": "dark",
+        "kind": "warm-2-open",
+        "open": true,
+        "titleAt": 214.79500000178814,
+        "copyAt": 233.875,
+        "wrapAt": 63.66500000655651,
+        "maxFrameGap": 32.020000010728836
+      },
+      {
+        "theme": "dark",
+        "kind": "warm-2-close",
+        "open": false,
+        "titleAt": 210.01999999582767,
+        "copyAt": 210.01999999582767,
+        "wrapAt": null,
+        "maxFrameGap": 22.520000010728836
+      },
+      {
+        "theme": "light",
+        "kind": "first-open",
+        "open": true,
+        "titleAt": 291.79999999701977,
+        "copyAt": 275.42499999701977,
+        "wrapAt": 150.73000000417233,
+        "maxFrameGap": 86.37000000476837
+      },
+      {
+        "theme": "light",
+        "kind": "first-close",
+        "open": false,
+        "titleAt": 205.20000000298023,
+        "copyAt": 205.20000000298023,
+        "wrapAt": null,
+        "maxFrameGap": 24.195000007748604
+      },
+      {
+        "theme": "light",
+        "kind": "warm-0-open",
+        "open": true,
+        "titleAt": 207.46000000834465,
+        "copyAt": 223.73499999940395,
+        "wrapAt": 57.92499999701977,
+        "maxFrameGap": 31.439999997615814
+      },
+      {
+        "theme": "light",
+        "kind": "warm-0-close",
+        "open": false,
+        "titleAt": 202.14000000059605,
+        "copyAt": 202.14000000059605,
+        "wrapAt": null,
+        "maxFrameGap": 24.200000002980232
+      },
+      {
+        "theme": "light",
+        "kind": "warm-1-open",
+        "open": true,
+        "titleAt": 207.5,
+        "copyAt": 224.1300000101328,
+        "wrapAt": 57.26500000059605,
+        "maxFrameGap": 29.04500000178814
+      },
+      {
+        "theme": "light",
+        "kind": "warm-1-close",
+        "open": false,
+        "titleAt": 215.24500000476837,
+        "copyAt": 215.24500000476837,
+        "wrapAt": null,
+        "maxFrameGap": 25.390000000596046
+      },
+      {
+        "theme": "light",
+        "kind": "warm-2-open",
+        "open": true,
+        "titleAt": 206.48499999940395,
+        "copyAt": 223.23499999940395,
+        "wrapAt": 55.23499999940395,
+        "maxFrameGap": 28.78499999642372
+      },
+      {
+        "theme": "light",
+        "kind": "warm-2-close",
+        "open": false,
+        "titleAt": 212.51999999582767,
+        "copyAt": 212.51999999582767,
+        "wrapAt": null,
+        "maxFrameGap": 21.859999999403954
+      }
+    ],
+    "candidate": [
+      {
+        "theme": "dark",
+        "kind": "first-open",
+        "open": true,
+        "titleAt": 18.719999998807907,
+        "copyAt": 18.719999998807907,
+        "wrapAt": 126.43999999761581,
+        "maxFrameGap": 67.48499999940395
+      },
+      {
+        "theme": "dark",
+        "kind": "first-close",
+        "open": false,
+        "titleAt": 24.46500000357628,
+        "copyAt": 24.46500000357628,
+        "wrapAt": null,
+        "maxFrameGap": 24.46500000357628
+      },
+      {
+        "theme": "dark",
+        "kind": "warm-0-open",
+        "open": true,
+        "titleAt": 7.899999991059303,
+        "copyAt": 7.899999991059303,
+        "wrapAt": 58.439999997615814,
+        "maxFrameGap": 30.160000011324883
+      },
+      {
+        "theme": "dark",
+        "kind": "warm-0-close",
+        "open": false,
+        "titleAt": 13.54500000178814,
+        "copyAt": 13.54500000178814,
+        "wrapAt": null,
+        "maxFrameGap": 19.86999998986721
+      },
+      {
+        "theme": "dark",
+        "kind": "warm-1-open",
+        "open": true,
+        "titleAt": 7.524999991059303,
+        "copyAt": 7.524999991059303,
+        "wrapAt": 57.92499999701977,
+        "maxFrameGap": 31
+      },
+      {
+        "theme": "dark",
+        "kind": "warm-1-close",
+        "open": false,
+        "titleAt": 14.995000004768372,
+        "copyAt": 14.995000004768372,
+        "wrapAt": null,
+        "maxFrameGap": 21.555000007152557
+      },
+      {
+        "theme": "dark",
+        "kind": "warm-2-open",
+        "open": true,
+        "titleAt": 12.060000002384186,
+        "copyAt": 12.060000002384186,
+        "wrapAt": 62.07500000298023,
+        "maxFrameGap": 40.855000004172325
+      },
+      {
+        "theme": "dark",
+        "kind": "warm-2-close",
+        "open": false,
+        "titleAt": 15.140000000596046,
+        "copyAt": 15.140000000596046,
+        "wrapAt": null,
+        "maxFrameGap": 22.17000000178814
+      },
+      {
+        "theme": "light",
+        "kind": "first-open",
+        "open": true,
+        "titleAt": 12.634999990463257,
+        "copyAt": 12.634999990463257,
+        "wrapAt": 141.9949999898672,
+        "maxFrameGap": 85.34000000357628
+      },
+      {
+        "theme": "light",
+        "kind": "first-close",
+        "open": false,
+        "titleAt": 16.480000004172325,
+        "copyAt": 16.480000004172325,
+        "wrapAt": null,
+        "maxFrameGap": 21.594999998807907
+      },
+      {
+        "theme": "light",
+        "kind": "warm-0-open",
+        "open": true,
+        "titleAt": 6.154999986290932,
+        "copyAt": 6.154999986290932,
+        "wrapAt": 56.71999999880791,
+        "maxFrameGap": 29.25500001013279
+      },
+      {
+        "theme": "light",
+        "kind": "warm-0-close",
+        "open": false,
+        "titleAt": 14.899999991059303,
+        "copyAt": 14.899999991059303,
+        "wrapAt": null,
+        "maxFrameGap": 21.955000013113022
+      },
+      {
+        "theme": "light",
+        "kind": "warm-1-open",
+        "open": true,
+        "titleAt": 6.625,
+        "copyAt": 6.625,
+        "wrapAt": 57.150000005960464,
+        "maxFrameGap": 29.29500000178814
+      },
+      {
+        "theme": "light",
+        "kind": "warm-1-close",
+        "open": false,
+        "titleAt": 18.83499999344349,
+        "copyAt": 18.83499999344349,
+        "wrapAt": null,
+        "maxFrameGap": 27.569999992847443
+      },
+      {
+        "theme": "light",
+        "kind": "warm-2-open",
+        "open": true,
+        "titleAt": 33.979999989271164,
+        "copyAt": 33.979999989271164,
+        "wrapAt": 73.49499998986721,
+        "maxFrameGap": 33.979999989271164
+      },
+      {
+        "theme": "light",
+        "kind": "warm-2-close",
+        "open": false,
+        "titleAt": 21.860000014305115,
+        "copyAt": 21.860000014305115,
+        "wrapAt": null,
+        "maxFrameGap": 22.09000000357628
+      }
+    ]
+  },
+  "traceSummary": {
+    "baseline": {
+      "RunTask": {
+        "count": 0,
+        "sumMs": 0,
+        "maxMs": 0
+      },
+      "UpdateLayoutTree": {
+        "count": 54,
+        "sumMs": 176.05500000000004,
+        "maxMs": 19.448
+      },
+      "Layout": {
+        "count": 41,
+        "sumMs": 26.126,
+        "maxMs": 10.479
+      },
+      "Paint": {
+        "count": 678,
+        "sumMs": 56.86300000000009,
+        "maxMs": 1.655
+      }
+    },
+    "candidate": {
+      "RunTask": {
+        "count": 0,
+        "sumMs": 0,
+        "maxMs": 0
+      },
+      "UpdateLayoutTree": {
+        "count": 44,
+        "sumMs": 175.059,
+        "maxMs": 20.847
+      },
+      "Layout": {
+        "count": 39,
+        "sumMs": 27.469999999999995,
+        "maxMs": 10.728
+      },
+      "Paint": {
+        "count": 613,
+        "sumMs": 52.684000000000154,
+        "maxMs": 1.452
+      }
+    }
+  },
+  "limitations": [
+    "Three repeats per theme/build; shared headless capped host; no statistical tail claims.",
+    "Chrome RunTask events were absent with the chosen trace categories; no JS CPU-time conclusion.",
+    "First-open frame gaps around 65\u201386ms remain; source rendering/loading was not optimized."
+  ],
+  "mechanism": "Header color/background interpolated for 180ms while Wrap lines already used the target foreground. Inherited action buttons also animated their color. Header and action contrast pairs now switch atomically; transforms, outline, wrap opacity, arrow rotation and disclosure slides remain.",
+  "artifacts": ".agents/tmp/schema-header-feedback/ holds diagnostic Gherkin fixture, full frame samples, compressed Chrome traces, reports and receipts locally."
+}

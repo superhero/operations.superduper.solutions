@@ -11,7 +11,9 @@ the single-open-section behavior, appearance and workflow defaults.
 | [KeybindingsSettings.svelte](KeybindingsSettings.svelte) | Configures workflow shortcuts and selection modifiers through app settings; text editing keeps native shortcuts |
 | [ToolbarSettings.svelte](ToolbarSettings.svelte) | Controls individual toolbar-button visibility through app settings; keyboard shortcuts remain available |
 | [LocaleSettings.svelte](LocaleSettings.svelte) | Receives preferences and change/retry callbacks; uses the shared locale formatter for its preview |
-| [SchemaSettings.svelte](SchemaSettings.svelte) | Receives library records and callbacks for upload, replacement, rename, ordering, enablement, deletion and download |
+| [SchemaSettings.svelte](SchemaSettings.svelte) | Groups all library records into alphabetical folders using only `/` name segments; preserves full-path editing and callbacks for upload, replacement, rename, enablement, deletion and download |
+| [SchemaHistory.svelte](SchemaHistory.svelte) | Compares saved schema commits using independent selectors and the actual ancestry graph; retains explicit conflict review |
+| [SchemaDiffField.svelte](SchemaDiffField.svelte) | Loads expanded fields from immutable commits and renders bounded colored line changes with horizontal scrolling |
 | [SecretsSettings.svelte](SecretsSettings.svelte) | Manages encrypted credentials, destination approvals, unlock methods, backups and locking through the dedicated vault worker |
 | [StorageSettings.svelte](StorageSettings.svelte) | Presents browser resource metrics, availability and collection errors |
 | [MetricsHistoryChart.svelte](MetricsHistoryChart.svelte) | Renders supplied series and intervals, with local metric/range selection |
@@ -35,3 +37,10 @@ and theme behavior.
 Secrets management clears temporary input on cancellation and teardown. Its lock
 action must remain available during pending work. Unlike resource recording,
 accepted secret operations are cancelled immediately when their UI closes.
+
+Schema name folders start collapsed and include disabled records. Leaf labels omit
+ancestor names; editing retains the complete path. Renaming opens the destination
+folders. Closing a folder closes its descendant cards and releases their expanded
+viewers; it does not change schema enablement. Upload has its own pane; folders
+and schema rows share the library pane. Name folders and schema leaves reuse the
+left menu’s connector lines, with the responsive settings inset.

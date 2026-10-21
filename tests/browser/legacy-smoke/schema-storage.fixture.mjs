@@ -38,11 +38,10 @@ async function importFixture(page) {
 async function history(page, id) { return page.evaluate(id => fixture.getSchemaHistory(id), id); }
 async function records(page) { return page.evaluate(() => fixture.loadSchemaDocuments()); }
 async function put(page, value) { return page.evaluate(value => fixture.putSchemaDocument(value), value); }
-async function move(page, id, targetId, placement) { return page.evaluate(args => fixture.moveSchemaDocument(...args), [id, targetId, placement]); }
 async function metadata(page) {
   return page.evaluate(async () => {
     const database = await fixture.openDB("v1/catalogs/index");
-    try { return { catalog: await database.getAll("catalog"), pending: await database.getAll("pending"), seeded: await database.get("state", "seeded"), order: await database.get("state", "order") }; }
+    try { return { catalog: await database.getAll("catalog"), pending: await database.getAll("pending"), seeded: await database.get("state", "seeded") }; }
     finally { database.close(); }
   });
 }
@@ -184,65 +183,40 @@ yield "interrupted schema writes preserve the old revision or recover the durabl
   assert.deepEqual((await records(page)).find(value => value.id === first.id), renamed, "The renamed title persists across reloads.");
 
 yield "schema renames preserve other repositories and persist without redundant commits";
-  const beforeMove = await records(page);
-  const originalOrder = beforeMove.map(value => value.id);
-  assert.deepEqual(originalOrder, ["demo", "httpbin", first.id, second.id], "Imports append after existing schemas.");
-  await move(page, second.id, first.id, "before");
-  const movedOrder = ["demo", "httpbin", second.id, first.id];
-  assert.deepEqual((await records(page)).map(value => value.id), movedOrder);
-  await move(page, second.id, first.id, "after");
-  assert.deepEqual((await records(page)).map(value => value.id), originalOrder);
-  await move(page, second.id, "demo", "before");
-  assert.deepEqual((await records(page)).map(value => value.id), [second.id, "demo", "httpbin", first.id], "Moving across multiple cards preserves every other card's order.");
-  await move(page, second.id, first.id, "after");
-  assert.deepEqual((await records(page)).map(value => value.id), originalOrder);
-  await move(page, second.id, first.id, "before");
-  await page.evaluate(async ({ id, targetId }) => {
-    const original = IDBObjectStore.prototype.put;
-    IDBObjectStore.prototype.put = function (record, ...args) {
-      if (this.name === "state") throw new Error("An unchanged order attempted a metadata write.");
-      return original.call(this, record, ...args);
-    };
-    try {
-      await fixture.moveSchemaDocument(id, id, "after");
-      await fixture.moveSchemaDocument(id, targetId, "before");
-    }
-    finally { IDBObjectStore.prototype.put = original; }
-  }, { id: second.id, targetId: first.id });
-  await assert.rejects(move(page, second.id, "missing-schema", "before"), /could not be found/);
-  assert.deepEqual((await metadata(page)).order, movedOrder, "Self-drops, unchanged placements and missing targets keep the current order.");
-  await page.reload();
-  await importFixture(page);
-  assert.deepEqual((await records(page)).map(value => value.id), movedOrder, "Order persists across reloads.");
-  assert.deepEqual(await history(page, first.id), renamedHistory, "Moving cards creates no schema revisions.");
-  assert.deepEqual(await history(page, second.id), secondBefore);
-  await page.evaluate(id => fixture.renameSchemaDocument(id, "Renamed again"), first.id);
-  assert.deepEqual((await records(page)).map(value => value.id), movedOrder, "Document edits retain the selected order.");
-
-  // Older metadata without an ordering uses a stable fallback; stale or duplicate IDs are ignored.
-  const fallbackOrder = [...beforeMove].sort((left, right) => left.createdAt - right.createdAt || left.id.localeCompare(right.id)).map(value => value.id);
-  await page.evaluate(async () => {
-    const database = await fixture.openDB("v1/catalogs/index");
-    try { await database.delete("state", "order"); } finally { database.close(); }
-  });
-  assert.deepEqual((await records(page)).map(value => value.id), fallbackOrder);
+  const sortedIds = values => [...values].sort((left, right) =>
+    (left.displayName ?? left.document.info.title).localeCompare(right.displayName ?? right.document.info.title, 'en', { sensitivity: 'base' })
+    || left.id.localeCompare(right.id)).map(value => value.id);
+  const beforeOrdering = await records(page);
+  const alphabetical = sortedIds(beforeOrdering);
+  assert.deepEqual(beforeOrdering.map(value => value.id), alphabetical);
   await page.evaluate(async id => {
     const database = await fixture.openDB("v1/catalogs/index");
-    try { await database.put("state", ["missing-schema", id, id], "order"); } finally { database.close(); }
+    try {
+      await database.put("state", ["missing-schema", id, id], "order");
+      await database.put("state", true, "alphabeticalOrder");
+    } finally { database.close(); }
   }, second.id);
-  assert.deepEqual((await records(page)).map(value => value.id), [second.id, ...fallbackOrder.filter(id => id !== second.id)]);
-  await page.evaluate(async order => {
-    const database = await fixture.openDB("v1/catalogs/index");
-    try { await database.put("state", order, "order"); } finally { database.close(); }
-  }, movedOrder);
-  const appended = { ...record("schema-appended", "Appended API"), createdAt: 0 };
+  assert.deepEqual((await records(page)).map(value => value.id), alphabetical, "Legacy manual arrangements cannot change alphabetical ordering.");
+  await page.reload();
+  await importFixture(page);
+  assert.deepEqual((await records(page)).map(value => value.id), alphabetical);
+  assert.deepEqual(await history(page, first.id), renamedHistory, "Reading sorted schemas creates no Git revisions.");
+  assert.deepEqual(await history(page, second.id), secondBefore);
+  await page.evaluate(id => fixture.renameSchemaDocument(id, "Aardvark renamed"), first.id);
+  assert.equal((await records(page))[0].id, first.id, "Renaming moves the schema to its alphabetical position.");
+  const appended = { ...record("schema-appended", "AAA imported"), createdAt: 0 };
   await put(page, appended);
-  assert.deepEqual((await records(page)).map(value => value.id), [...movedOrder, appended.id], "New imports append regardless of imported timestamps.");
-  await page.evaluate(id => fixture.deleteSchemaDocument(id), appended.id);
-  assert.deepEqual((await metadata(page)).order, movedOrder, "Deletion removes stale order entries.");
+  assert.equal((await records(page))[0].id, appended.id, "Uploads use their names rather than timestamps or insertion order.");
+  const tie = record("schema-tie", "aaa IMPORTED");
+  await put(page, tie);
+  assert.deepEqual((await records(page)).slice(0, 2).map(value => value.id), [appended.id, tie.id], "Equivalent displayed names have a stable ID tie-break.");
+  await page.evaluate(async id => { await fixture.setSchemaDocumentEnabled(id, false); await fixture.deleteSchemaDocument(id); }, appended.id);
+  await page.evaluate(async id => { await fixture.setSchemaDocumentEnabled(id, false); await fixture.deleteSchemaDocument(id); }, tie.id);
+  const remaining = await records(page);
+  assert.deepEqual(remaining.map(value => value.id), sortedIds(remaining));
 
-yield "schema ordering survives reload and ignores stale duplicate or unchanged placements";
-  await page.evaluate(id => fixture.deleteSchemaDocument(id), first.id);
+yield "schema ordering stays alphabetical across reload renames uploads and legacy preferences";
+  await page.evaluate(async id => { await fixture.setSchemaDocumentEnabled(id, false); await fixture.deleteSchemaDocument(id); }, first.id);
   assert.equal((await records(page)).some(value => value.id === first.id), false);
   assert.deepEqual(await history(page, second.id), secondBefore);
   assert.equal((await page.evaluate(async id => {
@@ -256,12 +230,15 @@ yield "schema ordering survives reload and ignores stale duplicate or unchanged 
   assert.ok(!repositories.includes(first.id));
   assert.ok(repositories.includes(second.id));
 
-  for (const value of await records(page)) await page.evaluate(id => fixture.deleteSchemaDocument(id), value.id);
+  for (const value of await records(page)) {
+    if (value.id === "demo" || value.id === "httpbin") continue;
+    await page.evaluate(async id => { await fixture.setSchemaDocumentEnabled(id, false); await fixture.deleteSchemaDocument(id); }, value.id);
+  }
   await page.reload();
   await importFixture(page);
-  assert.deepEqual(await records(page), [], "An intentionally empty catalog must remain empty after reload.");
+  assert.deepEqual((await records(page)).map(value => value.id).sort(), ["demo", "httpbin"], "Deleting uploads retains the protected defaults after reload.");
   assert.equal((await metadata(page)).seeded, true);
-yield "schema deletion removes only its repository and an intentionally empty catalog stays empty";
+yield "schema deletion removes disabled uploads while defaults remain protected";
   assert.deepEqual(failures, []);
 
 }

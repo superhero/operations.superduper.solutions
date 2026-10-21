@@ -33,10 +33,13 @@ if (( $# == 0 )) && [[ "${BROWSER_ENGINE:-chromium}" == chromium ]]; then runner
 echo "Browser tests: image=$image, output=tmp/test, memory=$memory."
 # Match the host's pinned Node runtime; the browser image otherwise supplies a
 # different Node version. Source stays read-only and all output is bounded.
+# Node workers, Vite and Chromium share this memory limit. Collect Node heaps
+# before parallel workers can exhaust the container's native/browser headroom.
 docker run --rm --init --network=none --read-only --shm-size=1g \
   --cpus=2 --memory="$memory" --memory-swap="$memory" --pids-limit="$processes" \
   --cap-drop=ALL --security-opt=no-new-privileges \
   --user "$(id -u):$(id -g)" --env HOME=/tmp --env CI=true \
+  --env NODE_OPTIONS=--max-old-space-size=512 \
   --env GITHUB_ACTIONS --env GITHUB_RUN_ID --env GITHUB_RUN_ATTEMPT \
   --env OPERATIONS_TEST_WORKERS \
   --env TMPDIR=/workspace/tmp/test/browser/.runtime \

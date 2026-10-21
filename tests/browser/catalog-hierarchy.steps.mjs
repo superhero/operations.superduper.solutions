@@ -10,7 +10,7 @@ import { catalogs } from '../../src/lib/catalog-registry.ts';
 import { operationNavigation, operationResourceGroups, navigationOperations } from '../../src/lib/operation-navigation.ts';
 import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };
 import { catalogSchemaHeading, catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
-import { expandSchemaCard } from './schema-card.fixture.mjs';
+import { expandSchemaCard, revealSchemaCard, expectSchemaName } from './schema-card.fixture.mjs';
 
 const catalog = page => page.getByRole('navigation', { name: 'Operation catalog', exact: true });
 const branch = (page, id, root) => (root ? catalog(page).locator(`[data-catalog-group="${root}"]`) : catalog(page))
@@ -46,6 +46,7 @@ Then('Codex schema settings preserve native protocol data and block execution', 
   await openCatalog(page);
   await expect(catalog(page).locator('[data-catalog-group="codex"]')).toHaveCount(0);
   await setMode(page, 'settings');
+  await revealSchemaCard(card);
   await enabled.click();
   await expect(enabled).toHaveAttribute('aria-checked', 'true');
   await page.reload();
@@ -101,11 +102,13 @@ Then('schema name groups preserve counts search and operation selection', async 
   await expect(interactions).toHaveAttribute('aria-expanded', 'false');
   await expect(list).toBeHidden();
   await searchOperations(page, 'storage.buckets.list');
-  // Unsupported contracts keep their guard when nested and matched.
-  await expect(list).toHaveAttribute('aria-disabled', 'true');
+  // Corrected Google grant alternatives stay executable when nested and matched.
+  await expect(list).toHaveAttribute('aria-disabled', 'false');
   await list.press('Enter');
   const node = page.locator('.svelte-flow__node-operation');
-  await expect(node).toHaveCount(0);
+  await expect(node).toHaveCount(1);
+  await expect(node).toContainText('storage.buckets.list');
+  await openCatalog(page);
   await searchOperations(page, 'getSeriesObservations');
   const supported = operation(page, 'fred:getSeriesObservations');
   await expect(supported).toHaveAttribute('aria-disabled', 'false');
@@ -113,9 +116,10 @@ Then('schema name groups preserve counts search and operation selection', async 
   await expect(supported).toBeFocused();
   await expect(supported).toBeInViewport();
   await supported.press('Enter');
-  await expect(node).toHaveCount(1);
-  await expect(node).toContainText('Get the observations or data values');
-  await expect(node).toBeFocused();
+  await expect(node).toHaveCount(2);
+  const observations = node.filter({ hasText: 'Get the observations or data values' });
+  await expect(observations).toHaveCount(1);
+  await expect(observations).toBeFocused();
 });
 
 Then('schema name groups follow saved schema names and enablement', async function () {
@@ -137,6 +141,7 @@ Then('schema name groups follow saved schema names and enablement', async functi
   const renamed = await catalogSchemaHeading(page, 'Local / Files / Storage');
   await expect(renamed.locator('xpath=../..')).toHaveAttribute('data-catalog-group', 'gcp-storage');
   await settings();
+  await revealSchemaCard(storage);
   await storage.getByRole('switch').click();
   await expect(storage.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
   await expect(page.getByRole('region', { name: 'OpenAPI documents', exact: true })).toHaveAttribute('aria-busy', 'false');
@@ -145,7 +150,8 @@ Then('schema name groups follow saved schema names and enablement', async functi
   await page.reload();
   await page.locator('#startup-status').waitFor({ state: 'detached' });
   await settings();
-  await expect(storage.locator('.schema-name-label')).toHaveText('Local / Files / Storage');
+  await revealSchemaCard(storage);
+  await expectSchemaName(storage, 'Local / Files / Storage');
   await storage.getByRole('switch').click();
   await expect(storage.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
   await expect(page.getByRole('region', { name: 'OpenAPI documents', exact: true })).toHaveAttribute('aria-busy', 'false');

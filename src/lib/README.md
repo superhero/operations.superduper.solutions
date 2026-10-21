@@ -44,6 +44,7 @@ for history semantics and content-versus-editor-state boundaries.
 | `schema-index` | Versioned compact descriptors; these cannot execute requests |
 | `schema-cache` | Coalesced reads and a source-byte budget for decoded content |
 | `schema-storage` | Targeted persistence, recovery, independent history and canonical policies |
+| `schema-patches`, `schema-merge` | Versioned reviewed corrections, structured upstream/local merges and bounded changed-field reports |
 | `schema-library*` | Worker deltas, on-demand models and source reads |
 | `schema-models`, `catalog*` | Nested dependencies, coalesced model batches, model pins and current operation lookup |
 
@@ -92,6 +93,11 @@ canonical executable model; call `hydrateOperation` through the schema library
 before adding or executing a deferred operation. Retain workflow leases while
 their models are in use. Workflow leases use `hydrateOperations` to group missing
 models by schema in batches of at most 16, sharing overlapping pending requests.
+
+Resource navigation skips the generated `Operations` tag folder and places its
+entries directly in the schema's URL resource tree. Other authored categories
+and literal schema/resource names remain. This display normalization also applies
+to cached discovery indexes without rewriting source schemas or operation models.
 
 ## Verification
 

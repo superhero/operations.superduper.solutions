@@ -17,26 +17,40 @@ import type { Operation, OperationModel } from "./catalog.ts";
 import { scopeOperationSchema } from "./operation-report.ts";
 import { createSchemaCache } from "./schema-cache.ts";
 import { schemaModelBatchSize } from "./schema-models.ts";
+import { applySchemaPatches, schemaPatchName, type SchemaPatch } from "./schema-patches.ts";
+import { mergeSchemaDocuments, sameSchemaValue, schemaChanges, type SchemaConflict, type SchemaResolution } from "./schema-merge.ts";
+import { schemaLineDiff, schemaPointerValue, type SchemaFieldDiff } from "./schema-diff.ts";
+import { schemaDeletionReason } from "./schema-deletion.ts";
 import { createSchemaDiscovery, createSchemaSummary, validateSchemaDiscovery, schemaIndexVersion, type SchemaDiscovery, type SchemaSummary } from "./schema-index.ts";
 
 if (!("Buffer" in globalThis)) Object.defineProperty(globalThis, "Buffer", { value: Buffer, configurable: true, writable: true });
 
-export type SchemaMetadata = Omit<SchemaDocumentRecord, "document"> & { repositoryPath: string; factoryDigest?: string;
+type IncomingSchema = { base: string; upstream: string; corrected: string; file: string; patches: SchemaPatch[] };
+type SchemaBranches = { upstreamRevision?: string; correctedRevision?: string; patches?: SchemaPatch[]; incoming?: IncomingSchema };
+export type SchemaMetadata = Omit<SchemaDocumentRecord, "document"> & SchemaBranches & { repositoryPath: string; factoryDigest?: string;
   revision?: string; gitRevision?: string; historyDigest?: string; adapterRevision?: string; summary?: SchemaSummary };
 type SchemaDefaults = {
-  catalogs: readonly { id: string; name: string; file: string; revision: string; bytes?: number; summary?: SchemaSummary }[];
+  catalogs: readonly { id: string; name: string; file: string; revision: string; enabled?: boolean; bytes?: number; summary?: SchemaSummary; patches?: SchemaPatch[] }[];
   adapterRevision?: string;
   read: (id: string) => Promise<Record<string, unknown>>;
+  readUpstream?: (id: string) => Promise<Record<string, unknown>>;
   readIndex?: (id: string) => Promise<SchemaDiscovery>;
   inspectOperation?: (document: Record<string, unknown>, id: string, operation: Pick<Operation, "id" | "path" | "method">) => Operation;
   validate: (document: Record<string, unknown>, id: string) => ReturnType<typeof validateSchemaDocument>;
 };
 let defaults: SchemaDefaults | undefined;
+let defaultSchemaIds = new Set(bundledCatalogs.map(catalog => catalog.id));
 let currentExampleRevisions: Promise<string[]> | undefined;
 const documents = createSchemaCache<Record<string, unknown>>(16 * 1024 * 1024);
 const inspections = new WeakMap<object, Map<string, ReturnType<typeof validateSchemaDocument>>>();
 /** Supply factory documents at the worker boundary; storage remains reusable with authored catalogs. */
-export function configureSchemaDefaults(value: SchemaDefaults): void { defaults = value; initialized = false; }
+export function configureSchemaDefaults(value: SchemaDefaults): void {
+  defaults = value;
+  defaultSchemaIds = new Set([...bundledCatalogs.map(catalog => catalog.id), ...value.catalogs.map(catalog => catalog.id)]);
+  initialized = false;
+}
+/** Registered origin survives authored names, replacements and factory detachment. */
+export function isBundledSchema(id: string): boolean { return defaultSchemaIds.has(id); }
 function validateLibraryDocument(document: unknown, id: string) {
   const cached = document && typeof document === "object" ? inspections.get(document)?.get(id) : undefined;
   if (cached) return cached;
@@ -48,7 +62,8 @@ function validateLibraryDocument(document: unknown, id: string) {
   }
   return inspected;
 }
-type PendingSchema = { metadata: SchemaMetadata; revision: string; previousRevision: string | null };
+type RefUpdate = { ref: string; revision: string | null; previousRevision: string | null };
+type PendingSchema = { metadata: SchemaMetadata; revision: string; previousRevision: string | null; refs?: RefUpdate[] };
 interface SchemaDatabase extends DBSchema
 {
   catalog: { key: string; value: SchemaMetadata };
@@ -56,19 +71,27 @@ interface SchemaDatabase extends DBSchema
   removed: { key: string; value: true };
   indexes: { key: string; value: { identity: string; discovery: SchemaDiscovery } };
   policies: { key: string; value: SchemaCredentialPolicies[string] };
-  state: { key: "seeded" | "order" | "vaultPolicy" | "serviceDefaults" | "exampleRevisions" | "alphabeticalOrder"; value: boolean | string[] | SchemaCredentialPolicies };
+  state: { key: "seeded" | "vaultPolicy" | "serviceDefaults" | "exampleRevisions"; value: boolean | string[] | SchemaCredentialPolicies };
 }
 type StoreName = "catalog" | "pending" | "removed" | "state" | "indexes" | "policies";
 type Database = IDBPDatabase<SchemaDatabase>;
 const timeout = 2500;
 const filepath = "schema.json";
 const mainRef = "refs/heads/main";
+const upstreamRef = "refs/heads/upstream";
+const correctedRef = "refs/heads/corrections";
+const incomingRef = "refs/heads/incoming";
 const lockName = `schema-repositories:${catalogsDatabaseName}`;
 let filesystem: LightningFS | undefined;
 let queue: Promise<unknown> = Promise.resolve();
 let initialized = false;
 
 export type SchemaRevision = { oid: string; message: string; timestamp: number; parents: string[] };
+export type SchemaBranchHistory = { branches: { name: string; oid: string }[]; revisions: SchemaRevision[]; truncated: boolean;
+  current: string; incoming?: { revision: string; conflicts: SchemaConflict[] } };
+type SchemaDiffCommit = Pick<SchemaRevision, "oid" | "message">;
+export type SchemaRevisionDiff = { revision: SchemaDiffCommit; parents: SchemaDiffCommit[]; base: SchemaDiffCommit | null;
+  changes: { path: string; kind: "added" | "removed" | "changed" }[]; truncated: boolean };
 
 export function schemaRepositoryPath(id: string): string
 {
@@ -139,26 +162,13 @@ function readMetadata(database: Database, id: string): Promise<SchemaMetadata | 
   return transaction(database, ["catalog"], "readonly", active => active.objectStore("catalog").get(id));
 }
 
-function orderedMetadata(records: SchemaMetadata[], order: boolean | string[] | SchemaCredentialPolicies | undefined): SchemaMetadata[]
+function readAlphabeticalMetadata(database: Database): Promise<SchemaMetadata[]>
 {
-  records.sort((left, right) => left.createdAt - right.createdAt || left.id.localeCompare(right.id));
-  const remaining = new Map(records.map(record => [record.id, record]));
-  const sorted: SchemaMetadata[] = [];
-  for (const id of Array.isArray(order) ? order : [])
-  {
-    const record = remaining.get(id);
-    if (record) { sorted.push(record); remaining.delete(id); }
-  }
-  return [...sorted, ...remaining.values()];
-}
-
-function readOrderedMetadata(database: Database): Promise<SchemaMetadata[]>
-{
-  return transaction(database, ["catalog", "state"], "readonly", async active => {
-    const [records, order] = await Promise.all([
-      active.objectStore("catalog").getAll(), active.objectStore("state").get("order"),
-    ]);
-    return orderedMetadata(records, order);
+  return transaction(database, ["catalog"], "readonly", async active => {
+    const records = await active.objectStore("catalog").getAll();
+    const name = (record: SchemaMetadata) => record.displayName ?? record.summary?.name ?? record.file;
+    return records.sort((left, right) => name(left).localeCompare(name(right), undefined, { sensitivity: "base" })
+      || left.id.localeCompare(right.id));
   });
 }
 
@@ -183,9 +193,9 @@ async function removeTree(path: string): Promise<void>
   await fs().promises.rmdir(path);
 }
 
-async function head(id: string): Promise<string | null>
+async function head(id: string, ref = mainRef): Promise<string | null>
 {
-  try { return await git.resolveRef({ fs: fs(), dir: schemaRepositoryPath(id), ref: mainRef }); }
+  try { return await git.resolveRef({ fs: fs(), dir: schemaRepositoryPath(id), ref }); }
   catch (error) { if (error instanceof git.Errors.NotFoundError) return null; throw error; }
 }
 
@@ -257,7 +267,7 @@ async function discovery(database: Database, metadata: SchemaMetadata): Promise<
 /** Metadata-only listing is the normal startup path, including disabled cards. */
 export function listSchemaMetadata(): Promise<SchemaMetadata[]> {
   return serialized(async database => {
-    const records = await readOrderedMetadata(database);
+    const records = await readAlphabeticalMetadata(database);
     for (const record of records) {
       validateMetadata(record);
       let changed = false;
@@ -289,8 +299,8 @@ export function readSchemaDiscovery(id: string): Promise<SchemaDiscovery> {
 
 async function materializedRecord(database: Database, metadata: SchemaMetadata): Promise<SchemaDocumentRecord> {
   const record = await readRecord(metadata);
-  if (metadata.factoryDigest && metadata.historyDigest !== metadata.factoryDigest)
-    return writeRecord(database, record, undefined, metadata.factoryDigest);
+  if (metadata.factoryDigest && (metadata.historyDigest !== metadata.factoryDigest || !metadata.upstreamRevision))
+    return writeFactoryRecord(database, record, metadata);
   return record;
 }
 
@@ -422,6 +432,12 @@ async function finishPending(database: Database, pending: PendingSchema): Promis
   const current = await head(id);
   if (current !== pending.previousRevision && current !== pending.revision)
     throw new Error(`Schema ${id} changed while a previous save was unfinished. Its repository has been preserved.`);
+  for (const update of pending.refs ?? []) {
+    if (![upstreamRef, correctedRef, incomingRef].includes(update.ref)) throw new Error("An unfinished schema branch is invalid.");
+    const current = await head(id, update.ref);
+    if (current !== update.previousRevision && current !== update.revision)
+      throw new Error(`Schema ${id} has an independently changed branch. Its repository has been preserved.`);
+  }
   const text = await versionText(id, pending.revision);
   const raw = JSON.parse(text) as Record<string, unknown>;
   let document: Record<string, unknown>;
@@ -448,15 +464,12 @@ async function finishPending(database: Database, pending: PendingSchema): Promis
   await git.add({ fs: fs(), dir, filepath });
   await fs().promises.flush();
   await git.writeRef({ fs: fs(), dir, ref: mainRef, value: pending.revision, force: true });
+  for (const update of pending.refs ?? []) {
+    if (update.revision) await git.writeRef({ fs: fs(), dir, ref: update.ref, value: update.revision, force: true });
+    else if (await head(id, update.ref)) await git.deleteRef({ fs: fs(), dir, ref: update.ref });
+  }
   await fs().promises.flush();
-  await transaction(database, ["catalog", "pending", "state", "policies", "indexes"], "readwrite", async active => {
-    if (!await active.objectStore("catalog").get(id))
-    {
-      const [records, order] = await Promise.all([
-        active.objectStore("catalog").getAll(), active.objectStore("state").get("order"),
-      ]);
-      await active.objectStore("state").put([...orderedMetadata(records, order).map(record => record.id), id], "order");
-    }
+  await transaction(database, ["catalog", "pending", "policies", "indexes"], "readwrite", async active => {
     await active.objectStore("catalog").put(metadata, id);
     await active.objectStore("indexes").delete(id);
     await storeCredentialPolicy(active, id, policy);
@@ -478,7 +491,49 @@ async function recover(database: Database): Promise<void>
   for (const entry of pending) if (!removed.includes(entry.metadata.id)) await finishPending(database, entry);
 }
 
-async function writeRecord(database: Database, record: SchemaDocumentRecord, commitMessage?: string, factoryDigest?: string): Promise<SchemaDocumentRecord>
+async function commitSnapshot(id: string, document: Record<string, unknown>, message: string, parents: string[]): Promise<string> {
+  const dir = schemaRepositoryPath(id);
+  await mkdir("/repositories");
+  await mkdir(dir);
+  if (!await exists(`${dir}/.git/HEAD`)) await git.init({ fs: fs(), dir, defaultBranch: "main" });
+  const text = `${JSON.stringify(document, null, 2)}\n`;
+  const blob = await git.writeBlob({ fs: fs(), dir, blob: new TextEncoder().encode(text) });
+  const tree = await git.writeTree({ fs: fs(), dir, tree: [{ mode: "100644", path: filepath, oid: blob, type: "blob" }] });
+  const author = { name: "Local schema manager", email: "schema@localhost", timestamp: Math.floor(Date.now() / 1000), timezoneOffset: 0 };
+  return git.writeCommit({ fs: fs(), dir, commit: { tree, parent: [...new Set(parents)], author, committer: author, message: `${message}\n` } });
+}
+
+async function refUpdate(id: string, ref: string, revision: string | null): Promise<RefUpdate> {
+  return { ref, revision, previousRevision: await head(id, ref) };
+}
+
+async function correctedSnapshot(id: string, upstream: string, document: Record<string, unknown>, patches: SchemaPatch[], previous?: string,
+  raw?: Record<string, unknown>): Promise<string> {
+  if (!patches.length) return upstream;
+  raw ??= JSON.parse(await versionText(id, upstream));
+  if (previous === upstream) previous = undefined;
+  if (sameSchemaValue(raw, document) && !previous) return upstream;
+  const label = sameSchemaValue(raw, document) ? "Upstream already includes schema corrections"
+    : `Apply schema corrections: ${patches.map(schemaPatchName).join(", ")}`;
+  return commitSnapshot(id, document, label, [upstream, ...(previous ? [previous] : [])]);
+}
+
+/** Materialize source and reviewed corrections lazily in the existing per-schema Git repository. */
+async function writeFactoryRecord(database: Database, record: SchemaDocumentRecord, metadata: SchemaMetadata): Promise<SchemaDocumentRecord> {
+  const patches = defaults?.catalogs.find(catalog => catalog.id === record.id)?.patches ?? [];
+  const raw = patches.length && defaults?.readUpstream ? await defaults.readUpstream(record.id) : record.document;
+  const previous = metadata.upstreamRevision ?? await head(record.id);
+  const same = previous && sameSchemaValue(JSON.parse(await versionText(record.id, previous)), raw);
+  const upstream = same ? previous : await commitSnapshot(record.id, raw,
+    `${previous ? "Update" : "Import"} published schema: ${record.displayName ?? (raw.info as { title: string }).title}`, previous ? [previous] : []);
+  const corrected = await correctedSnapshot(record.id, upstream, record.document, patches, metadata.correctedRevision, raw);
+  return writeRecord(database, record, undefined, metadata.factoryDigest, { revision: corrected,
+    branches: { upstreamRevision: upstream, correctedRevision: corrected, patches },
+    refs: [await refUpdate(record.id, upstreamRef, upstream), await refUpdate(record.id, correctedRef, corrected)] });
+}
+
+async function writeRecord(database: Database, record: SchemaDocumentRecord, commitMessage?: string, factoryDigest?: string,
+  options: { revision?: string; parents?: string[]; forceCommit?: boolean; branches?: SchemaBranches; clearIncoming?: boolean; refs?: RefUpdate[] } = {}): Promise<SchemaDocumentRecord>
 {
   const existing = await readMetadata(database, record.id);
   const previousRevision = await head(record.id);
@@ -488,11 +543,14 @@ async function writeRecord(database: Database, record: SchemaDocumentRecord, com
   const unchanged = existing && previousRevision && await versionText(record.id, previousRevision) === text;
   const metadata = validateMetadata({ ...details, createdAt: existing?.createdAt ?? record.createdAt,
     enabled: existing?.enabled ?? record.enabled, repositoryPath: dir,
+    ...(existing?.upstreamRevision ? { upstreamRevision: existing.upstreamRevision, correctedRevision: existing.correctedRevision, patches: existing.patches } : {}),
+    ...(existing?.incoming ? { incoming: existing.incoming } : {}), ...options.branches,
     ...(defaults?.adapterRevision ? { adapterRevision: defaults.adapterRevision } : {}),
     ...(factoryDigest ? { factoryDigest, historyDigest: factoryDigest } : {}) });
   if (!factoryDigest) { delete metadata.factoryDigest; delete metadata.historyDigest; }
+  if (options.clearIncoming) delete metadata.incoming;
   // Metadata (including enablement) is deliberately outside Git. Identical documents add no revision.
-  if (unchanged)
+  if (unchanged && !options.refs?.length && !options.revision && !options.forceCommit)
   {
     metadata.revision = factoryDigest ?? previousRevision;
     metadata.gitRevision = previousRevision;
@@ -503,22 +561,20 @@ async function writeRecord(database: Database, record: SchemaDocumentRecord, com
     });
     return { ...record, enabled: metadata.enabled };
   }
-  await mkdir("/repositories");
-  await mkdir(dir);
-  if (!await exists(`${dir}/.git/HEAD`)) await git.init({ fs: fs(), dir, defaultBranch: "main" });
   // Construct an immutable commit before replacing the authoritative working file.
   // The journal contains only metadata and OIDs, never a second copy of the schema.
-  const blob = await git.writeBlob({ fs: fs(), dir, blob: new TextEncoder().encode(text) });
-  const tree = await git.writeTree({ fs: fs(), dir, tree: [{ mode: "100644", path: filepath, oid: blob, type: "blob" }] });
-  const author = { name: "Local schema manager", email: "schema@localhost", timestamp: Math.floor(Date.now() / 1000), timezoneOffset: 0 };
   const info = document.info as { title: string; version: string };
   const label = `${info.title} (v${info.version})`.replace(/\s+/g, " ").trim();
-  const revision = await git.writeCommit({ fs: fs(), dir, commit: {
-    tree, parent: previousRevision ? [previousRevision] : [], author, committer: author,
-    message: `${commitMessage ?? `${previousRevision ? "Replace" : "Import"} OpenAPI schema: ${label}`}\n`,
-  } });
+  const revision = options.revision ?? (unchanged && !options.forceCommit ? previousRevision : await commitSnapshot(record.id, document,
+    commitMessage ?? `${previousRevision ? "Replace" : "Import"} OpenAPI schema: ${label}`, options.parents ?? (previousRevision ? [previousRevision] : [])))!;
+  const refs = options.refs ?? [];
+  if (!metadata.upstreamRevision) {
+    metadata.upstreamRevision = revision;
+    metadata.correctedRevision = revision;
+    refs.push(await refUpdate(record.id, upstreamRef, revision), await refUpdate(record.id, correctedRef, revision));
+  }
   await fs().promises.flush();
-  const pending = { metadata, revision, previousRevision };
+  const pending = { metadata, revision, previousRevision, refs };
   await transaction(database, ["pending"], "readwrite", async active => { await active.objectStore("pending").put(pending, record.id); });
   await finishPending(database, pending);
   if (!factoryDigest) documents.invalidate(`${record.id}:`);
@@ -589,9 +645,10 @@ async function initialize(database: Database): Promise<void>
       if (!installed.has(catalog.id) && !existing) {
         await active.objectStore("catalog").put({ id: catalog.id, file: catalog.file, displayName: catalog.name,
           repositoryPath: schemaRepositoryPath(catalog.id), factoryDigest: catalog.revision,
+          ...(catalog.patches?.length ? { patches: catalog.patches } : {}),
           revision: catalog.revision, ...(catalog.summary ? { summary: catalog.summary } : {}),
           ...(defaults!.adapterRevision ? { adapterRevision: defaults!.adapterRevision } : {}),
-          enabled: true, createdAt: now, updatedAt: now }, catalog.id);
+          enabled: catalog.enabled ?? true, createdAt: now, updatedAt: now }, catalog.id);
       } else if (existing?.factoryDigest) {
         // Unmodified factory copies follow bundled updates; authored Git copies do not.
         const sourceChanged = existing.factoryDigest !== catalog.revision || existing.adapterRevision !== defaults!.adapterRevision;
@@ -599,6 +656,7 @@ async function initialize(database: Database): Promise<void>
           if (sourceChanged) documents.invalidate(`${catalog.id}:`);
           await active.objectStore("catalog").put({ ...existing, displayName: catalog.name,
             factoryDigest: catalog.revision, revision: catalog.revision,
+            ...(catalog.patches?.length ? { patches: catalog.patches } : {}),
             ...(catalog.summary ? { summary: catalog.summary } : {}),
             ...(defaults!.adapterRevision ? { adapterRevision: defaults!.adapterRevision } : {}), updatedAt: now }, catalog.id);
         }
@@ -606,23 +664,6 @@ async function initialize(database: Database): Promise<void>
       installed.add(catalog.id);
     }
     await store.put([...installed], "serviceDefaults");
-  });
-  await transaction(database, ["catalog", "state"], "readwrite", async active => {
-    const state = active.objectStore("state");
-    if (await state.get("alphabeticalOrder") === true) return;
-    const order = await state.get("order");
-    // Older initializations recorded only the two examples. Preserve complete
-    // saved orders and custom arrangements while upgrading that implicit default.
-    const customOrder = Array.isArray(order) && order.length && !(order.length === bundledCatalogs.length
-      && order.every((id, index) => id === bundledCatalogs[index]!.id));
-    if (!customOrder) {
-      const records = await active.objectStore("catalog").getAll();
-      const name = (record: SchemaMetadata) => record.displayName ?? record.summary?.name ?? record.file;
-      records.sort((left, right) => name(left).localeCompare(name(right), undefined, { sensitivity: "base" })
-        || left.id.localeCompare(right.id));
-      await state.put(records.map(record => record.id), "order");
-    }
-    await state.put(true, "alphabeticalOrder");
   });
 }
 
@@ -656,29 +697,10 @@ export function loadSchemaDocuments(): Promise<SchemaDocumentRecord[]>
 {
   return serialized(async database => {
     await backfillCredentialPolicies(database);
-    const records = await readOrderedMetadata(database);
+    const records = await readAlphabeticalMetadata(database);
     const loaded: SchemaDocumentRecord[] = [];
     for (const record of records) loaded.push(await readRecord(record));
     return loaded;
-  });
-}
-
-/** Card order is application metadata, independent from document contents and Git history. */
-export function moveSchemaDocument(id: string, targetId: string, placement: "before" | "after"): Promise<void>
-{
-  validateSchemaDocumentId(id);
-  validateSchemaDocumentId(targetId);
-  if (placement !== "before" && placement !== "after") throw new Error("Choose whether to place the schema before or after its target.");
-  return serialized(async database => {
-    const ids = (await readOrderedMetadata(database)).map(record => record.id);
-    if (!ids.includes(id) || !ids.includes(targetId)) throw new Error("This schema could not be found in this browser.");
-    if (id === targetId) return;
-    const reordered = ids.filter(entry => entry !== id);
-    reordered.splice(reordered.indexOf(targetId) + (placement === "after" ? 1 : 0), 0, id);
-    if (reordered.every((entry, index) => entry === ids[index])) return;
-    await transaction(database, ["state"], "readwrite", async active => {
-      await active.objectStore("state").put(reordered, "order");
-    });
   });
 }
 
@@ -689,6 +711,128 @@ export function putSchemaDocument(value: SchemaDocumentRecord): Promise<SchemaDo
   record.document = validateLibraryDocument(record.document, record.id).document;
   validateMetadata({ ...record, repositoryPath: schemaRepositoryPath(record.id) });
   return serialized(database => writeRecord(database, record));
+}
+
+async function branchBase(metadata: SchemaMetadata): Promise<{ upstream: string; corrected: string; current: string }> {
+  const current = await head(metadata.id);
+  if (!current) throw new Error("This schema has no working revision.");
+  // Old authored repositories had only main. Their oldest import is the safe
+  // merge baseline; later edits are preserved, never guessed to be upstream.
+  const oldest = metadata.upstreamRevision ? undefined : (await git.log({ fs: fs(), dir: metadata.repositoryPath, ref: mainRef })).at(-1)!.oid;
+  const upstream = metadata.upstreamRevision ?? oldest!;
+  return { upstream, corrected: metadata.correctedRevision ?? upstream, current };
+}
+
+async function publishUpstream(database: Database, metadata: SchemaMetadata, record: SchemaDocumentRecord,
+  incoming: IncomingSchema, document: Record<string, unknown>, current: string): Promise<SchemaDocumentRecord> {
+  const { groups: _groups, displayName: _displayName, ...authored } = record;
+  validateLibraryDocument(document, record.id);
+  const joinsNewAncestry = current !== incoming.corrected && !await git.isDescendent({ fs: fs(), dir: metadata.repositoryPath,
+    oid: current, ancestor: incoming.corrected, depth: -1 });
+  return writeRecord(database, { ...authored, document, file: incoming.file, updatedAt: Date.now() },
+    "Merge published schema and replay local changes", undefined, {
+      parents: [...new Set([current, incoming.corrected])],
+      forceCommit: joinsNewAncestry,
+      branches: { upstreamRevision: incoming.upstream, correctedRevision: incoming.corrected, patches: incoming.patches },
+      clearIncoming: true,
+      refs: [await refUpdate(metadata.id, upstreamRef, incoming.upstream),
+        await refUpdate(metadata.id, correctedRef, incoming.corrected), await refUpdate(metadata.id, incomingRef, null)],
+    });
+}
+
+/** A new published snapshot is merged with corrections and authored edits, never blindly substituted. */
+export function updateSchemaUpstream(id: string, value: Record<string, unknown>, file: string): Promise<void> {
+  validateSchemaDocumentId(id);
+  const incomingDocument = structuredClone(value);
+  validateLibraryDocument(incomingDocument, id);
+  if (typeof file !== "string" || !file.trim()) throw new Error("The incoming schema needs a filename.");
+  return serialized(database => updateUpstream(database, id, incomingDocument, file));
+}
+
+/** Use the bundled source without fetching a remote schema or discarding authored edits. */
+export function updateSchemaFromBundle(id: string): Promise<void> {
+  validateSchemaDocumentId(id);
+  return serialized(async database => {
+    const source = defaults?.catalogs.find(source => source.id === id);
+    if (!source) throw new Error("There is no bundled revision for this schema.");
+    const metadata = await readMetadata(database, id);
+    if (!metadata) throw new Error("This schema could not be found in this browser.");
+    // An unedited factory copy already follows this bundle. Taking the authored
+    // merge path would discard its catalogue label and automatic update ownership.
+    if (metadata.factoryDigest === source.revision && metadata.file === source.file && !metadata.incoming
+      && sameSchemaValue(metadata.patches ?? [], source.patches ?? [])) return;
+    const document = defaults!.readUpstream ? await defaults!.readUpstream(id) : await defaults!.read(id);
+    await updateUpstream(database, id, document, source.file, source.patches ?? []);
+  });
+}
+
+async function updateUpstream(database: Database, id: string, incomingDocument: Record<string, unknown>, file: string,
+  reviewedPatches?: SchemaPatch[]): Promise<void> {
+    validateLibraryDocument(incomingDocument, id);
+    let metadata = await readMetadata(database, id);
+    if (!metadata) throw new Error("This schema could not be found in this browser.");
+    const record = await materializedRecord(database, metadata);
+    metadata = (await readMetadata(database, id))!;
+    const previous = await branchBase(metadata);
+    const patches = reviewedPatches ?? metadata.patches ?? [];
+    const correctedDocument = applySchemaPatches(incomingDocument, patches);
+    validateLibraryDocument(correctedDocument, id);
+    const upstream = sameSchemaValue(JSON.parse(await versionText(id, previous.upstream)), incomingDocument) ? previous.upstream
+      : await commitSnapshot(id, incomingDocument, `Update published schema: ${file}`, [previous.upstream]);
+    const corrected = upstream === previous.upstream && sameSchemaValue(JSON.parse(await versionText(id, previous.corrected)), correctedDocument) ? previous.corrected
+      : await correctedSnapshot(id, upstream, correctedDocument, patches, previous.corrected, incomingDocument);
+    // The working copy may contain local edits. Reapplying its existing source
+    // is still a no-op, unless a pending proposal or source metadata must change.
+    if (!metadata.incoming && upstream === previous.upstream && corrected === previous.corrected
+      && file === metadata.file && sameSchemaValue(patches, metadata.patches ?? [])) return;
+    const incoming: IncomingSchema = { base: previous.corrected, upstream, corrected, file, patches };
+    const base = JSON.parse(await versionText(id, previous.corrected));
+    const merged = mergeSchemaDocuments(base, record.document, correctedDocument);
+    if (merged.conflicts.length) {
+      // Publish the review branch and its metadata through the same recovery
+      // journal as ordinary saves. The usable main and its authority stay intact.
+      await writeRecord(database, record, undefined, metadata.factoryDigest, {
+        revision: previous.current, branches: { incoming }, refs: [await refUpdate(id, incomingRef, corrected)],
+      });
+    } else await publishUpstream(database, metadata, record, incoming, merged.document, previous.current);
+}
+
+/** Resolution is bound to both reviewed tips; concurrent edits cannot consume stale decisions. */
+export function resolveSchemaUpdate(id: string, current: string, incomingRevision: string, resolutions: Record<string, SchemaResolution>): Promise<void> {
+  validateSchemaDocumentId(id);
+  const choices = structuredClone(resolutions);
+  return serialized(async database => {
+    const metadata = await readMetadata(database, id);
+    if (!metadata?.incoming || metadata.incoming.corrected !== incomingRevision || await head(id) !== current)
+      throw new Error("The schema changed while its conflicts were being reviewed. Reload history and review again.");
+    const record = await readRecord(metadata);
+    const incoming = metadata.incoming;
+    const base = JSON.parse(await versionText(id, incoming.base));
+    const proposed = JSON.parse(await versionText(id, incoming.corrected));
+    const conflicts = mergeSchemaDocuments(base, record.document, proposed).conflicts;
+    if (!objectChoices(choices) || Object.keys(choices).length !== conflicts.length
+      || conflicts.some(conflict => !Object.hasOwn(choices, conflict.path)))
+      throw new Error("Choose the current or incoming value for every schema conflict.");
+    const merged = mergeSchemaDocuments(base, record.document, proposed, choices);
+    if (merged.conflicts.length) throw new Error("Some schema conflicts still need a decision.");
+    await publishUpstream(database, metadata, record, incoming, merged.document, current);
+  });
+}
+
+function objectChoices(value: unknown): value is Record<string, SchemaResolution> {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    && Object.values(value).every(choice => choice === "current" || choice === "incoming");
+}
+
+export function dismissSchemaUpdate(id: string, current: string, incomingRevision: string): Promise<void> {
+  validateSchemaDocumentId(id);
+  return serialized(async database => {
+    const metadata = await readMetadata(database, id);
+    if (!metadata?.incoming || metadata.incoming.corrected !== incomingRevision || await head(id) !== current)
+      throw new Error("The schema changed while its update was being reviewed. Reload history and review again.");
+    await writeRecord(database, await readRecord(metadata), undefined, metadata.factoryDigest,
+      { revision: current, clearIncoming: true, refs: [await refUpdate(id, incomingRef, null)] });
+  });
 }
 
 /** Rename the latest working document under its repository lock, preserving unrelated edits. */
@@ -744,14 +888,16 @@ export function deleteSchemaDocument(id: string): Promise<void>
 {
   const path = schemaRepositoryPath(id);
   return serialized(async database => {
-    await transaction(database, ["catalog", "pending", "removed", "state", "policies", "indexes"], "readwrite", async active => {
+    await transaction(database, ["catalog", "pending", "removed", "policies", "indexes"], "readwrite", async active => {
+      const metadata = await active.objectStore("catalog").get(id);
+      if (!metadata) throw new Error("This schema could not be found in this browser.");
+      const reason = schemaDeletionReason({ bundled: isBundledSchema(id), enabled: metadata.enabled });
+      if (reason) throw new Error(reason);
       await active.objectStore("removed").put(true, id);
       await active.objectStore("catalog").delete(id);
       await active.objectStore("pending").delete(id);
       await active.objectStore("indexes").delete(id);
       await storeCredentialPolicy(active, id, undefined);
-      const order = await active.objectStore("state").get("order");
-      if (Array.isArray(order)) await active.objectStore("state").put(order.filter(entry => entry !== id), "order");
     });
     documents.invalidate(`${id}:`);
     await removeTree(path);
@@ -773,11 +919,105 @@ export function getSchemaHistory(id: string): Promise<SchemaRevision[]>
   });
 }
 
+/** Branch metadata and commit ancestry only; source/diff blobs are read on selection. */
+export function getSchemaBranchHistory(id: string, limit = 100): Promise<SchemaBranchHistory> {
+  schemaRepositoryPath(id);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 1000) throw new Error("Schema history is limited to 1–1000 commits.");
+  return serialized(async database => {
+    let metadata = await readMetadata(database, id);
+    if (!metadata) throw new Error("This schema could not be found in this browser.");
+    if (metadata.factoryDigest && (metadata.historyDigest !== metadata.factoryDigest || !metadata.upstreamRevision))
+      await materializedRecord(database, metadata);
+    metadata = (await readMetadata(database, id))!;
+    const branches: SchemaBranchHistory["branches"] = [];
+    for (const [ref, name] of [[mainRef, "Working"], [upstreamRef, "Published"], [correctedRef, "Corrections"], [incomingRef, "Incoming"]]) {
+      const oid = await head(id, ref!);
+      if (oid) branches.push({ name: name!, oid });
+    }
+    const commits = new Map<string, SchemaRevision>();
+    const queue = branches.map(branch => branch.oid);
+    while (queue.length && commits.size < limit) {
+      const oid = queue.shift()!;
+      if (commits.has(oid)) continue;
+      const { commit } = await git.readCommit({ fs: fs(), dir: metadata.repositoryPath, oid });
+      commits.set(oid, { oid, message: commit.message.trim(), timestamp: commit.committer.timestamp * 1000, parents: commit.parent });
+      queue.push(...commit.parent);
+    }
+    // Timestamps can tie or move backwards. Topology, not date, orders the graph.
+    const children = new Map([...commits.keys()].map(oid => [oid, 0]));
+    for (const commit of commits.values()) for (const parent of commit.parents)
+      if (children.has(parent)) children.set(parent, children.get(parent)! + 1);
+    const revisions: SchemaRevision[] = [];
+    const ready = [...commits.values()].filter(commit => !children.get(commit.oid));
+    while (ready.length) {
+      ready.sort((left, right) => right.timestamp - left.timestamp || left.oid.localeCompare(right.oid));
+      const commit = ready.shift()!;
+      revisions.push(commit);
+      for (const parent of commit.parents) if (children.has(parent)) {
+        children.set(parent, children.get(parent)! - 1);
+        if (!children.get(parent)) ready.push(commits.get(parent)!);
+      }
+    }
+    let incoming: SchemaBranchHistory["incoming"];
+    if (metadata.incoming) {
+      const pending = metadata.incoming;
+      incoming = { revision: pending.corrected, conflicts: mergeSchemaDocuments(
+        JSON.parse(await versionText(id, pending.base)), (await readRecord(metadata)).document,
+        JSON.parse(await versionText(id, pending.corrected))).conflicts };
+    }
+    return { branches, revisions, current: (await head(id))!, truncated: queue.some(oid => !commits.has(oid)), ...(incoming ? { incoming } : {}) };
+  });
+}
+
+async function schemaComparison(id: string, oid: string, baseOid?: string) {
+  const dir = schemaRepositoryPath(id);
+  if (!/^[a-f0-9]{40}$/.test(oid) || (baseOid !== undefined && !/^[a-f0-9]{40}$/.test(baseOid)))
+    throw new Error("Choose saved commits from this schema.");
+  const { commit } = await git.readCommit({ fs: fs(), dir, oid });
+  const parents = await Promise.all(commit.parent.map(async oid => ({ oid,
+    message: (await git.readCommit({ fs: fs(), dir, oid })).commit.message.trim() })));
+  const comparison = baseOid ?? commit.parent[0];
+  const base = comparison ? { oid: comparison, message: (await git.readCommit({ fs: fs(), dir, oid: comparison })).commit.message.trim() } : null;
+  const before = base ? JSON.parse(await versionText(id, base.oid)) : {};
+  const after = JSON.parse(await versionText(id, oid));
+  return { revision: { oid, message: commit.message.trim() }, parents, base, before, after };
+}
+
+/** Any two commits in this schema's isolated repository; inspection never checks out. */
+export function getSchemaRevisionDiff(id: string, oid: string, limit = 200, baseOid?: string): Promise<SchemaRevisionDiff> {
+  schemaRepositoryPath(id);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 1000) throw new Error("Choose a valid bounded schema revision.");
+  return serialized(async database => {
+    if (!await readMetadata(database, id)) throw new Error("This schema could not be found in this browser.");
+    const { before, after, ...commits } = await schemaComparison(id, oid, baseOid);
+    const diff = schemaChanges(before, after, limit);
+    return { ...commits, truncated: diff.truncated, changes: diff.changes.map(({ path, kind }) => ({ path, kind })) };
+  });
+}
+
+/** Expanded fields alone request bounded real line content, not whole schema trees. */
+export function getSchemaRevisionFieldDiff(id: string, oid: string, baseOid: string | undefined, path: string, limit = 200): Promise<SchemaFieldDiff> {
+  schemaRepositoryPath(id);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 5000) throw new Error("Choose 1–5000 diff rows.");
+  return serialized(async database => {
+    if (!await readMetadata(database, id)) throw new Error("This schema could not be found in this browser.");
+    const { before, after } = await schemaComparison(id, oid, baseOid);
+    const left = schemaPointerValue(before, path);
+    const right = schemaPointerValue(after, path);
+    if (sameSchemaValue(left, right)) throw new Error("This field has no changes between the selected commits.");
+    return schemaLineDiff(JSON.stringify(left, null, 2), JSON.stringify(right, null, 2), limit);
+  });
+}
+
 export function readSchemaVersion(id: string, oid: string): Promise<Record<string, unknown>>
 {
   schemaRepositoryPath(id);
   return serialized(async database => {
     if (!await readMetadata(database, id)) throw new Error("This schema could not be found in this browser.");
-    return validateLibraryDocument(JSON.parse(await versionText(id, oid)), id).document;
+    // A source revision can intentionally contain contracts the executable
+    // adapter rejects. Inspection must return that exact committed source.
+    const document: unknown = JSON.parse(await versionText(id, oid));
+    if (!document || typeof document !== "object" || Array.isArray(document)) throw new Error("The historical schema is invalid.");
+    return document as Record<string, unknown>;
   });
 }

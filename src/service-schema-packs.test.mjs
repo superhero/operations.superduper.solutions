@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { Then } from '@cucumber/cucumber';
-import { decodeServiceSchema, readServiceSchema, serviceSchemaDescriptors } from './lib/service-schema-packs.ts';
+import { decodeServiceSchema, readServiceSchema, readServiceSchemaUpstream, serviceSchemaDescriptors } from './lib/service-schema-packs.ts';
 import { adaptGoogleOauthSchema } from '../build/google-oauth-schema.mjs';
 import { annotateCodexSchema } from '../build/codex-schema.mjs';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
@@ -37,10 +37,10 @@ Then('Google grant normalization preserves scope alternatives without weakening 
   assert.deepEqual(document, before, 'Source input must remain unchanged.');
   assert.deepEqual(adaptGoogleOauthSchema(adapted), adapted, 'Repeated adaptation must be byte-stable.');
   assert.deepEqual(adapted.components, before.components, 'Both original OAuth flow descriptions stay inspectable.');
-  assert.deepEqual(adapted.security, [{ Oauth2c: ['read'], ProjectKey: [] }], 'A separate API key must remain required.');
+  assert.deepEqual(adapted.security, [{ ProjectKey: [], Oauth2: ['read'] }, { ProjectKey: [], Oauth2c: ['read'] }], 'A separate API key remains required with either OAuth flow.');
   assert.deepEqual(adapted['x-upstream-security'], before.security);
-  assert.deepEqual(adapted.paths['/items'].get.security, [{ Oauth2c: ['read'] }, { Oauth2c: ['write'] }]);
-  assert.deepEqual(adapted.paths['/items'].post.security, [{ Oauth2c: ['write', 'read'] }]);
+  assert.deepEqual(adapted.paths['/items'].get.security, [{ Oauth2: ['read'] }, { Oauth2c: ['read'] }, { Oauth2: ['write'] }, { Oauth2c: ['write'] }]);
+  assert.deepEqual(adapted.paths['/items'].post.security, [{ Oauth2: ['read', 'write'] }, { Oauth2c: ['write', 'read'] }]);
   for (const method of ['get', 'post'])
     assert.deepEqual(adapted.paths['/items'][method]['x-upstream-security'], before.paths['/items'][method].security);
   for (const method of ['options', 'head', 'delete']) assert.deepEqual(adapted.paths['/items'][method], before.paths['/items'][method]);
@@ -57,11 +57,72 @@ Then('Google grant normalization preserves scope alternatives without weakening 
   }
 });
 
+Then('Google Cloud corrections preserve published packs and enable both private bearer alternatives', async () => {
+  const { executeCredentialed } = await import('./lib/secrets/execution.ts');
+  const { approvedOperation } = await import('./lib/secrets/policy.ts');
+  const sources = serviceSchemaDescriptors.filter(source => source.provider === 'gcp');
+  assert.equal(sources.length, 52);
+  let available = 0, unavailable = 0;
+  for (const source of sources) {
+    assert.deepEqual(source.patches, [{ id: 'google-oauth-alternatives', version: 1 }]);
+    const document = await readServiceSchema(source.id);
+    assert.equal(createHash('sha256').update(JSON.stringify(document)).digest('hex'), source.effectiveSha256);
+    const inspection = inspectServiceSchema(document, source.id);
+    available += inspection.operations.filter(operation => !operation.unavailableReason).length;
+    unavailable += inspection.operations.filter(operation => operation.unavailableReason).length;
+  }
+  assert.equal(available, 2121);
+  assert.equal(unavailable, 7, 'Separate request-media limitations remain explicit.');
+  const original = await readServiceSchemaUpstream('gcp-speech');
+  const corrected = await readServiceSchema('gcp-speech');
+  const id = 'gcp-speech:speech.operations.list';
+  const before = inspectServiceSchema(original, 'gcp-speech', new Set([id])).operations[0];
+  assert.match(before.unavailableReason, /duplicate credential header/i);
+  const operation = inspectServiceSchema(corrected, 'gcp-speech', new Set([id])).operations[0];
+  assert.equal(operation.unavailableReason, undefined);
+  const descriptor = await approvedOperation(operation, 'https://speech.googleapis.com');
+  const secret = 'google-test-token-canary';
+  const credential = { id: 'google-token', label: 'Google token', kind: 'secret', value: secret, grants: [] };
+  assert.equal(operation.security.length, 2);
+  for (const [alternative, schemes] of operation.security.entries()) {
+    assert.equal(schemes.length, 1);
+    assert.ok(operation.oauthScopes[alternative][schemes[0].name].length);
+    assert.deepEqual(descriptor.operation.oauthScopes, operation.oauthScopes);
+    const binding = { fingerprint: descriptor.fingerprint, alternative, credentials: { [schemes[0].name]: credential.id } };
+    let calls = 0;
+    const result = await executeCredentialed(descriptor, {}, binding, [credential], { assertCurrent() {}, fetchRequest: async (url, init) => {
+      calls++;
+      assert.equal(String(url), 'https://speech.googleapis.com/v1/operations');
+      assert.equal(init.method, operation.method);
+      assert.equal(init.headers.get('Authorization'), `Bearer ${secret}`);
+      assert.equal(init.credentials, 'omit');
+      return new Response('{}', { headers: { 'Content-Type': 'application/json' } });
+    } });
+    assert.equal(calls, 1);
+    assert.ok(!JSON.stringify(result).includes(secret));
+  }
+  assert.notDeepEqual(original, corrected);
+});
+
 const fixture = data => {
   const bytes = Buffer.isBuffer(data) ? data : Buffer.from(JSON.stringify(data));
   return { pack: `data:application/gzip;base64,${gzipSync(bytes).toString('base64')}`,
     descriptor: { bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex') } };
 };
+Then('corrected schema packs reject stale revision metadata while retaining the published source', async () => {
+  const source = serviceSchemaDescriptors.find(source => source.id === 'gcp-speech');
+  const original = await readServiceSchemaUpstream(source.id);
+  const packed = fixture(original);
+  const descriptor = { ...source, ...packed.descriptor };
+  const library = { descriptors: [descriptor], packs: { [`../catalogs/services/${source.id}.json.gz`]: packed.pack } };
+  assert.deepEqual(await readServiceSchema(source.id, library), await readServiceSchema(source.id));
+  for (const stale of [{ effectiveBytes: source.effectiveBytes + 1 }, { effectiveSha256: '0'.repeat(64) }]) {
+    const invalid = { ...library, descriptors: [{ ...descriptor, ...stale }] };
+    await assert.rejects(readServiceSchema(source.id, invalid), /corrected schema does not match its reviewed revision/);
+    assert.deepEqual(await readServiceSchema(source.id, invalid, true), original,
+      'Invalid correction metadata cannot alter the independently verified published source.');
+  }
+});
 Then('all service schema packs match their size hash and operation inventory', async () => {
   const ids = serviceSchemaDescriptors.map(item => item.id);
   assert.equal(new Set(ids).size, ids.length);

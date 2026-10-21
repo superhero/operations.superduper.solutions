@@ -8,7 +8,7 @@ import descriptors from '../../src/catalogs/services/index.json' with { type: 'j
 import sources from '../../build/service-schemas.sources.json' with { type: 'json' };
 import { bundledCatalogs } from '../../src/lib/catalog-registry.ts';
 import { setMode, openCatalog, closeCatalog, workflowAction, workspace, fillField } from './workspace.steps.mjs';
-import { expandSchemaCard } from './schema-card.fixture.mjs';
+import { expandSchemaCard, expandSchemaGroups, expectSchemaName } from './schema-card.fixture.mjs';
 import { catalogSchemaHeading, catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
 
 Then('Google Workspace YouTube Analytics and Search Console are grouped and Gmail and Drive nodes survive reload', async function () {
@@ -17,7 +17,7 @@ Then('Google Workspace YouTube Analytics and Search Console are grouped and Gmai
   assert.equal(collection.length, 24);
   await schemas(page);
   for (const source of collection) {
-    await expect(card(page, source.id).locator('.schema-name-label')).toHaveText(source.name);
+    await expectSchemaName(card(page, source.id), source.name);
     await expect(card(page, source.id).getByRole('switch')).toHaveAttribute('aria-checked', 'true');
   }
   await openCatalog(page);
@@ -60,7 +60,7 @@ Then('Cloudflare Realtime SFU appears beside the account API and its workflow no
   await schemas(page);
   for (const id of ['cloudflare', 'cloudflare-realtime-sfu']) {
     const source = descriptors.find(source => source.id === id);
-    await expect(card(page, id).locator('.schema-name-label')).toHaveText(source.name);
+    await expectSchemaName(card(page, id), source.name);
     await expect(card(page, id).getByRole('switch')).toHaveAttribute('aria-checked', 'true');
   }
   await openCatalog(page);
@@ -95,7 +95,7 @@ Then('the cloud collections retain their provider counts and representative work
     const collection = descriptors.filter(source => source.provider === provider);
     assert.equal(collection.length, count);
     const source = collection.find(source => source.id === representative);
-    await expect(card(page, representative).locator('.schema-name-label')).toHaveText(source.name);
+    await expectSchemaName(card(page, representative), source.name);
     await expect(card(page, representative).getByRole('switch')).toHaveAttribute('aria-checked', 'true');
   }
   await openCatalog(page);
@@ -136,6 +136,7 @@ async function schemas(page) {
   const section = page.getByRole('region', { name: 'OpenAPI documents', exact: true });
   await expect(section).toHaveAttribute('aria-busy', 'false');
   await expect(section.getByRole('alert')).toHaveCount(0);
+  await expandSchemaGroups(section);
   return section;
 }
 async function stored(page) {
@@ -159,8 +160,8 @@ async function reload(page) {
 Then('FRED observations and ALFRED vintages are available in separate catalogs and survive workflow reload', { timeout: 60_000 }, async function () {
   const page = this.page;
   await schemas(page);
-  for (const [id, name] of [['fred', 'FRED / Federal Reserve Economic Data'], ['alfred', 'ALFRED / Archival Federal Reserve Economic Data']]) {
-    await expect(card(page, id).locator('.schema-name-label')).toHaveText(name);
+  for (const [id, name] of [['fred', 'Federal Reserve / FRED'], ['alfred', 'Federal Reserve / ALFRED']]) {
+    await expectSchemaName(card(page, id), name);
     await expect(card(page, id).getByRole('switch')).toHaveAttribute('aria-checked', 'true');
   }
   await openCatalog(page);
@@ -184,7 +185,7 @@ Then('FRED observations and ALFRED vintages are available in separate catalogs a
   await expect(page.locator('.svelte-flow__node-operation')).toHaveCount(2);
   await expect(page.locator('.svelte-flow__node-operation').getByRole('alert')).toHaveCount(0);
 });
-Then('provider schema names use these paths across saved-label updates', async function (table) {
+Then('provider schema names use these paths across saved-label updates', { timeout: 120_000 }, async function (table) {
   const page = this.page;
   const names = table.hashes();
   for (const { id, name } of names) {
@@ -194,12 +195,7 @@ Then('provider schema names use these paths across saved-label updates', async f
   await schemas(page);
   const ids = () => page.locator('.schema-card').evaluateAll(cards => cards.map(card => card.dataset.schemaId));
   const initial = await ids();
-  for (const { id, name } of names) await expect(card(page, id).locator('.schema-name-label')).toHaveText(name);
-  const first = card(page, initial[0]);
-  const firstName = await first.locator('.schema-name-label').textContent();
-  await first.getByRole('button', { name: `Move ${firstName}`, exact: true }).press('ArrowDown');
-  const ordered = [initial[1], initial[0], ...initial.slice(2)];
-  await expect.poll(ids).toEqual(ordered);
+  for (const { id, name } of names) await expectSchemaName(card(page, id), name);
   const before = await stored(page);
   await page.evaluate(names => new Promise((resolve, reject) => {
     const opening = indexedDB.open('v1/catalogs/index');
@@ -217,8 +213,8 @@ Then('provider schema names use these paths across saved-label updates', async f
     };
   }), names);
   await reload(page);
-  for (const { id, name } of names) await expect(card(page, id).locator('.schema-name-label')).toHaveText(name);
-  assert.deepEqual(await ids(), ordered);
+  for (const { id, name } of names) await expectSchemaName(card(page, id), name);
+  assert.deepEqual(await ids(), initial);
   const after = await stored(page);
   for (const { id } of names) {
     const { updatedAt: _before, ...original } = before.find(record => record.id === id);
@@ -235,7 +231,7 @@ Then('all Atlassian catalogs share the provider prefix and retain a newly disabl
   assert.equal(products.length, 43);
   await schemas(page);
   for (const source of products) {
-    await expect(card(page, source.id).locator('.schema-name-label')).toHaveText(source.name);
+    await expectSchemaName(card(page, source.id), source.name);
     await expect(card(page, source.id).getByRole('switch')).toHaveAttribute('aria-checked', 'true');
   }
   await openCatalog(page);
@@ -260,58 +256,73 @@ Then('all Atlassian catalogs share the provider prefix and retain a newly disabl
   await reload(page);
   await expect(page.locator('.svelte-flow__node-operation')).toContainText('Get a list of pages');
   await expect(card(page, 'trello').getByRole('switch')).toHaveAttribute('aria-checked', 'false');
-  await expect(card(page, 'jira').locator('.schema-name-label')).toHaveText('Atlassian / Jira / Cloud');
+  await expectSchemaName(card(page, 'jira'), 'Atlassian / Jira / Cloud');
   await openCatalog(page);
   await catalogSchemaHeading(page, 'Atlassian / Statuspage');
   await expect(page.locator('[data-catalog-group="trello"]')).toHaveCount(0);
   await expect(page.locator('[data-catalog-group="statuspage"] > .catalog-group > summary .catalog-name')).toHaveText('Statuspage');
 });
 
-Then('all initial schemas sort by displayed name and keep a manually saved order', async function () {
+Then('schemas always sort by displayed name without manual controls', { timeout: 120_000 }, async function () {
   const page = this.page;
-  const expected = [...bundledCatalogs.map(({ id, name }) => ({ id, name })), ...descriptors]
-    .sort((left, right) => left.name.localeCompare(right.name, 'en', { sensitivity: 'base' }));
-  const ids = () => page.locator('.schema-card').evaluateAll(cards => cards.map(card => card.dataset.schemaId));
+  const expected = [...bundledCatalogs.map(({ id, name }) => ({ id, name })), ...descriptors.map(({ id, name }) => ({ id, name }))];
+  const ordered = () => [...expected].sort((left, right) => left.name.localeCompare(right.name, 'en', { sensitivity: 'base' }) || left.id.localeCompare(right.id));
+  const entries = () => page.locator('.schema-card').evaluateAll(cards => cards.map(card => ({ id: card.dataset.schemaId,
+    name: card.querySelector('.schema-name-input')?.value ?? card.querySelector('.schema-name-label')?.getAttribute('aria-label')?.slice('Open schema: '.length) })));
   await schemas(page);
   await expect(page.locator('.schema-card')).toHaveCount(expected.length);
-  assert.deepEqual(await ids(), expected.map(record => record.id));
-  assert.deepEqual(await page.locator('.schema-name-label').allTextContents(), expected.map(record => record.name));
+  assert.deepEqual(await entries(), ordered());
+  await expect(page.getByRole('group', { name: 'Reorder schemas', exact: true })).toHaveCount(0);
+  await expect(page.locator('.schema-card').getByRole('button', { name: /^Move / })).toHaveCount(0);
+  await expect(page.locator('.schema-card [draggable="true"]')).toHaveCount(0);
 
-  // Existing installations recorded the examples as the initial order while
-  // leaving factory schemas to an ID-based fallback. Upgrade only that default.
-  await page.evaluate(() => new Promise((resolve, reject) => {
+  // Complete old arrangements, including stale/duplicate IDs and the old marker,
+  // cannot override alphabetical ordering in an existing profile.
+  await page.evaluate(ids => new Promise((resolve, reject) => {
     const opening = indexedDB.open('v1/catalogs/index');
     opening.onerror = () => reject(opening.error);
     opening.onsuccess = () => {
       const db = opening.result;
       const tx = db.transaction('state', 'readwrite');
-      tx.objectStore('state').put(['demo', 'httpbin'], 'order');
-      tx.objectStore('state').delete('alphabeticalOrder');
+      tx.objectStore('state').put(['missing-schema', ...ids.reverse(), ids[0]], 'order');
+      tx.objectStore('state').put(true, 'alphabeticalOrder');
       tx.oncomplete = () => { db.close(); resolve(); };
       tx.onabort = () => { db.close(); reject(tx.error); };
     };
-  }));
+  }), expected.map(record => record.id));
   await reload(page);
-  assert.deepEqual(await ids(), expected.map(record => record.id));
+  assert.deepEqual(await entries(), ordered());
 
-  const first = expected[0];
-  await card(page, first.id).getByRole('button', { name: `Move ${first.name}`, exact: true }).press('ArrowDown');
-  const reordered = [expected[1].id, first.id, ...expected.slice(2).map(record => record.id)];
-  await expect.poll(ids).toEqual(reordered);
+  await expandSchemaCard(card(page, 'demo'));
+  const input = card(page, 'demo').getByRole('textbox', { name: 'Schema name', exact: true });
+  for (const name of ['Zulu example', 'AAA example']) {
+    await input.fill(name); await input.press('Enter');
+    expected.find(record => record.id === 'demo').name = name;
+    await expect.poll(entries).toEqual(ordered());
+  }
+  const document = { openapi: '3.1.0', info: { title: 'aab uploaded schema', version: '1' },
+    servers: [{ url: 'https://sort.example.test' }], paths: { '/items': { get: { operationId: 'list', responses: { '200': { description: 'OK' } } } } } };
+  await page.getByRole('button', { name: 'Upload OpenAPI document', exact: true }).click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({ name: 'sort.openapi.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
+  await expect(page.locator('.schema-card')).toHaveCount(expected.length + 1);
+  const uploaded = (await entries()).find(record => record.name === document.info.title);
+  assert.ok(uploaded);
+  expected.push(uploaded);
+  await expect.poll(entries).toEqual(ordered());
   await reload(page);
-  assert.deepEqual(await ids(), reordered);
+  assert.deepEqual(await entries(), ordered());
 });
 
-Then('all service schemas appear and preserve disablement renames and deletions after reload', { timeout: 120_000 }, async function () {
+Then('all service schemas appear and preserve disablement renames and default protection after reload', { timeout: 120_000 }, async function () {
   const page = this.page;
   await schemas(page);
   await expect(page.locator('[data-schema-id]')).toHaveCount(descriptors.length + 2);
   const records = await stored(page);
   for (const source of descriptors) {
     const record = records.find(record => record.id === source.id);
-    assert.equal(record.factoryDigest, source.sha256, source.id);
-    assert.equal(record.enabled, true, source.id);
-    await expect(card(page, source.id).locator('.schema-name-label')).toHaveText(source.name);
+    assert.equal(record.factoryDigest, source.effectiveSha256 ?? source.sha256, source.id);
+    assert.equal(record.enabled, source.id !== 'ollama', source.id);
+    await expectSchemaName(card(page, source.id), source.name);
   }
   const frankfurter = card(page, 'frankfurter');
   await expandSchemaCard(frankfurter);
@@ -326,9 +337,10 @@ Then('all service schemas appear and preserve disablement renames and deletions 
   await name.press('Enter');
   await expect.poll(async () => (await stored(page)).find(record => record.id === 'mistral').displayName).toBeUndefined();
   await expandSchemaCard(card(page, 'cohere'));
-  await card(page, 'cohere').getByRole('button', { name: 'Delete Cohere', exact: true }).click();
-  await card(page, 'cohere').getByRole('group', { name: 'Confirm deletion of Cohere', exact: true }).getByRole('button', { name: 'Delete', exact: true }).click();
-  await expect(card(page, 'cohere')).toHaveCount(0);
+  await expect(card(page, 'cohere').getByRole('button', { name: 'Delete Cohere', exact: true })).toBeDisabled();
+  await card(page, 'cohere').getByRole('switch').click();
+  await expect(card(page, 'cohere').getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+  await expect(card(page, 'cohere').getByRole('button', { name: 'Delete Cohere', exact: true })).toBeDisabled();
   // Represent a prior packaged revision without modifying the current bundle.
   await page.evaluate(() => new Promise((resolve, reject) => {
     const opening = indexedDB.open('v1/catalogs/index');
@@ -346,24 +358,32 @@ Then('all service schemas appear and preserve disablement renames and deletions 
   await reload(page);
   assert.equal((await stored(page)).find(record => record.id === 'frankfurter').factoryDigest,
     descriptors.find(source => source.id === 'frankfurter').sha256, 'Unmodified defaults follow the bundled revision.');
-  await expect(page.locator('[data-schema-id]')).toHaveCount(descriptors.length + 1);
+  await expect(page.locator('[data-schema-id]')).toHaveCount(descriptors.length + 2);
   await expect(card(page, 'frankfurter').getByRole('switch')).toHaveAttribute('aria-checked', 'false');
   await expect(card(page, 'mistral').locator('.schema-name-label')).toHaveText('My Mistral API');
-  await expect(card(page, 'cohere')).toHaveCount(0);
+  await expect(card(page, 'cohere')).toHaveCount(1);
+  await expect(card(page, 'cohere').getByRole('switch')).toHaveAttribute('aria-checked', 'false');
   const revised = (await stored(page)).find(record => record.id === 'mistral');
   assert.equal(revised.factoryDigest, undefined, 'Editing a factory document creates an authored Git copy.');
+  // Ollama starts off; explicit activation survives reload and supports execution.
+  const ollama = card(page, 'ollama').getByRole('switch');
+  await expect(ollama).toHaveAttribute('aria-checked', 'false');
+  await ollama.click();
+  await expect(ollama).toHaveAttribute('aria-checked', 'true');
+  await reload(page);
+  await expect(ollama).toHaveAttribute('aria-checked', 'true');
   // Exercise an actual newly installed operation through the normal sidebar/run path.
   await setMode(page, 'workflow');
   await openCatalog(page);
   const root = page.locator('[data-catalog-group="ollama"] > .catalog-group > summary');
   await root.click();
-  await catalogResourcePath(page, 'ollama:tag:Operations', ['api', 'generate']);
+  await catalogResourcePath(page, 'ollama', ['api', 'generate']);
   await page.locator('[data-operation-id="ollama:generate"] > button').click();
   await expect(page.locator('.svelte-flow__node-operation')).toContainText('Generate a response');
   await closeCatalog(page);
   await workflowAction(page, 'Run');
   const run = workspace(page);
-  await expect(run.getByRole('heading', { name: '1. Generate a response', exact: true })).toBeVisible();
+  await expect(run.getByRole('heading', { name: '1. Ollama / Generate a response', exact: true })).toBeVisible();
   await fillField(page, 'Model', 'test-model');
   await fillField(page, 'Stream', 'false');
   const requests = [];

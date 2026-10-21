@@ -12,6 +12,9 @@ Feature: Operation resources and API versions
   Scenario: Resource trees retain authored headings and every concrete operation
     Then operation resource groups are stable nested trees without mutating their sources
 
+  Scenario: Generic Operations tags add no extra navigation level
+    Then generic Operations tags disappear while literal schema and resource names remain
+
   Scenario: Version families share a menu action while search can choose a concrete version
     Then version families stay scoped to schema method and endpoint and respect availability and search
 

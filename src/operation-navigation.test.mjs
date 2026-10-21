@@ -54,7 +54,7 @@ Then('operation resource groups are stable nested trees without mutating their s
   const operations = [descriptor('api:foo', '/v1/foo'), descriptor('api:bar', '/v2/foo/{id}/bar'),
     descriptor('api:second', '/version-3/foo/{id}/bar'), descriptor('api:root', '/{id}'), descriptor('api:other', '/other')];
   const groups = [{ id: 'api', name: 'API', description: 'Source', children: [
-    { id: 'operations', name: 'Operations', description: 'Actions', operationIds: operations.slice(0, 4).map(operation => operation.id) },
+    { id: 'api:tag:Operations', name: 'Operations', description: '', operationIds: operations.slice(0, 4).map(operation => operation.id) },
     { id: 'authored', name: 'Authored / title', description: '', operationIds: ['api:other', 'missing'], children: [] },
   ] }, { id: 'empty', name: 'Empty', description: '' }];
   const original = structuredClone(groups);
@@ -62,19 +62,48 @@ Then('operation resource groups are stable nested trees without mutating their s
   const result = operationResourceGroups(groups, navigation);
   assert.deepEqual(groups, original);
   assert.equal(result[0].description, 'Source');
-  const actions = result[0].children[0];
-  assert.equal(actions.name, 'Operations');
-  assert.deepEqual(actions.operationIds, ['api:root']);
-  const foo = actions.children[0];
+  assert.deepEqual(result[0].operationIds, ['api:root']);
+  assert.equal(result[0].children[0].name, 'Authored / title');
+  const foo = result[0].children[1];
   assert.equal(foo.name, 'foo');
   assert.deepEqual(foo.operationIds, ['api:foo']);
   assert.equal(foo.children[0].name, 'bar');
   assert.deepEqual(foo.children[0].operationIds, ['api:bar', 'api:second']);
-  assert.equal(result[0].children[1].name, 'Authored / title');
   assert.deepEqual(result.flatMap(ids).sort(), operations.map(operation => operation.id).sort());
   assert.deepEqual(operationResourceGroups(groups, navigation), result);
   assert.deepEqual(operationResourceGroups([], navigation), []);
   assert.equal(result[1].children.length, 0);
+});
+
+Then('generic Operations tags disappear while literal schema and resource names remain', () => {
+  const operations = [descriptor('api:direct', '/v2/foo'), descriptor('api:untagged', '/v1/foo'),
+    descriptor('api:root', '/v1'), descriptor('api:literal', '/Operations'),
+    descriptor('api:tagged', '/foo'), descriptor('api:nested', '/nested'), descriptor('other:read', '/entry')];
+  const generic = (id, operationIds, children = []) => ({ id: `${id}:tag:Operations`, name: 'Operations',
+    description: '', operationIds, children });
+  const groups = [{ id: 'api', name: 'Operations', description: 'A real schema name', operationIds: ['api:direct'], children: [
+    generic('api', ['api:untagged', 'api:root', 'api:literal']),
+    { id: 'api:empty:tag:Operations', name: 'Operations', description: '' },
+    { id: 'api:tag:Accounts', name: 'Accounts', description: 'Authored category', operationIds: ['api:tagged'],
+      children: [generic('api:nested', ['api:nested'])] },
+    { id: 'other', name: 'Operations', description: 'Another schema', children: [generic('other', ['other:read'])] },
+  ] }];
+  const original = structuredClone(groups);
+  const result = operationResourceGroups(groups, operationNavigation(operations));
+  const root = result[0];
+  const allGroups = nodes => nodes.flatMap(node => [node, ...allGroups(node.children ?? [])]);
+  assert.ok(allGroups(result).every(group => !group.id.endsWith(':tag:Operations')));
+  assert.equal(root.name, 'Operations', 'A schema name is not a generic tag.');
+  assert.deepEqual(root.operationIds, ['api:root'], 'Resource-free entries appear directly under the schema.');
+  assert.deepEqual(root.children.find(group => group.name === 'foo').operationIds, ['api:direct', 'api:untagged'], 'Hoisted and direct entries share one resource tree.');
+  assert.ok(root.children.some(group => group.name === 'Operations' && group.id.includes(':resource:')),
+    'A literal URL resource keeps its name.');
+  assert.equal(root.children.find(group => group.id === 'other').name, 'Operations');
+  const accounts = root.children.find(group => group.name === 'Accounts');
+  assert.equal(accounts.description, 'Authored category');
+  assert.deepEqual(accounts.children.map(group => group.name), ['foo', 'nested']);
+  assert.deepEqual(result.flatMap(ids).sort(), operations.map(operation => operation.id).sort(), 'Every concrete operation remains reachable once.');
+  assert.deepEqual(groups, original, 'Canonical discovery metadata is not rewritten.');
 });
 
 Then('version families stay scoped to schema method and endpoint and respect availability and search', () => {

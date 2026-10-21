@@ -203,7 +203,7 @@
   },
   {
     "id": "fred",
-    "name": "FRED / Federal Reserve Economic Data",
+    "name": "Federal Reserve / FRED",
     "url": "https://raw.githubusercontent.com/armanobosyan/FRED-OpenAPI-specification/main/fred-schema.json",
     "provenance": "https://fred.stlouisfed.org/docs/api/fred/",
     "sourceKind": "community-adapted",
@@ -212,7 +212,7 @@
   {
     "id": "alfred",
     "provider": "fred",
-    "name": "ALFRED / Archival Federal Reserve Economic Data",
+    "name": "Federal Reserve / ALFRED",
     "url": "https://raw.githubusercontent.com/armanobosyan/FRED-OpenAPI-specification/main/fred-schema.json",
     "provenance": "https://fred.stlouisfed.org/docs/api/fred/realtime_period.html",
     "sourceKind": "community-adapted",
@@ -224,7 +224,8 @@
     "name": "Google / Cloud / Storage",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/storage/v1/openapi.yaml",
     "provenance": "https://storage.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-compute",
@@ -232,7 +233,8 @@
     "name": "Google / Cloud / Compute",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/compute/v1/openapi.yaml",
     "provenance": "https://compute.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "aws-s3",
@@ -1037,7 +1039,8 @@
     "name": "Google / Cloud / Run",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/run/v2/openapi.yaml",
     "provenance": "https://run.googleapis.com/$discovery/rest?version=v2",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-cloudfunctions",
@@ -1045,7 +1048,8 @@
     "name": "Google / Cloud / Functions",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudfunctions/v2/openapi.yaml",
     "provenance": "https://cloudfunctions.googleapis.com/$discovery/rest?version=v2",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-container",
@@ -1053,7 +1057,8 @@
     "name": "Google / Cloud / Kubernetes Engine",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/container/v1/openapi.yaml",
     "provenance": "https://container.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-artifactregistry",
@@ -1061,7 +1066,8 @@
     "name": "Google / Cloud / Artifact Registry",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/artifactregistry/v1/openapi.yaml",
     "provenance": "https://artifactregistry.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-cloudbuild",
@@ -1069,7 +1075,8 @@
     "name": "Google / Cloud / Build",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudbuild/v2/openapi.yaml",
     "provenance": "https://cloudbuild.googleapis.com/$discovery/rest?version=v2",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-cloudresourcemanager",
@@ -1077,7 +1084,8 @@
     "name": "Google / Cloud / Resource Manager",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudresourcemanager/v3/openapi.yaml",
     "provenance": "https://cloudresourcemanager.googleapis.com/$discovery/rest?version=v3",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-iam",
@@ -1085,7 +1093,8 @@
     "name": "Google / Cloud / IAM",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/iam/v2/openapi.yaml",
     "provenance": "https://iam.googleapis.com/$discovery/rest?version=v2",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-iamcredentials",
@@ -1093,7 +1102,8 @@
     "name": "Google / Cloud / IAM / Credentials",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/iamcredentials/v1/openapi.yaml",
     "provenance": "https://iamcredentials.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-serviceusage",
@@ -1101,7 +1111,8 @@
     "name": "Google / Cloud / Service Usage",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/serviceusage/v1/openapi.yaml",
     "provenance": "https://serviceusage.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-apigateway",
@@ -1109,7 +1120,8 @@
     "name": "Google / Cloud / API Gateway",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/apigateway/v1/openapi.yaml",
     "provenance": "https://apigateway.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-pubsub",
@@ -1117,7 +1129,8 @@
     "name": "Google / Cloud / PubSub",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/pubsub/v1/openapi.yaml",
     "provenance": "https://pubsub.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-cloudscheduler",
@@ -1125,7 +1138,8 @@
     "name": "Google / Cloud / Scheduler",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudscheduler/v1/openapi.yaml",
     "provenance": "https://cloudscheduler.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-cloudtasks",
@@ -1133,7 +1147,8 @@
     "name": "Google / Cloud / Tasks",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudtasks/v2/openapi.yaml",
     "provenance": "https://cloudtasks.googleapis.com/$discovery/rest?version=v2",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-workflows",
@@ -1141,7 +1156,8 @@
     "name": "Google / Cloud / Workflows",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/workflows/v1/openapi.yaml",
     "provenance": "https://workflows.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-workflowexecutions",
@@ -1149,7 +1165,8 @@
     "name": "Google / Cloud / Workflows / Executions",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/workflowexecutions/v1/openapi.yaml",
     "provenance": "https://workflowexecutions.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-bigquery",
@@ -1157,7 +1174,8 @@
     "name": "Google / Cloud / BigQuery",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/bigquery/v2/openapi.yaml",
     "provenance": "https://bigquery.googleapis.com/$discovery/rest?version=v2",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-bigquerydatatransfer",
@@ -1165,7 +1183,8 @@
     "name": "Google / Cloud / BigQuery / Data Transfer",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/bigquerydatatransfer/v1/openapi.yaml",
     "provenance": "https://bigquerydatatransfer.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-dataflow",
@@ -1173,7 +1192,8 @@
     "name": "Google / Cloud / Dataflow",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dataflow/v1b3/openapi.yaml",
     "provenance": "https://dataflow.googleapis.com/$discovery/rest?version=v1b3",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-dataproc",
@@ -1181,7 +1201,8 @@
     "name": "Google / Cloud / Dataproc",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dataproc/v1/openapi.yaml",
     "provenance": "https://dataproc.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-sqladmin",
@@ -1189,7 +1210,8 @@
     "name": "Google / Cloud / SQL Admin",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/sqladmin/v1/openapi.yaml",
     "provenance": "https://sqladmin.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-firestore",
@@ -1197,7 +1219,8 @@
     "name": "Google / Cloud / Firestore",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/firestore/v1/openapi.yaml",
     "provenance": "https://firestore.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-spanner",
@@ -1205,7 +1228,8 @@
     "name": "Google / Cloud / Spanner",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/spanner/v1/openapi.yaml",
     "provenance": "https://spanner.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-bigtableadmin",
@@ -1213,7 +1237,8 @@
     "name": "Google / Cloud / Bigtable / Admin",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/bigtableadmin/v2/openapi.yaml",
     "provenance": "https://bigtableadmin.googleapis.com/$discovery/rest?version=v2",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-redis",
@@ -1221,7 +1246,8 @@
     "name": "Google / Cloud / Memorystore / Redis",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/redis/v1/openapi.yaml",
     "provenance": "https://redis.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-secretmanager",
@@ -1229,7 +1255,8 @@
     "name": "Google / Cloud / Secret Manager",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/secretmanager/v1/openapi.yaml",
     "provenance": "https://secretmanager.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-cloudkms",
@@ -1237,7 +1264,8 @@
     "name": "Google / Cloud / Key Management",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudkms/v1/openapi.yaml",
     "provenance": "https://cloudkms.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-logging",
@@ -1245,7 +1273,8 @@
     "name": "Google / Cloud / Logging",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/logging/v2/openapi.yaml",
     "provenance": "https://logging.googleapis.com/$discovery/rest?version=v2",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-monitoring",
@@ -1253,7 +1282,8 @@
     "name": "Google / Cloud / Monitoring",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/monitoring/v3/openapi.yaml",
     "provenance": "https://monitoring.googleapis.com/$discovery/rest?version=v3",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-cloudtrace",
@@ -1261,7 +1291,8 @@
     "name": "Google / Cloud / Trace",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudtrace/v2/openapi.yaml",
     "provenance": "https://cloudtrace.googleapis.com/$discovery/rest?version=v2",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-clouderrorreporting",
@@ -1269,7 +1300,8 @@
     "name": "Google / Cloud / Error Reporting",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/clouderrorreporting/v1beta1/openapi.yaml",
     "provenance": "https://clouderrorreporting.googleapis.com/$discovery/rest?version=v1beta1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-dns",
@@ -1277,7 +1309,8 @@
     "name": "Google / Cloud / DNS",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dns/v1/openapi.yaml",
     "provenance": "https://dns.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-certificatemanager",
@@ -1285,7 +1318,8 @@
     "name": "Google / Cloud / Certificate Manager",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/certificatemanager/v1/openapi.yaml",
     "provenance": "https://certificatemanager.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-networkconnectivity",
@@ -1293,7 +1327,8 @@
     "name": "Google / Cloud / Network Connectivity",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/networkconnectivity/v1/openapi.yaml",
     "provenance": "https://networkconnectivity.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-servicenetworking",
@@ -1301,7 +1336,8 @@
     "name": "Google / Cloud / Service Networking",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/servicenetworking/v1/openapi.yaml",
     "provenance": "https://servicenetworking.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-vpcaccess",
@@ -1309,7 +1345,8 @@
     "name": "Google / Cloud / VPC Access",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/vpcaccess/v1/openapi.yaml",
     "provenance": "https://vpcaccess.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-aiplatform",
@@ -1317,7 +1354,8 @@
     "name": "Google / Cloud / Vertex AI",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/aiplatform/v1/openapi.yaml",
     "provenance": "https://aiplatform.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-discoveryengine",
@@ -1325,7 +1363,8 @@
     "name": "Google / Cloud / Vertex AI / Search",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/discoveryengine/v1beta/openapi.yaml",
     "provenance": "https://discoveryengine.googleapis.com/$discovery/rest?version=v1beta",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-vision",
@@ -1333,7 +1372,8 @@
     "name": "Google / Cloud / Vision",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/vision/v1/openapi.yaml",
     "provenance": "https://vision.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-translate",
@@ -1341,7 +1381,8 @@
     "name": "Google / Cloud / Translation",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/translate/v3/openapi.yaml",
     "provenance": "https://translation.googleapis.com/$discovery/rest?version=v3",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-speech",
@@ -1349,7 +1390,8 @@
     "name": "Google / Cloud / Speech to Text",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/speech/v1/openapi.yaml",
     "provenance": "https://speech.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-texttospeech",
@@ -1357,7 +1399,8 @@
     "name": "Google / Cloud / Text to Speech",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/texttospeech/v1/openapi.yaml",
     "provenance": "https://texttospeech.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-documentai",
@@ -1365,7 +1408,8 @@
     "name": "Google / Cloud / Document AI",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/documentai/v1/openapi.yaml",
     "provenance": "https://documentai.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-dlp",
@@ -1373,7 +1417,8 @@
     "name": "Google / Cloud / Sensitive Data Protection",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/dlp/v2/openapi.yaml",
     "provenance": "https://dlp.googleapis.com/$discovery/rest?version=v2",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-securitycenter",
@@ -1381,7 +1426,8 @@
     "name": "Google / Cloud / Security Command Center",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/securitycenter/v1/openapi.yaml",
     "provenance": "https://securitycenter.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-cloudasset",
@@ -1389,7 +1435,8 @@
     "name": "Google / Cloud / Asset Inventory",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudasset/v1/openapi.yaml",
     "provenance": "https://cloudasset.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-cloudbilling",
@@ -1397,7 +1444,8 @@
     "name": "Google / Cloud / Billing",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudbilling/v1/openapi.yaml",
     "provenance": "https://cloudbilling.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-billingbudgets",
@@ -1405,7 +1453,8 @@
     "name": "Google / Cloud / Billing / Budgets",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/billingbudgets/v1/openapi.yaml",
     "provenance": "https://billingbudgets.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-orgpolicy",
@@ -1413,7 +1462,8 @@
     "name": "Google / Cloud / Organization Policy",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/orgpolicy/v2/openapi.yaml",
     "provenance": "https://orgpolicy.googleapis.com/$discovery/rest?version=v2",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-accesscontextmanager",
@@ -1421,7 +1471,8 @@
     "name": "Google / Cloud / Access Context Manager",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/accesscontextmanager/v1/openapi.yaml",
     "provenance": "https://accesscontextmanager.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "gcp-cloudidentity",
@@ -1429,7 +1480,8 @@
     "name": "Google / Cloud / Identity",
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/googleapis.com/cloudidentity/v1/openapi.yaml",
     "provenance": "https://cloudidentity.googleapis.com/$discovery/rest?version=v1",
-    "sourceKind": "community-conversion"
+    "sourceKind": "community-conversion",
+    "profile": "google-oauth"
   },
   {
     "id": "azure-compute",

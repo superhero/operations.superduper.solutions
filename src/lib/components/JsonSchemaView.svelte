@@ -137,7 +137,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-loading { margin: 8px 0; text-align: center; font-size: 20px; }
   .schema-load-error { padding: 10px; font-size: 12px; }
   :global(.schema-disclosure) { margin-top: 16px; }
-  :global(.schema-disclosure > summary) { position: sticky; top: calc(var(--app-header-height) + var(--settings-header-height, 0px) + 8px); z-index: 2; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 14px; border-radius: 4px; list-style: none; background: var(--color-report-card); color: var(--color-foreground); font-size: 14px; font-weight: 650; transition: background-color 180ms ease-in, color 180ms ease-in, transform 180ms ease-in, outline-color 180ms ease-in; }
+  /* Swap contrasting colors together; inherited button colors must not lag behind. */
+  :global(.schema-disclosure > summary) { position: sticky; top: calc(var(--app-header-height) + var(--settings-header-height, 0px) + 8px); z-index: 2; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 14px; border-radius: 4px; list-style: none; background: var(--color-report-card); color: var(--color-foreground); font-size: 14px; font-weight: 650; transition: transform 180ms ease-in, outline-color 180ms ease-in; }
   :global(.schema-disclosure > summary[aria-expanded="true"]) { background: var(--color-json-header-hover-background); color: var(--color-json-header-hover-foreground); }
   :global(.schema-disclosure > summary:focus-visible) { outline-color: var(--color-foreground); }
   :global(.schema-disclosure .schema-chevron) { transition: transform 180ms ease-in; }
@@ -148,7 +149,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .schema-wrap-control.visible { opacity: 1; visibility: visible; transition-delay: 0s; }
   .schema-copy-status { position: absolute; top: calc(100% + 8px); left: 0; max-width: 100%; padding: 6px 10px; border-radius: 4px; background: var(--color-badge-background); color: var(--color-muted-foreground); font-size: 11px; font-weight: 700; pointer-events: none; }
   .schema-copy-status:empty { padding: 0; }
-  :global(.schema-disclosure .schema-action) { display: inline-grid; place-items: center; flex: 0 0 28px; width: 28px; height: 32px; padding: 0; border: 0; border-radius: 3px; background: transparent; color: inherit; }
+  :global(.schema-disclosure .schema-action) { display: inline-grid; place-items: center; flex: 0 0 28px; width: 28px; height: 32px; padding: 0; border: 0; border-radius: 3px; background: transparent; color: inherit; transition: transform 180ms ease-in, outline-color 180ms ease-in; }
   :global(.schema-disclosure .schema-action:is(:hover,:focus-visible):enabled) { background: var(--color-json-header-hover-foreground); color: var(--color-json-header-hover-background); }
   :global(.schema-disclosure .schema-action:focus-visible) { outline-color: var(--color-json-header-hover-foreground); }
   :global(.schema-disclosure .json-view) { margin-top: 4px; }

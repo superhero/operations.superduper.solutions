@@ -8,12 +8,373 @@ Before({ tags: '@schema-lifecycle' }, async function () {
   await this.page.evaluate(async () => { globalThis.schemaFixture = await import('/schema-lifecycle-fixture.js'); });
 });
 
+Then('deletion preserves default schemas and rejects enabled uploads before removing any saved data', async function () {
+  const evidence = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setup();
+    const stored = async () => {
+      const db = await new Promise((resolve, reject) => {
+        const request = indexedDB.open('v1/catalogs/index');
+        request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
+      });
+      try {
+        const names = ['catalog', 'policies', 'indexes', 'pending', 'removed', 'state'];
+        const tx = db.transaction(names, 'readonly');
+        return JSON.stringify(await Promise.all(names.map(name => new Promise((resolve, reject) => {
+          const request = tx.objectStore(name).getAll();
+          request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error);
+        }))));
+      } finally { db.close(); }
+    };
+    const refusals = [];
+    const refuse = async (id, reason) => {
+      const before = await stored();
+      const reads = JSON.stringify(api.counters());
+      try { await api.deleteSchemaDocument(id); throw new Error(`Unexpectedly deleted ${id}`); }
+      catch (error) {
+        if (!error.message.includes(reason)) throw error;
+        refusals.push(id);
+      }
+      if (before !== await stored()) throw new Error(`A refused deletion changed saved data for ${id}`);
+      if (reads !== JSON.stringify(api.counters())) throw new Error(`A refused deletion decoded a schema for ${id}`);
+    };
+    for (const id of ['demo', 'httpbin', 'factory-a', 'factory-b']) {
+      await refuse(id, 'Default schemas cannot be deleted');
+      await api.setSchemaDocumentEnabled(id, false, { metadataOnly: true });
+      await refuse(id, 'Default schemas cannot be deleted');
+    }
+    await api.renameSchemaDocument('factory-a', 'My renamed default');
+    const replacement = await api.readSchemaDocument('factory-b');
+    await api.putSchemaDocument({ ...replacement, document: { ...replacement.document,
+      info: { ...replacement.document.info, title: 'My replaced default' } } });
+    for (const id of ['factory-a', 'factory-b']) {
+      const history = await api.getSchemaBranchHistory(id);
+      await refuse(id, 'Default schemas cannot be deleted');
+      if (JSON.stringify(history) !== JSON.stringify(await api.getSchemaBranchHistory(id))) throw new Error(`Changed default history: ${id}`);
+    }
+    const document = { openapi: '3.1.0', info: { title: 'Uploaded fixture', version: '1' },
+      servers: [{ url: 'https://schema.example.test' }],
+      paths: { '/items': { get: { operationId: 'list', responses: { '200': { description: 'OK' } } } } } };
+    const upload = { id: 'uploaded-fixture', file: 'upload.json', document, enabled: true, createdAt: 1, updatedAt: 1 };
+    await api.putSchemaDocument(upload);
+    await api.putSchemaDocument({ ...upload, id: 'other-upload' });
+    await api.readSchemaDiscovery(upload.id);
+    const history = await api.getSchemaBranchHistory(upload.id);
+    await refuse(upload.id, 'Disable this schema before deleting it');
+    if (JSON.stringify(history) !== JSON.stringify(await api.getSchemaBranchHistory(upload.id))) throw new Error('Enabled upload history changed');
+    await api.setSchemaDocumentEnabled(upload.id, false, { metadataOnly: true });
+    // Queue an enable before deletion to emulate a stale disabled client snapshot.
+    const outcomes = await Promise.allSettled([
+      api.setSchemaDocumentEnabled(upload.id, true, { metadataOnly: true }),
+      api.deleteSchemaDocument(upload.id),
+    ]);
+    const concurrent = outcomes.map(outcome => ({ status: outcome.status, error: outcome.reason?.message }));
+    await refuse(upload.id, 'Disable this schema before deleting it');
+    const otherHistory = await api.getSchemaBranchHistory('other-upload');
+    await api.setSchemaDocumentEnabled(upload.id, false, { metadataOnly: true });
+    await api.deleteSchemaDocument(upload.id);
+    const remaining = (await api.listSchemaMetadata()).map(record => record.id).sort();
+    const otherUnchanged = JSON.stringify(otherHistory) === JSON.stringify(await api.getSchemaBranchHistory('other-upload'));
+    return { refusals, concurrent, remaining, otherUnchanged };
+  });
+  assert.equal(evidence.refusals.length, 12);
+  assert.equal(evidence.concurrent[0].status, 'fulfilled');
+  assert.equal(evidence.concurrent[1].status, 'rejected');
+  assert.match(evidence.concurrent[1].error, /Disable this schema before deleting it/);
+  assert.deepEqual(evidence.remaining, ['demo', 'factory-a', 'factory-b', 'httpbin', 'other-upload']);
+  assert.equal(evidence.otherUnchanged, true);
+});
+
+Then('unchanged bundled revisions preserve factory metadata and authored changes', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    const id = 'google-fixture';
+    const label = 'Google / Cloud / Fixture';
+    const metadata = async () => (await api.listSchemaMetadata()).find(record => record.id === id);
+    await api.setupGoogle(1, false, label);
+    await api.setSchemaDocumentEnabled(id, false, { metadataOnly: true });
+    const history = await api.getSchemaBranchHistory(id);
+    const before = await metadata();
+    const reads = api.counters();
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (value, ...args) {
+      throw new Error(`An unchanged bundle attempted to write ${this.name}.`);
+    };
+    let afterReads;
+    try {
+      await api.updateSchemaFromBundle(id);
+      await api.updateSchemaFromBundle(id);
+      afterReads = api.counters();
+      await api.updateSchemaUpstream(id, api.googleDocument(1), 'google.json');
+    } finally { IDBObjectStore.prototype.put = put; }
+    const after = await metadata();
+    const afterHistory = await api.getSchemaBranchHistory(id);
+    await api.setupGoogle(2, false, label);
+    const advanced = await api.readSchemaDocument(id);
+    await api.renameSchemaDocument(id, 'My Google service');
+    const authored = await metadata();
+    const authoredHistory = await api.getSchemaBranchHistory(id);
+    await api.updateSchemaFromBundle(id);
+    await api.updateSchemaFromBundle(id);
+    return { label, before, after, history, afterHistory, reads, afterReads,
+      advanced, authored, authoredHistory, repeated: await metadata(), repeatedHistory: await api.getSchemaBranchHistory(id) };
+  });
+  assert.equal(result.before.displayName, result.label);
+  assert.ok(result.before.factoryDigest);
+  assert.equal(result.before.enabled, false);
+  assert.deepEqual(result.after, result.before, 'An identical bundle/source changes no metadata, ownership or identity.');
+  assert.deepEqual(result.afterHistory, result.history);
+  assert.deepEqual(result.afterReads, result.reads, 'Applying a current factory bundle reads neither source nor upstream content.');
+  assert.equal(result.advanced.displayName, result.label);
+  assert.equal(result.advanced.document.info.title, 'Google fixture');
+  assert.equal(result.advanced.document.info.version, '2', 'No-op application must preserve automatic bundled updates.');
+  assert.equal(result.advanced.enabled, false);
+  assert.equal(result.authored.summary.name, 'My Google service');
+  assert.deepEqual(result.repeated, result.authored, 'A repeated source preserves local edits and their metadata.');
+  assert.deepEqual(result.repeatedHistory, result.authoredHistory);
+});
+
+Then('schema diffs preserve arbitrary comparison endpoints and load exact field changes separately', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setupGoogle();
+    const initial = await api.getSchemaBranchHistory('google-fixture');
+    const published = initial.branches.find(branch => branch.name === 'Published').oid;
+    const correction = await api.getSchemaRevisionDiff('google-fixture', initial.current);
+    const baseline = await api.getSchemaRevisionDiff('google-fixture', published);
+    await api.renameSchemaDocument('google-fixture', 'My Google');
+    const local = await api.getSchemaBranchHistory('google-fixture');
+    await api.updateSchemaUpstream('google-fixture', api.googleDocument(2), 'v2.json');
+    const merged = await api.getSchemaBranchHistory('google-fixture');
+    const current = merged.revisions.find(revision => revision.oid === merged.current);
+    const first = await api.getSchemaRevisionDiff('google-fixture', current.oid);
+    const second = await api.getSchemaRevisionDiff('google-fixture', current.oid, 200, current.parents[1]);
+    const ancestor = await api.getSchemaRevisionDiff('google-fixture', current.oid, 200, published);
+    const reverse = await api.getSchemaRevisionDiff('google-fixture', published, 200, current.oid);
+    const same = await api.getSchemaRevisionDiff('google-fixture', current.oid, 200, current.oid);
+    const field = await api.getSchemaRevisionFieldDiff('google-fixture', current.oid, published, '/paths/~1items/get/security');
+    const added = await api.getSchemaRevisionFieldDiff('google-fixture', current.oid, published, '/paths/~1items/get/x-upstream-security');
+    const removed = await api.getSchemaRevisionFieldDiff('google-fixture', published, current.oid, '/paths/~1items/get/x-upstream-security');
+    const source = await api.readSchemaVersion('google-fixture', published);
+    const target = await api.readSchemaVersion('google-fixture', current.oid);
+    const other = await api.putSchemaDocument({ id: 'unrelated-schema', file: 'other.json', enabled: false, createdAt: 0, updatedAt: 0,
+      document: { openapi: '3.1.0', info: { title: 'Other', version: '1' }, servers: [{ url: 'https://other.example.test' }],
+        paths: { '/other': { get: { responses: { '200': { description: 'OK' } } } } } } });
+    const otherHistory = await api.getSchemaHistory(other.id);
+    const failures = [];
+    for (const args of [[current.oid, otherHistory[0].oid], [otherHistory[0].oid, published], [current.oid, 'bad']]) {
+      try { await api.getSchemaRevisionDiff('google-fixture', args[0], 200, args[1]); failures.push(false); }
+      catch { failures.push(true); }
+    }
+    let invalidField = false;
+    try { await api.getSchemaRevisionFieldDiff('google-fixture', current.oid, published, '/missing'); }
+    catch { invalidField = true; }
+    return { initial, published, correction, baseline, local, merged, first, second, ancestor, reverse, same,
+      field, added, removed, source, target, failures, invalidField,
+      unchanged: await api.getSchemaBranchHistory('google-fixture') };
+  });
+  assert.deepEqual(result.baseline.revision, { oid: result.published, message: result.initial.revisions.find(item => item.oid === result.published).message });
+  assert.equal(result.baseline.base, null);
+  assert.deepEqual(result.baseline.parents, []);
+  assert.equal(result.correction.revision.oid, result.initial.current);
+  assert.equal(result.correction.base.oid, result.published);
+  assert.deepEqual(result.correction.parents.map(parent => parent.oid), [result.published]);
+  assert.equal(result.first.revision.oid, result.merged.current);
+  assert.equal(result.first.base.oid, result.local.current);
+  assert.ok(result.first.changes.some(change => change.path === '/info/version'));
+  assert.equal(result.first.changes.some(change => change.path === '/info/title'), false);
+  assert.equal(result.second.revision.oid, result.merged.current);
+  assert.equal(result.second.base.oid, result.merged.branches.find(branch => branch.name === 'Corrections').oid);
+  assert.deepEqual(result.second.changes.map(change => change.path), ['/info/title']);
+  const commit = result.merged.revisions.find(revision => revision.oid === result.merged.current);
+  assert.deepEqual(result.first.parents.map(parent => parent.oid), commit.parents);
+  assert.deepEqual(result.second.parents, result.first.parents);
+  assert.equal(result.ancestor.base.oid, result.published);
+  assert.ok(result.ancestor.changes.some(change => change.path === '/info/title'));
+  assert.ok(result.ancestor.changes.some(change => change.path === '/paths/~1items/get/security'));
+  assert.ok(result.ancestor.changes.every(change => !Object.hasOwn(change, 'before') && !Object.hasOwn(change, 'after')), 'Collapsed changes carry no source previews.');
+  assert.equal(result.same.base.oid, result.merged.current); assert.deepEqual(result.same.changes, []);
+  assert.equal(result.reverse.revision.oid, result.published);
+  assert.equal(result.reverse.base.oid, result.merged.current);
+  assert.ok(result.reverse.changes.some(change => change.path.endsWith('/x-upstream-security') && change.kind === 'removed'));
+  for (const [side, document] of [['before', result.source], ['after', result.target]]) {
+    const lines = JSON.stringify(document.paths['/items'].get.security, null, 2).split('\n');
+    for (const row of result.field.rows) if (row[side]) assert.equal(row[side].text, lines[row[side].number - 1]);
+  }
+  assert.equal(result.field.truncated, false);
+  assert.ok(result.field.rows.some(row => row.before?.kind === 'removed'));
+  assert.ok(result.field.rows.some(row => row.after?.kind === 'added'));
+  assert.equal(result.added.before, false); assert.equal(result.added.after, true);
+  assert.equal(result.removed.before, true); assert.equal(result.removed.after, false);
+  assert.deepEqual(result.failures, [true, true, true]); assert.equal(result.invalidField, true);
+  assert.deepEqual(result.unchanged, result.merged, 'Comparisons and field expansion leave every revision and branch unchanged.');
+});
+
+Then('schema corrections and local edits survive independent published updates', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setupGoogle();
+    const before = await api.getSchemaBranchHistory('google-fixture');
+    const published = before.branches.find(branch => branch.name === 'Published').oid;
+    const corrected = before.branches.find(branch => branch.name === 'Corrections').oid;
+    const raw = await api.readSchemaVersion('google-fixture', published);
+    const patched = await api.readSchemaVersion('google-fixture', corrected);
+    const patchDiff = await api.getSchemaRevisionDiff('google-fixture', corrected);
+    await api.renameSchemaDocument('google-fixture', 'My Google service');
+    const incoming = api.googleDocument(2);
+    incoming.paths['/new'] = { get: { operationId: 'new', responses: { '200': { description: 'Added upstream' } } } };
+    await api.updateSchemaUpstream('google-fixture', incoming, 'google-v2.json');
+    const record = await api.readSchemaDocument('google-fixture');
+    const history = await api.getSchemaBranchHistory('google-fixture');
+    const again = await api.getSchemaBranchHistory('google-fixture');
+    await api.updateSchemaUpstream('google-fixture', incoming, 'google-v2.json');
+    const repeated = await api.getSchemaBranchHistory('google-fixture');
+    const metadata = (await api.listSchemaMetadata()).find(record => record.id === 'google-fixture');
+    const model = await api.readSchemaOperation('google-fixture:list', api.schemaMetadataIdentity(metadata));
+    await api.assertCurrentSchema(await api.approvedOperation(model.operation, model.origin));
+    return { before, raw, patched, patchDiff, record, history, again, repeated, security: model.operation.security };
+  });
+  assert.equal(result.raw.paths['/items'].get.security.length, 1);
+  assert.deepEqual(Object.keys(result.raw.paths['/items'].get.security[0]), ['Oauth2', 'Oauth2c']);
+  assert.equal(result.patched.paths['/items'].get.security.length, 2);
+  assert.ok(result.patchDiff.changes.some(change => change.path === '/paths/~1items/get/security'));
+  assert.equal(result.record.document.info.title, 'My Google service');
+  assert.equal(result.record.document.info.version, '2');
+  assert.ok(result.record.document.paths['/new']);
+  assert.equal(result.security.length, 2);
+  assert.equal(result.history.incoming, undefined);
+  assert.deepEqual(result.again, result.history);
+  assert.deepEqual(result.repeated, result.history, 'The same published snapshot does not create duplicate commits.');
+  assert.deepEqual(result.history.branches.map(branch => branch.name), ['Working', 'Published', 'Corrections']);
+  const rank = new Map(result.history.revisions.map((revision, index) => [revision.oid, index]));
+  for (const revision of result.history.revisions) for (const parent of revision.parents)
+    assert.ok(rank.get(parent) > rank.get(revision.oid), 'Parents follow children even with identical timestamps.');
+  assert.ok(result.history.revisions.some(revision => revision.parents.length === 2));
+});
+
+Then('upstream-fixed authentication preserves both flow choices without duplicate patch content', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setupGoogle();
+    await api.renameSchemaDocument('google-fixture', 'Personal Google');
+    await api.setupGoogle(2, true);
+    await api.updateSchemaFromBundle('google-fixture');
+    const history = await api.getSchemaBranchHistory('google-fixture');
+    const corrected = history.branches.find(branch => branch.name === 'Corrections').oid;
+    return { history, diff: await api.getSchemaRevisionDiff('google-fixture', corrected), document: (await api.readSchemaDocument('google-fixture')).document };
+  });
+  assert.equal(result.document.info.title, 'Personal Google');
+  assert.equal(result.document.info.version, '2');
+  assert.equal(result.document.paths['/items'].get.security.length, 2);
+  assert.equal(Object.hasOwn(result.document.paths['/items'].get, 'x-upstream-security'), false);
+  assert.deepEqual(result.diff.changes, []);
+  assert.ok(result.history.revisions.some(revision => /Upstream already includes/.test(revision.message)));
+});
+
+Then('schema conflicts survive reload and reject obsolete review decisions', async function () {
+  const review = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setupGoogle();
+    await api.renameSchemaDocument('google-fixture', 'Local name');
+    const incoming = api.googleDocument(2); incoming.info.title = 'New published name';
+    await api.updateSchemaUpstream('google-fixture', incoming, 'v2.json');
+    return { history: await api.getSchemaBranchHistory('google-fixture'), document: (await api.readSchemaDocument('google-fixture')).document };
+  });
+  assert.equal(review.document.info.title, 'Local name');
+  assert.equal(review.document.info.version, '1');
+  assert.deepEqual(review.history.incoming.conflicts.map(item => item.path), ['/info/title']);
+  await this.page.reload();
+  const result = await this.page.evaluate(async previous => {
+    const api = await import('/schema-lifecycle-fixture.js');
+    await api.setupGoogle();
+    const reloaded = await api.getSchemaBranchHistory('google-fixture');
+    const record = await api.readSchemaDocument('google-fixture');
+    record.document.info.description = 'Changed after review';
+    await api.putSchemaDocument(record);
+    let obsolete;
+    try { await api.resolveSchemaUpdate('google-fixture', previous.current, previous.incoming.revision, { '/info/title': 'incoming' }); }
+    catch (error) { obsolete = error.message; }
+    const fresh = await api.getSchemaBranchHistory('google-fixture');
+    await api.resolveSchemaUpdate('google-fixture', fresh.current, fresh.incoming.revision, { '/info/title': 'current', '/info/description': 'current' });
+    return { reloaded, obsolete, document: (await api.readSchemaDocument('google-fixture')).document, history: await api.getSchemaBranchHistory('google-fixture') };
+  }, review.history);
+  assert.deepEqual(result.reloaded, review.history);
+  assert.match(result.obsolete, /schema changed/i);
+  assert.equal(result.document.info.title, 'Local name');
+  assert.equal(result.document.info.version, '2');
+  assert.equal(result.document.info.description, 'Changed after review');
+  assert.equal(result.history.incoming, undefined);
+  assert.equal(result.history.branches.some(branch => branch.name === 'Incoming'), false);
+});
+
+Then('interrupted schema correction branches recover without duplicate commits', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setupGoogle();
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (value, ...args) {
+      if (this.name === 'catalog' && value.id === 'google-fixture' && value.historyDigest === value.factoryDigest)
+        throw new DOMException('Interrupted correction publication', 'QuotaExceededError');
+      return put.call(this, value, ...args);
+    };
+    let failure;
+    try { await api.getSchemaBranchHistory('google-fixture'); } catch (error) { failure = error.message; }
+    finally { IDBObjectStore.prototype.put = put; }
+    const recovered = await api.getSchemaBranchHistory('google-fixture');
+    const again = await api.getSchemaBranchHistory('google-fixture');
+    return { failure, recovered, again, document: (await api.readSchemaDocument('google-fixture')).document };
+  });
+  assert.match(result.failure, /Interrupted correction publication/);
+  assert.equal(result.recovered.revisions.length, 2);
+  assert.deepEqual(result.again, result.recovered);
+  assert.equal(result.document.paths['/items'].get.security.length, 2);
+});
+
+Then('already applied schema edits merge their upstream ancestry exactly once', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setupGoogle();
+    const record = await api.readSchemaDocument('google-fixture');
+    // A local edit independently matches the later published version exactly.
+    record.document.info.version = '2'; record.document.info.description = 'Upstream version 2.';
+    record.document.paths['/items'].get.responses['200'].description = 'Version 2';
+    await api.putSchemaDocument(record);
+    const before = await api.getSchemaBranchHistory('google-fixture');
+    await api.updateSchemaUpstream('google-fixture', api.googleDocument(2), 'v2.json');
+    const merged = await api.getSchemaBranchHistory('google-fixture');
+    const diff = await api.getSchemaRevisionDiff('google-fixture', merged.current);
+    await api.updateSchemaUpstream('google-fixture', api.googleDocument(2), 'v2.json');
+    return { before, merged, diff, repeated: await api.getSchemaBranchHistory('google-fixture') };
+  });
+  const incoming = result.merged.branches.find(branch => branch.name === 'Corrections').oid;
+  const merge = result.merged.revisions.find(revision => revision.oid === result.merged.current);
+  assert.deepEqual(merge.parents, [result.before.current, incoming]);
+  assert.deepEqual(result.diff.changes, []);
+  assert.deepEqual(result.repeated, result.merged);
+});
+
+Then('discarded conflicting schema updates leave current content and ancestry unchanged', async function () {
+  const result = await this.page.evaluate(async () => {
+    const api = globalThis.schemaFixture;
+    await api.setupGoogle();
+    await api.renameSchemaDocument('google-fixture', 'Local service');
+    const before = await api.getSchemaBranchHistory('google-fixture');
+    const original = (await api.readSchemaDocument('google-fixture')).document;
+    const incoming = api.googleDocument(2); incoming.info.title = 'Conflicting upstream';
+    await api.updateSchemaUpstream('google-fixture', incoming, 'v2.json');
+    const review = await api.getSchemaBranchHistory('google-fixture');
+    await api.dismissSchemaUpdate('google-fixture', review.current, review.incoming.revision);
+    return { before, original, after: await api.getSchemaBranchHistory('google-fixture'), document: (await api.readSchemaDocument('google-fixture')).document };
+  });
+  assert.deepEqual(result.after, result.before);
+  assert.deepEqual(result.document, result.original);
+});
+
 Then('new factory labels refresh without decoding sources or replacing personal names', async function () {
   const result = await this.page.evaluate(async () => {
     const api = globalThis.schemaFixture;
     await api.setup(1, 1, { 'factory-a': 'Google Cloud — Compute', 'factory-b': 'Google Gemini — Interactions' });
     await api.setSchemaDocumentEnabled('factory-a', false, { metadataOnly: true });
-    await api.moveSchemaDocument('factory-b', 'demo', 'before');
     await api.renameSchemaDocument('factory-b', 'My Gemini API');
     const before = await api.listSchemaMetadata();
     const authoredHistory = await api.getSchemaHistory('factory-b');
@@ -38,16 +399,17 @@ Then('new factory labels refresh without decoding sources or replacing personal 
   assert.deepEqual(result.currentCounters, result.counters);
 });
 
-Then('renamed remaining examples retain their order when schema defaults initialize again', async function () {
+Then('renamed examples and protected defaults sort by name when schema defaults initialize again', async function () {
   const records = await this.page.evaluate(async () => {
     const api = globalThis.schemaFixture;
     await api.setup();
-    for (const id of ['factory-a', 'factory-b']) await api.deleteSchemaDocument(id);
     await api.renameSchemaDocument('demo', 'Zulu example');
     await api.renameSchemaDocument('httpbin', 'Alpha echo');
     return (await api.setup(2)).map(record => ({ id: record.id, name: record.summary.name }));
   });
-  assert.deepEqual(records, [{ id: 'demo', name: 'Zulu example' }, { id: 'httpbin', name: 'Alpha echo' }]);
+  assert.deepEqual(records, [{ id: 'httpbin', name: 'Alpha echo' },
+    { id: 'factory-a', name: 'factory-a v2' }, { id: 'factory-b', name: 'factory-b v2' },
+    { id: 'demo', name: 'Zulu example' }]);
 });
 
 Then('schema metadata and discovery avoid disabled and unrelated document reads', async function () {
@@ -57,7 +419,6 @@ Then('schema metadata and discovery avoid disabled and unrelated document reads'
     const a = records.find(record => record.id === 'factory-a');
     await api.setSchemaDocumentEnabled(a.id, false, { metadataOnly: true });
     await api.readSchemaDiscovery('factory-b');
-    await api.moveSchemaDocument('factory-b', 'demo', 'before');
     const metadataOnly = api.counters();
     let disabled;
     try { await api.readSchemaOperation('factory-a:list', api.schemaMetadataIdentity(a)); }
@@ -143,10 +504,7 @@ Then('factory revisions retain independent Git ancestry and authored ownership',
     await api.setup(3);
     const after = await api.listSchemaMetadata();
     const authoredHistory = await api.getSchemaHistory('factory-a');
-    await api.deleteSchemaDocument('factory-b');
-    await api.setup(3);
-    const deletedRemainsAbsent = !(await api.listSchemaMetadata()).some(record => record.id === 'factory-b');
-    return { originalA, originalB, updatedA, oldA, retained, authored, authoredHistory, deletedRemainsAbsent,
+    return { originalA, originalB, updatedA, oldA, retained, authored, authoredHistory,
       factoryAfterViewingHistory: beforeRead.find(record => record.id === 'factory-a').factoryDigest,
       authoredMetadata: after.find(record => record.id === 'factory-a') };
   });
@@ -160,7 +518,6 @@ Then('factory revisions retain independent Git ancestry and authored ownership',
   assert.equal(result.authoredMetadata.factoryDigest, undefined);
   assert.equal(result.authoredMetadata.summary.name, 'My authored service');
   assert.equal(result.authoredMetadata.summary.description, 'Description of factory-a v2.');
-  assert.equal(result.deletedRemainsAbsent, true);
 });
 
 Then('schema model loading and credential policies reject a stale source revision', async function () {

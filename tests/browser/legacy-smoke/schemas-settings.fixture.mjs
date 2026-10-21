@@ -254,13 +254,17 @@ yield "an uploaded schema contributes a working workflow operation";
 yield "unrelated schema uploads retain workflow nodes without replaying requests";
     await enterSchemas(page);
     const revised = { ...makeDocument(title, '2.0.0'), servers: [{ url: 'https://schema-smoke.invalid/v2' }] };
+    const beforeReplace = await history(page, first.id);
     await replace(page, first.id, 'Inventory.JSON', revised);
     await expect(card(page, first.id).locator('.schema-description p')).toHaveText(revised.info.description);
     const versions = await history(page, first.id);
-    assert.equal(versions.length, 2);
-    assert.deepEqual(versions[0].parents, [versions[1].oid]);
+    const published = versions.find(version => version.message === 'Update published schema: Inventory.JSON');
+    assert.ok(published);
+    assert.equal(versions.length, beforeReplace.length + 2, 'Replacement records the new published source and its working merge.');
+    assert.deepEqual(published.parents, [beforeReplace[0].oid]);
+    assert.deepEqual(versions[0].parents, [beforeReplace[0].oid, published.oid]);
     assert.deepEqual(await page.evaluate(async ({ id, oid }) => (await import('/lib/schema-storage.ts')).readSchemaVersion(id, oid),
-      { id: first.id, oid: versions[1].oid }), original);
+      { id: first.id, oid: beforeReplace[0].oid }), original);
     results.replace = { id: first.id, commits: versions.map(version => version.oid) };
     await navigate(page, 'Workflows');
     await expect(responseBody).toHaveCount(0);
@@ -326,11 +330,15 @@ yield "invalid schema documents cannot change existing state";
       return workflowRepository.save({ version: 3, id: 'schema-retained-workflow', name: 'Retained schema workflow',
         nodes: graph.nodes, edges: graph.edges, viewport: { x: 0, y: 0, zoom: 1 }, snap: true, curved: true, dashed: false }, null);
     }, operationId);
+    await card(page, first.id).getByRole('switch').click();
+    await expect(card(page, first.id).getByRole('switch')).toHaveAttribute('aria-checked', 'false');
+    await idle(page);
+    const beforeDeletion = await records(page);
     await card(page, first.id).getByRole('button', { name: `Delete ${title}`, exact: true }).click();
     const confirmation = card(page, first.id).getByRole('group', { name: `Confirm deletion of ${title}`, exact: true });
     await expect(confirmation).toContainText('Saved workflows are retained');
     await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
-    assert.deepEqual(await records(page), beforeInvalid);
+    assert.deepEqual(await records(page), beforeDeletion);
     await card(page, first.id).getByRole('button', { name: `Delete ${title}`, exact: true }).click();
     await confirmation.getByRole('button', { name: 'Delete', exact: true }).click();
     await idle(page);
@@ -428,119 +436,23 @@ yield "deleting one schema preserves other repositories and saved workflows";
     results.rename = { id: yamlRecord.id, title: 'Renamed with Enter', blurAndEnterSave: true, unchangedAndEmptyNotCommitted: true };
 
 yield "editable schema names save on blur or Enter without redundant commits";
-    const order = () => panel(page).locator('[data-schema-id]').evaluateAll(cards => cards
-      .sort((left, right) => left.offsetTop - right.offsetTop).map(element => element.dataset.schemaId));
-    const beforeOrder = await order();
-    const beforeMoveHistory = Object.fromEntries(await Promise.all(beforeOrder.map(async id => [id, await history(page, id)])));
-    const moveButton = id => card(page, id).getByRole('button', { name: /^Move / });
-    await page.setViewportSize({ width: 1280, height: 1800 });
-    assert.deepEqual(await moveButton(beforeOrder[0]).evaluate(button => {
-      const icon = button.querySelector('.material-symbols-rounded');
-      return { width: button.offsetWidth, height: button.offsetHeight, icon: icon.textContent, iconWidth: icon.getBoundingClientRect().width,
-        draggable: button.draggable, last: [...button.closest('.schema-actions').querySelectorAll('button')].at(-1) === button };
-    }), { width: 32, height: 32, icon: 'swap_vert', iconWidth: 20, draggable: true, last: true });
-    await moveButton(beforeOrder[0]).click();
-    await expect(page.getByRole('menu')).toHaveCount(0);
-    assert.deepEqual(await order(), beforeOrder, 'Clicking the drag handle does not move cards or open a menu');
-    await page.evaluate(() => {
-      const original = DataTransfer.prototype.setDragImage;
-      window.schemaDragImages = [];
-      DataTransfer.prototype.setDragImage = function(element, x, y) {
-        window.schemaDragImages.push({ id: element.dataset.schemaId, fullCard: element.classList.contains('schema-card') });
-        return original.call(this, element, x, y);
-      };
-    });
-    const drag = async (sourceId, targetId, placement, expectedPreview, cancel = false) => {
-      const persistedBefore = (await records(page)).map(record => record.id);
-      await moveButton(sourceId).scrollIntoViewIfNeeded();
-      const source = await moveButton(sourceId).boundingBox(), target = await card(page, targetId).boundingBox();
-      assert.ok(source && target);
-      await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
-      await page.mouse.down();
-      await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2 + 12, { steps: 3 });
-      const x = target.x + target.width / 2, y = placement === 'before' ? target.y + 16 : target.y + target.height - 16;
-      await page.mouse.move(x, y, { steps: 12 });
-      await page.mouse.move(x, y + 1);
-      await expect.poll(order).toEqual(expectedPreview);
-      assert.deepEqual((await records(page)).map(record => record.id), persistedBefore, 'Dragging previews order without saving before drop');
-      await expect(panel(page).locator('[data-drop]')).toHaveCount(0);
-      if (cancel) await page.keyboard.press('Escape');
-      await page.mouse.up();
-      await idle(page);
-    };
-    const firstToLast = [...beforeOrder.slice(1), beforeOrder[0]];
-    await drag(beforeOrder[0], beforeOrder.at(-1), 'after', firstToLast);
-    await expect.poll(order).toEqual(firstToLast);
-    await drag(beforeOrder[0], beforeOrder[1], 'before', beforeOrder);
-    await expect.poll(order).toEqual(beforeOrder);
-    await drag(beforeOrder[0], beforeOrder.at(-1), 'after', firstToLast, true);
-    assert.deepEqual(await order(), beforeOrder, 'Escape cancels dragging without moving cards');
-    assert.deepEqual((await records(page)).map(record => record.id), beforeOrder, 'Escape also preserves the stored order');
-    await moveButton(beforeOrder[0]).focus();
-    await moveButton(beforeOrder[0]).press('ArrowDown');
-    await idle(page);
-    await expect.poll(order).toEqual([beforeOrder[1], beforeOrder[0], ...beforeOrder.slice(2)]);
-    await moveButton(beforeOrder[0]).press('ArrowUp');
-    await idle(page);
-    await expect.poll(order).toEqual(beforeOrder);
-
-    await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    const selectedCatalogOperation = page.locator(`[data-operation-id="${yamlRecord.id}:checkHealth"]`);
-    await expandCatalog(page, yamlRecord.id, 'health');
-    await selectedCatalogOperation.getByRole('button', { name: 'Add to workflow: Check YAML schema health', exact: true }).click();
-    const yamlNode = page.locator('.svelte-flow__node-operation').filter({ has: page.locator('[data-operation-name="Check YAML schema health"]') });
-    await expect(yamlNode).toBeVisible();
-    const yamlNodeId = await yamlNode.getAttribute('data-id');
-    await enterSchemas(page);
-    const expandedCatalogGroups = await page.locator('.catalog-branch').evaluateAll(branches => branches
-      .filter(branch => branch.querySelector(':scope > .catalog-group > summary')?.getAttribute('aria-expanded') === 'true')
-      .map(branch => branch.dataset.catalogGroup));
-    const catalogGroupIds = await page.evaluate(async () => Object.fromEntries((await import('/lib/catalog-registry.ts')).catalogs
-      .map(catalog => [catalog.id, catalog.groups.map(group => group.id)])));
-    const catalogOrder = () => page.locator('nav[aria-label="Operation catalog"] > .catalog-reorder > [data-catalog-group]')
-      .evaluateAll(branches => branches.map(branch => branch.dataset.catalogGroup));
-    assert.deepEqual(await catalogOrder(), beforeOrder.flatMap(id => catalogGroupIds[id]));
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await page.evaluate(() => {
-      const animate = Element.prototype.animate;
-      window.schemaCardAnimations = [];
-      window.schemaCatalogAnimations = [];
-      Element.prototype.animate = function(keyframes, options) {
-        const animation = animate.call(this, keyframes, options);
-        if (this.classList.contains('schema-card')) window.schemaCardAnimations.push(animation.effect.getKeyframes().map(frame => frame.transform));
-        if (this.classList.contains('catalog-reorder')) window.schemaCatalogAnimations.push(animation.effect.getKeyframes().map(frame => frame.transform));
-        return animation;
-      };
-    });
-    const savedOrder = [beforeOrder.at(-1), ...beforeOrder.slice(0, -1)];
-    await drag(beforeOrder.at(-1), beforeOrder[0], 'before', savedOrder);
-    await expect.poll(order).toEqual(savedOrder);
-    const cardAnimations = await page.evaluate(() => window.schemaCardAnimations);
-    assert.ok(cardAnimations.some(transforms => new Set(transforms.filter(Boolean)).size > 1), 'Cards animate their transforms while previewing a drag');
-    await expect.poll(catalogOrder).toEqual(savedOrder.flatMap(id => catalogGroupIds[id]));
-    await expect.poll(() => page.evaluate(() => window.schemaCatalogAnimations.some(transforms => new Set(transforms.filter(Boolean)).size > 1))).toBe(true);
-    const catalogAnimations = await page.evaluate(() => window.schemaCatalogAnimations);
-    assert.ok(expandedCatalogGroups.length > 0);
-    for (const id of expandedCatalogGroups) await expect(page.locator(`[data-catalog-group="${id}"] > .catalog-group > summary`)).toHaveAttribute('aria-expanded', 'true');
-    await page.getByRole('button', { name: 'Open navigation', exact: true }).click();
-    await expect(selectedCatalogOperation.getByRole('button', { name: 'Add to workflow: Check YAML schema health', exact: true })).toBeVisible();
-    await expect(yamlNode).toHaveAttribute('data-id', yamlNodeId);
-    await page.getByRole('button', { name: 'Close navigation', exact: true }).click();
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    assert.deepEqual(await page.evaluate(() => window.schemaDragImages), [beforeOrder[0], beforeOrder[0], beforeOrder[0], beforeOrder.at(-1)]
-      .map(id => ({ id, fullCard: true })), 'Native drag gestures use the full card as their drag image');
+    const order = () => panel(page).locator('[data-schema-id]').evaluateAll(cards => cards.map(element => element.dataset.schemaId));
+    const savedRecords = await records(page);
+    const savedOrder = [...savedRecords].sort((left, right) =>
+      (left.displayName ?? left.document.info.title).localeCompare(right.displayName ?? right.document.info.title, 'en', { sensitivity: 'base' })
+      || left.id.localeCompare(right.id)).map(record => record.id);
+    assert.deepEqual(await order(), savedOrder);
+    await expect(panel(page).getByRole('button', { name: /^Move / })).toHaveCount(0);
+    await expect(panel(page).locator('[draggable="true"]')).toHaveCount(0);
+    const histories = Object.fromEntries(await Promise.all(savedOrder.map(async id => [id, await history(page, id)])));
     await page.reload({ waitUntil: 'networkidle', timeout: 90000 });
     await enterSchemas(page);
     await idle(page);
-    assert.deepEqual(await order(), savedOrder, 'Schema order persists across reload');
-    assert.deepEqual((await records(page)).map(record => record.id), savedOrder);
-    for (const id of beforeOrder) assert.deepEqual(await history(page, id), beforeMoveHistory[id], 'Reordering does not change schema Git history');
-    results.reorder = { order: savedOrder, nativeDrag: true, livePreview: true, cardAnimations: cardAnimations.length,
-      catalogAnimations: catalogAnimations.length, workflowNodePreserved: true,
-      escapeCancels: true, keyboardMoves: true, historiesUnchanged: true };
-    await page.setViewportSize({ width: 1280, height: 1000 });
+    assert.deepEqual(await order(), savedOrder, 'Displayed names determine the same order after reload');
+    for (const id of savedOrder) assert.deepEqual(await history(page, id), histories[id], 'Sorted listing does not change schema history');
+    results.ordering = { alphabetical: true, manualControls: false, historiesUnchanged: true };
 
-yield "schema drag previews keyboard moves cancellation and persistence retain histories and workflow nodes";
+yield "schema lists stay alphabetical without manual ordering controls or extra revisions";
     const largeDocument = makeDocument('Large worker schema');
     largeDocument.paths = Object.fromEntries(Array.from({ length: 1500 }, (_, index) => [`/items/${index}`, {
       get: { operationId: `workerItem${index}`, summary: `Read worker item ${index}`,
@@ -561,6 +473,8 @@ yield "schema drag previews keyboard moves cancellation and persistence retain h
     assert.ok(largeRecord);
     assert.equal((await liveOperationIds(page)).filter(id => id.startsWith(`${largeRecord.id}:`)).length, 1500);
     await expandCard(page, largeRecord.id);
+    await card(page, largeRecord.id).getByRole('switch').click();
+    await expect(card(page, largeRecord.id).getByRole('switch')).toHaveAttribute('aria-checked', 'false');
     await card(page, largeRecord.id).getByRole('button', { name: 'Delete Large worker schema', exact: true }).click();
     await card(page, largeRecord.id).getByRole('group', { name: 'Confirm deletion of Large worker schema', exact: true })
       .getByRole('button', { name: 'Delete', exact: true }).click();

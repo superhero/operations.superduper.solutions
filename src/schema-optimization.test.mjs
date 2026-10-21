@@ -209,7 +209,7 @@ Then('every service discovery index matches its source and targeted operation mo
     const document = await readServiceSchema(source.id);
     const full = inspectServiceSchema(document, source.id);
     const index = await readServiceSchemaIndex(source.id);
-    assert.deepEqual(index, createSchemaDiscovery(full, source.sha256), source.id);
+    assert.deepEqual(index, createSchemaDiscovery(full, source.effectiveSha256 ?? source.sha256), source.id);
     for (const operation of full.operations) {
       const model = inspectServiceSchema(document, source.id, new Set([operation.id]), operation).operations[0];
       assert.deepEqual(model, operation, operation.id);

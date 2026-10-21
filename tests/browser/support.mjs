@@ -6,6 +6,7 @@ import { chromium, firefox, webkit } from '@playwright/test';
 import { createServer } from 'node:http';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
+import { getHeapStatistics } from 'node:v8';
 import { resolve } from 'node:path';
 import { createExampleEndpoint } from './example-endpoint.fixture.mjs';
 import { pail } from '@visulima/pail';
@@ -122,7 +123,8 @@ Before(async function ({ pickle }) {
   this.diagnostics = [];
   // Capture the running browser, including successful runs and parallel workers.
   await this.attach(JSON.stringify({ name: browser.browserType().name(), version: browser.version(),
-    fixtureBundlesFile: this.parameters.fixtureBundlesFile, processId: process.pid, workerId: process.env.VITEST_POOL_ID ?? '0' }),
+    fixtureBundlesFile: this.parameters.fixtureBundlesFile, processId: process.pid, workerId: process.env.VITEST_POOL_ID ?? '0',
+    nodeHeapLimitBytes: getHeapStatistics().heap_size_limit }),
     'application/vnd.operations.browser+json');
   const slug = pickle.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 90);
   this.artifactDirectory = resolve('tmp/test/browser', `${slug}-${randomUUID().slice(0, 8)}`);

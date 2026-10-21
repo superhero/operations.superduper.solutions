@@ -225,10 +225,10 @@ Then('a connected nullable input stays locked and sends the upstream null', asyn
   await page.reload();
   await setMode(page, 'workflow');
   await workflowAction(page, 'Run');
-  await expect(workspace(page).getByRole('heading', { name: '1. Read nullable result', exact: true })).toBeVisible();
+  await expect(workspace(page).getByRole('heading', { name: '1. Field presence browser fixture / Read nullable result', exact: true })).toBeVisible();
   await executeOperation(page);
   await workspace(page).getByRole('button', { name: 'Next operation', exact: true }).click();
-  await expect(workspace(page).getByRole('heading', { name: '2. Send connected value', exact: true })).toBeVisible();
+  await expect(workspace(page).getByRole('heading', { name: '2. Field presence browser fixture / Send connected value', exact: true })).toBeVisible();
   await expect(await field(page, 'Mapped value')).toBeDisabled();
   await expect(omitted(page, 'Mapped value')).toBeDisabled();
   await expect(omitted(page, 'Mapped value')).not.toBeChecked();

@@ -79,7 +79,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                 invalid={fieldError?.fieldKey === field.key} describedBy={describedBy(field)} />
               <div class="field-actions">
                 {#if canOmit(field)}
-                  <OperationFieldToggle label={`Do not send ${field.label}`} hint="Do not send" icon="hide_source"
+                  <OperationFieldToggle label={`Do not send ${field.label}`} hint="Do not send" icon="block"
                     controls={`${idPrefix}-${field.key}`} checked={omitted} disabled={disabled || connected}
                     onchange={checked => omit(field, checked)} />
                 {/if}

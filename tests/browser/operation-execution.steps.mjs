@@ -153,7 +153,7 @@ Then("switching operation ignores a late response", async function () {
   await execute(page);
   await expect(responseBody(page)).toContainText("second operation");
   await reply(pendingRoute, { obsolete: "first operation" });
-  await expect(responsePanel(page).getByRole("heading", { name: "1. HTTPBin POST request", exact: true })).toBeVisible();
+  await expect(responsePanel(page).getByRole("heading", { name: "1. httpbin.org / HTTPBin POST request", exact: true })).toBeVisible();
   assert.deepEqual(await readBody(page), { current: "second operation" });
   await expect(responsePanel(page).getByRole("alert")).toHaveCount(0);
   assert.equal(requests.length, 2);

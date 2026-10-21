@@ -48,7 +48,8 @@ Feature: Default service schemas in the application
       | docker             | Docker Engine                     | Docker / Engine                    |
       | dukascopy          | Dukascopy Trading Tools           | Dukascopy / Trading Tools          |
       | ecb                | ECB Data Portal                   | ECB / Data Portal                  |
-      | fred               | FRED / GeoFRED                    | FRED / Federal Reserve Economic Data |
+      | fred               | FRED / Federal Reserve Economic Data | Federal Reserve / FRED            |
+      | alfred             | ALFRED / Archival Federal Reserve Economic Data | Federal Reserve / ALFRED |
       | gcp-compute        | Google Cloud — Compute            | Google / Cloud / Compute           |
       | gcp-storage        | Google Cloud — Storage            | Google / Cloud / Storage           |
       | gemini             | Google Gemini — Interactions      | Google / Gemini / Interactions     |
@@ -67,12 +68,12 @@ Feature: Default service schemas in the application
     Then all Atlassian catalogs share the provider prefix and retain a newly disabled product after reload
 
   @service-defaults
-  Scenario: Initial schema order is alphabetical and subsequent manual ordering persists
-    Then all initial schemas sort by displayed name and keep a manually saved order
+  Scenario: Schemas remain alphabetical after renames uploads and legacy saved orders
+    Then schemas always sort by displayed name without manual controls
 
   @service-defaults
   Scenario: Fresh profiles include the complete collection and retain local choices
-    Then all service schemas appear and preserve disablement renames and deletions after reload
+    Then all service schemas appear and preserve disablement renames and default protection after reload
 
   Scenario: Existing profiles receive new defaults without losing authored documents
     Then the default schema migration preserves an existing custom document and disabled example

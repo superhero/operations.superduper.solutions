@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, rmSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { stringify } from 'flatted';
@@ -41,12 +41,18 @@ Then('a failed browser resource cleanup still releases other resources and permi
   } finally { first(); second(); }
 });
 
+const completeLibraryFeatures = () => readdirSync(new URL('../../tests/browser/', import.meta.url))
+  .filter(name => name.endsWith('.feature') && readFileSync(new URL(`../../tests/browser/${name}`, import.meta.url), 'utf8')
+    .split('\n').some(line => line.trim().split(/\s+/).includes('@service-defaults')))
+  .map(name => `tests/browser/${name}`).sort();
+
 Then('browser project scheduling covers every selected feature once without overlapping the complete library', async () => {
-  const features = ['tests/browser/live-prompt.feature', 'tests/browser/service-defaults.feature', 'tests/browser/vault.feature'];
+  const library = completeLibraryFeatures();
+  const features = ['tests/browser/live-prompt.feature', ...library, 'tests/browser/vault.feature'];
   const projects = browserProjects(features, 'browser-chromium', 2);
   assert.deepEqual(projects.flatMap(project => project.test.include).sort(), [...features].sort());
   assert.equal(projects[0].test.name, 'browser-chromium-service-library');
-  assert.deepEqual(projects[0].test.include, ['tests/browser/service-defaults.feature']);
+  assert.deepEqual(projects[0].test.include, library);
   assert.equal(projects[0].test.maxWorkers, 1);
   assert.equal(projects[0].test.fileParallelism, false);
   assert.ok(projects[0].test.sequence.groupOrder < projects[1].test.sequence.groupOrder);
@@ -59,10 +65,12 @@ Then('browser project scheduling covers every selected feature once without over
 });
 Then('browser project scheduling does not add unselected features or empty projects', () => {
   assert.equal(browserProjects(['tests/browser/vault.feature'], 'browser-chromium', 2), undefined);
-  const projects = browserProjects(['tests/browser/service-defaults.feature'], 'browser-firefox', 1);
-  assert.equal(projects.length, 1);
-  assert.deepEqual(projects[0].test.include, ['tests/browser/service-defaults.feature']);
-  assert.equal(projects[0].test.name, 'browser-firefox-service-library');
+  for (const feature of completeLibraryFeatures()) {
+    const projects = browserProjects([feature], 'browser-firefox', 1);
+    assert.equal(projects.length, 1);
+    assert.deepEqual(projects[0].test.include, [feature]);
+    assert.equal(projects[0].test.name, 'browser-firefox-service-library');
+  }
 });
 
 Then('browser blob validation accepts each declared phase and rejects swapped or unrelated projects', () => {

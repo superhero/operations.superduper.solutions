@@ -72,7 +72,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     oninput={slide} onchange={() => onValueCommit?.()} onkeydown={keydown} />
   <input class="integer-value" id={`${id}-value`} type="text" inputmode="numeric" {value} {required} {disabled}
     bind:this={exactInput} aria-label={`${label} value`} aria-invalid={invalid || badValue || undefined}
-    aria-describedby={describedBy} placeholder="Not set" autocomplete="off" spellcheck={false}
+    aria-describedby={describedBy} autocomplete="off" spellcheck={false}
     style:--value-width={`${Math.max(5, Math.min(18, value.length + 1))}ch`}
     oninput={event => onValueChange(event.currentTarget.value)} onchange={() => onValueCommit?.()} />
 </div>
@@ -86,7 +86,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .integer-range::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 4px; background: var(--color-primary); }
   .integer-range:focus-visible, .integer-value:focus-visible, .integer-range:hover:enabled, .integer-value:hover:enabled { outline: 2px solid var(--color-ring); outline-offset: 2px; }
   .integer-value { flex: 0 1 var(--value-width); width: var(--value-width); min-width: 4ch; max-width: 50%; padding: 3px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; font-variant-numeric: tabular-nums; text-align: right; }
-  .integer-value::placeholder { color: var(--color-muted-foreground); font-style: italic; opacity: 1; }
   .disabled { color: var(--color-muted-foreground); }
   .integer-range:disabled { cursor: default; opacity: 0.5; }
   .unset .integer-range { opacity: 0.6; }

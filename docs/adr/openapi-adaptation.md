@@ -42,8 +42,8 @@ reference closure and fingerprint. A failed batch publishes no new policies.
 Disabled or changed sources reject obsolete requests, and the page checks source
 identity again before installing returned models.
 
-Metadata changes publish only changed catalogs and active IDs. Reordering alone
-does not rebuild matching inputs or revoke unchanged credential policy. Decoded
+Metadata changes publish only changed catalogs and active IDs. Alphabetical
+ordering does not rebuild matching inputs or revoke unchanged credential policy. Decoded
 sources use a bounded cache; models used by the current workflow or run remain
 pinned. Size accounting limits retention, not exact JavaScript heap consumption.
 Active workflows may require more models than the cache budget permits to retain
@@ -72,7 +72,7 @@ and YAML upload, renaming, enablement, replacement, normalized JSON download and
 confirmed deletion. Settings sections remain alphabetically ordered. Full source
 editing and remote Git integration are outside this version.
 
-The name is always editable; changes save on blur. Renaming changes only
+Cards start folded. Opening a card makes its name editable; changes save on blur. Renaming changes only
 `info.title` and creates a descriptive commit in the existing repository,
 preserving its ID and other content.
 
@@ -94,7 +94,7 @@ Reviewed service schemas ship as compressed, integrity-checked local packs. Star
 adds missing defaults to existing profiles without replacing authored documents.
 Installation records survive deletion, so deleted defaults stay deleted.
 
-Unmodified defaults follow bundled revisions while retaining enablement and order.
+Unmodified defaults follow bundled revisions while retaining enablement.
 Their Git baseline materializes when a complete source, operation model or history
 is needed. Once materialized, later observed bundled revisions append content
 commits in that schema's repository. Reading history preserves factory ownership;
@@ -105,11 +105,101 @@ until needed; local history does not invent unseen upstream revisions.
 Display names can identify a provider without rewriting its upstream document
 title. Examples retain their existing once-only seeding behavior.
 
+### Reviewed corrections and upstream updates
+
+Published service snapshots and application corrections are separate. For a
+corrected service, its compressed pack retains the published OpenAPI document
+after reference bundling/conversion. The manifest records the original pack
+digest, the versioned correction recipes and the effective document's digest and
+size. Discovery indexes and executable models use that effective revision.
+The complete uncorrected source stays available in its local Git history.
+
+The first correction changes Google's duplicated OAuth requirements from an AND
+entry to separate alternatives in the `security` array. Both flow definitions,
+required scopes and unrelated AND credentials remain intact. This is OpenAPI's
+[security alternative syntax](https://spec.openapis.org/oas/v3.0.3.html#security-requirement-object),
+not JSON Schema `oneOf`. The correction accepts only the reviewed Google flow
+endpoints and matching scopes, records the prior requirement and rejects an
+existing conflicting provenance extension. It applies to the 52 Google Cloud
+and 24 Google product packs. An already-correct upstream document needs no
+duplicate correction content.
+
+Each materialized schema repository uses these local branches:
+
+| Git branch | Settings label | Content |
+| --- | --- | --- |
+| `upstream` | Published | Observed published snapshots, without application corrections |
+| `corrections` | Corrections | Reviewed corrections replayed over the selected published revision |
+| `main` | Working | The effective schema, including local edits such as its name |
+| `incoming` | Incoming | A proposed corrected update awaiting conflict decisions, when necessary |
+
+Existing linear histories remain intact; migration does not invent missing old
+published revisions. Branches materialize on first source/model/history access,
+not while listing disabled schemas. Opening history again makes no commit.
+
+Uploading a replacement imports a new published snapshot into the same
+repository. Reviewed corrections are reapplied, then a structured three-way merge
+compares the previous corrected baseline, current working document and new
+corrected source. Independent edits merge automatically. Arrays are atomic, and
+overlapping edits produce explicit field conflicts instead of text conflict
+markers or an arbitrary winner. The current schema remains usable while the
+incoming branch and review state survive reload. Decisions must match both
+reviewed revisions; stale decisions cannot replace newer edits. A resolved
+document is validated before its working branch and credential policy change.
+
+The bundled-update API uses the same merge process to update an edited copy from
+the bundled source. It performs no schema download. Unmodified factory copies
+continue to follow bundled revisions automatically; edited copies retain their
+authored content. The history view has no bundled-apply action.
+Applying an already-current factory bundle preserves its catalogue label and
+automatic update ownership without reading its source or publishing metadata.
+Reapplying an identical source to an edited copy also preserves local state;
+pending proposals and changed source metadata still use the update path.
+
+**Schema revisions** shows the actual commit graph with a selected marker and
+uniform edges. The disclosure has only its leading chevron, and the selected
+commit has no redundant text label. Branch refs remain stored but are not
+rendered as badges or card borders. Independent **Base** and **Compare** selectors
+accept any two saved commits in that schema's isolated Git repository, including equal and reverse
+comparisons. Both menus retain the graph's newest-first commit order. A fresh
+disclosure selects the original import on the left and latest commit on the right
+without reordering either list. Root discovery can expand the loaded ancestry up to 1,000 commits; if
+the root is still outside that bound the user must choose a base explicitly.
+Selecting a graph node changes the comparison target while retaining its base.
+Comparing revisions never changes checkout, Git objects or schema metadata.
+
+Changed-field lists contain paths and kinds only. Expanding a field loads actual
+JSON values from the selected immutable blobs and computes aligned line changes
+with line numbers, context, red removals and green additions. Missing sides are
+omitted; null remains a real value. Visible Before/After headings appear only
+when both panes are present. Code never wraps and scrolls horizontally.
+Field paths stay on one line, truncate with an ellipsis without scrolling, and
+show the complete path on hover. Closing a field releases its rendered content; changing endpoints
+discards old field requests. Matching work is bounded; very large unmatched
+regions are honestly shown as replacements. Context is folded, and display limits
+(initially 200 rows, expandable to 5,000, with a 512 KiB text budget) are explicit.
+These bounds and the changed-field pagination never alter saved content/exports.
+Conflict decisions and their revision checks retain the separate merge review.
+
+Build-time refreshes apply the same reviewed recipes. To update corrections
+without fetching new provider documents, use
+`node build/service-schemas.mjs --from-bundled --profile=google-oauth`, followed
+by `npm run schemas:index`. The one-time migration of earlier Google packs
+restores their recorded original requirements only when those exactly explain
+the earlier correction. Generic parsing retains strict auth AND semantics.
+
 ### Available operations
 
 Bundled examples seed once, preserving the `demo` and `httpbin` IDs and authored
-navigation groups. Deleting every document does not reseed them. Schema
-repositories load before workflows are restored.
+navigation groups. Bundled examples and registered service defaults cannot be
+deleted, even after renaming or replacing their content. Uploaded schemas must
+first be disabled before deletion. Settings explain disabled Delete buttons and
+cancel a pending confirmation if the schema is re-enabled. The storage layer
+checks the registered ID and current enablement in the deletion transaction,
+before removing metadata, credential policy, indexes or the schema's Git
+repository. Deleting an upload retains saved workflows and other repositories.
+Missing defaults from older browser installations remain absent; they are not
+reseeded. Schema repositories load before workflows are restored.
 
 Successfully loaded, enabled discovery indexes replace the registry atomically, updating
 navigation, matching and reports immediately. Removed or disabled operations
@@ -126,8 +216,10 @@ Each document has an immutable ID. Authored documents have their own Git reposit
 IDs even when filenames match. The predictably formatted `schema.json` working
 file is authoritative persisted content.
 
-Import creates the first commit; replacement commits to the same repository.
-Identical content adds no commit. Historical reads use immutable Git blobs
+Import creates the first commit; corrected factory schemas retain separate source
+and correction commits. Upstream replacement and local edits use the same repository.
+Identical content adds no commit unless a new source ancestry must be integrated;
+repeating the same update does not create another merge. Historical reads use immutable Git blobs
 without changing the working file.
 
 ### Metadata and recovery
@@ -140,21 +232,20 @@ does not erase authoritative Git content. Enablement remains outside Git.
 
 A serialized queue and browser lock protect writes across tabs. Immutable Git
 objects are flushed before publishing a recovery journal, allowing the working
-file, index, branch reference and metadata to be finalized after interruption.
+file, index, all affected branch references and metadata to be finalized after interruption.
 Deletion records a tombstone before removing only the selected repository and
 metadata. Saved workflows remain untouched.
 
 ### Card ordering
 
-Cards slide into a local preview during dragging. Dropping before or after
-another card saves the order; cancellation restores the original arrangement.
-Order lives in the metadata database's `state` store, outside schema documents
-and Git history.
+Schemas always sort by their current displayed name, case-insensitively, with
+stable schema IDs breaking ties. Settings and the operation catalog use the
+same order after uploads, renames, replacements and reloads. Existing saved
+manual arrangements are ignored. There are no manual ordering controls or
+actions.
 
-Moves resolve the latest order under the same browser lock; dropping in the
-existing position causes no write. New documents append, deletion removes their
-entries, and older metadata without a saved order falls back to creation time
-and stable ID.
+Ordering reads metadata without opening schema documents or adding Git
+revisions. Names refreshed by discovery determine the final library snapshot.
 
 ## Validation
 

@@ -199,6 +199,15 @@ Feature: Browser operations workspace
     Given a workflow with 1 instances of "Example array response"
     Then wrapped workflow controls fit their occupied rows
 
+  Scenario Outline: Workflow button groups stay compact at fractional width boundaries
+    Given a workflow with 1 instances of "Example array response"
+    Then workflow toolbar frames follow their occupied rows at wrapping boundaries with "<visibility>" buttons
+
+    Examples:
+      | visibility |
+      | default    |
+      | all        |
+
   Scenario: Settings leaves workflow tools and graph editing available
     Given a workflow with 1 instances of "Example array response"
     Then the workflow remains editable beside Settings

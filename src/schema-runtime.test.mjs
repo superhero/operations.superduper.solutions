@@ -14,6 +14,55 @@ import { createWorkflowRequestExecution, workflowExecutionForOperation, workflow
 import { createOperationGraph } from "./lib/workflow-graph.ts";
 import { createWorkflowRunner } from "./lib/workflow-runner.ts";
 import { catalogHierarchy } from "./lib/catalog-hierarchy.ts";
+import { schemaNameTree } from "./lib/schema-name-tree.ts";
+import { schemaDeletionReason } from "./lib/schema-deletion.ts";
+
+Then("schema deletion protects defaults and permits only inactive uploaded records", () => {
+  for (const enabled of [true, false])
+    assert.equal(schemaDeletionReason({ bundled: true, enabled }), "Default schemas cannot be deleted.");
+  for (const bundled of [false, undefined]) {
+    assert.equal(schemaDeletionReason({ bundled, enabled: true }), "Disable this schema before deleting it.");
+    assert.equal(schemaDeletionReason({ bundled, enabled: false }), null);
+  }
+});
+
+Then("the settings name tree sorts folders and leaves while preserving every schema identity", () => {
+  const record = (id, name, enabled = true) => ({ id, summary: { name }, enabled,
+    tags: ["Unrelated / Tag"], path: "/v1/unrelated/resource" });
+  const records = [record("z", "Zebra"), record("nested", " Tools // Files / Second / "),
+    record("first", "Tools / Files / First", false), record("prefix", "Tools / Files"),
+    record("duplicate-b", "Tools / Files / First"), record("duplicate-a", "Tools / Files / First"),
+    record("a", "Alpha"), record("special", "__proto__ / constructor"), record("blank", "///")];
+  const before = structuredClone(records);
+  const tree = schemaNameTree(records);
+  const folders = nodes => nodes.flatMap(node => node.kind === "group" ? [node.path.join(" / "), ...folders(node.children)] : []);
+  assert.deepEqual(folders(tree).sort(), ["Tools", "Tools / Files", "__proto__"].sort(), "Tags and operation URLs never create settings folders.");
+  const tools = tree.find(node => node.name === "Tools");
+  assert.deepEqual(tools.children.map(node => [node.kind, node.name]), [["schema", "Files"], ["group", "Files"]]);
+  const files = tools.children[1];
+  assert.deepEqual(files.children.map(node => [node.id, node.name]), [
+    ["duplicate-a", "First"], ["duplicate-b", "First"], ["first", "First"], ["nested", "Second"],
+  ]);
+  assert.equal(files.children[2].record, records[2], "Disabled schemas remain reachable with their original metadata.");
+  const leaves = nodes => nodes.flatMap(node => node.kind === "schema" ? [node] : leaves(node.children));
+  assert.deepEqual(leaves(tree).map(node => node.id).sort(), records.map(record => record.id).sort());
+  const alphabetical = nodes => {
+    assert.deepEqual(nodes.map(node => node.name), nodes.map(node => node.name).sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" })));
+    for (const node of nodes) if (node.kind === "group") alphabetical(node.children);
+  };
+  alphabetical(tree);
+  assert.deepEqual(schemaNameTree([...records].reverse()), tree, "Input order cannot change the alphabetical tree.");
+  const renamed = schemaNameTree(records.map(item => item.id === "nested" ? record(item.id, "Moved / Second") : item));
+  assert.deepEqual(folders(renamed).sort(), ["Moved", "Tools", "Tools / Files", "__proto__"].sort());
+  assert.equal(renamed.find(node => node.name === "Tools").id, tools.id, "Unchanged folder paths keep stable IDs.");
+  assert.equal(leaves(renamed).find(node => node.id === "nested").name, "Second");
+  assert.deepEqual(folders(schemaNameTree([record("only", "Plain")])), [], "Removed prefixes leave no stale folders.");
+  assert.deepEqual(records, before, "Grouping never mutates stored names, order or enablement.");
+  assert.deepEqual(schemaNameTree([]), []);
+  const prefixFirst = schemaNameTree([record("prefix-first", "Tools"), record("nested-last", "Tools / Child")]);
+  assert.deepEqual(prefixFirst.map(node => [node.kind, node.name]), [["schema", "Tools"], ["group", "Tools"]],
+    "A schema sharing a folder name keeps its own row before the folder, regardless of insertion order.");
+});
 
 Then("slash-separated schema names form ordered groups without changing their sources", () => {
   const category = { id: "compute:tag", name: "Instances / actions", description: "", operationIds: ["compute:read"] };

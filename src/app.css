@@ -216,13 +216,13 @@ h2 { margin: 5px 0 0; font-size: 23px; font-weight: 650; letter-spacing: -0.6px;
 .icon-switch[aria-checked="false"] > span:nth-child(2), .icon-switch[aria-checked="true"] > span:nth-child(3) { --switch-foreground: var(--color-catalog-active-foreground); }
 .catalog-branch + .catalog-branch { margin-top: 12px; }
 .catalog-children { padding: 12px 0 4px; }
-.catalog-children > .catalog-branch { --catalog-branch-gap: 1px; position: relative; margin-left: 20px; }
-.catalog-children > .catalog-branch + .catalog-branch { --catalog-branch-gap: 12px; }
-.catalog-children > .catalog-branch:first-child { --catalog-branch-gap: 12px; }
-.catalog-children > .catalog-branch::before, .catalog-children > .catalog-branch::after { content: ''; position: absolute; left: -12px; pointer-events: none; }
-.catalog-children > .catalog-branch::before { top: calc(-1 * var(--catalog-branch-gap)); bottom: 0; width: 2px; background: var(--color-tree-line); }
-.catalog-children > .catalog-branch:last-child::before { bottom: auto; height: calc(18px + var(--catalog-branch-gap)); }
-.catalog-children > .catalog-branch::after { top: 15px; width: 12px; height: 8px; border-left: 2px solid var(--color-tree-line); border-bottom: 2px solid var(--color-tree-line); border-bottom-left-radius: 4px; }
+.tree-children > .tree-branch { --tree-branch-gap: 1px; position: relative; margin-left: var(--tree-indent, 20px); }
+.tree-children > .tree-branch + .tree-branch { --tree-branch-gap: 12px; }
+.tree-children > .tree-branch:first-child { --tree-branch-gap: 12px; }
+.tree-children > .tree-branch::before, .tree-children > .tree-branch::after { content: ''; position: absolute; left: calc(-1 * var(--tree-line-inset, 12px)); pointer-events: none; }
+.tree-children > .tree-branch::before { top: calc(-1 * var(--tree-branch-gap)); bottom: 0; width: 2px; background: var(--color-tree-line); }
+.tree-children > .tree-branch:last-child::before { bottom: auto; height: calc(var(--tree-hook-top, 15px) + 3px + var(--tree-branch-gap)); }
+.tree-children > .tree-branch::after { top: var(--tree-hook-top, 15px); width: var(--tree-line-inset, 12px); height: 8px; border-left: 2px solid var(--color-tree-line); border-bottom: 2px solid var(--color-tree-line); border-bottom-left-radius: 4px; }
 .catalog-group summary { display: flex; align-items: center; gap: 8px; list-style: none; color: var(--color-catalog-foreground); }
 summary::-webkit-details-marker { display: none; }
 .catalog-group summary > .material-symbols-rounded { width: 32px; margin-left: auto; text-align: center; transition: transform 180ms ease-in; }

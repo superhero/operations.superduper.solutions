@@ -6,7 +6,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <script lang="ts">
   import { onMount, tick, untrack, type Snippet } from "svelte";
-  let { open, id, children, overflowVisible = false }: { open: boolean; id: string; children: Snippet; overflowVisible?: boolean } = $props();
+  let { open, id, children, overflowVisible = false, onClosed }: { open: boolean; id: string; children: Snippet; overflowVisible?: boolean; onClosed?: () => void } = $props();
   let reduced = $state(true);
   let ready = false;
   let rendered = $state(untrack(() => open));
@@ -20,7 +20,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const media = matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => {
       reduced = media.matches;
-      if (reduced) { revision += 1; visible = open; rendered = open; settledOpen = open; }
+      if (reduced) {
+        const closing = rendered && !open;
+        revision += 1; visible = open; rendered = open; settledOpen = open;
+        if (closing) onClosed?.();
+      }
     };
     update(); ready = true;
     media.addEventListener("change", update);
@@ -33,7 +37,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     previous = next;
     const current = ++revision;
     settledOpen = false;
-    if (!ready || reduced) { visible = next; rendered = next; settledOpen = next; return; }
+    if (!ready || reduced) { visible = next; rendered = next; settledOpen = next; if (!next) onClosed?.(); return; }
     rendered = true;
     void (async () => {
       await tick();
@@ -44,7 +48,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       await tick();
       if (current !== revision || !panel) return;
       await Promise.allSettled(panel.getAnimations().map(animation => animation.finished));
-      if (current === revision) { rendered = next; settledOpen = next; }
+      if (current === revision) { rendered = next; settledOpen = next; if (!next) onClosed?.(); }
     })();
   });
 </script>

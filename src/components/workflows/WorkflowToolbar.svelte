@@ -56,7 +56,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function packedWidth(widths: number[], available: number, gap: number) {
     let row = 0, widest = 0;
     for (const width of widths) {
-      if (row && row + gap + width > available + 0.5) { widest = Math.max(widest, row); row = 0; }
+      if (row && row + gap + width > available) { widest = Math.max(widest, row); row = 0; }
       row = row ? row + gap + width : width;
     }
     return Math.max(widest, row);
@@ -72,12 +72,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       const style = getComputedStyle(toolbar);
       const chrome = ['padding-left', 'padding-right', 'border-left-width', 'border-right-width']
         .reduce((sum, property) => sum + (parseFloat(style.getPropertyValue(property)) || 0), 0);
-      const available = element.clientWidth - (parseFloat(style.right) || 0) -
+      const available = element.getBoundingClientRect().width - (parseFloat(style.right) || 0) -
         (parseFloat(style.getPropertyValue("--navigation-inset")) || 0) -
         parseFloat(style.marginLeft) - parseFloat(style.marginRight) - chrome;
       if (available <= 0) return;
       const widths = [...toolbar.querySelectorAll<HTMLElement>('.workflow-control-group')].map(group =>
-        packedWidth([...group.children].map(button => (button as HTMLElement).offsetWidth), available, parseFloat(getComputedStyle(group).columnGap) || 0));
+        packedWidth([...group.children].map(button => button.getBoundingClientRect().width), available, parseFloat(getComputedStyle(group).columnGap) || 0));
       const width = `${Math.ceil(packedWidth(widths, available, parseFloat(style.columnGap) || 0) + chrome)}px`;
       if (toolbar.style.width !== width) toolbar.style.width = width;
     };
@@ -240,7 +240,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .workflow-control-group { display: flex; flex: 0 0 auto; gap: 1px; }
   .workflow-control-group :global(button:first-child) { border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
   .workflow-control-group :global(button:last-child) { border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
-  :global(.workflow-toolbar) { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; max-width: calc(100% - 2rem); gap: 6px; margin: 0 1rem 1rem; padding: 3px; border: 1px solid var(--color-background); border-radius: 4px; background: var(--color-surface); box-shadow: none; }
+  :global(.workflow-toolbar) { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: flex-end; max-width: calc(100% - 2rem); gap: 6px; margin: 0 1rem 1rem; padding: 3px; border: 2px solid var(--color-background); border-radius: 4px; background: var(--color-surface); box-shadow: none; }
   :global(.workflow-toolbar .svelte-flow__controls-button) { width: 30px; height: 30px; padding: 6px; border: 0; border-radius: 0; background: var(--color-background); color: var(--color-foreground); transition: color 180ms ease-in, background-color 180ms ease-in, opacity 180ms ease-in, outline-color 180ms ease-in; }
   :global(.workflow-toolbar.svelte-flow__controls.horizontal .svelte-flow__controls-button) { border: 0; }
   :global(.workflow-toolbar .svelte-flow__controls-button:focus-visible) { position: relative; z-index: 1; }

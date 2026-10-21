@@ -54,14 +54,27 @@ export function operationNavigation(operations: readonly Operation[]): Navigatio
   return result;
 }
 
-/** Retain existing headings, then organize their entries by literal URL resources. */
+/** Retain meaningful headings and organize entries by literal URL resources. */
 export function operationResourceGroups(groups: readonly CatalogGroup[], navigation: Navigation): CatalogGroup[]
 {
   return groups.map(group => {
-    const children = operationResourceGroups(group.children ?? [], navigation);
+    const operationIds = [...(group.operationIds ?? [])];
+    const categories: CatalogGroup[] = [];
+    function collect(children: readonly CatalogGroup[]) {
+      for (const child of children) {
+        // Generated generic tags add no information. Schema names and literal
+        // resources called Operations have different IDs and remain headings.
+        if (child.name === "Operations" && child.id.endsWith(":tag:Operations")) {
+          operationIds.push(...(child.operationIds ?? []));
+          collect(child.children ?? []);
+        } else categories.push(child);
+      }
+    }
+    collect(group.children ?? []);
+    const children = operationResourceGroups(categories, navigation);
     const root: CatalogGroup = { ...group, operationIds: [], children };
     const branches = new Map<string, CatalogGroup>();
-    for (const id of group.operationIds ?? [])
+    for (const id of operationIds)
     {
       const resources = navigation.paths.get(id)?.resources;
       if (!resources) continue;

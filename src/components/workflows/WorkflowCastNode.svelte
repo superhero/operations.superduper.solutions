@@ -29,7 +29,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <MaterialIcon name="transform" size={20} /><strong>Cast</strong><span class="utility-type">{inputType}</span>
   </div>
   <div class="utility-row cast-type nodrag nopan nokey">
-    <span class="cast-label">To</span>
     <WorkflowNodeSelect label="Cast output type" value={data.targetType} active={editorActive?.() ?? true}
       choices={castTypes}
       onchange={type => changeType(id, type as CastData["targetType"])} />
@@ -39,5 +38,4 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .workflow-cast-node { width: 220px; }
-  .cast-label { padding-inline: 4px; color: var(--color-muted-foreground); }
 </style>

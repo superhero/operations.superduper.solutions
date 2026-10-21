@@ -68,7 +68,10 @@ export async function mutate(mode: string) {
     paths[descriptor.operation.path]!.get.description = "The operation changed while keeping its identity.";
     await putSchemaDocument(next);
   } else if (mode === "disabled") await setSchemaDocumentEnabled(record.id, false);
-  else if (mode === "deleted") await deleteSchemaDocument(record.id);
+  else if (mode === "deleted") {
+    await setSchemaDocumentEnabled(record.id, false);
+    await deleteSchemaDocument(record.id);
+  }
   else if (mode === "pending" || mode === "removed") await catalog(true, tx => { tx.objectStore(mode).put(true, record.id); });
   else if (mode === "legacy") await catalog(true, tx => { tx.objectStore("policies").delete(record.id); });
   else throw new Error("Unknown fixture transition");

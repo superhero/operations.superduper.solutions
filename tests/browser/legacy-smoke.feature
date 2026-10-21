@@ -117,8 +117,8 @@ Feature: Browser contracts migrated from standalone smoke scripts
     And replacement and enablement preserve identity and immutable historical versions
     And interrupted schema writes preserve the old revision or recover the durable commit
     And schema renames preserve other repositories and persist without redundant commits
-    And schema ordering survives reload and ignores stale duplicate or unchanged placements
-    And schema deletion removes only its repository and an intentionally empty catalog stays empty
+    And schema ordering stays alphabetical across reload renames uploads and legacy preferences
+    And schema deletion removes disabled uploads while defaults remain protected
     And every assertion in the browser journey has completed
 
   @storage-namespace
@@ -136,7 +136,7 @@ Feature: Browser contracts migrated from standalone smoke scripts
       | cleanup-filesystem |
 
   @schemas-settings
-  Scenario: Schema management preserves Git history workflow identity and responsive drag behavior
+  Scenario: Schema management preserves Git history workflow identity and alphabetical lists
     Given the isolated browser fixture "schemas-settings" uses "management"
     Then schema management loads its seeded documents in a dedicated worker
     And an uploaded schema contributes a working workflow operation
@@ -146,7 +146,7 @@ Feature: Browser contracts migrated from standalone smoke scripts
     And invalid schema documents cannot change existing state
     And deleting one schema preserves other repositories and saved workflows
     And editable schema names save on blur or Enter without redundant commits
-    And schema drag previews keyboard moves cancellation and persistence retain histories and workflow nodes
+    And schema lists stay alphabetical without manual ordering controls or extra revisions
     And large schema processing yields rendering frames while its worker persists operations
     And schema browser contexts contain no unexpected errors
     And every assertion in the browser journey has completed

@@ -90,10 +90,10 @@ async function seedLegacyExamples(page, entries, authored = false) {
       const record = await api.readSchemaDocument(entry.id);
       await api.putSchemaDocument({ ...record, document: entry.document, groups: entry.groups });
     }
-    if (authored) await api.deleteSchemaDocument('httpbin');
+    // Seed an older browser state from when deleting default schemas was allowed.
+    if (authored) await api.editStore('catalog', 'httpbin', 'delete');
     else {
       await api.setSchemaDocumentEnabled('httpbin', false);
-      await api.moveSchemaDocument('httpbin', 'demo', 'before');
     }
     // Reproduce a browser installation from before bundled-example version tracking.
     await api.editStore('state', 'exampleRevisions', 'delete');
@@ -117,7 +117,7 @@ Then('saved {string} examples update their labels and keep saved workflows', asy
   await runDialog(page).getByRole('button', { name: 'Quit', exact: true }).click();
 
   const after = await savedExampleState(page);
-  assert.deepEqual(after.order, before.order);
+  assert.deepEqual(after.order.filter(id => ['demo', 'httpbin'].includes(id)), ['demo', 'httpbin']);
   for (const example of after.examples) {
     const original = before.examples.find(entry => entry.record.id === example.record.id);
     const current = bundledCatalogs.find(catalog => catalog.id === example.record.id);

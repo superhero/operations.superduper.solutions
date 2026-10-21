@@ -42,8 +42,8 @@ export const contracts = {
     "replacement and enablement preserve identity and immutable historical versions",
     "interrupted schema writes preserve the old revision or recover the durable commit",
     "schema renames preserve other repositories and persist without redundant commits",
-    "schema ordering survives reload and ignores stale duplicate or unchanged placements",
-    "schema deletion removes only its repository and an intentionally empty catalog stays empty"
+    "schema ordering stays alphabetical across reload renames uploads and legacy preferences",
+    "schema deletion removes disabled uploads while defaults remain protected"
   ],
   "storage-namespace": [
     "namespace preparation preserves storage contents and requires proof before deleting legacy data"
@@ -58,7 +58,7 @@ export const contracts = {
     "invalid schema documents cannot change existing state",
     "deleting one schema preserves other repositories and saved workflows",
     "editable schema names save on blur or Enter without redundant commits",
-    "schema drag previews keyboard moves cancellation and persistence retain histories and workflow nodes",
+    "schema lists stay alphabetical without manual ordering controls or extra revisions",
     "large schema processing yields rendering frames while its worker persists operations",
     "schema management recovers after the origin-wide repository lock is released",
     "schema browser contexts contain no unexpected errors"

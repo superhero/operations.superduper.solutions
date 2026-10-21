@@ -437,3 +437,110 @@ trusted baseline matcher module, to alternate current/reference calls in the sam
 worker. Keep comparison builds, output directories and labels separate.
 
 Further windowing or canonical-model caches need a measured benefit beyond this pass and must retain focus and model independence. The fixed search debounce is a separate interaction-policy decision. Separate schema delivery remains deferred at the user’s request.
+
+
+## Schema header color feedback (20 October 2026)
+
+The schema title inherited a 180 ms color transition while the newly revealed
+Wrap lines control already used its target foreground. Existing action buttons
+also transitioned their inherited color. The header and action foreground/background
+pairs now switch together. The wrap fade, arrow rotation, disclosure slide,
+hover scaling and focus-outline transition remain.
+
+Production Chromium measurements on sds-01 used one 2-CPU / 3-GiB job, Node
+26.7.0, Playwright 1.63.0, 1280×900 at 1× DPR and the two example catalogs.
+Three repeated openings per theme gave these click-to-target-title-color values:
+
+| Theme | Before median (range), ms | After median (range), ms | Median reduction |
+| --- | --- | --- | --- |
+| Dark | 206.84 (206.42–214.80) | 7.90 (7.52–12.06) | 198.94 ms / 96.2% |
+| Light | 207.46 (206.48–207.50) | 6.62 (6.15–33.98) | 200.84 ms / 96.8% |
+
+The baseline wrap control was already partly visible after roughly 55–64 ms.
+After the change, title and persistent action colors match on the same sampled
+frame. Closings use the same immediate color-pair swap. First openings per theme
+were recorded separately. These are rAF/computed-color observations from a real
+click; physical display latency and field INP were not measured. Baseline ran
+before candidate on a shared headless host; there are no tail-latency claims.
+
+Separate short Chrome traces retain style/layout/paint attribution. Their aggregate
+costs are similar; the result is faster visual feedback. First-open frame gaps of
+65–86 ms remain; their cause was not isolated in this focused color check. No production listeners,
+workers or caches were added. Raw samples, conditions and trace summaries are in
+[schema-header-feedback.json](schema-header-feedback.json); full diagnostic evidence
+is retained locally in the ignored task directory named there.
+
+
+## Schema revision collapse (20 October 2026)
+
+Closing Schema revisions cleared the loaded graph and diff before the grid
+transition finished. In the real Cohere single-commit history, the first closing
+frame immediately fell to a 24px empty body. This happened in all three recorded
+closes at each viewport; the header did not move, isolating content loss rather
+than a scroll-position jump.
+
+| Viewport | Loaded height | Before: immediate height loss, median (range) | After: immediate height loss, median (range) |
+| --- | --- | --- | --- |
+| 390×900 | 284.5px | 260.5px (260.5–260.5) | 0px (0–0) |
+| 1280×900 | 172.5px | 148.5px (148.5–148.5) | 0px (0–0) |
+
+`Reveal.onClosed` now releases the revision data after the existing 240ms slide.
+Pending replies are invalidated on close; retained outgoing rows remain inert.
+Reopening cancels the obsolete close completion, and reduced motion releases
+content immediately. Retention lasts only through the closing transition.
+
+[Raw sample summaries and build hashes](schema-revisions-motion.json) record the
+production Chromium conditions: one sds-01 job, 2 CPUs, 3GiB memory and combined
+swap limit, 1,800MiB Node heap, Node 26.7.0, Playwright 1.63.0 and 1× DPR. The
+complete bundled library was enabled, with an empty workflow and three warm
+closes per build/viewport in sequential build batches. rAF geometry/row reads and
+normal Playwright snapshots make these instrumented local motion observations;
+separate bounded Chrome rendering traces retain the diagnostic intervals in the
+ignored run evidence. This fixes the shape of the animation; it is not a latency,
+CPU or field Core Web Vitals claim.
+
+The new two-viewport Gherkin regression failed on the original build and passed
+with the fix, including intermediate heights, stable headers, post-close cleanup,
+reversal, reduced motion, keyboard focus and card teardown. Three existing cases
+also passed: revision comparisons/conflicts, header hover/slide and edit-icon
+motion. The revision-comparison case also passed once each in Firefox and
+WebKit. Typecheck and build passed with the existing vault-node ARIA warning.
+
+
+## Schema revision opening colors (21 October 2026)
+
+Opening Schema revisions published its graph before the initial comparison
+finished loading. The commit selectors therefore mounted disabled, and the
+selected revision was briefly unset. Once the comparison arrived, the selectors
+transitioned from disabled colors into their final colors. Frame observations
+reproduced this in all three opens at both viewports.
+
+| Viewport | Before: frames with incorrect colors, median (range) | After | Before: disabled frames, median (range) | After |
+| --- | --- | --- | --- | --- |
+| 390×900 | 12 (12–12) | 0 (0–0) | 1 (1–1) | 0 (0–0) |
+| 1280×900 | 12 (12–15) | 0 (0–0) | 1 (1–3) | 0 (0–0) |
+
+`SchemaHistory` now publishes the initial history after awaiting its comparison,
+with the existing request-generation guard. Rows, current selection and ready
+selectors appear together. The loading status remains available while reading;
+subsequent comparison requests retain their existing disabled behavior. This
+changes publication order without adding requests, timers or retained caches.
+The existing 240ms slide and close-time data release remain unchanged.
+
+[Opening observations and build hashes](schema-revisions-opening.json) describe
+three baseline opens followed by three candidate opens per viewport in separate
+production build batches: real Cohere single-commit history, complete bundled
+defaults, empty workflow, light theme, 1× DPR, Chromium153/Playwright1.63.0 and
+Node26.7.0. One sds-01 job used2CPUs,4GiB memory and combined swap(no swap),
+512pids,512MiB browser-worker Node old space and1800MiB build old space.
+rAF geometry/computed-color reads and normal Playwright snapshots make these
+instrumented correctness observations; separate bounded Chrome traces preserve
+the diagnostic interval. Routing disables HTTP cache. Frame counts are neither
+physical display timings nor latency, CPU or field-performance improvements.
+
+The new two-viewport regression failed against the original implementation and
+passed after the fix. All five focused Chromium scenarios passed, also covering
+close/reversal, reduced motion, keyboard focus, teardown and comparison/conflict
+review. Desktop/mobile screenshots retain the existing layout. Typecheck had
+zero errors; production build passed with the existing vault-node ARIA warning.
+No full suite or coverage run was performed for this correction.

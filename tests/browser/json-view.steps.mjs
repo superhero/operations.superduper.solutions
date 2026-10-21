@@ -10,6 +10,7 @@ import { metricsCacheKey } from "../../src/lib/metrics-cache.ts";
 import schemaIndexes from "../../src/catalogs/services/indexes/index.json" with { type: "json" };
 import { catalogsIndexDatabaseName } from "../../src/lib/storage-names.ts";
 import { finishHeightAnimations, holdHeightAnimations, seekHeightAnimation } from "./height-animation.fixture.mjs";
+import { expandSchemaCard } from "./schema-card.fixture.mjs";
 
 const jsonLabel = "Operation OpenAPI JSON";
 const sourceCatalog = catalogForOperation("demo:createTask");
@@ -636,8 +637,8 @@ Then('the scaled schema header keeps its edges visible while card slides stay cl
     animation.currentTime = Number(animation.effect.getTiming().duration) / 2;
     const bounds = element.getBoundingClientRect();
     const inner = element.firstElementChild;
-    const header = inner.querySelector('summary[aria-label="OpenAPI schema"]');
-    const hidden = header.getBoundingClientRect();
+    // The header may already fit; the last row still extends past the sliding grid.
+    const hidden = inner.lastElementChild.getBoundingClientRect();
     return { height: bounds.height, fullHeight: inner.scrollHeight,
       clipped: !element.contains(document.elementFromPoint(hidden.left + hidden.width / 2, hidden.bottom - 1)) };
   });
@@ -686,7 +687,6 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   const heading = card.locator('.schema-heading');
   const name = heading.getByRole('textbox', { name: 'Schema name', exact: true });
   const closedName = heading.locator('.schema-name-label');
-  const move = heading.getByRole('button', { name: /^Move / });
   const title = await closedName.innerText();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   await expect(otherCard.getByRole('button', { name: /^Schema details:/ })).toHaveAttribute('aria-expanded', 'false');
@@ -694,7 +694,7 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   await expect(name).toHaveCount(0);
   await expect(heading.locator('.schema-name-icon')).toBeHidden();
   await expect(enabled).toHaveText('');
-  for (const control of [closedName, enabled, toggle, move]) await expect(control).toBeVisible();
+  for (const control of [closedName, enabled, toggle]) await expect(control).toBeVisible();
   const topRow = await heading.evaluate(element => {
     const field = element.querySelector('.schema-name').getBoundingClientRect();
     const toggleElement = element.querySelector('.schema-card-toggle');
@@ -747,13 +747,32 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   await expect(card.locator('.schema-metadata dt')).toHaveText(['Operations']);
   const presentation = await description.evaluate(element => {
     const style = getComputedStyle(element);
-    return { size: style.fontSize, weight: style.fontWeight, overflow: style.overflow,
-      ellipsis: style.textOverflow, wrapping: style.whiteSpace,
-      truncated: element.scrollWidth > element.clientWidth,
-      fits: element.closest('.schema-card').scrollWidth <= element.closest('.schema-card').clientWidth };
+    const original = element.textContent;
+    const measure = () => ({ height: element.getBoundingClientRect().height,
+      paneHeight: element.parentElement.getBoundingClientRect().height,
+      truncated: element.scrollHeight > element.clientHeight,
+      fits: element.scrollWidth <= element.clientWidth &&
+        element.closest('.schema-card').scrollWidth <= element.closest('.schema-card').clientWidth });
+    try {
+      element.textContent = 'Short description.';
+      const short = measure();
+      element.textContent = 'The API provides operations for managing resources and their configuration. '.repeat(50);
+      const long = measure();
+      element.textContent = 'x'.repeat(2000);
+      const unbroken = measure();
+      return { size: style.fontSize, weight: style.fontWeight, lineHeight: parseFloat(style.lineHeight),
+        short, long, unbroken };
+    } finally { element.textContent = original; }
   });
-  assert.deepEqual(presentation, { size: '12px', weight: '400', overflow: 'hidden', ellipsis: 'ellipsis', wrapping: 'nowrap',
-    truncated: true, fits: true }, 'Long descriptions remain normal-size single-line text with an ellipsis at desktop and mobile widths');
+  assert.equal(presentation.size, '12px');
+  assert.equal(presentation.weight, '400');
+  assert.equal(presentation.short.truncated, false);
+  for (const text of [presentation.long, presentation.unbroken]) {
+    assert.ok(Math.abs(text.height - 2 * presentation.lineHeight) < 1, 'Long descriptions fill two lines and then truncate');
+    assert.equal(text.truncated, true);
+    assert.equal(text.paneHeight, presentation.short.paneHeight, 'Descriptions cannot stretch the pane');
+    assert.equal(text.fits, true, 'Wrapping also contains long unbroken strings');
+  }
   const schema = card.locator('summary[aria-label="OpenAPI schema"]');
   await expect(schema).toHaveAttribute('aria-expanded', 'false');
   const expectCountAlignment = async () => {
@@ -786,11 +805,9 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   await actions.getByRole('button', { name: `Replace ${title}`, exact: true }).click();
   await chooser;
   await expect(schema).toHaveAttribute('aria-expanded', 'false');
-  await actions.getByRole('button', { name: `Delete ${title}`, exact: true }).click();
-  const confirmation = card.getByRole('group', { name: `Confirm deletion of ${title}`, exact: true });
-  await expect(confirmation).toBeVisible();
+  await expect(actions.getByRole('button', { name: `Delete ${title}`, exact: true })).toBeDisabled();
+  await expect(card.getByRole('group', { name: `Confirm deletion of ${title}`, exact: true })).toHaveCount(0);
   await expect(schema).toHaveAttribute('aria-expanded', 'false');
-  await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click();
   await schema.locator('.schema-title').click();
   const json = card.getByRole('region', { name: `Full OpenAPI JSON: ${title}`, exact: true });
   await expect(json).toBeVisible();
@@ -810,11 +827,14 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   const viewerWidth = await json.evaluate(element => {
     const viewer = element.getBoundingClientRect();
     const card = element.closest('.schema-card');
-    const style = getComputedStyle(card);
-    return { actual: viewer.width, expected: card.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight),
+    const panel = card.querySelector(':scope > .reveal-panel');
+    const heading = card.querySelector('.schema-heading').getBoundingClientRect();
+    return { actual: viewer.width, expected: panel.clientWidth,
+      inset: viewer.left - heading.left, right: Math.abs(viewer.right - heading.right),
       fits: card.scrollWidth <= card.clientWidth };
   });
-  assert.ok(Math.abs(viewerWidth.actual - viewerWidth.expected) < 2, 'The expanded JSON viewer uses the full card width');
+  assert.ok(viewerWidth.inset > 0 && viewerWidth.right < 1, 'The foldout is indented below its header while retaining the right edge');
+  assert.ok(Math.abs(viewerWidth.actual - viewerWidth.expected) < 2, 'The expanded JSON viewer fills the indented content area');
   assert.ok(viewerWidth.fits, 'Schema controls and content fit without horizontal overflow');
   await page.screenshot({ path: `${this.artifactDirectory}/schema-card-expanded-${width}.png` });
   await toggle.click();
@@ -853,7 +873,7 @@ Then('schema cards keep their controls usable and their viewer full width at {in
   if (await section.getAttribute('aria-expanded') !== 'true') await section.click();
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
   const telegram = documents.locator('[data-schema-id="telegram"]');
-  await telegram.getByRole('button', { name: /^Schema details:/ }).click();
+  await expandSchemaCard(telegram);
   const metadata = telegram.locator('.schema-metadata');
   await expect(metadata.locator('dt')).toHaveText(['Operations']);
   await expect(telegram.locator('.schema-description p')).toHaveText(schemaIndexes.indexes.find(schema => schema.id === 'telegram').summary.description);
