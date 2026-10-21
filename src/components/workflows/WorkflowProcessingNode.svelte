@@ -34,7 +34,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const choiceLabel = (value: string) => /^(HS256|RS256|UTF-8)$/.test(value) ? value : value.replace(/_/g, " ").replace(/^./, letter => letter.toUpperCase());
 </script>
 
-<div class="workflow-utility-node workflow-processing-node" class:selected data-processing-kind={kind}>
+<div class="workflow-utility-node workflow-processing-node" class:selected class:jwt-sign={data.operation === "jwt_sign"} data-processing-kind={kind}>
   <div class="utility-title">
     <Handle id="value" type="target" position={Position.Left} isConnectableStart={false}
       isConnectableEnd={!inputConnected(id, "value")} aria-disabled={inputConnected(id, "value")} aria-label={`${family} input (${inputLabel})`} />
@@ -59,7 +59,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {:else}
   {#each definition.parameters as field (field.name)}
       {@const connected = !!field.connectable && inputConnected(id, field.name)}
-      <div class="processing-parameter nodrag nopan nokey">
+      <div class="processing-parameter nodrag nopan nokey" class:key-id={field.name === "key_id"}>
         <label for={`${id}-${field.name}`}>{field.label}
           {#if field.connectable}<span class="utility-type">{processingInputTypes(kind, data, field.name)?.join(" | ")}</span>{/if}
         </label>
@@ -112,4 +112,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .workflow-processing-node .key-input ~ .processing-output { border-top: 0; }
   .workflow-processing-node .utility-row:not(.key-input) + .processing-parameter { border-top: 1px solid var(--color-border); }
   .workflow-processing-node:not([data-processing-kind="assert"]) .processing-parameter ~ .processing-output { border-top: 0; }
+  .workflow-processing-node.jwt-sign .key-input { border-bottom: 0; }
+  .key-id { border-bottom: 1px solid var(--color-border); }
 </style>
