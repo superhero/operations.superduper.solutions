@@ -41,6 +41,25 @@ Apply a versioned schema correction without changing the published pack. Retain 
 
 ```
 
+<!-- changelog-commit:663403e5ab762c8c6e57fad199f63e3592948e73 -->
+### Commit [`663403e`](https://github.com/superhero/operations.superduper.solutions/commit/663403e5ab762c8c6e57fad199f63e3592948e73)
+
+```text
+feat(workflow): add Transform, Filter and Assert nodes
+
+Add typed processing operations with versioned configuration, persistence and Undo. Execute public data in a lazy worker and retain opaque private recipes for vault injection.
+
+Route original assertion input through Success or Failure. Leave unmatched connections available for manual input without raising assertion errors.
+
+```
+
+<!-- changelog-commit:f2d5154ed737d534c7dd016d1715b10ea9072062 -->
+### Commit [`f2d5154`](https://github.com/superhero/operations.superduper.solutions/commit/f2d5154ed737d534c7dd016d1715b10ea9072062)
+
+```text
+Merge branch 'develop' into feature/workflow-processing-nodes
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
