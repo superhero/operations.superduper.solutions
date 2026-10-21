@@ -5,13 +5,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
+  import Handle from "./WorkflowHandle.svelte";
   import { getContext, untrack } from "svelte";
-  import { Handle, Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
+  import { Position, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import FieldNumber from "$lib/components/FieldNumber.svelte";
   import type { SwitchData, SwitchGate } from "$lib/workflow-document.ts";
   import { operatorsForType, switchGateInput, switchGateLimit, switchValueLimit, type RoutingType } from "$lib/workflow-utilities.ts";
+  import { processingTypeLabel } from "$lib/workflow-processing.ts";
   import WorkflowNodeSelect from "./WorkflowNodeSelect.svelte";
   import "./workflow-utility-nodes.css";
 
@@ -23,6 +25,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const inputConnected = getContext<((id: string, handleId?: string | null) => boolean) | undefined>("workflow-input-connected");
   const valueConnected = $derived(inputConnected?.(id, "value") ?? false);
   const inputType = $derived(inputTypeFor(id));
+  const inputLabel = $derived(processingTypeLabel(inputType));
   const operators = $derived(operatorsForType(inputType));
   const active = $derived(editorActive?.() ?? true);
   const updateNodeInternals = useUpdateNodeInternals();
@@ -33,8 +36,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <div class="workflow-utility-node workflow-switch-node" class:selected>
   <div class="utility-title">
     <Handle id="value" type="target" position={Position.Left} isConnectableStart={false}
-      isConnectableEnd={!valueConnected} aria-disabled={valueConnected} aria-label={`Switch input (${inputType})`} />
-    <MaterialIcon name="call_split" size={20} /><strong>Switch</strong><span class="utility-type">{inputType}</span>
+      isConnectableEnd={!valueConnected} aria-disabled={valueConnected} aria-label={`Switch input (${inputLabel})`} />
+    <MaterialIcon name="call_split" size={20} /><strong>Switch</strong><span class="utility-type">{inputLabel}</span>
   </div>
   {#each data.gates as gate, index (gate.id)}
     {@const operator = operators.find(choice => choice.value === gate.operator) ?? operators[0]}

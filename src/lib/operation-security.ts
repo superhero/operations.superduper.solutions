@@ -7,6 +7,8 @@ export type OperationSecurityScheme =
   | { name: string; kind: "apiKey"; query: string; header?: never };
 /** Alternatives are OR; every scheme within an alternative is required (AND). */
 export type OperationSecurity = OperationSecurityScheme[][];
+/** Permission metadata is aligned with the security alternatives, not OAuth flows. */
+export type CredentialPermissions = Record<string, string[]>[];
 
 type ObjectValue = Record<string, unknown>;
 const invalidHeaderName = /[^!#$%&'*+.^_`|~0-9A-Za-z-]/;
@@ -130,6 +132,23 @@ export function extractOperationSecurity(document: ObjectValue, operation: Objec
       return resolved;
     });
   });
+}
+
+/** Retain reviewed permission metadata in canonical models and private approval.
+ * This does not allow nonempty bearer/API-key security requirement arrays. */
+export function extractCredentialPermissions(value: unknown, security: OperationSecurity | undefined): CredentialPermissions | undefined
+{
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || !security || value.length !== security.length)
+    throw new Error("Credential permissions must match the security alternatives.");
+  return value.map((raw, index) => Object.fromEntries(Object.entries(object(raw, "Credential permissions")).map(([name, permissions]) =>
+  {
+    if (!security[index]!.some(scheme => scheme.name === name && scheme.kind === "bearer")
+      || !Array.isArray(permissions) || !permissions.length
+      || permissions.some(permission => typeof permission !== "string" || !permission.trim() || permission !== permission.trim()))
+      throw new Error("Credential permissions require a declared bearer scheme and nonempty permission strings.");
+    return [name, [...permissions]];
+  })));
 }
 
 /** An absent declaration, [] or an empty alternative permits anonymous execution. */

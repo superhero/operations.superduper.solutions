@@ -93,16 +93,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <div class="operation-node workflow-owner-node" class:selected data-operation-name={data.name}>
   {@render portRow("inputs")}
-  <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={`${data.method} ${data.path}\n${data.description}`} labelAsName={false} tabindex={-1}>
-    {#snippet child({ props })}
-      {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
-      <div {...hintProps} class="operation-title-row">
-        <MaterialIcon name="http" size={28} />
-        <strong>{data.name}</strong>
-        {#if ordinal}<span class="instance-pill" aria-label={`Instance ${ordinal}`}>{ordinal}</span>{/if}
-      </div>
-    {/snippet}
-  </HintButton>
+  <div class="operation-title-row">
+    <MaterialIcon name="http" size={28} />
+    <strong>{data.name}</strong>
+    {#if ordinal}<span class="instance-pill" aria-label={`Instance ${ordinal}`}>{ordinal}</span>{/if}
+  </div>
   {#if versions.length > 1}
     <div class="operation-version">
       <WorkflowNodeSelect label="API version" value={data.operationId} choices={versions}

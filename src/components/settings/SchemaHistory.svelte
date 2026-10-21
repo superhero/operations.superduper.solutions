@@ -48,7 +48,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (!diff) return [];
     const grouped = new Map<string, SchemaRevisionDiff["changes"]>();
     for (const change of diff.changes) {
-      const category = /\/(security|x-upstream-security)$/.test(change.path) ? "Authentication"
+      const category = /\/(security|x-upstream-security|x-credential-permissions)$/.test(change.path) ? "Authentication"
         : change.path.startsWith("/info/") ? "Schema information"
         : change.path.startsWith("/paths/") ? "Operations"
         : change.path.startsWith("/components/") ? "Data models and definitions" : "Other fields";
@@ -111,7 +111,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         next = await load(historyLimit);
       }
       if (request !== generation) return;
-      history = next;
       if (next.revisions.some(revision => revision.oid === selected) && next.revisions.some(revision => revision.oid === comparison))
         await select(selected, comparison);
       else {
@@ -120,6 +119,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         else { selected = ""; comparison = undefined; diff = undefined;
           error = "The first commit is outside the 1,000 loaded revisions. Choose a base commit to compare."; }
       }
+      // Publish the initial rows and controls with their comparison ready.
+      if (request === generation) history = next;
     } catch (failure) { if (request === generation) error = failure instanceof Error ? failure.message : "Could not read schema revisions."; }
     finally { if (request === generation) loading = false; }
   }

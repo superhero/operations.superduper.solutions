@@ -2,6 +2,321 @@
 
 ## Latest
 
+<!-- changelog-commit:1380178edebd71807fb603262a2652f0f860cc08 -->
+### Commit [`1380178`](https://github.com/superhero/operations.superduper.solutions/commit/1380178edebd71807fb603262a2652f0f860cc08)
+
+```text
+fix(schemas): avoid disabled flash when revisions open
+
+Publish the initial history after its comparison finishes so revision rows,
+the current marker and selectors appear in their ready state together.
+Keep stale-response rejection and the existing close lifecycle intact.
+
+Cover the first rendered control colors and selection at desktop and mobile
+widths, with bounded observations documenting the reproduced flash.
+
+```
+
+<!-- changelog-commit:2c6cade7a5ab67b3fe668172d4bd91ac5c9a2385 -->
+### Commit [`2c6cade`](https://github.com/superhero/operations.superduper.solutions/commit/2c6cade7a5ab67b3fe668172d4bd91ac5c9a2385)
+
+```text
+fix(schemas): disable Ollama by default
+
+Allow factory registration to specify initial enablement and start Ollama
+off on first installation. Keep saved enablement choices intact.
+
+Update the existing fresh-profile check to activate Ollama explicitly,
+verify that activation survives reload, and run its generation operation.
+
+```
+
+<!-- changelog-commit:37b6bb0a1fbe4e0640f090282982bb33659a920b -->
+### Commit [`37b6bb0`](https://github.com/superhero/operations.superduper.solutions/commit/37b6bb0a1fbe4e0640f090282982bb33659a920b)
+
+```text
+fix(auth): preserve DigitalOcean bearer permissions
+
+Apply a versioned schema correction without changing the published pack. Retain per-alternative permissions in canonical credential approval, reject stale bindings, and expose the correction in schema revisions.
+
+```
+
+<!-- changelog-commit:663403e5ab762c8c6e57fad199f63e3592948e73 -->
+### Commit [`663403e`](https://github.com/superhero/operations.superduper.solutions/commit/663403e5ab762c8c6e57fad199f63e3592948e73)
+
+```text
+feat(workflow): add Transform, Filter and Assert nodes
+
+Add typed processing operations with versioned configuration, persistence and Undo. Execute public data in a lazy worker and retain opaque private recipes for vault injection.
+
+Route original assertion input through Success or Failure. Leave unmatched connections available for manual input without raising assertion errors.
+
+```
+
+<!-- changelog-commit:f2d5154ed737d534c7dd016d1715b10ea9072062 -->
+### Commit [`f2d5154`](https://github.com/superhero/operations.superduper.solutions/commit/f2d5154ed737d534c7dd016d1715b10ea9072062)
+
+```text
+Merge branch 'develop' into feature/workflow-processing-nodes
+```
+
+<!-- changelog-commit:030a8ffdc6740dd72a2f9cebc0a2730285b696a6 -->
+### Commit [`030a8ff`](https://github.com/superhero/operations.superduper.solutions/commit/030a8ffdc6740dd72a2f9cebc0a2730285b696a6)
+
+```text
+feat(workflow): add an optional Stop node
+
+End the run normally when Stop receives a value, including in nested workflows. Keep unmatched Assert and inactive Switch connections inactive, and release processing resources before another step is prepared.
+
+Expose the input-only node in the toolbar, history, Undo and portable workflows. Cover routing and restoration with focused source and browser scenarios.
+
+```
+
+<!-- changelog-commit:1c3aa5fb3c9b526ac2034f0c3df5644ae3b3eaa3 -->
+### Commit [`1c3aa5f`](https://github.com/superhero/operations.superduper.solutions/commit/1c3aa5fb3c9b526ac2034f0c3df5644ae3b3eaa3)
+
+```text
+fix(ui): use antenna icon for Cast
+
+```
+
+<!-- changelog-commit:aaa1b734a707cc36302c5d3114ea55fccc828952 -->
+### Commit [`aaa1b73`](https://github.com/superhero/operations.superduper.solutions/commit/aaa1b734a707cc36302c5d3114ea55fccc828952)
+
+```text
+fix(ui): label the Cast tooltip as Cast type
+
+```
+
+<!-- changelog-commit:2726d9e106a536bbca12a43685e90c7e2039dcea -->
+### Commit [`2726d9e`](https://github.com/superhero/operations.superduper.solutions/commit/2726d9e106a536bbca12a43685e90c7e2039dcea)
+
+```text
+fix(workflow): show expected Transform input types
+
+```
+
+<!-- changelog-commit:11882f1a0a604cc557cc1074b1e599b99a25789e -->
+### Commit [`11882f1`](https://github.com/superhero/operations.superduper.solutions/commit/11882f1a0a604cc557cc1074b1e599b99a25789e)
+
+```text
+fix(ui): use shared badges for processing output types
+
+```
+
+<!-- changelog-commit:e2029c930bb2ae40b0425866f34e7e09de2071cc -->
+### Commit [`e2029c9`](https://github.com/superhero/operations.superduper.solutions/commit/e2029c930bb2ae40b0425866f34e7e09de2071cc)
+
+```text
+fix(ui): separate known type alternatives with pipes
+
+```
+
+<!-- changelog-commit:c1f4560ed2b96f298dde08f19b67ccb4a11edb75 -->
+### Commit [`c1f4560`](https://github.com/superhero/operations.superduper.solutions/commit/c1f4560ed2b96f298dde08f19b67ccb4a11edb75)
+
+```text
+fix(workflow): infer Parse JSON output alternatives
+
+Expose all JSON value types and allow direct wiring to matching typed
+inputs while retaining runtime validation. Preserve saved nodes and private
+recipes by dropping their obsolete result-type setting when loading.
+
+```
+
+<!-- changelog-commit:77c14a85231ca2722299a1382c036a2c91ba08f5 -->
+### Commit [`77c14a8`](https://github.com/superhero/operations.superduper.solutions/commit/77c14a85231ca2722299a1382c036a2c91ba08f5)
+
+```text
+fix(workflow): move field selection to Filter
+
+Offer Select field under Filter and migrate older Transform nodes without
+changing their configuration or connections. Keep legacy private recipes
+executable and show the expected input types for the selected Filter action.
+
+```
+
+<!-- changelog-commit:f5890bc811c61f9f4ce758c4097bcee4cc23b121 -->
+### Commit [`f5890bc`](https://github.com/superhero/operations.superduper.solutions/commit/f5890bc811c61f9f4ce758c4097bcee4cc23b121)
+
+```text
+feat(workflow): connect JWT Key ID inputs
+
+Show signing-key types and allow Key ID connections to override the saved
+manual value. Preserve typed graph identities, undo, and private worker
+execution without exposing private parameter values.
+
+```
+
+<!-- changelog-commit:e138e88f2992d416c315512ccc2b44ee62422fde -->
+### Commit [`e138e88`](https://github.com/superhero/operations.superduper.solutions/commit/e138e88f2992d416c315512ccc2b44ee62422fde)
+
+```text
+fix(ui): shorten JSON type badges to JsonValue
+
+```
+
+<!-- changelog-commit:68d3f8fce5052f3014ad5ecab1d189060644325a -->
+### Commit [`68d3f8f`](https://github.com/superhero/operations.superduper.solutions/commit/68d3f8fce5052f3014ad5ecab1d189060644325a)
+
+```text
+fix(ui): share scrollable select option lists
+
+Reuse the form/settings option list for compact workflow controls.
+Keep long menus inside the viewport and expose native scrollbars so
+users can scroll directly while preserving keyboard selection and
+the existing trigger styling.
+
+```
+
+<!-- changelog-commit:8695f78e7da6565ef3e892e49ba77506955c6fd2 -->
+### Commit [`8695f78`](https://github.com/superhero/operations.superduper.solutions/commit/8695f78e7da6565ef3e892e49ba77506955c6fd2)
+
+```text
+feat(workflow): edit field mappings without JSON
+
+Replace the raw mapping dictionary with source-to-name rows and a guided
+editor for nested fields and array items. Save and Cancel keep incomplete
+drafts out of workflow state while retaining the existing mapping format,
+Undo history and execution behavior.
+
+```
+
+<!-- changelog-commit:79b39bd0e4d872fac8a6b5fb3ada08e4801291cf -->
+### Commit [`79b39bd`](https://github.com/superhero/operations.superduper.solutions/commit/79b39bd0e4d872fac8a6b5fb3ada08e4801291cf)
+
+```text
+fix(ui): prevent dropdown hover scroll after opening
+
+Keep pointer hover over clipped options from forcing the select list to
+scroll after opening. Preserve direct clicking and explicit wheel, touch
+and keyboard scrolling, and release cached hover geometry with the popup.
+
+Record the reproduced Brave movement and focused cross-browser checks;
+allow the browser harness to use an installed Chromium variant.
+
+```
+
+<!-- changelog-commit:6fc68d62dbabcda46d747ccd40392264361a7838 -->
+### Commit [`6fc68d6`](https://github.com/superhero/operations.superduper.solutions/commit/6fc68d62dbabcda46d747ccd40392264361a7838)
+
+```text
+fix(ui): reposition signing node dividers
+
+```
+
+<!-- changelog-commit:866293f80485821718103387de80c03dd5e0a28f -->
+### Commit [`866293f`](https://github.com/superhero/operations.superduper.solutions/commit/866293f80485821718103387de80c03dd5e0a28f)
+
+```text
+fix(ui): place processing settings divider above parameters
+
+```
+
+<!-- changelog-commit:ce4c58c5ef7a3a981fa2f8b5c248e609df75c06d -->
+### Commit [`ce4c58c`](https://github.com/superhero/operations.superduper.solutions/commit/ce4c58c5ef7a3a981fa2f8b5c248e609df75c06d)
+
+```text
+fix(ui): group JWT key ID with signing key
+
+```
+
+<!-- changelog-commit:9a3e8f51f519d7efe4d6c934c744ff69a867227e -->
+### Commit [`9a3e8f5`](https://github.com/superhero/operations.superduper.solutions/commit/9a3e8f51f519d7efe4d6c934c744ff69a867227e)
+
+```text
+fix(ui): keep node field hover continuous across labels
+
+```
+
+<!-- changelog-commit:0ea4bf64d3b8ccf57e2f30b293dfc053f9d123da -->
+### Commit [`0ea4bf6`](https://github.com/superhero/operations.superduper.solutions/commit/0ea4bf64d3b8ccf57e2f30b293dfc053f9d123da)
+
+```text
+fix(ui): nest workflow controls inside their labels
+
+```
+
+<!-- changelog-commit:55bf1af1b2db6cb3f828857654fca93ed23b8a55 -->
+### Commit [`55bf1af`](https://github.com/superhero/operations.superduper.solutions/commit/55bf1af1b2db6cb3f828857654fca93ed23b8a55)
+
+```text
+fix(ui): show Assert output types and remove node header tooltips
+
+```
+
+<!-- changelog-commit:8f7dcdb3dbf2bd3f66c3c3d4b94abed1a4e12413 -->
+### Commit [`8f7dcdb`](https://github.com/superhero/operations.superduper.solutions/commit/8f7dcdb3dbf2bd3f66c3c3d4b94abed1a4e12413)
+
+```text
+fix(ui): describe node selectors and connector types
+
+```
+
+<!-- changelog-commit:5cb3cbd63d3e8480cccde187ce0812f9f1d1be86 -->
+### Commit [`5cb3cbd`](https://github.com/superhero/operations.superduper.solutions/commit/5cb3cbd63d3e8480cccde187ce0812f9f1d1be86)
+
+```text
+fix(ui): explain Assert controls and passthrough connections
+
+```
+
+<!-- changelog-commit:be00fb9633f92be0263b90791208a0d6e8f801f4 -->
+### Commit [`be00fb9`](https://github.com/superhero/operations.superduper.solutions/commit/be00fb9633f92be0263b90791208a0d6e8f801f4)
+
+```text
+fix(workflows): show only relevant assertion fields
+
+```
+
+<!-- changelog-commit:d310c3ec2d85889d575cf830d791e0e6fbbb594f -->
+### Commit [`d310c3e`](https://github.com/superhero/operations.superduper.solutions/commit/d310c3ec2d85889d575cf830d791e0e6fbbb594f)
+
+```text
+feat(comments): adopt markdown-it and styled Markdown editing
+
+```
+
+<!-- changelog-commit:f506a8f822f92b5cb4cd6709a0ae11cdf4a9dcfd -->
+### Commit [`f506a8f`](https://github.com/superhero/operations.superduper.solutions/commit/f506a8f822f92b5cb4cd6709a0ae11cdf4a9dcfd)
+
+```text
+feat(comments): enable images through mdit plugins
+
+```
+
+<!-- changelog-commit:539eff664fb61631aa1b680232b0d4d1039eea62 -->
+### Commit [`539eff6`](https://github.com/superhero/operations.superduper.solutions/commit/539eff664fb61631aa1b680232b0d4d1039eea62)
+
+```text
+feat(workflows): connect typed assertion expected values
+
+```
+
+<!-- changelog-commit:10f1f9a2f93221390612c9442f69264ebbff9edc -->
+### Commit [`10f1f9a`](https://github.com/superhero/operations.superduper.solutions/commit/10f1f9a2f93221390612c9442f69264ebbff9edc)
+
+```text
+chore(workflows): integrate Assert inputs with Markdown comments
+
+```
+
+<!-- changelog-commit:59db2e1cfdb760b0cadd7214a6343becef3c5603 -->
+### Commit [`59db2e1`](https://github.com/superhero/operations.superduper.solutions/commit/59db2e1cfdb760b0cadd7214a6343becef3c5603)
+
+```text
+fix(ui): separate mapping cancel and save actions
+
+```
+
+<!-- changelog-commit:6f2eea0c081d9aa78b6a9ce514d8f574c98500ba -->
+### Commit [`6f2eea0`](https://github.com/superhero/operations.superduper.solutions/commit/6f2eea0c081d9aa78b6a9ce514d8f574c98500ba)
+
+```text
+chore(deps): add Markdown editor dependency badges
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

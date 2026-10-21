@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { VaultError } from "./types.ts";
+import { validatePrivateExpression, type PrivateExpression } from "./processing.ts";
 
 /** Local references only; these are never decrypted by the workflow runner. */
-export type VaultVariableInput = { key: string; path: string[]; credentialId: string };
+export type VaultVariableInput = { key: string; path: string[] } &
+  ({ credentialId: string; expression?: never } | { expression: PrivateExpression; credentialId?: never });
 export const vaultVariablePlaceholder = "[Vault variable]";
 export type VaultVariableReference = { vaultVariable: string; referenceToken: string };
 export function isVaultVariableReference(value: unknown, token: string): value is VaultVariableReference {
@@ -31,15 +33,17 @@ export function validateVaultVariableInputs(value: unknown): VaultVariableInput[
     if (!value || typeof value !== "object" || ![Object.prototype, null].includes(Object.getPrototypeOf(value)) || Reflect.ownKeys(value).length !== 3)
       throw new VaultError("INVALID");
     const properties = Object.getOwnPropertyDescriptors(value);
-    if (["key", "path", "credentialId"].some(key => !properties[key]?.enumerable || !("value" in properties[key]!))) throw new VaultError("INVALID");
-    const key: unknown = properties.key!.value, credentialId: unknown = properties.credentialId!.value;
+    const source = Object.hasOwn(properties, "expression") ? "expression" : "credentialId";
+    if (["key", "path", source].some(key => !properties[key]?.enumerable || !("value" in properties[key]!))) throw new VaultError("INVALID");
+    const key: unknown = properties.key!.value, credentialId: unknown = properties.credentialId?.value;
     const path = plainArray(properties.path!.value, 40);
-    if (typeof key !== "string" || !key || key.length > 2048 || typeof credentialId !== "string" ||
-      !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(credentialId) ||
+    if (typeof key !== "string" || !key || key.length > 2048 || source === "credentialId" && (typeof credentialId !== "string" ||
+      !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(credentialId)) ||
       path.some(part => typeof part !== "string" || part.length > 2048)) throw new VaultError("INVALID");
     const identity = JSON.stringify([key, path]);
     if (seen.has(identity)) throw new VaultError("INVALID");
     seen.add(identity);
-    return { key, path: path as string[], credentialId };
+    return source === "credentialId" ? { key, path: path as string[], credentialId: credentialId as string }
+      : { key, path: path as string[], expression: validatePrivateExpression(properties.expression!.value) };
   });
 }

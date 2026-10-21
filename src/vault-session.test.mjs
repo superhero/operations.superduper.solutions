@@ -701,3 +701,18 @@ Then('public vault key indexes validate IDs labels kinds and membership and disc
   for (const kind of ['bearer', 'apiKey']) assert.equal(publicVaultKeys(state([{ ...key, kind }])).entries[0].kind, kind);
   assert.deepEqual(publicVaultKeys({ snapshot: { records: [] } }), { entries: [], needsUnlock: false });
 });
+
+Then('private assertion session decisions remain guarded by the vault session', async () => {
+  const { defaultProcessingData } = await import('./lib/workflow-processing.ts');
+  const { session } = await created();
+  const values = await session.put(null, { label: 'Synthetic assertion input', kind: 'secret', value: 'private-assertion-input' });
+  const expression = { kind: 'credential', id: values[0].id };
+  const predicate = defaultProcessingData('assert');
+  assert.equal(await session.checkAssertion(expression, predicate), true);
+  predicate.parameters.operator = 'equals'; predicate.parameters.expected = 'different';
+  assert.equal(await session.checkAssertion(expression, predicate), false);
+  assert.equal(await session.checkAssertion(expression, predicate, { expected: expression }), true);
+  await assert.rejects(session.checkAssertion(expression, predicate, { key_id: expression }), code('INVALID'));
+  session.lock();
+  await assert.rejects(session.checkAssertion(expression, predicate, { expected: expression }), code('LOCKED'));
+});

@@ -65,7 +65,7 @@ Then('workflow shortcut preferences persist, prevent conflicts and preserve text
   await expect(workflow(page).locator('.svelte-flow__node-comment')).toHaveCount(1);
   await workflow(page).focus();
   await page.keyboard.press('Escape');
-  const input = workflow(page).locator('.svelte-flow__node-comment textarea');
+  const input = workflow(page).locator('.svelte-flow__node-comment [contenteditable="true"]');
   await input.fill('Text editing');
   await input.press('Control+a');
   await expect.poll(() => input.evaluate(element => element.selectionEnd - element.selectionStart)).toBe(12);
@@ -140,11 +140,11 @@ Then('deletion shortcuts remove selected nodes and connections and respect editi
   await page.keyboard.press('Control+d');
   await expect(node(page, 'Other operation')).toHaveCount(0);
   await graph.getByRole('button', { name: 'Comment', exact: true }).click();
-  const input = graph.locator('.svelte-flow__node-comment textarea');
+  const input = graph.locator('.svelte-flow__node-comment [contenteditable="true"]');
   await input.fill('Keep');
   await input.press('End');
   await input.press('Backspace');
-  await expect(input).toHaveValue('Kee');
+  await expect(input).toHaveText('Kee');
   await input.press('Control+d');
   await expect(graph.locator('.svelte-flow__node-comment')).toHaveCount(1);
 });

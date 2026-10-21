@@ -108,7 +108,10 @@ BeforeAll(async function () {
     const engine = { chromium, firefox, webkit }[name];
     if (!engine) throw new Error(`Unsupported BROWSER_ENGINE: ${name}`);
     // Exercise native scrollbars as users see them; Chromium's headless default hides them.
-    browser = await engine.launch(name === 'chromium' ? { ignoreDefaultArgs: ['--hide-scrollbars'] } : {});
+    browser = await engine.launch(name === 'chromium' ? {
+      ignoreDefaultArgs: ['--hide-scrollbars'],
+      ...(process.env.BROWSER_EXECUTABLE_PATH ? { executablePath: process.env.BROWSER_EXECUTABLE_PATH } : {}),
+    } : {});
   } catch (error) {
     server.close();
     throw new Error(`Cannot start ${process.env.BROWSER_ENGINE ?? 'chromium'} with ${process.env.BROWSER_TEST_IMAGE ?? 'an unspecified image'}. Run npm run test:browser to use the matching Docker image.`, { cause: error });

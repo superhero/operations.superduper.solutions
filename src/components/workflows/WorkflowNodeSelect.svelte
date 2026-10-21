@@ -8,9 +8,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { Select, mergeProps } from "bits-ui";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import HintButton from "$lib/components/HintButton.svelte";
+  import FieldSelectOptions from "$lib/components/FieldSelectOptions.svelte";
 
-  let { label, value, choices, disabled = false, active = true, onchange }: {
-    label: string; value: string; choices: { value: string; label: string; symbol?: string; placeholder?: boolean; bold?: boolean; disabled?: boolean }[];
+  let { label, tooltip = label, value, choices, disabled = false, active = true, onchange }: {
+    label: string; tooltip?: string; value: string; choices: { value: string; label: string; symbol?: string; placeholder?: boolean; bold?: boolean; disabled?: boolean }[];
     disabled?: boolean; active?: boolean; onchange: (value: string) => void;
   } = $props();
   let open = $state(false);
@@ -21,7 +22,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <Select.Root type="single" {value} {disabled} items={choices} onValueChange={onchange} bind:open>
   <Select.Trigger class="workflow-node-select nodrag nopan nokey" role="combobox" aria-label={label}>
     {#snippet child({ props: selectProps })}
-      <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={selected?.label ?? value} labelAsName={false} tooltipEnabled={!open}>
+      <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={tooltip} labelAsName={false} tooltipEnabled={!open}>
         {#snippet child({ props: hintProps })}
           <button {...mergeProps(hintProps, selectProps)}>
             <span class="select-label" class:bold={selected?.bold} class:placeholder={selected?.placeholder}>{selected?.symbol ?? selected?.label ?? value}</span><MaterialIcon name="expand_more" size={16} />
@@ -30,31 +31,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </HintButton>
     {/snippet}
   </Select.Trigger>
-  <Select.Portal>
-    <Select.Content class="workflow-node-select-options nodrag nopan nokey nowheel" aria-label={label} align="start" sideOffset={5} collisionPadding={10} preventScroll={false}>
-      <Select.Viewport>
-        {#each choices as choice (choice.value)}
-          <Select.Item value={choice.value} label={choice.label} disabled={choice.disabled ?? false} class="workflow-node-select-option">
-            {#snippet children({ selected })}
-              <span class:bold={choice.bold} class:placeholder={choice.placeholder}>{choice.label}</span><span class="check" aria-hidden="true">{#if selected}<MaterialIcon name="check" size={16} />{/if}</span>
-            {/snippet}
-          </Select.Item>
-        {/each}
-      </Select.Viewport>
-    </Select.Content>
-  </Select.Portal>
+  <FieldSelectOptions {label} items={choices} portalZIndex={60} variant="node" />
 </Select.Root>
 
 <style>
   :global(.workflow-node-select) { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; min-width: 0; min-height: 30px; padding: 5px 8px; border: 0; border-radius: 4px; background: var(--color-background); color: var(--color-foreground); font-size: 11px; text-align: left; }
   :global(.workflow-node-select:disabled) { background: var(--color-disabled); color: var(--color-disabled-foreground); }
-  :global(.workflow-node-select-options) { z-index: 60; min-width: max(140px, var(--bits-select-anchor-width)); max-width: calc(100vw - 20px); max-height: min(320px, var(--bits-select-content-available-height)); overflow: auto; padding: 4px; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
-  :global(.workflow-node-select-option) { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 32px; padding: 6px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; outline: none; transition: background-color 180ms ease-in, color 180ms ease-in; }
-  :global(.workflow-node-select-option[data-highlighted]) { background: var(--color-secondary-hover); color: var(--color-secondary-hover-foreground); }
-  :global(.workflow-node-select-option[data-disabled]) { color: var(--color-disabled-foreground); cursor: not-allowed; }
   .select-label { min-width: 0; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .bold { font-weight: 700; }
   .placeholder { font-style: italic; font-weight: 400; }
-  .check { display: grid; place-items: center; width: 16px; height: 16px; }
-  @media (prefers-reduced-motion: reduce) { :global(.workflow-node-select), :global(.workflow-node-select-option) { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { :global(.workflow-node-select) { transition: none; } }
 </style>

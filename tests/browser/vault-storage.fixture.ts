@@ -6,8 +6,37 @@ import { createVaultStorage } from "../../src/lib/secrets/storage.ts";
 import { VaultSession } from "../../src/lib/secrets/session.ts";
 import { approvedOperation } from "../../src/lib/secrets/policy.ts";
 import { VaultError, vaultDatabaseName } from "../../src/lib/secrets/types.ts";
+import { vaultCall, lockVault } from "../../src/lib/secrets/client.ts";
+import { defaultProcessingData } from "../../src/lib/workflow-processing.ts";
 import type { ApprovedOperation, CredentialBinding, UnlockProof } from "../../src/lib/secrets/types.ts";
 export { createVaultStorage, VaultSession };
+
+export async function checkProcessingAssertion() {
+  const local = new VaultSession(createVaultStorage());
+  const password = "processing-browser-password-synthetic";
+  const recovery = await local.prepareCreate(password);
+  const status = await local.confirmCreate(recovery);
+  const proof = { methodId: status.methods.find(method => method.kind === "password")!.id, secret: password };
+  const values = await local.put(proof, { label: "Synthetic processing credential", kind: "secret", value: "private-processing-browser-canary" });
+  await vaultCall("unlock", [proof]);
+  const expression = { kind: "process" as const, type: "transform" as const, data: defaultProcessingData("transform"), value: { kind: "credential" as const, id: values[0]!.id } };
+  const predicate = defaultProcessingData("assert");
+  predicate.parameters.operator = "starts_with";
+  predicate.parameters.expected = "cHJp";
+  const matched = await vaultCall("checkAssertion", [expression, predicate]);
+  predicate.parameters.expected = "different";
+  const unmatched = await vaultCall("checkAssertion", [expression, predicate]);
+  const jwt = { kind: "process" as const, type: "transform" as const, data: defaultProcessingData("transform", "jwt_sign"),
+    value: { kind: "literal" as const, value: { sub: "subject" } }, key: { kind: "literal" as const, value: "01234567890123456789012345678901" },
+    parameters: { key_id: { kind: "credential" as const, id: values[0]!.id } } };
+  jwt.data.parameters.key_id = "manual-id";
+  predicate.parameters.expected = btoa(JSON.stringify({ alg: "HS256", typ: "JWT", kid: "private-processing-browser-canary" })).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") + ".";
+  const jwtKeyId = await vaultCall("checkAssertion", [jwt, predicate]);
+  predicate.parameters.expected = btoa(JSON.stringify({ alg: "HS256", typ: "JWT", kid: "manual-id" })).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") + ".";
+  const manualKeyId = await vaultCall("checkAssertion", [jwt, predicate]);
+  await lockVault();
+  return { matched, unmatched, jwtKeyId, manualKeyId };
+}
 
 export const synthetic = { password: "browser-VAULT-password-9182", bearer: "browser-BEARER-canary-9182",
   apiKey: "browser-APIKEY-canary-9182", label: "browser-PRIVATE-label-9182" };

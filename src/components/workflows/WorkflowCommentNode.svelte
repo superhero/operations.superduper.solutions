@@ -8,6 +8,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { getContext, tick, untrack } from "svelte";
   import { NodeResizeControl, useUpdateNodeInternals, type Node, type NodeProps } from "@xyflow/svelte";
   import HintButton from "$lib/components/HintButton.svelte";
+  import MarkdownEditor from "$lib/components/MarkdownEditor.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import type { CommentData } from "$lib/workflow-document.ts";
   import { commentTextLimit } from "$lib/workflow-utilities.ts";
@@ -20,7 +21,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const editorActive = getContext<(() => boolean) | undefined>("workflow-editor-active");
   const updateNodeInternals = useUpdateNodeInternals();
   let editing = $state(false);
-  let input: HTMLTextAreaElement | undefined = $state();
   let preview: HTMLDivElement | undefined = $state();
   let card: HTMLDivElement | undefined = $state();
   const layout = $derived(JSON.stringify([editing, data.text]));
@@ -31,20 +31,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (event?.target instanceof Element && event.target.closest("a")) return;
     editing = true;
     await tick();
-    input?.focus({ preventScroll: true });
   }
   async function finish() {
-    input?.blur();
     editing = false;
     await tick();
     (preview ?? card?.closest<HTMLElement>(".svelte-flow__node"))?.focus({ preventScroll: true });
-  }
-  function keydown(event: KeyboardEvent) {
-    event.stopPropagation();
-    if (!event.isComposing && (event.key === "Escape" || event.key === "Enter" && (event.ctrlKey || event.metaKey))) {
-      event.preventDefault();
-      void finish();
-    }
   }
 </script>
 
@@ -61,9 +52,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </div>
   {#if editing || !data.text.trim()}
     <div class="comment-editor nodrag nopan nokey nowheel">
-      <textarea bind:this={input} aria-label="Comment text (Markdown)" placeholder="Write a comment…" maxlength={commentTextLimit}
-        value={data.text} onfocus={() => editing = true} onblur={() => editing = false} onkeydown={keydown}
-        oninput={event => changeText(id, event.currentTarget.value)}></textarea>
+      <MarkdownEditor value={data.text} label="Comment text (Markdown)" maxLength={commentTextLimit} autofocus={editing}
+        onchange={text => changeText(id, text)} onfocus={() => editing = true} onblur={() => editing = false} onfinish={() => { void finish(); }} />
     </div>
   {:else}
     <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label="Click or press Enter to edit" labelAsName={false} aria-label="Edit comment text" tabindex={0}
@@ -75,7 +65,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       {#snippet child({ props })}
         {@const { type: _type, disabled: _disabled, ...hintProps } = props}
         <div {...hintProps} bind:this={preview} class="comment-preview nodrag nopan nokey" role="button">
-          <WorkflowCommentPreview text={data.text} />
+          <WorkflowCommentPreview text={data.text} scope={`${id}-view`} />
         </div>
       {/snippet}
     </HintButton>
@@ -88,6 +78,5 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.comment-resize-handle.handle) { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--color-surface); background: var(--color-foreground); }
   .comment-editor, .comment-preview { padding: 10px 12px; border-top: 1px solid var(--color-border); }
   .comment-preview { min-height: 60px; cursor: text; }
-  textarea { display: block; width: 100%; height: 100%; min-height: 0; padding: 8px; border: 0; border-radius: 4px; resize: none; background: var(--color-background); color: var(--color-foreground); font: 12px/1.6 ui-monospace, monospace; }
-  @media (prefers-reduced-motion: reduce) { textarea, .comment-preview { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .comment-preview { transition: none; } }
 </style>

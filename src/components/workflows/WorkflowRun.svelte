@@ -46,8 +46,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let heading = $state<HTMLHeadingElement>();
   const destination = $derived(view?.kind === "operation" ? workflowExecutionForOperation(view.operation) : undefined);
 
-  function advance()
+  let processingResults = $state<ReturnType<typeof createWorkflowRunner>["processingResults"]>([]);
+  let processingLocked = $state(false);
+  let resultsOpen = $state(false);
+  let advanceRevision = 0;
+  async function advance()
   {
+    const request = ++advanceRevision;
+    busy = true;
+    processingLocked = false;
     error = "";
     fieldError = null;
     prepared = null;
@@ -58,13 +65,22 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     retry = false;
     try
     {
-      view = runner!.next();
+      const next = await runner!.nextAsync();
+      if (disposed || request !== advanceRevision) return;
+      view = next;
+      processingResults = runner!.processingResults;
       credentialBinding = view.kind === "operation" ? view.credentialBinding : undefined;
       values = view.kind === "operation" ? { ...view.values } : {};
       selected = view.kind === "choice" ? view.choices[0]?.id ?? "" : "";
       void tick().then(() => heading?.focus());
     }
-    catch (cause) { error = cause instanceof Error ? cause.message : "The workflow could not continue."; fatal = true; }
+    catch (cause) {
+      if (disposed || request !== advanceRevision) return;
+      error = cause instanceof Error ? cause.message : "The workflow could not continue.";
+      processingLocked = !!cause && typeof cause === "object" && "code" in cause && cause.code === "LOCKED";
+      fatal = !processingLocked;
+    }
+    finally { if (!disposed && request === advanceRevision) busy = false; }
   }
 
   function start()
@@ -191,6 +207,23 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {#if error && (!fieldError || view?.kind !== "operation" || !view.operation.fields.some(field => field.key === fieldError?.fieldKey))}
     <p id="workflow-run-error" class="run-error" role="alert">{error}</p>
   {/if}
+  {#if processingLocked}
+    <VaultVariableAccess disabled={busy} />
+    <button type="button" class="run-primary" disabled={busy} onclick={advance}>Continue</button>
+  {/if}
+  {#if processingResults.length}
+    <details class="run-processing-results" bind:open={resultsOpen}>
+      <summary>Processing results ({processingResults.length})</summary>
+      {#if resultsOpen}
+        {#each processingResults as result, index (`${index}:${result.nodeId}`)}
+          <section aria-label={`${result.name} result`}>
+            <strong>{result.name}{result.matched === undefined ? "" : result.matched ? " · Success" : " · Failure"}</strong>
+            <pre>{result.preview}</pre>
+          </section>
+        {/each}
+      {/if}
+    </details>
+  {/if}
   {#if failedResponse}{@render responseDetails(failedResponse, "Operation response")}{/if}
   {#if prepared && !executed}<div class="json-report" role="region" aria-label="Prepared request"><pre>{JSON.stringify(prepared, null, 2)}</pre></div>{/if}
   {#if history.length}
@@ -249,6 +282,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .run-success { font-size: 12px; }
   .run-error { margin: 0; padding: 12px; background: var(--color-error-background); color: var(--color-error-foreground); font-size: 12px; line-height: 1.6; }
   .run-results { min-width: 0; display: grid; gap: 12px; }
+  .run-processing-results { min-width: 0; font-size: 12px; }
+  .run-processing-results pre { max-height: 240px; padding: 8px; overflow: auto; white-space: pre; background: var(--color-report-card); }
   summary { cursor: pointer; padding: 10px 0; font-size: 12px; font-weight: 700; }
   footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding-top: 8px; border-top: 1px solid var(--color-surface); }
 </style>

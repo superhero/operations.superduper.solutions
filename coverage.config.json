@@ -44,7 +44,9 @@
     "src/lib/secrets/vault-executor.ts",
     "src/lib/secrets/schema-policy-storage.ts",
     "src/lib/workflow-file-client.ts",
-    "src/lib/workflow-file.worker.ts"
+    "src/lib/workflow-file.worker.ts",
+    "src/lib/workflow-processing-client.ts",
+    "src/lib/workflow-processing.worker.ts"
   ],
   "statements": 100,
   "branches": 100,

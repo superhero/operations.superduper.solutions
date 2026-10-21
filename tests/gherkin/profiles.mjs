@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 const source = {
   import: [
+    "src/workflow-processing.test.mjs",
     "src/operation-security.test.mjs",
     "src/vault-crypto.test.mjs",
     "src/vault-session.test.mjs",
@@ -65,6 +66,7 @@ const source = {
     "src/workflow-defensive.test.mjs"
   ],
   paths: [
+    "src/workflow-processing.feature",
     "src/operation-security.feature",
     "src/vault-crypto.feature",
     "src/vault-session.feature",

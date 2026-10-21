@@ -321,7 +321,7 @@ Then('all service schemas appear and preserve disablement renames and default pr
   for (const source of descriptors) {
     const record = records.find(record => record.id === source.id);
     assert.equal(record.factoryDigest, source.effectiveSha256 ?? source.sha256, source.id);
-    assert.equal(record.enabled, true, source.id);
+    assert.equal(record.enabled, source.id !== 'ollama', source.id);
     await expectSchemaName(card(page, source.id), source.name);
   }
   const frankfurter = card(page, 'frankfurter');
@@ -365,6 +365,13 @@ Then('all service schemas appear and preserve disablement renames and default pr
   await expect(card(page, 'cohere').getByRole('switch')).toHaveAttribute('aria-checked', 'false');
   const revised = (await stored(page)).find(record => record.id === 'mistral');
   assert.equal(revised.factoryDigest, undefined, 'Editing a factory document creates an authored Git copy.');
+  // Ollama starts off; explicit activation survives reload and supports execution.
+  const ollama = card(page, 'ollama').getByRole('switch');
+  await expect(ollama).toHaveAttribute('aria-checked', 'false');
+  await ollama.click();
+  await expect(ollama).toHaveAttribute('aria-checked', 'true');
+  await reload(page);
+  await expect(ollama).toHaveAttribute('aria-checked', 'true');
   // Exercise an actual newly installed operation through the normal sidebar/run path.
   await setMode(page, 'workflow');
   await openCatalog(page);

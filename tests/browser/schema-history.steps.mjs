@@ -7,7 +7,74 @@ import { expect } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { setMode } from './workspace.steps.mjs';
 import { expandSchemaCard, revealSchemaCard, expectSchemaName } from './schema-card.fixture.mjs';
-import { captureRevisionClose, traceRevisionClose } from './schema-revisions-motion.fixture.mjs';
+import { captureRevisionClose, captureRevisionOpen, traceRevisionClose } from './schema-revisions-motion.fixture.mjs';
+
+Then('DigitalOcean revisions compare published security with retained token permissions', async function () {
+  const page = this.page;
+  await setMode(page, 'settings');
+  await page.locator('summary[aria-label="Schemas"]').click();
+  const card = await expandSchemaCard(page.locator('[data-schema-id="digitalocean"]'));
+  await card.getByRole('button', { name: 'Schema revisions', exact: true }).click();
+  const history = card.locator('.schema-history');
+  await expect(history.locator('[data-version-oid]')).toHaveCount(2);
+  await expect(history.getByText('Apply schema corrections: DigitalOcean bearer permissions', { exact: true })).toBeVisible();
+  const diff = history.locator('.revision-diff');
+  await expect(diff).toHaveAttribute('aria-busy', 'false');
+  assert.notEqual(await diff.getAttribute('data-revision'), await diff.getAttribute('data-base'));
+  await expect(diff.getByRole('combobox', { name: 'Base commit', exact: true })).toContainText('Import published schema: DigitalOcean');
+  await expect(diff.getByRole('combobox', { name: 'Compare commit', exact: true })).toContainText('DigitalOcean bearer permissions');
+  const group = diff.locator('.change-group').filter({ has: page.locator(':scope > summary strong', { hasText: 'Authentication' }) });
+  await group.locator(':scope > summary').click();
+  const permission = group.locator('.field-change').filter({ has: page.locator(':scope > summary code[title$="/x-credential-permissions"]') }).first();
+  await permission.locator(':scope > summary').click();
+  await expect(permission.locator('.field-content')).toHaveAttribute('aria-busy', 'false');
+  await expect(permission.locator('[data-side="before"]')).toHaveCount(0);
+  await expect(permission.locator('[data-side="after"] .diff-line.added').filter({ hasText: 'bearer_auth' })).toHaveCount(1);
+  await expect(permission.locator('[data-side="after"]')).toContainText('action_gateway:read');
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await card.screenshot({ path: `${this.artifactDirectory}/digitalocean-correction.png` });
+});
+
+Then('schema revisions open without flashing disabled comparison controls', async function () {
+  const page = this.page;
+  await setMode(page, 'settings');
+  await page.locator('summary[aria-label="Schemas"]').click();
+  const card = await expandSchemaCard(page.locator('[data-schema-id="cohere"]'));
+  const toggle = card.getByRole('button', { name: 'Schema revisions', exact: true });
+  const panel = card.locator('.schema-history > .reveal-panel');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const close = async () => {
+    if (await toggle.getAttribute('aria-expanded') === 'true') await toggle.click();
+    await expect(panel).toHaveAttribute('hidden', '');
+    await expect(panel.locator('[data-version-oid]')).toHaveCount(0);
+  };
+  const samples = [];
+  for (let sample = 0; sample < 3; sample++) {
+    await close();
+    samples.push(await captureRevisionOpen(panel, toggle));
+  }
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await close();
+  const diagnostic = await traceRevisionClose(this.context, page, `${this.artifactDirectory}/revision-expand.chrome.json`,
+    () => captureRevisionOpen(panel, toggle), 'expand');
+  const report = { width: page.viewportSize().width, browser: this.browser.version(), motion: 'no-preference',
+    source: 'cohere', samples, diagnostic,
+    instrumentation: 'rAF geometry/computed-color reads; normal Playwright snapshots; CDP in separate diagnostic pass; routing disables HTTP cache' };
+  await writeFile(`${this.artifactDirectory}/revision-expand.json`, JSON.stringify(report, null, 2));
+  await this.attach(JSON.stringify(report), 'application/json');
+  await card.locator('.schema-history').screenshot({ path: `${this.artifactDirectory}/revision-expand.png` });
+  for (const sample of samples) {
+    assert.ok(sample.ready, 'The initial comparison must finish loading.');
+    const visible = sample.frames.filter(frame => frame.height > 0 && frame.controls.length);
+    assert.ok(visible.length, 'Loaded comparison controls must become visible.');
+    const final = visible.at(-1);
+    for (const frame of visible) {
+      assert.ok(frame.controls.every(control => !control.disabled), 'Initial comparison controls appear ready, without a disabled flash.');
+      assert.deepEqual(frame.controls, final.controls, 'Comparison colors are correct from their first rendered frame.');
+      assert.equal(frame.current, final.revision, 'The initial current revision is selected when its row first appears.');
+    }
+  }
+});
 
 Then('schema revisions close without collapsing their content early and support reversal and reduced motion', async function () {
   const page = this.page;

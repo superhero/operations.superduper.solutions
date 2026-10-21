@@ -263,8 +263,131 @@ the marker without closing the dialog or discarding later history.
 
 Switch uses the first matching gate, with connected operands replacing manual
 values. Removing a gate removes its mappings; the last gate cannot be removed.
-Cast converts primitives to Text, Number or Boolean. Comment Markdown escapes
-text and permits safe links, never raw HTML.
+Cast converts primitives to Text, Number or Boolean. Comments store Markdown
+source unchanged. Editing uses CodeMirror's Markdown language support: source
+markers remain visible while headings, emphasis and inline code are styled.
+The editor exists only during editing and releases its view/listeners on exit;
+contenteditable focus participates in the existing grouped autosave history.
+
+Viewing uses the shared `src/lib/markdown.ts` markdown-it configuration, replacing
+the custom comment parser. CommonMark/GFM blocks and tables are supplemented by
+the mdit tasklist, footnote, mark, ins, sub and sup plugins. Markdown images use
+the mdit img-size and img-lazyload plugins, and fit inside the comment width.
+Raw HTML stays escaped and links permit only HTTP(S) and mailto. Plugin-generated
+task and footnote identifiers are scoped to each rendered comment. Plugin extensions must preserve these
+[markdown-it safety rules](https://github.com/markdown-it/markdown-it/blob/master/docs/safety.md).
+
+Transform, Filter and Assert are separate node types. Their validated, versioned
+operation definitions provide the selector choices, configuration fields and port
+types. A configured card names its action, such as Encode Base64 or Substring.
+Transform and Filter input badges and port labels show the types accepted by the selected
+operation before and after wiring, such as `Text | Binary` or `Object | Array`. JSON
+serialization displays JSON. Connected-type inference still determines the
+types propagated through the graph.
+Configurations participate in workflow history, Undo, clipboard and portable
+documents; existing document versions retain their prior behavior.
+
+Workflow node selects reuse the scrolling option list from form/settings selects.
+The popup caps its height to available viewport space and its inner viewport owns
+native scrolling, with a visible scrollbar. Wheel input stays inside the list;
+keyboard navigation, disabled options, node tooltips and compact styling retain
+their existing behavior.
+Selector tooltips describe the control's purpose rather than repeating its value
+(for example, Transformation or Assertion condition). Node headers have neither
+tooltips nor native title popups. Utility connector tooltips identify their
+purpose and types; Assert additionally explains that Success and Failure each
+pass the original input through unchanged. Connected inputs remain hoverable
+without allowing an additional incoming connection.
+Hovering a partly clipped option leaves the list and active highlight in place;
+the visible portion remains clickable. Wheel/touch scrolling and keyboard
+navigation still reveal options normally. Hover geometry is cached until the
+row changes or the viewport scrolls/resizes, and released when the popup closes.
+
+Transform supports UTF-8, Base64/Base64url and hexadecimal encoding/decoding,
+JSON parsing/serialization, field mapping, SHA-256,
+HMAC-SHA256 and JWT signing. JSON parsing has no result-type selector: its known
+output alternatives are `Object | Text | Number | Boolean | Array | Null`, shown
+as `JsonValue` in type badges and port labels. Integer is included in Number.
+A matching receiving port may assume one of these
+types; the executor validates the actual value without inserting a cast. The
+union stays available through Assert and Switch. Earlier saved Parse JSON nodes
+discard their obsolete result-type setting when loaded. Field selection still
+declares its output type. Map fields uses editable source → new-name rows,
+with Add/Remove and atomic Save/Cancel. Sources are the entire input or literal
+field/item names entered one level at a time, with zero-based array positions.
+Only listed fields appear in the result. The editor escapes JSON pointers
+internally and preserves the existing saved mapping format and executor;
+duplicate names and existing size limits are validated before saving.
+Binary values retain exact bytes; connecting an original file
+to a binary-only processing input inserts the visible Binary Cast.
+
+Signing-key ports show their accepted `Text | Binary` types. JWT Key ID also
+has a Text input port: a connection disables manual editing and supplies the
+header's `kid` during execution. Disconnecting restores the saved manual value;
+connected empty text omits `kid`. Connected parameters retain their own types
+and bounds and remain opaque when supplied by vault values. Unmatched Assert
+outputs and inactive Switch branches follow the same routing rules as other
+processing inputs, without falling back to disabled manual values.
+
+Filter trims either or both ends of text, selects a substring or a field by JSON
+pointer, selects an array range or keeps array items matching a predicate. Older
+Select field Transform nodes load as Filter nodes with the same identity,
+configuration and connections; older private recipes remain executable.
+Text indices count Unicode
+code points; ranges include their start and exclude their end, with negative
+indices counting from the end. Array filtering retains input order. Predicates
+use explicit field paths and comparisons; equality preserves value types.
+
+Assert passes the original input unchanged through Success or Failure. The
+field-path editor appears only for structured or unresolved input types; scalar
+inputs are checked directly, ignoring any retained path from an earlier
+configuration. The expected-value editor appears only for conditions that use
+it; Is set and Is not set hide it while preserving the saved value for reuse.
+Expected value also accepts one connection, which disables its manual editor.
+Its badge and connection compatibility follow the condition and checked type:
+numeric comparisons require Number, text comparisons and type checks require
+Text, and equality uses the known checked type. Unresolved nested values use
+Any, while a known JSON union uses JsonValue. Connected values retain their
+original types; private operands are compared inside the vault. Changing the
+condition or path removes incompatible operand connections through Undo history.
+The unmatched output leaves its connected input unsupplied and editable in the next
+operation, including through another utility node. Assertion failure is ordinary
+data flow, including when Failure has no connection; it does not raise an
+assertion error or automatically skip the next operation. Switch retains its
+existing branch-routing behavior.
+
+Stop has one value input and no output or configuration. Any supplied value,
+including false, zero, null, empty data or an opaque vault reference, ends the
+whole run normally with “Workflow stopped.” This also applies inside nested
+workflows. Unmatched Assert outputs and inactive Switch outputs do not activate
+Stop. For example, connect Assert Failure to Stop when a failed expectation
+should end execution. Delivery ends the run before another operation is prepared,
+clears pending steps and releases processing resources without decrypting input.
+
+Processing runs on demand through asynchronous runner advancement. One public
+worker is created lazily per run and terminated on completion, cancellation or
+closure. Substantial encoding, parsing, filtering and cryptography stay outside
+rendering. Operation-free processing chains are supported. Result previews are
+bounded and rendered only when their section opens.
+
+Vault-backed inputs propagate opaque processing recipes. The vault worker
+validates and evaluates them during request injection; original and derived
+secrets remain absent from public previews and are scrubbed from responses.
+Private assertions return only a predicate decision, then preserve the original
+opaque reference on their selected output. Session checks apply after evaluation.
+No general decryption method is exposed. Portable documents clear vault selections.
+
+JWT signing selects HS256 or RS256 explicitly, with an optional key ID. HS256
+requires at least 32 key bytes; RS256 imports PKCS8 PEM/DER keys of at least 2048
+bits, following [JWA](https://www.rfc-editor.org/rfc/rfc7518.html#section-3).
+Caller-supplied claim objects determine the signed payload. Provider connection
+profiles continue to own issuer/audience rules, expiry, acquisition and destination
+binding; see [JWT practices](https://www.rfc-editor.org/rfc/rfc8725.html).
+
+The processing worker/client adapters use the same browser-verification boundary
+as file worker adapters. Source coverage includes the pure operation and private
+recipe logic; browser scenarios exercise real worker creation, disposal and vault
+RPC. Development verification remains focused on these contracts.
 
 Nested workflows embed validated snapshots, remaining portable and independent
 of deleted originals. Interfaces expose unsupplied inputs and documented outputs;

@@ -30,7 +30,7 @@ type SchemaBranches = { upstreamRevision?: string; correctedRevision?: string; p
 export type SchemaMetadata = Omit<SchemaDocumentRecord, "document"> & SchemaBranches & { repositoryPath: string; factoryDigest?: string;
   revision?: string; gitRevision?: string; historyDigest?: string; adapterRevision?: string; summary?: SchemaSummary };
 type SchemaDefaults = {
-  catalogs: readonly { id: string; name: string; file: string; revision: string; bytes?: number; summary?: SchemaSummary; patches?: SchemaPatch[] }[];
+  catalogs: readonly { id: string; name: string; file: string; revision: string; enabled?: boolean; bytes?: number; summary?: SchemaSummary; patches?: SchemaPatch[] }[];
   adapterRevision?: string;
   read: (id: string) => Promise<Record<string, unknown>>;
   readUpstream?: (id: string) => Promise<Record<string, unknown>>;
@@ -648,7 +648,7 @@ async function initialize(database: Database): Promise<void>
           ...(catalog.patches?.length ? { patches: catalog.patches } : {}),
           revision: catalog.revision, ...(catalog.summary ? { summary: catalog.summary } : {}),
           ...(defaults!.adapterRevision ? { adapterRevision: defaults!.adapterRevision } : {}),
-          enabled: true, createdAt: now, updatedAt: now }, catalog.id);
+          enabled: catalog.enabled ?? true, createdAt: now, updatedAt: now }, catalog.id);
       } else if (existing?.factoryDigest) {
         // Unmodified factory copies follow bundled updates; authored Git copies do not.
         const sourceChanged = existing.factoryDigest !== catalog.revision || existing.adapterRevision !== defaults!.adapterRevision;

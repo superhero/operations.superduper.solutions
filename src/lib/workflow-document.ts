@@ -8,6 +8,7 @@ import { validateWorkflowFileData, type WorkflowFileData } from "./workflow-file
 import { normalizeManualRoute } from "./flow-routing/manual.js";
 import { validateCredentialBinding } from "./secrets/bindings.ts";
 import type { CredentialBinding } from "./secrets/types.ts";
+import { processingDefinition, validateProcessingData, type ProcessingData } from "./workflow-processing.ts";
 
 export type OperationData = {
   operationId: string;
@@ -42,16 +43,19 @@ export type WorkflowData = {
 export type SwitchGate = { id: string; operator: "==" | "!=" | ">" | ">=" | "<" | "<=" | "is_set" | "is_not_set"; value: string };
 export type SwitchData = { gates: SwitchGate[] };
 export type CastData = { targetType: "Text" | "Number" | "Boolean" | "Binary" };
+export type StopData = Record<string, never>;
 export type VaultVariableData = { credentialId?: string };
 export type CommentData = { text: string; width?: number; height?: number };
 export type WorkflowReferenceData = { workflowId: string; name: string; description: string; snapshot: WorkflowDocument };
-export type WorkflowNodeData = OperationData | WorkflowData | SwitchData | CastData | CommentData | VaultVariableData | WorkflowFileData | WorkflowReferenceData;
+export type WorkflowNodeData = OperationData | WorkflowData | SwitchData | CastData | StopData | CommentData | VaultVariableData | WorkflowFileData | WorkflowReferenceData | ProcessingData;
+type ProcessingNode = { type: "transform"; data: ProcessingData } | { type: "filter"; data: ProcessingData } | { type: "assert"; data: ProcessingData };
 export type WorkflowDocumentNode = {
   id: string;
   position: { x: number; y: number };
   hidden?: boolean;
 } & ({ type?: "operation"; data: OperationData } | { type: "data"; data: WorkflowData } |
   { type: "switch"; data: SwitchData } | { type: "cast"; data: CastData } | { type: "comment"; data: CommentData } |
+  ProcessingNode | { type: "stop"; data: StopData } |
   { type: "workflow"; data: WorkflowReferenceData } | { type: "vault"; data: VaultVariableData } | { type: "file"; data: WorkflowFileData });
 export type WorkflowDocumentEdge = {
   id: string;
@@ -327,6 +331,14 @@ function validateDocument(value: unknown, context: ValidationContext, depth: num
       if (data.targetType !== "Text" && data.targetType !== "Number" && data.targetType !== "Boolean" && data.targetType !== "Binary")
         throw new Error("A cast target must be Text, Number or Boolean.");
       return { ...common, type: "cast", data: { targetType: data.targetType } };
+    }
+    if (extended && (node.type === "transform" || node.type === "filter" || node.type === "assert")) {
+      const configuration = validateProcessingData(node.type, data);
+      return { ...common, type: processingDefinition(node.type, configuration).kind, data: configuration };
+    }
+    if (extended && node.type === "stop") {
+      if (Object.keys(data).length) throw new Error("Stop nodes do not have configuration fields.");
+      return { ...common, type: "stop", data: {} };
     }
     if (extended && node.type === "file") return { ...common, type: "file", data: validateWorkflowFileData(data) };
     if (extended && node.type === "vault") {

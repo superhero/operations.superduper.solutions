@@ -1,0 +1,122 @@
+{
+  "measuredAt": "2026-10-21",
+  "journey": "Open Transform with Sign JWT selected below the option fold, then move the pointer into the first partly visible option.",
+  "baseline": {
+    "applicationRevision": "8695f78e7da6565ef3e892e49ba77506955c6fd2",
+    "equivalentApplicationSourcesOnDevelop": "03e19ab4cb58169e8b1f9100358ac194a8127d85",
+    "bundleAsset": "index-BG01Ypeb.js"
+  },
+  "candidate": {
+    "baseRevision": "03e19ab4cb58169e8b1f9100358ac194a8127d85",
+    "componentSha256": "e0107b3d4f0287cc142c5a2147c8d35a8399dacc1ad8201d634748ea6f8d0b3a",
+    "bundleSha256": "914b75665bb52e9ac74890b8730eecafcd9aa2f2ab506575043a9a18ed9ba485",
+    "bundleAsset": "index-DqDxSeT7.js"
+  },
+  "environment": {
+    "browser": "Brave Browser 154.1.96.61",
+    "browserMode": "headless with visible native scrollbars",
+    "host": "sds-01",
+    "image": "mcr.microsoft.com/playwright:v1.63.0-noble",
+    "node": "26.7.0",
+    "cpus": 2,
+    "memoryGiB": 3,
+    "swapGiB": 0,
+    "pids": 512,
+    "theme": "light",
+    "motion": "no-preference",
+    "deviceScaleFactor": 1,
+    "profile": "fresh synthetic browser profile, example catalogs only",
+    "network": "existing browser fixture route isolation; HTTP caching disabled by routing"
+  },
+  "method": {
+    "comparison": "three sequential warm reopens per viewport before and after, after trigger hover settles; sample 20 animation frames around each opening/pointer entry",
+    "clock": "browser requestAnimationFrame timestamps; only spatial changes compared",
+    "instrumentation": "geometry reads plus normal Playwright failure tracing; separate Chrome timeline after comparison samples",
+    "order": "baseline repeats then candidate repeats",
+    "limits": "instrumented synthetic geometry observations, not latency, INP, physical display presentation, startup or heap measurements"
+  },
+  "results": [
+    {
+      "viewport": {
+        "width": 390,
+        "height": 540
+      },
+      "nodePosition": {
+        "x": 20,
+        "y": 20
+      },
+      "beforeShiftPixels": [
+        10,
+        10,
+        10
+      ],
+      "afterShiftPixels": [
+        0,
+        0,
+        0
+      ],
+      "medianBeforePixels": 10,
+      "medianAfterPixels": 0,
+      "beforeRangePixels": [
+        10,
+        10
+      ],
+      "afterRangePixels": [
+        0,
+        0
+      ],
+      "absoluteImprovementPixels": 10,
+      "diagnosticScrollEvents": {
+        "before": 2,
+        "after": 1
+      },
+      "traceSha256": {
+        "before": "7344fadd5d58742d2987b5df006deaff0564ebb5cdd9f76ce4240bffb5d9ecb5",
+        "after": "abdab77b817e2002eeb5462e0e673fd55c060d7e419c0566a85f6005f3c78bf1"
+      }
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 540
+      },
+      "nodePosition": {
+        "x": 20,
+        "y": 20
+      },
+      "beforeShiftPixels": [
+        10,
+        10,
+        10
+      ],
+      "afterShiftPixels": [
+        0,
+        0,
+        0
+      ],
+      "medianBeforePixels": 10,
+      "medianAfterPixels": 0,
+      "beforeRangePixels": [
+        10,
+        10
+      ],
+      "afterRangePixels": [
+        0,
+        0
+      ],
+      "absoluteImprovementPixels": 10,
+      "diagnosticScrollEvents": {
+        "before": 2,
+        "after": 1
+      },
+      "traceSha256": {
+        "before": "de8055affb5fc54e6867e2afb23ba5cf45fb3b085b854b59e87419d842742c3c",
+        "after": "79826eac81881cb154bf0455ce13db1ff5922eac3f8b51c20d8923c022e9c522"
+      }
+    }
+  ],
+  "cause": "Bits UI 2.19.5 scrolls newly highlighted options into view even when pointer movement highlights a clipped row.",
+  "implementation": "Suppress pointer highlight only on clipped options. Click, wheel, touch, keyboard and fully visible hover retain existing handlers. Cache clipping until row/scroll/resize changes; release observer and element reference when viewport unmounts.",
+  "tradeoff": "A clipped option does not become the active highlight just from hover; its visible portion still selects on click. One ResizeObserver exists per open viewport; memory/startup impact not benchmarked.",
+  "correctness": "Focused Brave and Chromium checks cover top/low popup placement, exact scroll stability, clipped-option clicking, native wheel scrolling, keyboard selection/cancellation, themes and motion. No full suite or CI monitoring."
+}

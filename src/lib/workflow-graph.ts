@@ -4,6 +4,7 @@
 
 import type { Operation } from "./catalog.ts";
 import { fileValueType } from "./workflow-file.ts";
+import { defaultProcessingData, type ProcessingKind } from "./workflow-processing.ts";
 import { placeUtilityNode } from "./workflow-layout.ts";
 import { validateWorkflowDocument, type SwitchGate, type WorkflowData, type WorkflowDocument,
   type WorkflowDocumentEdge, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
@@ -695,19 +696,20 @@ export function isWorkflowConnection(connection: { source: string; target: strin
   return isValueConnection(connection, source, target, edges) && isWorkflowConnectionTypeCompatible(connection, nodes, edges);
 }
 
-export function createUtilityNode(type: "switch" | "cast" | "comment" | "vault" | "file", position: { x: number; y: number }, id: string): WorkflowDocumentNode
+export function createUtilityNode(type: "switch" | "cast" | "comment" | "vault" | "file" | "stop" | ProcessingKind, position: { x: number; y: number }, id: string): WorkflowDocumentNode
 {
   const common = { id, position: { ...position } };
-  if (type === "vault" || type === "file") return { ...common, type, data: {} };
+  if (type === "vault" || type === "file" || type === "stop") return { ...common, type, data: {} };
   if (type === "switch") return { ...common, type, data: { gates: [{ id: "gate-1", operator: "==", value: "" }] } };
   if (type === "cast") return { ...common, type, data: { targetType: "Text" } };
+  if (type === "transform" || type === "filter" || type === "assert") return { ...common, type, data: defaultProcessingData(type) };
   return { ...common, type, data: { text: "" } };
 }
 
 /** Make the original-file conversion visible and persist it as ordinary editable graph nodes. */
 export function insertFileBinaryCast(edge: WorkflowDocumentEdge, nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[], castId: string): Graph | undefined {
   const target = nodes.find(node => node.id === edge.target);
-  if (target?.type !== "data" || !isFileBinaryConnection(edge, nodes)) return;
+  if (!target || target.type !== "data" && target.type !== "transform" || !isFileBinaryConnection(edge, nodes)) return;
   if (nodes.length >= 500 || edges.length > 998) throw new Error("Adding a binary cast would exceed the workflow node or connection limit.");
   if (nodes.some(node => node.id === castId) || edges.some(existing => existing.id === `${castId}:input` || existing.id === edge.id))
     throw new Error("Binary cast IDs must be unique.");

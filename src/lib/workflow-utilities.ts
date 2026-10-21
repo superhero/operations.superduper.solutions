@@ -6,6 +6,7 @@ import type { CastData, SwitchGate, WorkflowDocument, WorkflowDocumentEdge, Work
 
 import { fileValueType } from "./workflow-file.ts";
 import { encodeWorkflowBinary, validateWorkflowBinary, type WorkflowBinary } from "./workflow-binary.ts";
+import { processingDefinition, processingInputTypes, processingOutputType, processingTypeAlternatives } from "./workflow-processing.ts";
 
 export const switchGateLimit = 32;
 export const switchValueLimit = 4096;
@@ -25,7 +26,7 @@ export const switchOperators = [
 export const castTypes = [
   { value: "Text", label: "Text" }, { value: "Number", label: "Number" }, { value: "Boolean", label: "Boolean" }, { value: "Binary", label: "Binary" }
 ] satisfies { value: CastData["targetType"]; label: string }[];
-export type RoutingType = "Text" | "Number" | "Boolean" | "Object" | "Array" | "Null" | "Unknown" | "Mixed" | "Binary";
+export type RoutingType = "Text" | "Number" | "Boolean" | "Object" | "Array" | "Null" | "Unknown" | "Mixed" | "Binary" | "JSON";
 
 export function numericValue(value: unknown): value is string
 {
@@ -64,7 +65,7 @@ export function castValue(value: unknown, type: CastData["targetType"]): string 
 
 export function operatorsForType(type: RoutingType)
 {
-  if (type === "Unknown" || type === "Number") return switchOperators;
+  if (type === "Unknown" || type === "Number" || type === "JSON") return switchOperators;
   return switchOperators.filter(operator => "unary" in operator ||
     ["Text", "Boolean", "Mixed"].includes(type) && ["==", "!="].includes(operator.value));
 }
@@ -93,6 +94,7 @@ function valueType(input: unknown): RoutingType
 export function matchesSwitchGate(input: unknown, gate: SwitchGate, type: RoutingType = valueType(input),
   gateValues: Map<string, unknown> = new Map()): boolean
 {
+  if (type === "JSON") type = valueType(input);
   if (!operatorsForType(type).some(option => option.value === gate.operator)) return false;
   if (gate.operator === "is_set") return input !== undefined && input !== null;
   if (gate.operator === "is_not_set") return input === undefined || input === null;
@@ -131,7 +133,7 @@ export function matchingSwitchGates(input: unknown, gates: SwitchGate[], type: R
 export function routingInputTypes(nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[]): Map<string, RoutingType>
 {
   const byId = new Map(nodes.map(node => [node.id, node]));
-  const types = new Map(nodes.filter(node => node.type === "switch" || node.type === "cast").map(node => [node.id, new Set<RoutingType>()]));
+  const types = new Map(nodes.filter(node => ["switch", "cast", "transform", "filter", "assert", "stop"].includes(node.type!)).map(node => [node.id, new Set<RoutingType>()]));
   const incoming = edges.filter(edge => edge.kind === "mapping" && types.has(edge.target) && edge.targetHandle === "value" &&
     !edge.hidden && !edge.detached && !byId.get(edge.source)?.hidden && !byId.get(edge.target)?.hidden);
   for (const fallback of [false, true])
@@ -145,12 +147,20 @@ export function routingInputTypes(nodes: WorkflowDocumentNode[], edges: Workflow
         const source = byId.get(edge.source);
         let outputs: Iterable<RoutingType> = [];
         if (source?.type === "file") { const type = fileValueType(source.data.file); outputs = [type === "Integer" ? "Number" : type]; }
+        else if (source?.type === "vault") outputs = ["Text"];
         else if (source?.type === "cast") outputs = [source.data.targetType];
+        else if (source?.type === "transform" || source?.type === "filter" || source?.type === "assert") {
+          const inputs = processingDefinition(source.type, source.data).output === "input" ? types.get(source.id)! : ["Unknown" as const];
+          outputs = [...inputs].map(type => {
+            const output = processingOutputType(source.type, source.data, type);
+            return output === "Integer" ? "Number" : output;
+          });
+        }
         else if (source?.type === "switch") outputs = types.get(source.id)!;
         else if (source?.type === "data" && source.data.direction === "outputs")
         {
           const field = source.data.fields.find(field => field.id === edge.sourceHandle);
-          const type = byId.get(source.data.ownerId)?.type === "file" ? field?.itemType ?? field?.type ?? "Unknown" : field?.type ?? "Unknown";
+          const type = isFileRowConnection(edge, nodes, edges) ? field?.itemType ?? "Unknown" : field?.type ?? "Unknown";
           outputs = [type === "Integer" ? "Number" : type];
         }
         for (const type of outputs) if (!types.get(edge.target)!.has(type))
@@ -187,9 +197,10 @@ export function isFileBinaryConnection(connection: ValueConnection, nodes: Workf
   return source?.type === "file" && connection.sourceHandle === "value" && !!source.data.file
     && (source.data.file.format === "binary" || !!source.data.file.original)
     && (target?.type === "cast" && target.data.targetType === "Binary" && connection.targetHandle === "value"
+      || target?.type === "transform" && connection.targetHandle === "value" && processingDefinition(target.type, target.data).inputs.every(type => type === "Binary")
       || target?.type === "data" && target.data.direction === "inputs" && target.data.fields.some(field => field.id === connection.targetHandle && field.type === "Binary"));
 }
-type ConnectionValueType = WorkflowField["type"] | "Mixed";
+type ConnectionValueType = WorkflowField["type"] | "Mixed" | "JSON";
 const scalarConnectionType = (type: ConnectionValueType) => ["Text", "Integer", "Number", "Boolean"].includes(type);
 const numericConnectionType = (type: ConnectionValueType) => type === "Integer" || type === "Number";
 
@@ -200,6 +211,10 @@ export function isFileRowConnection(connection: ValueConnection, nodes: Workflow
   const field = source.data.fields.find(field => field.id === connection.sourceHandle);
   if (!field?.itemType) return false;
   const target = nodes.find(node => node.id === connection.target);
+  if ((target?.type === "transform" || target?.type === "filter" || target?.type === "assert") && connection.targetHandle === "value") {
+    const accepted = processingDefinition(target.type, target.data).inputs;
+    if (accepted.includes("Array") && !accepted.includes(field.itemType) && !(field.itemType === "Integer" && accepted.includes("Number"))) return false;
+  }
   let ancestor = target;
   const seen = new Set<string>();
   while (ancestor?.type === "data" && !seen.has(ancestor.id)) {
@@ -225,6 +240,12 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
     const node = byId.get(nodeId)!;
     if (node.type === "data") { const field = node.data.fields.find(field => field.id === handle)!; return byId.get(node.data.ownerId)?.type === "file" ? field.itemType ?? field.type : field.type; }
     if (node.type === "cast") return node.data.targetType;
+    if (node.type === "transform" || node.type === "filter" || node.type === "assert") {
+      if (seen.has(nodeId)) return "Unknown";
+      const ancestors = new Set([...seen, nodeId]);
+      const input = mainInputs(nodeId).map(edge => outputType(edge.source, edge.sourceHandle, ancestors));
+      return processingOutputType(node.type, node.data, input.length === 1 ? input[0]! : "Unknown");
+    }
     if (node.type === "vault") return "Text";
     if (node.type === "file") return fileValueType(node.data.file);
     if (seen.has(nodeId)) return "Unknown";
@@ -233,10 +254,25 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
     return types.size === 1 ? [...types][0]! : types.size ? "Mixed" : "Unknown";
   };
   const compatible = (candidate: ValueConnection): boolean => {
+    if (byId.get(candidate.target)?.type === "stop") return true;
     if (isFileBinaryConnection(candidate, nodes)) return true;
-    const type = outputType(candidate.source, candidate.sourceHandle);
-    if (type === "Unknown" || type === "Mixed") return false;
+    const output = outputType(candidate.source, candidate.sourceHandle);
+    if (output === "Unknown" || output === "Mixed") return false;
+    // A known union can connect under the receiving port's type assumption.
+    // The executor checks the actual value; connecting never casts it.
+    return processingTypeAlternatives(output).some(type => compatibleType(candidate, type));
+  };
+  const compatibleType = (candidate: ValueConnection, type: ConnectionValueType): boolean => {
     const target = byId.get(candidate.target)!;
+    if (target.type === "transform" || target.type === "filter" || target.type === "assert") {
+      const main = mainInputs(target.id);
+      const accepted = processingInputTypes(target.type, target.data, candidate.targetHandle, main.length === 1 ? outputType(main[0]!.source, main[0]!.sourceHandle) : "Unknown");
+      if (!accepted) return false;
+      const source = byId.get(candidate.source)!;
+      if (accepted.includes("Array") && source.type === "data" && source.data.fields.find(field => field.id === candidate.sourceHandle)?.itemType
+        && !isFileRowConnection(candidate, nodes, edges)) return true;
+      return accepted.includes(type) || type === "Integer" && accepted.includes("Number");
+    }
     if (target.type === "cast" && target.data.targetType === "Binary") return true;
     if (target.type === "data")
     {
@@ -249,11 +285,11 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
     }
     if (!scalarConnectionType(type)) return false;
     if (target.type === "cast" || candidate.targetHandle === "value" || !mainInputs(target.id).length) return true;
-    const expected = outputType(target.id, undefined);
-    return type === expected || numericConnectionType(type) && numericConnectionType(expected);
+    return processingTypeAlternatives(outputType(target.id, undefined)).some(expected =>
+      type === expected || numericConnectionType(type) && numericConnectionType(expected));
   };
   if (!compatible(connection)) return false;
-  if (byId.get(connection.target)!.type !== "switch" || connection.targetHandle !== "value") return true;
+  if (!["switch", "transform", "filter", "assert"].includes(byId.get(connection.target)!.type!) || connection.targetHandle !== "value") return true;
 
   active.push({ ...connection, id: "pending-connection", kind: "mapping",
     sourceHandle: connection.sourceHandle!, targetHandle: connection.targetHandle });
@@ -268,7 +304,7 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
       if (edge.target === nodeId && edge.targetHandle !== "value" && !compatible(edge)) return false;
       if (edge.source !== nodeId) continue;
       if (!compatible(edge)) return false;
-      if (byId.get(edge.target)!.type === "switch" && edge.targetHandle === "value") pending.push(edge.target);
+      if (["switch", "transform", "filter", "assert"].includes(byId.get(edge.target)!.type!) && edge.targetHandle === "value") pending.push(edge.target);
     }
   }
   return true;
@@ -280,21 +316,29 @@ export function isValueConnection(connection: { sourceHandle?: string | null; ta
   if (source.id === target.id || source.hidden || target.hidden) return false;
   const sourceField = source.type === "data" && source.data.direction === "outputs"
     ? source.data.fields.find(field => field.id === connection.sourceHandle && field.connectable) : undefined;
-  if (source.type === "vault") return connection.sourceHandle === "value" && target.type === "data" &&
-    target.data.direction === "inputs" && target.data.fields.some(field => field.id === connection.targetHandle && field.connectable && field.type === "Text");
+  if (source.type === "vault") return connection.sourceHandle === "value" && (target.type === "data" &&
+    target.data.direction === "inputs" && target.data.fields.some(field => field.id === connection.targetHandle && field.connectable && field.type === "Text")
+    || target.type === "stop" && connection.targetHandle === "value"
+    || (target.type === "transform" || target.type === "filter" || target.type === "assert")
+      && !!processingInputTypes(target.type, target.data, connection.targetHandle));
+  const processingSource = source.type === "transform" || source.type === "filter" ? connection.sourceHandle === "result"
+    : source.type === "assert" && (connection.sourceHandle === "success" || connection.sourceHandle === "failure");
   const sourceUtility = source.type === "file" ? !!source.data.file && connection.sourceHandle === "value" : source.type === "cast" ? connection.sourceHandle === "result" : source.type === "switch" &&
     source.data.gates.some(gate => gate.id === connection.sourceHandle);
-  if (!sourceField && !sourceUtility) return false;
+  if (!sourceField && !sourceUtility && !processingSource) return false;
+  if (target.type === "stop") return connection.targetHandle === "value";
+  if (target.type === "transform" || target.type === "filter" || target.type === "assert")
+    return !!processingInputTypes(target.type, target.data, connection.targetHandle);
   if (target.type === "data") return target.data.direction === "inputs" &&
     target.data.fields.some(field => field.id === connection.targetHandle && field.connectable);
   if (target.type === "cast") return connection.targetHandle === "value" &&
-    (sourceUtility || !!sourceField && (target.data.targetType === "Binary" || ["Text", "Integer", "Number", "Boolean"].includes(sourceField.itemType ?? sourceField.type)));
+    (sourceUtility || processingSource || !!sourceField && (target.data.targetType === "Binary" || ["Text", "Integer", "Number", "Boolean"].includes(sourceField.itemType ?? sourceField.type)));
   if (target.type !== "switch") return false;
   const gate = target.data.gates.find(gate => switchGateInput(gate.id) === connection.targetHandle);
   if (connection.targetHandle !== "value" && !gate) return false;
   if (gate && (gate.operator === "is_set" || gate.operator === "is_not_set" || edges.some(edge => !edge.hidden && !edge.detached &&
     edge.target === target.id && edge.targetHandle === connection.targetHandle))) return false;
-  return sourceUtility || !!sourceField && ["Text", "Integer", "Number", "Boolean"].includes(sourceField.itemType ?? sourceField.type);
+  return sourceUtility || processingSource || !!sourceField && ["Text", "Integer", "Number", "Boolean"].includes(sourceField.itemType ?? sourceField.type);
 }
 
 // Keep snapshot endpoint identities separate from the outer diagram's handles.

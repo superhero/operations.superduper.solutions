@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="185" height="20" role="img" aria-label="@codemirror/view: 6.43.15">
+  <!-- Copyright (C) 2026 Erik Landvall; SPDX-License-Identifier: AGPL-3.0-only. See LICENSE and LICENSE-ADDITIONAL-TERMS. -->
+  <title>@codemirror/view: 6.43.15</title>
+  <clipPath id="round"><rect width="185" height="20" rx="3"/></clipPath>
+  <g clip-path="url(#round)">
+    <rect width="124" height="20" fill="#555"/>
+    <rect x="124" width="61" height="20" fill="#007ec6"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="DejaVu Sans Mono,monospace" font-size="11">
+    <text x="62" y="14">@codemirror/view</text>
+    <text x="154" y="14">6.43.15</text>
+  </g>
+</svg>

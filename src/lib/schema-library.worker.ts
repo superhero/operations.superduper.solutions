@@ -17,7 +17,7 @@ import { prepareStorageNamespaces } from "./storage-namespace.ts";
 
 const indexes = new Map(serviceIndexDescriptors.map(index => [index.id, index]));
 configureSchemaDefaults({ adapterRevision: schemaAdapterRevision,
-  catalogs: serviceSchemaDescriptors.map(catalog => ({ id: catalog.id, name: catalog.name,
+  catalogs: serviceSchemaDescriptors.map(catalog => ({ id: catalog.id, name: catalog.name, enabled: catalog.id !== "ollama",
     file: `${catalog.id}.${catalog.protocol === "json-rpc" ? "schema" : "openapi"}.json`, revision: catalog.effectiveSha256 ?? catalog.sha256,
     bytes: catalog.effectiveBytes ?? catalog.bytes, ...(catalog.patches ? { patches: catalog.patches } : {}), summary: indexes.get(catalog.id)!.summary })),
   read: readServiceSchema, readUpstream: readServiceSchemaUpstream, readIndex: readServiceSchemaIndex, validate: inspectServiceSchema,

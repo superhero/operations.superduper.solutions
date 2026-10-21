@@ -9,7 +9,8 @@ Then('I can resize a comment from its sides and corners and retain its size', as
   const page=this.page;
   await page.getByRole('button',{name:'Comment',exact:true}).click();
   const node=workflow(page).locator('.svelte-flow__node-comment');
-  await expect(node.locator('textarea')).toHaveCSS('resize','none');
+  await expect(node.locator('textarea')).toHaveCount(0);
+  await expect(node.getByRole('textbox', { name: 'Comment text (Markdown)', exact: true })).toBeVisible();
   await expect(node.locator('.comment-resize-handle')).toHaveCount(8);
   for (const [side,dx,dy] of [['right',60,0],['bottom-right',30,40]]) {
     const handle=node.getByLabel(`Resize comment ${side}`,{exact:true});

@@ -14,7 +14,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     { buttons?: ToolbarButtons; oncopy: () => void; oncut: () => void; onpaste: () => void; canPaste?: boolean; canvas: HTMLElement | undefined; active: boolean; settingsOpen?: boolean; placing?: boolean; navigationOpen: boolean; snap: boolean; curved: boolean; dashed: boolean; selected: boolean;
       onsnap: () => void; oncurved: () => void; ondashed: () => void; onremove: () => void;
       onnew: () => void; onopen: () => void; onexport: () => void;
-      onimport: () => void; onbrowse: () => void; onutility: (type: "switch" | "cast" | "comment" | "vault" | "file") => void;
+      onimport: () => void; onbrowse: () => void; onutility: (type: "switch" | "cast" | "comment" | "vault" | "file" | "transform" | "filter" | "assert" | "stop") => void;
       ondescribe: () => void; onrun: () => void; canRun?: boolean; canUndo: boolean; canRedo: boolean; historyBusy: boolean;
       onundo: () => void; onredo: () => void; onhistory: () => void } = $props();
   $effect(() => { void buttons; void tick().then(() => compactLayout?.()); });
@@ -178,7 +178,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="workflow-control-group">
     {#if buttons.browse}<HintButton class="svelte-flow__controls-button" aria-label="Browse operations" label="Browse operations" aria-pressed={navigationOpen} aria-controls="side-navigation" onclick={onbrowse}><MaterialIcon name="list" size={18} /></HintButton>{/if}
     {#if buttons.switch}<HintButton class="svelte-flow__controls-button" aria-label="Switch" label="Switch" onclick={() => onutility("switch")}><MaterialIcon name="alt_route" size={18} /></HintButton>{/if}
-    {#if buttons.cast}<HintButton class="svelte-flow__controls-button" aria-label="Cast" label="Cast" onclick={() => onutility("cast")}><MaterialIcon name="transform" size={18} /></HintButton>{/if}
+    {#if buttons.cast}<HintButton class="svelte-flow__controls-button" aria-label="Cast" label="Cast type" onclick={() => onutility("cast")}><MaterialIcon name="settings_input_antenna" size={18} /></HintButton>{/if}
+    {#if buttons.transform}<HintButton class="svelte-flow__controls-button" aria-label="Transform" label="Transform" onclick={() => onutility("transform")}><MaterialIcon name="transform" size={18} /></HintButton>{/if}
+    {#if buttons.filter}<HintButton class="svelte-flow__controls-button" aria-label="Filter" label="Filter" onclick={() => onutility("filter")}><MaterialIcon name="filter_alt" size={18} /></HintButton>{/if}
+    {#if buttons.assert}<HintButton class="svelte-flow__controls-button" aria-label="Assert" label="Assert" onclick={() => onutility("assert")}><MaterialIcon name="fact_check" size={18} /></HintButton>{/if}
+    {#if buttons.stop}<HintButton class="svelte-flow__controls-button" aria-label="Stop" label="Stop" onclick={() => onutility("stop")}><MaterialIcon name="stop_circle" size={18} /></HintButton>{/if}
     {#if buttons.vault}<HintButton class="svelte-flow__controls-button" aria-label="Add vault variable" label="Add vault variable" onclick={() => onutility("vault")}><MaterialIcon name="variable_add" size={18} /></HintButton>{/if}
     {#if buttons.file}<HintButton class="svelte-flow__controls-button" aria-label="Add file" label="Add file" onclick={() => onutility("file")}><MaterialIcon name="upload_file" size={18} /></HintButton>{/if}
     {#if buttons.comment}<HintButton class="svelte-flow__controls-button" aria-label="Comment" label="Comment" onclick={() => onutility("comment")}><MaterialIcon name="sticky_note" size={18} /></HintButton>{/if}
