@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.56
+
 <!-- changelog-commit:fbc4b203069864002bf39ac8f036c134c5d204e7 -->
 ### Commit [`fbc4b20`](https://github.com/superhero/operations.superduper.solutions/commit/fbc4b203069864002bf39ac8f036c134c5d204e7)
 
@@ -649,8 +653,6 @@ five resource/provenance contracts pass. Full release validation remains
 in CI.
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.55
 
