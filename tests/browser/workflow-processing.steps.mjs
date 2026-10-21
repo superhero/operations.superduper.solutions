@@ -34,6 +34,116 @@ async function choose(page, node, label, option) {
   await page.getByRole('option', { name: option, exact: true }).click();
 }
 
+Then('Filter bound and path connections disable manual editing and selected fields return JsonValue', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  const auxiliary = (value, id, y) => ({ ...source(value), id, position: { x: 100, y } });
+  const card = id => workflow(page).locator(`.svelte-flow__node[data-id="${id}"]`);
+  const handle = (id, name) => card(id).locator(`.svelte-flow__handle[data-handleid="${name}"]`);
+  await loadGraphFixture(page, document([source('a🙂bcd'), auxiliary(1, 'start', 100), auxiliary(-1, 'end', 600),
+    processor('filter', 'substring', { start: '0', end: '2' })],
+  [connection('source', 'filter', 'value'), connection('end', 'filter', 'value', 'end')]));
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  const filter = card('filter');
+  const start = filter.getByLabel('Start (inclusive)', { exact: true });
+  await expect(filter.locator('.processing-parameter .utility-type')).toHaveText(['Integer', 'Integer']);
+  await expect(handle('filter', 'start')).toHaveAttribute('aria-label', 'Start (inclusive) input (Integer)');
+  await expect(start).toBeEditable();
+  await expect(filter.getByLabel('End (exclusive)', { exact: true })).toBeDisabled();
+  await gesture(page, handle('start', 'value'), handle('filter', 'start'));
+  await expect(start).toBeDisabled();
+  await saved(page);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(start).toBeEditable();
+  await expect(start).toHaveValue('0');
+  await page.getByRole('button', { name: 'Redo', exact: true }).click();
+  await expect(start).toBeDisabled();
+  await saved(page);
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(start).toBeDisabled();
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await expect(panel(page).getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
+  await panel(page).getByText('Processing results (1)', { exact: true }).click();
+  await expect(panel(page).getByRole('region', { name: 'Substring result' })).toContainText('"🙂bc"');
+  await panel(page).getByRole('button', { name: 'Quit', exact: true }).click();
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await choose(page, filter, 'Filter operation', 'Array range');
+  await expect(filter.locator('.utility-title .utility-type')).toHaveText('Array');
+  await expect(filter.locator('.processing-parameter .utility-type')).toHaveText(['Integer', 'Integer']);
+
+  const selection = { ...processor('filter', 'select_field', { path: '/manual', type: 'Number' }), id: 'selection' };
+  await loadGraphFixture(page, document([source({ profile: { name: '  hello  ' } }), auxiliary('/profile/name', 'path', 100), selection, processor('filter', 'trim', {}, 900)],
+    [connection('source', 'selection', 'value'), connection('selection', 'filter')]));
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  const selected = card('selection'), path = selected.getByLabel('Field path (JSON pointer)', { exact: true });
+  await expect(selected.getByRole('combobox', { name: 'Result type', exact: true })).toHaveCount(0);
+  await expect(selected.locator('.output-type')).toHaveText('JsonValue');
+  await expect(handle('selection', 'result')).toHaveAttribute('aria-label', 'Filter result (JsonValue)');
+  await expect(selected.locator('.processing-parameter .utility-type')).toHaveText('Text');
+  await handle('selection', 'path').hover();
+  await expect(page.getByRole('tooltip')).toHaveText('Field path (JSON pointer) input (Text)');
+  await gesture(page, handle('path', 'value'), handle('selection', 'path'));
+  await expect(path).toBeDisabled();
+  await expect(path).toHaveValue('/manual');
+  await saved(page);
+  const exported = (await readExport(page)).document;
+  assert.deepEqual(exported.nodes.find(node => node.id === 'selection').data.parameters, { path: '/manual' });
+  assert.equal(exported.nodes.some(node => node.type === 'cast'), false);
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await expect(panel(page).getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
+  await panel(page).getByText('Processing results (2)', { exact: true }).click();
+  await expect(panel(page).getByRole('region', { name: 'Trim text result' })).toContainText('"hello"');
+  await expect(panel(page).getByRole('alert')).toHaveCount(0);
+});
+
+Then('Filter array operand types visibility and connections follow reversible condition changes', async function () {
+  const page = this.page;
+  await setMode(page, 'workflow');
+  await loadGraphFixture(page, document([source([{ id: 1 }, { id: 4 }]), { ...source(3), id: 'expected', position: { x: 100, y: 100 } },
+    processor('filter', 'array_filter', { path: '/id', operator: 'greater_than', expected: '0' })], [connection('source', 'filter', 'value')]));
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  const filter = workflow(page).locator('[data-processing-kind="filter"]');
+  const expected = filter.getByLabel('Expected value', { exact: true });
+  const handle = filter.locator('.svelte-flow__handle[data-handleid="expected"]');
+  await expect(filter.locator('.processing-parameter .utility-type')).toHaveText(['Text', 'Number']);
+  await expect(filter.locator('.output-type')).toHaveText('Array');
+  await expect(handle).toHaveAttribute('aria-label', 'Expected value input (Number)');
+  await gesture(page, workflow(page).locator('.svelte-flow__node[data-id="expected"] .svelte-flow__handle.source'), handle);
+  await expect(expected).toBeDisabled();
+  await saved(page);
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await expect(panel(page).getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();
+  await panel(page).getByText('Processing results (1)', { exact: true }).click();
+  assert.deepEqual(JSON.parse(await panel(page).getByRole('region', { name: 'Filter array result' }).locator('pre').textContent()), [{ id: 4 }]);
+  await panel(page).getByRole('button', { name: 'Quit', exact: true }).click();
+  await page.getByRole('button', { name: 'Fit View', exact: true }).click();
+  await choose(page, filter, 'Condition', 'Starts with');
+  await expect(filter.locator('.processing-parameter .utility-type')).toHaveText(['Text', 'Text']);
+  await expect(expected).toBeEditable();
+  await saved(page);
+  assert.ok(!(await readExport(page)).document.edges.some(edge => edge.targetHandle === 'expected'));
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(expected).toBeDisabled();
+  await expect(handle).toHaveAttribute('aria-label', 'Expected value input (Number)');
+  await choose(page, filter, 'Condition', 'Is set');
+  await expect(expected).toHaveCount(0);
+  await expect(handle).toHaveCount(0);
+  await saved(page);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(expected).toBeDisabled();
+  await choose(page, filter, 'Condition', 'Equals');
+  await expect(handle).toHaveAttribute('aria-label', 'Expected value input (JsonValue)');
+  await expect(filter.locator('.processing-parameter .utility-type')).toHaveText(['Text', 'JsonValue']);
+  await expect(expected).toBeDisabled();
+  await saved(page);
+  assert.equal((await readExport(page)).document.nodes.find(node => node.id === 'filter').data.parameters.expected, '0');
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(expected).toBeDisabled();
+  await expect(handle).toHaveAttribute('aria-label', 'Expected value input (JsonValue)');
+});
+
 Then('reopening Transform with an offscreen selection keeps its first visible frame stable at vertical position {int}', async function (y) {
   const page = this.page;
   await setMode(page, 'workflow');
@@ -291,7 +401,7 @@ Then('Select field is offered by Filter and old Transform nodes restore and exec
   const filter = workflow(page).locator('[data-processing-kind="filter"]');
   await choose(page, filter, 'Filter operation', 'Select field');
   await expect(filter.locator('.utility-title .utility-type')).toHaveText('Object | Array');
-  await expect(filter.locator('.svelte-flow__handle.target')).toHaveAttribute('aria-label', 'Filter input (Object | Array)');
+  await expect(filter.locator('.svelte-flow__handle.target[data-handleid="value"]')).toHaveAttribute('aria-label', 'Filter input (Object | Array)');
   const legacy = document([source({ profile: { name: 'Alice' } }), processor('transform', 'select_field', { path: '/profile/name' })],
     [connection('source', 'transform', 'value')]);
   await loadGraphFixture(page, legacy);
@@ -303,7 +413,7 @@ Then('Select field is offered by Filter and old Transform nodes restore and exec
   await page.reload();
   await setMode(page, 'workflow');
   await expect(filter.getByLabel('Field path (JSON pointer)', { exact: true })).toHaveValue('/profile/name');
-  await expect(filter.locator('.output-type')).toHaveText('Text');
+  await expect(filter.locator('.output-type')).toHaveText('JsonValue');
   await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
   const run = panel(page);
   await expect(run.getByRole('heading', { name: 'Workflow complete.', exact: true })).toBeVisible();

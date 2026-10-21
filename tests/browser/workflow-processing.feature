@@ -3,6 +3,24 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 @workflow-processing
 Feature: Workflow processing controls and execution
+  Scenario Outline: Filter bounds and selected fields support typed connections
+    When I use a viewport of <width> by 900 pixels
+    Then Filter bound and path connections disable manual editing and selected fields return JsonValue
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  Scenario Outline: Filter array connections follow the selected condition
+    When I use a viewport of <width> by 900 pixels
+    Then Filter array operand types visibility and connections follow reversible condition changes
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
   Scenario Outline: Selected options below the fold are visible as soon as Transform opens
     When I use a viewport of <width> by 540 pixels
     Then reopening Transform with an offscreen selection keeps its first visible frame stable at vertical position <y>
