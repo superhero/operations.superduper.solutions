@@ -60,14 +60,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <div class="workflow-owner-node workflow-reference-node" class:selected data-workflow-name={displayName}>
   {@render portRow("inputs")}
-  <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={data.description} labelAsName={false} tooltipEnabled={Boolean(data.description)} tabindex={-1}>
-    {#snippet child({ props })}
-      {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
-      <div {...hintProps} class="operation-title-row">
-        <MaterialIcon name="flowsheet" size={28} /><strong>{displayName}</strong>
-        {#if ordinal}<span class="instance-pill" aria-label={`Instance ${ordinal}`}>{ordinal}</span>{/if}
-      </div>
-    {/snippet}
-  </HintButton>
+  <div class="operation-title-row">
+    <MaterialIcon name="flowsheet" size={28} /><strong>{displayName}</strong>
+    {#if ordinal}<span class="instance-pill" aria-label={`Instance ${ordinal}`}>{ordinal}</span>{/if}
+  </div>
   {@render portRow("outputs")}
 </div>
