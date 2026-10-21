@@ -178,7 +178,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <div class="workflow-control-group">
     {#if buttons.browse}<HintButton class="svelte-flow__controls-button" aria-label="Browse operations" label="Browse operations" aria-pressed={navigationOpen} aria-controls="side-navigation" onclick={onbrowse}><MaterialIcon name="list" size={18} /></HintButton>{/if}
     {#if buttons.switch}<HintButton class="svelte-flow__controls-button" aria-label="Switch" label="Switch" onclick={() => onutility("switch")}><MaterialIcon name="alt_route" size={18} /></HintButton>{/if}
-    {#if buttons.cast}<HintButton class="svelte-flow__controls-button" aria-label="Cast" label="Cast" onclick={() => onutility("cast")}><MaterialIcon name="settings_input_antenna" size={18} /></HintButton>{/if}
+    {#if buttons.cast}<HintButton class="svelte-flow__controls-button" aria-label="Cast" label="Cast type" onclick={() => onutility("cast")}><MaterialIcon name="settings_input_antenna" size={18} /></HintButton>{/if}
     {#if buttons.transform}<HintButton class="svelte-flow__controls-button" aria-label="Transform" label="Transform" onclick={() => onutility("transform")}><MaterialIcon name="transform" size={18} /></HintButton>{/if}
     {#if buttons.filter}<HintButton class="svelte-flow__controls-button" aria-label="Filter" label="Filter" onclick={() => onutility("filter")}><MaterialIcon name="filter_alt" size={18} /></HintButton>{/if}
     {#if buttons.assert}<HintButton class="svelte-flow__controls-button" aria-label="Assert" label="Assert" onclick={() => onutility("assert")}><MaterialIcon name="fact_check" size={18} /></HintButton>{/if}
