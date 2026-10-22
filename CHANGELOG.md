@@ -701,6 +701,44 @@ fix(settings): omit stepped slider hover outline
 
 ```
 
+<!-- changelog-commit:6759117d9df1c3eecb79f957166af8a84a8c2ffb -->
+### Commit [`6759117`](https://github.com/superhero/operations.superduper.solutions/commit/6759117d9df1c3eecb79f957166af8a84a8c2ffb)
+
+```text
+fix(settings): remove slider hover outlines consistently
+
+```
+
+<!-- changelog-commit:394a80baf0ea48202c08f234a5fe316ee2ffab10 -->
+### Commit [`394a80b`](https://github.com/superhero/operations.superduper.solutions/commit/394a80baf0ea48202c08f234a5fe316ee2ffab10)
+
+```text
+chore: refresh dependency badges
+```
+
+<!-- changelog-commit:5244b3f5019821e94f20f0ab7241ecb06a757403 -->
+### Commit [`5244b3f`](https://github.com/superhero/operations.superduper.solutions/commit/5244b3f5019821e94f20f0ab7241ecb06a757403)
+
+```text
+Merge branch 'develop' into feature/slider-hover-outlines
+```
+
+<!-- changelog-commit:860c1396ec29be3aaf70ef5e4ffaefadbddd1d01 -->
+### Commit [`860c139`](https://github.com/superhero/operations.superduper.solutions/commit/860c1396ec29be3aaf70ef5e4ffaefadbddd1d01)
+
+```text
+fix(workflow): rename Flowing to Direct and place it first
+
+```
+
+<!-- changelog-commit:aedaa943ad156eba8c3b316adbfc4333a1b30dd5 -->
+### Commit [`aedaa94`](https://github.com/superhero/operations.superduper.solutions/commit/aedaa943ad156eba8c3b316adbfc4333a1b30dd5)
+
+```text
+fix(settings): default connection style to Orthogonal
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

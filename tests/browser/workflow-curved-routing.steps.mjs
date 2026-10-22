@@ -237,6 +237,18 @@ Then('the five connection styles retain their geometry and saved preference', as
       return { tick: Math.abs(tickBox.x + tickBox.width / 2 - thumbX), text: Math.abs(textBox.x + textBox.width / 2 - box.x - box.width / 2) };
     });
     assert.ok(alignment.tick < 1 && alignment.text < 1, `Ticks must align with the snapped thumb and the sole label must be centered: ${JSON.stringify(alignment)}.`);
+    await slider.evaluate(element => element.blur());
+    await slider.hover();
+    await expect(slider).toHaveCSS('outline-style', 'none');
+    const dashLength = page.getByRole('slider', { name: 'Dash length', exact: true });
+    await dashLength.hover();
+    await expect(dashLength).toHaveCSS('outline-style', 'none');
+    await expect(page.locator('.grid-size-control').filter({ has: dashLength })).toHaveCSS('outline-color', 'rgba(0, 0, 0, 0)');
+    await dashLength.focus();
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Shift+Tab');
+    await expect(page.locator('.grid-size-control').filter({ has: dashLength })).not.toHaveCSS('outline-color', 'rgba(0, 0, 0, 0)');
+    await dashLength.evaluate(element => element.blur());
     if (style === 'flowing') {
       await mkdir(this.artifactDirectory, { recursive: true });
       await page.screenshot({ path: `${this.artifactDirectory}/five-style-slider.png` });
@@ -260,7 +272,7 @@ Then('the five connection styles retain their geometry and saved preference', as
   await page.reload();
   await setMode(page, 'workflow');
   const button = page.getByRole('button', { name: 'Connection style', exact: true });
-  await expect(button).toHaveAttribute('data-line-style', 'flowing');
+  await expect(button).toHaveAttribute('data-line-style', workflowLineStyles.at(-1));
   for (const style of workflowLineStyles) {
     await button.click();
     await expect(button).toHaveAttribute('data-line-style', style);
@@ -273,7 +285,7 @@ Then('the five connection styles retain their geometry and saved preference', as
   await setMode(page, 'settings');
   const application = page.locator('summary[aria-label="Application"]');
   if (await application.getAttribute('aria-expanded') !== 'true') await application.click();
-  await expect(page.getByRole('slider', { name: 'Connection style', exact: true })).toHaveAttribute('aria-valuetext', 'Flowing');
+  await expect(page.getByRole('slider', { name: 'Connection style', exact: true })).toHaveAttribute('aria-valuetext', workflowLineStyleLabels[workflowLineStyles.at(-1)]);
 });
 
 Then('flowing curves ignore saved detours while retaining them for routed styles', async function () {

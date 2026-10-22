@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-export const workflowLineStyles = ["orthogonal", "filleted", "bezier", "clutter", "flowing"] as const;
+export const workflowLineStyles = ["flowing", "orthogonal", "filleted", "bezier", "clutter"] as const;
 export type WorkflowLineStyle = typeof workflowLineStyles[number];
 export const workflowLineStyleLabels: Record<WorkflowLineStyle, string> = {
-  orthogonal: "Orthogonal", filleted: "Filleted", bezier: "Bézier", clutter: "Clutter", flowing: "Flowing",
+  orthogonal: "Orthogonal", filleted: "Filleted", bezier: "Bézier", clutter: "Clutter", flowing: "Direct",
 };
 
 export function isWorkflowLineStyle(value: unknown): value is WorkflowLineStyle {

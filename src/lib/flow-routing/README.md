@@ -40,8 +40,8 @@ Existing routes supply their ID and points. No geometry helper reads the DOM.
 The XYFlow adapter imports `@xyflow/system`; the routing and drawing algorithms
 are independent of Svelte, XYFlow, and browser globals.
 
-Settings exposes five discrete **Connection style** slider stops: **Orthogonal**,
-**Filleted**, **Bézier**, **Clutter**, and **Flowing**. The toolbar cycles through
+Settings exposes five discrete **Connection style** slider stops: **Direct**,
+**Orthogonal**, **Filleted**, **Bézier**, and **Clutter**. The toolbar cycles through
 those same choices for the current workflow. The slider snaps to marked ticks
 and shows only the selected style's name, centered below the track.
 The optional `lineStyle` preference persists
@@ -62,7 +62,7 @@ backbone locally. Facing port
 buffers allow the terminal exit while node bodies and other faces stay protected.
 These routed styles use matching hit areas/previews and expose segment controls.
 
-Flowing restores the single continuous cubic from `b68904b41b69e48e2f797f919c47958b898cd77a`,
+Direct (stored as `flowing` for compatibility) restores the single continuous cubic from `b68904b41b69e48e2f797f919c47958b898cd77a`,
 before obstacle routing (#199) and manual anchors (#200). It uses `workflowCurve`
 at the original strength for completed edges, raw pointer previews and snapped
 previews. It draws directly between ports, so it can cross nodes and has no
