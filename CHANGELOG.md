@@ -747,6 +747,19 @@ fix(workflow): separate opposing connection runs by six units
 
 ```
 
+<!-- changelog-commit:15f8b65943ff9443bbdfd6f57f2b37dc58cfd9b9 -->
+### Commit [`15f8b65`](https://github.com/superhero/operations.superduper.solutions/commit/15f8b65943ff9443bbdfd6f57f2b37dc58cfd9b9)
+
+```text
+fix(workflow): shorten obsolete crossing detours
+
+Restore a shorter checked route when later edges have cleared its
+corridor and it no longer adds crossings. Reuse initial searches within
+the routing work budget, preserve authored anchors, and apply directional
+lane spacing after this cleanup.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
