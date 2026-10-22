@@ -110,7 +110,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .integer-slider .integer-range::-moz-range-track { background: transparent; }
   .integer-range::-webkit-slider-thumb { width: 14px; height: 14px; margin-top: -5px; border: 0; border-radius: 4px; appearance: none; background: var(--color-primary); }
   .integer-range::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 4px; background: var(--color-primary); }
-  .integer-range:focus-visible, .integer-value:focus-visible, .field-integer > .integer-range:hover:enabled, .integer-value:hover:enabled { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+  .integer-range:focus-visible, .integer-value:focus-visible, .integer-value:hover:enabled { outline: 2px solid var(--color-ring); outline-offset: 2px; }
+  .integer-range:not(:focus-visible) { outline: none; }
   .integer-value { flex: 0 1 var(--value-width); width: var(--value-width); min-width: 4ch; max-width: 50%; padding: 3px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; font-variant-numeric: tabular-nums; text-align: right; }
   .disabled { color: var(--color-muted-foreground); }
   .integer-range:disabled { cursor: default; opacity: 0.5; }
