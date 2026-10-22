@@ -18,7 +18,7 @@ function workflow(name)
   return document.toJS();
 }
 
-function condition(expression, { source = "docs/readme", target = "main", fork = false, draft = false, updated = false, runRelease = true, integrationReady = true } = {})
+function condition(expression, { source = "docs/readme", target = "main", fork = false, draft = false, updated = false, runRelease = true, integrationReady = true, results = {}, cancelled = false } = {})
 {
   assert.equal(typeof expression, "string", "The job or step must explicitly guard its route");
   const github = {
@@ -30,10 +30,16 @@ function condition(expression, { source = "docs/readme", target = "main", fork =
   // These checked-in job conditions use GitHub's Boolean/string expression subset.
   const evaluate = new Function("github", "startsWith", "steps", "needs", "cancelled", "vars", `return (${expression
     .replace(/^\s*\$\{\{([\s\S]*)\}\}\s*$/, "$1").replace(/needs\.([\w-]+)/g, 'needs["$1"]')});`);
+  const needs = { integration: { outputs: { ready: String(integrationReady) } }, "release-route": { outputs: { run_release: String(runRelease) } }, validation: { outputs: { reused: "false" } }, "release-changelog": { outputs: { ready: "true" } }, "prepare-changelog": { outputs: { updated: String(updated) } }, 'validation-prepare': { outputs: { has_work: 'true' } } };
+  for (const name of ['integration', 'validation', 'workflow-checks', 'validate-pr', 'application',
+    'preview', 'auto-merge', 'create-release-tag', 'release-changelog'])
+  {
+    needs[name] ??= {};
+    needs[name].result = results[name] ?? 'success';
+  }
   return evaluate(github, (value, prefix) => value.toLowerCase().startsWith(prefix.toLowerCase()),
     { prepare: { outputs: { updated: String(updated) } } },
-    { integration: { outputs: { ready: String(integrationReady) } }, "release-route": { outputs: { run_release: String(runRelease) } }, validation: { outputs: { reused: "false" } }, "release-changelog": { outputs: { ready: "true" } }, "prepare-changelog": { outputs: { updated: String(updated) } }, 'validation-prepare': { outputs: { has_work: 'true' } } },
-    () => false, { CI_INCREMENTAL_TESTS: 'true' });
+    needs, () => cancelled, { CI_INCREMENTAL_TESTS: 'true' });
 }
 
 Given("the documentation workflow configuration", function ()
@@ -197,12 +203,19 @@ Then("a documentation-only release advance cannot reach application or publicati
   for (const [name, job] of Object.entries(jobs))
   {
     if (name === "integration" || name === "release-route") continue;
+    const dependencies = Array.isArray(job.needs) ? job.needs : [job.needs];
     assert.doesNotMatch(job.if, /\b(?:always|failure)\s*\(/, "Downstream jobs must retain successful prerequisites");
     if (/\bcancelled\s*\(/.test(job.if)) {
-      assert.equal(name, 'application'); assert.match(job.if, /!cancelled\(\)/);
-      assert.equal(job.steps[0].name, 'Require successful preparation and quick gates');
+      assert.match(job.if, /!cancelled\(\)/);
+      assert.equal(condition(job.if, { source: 'release/1.2.3', cancelled: true }), false);
+      if (name === 'application')
+        assert.equal(job.steps[0].name, 'Require successful preparation and quick gates');
+      else
+        for (const dependency of dependencies)
+          for (const result of ['failure', 'cancelled', 'skipped'])
+            assert.equal(condition(job.if, { source: 'release/1.2.3', results: { [dependency]: result } }), false,
+              `${name} must retain successful ${dependency} before publication`);
     }
-    const dependencies = Array.isArray(job.needs) ? job.needs : [job.needs];
     assert.ok(dependencies.every(dependency => Object.hasOwn(jobs, dependency)), `${name} requires known routing dependencies`);
     if (dependencies.every(dependency => reached.has(dependency)) &&
       condition(job.if, { source: "release/1.2.3", runRelease: false })) reached.add(name);
