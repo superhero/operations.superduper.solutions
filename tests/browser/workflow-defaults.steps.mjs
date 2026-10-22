@@ -204,6 +204,7 @@ Then('the defaults survive reload and initialize untouched and new workflows', a
 Then('unrelated defaults preserve saved flags and imports restore their own options', async function () {
   const page = this.page;
   const original = { dashed: false, curved: false, snap: true };
+  const unrelatedDefaults = { ...enabledDefaults, ...options(freshDefaults), lineStyle: 'orthogonal' };
   await setMode(page, 'workflow');
   for (const [key, label] of Object.entries(toolbarLabels)) {
     const toggle = workflow(page).getByRole('button', { name: label, exact: true });
@@ -214,7 +215,7 @@ Then('unrelated defaults preserve saved flags and imports restore their own opti
   const saved = (await storedWorkflows(page))[0];
   const history = await repository(page, 'history', saved.id);
   assert.deepEqual(options(saved), original);
-  await setDefaults(page, enabledDefaults);
+  await setDefaults(page, unrelatedDefaults);
   await setMode(page, 'workflow');
   await expectWorkflowOptions(page, original);
   assert.deepEqual(await repository(page, 'history', saved.id), history, 'Changing defaults must not version an existing workflow.');
@@ -222,10 +223,10 @@ Then('unrelated defaults preserve saved flags and imports restore their own opti
   await setMode(page, 'workflow');
   await expectWorkflowOptions(page, original);
   await newWorkflow(page);
-  await expectWorkflowOptions(page, enabledDefaults);
+  await expectWorkflowOptions(page, unrelatedDefaults);
   await workflow(page).getByRole('button', { name: 'Dashed connections', exact: true }).click();
   await expect(page.locator(".site-header .document-meta").getByText('Saved locally', { exact: true })).toBeVisible();
-  assert.deepEqual(await storedDefaults(page), enabledDefaults, 'Toolbar changes must only change the current workflow.');
+  assert.deepEqual(await storedDefaults(page), unrelatedDefaults, 'Toolbar changes must only change the current workflow.');
   await setDefaults(page, disabledDefaults);
   await setMode(page, 'workflow');
   await expectWorkflowOptions(page, disabledDefaults);
