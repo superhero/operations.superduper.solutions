@@ -272,7 +272,7 @@ Then('the five connection styles retain their geometry and saved preference', as
   await page.reload();
   await setMode(page, 'workflow');
   const button = page.getByRole('button', { name: 'Connection style', exact: true });
-  await expect(button).toHaveAttribute('data-line-style', 'flowing');
+  await expect(button).toHaveAttribute('data-line-style', workflowLineStyles.at(-1));
   for (const style of workflowLineStyles) {
     await button.click();
     await expect(button).toHaveAttribute('data-line-style', style);
@@ -285,7 +285,7 @@ Then('the five connection styles retain their geometry and saved preference', as
   await setMode(page, 'settings');
   const application = page.locator('summary[aria-label="Application"]');
   if (await application.getAttribute('aria-expanded') !== 'true') await application.click();
-  await expect(page.getByRole('slider', { name: 'Connection style', exact: true })).toHaveAttribute('aria-valuetext', 'Flowing');
+  await expect(page.getByRole('slider', { name: 'Connection style', exact: true })).toHaveAttribute('aria-valuetext', workflowLineStyleLabels[workflowLineStyles.at(-1)]);
 });
 
 Then('flowing curves ignore saved detours while retaining them for routed styles', async function () {
