@@ -731,6 +731,14 @@ fix(workflow): rename Flowing to Direct and place it first
 
 ```
 
+<!-- changelog-commit:aedaa943ad156eba8c3b316adbfc4333a1b30dd5 -->
+### Commit [`aedaa94`](https://github.com/superhero/operations.superduper.solutions/commit/aedaa943ad156eba8c3b316adbfc4333a1b30dd5)
+
+```text
+fix(settings): default connection style to Orthogonal
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
