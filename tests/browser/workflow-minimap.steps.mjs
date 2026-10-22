@@ -6,7 +6,7 @@ import { renameWorkflow } from "./workflow-details.fixture.mjs";
 import assert from "node:assert/strict";
 import { Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { workflow, operationNodes } from "./workspace.steps.mjs";
+import { workflow, operationNodes } from "./workspace.fixture.mjs";
 
 const minimap = page => page.getByRole("group", { name: "Workflow minimap", exact: true });
 const camera = page => workflow(page).locator(".svelte-flow__viewport").evaluate(element => {

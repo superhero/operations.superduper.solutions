@@ -34,7 +34,10 @@ one publication artifact; assets remain alongside its entry page.
 
 Canonical feature and example-row identities preserve discovery across jobs.
 Successful publication requires every declared case and step to pass, matching
-execution hashes, the same tested revision and complete unfiltered results.
+execution hashes, and complete unfiltered results for whole-profile execution.
+Incremental browser validation instead verifies every complete feature receipt
+against the current execution inputs and authored inventory. Filtered profile
+proofs remain incomplete; they cannot certify validation on their own.
 Diagnostic reports remain explicitly incomplete and cannot certify validation.
 
 Scenario badges count cases, including outline examples, from these results.
@@ -69,3 +72,14 @@ must verify. Otherwise validation runs again.
 
 Reuse preserves report bytes and original provenance. It never relabels earlier
 results as freshly executed tests.
+
+Within the same PR, independently completed browser features may also survive
+failed workflows and test corrections for up to seven days from their original
+execution. Schema 3 reports retain every original feature receipt, native result,
+blob and attachment, with explicit newly executed and reused counts. Other
+profiles rerun on new commits; intact earlier attempts from the same workflow
+run and revision may survive failed-job retries. Missing cases, skipped work,
+failed teardown or invalid evidence block certification. Scoped source coverage
+remains a complete profile, with all four existing 100% thresholds. Schema 2
+complete-validation artifacts remain supported. See the
+[execution and recovery policy](../ci-incremental-validation.md).

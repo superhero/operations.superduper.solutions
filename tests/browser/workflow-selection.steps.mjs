@@ -7,7 +7,7 @@ import { expect } from '@playwright/test';
 import { operations } from '../../src/lib/catalog.ts';
 import { createOperationGraph, removeGraphSelection } from '../../src/lib/workflow-graph.ts';
 import { repository } from './workflow-storage.fixture.mjs';
-import { readExport, setMode, workflow } from './workspace.steps.mjs';
+import { readExport, setMode, workflow } from './workspace.fixture.mjs';
 
 const node = (page, id) => workflow(page).locator(`.svelte-flow__node[data-id=${JSON.stringify(id)}]`);
 const selectedIds = page => workflow(page).locator('.svelte-flow__node.selected')

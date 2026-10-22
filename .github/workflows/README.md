@@ -114,6 +114,23 @@ Normal report generation requires all six complete, passing, unfiltered suites
 and 100% scoped coverage. Missing cases, stale results, skipped work, altered
 hashes or mismatched CI attempts fail validation.
 
+Incremental CI replaces the monolithic browser profile with complete feature
+units under `tmp/test/units/<id>/`. Preparation verifies reusable evidence from
+the same PR and schedules only nonempty batches, up to four GitHub-hosted jobs.
+The final check verifies every current case and combines the original native
+results with the other five complete profiles. Earlier successful attempts
+retain their actual producer identity. See
+[resumable validation](../../docs/ci-incremental-validation.md) for cache keys,
+seven-day expiry, resource limits and diagnostic capture.
+
+Use **Re-run failed jobs** to retain successful jobs and published feature
+checkpoints. A new commit reruns cheap profiles and browser features whose
+execution inputs changed; application runtime changes invalidate the browser
+corpus. Repository variable `CI_INCREMENTAL_TESTS=false` restores the previous
+complete-suite path. `CI_BROWSER_CAPTURE=full` retains incremental scheduling
+with full tracing. Automatic develop integration continues to build without
+running these test suites.
+
 ### Combined HTML report
 
 After complete validation, run:

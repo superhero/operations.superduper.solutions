@@ -16,6 +16,7 @@ import { enterBrowserFeature, releaseDevelopmentResources } from './development-
 import { exampleCatalogState } from "./catalog-state.fixture.mjs";
 import { appSettingsDatabaseName } from '../../src/lib/storage-names.ts';
 import { browserAbortCapture, finishBrowserContext } from '../gherkin/browser-abort-guard.mjs';
+import { tracingOptions } from './capture-policy.fixture.mjs';
 
 setDefaultTimeout(30_000);
 let browser;
@@ -130,7 +131,7 @@ Before(async function ({ pickle }) {
     nodeHeapLimitBytes: getHeapStatistics().heap_size_limit }),
     'application/vnd.operations.browser+json');
   const slug = pickle.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 90);
-  this.artifactDirectory = resolve('tmp/test/browser', `${slug}-${randomUUID().slice(0, 8)}`);
+  this.artifactDirectory = resolve(process.env.OPERATIONS_TEST_OUTPUT ?? 'tmp/test', 'browser', `${slug}-${randomUUID().slice(0, 8)}`);
   // Interaction scenarios explicitly save visible controls; untagged scenarios
   // exercise the application's real fresh-profile defaults.
   const toolbarControls = pickle.tags.some(tag => tag.name === '@toolbar-controls');
@@ -160,11 +161,10 @@ Before(async function ({ pickle }) {
       });
     });
   }
-  // Explicit profiling runs avoid Playwright's DOM snapshots. Ordinary tests
-  // retain their complete failure traces; routing/network isolation is unchanged.
-  const minimalProfile = process.env.SCHEMA_PROFILE_LOW_OVERHEAD === '1'
-    && pickle.tags.some(tag => tag.name === '@schema-profile');
-  await this.context.tracing.start({ screenshots: !minimalProfile, snapshots: !minimalProfile, sources: !minimalProfile });
+  // CI keeps action traces without continuous DOM/image capture for ordinary
+  // cases. Trace contracts and diagnostic runs retain full capture. Failure
+  // screenshots, console/network diagnostics and context cleanup remain active.
+  await this.context.tracing.start(tracingOptions(pickle.tags.map(tag => tag.name)));
   await this.context.route('**/*', async route => {
     const url = route.request().url();
     if (url.startsWith(`${baseURL}/`) || url.startsWith('data:') || url.startsWith('blob:')) {

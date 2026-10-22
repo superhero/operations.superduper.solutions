@@ -72,3 +72,12 @@ Feature: Carry complete validation through integration and release
   Scenario: Retrying publication retains the successful validation producer attempt
     Given the validation workflow for "main"
     Then publication retries use the producing attempt rather than the retry attempt
+
+  Scenario Outline: Incremental browser jobs retain every final validation gate
+    Then the "<workflow>" workflow schedules only outstanding batches and fails closed at aggregation
+    Examples:
+      | workflow     |
+      | ci-release   |
+      | ci-main      |
+      | ci-support   |
+      | test-develop |

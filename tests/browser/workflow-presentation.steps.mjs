@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, closeCatalog, selectThemeMode } from './workspace.steps.mjs';
+import { openCatalog, closeCatalog, selectThemeMode } from './workspace.fixture.mjs';
 import { expectThemeColors } from './theme-colors.mjs';
 
 Then('graph selection feedback remains distinct in the {string} theme', async function (theme) {

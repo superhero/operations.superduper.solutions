@@ -7,10 +7,10 @@ import assert from "node:assert/strict";
 import { seedOperationGraph, loadGraphFixture } from "./workflow-graph.fixture.mjs";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { closeCatalog, revealCatalogOperation, chooseCatalogOperation, connections, operationNodes, readExport, setMode, workflow } from "./workspace.steps.mjs";
+import { closeCatalog, revealCatalogOperation, chooseCatalogOperation, connections, operationNodes, readExport, setMode, workflow } from "./workspace.fixture.mjs";
 import { operations } from "../../src/lib/catalog.ts";
 import { createOperationGraph, removeGraphSelection } from "../../src/lib/workflow-graph.ts";
-import { setWorkflowNodeClearance } from './workflow-defaults.steps.mjs';
+import { setWorkflowNodeClearance } from './workflow-defaults.fixture.mjs';
 import { mkdir } from 'node:fs/promises';
 
 const panels = (page, ownerId, direction) => workflow(page).locator(

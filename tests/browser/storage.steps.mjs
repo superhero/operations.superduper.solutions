@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { setMode } from './workspace.steps.mjs';
+import { setMode } from './workspace.fixture.mjs';
 import { repository } from './workflow-storage.fixture.mjs';
 
 const dashboard = page => page.getByRole('region', { name: 'Storage dashboard', exact: true });

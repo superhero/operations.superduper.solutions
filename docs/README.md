@@ -2,9 +2,9 @@
 
 ## What belongs here
 
-This directory holds durable explanations of project decisions. Its current
-contents are [architectural decision records](adr/README.md), which preserve
-the choices and reasoning behind the application and its development practices.
+This directory holds durable project explanations and research. Its
+[architectural decision records](adr/README.md) preserve the choices and
+reasoning behind the application and its development practices.
 
 ## Service inventory
 
@@ -17,6 +17,14 @@ automatic file casts.
 [Schema performance](schema-performance.md) records the measured discovery,
 matching and retention changes. Its JSON sidecar preserves numeric evidence;
 raw profiles remain generated test artifacts.
+
+## CI research
+
+[CI test orchestration](ci-test-orchestration.md) records execution-cost
+measurements and dependency boundaries, then evaluates incremental result
+reuse, checkpoints and parallel execution for the current stack. Its
+recommendations are proposals; CI procedures and governing decisions remain
+in the automation guide and ADRs.
 
 ## Choose the document type
 

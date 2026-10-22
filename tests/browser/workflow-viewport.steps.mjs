@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { closeCatalog } from './workspace.steps.mjs';
+import { closeCatalog } from './workspace.fixture.mjs';
 import { loadGraphFixture } from './workflow-graph.fixture.mjs';
 
 Then('Fit View centers the graph between visible panes with {string} motion', async function (motion) {

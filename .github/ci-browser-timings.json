@@ -1,0 +1,243 @@
+{
+  "sourceRun": "https://github.com/superhero/operations.superduper.solutions/actions/runs/39787609451",
+  "sourceSha256": "f4efb5c067832de1b7c8da91d09de38d4cd18851dc126e17889b96b67471df56",
+  "purpose": "Scheduling hints only; never evidence for a passing test. Runtime cache keys exclude this scheduling data.",
+  "features": {
+    "tests/browser/alignment.feature": {
+      "duration": 46997.782958984375,
+      "failed": false
+    },
+    "tests/browser/browser-abort.feature": {
+      "duration": 1260.59716796875,
+      "failed": false
+    },
+    "tests/browser/browser-settings-building.feature": {
+      "duration": 43357.021484375,
+      "failed": false
+    },
+    "tests/browser/catalog-hierarchy.feature": {
+      "duration": 74661.38159179688,
+      "failed": false
+    },
+    "tests/browser/coverage-report.feature": {
+      "duration": 16299.08740234375,
+      "failed": false
+    },
+    "tests/browser/error-history-storage.feature": {
+      "duration": 12779.404541015625,
+      "failed": false
+    },
+    "tests/browser/error-history-ui.feature": {
+      "duration": 32985.96923828125,
+      "failed": false
+    },
+    "tests/browser/example-catalogs.feature": {
+      "duration": 197096.1484375,
+      "failed": false
+    },
+    "tests/browser/favicons.feature": {
+      "duration": 51353.2255859375,
+      "failed": false
+    },
+    "tests/browser/field-presence.feature": {
+      "duration": 41982.648681640625,
+      "failed": false
+    },
+    "tests/browser/json-view.feature": {
+      "duration": 168045.87622070312,
+      "failed": false
+    },
+    "tests/browser/keybindings.feature": {
+      "duration": 119168.7822265625,
+      "failed": true
+    },
+    "tests/browser/legacy-smoke.feature": {
+      "duration": 818975.7197265625,
+      "failed": false
+    },
+    "tests/browser/live-prompt.feature": {
+      "duration": 30788.88330078125,
+      "failed": false
+    },
+    "tests/browser/modal-lifetime.feature": {
+      "duration": 70108.43530273438,
+      "failed": false
+    },
+    "tests/browser/operation-execution.feature": {
+      "duration": 50039.11474609375,
+      "failed": false
+    },
+    "tests/browser/operation-versions.feature": {
+      "duration": 26027.740966796875,
+      "failed": false
+    },
+    "tests/browser/operations-qa.feature": {
+      "duration": 61771.385498046875,
+      "failed": false
+    },
+    "tests/browser/palette.feature": {
+      "duration": 450908.1052246094,
+      "failed": false
+    },
+    "tests/browser/pane-state.feature": {
+      "duration": 57206.0263671875,
+      "failed": false
+    },
+    "tests/browser/presentation.feature": {
+      "duration": 96716.00268554688,
+      "failed": false
+    },
+    "tests/browser/primitives-qa.feature": {
+      "duration": 38890.723388671875,
+      "failed": false
+    },
+    "tests/browser/reports.feature": {
+      "duration": 108611.29028320312,
+      "failed": false
+    },
+    "tests/browser/schema-history.feature": {
+      "duration": 105614.06665039062,
+      "failed": false
+    },
+    "tests/browser/schema-lifecycle.feature": {
+      "duration": 16529.572998046875,
+      "failed": false
+    },
+    "tests/browser/service-defaults.feature": {
+      "duration": 642330.7800292969,
+      "failed": false
+    },
+    "tests/browser/startup-recovery.feature": {
+      "duration": 67801.80224609375,
+      "failed": false
+    },
+    "tests/browser/storage.feature": {
+      "duration": 74148.83642578125,
+      "failed": false
+    },
+    "tests/browser/toolbar-settings.feature": {
+      "duration": 34126.974853515625,
+      "failed": false
+    },
+    "tests/browser/touch-panes.feature": {
+      "duration": 40377.90869140625,
+      "failed": false
+    },
+    "tests/browser/transitions.feature": {
+      "duration": 18011.09130859375,
+      "failed": false
+    },
+    "tests/browser/vault-keyboard.feature": {
+      "duration": 29021.481201171875,
+      "failed": false
+    },
+    "tests/browser/vault-origin.feature": {
+      "duration": 48955.75927734375,
+      "failed": false
+    },
+    "tests/browser/vault.feature": {
+      "duration": 270159.732421875,
+      "failed": false
+    },
+    "tests/browser/workflow-autosave.feature": {
+      "duration": 94418.6201171875,
+      "failed": false
+    },
+    "tests/browser/workflow-comment-resize.feature": {
+      "duration": 10913.430419921875,
+      "failed": false
+    },
+    "tests/browser/workflow-connection-types.feature": {
+      "duration": 36003.03564453125,
+      "failed": false
+    },
+    "tests/browser/workflow-controls.feature": {
+      "duration": 111616.95141601562,
+      "failed": false
+    },
+    "tests/browser/workflow-curved-routing.feature": {
+      "duration": 127299.27880859375,
+      "failed": false
+    },
+    "tests/browser/workflow-defaults.feature": {
+      "duration": 399777.7197265625,
+      "failed": false
+    },
+    "tests/browser/workflow-drag.feature": {
+      "duration": 139058.087890625,
+      "failed": false
+    },
+    "tests/browser/workflow-fields.feature": {
+      "duration": 218040.900390625,
+      "failed": false
+    },
+    "tests/browser/workflow-file-development.feature": {
+      "duration": 49925.713134765625,
+      "failed": false
+    },
+    "tests/browser/workflow-file.feature": {
+      "duration": 65439.370849609375,
+      "failed": false
+    },
+    "tests/browser/workflow-focus-order.feature": {
+      "duration": 26593.12646484375,
+      "failed": false
+    },
+    "tests/browser/workflow-history.feature": {
+      "duration": 397558.2275390625,
+      "failed": false
+    },
+    "tests/browser/workflow-manual-routing.feature": {
+      "duration": 175353.94506835938,
+      "failed": false
+    },
+    "tests/browser/workflow-menu.feature": {
+      "duration": 6139.08740234375,
+      "failed": false
+    },
+    "tests/browser/workflow-minimap.feature": {
+      "duration": 29971.802001953125,
+      "failed": false
+    },
+    "tests/browser/workflow-presentation.feature": {
+      "duration": 12645.200927734375,
+      "failed": false
+    },
+    "tests/browser/workflow-processing.feature": {
+      "duration": 303525.2507324219,
+      "failed": false
+    },
+    "tests/browser/workflow-qa.feature": {
+      "duration": 124551.4921875,
+      "failed": false
+    },
+    "tests/browser/workflow-routing.feature": {
+      "duration": 190716.01538085938,
+      "failed": false
+    },
+    "tests/browser/workflow-run.feature": {
+      "duration": 73532.06176757812,
+      "failed": false
+    },
+    "tests/browser/workflow-selection.feature": {
+      "duration": 105010.1337890625,
+      "failed": false
+    },
+    "tests/browser/workflow-single-input.feature": {
+      "duration": 53103.31005859375,
+      "failed": false
+    },
+    "tests/browser/workflow-vault-variables.feature": {
+      "duration": 16075.6943359375,
+      "failed": false
+    },
+    "tests/browser/workflow-viewport.feature": {
+      "duration": 17628.718017578125,
+      "failed": false
+    },
+    "tests/browser/workspace.feature": {
+      "duration": 265875.74267578125,
+      "failed": false
+    }
+  }
+}

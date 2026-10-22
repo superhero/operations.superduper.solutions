@@ -153,7 +153,7 @@ export function expectedCases(profile, root = process.cwd()) {
   return { features, ids, steps };
 }
 
-export function verifyExecution(profile, directory = 'tmp/test', { root = process.cwd() } = {}) {
+export function verifyExecution(profile, directory = 'tmp/test', { root = process.cwd(), allowPreviousAttempt = false } = {}) {
   const identity = profile === 'browser' ? 'browser-chromium' : profile;
   const result = resolve(root, directory, `vitest-${identity}.json`);
   const proof = JSON.parse(readFileSync(resolve(root, directory, 'executions', `${identity}.json`), 'utf8'));
@@ -182,7 +182,9 @@ export function verifyExecution(profile, directory = 'tmp/test', { root = proces
       JSON.stringify(Object.entries(installedToolchain(root)).sort()))
     throw new Error(`Incomplete, stale, filtered or mismatched execution: ${profile}.`);
   if (process.env.GITHUB_RUN_ID && (String(proof.runId) !== process.env.GITHUB_RUN_ID ||
-    String(proof.runAttempt) !== process.env.GITHUB_RUN_ATTEMPT))
+    (allowPreviousAttempt
+      ? !Number.isSafeInteger(Number(proof.runAttempt)) || Number(proof.runAttempt) < 1 || Number(proof.runAttempt) > Number(process.env.GITHUB_RUN_ATTEMPT)
+      : String(proof.runAttempt) !== process.env.GITHUB_RUN_ATTEMPT)))
     throw new Error(`Results belong to a different CI run or attempt: ${profile}.`);
   if (!report.success || report.numFailedTestSuites !== 0 || cases.some(item => item.status !== 'passed' ||
     !item.meta.gherkin.steps?.length || item.meta.gherkin.steps.some(step => step.status !== 'passed')))

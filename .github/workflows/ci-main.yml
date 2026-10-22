@@ -92,7 +92,8 @@ jobs:
     name: Find Previous Validation
     needs: [ integration, release-route ]
     if: >-
-      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') && needs.release-route.outputs.run_release == 'true'
+      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') &&
+      needs.release-route.outputs.run_release == 'true'
     permissions:
       actions: read
       contents: read
@@ -136,7 +137,8 @@ jobs:
     name: Automation Checks
     needs: [ integration, release-route, validation ]
     if: >-
-      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') && needs.release-route.outputs.run_release == 'true'
+      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') &&
+      needs.release-route.outputs.run_release == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -191,7 +193,8 @@ jobs:
       contents: read
       pull-requests: read
     if: >-
-      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') && needs.release-route.outputs.run_release == 'true' && (github.head_ref != 'develop')
+      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') &&
+      needs.release-route.outputs.run_release == 'true' && (github.head_ref != 'develop')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -214,7 +217,8 @@ jobs:
     name: Create Release
     needs: [ integration, workflow-checks ]
     if: >-
-      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') && github.head_ref == 'develop' && github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
+      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') && github.head_ref == 'develop'
+      && github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
     concurrency:
       group: release-creation
       cancel-in-progress: false
@@ -251,7 +255,8 @@ jobs:
     name: Prepare Release Changelog
     needs: [ integration, workflow-checks, validate-pr ]
     if: >-
-      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') && github.head_ref != 'develop' && github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
+      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') && github.head_ref != 'develop'
+      && github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
     concurrency:
       group: release-changelog-${{ github.head_ref }}
       cancel-in-progress: false
@@ -309,17 +314,23 @@ jobs:
           else
             echo 'ready=true' >> "$GITHUB_OUTPUT"
           fi
-
-  application:
-    name: Test and Build Release
-    needs: [ integration, validate-pr, workflow-checks, validation, release-changelog ]
-    if: >-
-      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') && github.head_ref != 'develop' && needs.release-changelog.outputs.ready == 'true'
+  validation-prepare:
+    name: Prepare validation and quick gates
+    needs:
+      - integration
+      - validate-pr
+      - workflow-checks
+      - validation
+      - release-changelog
+    if: (needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') && github.head_ref != 'develop'
+      && needs.release-changelog.outputs.ready == 'true') && (needs.validation.outputs.reused != 'true' &&
+      vars.CI_INCREMENTAL_TESTS != 'false')
     permissions:
       actions: read
       contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
-    timeout-minutes: 80
+    timeout-minutes: 20
     steps:
       - name: Checkout validation inputs
         uses: actions/checkout@v7
@@ -332,14 +343,6 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
-      - name: Restore verified validation artifacts
-        if: needs.validation.outputs.reused == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SOURCE_RUN_ID: ${{ needs.validation.outputs.source_run_id }}
-        run: |
-          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name reused-validation --dir tmp/validation
-          printf 'Reusing complete validation and unchanged artifacts from run %s. Reports retain their original commit and run URL.\n' "$SOURCE_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
       - name: Install dependencies
         if: needs.validation.outputs.reused != 'true'
         run: npm ci --no-audit --no-fund
@@ -357,9 +360,11 @@ jobs:
       - name: Check coverage thresholds
         if: needs.validation.outputs.reused != 'true'
         id: coverage
-        run: |
+        run: >
           npm --loglevel=error run test:coverage
-          jq -r '.total | "Coverage: statements \(.statements.pct)%, branches \(.branches.pct)%, functions \(.functions.pct)%, lines \(.lines.pct)%."' \
+
+          jq -r '.total | "Coverage: statements \(.statements.pct)%, branches \(.branches.pct)%, functions
+          \(.functions.pct)%, lines \(.lines.pct)%."' \
             tmp/test/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
       - name: Build
         if: needs.validation.outputs.reused != 'true'
@@ -368,11 +373,254 @@ jobs:
         if: needs.validation.outputs.reused != 'true'
         id: acceptance
         run: npm --loglevel=error run test:acceptance
+      - name: Component tests
+        id: components
+        env:
+          OPERATIONS_BROWSER_PROFILE: components
+        run: npm --loglevel=error run test:browser
+      - name: Prepare immutable browser inputs
+        env:
+          CI_SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+          CI_PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node .github/scripts/ci-prepare.mjs
+      - name: Verify reusable feature evidence before scheduling
+        id: cache
+        uses: ./.github/actions/ci-browser
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          mode: prepare
+          node: node
+      - name: Upload prepared browser inputs
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-browser-inputs
+          path: |-
+            dist
+            tmp/test/ci/plan.json
+            tmp/test/browser/fixture-bundles.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+      - name: Retain quick-profile evidence
+        if: "!cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure')"
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-node-test-report
+          path: |-
+            tmp/test/vitest-*.json
+            tmp/test/blobs
+            tmp/test/executions
+            tmp/test/attachments
+            tmp/test/coverage
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+      - name: Retain verified reused units
+        if: steps.cache.outputs.has_reused == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-reused-units
+          path: tmp/test/units
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+    outputs:
+      matrix: ${{ steps.cache.outputs.matrix }}
+      has_work: ${{ steps.cache.outputs.has_work }}
+      has_reused: ${{ steps.cache.outputs.has_reused }}
+  browser-validation:
+    name: Browser validation (${{ matrix.batch }})
+    needs:
+      - integration
+      - validate-pr
+      - workflow-checks
+      - validation
+      - release-changelog
+      - validation-prepare
+    if: ((needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') && github.head_ref != 'develop'
+      && needs.release-changelog.outputs.ready == 'true') && (needs.validation.outputs.reused != 'true' &&
+      vars.CI_INCREMENTAL_TESTS != 'false')) && needs.validation-prepare.outputs.has_work == 'true'
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.validation-prepare.outputs.matrix || '{"batch":["none"]}') }}
+    steps:
+      - name: Checkout validation inputs
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install dependencies
+        if: needs.validation.outputs.reused != 'true'
+        run: npm ci --no-audit --no-fund
+      - name: Locate pinned Node
+        id: node
+        run: printf 'path=%s\n' "$(readlink -f "$(command -v node)")" >> "$GITHUB_OUTPUT"
+      - name: Download prepared browser inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name ci-browser-inputs --dir .
+      - name: Run outstanding features and publish checkpoints
+        uses: ./.github/actions/ci-browser
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_WORKFLOW_FILE: .github/workflows/ci-main.yml
+        with:
+          mode: batch
+          batch: ${{ matrix.batch }}
+          node: ${{ steps.node.outputs.path }}
+      - name: Retain browser batch metrics
+        if: "!cancelled()"
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-browser-metrics-${{ matrix.batch }}-attempt-${{ github.run_attempt }}
+          path: tmp/test/ci/batch-*.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  application:
+    name: Test and Build Release
+    needs:
+      - integration
+      - validate-pr
+      - workflow-checks
+      - validation
+      - release-changelog
+      - validation-prepare
+      - browser-validation
+    if: (!cancelled()) && (needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') &&
+      github.head_ref != 'develop' && needs.release-changelog.outputs.ready == 'true')
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - name: Require successful preparation and quick gates
+        env:
+          STATIC_RESULT: ${{ needs.workflow-checks.result }}
+          PREPARE_RESULT: ${{ needs.validation-prepare.result }}
+          VALIDATION_REUSED: ${{ needs.validation.outputs.reused }}
+          GATE_VALIDATE_PR: ${{ needs.validate-pr.result }}
+          GATE_VALIDATION: ${{ needs.validation.result }}
+          GATE_RELEASE_CHANGELOG: ${{ needs.release-changelog.result }}
+        run: >-
+          [[ "$GATE_VALIDATE_PR" == success ]] || { echo "::error::Required validate-pr gate failed or was skipped.";
+          exit 1; }
+
+          [[ "$GATE_VALIDATION" == success ]] || { echo "::error::Required validation gate failed or was skipped."; exit
+          1; }
+
+          [[ "$GATE_RELEASE_CHANGELOG" == success ]] || { echo "::error::Required release-changelog gate failed or was
+          skipped."; exit 1; }
+
+          [[ "$STATIC_RESULT" == success ]] || { echo "::error::Quick checks failed."; exit 1; }
+
+          if [[ "$CI_INCREMENTAL_TESTS" == true && "$VALIDATION_REUSED" != true ]]; then
+            [[ "$PREPARE_RESULT" == success ]] || { echo "::error::Validation preparation failed or was skipped."; exit 1; }
+          fi
+      - name: Checkout validation inputs
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Restore verified validation artifacts
+        if: needs.validation.outputs.reused == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ needs.validation.outputs.source_run_id }}
+        run: >
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name reused-validation --dir tmp/validation
+
+          printf 'Reusing complete validation and unchanged artifacts from run %s. Reports retain their original commit
+          and run URL.\n' "$SOURCE_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+      - name: Install dependencies
+        if: needs.validation.outputs.reused != 'true'
+        run: npm ci --no-audit --no-fund
+      - name: Restore prepared application and profile evidence
+        id: prepared
+        if: (needs.validation.outputs.reused != 'true') && (env.CI_INCREMENTAL_TESTS == 'true')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |-
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name ci-browser-inputs --dir .
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name ci-node-test-report --dir tmp/test
+      - name: Restore previously verified units
+        if: env.CI_INCREMENTAL_TESTS == 'true' && needs.validation.outputs.reused != 'true' &&
+          needs.validation-prepare.outputs.has_reused == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name ci-reused-units --dir tmp/test/units
+      - name: Type check
+        if: (needs.validation.outputs.reused != 'true') && (env.CI_INCREMENTAL_TESTS != 'true')
+        run: npm --loglevel=error run typecheck
+      - name: Source tests with coverage
+        if: (needs.validation.outputs.reused != 'true') && (env.CI_INCREMENTAL_TESTS != 'true')
+        id: source
+        run: npm --loglevel=error run test:source:coverage
+      - name: Gherkin runner integration contracts
+        id: runner
+        if: (needs.validation.outputs.reused != 'true') && (env.CI_INCREMENTAL_TESTS != 'true')
+        run: npm --loglevel=error run test:runner
+      - name: Check coverage thresholds
+        if: (needs.validation.outputs.reused != 'true') && (env.CI_INCREMENTAL_TESTS != 'true')
+        id: coverage
+        run: >
+          npm --loglevel=error run test:coverage
+
+          jq -r '.total | "Coverage: statements \(.statements.pct)%, branches \(.branches.pct)%, functions
+          \(.functions.pct)%, lines \(.lines.pct)%."' \
+            tmp/test/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
+      - name: Build
+        if: (needs.validation.outputs.reused != 'true') && (env.CI_INCREMENTAL_TESTS != 'true')
+        run: npm --loglevel=error run build
+      - name: Acceptance tests
+        if: (needs.validation.outputs.reused != 'true') && (env.CI_INCREMENTAL_TESTS != 'true')
+        id: acceptance
+        run: npm --loglevel=error run test:acceptance
       - name: Browser tests against the built bundle
         if: needs.validation.outputs.reused != 'true'
         id: browser
         timeout-minutes: 70
-        run: npm --loglevel=error run test:browser
+        run: |-
+          if [[ "$CI_INCREMENTAL_TESTS" == true ]]; then
+            node .github/scripts/ci-restore-browser.mjs
+            node tests/gherkin/ci.mjs assemble
+          else
+            npm --loglevel=error run test:browser
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Require successful browser batches
+        if: (needs.validation.outputs.reused != 'true') && (env.CI_INCREMENTAL_TESTS == 'true')
+        env:
+          BROWSER_BATCH_RESULT: ${{ needs.browser-validation.result }}
+          HAS_WORK: ${{ needs.validation-prepare.outputs.has_work }}
+        run: >-
+          if [[ "$HAS_WORK" == true ]]; then
+            [[ "$BROWSER_BATCH_RESULT" == success ]] || { echo "::error::Browser batch execution or checkpoint publication failed."; exit 1; }
+          else
+            [[ "$BROWSER_BATCH_RESULT" == skipped ]] || { echo "::error::Unexpected browser execution state."; exit 1; }
+          fi
       - name: Upload browser results and diagnostics
         if: ${{ !cancelled() && (steps.browser.outcome == 'success' || steps.browser.outcome == 'failure') }}
         uses: actions/upload-artifact@v7
@@ -389,7 +637,8 @@ jobs:
           overwrite: true
           retention-days: 7
       - name: Upload application test results
-        if: ${{ !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure') }}
+        if: ${{ !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure' ||
+          steps.prepared.outcome == 'success') }}
         uses: actions/upload-artifact@v7
         with:
           name: application-test-report
@@ -406,7 +655,8 @@ jobs:
           overwrite: true
           retention-days: 7
       - name: Download automation test results
-        if: ${{ !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure') }}
+        if: ${{ !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure' ||
+          steps.prepared.outcome == 'success') }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name automation-test-report --dir tmp/test
@@ -419,7 +669,8 @@ jobs:
         run: npm --loglevel=error run report:tests
       - name: Generate diagnostic report after failure
         id: failure-report
-        if: failure() && !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure')
+        if: failure() && !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure' ||
+          steps.prepared.outcome == 'success')
         env:
           REPORT_COMMIT: ${{ github.event.pull_request.head.sha }}
           REPORT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -448,17 +699,27 @@ jobs:
           REPOSITORY: ${{ github.repository }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           TESTED_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
+        run: >
           mkdir -p tmp/validation/bundle tmp/validation/coverage tmp/validation/test-report
+
           cp -a dist/. tmp/validation/bundle/
+
           cp -a tmp/test/coverage/. tmp/validation/coverage/
+
           rm -rf tmp/validation/coverage/v8
+
           cp -a tmp/test/report/. tmp/validation/test-report/
+
           cp -a tmp/test/badges tmp/validation/test-report/
+
           # Empty generated folders have no upload payload; retain every file for strict verification.
+
           find tmp/validation/bundle tmp/validation/coverage tmp/validation/test-report \
             -mindepth 1 -depth -type d -empty -delete
-          node .github/scripts/validation-artifacts.mjs create "$REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$PR_HEAD_SHA" "$TESTED_SHA" tmp/validation/bundle tmp/validation/coverage tmp/validation/test-report/index.html tmp/validation/validation-manifest.json
+          node .github/scripts/validation-artifacts.mjs create "$REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
+          "$PR_HEAD_SHA" "$TESTED_SHA" tmp/validation/bundle tmp/validation/coverage
+          tmp/validation/test-report/index.html tmp/validation/validation-manifest.json
+
           printf 'run_attempt=%s\n' "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
         id: validation-proof
       - name: Upload tested bundle
@@ -501,7 +762,8 @@ jobs:
     name: Deploy Preview
     needs: [ integration, application ]
     if: >-
-      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') && github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
+      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') &&
+      github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
     concurrency:
       group: pages-${{ github.head_ref }}
       cancel-in-progress: false
@@ -552,7 +814,9 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=operations-superduper-solutions --branch="${{ env.PAGES_BRANCH }}" --commit-hash=${{ env.DEPLOY_SHA }} --commit-dirty=false --commit-message=bundle-sha256:${{ steps.prepare.outputs.bundle_hash }}
+          command: pages deploy dist --project-name=operations-superduper-solutions --branch="${{ env.PAGES_BRANCH }}"
+            --commit-hash=${{ env.DEPLOY_SHA }} --commit-dirty=false --commit-message=bundle-sha256:${{
+            steps.prepare.outputs.bundle_hash }}
       - name: Verify and record preview deployment
         if: (success() || (failure() && steps.cloudflare.outcome == 'failure')) && steps.prepare.outputs.skipped == 'false'
         env:
@@ -560,7 +824,8 @@ jobs:
           BUNDLE_HASH: ${{ steps.prepare.outputs.bundle_hash }}
           DEPLOYMENT_ID: ${{ steps.cloudflare.outputs.pages-deployment-id || steps.prepare.outputs.deployment_id }}
           DEPLOYMENT_OUTCOME: ${{ steps.cloudflare.outcome == 'failure' && 'failure' || 'success' }}
-        run: bash .github/scripts/record-pages-deployment.sh "$REPOSITORY" "$PAGES_BRANCH" "$DEPLOY_SHA" "$BUNDLE_HASH" "$DEPLOYMENT_ID" "$DEPLOYMENT_OUTCOME"
+        run: bash .github/scripts/record-pages-deployment.sh "$REPOSITORY" "$PAGES_BRANCH" "$DEPLOY_SHA" "$BUNDLE_HASH"
+          "$DEPLOYMENT_ID" "$DEPLOYMENT_OUTCOME"
 
   auto-merge:
     name: Merge Release
@@ -569,7 +834,8 @@ jobs:
       cancel-in-progress: false
     needs: [ integration, workflow-checks, validate-pr, application, preview ]
     if: >-
-      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') && github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
+      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') &&
+      github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
     outputs:
       merge_sha: ${{ steps.release.outputs.merge_sha }}
       head_branch: ${{ steps.release.outputs.head_branch }}
@@ -735,9 +1001,12 @@ jobs:
       MERGE_SHA: ${{ needs.create-release-tag.outputs.merge_sha }}
       REUSED_VALIDATION: ${{ needs.validation.outputs.reused }}
       VALIDATION_RUN_ID: ${{ needs.validation.outputs.reused == 'true' && needs.validation.outputs.source_run_id || github.run_id }}
-      VALIDATION_RUN_ATTEMPT: ${{ needs.validation.outputs.reused == 'true' && needs.validation.outputs.source_run_attempt || needs.application.outputs.validation_run_attempt }}
-      VALIDATION_SOURCE_SHA: ${{ needs.validation.outputs.reused == 'true' && needs.validation.outputs.source_sha || github.event.pull_request.head.sha }}
-      VALIDATION_TESTED_SHA: ${{ needs.validation.outputs.reused == 'true' && needs.validation.outputs.tested_sha || github.event.pull_request.head.sha }}
+      VALIDATION_RUN_ATTEMPT: ${{ needs.validation.outputs.reused == 'true' && needs.validation.outputs.source_run_attempt ||
+        needs.application.outputs.validation_run_attempt }}
+      VALIDATION_SOURCE_SHA: ${{ needs.validation.outputs.reused == 'true' && needs.validation.outputs.source_sha ||
+        github.event.pull_request.head.sha }}
+      VALIDATION_TESTED_SHA: ${{ needs.validation.outputs.reused == 'true' && needs.validation.outputs.tested_sha ||
+        github.event.pull_request.head.sha }}
     steps:
       - name: Checkout release automation
         uses: actions/checkout@v7
@@ -782,7 +1051,9 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_PAGES_API_TOKEN }}
           accountId: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=operations-superduper-solutions --branch=main --commit-hash=${{ needs.create-release-tag.outputs.merge_sha }} --commit-dirty=false --commit-message=bundle-sha256:${{ steps.prepare.outputs.bundle_hash }}
+          command: pages deploy dist --project-name=operations-superduper-solutions --branch=main --commit-hash=${{
+            needs.create-release-tag.outputs.merge_sha }} --commit-dirty=false --commit-message=bundle-sha256:${{
+            steps.prepare.outputs.bundle_hash }}
       - name: Verify and record production deployment
         if: success() || (failure() && steps.cloudflare.outcome == 'failure')
         env:
@@ -792,7 +1063,8 @@ jobs:
           BUNDLE_HASH: ${{ steps.prepare.outputs.bundle_hash }}
           DEPLOYMENT_ID: ${{ steps.cloudflare.outputs.pages-deployment-id || steps.prepare.outputs.deployment_id }}
           DEPLOYMENT_OUTCOME: ${{ steps.cloudflare.outcome == 'failure' && 'failure' || 'success' }}
-        run: bash .github/scripts/record-pages-deployment.sh "$REPOSITORY" main "$MERGE_SHA" "$BUNDLE_HASH" "$DEPLOYMENT_ID" "$DEPLOYMENT_OUTCOME"
+        run: bash .github/scripts/record-pages-deployment.sh "$REPOSITORY" main "$MERGE_SHA" "$BUNDLE_HASH" "$DEPLOYMENT_ID"
+          "$DEPLOYMENT_OUTCOME"
       - name: Publish test reports and badges
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_R2_API_TOKEN || secrets.CLOUDFLARE_PAGES_API_TOKEN }}
@@ -803,3 +1075,6 @@ jobs:
       - name: Report links
         run: |
           echo '[Tests and coverage](https://status.operations.superduper.solutions/test-report.html)' >> "$GITHUB_STEP_SUMMARY"
+env:
+  CI_INCREMENTAL_TESTS: ${{ vars.CI_INCREMENTAL_TESTS != 'false' && 'true' || 'false' }}
+  CI_BROWSER_CAPTURE: ${{ vars.CI_BROWSER_CAPTURE || 'minimal' }}

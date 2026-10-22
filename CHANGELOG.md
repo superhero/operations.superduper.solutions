@@ -427,6 +427,54 @@ assertions.
 
 ```
 
+<!-- changelog-commit:60dfa428072bc199eb3eb382c2f9df5a3736d234 -->
+### Commit [`60dfa42`](https://github.com/superhero/operations.superduper.solutions/commit/60dfa428072bc199eb3eb382c2f9df5a3736d234)
+
+```text
+docs(ci): record test orchestration findings and plan
+
+Document release-validation bottlenecks and compare sharding, failed-job
+recovery and cross-commit reuse for the Gherkin/Vitest runner.
+
+Separate measured timings from forecasts and preserve completeness, scoped
+coverage and artifact provenance requirements.
+
+```
+
+<!-- changelog-commit:4cbdcddd4882641491c36ae1ed3f6d43a224e8f0 -->
+### Commit [`4cbdcdd`](https://github.com/superhero/operations.superduper.solutions/commit/4cbdcddd4882641491c36ae1ed3f6d43a224e8f0)
+
+```text
+docs(ci): ground incremental validation in execution measurements
+
+```
+
+<!-- changelog-commit:e13b487001491b8df6a88ff32bfd39f119b5d8f5 -->
+### Commit [`e13b487`](https://github.com/superhero/operations.superduper.solutions/commit/e13b487001491b8df6a88ff32bfd39f119b5d8f5)
+
+```text
+ci(tests): resume verified browser features across CI runs
+
+Retain complete browser features from the same PR with exact input keys,
+original execution provenance and verified worker cleanup. Publish each
+passing feature immediately so failed runs and test corrections can keep
+independent successful results.
+
+Schedule only outstanding features across four bounded GitHub jobs and
+verify the full current inventory with the other profiles before release
+certification. Preserve complete-validation reuse, scoped coverage and
+branch gates, with a monolithic rollback and lighter ordinary tracing.
+
+```
+
+<!-- changelog-commit:6b4071c349b7192cc98fb11e38e3aa9d4f24daf0 -->
+### Commit [`6b4071c`](https://github.com/superhero/operations.superduper.solutions/commit/6b4071c349b7192cc98fb11e38e3aa9d4f24daf0)
+
+```text
+fix(ci): include the artifact dependency badge
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

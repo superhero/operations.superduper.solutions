@@ -13,7 +13,7 @@ import { extractOperations, operations } from "../../src/lib/catalog.ts";
 import { bundledCatalogs, catalogForOperation } from "../../src/lib/catalog-registry.ts";
 import legacyRevisions from "../../src/catalogs/example-revisions.json" with { type: "json" };
 import { createOperationGraph } from "../../src/lib/workflow-graph.ts";
-import { chooseCatalogOperation, fillField, includeField, openCatalog, revealCatalogOperation, setMode, workflowAction, workspace } from "./workspace.steps.mjs";
+import { chooseCatalogOperation, fillField, includeField, openCatalog, revealCatalogOperation, setMode, workflowAction, workspace } from "./workspace.fixture.mjs";
 
 const operation = id => operations.find(item => item.id === id);
 const graph = id => createOperationGraph(operation(id), { x: 0, y: 0 }, id, catalogForOperation(id).document);

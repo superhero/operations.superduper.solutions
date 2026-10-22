@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { setMode } from './workspace.steps.mjs';
+import { setMode } from './workspace.fixture.mjs';
 import { holdHeightAnimations, seekHeightAnimation, finishHeightAnimations } from './height-animation.fixture.mjs';
 
 const browserSection = page => page.locator('.settings-section').filter({ has: page.locator('summary[aria-label="Browser"]') });

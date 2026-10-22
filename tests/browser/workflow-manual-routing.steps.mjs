@@ -5,7 +5,7 @@ import { toggleConnectionStyle } from './connection-style.fixture.mjs';
 import assert from 'node:assert/strict';
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { readExport, setMode, workflow } from './workspace.steps.mjs';
+import { readExport, setMode, workflow } from './workspace.fixture.mjs';
 import { repository, storedWorkflows } from './workflow-storage.fixture.mjs';
 
 const edgeId = 'manual-edge';

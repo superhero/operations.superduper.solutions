@@ -29,7 +29,7 @@ memory=2g
 processes=256
 if [[ "${GITHUB_ACTIONS:-}" == true ]]; then memory=5g; processes=512; fi
 runner_arguments=()
-if (( $# == 0 )) && [[ "${BROWSER_ENGINE:-chromium}" == chromium ]]; then runner_arguments+=(--with-components); fi
+if (( $# == 0 )) && [[ "${BROWSER_ENGINE:-chromium}" == chromium && "${OPERATIONS_BROWSER_PROFILE:-browser}" == browser ]]; then runner_arguments+=(--with-components); fi
 echo "Browser tests: image=$image, output=tmp/test, memory=$memory."
 # Match the host's pinned Node runtime; the browser image otherwise supplies a
 # different Node version. Source stays read-only and all output is bounded.
@@ -41,7 +41,7 @@ docker run --rm --init --network=none --read-only --shm-size=1g \
   --user "$(id -u):$(id -g)" --env HOME=/tmp --env CI=true \
   --env NODE_OPTIONS=--max-old-space-size=512 \
   --env GITHUB_ACTIONS --env GITHUB_RUN_ID --env GITHUB_RUN_ATTEMPT \
-  --env OPERATIONS_TEST_WORKERS \
+  --env OPERATIONS_TEST_WORKERS --env OPERATIONS_BROWSER_PROFILE \
   --env TMPDIR=/workspace/tmp/test/browser/.runtime \
   --env "BROWSER_TEST_IMAGE=$image" --env "BROWSER_ENGINE=${BROWSER_ENGINE:-chromium}" \
   --tmpfs /tmp:rw,nosuid,nodev,size=512m \
@@ -50,7 +50,11 @@ docker run --rm --init --network=none --read-only --shm-size=1g \
   --mount "type=bind,source=$node_binary,target=/usr/local/bin/node,readonly" \
   --workdir /workspace "$image" \
   bash -c '
-    node tests/browser/run.mjs "$@"
+    if [[ "${OPERATIONS_BROWSER_PROFILE:-browser}" == components ]]; then
+      node tests/gherkin/run.mjs components "$@"
+    else
+      node tests/browser/run.mjs "$@"
+    fi
     browser_status=$?
     # A cgroup may kill one test worker without terminating the container.
     # Preserve its exit status and report the native memory evidence either way.

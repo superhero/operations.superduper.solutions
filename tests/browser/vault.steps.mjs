@@ -6,7 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { exampleCatalogState } from './catalog-state.fixture.mjs';
-import { chooseCatalogOperation, setMode } from './workspace.steps.mjs';
+import { chooseCatalogOperation, setMode } from './workspace.fixture.mjs';
 
 const fixture = '/vault-storage-fixture.js';
 const canaries = ['browser-VAULT-password-9182', 'browser-BEARER-canary-9182', 'browser-APIKEY-canary-9182', 'browser-PRIVATE-label-9182'];

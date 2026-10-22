@@ -8,7 +8,7 @@ import { operations } from '../../src/lib/catalog.ts';
 import { catalogs } from '../../src/lib/catalog-registry.ts';
 import { rankOperations } from '../../src/lib/matching.ts';
 import { catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
-import { openCatalog, closeCatalog, searchOperations, workflow, operationNodes } from './workspace.steps.mjs';
+import { openCatalog, closeCatalog, searchOperations, workflow, operationNodes } from './workspace.fixture.mjs';
 
 const catalog = page => page.getByRole('navigation', { name: 'Operation catalog', exact: true });
 const prompt = page => page.getByRole('textbox', { name: 'Prompt', exact: true });

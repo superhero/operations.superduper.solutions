@@ -51,6 +51,9 @@ export async function createTestConfig(name = process.env.OPERATIONS_TEST_PROFIL
   const engine = process.env.BROWSER_ENGINE ?? 'chromium';
   if (!['chromium', 'firefox', 'webkit'].includes(engine)) throw new Error(`Unsupported browser engine: ${engine}`);
   const identity = browser ? `browser-${engine}` : name;
+  const output = process.env.OPERATIONS_TEST_OUTPUT ?? 'tmp/test';
+  if (!/^tmp\/test(?:\/[a-zA-Z0-9_-]+)*$/.test(output)) throw new Error('Invalid test output directory.');
+  const unit = process.env.OPERATIONS_CI_CONTEXT ? JSON.parse(readFileSync(process.env.OPERATIONS_CI_CONTEXT, 'utf8')) : undefined;
   const workers = browser ? Number(process.env.OPERATIONS_TEST_WORKERS ?? (process.env.GITHUB_ACTIONS ? '2' : '1')) : 1;
   if (!Number.isSafeInteger(workers) || workers < 1 || workers > 2) throw new Error('Browser workers must be 1 or 2.');
   const selected = process.env.OPERATIONS_FEATURES ? JSON.parse(process.env.OPERATIONS_FEATURES) : profile.paths;
@@ -65,10 +68,10 @@ export async function createTestConfig(name = process.env.OPERATIONS_TEST_PROFIL
     tagExpression: tags, ...(browser ? { testModule: resolve(root, 'tests/gherkin/worker-test.mjs') } : {}) }));
   if (name === 'source') plugins.push(matchingWorkerConstructor());
   const config = {
-    root, cacheDir: resolve(root, `tmp/test/.vite/${identity}-${runnerCacheIdentity}`), plugins,
+    root, cacheDir: resolve(root, `${output}/.vite/${identity}-${runnerCacheIdentity}`), plugins,
     resolve: { alias: [{ find: /^@cucumber\/cucumber$/, replacement: resolve(root, 'tests/gherkin/cucumber-compat.mjs') }] },
     test: {
-      name: identity, include: selected, passWithNoTests: false,
+      name: unit?.project ?? identity, include: selected, passWithNoTests: false,
       environment: 'node', pool: 'forks', maxWorkers: workers,
       fileParallelism: browser && workers > 1, isolate: false, retry: 0,
       testTimeout: browser ? 300_000 : 240_000, hookTimeout: 120_000,
@@ -80,13 +83,13 @@ export async function createTestConfig(name = process.env.OPERATIONS_TEST_PROFIL
         ...(name === 'source' ? [/[\\/]src[\\/]lib[\\/]matching\.ts$/] : []), ...(browser ? [
         /[\\/]tests[\\/]gherkin[\\/](?:native-steps|cucumber-compat|worker-test)\.mjs$/,
       ] : [])] } },
-      attachmentsDir: resolve(root, 'tmp/test/attachments'),
-      reporters: ['default', resolve(root, 'tests/gherkin/interrupt-reporter.mjs'), ['json', { outputFile: `tmp/test/vitest-${identity}.json` }],
-        ['blob', { outputFile: `tmp/test/blobs/${identity}.json` }]],
-      ...(name === 'source' && process.env.OPERATIONS_COVERAGE === '1' ? { coverage: coverageOptions() } : {}),
+      attachmentsDir: resolve(root, output, 'attachments'),
+      reporters: ['default', resolve(root, 'tests/gherkin/interrupt-reporter.mjs'), ['json', { outputFile: `${output}/vitest-${identity}.json` }],
+        ['blob', { outputFile: `${output}/blobs/${identity}.json` }]],
+      ...(name === 'source' && process.env.OPERATIONS_COVERAGE === '1' ? { coverage: coverageOptions(`${output}/coverage`) } : {}),
     },
   };
-  if (browser) {
+  if (browser && !unit) {
     const projects = browserProjects(selected, identity, workers);
     if (projects) {
       // Inline projects inherit setup/plugins and root reporters. An empty root

@@ -10,10 +10,14 @@ policy inputs and generated status badges. Application behavior belongs in
 | Directory | Responsibility |
 | --- | --- |
 | [`workflows/`](workflows/README.md) | Event triggers, job orchestration, permissions and artifacts |
+| [`actions/ci-browser/`](actions/ci-browser/action.yml) | Host action for resumable browser batches and artifact checkpoints |
 | [`scripts/`](scripts/README.md) | Validation, merging, release, publication and report commands |
 | [`tests/`](tests/README.md) | Gherkin scenarios and steps for repository automation |
 | [`policies/`](policies/README.md) | Declarative inputs for repository administration |
 | [`badges/`](badges/README.md) | Committed dependency SVGs; test badges accompany published reports |
+
+`ci-browser-timings.json` contains historical scheduling hints, with their source
+run and revision. It is not validation evidence or part of feature cache keys.
 
 ## Responsibility boundaries
 

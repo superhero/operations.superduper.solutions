@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { connections, readExport, setMode, workflow } from './workspace.steps.mjs';
+import { connections, readExport, setMode, workflow } from './workspace.fixture.mjs';
 import { repository } from './workflow-storage.fixture.mjs';
 import { center, gesture } from './workflow-single-input.steps.mjs';
 

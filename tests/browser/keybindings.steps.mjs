@@ -4,7 +4,7 @@
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { closeWorkflowDetails, workflowDetails } from './workflow-details.fixture.mjs';
-import { setMode, workflow, openCatalog } from './workspace.steps.mjs';
+import { setMode, workflow, openCatalog } from './workspace.fixture.mjs';
 
 async function preferences(page) {
   await setMode(page, 'settings');

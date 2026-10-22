@@ -147,7 +147,7 @@ export async function findValidation({ repository, targetSha, destination, cwd =
       if (JSON.stringify(Object.keys(inventory(manifestDirectory))) !== JSON.stringify([MANIFEST_NAME]))
         throw new Error("Unexpected validation manifest files.");
       const manifest = JSON.parse(readFileSync(join(temporary, "validation-manifest", MANIFEST_NAME), "utf8"));
-      if (manifest.schemaVersion !== 2 || manifest.repository !== repository || manifest.runId !== run.id
+      if (![2, 3].includes(manifest.schemaVersion) || manifest.repository !== repository || manifest.runId !== run.id
         || manifest.runAttempt !== run.run_attempt || manifest.sourceSha !== run.head_sha
         || !isSha(manifest.testedSha) || !isSha(manifest.testedTree)
         || manifest.inputFingerprint !== target.inputFingerprint)

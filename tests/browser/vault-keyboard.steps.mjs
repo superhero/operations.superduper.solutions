@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog } from './workspace.steps.mjs';
+import { openCatalog } from './workspace.fixture.mjs';
 import { categoryLabel } from '../../src/lib/category-label.ts';
 
 const password = 'keyboard-vault-password-6481';
