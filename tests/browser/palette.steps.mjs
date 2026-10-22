@@ -5,8 +5,8 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { Then, When } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { closeCatalog, openCatalog, setMode, searchOperations, setEvaluationDetails } from './workspace.steps.mjs';
-import { selectThemeMode } from './workspace.steps.mjs';
+import { closeCatalog, openCatalog, setMode, searchOperations, setEvaluationDetails } from './workspace.fixture.mjs';
+import { selectThemeMode } from './workspace.fixture.mjs';
 
 const paletteNames = Array.from({ length: 6 }, (_, index) => `--palette-${index + 1}`);
 const toneNames = Array.from({ length: 6 }, (_, index) => `--tone-${index + 1}`);

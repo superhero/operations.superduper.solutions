@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { chooseCatalogOperation, expectFieldValue, fillField, setMode } from "./workspace.steps.mjs";
+import { chooseCatalogOperation, expectFieldValue, fillField, setMode } from "./workspace.fixture.mjs";
 import { catalogForOperation } from "../../src/lib/catalog-registry.ts";
 import { metricsCacheKey } from "../../src/lib/metrics-cache.ts";
 import schemaIndexes from "../../src/catalogs/services/indexes/index.json" with { type: "json" };

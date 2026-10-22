@@ -5,8 +5,8 @@ import { toggleConnectionStyle } from './connection-style.fixture.mjs';
 import assert from 'node:assert/strict';
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { readExport, setMode, workflow } from './workspace.steps.mjs';
-import { setWorkflowNodeClearance, setWorkflowDashValues, storedDefaults } from './workflow-defaults.steps.mjs';
+import { readExport, setMode, workflow } from './workspace.fixture.mjs';
+import { setWorkflowNodeClearance, setWorkflowDashValues, storedDefaults } from './workflow-defaults.fixture.mjs';
 import { repository, storedWorkflows } from './workflow-storage.fixture.mjs';
 
 const node = (page, id) => workflow(page).locator(`.svelte-flow__node[data-id="${id}"]`);

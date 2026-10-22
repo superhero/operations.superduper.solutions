@@ -1,0 +1,22 @@
+name: Resumable browser validation
+description: Execute or restore independently verified browser feature units.
+inputs:
+  mode:
+    required: true
+    description: prepare, batch or restore
+  batch:
+    required: false
+    description: Stable batch identifier from the prepared plan
+  node:
+    required: true
+    description: Absolute path to the pinned project Node executable
+outputs:
+  matrix:
+    description: Only batches with outstanding features
+  has_work:
+    description: Whether any feature still requires execution
+  has_reused:
+    description: Whether the prepared pack contains verified cached units
+runs:
+  using: node24
+  main: index.mjs

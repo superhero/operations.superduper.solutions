@@ -6,7 +6,7 @@ import { closeWorkflowDetails, renameWorkflow, workflowNameInput } from "./workf
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, closeCatalog, chooseCatalogOperation, field, fillField, workflow, workflowAction, workspace, operationNodes, connections, searchOperations } from './workspace.steps.mjs';
+import { openCatalog, closeCatalog, chooseCatalogOperation, field, fillField, workflow, workflowAction, workspace, operationNodes, connections, searchOperations } from './workspace.fixture.mjs';
 import { expectThemeColors } from './theme-colors.mjs';
 import { catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
 

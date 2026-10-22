@@ -6,7 +6,7 @@ import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { versionedSchema } from '../fixtures/operation-versions.mjs';
 import { catalogSchemaHeading, catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
-import { setMode, openCatalog, closeCatalog, searchOperations, workflowAction, readExport, fillField, executeOperation, quitRun } from './workspace.steps.mjs';
+import { setMode, openCatalog, closeCatalog, searchOperations, workflowAction, readExport, fillField, executeOperation, quitRun } from './workspace.fixture.mjs';
 
 const nodes = page => page.locator('.svelte-flow__node-operation');
 const version = page => nodes(page).getByRole('combobox', { name: 'API version', exact: true });

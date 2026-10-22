@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
-import { readExport, setMode, workflow } from './workspace.steps.mjs';
+import { readExport, setMode, workflow } from './workspace.fixture.mjs';
 import { loadGraphFixture } from './workflow-graph.fixture.mjs';
 import { createUtilityNode, addArrayFilterAssertion } from '../../src/lib/workflow-graph.ts';
 import { defaultProcessingData } from '../../src/lib/workflow-processing.ts';

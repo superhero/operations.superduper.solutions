@@ -6,7 +6,7 @@ import { closeWorkflowDetails, expectWorkflowName, openWorkflowDetails, renameWo
 import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { closeCatalog, connections, openCatalog, readExport, setMode, workflow } from "./workspace.steps.mjs";
+import { closeCatalog, connections, openCatalog, readExport, setMode, workflow } from "./workspace.fixture.mjs";
 import { expectHoverHint, expectNoHeaderHint } from "./workflow-fields.steps.mjs";
 import { gesture as connect } from "./workflow-single-input.steps.mjs";
 

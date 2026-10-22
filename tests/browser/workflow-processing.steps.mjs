@@ -6,7 +6,7 @@ import { Then } from '@cucumber/cucumber';
 import { createHmac } from 'node:crypto';
 import { expect } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { setMode, readExport, workflow } from './workspace.steps.mjs';
+import { setMode, readExport, workflow } from './workspace.fixture.mjs';
 import { loadGraphFixture } from './workflow-graph.fixture.mjs';
 import { defaultProcessingData } from '../../src/lib/workflow-processing.ts';
 import { parseWorkflowFile } from '../../src/lib/workflow-file.ts';

@@ -134,6 +134,17 @@ complete reports and bundle hashes, preserving their provenance. Missing,
 expired or unverifiable evidence requires fresh validation; current branch and
 merge checks still apply.
 
+Browser validation also retains complete feature results for seven days within
+the same repository and PR. Exact execution inputs, original producer evidence
+and successful cleanup must verify before reuse. Outstanding features run in
+up to four bounded GitHub-hosted jobs. Adding a feature does not invalidate
+unchanged feature keys; application or shared runner changes invalidate their
+dependents. The final check still requires the entire current inventory, the
+other complete profiles and scoped coverage before integration. See
+[resumable CI validation](../ci-incremental-validation.md) for the dependency,
+expiry, recovery, reporting and rollback policy. Develop's automatic test policy
+and the integration queue are unchanged.
+
 ### Merge policy
 
 Feature and integration bugfix PRs, hotfix PRs into `main`, and documentation PRs

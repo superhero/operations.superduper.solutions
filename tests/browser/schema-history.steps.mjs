@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
-import { setMode } from './workspace.steps.mjs';
+import { setMode } from './workspace.fixture.mjs';
 import { expandSchemaCard, revealSchemaCard, expectSchemaName } from './schema-card.fixture.mjs';
 import { captureRevisionClose, captureRevisionOpen, traceRevisionClose } from './schema-revisions-motion.fixture.mjs';
 

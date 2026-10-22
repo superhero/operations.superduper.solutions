@@ -8,7 +8,7 @@ import { expect } from '@playwright/test';
 import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };
 import sources from '../../build/service-schemas.sources.json' with { type: 'json' };
 import { bundledCatalogs } from '../../src/lib/catalog-registry.ts';
-import { setMode, openCatalog, closeCatalog, workflowAction, workspace, fillField } from './workspace.steps.mjs';
+import { setMode, openCatalog, closeCatalog, workflowAction, workspace, fillField } from './workspace.fixture.mjs';
 import { expandSchemaCard, expandSchemaGroups, expectSchemaName } from './schema-card.fixture.mjs';
 import { catalogSchemaHeading, catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
 

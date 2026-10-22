@@ -5,7 +5,7 @@ import { closeWorkflowDetails, expectWorkflowName, openWorkflowDetails, renameWo
 import assert from 'node:assert/strict';
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { setMode, workflow } from './workspace.steps.mjs';
+import { setMode, workflow } from './workspace.fixture.mjs';
 import { repository, storedWorkflows } from './workflow-storage.fixture.mjs';
 
 const historyDialog = page => page.getByRole('dialog', { name: 'Workflow history', exact: true });
@@ -652,7 +652,7 @@ Then('repeated keyboard undo and redo preserve workflow focus beside the open se
     await workflow(page).getByRole('button', { name: 'Cast', exact: true }).click();
     await saved(page);
   }
-  const { openCatalog } = await import('./workspace.steps.mjs');
+  const { openCatalog } = await import('./workspace.fixture.mjs');
   await openCatalog(page);
   const search = page.getByRole('textbox', { name: 'Prompt', exact: true });
   await expect(search).toBeFocused();

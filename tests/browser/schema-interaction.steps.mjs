@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, searchOperations, setEvaluationDetails } from './workspace.steps.mjs';
+import { openCatalog, searchOperations, setEvaluationDetails } from './workspace.fixture.mjs';
 import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };
 import { operations } from '../../src/lib/catalog.ts';
 import { bundledCatalogs } from '../../src/lib/catalog-registry.ts';
@@ -66,7 +66,7 @@ Then('full-library search renders nearby rows and shares tooltip state', async f
 Then('delegated catalog help preserves disabled explanations anchors and dismissal', async function () {
   const { readFile } = await import('node:fs/promises');
   const { gunzipSync } = await import('node:zlib');
-  const { setMode } = await import('./workspace.steps.mjs');
+  const { setMode } = await import('./workspace.fixture.mjs');
   const index = JSON.parse(gunzipSync(await readFile('src/catalogs/services/indexes/aws-lambda.json.gz')));
   const unavailable = index.operations.find(operation => operation.unavailableReason);
   assert.ok(unavailable);
@@ -172,7 +172,7 @@ Then('a multi-schema workflow restores through bounded model requests', async fu
 
 Then('closed settings and search retain no inactive controls or matching worker', async function () {
   const { observeMatchingTransfers } = await import('./schema-profile.fixture.mjs');
-  const { closeCatalog, setMode } = await import('./workspace.steps.mjs');
+  const { closeCatalog, setMode } = await import('./workspace.fixture.mjs');
   await this.context.addInitScript(observeMatchingTransfers);
   const page = this.page;
   await page.reload();

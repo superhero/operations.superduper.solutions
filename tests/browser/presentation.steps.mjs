@@ -5,8 +5,8 @@ import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { chooseCatalogOperation, closeCatalog, field, fillField, expectFieldValue, openCatalog, workspace, searchOperations,
-  workflow, workflowAction, operationNodes, restartRun, quitRun, executeOperation, applyDisplayedTheme, setEvaluationDetails } from './workspace.steps.mjs';
-import { selectThemeMode } from './workspace.steps.mjs';
+  workflow, workflowAction, operationNodes, restartRun, quitRun, executeOperation, applyDisplayedTheme, setEvaluationDetails } from './workspace.fixture.mjs';
+import { selectThemeMode } from './workspace.fixture.mjs';
 import { expectThemeColors } from './theme-colors.mjs';
 
 async function expectUnclippedFocus(control) {

@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { setMode } from './workspace.steps.mjs';
+import { setMode } from './workspace.fixture.mjs';
 
 const password = 'browser-VAULT-password-9182';
 const secret = 'browser-BEARER-canary-9182';

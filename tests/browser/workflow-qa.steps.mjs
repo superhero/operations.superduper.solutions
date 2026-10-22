@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { workflow, workflowAction, setMode } from "./workspace.steps.mjs";
+import { workflow, workflowAction, setMode } from "./workspace.fixture.mjs";
 import { repository, storedWorkflows, blockWorkflowSaving, restoreWorkflowSaving } from "./workflow-storage.fixture.mjs";
 import { expectWorkflowName, renameWorkflow } from "./workflow-details.fixture.mjs";
 

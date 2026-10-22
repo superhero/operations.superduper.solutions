@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { closeCatalog, expectFieldValue, includeField, field, openCatalog, restartRun, applyDisplayedTheme } from './workspace.steps.mjs';
+import { closeCatalog, expectFieldValue, includeField, field, openCatalog, restartRun, applyDisplayedTheme } from './workspace.fixture.mjs';
 import { expectThemeColors } from './theme-colors.mjs';
 
 Then('the required Priority dropdown supports keyboard choice and cancellation', async function () {

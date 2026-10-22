@@ -5,7 +5,7 @@ import { openWorkflowDetails, closeWorkflowDetails, expectWorkflowName, renameWo
 import assert from "node:assert/strict";
 import { When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { workflow, setMode, openCatalog, closeCatalog } from "./workspace.steps.mjs";
+import { workflow, setMode, openCatalog, closeCatalog } from "./workspace.fixture.mjs";
 import { repository, storedWorkflows, blockWorkflowSaving, restoreWorkflowSaving } from "./workflow-storage.fixture.mjs";
 
 const nameInput = workflowNameInput;

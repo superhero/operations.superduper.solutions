@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { chooseCatalogOperation, executeOperation, includeField, field, fillField, quitRun, restartRun, setMode, workflowAction, workspace } from './workspace.steps.mjs';
+import { chooseCatalogOperation, executeOperation, includeField, field, fillField, quitRun, restartRun, setMode, workflowAction, workspace } from './workspace.fixture.mjs';
 import { repository, storedWorkflows } from './workflow-storage.fixture.mjs';
 
 const omitted = (page, label) => workspace(page).getByRole('checkbox', { name: `Do not send ${label}`, exact: true });

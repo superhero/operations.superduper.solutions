@@ -27,6 +27,7 @@
     "test:components": "node tests/gherkin/run.mjs components"
   },
   "devDependencies": {
+    "@actions/artifact": "6.3.1",
     "@apidevtools/json-schema-ref-parser": "16.0.5",
     "@cucumber/gherkin": "32.2.0",
     "@cucumber/messages": "27.2.0",

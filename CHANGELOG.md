@@ -1054,6 +1054,32 @@ docs(ci): ground incremental validation in execution measurements
 
 ```
 
+<!-- changelog-commit:e13b487001491b8df6a88ff32bfd39f119b5d8f5 -->
+### Commit [`e13b487`](https://github.com/superhero/operations.superduper.solutions/commit/e13b487001491b8df6a88ff32bfd39f119b5d8f5)
+
+```text
+ci(tests): resume verified browser features across CI runs
+
+Retain complete browser features from the same PR with exact input keys,
+original execution provenance and verified worker cleanup. Publish each
+passing feature immediately so failed runs and test corrections can keep
+independent successful results.
+
+Schedule only outstanding features across four bounded GitHub jobs and
+verify the full current inventory with the other profiles before release
+certification. Preserve complete-validation reuse, scoped coverage and
+branch gates, with a monolithic rollback and lighter ordinary tracing.
+
+```
+
+<!-- changelog-commit:6b4071c349b7192cc98fb11e38e3aa9d4f24daf0 -->
+### Commit [`6b4071c`](https://github.com/superhero/operations.superduper.solutions/commit/6b4071c349b7192cc98fb11e38e3aa9d4f24daf0)
+
+```text
+fix(ci): include the artifact dependency badge
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

@@ -5,7 +5,7 @@ import { categoryLabel } from '../../src/lib/category-label.ts';
 import assert from "node:assert/strict";
 import { When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { chooseCatalogOperation, closeCatalog, field, expectFieldValue, openCatalog, workspace, searchOperations, setMode, setEvaluationDetails, selectThemeMode } from "./workspace.steps.mjs";
+import { chooseCatalogOperation, closeCatalog, field, expectFieldValue, openCatalog, workspace, searchOperations, setMode, setEvaluationDetails, selectThemeMode } from "./workspace.fixture.mjs";
 import { expectThemeColors } from "./theme-colors.mjs";
 import { operations } from "../../src/lib/catalog.ts";
 import { catalogForOperation } from "../../src/lib/catalog-registry.ts";

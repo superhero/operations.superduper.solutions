@@ -1,5 +1,11 @@
 # CI test orchestration: avoid repeated work and reduce execution cost
 
+The historical audit and recommendations below describe the pre-implementation
+baseline. The resulting implementation and recovery policy are maintained in
+[resumable CI validation](ci-incremental-validation.md); its local verification
+is recorded [separately](ci-incremental-validation-checks.md). Historical timings
+here are not measurements of that implementation.
+
 **Research synthesis, revised 2026-10-22.** Use this record to design faster
 test integration for Operations: incremental validation, partial reruns,
 execution overhead, checkpointing and parallel scheduling. Test semantics and
