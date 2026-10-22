@@ -69,6 +69,7 @@ Then("evaluation details stay hidden until enabled and the saved choice survives
 
   await setEvaluationDetails(page);
   await page.reload();
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
   await searchOperations(page, "Example array response");
   await expect(toggle).toBeVisible();
   await expect(symbol).toHaveText("manage_search");
@@ -78,6 +79,7 @@ Then("evaluation details stay hidden until enabled and the saved choice survives
   await expect(toggle).toHaveCount(0);
   await expect(evaluationReport(page)).toBeHidden();
   await page.reload();
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
   await searchOperations(page, "Example array response");
   await expect(toggle).toHaveCount(0);
   await expect(symbol).toHaveText("search");
