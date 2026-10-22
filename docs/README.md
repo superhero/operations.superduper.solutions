@@ -20,10 +20,11 @@ raw profiles remain generated test artifacts.
 
 ## CI research
 
-[CI test orchestration](ci-test-orchestration.md) records measured validation
-bottlenecks and evaluates parallel execution, failed-job recovery and result
-reuse for the current stack. Its recommendations are proposals; CI procedures
-and governing decisions remain in the automation guide and ADRs.
+[CI test orchestration](ci-test-orchestration.md) records execution-cost
+measurements and dependency boundaries, then evaluates incremental result
+reuse, checkpoints and parallel execution for the current stack. Its
+recommendations are proposals; CI procedures and governing decisions remain
+in the automation guide and ADRs.
 
 ## Choose the document type
 
