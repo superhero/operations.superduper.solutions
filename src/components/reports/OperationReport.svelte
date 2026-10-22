@@ -7,6 +7,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import type { Operation } from "$lib/catalog.ts";
   import { getOperationReport } from "$lib/operation-report.ts";
+  import { categoryLabel } from "$lib/category-label.ts";
   import JsonSchemaView from "$lib/components/JsonSchemaView.svelte";
 
   let { operation }: { operation: Operation } = $props();
@@ -68,7 +69,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         <h3>Grouping</h3>
         <ol class="report-groups">{#each data.groups as group, index (group.id)}
           <li style:--group-depth={index}>
-            <dl class="report-facts report-inset report-record"><dt>Name</dt><dd>{group.name}</dd><dt>Description</dt><dd>{group.description || "—"}</dd></dl>
+            <dl class="report-facts report-inset report-record"><dt>Name</dt><dd>{categoryLabel(group.name)}</dd><dt>Description</dt><dd>{group.description || "—"}</dd></dl>
           </li>
         {/each}</ol>
       </section>

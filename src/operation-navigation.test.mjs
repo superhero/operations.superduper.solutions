@@ -12,6 +12,7 @@ import { updateCatalogs, extractOperations } from './lib/catalog.ts';
 import { createWorkflowRequestExecution } from './lib/workflow-execution.ts';
 import { createWorkflowRunner } from './lib/workflow-runner.ts';
 import { versionedSchema } from '../tests/fixtures/operation-versions.mjs';
+import { categoryLabel } from './lib/category-label.ts';
 
 Before({ tags: '@operation-navigation' }, function () { this.previousCatalogs = catalogs; });
 After({ tags: '@operation-navigation' }, function () { updateCatalogs(this.previousCatalogs); });
@@ -74,10 +75,17 @@ Then('operation resource groups are stable nested trees without mutating their s
   assert.deepEqual(operationResourceGroups([], navigation), []);
   assert.equal(result[1].children.length, 0);
   const paths = operationCategoryPaths(result);
-  assert.deepEqual(paths.get('api:foo'), ['API', 'foo']);
-  assert.deepEqual(paths.get('api:bar'), ['API', 'foo', 'bar']);
-  assert.deepEqual(paths.get('api:other'), ['API', 'Authored / title', 'other']);
+  assert.deepEqual(paths.get('api:foo'), ['API', 'Foo']);
+  assert.deepEqual(paths.get('api:bar'), ['API', 'Foo', 'Bar']);
+  assert.deepEqual(paths.get('api:other'), ['API', 'Authored / Title', 'Other']);
   assert.equal(paths.get('missing'), undefined);
+  for (const [source, expected] of [['memory_stores', 'Memory Stores'], ['deployment_runs', 'Deployment Runs'],
+    ['user_profiles', 'User Profiles'], ['api_keys', 'API Keys'], ['HTTP API', 'HTTP API'],
+    ['oauth_clients', 'OAuth Clients'], ['OpenAI SDK', 'OpenAI SDK'], ['GraphQL / v1 / files', 'GraphQL / v1 / Files']]) {
+    assert.equal(categoryLabel(source), expected);
+  }
+  assert.deepEqual(operationCategoryPaths([{ id: 'raw_category', name: 'memory_stores', description: '', operationIds: ['operation_id'] }])
+    .get('operation_id'), ['Memory Stores']);
 });
 
 Then('generic Operations tags disappear while literal schema and resource names remain', () => {

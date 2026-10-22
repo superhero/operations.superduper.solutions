@@ -10,6 +10,7 @@ import { catalogs } from '../../src/lib/catalog-registry.ts';
 import { operationNavigation, operationResourceGroups, navigationOperations } from '../../src/lib/operation-navigation.ts';
 import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };
 import { catalogSchemaHeading, catalogResourcePath } from './catalog-hierarchy.fixture.mjs';
+import { categoryLabel } from '../../src/lib/category-label.ts';
 import { expandSchemaCard, revealSchemaCard, expectSchemaName } from './schema-card.fixture.mjs';
 
 const catalog = page => page.getByRole('navigation', { name: 'Operation catalog', exact: true });
@@ -175,7 +176,7 @@ Then('catalog groups count their operations and keep one open descendant path', 
     async function inspect(group) {
       await expand(page, group.id, root.id);
       await expect(heading(page, group.id, root.id).locator('.catalog-count')).toHaveText(String(total(group)));
-      await expect(heading(page, group.id, root.id)).toHaveAccessibleName(`${group.name} group, ${total(group)} operations`);
+      await expect(heading(page, group.id, root.id)).toHaveAccessibleName(`${categoryLabel(group.name)} group, ${total(group)} operations`);
       await expect(branch(page, group.id, root.id).locator('[data-operation-id]')).toHaveCount(navigationOperations(group.operationIds ?? [], index, null).length);
       for (const child of group.children ?? []) await inspect(child);
     }

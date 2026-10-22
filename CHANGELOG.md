@@ -786,6 +786,16 @@ Drop the best-effort six-unit separation pass and restore direction-independent 
 
 ```
 
+<!-- changelog-commit:07946b09e271acb63cf8be524c673d2f6fe328e4 -->
+### Commit [`07946b0`](https://github.com/superhero/operations.superduper.solutions/commit/07946b09e271acb63cf8be524c673d2f6fe328e4)
+
+```text
+fix(catalog): format category labels consistently
+
+Use shared presentation formatting for navigation, operation tooltip paths and grouping reports. Replace underscores with spaces and title-case category words while preserving acronym casing and source identifiers.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

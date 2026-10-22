@@ -308,7 +308,9 @@ their existing behavior.
 Selector tooltips describe the control's purpose rather than repeating its value
 (for example, Transformation or Assertion condition). Operation names show their
 full catalog category path in the shared tooltip. Other node headers have no
-tooltips; node headers never use native title popups. Utility connector tooltips identify their
+tooltips. Category labels use title case and replace underscores with spaces in
+navigation, tooltip paths and reports, preserving acronyms and source identifiers.
+Node headers never use native title popups. Utility connector tooltips identify their
 purpose and types; Assert additionally explains that Success and Failure each
 pass the original input through unchanged. Connected inputs remain hoverable
 without allowing an additional incoming connection.
