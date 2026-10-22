@@ -202,6 +202,13 @@ tests are needed.
 
 ## Dependency packages
 
+<a href="https://www.npmjs.com/package/@actions/artifact"><img src=".github/badges/version-dependency-actions--artifact.svg" alt="@actions/artifact declared version"></a>
+
+Publishes and restores verified test feature checkpoints in GitHub Actions so
+CI retries can reuse successful work.
+
+---
+
 <a href="https://www.npmjs.com/package/@codemirror/commands"><img src=".github/badges/version-dependency-codemirror--commands.svg" alt="@codemirror/commands declared version"></a>
 <a href="https://www.npmjs.com/package/@codemirror/lang-markdown"><img src=".github/badges/version-dependency-codemirror--lang-markdown.svg" alt="@codemirror/lang-markdown declared version"></a>
 <a href="https://www.npmjs.com/package/@codemirror/language"><img src=".github/badges/version-dependency-codemirror--language.svg" alt="@codemirror/language declared version"></a>

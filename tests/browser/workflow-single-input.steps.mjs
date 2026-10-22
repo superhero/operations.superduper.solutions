@@ -44,8 +44,22 @@ export async function center(locator) {
 }
 
 export async function gesture(page, from, to, mode = 'drag', beforeRelease) {
-  const start = await center(from), end = await center(to);
   await expect(from).toHaveClass(/\bconnectablestart\b/);
+  // Fit View and import layout finish after the toolbar click returns. Measure
+  // only once the canvas and source port have stopped moving across frames.
+  await from.evaluate(async element => {
+    let previous = '', stable = 0;
+    for (let frame = 0; frame < 90; frame++) {
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      const box = element.getBoundingClientRect();
+      const current = JSON.stringify([element.closest('.svelte-flow__viewport')?.getAttribute('style'),
+        box.x, box.y, box.width, box.height]);
+      stable = current === previous ? stable + 1 : 0; previous = current;
+      if (stable >= 3) return;
+    }
+    throw new Error('The canvas must settle before measuring connection drag targets.');
+  });
+  const start = await center(from), end = await center(to);
   // Native pointer events also exercise aria-disabled SVG handles: Playwright's
   // locator.click intentionally refuses elements marked aria-disabled.
   if (mode === 'click') {

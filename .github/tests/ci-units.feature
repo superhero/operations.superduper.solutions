@@ -58,6 +58,13 @@ Feature: Incremental CI retains only independently verified feature results
     Given a hermetic CI feature-unit execution
     Then a rejected cached artifact is a cache miss and never overwrites valid evidence
 
+  Scenario Outline: The installed SDK verifies the complete artifact archive digest
+    Then the installed artifact SDK verifies a checkpoint with a "<kind>" archive digest
+    Examples:
+      | kind       |
+      | matching   |
+      | mismatched |
+
   Scenario: GitHub commit associations identify the PR when run metadata is empty
     Given a hermetic CI feature-unit execution
     Then passing units from a failed same-PR workflow are found through commit association

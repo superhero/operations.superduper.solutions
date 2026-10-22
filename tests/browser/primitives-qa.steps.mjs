@@ -86,9 +86,17 @@ Then('expanding a nested catalog item does not clip its parent', async function 
 Then('hovering another control replaces keyboard help', async function () {
   const page = this.page;
   await openThemeSettings(page);
-  await page.getByRole('switch', { name: 'Dark theme', exact: true }).focus();
+  const palette = page.getByRole('group', { name: 'Color palette', exact: true });
+  const toggle = palette.getByRole('switch', { name: 'Dark theme', exact: true });
+  // Keep both keyboard stops visible so automatic scrolling does not exercise
+  // the separate behavior that intentionally dismisses help on scroll.
+  await palette.locator('.palette-choice').first().scrollIntoViewIfNeeded();
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await toggle.focus();
   await page.keyboard.press('Tab');
+  await expect(palette.getByRole('radio', { name: 'Default', exact: true })).toBeFocused();
   await page.keyboard.press('Shift+Tab');
+  await expect(toggle).toBeFocused();
   await expect(page.getByRole('tooltip')).toHaveText('Switch to dark theme');
   await page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }).hover();
   await expect(page.getByRole('tooltip')).toHaveText('Settings');

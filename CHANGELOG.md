@@ -1080,6 +1080,110 @@ fix(ci): include the artifact dependency badge
 
 ```
 
+<!-- changelog-commit:d8968cac33ded15a3dafe4b7057a6c4e558e6d2f -->
+### Commit [`d8968ca`](https://github.com/superhero/operations.superduper.solutions/commit/d8968cac33ded15a3dafe4b7057a6c4e558e6d2f)
+
+```text
+fix(ci): link the artifact dependency badge in README
+
+```
+
+<!-- changelog-commit:b207717952483cbd7af8f5d2570303e464763004 -->
+### Commit [`b207717`](https://github.com/superhero/operations.superduper.solutions/commit/b207717952483cbd7af8f5d2570303e464763004)
+
+```text
+test(workflows): await settled viewport and saved preferences
+
+```
+
+<!-- changelog-commit:04b85a2da69172d7c55a7bd2e1e0e334cb98a480 -->
+### Commit [`04b85a2`](https://github.com/superhero/operations.superduper.solutions/commit/04b85a2da69172d7c55a7bd2e1e0e334cb98a480)
+
+```text
+test(workflows): settle pane transitions before fitting the view
+
+```
+
+<!-- changelog-commit:0cfe17f43d3f682a35950310759f3971c6ea88e2 -->
+### Commit [`0cfe17f`](https://github.com/superhero/operations.superduper.solutions/commit/0cfe17f43d3f682a35950310759f3971c6ea88e2)
+
+```text
+fix(ci): retain the artifact SDK digest prefix
+
+```
+
+<!-- changelog-commit:b78f5054569366f62464c4bd90e2b4e2413952fe -->
+### Commit [`b78f505`](https://github.com/superhero/operations.superduper.solutions/commit/b78f5054569366f62464c4bd90e2b4e2413952fe)
+
+```text
+test(workflows): await the history drag target
+
+```
+
+<!-- changelog-commit:e3a37f1ad057fdef0a8d20280621d8dde62fe20a -->
+### Commit [`e3a37f1`](https://github.com/superhero/operations.superduper.solutions/commit/e3a37f1ad057fdef0a8d20280621d8dde62fe20a)
+
+```text
+test(panes): wait for startup before keyboard resizing
+
+```
+
+<!-- changelog-commit:f952943266372d626e441efdc03cc5fc72e2e9e2 -->
+### Commit [`f952943`](https://github.com/superhero/operations.superduper.solutions/commit/f952943266372d626e441efdc03cc5fc72e2e9e2)
+
+```text
+test(tooltips): keep keyboard targets visible before focus
+
+```
+
+<!-- changelog-commit:9d70c422a18e9221d37d7fafbc39cc1e05f517d0 -->
+### Commit [`9d70c42`](https://github.com/superhero/operations.superduper.solutions/commit/9d70c422a18e9221d37d7fafbc39cc1e05f517d0)
+
+```text
+test(reports): await startup before restored searches
+
+```
+
+<!-- changelog-commit:cff6d69fc757147ad750092f5467320fd13d9364 -->
+### Commit [`cff6d69`](https://github.com/superhero/operations.superduper.solutions/commit/cff6d69fc757147ad750092f5467320fd13d9364)
+
+```text
+test(panes): isolate resize checks and await stored widths
+
+```
+
+<!-- changelog-commit:b04960747b13a0a11a7a7f1ff69cfdd492680e80 -->
+### Commit [`b049607`](https://github.com/superhero/operations.superduper.solutions/commit/b04960747b13a0a11a7a7f1ff69cfdd492680e80)
+
+```text
+test(palettes): await restored settings before interaction
+
+```
+
+<!-- changelog-commit:7d85404187ca1d4fe02af70a99a09272e052d447 -->
+### Commit [`7d85404`](https://github.com/superhero/operations.superduper.solutions/commit/7d85404187ca1d4fe02af70a99a09272e052d447)
+
+```text
+perf(tests): keep palette helpers local to their feature
+
+```
+
+<!-- changelog-commit:9ac83cbc1242856cb02cc99b42941525202c55ed -->
+### Commit [`9ac83cb`](https://github.com/superhero/operations.superduper.solutions/commit/9ac83cbc1242856cb02cc99b42941525202c55ed)
+
+```text
+chore(ci): retain generated changelog with palette isolation
+
+```
+
+<!-- changelog-commit:45557594d33579abb6411be2b90abccad4ebb21f -->
+### Commit [`4555759`](https://github.com/superhero/operations.superduper.solutions/commit/45557594d33579abb6411be2b90abccad4ebb21f)
+
+```text
+test(navigation): use reading input before dismissing panes
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
