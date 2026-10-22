@@ -238,6 +238,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .property-error { grid-column: 1 / -1; max-width: 300px; color: var(--color-badge-background); font-size: 11px; overflow-wrap: anywhere; }
   .workflow-data-node :global(.svelte-flow__handle) { width: 12px; height: 12px; border: 2px solid var(--color-surface); background: var(--color-emphasis); }
   .workflow-data-node :global(.svelte-flow__handle.target) { background: var(--color-foreground); }
-  .workflow-data-node :global(.structural-port) { pointer-events: auto; cursor: default; }
+  .workflow-data-node :global(.structural-port) { pointer-events: auto; }
+  .workflow-data-node :global(.structural-port:not(.connectionindicator)) { cursor: default; }
   @media (prefers-reduced-motion: reduce) { .workflow-data-node { transition: none; } }
 </style>
