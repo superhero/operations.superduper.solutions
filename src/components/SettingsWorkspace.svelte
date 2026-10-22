@@ -488,7 +488,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </section>
 
 <style>
-  .line-style-setting { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .line-style-setting { display: flex; flex-direction: column; gap: 4px; min-width: 0; border-radius: 4px; background: var(--color-background); }
   .line-style-setting > label { padding: 10px 12px 0; }
   .line-style-value { display: block; padding: 4px 12px 12px; text-align: center; font-size: 0.85em; color: var(--color-primary); font-weight: 700; }
 
