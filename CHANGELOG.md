@@ -796,6 +796,16 @@ Use shared presentation formatting for navigation, operation tooltip paths and g
 
 ```
 
+<!-- changelog-commit:fbe9e8917db41e8e2c69cba8d4ea88b88f3743d4 -->
+### Commit [`fbe9e89`](https://github.com/superhero/operations.superduper.solutions/commit/fbe9e8917db41e8e2c69cba8d4ea88b88f3743d4)
+
+```text
+fix(workflow): scale orthogonal radius with curve strength
+
+Apply the configured strength to completed orthogonal edges, preview paths, dashes and segment controls. Keep the 4-unit radius at 100%, reaching 40 units at 1000%, subject to existing geometry and obstacle constraints.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
