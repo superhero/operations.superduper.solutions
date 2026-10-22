@@ -5,6 +5,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
+  import { isInputLink } from "$lib/workflow-input-links.ts";
   import { isResponseLink } from "$lib/workflow-response-links.ts";
   import { workflowLineStyle, workflowLineStyles, type WorkflowLineStyle } from "$lib/workflow-line-style.ts";
   import { defaultToolbarButtons, type ToolbarButtons } from "$lib/toolbar-settings.ts";
@@ -458,7 +459,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 
   function validConnection(connection: Connection | GraphEdge): boolean {
-    return keyboardActive && !branches.get(connection.target)?.get(connection.targetHandle ?? "")?.hidden &&
+    return keyboardActive && (isInputLink(connection, nodes, edges) || !branches.get(connection.target)?.get(connection.targetHandle ?? "")?.hidden) &&
       isWorkflowConnection(connection, nodes, edges);
   }
 
@@ -722,7 +723,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const edge = { id: crypto.randomUUID(), source: connection.source, target: connection.target,
       ...(connection.sourceHandle ? { sourceHandle: connection.sourceHandle } : {}),
       ...(connection.targetHandle ? { targetHandle: connection.targetHandle } : {}),
-      ...(isResponseLink(connection, nodes, edges) ? { kind: "response" as const } : fieldMapping ? { kind: "mapping" as const } : {}) };
+      ...(isInputLink(connection, nodes, edges) ? { kind: "input" as const } : isResponseLink(connection, nodes, edges) ? { kind: "response" as const } : fieldMapping ? { kind: "mapping" as const } : {}) };
     try {
       const graph = insertFileBinaryCast(edge, nodes, edges, crypto.randomUUID());
       if (graph) { applyGraph(graph); return null; }

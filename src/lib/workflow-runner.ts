@@ -7,6 +7,7 @@ import { additionalBodyField, inputAllowsNull, InputValidationError, validateInp
 import { validateWorkflowDocument, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
 import { castValue, isFileRowConnection, isFileBinaryConnection, matchingSwitchGates } from "./workflow-utilities.ts";
 import { createWorkflowExecution, type WorkflowExecutionResult, type WorkflowResponse, type WorkflowExecutor } from "./workflow-execution.ts";
+import { expandInputLinks } from "./workflow-input-links.ts";
 import { linkedResponseGroups } from "./workflow-response-links.ts";
 import { responseHeaderReader } from "./workflow-response.ts";
 import { isVaultVariableReference, vaultVariablePlaceholder, type VaultVariableInput } from "./secrets/variables.ts";
@@ -153,6 +154,7 @@ function mergeMapped(previous: unknown, next: unknown): unknown
 
 function createFrame(document: WorkflowDocument, parent?: Frame, call?: Owner, rowIndex = 0): Frame
 {
+  document = expandInputLinks(document);
   const nodes = new Map(document.nodes.map(node => [node.id, node]));
   const arrayFilters = arrayFilterPlans(document);
   const internalEdges = new Set([...arrayFilters.values()].flatMap(plan => [...plan.edges]));

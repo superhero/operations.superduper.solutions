@@ -92,3 +92,6 @@ Feature: Step through workflow requests with explicit test responses
 
   Scenario: Compatible response statuses reuse a visible response schema
     Then response schema links persist and route each selected status through the shared fields
+
+  Scenario: One input schema supplies multiple compatible operations
+    Then one input schema fans mapped values out to multiple operations after reload

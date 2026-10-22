@@ -893,3 +893,43 @@ Then('the hidden 404 response can be dragged onto the existing 401 response sche
     target: canonical.target, targetHandle: 'value'
   });
 });
+
+Then('the yellow output of an input schema can connect to two additional compatible operations', async function () {
+  const page = this.page;
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await setMode(page, 'workflow');
+  const operation = operations.find(item => item.name === 'Example POST body');
+  const graphs = ['first', 'second', 'third'].map((id, index) => {
+    const graph = createOperationGraph(operation, { x: 650, y: 100 + index * 240 }, id);
+    const attachment = graph.edges.find(edge => edge.kind === 'schema' && edge.target === id && decodeURIComponent(edge.source).includes('input:path'));
+    const root = graph.nodes.find(node => node.id === attachment.source);
+    return { nodes: [graph.nodes[0], { ...root, position: { x: 150, y: 200 } }], edges: [attachment], attachment };
+  });
+  let combined = { nodes: graphs.flatMap(graph => graph.nodes), edges: graphs.flatMap(graph => graph.edges) };
+  combined = removeGraphSelection({ nodes: graphs.slice(1).map(graph => ({ id: graph.attachment.source })), edges: [] }, combined.nodes, combined.edges);
+  await loadGraphFixture(page, { version: 3, id: 'input-schema-fanout', name: 'Shared input schema', ...combined,
+    viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, dashed: false });
+  const panel = namedPanel(page, 'first', 'inputs', 'Path parameters');
+  const source = panel.locator('.structural-port.source');
+  await source.hover();
+  await expect(source).toHaveCSS('cursor', 'crosshair');
+  await expect(panel.locator('.data-field .target').first()).not.toHaveClass(/connectablestart/);
+  for (const [index, graph] of graphs.slice(1).entries()) {
+    const target = workflow(page).locator('.svelte-flow__handle.target:visible');
+    const to = await target.evaluateAll((elements, id) => {
+      const element = elements.find(element => element.getAttribute('data-handleid') === id);
+      const box = element?.getBoundingClientRect();
+      return box ? { x: box.x + box.width / 2, y: box.y + box.height / 2 } : null;
+    }, graph.attachment.targetHandle);
+    const from = await source.boundingBox();
+    assert.ok(from && to);
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, { steps: 12 });
+    await page.mouse.up();
+    await expect.poll(async () => (await readExport(page)).document.edges.filter(edge => edge.kind === 'input').length).toBe(index + 1);
+  }
+  const saved = (await readExport(page)).document;
+  assert.equal(saved.edges.filter(edge => edge.kind === 'input' && edge.source === graphs[0].attachment.source).length, 2);
+  assert.ok(saved.edges.some(edge => edge.id === graphs[0].attachment.id), 'The original connection stays attached.');
+});

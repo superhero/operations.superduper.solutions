@@ -16,7 +16,7 @@ export function responseGroup(id: string, owner: string, nodes: WorkflowDocument
 }
 
 // Compare the complete generated field tree, independent of status and panel IDs.
-function shape(root: string, nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[], seen = new Set<string>()): unknown {
+export function schemaShape(root: string, nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdge[], seen = new Set<string>()): unknown {
   if (seen.has(root)) return "cycle";
   seen = new Set([...seen, root]);
   const panel = nodes.find(node => node.id === root);
@@ -24,9 +24,10 @@ function shape(root: string, nodes: WorkflowDocumentNode[], edges: WorkflowDocum
   return { array: panel.data.array, fields: panel.data.fields.map(field => {
     let path: unknown;
     try { path = JSON.parse(decodeURIComponent(field.id))[1]; } catch { path = field.id; }
-    const child = edges.find(edge => edge.kind === 'schema' && edge.source === root && edge.sourceHandle === field.id);
+    const child = edges.find(edge => edge.kind === 'schema' && (panel.data.direction === 'inputs'
+      ? edge.target === root && edge.targetHandle === field.id : edge.source === root && edge.sourceHandle === field.id));
     return { path, type: field.type, required: field.required, connectable: field.connectable,
-      array: field.array, itemType: field.itemType, child: child ? shape(child.target, nodes, edges, seen) : undefined };
+      array: field.array, itemType: field.itemType, child: child ? schemaShape(panel.data.direction === "inputs" ? child.source : child.target, nodes, edges, seen) : undefined };
   }) };
 }
 
@@ -41,7 +42,7 @@ export function isResponseLink(connection: { source: string; target: string; sou
   if (!original || !attachment || original.target === target.id || !responseGroup(original.target, owner.id, nodes)?.startsWith('response:') ||
       !responseGroup(target.id, owner.id, nodes)?.startsWith('response:')) return false;
   return !edges.some(edge => edge.kind === 'response' && edge.source === owner.id && edge.sourceHandle === connection.sourceHandle) &&
-    JSON.stringify(shape(original.target, nodes, edges)) === JSON.stringify(shape(target.id, nodes, edges));
+    JSON.stringify(schemaShape(original.target, nodes, edges)) === JSON.stringify(schemaShape(target.id, nodes, edges));
 }
 
 export function linkedResponseGroups(panelId: string, owner: string, edges: WorkflowDocumentEdge[], nodes: WorkflowDocumentNode[]): string[] {

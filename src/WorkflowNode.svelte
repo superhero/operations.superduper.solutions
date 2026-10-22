@@ -46,8 +46,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     untrack(() => updateNodeInternals(id));
   });
 
-  function blockPointer(event: MouseEvent | TouchEvent) { event.stopPropagation(); }
-
   function portLabel(label: string): string {
     return ({ "Path parameters": "Path", "Query parameters": "Query", "Request body": "Body" } as Record<string, string>)[label]
       ?? label.replace(/^Response · /, "").replace(/ · application\/json$/, " · JSON").replace(/ · text\/plain$/, " · Text");
@@ -72,9 +70,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <span class="port-type">Object</span>
             <Handle id={branch.id} type={input ? "target" : "source"} {position}
               class="owner-port"
-              isConnectable={!input} isConnectableStart={!input} isConnectableEnd={false}
-              {...(input ? { onmousedown: blockPointer, ontouchstart: blockPointer } : {})}
-              aria-disabled={input} aria-label={`${branch.label} ${input ? "input" : "output"}`} />
+              isConnectable={true} isConnectableStart={!input} isConnectableEnd={input}
+              aria-disabled={false} aria-label={`${branch.label} ${input ? "input" : "output"}`} />
             {#if branch.hidden}<WorkflowRestoreBranch {branch} {position} />{/if}
           </div>
         {/snippet}
