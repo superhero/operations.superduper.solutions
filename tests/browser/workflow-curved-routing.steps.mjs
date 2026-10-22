@@ -11,6 +11,7 @@ import { loadGraphFixture } from './workflow-graph.fixture.mjs';
 import { createUtilityNode, addArrayFilterAssertion } from '../../src/lib/workflow-graph.ts';
 import { defaultProcessingData } from '../../src/lib/workflow-processing.ts';
 import { workflowLineStyles, workflowLineStyleLabels } from '../../src/lib/workflow-line-style.ts';
+import { workflowCurve } from '../../src/lib/workflow-curve.ts';
 
 const edge = (page, name) => workflow(page).locator(`.svelte-flow__edge[data-id="${name === 'cast' ? 'curve-cast:result' : `curve-assert:${name}`}"]`);
 const path = (page, name) => edge(page, name).locator('.svelte-flow__edge-interaction');
@@ -39,6 +40,24 @@ async function expectSafe(page, locator) {
     }
     return crossings;
   }), { message: 'Every settled curved segment must avoid all measured node bodies, including its owners.' }).toBe(0);
+}
+
+async function expectFlowing(locator) {
+  await expect(locator).toHaveAttribute('d', /^M.* C/);
+  const values = (await locator.getAttribute('d')).match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi).map(Number);
+  assert.equal(values.length, 8, 'The historical mode draws one cubic between the ports.');
+  await expect(locator).toHaveAttribute('d', workflowCurve({ sourceX: values[0], sourceY: values[1], sourcePosition: 'right',
+    targetX: values[6], targetY: values[7], targetPosition: 'left' }, 100)[0]);
+}
+
+async function expectSameCurve(locator, expected) {
+  const values = value => value.match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi).map(Number);
+  const before = values(expected);
+  await expect.poll(async () => {
+    const after = values(await locator.getAttribute('d'));
+    return before.length === after.length ? Math.max(...before.map((value, i) => Math.abs(value - after[i]))) : Infinity;
+  }, { message: 'Remeasuring ports must preserve the curve within subpixel rounding.' }).toBeLessThan(0.01);
+  await expectFlowing(locator);
 }
 
 Given('a curved Filter array assertion loop at width {int}', async function (width) {
@@ -114,9 +133,10 @@ Then('its curved returns avoid node bodies and support reversible anchor adjustm
   await workflow(page).screenshot({ path: `${this.artifactDirectory}/curved-assertion-returns.png` });
 });
 
-Then('a curved return uses the same safe snapped preview when connected', async function () {
-  const page = this.page;
-  await loadGraphFixture(page, { ...this.curvedLoop, edges: this.curvedLoop.edges.filter(edge => edge.id !== 'curve-assert:keep') });
+async function connectReturn(world, style) {
+  const page = world.page;
+  const verify = locator => style === 'flowing' ? expectFlowing(locator) : expectSafe(page, locator);
+  await loadGraphFixture(page, { ...world.curvedLoop, lineStyle: style, edges: world.curvedLoop.edges.filter(edge => edge.id !== 'curve-assert:keep') });
   await page.getByRole('button', { name: 'Fit View', exact: true }).click();
   // Leave a stable drag corridor outside XYFlow's edge auto-pan region.
   const zoomOut = page.getByRole('button', { name: 'Zoom Out', exact: true });
@@ -136,10 +156,11 @@ Then('a curved return uses the same safe snapped preview when connected', async 
   await page.mouse.down();
   try {
     await page.mouse.move(start.x - 12, start.y, { steps: 3 });
+    if (style === 'flowing') await verify(workflow(page).locator('.svelte-flow__connection-path'));
     await page.mouse.move(end.x, end.y, { steps: 10 });
     const preview = workflow(page).locator('.workflow-connection-preview');
     await expect(preview).toHaveAttribute('data-target', 'curve-filter');
-    await expectSafe(page, preview.locator('path'));
+    await verify(preview.locator('path'));
     const expected = await preview.locator('path').getAttribute('d');
     await page.mouse.up();
     const added = workflow(page).locator('.svelte-flow__edge:not([data-id="curve-assert:assertion"]):not([data-id="curve-assert:remove"]):not([data-id="curve-cast:result"])');
@@ -149,9 +170,12 @@ Then('a curved return uses the same safe snapped preview when connected', async 
       const before = values(expected), after = values(await added.locator('.svelte-flow__edge-interaction').getAttribute('d'));
       return before.length === after.length ? Math.max(...before.map((value, i) => Math.abs(value - after[i]))) : Infinity;
     }, { message: 'Dropping must preserve the preview geometry within subpixel coordinate rounding.' }).toBeLessThan(0.01);
-    await expectSafe(page, added.locator('.svelte-flow__edge-interaction'));
+    await verify(added.locator('.svelte-flow__edge-interaction'));
   } finally { await page.mouse.up(); }
-});
+}
+
+Then('a curved return uses the same safe snapped preview when connected', function () { return connectReturn(this, 'filleted'); });
+Then('a flowing return preserves its original preview when connected', function () { return connectReturn(this, 'flowing'); });
 
 Then('the Settings curve switch changes the open workflow immediately', async function () {
   const page = this.page;
@@ -178,25 +202,30 @@ Then('the Settings curve switch changes the open workflow immediately', async fu
   assert.equal((await readExport(page)).document.curved, true);
 });
 
-Then('the four connection styles have distinct safe paths and retain their saved preference', async function () {
-  const page = this.page, original = (await readExport(page)).document, paths = {};
+Then('the five connection styles retain their geometry and saved preference', async function () {
+  const page = this.page, original = (await readExport(page)).document, paths = {}, maximum = workflowLineStyles.length - 1;
   for (const [index, style] of workflowLineStyles.entries()) {
     await setMode(page, 'settings');
     const application = page.locator('summary[aria-label="Application"]');
     if (await application.getAttribute('aria-expanded') !== 'true') await application.click();
     const slider = page.getByRole('slider', { name: 'Connection style', exact: true });
     await expect(slider).toHaveAttribute('aria-valuemin', '0');
-    await expect(slider).toHaveAttribute('aria-valuemax', '3');
-    await expect(slider).toHaveAttribute('step', String(1 / 3));
+    await expect(slider).toHaveAttribute('aria-valuemax', String(maximum));
+    await expect(slider).toHaveAttribute('step', String(1 / maximum));
     await expect(page.getByRole('textbox', { name: 'Connection style value', exact: true })).toHaveCount(0);
     await chooseSettingsLineStyle(page, style);
     await slider.press('Home');
     const bounds = await slider.boundingBox();
-    await slider.click({ position: { x: 8 + (bounds.width - 16) * index / 3, y: bounds.height / 2 } });
+    await slider.click({ position: { x: 8 + (bounds.width - 16) * index / maximum, y: bounds.height / 2 } });
     await expect(slider).toHaveAttribute('aria-valuetext', workflowLineStyleLabels[style]);
+    if (style === 'flowing') {
+      await mkdir(this.artifactDirectory, { recursive: true });
+      await page.screenshot({ path: `${this.artifactDirectory}/five-style-slider.png` });
+    }
     await setMode(page, 'workflow');
     await expect(page.getByRole('button', { name: 'Connection style', exact: true })).toHaveAttribute('data-line-style', style);
-    if (style !== 'orthogonal') for (const name of ['cast', 'keep', 'remove']) await expectSafe(page, path(page, name));
+    if (style === 'flowing') for (const name of ['cast', 'keep', 'remove']) await expectFlowing(path(page, name));
+    else if (style !== 'orthogonal') for (const name of ['cast', 'keep', 'remove']) await expectSafe(page, path(page, name));
     else await expect(path(page, 'cast')).toHaveAttribute('d', /^M .* L/);
     paths[style] = (await Promise.all(['cast', 'keep', 'remove'].map(name => path(page, name).getAttribute('d')))).join(' ');
     await saved(page);
@@ -208,11 +237,11 @@ Then('the four connection styles have distinct safe paths and retain their saved
     await mkdir(this.artifactDirectory, { recursive: true });
     await workflow(page).screenshot({ path: `${this.artifactDirectory}/${style}.png` });
   }
-  assert.equal(new Set(Object.values(paths)).size, 4, 'Each mode must render a genuinely different path.');
+  assert.equal(new Set(Object.values(paths)).size, workflowLineStyles.length, 'Each mode must render a genuinely different path.');
   await page.reload();
   await setMode(page, 'workflow');
   const button = page.getByRole('button', { name: 'Connection style', exact: true });
-  await expect(button).toHaveAttribute('data-line-style', 'clutter');
+  await expect(button).toHaveAttribute('data-line-style', 'flowing');
   for (const style of workflowLineStyles) {
     await button.click();
     await expect(button).toHaveAttribute('data-line-style', style);
@@ -225,5 +254,33 @@ Then('the four connection styles have distinct safe paths and retain their saved
   await setMode(page, 'settings');
   const application = page.locator('summary[aria-label="Application"]');
   if (await application.getAttribute('aria-expanded') !== 'true') await application.click();
-  await expect(page.getByRole('slider', { name: 'Connection style', exact: true })).toHaveAttribute('aria-valuetext', 'Clutter');
+  await expect(page.getByRole('slider', { name: 'Connection style', exact: true })).toHaveAttribute('aria-valuetext', 'Flowing');
+});
+
+Then('flowing curves ignore saved detours while retaining them for routed styles', async function () {
+  const page = this.page;
+  await chooseConnectionStyle(page, 'flowing');
+  for (const name of ['assertion', 'cast', 'keep', 'remove']) await expectFlowing(path(page, name));
+  const original = await path(page, 'keep').getAttribute('d');
+  const values = original.match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi).map(Number);
+  const start = { x: values[0], y: values[1] }, end = { x: values[6], y: values[7] }, bottom = Math.max(start.y, end.y) + 200;
+  const manualRoute = [start, { x: start.x + 48, y: start.y }, { x: start.x + 48, y: bottom },
+    { x: end.x - 48, y: bottom }, { x: end.x - 48, y: end.y }, end];
+  const document = (await readExport(page)).document;
+  await loadGraphFixture(page, { ...document, edges: document.edges.map(item => item.id === 'curve-assert:keep' ? { ...item, manualRoute } : item) });
+  await expectSameCurve(path(page, 'keep'), original);
+  await edge(page, 'keep').focus();
+  await edge(page, 'keep').press('Enter');
+  await expect(edge(page, 'keep').locator('.flow-routing-segment-handle')).toHaveCount(0);
+  assert.deepEqual((await readExport(page)).document.edges.find(item => item.id === 'curve-assert:keep').manualRoute, manualRoute);
+  await chooseConnectionStyle(page, 'filleted');
+  await expectSafe(page, path(page, 'keep'));
+  await expect(path(page, 'keep')).not.toHaveAttribute('d', original);
+  await reveal(page, 'keep');
+  assert.deepEqual((await readExport(page)).document.edges.find(item => item.id === 'curve-assert:keep').manualRoute, manualRoute);
+  await chooseConnectionStyle(page, 'flowing');
+  await saved(page);
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expectSameCurve(path(page, 'keep'), original);
 });

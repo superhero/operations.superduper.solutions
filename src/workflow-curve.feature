@@ -5,6 +5,9 @@
 @workflow-curve
 Feature: Workflow connection curve geometry
 
+  Scenario: Original flowing curves retain their historical geometry
+    Then flowing curves match the geometry before obstacle routing and manual anchors
+
   Scenario: Routed curves avoid nodes around assertion returns
     Then curved routing keeps assertion return paths outside nodes at every strength
 

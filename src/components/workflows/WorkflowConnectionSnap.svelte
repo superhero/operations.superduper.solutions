@@ -88,6 +88,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (!resolved.inProgress || !resolved.isValid || !resolved.toNode) return "";
     const geometry = connectionGeometry(resolved)!;
     const points = { ...geometry, sourcePosition: geometry.sourcePosition as Position, targetPosition: geometry.targetPosition as Position };
+    if (lineStyle === "flowing") return workflowCurve(points, curveStrength)[0];
     const route = previewRoute(routing?.preview(), points);
     if (curved && route) return bezierDrawing(route, geometry, curveStrength, routing?.obstacles() ?? [], false, lineStyle).path;
     return previewPath(routing?.preview(), points, bendRadius, routing?.obstacles() ?? []) ??

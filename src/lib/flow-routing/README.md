@@ -1,7 +1,7 @@
 # Workflow edge routing
 
-This module routes workflow connections around measured node rectangles
-using a shared orthogonal backbone, reduces crossings within bounded work,
+This module routes Orthogonal, Filleted, Bézier and Clutter connections around
+measured node rectangles using a shared orthogonal backbone, reduces crossings within bounded work,
 and keeps attached edges and connection
 previews aligned while asynchronous routing catches up. Automatic geometry is
 derived editor state. Explicit segment adjustments are saved as authored routes.
@@ -40,9 +40,9 @@ Existing routes supply their ID and points. No geometry helper reads the DOM.
 The XYFlow adapter imports `@xyflow/system`; the routing and drawing algorithms
 are independent of Svelte, XYFlow, and browser globals.
 
-Settings exposes four discrete **Connection style** slider stops: **Orthogonal**,
-**Filleted**, **Bézier**, and **Clutter**. The toolbar cycles through those same
-choices for the current workflow. The optional `lineStyle` preference persists
+Settings exposes five discrete **Connection style** slider stops: **Orthogonal**,
+**Filleted**, **Bézier**, **Clutter**, and **Flowing**. The toolbar cycles through
+those same choices for the current workflow. The optional `lineStyle` preference persists
 in settings and workflow documents; legacy `curved` flags retain Orthogonal
 (`false`) or Filleted (`true`). Display changes do not create workflow revisions.
 
@@ -50,7 +50,7 @@ Use `bendRadius` from `path.js` for orthogonal rendering: it is four diagram uni
 Filleted keeps the existing full-distance cubic handles. Bézier uses half-distance
 handles along the routed anchor directions. Clutter preserves the experimental
 blend of diagonal anchor tangents, bowed spans, and sharp backbone fallbacks.
-The curved styles keep their direct strength-controlled Bézier when it is
+The routed curved styles keep their direct strength-controlled Bézier when it is
 clear. Otherwise they fit smooth cubic spans through the routed guides, allowing
 diagonal travel instead of rounding each orthogonal elbow. Recursive convex-hull
 bounds certify clearance; an 8192-check drawing budget and ten subdivision levels
@@ -58,7 +58,15 @@ bound the fit. Analytic extrema keep detours within 64 units of the checked
 corridor instead of creating oversized loops. Uncertified spans retain the safe
 backbone locally. Facing port
 buffers allow the terminal exit while node bodies and other faces stay protected.
-All styles use matching hit areas/previews and expose segment controls.
+These routed styles use matching hit areas/previews and expose segment controls.
+
+Flowing restores the single continuous cubic from `b68904b41b69e48e2f797f919c47958b898cd77a`,
+before obstacle routing (#199) and manual anchors (#200). It uses `workflowCurve`
+at the original strength for completed edges, raw pointer previews and snapped
+previews. It draws directly between ports, so it can cross nodes and has no
+segment controls. Existing manual routes remain saved for returning to a routed
+style. Its geometry does not wait for worker routing results.
+
 The low-level `roundedSegments` default remains eight for reference compatibility;
 path and dash helpers default to sharp corners. Pass the rendered dash-plus-gap
 period to `dashSegments`, including when user settings change dash size. It is
