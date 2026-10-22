@@ -145,7 +145,11 @@ Then('dismissing mobile navigation preserves reading position with {string} moti
   });
   for (const readingPosition of positions) {
     assert.ok(readingPosition > 0, 'The fixture must provide a nonzero reading position to preserve.');
-    await drawer.evaluate((element, top) => element.scrollTo({ top, behavior: 'instant' }), readingPosition);
+    // Real reading input interrupts any pending scroll restoration. A direct
+    // programmatic scroll can be replaced by the still-running restoration.
+    await drawer.hover();
+    const currentPosition = await drawer.evaluate(element => element.scrollTop);
+    await page.mouse.wheel(0, readingPosition - currentPosition);
     await expect.poll(() => drawer.evaluate(element => element.scrollTop)).toBe(readingPosition);
     await setMode(page, 'workflow');
     await openCatalog(page);
