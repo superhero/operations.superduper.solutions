@@ -14,7 +14,8 @@ try {
     if (!response.id || !response.digest) throw new Error('Incomplete upload response.');
   } else if (input.command === 'download') {
     const [repositoryOwner, repositoryName] = input.repository.split('/');
-    response = await client.downloadArtifact(input.id, { path: input.directory, expectedHash: input.digest?.replace(/^sha256:/, ''),
+    // The SDK compares the complete algorithm-prefixed digest from GitHub.
+    response = await client.downloadArtifact(input.id, { path: input.directory, expectedHash: input.digest,
       findBy: { token: process.env.GH_TOKEN, workflowRunId: input.runId, repositoryOwner, repositoryName } });
     if (response.digestMismatch) throw new Error('Artifact digest mismatch.');
   } else throw new Error('Unknown artifact operation.');

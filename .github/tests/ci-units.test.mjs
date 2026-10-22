@@ -3,8 +3,11 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import './support.mjs';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { createServer } from 'node:http';
 import { readFileSync, writeFileSync, unlinkSync, symlinkSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { parse as parseBlob } from 'flatted';
 import { AfterAll, Given, When, Then } from '@cucumber/cucumber';
@@ -12,6 +15,44 @@ import { createUnitFixture, createIncrementalFixture, cleanupUnitFixture, planFi
 import { readJSON, writeJSON, verifyReceipt, verifyBrowserAggregate, unitDirectory, MAX_AGE_MS } from '../../tests/gherkin/ci-units.mjs';
 import { validatePlan } from '../../tests/gherkin/ci-inputs.mjs';
 import { restoreUnit } from '../scripts/ci-unit-cache.mjs';
+import { command } from '../scripts/ci-browser.mjs';
+
+Then('the installed artifact SDK verifies a checkpoint with a {string} archive digest', async function (kind) {
+  // A stored ZIP containing checkpoint.txt, served through the real SDK's REST
+  // redirect and archive extraction path without external network access.
+  const archive = Buffer.from('UEsDBBQAAAAAAAAAIVyfkyJ+HAAAABwAAAAOAAAAY2hlY2twb2ludC50eHR2ZXJpZmllZCBmZWF0dXJlIGNoZWNrcG9pbnQKUEsBAhQDFAAAAAAAAAAhXJ+TIn4cAAAAHAAAAA4AAAAAAAAAAAAAAIABAAAAAGNoZWNrcG9pbnQudHh0UEsFBgAAAAABAAEAPAAAAEgAAAAAAA==', 'base64');
+  const requests = [];
+  let origin;
+  const server = createServer((request, response) => {
+    requests.push(request.url);
+    if (request.url === '/repos/owner/project/actions/artifacts/7/zip') {
+      response.writeHead(302, { location: `${origin}/checkpoint.zip` }); response.end();
+    } else if (request.url === '/checkpoint.zip') {
+      response.writeHead(200, { 'content-type': 'application/zip', 'content-length': archive.length }); response.end(archive);
+    } else { response.writeHead(404); response.end(); }
+  });
+  await new Promise((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve); });
+  origin = `http://127.0.0.1:${server.address().port}`;
+  try {
+    const file = join(this.automation.root, 'artifact-operation.json');
+    const directory = join(this.automation.root, 'download');
+    const digest = `sha256:${kind === 'matching' ? createHash('sha256').update(archive).digest('hex') : '0'.repeat(64)}`;
+    writeJSON(file, { command: 'download', id: 7, runId: 123456, repository: 'owner/project', digest, directory });
+    const result = await command(process.execPath, [fileURLToPath(new URL('../scripts/ci-artifact.mjs', import.meta.url)), file], {
+      quiet: true, timeoutMs: 10_000,
+      env: { ...process.env, GH_TOKEN: 'artifact-sdk-test-token', GITHUB_API_URL: origin, GITHUB_SERVER_URL: 'https://github.com' },
+    });
+    assert.equal(result.code, kind === 'matching' ? 0 : 1, result.output);
+    assert.deepEqual(requests, ['/repos/owner/project/actions/artifacts/7/zip', '/checkpoint.zip']);
+    if (kind === 'matching') {
+      assert.equal(readJSON(`${file}.result`).digestMismatch, false);
+      assert.equal(readFileSync(join(directory, 'checkpoint.txt'), 'utf8'), 'verified feature checkpoint\n');
+    } else assert.throws(() => readFileSync(`${file}.result`), 'A mismatched archive must not produce successful transfer evidence.');
+  } finally {
+    server.closeAllConnections();
+    await new Promise(resolve => server.close(resolve));
+  }
+});
 
 AfterAll(cleanupUnitFixture);
 Given('a hermetic CI feature-unit execution', { timeout: 60_000 }, function () {
