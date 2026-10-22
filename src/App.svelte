@@ -77,6 +77,22 @@
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
   });
+  // 320px catalog + 900px settings + roughly 500px of usable canvas.
+  const concurrentPanesQuery = "(min-width: 1720px)";
+  let concurrentPanes = $state(matchMedia(concurrentPanesQuery).matches);
+  let lastOpenedPane: "navigation" | "settings" = "navigation";
+  onMount(() => {
+    const media = matchMedia(concurrentPanesQuery);
+    const update = () => {
+      concurrentPanes = media.matches;
+      if (!concurrentPanes && navigationOpen && mode === "settings") {
+        if (lastOpenedPane === "navigation") void setMode("workflow");
+        else navigationOpen = false;
+      }
+    };
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  });
   let settingsDrawer: HTMLElement;
   let settingsContent: HTMLElement;
   let settingsContentHeight = $state<number>();
@@ -123,9 +139,9 @@
     // Lazy sections collapse while inactive. Retain their space and suspend
     // scroll anchoring until they reopen so neither can move the reading position.
     if (mode === "settings") settingsContentHeight = settingsContent.getBoundingClientRect().height;
-    if (next === "settings") settingsPresent = true;
+    if (next === "settings") { settingsPresent = true; lastOpenedPane = "settings"; }
     mode = next;
-    if (next === "settings" || matchMedia("(max-width: 899px)").matches) navigationOpen = false;
+    if ((next === "settings" && !concurrentPanes) || matchMedia("(max-width: 899px)").matches) navigationOpen = false;
     await tick();
     if (next === "workflow") {
       await Promise.all(settingsDrawer.getAnimations().map(animation => animation.finished.catch(() => {})));
@@ -150,10 +166,11 @@
   }
 
   async function toggleNavigation() {
-    if (mode === "settings") {
+    if (mode === "settings" && !concurrentPanes) {
       await setMode("workflow");
       navigationOpen = true;
     } else navigationOpen = !navigationOpen;
+    if (navigationOpen) lastOpenedPane = "navigation";
   }
 
   function dismissMenus(event: KeyboardEvent) {
@@ -161,7 +178,7 @@
       shortcutAction(event, keybindings) !== "closeMenu" ||
       document.querySelector('[role="dialog"]:not(#side-navigation), [role="menu"], [role="listbox"]')) return;
     event.preventDefault();
-    if (mode === "settings") void toggleSettings();
+    if (mode === "settings" && !(concurrentPanes && navigationOpen && document.activeElement?.closest("#side-navigation"))) void toggleSettings();
     else {
       navigationOpen = false;
       void tick().then(() => document.querySelector<HTMLElement>('[aria-controls="side-navigation"]')?.focus({ preventScroll: true }));
@@ -336,20 +353,23 @@
   }
 
   async function browseOperations() {
-    await setMode("workflow");
-    if (mode !== "workflow") return;
+    if (!concurrentPanes) {
+      await setMode("workflow");
+      if (mode !== "workflow") return;
+    }
     navigationOpen = true;
+    lastOpenedPane = "navigation";
     await tick();
     await sideNavigation.focusPrompt();
   }
   async function selectOperation(operation: Operation) {
-    await setMode("workflow");
+    if (!concurrentPanes) await setMode("workflow");
     await workflowWorkspace.addOperation(operation);
     if (matchMedia("(max-width: 899px)").matches) navigationOpen = false;
   }
 
   async function selectWorkflow(document: WorkflowDocument) {
-    await setMode("workflow");
+    if (!concurrentPanes) await setMode("workflow");
     await workflowWorkspace.addWorkflow(document);
     if (matchMedia("(max-width: 899px)").matches) navigationOpen = false;
   }

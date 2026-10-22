@@ -934,3 +934,52 @@ Then('Settings disables the workspace when insufficient space remains', async fu
   await expect(canvas).not.toHaveAttribute('inert');
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
 });
+
+Then('the catalog and settings coexist only when there is room for both panes', async function () {
+  const page = this.page;
+  const menu = page.locator('.site-header [aria-controls="side-navigation"]');
+  const settings = page.locator('.site-header [aria-controls="settings-panel"]');
+  const catalog = page.locator('#side-navigation');
+  const drawer = page.locator('#settings-panel');
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  const entry = await revealCatalogOperation(page, "Example object response");
+  await settings.click();
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  await expect(catalog).toBeVisible();
+  await expect(drawer).toBeVisible();
+  await expect.poll(async () => {
+    const left = await catalog.boundingBox(), right = await drawer.boundingBox();
+    return right.x - left.x - left.width;
+  }).toBeGreaterThanOrEqual(480);
+  await entry.getByRole("button", { name: "Add to workflow: Example object response", exact: true }).click();
+  await expect(operationNodes(page, "Example object response")).toHaveCount(1);
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
+  await expect(settings).toHaveAttribute("aria-expanded", "true");
+  await menu.click();
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  await menu.click();
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  await page.setViewportSize({ width: 1720, height: 900 });
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  // Navigation was opened last: shrinking retains it and closes Settings.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect(settings).toHaveAttribute('aria-expanded', 'false');
+  await settings.click();
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  await menu.click();
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect(settings).toHaveAttribute('aria-expanded', 'false');
+  // Settings was opened last: shrinking retains it and closes Navigation.
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await settings.click();
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+});
