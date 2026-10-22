@@ -10,6 +10,8 @@ import { profiles } from './profiles.mjs';
 import { configurationFingerprint, installedToolchain } from './execution-fingerprint.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
+const output = process.env.OPERATIONS_TEST_OUTPUT ?? 'tmp/test';
+if (!/^tmp\/test(?:\/[a-zA-Z0-9_-]+)*$/.test(output)) throw new Error('Test output must be a canonical directory below tmp/test.');
 const [profile, ...arguments_] = process.argv.slice(2);
 if (!profiles[profile] && profile !== 'runner') throw new Error('Expected source, acceptance, automation, browser, components or runner.');
 const forwarded = [];
@@ -40,14 +42,14 @@ for (let index = 0; index < arguments_.length; index++) {
 }
 if ((matrix || components) && profile !== 'browser') throw new Error('Browser matrix/component options require the browser profile.');
 const engines = matrix ? ['chromium', 'firefox', 'webkit'] : [process.env.BROWSER_ENGINE ?? 'chromium'];
-const filtered = Boolean(features.length || tags || nameFiltered || forwarded.some(arg => /^(?:--shard|--exclude|--testNamePattern)/.test(arg)));
+const filtered = Boolean(process.env.OPERATIONS_CI_CONTEXT || features.length || tags || nameFiltered || forwarded.some(arg => /^(?:--shard|--exclude|--testNamePattern)/.test(arg)));
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
 const configFingerprint = configurationFingerprint(root);
 const dependencyVersions = installedToolchain(root);
-await mkdir(resolve(root, 'tmp/test/blobs'), { recursive: true });
-await mkdir(resolve(root, 'tmp/test/executions'), { recursive: true });
-await mkdir(resolve(root, 'tmp/test/attachments'), { recursive: true });
+await mkdir(resolve(root, output, 'blobs'), { recursive: true });
+await mkdir(resolve(root, output, 'executions'), { recursive: true });
+await mkdir(resolve(root, output, 'attachments'), { recursive: true });
 
 async function discover(name) {
   const selectedFeatures = name === profile ? features : [];
@@ -98,6 +100,7 @@ function runNode(script, args, environment) {
 
 let preparedBrowserBundles;
 async function browserBundles() {
+  if (process.env.OPERATIONS_FIXTURE_BUNDLES) return resolve(root, process.env.OPERATIONS_FIXTURE_BUNDLES);
   preparedBrowserBundles ??= (async () => {
     const bundles = resolve(root, 'tmp/test/browser/fixture-bundles.json');
     await mkdir(resolve(root, 'tmp/test/browser'), { recursive: true });
@@ -111,15 +114,15 @@ async function browserBundles() {
 async function execute(name, engine) {
   const project = name === 'browser' ? `browser-${engine}` : name;
   const { featurePaths, expectedCaseIds } = await discover(name);
-  const resultPath = `tmp/test/vitest-${project}.json`;
-  const blobPath = `tmp/test/blobs/${project}.json`;
-  const proofPath = `tmp/test/executions/${project}.json`;
+  const resultPath = `${output}/vitest-${project}.json`;
+  const blobPath = `${output}/blobs/${project}.json`;
+  const proofPath = `${output}/executions/${project}.json`;
   await Promise.all([resultPath, blobPath, proofPath].map(file => rm(resolve(root, file), { force: true })));
   const environment = { ...process.env, OPERATIONS_TEST_PROFILE: name,
     OPERATIONS_TEST_TAGS: tags, BROWSER_ENGINE: engine,
     ...(name === 'browser' || name === profile && features.length ? { OPERATIONS_FEATURES: JSON.stringify(featurePaths) } : {}) };
   if (name === 'browser') {
-    const runtime = resolve(root, 'tmp/test/browser/.runtime');
+    const runtime = resolve(root, output, 'browser/.runtime');
     await mkdir(runtime, { recursive: true });
     environment.TMPDIR = runtime;
     environment.OPERATIONS_WORLD_PARAMETERS = JSON.stringify({ fixtureBundlesFile: await browserBundles() });

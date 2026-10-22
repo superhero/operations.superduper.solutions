@@ -9,8 +9,8 @@ import { expect } from "@playwright/test";
 import { operations } from "../../src/lib/catalog.ts";
 import { catalogForOperation } from "../../src/lib/catalog-registry.ts";
 import { createOperationGraph } from "../../src/lib/workflow-graph.ts";
-import { chooseCatalogOperation, setMode, workflow } from "./workspace.steps.mjs";
-import { setWorkflowGridSize, storedDefaults } from "./workflow-defaults.steps.mjs";
+import { chooseCatalogOperation, setMode, workflow } from "./workspace.fixture.mjs";
+import { setWorkflowGridSize, storedDefaults } from "./workflow-defaults.fixture.mjs";
 
 async function measuredNodes(page) {
   return workflow(page).locator('.svelte-flow__node').evaluateAll(elements => elements.map(element => {

@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { openCatalog } from "./workspace.steps.mjs";
+import { openCatalog } from "./workspace.fixture.mjs";
 
 Then("direct workflow actions protect graph shortcuts and restore focus without closing navigation", async function () {
   const page = this.page;

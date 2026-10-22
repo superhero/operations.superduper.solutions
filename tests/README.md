@@ -17,6 +17,7 @@ example that appears in the combined report.
 | Test-only source fixtures | [`fixtures/`](fixtures/README.md), or beside the browser steps that use them |
 
 [`tests/gherkin/profiles.mjs`](gherkin/profiles.mjs) is the registration authority.
+Its source inventory is stored in [`source-profile.json`](source-profile.json).
 The default source glob does not replace the explicit named profiles used by
 npm and CI.
 

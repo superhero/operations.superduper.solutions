@@ -19,7 +19,7 @@ const fixtures = new Map();
 
 function executeFixture(mode, directory) {
   return new Promise((resolve, reject) => {
-    const child = spawn(process.execPath, [cli, 'run', '--config',
+    const child = spawn(process.execPath, [cli, 'run', '--configLoader', 'native', '--config',
       'tests/gherkin/runner-regressions/fixtures/vitest.config.mjs'], {
       cwd: root, detached: process.platform !== 'win32',
       env: { ...process.env, OPERATIONS_RUNNER_FIXTURE_MODE: mode,

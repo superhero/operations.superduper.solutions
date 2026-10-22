@@ -22,6 +22,8 @@ recovery procedures.
 | Test evidence and reports | `test-results.mjs` checks discovery, execution proofs and coverage; `generate-test-report.mjs` merges Vitest blobs into the complete HTML directory |
 | Generated badges | `generate-*-badge.sh`, `generate-dependency-badges.sh` |
 | Browser suite runner | `test-browser.sh` |
+| Resumable browser CI | `ci-prepare.mjs`, `ci-browser.mjs`, `ci-unit-cache.mjs` and `ci-artifact.mjs` prepare inputs, schedule outstanding features and checkpoint complete results; `ci-restore-browser.mjs` restores final evidence |
+| Incremental reporting | `generate-incremental-report.mjs` certifies native unit aggregation; `ci-report-evidence.mjs` verifies published unit evidence using only Node built-ins |
 
 ## Adding or changing commands
 
@@ -52,9 +54,13 @@ UI, coverage, attachments, results and provenance.
 
 ## Report publication
 
-`validation-artifacts.mjs` records the full report file set in a schema-2 manifest;
+`validation-artifacts.mjs` records the full report file set in a schema-2 or schema-3 manifest;
 `find-validation.mjs` verifies it before reuse. Diagnostic or incomplete reports
 cannot supply successful release proof.
+
+Schema 3 retains each original browser feature producer while verifying the
+complete current inventory and other whole profiles. See
+[resumable CI validation](../../docs/ci-incremental-validation.md).
 
 `publish-report.mjs` rechecks original manifest hashes and provenance, then uploads
 a verified snapshot with MIME types before entry pages and stable redirects. `publish-status.sh` performs bounded R2 requests and

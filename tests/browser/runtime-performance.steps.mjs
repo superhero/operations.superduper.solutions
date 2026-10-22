@@ -9,7 +9,7 @@ import { performance } from 'node:perf_hooks';
 import { gunzipSync } from 'node:zlib';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog } from './workspace.steps.mjs';
+import { openCatalog } from './workspace.fixture.mjs';
 import { repository } from './workflow-storage.fixture.mjs';
 import { cpuProfile, heapProfile, renderProfile, observeMatchingTransfers, observeSearchPhases } from './schema-profile.fixture.mjs';
 

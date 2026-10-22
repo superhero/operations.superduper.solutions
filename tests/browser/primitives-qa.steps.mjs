@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, closeCatalog, workspace, searchOperations, setEvaluationDetails, openThemeSettings } from './workspace.steps.mjs';
+import { openCatalog, closeCatalog, workspace, searchOperations, setEvaluationDetails, openThemeSettings } from './workspace.fixture.mjs';
 import { holdHeightAnimations, resumeHeightAnimations, seekHeightAnimation } from './height-animation.fixture.mjs';
 
 Then('navigation focus follows normal-motion opening and breakpoint changes', async function () {

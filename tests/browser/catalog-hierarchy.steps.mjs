@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, searchOperations, setMode } from './workspace.steps.mjs';
+import { openCatalog, searchOperations, setMode } from './workspace.fixture.mjs';
 import { operations } from '../../src/lib/catalog.ts';
 import { catalogs } from '../../src/lib/catalog-registry.ts';
 import { operationNavigation, operationResourceGroups, navigationOperations } from '../../src/lib/operation-navigation.ts';

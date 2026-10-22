@@ -8,10 +8,28 @@ import {
   BeforeAll as qpBeforeAll, AfterAll as qpAfterAll,
   BeforeStep as qpBeforeStep, AfterStep as qpAfterStep,
   QuickPickleWorld, setWorldConstructor as qpSetWorldConstructor,
-  defineParameterType, DataTable,
+  defineParameterType as qpDefineParameterType, DataTable,
 } from 'quickpickle';
+import { fileURLToPath } from 'node:url';
+import { relative, resolve } from 'node:path';
 
-export { defineParameterType, DataTable };
+export { DataTable };
+const registrations = [];
+function registration(kind, detail = {}) {
+  const owner = [...new Error().stack.matchAll(/(file:\/\/[^\s)]+?):\d+:\d+/g)]
+    .map(match => relative(resolve(import.meta.dirname, '../..'), fileURLToPath(match[1])).replaceAll('\\', '/'))
+    .find(path => path !== 'tests/gherkin/cucumber-compat.mjs' && !path.startsWith('../') && !path.startsWith('node_modules/'));
+  if (!owner && process.env.OPERATIONS_CI_DISCOVERY === '1') throw new Error(`Cannot identify ${kind} registration owner.`);
+  const ordinal = registrations.filter(entry => entry.owner === owner && entry.kind === kind).length;
+  const entry = { kind, owner, ordinal, ...detail };
+  registrations.push(entry);
+  return entry;
+}
+export const registrationInventory = () => registrations.map(entry => ({ ...entry }));
+export function defineParameterType(type) {
+  registration('parameter', { name: type.name });
+  return qpDefineParameterType(type);
+}
 export const Status = Object.freeze(Object.fromEntries([
   'UNKNOWN', 'PASSED', 'SKIPPED', 'PENDING', 'UNDEFINED', 'AMBIGUOUS', 'FAILED',
 ].map(status => [status, status])));
@@ -53,10 +71,11 @@ export class World extends QuickPickleWorld {
 }
 
 qpSetWorldConstructor(World);
-export function setWorldConstructor(constructor) { qpSetWorldConstructor(constructor); }
+export function setWorldConstructor(constructor) { registration('world'); qpSetWorldConstructor(constructor); }
 export function setDefaultTimeout(milliseconds) {
   if (!Number.isFinite(milliseconds) || milliseconds <= 0) throw new TypeError('Invalid Cucumber default timeout.');
   defaultTimeout = milliseconds;
+  registration('timeout');
 }
 
 function argumentsForHook(world) {
@@ -96,8 +115,11 @@ function registerStep(register, pattern, optionsOrCallback, maybeCallback) {
   const options = typeof optionsOrCallback === 'function' ? {} : optionsOrCallback;
   const callback = typeof optionsOrCallback === 'function' ? optionsOrCallback : maybeCallback;
   if (typeof callback !== 'function') throw new TypeError('Expected a Cucumber step callback.');
-  register(pattern, (world, ...args) => invoke(world, callback, args,
-    options?.timeout ?? defaultTimeout, String(pattern)));
+  const entry = registration('step', { pattern: String(pattern) });
+  const wrapped = (world, ...args) => invoke(world, callback, args,
+    options?.timeout ?? defaultTimeout, String(pattern));
+  wrapped.registration = entry;
+  register(pattern, wrapped);
 }
 
 export function Given(...args) { registerStep(qpGiven, ...args); }
@@ -108,6 +130,7 @@ export const defineStep = Given;
 function registerHook(register, after, all, optionsOrCallback, maybeCallback) {
   const options = typeof optionsOrCallback === 'function' ? {} : optionsOrCallback;
   const callback = typeof optionsOrCallback === 'function' ? optionsOrCallback : maybeCallback;
+  registration('hook', { phase: register.name, after, all, tags: options?.tags ?? '' });
   if (typeof callback !== 'function') throw new TypeError('Expected a Cucumber hook callback.');
   const wrapped = async world => {
     if (all) world.parameters = parameters();

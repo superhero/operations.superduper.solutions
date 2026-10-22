@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, revealCatalogOperation, workflow, setMode } from './workspace.steps.mjs';
+import { openCatalog, revealCatalogOperation, workflow, setMode } from './workspace.fixture.mjs';
 import { blockWorkflowSaving } from './workflow-storage.fixture.mjs';
 
 const sheet = page => page.locator('[data-slot="sheet-content"]');

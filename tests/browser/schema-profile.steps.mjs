@@ -6,7 +6,7 @@ import { performance } from 'node:perf_hooks';
 import { readFile } from 'node:fs/promises';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, closeCatalog, setMode } from './workspace.steps.mjs';
+import { openCatalog, closeCatalog, setMode } from './workspace.fixture.mjs';
 import { expandSchemaCard } from './schema-card.fixture.mjs';
 import { cpuProfile, heapProfile, observeSchemaTransfers, saveSchemaProfile, renderProfile, observeMatchingTransfers, observeSearchPhases, compareBrowserMatching } from './schema-profile.fixture.mjs';
 import descriptors from '../../src/catalogs/services/index.json' with { type: 'json' };

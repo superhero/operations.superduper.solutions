@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { workflow, readExport, setMode, chooseCatalogOperation, quitRun } from './workspace.steps.mjs';
+import { workflow, readExport, setMode, chooseCatalogOperation, quitRun } from './workspace.fixture.mjs';
 import { gesture } from './workflow-single-input.steps.mjs';
 Then('I can upload typed workflow files and correct CSV detection', async function () {
   const page=this.page;

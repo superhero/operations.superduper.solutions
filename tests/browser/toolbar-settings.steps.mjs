@@ -4,7 +4,7 @@
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { toolbarButtonLabels, toolbarButtonGroups, defaultToolbarButtons } from '../../src/lib/toolbar-settings.ts';
-import { setMode, workflow } from './workspace.steps.mjs';
+import { setMode, workflow } from './workspace.fixture.mjs';
 
 Then('toolbar visibility choices persist and leave keyboard shortcuts available', async function () {
   const page = this.page;

@@ -6,6 +6,7 @@ import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSyn
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { parse, stringify } from 'flatted';
+import { generateIncrementalReport } from './generate-incremental-report.mjs';
 import { hashFile, requiredProfiles, readResults, caseSignature, verifyCoverage, verifyExecution } from './test-results.mjs';
 
 const repository = fileURLToPath(new URL('../../', import.meta.url));
@@ -60,9 +61,11 @@ export function generateReport(output = 'tmp/test/report', inputs = 'tmp/test/bl
   rmSync(directory, { recursive: true, force: true });
   let staging;
   try {
+    const inputDirectory = dirname(blobs);
+    if (!diagnostic && existsSync(join(inputDirectory, 'ci/browser-aggregate.json')))
+      return generateIncrementalReport({ root, directory, inputDirectory, mergeTimeout, relocateBlob });
     const names = readdirSync(blobs).filter(name => name.endsWith('.json')).sort();
     if (!names.length) throw new Error(`No suite blobs in ${blobs}.`);
-    const inputDirectory = dirname(blobs);
     let verified = [];
     if (!diagnostic) {
       const expected = requiredProfiles.map(profile => `${identity(profile)}.json`).sort();
@@ -83,7 +86,7 @@ export function generateReport(output = 'tmp/test/report', inputs = 'tmp/test/bl
       writeFileSync(join(staging, name), relocateBlob(readFileSync(join(blobs, name), 'utf8'), proof.featurePaths, root));
     }
     const result = spawnSync(process.execPath, [join(root, 'node_modules/vitest/vitest.mjs'),
-      '--config', join(root, 'tests/gherkin/merge.config.mjs'), `--merge-reports=${staging}`],
+      '--configLoader', 'native', '--config', join(root, 'tests/gherkin/merge.config.mjs'), `--merge-reports=${staging}`],
     // This child only merges stored results. SIGKILL enforces the deadline even
     // if its event loop stalls or a dependency retains a SIGTERM handler.
     { cwd: root, env: { ...process.env, OPERATIONS_REPORT_DIRECTORY: directory }, encoding: 'utf8', timeout: mergeTimeout, killSignal: 'SIGKILL',

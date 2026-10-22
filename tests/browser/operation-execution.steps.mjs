@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { chooseCatalogOperation, fillField, workspace } from "./workspace.steps.mjs";
+import { chooseCatalogOperation, fillField, workspace } from "./workspace.fixture.mjs";
 
 const responsePanel = workspace;
 const responseBody = page => page.getByRole("region", { name: "Response body", exact: true });

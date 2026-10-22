@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { createHash } from "node:crypto";
+import { verifyPublishedBrowserEvidence } from './ci-report-evidence.mjs';
 import { execFileSync } from "node:child_process";
 import { lstatSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -114,13 +115,14 @@ export function validateArtifactContract(files)
     || !Object.keys(files["test-report"]).some(path => /^ui\/assets\/.+\.js$/.test(path))
     || !Object.keys(files["test-report"]).some(path => /^ui\/assets\/.+\.css$/.test(path))
     || Object.keys(files["test-report"]).some(path => !REPORT_FILES.includes(path)
-      && !/^(?:ui|coverage|attachments|badges)\//.test(path)))
+      && !/^(?:ui|coverage|attachments|badges|evidence)\//.test(path)))
     throw new Error("Validation artifacts do not contain the complete bundle, coverage and test report.");
 }
 
-export function validateReportEvidence(directory, { testedSha, runId, runAttempt } = {})
+export function validateReportEvidence(directory, { testedSha, runId, runAttempt, schemaVersion } = {})
 {
   const provenance = JSON.parse(readFileSync(join(directory, "provenance.json"), "utf8"));
+  const incremental = provenance.schemaVersion === 3;
   const expected = ["source", "acceptance", "automation", "browser", "components", "runner"].sort();
   const object = value => value && typeof value === "object" && !Array.isArray(value);
   const digest = value => typeof value === "string" && /^[a-f0-9]{64}$/.test(value);
@@ -132,24 +134,35 @@ export function validateReportEvidence(directory, { testedSha, runId, runAttempt
     && typeof value.node === "string" && value.node.startsWith("v") && version(value.node.slice(1))
     && toolchainPackages.every(name => version(value[name]));
   if (!isSha(testedSha) || !isPositiveInteger(runId) || !isPositiveInteger(runAttempt)
-    || provenance.schemaVersion !== 2 || provenance.complete !== true || provenance.diagnostic !== false
+    || !([2, 3].includes(provenance.schemaVersion)) || (schemaVersion !== undefined && schemaVersion !== provenance.schemaVersion) || provenance.complete !== true || provenance.diagnostic !== false
     || provenance.mergeExitCode !== 0 || provenance.testedSha !== testedSha
     || !Array.isArray(provenance.suites)
     || provenance.suites.some(suite => !object(suite))
     || JSON.stringify(provenance.suites.map(suite => suite.profile).sort()) !== JSON.stringify(expected)
     || provenance.suites.some(suite => suite.head !== testedSha || !isPositiveInteger(suite.cases)
       || suite.project !== (suite.profile === "browser" ? "browser-chromium" : suite.profile)
-      || String(suite.runId) !== String(runId) || String(suite.runAttempt) !== String(runAttempt)
-      || !digest(suite.resultHash) || !digest(suite.blobHash) || !digest(suite.configFingerprint)
+      || String(suite.runId) !== String(runId) || (incremental && suite.profile !== "browser"
+        ? !isPositiveInteger(Number(suite.runAttempt)) || Number(suite.runAttempt) > Number(runAttempt)
+        : String(suite.runAttempt) !== String(runAttempt))
+      || !digest(suite.resultHash) || (!(incremental && suite.profile === "browser") && !digest(suite.blobHash)) || !digest(suite.configFingerprint)
       || !installedVersions(suite.dependencyVersions)))
     throw new Error("Report lacks complete successful provenance for all Gherkin suites.");
   const signatures = provenance.suites.map(suite => JSON.stringify(Object.entries(suite.dependencyVersions).sort()));
   if (new Set(provenance.suites.map(suite => suite.configFingerprint)).size !== 1 || new Set(signatures).size !== 1)
     throw new Error("Report suites do not share the original configuration and installed toolchain.");
-  const blobNames = provenance.suites.map(suite => `${suite.project}.json`).sort();
-  if (!object(provenance.inputHashes) || keys(provenance.inputHashes) !== JSON.stringify(blobNames)
-    || provenance.suites.some(suite => provenance.inputHashes[`${suite.project}.json`] !== suite.blobHash))
-    throw new Error("Report input hashes do not match the six verified suite blobs.");
+  if (incremental) {
+    const browser = verifyPublishedBrowserEvidence(directory, provenance, { testedSha, runId, runAttempt });
+    const nonbrowser = provenance.suites.filter(suite => suite.profile !== "browser");
+    const names = [...nonbrowser.map(suite => `${suite.project}.json`), ...browser.units.map(unit => `units/${unit.id}.json`)].sort();
+    if (!object(provenance.inputHashes) || keys(provenance.inputHashes) !== JSON.stringify(names)
+      || nonbrowser.some(suite => provenance.inputHashes[`${suite.project}.json`] !== suite.blobHash))
+      throw new Error("Incremental report input hashes do not match verified profile and unit blobs.");
+  } else {
+    const blobNames = provenance.suites.map(suite => `${suite.project}.json`).sort();
+    if (!object(provenance.inputHashes) || keys(provenance.inputHashes) !== JSON.stringify(blobNames)
+      || provenance.suites.some(suite => provenance.inputHashes[`${suite.project}.json`] !== suite.blobHash))
+      throw new Error("Report input hashes do not match the six verified suite blobs.");
+  }
   // Recorded versions describe the original producer. Reuse never substitutes
   // the current machine's toolchain or configuration for those recorded bytes.
   const summary = JSON.parse(readFileSync(join(directory, "coverage/coverage-summary.json"), "utf8")).total;
@@ -157,6 +170,7 @@ export function validateReportEvidence(directory, { testedSha, runId, runAttempt
     if (!isPositiveInteger(summary?.[metric]?.total) || summary[metric].covered !== summary[metric].total
       || summary[metric].skipped !== 0 || summary[metric].pct !== 100)
       throw new Error("Report coverage does not satisfy every 100% threshold.");
+  return provenance;
 }
 
 export function createManifest({ repository, runId, runAttempt, sourceSha, testedSha, bundle, coverage, report, cwd = process.cwd() })
@@ -174,14 +188,14 @@ export function createManifest({ repository, runId, runAttempt, sourceSha, teste
   const files = { bundle: inventory(bundle), coverage: inventory(coverage, { coverage: true }),
     "test-report": inventory(dirname(report)) };
   validateArtifactContract(files);
-  validateReportEvidence(dirname(report), { testedSha, runId, runAttempt });
-  return { schemaVersion: 2, repository, runId, runAttempt, sourceSha, testedSha,
+  const reportProvenance = validateReportEvidence(dirname(report), { testedSha, runId, runAttempt });
+  return { schemaVersion: reportProvenance.schemaVersion, repository, runId, runAttempt, sourceSha, testedSha,
     ...localIdentity(testedSha, cwd), files };
 }
 
 export function validateManifestProvenance(manifest, expected = manifest)
 {
-  if (!manifest || manifest.schemaVersion !== 2 || !isRepository(manifest.repository)
+  if (!manifest || ![2, 3].includes(manifest.schemaVersion) || !isRepository(manifest.repository)
     || !isPositiveInteger(manifest.runId) || !isPositiveInteger(manifest.runAttempt)
     || !isSha(manifest.sourceSha) || !isSha(manifest.testedSha) || !isSha(manifest.testedTree)
     || !/^[a-f0-9]{64}$/.test(manifest.inputFingerprint ?? "")

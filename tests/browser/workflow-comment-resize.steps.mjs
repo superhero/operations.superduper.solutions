@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { workflow, readExport } from './workspace.steps.mjs';
+import { workflow, readExport } from './workspace.fixture.mjs';
 Then('I can resize a comment from its sides and corners and retain its size', async function () {
   const page=this.page;
   await page.getByRole('button',{name:'Comment',exact:true}).click();

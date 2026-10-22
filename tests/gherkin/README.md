@@ -10,6 +10,11 @@ registration without starting a second runner.
 inputs. `config.mjs` defines the shared execution and coverage rules. The root
 `vitest.config.mjs` delegates to it.
 
+The explicit source paths and step modules are data in
+[`../source-profile.json`](../source-profile.json), loaded by `profiles.mjs`.
+Keep new source cases there so inventory updates do not change browser harness
+configuration.
+
 ## Focused commands
 
 Use `node tests/gherkin/run.mjs <profile>` and select feature paths, `--tags
@@ -40,11 +45,21 @@ unavailable captures remain explicit diagnostics. SIGINT/SIGTERM request
 cancellation and cleanup; interrupted runs remain unsuccessful.
 
 Features using the complete service library run in an exclusive phase before
-application scenarios. The scheduling contract discovers `@service-defaults`
+application scenarios in the normal runner. Incremental CI assigns them a
+dedicated serial batch, separate from application jobs. The scheduling contract discovers `@service-defaults`
 tags so new library features must join that phase. Browser containers cap Node
 old space at 512 MiB per process, leaving room for Chromium and native allocations
 inside the shared container limit. Worker attachments record the effective V8
 heap limit for diagnosing resource failures.
+
+`ci-discover.mjs` resolves full-registry step/hook bindings without launching a
+browser. `ci-inputs.mjs` constructs complete feature keys and job assignments.
+`ci.mjs` executes fresh feature processes, seals receipts after verified worker
+cleanup and assembles the complete inventory. Unit results are namespaced under
+`tmp/test/units/`; ordinary selected runs remain incomplete profile evidence.
+See [resumable validation](../../docs/ci-incremental-validation.md) for the trust,
+expiry and recovery policy. Keep helper exports in pure fixture modules rather
+than importing step registration modules.
 
 ## Reports and coverage
 

@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, searchOperations } from './workspace.steps.mjs';
+import { openCatalog, searchOperations } from './workspace.fixture.mjs';
 import { paneStateKey } from '../../src/lib/pane-state.ts';
 
 const menu = page => page.locator('.site-header [aria-controls="side-navigation"]');

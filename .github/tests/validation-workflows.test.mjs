@@ -35,10 +35,12 @@ function enabled(step, reused, ready = true, status = "success", outcomes = {}, 
     head_ref: integration.source ?? "release/1.2.3", base_ref: "main", repository: "owner/project",
     event: { pull_request: { draft: false, head: { repo: { full_name: "owner/project" } } } }
   };
-  const steps = Object.fromEntries(["automation", "source", "browser", "failure-report"]
+  const steps = Object.fromEntries(["automation", "source", "browser", "failure-report", "prepared"]
     .map(id => [id, { outcome: outcomes[id] ?? status }]));
-  return new Function("needs", "github", "steps", "startsWith", "success", "always", "failure", "cancelled", `return (${expression});`)(
-    needs, github, steps, (value, prefix) => value.startsWith(prefix),
+  const env = { CI_INCREMENTAL_TESTS: 'false' }, vars = { CI_INCREMENTAL_TESTS: 'false' };
+  needs['validation-prepare'] = { result: 'skipped', outputs: { has_work: 'false' } };
+  return new Function("needs", "github", "steps", "env", "vars", "startsWith", "success", "always", "failure", "cancelled", `return (${expression});`)(
+    needs, github, steps, env, vars, (value, prefix) => value.startsWith(prefix),
     () => status === "success", () => true, () => status === "failure", () => status === "cancelled");
 }
 
@@ -159,7 +161,8 @@ Then("an unprepared candidate cannot start any downstream integration job", func
     if (name === "integration") continue;
     assert.ok([job.needs].flat().includes("integration"), `${name} must wait directly for the prepared candidate`);
     assert.equal(job["continue-on-error"], undefined);
-    assert.doesNotMatch(job.if ?? "", /\b(?:always|failure|cancelled)\s*\(/, `${name} cannot bypass failed preparation`);
+    assert.doesNotMatch(job.if ?? "", /\b(?:always|failure)\s*\(/, `${name} cannot bypass failed preparation`);
+    if (/\bcancelled\s*\(/.test(job.if ?? '')) assert.match(job.if, /!cancelled\(\)/);
     assert.doesNotMatch(JSON.stringify(job), /github\.event\.pull_request\.base\.sha/,
       `${name} must not use the stale event base after preparation`);
     for (const source of ["feature/editor", "bugfix/editor", "docs/readme", "release/1.2.3", "develop"])
@@ -352,7 +355,8 @@ Then("reuse has read-only access and publication requires successful validation"
   for (const job of [jobs.validation, jobs["workflow-checks"], jobs["validate-pr"], jobs.application, jobs["auto-merge"], jobs.preview])
   {
     assert.equal(job["continue-on-error"], undefined);
-    assert.doesNotMatch(job.if ?? "", /\b(?:always|failure|cancelled)\s*\(/);
+    assert.doesNotMatch(job.if ?? "", /\b(?:always|failure)\s*\(/);
+    if (/\bcancelled\s*\(/.test(job.if ?? '')) assert.match(job.if, /!cancelled\(\)/);
   }
   const { create, upload } = validationProof(jobs);
   const reports = npmCommands(jobs).filter(({ command }) => reportChecks.includes(command)).map(({ step }) => step);
@@ -525,4 +529,46 @@ Then("publication retries use the producing attempt rather than the retry attemp
   assert.equal(evaluate({ application: { outputs: {} },
     validation: { outputs: { reused: 'true', source_run_attempt: '7' } } }), '7',
     'Reused validation retains the original external run attempt');
+});
+
+Then('the {string} workflow schedules only outstanding batches and fails closed at aggregation', function (name) {
+  const document = parseDocument(readFileSync(new URL(`../workflows/${name}.yml`, import.meta.url), 'utf8'));
+  assert.deepEqual(document.errors, []);
+  const { jobs, env } = document.toJS(), prep = jobs['validation-prepare'], browser = jobs['browser-validation'], app = jobs.application;
+  assert.match(env.CI_INCREMENTAL_TESTS, /vars\.CI_INCREMENTAL_TESTS != 'false'/);
+  assert.match(prep.if, /vars\.CI_INCREMENTAL_TESTS != 'false'/);
+  assert.equal(prep.permissions.actions, 'read'); assert.equal(prep.permissions.contents, 'read');
+  assert.equal(prep.permissions['pull-requests'], 'read');
+  for (const required of ['workflow-checks', 'validation-prepare']) assert.ok(browser.needs.includes(required));
+  for (const required of ['workflow-checks', 'validation-prepare', 'browser-validation']) assert.ok(app.needs.includes(required));
+  assert.equal(browser.strategy['max-parallel'], 4); assert.equal(browser.strategy['fail-fast'], false);
+  assert.match(browser.strategy.matrix, /fromJSON\(needs\.validation-prepare\.outputs\.matrix/);
+  assert.match(browser.if, /needs\.validation-prepare\.outputs\.has_work == 'true'/);
+  const cache = uniqueStep(prep.steps, step => step.uses === './.github/actions/ci-browser', 'Cache planner');
+  assert.equal(cache.with.mode, 'prepare');
+  assert.ok(prep.steps.indexOf(cache) > prep.steps.findIndex(step => step.run?.includes('ci-prepare.mjs')));
+  const run = uniqueStep(browser.steps, step => step.uses === './.github/actions/ci-browser', 'Browser checkpoints');
+  assert.equal(run.with.mode, 'batch');
+  assert.equal(run.env.GH_TOKEN, '${{ github.token }}');
+  const gate = app.steps[0];
+  assert.equal(gate.name, 'Require successful preparation and quick gates');
+  const good = Object.fromEntries(Object.keys(gate.env).map(key => [key, key === 'VALIDATION_REUSED' ? 'false' : 'success']));
+  function execute(step, values) {
+    return spawnSync('bash', ['-euc', step.run], { env: { ...process.env, ...values }, encoding: 'utf8', timeout: 5000 });
+  }
+  for (const mode of ['true', 'false']) {
+    assert.equal(execute(gate, { ...good, CI_INCREMENTAL_TESTS: mode }).status, 0);
+    for (const key of Object.keys(good).filter(key => key !== 'VALIDATION_REUSED' && (mode === 'true' || key !== 'PREPARE_RESULT'))) {
+      assert.notEqual(execute(gate, { ...good, CI_INCREMENTAL_TESTS: mode, [key]: 'failure' }).status, 0, `${key} failure must block ${mode} mode`);
+    }
+  }
+  const batchGate = uniqueStep(app.steps, step => step.name === 'Require successful browser batches', 'Final batch gate');
+  for (const hasWork of ['true', 'false']) for (const result of ['success', 'skipped', 'failure', 'cancelled'])
+    assert.equal(execute(batchGate, { HAS_WORK: hasWork, BROWSER_BATCH_RESULT: result }).status === 0,
+      hasWork === 'true' ? result === 'success' : result === 'skipped');
+  const assemble = app.steps.findIndex(step => step.run?.includes('ci.mjs assemble'));
+  assert.ok(assemble > 0 && assemble < app.steps.indexOf(batchGate));
+  const report = app.steps.findIndex(step => step.id === 'report');
+  if (report >= 0) assert.ok(report > app.steps.indexOf(batchGate));
+  requiresSuccess(batchGate);
 });

@@ -59,22 +59,25 @@ jobs:
           if-no-files-found: error
           overwrite: true
           retention-days: 7
-  application:
-    name: Application tests and build
+  validation-prepare:
+    name: Prepare validation and quick gates
     needs:
       - validate-target
       - workflow-checks
+    if: (true) && (true && vars.CI_INCREMENTAL_TESTS != 'false')
     permissions:
       actions: read
       contents: read
+      pull-requests: read
     runs-on: ubuntu-latest
-    timeout-minutes: 80
+    timeout-minutes: 20
     steps:
       - name: Checkout develop revision
         uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+          fetch-depth: 0
       - name: Set up Node.js
         uses: actions/setup-node@v7
         with:
@@ -92,19 +95,231 @@ jobs:
         run: npm --loglevel=error run test:runner
       - name: Check coverage thresholds
         id: coverage
-        run: |
+        run: >
           npm --loglevel=error run test:coverage
-          jq -r '.total | "Coverage: statements \(.statements.pct)%, branches \(.branches.pct)%, functions \(.functions.pct)%, lines \(.lines.pct)%."' \
+
+          jq -r '.total | "Coverage: statements \(.statements.pct)%, branches \(.branches.pct)%, functions
+          \(.functions.pct)%, lines \(.lines.pct)%."' \
             tmp/test/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
       - name: Build
         run: npm --loglevel=error run build
       - name: Acceptance tests
         id: acceptance
         run: npm --loglevel=error run test:acceptance
+      - name: Component tests
+        id: components
+        env:
+          OPERATIONS_BROWSER_PROFILE: components
+        run: npm --loglevel=error run test:browser
+      - name: Prepare immutable browser inputs
+        env:
+          CI_SOURCE_SHA: ${{ github.sha }}
+          CI_PR_NUMBER: "0"
+        run: node .github/scripts/ci-prepare.mjs
+      - name: Verify reusable feature evidence before scheduling
+        id: cache
+        uses: ./.github/actions/ci-browser
+        env:
+          GH_TOKEN: ${{ github.token }}
+        with:
+          mode: prepare
+          node: node
+      - name: Upload prepared browser inputs
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-browser-inputs
+          path: |-
+            dist
+            tmp/test/ci/plan.json
+            tmp/test/browser/fixture-bundles.json
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+      - name: Retain quick-profile evidence
+        if: "!cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure')"
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-node-test-report
+          path: |-
+            tmp/test/vitest-*.json
+            tmp/test/blobs
+            tmp/test/executions
+            tmp/test/attachments
+            tmp/test/coverage
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+      - name: Retain verified reused units
+        if: steps.cache.outputs.has_reused == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-reused-units
+          path: tmp/test/units
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+    outputs:
+      matrix: ${{ steps.cache.outputs.matrix }}
+      has_work: ${{ steps.cache.outputs.has_work }}
+      has_reused: ${{ steps.cache.outputs.has_reused }}
+  browser-validation:
+    name: Browser validation (${{ matrix.batch }})
+    needs:
+      - validate-target
+      - workflow-checks
+      - validation-prepare
+    if: ((true) && (true && vars.CI_INCREMENTAL_TESTS != 'false')) && needs.validation-prepare.outputs.has_work == 'true'
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.validation-prepare.outputs.matrix || '{"batch":["none"]}') }}
+    steps:
+      - name: Checkout develop revision
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Locate pinned Node
+        id: node
+        run: printf 'path=%s\n' "$(readlink -f "$(command -v node)")" >> "$GITHUB_OUTPUT"
+      - name: Download prepared browser inputs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name ci-browser-inputs --dir .
+      - name: Run outstanding features and publish checkpoints
+        uses: ./.github/actions/ci-browser
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CI_WORKFLOW_FILE: .github/workflows/test-develop.yml
+        with:
+          mode: batch
+          batch: ${{ matrix.batch }}
+          node: ${{ steps.node.outputs.path }}
+      - name: Retain browser batch metrics
+        if: "!cancelled()"
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-browser-metrics-${{ matrix.batch }}-attempt-${{ github.run_attempt }}
+          path: tmp/test/ci/batch-*.json
+          if-no-files-found: warn
+          retention-days: 7
+  application:
+    name: Application tests and build
+    needs:
+      - validate-target
+      - workflow-checks
+      - validation-prepare
+      - browser-validation
+    permissions:
+      actions: read
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 80
+    steps:
+      - name: Require successful preparation and quick gates
+        env:
+          STATIC_RESULT: ${{ needs.workflow-checks.result }}
+          PREPARE_RESULT: ${{ needs.validation-prepare.result }}
+          VALIDATION_REUSED: "false"
+          GATE_VALIDATE_TARGET: ${{ needs.validate-target.result }}
+        run: >-
+          [[ "$GATE_VALIDATE_TARGET" == success ]] || { echo "::error::Required validate-target gate failed or was
+          skipped."; exit 1; }
+
+          [[ "$STATIC_RESULT" == success ]] || { echo "::error::Quick checks failed."; exit 1; }
+
+          if [[ "$CI_INCREMENTAL_TESTS" == true && "$VALIDATION_REUSED" != true ]]; then
+            [[ "$PREPARE_RESULT" == success ]] || { echo "::error::Validation preparation failed or was skipped."; exit 1; }
+          fi
+      - name: Checkout develop revision
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Restore prepared application and profile evidence
+        id: prepared
+        if: env.CI_INCREMENTAL_TESTS == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |-
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name ci-browser-inputs --dir .
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name ci-node-test-report --dir tmp/test
+      - name: Restore previously verified units
+        if: env.CI_INCREMENTAL_TESTS == 'true' && true && needs.validation-prepare.outputs.has_reused == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name ci-reused-units --dir tmp/test/units
+      - name: Type check
+        run: npm --loglevel=error run typecheck
+        if: env.CI_INCREMENTAL_TESTS != 'true'
+      - name: Source tests with coverage
+        id: source
+        run: npm --loglevel=error run test:source:coverage
+        if: env.CI_INCREMENTAL_TESTS != 'true'
+      - name: Gherkin runner integration contracts
+        id: runner
+        run: npm --loglevel=error run test:runner
+        if: env.CI_INCREMENTAL_TESTS != 'true'
+      - name: Check coverage thresholds
+        id: coverage
+        run: >
+          npm --loglevel=error run test:coverage
+
+          jq -r '.total | "Coverage: statements \(.statements.pct)%, branches \(.branches.pct)%, functions
+          \(.functions.pct)%, lines \(.lines.pct)%."' \
+            tmp/test/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
+        if: env.CI_INCREMENTAL_TESTS != 'true'
+      - name: Build
+        run: npm --loglevel=error run build
+        if: env.CI_INCREMENTAL_TESTS != 'true'
+      - name: Acceptance tests
+        id: acceptance
+        run: npm --loglevel=error run test:acceptance
+        if: env.CI_INCREMENTAL_TESTS != 'true'
       - name: Browser tests against the built bundle
         id: browser
         timeout-minutes: 70
-        run: npm --loglevel=error run test:browser
+        run: |-
+          if [[ "$CI_INCREMENTAL_TESTS" == true ]]; then
+            node .github/scripts/ci-restore-browser.mjs
+            node tests/gherkin/ci.mjs assemble
+          else
+            npm --loglevel=error run test:browser
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Require successful browser batches
+        if: env.CI_INCREMENTAL_TESTS == 'true'
+        env:
+          BROWSER_BATCH_RESULT: ${{ needs.browser-validation.result }}
+          HAS_WORK: ${{ needs.validation-prepare.outputs.has_work }}
+        run: >-
+          if [[ "$HAS_WORK" == true ]]; then
+            [[ "$BROWSER_BATCH_RESULT" == success ]] || { echo "::error::Browser batch execution or checkpoint publication failed."; exit 1; }
+          else
+            [[ "$BROWSER_BATCH_RESULT" == skipped ]] || { echo "::error::Unexpected browser execution state."; exit 1; }
+          fi
       - name: Upload browser results and diagnostics
         if: ${{ !cancelled() && (steps.browser.outcome == 'success' || steps.browser.outcome == 'failure') }}
         uses: actions/upload-artifact@v7
@@ -121,7 +336,8 @@ jobs:
           overwrite: true
           retention-days: 7
       - name: Upload application test results
-        if: ${{ !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure') }}
+        if: ${{ !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure' ||
+          steps.prepared.outcome == 'success') }}
         uses: actions/upload-artifact@v7
         with:
           name: application-test-report
@@ -138,7 +354,8 @@ jobs:
           overwrite: true
           retention-days: 7
       - name: Download automation test results
-        if: ${{ !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure') }}
+        if: ${{ !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure' ||
+          steps.prepared.outcome == 'success') }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name automation-test-report --dir tmp/test
@@ -150,7 +367,8 @@ jobs:
         run: npm --loglevel=error run report:tests
       - name: Generate diagnostic report after failure
         id: failure-report
-        if: failure() && !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure')
+        if: failure() && !cancelled() && (steps.source.outcome == 'success' || steps.source.outcome == 'failure' ||
+          steps.prepared.outcome == 'success')
         env:
           REPORT_COMMIT: ${{ github.sha }}
           REPORT_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -202,3 +420,7 @@ jobs:
           path: tmp/test/badges
           if-no-files-found: error
           retention-days: 7
+    if: (!cancelled()) && (true)
+env:
+  CI_INCREMENTAL_TESTS: ${{ vars.CI_INCREMENTAL_TESTS != 'false' && 'true' || 'false' }}
+  CI_BROWSER_CAPTURE: ${{ vars.CI_BROWSER_CAPTURE || 'minimal' }}

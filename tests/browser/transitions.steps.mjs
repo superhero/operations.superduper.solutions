@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
-import { openCatalog, setMode, workspace } from './workspace.steps.mjs';
+import { openCatalog, setMode, workspace } from './workspace.fixture.mjs';
 
 async function pauseNextAnimation(page, selector, property) {
   // Observe before the input action: transport and locator waits can otherwise

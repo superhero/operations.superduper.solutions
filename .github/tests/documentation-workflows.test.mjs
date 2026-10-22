@@ -28,11 +28,12 @@ function condition(expression, { source = "docs/readme", target = "main", fork =
     event: { pull_request: { draft, head: { repo: { full_name: fork ? "fork/project" : "owner/project" } } } }
   };
   // These checked-in job conditions use GitHub's Boolean/string expression subset.
-  const evaluate = new Function("github", "startsWith", "steps", "needs", `return (${expression
+  const evaluate = new Function("github", "startsWith", "steps", "needs", "cancelled", "vars", `return (${expression
     .replace(/^\s*\$\{\{([\s\S]*)\}\}\s*$/, "$1").replace(/needs\.([\w-]+)/g, 'needs["$1"]')});`);
   return evaluate(github, (value, prefix) => value.toLowerCase().startsWith(prefix.toLowerCase()),
     { prepare: { outputs: { updated: String(updated) } } },
-    { integration: { outputs: { ready: String(integrationReady) } }, "release-route": { outputs: { run_release: String(runRelease) } }, validation: { outputs: { reused: "false" } }, "release-changelog": { outputs: { ready: "true" } }, "prepare-changelog": { outputs: { updated: String(updated) } } });
+    { integration: { outputs: { ready: String(integrationReady) } }, "release-route": { outputs: { run_release: String(runRelease) } }, validation: { outputs: { reused: "false" } }, "release-changelog": { outputs: { ready: "true" } }, "prepare-changelog": { outputs: { updated: String(updated) } }, 'validation-prepare': { outputs: { has_work: 'true' } } },
+    () => false, { CI_INCREMENTAL_TESTS: 'true' });
 }
 
 Given("the documentation workflow configuration", function ()
@@ -196,7 +197,11 @@ Then("a documentation-only release advance cannot reach application or publicati
   for (const [name, job] of Object.entries(jobs))
   {
     if (name === "integration" || name === "release-route") continue;
-    assert.doesNotMatch(job.if, /\b(?:always|failure|cancelled)\s*\(/, "Downstream jobs must retain successful prerequisites");
+    assert.doesNotMatch(job.if, /\b(?:always|failure)\s*\(/, "Downstream jobs must retain successful prerequisites");
+    if (/\bcancelled\s*\(/.test(job.if)) {
+      assert.equal(name, 'application'); assert.match(job.if, /!cancelled\(\)/);
+      assert.equal(job.steps[0].name, 'Require successful preparation and quick gates');
+    }
     const dependencies = Array.isArray(job.needs) ? job.needs : [job.needs];
     assert.ok(dependencies.every(dependency => Object.hasOwn(jobs, dependency)), `${name} requires known routing dependencies`);
     if (dependencies.every(dependency => reached.has(dependency)) &&
