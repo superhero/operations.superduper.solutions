@@ -37,5 +37,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   :global(.workflow-branch-action[data-side="top"]), :global(.workflow-branch-action[data-side="bottom"]) { left: 50%; }
   :global(.workflow-branch-action:hover:not(:disabled)) { background: var(--color-secondary-hover); color: var(--color-secondary-hover-foreground); }
   :global(.workflow-branch-action .material-symbols-rounded) { font-variation-settings: "FILL" 1; }
+  :global(.workflow-branch-action[data-side="left"] .material-symbols-rounded) { transform: rotate(-90deg); }
+  :global(.workflow-branch-action[data-side="right"] .material-symbols-rounded) { transform: rotate(90deg); }
+  :global(.workflow-branch-action[data-side="bottom"] .material-symbols-rounded) { transform: rotate(180deg); }
   @media (prefers-reduced-motion: reduce) { :global(.workflow-branch-action) { transition: none; } }
 </style>
