@@ -79,6 +79,15 @@ a match adds an operation to the canvas; execution happens in Run workflow.
 
 ## Settings and startup
 
+The catalog on the left and Settings on the right can stay open together at
+viewport widths of 1720px or more: 320px for the catalog, up to 900px for Settings,
+and roughly 500px for the canvas. Each pane toggles independently; selecting a
+catalog item keeps Settings open on wide screens. Below that
+width, opening one closes the other. Shrinking while both are open keeps the
+most recently opened pane. Existing mobile dialogs and Settings overlays remain
+unchanged. Escape closes the focused catalog when both panes are open; otherwise
+it follows the existing Settings-first dismissal.
+
 ### Storage and recovery
 
 Only one Settings section opens at a time. Settings live outside workflow Git

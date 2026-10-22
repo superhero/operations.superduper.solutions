@@ -234,3 +234,6 @@ Feature: Browser operations workspace
       | 2048  | no-preference |
       | 1150  | reduce        |
       | 390   | reduce        |
+
+  Scenario: Wide workspaces keep both panes open and compact workspaces retain one
+    Then the catalog and settings coexist only when there is room for both panes
