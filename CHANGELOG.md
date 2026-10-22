@@ -1032,6 +1032,20 @@ assertions.
 
 ```
 
+<!-- changelog-commit:60dfa428072bc199eb3eb382c2f9df5a3736d234 -->
+### Commit [`60dfa42`](https://github.com/superhero/operations.superduper.solutions/commit/60dfa428072bc199eb3eb382c2f9df5a3736d234)
+
+```text
+docs(ci): record test orchestration findings and plan
+
+Document release-validation bottlenecks and compare sharding, failed-job
+recovery and cross-commit reuse for the Gherkin/Vitest runner.
+
+Separate measured timings from forecasts and preserve completeness, scoped
+coverage and artifact provenance requirements.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
