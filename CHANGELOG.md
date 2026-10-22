@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.57
+
 <!-- changelog-commit:1380178edebd71807fb603262a2652f0f860cc08 -->
 ### Commit [`1380178`](https://github.com/superhero/operations.superduper.solutions/commit/1380178edebd71807fb603262a2652f0f860cc08)
 
@@ -1183,8 +1187,6 @@ chore(ci): retain generated changelog with palette isolation
 test(navigation): use reading input before dismissing panes
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.56
 
