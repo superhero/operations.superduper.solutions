@@ -228,3 +228,16 @@ those two faces share the actual gap from the first routing search. Other faces
 and unrelated obstacles keep the requested clearance. Automatic routing and
 manual anchor validation use the same corridor, so restoring a response at high
 clearance does not force a loop around its entire subtree.
+
+Operation response outputs can also link to a compatible visible Response panel
+of the same operation. These saved `response` edges reuse the complete generated
+field tree across statuses; they are not field mappings or execution dependencies.
+The runner projects the selected status through the shared fields. Schemas with
+different field types, paths, required flags or nested structures cannot be shared.
+
+The yellow structural output on a root input schema can supply multiple operation
+input ports. Saved `input` links require the same input location and generated
+field tree, and refuse destinations with local field mappings. White field ports
+remain inputs. Execution fans the shared panel's incoming mappings out to every
+linked operation, including closed destination panels; the original attachment
+is retained. These links survive export/import and copy/paste.

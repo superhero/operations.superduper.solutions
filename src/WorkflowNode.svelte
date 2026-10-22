@@ -46,8 +46,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     untrack(() => updateNodeInternals(id));
   });
 
-  function blockPointer(event: MouseEvent | TouchEvent) { event.stopPropagation(); }
-
   function portLabel(label: string): string {
     return ({ "Path parameters": "Path", "Query parameters": "Query", "Request body": "Body" } as Record<string, string>)[label]
       ?? label.replace(/^Response · /, "").replace(/ · application\/json$/, " · JSON").replace(/ · text\/plain$/, " · Text");
@@ -71,10 +69,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <span class="port-label">{#if input}{label}{:else}<span class="port-code">{separator < 0 ? label : label.slice(0, separator)}</span>{separator < 0 ? "" : label.slice(separator)}{/if}</span>
             <span class="port-type">Object</span>
             <Handle id={branch.id} type={input ? "target" : "source"} {position}
-              class="owner-port" style={`visibility: ${branch.hidden ? "hidden" : "visible"}`}
-              isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
-              onmousedown={blockPointer} ontouchstart={blockPointer}
-              aria-disabled="true" aria-label={`${branch.label} ${input ? "input" : "output"}`} />
+              class="owner-port"
+              isConnectable={true} isConnectableStart={!input} isConnectableEnd={input}
+              aria-disabled={false} aria-label={`${branch.label} ${input ? "input" : "output"}`} />
             {#if branch.hidden}<WorkflowRestoreBranch {branch} {position} />{/if}
           </div>
         {/snippet}

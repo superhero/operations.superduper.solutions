@@ -46,9 +46,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           <div {...hintProps} class="operation-port">
             <span class="port-label">{branch.label}</span><span class="port-type">Object</span>
             <Handle id={`schema:${branch.childId}`} type={input ? "target" : "source"} {position}
-              class="owner-port" style={`visibility: ${branch.hidden ? "hidden" : "visible"}`}
-              isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
-              onmousedown={blockPointer} ontouchstart={blockPointer} aria-disabled="true"
+              class="owner-port"
+              isConnectable={!input} isConnectableStart={!input} isConnectableEnd={false}
+              {...(input ? { onmousedown: blockPointer, ontouchstart: blockPointer } : {})} aria-disabled={input}
               aria-label={`${branch.label} ${input ? "input" : "output"}`} />
             {#if branch.hidden}<WorkflowRestoreBranch {branch} {position} />{/if}
           </div>

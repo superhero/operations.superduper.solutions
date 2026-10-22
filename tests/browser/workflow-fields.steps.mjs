@@ -322,9 +322,9 @@ When('I hide and restore the root query input', async function () {
   const position = await restore.evaluate(element => {
     const button = element.getBoundingClientRect();
     const port = element.closest('.operation-port').getBoundingClientRect();
-    return { x: button.x + button.width / 2, y: button.y + button.height / 2, portX: port.x, portY: port.y + port.height / 2 };
+    return { x: button.x + button.width / 2, y: button.y + button.height / 2, portX: port.x, portY: port.y + port.height / 2, scale: button.width / 24 };
   });
-  assert.ok(Math.abs(position.x - position.portX) < 1 && Math.abs(position.y - position.portY) < 1, 'Restore is centered on the left input port.');
+  assert.ok(Math.abs(position.x - position.portX + 20 * position.scale) < 1 && Math.abs(position.y - position.portY) < 1, 'Restore sits beside the visible left input port.');
   await restore.click();
   await expect(query).toBeVisible();
   await expect(handle).toHaveAttribute('data-handleid', handleId);
@@ -855,4 +855,81 @@ Then('the restored response connection stays inside its endpoint bounds', async 
   assert.ok((await readExport(this.page)).document.edges.every(edge => !edge.manualRoute));
   await mkdir(this.artifactDirectory, { recursive: true });
   await workflow(this.page).screenshot({ path: `${this.artifactDirectory}/restored-response-64px.png` });
+});
+
+Then('the hidden 404 response can be dragged onto the existing 401 response schema and saved', async function () {
+  const page = this.page;
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await setMode(page, 'workflow');
+  const operation = operations.find(item => item.name === 'Example POST body');
+  const response = { description: 'Shared error', content: { 'application/json': { schema: { type: 'string' } } } };
+  const schema = { paths: { [operation.path]: { [operation.method.toLowerCase()]: { responses: { 401: response, 404: response } } } } };
+  const graph = createOperationGraph(operation, { x: 150, y: 250 }, 'shared-errors', schema);
+  const root = code => graph.edges.find(edge => edge.kind === 'schema' && edge.source === 'shared-errors' && decodeURIComponent(edge.target).includes(`response:${code}`));
+  const canonical = root(401), alternate = root(404);
+  graph.nodes.find(node => node.id === canonical.target).position = { x: 650, y: 180 };
+  const hidden = removeGraphSelection({ nodes: [{ id: alternate.target }], edges: [] }, graph.nodes, graph.edges);
+  await loadGraphFixture(page, { version: 3, id: 'shared-response-links', name: 'Shared responses', ...hidden,
+    viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, dashed: false });
+  const handle = workflow(page).locator('.svelte-flow__handle.source:visible');
+  const from = await handle.evaluateAll((elements, id) => {
+    const element = elements.find(element => element.getAttribute('data-handleid') === id);
+    const box = element?.getBoundingClientRect();
+    return box ? { x: box.x + box.width / 2, y: box.y + box.height / 2 } : null;
+  }, alternate.sourceHandle);
+  const target = namedPanel(page, 'shared-errors', 'outputs', 'Response · 401').locator('.structural-port');
+  await expect(target).toBeVisible();
+  const to = await target.boundingBox();
+  assert.ok(from && to);
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
+  await expect(preview(page)).toHaveCount(1);
+  await page.mouse.up();
+  await expect.poll(async () => (await readExport(page)).document.edges.filter(edge => edge.kind === 'response').length).toBe(1);
+  const saved = (await readExport(page)).document;
+  assert.deepEqual(saved.edges.find(edge => edge.kind === 'response'), {
+    ...saved.edges.find(edge => edge.kind === 'response'), source: 'shared-errors', sourceHandle: alternate.sourceHandle,
+    target: canonical.target, targetHandle: 'value'
+  });
+});
+
+Then('the yellow output of an input schema can connect to two additional compatible operations', async function () {
+  const page = this.page;
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await setMode(page, 'workflow');
+  const operation = operations.find(item => item.name === 'Example POST body');
+  const graphs = ['first', 'second', 'third'].map((id, index) => {
+    const graph = createOperationGraph(operation, { x: 650, y: 100 + index * 240 }, id);
+    const attachment = graph.edges.find(edge => edge.kind === 'schema' && edge.target === id && decodeURIComponent(edge.source).includes('input:path'));
+    const root = graph.nodes.find(node => node.id === attachment.source);
+    return { nodes: [graph.nodes[0], { ...root, position: { x: 150, y: 200 } }], edges: [attachment], attachment };
+  });
+  let combined = { nodes: graphs.flatMap(graph => graph.nodes), edges: graphs.flatMap(graph => graph.edges) };
+  combined = removeGraphSelection({ nodes: graphs.slice(1).map(graph => ({ id: graph.attachment.source })), edges: [] }, combined.nodes, combined.edges);
+  await loadGraphFixture(page, { version: 3, id: 'input-schema-fanout', name: 'Shared input schema', ...combined,
+    viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, dashed: false });
+  const panel = namedPanel(page, 'first', 'inputs', 'Path parameters');
+  const source = panel.locator('.structural-port.source');
+  await source.hover();
+  await expect(source).toHaveCSS('cursor', 'crosshair');
+  await expect(panel.locator('.data-field .target').first()).not.toHaveClass(/connectablestart/);
+  for (const [index, graph] of graphs.slice(1).entries()) {
+    const target = workflow(page).locator('.svelte-flow__handle.target:visible');
+    const to = await target.evaluateAll((elements, id) => {
+      const element = elements.find(element => element.getAttribute('data-handleid') === id);
+      const box = element?.getBoundingClientRect();
+      return box ? { x: box.x + box.width / 2, y: box.y + box.height / 2 } : null;
+    }, graph.attachment.targetHandle);
+    const from = await source.boundingBox();
+    assert.ok(from && to);
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, { steps: 12 });
+    await page.mouse.up();
+    await expect.poll(async () => (await readExport(page)).document.edges.filter(edge => edge.kind === 'input').length).toBe(index + 1);
+  }
+  const saved = (await readExport(page)).document;
+  assert.equal(saved.edges.filter(edge => edge.kind === 'input' && edge.source === graphs[0].attachment.source).length, 2);
+  assert.ok(saved.edges.some(edge => edge.id === graphs[0].attachment.id), 'The original connection stays attached.');
 });

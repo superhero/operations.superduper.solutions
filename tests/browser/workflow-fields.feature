@@ -116,3 +116,9 @@ Feature: Documented workflow fields and mappings
     Then its child panel accepts a nested property without overlapping its parent
     When I change the added Object property to Integer
     Then changing the property type removes its old child panel
+
+  Scenario: A hidden response status connects to a compatible visible response schema
+    Then the hidden 404 response can be dragged onto the existing 401 response schema and saved
+
+  Scenario: One input schema output connects to several operation inputs
+    Then the yellow output of an input schema can connect to two additional compatible operations

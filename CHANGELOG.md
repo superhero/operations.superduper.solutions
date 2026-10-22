@@ -806,6 +806,74 @@ Apply the configured strength to completed orthogonal edges, preview paths, dash
 
 ```
 
+<!-- changelog-commit:5e1a855681a94ccf8c2a1f3a361da87abe03c101 -->
+### Commit [`5e1a855`](https://github.com/superhero/operations.superduper.solutions/commit/5e1a855681a94ccf8c2a1f3a361da87abe03c101)
+
+```text
+fix(workflow): unify branch action icons and offsets
+
+```
+
+<!-- changelog-commit:9909ad444466ca8eff3a1a694f9b124da1374543 -->
+### Commit [`9909ad4`](https://github.com/superhero/operations.superduper.solutions/commit/9909ad444466ca8eff3a1a694f9b124da1374543)
+
+```text
+fix(workflow): retain ports beside branch restore controls
+
+```
+
+<!-- changelog-commit:6d9a3c4a6e83be082619e644cb84937c9ef453c3 -->
+### Commit [`6d9a3c4`](https://github.com/superhero/operations.superduper.solutions/commit/6d9a3c4a6e83be082619e644cb84937c9ef453c3)
+
+```text
+fix(workflow): point branch markers toward their connectors
+
+```
+
+<!-- changelog-commit:d3dbeb9cb8cb7d7bf8902bf17b166c516035f272 -->
+### Commit [`d3dbeb9`](https://github.com/superhero/operations.superduper.solutions/commit/d3dbeb9cb8cb7d7bf8902bf17b166c516035f272)
+
+```text
+style(workflow): bring branch markers closer to connectors
+
+```
+
+<!-- changelog-commit:3e4286a7605bc59c332a5f129202afc6c645e4a8 -->
+### Commit [`3e4286a`](https://github.com/superhero/operations.superduper.solutions/commit/3e4286a7605bc59c332a5f129202afc6c645e4a8)
+
+```text
+fix(workflow): enable dragging from operation output ports
+
+```
+
+<!-- changelog-commit:cd082c7366280d15e46cb20279f2b436410ec039 -->
+### Commit [`cd082c7`](https://github.com/superhero/operations.superduper.solutions/commit/cd082c7366280d15e46cb20279f2b436410ec039)
+
+```text
+feat(workflow): share compatible schemas across response statuses
+
+Allow an operation response output to connect to a compatible visible response panel of the same operation. Persist response links separately from field mappings and route the selected status through shared fields without introducing execution dependencies. Validate complete generated field trees and retain compatible links across operation version changes. Preserve XYFlow pointer handlers so structural output drags and response header drops work.
+
+```
+
+<!-- changelog-commit:fb9967527768a9b32fa140630198761f3bb3eca7 -->
+### Commit [`fb99675`](https://github.com/superhero/operations.superduper.solutions/commit/fb9967527768a9b32fa140630198761f3bb3eca7)
+
+```text
+fix(workflow): retain connection cursor on active structural ports
+
+```
+
+<!-- changelog-commit:e60f5a90d8c13091e93378db4a8d5b3f2dac20fa -->
+### Commit [`e60f5a9`](https://github.com/superhero/operations.superduper.solutions/commit/e60f5a90d8c13091e93378db4a8d5b3f2dac20fa)
+
+```text
+feat(workflow): share input schemas across operation inputs
+
+Enable yellow input-schema outputs to fan out to compatible operation input ports while retaining the original attachment. Persist and validate shared input links, reject conflicting local mappings, and expand incoming field mappings to every linked operation during execution. Preserve compatible links on operation version changes and keep white field ports as inputs.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
