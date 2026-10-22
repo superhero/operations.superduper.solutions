@@ -100,7 +100,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .integer-slider { position: relative; flex: 1; min-width: 40px; height: 24px; }
   .integer-slider .integer-range { position: relative; display: block; }
   .integer-ticks { position: absolute; inset: 0 7px; pointer-events: none; }
-  .integer-tick { position: absolute; top: 7px; width: 2px; height: 10px; border-radius: 1px; background: var(--color-muted-foreground); transform: translateX(-50%); }
+  .integer-tick { position: absolute; top: 7px; width: 1px; height: 10px; border-radius: 1px; background: var(--color-muted-foreground); transform: translateX(-50%); }
   .integer-tick.active { background: var(--color-primary); }
   .integer-range { flex: 1; min-width: 40px; width: 100%; height: 24px; padding: 0; margin: 0; border: 0; border-radius: 4px; appearance: none; background: transparent; color: inherit; cursor: pointer; }
   .integer-range::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(to right, var(--color-primary) var(--slider-position), var(--color-muted-foreground) var(--slider-position)); }
