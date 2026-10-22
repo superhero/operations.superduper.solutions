@@ -91,9 +91,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (lineStyle === "flowing") return workflowCurve(points, curveStrength)[0];
     const route = previewRoute(routing?.preview(), points);
     if (curved && route) return bezierDrawing(route, geometry, curveStrength, routing?.obstacles() ?? [], false, lineStyle).path;
-    return previewPath(routing?.preview(), points, bendRadius, routing?.obstacles() ?? []) ??
+    const radius = bendRadius * (curved ? 1 : curveStrength / 100);
+    return previewPath(routing?.preview(), points, radius, routing?.obstacles() ?? []) ??
       (curved ? workflowCurve(points, curveStrength * (lineStyle === "filleted" ? 1 : 0.5))[0] :
-      getSmoothStepPath({ ...points, borderRadius: bendRadius, stepPosition: 1 })[0]);
+      getSmoothStepPath({ ...points, borderRadius: radius, stepPosition: 1 })[0]);
   });
 </script>
 
