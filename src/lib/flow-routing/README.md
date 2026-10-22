@@ -1,6 +1,6 @@
 # Workflow edge routing
 
-This module routes both workflow edge styles around measured node rectangles
+This module routes workflow connections around measured node rectangles
 using a shared orthogonal backbone, reduces crossings within bounded work,
 and keeps attached edges and connection
 previews aligned while asynchronous routing catches up. Automatic geometry is
@@ -40,8 +40,17 @@ Existing routes supply their ID and points. No geometry helper reads the DOM.
 The XYFlow adapter imports `@xyflow/system`; the routing and drawing algorithms
 are independent of Svelte, XYFlow, and browser globals.
 
+Settings exposes four discrete **Connection style** slider stops: **Orthogonal**,
+**Filleted**, **Bézier**, and **Clutter**. The toolbar cycles through those same
+choices for the current workflow. The optional `lineStyle` preference persists
+in settings and workflow documents; legacy `curved` flags retain Orthogonal
+(`false`) or Filleted (`true`). Display changes do not create workflow revisions.
+
 Use `bendRadius` from `path.js` for orthogonal rendering: it is four diagram units.
-Curved connections keep the original strength-controlled Bézier when it is
+Filleted keeps the existing full-distance cubic handles. Bézier uses half-distance
+handles along the routed anchor directions. Clutter preserves the experimental
+blend of diagonal anchor tangents, bowed spans, and sharp backbone fallbacks.
+The curved styles keep their direct strength-controlled Bézier when it is
 clear. Otherwise they fit smooth cubic spans through the routed guides, allowing
 diagonal travel instead of rounding each orthogonal elbow. Recursive convex-hull
 bounds certify clearance; an 8192-check drawing budget and ten subdivision levels
@@ -49,7 +58,7 @@ bound the fit. Analytic extrema keep detours within 64 units of the checked
 corridor instead of creating oversized loops. Uncertified spans retain the safe
 backbone locally. Facing port
 buffers allow the terminal exit while node bodies and other faces stay protected.
-Both styles use matching hit areas/previews and expose segment controls.
+All styles use matching hit areas/previews and expose segment controls.
 The low-level `roundedSegments` default remains eight for reference compatibility;
 path and dash helpers default to sharp corners. Pass the rendered dash-plus-gap
 period to `dashSegments`, including when user settings change dash size. It is
@@ -140,7 +149,7 @@ connection styles reuses the worker and its checked geometry.
 
 ## Manual adjustments
 
-Hover or select an edge in either style to expose segment handles. Horizontal runs
+Hover or select an edge in any style to expose segment handles. Horizontal runs
 move vertically; vertical runs move horizontally. Terminal and straight edges
 gain endpoint stubs when needed. Pointer motion stops at the configured node
 clearance, including obstacles crossed by adjoining segments. A fast pointer

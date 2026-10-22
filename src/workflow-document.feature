@@ -252,3 +252,6 @@ Feature: Local workflow documents
 
   Scenario: Existing added properties remain editable when an object is full
     Then property edits use canonical names and enforce schema policy without addition limits
+
+  Scenario: Named connection styles retain legacy appearance and round trip
+    Then named connection styles survive export while legacy flags retain their appearance

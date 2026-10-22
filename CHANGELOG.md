@@ -607,6 +607,22 @@ runner status so individual worker kills remain visible.
 
 ```
 
+<!-- changelog-commit:8d9b49907ab21eeb6cf0e4ce9e5007305cd719ab -->
+### Commit [`8d9b499`](https://github.com/superhero/operations.superduper.solutions/commit/8d9b49907ab21eeb6cf0e4ce9e5007305cd719ab)
+
+```text
+feat(workflow): add four connection styles and a stepped selector
+
+Expose Orthogonal, Filleted, Bézier and Clutter through evenly spaced
+Settings stops and the toolbar cycle. Preserve the experimental blended
+tangents and sharp fallback spans under the user-selected Clutter name.
+
+Persist named styles alongside legacy curve flags so existing documents
+retain their appearance. Keep display preferences outside workflow
+revisions, and share routing clearance, previews and anchor controls.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { toggleConnectionStyle } from './connection-style.fixture.mjs';
 import assert from 'node:assert/strict';
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
@@ -458,17 +459,17 @@ Then('one manual drag survives history navigation reload and import and can be r
 Then('curved connections retain editable anchors and preserve adjustments across styles', async function () {
   const page = this.page;
   const before = (await readExport(page)).document, original = await geometry(page), versions = await history(page, before);
-  await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
+  await toggleConnectionStyle(page);
   await expect(path(page)).not.toHaveAttribute('d', original.d);
   await reveal(page);
   await expect(controls(page)).toHaveCount(routeOf(before).length - 1);
   assert.deepEqual(routeOf((await readExport(page)).document), routeOf(before));
-  await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
+  await toggleConnectionStyle(page);
   await expect(path(page)).toHaveAttribute('d', original.d);
   await reveal(page);
   await expect(controls(page)).toHaveCount(routeOf(before).length - 1);
   assert.deepEqual(await history(page, before), versions, 'A display preference must not rewrite authored route history.');
-  await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
+  await toggleConnectionStyle(page);
   await drag(page, 2, -24);
   await assertAttached(page);
   const moved = (await readExport(page)).document;

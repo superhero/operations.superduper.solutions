@@ -10,9 +10,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { bezierDrawing } from "$lib/flow-routing/bezier.ts";
   import RoutedEdge from "$lib/flow-routing/RoutedEdge.svelte";
 
+  import type { WorkflowLineStyle } from "$lib/workflow-line-style.ts";
+  const options = getContext<() => { lineStyle: WorkflowLineStyle }>("workflow-connection-options");
   let props: EdgeProps = $props();
   const strength = getContext<() => number>("workflow-curve-strength");
 </script>
 
-<RoutedEdge {...props} splitDashes={false} fallback={workflowCurve(props, strength())}
-  drawRoute={(route, points, obstacles, authored) => bezierDrawing(route, points, strength(), obstacles, authored)} />
+<RoutedEdge {...props} splitDashes={false} fallback={workflowCurve(props, strength() * (options().lineStyle === "filleted" ? 1 : 0.5))}
+  drawRoute={(route, points, obstacles, authored) => bezierDrawing(route, points, strength(), obstacles, authored, options().lineStyle)} />

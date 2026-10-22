@@ -14,3 +14,12 @@ Feature: Curved assertion loop routing
       | width |
       | 390   |
       | 1280  |
+
+  Scenario Outline: Four connection styles update immediately and survive reload
+    Given a curved Filter array assertion loop at width <width>
+    Then the four connection styles have distinct safe paths and retain their saved preference
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |

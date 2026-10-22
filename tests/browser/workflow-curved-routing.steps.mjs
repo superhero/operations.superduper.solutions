@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { toggleConnectionStyle, chooseSettingsLineStyle, chooseConnectionStyle } from './connection-style.fixture.mjs';
 import assert from 'node:assert/strict';
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
@@ -9,6 +10,7 @@ import { readExport, setMode, workflow } from './workspace.steps.mjs';
 import { loadGraphFixture } from './workflow-graph.fixture.mjs';
 import { createUtilityNode, addArrayFilterAssertion } from '../../src/lib/workflow-graph.ts';
 import { defaultProcessingData } from '../../src/lib/workflow-processing.ts';
+import { workflowLineStyles, workflowLineStyleLabels } from '../../src/lib/workflow-line-style.ts';
 
 const edge = (page, name) => workflow(page).locator(`.svelte-flow__edge[data-id="${name === 'cast' ? 'curve-cast:result' : `curve-assert:${name}`}"]`);
 const path = (page, name) => edge(page, name).locator('.svelte-flow__edge-interaction');
@@ -70,10 +72,10 @@ Then('its curved returns avoid node bodies and support reversible anchor adjustm
   assert.ok(diagonal > 10, 'Curved mode must contain real diagonal spans, not only short rounded corners.');
   await mkdir(this.artifactDirectory, { recursive: true });
   await workflow(page).screenshot({ path: `${this.artifactDirectory}/default-diagonal-curves.png` });
-  await page.getByRole('button', { name: 'Curved connections', exact: true }).click();
+  await toggleConnectionStyle(page);
   await expect(path(page, 'cast')).toHaveAttribute('d', /^M .* L/);
   assert.notEqual(await path(page, 'cast').getAttribute('d'), curved);
-  await page.getByRole('button', { name: 'Curved connections', exact: true }).click();
+  await toggleConnectionStyle(page);
   await expect(path(page, 'cast')).toHaveAttribute('d', curved);
   const before = (await readExport(page)).document;
   assert.ok(before.edges.every(edge => !edge.manualRoute), 'Automatic routing must stay out of the saved document.');
@@ -159,11 +161,9 @@ Then('the Settings curve switch changes the open workflow immediately', async fu
     const settings = page.getByRole('region', { name: 'Settings workspace', exact: true });
     const application = settings.locator('summary[aria-label="Application"]');
     if (await application.getAttribute('aria-expanded') !== 'true') await application.click();
-    const toggle = settings.getByRole('switch', { name: 'Curved lines', exact: true });
-    await expect(toggle).toHaveAttribute('aria-checked', String(!enabled));
-    await toggle.click();
+    await chooseSettingsLineStyle(page, enabled ? 'filleted' : 'orthogonal');
     await setMode(page, 'workflow');
-    await expect(page.getByRole('button', { name: 'Curved connections', exact: true })).toHaveAttribute('aria-pressed', String(enabled));
+    await expect(page.getByRole('button', { name: 'Connection style', exact: true })).toHaveAttribute('aria-pressed', String(enabled));
     if (enabled) await expectSafe(page, path(page, 'cast'));
     else await expect(path(page, 'cast')).toHaveAttribute('d', /^M .* L/);
     await saved(page);
@@ -176,4 +176,54 @@ Then('the Settings curve switch changes the open workflow immediately', async fu
   await setMode(page, 'workflow');
   await expectSafe(page, path(page, 'cast'));
   assert.equal((await readExport(page)).document.curved, true);
+});
+
+Then('the four connection styles have distinct safe paths and retain their saved preference', async function () {
+  const page = this.page, original = (await readExport(page)).document, paths = {};
+  for (const [index, style] of workflowLineStyles.entries()) {
+    await setMode(page, 'settings');
+    const application = page.locator('summary[aria-label="Application"]');
+    if (await application.getAttribute('aria-expanded') !== 'true') await application.click();
+    const slider = page.getByRole('slider', { name: 'Connection style', exact: true });
+    await expect(slider).toHaveAttribute('aria-valuemin', '0');
+    await expect(slider).toHaveAttribute('aria-valuemax', '3');
+    await expect(slider).toHaveAttribute('step', String(1 / 3));
+    await expect(page.getByRole('textbox', { name: 'Connection style value', exact: true })).toHaveCount(0);
+    await chooseSettingsLineStyle(page, style);
+    await slider.press('Home');
+    const bounds = await slider.boundingBox();
+    await slider.click({ position: { x: 8 + (bounds.width - 16) * index / 3, y: bounds.height / 2 } });
+    await expect(slider).toHaveAttribute('aria-valuetext', workflowLineStyleLabels[style]);
+    await setMode(page, 'workflow');
+    await expect(page.getByRole('button', { name: 'Connection style', exact: true })).toHaveAttribute('data-line-style', style);
+    if (style !== 'orthogonal') for (const name of ['cast', 'keep', 'remove']) await expectSafe(page, path(page, name));
+    else await expect(path(page, 'cast')).toHaveAttribute('d', /^M .* L/);
+    paths[style] = (await Promise.all(['cast', 'keep', 'remove'].map(name => path(page, name).getAttribute('d')))).join(' ');
+    await saved(page);
+    const document = (await readExport(page)).document;
+    assert.equal(document.lineStyle, style);
+    assert.deepEqual(document.nodes, original.nodes);
+    assert.deepEqual(document.edges, original.edges);
+    assert.equal(document.dashed, original.dashed);
+    await mkdir(this.artifactDirectory, { recursive: true });
+    await workflow(page).screenshot({ path: `${this.artifactDirectory}/${style}.png` });
+  }
+  assert.equal(new Set(Object.values(paths)).size, 4, 'Each mode must render a genuinely different path.');
+  await page.reload();
+  await setMode(page, 'workflow');
+  const button = page.getByRole('button', { name: 'Connection style', exact: true });
+  await expect(button).toHaveAttribute('data-line-style', 'clutter');
+  for (const style of workflowLineStyles) {
+    await button.click();
+    await expect(button).toHaveAttribute('data-line-style', style);
+  }
+  await chooseConnectionStyle(page, 'filleted');
+  await saved(page);
+  await page.reload();
+  await setMode(page, 'workflow');
+  await expect(button).toHaveAttribute('data-line-style', 'filleted');
+  await setMode(page, 'settings');
+  const application = page.locator('summary[aria-label="Application"]');
+  if (await application.getAttribute('aria-expanded') !== 'true') await application.click();
+  await expect(page.getByRole('slider', { name: 'Connection style', exact: true })).toHaveAttribute('aria-valuetext', 'Clutter');
 });

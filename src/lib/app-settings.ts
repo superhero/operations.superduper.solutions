@@ -13,7 +13,8 @@ import { defaultVaultPreferences, VaultError, type VaultPreferences } from "./se
 import { appSettingsDatabaseName } from "./storage-names.ts";
 export { appSettingsDatabaseName } from "./storage-names.ts";
 
-export type WorkflowDefaults = { dashed: boolean; curved: boolean; snap: boolean; nodeSymbols: boolean; gridSize: number; dashLength: number; dashGap: number; dashSpeed: number; curveStrength: number; nodeClearance: number };
+import { isWorkflowLineStyle, type WorkflowLineStyle } from "./workflow-line-style.ts";
+export type WorkflowDefaults = { dashed: boolean; curved: boolean; lineStyle?: WorkflowLineStyle; snap: boolean; nodeSymbols: boolean; gridSize: number; dashLength: number; dashGap: number; dashSpeed: number; curveStrength: number; nodeClearance: number };
 export const workflowGridSizeLimits = { min: 1, max: 32 } as const;
 export const workflowDashLengthLimits = { min: 1, max: 128 } as const;
 export const workflowDashGapLimits = { min: 1, max: 128 } as const;
@@ -197,6 +198,7 @@ function normalize(saved: SavedSettings, legacy: LegacySettings, paletteIds: rea
   return { theme, palette, toolbarButtons: normalizeToolbarButtons(saved.toolbarButtons), keybindings: normalizeKeybindings(saved.keybindings), developerToolbar: saved.developerToolbar === true, evaluationDetails: saved.evaluationDetails === true, tooltips: saved.tooltips !== false, locale: normalizeLocaleSettings(saved.locale), workflowDefaults: {
     dashed: typeof workflow.dashed === "boolean" ? workflow.dashed : defaultWorkflowSettings.dashed,
     curved: typeof workflow.curved === "boolean" ? workflow.curved : defaultWorkflowSettings.curved,
+    ...(isWorkflowLineStyle(workflow.lineStyle) ? { lineStyle: workflow.lineStyle, curved: workflow.lineStyle !== "orthogonal" } : {}),
     snap: typeof workflow.snap === "boolean" ? workflow.snap : defaultWorkflowSettings.snap,
     nodeSymbols: typeof workflow.nodeSymbols === "boolean" ? workflow.nodeSymbols : defaultWorkflowSettings.nodeSymbols,
     gridSize: isValidWorkflowGridSize(workflow.gridSize) ? workflow.gridSize : defaultWorkflowSettings.gridSize,

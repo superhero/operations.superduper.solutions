@@ -474,7 +474,7 @@ When("I connect the first operation to the second", async function () {
   await expect(connections(this.page)).toHaveCount(1);
 });
 When("I enable grid snapping and curved dashed connections", async function () {
-  for (const name of ["Snap to grid", "Curved connections", "Dashed connections"]) {
+  for (const name of ["Snap to grid", "Connection style", "Dashed connections"]) {
     const toggle = this.page.getByRole("button", { name, exact: true });
     if (await toggle.getAttribute("aria-pressed") !== "true") await toggle.click();
     await expect(toggle).toHaveAttribute("aria-pressed", "true");
@@ -507,7 +507,7 @@ Then("the workflow is named {string}", async function (name) {
 });
 Then("it contains one connection", async function () { await expect(connections(this.page)).toHaveCount(1); });
 Then("grid snapping and curved dashed connections remain enabled", async function () {
-  for (const name of ["Snap to grid", "Curved connections", "Dashed connections"])
+  for (const name of ["Snap to grid", "Connection style", "Dashed connections"])
     await expect(this.page.getByRole("button", { name, exact: true })).toHaveAttribute("aria-pressed", "true");
 });
 When("I add {string} through the workflow catalog", async function (name) {

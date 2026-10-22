@@ -1221,3 +1221,20 @@ Then("property edits use canonical names and enforce schema policy without addit
   assert.equal(updated.nodes.find(item => item.id === wide.node.id).data.fields[0].type, "Object");
   importedGraph(updated);
 });
+
+Then('named connection styles survive export while legacy flags retain their appearance', async () => {
+  const { workflowLineStyle } = await import('./lib/workflow-line-style.ts');
+  assert.equal(workflowLineStyle(plan()), 'orthogonal');
+  assert.equal(workflowLineStyle({ curved: true }), 'filleted');
+  assert.equal(workflowLineStyle({ curved: true, lineStyle: 'invalid' }), 'filleted');
+  assert.equal(workflowLineStyle({ curved: false, lineStyle: null }), 'orthogonal');
+  for (const lineStyle of ['orthogonal', 'filleted', 'bezier', 'clutter']) {
+    const document = parseWorkflowDocument(JSON.stringify({ ...plan(), lineStyle }));
+    assert.equal(document.lineStyle, lineStyle);
+    assert.equal(document.curved, lineStyle !== 'orthogonal');
+    assert.equal(workflowLineStyle(document), lineStyle);
+    assert.deepEqual(parseWorkflowDocument(JSON.stringify(document)), document);
+  }
+  for (const lineStyle of ['', 'invalid', 1, null])
+    assert.throws(() => validateWorkflowDocument({ ...plan(), lineStyle }), /Unsupported connection line style/);
+});

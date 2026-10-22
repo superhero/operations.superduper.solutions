@@ -5,13 +5,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
+  import { workflowLineStyleLabels, type WorkflowLineStyle } from "$lib/workflow-line-style.ts";
   import { defaultToolbarButtons, toolbarButtonGroups, type ToolbarButtons } from "$lib/toolbar-settings.ts";
   import { onMount, onDestroy, tick } from "svelte";
   import { Controls, useSvelteFlow, useStore } from "@xyflow/svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  let { buttons = defaultToolbarButtons, oncopy, oncut, onpaste, canPaste = false, canRun = false, canvas, active, settingsOpen = false, placing = false, navigationOpen, snap, curved, dashed, selected, onsnap, oncurved, ondashed, onremove, onnew, onopen, onexport, onimport, onbrowse, onutility, ondescribe, onrun, canUndo, canRedo, historyBusy, onundo, onredo, onhistory }:
-    { buttons?: ToolbarButtons; oncopy: () => void; oncut: () => void; onpaste: () => void; canPaste?: boolean; canvas: HTMLElement | undefined; active: boolean; settingsOpen?: boolean; placing?: boolean; navigationOpen: boolean; snap: boolean; curved: boolean; dashed: boolean; selected: boolean;
+  let { buttons = defaultToolbarButtons, oncopy, oncut, onpaste, canPaste = false, canRun = false, canvas, active, settingsOpen = false, placing = false, navigationOpen, snap, curved, lineStyle, dashed, selected, onsnap, oncurved, ondashed, onremove, onnew, onopen, onexport, onimport, onbrowse, onutility, ondescribe, onrun, canUndo, canRedo, historyBusy, onundo, onredo, onhistory }:
+    { buttons?: ToolbarButtons; oncopy: () => void; oncut: () => void; onpaste: () => void; canPaste?: boolean; canvas: HTMLElement | undefined; active: boolean; settingsOpen?: boolean; placing?: boolean; navigationOpen: boolean; snap: boolean; curved: boolean; lineStyle: WorkflowLineStyle; dashed: boolean; selected: boolean;
       onsnap: () => void; oncurved: () => void; ondashed: () => void; onremove: () => void;
       onnew: () => void; onopen: () => void; onexport: () => void;
       onimport: () => void; onbrowse: () => void; onutility: (type: "switch" | "cast" | "comment" | "vault" | "file" | "transform" | "filter" | "assert" | "stop") => void;
@@ -199,7 +200,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if toolbarButtonGroups[2].buttons.some(key => buttons[key])}
     <div class="workflow-control-group">
     {#if buttons.dashed}<HintButton class="svelte-flow__controls-button" aria-label="Dashed connections" label="Dashed connections" aria-pressed={dashed} onclick={ondashed}><MaterialIcon name="unknown_med" size={18} /></HintButton>{/if}
-    {#if buttons.curved}<HintButton class="svelte-flow__controls-button" aria-label="Curved connections" label="Curved connections" aria-pressed={curved} onclick={oncurved}><MaterialIcon name="line_curve" size={18} /></HintButton>{/if}
+    {#if buttons.curved}<HintButton class="svelte-flow__controls-button" aria-label="Connection style" label={`Connection style: ${workflowLineStyleLabels[lineStyle]}`} data-line-style={lineStyle} aria-pressed={curved} onclick={oncurved}><MaterialIcon name="line_curve" size={18} /></HintButton>{/if}
     {#if buttons.snap}<HintButton class="svelte-flow__controls-button" aria-label="Snap to grid" label="Snap to grid" aria-pressed={snap} onclick={onsnap}><MaterialIcon name="grid_on" size={18} /></HintButton>{/if}
     </div>
     {/if}

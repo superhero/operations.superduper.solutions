@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { toggleConnectionStyle, chooseSettingsLineStyle } from './connection-style.fixture.mjs';
 import assert from 'node:assert/strict';
 import { Then, When } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
@@ -11,10 +12,10 @@ import { loadGraphFixture } from './workflow-graph.fixture.mjs';
 import { createUtilityNode } from '../../src/lib/workflow-graph.ts';
 
 const freshDefaults = { dashed: true, curved: true, snap: true, nodeSymbols: true, gridSize: 8, dashLength: 8, dashGap: 16, dashSpeed: 64, curveStrength: 100, nodeClearance: 16 };
-const disabledDefaults = { dashed: false, curved: false, snap: false, gridSize: 12, dashLength: 6, dashGap: 4, dashSpeed: 20, curveStrength: 50, nodeClearance: 12, nodeSymbols: true };
-const enabledDefaults = { dashed: true, curved: true, snap: true, gridSize: 12, dashLength: 6, dashGap: 4, dashSpeed: 20, curveStrength: 200, nodeClearance: 12, nodeSymbols: true };
-const settingLabels = { dashed: 'Dashed lines', curved: 'Curved lines', snap: 'Snap to grid', nodeSymbols: 'Node symbols' };
-const toolbarLabels = { dashed: 'Dashed connections', curved: 'Curved connections', snap: 'Snap to grid' };
+const disabledDefaults = { lineStyle: 'orthogonal', dashed: false, curved: false, snap: false, gridSize: 12, dashLength: 6, dashGap: 4, dashSpeed: 20, curveStrength: 50, nodeClearance: 12, nodeSymbols: true };
+const enabledDefaults = { lineStyle: 'filleted', dashed: true, curved: true, snap: true, gridSize: 12, dashLength: 6, dashGap: 4, dashSpeed: 20, curveStrength: 200, nodeClearance: 12, nodeSymbols: true };
+const settingLabels = { dashed: 'Dashed lines', snap: 'Snap to grid', nodeSymbols: 'Node symbols' };
+const toolbarLabels = { dashed: 'Dashed connections', curved: 'Connection style', snap: 'Snap to grid' };
 const settings = page => page.getByRole('region', { name: 'Settings workspace', exact: true });
 const summary = (page, name) => settings(page).locator(`summary[aria-label="${name}"]`);
 const options = ({ dashed, curved, snap }) => ({ dashed, curved, snap });
@@ -43,6 +44,8 @@ async function openDefaults(page) {
 }
 
 async function expectDefaultSwitches(page, defaults) {
+  await expect(settings(page).getByRole('slider', { name: 'Connection style', exact: true }))
+    .toHaveAttribute('aria-valuetext', defaults.curved ? 'Filleted' : 'Orthogonal');
   for (const [key, label] of Object.entries(settingLabels))
     await expect(settings(page).getByRole('switch', { name: label, exact: true })).toHaveAttribute('aria-checked', String(defaults[key]));
   await expect(settings(page).getByRole('textbox', { name: 'Grid size value', exact: true })).toHaveValue(String(defaults.gridSize));
@@ -91,6 +94,7 @@ export async function setWorkflowDashValues(page, values) {
 
 async function setDefaults(page, defaults) {
   await openDefaults(page);
+  await chooseSettingsLineStyle(page, defaults.curved ? 'filleted' : 'orthogonal');
   for (const [key, label] of Object.entries(settingLabels)) {
     const control = settings(page).getByRole('switch', { name: label, exact: true });
     if (await control.getAttribute('aria-checked') !== String(defaults[key])) await control.click();
@@ -259,8 +263,11 @@ Then('workflow display switches update rendered lines and grid movement at width
   const position = ({ x, y }) => ({ x, y });
   const setting = async (key, enabled) => {
     await openDefaults(page);
-    const control = settings(page).getByRole('switch', { name: settingLabels[key], exact: true });
-    if (await control.getAttribute('aria-checked') !== String(enabled)) await control.click();
+    if (key === 'curved') await chooseSettingsLineStyle(page, enabled ? 'filleted' : 'orthogonal');
+    else {
+      const control = settings(page).getByRole('switch', { name: settingLabels[key], exact: true });
+      if (await control.getAttribute('aria-checked') !== String(enabled)) await control.click();
+    }
     await expect.poll(async () => (await storedDefaults(page))[key]).toBe(enabled);
     await setMode(page, 'workflow');
     await expect(workflow(page).getByRole('button', { name: toolbarLabels[key], exact: true })).toHaveAttribute('aria-pressed', String(enabled));
@@ -300,10 +307,9 @@ Then('workflow display switches update rendered lines and grid movement at width
       await lines(curved, dashed);
       assert.equal((await storedDefaults(page)).dashed, dashed, 'The toolbar must not change defaults.');
     }
-    const toggle = workflow(page).getByRole('button', { name: 'Curved connections', exact: true });
-    await toggle.click();
+    await toggleConnectionStyle(page);
     await lines(!curved, true);
-    await toggle.click();
+    await toggleConnectionStyle(page);
     await lines(curved, true);
   }
   await saved();
