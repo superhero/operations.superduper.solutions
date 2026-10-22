@@ -96,12 +96,12 @@ Then('hovering another control replaces keyboard help', async function () {
 
   await page.setViewportSize({ width: 390, height: 844 });
   await openCatalog(page);
-  const close = page.locator('[data-slot="sheet-content"]').getByRole('button', { name: 'Close', exact: true });
+  const close = page.locator('[data-slot="sheet-content"]').getByRole('button', { name: 'Close navigation', exact: true });
   await close.focus();
   await page.keyboard.press('Tab');
   await page.keyboard.press('Shift+Tab');
-  await expect(page.getByRole('tooltip')).toHaveText('Close navigation');
-  await expect(close).toHaveAccessibleName('Close');
+  await expect(close).toHaveAccessibleDescription('Swipe left or tap to close');
+  await expect(close).toHaveAccessibleName('Close navigation');
   await close.press('Enter');
   await expect(page.getByRole('button', { name: 'Open navigation', exact: true })).toBeFocused();
 });

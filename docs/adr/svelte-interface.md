@@ -81,6 +81,8 @@ Window resizing preserves workflow zoom and node dimensions. If the smaller
 canvas hides every operation node, it pans to a nearby node at the current zoom;
 it does not automatically fit the whole graph. Explicit Zoom and Fit controls
 remain available. Viewport width alone does not select smaller node defaults.
+Fit View centers the graph in the uncovered canvas between the open panes,
+using their current widths and leaving room below the workflow toolbar.
 
 ## Settings and startup
 
@@ -89,13 +91,34 @@ larger steps), Home/End limits and a double-click reset. Its preferred width is
 saved separately from workflow documents, defaults to 900px and ranges from
 360px to 1440px, limited while dragging to leave 250px of the viewport visible.
 
-Both panes can stay open when the viewport fits the selected Settings width,
-the 320px catalog and 500px of canvas. Below that, opening one closes the other;
+The catalog has the same splitter on its right edge and saves its own preferred
+width, with its original 320px width as the minimum and a 1440px maximum. On
+smaller desktop viewports it temporarily clamps to leave 250px of canvas and
+restores the preference when space returns. Its existing mobile sheet stays
+320px wide (bounded by 90vw), without a resize grip.
+
+Both panes can stay open when the viewport fits their chosen widths and 500px
+of canvas. Below that, opening one closes the other;
 shrinking keeps the most recently opened pane. Settings fills the viewport when
 its preferred width would leave less than 250px of canvas, or below 900px viewport
 width. Growing the window restores the chosen pane width. Selecting a catalog
 item keeps Settings open when both panes fit. Escape closes the focused catalog
 when both are open; otherwise it follows the existing Settings-first dismissal.
+
+Touch capability is independent of viewport size: docked panes remain resizable
+on tablets and other touchscreens. Coarse-pointer devices get a visible 44px-wide
+grip with a bounded vertical touch area, leaving content editing and scrolling
+untouched. Tap a splitter (or press Enter/Space) for Narrow, Medium, Wide, Reset
+and Close controls; desktop arrow keys and the delayed hover highlight remain.
+
+Compact panes replace the X with a visible, accessible dismissal grip. Navigation
+swipes left and Settings swipes right, following the finger while moving. Short,
+wrong-direction, vertical and cancelled gestures do not dismiss. Only the grip
+handles swipes; its header sits outside the scroll area so it cannot cover the
+search field or catalog rows. Normal content remains scrollable. Tap or keyboard
+activation of the same grip also closes the pane. Navigation restores its scroll
+position when reopened. Width-based layout does not react to a keyboard-only
+height change.
 
 ### Storage and recovery
 

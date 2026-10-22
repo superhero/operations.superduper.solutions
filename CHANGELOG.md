@@ -919,6 +919,52 @@ Replace automatic fit-all on resize with panning to a nearby node at the existin
 Merge branch 'develop' into bugfix/preserve-zoom-on-resize
 ```
 
+<!-- changelog-commit:26af858e91c635f00b1b025a7d737f670cee3799 -->
+### Commit [`26af858`](https://github.com/superhero/operations.superduper.solutions/commit/26af858e91c635f00b1b025a7d737f670cee3799)
+
+```text
+feat(navigation): resize the left pane above its current minimum
+
+Add a right-edge splitter to navigation with its existing 320px width as the minimum. Save its preferred width, clamp it to the available desktop viewport and retain the existing mobile sheet. Account for both chosen pane widths when deciding whether they can coexist. Share drag, keyboard, reset and delayed highlight behavior with Settings.
+
+```
+
+<!-- changelog-commit:823e4cdfbf1947ac2d717102e10f861376520ef8 -->
+### Commit [`823e4cd`](https://github.com/superhero/operations.superduper.solutions/commit/823e4cdfbf1947ac2d717102e10f861376520ef8)
+
+```text
+feat(panes): support touch resizing and swipe dismissal
+
+```
+
+<!-- changelog-commit:c10396bb4712dc92e37eba80e748c09e726c884d -->
+### Commit [`c10396b`](https://github.com/superhero/operations.superduper.solutions/commit/c10396bb4712dc92e37eba80e748c09e726c884d)
+
+```text
+fix(navigation): keep the dismissal grip above scrolling content
+
+```
+
+<!-- changelog-commit:4d2606f46bf5187a23fcde8ccb848a932f9d649b -->
+### Commit [`4d2606f`](https://github.com/superhero/operations.superduper.solutions/commit/4d2606f46bf5187a23fcde8ccb848a932f9d649b)
+
+```text
+Merge remote-tracking branch 'origin/develop' into feature/resizable-navigation-pane
+
+# Conflicts:
+#	tests/browser/workspace.feature
+#	tests/browser/workspace.steps.mjs
+
+```
+
+<!-- changelog-commit:8c09a24dcd007d4d7f2911315feabcb316ea0ccc -->
+### Commit [`8c09a24`](https://github.com/superhero/operations.superduper.solutions/commit/8c09a24dcd007d4d7f2911315feabcb316ea0ccc)
+
+```text
+fix(workflow): fit the graph within the visible canvas
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
