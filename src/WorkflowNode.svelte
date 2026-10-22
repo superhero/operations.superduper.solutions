@@ -72,9 +72,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <span class="port-type">Object</span>
             <Handle id={branch.id} type={input ? "target" : "source"} {position}
               class="owner-port"
-              isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
+              isConnectable={!input} isConnectableStart={!input} isConnectableEnd={false}
               onmousedown={blockPointer} ontouchstart={blockPointer}
-              aria-disabled="true" aria-label={`${branch.label} ${input ? "input" : "output"}`} />
+              aria-disabled={input} aria-label={`${branch.label} ${input ? "input" : "output"}`} />
             {#if branch.hidden}<WorkflowRestoreBranch {branch} {position} />{/if}
           </div>
         {/snippet}
