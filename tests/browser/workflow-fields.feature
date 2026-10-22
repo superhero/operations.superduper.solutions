@@ -6,6 +6,11 @@
 Feature: Documented workflow fields and mappings
   Operations expose their documented input and response fields as editable workflow panels.
 
+  Scenario: Restoring a response at high clearance keeps the short terminal corridor
+    Given a hidden upload response above its operation with sixty-four-pixel clearance
+    When I restore the upload response with its plus button
+    Then the restored response connection stays inside its endpoint bounds
+
   Scenario: Added operations expose separate schema groups and nested fields
     Given I add 1 instances of "Example array response" from the catalog
     Then Example array response exposes its query parameters and nested project response
