@@ -43,7 +43,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowCurveEdge from "./workflows/WorkflowCurveEdge.svelte";
   import WorkflowConnectionLine from "./workflows/WorkflowConnectionLine.svelte";
   import RoutingScope from "$lib/flow-routing/RoutingScope.svelte";
-  import RoutedEdge from "$lib/flow-routing/RoutedEdge.svelte";
   import { createWorkflowRoutingClient } from "$lib/workflow-routing-client.ts";
   import { logger } from "$lib/logger.ts";
   import WorkflowSelection from "./workflows/WorkflowSelection.svelte";
@@ -66,7 +65,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     { toolbarButtons?: ToolbarButtons; keybindings?: Keybindings; active: boolean; settingsOpen?: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
   const nodeTypes = { file: WorkflowFileNode, vault: WorkflowVaultNode, operation: WorkflowNode, data: WorkflowDataNode, switch: WorkflowSwitchNode, cast: WorkflowCastNode,
     transform: WorkflowProcessingNode, filter: WorkflowProcessingNode, assert: WorkflowProcessingNode, stop: WorkflowStopNode, comment: WorkflowCommentNode, workflow: WorkflowReferenceNode };
-  const edgeTypes = { default: WorkflowCurveEdge, smoothstep: RoutedEdge };
+  const edgeTypes = { default: WorkflowCurveEdge, smoothstep: WorkflowCurveEdge };
   type CanvasNode<T> = T extends WorkflowDocumentNode ? Node<T["data"], NonNullable<T["type"]>> & { type: NonNullable<T["type"]> } : never;
   type GraphNode = CanvasNode<WorkflowDocumentNode>;
   type GraphEdge = Edge & WorkflowDocumentEdge;

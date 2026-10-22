@@ -30,7 +30,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       return [routePath(projected, radius, obstacles)!, midpoint.x, midpoint.y];
     }
     if (fallback) return fallback;
-    const [path, x, y] = getSmoothStepPath({ ...props, borderRadius: bendRadius, stepPosition: 1 });
+    const [path, x, y] = getSmoothStepPath({ ...props, borderRadius: radius, stepPosition: 1 });
     return [path, x, y];
   });
 </script>

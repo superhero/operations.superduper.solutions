@@ -48,7 +48,10 @@ The optional `lineStyle` preference persists
 in settings and workflow documents; legacy `curved` flags retain Orthogonal
 (`false`) or Filleted (`true`). Display changes do not create workflow revisions.
 
-Use `bendRadius` from `path.js` for orthogonal rendering: it is four diagram units.
+Use `bendRadius` from `path.js` as the orthogonal radius at 100% Curve strength:
+it is four diagram units. The application scales it linearly with strength, from
+sharp corners at 0% to 40-unit corners at 1000%, including previews, dashes and
+segment controls. Short legs and obstacle clearance can still constrain a corner.
 Filleted keeps the existing full-distance cubic handles. Bézier uses half-distance
 handles along the routed anchor directions. Clutter preserves the experimental
 blend of diagonal anchor tangents, bowed spans, and sharp backbone fallbacks.

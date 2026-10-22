@@ -23,7 +23,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (route && drawRoute) return drawRoute(route, pointer, routing?.obstacles() ?? [], false).path;
     return previewPath(routing?.preview(), pointer, radius, routing?.obstacles() ?? []) ?? curve?.(pointer) ??
       getSmoothStepPath({ ...pointer, sourcePosition: pointer.sourcePosition as Position,
-        targetPosition: pointer.targetPosition as Position, borderRadius: bendRadius, stepPosition: 1 })[0];
+        targetPosition: pointer.targetPosition as Position, borderRadius: radius, stepPosition: 1 })[0];
   });
 </script>
 
