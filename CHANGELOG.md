@@ -768,6 +768,14 @@ fix(workflow): share clearance between facing response terminals
 
 ```
 
+<!-- changelog-commit:f1ec363f80acc3cece7b997171faabdb7a70a418 -->
+### Commit [`f1ec363`](https://github.com/superhero/operations.superduper.solutions/commit/f1ec363f80acc3cece7b997171faabdb7a70a418)
+
+```text
+feat(workflow): show operation category paths on name hover
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
