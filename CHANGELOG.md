@@ -723,6 +723,14 @@ chore: refresh dependency badges
 Merge branch 'develop' into feature/slider-hover-outlines
 ```
 
+<!-- changelog-commit:860c1396ec29be3aaf70ef5e4ffaefadbddd1d01 -->
+### Commit [`860c139`](https://github.com/superhero/operations.superduper.solutions/commit/860c1396ec29be3aaf70ef5e4ffaefadbddd1d01)
+
+```text
+fix(workflow): rename Flowing to Direct and place it first
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
