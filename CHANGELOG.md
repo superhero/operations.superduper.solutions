@@ -999,6 +999,23 @@ and storage in source coverage and leave all coverage thresholds at 100%.
 
 ```
 
+<!-- changelog-commit:e7d2c9f98fcfbe01aec9a9e9aa584f2974513cc9 -->
+### Commit [`e7d2c9f`](https://github.com/superhero/operations.superduper.solutions/commit/e7d2c9f98fcfbe01aec9a9e9aa584f2974513cc9)
+
+```text
+test(browser): align release journeys with current controls
+
+Update release browser expectations for Orthogonal defaults, saved pane
+widths and disclosure state, formatted categories, directional schema
+ports, retained restore ports and concurrent panes.
+
+Keep the unrelated-defaults journey from changing the connection style.
+Verify route clearance, measured handle attachment and comparable length
+across reload and Undo while tolerating subpixel coordinates and equally
+short corridors. Preserve exact workflow and history assertions.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
