@@ -1080,6 +1080,30 @@ fix(ci): include the artifact dependency badge
 
 ```
 
+<!-- changelog-commit:d8968cac33ded15a3dafe4b7057a6c4e558e6d2f -->
+### Commit [`d8968ca`](https://github.com/superhero/operations.superduper.solutions/commit/d8968cac33ded15a3dafe4b7057a6c4e558e6d2f)
+
+```text
+fix(ci): link the artifact dependency badge in README
+
+```
+
+<!-- changelog-commit:b207717952483cbd7af8f5d2570303e464763004 -->
+### Commit [`b207717`](https://github.com/superhero/operations.superduper.solutions/commit/b207717952483cbd7af8f5d2570303e464763004)
+
+```text
+test(workflows): await settled viewport and saved preferences
+
+```
+
+<!-- changelog-commit:04b85a2da69172d7c55a7bd2e1e0e334cb98a480 -->
+### Commit [`04b85a2`](https://github.com/superhero/operations.superduper.solutions/commit/04b85a2da69172d7c55a7bd2e1e0e334cb98a480)
+
+```text
+test(workflows): settle pane transitions before fitting the view
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
