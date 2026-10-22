@@ -214,3 +214,9 @@ reference case is an individual Cucumber scenario. Browser cases tagged
 settings, and persistence; run them after `npm run build` with
 `npm run test:browser -- --tags @workflow-routing`.
 Manual controls and persistence are covered by `@workflow-manual-routing`.
+
+Automatic interior runs travelling in opposite directions prefer a six-unit gap:
+vertical downward runs sit left of upward runs, and horizontal rightward runs sit
+above leftward runs. Matching directions can still share a line. This bounded
+worker-side adjustment preserves ports and authored routes, and yields to node
+clearance and crossing safety when a corridor cannot fit both lanes.
