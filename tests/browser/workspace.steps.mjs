@@ -879,8 +879,11 @@ Then('the left menu resizes from its right edge without becoming narrower than 3
   await expect(grip).toHaveAttribute('aria-valuenow', '544');
   await expect(settings).toHaveAttribute('aria-expanded', 'false');
   await page.reload();
+  // Stored widths render before startup removes the app's inert state.
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
   await expect(grip).toHaveAttribute('aria-valuenow', '544');
   await grip.focus();
+  await expect(grip).toBeFocused();
   await page.keyboard.press('Home');
   await page.keyboard.press('ArrowLeft');
   await expect(grip).toHaveAttribute('aria-valuenow', '320');
