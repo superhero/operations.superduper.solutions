@@ -33,6 +33,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <script lang="ts">
   import { tick } from "svelte";
+  import type { SettingsSection } from "$lib/pane-state.ts";
   import Disclosure from "$lib/components/Disclosure.svelte";
   import { workflowLineStyle, workflowLineStyles, workflowLineStyleLabels } from "$lib/workflow-line-style.ts";
   import FieldInteger from "$lib/components/FieldInteger.svelte";
@@ -53,7 +54,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { isValidWorkflowCurveStrength, isValidWorkflowDashLength, isValidWorkflowDashGap, isValidWorkflowDashSpeed, isValidWorkflowGridSize, isValidWorkflowNodeClearance,
     workflowCurveStrengthLimits, workflowDashLengthLimits, workflowDashGapLimits, workflowDashSpeedLimits, workflowGridSizeLimits, workflowNodeClearanceLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
 
-  let { active = true, dark, onTheme, tooltips = true, tooltipsError = "", onTooltipsChange = () => {}, palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
+  let { active = true, openSection = $bindable<SettingsSection>(null), dark, onTheme, tooltips = true, tooltipsError = "", onTooltipsChange = () => {}, palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
     toolbarButtons = defaultToolbarButtons, toolbarButtonsError = "", onToolbarButtonsChange = () => {}, onRetryToolbarButtons = () => {},
     keybindings = defaultKeybindings, keybindingsError = "", onKeybindingsChange = () => {}, onRetryKeybindings = () => {},
     locale = defaultLocaleSettings, localeError = "", onLocaleChange = () => {}, onRetryLocale = () => {},
@@ -61,6 +62,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     evaluationDetails, evaluationDetailsError = "", onEvaluationDetailsChange,
     settingsUnavailable, settingsRetrying, onRetrySettings }: {
     active?: boolean;
+    openSection?: SettingsSection;
     dark: boolean;
     onTheme: () => void;
     tooltips?: boolean;
@@ -95,7 +97,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     onRetrySettings: () => void;
   } = $props();
   let workspace: HTMLElement;
-  let openSection = $state<"toolbar" | "keybindings" | "secrets" | "theme" | "locale" | "logs" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
   let storageBuilt = $state(false);
   let storageReady = $state(false);
   let storageDismissing = $state(false);
