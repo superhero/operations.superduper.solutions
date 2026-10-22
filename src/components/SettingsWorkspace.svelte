@@ -489,7 +489,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .line-style-setting { display: flex; flex-direction: column; gap: 4px; min-width: 0; border-radius: 4px; background: var(--color-background); }
-  .line-style-setting > label { padding: 10px 12px 0; }
+  .line-style-setting > label { padding: 10px 12px 0; color: var(--color-catalog-foreground); font-size: 12px; font-weight: 700; }
   .line-style-value { display: block; padding: 4px 12px 12px; text-align: center; font-size: 0.85em; color: var(--color-primary); font-weight: 700; }
 
   .storage-building { margin: 0; padding: 12px 16px 16px; font-size: 12px; font-weight: 700; color: var(--color-catalog-active-foreground); text-align: center; }

@@ -685,6 +685,22 @@ style(settings): match the connection slider pane background
 
 ```
 
+<!-- changelog-commit:38644b2a36ec67b9c0464a5bcaefe6a2bb90f8ac -->
+### Commit [`38644b2`](https://github.com/superhero/operations.superduper.solutions/commit/38644b2a36ec67b9c0464a5bcaefe6a2bb90f8ac)
+
+```text
+fix(settings): align slider heading and track endpoints
+
+```
+
+<!-- changelog-commit:4c68d0b10f25cccc789d42a0623cb32e42f8afab -->
+### Commit [`4c68d0b`](https://github.com/superhero/operations.superduper.solutions/commit/4c68d0b10f25cccc789d42a0623cb32e42f8afab)
+
+```text
+fix(settings): omit stepped slider hover outline
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
