@@ -54,6 +54,16 @@ Feature: Carry complete validation through integration and release
       | release |
       | main    |
 
+  Scenario Outline: Completed validation continues publication past optional job skips
+    Given the validation workflow for "<target>"
+    Then publication continues after optional validation jobs are skipped
+    And failed or cancelled required jobs still block every publication stage
+    Examples:
+      | target  |
+      | release |
+      | main    |
+      | support |
+
   Scenario: A release waits for its versioned changelog
     Given the validation workflow for "main"
     Then the release application job waits for the changelog documentation PR

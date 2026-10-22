@@ -39,6 +39,12 @@ function enabled(step, reused, ready = true, status = "success", outcomes = {}, 
     .map(id => [id, { outcome: outcomes[id] ?? status }]));
   const env = { CI_INCREMENTAL_TESTS: 'false' }, vars = { CI_INCREMENTAL_TESTS: 'false' };
   needs['validation-prepare'] = { result: 'skipped', outputs: { has_work: 'false' } };
+  for (const name of ['integration', 'validation', 'workflow-checks', 'validate-pr', 'application',
+    'preview', 'auto-merge', 'create-release-tag', 'release-changelog'])
+  {
+    needs[name] ??= {};
+    needs[name].result = integration.results?.[name] ?? 'success';
+  }
   return new Function("needs", "github", "steps", "env", "vars", "startsWith", "success", "always", "failure", "cancelled", `return (${expression});`)(
     needs, github, steps, env, vars, (value, prefix) => value.startsWith(prefix),
     () => status === "success", () => true, () => status === "failure", () => status === "cancelled");
@@ -94,6 +100,45 @@ Given("the validation workflow for {string}", function (target)
   assert.deepEqual(document.errors, []);
   this.validationWorkflow = document.toJS();
   this.validationTarget = target;
+});
+
+function publicationStages(jobs)
+{
+  return ['preview', 'auto-merge', 'create-release-tag', 'backmerge-develop', 'promote-release']
+    .filter(name => jobs[name]).map(name => [name, jobs[name]]);
+}
+
+function completedValidation(jobs)
+{
+  return Object.fromEntries(Object.keys(jobs).map(name => [name,
+    ['validation-prepare', 'browser-validation'].includes(name) ? 'skipped' : 'success']));
+}
+
+Then('publication continues after optional validation jobs are skipped', function ()
+{
+  const { jobs } = this.validationWorkflow;
+  const results = completedValidation(jobs);
+  for (const reused of [false, true])
+    for (const [name, job] of publicationStages(jobs))
+      assert.equal(enabled(job, reused, true, 'skipped', {}, { results }), true,
+        `${this.validationTarget}/${name} must run after successful aggregation despite skipped ancestors`);
+});
+
+Then('failed or cancelled required jobs still block every publication stage', function ()
+{
+  const { jobs } = this.validationWorkflow;
+  const results = completedValidation(jobs);
+  for (const [name, job] of publicationStages(jobs))
+    for (const reused of [false, true])
+    {
+      assert.equal(enabled(job, reused, true, 'cancelled', {}, { results }), false,
+        `${name} cannot publish after workflow cancellation`);
+      for (const dependency of [job.needs].flat())
+        for (const result of ['failure', 'cancelled', 'skipped'])
+          assert.equal(enabled(job, reused, true, result, {}, {
+            results: { ...results, [dependency]: result }
+          }), false, `${name} must stop when required ${dependency} is ${result}`);
+    }
 });
 
 Then("integration workflows share one retained queue without acquiring their own lock twice", function ()

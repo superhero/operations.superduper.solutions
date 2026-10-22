@@ -366,6 +366,7 @@ jobs:
           overwrite: true
           retention-days: 7
 
+  # Cache hits skip optional ancestors; require the completed validation gates.
   auto-merge:
     name: Auto Merge
     concurrency:
@@ -373,6 +374,8 @@ jobs:
       cancel-in-progress: false
     needs: [ integration, workflow-checks, validate-pr, application ]
     if: >-
+      !cancelled() && needs.integration.result == 'success' && needs.workflow-checks.result == 'success' &&
+      needs.validate-pr.result == 'success' && needs.application.result == 'success' &&
       needs.integration.outputs.ready == 'true' && github.event.pull_request.head.repo.full_name == github.repository &&
       !github.event.pull_request.draft
     runs-on: ubuntu-latest

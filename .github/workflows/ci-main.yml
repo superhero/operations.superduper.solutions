@@ -758,10 +758,13 @@ jobs:
     outputs:
       validation_run_attempt: ${{ steps.validation-proof.outputs.run_attempt }}
 
+  # Cache hits skip optional ancestors; publication must check successful gates
+  # explicitly instead of inheriting GitHub's implicit success() condition.
   preview:
     name: Deploy Preview
     needs: [ integration, application ]
     if: >-
+      !cancelled() && needs.integration.result == 'success' && needs.application.result == 'success' &&
       needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') &&
       github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
     concurrency:
@@ -834,6 +837,8 @@ jobs:
       cancel-in-progress: false
     needs: [ integration, workflow-checks, validate-pr, application, preview ]
     if: >-
+      !cancelled() && needs.integration.result == 'success' && needs.workflow-checks.result == 'success' &&
+      needs.validate-pr.result == 'success' && needs.application.result == 'success' && needs.preview.result == 'success' &&
       needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/') &&
       github.event.pull_request.head.repo.full_name == github.repository && !github.event.pull_request.draft
     outputs:
@@ -869,7 +874,9 @@ jobs:
 
   create-release-tag:
     name: Create Release Tag
-    if: "needs.integration.outputs.ready == 'true' && (!startsWith(github.head_ref, 'docs/'))"
+    if: >-
+      !cancelled() && needs.integration.result == 'success' && needs.auto-merge.result == 'success' &&
+      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/')
     needs: [ integration, auto-merge ]
     permissions:
       contents: read
@@ -947,7 +954,9 @@ jobs:
 
   backmerge-develop:
     name: Synchronize Released Code
-    if: "needs.integration.outputs.ready == 'true' && (!startsWith(github.head_ref, 'docs/'))"
+    if: >-
+      !cancelled() && needs.integration.result == 'success' && needs.create-release-tag.result == 'success' &&
+      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/')
     needs: [ integration, create-release-tag ]
     concurrency:
       group: post-release-backmerge
@@ -980,7 +989,10 @@ jobs:
 
   promote-release:
     name: Promote Release
-    if: needs.integration.outputs.ready == 'true' && (!startsWith(github.head_ref, 'docs/'))
+    if: >-
+      !cancelled() && needs.integration.result == 'success' && needs.create-release-tag.result == 'success' &&
+      needs.validation.result == 'success' && needs.application.result == 'success' &&
+      needs.integration.outputs.ready == 'true' && !startsWith(github.head_ref, 'docs/')
     needs:
       - integration
       - create-release-tag
