@@ -902,6 +902,23 @@ style(settings): delay and fade the resize edge highlight
 
 ```
 
+<!-- changelog-commit:2d1150f9a59c21869a43e9b05aa55ee5b9bf7f2e -->
+### Commit [`2d1150f`](https://github.com/superhero/operations.superduper.solutions/commit/2d1150f9a59c21869a43e9b05aa55ee5b9bf7f2e)
+
+```text
+fix(workflow): preserve node scale when the viewport shrinks
+
+Replace automatic fit-all on resize with panning to a nearby node at the existing zoom. Narrow desktop windows no longer make nodes smaller, while a hidden graph still becomes reachable. Preserve explicit Zoom and Fit actions.
+
+```
+
+<!-- changelog-commit:e7e3685858f0540632cdddeb4155f53a84741ea4 -->
+### Commit [`e7e3685`](https://github.com/superhero/operations.superduper.solutions/commit/e7e3685858f0540632cdddeb4155f53a84741ea4)
+
+```text
+Merge branch 'develop' into bugfix/preserve-zoom-on-resize
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
