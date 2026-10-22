@@ -11,6 +11,9 @@ Feature: Integer slider scales
   Scenario: Explicit maximum bounds concentrate value changes around the middle
     Then bounded integer scales are symmetric around their midpoint and monotonic
 
+  Scenario: Bounded logarithmic controls retain zero and precision across orders of magnitude
+    Then logarithmic integer scales span zero through one thousand with fine low-value adjustments
+
   Scenario: Schema bounds describe only their valid safe integers
     Then integer scales round bounds inward and handle fixed empty and nonfinite ranges
 

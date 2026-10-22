@@ -444,6 +444,50 @@ Then('the grid size slider supports exact keys and saves its nonlinear pointer v
   await expect(slider).toHaveAttribute('aria-valuenow', String(selected));
 });
 
+Then('curve strength supports logarithmic pointer control and exact values through 1000 at width {int}', async function (width) {
+  const page = this.page;
+  await page.setViewportSize({ width, height: 900 });
+  await openDefaults(page);
+  const slider = settings(page).getByRole('slider', { name: 'Curve strength', exact: true });
+  const input = settings(page).getByRole('textbox', { name: 'Curve strength value', exact: true });
+  await expect(slider).toHaveAttribute('aria-valuemin', '0');
+  await expect(slider).toHaveAttribute('aria-valuemax', '1000');
+  await expect(input).toHaveValue('100');
+  for (const invalid of ['1001', '-1', '1.5', 'not-a-number', '']) {
+    await input.fill(invalid);
+    await input.press('Tab');
+    await expect(settings(page).getByRole('alert')).toContainText('Curve strength must be a whole number from 0 to 1000.');
+    assert.equal((await storedDefaults(page)).curveStrength, 100, 'Invalid drafts must retain the saved strength.');
+  }
+  await input.fill('500');
+  await input.press('Tab');
+  await expect(settings(page).getByRole('alert')).toHaveCount(0);
+  const position = await slider.evaluate(element => element.valueAsNumber);
+  assert.ok(position > 0.88 && position < 0.92, '500% must be near the high end of a logarithmic slider.');
+  for (const [key, value] of [['Home', 0], ['ArrowLeft', 0], ['End', 1000], ['ArrowRight', 1000], ['ArrowLeft', 999]]) {
+    await slider.press(key);
+    await expect(input).toHaveValue(String(value));
+    await expect(slider).toHaveAttribute('aria-valuenow', String(value));
+  }
+  await slider.scrollIntoViewIfNeeded();
+  const bounds = await slider.boundingBox(), samples = [];
+  for (const fraction of [0.25, 0.5, 0.75]) {
+    await page.mouse.click(bounds.x + bounds.width * fraction, bounds.y + bounds.height / 2);
+    samples.push(Number(await slider.getAttribute('aria-valuenow')));
+  }
+  assert.ok(samples[0] >= 3 && samples[0] <= 8 && samples[1] >= 25 && samples[1] <= 40 && samples[2] >= 140 && samples[2] <= 230,
+    `Pointer samples must follow the logarithmic scale: ${samples.join(', ')}.`);
+  await input.fill('1000');
+  await input.press('Tab');
+  await expect.poll(async () => (await storedDefaults(page)).curveStrength).toBe(1000);
+  await page.reload();
+  await openDefaults(page);
+  await expect(input).toHaveValue('1000');
+  await expect(slider).toHaveAttribute('aria-valuenow', '1000');
+  assert.equal(await slider.evaluate(element => element.valueAsNumber), 1);
+  assert.deepEqual(await storedWorkflows(page), [], 'Saving curve strength must not create an untouched workflow.');
+});
+
 Then('saved node clearance {word} normalizes to {int} after reload without changing other defaults',
   { timeout: 10_000 }, async function (raw, normalized) {
   const defaults = { ...disabledDefaults, dashed: true, snap: true,

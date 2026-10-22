@@ -268,7 +268,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                     <span>Curve strength</span>
                     <div class="grid-size-control">
                       <FieldInteger id="workflow-curve-strength" label="Curve strength" value={curveStrengthDraft}
-                        minimum={workflowCurveStrengthLimits.min} maximum={workflowCurveStrengthLimits.max} required invalid={curveStrengthInvalid}
+                        minimum={workflowCurveStrengthLimits.min} maximum={workflowCurveStrengthLimits.max} logarithmic required invalid={curveStrengthInvalid}
                         describedBy={curveStrengthInvalid ? "workflow-curve-strength-error" : undefined}
                         onValueChange={value => { curveStrengthDraft = value; curveStrengthInvalid = false; }} onValueCommit={commitCurveStrength} />
                       <span aria-hidden="true">%</span>

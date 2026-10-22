@@ -127,7 +127,10 @@ to placement and center snapping on every canvas without repositioning nodes or
 changing workflow documents. Decorative dots retain independent 24px spacing.
 Dash length and gap accept 1–128 px, defaulting to 8 and 16 respectively.
 Dash speed accepts 0–512 px/s, defaulting to 64; zero pauses motion.
-Curve strength accepts 0–200%, defaulting to 100%, and controls Bézier handles.
+Curve strength accepts 0–1000%, defaulting to 100%, and controls Bézier handles.
+Its slider uses a logarithmic scale with a zero-inclusive offset, giving finer
+pointer adjustments at low strengths; exact entry and keyboard steps retain
+whole percentages.
 Clear connections retain their original diagonal cubic shape. Blocked paths
 use smooth cubic detours fitted to the checked route, with conservative curve
 bounds keeping them outside nodes. Node clearance accepts 0–128 diagram units,

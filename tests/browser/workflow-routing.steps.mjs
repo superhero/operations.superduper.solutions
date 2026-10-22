@@ -495,7 +495,7 @@ Then('changing curve strength changes safe routed bends without changing its end
   await dragNode(page, 'routing-target', 0, -180);
   await toggleConnectionStyle(page);
   const values = [];
-  for (const strength of [50, 200]) {
+  for (const strength of [50, 200, 1000]) {
     await changeCurveStrength(page, strength);
     await expect(route(page)).toHaveAttribute('d', /^M.* C/);
     await expectClearRoute(page);
