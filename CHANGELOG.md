@@ -739,6 +739,14 @@ fix(settings): default connection style to Orthogonal
 
 ```
 
+<!-- changelog-commit:2112bef19616cdcd5e8af741636fe767528b4a1e -->
+### Commit [`2112bef`](https://github.com/superhero/operations.superduper.solutions/commit/2112bef19616cdcd5e8af741636fe767528b4a1e)
+
+```text
+fix(workflow): separate opposing connection runs by six units
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
