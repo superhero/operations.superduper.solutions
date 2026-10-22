@@ -240,3 +240,6 @@ Feature: Browser operations workspace
 
   Scenario: Settings width controls responsive pane layout and survives reload
     Then resizing Settings changes when the catalog closes and Settings becomes fullscreen
+
+  Scenario: Narrowing a desktop window preserves node size
+    Then desktop viewport resizing keeps the workflow zoom and node dimensions unchanged

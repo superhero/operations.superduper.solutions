@@ -50,7 +50,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       return node.width > 0 && node.left >= bounds.left && node.right <= bounds.right &&
         node.top >= bounds.top && node.bottom <= bounds.bottom;
     });
-    if (!visible) await fitView({ padding: 0.25, minZoom: 0.25, maxZoom: 1, duration: 0 });
+    if (!visible) {
+      // Resizing may reveal a nearby node, but must never change the user's scale.
+      const area = visibleCanvasArea();
+      const center = { x: bounds.left + area.x + area.width / 2, y: bounds.top + area.y + area.height / 2 };
+      const nearest = [...canvas.querySelectorAll(".svelte-flow__node:not(.svelte-flow__node-data)")]
+        .map(element => element.getBoundingClientRect()).filter(node => node.width > 0 && node.height > 0)
+        .sort((a, b) => Math.hypot(a.x + a.width / 2 - center.x, a.y + a.height / 2 - center.y) -
+          Math.hypot(b.x + b.width / 2 - center.x, b.y + b.height / 2 - center.y))[0];
+      if (!nearest) return;
+      const viewport = getViewport();
+      await setViewport({ ...viewport, x: viewport.x + center.x - nearest.x - nearest.width / 2,
+        y: viewport.y + center.y - nearest.y - nearest.height / 2 }, { duration: 0 });
+    }
   }
 
   // Flex wrapping leaves the container at its width limit, even when no row fills it.
