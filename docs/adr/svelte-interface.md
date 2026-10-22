@@ -81,6 +81,8 @@ Window resizing preserves workflow zoom and node dimensions. If the smaller
 canvas hides every operation node, it pans to a nearby node at the current zoom;
 it does not automatically fit the whole graph. Explicit Zoom and Fit controls
 remain available. Viewport width alone does not select smaller node defaults.
+Fit View centers the graph in the uncovered canvas between the open panes,
+using their current widths and leaving room below the workflow toolbar.
 
 ## Settings and startup
 

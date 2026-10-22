@@ -8,7 +8,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { workflowLineStyleLabels, type WorkflowLineStyle } from "$lib/workflow-line-style.ts";
   import { defaultToolbarButtons, toolbarButtonGroups, type ToolbarButtons } from "$lib/toolbar-settings.ts";
   import { onMount, onDestroy, tick } from "svelte";
-  import { Controls, useSvelteFlow, useStore } from "@xyflow/svelte";
+  import { Controls, getViewportForBounds, useSvelteFlow, useStore } from "@xyflow/svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   let { buttons = defaultToolbarButtons, oncopy, oncut, onpaste, canPaste = false, canRun = false, canvas, active, settingsOpen = false, placing = false, navigationOpen, snap, curved, lineStyle, dashed, selected, onsnap, oncurved, ondashed, onremove, onnew, onopen, onexport, onimport, onbrowse, onutility, ondescribe, onrun, canUndo, canRedo, historyBusy, onundo, onredo, onhistory }:
@@ -19,7 +19,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       ondescribe: () => void; onrun: () => void; canRun?: boolean; canUndo: boolean; canRedo: boolean; historyBusy: boolean;
       onundo: () => void; onredo: () => void; onhistory: () => void } = $props();
   $effect(() => { void buttons; void tick().then(() => compactLayout?.()); });
-  const { fitView, getInternalNode, getNodes, getViewport, setViewport, zoomIn, zoomOut } = useSvelteFlow();
+  const { getInternalNode, getNodes, getNodesBounds, getViewport, setViewport, zoomIn, zoomOut } = useSvelteFlow();
   const store = useStore();
   const minZoomReached = $derived(store.viewport.zoom <= store.minZoom);
   const maxZoomReached = $derived(store.viewport.zoom >= store.maxZoom);
@@ -139,6 +139,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     return { x: left, y: top, width: Math.max(1, canvas!.clientWidth - left - right), height: Math.max(1, canvas!.clientHeight - top - 24) };
   }
 
+  async function fitVisibleCanvas() {
+    if (!await waitForLayout()) return;
+    const nodes = getNodes().filter(node => !node.hidden && node.measured?.width && node.measured.height);
+    if (!nodes.length) return;
+    const area = visibleCanvasArea();
+    const viewport = getViewportForBounds(getNodesBounds(nodes), area.width, area.height, store.minZoom, Math.min(1, store.maxZoom), 0.2);
+    await setViewport({ ...viewport, x: area.x + viewport.x, y: area.y + viewport.y });
+  }
+
   export function placementViewport() {
     const area = visibleCanvasArea(), viewport = getViewport();
     return { x: (area.x - viewport.x) / viewport.zoom, y: (area.y - viewport.y) / viewport.zoom,
@@ -223,7 +232,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if buttons.zoomOut}<HintButton class="svelte-flow__controls-button" aria-label={ariaLabels["controls.zoomOut.ariaLabel"]} label={ariaLabels["controls.zoomOut.ariaLabel"]}
       disabled={minZoomReached} onclick={() => { void zoomOut(); }}><MaterialIcon name="remove" size={18} /></HintButton>{/if}
     {#if buttons.fit}<HintButton class="svelte-flow__controls-button" aria-label={ariaLabels["controls.fitView.ariaLabel"]} label={ariaLabels["controls.fitView.ariaLabel"]}
-      onclick={() => { void fitView({ padding: 0.2, maxZoom: 1 }); }}><MaterialIcon name="fit_screen" size={18} /></HintButton>{/if}
+      onclick={() => { void fitVisibleCanvas(); }}><MaterialIcon name="fit_screen" size={18} /></HintButton>{/if}
     </div>
     {/if}
   {/snippet}
