@@ -257,7 +257,6 @@ function sharedLength(points, routes, edge, budget) {
       for (let j = 1; j < route.points.length; j++) {
         if (--budget.work < 0) return -Infinity;
         const c = route.points[j - 1], d = route.points[j];
-        if (directionOf(a, b) !== directionOf(c, d)) continue;
         if (Math.abs(c[across] - a[across]) >= EPSILON || Math.abs(d[across] - a[across]) >= EPSILON) continue;
         const start = Math.max(Math.min(a[axis], b[axis]), Math.min(c[axis], d[axis]));
         const end = Math.min(Math.max(a[axis], b[axis]), Math.max(c[axis], d[axis]));
@@ -291,7 +290,7 @@ function alignSegments(edge, nodes, routes, original, options, budget) {
       for (let j = 1; j < route.points.length; j++) {
         if (--budget.work < 0) return current;
         const c = route.points[j - 1], d = route.points[j];
-        if (directionOf(a, b) === directionOf(c, d) && Math.abs(c[across] - d[across]) < EPSILON && Math.abs(c[across] - a[across]) > EPSILON &&
+        if (Math.abs(c[across] - d[across]) < EPSILON && Math.abs(c[across] - a[across]) > EPSILON &&
             Math.min(Math.max(a[axis], b[axis]), Math.max(c[axis], d[axis])) >
             Math.max(Math.min(a[axis], b[axis]), Math.min(c[axis], d[axis])) + EPSILON) coordinates.add(c[across]);
       }
@@ -313,42 +312,6 @@ function alignSegments(edge, nodes, routes, original, options, budget) {
       best = result(points); bestShared = candidateShared; bestCrossings = candidateCrossings;
     }
     current = best; shared = bestShared; crossings = bestCrossings;
-  }
-  return current;
-}
-
-// Opposing traffic gets separate lanes; equal-direction runs still share a line.
-// Only slide interior segments, keeping ports, authored routes and clearance intact.
-function separateOpposing(edge, nodes, routes, original, options, budget) {
-  if (original.status !== 'routed' || original.manualState === 'applied' || original.points.length < 4 || !routes.length || budget.work <= 0) return original;
-  let current = original;
-  const gap = 6, padded = rectangles(nodes, options.nodePadding, edge);
-  const boxes = clearRoute(current.points, padded, edge, budget) ? padded : terminalRectangles(nodes, options.nodePadding, edge);
-  for (let i = 1; i < current.points.length - 2 && budget.work > 0; i++) {
-    const a = current.points[i], b = current.points[i + 1], horizontal = a.y === b.y;
-    const axis = horizontal ? 'x' : 'y', across = horizontal ? 'y' : 'x';
-    const direction = directionOf(a, b), offset = direction === 0 || direction === 1 ? -gap : gap;
-    let coordinate = a[across];
-    for (const route of routes) {
-      if (route.id === edge.id) continue;
-      for (let j = 1; j < route.points.length; j++) {
-        if (--budget.work < 0) return current;
-        const c = route.points[j - 1], d = route.points[j];
-        if (directionOf(c, d) !== (direction + 2) % 4 ||
-            Math.abs(c[across] - a[across]) >= gap - EPSILON ||
-            Math.min(Math.max(a[axis], b[axis]), Math.max(c[axis], d[axis])) <=
-              Math.max(Math.min(a[axis], b[axis]), Math.min(c[axis], d[axis])) + EPSILON) continue;
-        coordinate = offset < 0 ? Math.min(coordinate, c[across] + offset) : Math.max(coordinate, c[across] + offset);
-      }
-    }
-    if (Math.abs(coordinate - a[across]) < EPSILON) continue;
-    const points = current.points.map((point, index) => index === i || index === i + 1 ? { ...point, [across]: coordinate } : point);
-    // A short neighbouring leg must not reverse direction or collapse a port stem.
-    if (points.some((point, index) => index && (same(points[index - 1], point) ||
-        directionOf(points[index - 1], point) !== directionOf(current.points[index - 1], current.points[index]))) ||
-        !clearRoute(points, boxes, edge, budget)) continue;
-    const before = crossingCount(current.points, routes, edge, budget), after = crossingCount(points, routes, edge, budget);
-    if (budget.work > 0 && after <= before) current = result(points);
   }
   return current;
 }
@@ -390,12 +353,6 @@ export function routeEdges({ nodes, edges }, options = {}) {
   }
   for (const edge of sorted) if (edge.manualRoute !== undefined && !output.get(edge.id).manualState)
     output.set(edge.id, { ...output.get(edge.id), manualState: 'suspended' });
-  for (const edge of sorted.slice(0, config.maxRoutedEdges)) {
-    if (budget.work <= 0) break;
-    const routes = sorted.map(other => ({ ...other, points: output.get(other.id).points }));
-    const original = output.get(edge.id);
-    output.set(edge.id, { ...original, ...separateOpposing(edge, obstacles, routes, original, config, budget) });
-  }
   return output;
 }
 
@@ -406,7 +363,6 @@ export function routeConnection(edge, nodes, existingRoutes = [], options = {}) 
   if (manual) return manual;
   const routes = existingRoutes.map((route) => ({ ...route, points: simplify(route.points) })).sort(compareId);
   const routed = improve(edge, obstacles, routes, baseline(edge, obstacles, config, budget), config, budget);
-  const aligned = alignSegments(edge, obstacles, routes, routed, config, budget);
-  const output = separateOpposing(edge, obstacles, routes, aligned, config, budget);
+  const output = alignSegments(edge, obstacles, routes, routed, config, budget);
   return edge.manualRoute !== undefined ? { ...output, manualState: 'suspended' } : output;
 }
