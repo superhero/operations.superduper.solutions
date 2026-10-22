@@ -107,9 +107,11 @@ and Close controls; desktop arrow keys and the delayed hover highlight remain.
 Compact panes replace the X with a visible, accessible dismissal grip. Navigation
 swipes left and Settings swipes right, following the finger while moving. Short,
 wrong-direction, vertical and cancelled gestures do not dismiss. Only the grip
-handles swipes; normal content remains scrollable. Tap or keyboard activation of
-the same grip also closes the pane. Navigation restores its scroll position when
-reopened. Width-based layout does not react to a keyboard-only height change.
+handles swipes; its header sits outside the scroll area so it cannot cover the
+search field or catalog rows. Normal content remains scrollable. Tap or keyboard
+activation of the same grip also closes the pane. Navigation restores its scroll
+position when reopened. Width-based layout does not react to a keyboard-only
+height change.
 
 ### Storage and recovery
 
