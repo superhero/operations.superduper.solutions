@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { categoryLabel } from '../../src/lib/category-label.ts';
 import assert from "node:assert/strict";
 import { When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
@@ -252,8 +253,8 @@ Then("the operation report describes the demo Example POST body source and input
   await expect(estimate.getByRole("cell").nth(1)).toHaveText("number");
   const groups = report.getByRole("region", { name: "Operation grouping", exact: true }).getByRole("listitem");
   await expect(groups).toHaveCount(2);
-  await expect(fact(groups.nth(0), "Name")).toHaveText(exampleCatalog.name);
-  await expect(fact(groups.nth(1), "Name")).toHaveText("Request examples");
+  await expect(fact(groups.nth(0), "Name")).toHaveText(categoryLabel(exampleCatalog.name));
+  await expect(fact(groups.nth(1), "Name")).toHaveText("Request Examples");
   await expect(report.locator('summary[aria-label="OpenAPI schema"]')).toHaveAttribute("aria-expanded", "false");
 });
 
@@ -275,8 +276,8 @@ Then("changing the reported operation resets its schema view and run inputs", as
   await expect(this.page.getByRole("region", { name: "Operation OpenAPI JSON", exact: true })).toHaveCount(0);
   const groups = report.getByRole("region", { name: "Operation grouping", exact: true }).getByRole("listitem");
   await expect(groups).toHaveCount(2);
-  await expect(fact(groups.nth(0), "Name")).toHaveText(exampleCatalog.name);
-  await expect(fact(groups.nth(1), "Name")).toHaveText("Response examples");
+  await expect(fact(groups.nth(0), "Name")).toHaveText(categoryLabel(exampleCatalog.name));
+  await expect(fact(groups.nth(1), "Name")).toHaveText("Response Examples");
   await report.locator('summary[aria-label="OpenAPI schema"]').click();
   const schema = this.page.getByRole("region", { name: "Operation OpenAPI JSON", exact: true });
   await expect(schema).toContainText('"/projects/{projectId}"');
@@ -300,8 +301,8 @@ Then("changing the reported operation resets its schema view and run inputs", as
     ["priority", "No"], ["profile", "No"], ["tags", "No"], ["note", "No"]
   ] });
   const liveGroups = liveReport.getByRole("region", { name: "Operation grouping", exact: true }).getByRole("listitem");
-  await expect(fact(liveGroups.nth(0), "Name")).toHaveText(liveCatalog.name);
-  await expect(fact(liveGroups.nth(1), "Name")).toHaveText("Body formats");
+  await expect(fact(liveGroups.nth(0), "Name")).toHaveText(categoryLabel(liveCatalog.name));
+  await expect(fact(liveGroups.nth(1), "Name")).toHaveText("Body Formats");
   await expect(liveReport.locator('summary[aria-label="OpenAPI schema"]')).toHaveAttribute("aria-expanded", "false");
   await chooseCatalogOperation(this.page, "Example POST body");
   await expect(await field(this.page, "Path value")).toHaveValue("");

@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { categoryLabel } from '../../src/lib/category-label.ts';
 import { expect } from '@playwright/test';
 
 /** Follow literal resource headings without expanding unrelated branches. */
@@ -14,7 +15,7 @@ export async function catalogResourcePath(page, groupId, resources, rootId) {
   await open(branch.locator(':scope > .catalog-group > summary'));
   for (const resource of resources) {
     const heading = branch.locator(':scope > .catalog-group > .disclosure-panel > .catalog-children > .catalog-branch > .catalog-group > summary')
-      .filter({ has: page.getByText(resource, { exact: true }) });
+      .filter({ has: page.getByText(categoryLabel(resource), { exact: true }) });
     await expect(heading).toBeVisible();
     await open(heading);
     branch = heading.locator('xpath=../..');
@@ -30,7 +31,7 @@ export async function catalogSchemaHeading(page, name) {
     const heading = scope.locator([
       ':scope > .catalog-reorder > .catalog-branch > .catalog-group > summary',
       ':scope > .catalog-group > .disclosure-panel > .catalog-children > .catalog-branch > .catalog-group > summary',
-    ].join(', ')).filter({ has: page.getByText(parts[index], { exact: true }) });
+    ].join(', ')).filter({ has: page.getByText(categoryLabel(parts[index]), { exact: true }) });
     await expect(heading).toBeVisible();
     if (index === parts.length - 1) return heading;
     if (await heading.getAttribute('aria-expanded') !== 'true') await heading.press('Enter');

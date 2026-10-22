@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { categoryLabel } from '../../src/lib/category-label.ts';
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
@@ -136,7 +137,7 @@ Then('saved {string} examples update their labels and keep saved workflows', asy
     await expect((await revealCatalogOperation(page, name)).getByRole('button', { name: `Add to workflow: ${name}`, exact: true })).toBeVisible();
   const catalog = page.getByRole('navigation', { name: 'Operation catalog', exact: true });
   for (const name of ['List projects', 'Get project', 'Create task', 'Update task'])
-    await expect(catalog.getByText(name, { exact: true })).toHaveCount(0);
+    await expect(catalog.getByText(categoryLabel(name), { exact: true })).toHaveCount(0);
   await page.reload();
   await setMode(page, 'workflow');
   const repeated = await savedExampleState(page);
@@ -166,7 +167,7 @@ Then("both example catalogs prepare typed query and header values", async functi
   await openCatalog(page);
   const catalog = page.getByRole("navigation", { name: "Operation catalog", exact: true });
   for (const name of ["example.com", "httpbin.org"])
-    await expect(catalog.getByText(name, { exact: true })).toBeVisible();
+    await expect(catalog.getByText(categoryLabel(name), { exact: true })).toBeVisible();
   await expect(page.getByText("Demo catalog · 4 operations", { exact: true })).toHaveCount(0);
   await chooseCatalogOperation(page, "HTTPBin query and header inputs");
   for (const [label, value] of Object.entries({ "Sample ID": "space / value", Label: "blue", Count: "3", Ratio: "0.5",

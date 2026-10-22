@@ -10,6 +10,7 @@
   import CatalogHelp from "./CatalogHelp.svelte";
   import { catalogs, type CatalogGroup } from "$lib/catalog-registry.ts";
   import { catalogHierarchy } from "$lib/catalog-hierarchy.ts";
+  import { categoryLabel } from "$lib/category-label.ts";
   import { operationNavigation, operationResourceGroups, navigationOperations } from "$lib/operation-navigation.ts";
   import { evaluateOperationsAsync } from "$lib/operation-matching-client.ts";
   import type { OperationMatch } from "$lib/matching.ts";
@@ -215,13 +216,14 @@
 {/snippet}
 
 {#snippet branch(group: CatalogGroup, depth: number, parentOpen: boolean, parents: string[] = [])}
+  {@const name = categoryLabel(group.name)}
   {@const count = groupCount(group)}
   {@const path = [...parents, group.id]}
   {@const expanded = parentOpen && (matchingIds ? (searchExpansion[JSON.stringify(path)] ?? groupCount(group, true) > 0) : catalogPath[depth] === group.id)}
   {#if groupCount(group, true) > 0}
     <div class="catalog-branch tree-branch" data-catalog-group={group.id}>
-      <Disclosure lazy class="catalog-group" label={`${group.name} group, ${count} operations`} tooltipEnabled={false} open={expanded} onToggle={(next) => toggleGroup(depth, path, next)}>
-        {#snippet summary()}<span class="catalog-name">{group.name}</span><span class="catalog-count" aria-label={`${count} operations`}><span class="catalog-count-value">{count}</span></span><MaterialIcon name="chevron_forward" size={17} />{/snippet}
+      <Disclosure lazy class="catalog-group" label={`${name} group, ${count} operations`} tooltipEnabled={false} open={expanded} onToggle={(next) => toggleGroup(depth, path, next)}>
+        {#snippet summary()}<span class="catalog-name">{name}</span><span class="catalog-count" aria-label={`${count} operations`}><span class="catalog-count-value">{count}</span></span><MaterialIcon name="chevron_forward" size={17} />{/snippet}
         {#if group.children?.length}
           <div class="catalog-children tree-children">
             {#each group.children as child (child.id)}{@render branch(child, depth + 1, expanded, path)}{/each}

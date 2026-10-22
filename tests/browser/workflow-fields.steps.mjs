@@ -169,7 +169,7 @@ Then("Example array response exposes its query parameters and nested project res
   await expect(projectId.locator(".required")).toHaveText("*");
   await expect(workflow(this.page).locator('.svelte-flow__node[title], .svelte-flow__node [title]')).toHaveCount(0);
   await expectHoverHint(operationNodes(this.page, 'Example array response').locator('.operation-title-row strong'),
-    'example.com / Response examples / projects / Example array response');
+    'Example.Com / Response Examples / Projects / Example array response');
   await expectNoHeaderHint(nested.locator('.data-title strong'));
   await expectHoverHint(projectId, /arbitrary string used in the example schema[\s\S]*Required/);
   await expectHoverHint(projectId.locator('.required'), 'Required');
