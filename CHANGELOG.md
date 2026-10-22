@@ -1046,6 +1046,14 @@ coverage and artifact provenance requirements.
 
 ```
 
+<!-- changelog-commit:4cbdcddd4882641491c36ae1ed3f6d43a224e8f0 -->
+### Commit [`4cbdcdd`](https://github.com/superhero/operations.superduper.solutions/commit/4cbdcddd4882641491c36ae1ed3f6d43a224e8f0)
+
+```text
+docs(ci): ground incremental validation in execution measurements
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
