@@ -9,6 +9,18 @@ import { createIntegerScale } from "./lib/integer-scale.ts";
 const lowest = Number.MIN_SAFE_INTEGER;
 const highest = Number.MAX_SAFE_INTEGER;
 
+Then("logarithmic integer scales span zero through one thousand with fine low-value adjustments", () => {
+  const scale = createIntegerScale({ minimum: 0, maximum: 1000 }, true);
+  assert.deepEqual([0, 0.25, 0.5, 0.75, 1].map(position => scale.value(position)), [0, 5, 31, 177, 1000]);
+  assert.equal(scale.position(0), 0);
+  assert.equal(scale.position(1000), 1);
+  assert.equal(scale.value(-Infinity), 0);
+  assert.equal(scale.value(Infinity), 1000);
+  for (let value = 0; value <= 1000; value++) assert.equal(scale.value(scale.position(value)), value);
+  const values = Array.from({ length: 1001 }, (_, index) => scale.value(index / 1000));
+  assert.ok(values.every((value, index) => Number.isSafeInteger(value) && value >= 0 && value <= 1000 && (!index || value >= values[index - 1])));
+});
+
 Then("logarithmic integer scales preserve zero negatives and exact safe endpoints", function () {
   const scale = createIntegerScale();
   assert.equal(scale.minimum, lowest);

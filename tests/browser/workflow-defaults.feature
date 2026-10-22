@@ -33,6 +33,14 @@ Feature: Browser-local workflow defaults
   Scenario: Grid size slider preserves bounds and changes values faster near the center
     Then the grid size slider supports exact keys and saves its nonlinear pointer value across reload
 
+  Scenario Outline: Curve strength offers logarithmic control up to 1000 percent
+    Then curve strength supports logarithmic pointer control and exact values through 1000 at width <width>
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
   Scenario: Saved node clearance is normalized independently from other workflow defaults
     Then saved node clearance missing normalizes to 16 after reload without changing other defaults
     And saved node clearance 0 normalizes to 0 after reload without changing other defaults

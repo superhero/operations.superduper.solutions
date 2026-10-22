@@ -141,8 +141,9 @@ Supply a client with
 resolver. `RoutedConnection` draws the raw pointer; the host draws the faint
 resolved target with the same `previewPath` geometry. Both previews prefer the
 shared checked route; a supplied curve function is only a temporary fallback.
-The application keeps its configurable curve strength
-and stricter live-handle eligibility checks.
+The application keeps its configurable curve strength (0–1000%, default 100%)
+with a logarithmic Settings slider and exact whole-percent entry, and stricter
+live-handle eligibility checks.
 
 Supply `onroutechange(id, points)` to persist completed adjustments; `undefined`
 points reset the edge. The host's `editable` flag disables segment controls when

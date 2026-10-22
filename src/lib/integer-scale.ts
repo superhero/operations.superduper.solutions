@@ -17,14 +17,14 @@ const clamp = (value: number, minimum: number, maximum: number) => Math.min(maxi
 const signedLog = (value: number) => Math.sign(value) * Math.log1p(Math.abs(value));
 const signedExp = (value: number) => Math.sign(value) * Math.expm1(Math.abs(value));
 
-export function createIntegerScale(bounds: IntegerBounds = {}): IntegerScale
+export function createIntegerScale(bounds: IntegerBounds = {}, logarithmic = false): IntegerScale
 {
   const lower = Math.ceil(bounds.minimum === undefined || Number.isNaN(bounds.minimum) ? lowest : bounds.minimum);
   const upper = Math.floor(bounds.maximum === undefined || Number.isNaN(bounds.maximum) ? highest : bounds.maximum);
   const minimum = clamp(lower, lowest, highest);
   const maximum = clamp(upper, lowest, highest);
   const empty = lower > upper || lower > highest || upper < lowest;
-  const bounded = bounds.maximum !== undefined && !Number.isNaN(bounds.maximum);
+  const centered = !logarithmic && bounds.maximum !== undefined && !Number.isNaN(bounds.maximum);
   // Halving before addition keeps the midpoint safe across the entire signed domain.
   const middle = minimum / 2 + maximum / 2;
   const left = middle - minimum;
@@ -46,7 +46,7 @@ export function createIntegerScale(bounds: IntegerBounds = {}): IntegerScale
       const current = integer(Number.isNaN(value) ? 0 : value);
       if (current === minimum) return 0;
       if (current === maximum) return 1;
-      if (!bounded) return clamp(minimum >= 0
+      if (!centered) return clamp(minimum >= 0
         ? Math.log1p((current - minimum) / (minimum + 1)) / positiveSpan
         : (signedLog(current) - start) / span, 0, 1);
       const distance = current - middle;
@@ -60,7 +60,7 @@ export function createIntegerScale(bounds: IntegerBounds = {}): IntegerScale
       const current = clamp(Number.isNaN(position) ? 0.5 : position, 0, 1);
       if (current === 0) return minimum;
       if (current === 1) return maximum;
-      if (!bounded) return integer(minimum >= 0
+      if (!centered) return integer(minimum >= 0
         ? minimum + (minimum + 1) * Math.expm1(current * positiveSpan)
         : signedExp(start + current * span));
       // Values change fastest around the midpoint, slowing toward either end.

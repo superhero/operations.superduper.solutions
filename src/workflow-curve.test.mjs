@@ -33,6 +33,7 @@ Then('backward workflow connections bow out farther with increased curve strengt
   const points = { sourceX: 0, sourceY: 0, sourcePosition: 'right', targetX: -100, targetY: 100, targetPosition: 'left' };
   assert.deepEqual(workflowCurve(points, 50), ['M0,0 C62.5,0 -162.5,100 -100,100', -50, 50]);
   assert.deepEqual(workflowCurve(points, 100), ['M0,0 C125,0 -225,100 -100,100', -50, 50]);
+  assert.deepEqual(workflowCurve(points, 1000), ['M0,0 C1250,0 -1350,100 -100,100', -50, 50]);
 });
 
 const cubics = path => {
@@ -56,7 +57,7 @@ Then('curved routing keeps assertion return paths outside nodes at every strengt
     edge('keep', 'assert', 'filter', 800, 258, 40, 238), edge('remove', 'assert', 'filter', 800, 290, 40, 270)];
   const routes = routeEdges({ nodes, edges }, { nodePadding: 16 });
   const before = structuredClone([...routes]);
-  for (const style of ['filleted', 'bezier', 'clutter']) for (const strength of [0, 50, 100, 200]) for (const link of edges) {
+  for (const style of ['filleted', 'bezier', 'clutter']) for (const strength of [0, 50, 100, 200, 1000]) for (const link of edges) {
     const route = routes.get(link.id);
     assert.equal(route.status, 'routed');
     const result = bezierDrawing(route, link, strength, nodes.map(node => ({ ...node, x: node.x - 16, y: node.y - 16, width: node.width + 32, height: node.height + 32 })), false, style);

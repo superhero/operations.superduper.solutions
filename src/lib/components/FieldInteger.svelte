@@ -8,14 +8,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { createIntegerScale } from "$lib/integer-scale.ts";
 
   let { id, label, value, minimum, maximum, options, required = false, disabled = false, invalid = false,
-    describedBy, valueText, showValue = true, stepped = false, onValueChange, onValueCommit }:
+    describedBy, valueText, showValue = true, stepped = false, logarithmic = false, onValueChange, onValueCommit }:
     { id: string; label: string; value: string; minimum?: number | undefined; maximum?: number | undefined; options?: number[] | undefined;
-      required?: boolean; disabled?: boolean; invalid?: boolean; describedBy?: string | undefined; valueText?: string; showValue?: boolean; stepped?: boolean;
+      required?: boolean; disabled?: boolean; invalid?: boolean; describedBy?: string | undefined; valueText?: string; showValue?: boolean; stepped?: boolean; logarithmic?: boolean;
       onValueChange: (value: string) => void; onValueCommit?: () => void } = $props();
 
   const allowed = $derived(options ? [...new Set(options)].filter(number => Number.isSafeInteger(number)
     && (minimum === undefined || number >= minimum) && (maximum === undefined || number <= maximum)).sort((a, b) => a - b) : undefined);
-  const scale = $derived(createIntegerScale({ minimum: allowed?.[0] ?? minimum, maximum: allowed?.at(-1) ?? maximum }));
+  const scale = $derived(createIntegerScale({ minimum: allowed?.[0] ?? minimum, maximum: allowed?.at(-1) ?? maximum }, logarithmic));
   const unavailable = $derived(scale.empty || allowed?.length === 0);
   const number = $derived(Number(value));
   const unset = $derived(value.trim() === "");
