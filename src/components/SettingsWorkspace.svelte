@@ -257,12 +257,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                       const lineStyle = workflowLineStyles[Number(value)]!;
                       if (lineStyle !== workflowDefaults.lineStyle) onWorkflowDefaultsChange({ ...workflowDefaults, lineStyle, curved: lineStyle !== "orthogonal" });
                     }} />
-                  <div class="line-style-labels">
-                    {#each workflowLineStyles as lineStyle}
-                      <button type="button" aria-pressed={selectedStyle === lineStyle}
-                        onclick={() => onWorkflowDefaultsChange({ ...workflowDefaults, lineStyle, curved: lineStyle !== "orthogonal" })}>{workflowLineStyleLabels[lineStyle]}</button>
-                    {/each}
-                  </div>
+                  <span class="line-style-value" aria-hidden="true">{workflowLineStyleLabels[selectedStyle]}</span>
                 </div>
                   <div class="grid-size-setting">
                     <span>Curve strength</span>
@@ -495,9 +490,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <style>
   .line-style-setting { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .line-style-setting > label { padding: 10px 12px 0; }
-  .line-style-labels { display: flex; justify-content: space-between; gap: 4px; padding: 0 10px 8px; }
-  .line-style-labels button { padding: 4px 2px; min-width: 0; background: transparent; color: inherit; font: inherit; font-size: 0.85em; }
-  .line-style-labels button[aria-pressed="true"] { color: var(--color-primary); font-weight: 700; }
+  .line-style-value { display: block; padding: 4px 12px 12px; text-align: center; font-size: 0.85em; color: var(--color-primary); font-weight: 700; }
 
   .storage-building { margin: 0; padding: 12px 16px 16px; font-size: 12px; font-weight: 700; color: var(--color-catalog-active-foreground); text-align: center; }
   .browser-content { position: relative; }

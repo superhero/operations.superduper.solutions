@@ -209,15 +209,34 @@ Then('the five connection styles retain their geometry and saved preference', as
     const application = page.locator('summary[aria-label="Application"]');
     if (await application.getAttribute('aria-expanded') !== 'true') await application.click();
     const slider = page.getByRole('slider', { name: 'Connection style', exact: true });
+    const control = page.locator('.line-style-setting'), ticks = control.locator('.integer-tick');
     await expect(slider).toHaveAttribute('aria-valuemin', '0');
     await expect(slider).toHaveAttribute('aria-valuemax', String(maximum));
     await expect(slider).toHaveAttribute('step', String(1 / maximum));
+    await expect(ticks).toHaveCount(workflowLineStyles.length);
+    for (const tick of await ticks.all()) await expect(tick).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Connection style value', exact: true })).toHaveCount(0);
     await chooseSettingsLineStyle(page, style);
     await slider.press('Home');
     const bounds = await slider.boundingBox();
-    await slider.click({ position: { x: 8 + (bounds.width - 16) * index / maximum, y: bounds.height / 2 } });
+    const fraction = (index + (index === maximum ? -0.3 : 0.3)) / maximum;
+    await page.mouse.move(bounds.x + 7, bounds.y + bounds.height / 2);
+    await page.mouse.down();
+    try {
+      await page.mouse.move(bounds.x + 7 + (bounds.width - 14) * fraction, bounds.y + bounds.height / 2, { steps: 4 });
+      assert.equal(await slider.evaluate(element => element.valueAsNumber), index / maximum, 'Dragging between ticks must snap the thumb to the nearest stop.');
+    } finally { await page.mouse.up(); }
     await expect(slider).toHaveAttribute('aria-valuetext', workflowLineStyleLabels[style]);
+    await expect(control).toHaveText(new RegExp(`^\\s*Connection style\\s*${workflowLineStyleLabels[style]}\\s*$`));
+    const alignment = await control.evaluate(element => {
+      const input = element.querySelector('input[type="range"]'), tick = element.querySelector('.integer-tick.active');
+      const inputBox = input.getBoundingClientRect(), tickBox = tick.getBoundingClientRect();
+      const thumbX = inputBox.x + (7 + (input.clientWidth - 14) * input.valueAsNumber) * inputBox.width / input.clientWidth;
+      const text = document.createRange(); text.selectNodeContents(element.querySelector('.line-style-value'));
+      const textBox = text.getBoundingClientRect(), box = element.getBoundingClientRect();
+      return { tick: Math.abs(tickBox.x + tickBox.width / 2 - thumbX), text: Math.abs(textBox.x + textBox.width / 2 - box.x - box.width / 2) };
+    });
+    assert.ok(alignment.tick < 1 && alignment.text < 1, `Ticks must align with the snapped thumb and the sole label must be centered: ${JSON.stringify(alignment)}.`);
     if (style === 'flowing') {
       await mkdir(this.artifactDirectory, { recursive: true });
       await page.screenshot({ path: `${this.artifactDirectory}/five-style-slider.png` });

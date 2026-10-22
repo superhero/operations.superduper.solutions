@@ -42,7 +42,9 @@ are independent of Svelte, XYFlow, and browser globals.
 
 Settings exposes five discrete **Connection style** slider stops: **Orthogonal**,
 **Filleted**, **Bézier**, **Clutter**, and **Flowing**. The toolbar cycles through
-those same choices for the current workflow. The optional `lineStyle` preference persists
+those same choices for the current workflow. The slider snaps to marked ticks
+and shows only the selected style's name, centered below the track.
+The optional `lineStyle` preference persists
 in settings and workflow documents; legacy `curved` flags retain Orthogonal
 (`false`) or Filleted (`true`). Display changes do not create workflow revisions.
 
