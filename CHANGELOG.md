@@ -1104,6 +1104,46 @@ test(workflows): settle pane transitions before fitting the view
 
 ```
 
+<!-- changelog-commit:0cfe17f43d3f682a35950310759f3971c6ea88e2 -->
+### Commit [`0cfe17f`](https://github.com/superhero/operations.superduper.solutions/commit/0cfe17f43d3f682a35950310759f3971c6ea88e2)
+
+```text
+fix(ci): retain the artifact SDK digest prefix
+
+```
+
+<!-- changelog-commit:b78f5054569366f62464c4bd90e2b4e2413952fe -->
+### Commit [`b78f505`](https://github.com/superhero/operations.superduper.solutions/commit/b78f5054569366f62464c4bd90e2b4e2413952fe)
+
+```text
+test(workflows): await the history drag target
+
+```
+
+<!-- changelog-commit:e3a37f1ad057fdef0a8d20280621d8dde62fe20a -->
+### Commit [`e3a37f1`](https://github.com/superhero/operations.superduper.solutions/commit/e3a37f1ad057fdef0a8d20280621d8dde62fe20a)
+
+```text
+test(panes): wait for startup before keyboard resizing
+
+```
+
+<!-- changelog-commit:f952943266372d626e441efdc03cc5fc72e2e9e2 -->
+### Commit [`f952943`](https://github.com/superhero/operations.superduper.solutions/commit/f952943266372d626e441efdc03cc5fc72e2e9e2)
+
+```text
+test(tooltips): keep keyboard targets visible before focus
+
+```
+
+<!-- changelog-commit:9d70c422a18e9221d37d7fafbc39cc1e05f517d0 -->
+### Commit [`9d70c42`](https://github.com/superhero/operations.superduper.solutions/commit/9d70c422a18e9221d37d7fafbc39cc1e05f517d0)
+
+```text
+test(reports): await startup before restored searches
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
