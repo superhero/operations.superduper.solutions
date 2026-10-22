@@ -176,7 +176,9 @@ Then("Example array response exposes its query parameters and nested project res
   assert.ok(await projectId.evaluate(element => element.tabIndex < 0), 'Field hints must preserve the native node tab order.');
   assert.ok(await projectId.locator('.required').evaluate(element => element.tabIndex < 0), 'Required markers must not add tab stops.');
   await expect(projectId.getByLabel("Path value output", { exact: true })).toHaveClass(/connectablestart/);
-  await expect(response.locator('[data-handleid="value"]')).toHaveAttribute("aria-disabled", "true");
+  await expect(response.locator('[data-handleid="value"]')).toHaveAttribute("aria-disabled", "false");
+  await expect(response.locator('[data-handleid="value"]')).toHaveClass(/\bconnectableend\b/);
+  await expect(response.locator('[data-handleid="value"]')).not.toHaveClass(/\bconnectablestart\b/);
   await expect(operationNodes(this.page, "Example array response").locator(".owner-port")).toHaveCount(2);
   await expectOwnerLayout(operationNodes(this.page, "Example array response"), ['Query'], ['200']);
   await expect(connections(this.page)).toHaveCount(0);
@@ -196,8 +198,10 @@ Then("Example POST body separates required path and request-body fields", async 
   const ports = operationNodes(this.page, "Example POST body").locator(".owner-port");
   await expect(ports).toHaveCount(3);
   for (const port of await ports.all()) {
-    await expect(port).toHaveAttribute("aria-disabled", "true");
-    await expect(port).not.toHaveClass(/connectablestart|connectableend/);
+    const input = await port.getAttribute('data-handlepos') === 'left';
+    await expect(port).toHaveAttribute("aria-disabled", "false");
+    await expect(port).toHaveClass(input ? /\bconnectableend\b/ : /\bconnectablestart\b/);
+    await expect(port).not.toHaveClass(input ? /\bconnectablestart\b/ : /\bconnectableend\b/);
   }
   await expectOwnerLayout(operationNodes(this.page, "Example POST body"), ['Path', 'Body'], ['201']);
 });
