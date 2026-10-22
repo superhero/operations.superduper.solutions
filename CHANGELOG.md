@@ -884,6 +884,16 @@ Keep navigation and Settings open independently from 1720px, reserving room for 
 
 ```
 
+<!-- changelog-commit:67710658384103f7bdbc8cfcc93ea83a06252b51 -->
+### Commit [`6771065`](https://github.com/superhero/operations.superduper.solutions/commit/67710658384103f7bdbc8cfcc93ea83a06252b51)
+
+```text
+feat(settings): resize the pane and adapt layout to its width
+
+Add a pointer and keyboard accessible left-edge splitter with a saved preferred width. Compare the selected width with the current viewport to decide whether both side panes fit and when Settings must fill the screen. Restore the preferred width when space returns, retain existing mobile behavior, and keep pane dimensions outside workflow documents.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
