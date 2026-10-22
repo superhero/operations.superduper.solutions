@@ -638,6 +638,22 @@ historical geometry, five-stop persistence and preview-to-edge handoff.
 
 ```
 
+<!-- changelog-commit:43aac879863d7d2219a4ccc1258d5c51d0723c1d -->
+### Commit [`43aac87`](https://github.com/superhero/operations.superduper.solutions/commit/43aac879863d7d2219a4ccc1258d5c51d0723c1d)
+
+```text
+feat(settings): extend curve strength with logarithmic control
+
+Allow whole-percent curve strengths from zero through 1000 and use a
+logarithmic slider for finer pointer control at low values. Keep exact
+entry and keyboard steps, and preserve the default strength of 100.
+
+Reuse the integer scale's logarithmic mapping with a zero-inclusive
+offset. Verify saved settings, native pointer input and routed geometry
+at the expanded limit.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
