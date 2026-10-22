@@ -760,6 +760,14 @@ lane spacing after this cleanup.
 
 ```
 
+<!-- changelog-commit:2bc63afdf4d30f3e172b6e25150053e235e439a2 -->
+### Commit [`2bc63af`](https://github.com/superhero/operations.superduper.solutions/commit/2bc63afdf4d30f3e172b6e25150053e235e439a2)
+
+```text
+fix(workflow): share clearance between facing response terminals
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
