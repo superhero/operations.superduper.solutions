@@ -61,6 +61,10 @@ Then('workflow shortcut preferences persist, prevent conflicts and preserve text
   await workflow(page).focus();
   await page.keyboard.press('Control+u');
   await expect(workflow(page).locator('.svelte-flow__node-comment')).toHaveCount(0);
+  // Hydration removes the comment before the history checkout finishes.
+  // Wait for the visible control and restored focus before the next shortcut.
+  await expect(workflow(page).getByRole('button', { name: 'Redo', exact: true })).toBeEnabled();
+  await expect(workflow(page)).toBeFocused();
   await page.keyboard.press('Control+Shift+r');
   await expect(workflow(page).locator('.svelte-flow__node-comment')).toHaveCount(1);
   await workflow(page).focus();
