@@ -142,7 +142,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <div {...hintProps} class="data-field" class:deferred={!field.connectable} data-field-id={field.id}>
               {#if field.connectable || branch}
                 <Handle id={field.id} type={input ? "target" : "source"} {position}
-                  style={branch?.hidden && (input || !field.connectable) ? "visibility: hidden" : undefined}
                   isConnectable={field.connectable} isConnectableStart={field.connectable && !input}
                   isConnectableEnd={field.connectable && input && !connected} aria-disabled={!field.connectable || connected}
                   aria-label={`${field.label} ${input ? "input" : "output"}`} />

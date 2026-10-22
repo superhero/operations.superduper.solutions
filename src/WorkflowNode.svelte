@@ -71,7 +71,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <span class="port-label">{#if input}{label}{:else}<span class="port-code">{separator < 0 ? label : label.slice(0, separator)}</span>{separator < 0 ? "" : label.slice(separator)}{/if}</span>
             <span class="port-type">Object</span>
             <Handle id={branch.id} type={input ? "target" : "source"} {position}
-              class="owner-port" style={`visibility: ${branch.hidden ? "hidden" : "visible"}`}
+              class="owner-port"
               isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
               onmousedown={blockPointer} ontouchstart={blockPointer}
               aria-disabled="true" aria-label={`${branch.label} ${input ? "input" : "output"}`} />
