@@ -4,6 +4,7 @@
 
 import type { CastData, SwitchGate, WorkflowDocument, WorkflowDocumentEdge, WorkflowDocumentNode, WorkflowField } from "./workflow-document.ts";
 
+import { hasInputLink } from "./workflow-input-links.ts";
 import { fileValueType } from "./workflow-file.ts";
 import { numericValue } from "./workflow-cast.ts";
 export { numericValue, castValue } from "./workflow-cast.ts";
@@ -153,7 +154,7 @@ export function adaptRoutingGates(nodes: WorkflowDocumentNode[], edges: Workflow
 export function workflowInputConnected(targetId: string, targetHandle: string | null | undefined,
   edges: WorkflowDocumentEdge[]): boolean
 {
-  return edges.some(edge => edge.kind !== "schema" && !edge.hidden && !edge.detached &&
+  return hasInputLink(targetId, edges) || edges.some(edge => edge.kind !== "schema" && edge.kind !== "response" && edge.kind !== "input" && !edge.hidden && !edge.detached &&
     edge.target === targetId && (edge.targetHandle ?? null) === (targetHandle ?? null));
 }
 
@@ -287,7 +288,7 @@ export function isWorkflowConnectionTypeCompatible(connection: ValueConnection,
 export function isValueConnection(connection: { sourceHandle?: string | null; targetHandle?: string | null },
   source: WorkflowDocumentNode, target: WorkflowDocumentNode, edges: WorkflowDocumentEdge[] = []): boolean
 {
-  if (source.id === target.id || source.hidden || target.hidden) return false;
+  if (source.id === target.id || source.hidden || target.hidden || hasInputLink(target.id, edges)) return false;
   if (isArrayFilterReturn(target, connection.targetHandle))
     return source.type === "assert" && (connection.sourceHandle === "success" || connection.sourceHandle === "failure");
   const sourceField = source.type === "data" && source.data.direction === "outputs"

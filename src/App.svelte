@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick, untrack } from "svelte";
+  import { flushSync, onMount, tick, untrack } from "svelte";
   import { Tooltip } from "bits-ui";
   import type { Operation } from "$lib/catalog.ts";
   import { getSchemaLibrary } from "$lib/schema-library.ts";
@@ -18,9 +18,15 @@
   import BackgroundWave from "./components/BackgroundWave.svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
+  import PaneDismiss from "$lib/components/PaneDismiss.svelte";
+  import PaneResize from "$lib/components/PaneResize.svelte";
   import NativeScrollbars from "./components/NativeScrollbars.svelte";
+  import { emptyNavigationState, flushPaneState, readPaneState, savePaneState, type NavigationPaneState, type SettingsSection } from "$lib/pane-state.ts";
+  import { flushPaneScroll, rememberPaneScroll } from "$lib/pane-scroll.ts";
 
-  let { initialToolbarButtons = defaultToolbarButtons, initialKeybindings = defaultKeybindings, initialWorkflowDefaults, initialDeveloperToolbar = false, initialEvaluationDetails = false, initialTooltips = true, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
+  let { initialNavigationPaneWidth = 320, initialSettingsPaneWidth = 900, initialToolbarButtons = defaultToolbarButtons, initialKeybindings = defaultKeybindings, initialWorkflowDefaults, initialDeveloperToolbar = false, initialEvaluationDetails = false, initialTooltips = true, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
+    initialNavigationPaneWidth?: number;
+    initialSettingsPaneWidth?: number;
     initialWorkflowDefaults: WorkflowDefaults;
     initialDeveloperToolbar?: boolean;
     initialEvaluationDetails?: boolean;
@@ -54,32 +60,86 @@
   const settingsEdits = { theme: 0, palette: 0, workflowDefaults: 0, developerToolbar: 0, evaluationDetails: 0, tooltips: 0, locale: 0, keybindings: 0, toolbarButtons: 0 };
   let workflowDefaultsError = $state("");
   let workflowDefaultsSave = 0;
-  let navigationOpen = $state(!matchMedia("(max-width: 899px)").matches);
+  const resumedPanes = untrack(() => {
+    const saved = readPaneState();
+    if (saved?.navigationOpen && saved.settingsOpen) {
+      const width = window.innerWidth;
+      const leftWidth = width < 900 ? 320 : Math.min(initialNavigationPaneWidth, Math.max(320, width - 250));
+      if (width < Math.max(900, initialSettingsPaneWidth + 250) || width < initialSettingsPaneWidth + leftWidth + 500) {
+        if (saved.lastOpenedPane === "settings") saved.navigationOpen = false;
+        else saved.settingsOpen = false;
+      }
+    }
+    return saved;
+  });
+  const initialNavigationView = resumedPanes?.navigation ?? emptyNavigationState();
+  let navigationView = $state<NavigationPaneState>(initialNavigationView);
+  let settingsSection = $state<SettingsSection>(resumedPanes?.settings.section ?? null);
+  let settingsScroll = $state(resumedPanes?.settings.scrollTop ?? 0);
+  let navigationOpen = $state(resumedPanes?.navigationOpen ?? !matchMedia("(max-width: 899px)").matches);
   let navigationModal = $state(false);
   let documentModal = $state(false);
   let workflowSaveStatus = $state<WorkflowSaveStatus>("loading");
   let savedWorkflows = $state<WorkflowDocument[]>([]);
   let workflowLibraryError = $state("");
-  let mode = $state<WorkspaceMode>("workflow");
+  let mode = $state<WorkspaceMode>(resumedPanes?.settingsOpen ? "settings" : "workflow");
   let modeRequest = 0;
-  let settingsPresent = $state(false);
-  // Below 1150px, overlay Settings instead of compressing the workflow controls.
-  const compactSettingsQuery = "(max-width: 1149px)";
-  let compactSettings = $state(matchMedia(compactSettingsQuery).matches);
-  onMount(() => {
-    const media = matchMedia(compactSettingsQuery);
-    const update = () => {
-      const canvasFocused = document.activeElement?.closest(".workflow-host");
-      compactSettings = media.matches;
-      if (compactSettings && settingsPresent && canvasFocused) void tick().then(() => settingsWorkspace.focusActive());
-    };
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
+  let settingsPresent = $state(resumedPanes?.settingsOpen ?? false);
+  let viewportWidth = $state(window.innerWidth);
+  let navigationPaneWidth = $state(untrack(() => initialNavigationPaneWidth));
+  const navigationWidth = $derived(viewportWidth < 900 ? 320 : Math.min(navigationPaneWidth, Math.max(320, viewportWidth - 250)));
+  let resizingNavigation = $state(false);
+  let settingsPaneWidth = $state(untrack(() => initialSettingsPaneWidth));
+  const compactSettings = $derived(viewportWidth < Math.max(900, settingsPaneWidth + 250));
+  const concurrentPanes = $derived(!compactSettings && viewportWidth >= settingsPaneWidth + navigationWidth + 500);
+  let lastOpenedPane = $state<"navigation" | "settings">(resumedPanes?.lastOpenedPane ?? "navigation");
+  let resizingSettings = $state(false);
+  let settingsSwipeOffset = $state(0);
+  let swipingSettings = $state(false);
+  const maximumSettingsWidth = $derived(Math.max(360, Math.min(1440, viewportWidth - 250)));
+  $effect(() => {
+    document.documentElement.style.setProperty("--catalog-width", `${navigationWidth}px`);
+    return () => document.documentElement.style.removeProperty("--catalog-width");
   });
+  $effect(() => {
+    document.documentElement.style.setProperty("--settings-drawer-width", `${compactSettings ? viewportWidth : settingsPaneWidth}px`);
+    return () => document.documentElement.style.removeProperty("--settings-drawer-width");
+  });
+  $effect(() => {
+    if (!concurrentPanes && navigationOpen && mode === "settings") {
+      if (lastOpenedPane === "navigation") void setMode("workflow");
+      else navigationOpen = false;
+    }
+  });
+  $effect(() => {
+    if (compactSettings && settingsPresent && document.activeElement?.closest(".workflow-host"))
+      void tick().then(() => settingsWorkspace.focusActive());
+  });
+  function savePaneWidth() {
+    void saveSetting("settingsPaneWidth", settingsPaneWidth).catch(reportSettingsError);
+  }
+  function resizeSettings(width: number) {
+    lastOpenedPane = "settings";
+    settingsPaneWidth = Math.round(Math.max(360, Math.min(maximumSettingsWidth, width)));
+  }
+  function resizeNavigation(width: number) {
+    lastOpenedPane = "navigation";
+    navigationPaneWidth = width;
+  }
+  function saveNavigationWidth() {
+    void saveSetting("navigationPaneWidth", navigationPaneWidth).catch(reportSettingsError);
+  }
   let settingsDrawer: HTMLElement;
   let settingsContent: HTMLElement;
   let settingsContentHeight = $state<number>();
+  function rememberNavigationView(next: NavigationPaneState) { navigationView = next; }
+  function rememberSettingsScroll(position: number) { settingsScroll = position; }
+  function persistPanes() {
+    savePaneState({ version: 1, navigationOpen, settingsOpen: mode === "settings", lastOpenedPane,
+      navigation: $state.snapshot(navigationView), settings: { section: settingsSection, scrollTop: settingsScroll } });
+  }
+  $effect(persistPanes);
+  function flushPanes() { flushSync(flushPaneScroll); persistPanes(); flushPaneState(); }
   $effect(() => {
     if (!settingsPresent) return;
     const root = document.documentElement;
@@ -123,9 +183,9 @@
     // Lazy sections collapse while inactive. Retain their space and suspend
     // scroll anchoring until they reopen so neither can move the reading position.
     if (mode === "settings") settingsContentHeight = settingsContent.getBoundingClientRect().height;
-    if (next === "settings") settingsPresent = true;
+    if (next === "settings") { settingsPresent = true; lastOpenedPane = "settings"; }
     mode = next;
-    if (next === "settings" || matchMedia("(max-width: 899px)").matches) navigationOpen = false;
+    if ((next === "settings" && !concurrentPanes) || matchMedia("(max-width: 899px)").matches) navigationOpen = false;
     await tick();
     if (next === "workflow") {
       await Promise.all(settingsDrawer.getAnimations().map(animation => animation.finished.catch(() => {})));
@@ -150,10 +210,11 @@
   }
 
   async function toggleNavigation() {
-    if (mode === "settings") {
+    if (mode === "settings" && !concurrentPanes) {
       await setMode("workflow");
       navigationOpen = true;
     } else navigationOpen = !navigationOpen;
+    if (navigationOpen) lastOpenedPane = "navigation";
   }
 
   function dismissMenus(event: KeyboardEvent) {
@@ -161,7 +222,7 @@
       shortcutAction(event, keybindings) !== "closeMenu" ||
       document.querySelector('[role="dialog"]:not(#side-navigation), [role="menu"], [role="listbox"]')) return;
     event.preventDefault();
-    if (mode === "settings") void toggleSettings();
+    if (mode === "settings" && !(concurrentPanes && navigationOpen && document.activeElement?.closest("#side-navigation,.navigation-resize-host"))) void toggleSettings();
     else {
       navigationOpen = false;
       void tick().then(() => document.querySelector<HTMLElement>('[aria-controls="side-navigation"]')?.focus({ preventScroll: true }));
@@ -336,20 +397,23 @@
   }
 
   async function browseOperations() {
-    await setMode("workflow");
-    if (mode !== "workflow") return;
+    if (!concurrentPanes) {
+      await setMode("workflow");
+      if (mode !== "workflow") return;
+    }
     navigationOpen = true;
+    lastOpenedPane = "navigation";
     await tick();
     await sideNavigation.focusPrompt();
   }
   async function selectOperation(operation: Operation) {
-    await setMode("workflow");
+    if (!concurrentPanes) await setMode("workflow");
     await workflowWorkspace.addOperation(operation);
     if (matchMedia("(max-width: 899px)").matches) navigationOpen = false;
   }
 
   async function selectWorkflow(document: WorkflowDocument) {
-    await setMode("workflow");
+    if (!concurrentPanes) await setMode("workflow");
     await workflowWorkspace.addWorkflow(document);
     if (matchMedia("(max-width: 899px)").matches) navigationOpen = false;
   }
@@ -376,8 +440,8 @@
   }
 </script>
 
-<svelte:document onpointerover={sizeHover} onfocusin={sizeHover} />
-<svelte:window onkeydown={dismissMenus} />
+<svelte:document onpointerover={sizeHover} onfocusin={sizeHover} onvisibilitychange={() => { if (document.visibilityState === "hidden") flushPanes(); }} />
+<svelte:window bind:innerWidth={viewportWidth} onkeydown={dismissMenus} onpagehide={flushPanes} />
 
 <svelte:head>
   <title>operations.superduper.solutions</title>
@@ -387,10 +451,16 @@
 <Tooltip.Provider disabled={!tooltips} delayDuration={400} ignoreNonKeyboardFocus disableHoverableContent>
 <BackgroundWave />
 <NativeScrollbars />
-<SideNavigation closeMenuWithEscape={keybindings.closeMenu === "Escape"} bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {evaluationDetails} {catalogGroups}
+<SideNavigation initialView={initialNavigationView} onviewchange={rememberNavigationView} closeMenuWithEscape={keybindings.closeMenu === "Escape"} bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {evaluationDetails} {catalogGroups}
   workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
   onSelect={selectOperation} />
-<div class="page-content workflow-mode" inert={settingsPresent && compactSettings} class:catalog-open={navigationOpen} class:settings-open={mode === "settings"}>
+{#if navigationOpen && viewportWidth >= 900}
+  <div class="navigation-resize-host" class:resizing={resizingNavigation} inert={documentModal}>
+    <PaneResize label="Navigation pane width" width={navigationWidth} minimum={320} maximum={maximumSettingsWidth} defaultWidth={320} edge="right"
+      onresize={resizeNavigation} oncommit={saveNavigationWidth} onresizing={value => resizingNavigation = value} onclose={() => { navigationOpen = false; void tick().then(() => document.querySelector<HTMLElement>('[aria-controls="side-navigation"]')?.focus()); }} />
+  </div>
+{/if}
+<div class="page-content workflow-mode" class:compact-settings={compactSettings} class:resizing-settings={resizingSettings || resizingNavigation} inert={settingsPresent && compactSettings} class:catalog-open={navigationOpen} class:settings-open={mode === "settings"}>
   <Header {navigationOpen} settingsOpen={mode === "settings"} onSettings={toggleSettings} {workflowSaveStatus} onMenu={toggleNavigation} />
   <div class="shell">
     <main>
@@ -412,17 +482,20 @@
 {#if compactSettings && settingsPresent}
   <div class="settings-backdrop" class:open={mode === "settings"} aria-hidden="true"></div>
 {/if}
-<div class="settings-drawer-host">
-  <aside id="settings-panel" bind:this={settingsDrawer} class="settings-drawer" class:open={mode === "settings"} class:preserving-scroll={settingsContentHeight !== undefined} aria-label="Application settings" inert={mode !== "settings"}>
+<div class="settings-drawer-host" class:compact={compactSettings} class:resizing={resizingSettings}>
+  {#if mode === "settings" && !compactSettings}
+    <PaneResize label="Settings pane width" width={settingsPaneWidth} minimum={360} maximum={maximumSettingsWidth} defaultWidth={900}
+      onresize={resizeSettings} oncommit={savePaneWidth} onresizing={value => resizingSettings = value} onclose={() => void toggleSettings()} />
+  {/if}
+  <aside id="settings-panel" bind:this={settingsDrawer} use:rememberPaneScroll={{ active: mode === "settings", position: settingsScroll, onposition: rememberSettingsScroll }} class="settings-drawer" class:swiping={swipingSettings} style={`--pane-swipe-offset: ${settingsSwipeOffset}px`} class:open={mode === "settings"} class:preserving-scroll={settingsContentHeight !== undefined} aria-label="Application settings" inert={mode !== "settings"}>
     {#if compactSettings}
       <div class="settings-mobile-header">
-        <HintButton tooltipSide="left" label="Close settings" aria-label="Close settings" onclick={toggleSettings}>
-          <MaterialIcon name="close" size={24} />
-        </HintButton>
+        <PaneDismiss label="Close settings" direction="right" panel="#settings-panel" onclose={() => void toggleSettings()}
+          onmove={(offset, active) => { settingsSwipeOffset = offset; swipingSettings = active; }} />
       </div>
     {/if}
     <div bind:this={settingsContent} style:min-height={settingsContentHeight === undefined ? undefined : `${settingsContentHeight}px`}>
-      <SettingsWorkspace active={settingsPresent} bind:this={settingsWorkspace} {dark} onTheme={toggleTheme} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
+      <SettingsWorkspace bind:openSection={settingsSection} active={settingsPresent} bind:this={settingsWorkspace} {dark} onTheme={toggleTheme} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
           {toolbarButtons} {toolbarButtonsError} onToolbarButtonsChange={selectToolbarButtons} onRetryToolbarButtons={() => selectToolbarButtons(toolbarButtons)}
           {keybindings} {keybindingsError} onKeybindingsChange={selectKeybindings} onRetryKeybindings={() => selectKeybindings(keybindings)}
           {locale} {localeError} onLocaleChange={selectLocale} onRetryLocale={() => selectLocale(locale)}
@@ -436,11 +509,9 @@
 </Tooltip.Provider>
 
 <style>
-  :global(:root) { --settings-drawer-width: min(900px, calc(100vw - 250px)); }
-  @media (max-width: 1149px) { :global(:root) { --settings-drawer-width: 100vw; } }
   .page-content { --workflow-controls-inset: 0px; --navigation-inset: 0px; }
   @media (min-width: 900px) { .page-content.catalog-open { --navigation-inset: var(--catalog-width); } }
-  @media (min-width: 1150px) { .page-content.settings-open { --workflow-controls-inset: var(--settings-drawer-width); } }
+  .page-content.settings-open:not(.compact-settings) { --workflow-controls-inset: var(--settings-drawer-width); }
   .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap) { right: var(--workflow-controls-inset); max-width: calc(100% - var(--workflow-controls-inset) - 2rem); transition: right 200ms ease-in-out, max-width 200ms ease-in-out; }
   .page-content :global(.workflow-toolbar) { max-width: calc(100% - var(--workflow-controls-inset) - var(--navigation-inset) - 2rem); }
   /* The fixed settings drawer spans the viewport, including its reserved scrollbar gutter. */
@@ -448,18 +519,19 @@
   .page-content :global(.workflow-control-group) { max-width: 100%; flex-wrap: wrap; }
   .page-content :global(.workflow-minimap .svelte-flow__minimap-svg) { max-width: 100%; height: auto; }
   .page-content :global(.site-header) { margin-left: var(--navigation-inset); width: calc(100% - var(--workflow-controls-inset) - var(--navigation-inset)); transition: width 200ms ease-in-out, margin-left 200ms ease-in-out; }
+  .page-content.resizing-settings :global(.site-header), .page-content.resizing-settings :global(.workflow-toolbar), .page-content.resizing-settings :global(.workflow-minimap), .page-content.resizing-settings :global(.workflow-empty) { transition: none; }
   .settings-backdrop { position: fixed; inset: 0; z-index: 24; background: color-mix(in srgb, var(--color-background) 65%, transparent); opacity: 0; transition: opacity 200ms ease-in-out; }
   .settings-backdrop.open { opacity: 1; }
   .settings-drawer-host { position: fixed; z-index: 25; top: 0; right: 0; bottom: 0; width: var(--settings-drawer-width); overflow: clip; pointer-events: none; }
   .settings-drawer { --app-header-height: 0px; height: 100%; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; pointer-events: auto; background: var(--color-surface); border-left: 1px solid var(--color-border); transform: translateX(100%); visibility: hidden; transition: transform 200ms ease-in-out, visibility 0s linear 200ms; }
   .settings-drawer.preserving-scroll { overflow-anchor: none; }
-  .settings-mobile-header { position: sticky; top: 0; z-index: 20; display: flex; justify-content: flex-end; align-items: center; height: 64px; padding-inline: var(--content-padding); background: var(--color-surface); }
-  .settings-mobile-header :global(button) { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; background: transparent; color: var(--color-foreground); }
-  @media (max-width: 1149px) {
-    .settings-drawer { --app-header-height: 64px; }
-    .settings-drawer :global(.workspace) { padding-top: 0; }
-  }
-  .settings-drawer.open { transform: translateX(0); visibility: visible; transition-delay: 0s; }
+  .settings-mobile-header { position: sticky; top: 0; z-index: 20; display: flex; justify-content: center; align-items: center; height: 64px; padding-inline: var(--content-padding); background: var(--color-surface); }
+  .settings-drawer-host.compact .settings-drawer { --app-header-height: 64px; }
+  .settings-drawer-host.compact .settings-drawer :global(.workspace) { padding-top: 0; }
+  .navigation-resize-host { position: fixed; z-index: 31; left: calc(var(--catalog-width) - 10px); top: 0; bottom: 0; width: 10px; }
+  .resizing { user-select: none; }
+  .settings-drawer.open { transform: translateX(var(--pane-swipe-offset, 0px)); visibility: visible; transition-delay: 0s; }
+  .settings-drawer.swiping { transition: none; }
   @media (prefers-reduced-motion: reduce) { .settings-backdrop, .settings-drawer, .page-content :global(.site-header), .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap), .page-content :global(.workflow-empty) { transition: none; } }
 
   .settings-recovery {

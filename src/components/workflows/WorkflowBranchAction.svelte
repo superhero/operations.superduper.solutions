@@ -9,7 +9,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
 
-  let { label, position, top = "50%", beside = false, disabled = false, class: className = "", onclick }: {
+  let { label, position, top = "50%", disabled = false, class: className = "", onclick }: {
     label: string;
     position: Position;
     top?: string;
@@ -24,19 +24,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="button"
   class={`workflow-branch-action ${className} nodrag nopan nokey`} data-side={position}
-  data-beside={beside} style={`top: ${top}`} {label} {disabled}
+  style={`top: ${top}`} {label} {disabled}
   onmousedown={blockPointer} ontouchstart={blockPointer} ondblclick={blockPointer}
   onclick={event => { event.stopPropagation(); onclick(); }}>
-  <MaterialIcon name={beside ? "add_location" : "add_box"} size={18} />
+  <MaterialIcon name="add_location" size={18} />
 </HintButton>
 
 <style>
   :global(.workflow-branch-action) { position: absolute; z-index: 2; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-background); color: var(--color-foreground); transform: translate(-50%, -50%); transition: background-color 180ms ease-in, color 180ms ease-in, outline-color 180ms ease-in; }
-  :global(.workflow-branch-action[data-side="left"]) { left: 0; }
-  :global(.workflow-branch-action[data-side="right"]) { right: 0; transform: translate(50%, -50%); }
+  :global(.workflow-branch-action[data-side="left"]) { left: -20px; }
+  :global(.workflow-branch-action[data-side="right"]) { right: -20px; transform: translate(50%, -50%); }
   :global(.workflow-branch-action[data-side="top"]), :global(.workflow-branch-action[data-side="bottom"]) { left: 50%; }
-  :global(.workflow-branch-action[data-side="right"][data-beside="true"]) { right: -28px; }
   :global(.workflow-branch-action:hover:not(:disabled)) { background: var(--color-secondary-hover); color: var(--color-secondary-hover-foreground); }
   :global(.workflow-branch-action .material-symbols-rounded) { font-variation-settings: "FILL" 1; }
+  :global(.workflow-branch-action[data-side="left"] .material-symbols-rounded) { transform: rotate(-90deg); }
+  :global(.workflow-branch-action[data-side="right"] .material-symbols-rounded) { transform: rotate(90deg); }
+  :global(.workflow-branch-action[data-side="bottom"] .material-symbols-rounded) { transform: rotate(180deg); }
   @media (prefers-reduced-motion: reduce) { :global(.workflow-branch-action) { transition: none; } }
 </style>

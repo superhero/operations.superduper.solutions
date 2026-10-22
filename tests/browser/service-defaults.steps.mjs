@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { categoryLabel } from '../../src/lib/category-label.ts';
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
@@ -238,7 +239,7 @@ Then('all Atlassian catalogs share the provider prefix and retain a newly disabl
   for (const source of products) {
     const heading = await catalogSchemaHeading(page, source.name);
     await expect(heading.locator('xpath=../..')).toHaveAttribute('data-catalog-group', source.id);
-    await expect(heading.locator('.catalog-name')).toHaveText(source.name.split(' / ').at(-1));
+    await expect(heading.locator('.catalog-name')).toHaveText(categoryLabel(source.name.split(' / ').at(-1)));
   }
   await (await catalogSchemaHeading(page, 'Atlassian / Statuspage')).click();
   await page.locator('[data-catalog-group="statuspage:tag:pages"] > .catalog-group > summary').click();

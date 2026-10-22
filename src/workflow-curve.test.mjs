@@ -7,6 +7,15 @@ import { workflowCurve } from './lib/workflow-curve.ts';
 import { routeEdges } from './lib/flow-routing/router.js';
 import { bezierDrawing } from './lib/flow-routing/bezier.ts';
 
+Then('flowing curves match the geometry before obstacle routing and manual anchors', () => {
+  // Frozen results from b68904b (before routing #199 and manual anchors #200).
+  for (const [sourcePosition, targetX, targetY, targetPosition, expected] of [
+    ['right', 200, 100, 'left', ['M0,0 C200,0 0,100 200,100', 100, 50]],
+    ['right', -100, 100, 'left', ['M0,0 C125,0 -225,100 -100,100', -50, 50]],
+    ['bottom', 100, 200, 'top', ['M0,0 C0,200 100,0 100,200', 50, 100]],
+  ]) assert.deepEqual(workflowCurve({ sourceX: 0, sourceY: 0, sourcePosition, targetX, targetY, targetPosition }, 100), expected);
+});
+
 Then('workflow curves follow every port orientation and keep their label at the cubic midpoint', () => {
   for (const [sourcePosition, targetPosition, targetX, targetY, expected] of [
     ['right', 'left', 200, 100, ['M0,0 C100,0 100,100 200,100', 100, 50]],
@@ -24,6 +33,7 @@ Then('backward workflow connections bow out farther with increased curve strengt
   const points = { sourceX: 0, sourceY: 0, sourcePosition: 'right', targetX: -100, targetY: 100, targetPosition: 'left' };
   assert.deepEqual(workflowCurve(points, 50), ['M0,0 C62.5,0 -162.5,100 -100,100', -50, 50]);
   assert.deepEqual(workflowCurve(points, 100), ['M0,0 C125,0 -225,100 -100,100', -50, 50]);
+  assert.deepEqual(workflowCurve(points, 1000), ['M0,0 C1250,0 -1350,100 -100,100', -50, 50]);
 });
 
 const cubics = path => {
@@ -47,10 +57,10 @@ Then('curved routing keeps assertion return paths outside nodes at every strengt
     edge('keep', 'assert', 'filter', 800, 258, 40, 238), edge('remove', 'assert', 'filter', 800, 290, 40, 270)];
   const routes = routeEdges({ nodes, edges }, { nodePadding: 16 });
   const before = structuredClone([...routes]);
-  for (const strength of [0, 50, 100, 200]) for (const link of edges) {
+  for (const style of ['filleted', 'bezier', 'clutter']) for (const strength of [0, 50, 100, 200, 1000]) for (const link of edges) {
     const route = routes.get(link.id);
     assert.equal(route.status, 'routed');
-    const result = bezierDrawing(route, link, strength, nodes.map(node => ({ ...node, x: node.x - 16, y: node.y - 16, width: node.width + 32, height: node.height + 32 })));
+    const result = bezierDrawing(route, link, strength, nodes.map(node => ({ ...node, x: node.x - 16, y: node.y - 16, width: node.width + 32, height: node.height + 32 })), false, style);
     const curves = cubics(result.path);
     assert.deepEqual(curves[0][0], { x: link.sourceX, y: link.sourceY });
     assert.deepEqual(curves.at(-1).at(-1), { x: link.targetX, y: link.targetY });
@@ -147,4 +157,24 @@ Then('coincident curved connections retain finite paths labels and controls', ()
     assert.deepEqual(result.locate({ x: 1, y: 1 }), point);
     assert.ok(cubics(result.path).flat().every(value => Number.isFinite(value.x) && Number.isFinite(value.y)));
   }
+});
+
+Then('Filleted Bezier and Clutter drawings differ while retaining finite endpoints and labels', () => {
+  const edge = { sourceX: 0, sourceY: 0, sourcePosition: 'right', targetX: 200, targetY: 100, targetPosition: 'left' };
+  const route = { points: [{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 100, y: 100 }, { x: 200, y: 100 }] };
+  const paths = ['filleted', 'bezier', 'clutter'].map(style => bezierDrawing(route, edge, 100, [], true, style).path);
+  assert.equal(new Set(paths).size, 3, 'Authored detours distinguish every smooth fitting style.');
+  for (const style of ['filleted', 'bezier', 'clutter']) {
+    for (const authored of [false, true]) {
+      const drawing = bezierDrawing(route, edge, 100, [], authored, style);
+      const curves = cubics(drawing.path);
+      assert.deepEqual(curves[0][0], route.points[0]);
+      assert.deepEqual(curves.at(-1).at(-1), route.points.at(-1));
+      assert.ok(Number.isFinite(drawing.midpoint.x) && Number.isFinite(drawing.locate(drawing.midpoint).y));
+    }
+  }
+  const point = { x: 0, y: 0 };
+  const zero = bezierDrawing({ points: [point, point] }, { ...edge, targetX: 0, targetY: 0 }, 100,
+    [{ id: 'cover', x: -1, y: -1, width: 2, height: 2 }], true, 'clutter');
+  assert.ok(cubics(zero.path).flat().every(p => Number.isFinite(p.x) && Number.isFinite(p.y)));
 });

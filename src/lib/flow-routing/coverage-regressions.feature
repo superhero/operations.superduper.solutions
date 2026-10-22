@@ -5,6 +5,16 @@
 @flow-routing
 Feature: Routing remains stable at geometry and work limits
 
+  Scenario: Staggered facing terminals share overlapping clearance buffers
+    Given a restored response above its operation at sixty-four-unit clearance
+    When the same terminal corridor is routed in all four orientations
+    Then only the facing buffers share the gap and the response takes the short editable route
+
+  Scenario: Crossing detours disappear when later routes clear the shorter path
+    Given four connections whose crossing avoidance clears an earlier direct corridor
+    When the complete scene finishes crossing reduction
+    Then the obsolete loop returns to its short clear route without moving authored anchors
+
   Scenario: A narrow terminal keeps the requested clearance around other node faces
     Given a narrow handle exit beside a node and a target behind it
     When clearance is varied and the same scene is reflected and rotated

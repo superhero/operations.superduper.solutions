@@ -12,13 +12,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     type WorkflowHandle } from "$lib/workflow-connection-snap.ts";
   import { workflowCurve } from "$lib/workflow-curve.ts";
   import { bezierDrawing } from "$lib/flow-routing/bezier.ts";
+  import type { WorkflowLineStyle } from "$lib/workflow-line-style.ts";
   import { defaultWorkflowSettings } from "$lib/app-settings.ts";
   import { routingContext, type RoutingContext } from "$lib/flow-routing/context.ts";
   import { connectionGeometry } from "$lib/flow-routing/geometry.js";
   import { bendRadius, previewPath, previewRoute } from "$lib/flow-routing/path.js";
 
-  let { isValidConnection, active = true, curved = false, dashed = false, curveStrength = defaultWorkflowSettings.curveStrength, markerEnd }:
-    { isValidConnection: (connection: Connection) => boolean; active?: boolean; curved?: boolean;
+  let { isValidConnection, active = true, curved = false, lineStyle = "filleted", dashed = false, curveStrength = defaultWorkflowSettings.curveStrength, markerEnd }:
+    { isValidConnection: (connection: Connection) => boolean; active?: boolean; curved?: boolean; lineStyle?: WorkflowLineStyle;
       dashed?: boolean; curveStrength?: number; markerEnd?: string } = $props();
   const connection = useConnection();
   const nodes = useNodes();
@@ -87,11 +88,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     if (!resolved.inProgress || !resolved.isValid || !resolved.toNode) return "";
     const geometry = connectionGeometry(resolved)!;
     const points = { ...geometry, sourcePosition: geometry.sourcePosition as Position, targetPosition: geometry.targetPosition as Position };
+    if (lineStyle === "flowing") return workflowCurve(points, curveStrength)[0];
     const route = previewRoute(routing?.preview(), points);
-    if (curved && route) return bezierDrawing(route, geometry, curveStrength, routing?.obstacles() ?? []).path;
-    return previewPath(routing?.preview(), points, bendRadius, routing?.obstacles() ?? []) ??
-      (curved ? workflowCurve(points, curveStrength)[0] :
-      getSmoothStepPath({ ...points, borderRadius: bendRadius, stepPosition: 1 })[0]);
+    if (curved && route) return bezierDrawing(route, geometry, curveStrength, routing?.obstacles() ?? [], false, lineStyle).path;
+    const radius = bendRadius * (curved ? 1 : curveStrength / 100);
+    return previewPath(routing?.preview(), points, radius, routing?.obstacles() ?? []) ??
+      (curved ? workflowCurve(points, curveStrength * (lineStyle === "filleted" ? 1 : 0.5))[0] :
+      getSmoothStepPath({ ...points, borderRadius: radius, stepPosition: 1 })[0]);
   });
 </script>
 

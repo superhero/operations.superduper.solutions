@@ -5,20 +5,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
+  import { workflowLineStyleLabels, type WorkflowLineStyle } from "$lib/workflow-line-style.ts";
   import { defaultToolbarButtons, toolbarButtonGroups, type ToolbarButtons } from "$lib/toolbar-settings.ts";
   import { onMount, onDestroy, tick } from "svelte";
-  import { Controls, useSvelteFlow, useStore } from "@xyflow/svelte";
+  import { Controls, getViewportForBounds, useSvelteFlow, useStore } from "@xyflow/svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
-  let { buttons = defaultToolbarButtons, oncopy, oncut, onpaste, canPaste = false, canRun = false, canvas, active, settingsOpen = false, placing = false, navigationOpen, snap, curved, dashed, selected, onsnap, oncurved, ondashed, onremove, onnew, onopen, onexport, onimport, onbrowse, onutility, ondescribe, onrun, canUndo, canRedo, historyBusy, onundo, onredo, onhistory }:
-    { buttons?: ToolbarButtons; oncopy: () => void; oncut: () => void; onpaste: () => void; canPaste?: boolean; canvas: HTMLElement | undefined; active: boolean; settingsOpen?: boolean; placing?: boolean; navigationOpen: boolean; snap: boolean; curved: boolean; dashed: boolean; selected: boolean;
+  let { buttons = defaultToolbarButtons, oncopy, oncut, onpaste, canPaste = false, canRun = false, canvas, active, settingsOpen = false, placing = false, navigationOpen, snap, curved, lineStyle, dashed, selected, onsnap, oncurved, ondashed, onremove, onnew, onopen, onexport, onimport, onbrowse, onutility, ondescribe, onrun, canUndo, canRedo, historyBusy, onundo, onredo, onhistory }:
+    { buttons?: ToolbarButtons; oncopy: () => void; oncut: () => void; onpaste: () => void; canPaste?: boolean; canvas: HTMLElement | undefined; active: boolean; settingsOpen?: boolean; placing?: boolean; navigationOpen: boolean; snap: boolean; curved: boolean; lineStyle: WorkflowLineStyle; dashed: boolean; selected: boolean;
       onsnap: () => void; oncurved: () => void; ondashed: () => void; onremove: () => void;
       onnew: () => void; onopen: () => void; onexport: () => void;
       onimport: () => void; onbrowse: () => void; onutility: (type: "switch" | "cast" | "comment" | "vault" | "file" | "transform" | "filter" | "assert" | "stop") => void;
       ondescribe: () => void; onrun: () => void; canRun?: boolean; canUndo: boolean; canRedo: boolean; historyBusy: boolean;
       onundo: () => void; onredo: () => void; onhistory: () => void } = $props();
   $effect(() => { void buttons; void tick().then(() => compactLayout?.()); });
-  const { fitView, getInternalNode, getNodes, getViewport, setViewport, zoomIn, zoomOut } = useSvelteFlow();
+  const { getInternalNode, getNodes, getNodesBounds, getViewport, setViewport, zoomIn, zoomOut } = useSvelteFlow();
   const store = useStore();
   const minZoomReached = $derived(store.viewport.zoom <= store.minZoom);
   const maxZoomReached = $derived(store.viewport.zoom >= store.maxZoom);
@@ -49,7 +50,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       return node.width > 0 && node.left >= bounds.left && node.right <= bounds.right &&
         node.top >= bounds.top && node.bottom <= bounds.bottom;
     });
-    if (!visible) await fitView({ padding: 0.25, minZoom: 0.25, maxZoom: 1, duration: 0 });
+    if (!visible) {
+      // Resizing may reveal a nearby node, but must never change the user's scale.
+      const area = visibleCanvasArea();
+      const center = { x: bounds.left + area.x + area.width / 2, y: bounds.top + area.y + area.height / 2 };
+      const nearest = [...canvas.querySelectorAll(".svelte-flow__node:not(.svelte-flow__node-data)")]
+        .map(element => element.getBoundingClientRect()).filter(node => node.width > 0 && node.height > 0)
+        .sort((a, b) => Math.hypot(a.x + a.width / 2 - center.x, a.y + a.height / 2 - center.y) -
+          Math.hypot(b.x + b.width / 2 - center.x, b.y + b.height / 2 - center.y))[0];
+      if (!nearest) return;
+      const viewport = getViewport();
+      await setViewport({ ...viewport, x: viewport.x + center.x - nearest.x - nearest.width / 2,
+        y: viewport.y + center.y - nearest.y - nearest.height / 2 }, { duration: 0 });
+    }
   }
 
   // Flex wrapping leaves the container at its width limit, even when no row fills it.
@@ -126,6 +139,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     return { x: left, y: top, width: Math.max(1, canvas!.clientWidth - left - right), height: Math.max(1, canvas!.clientHeight - top - 24) };
   }
 
+  async function fitVisibleCanvas() {
+    if (!await waitForLayout()) return;
+    const nodes = getNodes().filter(node => !node.hidden && node.measured?.width && node.measured.height);
+    if (!nodes.length) return;
+    const area = visibleCanvasArea();
+    const viewport = getViewportForBounds(getNodesBounds(nodes), area.width, area.height, store.minZoom, Math.min(1, store.maxZoom), 0.2);
+    await setViewport({ ...viewport, x: area.x + viewport.x, y: area.y + viewport.y });
+  }
+
   export function placementViewport() {
     const area = visibleCanvasArea(), viewport = getViewport();
     return { x: (area.x - viewport.x) / viewport.zoom, y: (area.y - viewport.y) / viewport.zoom,
@@ -199,7 +221,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if toolbarButtonGroups[2].buttons.some(key => buttons[key])}
     <div class="workflow-control-group">
     {#if buttons.dashed}<HintButton class="svelte-flow__controls-button" aria-label="Dashed connections" label="Dashed connections" aria-pressed={dashed} onclick={ondashed}><MaterialIcon name="unknown_med" size={18} /></HintButton>{/if}
-    {#if buttons.curved}<HintButton class="svelte-flow__controls-button" aria-label="Curved connections" label="Curved connections" aria-pressed={curved} onclick={oncurved}><MaterialIcon name="line_curve" size={18} /></HintButton>{/if}
+    {#if buttons.curved}<HintButton class="svelte-flow__controls-button" aria-label="Connection style" label={`Connection style: ${workflowLineStyleLabels[lineStyle]}`} data-line-style={lineStyle} aria-pressed={curved} onclick={oncurved}><MaterialIcon name="line_curve" size={18} /></HintButton>{/if}
     {#if buttons.snap}<HintButton class="svelte-flow__controls-button" aria-label="Snap to grid" label="Snap to grid" aria-pressed={snap} onclick={onsnap}><MaterialIcon name="grid_on" size={18} /></HintButton>{/if}
     </div>
     {/if}
@@ -210,7 +232,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if buttons.zoomOut}<HintButton class="svelte-flow__controls-button" aria-label={ariaLabels["controls.zoomOut.ariaLabel"]} label={ariaLabels["controls.zoomOut.ariaLabel"]}
       disabled={minZoomReached} onclick={() => { void zoomOut(); }}><MaterialIcon name="remove" size={18} /></HintButton>{/if}
     {#if buttons.fit}<HintButton class="svelte-flow__controls-button" aria-label={ariaLabels["controls.fitView.ariaLabel"]} label={ariaLabels["controls.fitView.ariaLabel"]}
-      onclick={() => { void fitView({ padding: 0.2, maxZoom: 1 }); }}><MaterialIcon name="fit_screen" size={18} /></HintButton>{/if}
+      onclick={() => { void fitVisibleCanvas(); }}><MaterialIcon name="fit_screen" size={18} /></HintButton>{/if}
     </div>
     {/if}
   {/snippet}

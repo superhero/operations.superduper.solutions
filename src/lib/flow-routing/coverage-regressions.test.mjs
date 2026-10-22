@@ -7,11 +7,82 @@ import { routingScenario } from "../../flow-routing-test-support.mjs";
 import { routeConnection, routeEdges } from "./router.js";
 import { matchesEndpoints, projectRoute, routeMidpoint } from "./path.js";
 import { roundedSegments } from "./rounding.js";
+import { rectangles, clearRoute } from "./clearance.js";
+import { resolveManualRoute } from "./manual.js";
 
 const edge = (values = {}) => ({ id: "edge", source: "a", target: "b", sourceX: 0, sourceY: 0,
   targetX: 300, targetY: 0, sourcePosition: "right", targetPosition: "left", ...values });
 const point = (x, y) => ({ x, y });
 const node = (id, x, y, width, height) => ({ id, x, y, width, height });
+
+routingScenario(
+  "a restored response above its operation at sixty-four-unit clearance",
+  "the same terminal corridor is routed in all four orientations",
+  "only the facing buffers share the gap and the response takes the short editable route",
+  () => () => {
+    const bodies = [node('input', -80, 444, 174, 72), node('source', 151, 485, 147, 169),
+      node('target', 382, 285, 175, 167), node('body', 622, 111, 291, 365), node('headers', 673, 498, 203, 113)];
+    for (const swapped of [false, true]) for (const sign of [-1, 1]) {
+      const transform = ({ x, y }) => swapped ? point(y * sign, x * sign) : point(x * sign, y * sign);
+      const nodes = bodies.map(body => {
+        const a = transform(body), b = transform(point(body.x + body.width, body.y + body.height));
+        return node(body.id, Math.min(a.x, b.x), Math.min(a.y, b.y), Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+      });
+      const from = transform(point(298, 606)), to = transform(point(382, 305));
+      const connection = edge({ source: 'source', target: 'target', sourceX: from.x, sourceY: from.y, targetX: to.x, targetY: to.y,
+        sourcePosition: swapped ? sign > 0 ? 'bottom' : 'top' : sign > 0 ? 'right' : 'left',
+        targetPosition: swapped ? sign > 0 ? 'top' : 'bottom' : sign > 0 ? 'left' : 'right' });
+      const options = { nodePadding: 64 }, route = routeConnection(connection, nodes, [], options);
+      assert.equal(route.status, 'routed');
+      assert.equal(route.length, 385, 'the facing corridor must not turn into a loop around the whole restored branch');
+      assert.equal(route.points.length, 4);
+      completeRoute(route, connection);
+      const boxes = rectangles(nodes, 64, connection), full = rectangles(nodes, 64);
+      for (let i = 0; i < nodes.length; i++) {
+        clearOfNode(route.points, nodes[i], 0, nodes[i].id === 'source' ? [1] : nodes[i].id === 'target' ? [route.points.length - 1] : []);
+        const changed = Object.keys(boxes[i]).filter(key => boxes[i][key] !== full[i][key]);
+        assert.deepEqual(changed, nodes[i].id === 'source' ? [connection.sourcePosition] : nodes[i].id === 'target' ? [connection.targetPosition] : []);
+      }
+      assert.ok(clearRoute(route.points, boxes, connection, { work: 500000 }));
+      assert.equal(resolveManualRoute(route.points, connection, nodes, options).manualState, 'applied');
+      assert.equal(routeEdges({ nodes, edges: [connection] }, options).get(connection.id).length, 385);
+    }
+  }
+);
+
+routingScenario(
+  "four connections whose crossing avoidance clears an earlier direct corridor",
+  "the complete scene finishes crossing reduction",
+  "the obsolete loop returns to its short clear route without moving authored anchors",
+  () => {
+    const nodes = [node('a', 0, 80, 150, 180), node('b', 250, -180, 180, 220),
+      node('e', 490, 260, 280, 220), node('f', 520, 550, 220, 100)];
+    const connection = (id, source, target, sourceX, sourceY, targetX, targetY) =>
+      edge({ id, source, target, sourceX, sourceY, targetX, targetY });
+    const edges = [connection('e0', 'a', 'e', 150, 130, 490, 280),
+      connection('e2', 'b', 'f', 430, -40, 520, 570),
+      connection('e4', 'e', 'a', 770, 370, 0, 100), connection('e5', 'b', 'e', 430, -70, 490, 280)];
+    const options = { nodePadding: 16 }, scene = { nodes, edges }, snapshot = structuredClone(scene);
+    const routes = routeEdges(scene, options);
+    const manualRoute = [point(430, -40), point(450, -40), point(450, 64), point(-20, 64),
+      point(-20, 590), point(450, 590), point(450, 570), point(520, 570)];
+    const authored = routeEdges({ nodes, edges: edges.map(edge => edge.id === 'e2' ? { ...edge, manualRoute } : edge) }, options);
+    return () => {
+      assert.equal(routes.get('e2').length, 700, 'the former 1680-unit detour has a clear 700-unit alternative');
+      assert.equal(routes.get('e2').points.length, 4);
+      for (const edge of edges) {
+        const route = routes.get(edge.id);
+        completeRoute(route, edge);
+        for (const node of nodes) clearOfNode(route.points, node, 16,
+          [...(node.id === edge.source ? [1] : []), ...(node.id === edge.target ? [route.points.length - 1] : [])]);
+      }
+      assert.deepEqual(routeEdges({ nodes: nodes.toReversed(), edges: edges.toReversed() }, options), routes);
+      assert.equal(authored.get('e2').manualState, 'applied');
+      assert.deepEqual(authored.get('e2').points, manualRoute);
+      assert.deepEqual(scene, snapshot);
+    };
+  }
+);
 
 function completeRoute(route, connection) {
   assert.ok(["routed", "fallback"].includes(route.status));

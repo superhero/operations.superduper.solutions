@@ -2,6 +2,382 @@
 
 ## Latest
 
+<!-- changelog-commit:8d9b49907ab21eeb6cf0e4ce9e5007305cd719ab -->
+### Commit [`8d9b499`](https://github.com/superhero/operations.superduper.solutions/commit/8d9b49907ab21eeb6cf0e4ce9e5007305cd719ab)
+
+```text
+feat(workflow): add four connection styles and a stepped selector
+
+Expose Orthogonal, Filleted, Bézier and Clutter through evenly spaced
+Settings stops and the toolbar cycle. Preserve the experimental blended
+tangents and sharp fallback spans under the user-selected Clutter name.
+
+Persist named styles alongside legacy curve flags so existing documents
+retain their appearance. Keep display preferences outside workflow
+revisions, and share routing clearance, previews and anchor controls.
+
+```
+
+<!-- changelog-commit:6e31fed0b0d8916b6cfd5347e09375d659f082f9 -->
+### Commit [`6e31fed`](https://github.com/superhero/operations.superduper.solutions/commit/6e31fed0b0d8916b6cfd5347e09375d659f082f9)
+
+```text
+feat(workflow): restore original flowing curves as a fifth style
+
+Recover the direct cubic rendering from b68904b, before obstacle routing
+and manual anchors, as Flowing in the connection-style slider and toolbar.
+Use the original strength formula for completed edges and both previews.
+
+Preserve authored detours for switching back to routed styles. Verify the
+historical geometry, five-stop persistence and preview-to-edge handoff.
+
+```
+
+<!-- changelog-commit:43aac879863d7d2219a4ccc1258d5c51d0723c1d -->
+### Commit [`43aac87`](https://github.com/superhero/operations.superduper.solutions/commit/43aac879863d7d2219a4ccc1258d5c51d0723c1d)
+
+```text
+feat(settings): extend curve strength with logarithmic control
+
+Allow whole-percent curve strengths from zero through 1000 and use a
+logarithmic slider for finer pointer control at low values. Keep exact
+entry and keyboard steps, and preserve the default strength of 100.
+
+Reuse the integer scale's logarithmic mapping with a zero-inclusive
+offset. Verify saved settings, native pointer input and routed geometry
+at the expanded limit.
+
+```
+
+<!-- changelog-commit:c40bbc866ed19aa04f52383f0ce8fc97af9b44fb -->
+### Commit [`c40bbc8`](https://github.com/superhero/operations.superduper.solutions/commit/c40bbc866ed19aa04f52383f0ce8fc97af9b44fb)
+
+```text
+feat(settings): mark snapped slider stops and center the selected label
+
+Give stepped integer sliders visible tick marks and snap the native thumb
+to its nearest stop during input. Keep ticks aligned through the shared
+hover transform and retain continuous controls through the same snippet.
+
+Show only the selected connection-style name, centered in its existing
+label row. Verify between-stop dragging, tick alignment and label centering.
+
+```
+
+<!-- changelog-commit:d004d266d400baec79038751a482f2c7df6f6e61 -->
+### Commit [`d004d26`](https://github.com/superhero/operations.superduper.solutions/commit/d004d266d400baec79038751a482f2c7df6f6e61)
+
+```text
+style(settings): thin slider tick marks to one pixel
+
+```
+
+<!-- changelog-commit:6f30540d329bdfb642d4816c417ede49cc59ca4a -->
+### Commit [`6f30540`](https://github.com/superhero/operations.superduper.solutions/commit/6f30540d329bdfb642d4816c417ede49cc59ca4a)
+
+```text
+style(settings): match the connection slider pane background
+
+```
+
+<!-- changelog-commit:38644b2a36ec67b9c0464a5bcaefe6a2bb90f8ac -->
+### Commit [`38644b2`](https://github.com/superhero/operations.superduper.solutions/commit/38644b2a36ec67b9c0464a5bcaefe6a2bb90f8ac)
+
+```text
+fix(settings): align slider heading and track endpoints
+
+```
+
+<!-- changelog-commit:4c68d0b10f25cccc789d42a0623cb32e42f8afab -->
+### Commit [`4c68d0b`](https://github.com/superhero/operations.superduper.solutions/commit/4c68d0b10f25cccc789d42a0623cb32e42f8afab)
+
+```text
+fix(settings): omit stepped slider hover outline
+
+```
+
+<!-- changelog-commit:6759117d9df1c3eecb79f957166af8a84a8c2ffb -->
+### Commit [`6759117`](https://github.com/superhero/operations.superduper.solutions/commit/6759117d9df1c3eecb79f957166af8a84a8c2ffb)
+
+```text
+fix(settings): remove slider hover outlines consistently
+
+```
+
+<!-- changelog-commit:394a80baf0ea48202c08f234a5fe316ee2ffab10 -->
+### Commit [`394a80b`](https://github.com/superhero/operations.superduper.solutions/commit/394a80baf0ea48202c08f234a5fe316ee2ffab10)
+
+```text
+chore: refresh dependency badges
+```
+
+<!-- changelog-commit:5244b3f5019821e94f20f0ab7241ecb06a757403 -->
+### Commit [`5244b3f`](https://github.com/superhero/operations.superduper.solutions/commit/5244b3f5019821e94f20f0ab7241ecb06a757403)
+
+```text
+Merge branch 'develop' into feature/slider-hover-outlines
+```
+
+<!-- changelog-commit:860c1396ec29be3aaf70ef5e4ffaefadbddd1d01 -->
+### Commit [`860c139`](https://github.com/superhero/operations.superduper.solutions/commit/860c1396ec29be3aaf70ef5e4ffaefadbddd1d01)
+
+```text
+fix(workflow): rename Flowing to Direct and place it first
+
+```
+
+<!-- changelog-commit:aedaa943ad156eba8c3b316adbfc4333a1b30dd5 -->
+### Commit [`aedaa94`](https://github.com/superhero/operations.superduper.solutions/commit/aedaa943ad156eba8c3b316adbfc4333a1b30dd5)
+
+```text
+fix(settings): default connection style to Orthogonal
+
+```
+
+<!-- changelog-commit:2112bef19616cdcd5e8af741636fe767528b4a1e -->
+### Commit [`2112bef`](https://github.com/superhero/operations.superduper.solutions/commit/2112bef19616cdcd5e8af741636fe767528b4a1e)
+
+```text
+fix(workflow): separate opposing connection runs by six units
+
+```
+
+<!-- changelog-commit:15f8b65943ff9443bbdfd6f57f2b37dc58cfd9b9 -->
+### Commit [`15f8b65`](https://github.com/superhero/operations.superduper.solutions/commit/15f8b65943ff9443bbdfd6f57f2b37dc58cfd9b9)
+
+```text
+fix(workflow): shorten obsolete crossing detours
+
+Restore a shorter checked route when later edges have cleared its
+corridor and it no longer adds crossings. Reuse initial searches within
+the routing work budget, preserve authored anchors, and apply directional
+lane spacing after this cleanup.
+
+```
+
+<!-- changelog-commit:2bc63afdf4d30f3e172b6e25150053e235e439a2 -->
+### Commit [`2bc63af`](https://github.com/superhero/operations.superduper.solutions/commit/2bc63afdf4d30f3e172b6e25150053e235e439a2)
+
+```text
+fix(workflow): share clearance between facing response terminals
+
+```
+
+<!-- changelog-commit:f1ec363f80acc3cece7b997171faabdb7a70a418 -->
+### Commit [`f1ec363`](https://github.com/superhero/operations.superduper.solutions/commit/f1ec363f80acc3cece7b997171faabdb7a70a418)
+
+```text
+feat(workflow): show operation category paths on name hover
+
+```
+
+<!-- changelog-commit:2ae137c1b0b5498b53f0a2dc6b78da2108635c1f -->
+### Commit [`2ae137c`](https://github.com/superhero/operations.superduper.solutions/commit/2ae137c1b0b5498b53f0a2dc6b78da2108635c1f)
+
+```text
+fix(workflow): remove directional connection spacing
+
+Drop the best-effort six-unit separation pass and restore direction-independent shared-line alignment. Keep node-clearance and detour-shortening fixes while removing the spacing-specific tests and documentation.
+
+```
+
+<!-- changelog-commit:07946b09e271acb63cf8be524c673d2f6fe328e4 -->
+### Commit [`07946b0`](https://github.com/superhero/operations.superduper.solutions/commit/07946b09e271acb63cf8be524c673d2f6fe328e4)
+
+```text
+fix(catalog): format category labels consistently
+
+Use shared presentation formatting for navigation, operation tooltip paths and grouping reports. Replace underscores with spaces and title-case category words while preserving acronym casing and source identifiers.
+
+```
+
+<!-- changelog-commit:fbe9e8917db41e8e2c69cba8d4ea88b88f3743d4 -->
+### Commit [`fbe9e89`](https://github.com/superhero/operations.superduper.solutions/commit/fbe9e8917db41e8e2c69cba8d4ea88b88f3743d4)
+
+```text
+fix(workflow): scale orthogonal radius with curve strength
+
+Apply the configured strength to completed orthogonal edges, preview paths, dashes and segment controls. Keep the 4-unit radius at 100%, reaching 40 units at 1000%, subject to existing geometry and obstacle constraints.
+
+```
+
+<!-- changelog-commit:5e1a855681a94ccf8c2a1f3a361da87abe03c101 -->
+### Commit [`5e1a855`](https://github.com/superhero/operations.superduper.solutions/commit/5e1a855681a94ccf8c2a1f3a361da87abe03c101)
+
+```text
+fix(workflow): unify branch action icons and offsets
+
+```
+
+<!-- changelog-commit:9909ad444466ca8eff3a1a694f9b124da1374543 -->
+### Commit [`9909ad4`](https://github.com/superhero/operations.superduper.solutions/commit/9909ad444466ca8eff3a1a694f9b124da1374543)
+
+```text
+fix(workflow): retain ports beside branch restore controls
+
+```
+
+<!-- changelog-commit:6d9a3c4a6e83be082619e644cb84937c9ef453c3 -->
+### Commit [`6d9a3c4`](https://github.com/superhero/operations.superduper.solutions/commit/6d9a3c4a6e83be082619e644cb84937c9ef453c3)
+
+```text
+fix(workflow): point branch markers toward their connectors
+
+```
+
+<!-- changelog-commit:d3dbeb9cb8cb7d7bf8902bf17b166c516035f272 -->
+### Commit [`d3dbeb9`](https://github.com/superhero/operations.superduper.solutions/commit/d3dbeb9cb8cb7d7bf8902bf17b166c516035f272)
+
+```text
+style(workflow): bring branch markers closer to connectors
+
+```
+
+<!-- changelog-commit:3e4286a7605bc59c332a5f129202afc6c645e4a8 -->
+### Commit [`3e4286a`](https://github.com/superhero/operations.superduper.solutions/commit/3e4286a7605bc59c332a5f129202afc6c645e4a8)
+
+```text
+fix(workflow): enable dragging from operation output ports
+
+```
+
+<!-- changelog-commit:cd082c7366280d15e46cb20279f2b436410ec039 -->
+### Commit [`cd082c7`](https://github.com/superhero/operations.superduper.solutions/commit/cd082c7366280d15e46cb20279f2b436410ec039)
+
+```text
+feat(workflow): share compatible schemas across response statuses
+
+Allow an operation response output to connect to a compatible visible response panel of the same operation. Persist response links separately from field mappings and route the selected status through shared fields without introducing execution dependencies. Validate complete generated field trees and retain compatible links across operation version changes. Preserve XYFlow pointer handlers so structural output drags and response header drops work.
+
+```
+
+<!-- changelog-commit:fb9967527768a9b32fa140630198761f3bb3eca7 -->
+### Commit [`fb99675`](https://github.com/superhero/operations.superduper.solutions/commit/fb9967527768a9b32fa140630198761f3bb3eca7)
+
+```text
+fix(workflow): retain connection cursor on active structural ports
+
+```
+
+<!-- changelog-commit:e60f5a90d8c13091e93378db4a8d5b3f2dac20fa -->
+### Commit [`e60f5a9`](https://github.com/superhero/operations.superduper.solutions/commit/e60f5a90d8c13091e93378db4a8d5b3f2dac20fa)
+
+```text
+feat(workflow): share input schemas across operation inputs
+
+Enable yellow input-schema outputs to fan out to compatible operation input ports while retaining the original attachment. Persist and validate shared input links, reject conflicting local mappings, and expand incoming field mappings to every linked operation during execution. Preserve compatible links on operation version changes and keep white field ports as inputs.
+
+```
+
+<!-- changelog-commit:e2e789c612a376dbf569381661fdc1a10cd770e3 -->
+### Commit [`e2e789c`](https://github.com/superhero/operations.superduper.solutions/commit/e2e789c612a376dbf569381661fdc1a10cd770e3)
+
+```text
+feat(workspace): allow both side panes on wide screens
+
+Keep navigation and Settings open independently from 1720px, reserving room for both panes and the canvas. Preserve Settings while browsing or adding catalog items on wide screens. Smaller layouts retain exclusive panes; resizing keeps the most recently opened pane. Retain mobile overlays and dismiss the focused catalog with Escape when both panes are open.
+
+```
+
+<!-- changelog-commit:67710658384103f7bdbc8cfcc93ea83a06252b51 -->
+### Commit [`6771065`](https://github.com/superhero/operations.superduper.solutions/commit/67710658384103f7bdbc8cfcc93ea83a06252b51)
+
+```text
+feat(settings): resize the pane and adapt layout to its width
+
+Add a pointer and keyboard accessible left-edge splitter with a saved preferred width. Compare the selected width with the current viewport to decide whether both side panes fit and when Settings must fill the screen. Restore the preferred width when space returns, retain existing mobile behavior, and keep pane dimensions outside workflow documents.
+
+```
+
+<!-- changelog-commit:e849f2ff7a7a5e8a37a5e63f60e05bee0553b084 -->
+### Commit [`e849f2f`](https://github.com/superhero/operations.superduper.solutions/commit/e849f2ff7a7a5e8a37a5e63f60e05bee0553b084)
+
+```text
+style(settings): delay and fade the resize edge highlight
+
+```
+
+<!-- changelog-commit:2d1150f9a59c21869a43e9b05aa55ee5b9bf7f2e -->
+### Commit [`2d1150f`](https://github.com/superhero/operations.superduper.solutions/commit/2d1150f9a59c21869a43e9b05aa55ee5b9bf7f2e)
+
+```text
+fix(workflow): preserve node scale when the viewport shrinks
+
+Replace automatic fit-all on resize with panning to a nearby node at the existing zoom. Narrow desktop windows no longer make nodes smaller, while a hidden graph still becomes reachable. Preserve explicit Zoom and Fit actions.
+
+```
+
+<!-- changelog-commit:e7e3685858f0540632cdddeb4155f53a84741ea4 -->
+### Commit [`e7e3685`](https://github.com/superhero/operations.superduper.solutions/commit/e7e3685858f0540632cdddeb4155f53a84741ea4)
+
+```text
+Merge branch 'develop' into bugfix/preserve-zoom-on-resize
+```
+
+<!-- changelog-commit:26af858e91c635f00b1b025a7d737f670cee3799 -->
+### Commit [`26af858`](https://github.com/superhero/operations.superduper.solutions/commit/26af858e91c635f00b1b025a7d737f670cee3799)
+
+```text
+feat(navigation): resize the left pane above its current minimum
+
+Add a right-edge splitter to navigation with its existing 320px width as the minimum. Save its preferred width, clamp it to the available desktop viewport and retain the existing mobile sheet. Account for both chosen pane widths when deciding whether they can coexist. Share drag, keyboard, reset and delayed highlight behavior with Settings.
+
+```
+
+<!-- changelog-commit:823e4cdfbf1947ac2d717102e10f861376520ef8 -->
+### Commit [`823e4cd`](https://github.com/superhero/operations.superduper.solutions/commit/823e4cdfbf1947ac2d717102e10f861376520ef8)
+
+```text
+feat(panes): support touch resizing and swipe dismissal
+
+```
+
+<!-- changelog-commit:c10396bb4712dc92e37eba80e748c09e726c884d -->
+### Commit [`c10396b`](https://github.com/superhero/operations.superduper.solutions/commit/c10396bb4712dc92e37eba80e748c09e726c884d)
+
+```text
+fix(navigation): keep the dismissal grip above scrolling content
+
+```
+
+<!-- changelog-commit:4d2606f46bf5187a23fcde8ccb848a932f9d649b -->
+### Commit [`4d2606f`](https://github.com/superhero/operations.superduper.solutions/commit/4d2606f46bf5187a23fcde8ccb848a932f9d649b)
+
+```text
+Merge remote-tracking branch 'origin/develop' into feature/resizable-navigation-pane
+
+# Conflicts:
+#	tests/browser/workspace.feature
+#	tests/browser/workspace.steps.mjs
+
+```
+
+<!-- changelog-commit:8c09a24dcd007d4d7f2911315feabcb316ea0ccc -->
+### Commit [`8c09a24`](https://github.com/superhero/operations.superduper.solutions/commit/8c09a24dcd007d4d7f2911315feabcb316ea0ccc)
+
+```text
+fix(workflow): fit the graph within the visible canvas
+
+```
+
+<!-- changelog-commit:bda5376668246a79329524c9cf995a79ac101d35 -->
+### Commit [`bda5376`](https://github.com/superhero/operations.superduper.solutions/commit/bda5376668246a79329524c9cf995a79ac101d35)
+
+```text
+feat(panes): restore navigation and settings across sessions
+
+Resume pane visibility, searches, branch expansion, selected Settings
+section and reading positions from a validated local snapshot. Preserve
+preferred widths and resolve constrained layouts using the last opened
+pane.
+
+Wait for asynchronous content before restoring scroll, and flush current
+positions on page hide so immediate refreshes retain the reading position.
+Cover desktop, compact touch, search and invalid-state recovery in browser
+scenarios.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

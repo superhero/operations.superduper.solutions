@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+import { isInputLink } from "./workflow-input-links.ts";
+import { isResponseLink } from "./workflow-response-links.ts";
 import { commentTextLimit, isValueConnection, switchGateLimit, switchOperators, switchValueLimit,
   workflowDescriptionLimit, workflowInterface } from "./workflow-utilities.ts";
 import { validateWorkflowFileData, type WorkflowFileData } from "./workflow-file.ts";
@@ -9,6 +11,7 @@ import { normalizeManualRoute } from "./flow-routing/manual.js";
 import { validateCredentialBinding } from "./secrets/bindings.ts";
 import type { CredentialBinding } from "./secrets/types.ts";
 import { processingDefinition, validateProcessingData, type ProcessingData } from "./workflow-processing.ts";
+import { isWorkflowLineStyle, type WorkflowLineStyle } from "./workflow-line-style.ts";
 
 export type OperationData = {
   operationId: string;
@@ -63,7 +66,7 @@ export type WorkflowDocumentEdge = {
   target: string;
   sourceHandle?: string;
   targetHandle?: string;
-  kind?: "schema" | "mapping";
+  kind?: "schema" | "mapping" | "response" | "input";
   hidden?: boolean;
   detached?: boolean;
   manualRoute?: { x: number; y: number }[];
@@ -78,6 +81,7 @@ export type WorkflowDocument = {
   viewport: { x: number; y: number; zoom: number };
   snap: boolean;
   curved: boolean;
+  lineStyle?: WorkflowLineStyle;
   dashed: boolean;
 };
 
@@ -251,6 +255,16 @@ function validateGraph(nodes: WorkflowDocumentNode[], edges: WorkflowDocumentEdg
           Boolean(edge.hidden) !== Boolean(source.hidden || target.hidden || edge.detached))
         throw new Error("Schema branch visibility must agree with its nodes and attachment.");
     }
+    else if (edge.kind === "input")
+    {
+      if (edge.hidden || edge.detached || !isInputLink(edge, nodes, edges.filter(other => other.id !== edge.id)))
+        throw new Error("Shared inputs must connect compatible input schemas without conflicting field mappings.");
+    }
+    else if (edge.kind === "response")
+    {
+      if (edge.hidden || edge.detached || !isResponseLink(edge, nodes, edges.filter(other => other.id !== edge.id)))
+        throw new Error("Response links must join compatible response schemas of the same operation.");
+    }
     else if (edge.kind === "mapping")
     {
       if (!isValueConnection(edge, source, target, edges.filter(other => other.id !== edge.id)) || edge.hidden || edge.detached)
@@ -375,7 +389,7 @@ function validateDocument(value: unknown, context: ValidationContext, depth: num
     const target = text(edge.target, "Connection target", rich ? 2048 : 128);
     if (!nodeIds.has(source) || !nodeIds.has(target))
       throw new Error("Every workflow connection must refer to nodes in this document.");
-    if (rich && edge.kind !== undefined && edge.kind !== "schema" && edge.kind !== "mapping")
+    if (rich && edge.kind !== undefined && edge.kind !== "schema" && edge.kind !== "mapping" && edge.kind !== "response" && edge.kind !== "input")
       throw new Error("Unsupported workflow connection kind.");
     const manualRoute = edge.manualRoute === undefined ? undefined : normalizeManualRoute(edge.manualRoute);
     if (manualRoute === null)
@@ -383,7 +397,7 @@ function validateDocument(value: unknown, context: ValidationContext, depth: num
     return {
       id: text(edge.id, "Connection ID", rich ? 4096 : 256), source, target,
       ...(manualRoute ? { manualRoute } : {}),
-      ...(rich && edge.kind !== undefined ? { kind: edge.kind as "schema" | "mapping" } : {}),
+      ...(rich && edge.kind !== undefined ? { kind: edge.kind as "schema" | "mapping" | "response" | "input" } : {}),
       ...(rich && edge.sourceHandle !== undefined ? { sourceHandle: text(edge.sourceHandle, "Source handle", 4096) } : {}),
       ...(rich && edge.targetHandle !== undefined ? { targetHandle: text(edge.targetHandle, "Target handle", 4096) } : {}),
       ...(rich && edge.hidden !== undefined ? { hidden: flag(edge.hidden) } : {}),
@@ -397,12 +411,14 @@ function validateDocument(value: unknown, context: ValidationContext, depth: num
   const zoom = coordinate(viewport.zoom);
   if (zoom < 0.25 || zoom > 2) throw new Error("Workflow zoom must be between 0.25 and 2.");
   context.ancestors.delete(document);
+  if (document.lineStyle !== undefined && !isWorkflowLineStyle(document.lineStyle)) throw new Error("Unsupported connection line style.");
   return {
     version: document.version,
     id: text(document.id, "Document ID", 128), name: text(document.name, "Document name", 100), nodes, edges,
     ...(extended && document.description !== undefined ? { description: text(document.description, "Workflow description", workflowDescriptionLimit, true) } : {}),
     viewport: { x: coordinate(viewport.x), y: coordinate(viewport.y), zoom },
-    snap: flag(document.snap), curved: flag(document.curved), dashed: flag(document.dashed)
+    snap: flag(document.snap), curved: flag(document.curved), dashed: flag(document.dashed),
+    ...(isWorkflowLineStyle(document.lineStyle) ? { lineStyle: document.lineStyle, curved: document.lineStyle !== "orthogonal" } : {})
   };
 }
 

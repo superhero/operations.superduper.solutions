@@ -1,7 +1,7 @@
 # Workflow edge routing
 
-This module routes both workflow edge styles around measured node rectangles
-using a shared orthogonal backbone, reduces crossings within bounded work,
+This module routes Orthogonal, Filleted, Bézier and Clutter connections around
+measured node rectangles using a shared orthogonal backbone, reduces crossings within bounded work,
 and keeps attached edges and connection
 previews aligned while asynchronous routing catches up. Automatic geometry is
 derived editor state. Explicit segment adjustments are saved as authored routes.
@@ -40,8 +40,22 @@ Existing routes supply their ID and points. No geometry helper reads the DOM.
 The XYFlow adapter imports `@xyflow/system`; the routing and drawing algorithms
 are independent of Svelte, XYFlow, and browser globals.
 
-Use `bendRadius` from `path.js` for orthogonal rendering: it is four diagram units.
-Curved connections keep the original strength-controlled Bézier when it is
+Settings exposes five discrete **Connection style** slider stops: **Direct**,
+**Orthogonal**, **Filleted**, **Bézier**, and **Clutter**. The toolbar cycles through
+those same choices for the current workflow. The slider snaps to marked ticks
+and shows only the selected style's name, centered below the track.
+The optional `lineStyle` preference persists
+in settings and workflow documents; legacy `curved` flags retain Orthogonal
+(`false`) or Filleted (`true`). Display changes do not create workflow revisions.
+
+Use `bendRadius` from `path.js` as the orthogonal radius at 100% Curve strength:
+it is four diagram units. The application scales it linearly with strength, from
+sharp corners at 0% to 40-unit corners at 1000%, including previews, dashes and
+segment controls. Short legs and obstacle clearance can still constrain a corner.
+Filleted keeps the existing full-distance cubic handles. Bézier uses half-distance
+handles along the routed anchor directions. Clutter preserves the experimental
+blend of diagonal anchor tangents, bowed spans, and sharp backbone fallbacks.
+The routed curved styles keep their direct strength-controlled Bézier when it is
 clear. Otherwise they fit smooth cubic spans through the routed guides, allowing
 diagonal travel instead of rounding each orthogonal elbow. Recursive convex-hull
 bounds certify clearance; an 8192-check drawing budget and ten subdivision levels
@@ -49,7 +63,15 @@ bound the fit. Analytic extrema keep detours within 64 units of the checked
 corridor instead of creating oversized loops. Uncertified spans retain the safe
 backbone locally. Facing port
 buffers allow the terminal exit while node bodies and other faces stay protected.
-Both styles use matching hit areas/previews and expose segment controls.
+These routed styles use matching hit areas/previews and expose segment controls.
+
+Direct (stored as `flowing` for compatibility) restores the single continuous cubic from `b68904b41b69e48e2f797f919c47958b898cd77a`,
+before obstacle routing (#199) and manual anchors (#200). It uses `workflowCurve`
+at the original strength for completed edges, raw pointer previews and snapped
+previews. It draws directly between ports, so it can cross nodes and has no
+segment controls. Existing manual routes remain saved for returning to a routed
+style. Its geometry does not wait for worker routing results.
+
 The low-level `roundedSegments` default remains eight for reference compatibility;
 path and dash helpers default to sharp corners. Pass the rendered dash-plus-gap
 period to `dashSegments`, including when user settings change dash size. It is
@@ -66,6 +88,11 @@ align interior parallel runs when this increases shared length without adding
 bends, length, crossings, or losing the existing clearance. Existing routes
 remain fixed when routing one connection. Shared stems and joining existing
 bends are intentional overlaps.
+
+Once crossing reduction finishes, one bounded cleanup compares automatic
+detours with their already checked shortest routes. If later edges have cleared
+that shorter corridor, it replaces the obsolete detour without adding crossings.
+This reuses the initial searches and preserves authored routes.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
@@ -124,8 +151,9 @@ Supply a client with
 resolver. `RoutedConnection` draws the raw pointer; the host draws the faint
 resolved target with the same `previewPath` geometry. Both previews prefer the
 shared checked route; a supplied curve function is only a temporary fallback.
-The application keeps its configurable curve strength
-and stricter live-handle eligibility checks.
+The application keeps its configurable curve strength (0–1000%, default 100%)
+with a logarithmic Settings slider and exact whole-percent entry, and stricter
+live-handle eligibility checks.
 
 Supply `onroutechange(id, points)` to persist completed adjustments; `undefined`
 points reset the edge. The host's `editable` flag disables segment controls when
@@ -140,7 +168,7 @@ connection styles reuses the worker and its checked geometry.
 
 ## Manual adjustments
 
-Hover or select an edge in either style to expose segment handles. Horizontal runs
+Hover or select an edge in any style to expose segment handles. Horizontal runs
 move vertically; vertical runs move horizontally. Terminal and straight edges
 gain endpoint stubs when needed. Pointer motion stops at the configured node
 clearance, including obstacles crossed by adjoining segments. A fast pointer
@@ -194,3 +222,22 @@ reference case is an individual Cucumber scenario. Browser cases tagged
 settings, and persistence; run them after `npm run build` with
 `npm run test:browser -- --tags @workflow-routing`.
 Manual controls and persistence are covered by `@workflow-manual-routing`.
+
+When facing endpoint buffers overlap, including diagonally staggered nodes,
+those two faces share the actual gap from the first routing search. Other faces
+and unrelated obstacles keep the requested clearance. Automatic routing and
+manual anchor validation use the same corridor, so restoring a response at high
+clearance does not force a loop around its entire subtree.
+
+Operation response outputs can also link to a compatible visible Response panel
+of the same operation. These saved `response` edges reuse the complete generated
+field tree across statuses; they are not field mappings or execution dependencies.
+The runner projects the selected status through the shared fields. Schemas with
+different field types, paths, required flags or nested structures cannot be shared.
+
+The yellow structural output on a root input schema can supply multiple operation
+input ports. Saved `input` links require the same input location and generated
+field tree, and refuse destinations with local field mappings. White field ports
+remain inputs. Execution fans the shared panel's incoming mappings out to every
+linked operation, including closed destination panels; the original attachment
+is retained. These links survive export/import and copy/paste.

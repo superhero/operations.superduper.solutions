@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { EdgeDrawing } from './context.ts';
 import type { EdgeEndpoints, NodeRect, Point, Route } from './types.js';
+import type { WorkflowLineStyle } from '../workflow-line-style.ts';
 
 type Cubic = [Point, Point, Point, Point];
 type Anchor = Point & { direction: Point; corner?: Point };
@@ -96,7 +97,11 @@ function drawing(curves: Cubic[]): EdgeDrawing {
 }
 
 /** Fit real diagonal cubics to an already checked route; this never searches for a route. */
-export function bezierDrawing(route: Route, edge: EdgeEndpoints & { source?: string | undefined; target?: string | undefined }, strength: number, obstacles: NodeRect[], authored = false): EdgeDrawing {
+export function bezierDrawing(route: Route, edge: EdgeEndpoints & { source?: string | undefined; target?: string | undefined }, strength: number, obstacles: NodeRect[], authored = false, style: WorkflowLineStyle = "filleted"): EdgeDrawing {
+  // Filleted retains the existing full-distance handles. Bézier and Clutter use
+  // half-distance handles; Clutter also blends routed anchor directions, keeping
+  // its distinctive mix of bowed spans and sharp certified-backbone fallbacks.
+  if (style === "bezier" || style === "clutter") strength /= 2;
   const points = route.points, budget = { work: 8192 }, boxes = terminalBoxes(obstacles, edge);
   const frame = { left: Math.min(...points.map(p => p.x)) - 64, right: Math.max(...points.map(p => p.x)) + 64,
     top: Math.min(...points.map(p => p.y)) - 64, bottom: Math.max(...points.map(p => p.y)) + 64 };
@@ -104,6 +109,11 @@ export function bezierDrawing(route: Route, edge: EdgeEndpoints & { source?: str
   if (!authored && clear(direct, boxes, budget)) return drawing([direct]);
   const anchors: Anchor[] = [{ ...points[0]!, direction: sides[edge.sourcePosition] }, ...points.slice(1).map((point, i) => ({ ...mix(points[i]!, point), direction: unit(points[i]!, point), corner: point })),
     { ...points.at(-1)!, direction: { x: -sides[edge.targetPosition].x, y: -sides[edge.targetPosition].y } }];
+  if (style === "clutter") for (let i = 1; i < anchors.length - 1; i++) {
+    const previous = anchors[i - 1]!, next = anchors[i + 1]!;
+    const dx = next.x - previous.x, dy = next.y - previous.y, distance = Math.hypot(dx, dy);
+    if (distance) anchors[i]!.direction = { x: dx / distance, y: dy / distance };
+  }
   const curves: Cubic[] = [];
   for (let i = 0; i < anchors.length - 1;) {
     const a = anchors[i]!;

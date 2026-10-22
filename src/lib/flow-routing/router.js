@@ -146,7 +146,7 @@ class Queue {
   }
 }
 
-function search(edge, nodes, options, budget, routes = [], maximum = Infinity, boxes = rectangles(nodes, options.nodePadding)) {
+function search(edge, nodes, options, budget, routes = [], maximum = Infinity, boxes = rectangles(nodes, options.nodePadding, edge)) {
   const [source, target] = endpoints(edge);
   const a = endpointStem(source, edge.sourcePosition, boxes.find((box) => box.id === edge.source), target, boxes, options);
   const b = endpointStem(target, edge.targetPosition, boxes.find((box) => box.id === edge.target), source, boxes, options);
@@ -241,7 +241,7 @@ function improve(edge, nodes, routes, original, options, budget) {
   const count = crossingCount(original.points, routes, edge, budget);
   if (!count || !Number.isFinite(count)) return original;
   const maximum = original.length * options.maxLengthRatio;
-  const padded = rectangles(nodes, options.nodePadding);
+  const padded = rectangles(nodes, options.nodePadding, edge);
   const boxes = clearRoute(original.points, padded, edge, budget) ? padded : terminalRectangles(nodes, options.nodePadding, edge);
   const candidate = search(edge, nodes, options, budget, routes, maximum, boxes);
   return candidate && candidate.length <= maximum + EPSILON && crossingCount(candidate.points, routes, edge, budget) < count ? candidate : original;
@@ -277,7 +277,7 @@ function alignSegments(edge, nodes, routes, original, options, budget) {
   if (original.status !== 'routed' || original.points.length < 4 || !routes.length || budget.work <= 0) return original;
   let current = original, shared = sharedLength(current.points, routes, edge, budget);
   let crossings = crossingCount(current.points, routes, edge, budget);
-  const padded = rectangles(nodes, options.nodePadding);
+  const padded = rectangles(nodes, options.nodePadding, edge);
   const boxes = clearRoute(current.points, padded, edge, budget) ? padded : terminalRectangles(nodes, options.nodePadding, edge);
   // One bounded pass slides existing interior segments; it introduces no bends
   // and leaves all established routes untouched. Keep the baseline's full or
@@ -331,12 +331,25 @@ export function routeEdges({ nodes, edges }, options = {}) {
     const manual = edge.manualRoute !== undefined ? resolveManualRoute(edge.manualRoute, edge, obstacles, config, budget) : null;
     output.set(edge.id, manual || (index < config.maxRoutedEdges ? baseline(edge, obstacles, config, budget) : fallback(edge, config)));
   }
+  const shortest = new Map(output);
   for (const edge of sorted.slice(0, config.maxRoutedEdges)) {
     if (budget.work <= 0) break;
     if (output.get(edge.id).manualState === 'applied') continue;
     const routes = sorted.map((other) => ({ ...other, points: output.get(other.id).points }));
     const routed = improve(edge, obstacles, routes, output.get(edge.id), config, budget);
     output.set(edge.id, alignSegments(edge, obstacles, routes, routed, config, budget));
+  }
+  // Later edges can move out of an earlier edge's way. Drop the obsolete
+  // crossing detour when its checked baseline now has no more crossings.
+  // Reuse the initial searches rather than doing another layout/search pass.
+  for (const edge of sorted.slice(0, config.maxRoutedEdges)) {
+    if (budget.work <= 0) break;
+    const candidate = shortest.get(edge.id), current = output.get(edge.id);
+    if (candidate.status !== 'routed' || current.status !== 'routed' ||
+        current.manualState === 'applied' || candidate.length >= current.length - EPSILON) continue;
+    const routes = sorted.map(other => ({ ...other, points: output.get(other.id).points }));
+    const before = crossingCount(current.points, routes, edge, budget), after = crossingCount(candidate.points, routes, edge, budget);
+    if (budget.work > 0 && after <= before) output.set(edge.id, candidate);
   }
   for (const edge of sorted) if (edge.manualRoute !== undefined && !output.get(edge.id).manualState)
     output.set(edge.id, { ...output.get(edge.id), manualState: 'suspended' });

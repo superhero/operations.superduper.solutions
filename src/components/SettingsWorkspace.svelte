@@ -33,7 +33,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <script lang="ts">
   import { tick } from "svelte";
+  import type { SettingsSection } from "$lib/pane-state.ts";
   import Disclosure from "$lib/components/Disclosure.svelte";
+  import { workflowLineStyle, workflowLineStyles, workflowLineStyleLabels } from "$lib/workflow-line-style.ts";
   import FieldInteger from "$lib/components/FieldInteger.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import HintButton from "$lib/components/HintButton.svelte";
@@ -52,7 +54,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { isValidWorkflowCurveStrength, isValidWorkflowDashLength, isValidWorkflowDashGap, isValidWorkflowDashSpeed, isValidWorkflowGridSize, isValidWorkflowNodeClearance,
     workflowCurveStrengthLimits, workflowDashLengthLimits, workflowDashGapLimits, workflowDashSpeedLimits, workflowGridSizeLimits, workflowNodeClearanceLimits, type WorkflowDefaults } from "$lib/app-settings.ts";
 
-  let { active = true, dark, onTheme, tooltips = true, tooltipsError = "", onTooltipsChange = () => {}, palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
+  let { active = true, openSection = $bindable<SettingsSection>(null), dark, onTheme, tooltips = true, tooltipsError = "", onTooltipsChange = () => {}, palette, onPaletteChange, workflowDefaults, onWorkflowDefaultsChange, workflowDefaultsError = "", onRetryWorkflowDefaults,
     toolbarButtons = defaultToolbarButtons, toolbarButtonsError = "", onToolbarButtonsChange = () => {}, onRetryToolbarButtons = () => {},
     keybindings = defaultKeybindings, keybindingsError = "", onKeybindingsChange = () => {}, onRetryKeybindings = () => {},
     locale = defaultLocaleSettings, localeError = "", onLocaleChange = () => {}, onRetryLocale = () => {},
@@ -60,6 +62,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     evaluationDetails, evaluationDetailsError = "", onEvaluationDetailsChange,
     settingsUnavailable, settingsRetrying, onRetrySettings }: {
     active?: boolean;
+    openSection?: SettingsSection;
     dark: boolean;
     onTheme: () => void;
     tooltips?: boolean;
@@ -94,7 +97,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     onRetrySettings: () => void;
   } = $props();
   let workspace: HTMLElement;
-  let openSection = $state<"toolbar" | "keybindings" | "secrets" | "theme" | "locale" | "logs" | "schemas" | "workflow" | "storage" | "developer" | null>(null);
   let storageBuilt = $state(false);
   let storageReady = $state(false);
   let storageDismissing = $state(false);
@@ -163,7 +165,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let nodeClearanceInvalid = $state(false);
   const savedNodeClearance = $derived(workflowDefaults.nodeClearance);
   const applicationOptions = [
-    { key: "curved", label: "Curved lines" },
+    { key: "curved", label: "Connection style" },
     { key: "dashed", label: "Dashed lines" },
     { key: "nodeClearance", label: "Node clearance" },
     { key: "nodeSymbols", label: "Node symbols" },
@@ -246,7 +248,30 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <div class="application-lane">
           {#each lane as option (option.key)}
             <div class="workflow-default-pair">
-              {#if option.key === "tooltips"}
+              {#if option.key === "curved"}
+                {@const selectedStyle = workflowLineStyle(workflowDefaults)}
+                <div class="line-style-setting">
+                  <label for="workflow-line-style">Connection style</label>
+                  <FieldInteger id="workflow-line-style" label="Connection style" minimum={0} maximum={workflowLineStyles.length - 1} options={workflowLineStyles.map((_, i) => i)}
+                    value={String(workflowLineStyles.indexOf(selectedStyle))} valueText={workflowLineStyleLabels[selectedStyle]} showValue={false} stepped
+                    onValueChange={value => {
+                      const lineStyle = workflowLineStyles[Number(value)]!;
+                      if (lineStyle !== workflowDefaults.lineStyle) onWorkflowDefaultsChange({ ...workflowDefaults, lineStyle, curved: lineStyle !== "orthogonal" });
+                    }} />
+                  <span class="line-style-value" aria-hidden="true">{workflowLineStyleLabels[selectedStyle]}</span>
+                </div>
+                  <div class="grid-size-setting">
+                    <span>Curve strength</span>
+                    <div class="grid-size-control">
+                      <FieldInteger id="workflow-curve-strength" label="Curve strength" value={curveStrengthDraft}
+                        minimum={workflowCurveStrengthLimits.min} maximum={workflowCurveStrengthLimits.max} logarithmic required invalid={curveStrengthInvalid}
+                        describedBy={curveStrengthInvalid ? "workflow-curve-strength-error" : undefined}
+                        onValueChange={value => { curveStrengthDraft = value; curveStrengthInvalid = false; }} onValueCommit={commitCurveStrength} />
+                      <span aria-hidden="true">%</span>
+                    </div>
+                    {#if curveStrengthInvalid}<span class="grid-size-error" id="workflow-curve-strength-error" role="alert">Curve strength must be a whole number from {workflowCurveStrengthLimits.min} to {workflowCurveStrengthLimits.max}.</span>{/if}
+                  </div>
+              {:else if option.key === "tooltips"}
                 <button class="workflow-default" type="button" role="switch" aria-checked={tooltips} onclick={() => onTooltipsChange(!tooltips)}>
                   <span>Tooltips</span><span class="default-switch" aria-hidden="true"><span></span></span>
                 </button>
@@ -318,18 +343,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                       <span aria-hidden="true">px/s</span>
                     </div>
                     {#if dashSpeedInvalid}<span class="grid-size-error" id="workflow-dash-speed-error" role="alert">Dash speed must be a whole number from {workflowDashSpeedLimits.min} to {workflowDashSpeedLimits.max}.</span>{/if}
-                  </div>
-                {:else}
-                  <div class="grid-size-setting">
-                    <span>Curve strength</span>
-                    <div class="grid-size-control">
-                      <FieldInteger id="workflow-curve-strength" label="Curve strength" value={curveStrengthDraft}
-                        minimum={workflowCurveStrengthLimits.min} maximum={workflowCurveStrengthLimits.max} required invalid={curveStrengthInvalid}
-                        describedBy={curveStrengthInvalid ? "workflow-curve-strength-error" : undefined}
-                        onValueChange={value => { curveStrengthDraft = value; curveStrengthInvalid = false; }} onValueCommit={commitCurveStrength} />
-                      <span aria-hidden="true">%</span>
-                    </div>
-                    {#if curveStrengthInvalid}<span class="grid-size-error" id="workflow-curve-strength-error" role="alert">Curve strength must be a whole number from {workflowCurveStrengthLimits.min} to {workflowCurveStrengthLimits.max}.</span>{/if}
                   </div>
                 {/if}
               {/if}
@@ -476,6 +489,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </section>
 
 <style>
+  .line-style-setting { display: flex; flex-direction: column; gap: 4px; min-width: 0; border-radius: 4px; background: var(--color-background); }
+  .line-style-setting > label { padding: 10px 12px 0; color: var(--color-catalog-foreground); font-size: 12px; font-weight: 700; }
+  .line-style-value { display: block; padding: 4px 12px 12px; text-align: center; font-size: 0.85em; color: var(--color-primary); font-weight: 700; }
+
   .storage-building { margin: 0; padding: 12px 16px 16px; font-size: 12px; font-weight: 700; color: var(--color-catalog-active-foreground); text-align: center; }
   .browser-content { position: relative; }
   /* Preserve the dots as overflow while the enclosing disclosure clips its slide. */
@@ -506,7 +523,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .workflow-default-pair > .workflow-default { background: var(--color-background); }
   .grid-size-setting { display: grid; align-content: center; gap: 8px; min-width: 0; padding: 10px 12px; border-radius: 4px; background: var(--color-background); color: var(--color-catalog-foreground); font-size: 12px; font-weight: 700; }
   .grid-size-control { display: flex; align-items: stretch; gap: 0; min-width: 0; border-radius: 4px; outline: 2px solid transparent; outline-offset: 2px; transition: outline-color 180ms ease-in; --field-background: var(--color-background); --field-foreground: var(--color-catalog-foreground); }
-  .grid-size-control:focus-within, .grid-size-control:hover:has(:enabled) { outline-color: var(--color-ring); }
+  .grid-size-control:has(:global(:focus-visible)) { outline-color: var(--color-ring); }
   .grid-size-control :global(.field-integer) { flex: 1; min-width: 0; padding-right: 4px; }
   .grid-size-control :global(.field-integer :is(.integer-range, .integer-value)) { outline: none; }
   .grid-size-control > span { display: flex; align-items: center; flex-shrink: 0; padding: 0 8px; border-radius: 0 4px 4px 0; background: var(--field-background); color: var(--field-foreground); }

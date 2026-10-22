@@ -7,7 +7,7 @@ import { Then } from "@cucumber/cucumber";
 import demo from "./catalogs/demo.openapi.json" with { type: "json" };
 import { extractOperations, operations, updateCatalogs } from "./lib/catalog.ts";
 import { catalogs, catalogForOperation } from "./lib/catalog-registry.ts";
-import { addAdditionalProperty, createOperationGraph, createWorkflowGraph } from "./lib/workflow-graph.ts";
+import { addAdditionalProperty, createOperationGraph, createWorkflowGraph, removeGraphSelection, isWorkflowConnection } from "./lib/workflow-graph.ts";
 import { createWorkflowRunner as createRequestRunner } from "./lib/workflow-runner.ts";
 import { createWorkflowDemo } from "./lib/workflow-demo.ts";
 import { createWorkflowRequestExecution, WorkflowResponseError, workflowExecutionForOperation, workflowRequestUrl } from "./lib/workflow-execution.ts";
@@ -958,4 +958,83 @@ Then('service workflow inputs retain required defaults generic JSON values and e
       assert.deepEqual((await runner.submit(next.values)).request.body, response);
     } finally { restore(); }
   }
+});
+
+
+Then("response schema links persist and route each selected status through the shared fields", async function () {
+  const { parseWorkflowDocument } = await import("./lib/workflow-document.ts");
+  const schema = structuredClone(demo);
+  const response = { description: "Shared error", content: { "application/json": { schema: { type: "string" } } } };
+  schema.paths["/projects/{projectId}"].get.responses = { 401: response, 404: response,
+    400: { description: "Different", content: { "application/json": { schema: { type: "integer" } } } } };
+  for (const status of [401, 404]) {
+    let doc = document(createOperationGraph(operation("getProject"), { x: 0, y: 0 }, "source", schema), graph("createTask", "target"));
+    const root = code => doc.edges.find(edge => edge.kind === "schema" && edge.source === "source" &&
+      decodeURIComponent(edge.target).includes(`response:${code}`));
+    const canonical = root(401), alternate = root(404), wrong = root(400);
+    const hidden = removeGraphSelection({ nodes: [{ id: alternate.target }], edges: [] }, doc.nodes, doc.edges);
+    doc = { ...doc, ...hidden };
+    const link = { id: "shared-response", kind: "response", source: "source", sourceHandle: alternate.sourceHandle,
+      target: canonical.target, targetHandle: "value" };
+    assert.ok(isWorkflowConnection(link, doc.nodes, doc.edges), "hidden 404 can connect to visible compatible 401");
+    assert.equal(isWorkflowConnection({ ...link, sourceHandle: wrong.sourceHandle }, doc.nodes, doc.edges), false);
+    doc.edges.push(link);
+    assert.equal(isWorkflowConnection(link, doc.nodes, doc.edges), false, "duplicate response links are rejected");
+    mapping(doc, responseField(doc, "source", "/body", "401"), input(doc, "target", "Path value"));
+    doc = parseWorkflowDocument(JSON.stringify(doc));
+    assert.ok(doc.edges.some(edge => edge.id === link.id && edge.kind === "response"));
+    const { copyWorkflowSelection, pasteWorkflowSelection } = await import("./lib/workflow-clipboard.ts");
+    const copied = pasteWorkflowSelection(copyWorkflowSelection(doc, ["source", "target"], []));
+    assert.doesNotThrow(() => parseWorkflowDocument(JSON.stringify({ ...doc, ...copied })));
+    const differentOwner = { ...link, source: "target" };
+    assert.equal(isWorkflowConnection(differentOwner, doc.nodes, doc.edges), false);
+    assert.throws(() => parseWorkflowDocument(JSON.stringify({ ...doc, edges: [...doc.edges, { ...link, id: "duplicate" }] })));
+    const fixture = createWorkflowDemo();
+    const runner = createRequestRunner(doc, undefined, { execute(operation, values) {
+      return operation.id === "demo:getProject" ? { request: { method: "GET", path: "/projects/project-1", query: {} },
+        response: { status, statusText: "Error", headers: {}, body: "project-1" } } : fixture.execute(operation, values);
+    } });
+    await submit(runner, project);
+    assert.equal(runner.next().nodeId, "target");
+    assert.equal(runner.next().values["path:projectId"], "project-1");
+    await submit(runner, task);
+    assert.equal(runner.next().kind, "complete");
+  }
+});
+
+Then("one input schema fans mapped values out to multiple operations after reload", async function () {
+  const { parseWorkflowDocument } = await import("./lib/workflow-document.ts");
+  const doc = document(graph("getProject", "source"), graph("createTask", "first"), graph("createTask", "second"), graph("createTask", "third"));
+  const root = owner => doc.edges.find(edge => edge.kind === "schema" && edge.target === owner &&
+    decodeURIComponent(edge.source).includes('input:path'));
+  const canonical = root("first");
+  for (const owner of ["second", "third"]) {
+    const attachment = root(owner);
+    const hidden = removeGraphSelection({ nodes: [{ id: attachment.source }], edges: [] }, doc.nodes, doc.edges);
+    Object.assign(doc, hidden);
+    const link = { id: `input-${owner}`, kind: "input", source: canonical.source, sourceHandle: "value",
+      target: owner, targetHandle: attachment.targetHandle };
+    assert.ok(isWorkflowConnection(link, doc.nodes, doc.edges));
+    doc.edges.push(link);
+  }
+  mapping(doc, output(doc, "source", "Path value"), input(doc, "first", "Path value"));
+  const saved = parseWorkflowDocument(JSON.stringify(doc));
+  assert.equal(saved.edges.filter(edge => edge.kind === "input").length, 2);
+  const fixture = createWorkflowDemo();
+  const runner = createRequestRunner(saved, "source", fixture);
+  await submit(runner, project);
+  const visited = new Set();
+  for (let index = 0; index < 3; index++) {
+    let next = runner.next();
+    if (next.kind === "choice") { runner.choose(next.choices[0].id); next = runner.next(); }
+    assert.equal(next.kind, "operation");
+    assert.equal(next.values["path:projectId"], "project-1");
+    visited.add(next.nodeId);
+    await submit(runner, task);
+  }
+  assert.deepEqual([...visited].sort(), ["first", "second", "third"]);
+  assert.equal(runner.next().kind, "complete");
+  const { pasteWorkflowSelection, copyWorkflowSelection } = await import("./lib/workflow-clipboard.ts");
+  assert.doesNotThrow(() => parseWorkflowDocument(JSON.stringify({ ...doc, ...pasteWorkflowSelection(copyWorkflowSelection(doc, ["first", "second", "third", "source"], [])) })));
+  assert.equal(isWorkflowConnection({ source: canonical.source, sourceHandle: "value", target: "second", targetHandle: doc.edges.find(edge => edge.kind === "schema" && edge.target === "second" && decodeURIComponent(edge.source).includes("input:body"))?.targetHandle }, doc.nodes, doc.edges), false);
 });

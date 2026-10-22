@@ -33,7 +33,7 @@ async function addVersionedOperation(page) {
   await expect(foo.locator('[data-operation-id]')).toHaveCount(1);
   await expect(foo.locator('[data-operation-id]')).toHaveAttribute('data-operation-id', `${id}:readV1`);
   const bar = foo.locator(':scope > .catalog-group > .disclosure-panel > .catalog-children > .catalog-branch > .catalog-group > summary');
-  await expect(bar.locator('.catalog-name')).toHaveText('bar');
+  await expect(bar.locator('.catalog-name')).toHaveText('Bar');
   await bar.press('Enter');
   await expect(page.locator(`[data-operation-id="${id}:readBar"]`)).toBeVisible();
   await page.locator(`[data-operation-id="${id}:readV1"] > button`).press('Enter');
@@ -140,7 +140,7 @@ Then('Anthropic operations follow their nested resources without altering their 
   await expect(page.locator('[data-catalog-group="anthropic:tag:Operations"]')).toHaveCount(0);
   const operations = page.locator('[data-catalog-group="anthropic"]');
   const batches = await catalogResourcePath(page, 'anthropic', ['messages', 'batches']);
-  await expect(batches.locator(':scope > .catalog-group > summary .catalog-name')).toHaveText('batches');
+  await expect(batches.locator(':scope > .catalog-group > summary .catalog-name')).toHaveText('Batches');
   await catalogResourcePath(page, 'anthropic', ['messages', 'batches', 'results']);
   const result = operations.locator('[data-operation-id="anthropic:message_batches_results"]');
   await expect(result).toBeVisible();

@@ -85,7 +85,7 @@ async function openCatalog(page) {
     await expect(page.locator('.settings-drawer')).toBeHidden();
   }
   const open = page.getByRole("button", { name: "Open navigation", exact: true });
-  await expect(open.or(page.getByRole("button", { name: "Close navigation", exact: true }))).toBeVisible();
+  await expect(open.or(page.getByRole("button", { name: "Close navigation", exact: true })).first()).toBeVisible();
   if (await open.isVisible()) await open.click();
   await expect(page.getByRole("navigation", { name: "Operation catalog", exact: true })).toBeVisible();
 }
@@ -93,13 +93,13 @@ async function openCatalog(page) {
 async function closeCatalog(page) {
   await page.locator("#startup-status").waitFor({ state: "detached" });
   if (await page.evaluate(() => matchMedia('(max-width: 899px)').matches) &&
-      await page.getByRole('button', { name: 'Close navigation', exact: true }).isVisible())
+      await page.locator('.site-header [aria-controls="side-navigation"]').getAttribute('aria-expanded') === 'true')
     await expect(page.locator('#side-navigation')).toHaveAttribute('data-slot', 'sheet-content');
   const dialog = page.getByRole("dialog").filter({
     has: page.getByRole("navigation", { name: "Operation catalog", exact: true })
   });
   if (await dialog.isVisible()) {
-    await dialog.getByRole("button", { name: "Close", exact: true }).click();
+    await dialog.getByRole("button", { name: "Close navigation", exact: true }).click();
     await expect(dialog).toBeHidden();
   } else {
     const close = page.getByRole("button", { name: "Close navigation", exact: true });
@@ -474,7 +474,7 @@ When("I connect the first operation to the second", async function () {
   await expect(connections(this.page)).toHaveCount(1);
 });
 When("I enable grid snapping and curved dashed connections", async function () {
-  for (const name of ["Snap to grid", "Curved connections", "Dashed connections"]) {
+  for (const name of ["Snap to grid", "Connection style", "Dashed connections"]) {
     const toggle = this.page.getByRole("button", { name, exact: true });
     if (await toggle.getAttribute("aria-pressed") !== "true") await toggle.click();
     await expect(toggle).toHaveAttribute("aria-pressed", "true");
@@ -507,7 +507,7 @@ Then("the workflow is named {string}", async function (name) {
 });
 Then("it contains one connection", async function () { await expect(connections(this.page)).toHaveCount(1); });
 Then("grid snapping and curved dashed connections remain enabled", async function () {
-  for (const name of ["Snap to grid", "Curved connections", "Dashed connections"])
+  for (const name of ["Snap to grid", "Connection style", "Dashed connections"])
     await expect(this.page.getByRole("button", { name, exact: true })).toHaveAttribute("aria-pressed", "true");
 });
 When("I add {string} through the workflow catalog", async function (name) {
@@ -933,4 +933,161 @@ Then('Settings disables the workspace when insufficient space remains', async fu
   await page.getByRole('button', { name: 'Close settings', exact: true }).click();
   await expect(canvas).not.toHaveAttribute('inert');
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+});
+
+Then('the catalog and settings coexist only when there is room for both panes', async function () {
+  const page = this.page;
+  const menu = page.locator('.site-header [aria-controls="side-navigation"]');
+  const settings = page.locator('.site-header [aria-controls="settings-panel"]');
+  const catalog = page.locator('#side-navigation');
+  const drawer = page.locator('#settings-panel');
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  const entry = await revealCatalogOperation(page, "Example object response");
+  await settings.click();
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  await expect(catalog).toBeVisible();
+  await expect(drawer).toBeVisible();
+  await expect.poll(async () => {
+    const left = await catalog.boundingBox(), right = await drawer.boundingBox();
+    return right.x - left.x - left.width;
+  }).toBeGreaterThanOrEqual(480);
+  await entry.getByRole("button", { name: "Add to workflow: Example object response", exact: true }).click();
+  await expect(operationNodes(page, "Example object response")).toHaveCount(1);
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
+  await expect(settings).toHaveAttribute("aria-expanded", "true");
+  await menu.click();
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  await menu.click();
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  await page.setViewportSize({ width: 1720, height: 900 });
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  // Navigation was opened last: shrinking retains it and closes Settings.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect(settings).toHaveAttribute('aria-expanded', 'false');
+  await settings.click();
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  await menu.click();
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect(settings).toHaveAttribute('aria-expanded', 'false');
+  // Settings was opened last: shrinking retains it and closes Navigation.
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await settings.click();
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+});
+
+Then('resizing Settings changes when the catalog closes and Settings becomes fullscreen', async function () {
+  const page = this.page;
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await openCatalog(page);
+  const menu = page.locator('.site-header [aria-controls="side-navigation"]');
+  const settings = page.locator('.site-header [aria-controls="settings-panel"]');
+  const drawer = page.locator('#settings-panel');
+  const grip = page.getByRole('separator', { name: 'Settings pane width', exact: true });
+  await settings.click();
+  await expect(grip).toHaveAttribute('aria-valuenow', '900');
+  const from = await grip.boundingBox();
+  await page.mouse.move(from.x + from.width / 2, from.y + 100);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 300, from.y + 100, { steps: 15 });
+  await page.mouse.up();
+  await expect(grip).toHaveAttribute('aria-valuenow', '600');
+  await expect.poll(async () => Math.round((await drawer.boundingBox()).width)).toBe(600);
+  await page.setViewportSize({ width: 1500, height: 900 });
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  // The resized pane fits until 1420px, rather than the old fixed 1720px.
+  await page.setViewportSize({ width: 1419, height: 900 });
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  await expect(drawer).not.toHaveAttribute('inert', '');
+  await page.setViewportSize({ width: 899, height: 900 });
+  await expect(page.getByRole('button', { name: 'Close settings', exact: true })).toBeVisible();
+  await expect.poll(async () => Math.round((await drawer.boundingBox()).width)).toBe(899);
+  await page.setViewportSize({ width: 1500, height: 900 });
+  await expect(grip).toHaveAttribute('aria-valuenow', '600');
+  await expect.poll(async () => Math.round((await drawer.boundingBox()).width)).toBe(600);
+  await grip.focus();
+  await page.keyboard.press('ArrowLeft');
+  await expect(grip).toHaveAttribute('aria-valuenow', '616');
+  await page.reload();
+  await expect(page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true })).toHaveAttribute('aria-expanded', 'true');
+  await expect(grip).toHaveAttribute('aria-valuenow', '616');
+  // A wider chosen pane becomes fullscreen at a correspondingly wider viewport.
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await grip.focus();
+  await page.keyboard.press('End');
+  await expect(grip).toHaveAttribute('aria-valuenow', '1440');
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await expect(page.getByRole('button', { name: 'Close settings', exact: true })).toBeVisible();
+  await expect.poll(async () => Math.round((await drawer.boundingBox()).width)).toBe(1600);
+});
+
+Then('the left menu resizes from its right edge without becoming narrower than 320 pixels', async function () {
+  const page = this.page;
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await openCatalog(page);
+  const catalog = page.locator('#side-navigation');
+  const grip = page.getByRole('separator', { name: 'Navigation pane width', exact: true });
+  const settings = page.locator('.site-header [aria-controls="settings-panel"]');
+  await settings.click();
+  await expect(grip).toHaveAttribute('aria-valuemin', '320');
+  await expect(grip).toHaveAttribute('aria-valuenow', '320');
+  const from = await grip.boundingBox();
+  await page.mouse.move(from.x + from.width / 2, from.y + 100);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 160, from.y + 100, { steps: 12 });
+  await page.mouse.up();
+  await expect(grip).toHaveAttribute('aria-valuenow', '480');
+  await expect.poll(async () => Math.round((await catalog.boundingBox()).width)).toBe(480);
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  await grip.focus();
+  await page.keyboard.press('Shift+ArrowRight');
+  await expect(grip).toHaveAttribute('aria-valuenow', '544');
+  await expect(settings).toHaveAttribute('aria-expanded', 'false');
+  await page.reload();
+  await expect(grip).toHaveAttribute('aria-valuenow', '544');
+  await grip.focus();
+  await page.keyboard.press('Home');
+  await page.keyboard.press('ArrowLeft');
+  await expect(grip).toHaveAttribute('aria-valuenow', '320');
+  await page.keyboard.press('End');
+  await expect(grip).toHaveAttribute('aria-valuenow', '1440');
+  await page.setViewportSize({ width: 1000, height: 900 });
+  await expect.poll(async () => Math.round((await catalog.boundingBox()).width)).toBe(750);
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await expect(grip).toHaveAttribute('aria-valuenow', '1440');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(catalog).toHaveAttribute('data-slot', 'sheet-content');
+  await expect(grip).toHaveCount(0);
+  await expect.poll(async () => Math.round((await catalog.boundingBox()).width)).toBe(320);
+});
+
+Then('desktop viewport resizing keeps the workflow zoom and node dimensions unchanged', async function () {
+  const page = this.page;
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await setMode(page, 'workflow');
+  await seedOperationGraph(page, ['Example array response', 'Example POST body']);
+  await closeCatalog(page);
+  const measure = async () => {
+    const saved = (await readExport(page)).document;
+    const nodes = await operationNodes(page, 'Example array response').boundingBox();
+    return { zoom: saved.viewport.zoom, width: nodes.width, height: nodes.height };
+  };
+  const initial = await measure();
+  for (const width of [1000, 600, 390, 1920]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect.poll(measure).toEqual(initial);
+    // Let ResizeObserver and any delayed viewport correction finish before checking again.
+    await page.waitForTimeout(350);
+    await expect.poll(measure).toEqual(initial);
+  }
 });

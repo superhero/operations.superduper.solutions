@@ -60,7 +60,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     untrack(() => updateNodeInternals(id));
   });
 
-  function blockPointer(event: MouseEvent | TouchEvent) { event.stopPropagation(); }
 
   async function openProperty(fieldId?: string) {
     const property = fieldId ? editableProperties.get(fieldId) : undefined;
@@ -107,8 +106,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 {#snippet title()}
   <div class="data-title">
     <Handle id="value" type={input ? "source" : "target"} position={input ? Position.Right : Position.Left}
-      class="structural-port" isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
-      onmousedown={blockPointer} ontouchstart={blockPointer} aria-disabled="true" aria-label={`${panelLabel} ${data.array ? "array" : "object"}`} />
+      class="structural-port" isConnectable={true} isConnectableStart={input} isConnectableEnd={!input}
+      aria-disabled={false} aria-label={`${panelLabel} ${data.array ? "array" : "object"}`} />
     <MaterialIcon name={data.array ? "data_array" : "data_object"} size={20} />
     <strong data-label={panelLabel}>{input ? panelLabel.replace(/ parameters$/i, "") : panelLabel.replace(/^Response · .+$/, "Response")}</strong>
   </div>
@@ -142,7 +141,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <div {...hintProps} class="data-field" class:deferred={!field.connectable} data-field-id={field.id}>
               {#if field.connectable || branch}
                 <Handle id={field.id} type={input ? "target" : "source"} {position}
-                  style={branch?.hidden && (input || !field.connectable) ? "visibility: hidden" : undefined}
                   isConnectable={field.connectable} isConnectableStart={field.connectable && !input}
                   isConnectableEnd={field.connectable && input && !connected} aria-disabled={!field.connectable || connected}
                   aria-label={`${field.label} ${input ? "input" : "output"}`} />
@@ -239,6 +237,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .property-error { grid-column: 1 / -1; max-width: 300px; color: var(--color-badge-background); font-size: 11px; overflow-wrap: anywhere; }
   .workflow-data-node :global(.svelte-flow__handle) { width: 12px; height: 12px; border: 2px solid var(--color-surface); background: var(--color-emphasis); }
   .workflow-data-node :global(.svelte-flow__handle.target) { background: var(--color-foreground); }
-  .workflow-data-node :global(.structural-port) { pointer-events: auto; cursor: default; }
+  .workflow-data-node :global(.structural-port) { pointer-events: auto; }
+  .workflow-data-node :global(.structural-port:not(.connectionindicator)) { cursor: default; }
   @media (prefers-reduced-motion: reduce) { .workflow-data-node { transition: none; } }
 </style>

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import PaneDismiss from "$lib/components/PaneDismiss.svelte";
+  import { emptyNavigationState, type NavigationPaneState } from "$lib/pane-state.ts";
+  import { rememberPaneScroll } from "$lib/pane-scroll.ts";
   import { onMount, tick, untrack } from "svelte";
   import { flip } from "svelte/animate";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
@@ -10,28 +13,37 @@
   import CatalogHelp from "./CatalogHelp.svelte";
   import { catalogs, type CatalogGroup } from "$lib/catalog-registry.ts";
   import { catalogHierarchy } from "$lib/catalog-hierarchy.ts";
+  import { categoryLabel } from "$lib/category-label.ts";
   import { operationNavigation, operationResourceGroups, navigationOperations } from "$lib/operation-navigation.ts";
   import { evaluateOperationsAsync } from "$lib/operation-matching-client.ts";
   import type { OperationMatch } from "$lib/matching.ts";
-  let { closeMenuWithEscape = true, open = $bindable(false), modal = $bindable(false), documentModal = false, operations, catalogGroups, evaluationDetails = false, workflows, workflowError, onWorkflowSelect, onWorkflowRetry, onSelect }:
-    { closeMenuWithEscape?: boolean; open: boolean; modal?: boolean; documentModal?: boolean; operations: Operation[]; evaluationDetails?: boolean;
+  let { initialView, onviewchange, closeMenuWithEscape = true, open = $bindable(false), modal = $bindable(false), documentModal = false, operations, catalogGroups, evaluationDetails = false, workflows, workflowError, onWorkflowSelect, onWorkflowRetry, onSelect }:
+    { initialView?: NavigationPaneState; onviewchange?: (view: NavigationPaneState) => void; closeMenuWithEscape?: boolean; open: boolean; modal?: boolean; documentModal?: boolean; operations: Operation[]; evaluationDetails?: boolean;
       catalogGroups?: CatalogGroup[]; workflows: WorkflowDocument[]; workflowError: string; onWorkflowSelect: (document: WorkflowDocument) => void; onWorkflowRetry: () => void;
       onSelect: (operation: Operation) => void } = $props();
   let mobile = $state(false);
-  let catalogPath = $state<string[]>([]);
-  let workflowsOpen = $state(false);
+  let swipeOffset = $state(0);
+  let swiping = $state(false);
+  const restoredView = untrack(() => initialView ?? emptyNavigationState());
+  let catalogScroll = $state(restoredView.scrollTop);
+  let catalogPath = $state<string[]>(restoredView.catalogPath);
+  let workflowsOpen = $state(restoredView.workflowsOpen);
   let navigation = $state<HTMLElement>();
   let promptEditor: CatalogPrompt;
   let promptFocusRequested = false;
   let sheetAutoFocused = false;
-  let prompt = $state("");
+  let prompt = $state(restoredView.prompt);
   let composing = $state(false);
-  let matchingOpen = $state(false);
+  let matchingOpen = $state(restoredView.matchingOpen);
   $effect(() => { if (!evaluationDetails) matchingOpen = false; });
-  let matchingPending = $state(false);
+  let matchingPending = $state(Boolean(restoredView.prompt.trim()));
   let matchingError = $state("");
   let evaluation = $state<{ prompt: string; candidates: OperationMatch[]; results: OperationMatch[]; considered: number; durationMs: number } | null>(null);
-  let searchExpansion = $state<Record<string, boolean>>({});
+  let searchExpansion = $state<Record<string, boolean>>(restoredView.searchExpansion);
+  let expansionPrompt = restoredView.prompt;
+  function rememberCatalogScroll(position: number) { catalogScroll = position; }
+  $effect(() => onviewchange?.({ prompt, catalogPath: $state.snapshot(catalogPath), workflowsOpen, matchingOpen,
+    searchExpansion: $state.snapshot(searchExpansion), scrollTop: catalogScroll }));
   let retryMatching = $state(0);
   let completed: { operations: Operation[]; details: boolean } | undefined;
   let matchingController: AbortController | undefined;
@@ -107,7 +119,10 @@
     void retryMatching;
     cancelMatching();
     const reusable = untrack(() => evaluation?.prompt === query && completed?.operations === snapshot && completed.details === details);
-    if (!reusable) { evaluation = null; completed = undefined; searchExpansion = {}; }
+    if (!reusable) {
+      evaluation = null; completed = undefined;
+      if (query !== expansionPrompt) { searchExpansion = {}; expansionPrompt = query; }
+    }
     matchingError = "";
     matchingPending = Boolean(query.trim()) && !reusable;
     if (!visible || !query.trim() || isComposing) {
@@ -156,7 +171,7 @@
       const origin = document.activeElement;
       void tick().then(() => {
         if (!cancelled && open && !mobile && !documentModal && navigation === panel && document.activeElement === origin) {
-          workspaceFocusTarget(panel)?.focus();
+          workspaceFocusTarget(panel)?.focus({ preventScroll: true });
         }
       });
     }
@@ -172,7 +187,7 @@
       if (hadFocus && mobile && !documentModal) void tick().then(() => {
         if (!open || !mobile || documentModal) return;
         const panel = document.getElementById("side-navigation");
-        (workspaceFocusTarget(panel) ?? document.querySelector<HTMLElement>('[aria-controls="side-navigation"]'))?.focus();
+        (workspaceFocusTarget(panel) ?? document.querySelector<HTMLElement>('[aria-controls="side-navigation"]'))?.focus({ preventScroll: true });
       });
     };
     update(); media.addEventListener("change", update);
@@ -215,13 +230,14 @@
 {/snippet}
 
 {#snippet branch(group: CatalogGroup, depth: number, parentOpen: boolean, parents: string[] = [])}
+  {@const name = categoryLabel(group.name)}
   {@const count = groupCount(group)}
   {@const path = [...parents, group.id]}
   {@const expanded = parentOpen && (matchingIds ? (searchExpansion[JSON.stringify(path)] ?? groupCount(group, true) > 0) : catalogPath[depth] === group.id)}
   {#if groupCount(group, true) > 0}
     <div class="catalog-branch tree-branch" data-catalog-group={group.id}>
-      <Disclosure lazy class="catalog-group" label={`${group.name} group, ${count} operations`} tooltipEnabled={false} open={expanded} onToggle={(next) => toggleGroup(depth, path, next)}>
-        {#snippet summary()}<span class="catalog-name">{group.name}</span><span class="catalog-count" aria-label={`${count} operations`}><span class="catalog-count-value">{count}</span></span><MaterialIcon name="chevron_forward" size={17} />{/snippet}
+      <Disclosure lazy class="catalog-group" label={`${name} group, ${count} operations`} tooltipEnabled={false} open={expanded} onToggle={(next) => toggleGroup(depth, path, next)}>
+        {#snippet summary()}<span class="catalog-name">{name}</span><span class="catalog-count" aria-label={`${count} operations`}><span class="catalog-count-value">{count}</span></span><MaterialIcon name="chevron_forward" size={17} />{/snippet}
         {#if group.children?.length}
           <div class="catalog-children tree-children">
             {#each group.children as child (child.id)}{@render branch(child, depth + 1, expanded, path)}{/each}
@@ -292,30 +308,41 @@
 {#if mobile}
   {#if !documentModal}
   <Sheet.Root bind:open onOpenChangeComplete={(next) => { if (!next) void finishClose(); }}>
-    <Sheet.Content onEscapeKeydown={event => { if (!closeMenuWithEscape) event.preventDefault(); }} id="side-navigation" class="catalog-sheet" side="left" aria-label="Navigation" onOpenAutoFocus={(event) => {
+    <Sheet.Content onEscapeKeydown={event => { if (!closeMenuWithEscape) event.preventDefault(); }} id="side-navigation" class={`catalog-sheet${swiping ? " pane-swiping" : ""}`} style={`--pane-swipe-offset: ${swipeOffset}px`} showClose={false} side="left" aria-label="Navigation" onOpenAutoFocus={(event) => {
       event.preventDefault();
       sheetAutoFocused = true;
       if (promptFocusRequested) {
         promptFocusRequested = false;
+        catalogScroll = 0;
         promptEditor?.focus();
-      } else workspaceFocusTarget(document.getElementById("side-navigation"))?.focus();
+      } else workspaceFocusTarget(document.getElementById("side-navigation"))?.focus({ preventScroll: true });
     }} onCloseAutoFocus={(event) => {
       event.preventDefault();
       restoreNavigationFocus = !destination;
     }}>
+      <div class="catalog-gesture-header">
+        <PaneDismiss label="Close navigation" direction="left" panel="#side-navigation" onclose={() => open = false}
+          onmove={(offset, active) => { swipeOffset = offset; swiping = active; }} />
+      </div>
       <Sheet.Header class="sr-only"><Sheet.Title>Operations catalog</Sheet.Title>
         <Sheet.Description>Browse operations and change your workspace or theme.</Sheet.Description></Sheet.Header>
-      {@render catalog()}
+      <div class="catalog-scroll" use:rememberPaneScroll={{ active: open, ready: !matchingPending, position: catalogScroll, onposition: rememberCatalogScroll }}>
+        {@render catalog()}
+      </div>
     </Sheet.Content>
   </Sheet.Root>
   {/if}
 {:else}
-  <aside bind:this={navigation} id="side-navigation" class="catalog-menu" class:open aria-label="Navigation" inert={!open}>
+  <aside bind:this={navigation} id="side-navigation" use:rememberPaneScroll={{ active: open, ready: !matchingPending, position: catalogScroll, onposition: rememberCatalogScroll }} class="catalog-menu" class:open aria-label="Navigation" inert={!open}>
     {@render catalog()}
   </aside>
 {/if}
 
 <style>
+  .catalog-gesture-header { display: flex; flex: 0 0 64px; align-items: center; justify-content: center; padding-inline: var(--content-padding); }
+  .catalog-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; padding: 12px var(--content-padding) 28px; }
+  :global(.catalog-sheet[data-state="open"]:not([data-starting-style])) { transform: translateX(var(--pane-swipe-offset, 0px)); }
+  :global(.catalog-sheet.pane-swiping) { transition: none; }
   .catalog-menu { transition: transform 200ms ease-in, visibility 0s linear 200ms; }
   .catalog-menu.open { transition-delay: 0s; }
   .operation-catalog { isolation: isolate; }

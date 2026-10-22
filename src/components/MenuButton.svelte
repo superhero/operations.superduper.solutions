@@ -23,6 +23,7 @@
 
 <style>
   :global(.menu-button) {
+    touch-action: manipulation;
     display: inline-grid;
     place-items: center;
     padding: 0;

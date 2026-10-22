@@ -22,7 +22,7 @@ const mainRef = "refs/heads/main";
 const redoRef = "refs/workflow/redo";
 const author = { name: "Local workflow editor", email: "workflow@localhost" };
 
-type Preferences = Pick<WorkflowDocument, "viewport" | "snap" | "curved" | "dashed">;
+type Preferences = Pick<WorkflowDocument, "viewport" | "snap" | "curved" | "dashed" | "lineStyle">;
 type CatalogEntry = { id: string; name: string; repositoryPath: string };
 // Missing format denotes the previous append-only Undo/Redo implementation.
 type Navigation = { format?: 2; revision: string; undo: string[]; redo: string[] };
@@ -91,14 +91,15 @@ const repositoryPath = workflowRepositoryPath;
 
 function preferencesOf(document: WorkflowDocument): Preferences
 {
-  return { viewport: document.viewport, snap: document.snap, curved: document.curved, dashed: document.dashed };
+  return { viewport: document.viewport, snap: document.snap, curved: document.curved, dashed: document.dashed,
+    ...(document.lineStyle ? { lineStyle: document.lineStyle } : {}) };
 }
 
 const defaultPreferences: Preferences = { viewport: { x: 0, y: 0, zoom: 1 }, snap: true, curved: true, dashed: false };
 
 function serialize(document: WorkflowDocument): string
 {
-  const { viewport: _viewport, snap: _snap, curved: _curved, dashed: _dashed, ...content } = validateWorkflowDocument(document);
+  const { viewport: _viewport, snap: _snap, curved: _curved, dashed: _dashed, lineStyle: _lineStyle, ...content } = validateWorkflowDocument(document);
   return `${JSON.stringify(content, null, 2)}\n`;
 }
 

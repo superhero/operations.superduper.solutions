@@ -14,3 +14,22 @@ Feature: Curved assertion loop routing
       | width |
       | 390   |
       | 1280  |
+
+  Scenario Outline: Five connection styles update immediately and survive reload
+    Given a curved Filter array assertion loop at width <width>
+    Then the five connection styles retain their geometry and saved preference
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  Scenario Outline: Flowing restores original curves and connection previews
+    Given a curved Filter array assertion loop at width <width>
+    Then flowing curves ignore saved detours while retaining them for routed styles
+    And a flowing return preserves its original preview when connected
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |

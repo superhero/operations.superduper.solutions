@@ -13,14 +13,15 @@ import { defaultVaultPreferences, VaultError, type VaultPreferences } from "./se
 import { appSettingsDatabaseName } from "./storage-names.ts";
 export { appSettingsDatabaseName } from "./storage-names.ts";
 
-export type WorkflowDefaults = { dashed: boolean; curved: boolean; snap: boolean; nodeSymbols: boolean; gridSize: number; dashLength: number; dashGap: number; dashSpeed: number; curveStrength: number; nodeClearance: number };
+import { isWorkflowLineStyle, type WorkflowLineStyle } from "./workflow-line-style.ts";
+export type WorkflowDefaults = { dashed: boolean; curved: boolean; lineStyle?: WorkflowLineStyle; snap: boolean; nodeSymbols: boolean; gridSize: number; dashLength: number; dashGap: number; dashSpeed: number; curveStrength: number; nodeClearance: number };
 export const workflowGridSizeLimits = { min: 1, max: 32 } as const;
 export const workflowDashLengthLimits = { min: 1, max: 128 } as const;
 export const workflowDashGapLimits = { min: 1, max: 128 } as const;
 export const workflowDashSpeedLimits = { min: 0, max: 512 } as const;
-export const workflowCurveStrengthLimits = { min: 0, max: 200 } as const;
+export const workflowCurveStrengthLimits = { min: 0, max: 1000 } as const;
 export const workflowNodeClearanceLimits = { min: 0, max: 128 } as const;
-export const defaultWorkflowSettings: Readonly<WorkflowDefaults> = { dashed: true, curved: true, snap: true, nodeSymbols: true, gridSize: 8, dashLength: 8, dashGap: 16, dashSpeed: 64, curveStrength: 100, nodeClearance: 16 };
+export const defaultWorkflowSettings: Readonly<WorkflowDefaults> = { dashed: true, curved: false, snap: true, nodeSymbols: true, gridSize: 8, dashLength: 8, dashGap: 16, dashSpeed: 64, curveStrength: 100, nodeClearance: 16 };
 
 export function isValidWorkflowGridSize(value: unknown): value is number
 {
@@ -57,7 +58,7 @@ export function isValidWorkflowNodeClearance(value: unknown): value is number
   return typeof value === "number" && Number.isSafeInteger(value)
     && value >= workflowNodeClearanceLimits.min && value <= workflowNodeClearanceLimits.max;
 }
-type SettingValues = { toolbarButtons: ToolbarButtons; keybindings: Keybindings; theme: string; palette: string; workflowDefaults: WorkflowDefaults; developerToolbar: boolean; evaluationDetails: boolean; tooltips: boolean; locale: LocaleSettings; vaultPreferences?: VaultPreferences };
+type SettingValues = { navigationPaneWidth: number; settingsPaneWidth: number; toolbarButtons: ToolbarButtons; keybindings: Keybindings; theme: string; palette: string; workflowDefaults: WorkflowDefaults; developerToolbar: boolean; evaluationDetails: boolean; tooltips: boolean; locale: LocaleSettings; vaultPreferences?: VaultPreferences };
 
 interface SettingsDatabase extends DBSchema
 {
@@ -181,10 +182,10 @@ async function inStore<Mode extends "readonly" | "readwrite", T>(mode: Mode,
 
 async function readSettings(store: Pick<SettingsStore, "get">): Promise<SavedSettings>
 {
-  const [theme, palette, workflowDefaults, developerToolbar, evaluationDetails, tooltips, locale, keybindings, toolbarButtons] = await Promise.all([
-    store.get("theme"), store.get("palette"), store.get("workflowDefaults"), store.get("developerToolbar"), store.get("evaluationDetails"), store.get("tooltips"), store.get("locale"), store.get("keybindings"), store.get("toolbarButtons"),
+  const [theme, palette, workflowDefaults, developerToolbar, evaluationDetails, tooltips, locale, keybindings, toolbarButtons, settingsPaneWidth, navigationPaneWidth] = await Promise.all([
+    store.get("theme"), store.get("palette"), store.get("workflowDefaults"), store.get("developerToolbar"), store.get("evaluationDetails"), store.get("tooltips"), store.get("locale"), store.get("keybindings"), store.get("toolbarButtons"), store.get("settingsPaneWidth"), store.get("navigationPaneWidth"),
   ]);
-  return { theme, palette, workflowDefaults, developerToolbar, evaluationDetails, tooltips, locale, keybindings, toolbarButtons };
+  return { theme, palette, workflowDefaults, developerToolbar, evaluationDetails, tooltips, locale, keybindings, toolbarButtons, settingsPaneWidth, navigationPaneWidth };
 }
 
 function normalize(saved: SavedSettings, legacy: LegacySettings, paletteIds: readonly string[]): SettingValues
@@ -194,9 +195,10 @@ function normalize(saved: SavedSettings, legacy: LegacySettings, paletteIds: rea
   const palette = typeof candidate === "string" && paletteIds.includes(candidate) ? candidate : "default";
   const workflow = saved.workflowDefaults && typeof saved.workflowDefaults === "object"
     ? saved.workflowDefaults as Partial<WorkflowDefaults> : defaultWorkflowSettings;
-  return { theme, palette, toolbarButtons: normalizeToolbarButtons(saved.toolbarButtons), keybindings: normalizeKeybindings(saved.keybindings), developerToolbar: saved.developerToolbar === true, evaluationDetails: saved.evaluationDetails === true, tooltips: saved.tooltips !== false, locale: normalizeLocaleSettings(saved.locale), workflowDefaults: {
+  return { navigationPaneWidth: typeof saved.navigationPaneWidth === "number" && Number.isSafeInteger(saved.navigationPaneWidth) && saved.navigationPaneWidth >= 320 && saved.navigationPaneWidth <= 1440 ? saved.navigationPaneWidth : 320, settingsPaneWidth: typeof saved.settingsPaneWidth === "number" && Number.isSafeInteger(saved.settingsPaneWidth) && saved.settingsPaneWidth >= 360 && saved.settingsPaneWidth <= 1440 ? saved.settingsPaneWidth : 900, theme, palette, toolbarButtons: normalizeToolbarButtons(saved.toolbarButtons), keybindings: normalizeKeybindings(saved.keybindings), developerToolbar: saved.developerToolbar === true, evaluationDetails: saved.evaluationDetails === true, tooltips: saved.tooltips !== false, locale: normalizeLocaleSettings(saved.locale), workflowDefaults: {
     dashed: typeof workflow.dashed === "boolean" ? workflow.dashed : defaultWorkflowSettings.dashed,
     curved: typeof workflow.curved === "boolean" ? workflow.curved : defaultWorkflowSettings.curved,
+    ...(isWorkflowLineStyle(workflow.lineStyle) ? { lineStyle: workflow.lineStyle, curved: workflow.lineStyle !== "orthogonal" } : {}),
     snap: typeof workflow.snap === "boolean" ? workflow.snap : defaultWorkflowSettings.snap,
     nodeSymbols: typeof workflow.nodeSymbols === "boolean" ? workflow.nodeSymbols : defaultWorkflowSettings.nodeSymbols,
     gridSize: isValidWorkflowGridSize(workflow.gridSize) ? workflow.gridSize : defaultWorkflowSettings.gridSize,

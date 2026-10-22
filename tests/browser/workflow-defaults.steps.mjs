@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { toggleConnectionStyle, chooseSettingsLineStyle } from './connection-style.fixture.mjs';
 import assert from 'node:assert/strict';
 import { Then, When } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
@@ -10,11 +11,11 @@ import { repository, storedWorkflows } from './workflow-storage.fixture.mjs';
 import { loadGraphFixture } from './workflow-graph.fixture.mjs';
 import { createUtilityNode } from '../../src/lib/workflow-graph.ts';
 
-const freshDefaults = { dashed: true, curved: true, snap: true, nodeSymbols: true, gridSize: 8, dashLength: 8, dashGap: 16, dashSpeed: 64, curveStrength: 100, nodeClearance: 16 };
-const disabledDefaults = { dashed: false, curved: false, snap: false, gridSize: 12, dashLength: 6, dashGap: 4, dashSpeed: 20, curveStrength: 50, nodeClearance: 12, nodeSymbols: true };
-const enabledDefaults = { dashed: true, curved: true, snap: true, gridSize: 12, dashLength: 6, dashGap: 4, dashSpeed: 20, curveStrength: 200, nodeClearance: 12, nodeSymbols: true };
-const settingLabels = { dashed: 'Dashed lines', curved: 'Curved lines', snap: 'Snap to grid', nodeSymbols: 'Node symbols' };
-const toolbarLabels = { dashed: 'Dashed connections', curved: 'Curved connections', snap: 'Snap to grid' };
+const freshDefaults = { dashed: true, curved: false, snap: true, nodeSymbols: true, gridSize: 8, dashLength: 8, dashGap: 16, dashSpeed: 64, curveStrength: 100, nodeClearance: 16 };
+const disabledDefaults = { lineStyle: 'orthogonal', dashed: false, curved: false, snap: false, gridSize: 12, dashLength: 6, dashGap: 4, dashSpeed: 20, curveStrength: 50, nodeClearance: 12, nodeSymbols: true };
+const enabledDefaults = { lineStyle: 'filleted', dashed: true, curved: true, snap: true, gridSize: 12, dashLength: 6, dashGap: 4, dashSpeed: 20, curveStrength: 200, nodeClearance: 12, nodeSymbols: true };
+const settingLabels = { dashed: 'Dashed lines', snap: 'Snap to grid', nodeSymbols: 'Node symbols' };
+const toolbarLabels = { dashed: 'Dashed connections', curved: 'Connection style', snap: 'Snap to grid' };
 const settings = page => page.getByRole('region', { name: 'Settings workspace', exact: true });
 const summary = (page, name) => settings(page).locator(`summary[aria-label="${name}"]`);
 const options = ({ dashed, curved, snap }) => ({ dashed, curved, snap });
@@ -43,6 +44,8 @@ async function openDefaults(page) {
 }
 
 async function expectDefaultSwitches(page, defaults) {
+  await expect(settings(page).getByRole('slider', { name: 'Connection style', exact: true }))
+    .toHaveAttribute('aria-valuetext', defaults.curved ? 'Filleted' : 'Orthogonal');
   for (const [key, label] of Object.entries(settingLabels))
     await expect(settings(page).getByRole('switch', { name: label, exact: true })).toHaveAttribute('aria-checked', String(defaults[key]));
   await expect(settings(page).getByRole('textbox', { name: 'Grid size value', exact: true })).toHaveValue(String(defaults.gridSize));
@@ -91,6 +94,7 @@ export async function setWorkflowDashValues(page, values) {
 
 async function setDefaults(page, defaults) {
   await openDefaults(page);
+  await chooseSettingsLineStyle(page, defaults.curved ? 'filleted' : 'orthogonal');
   for (const [key, label] of Object.entries(settingLabels)) {
     const control = settings(page).getByRole('switch', { name: label, exact: true });
     if (await control.getAttribute('aria-checked') !== String(defaults[key])) await control.click();
@@ -259,8 +263,11 @@ Then('workflow display switches update rendered lines and grid movement at width
   const position = ({ x, y }) => ({ x, y });
   const setting = async (key, enabled) => {
     await openDefaults(page);
-    const control = settings(page).getByRole('switch', { name: settingLabels[key], exact: true });
-    if (await control.getAttribute('aria-checked') !== String(enabled)) await control.click();
+    if (key === 'curved') await chooseSettingsLineStyle(page, enabled ? 'filleted' : 'orthogonal');
+    else {
+      const control = settings(page).getByRole('switch', { name: settingLabels[key], exact: true });
+      if (await control.getAttribute('aria-checked') !== String(enabled)) await control.click();
+    }
     await expect.poll(async () => (await storedDefaults(page))[key]).toBe(enabled);
     await setMode(page, 'workflow');
     await expect(workflow(page).getByRole('button', { name: toolbarLabels[key], exact: true })).toHaveAttribute('aria-pressed', String(enabled));
@@ -300,10 +307,9 @@ Then('workflow display switches update rendered lines and grid movement at width
       await lines(curved, dashed);
       assert.equal((await storedDefaults(page)).dashed, dashed, 'The toolbar must not change defaults.');
     }
-    const toggle = workflow(page).getByRole('button', { name: 'Curved connections', exact: true });
-    await toggle.click();
+    await toggleConnectionStyle(page);
     await lines(!curved, true);
-    await toggle.click();
+    await toggleConnectionStyle(page);
     await lines(curved, true);
   }
   await saved();
@@ -436,6 +442,50 @@ Then('the grid size slider supports exact keys and saves its nonlinear pointer v
   await openDefaults(page);
   await expect(input).toHaveValue(String(selected));
   await expect(slider).toHaveAttribute('aria-valuenow', String(selected));
+});
+
+Then('curve strength supports logarithmic pointer control and exact values through 1000 at width {int}', async function (width) {
+  const page = this.page;
+  await page.setViewportSize({ width, height: 900 });
+  await openDefaults(page);
+  const slider = settings(page).getByRole('slider', { name: 'Curve strength', exact: true });
+  const input = settings(page).getByRole('textbox', { name: 'Curve strength value', exact: true });
+  await expect(slider).toHaveAttribute('aria-valuemin', '0');
+  await expect(slider).toHaveAttribute('aria-valuemax', '1000');
+  await expect(input).toHaveValue('100');
+  for (const invalid of ['1001', '-1', '1.5', 'not-a-number', '']) {
+    await input.fill(invalid);
+    await input.press('Tab');
+    await expect(settings(page).getByRole('alert')).toContainText('Curve strength must be a whole number from 0 to 1000.');
+    assert.equal((await storedDefaults(page)).curveStrength, 100, 'Invalid drafts must retain the saved strength.');
+  }
+  await input.fill('500');
+  await input.press('Tab');
+  await expect(settings(page).getByRole('alert')).toHaveCount(0);
+  const position = await slider.evaluate(element => element.valueAsNumber);
+  assert.ok(position > 0.88 && position < 0.92, '500% must be near the high end of a logarithmic slider.');
+  for (const [key, value] of [['Home', 0], ['ArrowLeft', 0], ['End', 1000], ['ArrowRight', 1000], ['ArrowLeft', 999]]) {
+    await slider.press(key);
+    await expect(input).toHaveValue(String(value));
+    await expect(slider).toHaveAttribute('aria-valuenow', String(value));
+  }
+  await slider.scrollIntoViewIfNeeded();
+  const bounds = await slider.boundingBox(), samples = [];
+  for (const fraction of [0.25, 0.5, 0.75]) {
+    await page.mouse.click(bounds.x + bounds.width * fraction, bounds.y + bounds.height / 2);
+    samples.push(Number(await slider.getAttribute('aria-valuenow')));
+  }
+  assert.ok(samples[0] >= 3 && samples[0] <= 8 && samples[1] >= 25 && samples[1] <= 40 && samples[2] >= 140 && samples[2] <= 230,
+    `Pointer samples must follow the logarithmic scale: ${samples.join(', ')}.`);
+  await input.fill('1000');
+  await input.press('Tab');
+  await expect.poll(async () => (await storedDefaults(page)).curveStrength).toBe(1000);
+  await page.reload();
+  await openDefaults(page);
+  await expect(input).toHaveValue('1000');
+  await expect(slider).toHaveAttribute('aria-valuenow', '1000');
+  assert.equal(await slider.evaluate(element => element.valueAsNumber), 1);
+  assert.deepEqual(await storedWorkflows(page), [], 'Saving curve strength must not create an untouched workflow.');
 });
 
 Then('saved node clearance {word} normalizes to {int} after reload without changing other defaults',

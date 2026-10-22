@@ -77,7 +77,57 @@ abort the previous calculation; only results for the current prompt and catalog
 may be displayed. Matching never moves focus or changes the workflow. Selecting
 a match adds an operation to the canvas; execution happens in Run workflow.
 
+Window resizing preserves workflow zoom and node dimensions. If the smaller
+canvas hides every operation node, it pans to a nearby node at the current zoom;
+it does not automatically fit the whole graph. Explicit Zoom and Fit controls
+remain available. Viewport width alone does not select smaller node defaults.
+Fit View centers the graph in the uncovered canvas between the open panes,
+using their current widths and leaving room below the workflow toolbar.
+
 ## Settings and startup
+
+Settings has a draggable left-edge splitter, with arrow-key resizing (Shift for
+larger steps), Home/End limits and a double-click reset. Its preferred width is
+saved separately from workflow documents, defaults to 900px and ranges from
+360px to 1440px, limited while dragging to leave 250px of the viewport visible.
+
+The catalog has the same splitter on its right edge and saves its own preferred
+width, with its original 320px width as the minimum and a 1440px maximum. On
+smaller desktop viewports it temporarily clamps to leave 250px of canvas and
+restores the preference when space returns. Its existing mobile sheet stays
+320px wide (bounded by 90vw), without a resize grip.
+
+Both panes can stay open when the viewport fits their chosen widths and 500px
+of canvas. Below that, opening one closes the other;
+shrinking keeps the most recently opened pane. Settings fills the viewport when
+its preferred width would leave less than 250px of canvas, or below 900px viewport
+width. Growing the window restores the chosen pane width. Selecting a catalog
+item keeps Settings open when both panes fit. Escape closes the focused catalog
+when both are open; otherwise it follows the existing Settings-first dismissal.
+
+Touch capability is independent of viewport size: docked panes remain resizable
+on tablets and other touchscreens. Coarse-pointer devices get a visible 44px-wide
+grip with a bounded vertical touch area, leaving content editing and scrolling
+untouched. Tap a splitter (or press Enter/Space) for Narrow, Medium, Wide, Reset
+and Close controls; desktop arrow keys and the delayed hover highlight remain.
+
+Compact panes replace the X with a visible, accessible dismissal grip. Navigation
+swipes left and Settings swipes right, following the finger while moving. Short,
+wrong-direction, vertical and cancelled gestures do not dismiss. Only the grip
+handles swipes; its header sits outside the scroll area so it cannot cover the
+search field or catalog rows. Normal content remains scrollable. Tap or keyboard
+activation of the same grip also closes the pane. Navigation restores its scroll
+position when reopened. Width-based layout does not react to a keyboard-only
+height change.
+
+Pane visibility, the last opened pane, navigation search and branch expansion,
+the selected Settings section, and both reading positions survive refreshes and
+new sessions in the disposable localStorage snapshot `v1/settings/pane-state`.
+Preferred widths remain in IndexedDB. Read the snapshot before mounting; apply
+the usual viewport limits when both saved panes no longer fit. Scroll writes
+are coalesced and the latest positions flush synchronously on page hide.
+Restoration waits for matching results, fonts and lazy layout; direct user input
+cancels it. Missing, malformed or unavailable snapshots leave normal defaults.
 
 ### Storage and recovery
 
@@ -127,7 +177,10 @@ to placement and center snapping on every canvas without repositioning nodes or
 changing workflow documents. Decorative dots retain independent 24px spacing.
 Dash length and gap accept 1–128 px, defaulting to 8 and 16 respectively.
 Dash speed accepts 0–512 px/s, defaulting to 64; zero pauses motion.
-Curve strength accepts 0–200%, defaulting to 100%, and controls Bézier handles.
+Curve strength accepts 0–1000%, defaulting to 100%, and controls Bézier handles.
+Its slider uses a logarithmic scale with a zero-inclusive offset, giving finer
+pointer adjustments at low strengths; exact entry and keyboard steps retain
+whole percentages.
 Clear connections retain their original diagonal cubic shape. Blocked paths
 use smooth cubic detours fitted to the checked route, with conservative curve
 bounds keeping them outside nodes. Node clearance accepts 0–128 diagram units,
@@ -303,8 +356,11 @@ native scrolling, with a visible scrollbar. Wheel input stays inside the list;
 keyboard navigation, disabled options, node tooltips and compact styling retain
 their existing behavior.
 Selector tooltips describe the control's purpose rather than repeating its value
-(for example, Transformation or Assertion condition). Node headers have neither
-tooltips nor native title popups. Utility connector tooltips identify their
+(for example, Transformation or Assertion condition). Operation names show their
+full catalog category path in the shared tooltip. Other node headers have no
+tooltips. Category labels use title case and replace underscores with spaces in
+navigation, tooltip paths and reports, preserving acronyms and source identifiers.
+Node headers never use native title popups. Utility connector tooltips identify their
 purpose and types; Assert additionally explains that Success and Failure each
 pass the original input through unchanged. Connected inputs remain hoverable
 without allowing an additional incoming connection.

@@ -5,15 +5,37 @@
 // Shared obstacle faces and terminal owner exemptions for automatic and manual routes.
 export const EPSILON = 1e-7;
 
-export function rectangles(nodes, padding) {
-  return nodes.map((node) => ({ id: node.id, left: node.x - padding, top: node.y - padding,
-    right: node.x + node.width + padding, bottom: node.y + node.height + padding }));
+export function rectangles(nodes, padding, edge) {
+  let source, target;
+  const boxes = nodes.map(node => {
+    const box = { id: node.id, left: node.x - padding, top: node.y - padding,
+      right: node.x + node.width + padding, bottom: node.y + node.height + padding };
+    if (node.id === edge?.source) source = box;
+    if (node.id === edge?.target) target = box;
+    return box;
+  });
+  if (!source || !target || source === target ||
+      Math.min(source.right, target.right) <= Math.max(source.left, target.left) + EPSILON ||
+      Math.min(source.bottom, target.bottom) <= Math.max(source.top, target.top) + EPSILON) return boxes;
+  // Facing ports need a local corridor even when their bodies are staggered.
+  // Split overlapping buffers at the middle of the real gap, on these faces
+  // only. Otherwise a valid large clearance can force a trip around the group.
+  for (const [low, high] of [['left', 'right'], ['top', 'bottom']]) {
+    const [first, second] = edge.sourcePosition === high && edge.targetPosition === low ? [source, target] :
+      edge.sourcePosition === low && edge.targetPosition === high ? [target, source] : [];
+    if (!first || first[high] - padding > second[low] + padding) continue;
+    const middle = (first[high] + second[low]) / 2;
+    first[high] = middle;
+    second[low] = middle;
+    break;
+  }
+  return boxes;
 }
 
 // A tight terminal may need less clearance on the faces forming its corridor.
 // Keep every other face padded instead of making the whole scene hug node bodies.
 export function terminalRectangles(nodes, padding, edge) {
-  const bodies = rectangles(nodes, 0), boxes = rectangles(nodes, padding);
+  const bodies = rectangles(nodes, 0), boxes = rectangles(nodes, padding, edge);
   const axes = [['left', 'right', 'top', 'bottom', 'x'], ['top', 'bottom', 'left', 'right', 'y']];
   for (const id of [edge.source, edge.target]) {
     const owner = bodies.findIndex(box => box.id === id);

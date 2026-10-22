@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
+import { categoryLabel } from "./category-label.ts";
 
 const versionSegment = /^(?:v|ver|version)[._-]?\d+(?:[._-]\d+)*(?:[._-]?(?:alpha|beta|rc)\d*)?$/i;
 const parameter = /^\{[^{}]+\}$/;
@@ -115,4 +116,19 @@ export function navigationOperations(ids: readonly string[], navigation: Navigat
     if (selected) { result.push(selected); seen.add(family); }
   }
   return result;
+}
+
+/** Use the first catalog location when an operation is listed in several groups. */
+export function operationCategoryPaths(groups: readonly CatalogGroup[]): Map<string, string[]>
+{
+  const paths = new Map<string, string[]>();
+  function visit(groups: readonly CatalogGroup[], parents: string[]) {
+    for (const group of groups) {
+      const path = [...parents, categoryLabel(group.name)];
+      for (const id of group.operationIds ?? []) if (!paths.has(id)) paths.set(id, path);
+      visit(group.children ?? [], path);
+    }
+  }
+  visit(groups, []);
+  return paths;
 }

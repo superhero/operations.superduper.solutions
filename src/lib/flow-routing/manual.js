@@ -57,7 +57,7 @@ function certify(points, edge, nodes, config, budget) {
   // Charge input validation and construction before allocating scene-sized arrays.
   if (!spend(budget, nodes.length * 2 + points.length)) return null;
   const valid = nodes.filter(node => [node.x, node.y, node.width, node.height].every(Number.isFinite) && node.width > 0 && node.height > 0);
-  const full = rectangles(valid, config.nodePadding);
+  const full = rectangles(valid, config.nodePadding, edge);
   if (clearRoute(points, full, edge, budget)) return full;
   if (budget.work < 0 || !config.nodePadding) return null;
   // Two rectangle arrays, terminal-owner lookups, face pairs and terminal gaps:
