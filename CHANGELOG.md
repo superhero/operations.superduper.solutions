@@ -709,6 +709,20 @@ fix(settings): remove slider hover outlines consistently
 
 ```
 
+<!-- changelog-commit:394a80baf0ea48202c08f234a5fe316ee2ffab10 -->
+### Commit [`394a80b`](https://github.com/superhero/operations.superduper.solutions/commit/394a80baf0ea48202c08f234a5fe316ee2ffab10)
+
+```text
+chore: refresh dependency badges
+```
+
+<!-- changelog-commit:5244b3f5019821e94f20f0ab7241ecb06a757403 -->
+### Commit [`5244b3f`](https://github.com/superhero/operations.superduper.solutions/commit/5244b3f5019821e94f20f0ab7241ecb06a757403)
+
+```text
+Merge branch 'develop' into feature/slider-hover-outlines
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
