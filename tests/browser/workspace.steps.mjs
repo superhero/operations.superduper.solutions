@@ -1030,3 +1030,24 @@ Then('resizing Settings changes when the catalog closes and Settings becomes ful
   await expect(page.getByRole('button', { name: 'Close settings', exact: true })).toBeVisible();
   await expect.poll(async () => Math.round((await drawer.boundingBox()).width)).toBe(1600);
 });
+
+Then('desktop viewport resizing keeps the workflow zoom and node dimensions unchanged', async function () {
+  const page = this.page;
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await setMode(page, 'workflow');
+  await seedOperationGraph(page, ['Example array response', 'Example POST body']);
+  await closeCatalog(page);
+  const measure = async () => {
+    const saved = (await readExport(page)).document;
+    const nodes = await operationNodes(page, 'Example array response').boundingBox();
+    return { zoom: saved.viewport.zoom, width: nodes.width, height: nodes.height };
+  };
+  const initial = await measure();
+  for (const width of [1000, 600, 390, 1920]) {
+    await page.setViewportSize({ width, height: 844 });
+    await expect.poll(measure).toEqual(initial);
+    // Let ResizeObserver and any delayed viewport correction finish before checking again.
+    await page.waitForTimeout(350);
+    await expect.poll(measure).toEqual(initial);
+  }
+});

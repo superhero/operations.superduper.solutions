@@ -77,6 +77,11 @@ abort the previous calculation; only results for the current prompt and catalog
 may be displayed. Matching never moves focus or changes the workflow. Selecting
 a match adds an operation to the canvas; execution happens in Run workflow.
 
+Window resizing preserves workflow zoom and node dimensions. If the smaller
+canvas hides every operation node, it pans to a nearby node at the current zoom;
+it does not automatically fit the whole graph. Explicit Zoom and Fit controls
+remain available. Viewport width alone does not select smaller node defaults.
+
 ## Settings and startup
 
 Settings has a draggable left-edge splitter, with arrow-key resizing (Shift for
