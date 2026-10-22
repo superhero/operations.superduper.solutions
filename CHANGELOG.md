@@ -1144,6 +1144,22 @@ test(reports): await startup before restored searches
 
 ```
 
+<!-- changelog-commit:cff6d69fc757147ad750092f5467320fd13d9364 -->
+### Commit [`cff6d69`](https://github.com/superhero/operations.superduper.solutions/commit/cff6d69fc757147ad750092f5467320fd13d9364)
+
+```text
+test(panes): isolate resize checks and await stored widths
+
+```
+
+<!-- changelog-commit:b04960747b13a0a11a7a7f1ff69cfdd492680e80 -->
+### Commit [`b049607`](https://github.com/superhero/operations.superduper.solutions/commit/b04960747b13a0a11a7a7f1ff69cfdd492680e80)
+
+```text
+test(palettes): await restored settings before interaction
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
