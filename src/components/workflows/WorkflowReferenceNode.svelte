@@ -48,7 +48,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <Handle id={`schema:${branch.childId}`} type={input ? "target" : "source"} {position}
               class="owner-port"
               isConnectable={!input} isConnectableStart={!input} isConnectableEnd={false}
-              onmousedown={blockPointer} ontouchstart={blockPointer} aria-disabled={input}
+              {...(input ? { onmousedown: blockPointer, ontouchstart: blockPointer } : {})} aria-disabled={input}
               aria-label={`${branch.label} ${input ? "input" : "output"}`} />
             {#if branch.hidden}<WorkflowRestoreBranch {branch} {position} />{/if}
           </div>

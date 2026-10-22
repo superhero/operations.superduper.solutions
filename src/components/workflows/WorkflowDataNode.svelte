@@ -107,8 +107,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 {#snippet title()}
   <div class="data-title">
     <Handle id="value" type={input ? "source" : "target"} position={input ? Position.Right : Position.Left}
-      class="structural-port" isConnectable={false} isConnectableStart={false} isConnectableEnd={false}
-      onmousedown={blockPointer} ontouchstart={blockPointer} aria-disabled="true" aria-label={`${panelLabel} ${data.array ? "array" : "object"}`} />
+      class="structural-port" isConnectable={!input} isConnectableStart={false} isConnectableEnd={!input}
+      {...(input ? { onmousedown: blockPointer, ontouchstart: blockPointer } : {})} aria-disabled={input} aria-label={`${panelLabel} ${data.array ? "array" : "object"}`} />
     <MaterialIcon name={data.array ? "data_array" : "data_object"} size={20} />
     <strong data-label={panelLabel}>{input ? panelLabel.replace(/ parameters$/i, "") : panelLabel.replace(/^Response · .+$/, "Response")}</strong>
   </div>

@@ -153,7 +153,7 @@ export function adaptRoutingGates(nodes: WorkflowDocumentNode[], edges: Workflow
 export function workflowInputConnected(targetId: string, targetHandle: string | null | undefined,
   edges: WorkflowDocumentEdge[]): boolean
 {
-  return edges.some(edge => edge.kind !== "schema" && !edge.hidden && !edge.detached &&
+  return edges.some(edge => edge.kind !== "schema" && edge.kind !== "response" && !edge.hidden && !edge.detached &&
     edge.target === targetId && (edge.targetHandle ?? null) === (targetHandle ?? null));
 }
 

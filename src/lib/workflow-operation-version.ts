@@ -4,6 +4,7 @@
 import type { Operation } from "./catalog.ts";
 import type { WorkflowDocumentNode, WorkflowDocumentEdge } from "./workflow-document.ts";
 import { createOperationGraph } from "./workflow-graph.ts";
+import { isResponseLink } from "./workflow-response-links.ts";
 import { isValueConnection, isWorkflowConnectionTypeCompatible } from "./workflow-utilities.ts";
 
 /** Replace the canonical contract, retaining the owner, panel positions and compatible mappings. */
@@ -38,7 +39,7 @@ export function updateOperationVersion(nodeId: string, operation: Operation, doc
   }
   const connected = nextEdges.filter(edge => {
     const source = index.get(edge.source), target = index.get(edge.target);
-    return source && target && (edge.kind !== "mapping" ||
+    return source && target && (edge.kind !== "response" || isResponseLink(edge, nextNodes, nextEdges.filter(other => other.id !== edge.id))) && (edge.kind !== "mapping" ||
       isValueConnection(edge, source, target, nextEdges.filter(other => other.id !== edge.id)));
   });
   return { nodes: nextNodes, edges: connected.filter(edge => edge.kind !== "mapping" ||

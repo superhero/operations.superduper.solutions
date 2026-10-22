@@ -7,6 +7,7 @@ import { additionalBodyField, inputAllowsNull, InputValidationError, validateInp
 import { validateWorkflowDocument, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
 import { castValue, isFileRowConnection, isFileBinaryConnection, matchingSwitchGates } from "./workflow-utilities.ts";
 import { createWorkflowExecution, type WorkflowExecutionResult, type WorkflowResponse, type WorkflowExecutor } from "./workflow-execution.ts";
+import { linkedResponseGroups } from "./workflow-response-links.ts";
 import { responseHeaderReader } from "./workflow-response.ts";
 import { isVaultVariableReference, vaultVariablePlaceholder, type VaultVariableInput } from "./secrets/variables.ts";
 import { approvedOperation } from "./secrets/policy.ts";
@@ -156,7 +157,7 @@ function createFrame(document: WorkflowDocument, parent?: Frame, call?: Owner, r
   const arrayFilters = arrayFilterPlans(document);
   const internalEdges = new Set([...arrayFilters.values()].flatMap(plan => [...plan.edges]));
   const internalNodes = new Set([...arrayFilters.values()].flatMap(plan => [...plan.nodes]));
-  const edges = [...document.edges.filter(edge => !internalEdges.has(edge.id) && edge.kind !== "schema" && !edge.hidden && !edge.detached
+  const edges = [...document.edges.filter(edge => !internalEdges.has(edge.id) && edge.kind !== "schema" && edge.kind !== "response" && !edge.hidden && !edge.detached
     && !nodes.get(edge.source)?.hidden && !nodes.get(edge.target)?.hidden), ...[...arrayFilters.values()].flatMap(plan => plan.captures)];
   const hasRows = edges.some(edge => isFileRowConnection(edge, document.nodes, document.edges));
   return { document, nodes, owners: document.nodes.filter(node => !node.hidden && isOwner(node)) as Owner[],
@@ -335,7 +336,7 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       else if (response && field.connectable)
       {
         const [group, path] = identity(field);
-        if (responseStatus(group) === selectedStatus)
+        if (responseStatus(group) === selectedStatus || linkedResponseGroups(panel.id, node.id, frame.document.edges, frame.document.nodes).some(group => responseStatus(group) === selectedStatus))
           value = group.startsWith("response:") ? readResponse(response, path, mappedOutput(frame, panel.id, field.id) ? headers : undefined)
             : read(response.body, path);
       }

@@ -89,3 +89,6 @@ Feature: Step through workflow requests with explicit test responses
 
   Scenario: Reviewed service defaults and generic JSON mappings remain exact
     Then service workflow inputs retain required defaults generic JSON values and execution guards
+
+  Scenario: Compatible response statuses reuse a visible response schema
+    Then response schema links persist and route each selected status through the shared fields

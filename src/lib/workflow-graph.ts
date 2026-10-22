@@ -8,6 +8,7 @@ import { defaultProcessingData, type ProcessingKind } from "./workflow-processin
 import { placeUtilityNode, type WorkflowLayoutNode } from "./workflow-layout.ts";
 import { validateWorkflowDocument, type SwitchGate, type WorkflowData, type WorkflowDocument,
   type WorkflowDocumentEdge, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
+import { isResponseLink } from "./workflow-response-links.ts";
 import { adaptRoutingGates, gateForType, isFileBinaryConnection, isValueConnection, isWorkflowConnectionTypeCompatible, routingInputTypes, switchGateInput, switchGateLimit,
   switchOperators, switchValueLimit, workflowInputConnected, workflowInterface } from "./workflow-utilities.ts";
 
@@ -677,7 +678,7 @@ export function schemaBranches(nodes: WorkflowDocumentNode[], edges: WorkflowDoc
     if (!parent || child?.type !== "data" || !id) continue;
     const ports = branches.get(parent.id) ?? new Map<string, SchemaBranch>();
     ports.set(id, { id, childId: child.id, direction: child.data.direction, label: child.data.label,
-      hidden: child.hidden === true || edge.detached === true });
+      hidden: (child.hidden === true || edge.detached === true) && !edges.some(link => link.kind === "response" && !link.hidden && !link.detached && link.source === parent.id && link.sourceHandle === id) });
     branches.set(parent.id, ports);
   }
   return branches;
@@ -693,6 +694,7 @@ export function isWorkflowConnection(connection: { source: string; target: strin
   if ((source.type === "operation" || source.type === undefined) && (target.type === "operation" || target.type === undefined))
     return !connection.sourceHandle && !connection.targetHandle &&
     !nodes.some(node => node.type === "data" && [source.id, target.id].includes(node.data.ownerId));
+  if (isResponseLink(connection, nodes, edges)) return true;
   return isValueConnection(connection, source, target, edges) && isWorkflowConnectionTypeCompatible(connection, nodes, edges);
 }
 
