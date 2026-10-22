@@ -504,12 +504,13 @@
   .settings-drawer-host.compact .settings-drawer { --app-header-height: 64px; }
   .settings-drawer-host.compact .settings-drawer :global(.workspace) { padding-top: 0; }
   .settings-resize { position: absolute; z-index: 30; left: 0; top: 0; bottom: 0; width: 10px; cursor: ew-resize; touch-action: none; pointer-events: auto; }
-  .settings-resize::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: transparent; }
-  .settings-resize:hover::after, .settings-resize:focus-visible::after, .resizing .settings-resize::after { background: var(--color-emphasis); }
+  .settings-resize::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--color-emphasis); opacity: 0; transition: opacity 180ms ease-out; }
+  .settings-resize:hover::after { opacity: 1; transition-delay: 200ms; }
+  .settings-resize:focus-visible::after, .resizing .settings-resize::after { opacity: 1; transition-delay: 0s; }
   .settings-resize:focus-visible { outline: 2px solid var(--color-emphasis); outline-offset: -2px; }
   .resizing { user-select: none; }
   .settings-drawer.open { transform: translateX(0); visibility: visible; transition-delay: 0s; }
-  @media (prefers-reduced-motion: reduce) { .settings-backdrop, .settings-drawer, .page-content :global(.site-header), .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap), .page-content :global(.workflow-empty) { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .settings-resize::after { transition: none; } .settings-backdrop, .settings-drawer, .page-content :global(.site-header), .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap), .page-content :global(.workflow-empty) { transition: none; } }
 
   .settings-recovery {
     display: flex;
