@@ -575,13 +575,18 @@ Then('a paused text edit and a paused node drag each create only one completed v
   assert.equal(typed.document.name, 'A paused text edit');
   await workflow(page).getByRole('button', { name: 'Fit View', exact: true }).click();
   const node = workflow(page).locator(`[data-id="${this.historyFirst.nodes[0].id}"]`);
-  const box = await node.boundingBox();
+  const header = node.locator('.utility-title');
+  // Hover waits for the real drag target to settle after Fit View before we
+  // measure its coordinates and hold the pointer through the deliberate pause.
+  await header.hover();
+  const box = await header.boundingBox();
   assert.ok(box);
-  const start = { x: box.x + box.width / 2, y: box.y + 20 };
+  const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   await page.mouse.move(start.x, start.y);
   await page.mouse.down();
   try {
     await page.mouse.move(start.x + 35, start.y + 30, { steps: 5 });
+    await expect(node).toHaveClass(/\bdragging\b/);
     await page.waitForTimeout(650);
     assert.equal((await repository(page, 'history', this.historyFirst.id)).length, 7, 'A paused drag remains one unfinished edit.');
     await page.mouse.move(start.x + 85, start.y + 65, { steps: 5 });
