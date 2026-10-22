@@ -52,6 +52,11 @@ behavioral tests. Scope changes must preserve that verification. Passing cases,
 complete reporting and coverage remain separate gates; assertions must verify
 meaningful outcomes rather than merely execute code.
 
+Pane scroll restoration is a browser adapter: its behavior depends on native
+layout, fonts, animations and resize observation. Desktop and compact touch
+browser scenarios verify restoration, immediate refresh and user interaction;
+the snapshot validation and storage logic remain in source coverage.
+
 ## Integration evidence
 
 Develop integration builds previews; test suites run there only when manually

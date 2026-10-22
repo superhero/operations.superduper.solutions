@@ -378,6 +378,22 @@ scenarios.
 
 ```
 
+<!-- changelog-commit:bb95371203a0e7b45965a7fc2e0192fee767cd0f -->
+### Commit [`bb95371`](https://github.com/superhero/operations.superduper.solutions/commit/bb95371203a0e7b45965a7fc2e0192fee767cd0f)
+
+```text
+test(release): cover pane state and shared schema boundaries
+
+Verify disposable pane snapshots, storage failures, nested input fan-out,
+shared response identities, restore controls and contract replacement.
+Exercise the missing source branches exposed by release validation.
+
+Keep native scroll restoration in the browser adapter scope, with its
+existing desktop and compact touch scenarios. Retain snapshot validation
+and storage in source coverage and leave all coverage thresholds at 100%.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
