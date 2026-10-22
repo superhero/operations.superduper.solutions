@@ -13,6 +13,40 @@ const edge = (values = {}) => ({ id: "edge", source: "a", target: "b", sourceX: 
 const point = (x, y) => ({ x, y });
 const node = (id, x, y, width, height) => ({ id, x, y, width, height });
 
+routingScenario(
+  "four connections whose crossing avoidance clears an earlier direct corridor",
+  "the complete scene finishes crossing reduction",
+  "the obsolete loop returns to its short clear route without moving authored anchors",
+  () => {
+    const nodes = [node('a', 0, 80, 150, 180), node('b', 250, -180, 180, 220),
+      node('e', 490, 260, 280, 220), node('f', 520, 550, 220, 100)];
+    const connection = (id, source, target, sourceX, sourceY, targetX, targetY) =>
+      edge({ id, source, target, sourceX, sourceY, targetX, targetY });
+    const edges = [connection('e0', 'a', 'e', 150, 130, 490, 280),
+      connection('e2', 'b', 'f', 430, -40, 520, 570),
+      connection('e4', 'e', 'a', 770, 370, 0, 100), connection('e5', 'b', 'e', 430, -70, 490, 280)];
+    const options = { nodePadding: 16 }, scene = { nodes, edges }, snapshot = structuredClone(scene);
+    const routes = routeEdges(scene, options);
+    const manualRoute = [point(430, -40), point(450, -40), point(450, 64), point(-20, 64),
+      point(-20, 590), point(450, 590), point(450, 570), point(520, 570)];
+    const authored = routeEdges({ nodes, edges: edges.map(edge => edge.id === 'e2' ? { ...edge, manualRoute } : edge) }, options);
+    return () => {
+      assert.equal(routes.get('e2').length, 700, 'the former 1680-unit detour has a clear 700-unit alternative');
+      assert.equal(routes.get('e2').points.length, 4);
+      for (const edge of edges) {
+        const route = routes.get(edge.id);
+        completeRoute(route, edge);
+        for (const node of nodes) clearOfNode(route.points, node, 16,
+          [...(node.id === edge.source ? [1] : []), ...(node.id === edge.target ? [route.points.length - 1] : [])]);
+      }
+      assert.deepEqual(routeEdges({ nodes: nodes.toReversed(), edges: edges.toReversed() }, options), routes);
+      assert.equal(authored.get('e2').manualState, 'applied');
+      assert.deepEqual(authored.get('e2').points, manualRoute);
+      assert.deepEqual(scene, snapshot);
+    };
+  }
+);
+
 function completeRoute(route, connection) {
   assert.ok(["routed", "fallback"].includes(route.status));
   assert.ok(Number.isFinite(route.length));
