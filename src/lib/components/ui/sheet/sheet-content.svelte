@@ -34,10 +34,12 @@
 		side = "right",
 		portalProps,
 		children,
+		showClose = true,
 		...restProps
 	}: WithoutChildrenOrChild<SheetPrimitive.ContentProps> & {
 		portalProps?: WithoutChildrenOrChild<ComponentProps<typeof SheetPortal>>;
 		side?: Side;
+		showClose?: boolean;
 		children: Snippet;
 	} = $props();
 </script>
@@ -52,6 +54,7 @@
 		{...restProps}
 	>
 		{@render children?.()}
+		{#if showClose}
 		<SheetPrimitive.Close>
 			{#snippet child({ props: closeProps })}
 				<HintButton tooltipSide="left" label="Close navigation" aria-label="Close">
@@ -65,6 +68,7 @@
 				</HintButton>
 			{/snippet}
 		</SheetPrimitive.Close>
+		{/if}
 	</SheetPrimitive.Content>
 </SheetPortal>
 

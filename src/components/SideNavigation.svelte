@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PaneDismiss from "$lib/components/PaneDismiss.svelte";
   import { onMount, tick, untrack } from "svelte";
   import { flip } from "svelte/animate";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
@@ -19,6 +20,9 @@
       catalogGroups?: CatalogGroup[]; workflows: WorkflowDocument[]; workflowError: string; onWorkflowSelect: (document: WorkflowDocument) => void; onWorkflowRetry: () => void;
       onSelect: (operation: Operation) => void } = $props();
   let mobile = $state(false);
+  let swipeOffset = $state(0);
+  let swiping = $state(false);
+  let catalogScroll = 0;
   let catalogPath = $state<string[]>([]);
   let workflowsOpen = $state(false);
   let navigation = $state<HTMLElement>();
@@ -294,17 +298,24 @@
 {#if mobile}
   {#if !documentModal}
   <Sheet.Root bind:open onOpenChangeComplete={(next) => { if (!next) void finishClose(); }}>
-    <Sheet.Content onEscapeKeydown={event => { if (!closeMenuWithEscape) event.preventDefault(); }} id="side-navigation" class="catalog-sheet" side="left" aria-label="Navigation" onOpenAutoFocus={(event) => {
+    <Sheet.Content onEscapeKeydown={event => { if (!closeMenuWithEscape) event.preventDefault(); }} onscroll={event => { if (open) catalogScroll = (event.currentTarget as HTMLElement).scrollTop; }} id="side-navigation" class={`catalog-sheet${swiping ? " pane-swiping" : ""}`} style={`--pane-swipe-offset: ${swipeOffset}px`} showClose={false} side="left" aria-label="Navigation" onOpenAutoFocus={(event) => {
       event.preventDefault();
+      const scroll = promptFocusRequested ? 0 : catalogScroll;
       sheetAutoFocused = true;
       if (promptFocusRequested) {
         promptFocusRequested = false;
+        catalogScroll = 0;
         promptEditor?.focus();
-      } else workspaceFocusTarget(document.getElementById("side-navigation"))?.focus();
+      } else workspaceFocusTarget(document.getElementById("side-navigation"))?.focus({ preventScroll: true });
+      void tick().then(() => { const panel = document.getElementById("side-navigation"); if (panel && open) panel.scrollTop = scroll; });
     }} onCloseAutoFocus={(event) => {
       event.preventDefault();
       restoreNavigationFocus = !destination;
     }}>
+      <div class="catalog-gesture-header">
+        <PaneDismiss label="Close navigation" direction="left" panel="#side-navigation" onclose={() => open = false}
+          onmove={(offset, active) => { swipeOffset = offset; swiping = active; }} />
+      </div>
       <Sheet.Header class="sr-only"><Sheet.Title>Operations catalog</Sheet.Title>
         <Sheet.Description>Browse operations and change your workspace or theme.</Sheet.Description></Sheet.Header>
       {@render catalog()}
@@ -318,6 +329,9 @@
 {/if}
 
 <style>
+  .catalog-gesture-header { position: sticky; top: 0; z-index: 20; display: flex; justify-content: center; margin: -64px calc(-1 * var(--content-padding)) 12px; min-height: 64px; background: var(--color-surface); }
+  :global(.catalog-sheet[data-state="open"]:not([data-starting-style])) { transform: translateX(var(--pane-swipe-offset, 0px)); }
+  :global(.catalog-sheet.pane-swiping) { transition: none; }
   .catalog-menu { transition: transform 200ms ease-in, visibility 0s linear 200ms; }
   .catalog-menu.open { transition-delay: 0s; }
   .operation-catalog { isolation: isolate; }

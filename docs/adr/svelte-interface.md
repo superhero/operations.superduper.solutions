@@ -98,6 +98,19 @@ width. Growing the window restores the chosen pane width. Selecting a catalog
 item keeps Settings open when both panes fit. Escape closes the focused catalog
 when both are open; otherwise it follows the existing Settings-first dismissal.
 
+Touch capability is independent of viewport size: docked panes remain resizable
+on tablets and other touchscreens. Coarse-pointer devices get a visible 44px-wide
+grip with a bounded vertical touch area, leaving content editing and scrolling
+untouched. Tap a splitter (or press Enter/Space) for Narrow, Medium, Wide, Reset
+and Close controls; desktop arrow keys and the delayed hover highlight remain.
+
+Compact panes replace the X with a visible, accessible dismissal grip. Navigation
+swipes left and Settings swipes right, following the finger while moving. Short,
+wrong-direction, vertical and cancelled gestures do not dismiss. Only the grip
+handles swipes; normal content remains scrollable. Tap or keyboard activation of
+the same grip also closes the pane. Navigation restores its scroll position when
+reopened. Width-based layout does not react to a keyboard-only height change.
+
 ### Storage and recovery
 
 Only one Settings section opens at a time. Settings live outside workflow Git

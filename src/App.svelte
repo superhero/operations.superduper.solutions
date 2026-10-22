@@ -18,6 +18,7 @@
   import BackgroundWave from "./components/BackgroundWave.svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
+  import PaneDismiss from "$lib/components/PaneDismiss.svelte";
   import PaneResize from "$lib/components/PaneResize.svelte";
   import NativeScrollbars from "./components/NativeScrollbars.svelte";
 
@@ -75,6 +76,8 @@
   const concurrentPanes = $derived(!compactSettings && viewportWidth >= settingsPaneWidth + navigationWidth + 500);
   let lastOpenedPane: "navigation" | "settings" = "navigation";
   let resizingSettings = $state(false);
+  let settingsSwipeOffset = $state(0);
+  let swipingSettings = $state(false);
   const maximumSettingsWidth = $derived(Math.max(360, Math.min(1440, viewportWidth - 250)));
   $effect(() => {
     document.documentElement.style.setProperty("--catalog-width", `${navigationWidth}px`);
@@ -428,7 +431,7 @@
 {#if navigationOpen && viewportWidth >= 900}
   <div class="navigation-resize-host" class:resizing={resizingNavigation} inert={documentModal}>
     <PaneResize label="Navigation pane width" width={navigationWidth} minimum={320} maximum={maximumSettingsWidth} defaultWidth={320} edge="right"
-      onresize={resizeNavigation} oncommit={saveNavigationWidth} onresizing={value => resizingNavigation = value} />
+      onresize={resizeNavigation} oncommit={saveNavigationWidth} onresizing={value => resizingNavigation = value} onclose={() => { navigationOpen = false; void tick().then(() => document.querySelector<HTMLElement>('[aria-controls="side-navigation"]')?.focus()); }} />
   </div>
 {/if}
 <div class="page-content workflow-mode" class:compact-settings={compactSettings} class:resizing-settings={resizingSettings || resizingNavigation} inert={settingsPresent && compactSettings} class:catalog-open={navigationOpen} class:settings-open={mode === "settings"}>
@@ -456,14 +459,13 @@
 <div class="settings-drawer-host" class:compact={compactSettings} class:resizing={resizingSettings}>
   {#if mode === "settings" && !compactSettings}
     <PaneResize label="Settings pane width" width={settingsPaneWidth} minimum={360} maximum={maximumSettingsWidth} defaultWidth={900}
-      onresize={resizeSettings} oncommit={savePaneWidth} onresizing={value => resizingSettings = value} />
+      onresize={resizeSettings} oncommit={savePaneWidth} onresizing={value => resizingSettings = value} onclose={() => void toggleSettings()} />
   {/if}
-  <aside id="settings-panel" bind:this={settingsDrawer} class="settings-drawer" class:open={mode === "settings"} class:preserving-scroll={settingsContentHeight !== undefined} aria-label="Application settings" inert={mode !== "settings"}>
+  <aside id="settings-panel" bind:this={settingsDrawer} class="settings-drawer" class:swiping={swipingSettings} style={`--pane-swipe-offset: ${settingsSwipeOffset}px`} class:open={mode === "settings"} class:preserving-scroll={settingsContentHeight !== undefined} aria-label="Application settings" inert={mode !== "settings"}>
     {#if compactSettings}
       <div class="settings-mobile-header">
-        <HintButton tooltipSide="left" label="Close settings" aria-label="Close settings" onclick={toggleSettings}>
-          <MaterialIcon name="close" size={24} />
-        </HintButton>
+        <PaneDismiss label="Close settings" direction="right" panel="#settings-panel" onclose={() => void toggleSettings()}
+          onmove={(offset, active) => { settingsSwipeOffset = offset; swipingSettings = active; }} />
       </div>
     {/if}
     <div bind:this={settingsContent} style:min-height={settingsContentHeight === undefined ? undefined : `${settingsContentHeight}px`}>
@@ -497,13 +499,13 @@
   .settings-drawer-host { position: fixed; z-index: 25; top: 0; right: 0; bottom: 0; width: var(--settings-drawer-width); overflow: clip; pointer-events: none; }
   .settings-drawer { --app-header-height: 0px; height: 100%; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; pointer-events: auto; background: var(--color-surface); border-left: 1px solid var(--color-border); transform: translateX(100%); visibility: hidden; transition: transform 200ms ease-in-out, visibility 0s linear 200ms; }
   .settings-drawer.preserving-scroll { overflow-anchor: none; }
-  .settings-mobile-header { position: sticky; top: 0; z-index: 20; display: flex; justify-content: flex-end; align-items: center; height: 64px; padding-inline: var(--content-padding); background: var(--color-surface); }
-  .settings-mobile-header :global(button) { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; background: transparent; color: var(--color-foreground); }
+  .settings-mobile-header { position: sticky; top: 0; z-index: 20; display: flex; justify-content: center; align-items: center; height: 64px; padding-inline: var(--content-padding); background: var(--color-surface); }
   .settings-drawer-host.compact .settings-drawer { --app-header-height: 64px; }
   .settings-drawer-host.compact .settings-drawer :global(.workspace) { padding-top: 0; }
   .navigation-resize-host { position: fixed; z-index: 31; left: calc(var(--catalog-width) - 10px); top: 0; bottom: 0; width: 10px; }
   .resizing { user-select: none; }
-  .settings-drawer.open { transform: translateX(0); visibility: visible; transition-delay: 0s; }
+  .settings-drawer.open { transform: translateX(var(--pane-swipe-offset, 0px)); visibility: visible; transition-delay: 0s; }
+  .settings-drawer.swiping { transition: none; }
   @media (prefers-reduced-motion: reduce) { .settings-backdrop, .settings-drawer, .page-content :global(.site-header), .page-content :global(.workflow-toolbar), .page-content :global(.workflow-minimap), .page-content :global(.workflow-empty) { transition: none; } }
 
   .settings-recovery {

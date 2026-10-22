@@ -85,7 +85,7 @@ async function openCatalog(page) {
     await expect(page.locator('.settings-drawer')).toBeHidden();
   }
   const open = page.getByRole("button", { name: "Open navigation", exact: true });
-  await expect(open.or(page.getByRole("button", { name: "Close navigation", exact: true }))).toBeVisible();
+  await expect(open.or(page.getByRole("button", { name: "Close navigation", exact: true })).first()).toBeVisible();
   if (await open.isVisible()) await open.click();
   await expect(page.getByRole("navigation", { name: "Operation catalog", exact: true })).toBeVisible();
 }
@@ -93,13 +93,13 @@ async function openCatalog(page) {
 async function closeCatalog(page) {
   await page.locator("#startup-status").waitFor({ state: "detached" });
   if (await page.evaluate(() => matchMedia('(max-width: 899px)').matches) &&
-      await page.getByRole('button', { name: 'Close navigation', exact: true }).isVisible())
+      await page.locator('.site-header [aria-controls="side-navigation"]').getAttribute('aria-expanded') === 'true')
     await expect(page.locator('#side-navigation')).toHaveAttribute('data-slot', 'sheet-content');
   const dialog = page.getByRole("dialog").filter({
     has: page.getByRole("navigation", { name: "Operation catalog", exact: true })
   });
   if (await dialog.isVisible()) {
-    await dialog.getByRole("button", { name: "Close", exact: true }).click();
+    await dialog.getByRole("button", { name: "Close navigation", exact: true }).click();
     await expect(dialog).toBeHidden();
   } else {
     const close = page.getByRole("button", { name: "Close navigation", exact: true });

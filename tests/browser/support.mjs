@@ -145,8 +145,9 @@ Before(async function ({ pickle }) {
     : exampleCatalogState(baseURL, indexedDB);
   this.context = await browser.newContext({ storageState,
     viewport: { width: 1280, height: 900 },
+    hasTouch: pickle.tags.some(tag => tag.name === '@touch-pane'),
     locale: 'en-US', timezoneId: 'UTC', colorScheme: 'light',
-    reducedMotion: 'reduce', deviceScaleFactor: 1,
+    reducedMotion: pickle.tags.some(tag => tag.name === '@touch-pane') ? 'no-preference' : 'reduce', deviceScaleFactor: 1,
     serviceWorkers: 'block', acceptDownloads: true,
   });
   if (pickle.tags.some(tag => tag.name === '@immediate-page-memory')) {

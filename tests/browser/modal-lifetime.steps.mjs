@@ -63,7 +63,7 @@ Then('dismissing animated mobile navigation with {string} protects the graph unt
   // reversed opening may legitimately finish before the next browser call.
   await settleOpening(page);
   await pauseDismissal(page, () => dismissal === 'Escape' ? page.keyboard.press('Escape') :
-    sheet(page).getByRole('button', { name: 'Close', exact: true }).click());
+    sheet(page).getByRole('button', { name: 'Close navigation', exact: true }).click());
   await selected.focus();
   await expect(selected).not.toBeFocused();
   for (const key of ['Delete', 'Backspace', 'ArrowRight', 'Shift+ArrowDown']) await page.keyboard.press(key);
