@@ -693,6 +693,14 @@ fix(settings): align slider heading and track endpoints
 
 ```
 
+<!-- changelog-commit:4c68d0b10f25cccc789d42a0623cb32e42f8afab -->
+### Commit [`4c68d0b`](https://github.com/superhero/operations.superduper.solutions/commit/4c68d0b10f25cccc789d42a0623cb32e42f8afab)
+
+```text
+fix(settings): omit stepped slider hover outline
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
