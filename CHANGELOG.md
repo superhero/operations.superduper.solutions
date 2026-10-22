@@ -894,6 +894,14 @@ Add a pointer and keyboard accessible left-edge splitter with a saved preferred 
 
 ```
 
+<!-- changelog-commit:e849f2ff7a7a5e8a37a5e63f60e05bee0553b084 -->
+### Commit [`e849f2f`](https://github.com/superhero/operations.superduper.solutions/commit/e849f2ff7a7a5e8a37a5e63f60e05bee0553b084)
+
+```text
+style(settings): delay and fade the resize edge highlight
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
