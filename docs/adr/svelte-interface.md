@@ -306,8 +306,9 @@ native scrolling, with a visible scrollbar. Wheel input stays inside the list;
 keyboard navigation, disabled options, node tooltips and compact styling retain
 their existing behavior.
 Selector tooltips describe the control's purpose rather than repeating its value
-(for example, Transformation or Assertion condition). Node headers have neither
-tooltips nor native title popups. Utility connector tooltips identify their
+(for example, Transformation or Assertion condition). Operation names show their
+full catalog category path in the shared tooltip. Other node headers have no
+tooltips; node headers never use native title popups. Utility connector tooltips identify their
 purpose and types; Assert additionally explains that Success and Failure each
 pass the original input through unchanged. Connected inputs remain hoverable
 without allowing an additional incoming connection.

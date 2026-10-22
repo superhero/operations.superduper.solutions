@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
 import { After, Before, Then } from '@cucumber/cucumber';
-import { operationResourcePath, operationNavigation, operationResourceGroups, navigationOperations } from './lib/operation-navigation.ts';
+import { operationResourcePath, operationNavigation, operationResourceGroups, navigationOperations, operationCategoryPaths } from './lib/operation-navigation.ts';
 import { updateOperationVersion } from './lib/workflow-operation-version.ts';
 import { createOperationGraph, removeGraphSelection } from './lib/workflow-graph.ts';
 import { validateWorkflowDocument, parseWorkflowDocument } from './lib/workflow-document.ts';
@@ -73,6 +73,11 @@ Then('operation resource groups are stable nested trees without mutating their s
   assert.deepEqual(operationResourceGroups(groups, navigation), result);
   assert.deepEqual(operationResourceGroups([], navigation), []);
   assert.equal(result[1].children.length, 0);
+  const paths = operationCategoryPaths(result);
+  assert.deepEqual(paths.get('api:foo'), ['API', 'foo']);
+  assert.deepEqual(paths.get('api:bar'), ['API', 'foo', 'bar']);
+  assert.deepEqual(paths.get('api:other'), ['API', 'Authored / title', 'other']);
+  assert.equal(paths.get('missing'), undefined);
 });
 
 Then('generic Operations tags disappear while literal schema and resource names remain', () => {

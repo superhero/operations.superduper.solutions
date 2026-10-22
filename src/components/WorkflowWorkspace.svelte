@@ -19,7 +19,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { catalogForOperation } from "$lib/catalog-registry.ts";
   import { createWorkflowSchemaLease, hydrateOperation, getSchemaLibrary } from "$lib/schema-library.ts";
   import { workflowOperationIds } from "$lib/schema-models.ts";
-  import { operationNavigation } from "$lib/operation-navigation.ts";
+  import { operationNavigation, operationResourceGroups, operationCategoryPaths } from "$lib/operation-navigation.ts";
+  import { catalogHierarchy } from "$lib/catalog-hierarchy.ts";
   import { updateOperationVersion } from "$lib/workflow-operation-version.ts";
   import { portableWorkflowDocument, parseWorkflowDocument, validateWorkflowDocument, maxWorkflowFileSize, type WorkflowDocument, type WorkflowDocumentNode, type WorkflowDocumentEdge, type WorkflowField, type SwitchGate, type CastData } from "$lib/workflow-document.ts";
   import { workflowRepository } from "$lib/workflow-repository-client.ts";
@@ -162,6 +163,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const inputTypes = $derived(routingInputTypes(nodes, edges));
   const workflowNames = $derived(new Map(documents.map(document => [document.id, document.name])));
   const operationIndex = $derived(operationNavigation(getSchemaLibrary().operations));
+  const operationPaths = $derived(operationCategoryPaths(operationResourceGroups(
+    catalogHierarchy(getSchemaLibrary().catalogs.flatMap(catalog => catalog.groups)), operationIndex)));
+  setContext("workflow-operation-path", (operationId: string) => operationPaths.get(operationId));
   let changingOperationVersion = $state(false);
 
   setContext("workflow-operation-version", {

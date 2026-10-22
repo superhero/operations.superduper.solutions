@@ -19,6 +19,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const updateNodeInternals = useUpdateNodeInternals();
   const branchesFor = getContext<((id: string) => Map<string, Branch> | undefined) | undefined>("workflow-branches");
   const inputConnected = getContext<((id: string, handleId?: string | null) => boolean) | undefined>("workflow-input-connected");
+  const pathFor = getContext<((operationId: string) => string[] | undefined) | undefined>("workflow-operation-path");
   const versionsFor = getContext<{
     choices: (operationId: string) => { value: string; label: string; disabled?: boolean }[];
     pending: () => boolean;
@@ -27,6 +28,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   } | undefined>("workflow-operation-version");
   let { id, data, selected }: NodeProps<Node<OperationData, "operation">> = $props();
   let hoveredRestore = $state<string>();
+  const categoryPath = $derived(pathFor?.(data.operationId));
   const occurrences = $derived(getNodes().filter(node => node.type === "operation" && node.data.operationId === data.operationId));
   const ordinal = $derived(occurrences.length > 1 ? occurrences.findIndex(node => node.id === id) + 1 : 0);
   const branches = $derived(branchesFor?.(id));
@@ -95,7 +97,13 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   {@render portRow("inputs")}
   <div class="operation-title-row">
     <MaterialIcon name="http" size={28} />
-    <strong>{data.name}</strong>
+    <HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" label={[...(categoryPath ?? []), data.name].join(" / ")}
+      labelAsName={false} tooltipEnabled={Boolean(categoryPath?.length)} tabindex={-1}>
+      {#snippet child({ props })}
+        {@const { type: _type, disabled: _disabled, tabindex: _tabindex, ...hintProps } = props}
+        <strong {...hintProps}>{data.name}</strong>
+      {/snippet}
+    </HintButton>
     {#if ordinal}<span class="instance-pill" aria-label={`Instance ${ordinal}`}>{ordinal}</span>{/if}
   </div>
   {#if versions.length > 1}
