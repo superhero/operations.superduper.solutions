@@ -368,12 +368,25 @@ export function routeEdges({ nodes, edges }, options = {}) {
     const manual = edge.manualRoute !== undefined ? resolveManualRoute(edge.manualRoute, edge, obstacles, config, budget) : null;
     output.set(edge.id, manual || (index < config.maxRoutedEdges ? baseline(edge, obstacles, config, budget) : fallback(edge, config)));
   }
+  const shortest = new Map(output);
   for (const edge of sorted.slice(0, config.maxRoutedEdges)) {
     if (budget.work <= 0) break;
     if (output.get(edge.id).manualState === 'applied') continue;
     const routes = sorted.map((other) => ({ ...other, points: output.get(other.id).points }));
     const routed = improve(edge, obstacles, routes, output.get(edge.id), config, budget);
     output.set(edge.id, alignSegments(edge, obstacles, routes, routed, config, budget));
+  }
+  // Later edges can move out of an earlier edge's way. Drop the obsolete
+  // crossing detour when its checked baseline now has no more crossings.
+  // Reuse the initial searches rather than doing another layout/search pass.
+  for (const edge of sorted.slice(0, config.maxRoutedEdges)) {
+    if (budget.work <= 0) break;
+    const candidate = shortest.get(edge.id), current = output.get(edge.id);
+    if (candidate.status !== 'routed' || current.status !== 'routed' ||
+        current.manualState === 'applied' || candidate.length >= current.length - EPSILON) continue;
+    const routes = sorted.map(other => ({ ...other, points: output.get(other.id).points }));
+    const before = crossingCount(current.points, routes, edge, budget), after = crossingCount(candidate.points, routes, edge, budget);
+    if (budget.work > 0 && after <= before) output.set(edge.id, candidate);
   }
   for (const edge of sorted) if (edge.manualRoute !== undefined && !output.get(edge.id).manualState)
     output.set(edge.id, { ...output.get(edge.id), manualState: 'suspended' });

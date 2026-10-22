@@ -86,6 +86,12 @@ bends, length, crossings, or losing the existing clearance. Existing routes
 remain fixed when routing one connection. Shared stems and joining existing
 bends are intentional overlaps.
 
+Once crossing reduction finishes, one bounded cleanup compares automatic
+detours with their already checked shortest routes. If later edges have cleared
+that shorter corridor, it replaces the obsolete detour without adding crossings.
+This reuses the initial searches, preserves authored routes, and runs before
+opposing-direction lane spacing.
+
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `nodePadding` | 12 | Requested clearance in diagram units; the host's minimum-clearance setting |
