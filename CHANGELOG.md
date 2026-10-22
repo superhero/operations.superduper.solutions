@@ -1016,6 +1016,22 @@ short corridors. Preserve exact workflow and history assertions.
 
 ```
 
+<!-- changelog-commit:bb4199b42eaeb9fb0aa2cf160bc96dd566ec1702 -->
+### Commit [`bb4199b`](https://github.com/superhero/operations.superduper.solutions/commit/bb4199b42eaeb9fb0aa2cf160bc96dd566ec1702)
+
+```text
+test(browser): wait for history readiness before custom redo
+
+The comment disappears during checkout before the workflow finishes
+refreshing its saved documents. Sending Redo at that point hits an inert
+canvas and loses the shortcut.
+
+Wait for the enabled Redo control and restored canvas focus before
+exercising the configured binding, preserving the shortcut and editing
+assertions.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
