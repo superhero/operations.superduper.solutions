@@ -776,6 +776,16 @@ feat(workflow): show operation category paths on name hover
 
 ```
 
+<!-- changelog-commit:2ae137c1b0b5498b53f0a2dc6b78da2108635c1f -->
+### Commit [`2ae137c`](https://github.com/superhero/operations.superduper.solutions/commit/2ae137c1b0b5498b53f0a2dc6b78da2108635c1f)
+
+```text
+fix(workflow): remove directional connection spacing
+
+Drop the best-effort six-unit separation pass and restore direction-independent shared-line alignment. Keep node-clearance and detour-shortening fixes while removing the spacing-specific tests and documentation.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
