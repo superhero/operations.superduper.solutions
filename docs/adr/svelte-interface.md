@@ -84,8 +84,14 @@ larger steps), Home/End limits and a double-click reset. Its preferred width is
 saved separately from workflow documents, defaults to 900px and ranges from
 360px to 1440px, limited while dragging to leave 250px of the viewport visible.
 
-Both panes can stay open when the viewport fits the selected Settings width,
-the 320px catalog and 500px of canvas. Below that, opening one closes the other;
+The catalog has the same splitter on its right edge and saves its own preferred
+width, with its original 320px width as the minimum and a 1440px maximum. On
+smaller desktop viewports it temporarily clamps to leave 250px of canvas and
+restores the preference when space returns. Its existing mobile sheet stays
+320px wide (bounded by 90vw), without a resize grip.
+
+Both panes can stay open when the viewport fits their chosen widths and 500px
+of canvas. Below that, opening one closes the other;
 shrinking keeps the most recently opened pane. Settings fills the viewport when
 its preferred width would leave less than 250px of canvas, or below 900px viewport
 width. Growing the window restores the chosen pane width. Selecting a catalog

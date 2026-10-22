@@ -240,3 +240,6 @@ Feature: Browser operations workspace
 
   Scenario: Settings width controls responsive pane layout and survives reload
     Then resizing Settings changes when the catalog closes and Settings becomes fullscreen
+
+  Scenario: Navigation resizes above its existing minimum and keeps its width
+    Then the left menu resizes from its right edge without becoming narrower than 320 pixels
