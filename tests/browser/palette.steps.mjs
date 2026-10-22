@@ -8,8 +8,8 @@ import { expect } from '@playwright/test';
 import { closeCatalog, openCatalog, setMode, searchOperations, setEvaluationDetails } from './workspace.fixture.mjs';
 import { selectThemeMode } from './workspace.fixture.mjs';
 
-const paletteNames = Array.from({ length: 6 }, (_, index) => `--palette-${index + 1}`);
-const toneNames = Array.from({ length: 6 }, (_, index) => `--tone-${index + 1}`);
+const paletteNames = ['--palette-1', '--palette-2', '--palette-3', '--palette-4', '--palette-5', '--palette-6'];
+const toneNames = ['--tone-1', '--tone-2', '--tone-3', '--tone-4', '--tone-5', '--tone-6'];
 const replacement = ['#fff8ed', '#d8cdb8', '#e6ae67', '#994932', '#33465c', '#14202c'];
 const paletteOptions = [
   { id: 'default', name: 'Default', selector: ':root' },
