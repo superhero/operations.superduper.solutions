@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, tick, untrack } from "svelte";
+  import { flushSync, onMount, tick, untrack } from "svelte";
   import { Tooltip } from "bits-ui";
   import type { Operation } from "$lib/catalog.ts";
   import { getSchemaLibrary } from "$lib/schema-library.ts";
@@ -21,6 +21,8 @@
   import PaneDismiss from "$lib/components/PaneDismiss.svelte";
   import PaneResize from "$lib/components/PaneResize.svelte";
   import NativeScrollbars from "./components/NativeScrollbars.svelte";
+  import { emptyNavigationState, flushPaneState, readPaneState, savePaneState, type NavigationPaneState, type SettingsSection } from "$lib/pane-state.ts";
+  import { flushPaneScroll, rememberPaneScroll } from "$lib/pane-scroll.ts";
 
   let { initialNavigationPaneWidth = 320, initialSettingsPaneWidth = 900, initialToolbarButtons = defaultToolbarButtons, initialKeybindings = defaultKeybindings, initialWorkflowDefaults, initialDeveloperToolbar = false, initialEvaluationDetails = false, initialTooltips = true, initialLocale = defaultLocaleSettings, initialSettingsError = null }: {
     initialNavigationPaneWidth?: number;
@@ -58,15 +60,31 @@
   const settingsEdits = { theme: 0, palette: 0, workflowDefaults: 0, developerToolbar: 0, evaluationDetails: 0, tooltips: 0, locale: 0, keybindings: 0, toolbarButtons: 0 };
   let workflowDefaultsError = $state("");
   let workflowDefaultsSave = 0;
-  let navigationOpen = $state(!matchMedia("(max-width: 899px)").matches);
+  const resumedPanes = untrack(() => {
+    const saved = readPaneState();
+    if (saved?.navigationOpen && saved.settingsOpen) {
+      const width = window.innerWidth;
+      const leftWidth = width < 900 ? 320 : Math.min(initialNavigationPaneWidth, Math.max(320, width - 250));
+      if (width < Math.max(900, initialSettingsPaneWidth + 250) || width < initialSettingsPaneWidth + leftWidth + 500) {
+        if (saved.lastOpenedPane === "settings") saved.navigationOpen = false;
+        else saved.settingsOpen = false;
+      }
+    }
+    return saved;
+  });
+  const initialNavigationView = resumedPanes?.navigation ?? emptyNavigationState();
+  let navigationView = $state<NavigationPaneState>(initialNavigationView);
+  let settingsSection = $state<SettingsSection>(resumedPanes?.settings.section ?? null);
+  let settingsScroll = $state(resumedPanes?.settings.scrollTop ?? 0);
+  let navigationOpen = $state(resumedPanes?.navigationOpen ?? !matchMedia("(max-width: 899px)").matches);
   let navigationModal = $state(false);
   let documentModal = $state(false);
   let workflowSaveStatus = $state<WorkflowSaveStatus>("loading");
   let savedWorkflows = $state<WorkflowDocument[]>([]);
   let workflowLibraryError = $state("");
-  let mode = $state<WorkspaceMode>("workflow");
+  let mode = $state<WorkspaceMode>(resumedPanes?.settingsOpen ? "settings" : "workflow");
   let modeRequest = 0;
-  let settingsPresent = $state(false);
+  let settingsPresent = $state(resumedPanes?.settingsOpen ?? false);
   let viewportWidth = $state(window.innerWidth);
   let navigationPaneWidth = $state(untrack(() => initialNavigationPaneWidth));
   const navigationWidth = $derived(viewportWidth < 900 ? 320 : Math.min(navigationPaneWidth, Math.max(320, viewportWidth - 250)));
@@ -74,7 +92,7 @@
   let settingsPaneWidth = $state(untrack(() => initialSettingsPaneWidth));
   const compactSettings = $derived(viewportWidth < Math.max(900, settingsPaneWidth + 250));
   const concurrentPanes = $derived(!compactSettings && viewportWidth >= settingsPaneWidth + navigationWidth + 500);
-  let lastOpenedPane: "navigation" | "settings" = "navigation";
+  let lastOpenedPane = $state<"navigation" | "settings">(resumedPanes?.lastOpenedPane ?? "navigation");
   let resizingSettings = $state(false);
   let settingsSwipeOffset = $state(0);
   let swipingSettings = $state(false);
@@ -114,6 +132,14 @@
   let settingsDrawer: HTMLElement;
   let settingsContent: HTMLElement;
   let settingsContentHeight = $state<number>();
+  function rememberNavigationView(next: NavigationPaneState) { navigationView = next; }
+  function rememberSettingsScroll(position: number) { settingsScroll = position; }
+  function persistPanes() {
+    savePaneState({ version: 1, navigationOpen, settingsOpen: mode === "settings", lastOpenedPane,
+      navigation: $state.snapshot(navigationView), settings: { section: settingsSection, scrollTop: settingsScroll } });
+  }
+  $effect(persistPanes);
+  function flushPanes() { flushSync(flushPaneScroll); persistPanes(); flushPaneState(); }
   $effect(() => {
     if (!settingsPresent) return;
     const root = document.documentElement;
@@ -414,8 +440,8 @@
   }
 </script>
 
-<svelte:document onpointerover={sizeHover} onfocusin={sizeHover} />
-<svelte:window bind:innerWidth={viewportWidth} onkeydown={dismissMenus} />
+<svelte:document onpointerover={sizeHover} onfocusin={sizeHover} onvisibilitychange={() => { if (document.visibilityState === "hidden") flushPanes(); }} />
+<svelte:window bind:innerWidth={viewportWidth} onkeydown={dismissMenus} onpagehide={flushPanes} />
 
 <svelte:head>
   <title>operations.superduper.solutions</title>
@@ -425,7 +451,7 @@
 <Tooltip.Provider disabled={!tooltips} delayDuration={400} ignoreNonKeyboardFocus disableHoverableContent>
 <BackgroundWave />
 <NativeScrollbars />
-<SideNavigation closeMenuWithEscape={keybindings.closeMenu === "Escape"} bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {evaluationDetails} {catalogGroups}
+<SideNavigation initialView={initialNavigationView} onviewchange={rememberNavigationView} closeMenuWithEscape={keybindings.closeMenu === "Escape"} bind:this={sideNavigation} bind:open={navigationOpen} bind:modal={navigationModal} {documentModal} {operations} {evaluationDetails} {catalogGroups}
   workflows={savedWorkflows} workflowError={workflowLibraryError} onWorkflowSelect={selectWorkflow} onWorkflowRetry={() => workflowWorkspace.refreshDocuments()}
   onSelect={selectOperation} />
 {#if navigationOpen && viewportWidth >= 900}
@@ -461,7 +487,7 @@
     <PaneResize label="Settings pane width" width={settingsPaneWidth} minimum={360} maximum={maximumSettingsWidth} defaultWidth={900}
       onresize={resizeSettings} oncommit={savePaneWidth} onresizing={value => resizingSettings = value} onclose={() => void toggleSettings()} />
   {/if}
-  <aside id="settings-panel" bind:this={settingsDrawer} class="settings-drawer" class:swiping={swipingSettings} style={`--pane-swipe-offset: ${settingsSwipeOffset}px`} class:open={mode === "settings"} class:preserving-scroll={settingsContentHeight !== undefined} aria-label="Application settings" inert={mode !== "settings"}>
+  <aside id="settings-panel" bind:this={settingsDrawer} use:rememberPaneScroll={{ active: mode === "settings", position: settingsScroll, onposition: rememberSettingsScroll }} class="settings-drawer" class:swiping={swipingSettings} style={`--pane-swipe-offset: ${settingsSwipeOffset}px`} class:open={mode === "settings"} class:preserving-scroll={settingsContentHeight !== undefined} aria-label="Application settings" inert={mode !== "settings"}>
     {#if compactSettings}
       <div class="settings-mobile-header">
         <PaneDismiss label="Close settings" direction="right" panel="#settings-panel" onclose={() => void toggleSettings()}
@@ -469,7 +495,7 @@
       </div>
     {/if}
     <div bind:this={settingsContent} style:min-height={settingsContentHeight === undefined ? undefined : `${settingsContentHeight}px`}>
-      <SettingsWorkspace active={settingsPresent} bind:this={settingsWorkspace} {dark} onTheme={toggleTheme} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
+      <SettingsWorkspace bind:openSection={settingsSection} active={settingsPresent} bind:this={settingsWorkspace} {dark} onTheme={toggleTheme} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
           {toolbarButtons} {toolbarButtonsError} onToolbarButtonsChange={selectToolbarButtons} onRetryToolbarButtons={() => selectToolbarButtons(toolbarButtons)}
           {keybindings} {keybindingsError} onKeybindingsChange={selectKeybindings} onRetryKeybindings={() => selectKeybindings(keybindings)}
           {locale} {localeError} onLocaleChange={selectLocale} onRetryLocale={() => selectLocale(locale)}

@@ -965,6 +965,24 @@ fix(workflow): fit the graph within the visible canvas
 
 ```
 
+<!-- changelog-commit:bda5376668246a79329524c9cf995a79ac101d35 -->
+### Commit [`bda5376`](https://github.com/superhero/operations.superduper.solutions/commit/bda5376668246a79329524c9cf995a79ac101d35)
+
+```text
+feat(panes): restore navigation and settings across sessions
+
+Resume pane visibility, searches, branch expansion, selected Settings
+section and reading positions from a validated local snapshot. Preserve
+preferred widths and resolve constrained layouts using the last opened
+pane.
+
+Wait for asynchronous content before restoring scroll, and flush current
+positions on page hide so immediate refreshes retain the reading position.
+Cover desktop, compact touch, search and invalid-state recovery in browser
+scenarios.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

@@ -120,6 +120,15 @@ activation of the same grip also closes the pane. Navigation restores its scroll
 position when reopened. Width-based layout does not react to a keyboard-only
 height change.
 
+Pane visibility, the last opened pane, navigation search and branch expansion,
+the selected Settings section, and both reading positions survive refreshes and
+new sessions in the disposable localStorage snapshot `v1/settings/pane-state`.
+Preferred widths remain in IndexedDB. Read the snapshot before mounting; apply
+the usual viewport limits when both saved panes no longer fit. Scroll writes
+are coalesced and the latest positions flush synchronously on page hide.
+Restoration waits for matching results, fonts and lazy layout; direct user input
+cancels it. Missing, malformed or unavailable snapshots leave normal defaults.
+
 ### Storage and recovery
 
 Only one Settings section opens at a time. Settings live outside workflow Git

@@ -1019,7 +1019,7 @@ Then('resizing Settings changes when the catalog closes and Settings becomes ful
   await page.keyboard.press('ArrowLeft');
   await expect(grip).toHaveAttribute('aria-valuenow', '616');
   await page.reload();
-  await page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true })).toHaveAttribute('aria-expanded', 'true');
   await expect(grip).toHaveAttribute('aria-valuenow', '616');
   // A wider chosen pane becomes fullscreen at a correspondingly wider viewport.
   await page.setViewportSize({ width: 1920, height: 1000 });
