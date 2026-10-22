@@ -89,8 +89,7 @@ bends are intentional overlaps.
 Once crossing reduction finishes, one bounded cleanup compares automatic
 detours with their already checked shortest routes. If later edges have cleared
 that shorter corridor, it replaces the obsolete detour without adding crossings.
-This reuses the initial searches, preserves authored routes, and runs before
-opposing-direction lane spacing.
+This reuses the initial searches and preserves authored routes.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
@@ -220,12 +219,6 @@ reference case is an individual Cucumber scenario. Browser cases tagged
 settings, and persistence; run them after `npm run build` with
 `npm run test:browser -- --tags @workflow-routing`.
 Manual controls and persistence are covered by `@workflow-manual-routing`.
-
-Automatic interior runs travelling in opposite directions prefer a six-unit gap:
-vertical downward runs sit left of upward runs, and horizontal rightward runs sit
-above leftward runs. Matching directions can still share a line. This bounded
-worker-side adjustment preserves ports and authored routes, and yields to node
-clearance and crossing safety when a corridor cannot fit both lanes.
 
 When facing endpoint buffers overlap, including diagonally staggered nodes,
 those two faces share the actual gap from the first routing search. Other faces
