@@ -1160,6 +1160,30 @@ test(palettes): await restored settings before interaction
 
 ```
 
+<!-- changelog-commit:7d85404187ca1d4fe02af70a99a09272e052d447 -->
+### Commit [`7d85404`](https://github.com/superhero/operations.superduper.solutions/commit/7d85404187ca1d4fe02af70a99a09272e052d447)
+
+```text
+perf(tests): keep palette helpers local to their feature
+
+```
+
+<!-- changelog-commit:9ac83cbc1242856cb02cc99b42941525202c55ed -->
+### Commit [`9ac83cb`](https://github.com/superhero/operations.superduper.solutions/commit/9ac83cbc1242856cb02cc99b42941525202c55ed)
+
+```text
+chore(ci): retain generated changelog with palette isolation
+
+```
+
+<!-- changelog-commit:45557594d33579abb6411be2b90abccad4ebb21f -->
+### Commit [`4555759`](https://github.com/superhero/operations.superduper.solutions/commit/45557594d33579abb6411be2b90abccad4ebb21f)
+
+```text
+test(navigation): use reading input before dismissing panes
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
