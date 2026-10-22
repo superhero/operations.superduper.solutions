@@ -874,6 +874,16 @@ Enable yellow input-schema outputs to fan out to compatible operation input port
 
 ```
 
+<!-- changelog-commit:e2e789c612a376dbf569381661fdc1a10cd770e3 -->
+### Commit [`e2e789c`](https://github.com/superhero/operations.superduper.solutions/commit/e2e789c612a376dbf569381661fdc1a10cd770e3)
+
+```text
+feat(workspace): allow both side panes on wide screens
+
+Keep navigation and Settings open independently from 1720px, reserving room for both panes and the canvas. Preserve Settings while browsing or adding catalog items on wide screens. Smaller layouts retain exclusive panes; resizing keeps the most recently opened pane. Retain mobile overlays and dismiss the focused catalog with Escape when both panes are open.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
