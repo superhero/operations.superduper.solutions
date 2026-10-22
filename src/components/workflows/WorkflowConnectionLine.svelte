@@ -14,7 +14,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const options = getContext<() => { curved: boolean; lineStyle: WorkflowLineStyle; strength: number; style: string }>("workflow-connection-options");
 </script>
 
-<RoutedConnection style={options().style}
+<RoutedConnection style={options().style} direct={options().lineStyle === "flowing"}
   drawRoute={options().curved ? (route, points, obstacles) => bezierDrawing(route, points, options().strength, obstacles, false, options().lineStyle) : undefined}
   curve={options().curved ? points => workflowCurve({ ...points,
-  sourcePosition: points.sourcePosition as Position, targetPosition: points.targetPosition as Position }, options().strength * (options().lineStyle === "filleted" ? 1 : 0.5))[0] : undefined} />
+  sourcePosition: points.sourcePosition as Position, targetPosition: points.targetPosition as Position }, options().strength * (options().lineStyle === "filleted" || options().lineStyle === "flowing" ? 1 : 0.5))[0] : undefined} />

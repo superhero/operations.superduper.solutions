@@ -1228,7 +1228,7 @@ Then('named connection styles survive export while legacy flags retain their app
   assert.equal(workflowLineStyle({ curved: true }), 'filleted');
   assert.equal(workflowLineStyle({ curved: true, lineStyle: 'invalid' }), 'filleted');
   assert.equal(workflowLineStyle({ curved: false, lineStyle: null }), 'orthogonal');
-  for (const lineStyle of ['orthogonal', 'filleted', 'bezier', 'clutter']) {
+  for (const lineStyle of ['orthogonal', 'filleted', 'bezier', 'clutter', 'flowing']) {
     const document = parseWorkflowDocument(JSON.stringify({ ...plan(), lineStyle }));
     assert.equal(document.lineStyle, lineStyle);
     assert.equal(document.curved, lineStyle !== 'orthogonal');

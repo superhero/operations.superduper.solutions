@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
-export const workflowLineStyles = ["orthogonal", "filleted", "bezier", "clutter"] as const;
+export const workflowLineStyles = ["orthogonal", "filleted", "bezier", "clutter", "flowing"] as const;
 export type WorkflowLineStyle = typeof workflowLineStyles[number];
 export const workflowLineStyleLabels: Record<WorkflowLineStyle, string> = {
-  orthogonal: "Orthogonal", filleted: "Filleted", bezier: "Bézier", clutter: "Clutter",
+  orthogonal: "Orthogonal", filleted: "Filleted", bezier: "Bézier", clutter: "Clutter", flowing: "Flowing",
 };
 
 export function isWorkflowLineStyle(value: unknown): value is WorkflowLineStyle {
-  return value === "orthogonal" || value === "filleted" || value === "bezier" || value === "clutter";
+  return value === "orthogonal" || value === "filleted" || value === "bezier" || value === "clutter" || value === "flowing";
 }
 
 /** Documents without a named style retain their existing appearance. */

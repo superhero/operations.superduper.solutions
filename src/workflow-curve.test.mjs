@@ -7,6 +7,15 @@ import { workflowCurve } from './lib/workflow-curve.ts';
 import { routeEdges } from './lib/flow-routing/router.js';
 import { bezierDrawing } from './lib/flow-routing/bezier.ts';
 
+Then('flowing curves match the geometry before obstacle routing and manual anchors', () => {
+  // Frozen results from b68904b (before routing #199 and manual anchors #200).
+  for (const [sourcePosition, targetX, targetY, targetPosition, expected] of [
+    ['right', 200, 100, 'left', ['M0,0 C200,0 0,100 200,100', 100, 50]],
+    ['right', -100, 100, 'left', ['M0,0 C125,0 -225,100 -100,100', -50, 50]],
+    ['bottom', 100, 200, 'top', ['M0,0 C0,200 100,0 100,200', 50, 100]],
+  ]) assert.deepEqual(workflowCurve({ sourceX: 0, sourceY: 0, sourcePosition, targetX, targetY, targetPosition }, 100), expected);
+});
+
 Then('workflow curves follow every port orientation and keep their label at the cubic midpoint', () => {
   for (const [sourcePosition, targetPosition, targetX, targetY, expected] of [
     ['right', 'left', 200, 100, ['M0,0 C100,0 100,100 200,100', 100, 50]],

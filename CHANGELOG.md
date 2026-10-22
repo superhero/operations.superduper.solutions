@@ -623,6 +623,21 @@ revisions, and share routing clearance, previews and anchor controls.
 
 ```
 
+<!-- changelog-commit:6e31fed0b0d8916b6cfd5347e09375d659f082f9 -->
+### Commit [`6e31fed`](https://github.com/superhero/operations.superduper.solutions/commit/6e31fed0b0d8916b6cfd5347e09375d659f082f9)
+
+```text
+feat(workflow): restore original flowing curves as a fifth style
+
+Recover the direct cubic rendering from b68904b, before obstacle routing
+and manual anchors, as Flowing in the connection-style slider and toolbar.
+Use the original strength formula for completed edges and both previews.
+
+Preserve authored detours for switching back to routed styles. Verify the
+historical geometry, five-stop persistence and preview-to-edge handoff.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
