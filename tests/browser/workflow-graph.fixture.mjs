@@ -32,7 +32,7 @@ export async function seedOperationGraph(page, names) {
     edges.push(...graph.edges);
   }
   const pressed = async name => await page.getByRole('button', { name, exact: true }).getAttribute('aria-pressed') === 'true';
-  const [snap, curved, dashed] = await Promise.all(['Snap to grid', 'Curved connections', 'Dashed connections'].map(pressed));
+  const [snap, curved, dashed] = await Promise.all(['Snap to grid', 'Connection style', 'Dashed connections'].map(pressed));
   await loadGraphFixture(page, { version: 2, id: randomUUID(), name: 'Untitled workflow', description: '', nodes, edges,
     viewport: { x: 0, y: 0, zoom: 1 }, snap, curved, dashed });
 }

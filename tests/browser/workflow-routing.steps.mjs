@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { toggleConnectionStyle } from './connection-style.fixture.mjs';
 import assert from 'node:assert/strict';
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
@@ -443,7 +444,7 @@ Then('dash length gap and speed update existing routes and previews and pause bo
   assert.deepEqual((await readExport(page)).document, baseline, 'Dash appearance remains a browser preference.');
   assert.deepEqual(await repository(page, 'history', baseline.id), history);
 
-  await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
+  await toggleConnectionStyle(page);
   await expect(route(page)).toHaveAttribute('d', /^M.* C/);
   await expect(curvedPaths).toHaveCount(2);
   await saved(page);
@@ -492,7 +493,7 @@ Then('changing curve strength changes safe routed bends without changing its end
   // strengths to the same sharp bend and cannot prove this setting changes.
   await dragNode(page, 'routing-blocker', 0, 300);
   await dragNode(page, 'routing-target', 0, -180);
-  await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
+  await toggleConnectionStyle(page);
   const values = [];
   for (const strength of [50, 200]) {
     await changeCurveStrength(page, strength);
@@ -506,7 +507,7 @@ Then('changing curve strength changes safe routed bends without changing its end
   await changeCurveStrength(page, 0);
   await expect(route(page)).not.toHaveAttribute('d', / A/);
   await expectClearRoute(page);
-  await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
+  await toggleConnectionStyle(page);
   await expectClearRoute(page);
 });
 
@@ -562,10 +563,10 @@ Then('pending routing work closes with the canvas and reopening creates one fres
   await expectClearRoute(page);
   await expect.poll(async () => (await live()).length).toBe(1);
   assert.equal((await observations()).length, before + 1, 'Reopening must create exactly one fresh routing worker.');
-  await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
+  await toggleConnectionStyle(page);
   await expectClearRoute(page);
   await expect.poll(async () => (await live()).length).toBe(1);
-  await workflow(page).getByRole('button', { name: 'Curved connections', exact: true }).click();
+  await toggleConnectionStyle(page);
   await expectClearRoute(page);
   await expect.poll(async () => (await live()).length).toBe(1);
   assert.equal((await observations()).length, before + 1, 'Switching styles must reuse the same routing worker.');

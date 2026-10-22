@@ -9,6 +9,7 @@ import { normalizeManualRoute } from "./flow-routing/manual.js";
 import { validateCredentialBinding } from "./secrets/bindings.ts";
 import type { CredentialBinding } from "./secrets/types.ts";
 import { processingDefinition, validateProcessingData, type ProcessingData } from "./workflow-processing.ts";
+import { isWorkflowLineStyle, type WorkflowLineStyle } from "./workflow-line-style.ts";
 
 export type OperationData = {
   operationId: string;
@@ -78,6 +79,7 @@ export type WorkflowDocument = {
   viewport: { x: number; y: number; zoom: number };
   snap: boolean;
   curved: boolean;
+  lineStyle?: WorkflowLineStyle;
   dashed: boolean;
 };
 
@@ -397,12 +399,14 @@ function validateDocument(value: unknown, context: ValidationContext, depth: num
   const zoom = coordinate(viewport.zoom);
   if (zoom < 0.25 || zoom > 2) throw new Error("Workflow zoom must be between 0.25 and 2.");
   context.ancestors.delete(document);
+  if (document.lineStyle !== undefined && !isWorkflowLineStyle(document.lineStyle)) throw new Error("Unsupported connection line style.");
   return {
     version: document.version,
     id: text(document.id, "Document ID", 128), name: text(document.name, "Document name", 100), nodes, edges,
     ...(extended && document.description !== undefined ? { description: text(document.description, "Workflow description", workflowDescriptionLimit, true) } : {}),
     viewport: { x: coordinate(viewport.x), y: coordinate(viewport.y), zoom },
-    snap: flag(document.snap), curved: flag(document.curved), dashed: flag(document.dashed)
+    snap: flag(document.snap), curved: flag(document.curved), dashed: flag(document.dashed),
+    ...(isWorkflowLineStyle(document.lineStyle) ? { lineStyle: document.lineStyle, curved: document.lineStyle !== "orthogonal" } : {})
   };
 }
 

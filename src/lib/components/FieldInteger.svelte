@@ -8,9 +8,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { createIntegerScale } from "$lib/integer-scale.ts";
 
   let { id, label, value, minimum, maximum, options, required = false, disabled = false, invalid = false,
-    describedBy, onValueChange, onValueCommit }:
+    describedBy, valueText, showValue = true, stepped = false, onValueChange, onValueCommit }:
     { id: string; label: string; value: string; minimum?: number | undefined; maximum?: number | undefined; options?: number[] | undefined;
-      required?: boolean; disabled?: boolean; invalid?: boolean; describedBy?: string | undefined;
+      required?: boolean; disabled?: boolean; invalid?: boolean; describedBy?: string | undefined; valueText?: string; showValue?: boolean; stepped?: boolean;
       onValueChange: (value: string) => void; onValueCommit?: () => void } = $props();
 
   const allowed = $derived(options ? [...new Set(options)].filter(number => Number.isSafeInteger(number)
@@ -22,7 +22,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const valid = $derived(!unavailable && /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(value.trim()) && Number.isSafeInteger(number)
     && number >= scale.minimum && number <= scale.maximum && (!allowed || allowed.includes(number)));
   const current = $derived(valid ? number : allowed?.[0] ?? Math.max(scale.minimum, Math.min(scale.maximum, 0)));
-  const position = $derived(scale.position(current));
+  const stops = $derived(stepped && allowed && allowed.length > 1 ? allowed : undefined);
+  const position = $derived(stops ? stops.indexOf(current) / (stops.length - 1) : scale.position(current));
   const badValue = $derived(!unset && !valid);
   const validationMessage = $derived(unavailable ? "No safe integer satisfies this field's limits."
     : allowed ? "Choose one of the allowed integers."
@@ -40,7 +41,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   function slide(event: Event) {
     const input = event.currentTarget as HTMLInputElement;
-    let next = scale.value(input.valueAsNumber);
+    let next = stops ? stops[Math.round(input.valueAsNumber * (stops.length - 1))] : scale.value(input.valueAsNumber);
     if (next === undefined) return;
     if (allowed?.length) next = allowed.reduce((closest, candidate) => Math.abs(candidate - next!) < Math.abs(closest - next!) ? candidate : closest);
     emit(next);
@@ -65,16 +66,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <div class="field-integer" class:disabled class:unset style:--slider-position={`${position * 100}%`}>
   <input class="integer-range" bind:clientWidth={rangeWidth} bind:clientHeight={rangeHeight}
     style:--slider-hover-x={rangeWidth > 0 ? 1 + 8 / rangeWidth : 1}
-    style:--slider-hover-y={rangeHeight > 0 ? 1 + 2 / rangeHeight : 1} {id} type="range" min="0" max="1" step="any" value={position}
+    style:--slider-hover-y={rangeHeight > 0 ? 1 + 2 / rangeHeight : 1} {id} type="range" min="0" max="1" step={stops ? 1 / (stops.length - 1) : "any"} value={position}
     disabled={disabled || unavailable} aria-label={label} aria-valuemin={scale.minimum} aria-valuemax={scale.maximum}
-    aria-valuenow={current} aria-valuetext={unset ? "Not set" : valid ? number.toLocaleString() : "Invalid value"}
+    aria-valuenow={current} aria-valuetext={valueText ?? (unset ? "Not set" : valid ? number.toLocaleString() : "Invalid value")}
     aria-invalid={invalid || badValue || undefined} aria-describedby={describedBy}
     oninput={slide} onchange={() => onValueCommit?.()} onkeydown={keydown} />
-  <input class="integer-value" id={`${id}-value`} type="text" inputmode="numeric" {value} {required} {disabled}
+  {#if showValue}<input class="integer-value" id={`${id}-value`} type="text" inputmode="numeric" {value} {required} {disabled}
     bind:this={exactInput} aria-label={`${label} value`} aria-invalid={invalid || badValue || undefined}
     aria-describedby={describedBy} autocomplete="off" spellcheck={false}
     style:--value-width={`${Math.max(5, Math.min(18, value.length + 1))}ch`}
-    oninput={event => onValueChange(event.currentTarget.value)} onchange={() => onValueCommit?.()} />
+    oninput={event => onValueChange(event.currentTarget.value)} onchange={() => onValueCommit?.()} />{/if}
 </div>
 
 <style>

@@ -34,6 +34,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <script lang="ts">
   import { tick } from "svelte";
   import Disclosure from "$lib/components/Disclosure.svelte";
+  import { workflowLineStyle, workflowLineStyles, workflowLineStyleLabels } from "$lib/workflow-line-style.ts";
   import FieldInteger from "$lib/components/FieldInteger.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
   import HintButton from "$lib/components/HintButton.svelte";
@@ -163,7 +164,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let nodeClearanceInvalid = $state(false);
   const savedNodeClearance = $derived(workflowDefaults.nodeClearance);
   const applicationOptions = [
-    { key: "curved", label: "Curved lines" },
+    { key: "curved", label: "Connection style" },
     { key: "dashed", label: "Dashed lines" },
     { key: "nodeClearance", label: "Node clearance" },
     { key: "nodeSymbols", label: "Node symbols" },
@@ -246,7 +247,35 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <div class="application-lane">
           {#each lane as option (option.key)}
             <div class="workflow-default-pair">
-              {#if option.key === "tooltips"}
+              {#if option.key === "curved"}
+                {@const selectedStyle = workflowLineStyle(workflowDefaults)}
+                <div class="line-style-setting">
+                  <label for="workflow-line-style">Connection style</label>
+                  <FieldInteger id="workflow-line-style" label="Connection style" minimum={0} maximum={workflowLineStyles.length - 1} options={workflowLineStyles.map((_, i) => i)}
+                    value={String(workflowLineStyles.indexOf(selectedStyle))} valueText={workflowLineStyleLabels[selectedStyle]} showValue={false} stepped
+                    onValueChange={value => {
+                      const lineStyle = workflowLineStyles[Number(value)]!;
+                      if (lineStyle !== workflowDefaults.lineStyle) onWorkflowDefaultsChange({ ...workflowDefaults, lineStyle, curved: lineStyle !== "orthogonal" });
+                    }} />
+                  <div class="line-style-labels">
+                    {#each workflowLineStyles as lineStyle}
+                      <button type="button" aria-pressed={selectedStyle === lineStyle}
+                        onclick={() => onWorkflowDefaultsChange({ ...workflowDefaults, lineStyle, curved: lineStyle !== "orthogonal" })}>{workflowLineStyleLabels[lineStyle]}</button>
+                    {/each}
+                  </div>
+                </div>
+                  <div class="grid-size-setting">
+                    <span>Curve strength</span>
+                    <div class="grid-size-control">
+                      <FieldInteger id="workflow-curve-strength" label="Curve strength" value={curveStrengthDraft}
+                        minimum={workflowCurveStrengthLimits.min} maximum={workflowCurveStrengthLimits.max} required invalid={curveStrengthInvalid}
+                        describedBy={curveStrengthInvalid ? "workflow-curve-strength-error" : undefined}
+                        onValueChange={value => { curveStrengthDraft = value; curveStrengthInvalid = false; }} onValueCommit={commitCurveStrength} />
+                      <span aria-hidden="true">%</span>
+                    </div>
+                    {#if curveStrengthInvalid}<span class="grid-size-error" id="workflow-curve-strength-error" role="alert">Curve strength must be a whole number from {workflowCurveStrengthLimits.min} to {workflowCurveStrengthLimits.max}.</span>{/if}
+                  </div>
+              {:else if option.key === "tooltips"}
                 <button class="workflow-default" type="button" role="switch" aria-checked={tooltips} onclick={() => onTooltipsChange(!tooltips)}>
                   <span>Tooltips</span><span class="default-switch" aria-hidden="true"><span></span></span>
                 </button>
@@ -318,18 +347,6 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                       <span aria-hidden="true">px/s</span>
                     </div>
                     {#if dashSpeedInvalid}<span class="grid-size-error" id="workflow-dash-speed-error" role="alert">Dash speed must be a whole number from {workflowDashSpeedLimits.min} to {workflowDashSpeedLimits.max}.</span>{/if}
-                  </div>
-                {:else}
-                  <div class="grid-size-setting">
-                    <span>Curve strength</span>
-                    <div class="grid-size-control">
-                      <FieldInteger id="workflow-curve-strength" label="Curve strength" value={curveStrengthDraft}
-                        minimum={workflowCurveStrengthLimits.min} maximum={workflowCurveStrengthLimits.max} required invalid={curveStrengthInvalid}
-                        describedBy={curveStrengthInvalid ? "workflow-curve-strength-error" : undefined}
-                        onValueChange={value => { curveStrengthDraft = value; curveStrengthInvalid = false; }} onValueCommit={commitCurveStrength} />
-                      <span aria-hidden="true">%</span>
-                    </div>
-                    {#if curveStrengthInvalid}<span class="grid-size-error" id="workflow-curve-strength-error" role="alert">Curve strength must be a whole number from {workflowCurveStrengthLimits.min} to {workflowCurveStrengthLimits.max}.</span>{/if}
                   </div>
                 {/if}
               {/if}
@@ -476,6 +493,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </section>
 
 <style>
+  .line-style-setting { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .line-style-setting > label { padding: 10px 12px 0; }
+  .line-style-labels { display: flex; justify-content: space-between; gap: 4px; padding: 0 10px 8px; }
+  .line-style-labels button { padding: 4px 2px; min-width: 0; background: transparent; color: inherit; font: inherit; font-size: 0.85em; }
+  .line-style-labels button[aria-pressed="true"] { color: var(--color-primary); font-weight: 700; }
+
   .storage-building { margin: 0; padding: 12px 16px 16px; font-size: 12px; font-weight: 700; color: var(--color-catalog-active-foreground); text-align: center; }
   .browser-content { position: relative; }
   /* Preserve the dots as overflow while the enclosing disclosure clips its slide. */

@@ -28,3 +28,6 @@ Feature: Workflow connection curve geometry
 
   Scenario: Coincident handles remain drawable with an exhausted budget
     Then coincident curved connections retain finite paths labels and controls
+
+  Scenario: Filleted Bezier and Clutter use distinct safe curve fitting
+    Then Filleted Bezier and Clutter drawings differ while retaining finite endpoints and labels

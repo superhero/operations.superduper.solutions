@@ -17,7 +17,7 @@ export const toolbarButtonLabels = {
   "paste": "Paste",
   "delete": "Remove selected",
   "dashed": "Dashed connections",
-  "curved": "Curved connections",
+  "curved": "Connection style",
   "snap": "Snap to grid",
   "zoomIn": "Zoom in",
   "zoomOut": "Zoom out",

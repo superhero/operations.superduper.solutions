@@ -5,6 +5,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 
 <script lang="ts">
+  import { workflowLineStyle, workflowLineStyles, type WorkflowLineStyle } from "$lib/workflow-line-style.ts";
   import { defaultToolbarButtons, type ToolbarButtons } from "$lib/toolbar-settings.ts";
   import { copyWorkflowSelection, pasteWorkflowSelection, type WorkflowClipboard } from "$lib/workflow-clipboard.ts";
   import { defaultKeybindings, shortcutAction, modifierKeys, modifierPressed, type Keybindings } from "$lib/keybindings.ts";
@@ -80,6 +81,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const initialWorkflowDefaults = untrack(() => workflowDefaults);
   let snap = $state(initialWorkflowDefaults.snap);
   let curved = $state(initialWorkflowDefaults.curved);
+  let lineStyle = $state<WorkflowLineStyle | undefined>(initialWorkflowDefaults.lineStyle);
+  const connectionStyle = $derived(workflowLineStyle({ curved, lineStyle }));
   let dashed = $state(initialWorkflowDefaults.dashed);
   const gridSize = $derived(workflowDefaults.gridSize);
   let savedSnapshot = $state("");
@@ -176,7 +179,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   setContext("workflow-name", (workflowId: string) => workflowId === id ? name : workflowNames.get(workflowId));
   setContext("workflow-editor-active", () => keyboardActive);
   setContext("workflow-curve-strength", () => workflowDefaults.curveStrength);
-  setContext("workflow-connection-options", () => ({ curved, strength: workflowDefaults.curveStrength,
+  setContext("workflow-connection-options", () => ({ curved, lineStyle: connectionStyle, strength: workflowDefaults.curveStrength,
     style: `${edgeOptions.style}; marker-end: url(#${connectionMarkerId})` }));
   setContext("workflow-input-type", (nodeId: string, handle = "value") => {
     if (handle === "value") return inputTypes.get(nodeId) ?? "Unknown";
@@ -282,6 +285,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       if (!ready || hasSavedDocument || dirty || saving || !initialDraft) return;
       snap = defaults.snap;
       curved = defaults.curved;
+      lineStyle = defaults.lineStyle;
       dashed = defaults.dashed;
       savedSnapshot = JSON.stringify(documentValue());
       initialDraft = JSON.parse(savedSnapshot);
@@ -313,7 +317,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         ...(version >= 2 ? { ...(edge.sourceHandle ? { sourceHandle: edge.sourceHandle } : {}),
           ...(edge.targetHandle ? { targetHandle: edge.targetHandle } : {}), ...(edge.kind ? { kind: edge.kind } : {}),
           ...(edge.hidden ? { hidden: true } : {}), ...(edge.detached ? { detached: true } : {}) } : {}) })),
-      viewport: { ...viewport }, snap, curved, dashed };
+      viewport: { ...viewport }, snap, curved, dashed, ...(lineStyle ? { lineStyle } : {}) };
   }
 
   function storedNode(node: GraphNode): WorkflowDocumentNode {
@@ -469,6 +473,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     viewport = document.viewport;
     snap = document.snap;
     curved = document.curved;
+    lineStyle = document.lineStyle;
     dashed = document.dashed;
     applyGraph(document);
     savedSnapshot = saved ? JSON.stringify(documentValue()) : "";
@@ -775,19 +780,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     return false;
   }
 
-  function setDisplayOptions(options: Partial<Pick<WorkflowDefaults, "snap" | "curved" | "dashed">>) {
+  function setDisplayOptions(options: Partial<Pick<WorkflowDefaults, "snap" | "curved" | "dashed" | "lineStyle">>) {
     if (options.snap !== undefined) snap = options.snap;
-    if (options.curved !== undefined) curved = options.curved;
+    if (options.curved !== undefined) { curved = options.curved; lineStyle = undefined; }
+    if (options.lineStyle !== undefined) { lineStyle = options.lineStyle; curved = lineStyle !== "orthogonal"; }
     if (options.dashed !== undefined) dashed = options.dashed;
-    if (options.curved !== undefined || options.dashed !== undefined) edges = edges.map(paintEdge);
+    if (options.curved !== undefined || options.lineStyle !== undefined || options.dashed !== undefined) edges = edges.map(paintEdge);
   }
 
   export function applyDisplayDefaults(next: WorkflowDefaults, previous: WorkflowDefaults) {
     const untouched = storageReady && !hasSavedDocument && !dirty && !saving && initialDraft !== null;
-    const changed: Partial<Pick<WorkflowDefaults, "snap" | "curved" | "dashed">> = {};
+    const changed: Partial<Pick<WorkflowDefaults, "snap" | "curved" | "dashed" | "lineStyle">> = {};
     for (const key of ["snap", "curved", "dashed"] as const) {
       if (next[key] !== previous[key]) changed[key] = next[key];
     }
+    if (next.lineStyle !== previous.lineStyle) changed.lineStyle = workflowLineStyle(next);
     setDisplayOptions(changed);
     if (untouched) {
       // Settings can initialize a blank canvas without creating a saved workflow.
@@ -803,7 +810,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   function versionedSnapshot(value: string): string {
     if (!value) return "";
-    const { viewport: _viewport, snap: _snap, curved: _curved, dashed: _dashed, ...content } = JSON.parse(value);
+    const { viewport: _viewport, snap: _snap, curved: _curved, dashed: _dashed, lineStyle: _lineStyle, ...content } = JSON.parse(value);
     return JSON.stringify(content);
   }
 
@@ -905,7 +912,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function newDocument() {
     intent += 1;
     void replace(() => hydrate({ version: 1, id: crypto.randomUUID(), name: "Untitled workflow", nodes: [], edges: [],
-      viewport: { x: 0, y: 0, zoom: 1 }, dashed: workflowDefaults.dashed, curved: workflowDefaults.curved,
+      viewport: { x: 0, y: 0, zoom: 1 }, dashed: workflowDefaults.dashed, curved: workflowDefaults.curved, ...(workflowDefaults.lineStyle ? { lineStyle: workflowDefaults.lineStyle } : {}),
       snap: workflowDefaults.snap }, true, false, "name"));
   }
 
@@ -1168,10 +1175,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       </svg>
       <Background variant={BackgroundVariant.Dots} gap={24} size={2} />
       <WorkflowSelection menuOpen={navigationOpen || settingsOpen} {canvas} {keybindings} active={keyboardActive} />
-      <WorkflowConnectionSnap bind:this={connectionSnap} isValidConnection={validConnection} active={keyboardActive} {curved} {dashed} curveStrength={workflowDefaults.curveStrength} markerEnd={`url(#${connectionMarkerId})`} />
+      <WorkflowConnectionSnap bind:this={connectionSnap} isValidConnection={validConnection} active={keyboardActive} {curved} lineStyle={connectionStyle} {dashed} curveStrength={workflowDefaults.curveStrength} markerEnd={`url(#${connectionMarkerId})`} />
       {#if nodes.length}<WorkflowMinimap active={keyboardActive} />{/if}
-      <WorkflowToolbar buttons={toolbarButtons} bind:this={toolbar} {canvas} {active} {settingsOpen} {navigationOpen} {snap} {curved} {dashed} {selected} placing={placement !== null}
-        onsnap={() => setDisplayOptions({ snap: !snap })} oncurved={() => setDisplayOptions({ curved: !curved })} ondashed={() => setDisplayOptions({ dashed: !dashed })}
+      <WorkflowToolbar buttons={toolbarButtons} bind:this={toolbar} {canvas} {active} {settingsOpen} {navigationOpen} {snap} {curved} lineStyle={connectionStyle} {dashed} {selected} placing={placement !== null}
+        onsnap={() => setDisplayOptions({ snap: !snap })} oncurved={() => setDisplayOptions({ lineStyle: workflowLineStyles[(workflowLineStyles.indexOf(connectionStyle) + 1) % workflowLineStyles.length]! })} ondashed={() => setDisplayOptions({ dashed: !dashed })}
         oncopy={() => copySelection()} oncut={() => copySelection(true)} onpaste={() => { void pasteSelection(); }} canPaste={clipboard !== null}
         onremove={removeSelected} onnew={newDocument} onopen={openDocuments}
         onexport={exportDocument} onimport={() => upload.click()} onbrowse={onBrowse}
