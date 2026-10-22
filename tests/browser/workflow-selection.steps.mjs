@@ -70,6 +70,10 @@ Given('nested workflow input and output branches mapped to another operation', a
   await expect(this.page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true })).toBeVisible();
   this.selectionIds = Object.fromEntries(primary.nodes.map(node => [node.type === 'data' ? node.data.label : node.id, node.id]));
   this.selectionBaseline = (await readExport(this.page)).document;
+  // Fit View persists its viewport separately from graph autosave. Capture the
+  // repository baseline only after those preferences match the visible graph.
+  await expect.poll(async () => (await repository(this.page, 'inspect', document.id))?.preferences?.viewport,
+    { message: 'Fit View preferences must be saved before checking selection isolation.' }).toEqual(this.selectionBaseline.viewport);
   this.selectionRepository = await repository(this.page, 'inspect', document.id);
   for (const label of ['Hidden input', 'Hidden output']) await expect(node(this.page, this.selectionIds[label])).toHaveCount(0);
 });
