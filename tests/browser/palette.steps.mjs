@@ -387,6 +387,9 @@ Then('rapid settings changes retain the final theme and palette after reloading'
   await expect.poll(() => storedSettings(page)).toEqual({ theme: 'dark', palette: 'sunset' });
   assert.deepEqual(await legacySettings(page), { theme: null, palette: null });
   await page.reload();
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await expect.poll(() => storedSettings(page)).toEqual({ theme: 'dark', palette: 'sunset' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await setMode(page, 'settings');
   await expectPaletteChoices(page, 'Sunset');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
