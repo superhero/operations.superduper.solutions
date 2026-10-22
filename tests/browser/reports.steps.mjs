@@ -33,7 +33,8 @@ Then("evaluation details stay hidden until enabled and the saved choice survives
   await expect(evaluationReport(page)).toBeHidden();
   await expect(page.locator(".catalog-prompt .prompt-actions")).toHaveCount(0);
   await setMode(page, "settings");
-  await page.locator('summary[aria-label="Developer"]').click();
+  if (await page.locator('summary[aria-label="Developer"]').getAttribute('aria-expanded') !== 'true')
+    await page.locator('summary[aria-label="Developer"]').click();
   await expect(preference).toHaveAttribute("aria-checked", "false");
 
   await setEvaluationDetails(page);
@@ -82,7 +83,8 @@ Then("evaluation details stay hidden until enabled and the saved choice survives
   await expect(symbol).toHaveText("search");
   await expect(evaluationReport(page)).toBeHidden();
   await setMode(page, "settings");
-  await page.locator('summary[aria-label="Developer"]').click();
+  if (await page.locator('summary[aria-label="Developer"]').getAttribute('aria-expanded') !== 'true')
+    await page.locator('summary[aria-label="Developer"]').click();
   await expect(preference).toHaveAttribute("aria-checked", "false");
 });
 

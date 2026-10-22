@@ -22,6 +22,7 @@ const connections = page => workflow(page).locator(".svelte-flow__edge:not(.work
 
 Then('empty workflow guidance stays centered beside menus at {int} pixels with {string} motion', async function (width, motion) {
   const page = this.page;
+  const concurrent = width >= 900 + 320 + 500;
   await page.setViewportSize({ width, height: 844 });
   await page.emulateMedia({ reducedMotion: motion });
   await closeCatalog(page);
@@ -57,7 +58,8 @@ Then('empty workflow guidance stays centered beside menus at {int} pixels with {
     await center(before.x, (await drawer.boundingBox()).x);
     await page.screenshot({ path: `${this.artifactDirectory}/empty-workflow-settings-${width}.png` });
     await browse.click();
-    await expect(drawer).toBeHidden();
+    if (concurrent) await expect(drawer).toBeVisible();
+    else await expect(drawer).toBeHidden();
   } else {
     await expect(page.locator('.page-content')).toHaveAttribute('inert', '');
     await setMode(page, 'workflow');
@@ -67,10 +69,10 @@ Then('empty workflow guidance stays centered beside menus at {int} pixels with {
   await expect(page.getByRole('textbox', { name: 'Prompt', exact: true })).toBeFocused();
   if (width >= 900) await expect(navigation).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
   const visibleMenu = await navigation.boundingBox();
-  if (width >= 900) await center(visibleMenu.x + visibleMenu.width, before.x + before.width);
+  if (width >= 900) await center(visibleMenu.x + visibleMenu.width, concurrent ? (await drawer.boundingBox()).x : before.x + before.width);
   await page.screenshot({ path: `${this.artifactDirectory}/empty-workflow-navigation-${width}.png` });
   await expect(page.getByRole('banner', { includeHidden: true }).getByRole('button', { name: 'Settings', exact: true, includeHidden: true }))
-    .toHaveAttribute('aria-pressed', 'false');
+    .toHaveAttribute('aria-pressed', String(concurrent));
 });
 
 async function openCatalog(page) {

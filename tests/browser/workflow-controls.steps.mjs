@@ -197,9 +197,11 @@ Then("the reusable workflow keeps its ports and embedded definition", async func
   await expectHoverHint(inputPort, 'Example object response · Path parameters');
   for (const port of [inputPort, outputPort]) {
     await expect(port).toHaveAttribute('tabindex', '-1');
-    await expect(port).toHaveAttribute('aria-disabled', 'true');
-    await expect(port).not.toHaveClass(/\bconnectablestart\b|\bconnectableend\b/);
+    await expect(port).toHaveAttribute('aria-disabled', String(port === inputPort));
+    await expect(port).not.toHaveClass(/\bconnectableend\b/);
   }
+  await expect(inputPort).not.toHaveClass(/\bconnectablestart\b/);
+  await expect(outputPort).toHaveClass(/\bconnectablestart\b/);
   const layout = await referenceNode.evaluate(element => {
     const title = element.querySelector('.operation-title-row').getBoundingClientRect();
     const row = direction => {
@@ -234,7 +236,8 @@ Then("the reusable workflow keeps its ports and embedded definition", async func
   await inputPanel.locator('.data-title strong').click();
   await page.getByRole('button', { name: 'Remove selected', exact: true }).click();
   await expect(inputPanel).toHaveCount(0);
-  await expect(inputPort).toBeHidden();
+  await expect(inputPort).toBeVisible();
+  await expect(inputPort).toHaveAttribute('aria-disabled', 'true');
   const restore = referenceNode.getByRole('button', { name: 'Restore Example object response · Path parameters', exact: true });
   await expect(restore).toHaveAttribute('data-side', 'left');
   await expectHoverHint(restore, 'Restore Example object response · Path parameters');

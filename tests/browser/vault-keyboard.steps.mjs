@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { Given, When, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { openCatalog } from './workspace.steps.mjs';
+import { categoryLabel } from '../../src/lib/category-label.ts';
 
 const password = 'keyboard-vault-password-6481';
 const originalSecret = 'keyboard-BEARER-canary-6481';
@@ -157,7 +158,7 @@ Then('keyboard credential selection sends only the selected saved value without 
   let root = heading.locator('xpath=ancestor::*[@data-catalog-group][1]');
   for (const name of ['vault-api', run, 'ok']) {
     const child = root.locator(':scope > .catalog-group > .disclosure-panel > .catalog-children > .catalog-branch > .catalog-group > summary')
-      .filter({ has: page.getByText(name, { exact: true }) });
+      .filter({ has: page.getByText(categoryLabel(name), { exact: true }) });
     if (await child.getAttribute('aria-expanded') !== 'true') await activate(page, child);
     root = child.locator('xpath=../..');
   }

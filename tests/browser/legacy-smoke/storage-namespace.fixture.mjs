@@ -267,7 +267,10 @@ try {
   }, current.workflows), false);
 
   const migrated = await loadDefaults(page);
-  assert.deepEqual(migrated.settings, { ...savedSettings, keybindings: defaultKeybindings, toolbarButtons: defaultToolbarButtons, evaluationDetails: false, tooltips: true, locale: { dateFormat: "system", timeFormat: "system", timeZone: "system" }, storageError: null });
+  const expectedSettings = { ...savedSettings, navigationPaneWidth: 320, settingsPaneWidth: 900,
+    keybindings: defaultKeybindings, toolbarButtons: defaultToolbarButtons, evaluationDetails: false, tooltips: true,
+    locale: { dateFormat: "system", timeFormat: "system", timeZone: "system" }, storageError: null };
+  assert.deepEqual(migrated.settings, expectedSettings);
   assert.deepEqual(migrated.workflow, expected.workflow);
   assert.deepEqual(migrated.history, expected.history);
   assert.deepEqual(migrated.versions, expected.versions);
@@ -299,7 +302,7 @@ try {
   const reloaded = await openPage(context, baseURL);
   await prepare(reloaded);
   const retained = await loadDefaults(reloaded);
-  assert.deepEqual(retained.settings, { ...savedSettings, theme: "light", keybindings: defaultKeybindings, toolbarButtons: defaultToolbarButtons, evaluationDetails: false, tooltips: true, locale: { dateFormat: "system", timeFormat: "system", timeZone: "system" }, storageError: null });
+  assert.deepEqual(retained.settings, { ...expectedSettings, theme: "light" });
   assert.deepEqual(retained.workflow, edited);
   assert.equal(retained.history.length, 5);
   for (const revision of expected.history) assert.ok(retained.history.some(value => value.oid === revision.oid));
