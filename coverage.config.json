@@ -22,6 +22,7 @@
     "src/lib/metrics-recorder.ts",
     "src/lib/metrics-recorder.worker.ts",
     "src/lib/page-memory.ts",
+    "src/lib/pane-scroll.ts",
     "src/lib/schema-library-types.ts",
     "src/lib/schema-library.ts",
     "src/lib/schema-library.worker.ts",
