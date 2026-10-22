@@ -701,6 +701,14 @@ fix(settings): omit stepped slider hover outline
 
 ```
 
+<!-- changelog-commit:6759117d9df1c3eecb79f957166af8a84a8c2ffb -->
+### Commit [`6759117`](https://github.com/superhero/operations.superduper.solutions/commit/6759117d9df1c3eecb79f957166af8a84a8c2ffb)
+
+```text
+fix(settings): remove slider hover outlines consistently
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56
