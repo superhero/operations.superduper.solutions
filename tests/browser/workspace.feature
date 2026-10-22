@@ -237,3 +237,6 @@ Feature: Browser operations workspace
 
   Scenario: Wide workspaces keep both panes open and compact workspaces retain one
     Then the catalog and settings coexist only when there is room for both panes
+
+  Scenario: Settings width controls responsive pane layout and survives reload
+    Then resizing Settings changes when the catalog closes and Settings becomes fullscreen

@@ -983,3 +983,50 @@ Then('the catalog and settings coexist only when there is room for both panes', 
   await expect(menu).toHaveAttribute('aria-expanded', 'false');
   await expect(settings).toHaveAttribute('aria-expanded', 'true');
 });
+
+Then('resizing Settings changes when the catalog closes and Settings becomes fullscreen', async function () {
+  const page = this.page;
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await openCatalog(page);
+  const menu = page.locator('.site-header [aria-controls="side-navigation"]');
+  const settings = page.locator('.site-header [aria-controls="settings-panel"]');
+  const drawer = page.locator('#settings-panel');
+  const grip = page.getByRole('separator', { name: 'Settings pane width', exact: true });
+  await settings.click();
+  await expect(grip).toHaveAttribute('aria-valuenow', '900');
+  const from = await grip.boundingBox();
+  await page.mouse.move(from.x + from.width / 2, from.y + 100);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 300, from.y + 100, { steps: 15 });
+  await page.mouse.up();
+  await expect(grip).toHaveAttribute('aria-valuenow', '600');
+  await expect.poll(async () => Math.round((await drawer.boundingBox()).width)).toBe(600);
+  await page.setViewportSize({ width: 1500, height: 900 });
+  await expect(menu).toHaveAttribute('aria-expanded', 'true');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  // The resized pane fits until 1420px, rather than the old fixed 1720px.
+  await page.setViewportSize({ width: 1419, height: 900 });
+  await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  await expect(settings).toHaveAttribute('aria-expanded', 'true');
+  await expect(drawer).not.toHaveAttribute('inert', '');
+  await page.setViewportSize({ width: 899, height: 900 });
+  await expect(page.getByRole('button', { name: 'Close settings', exact: true })).toBeVisible();
+  await expect.poll(async () => Math.round((await drawer.boundingBox()).width)).toBe(899);
+  await page.setViewportSize({ width: 1500, height: 900 });
+  await expect(grip).toHaveAttribute('aria-valuenow', '600');
+  await expect.poll(async () => Math.round((await drawer.boundingBox()).width)).toBe(600);
+  await grip.focus();
+  await page.keyboard.press('ArrowLeft');
+  await expect(grip).toHaveAttribute('aria-valuenow', '616');
+  await page.reload();
+  await page.getByRole('banner').getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(grip).toHaveAttribute('aria-valuenow', '616');
+  // A wider chosen pane becomes fullscreen at a correspondingly wider viewport.
+  await page.setViewportSize({ width: 1920, height: 1000 });
+  await grip.focus();
+  await page.keyboard.press('End');
+  await expect(grip).toHaveAttribute('aria-valuenow', '1440');
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await expect(page.getByRole('button', { name: 'Close settings', exact: true })).toBeVisible();
+  await expect.poll(async () => Math.round((await drawer.boundingBox()).width)).toBe(1600);
+});
