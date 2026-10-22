@@ -654,6 +654,37 @@ at the expanded limit.
 
 ```
 
+<!-- changelog-commit:c40bbc866ed19aa04f52383f0ce8fc97af9b44fb -->
+### Commit [`c40bbc8`](https://github.com/superhero/operations.superduper.solutions/commit/c40bbc866ed19aa04f52383f0ce8fc97af9b44fb)
+
+```text
+feat(settings): mark snapped slider stops and center the selected label
+
+Give stepped integer sliders visible tick marks and snap the native thumb
+to its nearest stop during input. Keep ticks aligned through the shared
+hover transform and retain continuous controls through the same snippet.
+
+Show only the selected connection-style name, centered in its existing
+label row. Verify between-stop dragging, tick alignment and label centering.
+
+```
+
+<!-- changelog-commit:d004d266d400baec79038751a482f2c7df6f6e61 -->
+### Commit [`d004d26`](https://github.com/superhero/operations.superduper.solutions/commit/d004d266d400baec79038751a482f2c7df6f6e61)
+
+```text
+style(settings): thin slider tick marks to one pixel
+
+```
+
+<!-- changelog-commit:6f30540d329bdfb642d4816c417ede49cc59ca4a -->
+### Commit [`6f30540`](https://github.com/superhero/operations.superduper.solutions/commit/6f30540d329bdfb642d4816c417ede49cc59ca4a)
+
+```text
+style(settings): match the connection slider pane background
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.56

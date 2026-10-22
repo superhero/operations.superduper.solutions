@@ -43,6 +43,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     const input = event.currentTarget as HTMLInputElement;
     let next = stops ? stops[Math.round(input.valueAsNumber * (stops.length - 1))] : scale.value(input.valueAsNumber);
     if (next === undefined) return;
+    if (stops) input.valueAsNumber = stops.indexOf(next) / (stops.length - 1);
     if (allowed?.length) next = allowed.reduce((closest, candidate) => Math.abs(candidate - next!) < Math.abs(closest - next!) ? candidate : closest);
     emit(next);
   }
@@ -63,7 +64,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 </script>
 
-<div class="field-integer" class:disabled class:unset style:--slider-position={`${position * 100}%`}>
+{#snippet rangeInput()}
   <input class="integer-range" bind:clientWidth={rangeWidth} bind:clientHeight={rangeHeight}
     style:--slider-hover-x={rangeWidth > 0 ? 1 + 8 / rangeWidth : 1}
     style:--slider-hover-y={rangeHeight > 0 ? 1 + 2 / rangeHeight : 1} {id} type="range" min="0" max="1" step={stops ? 1 / (stops.length - 1) : "any"} value={position}
@@ -71,6 +72,22 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     aria-valuenow={current} aria-valuetext={valueText ?? (unset ? "Not set" : valid ? number.toLocaleString() : "Invalid value")}
     aria-invalid={invalid || badValue || undefined} aria-describedby={describedBy}
     oninput={slide} onchange={() => onValueCommit?.()} onkeydown={keydown} />
+{/snippet}
+
+<div class="field-integer" class:disabled class:unset style:--slider-position={`${position * 100}%`}>
+  {#if stops}
+    <div class="integer-slider" style:--slider-hover-x={rangeWidth > 0 ? 1 + 8 / rangeWidth : 1}
+      style:--slider-hover-y={rangeHeight > 0 ? 1 + 2 / rangeHeight : 1}>
+      <div class="integer-ticks" aria-hidden="true">
+        {#each stops as stop, index (stop)}
+          <span class="integer-tick" class:active={stop === current} style:left={`${index / (stops.length - 1) * 100}%`}></span>
+        {/each}
+      </div>
+      {@render rangeInput()}
+    </div>
+  {:else}
+    {@render rangeInput()}
+  {/if}
   {#if showValue}<input class="integer-value" id={`${id}-value`} type="text" inputmode="numeric" {value} {required} {disabled}
     bind:this={exactInput} aria-label={`${label} value`} aria-invalid={invalid || badValue || undefined}
     aria-describedby={describedBy} autocomplete="off" spellcheck={false}
@@ -80,6 +97,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <style>
   .field-integer { display: flex; align-items: center; gap: 10px; min-width: 0; width: 100%; min-height: 40px; height: 100%; padding: 6px 10px; background: transparent; color: inherit; }
+  .integer-slider { position: relative; flex: 1; min-width: 40px; height: 24px; }
+  .integer-slider .integer-range { position: relative; display: block; }
+  .integer-ticks { position: absolute; inset: 0 7px; pointer-events: none; }
+  .integer-tick { position: absolute; top: 7px; width: 1px; height: 10px; border-radius: 1px; background: var(--color-muted-foreground); transform: translateX(-50%); }
+  .integer-tick.active { background: var(--color-primary); }
   .integer-range { flex: 1; min-width: 40px; width: 100%; height: 24px; padding: 0; margin: 0; border: 0; border-radius: 4px; appearance: none; background: transparent; color: inherit; cursor: pointer; }
   .integer-range::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(to right, var(--color-primary) var(--slider-position), var(--color-muted-foreground) var(--slider-position)); }
   .integer-range::-moz-range-track { height: 4px; border-radius: 4px; background: linear-gradient(to right, var(--color-primary) var(--slider-position), var(--color-muted-foreground) var(--slider-position)); }
@@ -91,7 +113,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .integer-range:disabled { cursor: default; opacity: 0.5; }
   .unset .integer-range { opacity: 0.6; }
   @media (prefers-reduced-motion: no-preference) {
-    .integer-range { transition: transform 180ms ease-in; }
+    .integer-range, .integer-slider { transition: transform 180ms ease-in; }
     .integer-range:hover:enabled { transform: scale(var(--slider-hover-x), var(--slider-hover-y)); }
+    .integer-slider .integer-range:hover:enabled { transform: none; }
+    .field-integer:not(.disabled) .integer-slider:hover { transform: scale(var(--slider-hover-x), var(--slider-hover-y)); }
   }
 </style>
