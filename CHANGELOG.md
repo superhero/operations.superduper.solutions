@@ -2,6 +2,23 @@
 
 ## Latest
 
+<!-- changelog-commit:5a73ffb075e1a429a18a3714c222936c6bd55666 -->
+### Commit [`5a73ffb`](https://github.com/superhero/operations.superduper.solutions/commit/5a73ffb075e1a429a18a3714c222936c6bd55666)
+
+```text
+fix(ci): continue publication after skipped validation jobs
+
+Optional incremental jobs are skipped on a validation cache hit. GitHub's
+implicit success() propagates those skips beyond the successful aggregator,
+leaving validated releases unmerged.
+
+Require a non-cancelled workflow and successful direct gate results for
+merge, preview, tagging, synchronization and promotion jobs. Cover skipped
+ancestors and failed or cancelled requirements in release, main and support
+workflow regressions.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.57
