@@ -146,7 +146,7 @@ class Queue {
   }
 }
 
-function search(edge, nodes, options, budget, routes = [], maximum = Infinity, boxes = rectangles(nodes, options.nodePadding)) {
+function search(edge, nodes, options, budget, routes = [], maximum = Infinity, boxes = rectangles(nodes, options.nodePadding, edge)) {
   const [source, target] = endpoints(edge);
   const a = endpointStem(source, edge.sourcePosition, boxes.find((box) => box.id === edge.source), target, boxes, options);
   const b = endpointStem(target, edge.targetPosition, boxes.find((box) => box.id === edge.target), source, boxes, options);
@@ -241,7 +241,7 @@ function improve(edge, nodes, routes, original, options, budget) {
   const count = crossingCount(original.points, routes, edge, budget);
   if (!count || !Number.isFinite(count)) return original;
   const maximum = original.length * options.maxLengthRatio;
-  const padded = rectangles(nodes, options.nodePadding);
+  const padded = rectangles(nodes, options.nodePadding, edge);
   const boxes = clearRoute(original.points, padded, edge, budget) ? padded : terminalRectangles(nodes, options.nodePadding, edge);
   const candidate = search(edge, nodes, options, budget, routes, maximum, boxes);
   return candidate && candidate.length <= maximum + EPSILON && crossingCount(candidate.points, routes, edge, budget) < count ? candidate : original;
@@ -278,7 +278,7 @@ function alignSegments(edge, nodes, routes, original, options, budget) {
   if (original.status !== 'routed' || original.points.length < 4 || !routes.length || budget.work <= 0) return original;
   let current = original, shared = sharedLength(current.points, routes, edge, budget);
   let crossings = crossingCount(current.points, routes, edge, budget);
-  const padded = rectangles(nodes, options.nodePadding);
+  const padded = rectangles(nodes, options.nodePadding, edge);
   const boxes = clearRoute(current.points, padded, edge, budget) ? padded : terminalRectangles(nodes, options.nodePadding, edge);
   // One bounded pass slides existing interior segments; it introduces no bends
   // and leaves all established routes untouched. Keep the baseline's full or
@@ -322,7 +322,7 @@ function alignSegments(edge, nodes, routes, original, options, budget) {
 function separateOpposing(edge, nodes, routes, original, options, budget) {
   if (original.status !== 'routed' || original.manualState === 'applied' || original.points.length < 4 || !routes.length || budget.work <= 0) return original;
   let current = original;
-  const gap = 6, padded = rectangles(nodes, options.nodePadding);
+  const gap = 6, padded = rectangles(nodes, options.nodePadding, edge);
   const boxes = clearRoute(current.points, padded, edge, budget) ? padded : terminalRectangles(nodes, options.nodePadding, edge);
   for (let i = 1; i < current.points.length - 2 && budget.work > 0; i++) {
     const a = current.points[i], b = current.points[i + 1], horizontal = a.y === b.y;

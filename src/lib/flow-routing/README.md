@@ -226,3 +226,9 @@ vertical downward runs sit left of upward runs, and horizontal rightward runs si
 above leftward runs. Matching directions can still share a line. This bounded
 worker-side adjustment preserves ports and authored routes, and yields to node
 clearance and crossing safety when a corridor cannot fit both lanes.
+
+When facing endpoint buffers overlap, including diagonally staggered nodes,
+those two faces share the actual gap from the first routing search. Other faces
+and unrelated obstacles keep the requested clearance. Automatic routing and
+manual anchor validation use the same corridor, so restoring a response at high
+clearance does not force a loop around its entire subtree.

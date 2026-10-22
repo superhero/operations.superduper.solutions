@@ -4,12 +4,14 @@
 import { repository, storedWorkflows } from "./workflow-storage.fixture.mjs";
 import { expectWorkflowName, renameWorkflow } from './workflow-details.fixture.mjs';
 import assert from "node:assert/strict";
-import { seedOperationGraph } from "./workflow-graph.fixture.mjs";
+import { seedOperationGraph, loadGraphFixture } from "./workflow-graph.fixture.mjs";
 import { Given, When, Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
 import { closeCatalog, revealCatalogOperation, chooseCatalogOperation, connections, operationNodes, readExport, setMode, workflow } from "./workspace.steps.mjs";
 import { operations } from "../../src/lib/catalog.ts";
-import { createOperationGraph } from "../../src/lib/workflow-graph.ts";
+import { createOperationGraph, removeGraphSelection } from "../../src/lib/workflow-graph.ts";
+import { setWorkflowNodeClearance } from './workflow-defaults.steps.mjs';
+import { mkdir } from 'node:fs/promises';
 
 const panels = (page, ownerId, direction) => workflow(page).locator(
   `.workflow-data-node[data-owner-id=${JSON.stringify(ownerId)}]${direction ? `[data-direction=${JSON.stringify(direction)}]` : ""}`
@@ -805,4 +807,51 @@ Then('changing the property type removes its old child panel', async function ()
   const document = (await readExport(this.page)).document;
   assert.ok(!document.nodes.some(node => node.id === this.additionalChildId));
   assert.ok(!document.edges.some(edge => edge.source === this.additionalChildId || edge.target === this.additionalChildId));
+});
+
+Given('a hidden upload response above its operation with sixty-four-pixel clearance', async function () {
+  const page = this.page;
+  await page.setViewportSize({ width: 1362, height: 960 });
+  await setWorkflowNodeClearance(page, 64);
+  await setMode(page, 'workflow');
+  const operation = { ...operations.find(item => item.name === 'Example POST body'), name: 'Upload File' };
+  const properties = Object.fromEntries(['Created at', 'Downloadable', 'Expires at', 'Filename', 'Id', 'Mime type', 'Size bytes', 'Type']
+    .map(name => [name, { type: name === 'Size bytes' ? 'integer' : name === 'Downloadable' ? 'boolean' : 'string' }]));
+  const schema = { paths: { [operation.path]: { [operation.method.toLowerCase()]: {
+    parameters: [{ in: 'header', name: 'Version', schema: { type: 'string' } }],
+    responses: { 200: { content: { 'application/json': { schema: { type: 'object', properties } } } } },
+  } } } };
+  const graph = createOperationGraph(operation, { x: 151, y: 485 }, 'restore-upload', schema);
+  const response = graph.nodes.find(node => node.type === 'data' && node.data.label === 'Response · 200');
+  this.restoreResponseId = response.id;
+  for (const node of graph.nodes) if (node.type === 'data') {
+    node.position = node.data.label === 'Response · 200' ? { x: 382, y: 285 } :
+      node.data.label === 'Response body' ? { x: 622, y: 111 } :
+      node.data.label === 'Response headers' ? { x: 673, y: 498 } : { x: -80, y: 444 };
+  }
+  const hidden = removeGraphSelection({ nodes: [{ id: response.id }], edges: [] }, graph.nodes, graph.edges);
+  await loadGraphFixture(page, { version: 3, id: 'restore-response-routing', name: 'Restored response routing', ...hidden,
+    viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, lineStyle: 'orthogonal', dashed: true });
+  await expect(workflow(page).locator(`.svelte-flow__node[data-id="${response.id}"]`)).toHaveCount(0);
+});
+
+When('I restore the upload response with its plus button', async function () {
+  await workflow(this.page).getByRole('button', { name: 'Restore Response · 200', exact: true }).click();
+  await expect(workflow(this.page).locator(`.svelte-flow__node[data-id="${this.restoreResponseId}"]`)).toBeVisible();
+});
+
+Then('the restored response connection stays inside its endpoint bounds', async function () {
+  const edge = workflow(this.page).locator(`.svelte-flow__edge[data-id="schema:${this.restoreResponseId}"]`);
+  // Split dashes appear only after the real routing worker returns a measured route.
+  await expect(edge.locator('.flow-routing-dash-base')).toHaveCount(1);
+  const path = edge.locator('.svelte-flow__edge-interaction');
+  await expect.poll(() => path.evaluate(element => {
+    const length = element.getTotalLength(), start = element.getPointAtLength(0), end = element.getPointAtLength(length), box = element.getBBox();
+    return box.x >= Math.min(start.x, end.x) - 1 && box.x + box.width <= Math.max(start.x, end.x) + 1 &&
+      box.y >= Math.min(start.y, end.y) - 1 && box.y + box.height <= Math.max(start.y, end.y) + 1 &&
+      length <= Math.abs(start.x - end.x) + Math.abs(start.y - end.y) + 1;
+  }), { message: 'Restoring the response must use the local corridor instead of looping around its subtree.' }).toBe(true);
+  assert.ok((await readExport(this.page)).document.edges.every(edge => !edge.manualRoute));
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await workflow(this.page).screenshot({ path: `${this.artifactDirectory}/restored-response-64px.png` });
 });
