@@ -29,6 +29,13 @@ Then('Fit View centers the graph between visible panes with {string} motion', as
   const positions = await nodes.evaluateAll(elements => elements.map(element => element.style.transform));
 
   async function checkFit() {
+    // Pane state changes before its slide and the toolbar's resize finish.
+    // Exercise Fit View with the requested panes fully open or closed.
+    await page.evaluate(async () => {
+      const elements = [...document.querySelectorAll('.workflow-toolbar, #side-navigation, #settings-panel')];
+      await Promise.allSettled(elements.flatMap(element => element.getAnimations()).map(animation => animation.finished));
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    });
     await fit.click();
     await expect.poll(async () => {
       const bounds = await canvas.boundingBox();
