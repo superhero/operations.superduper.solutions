@@ -100,11 +100,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .integer-slider { position: relative; flex: 1; min-width: 40px; height: 24px; }
   .integer-slider .integer-range { position: relative; display: block; }
   .integer-ticks { position: absolute; inset: 0 7px; pointer-events: none; }
+  .integer-ticks::before { content: ""; position: absolute; top: 10px; left: 0; right: 0; height: 4px; background: linear-gradient(to right, var(--color-primary) var(--slider-position), var(--color-muted-foreground) var(--slider-position)); }
   .integer-tick { position: absolute; top: 7px; width: 1px; height: 10px; border-radius: 1px; background: var(--color-muted-foreground); transform: translateX(-50%); }
   .integer-tick.active { background: var(--color-primary); }
   .integer-range { flex: 1; min-width: 40px; width: 100%; height: 24px; padding: 0; margin: 0; border: 0; border-radius: 4px; appearance: none; background: transparent; color: inherit; cursor: pointer; }
   .integer-range::-webkit-slider-runnable-track { height: 4px; border-radius: 4px; background: linear-gradient(to right, var(--color-primary) var(--slider-position), var(--color-muted-foreground) var(--slider-position)); }
   .integer-range::-moz-range-track { height: 4px; border-radius: 4px; background: linear-gradient(to right, var(--color-primary) var(--slider-position), var(--color-muted-foreground) var(--slider-position)); }
+  .integer-slider .integer-range::-webkit-slider-runnable-track { background: transparent; }
+  .integer-slider .integer-range::-moz-range-track { background: transparent; }
   .integer-range::-webkit-slider-thumb { width: 14px; height: 14px; margin-top: -5px; border: 0; border-radius: 4px; appearance: none; background: var(--color-primary); }
   .integer-range::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 4px; background: var(--color-primary); }
   .integer-range:focus-visible, .integer-value:focus-visible, .integer-range:hover:enabled, .integer-value:hover:enabled { outline: 2px solid var(--color-ring); outline-offset: 2px; }
