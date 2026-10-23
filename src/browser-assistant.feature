@@ -15,6 +15,10 @@ Feature: Browser-local Bonsai assistant boundaries
     Then assistant compatibility probes verify GPU readback and release every device
   Scenario: Pinned runtime loading and generation preserve the native adapter
     Then assistant model loading verifies runtime integrity and forwards pinned native settings
+  Scenario: Model loading respects optional GPU computation failures
+    Then assistant loading keeps a failed FP16 compute probe disabled in the native runtime
+  Scenario: Assistant diagnostics preserve original failures without recording cancellation
+    Then assistant failures retain native stacks causes codes and GPU diagnostics across the worker boundary
   Scenario: Pi tools and skills pass real tool results back to the model
     Then the local Pi agent streams answers and uses fresh application tool results
   Scenario: Pi requests remain cancellable and bounded

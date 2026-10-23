@@ -11,9 +11,21 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import Disclosure from "$lib/components/Disclosure.svelte";
   import HintButton from "$lib/components/HintButton.svelte";
   import MaterialIcon from "$lib/components/MaterialIcon.svelte";
+  import { logger } from "$lib/logger.ts";
 
   let history = $state<ErrorHistoryState>({ phase: "idle", entries: [], total: 0, offset: 0, error: null, queued: 0, dropped: 0, unconfirmed: 0 });
   let expanded = $state(new Set<number>());
+  let copyStatus = $state<{ id: number; text: string }>();
+  async function copy(entry: ErrorHistoryRecord): Promise<void> {
+    try {
+      const { origin, error, firstSeen, lastSeen, occurrences } = entry;
+      await navigator.clipboard.writeText(JSON.stringify({ origin, error, firstSeen, lastSeen, occurrences }, null, 2));
+      copyStatus = { id: entry.id, text: "Error details copied." };
+    } catch (problem) {
+      logger.scope("error-history").error(problem);
+      copyStatus = { id: entry.id, text: "Could not copy error details. Select the diagnostic text to copy it manually." };
+    }
+  }
   const origin = (entry: ErrorHistoryRecord) => [entry.origin.source, [entry.origin.scope, entry.origin.operation].filter(Boolean).join(" > ")].filter(Boolean).join(" · ");
   const number = (value: number) => value.toLocaleString();
   const location = (entry: ErrorHistoryRecord) => [entry.origin.filename, entry.origin.line, entry.origin.column].filter(value => value !== undefined).join(":");
@@ -73,6 +85,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
           {/snippet}
           <div class="entry-content">
             <div class="entry-divider" aria-hidden="true"></div>
+            <div class="copy-actions"><HintButton label="Copy error details" class="copy-error" onclick={() => void copy(entry)}><MaterialIcon name="content_copy" size={16} /></HintButton>
+              {#if copyStatus?.id === entry.id}<span role="status">{copyStatus.text}</span>{/if}
+            </div>
             <dl class="timestamps"><div><dt>First seen</dt><dd>{formatLocalDateTime(entry.firstSeen)}</dd></div><div><dt>Last seen</dt><dd>{formatLocalDateTime(entry.lastSeen)}</dd></div></dl>
             <div class="entry-divider" aria-hidden="true"></div>
             {#if entry.origin.filename}<p class="source">{location(entry)}</p>{/if}
@@ -117,6 +132,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   .entry-content { display: flow-root; min-width: 0; padding: 0 12px 12px; }
   .entry-divider { height: 1px; margin: 8px 0; background: repeating-linear-gradient(to right, var(--color-surface) 0 8px, transparent 8px 14px); }
   .entry-content > .entry-divider:first-child { margin-top: 0; }
+  .copy-actions { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 12px; }
+  :global(.error-history .copy-error) { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 4px; background: var(--color-surface); color: var(--color-foreground); }
   .timestamps { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 0 0 12px; font-size: 12px; }
   .diagnostic { min-width: 0; margin-top: 12px; font-size: 12px; }
   .diagnostic > :last-child { margin-bottom: 0; }
