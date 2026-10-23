@@ -105,3 +105,49 @@ in the source coverage gate.
 
 Full source, acceptance, automation, component and browser validation remains
 required on release/main. sds-01 is excluded from this task's local test workloads.
+
+## Rendering and interaction review
+
+The 2026-10-23 review keeps the conversation and composer above optional settings.
+The chat viewport has a stable height while replies grow; sending follows the
+new reply, while incoming chunks preserve a reader's scroll position. The
+composer stays available for drafting during generation. Tool results collapse
+into expandable rows with their complete content retained. Buttons, switches,
+disclosure indicators and large numeric ranges follow the Settings controls.
+Image-only messages show an attachment indicator; reset/unload invalidates image
+preparation so an old decode cannot repopulate a cleared conversation.
+
+Two avoidable costs were verified: the worker projected every prior message
+before its 40 ms publication throttle, and cloned snapshots invalidated completed
+Svelte rows. Projection now happens at publication, and equal message views keep
+their identity. Three alternating browser pairs with 40 prior messages and 80
+updates showed median main-thread script time of **699 → 456 ms**. All candidate
+samples retained the full transcript, followed the bottom correctly and had no
+tasks over 50 ms. Style/layout counters increased; these local samples establish
+the measured tradeoff, not field INP or a guarantee for every device. A separate
+synthetic eight-delta publication benchmark reduced transcript projections from
+2,010 to 251 with identical final output.
+
+[The measurement record](browser-assistant-quality.json) preserves raw samples,
+source/build hashes, conditions and limits. Comparisons used production HTML,
+fresh profiles, Chromium 153, one CPU and 2 GiB with no additional swap. Initial
+history layout stayed outside the timed interval. A separate Chrome trace was
+used for attribution; its profiler-start overhead is excluded from comparisons.
+The [Playwright CDP interface](https://playwright.dev/docs/api/class-cdpsession)
+provides the counters; scripted inference isolates UI work from GPU inference.
+
+Focused verification covers all seven Assistant browser cases in Chromium,
+streaming/image cases in Firefox and WebKit, keyboard switch operation, draft
+focus, fixed composer position, scroll behavior, complete tool expansion,
+late image cleanup and rejected-file retry. Light/dark and 390 px layouts were
+inspected, including reduced motion. The nine source cases retain 100% coverage
+of the changed session module; typecheck and production build pass.
+
+A separate real Bonsai 2B smoke test on the final UI loaded the pinned model,
+generated a greeting, read application state and reported the exact fresh
+workflow ID returned by the tool. It verified unload and had no page errors or
+credential-bearing requests. This used desktop Chrome 155, an RTX 5060 Ti,
+FP32, and explicit Vulkan test flags/ICD selection under a one-CPU, 3-GiB cap.
+FP16 was unavailable. The page cannot enable those browser flags. This is not a
+new qualification of 4B/9B, OCR, mobile/tablet inference or general throughput;
+the per-model limitations above remain applicable.

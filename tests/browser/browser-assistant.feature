@@ -12,3 +12,7 @@ Feature: Browser assistant in Settings
     Then assistant messaging remains usable on a narrow viewport and reports failure
   Scenario: Compatibility runs in the actual browser worker without model downloads
     Then the assistant checks its real browser worker without downloading model files
+  Scenario: Streamed conversations preserve drafts and the reader's scroll position
+    Then assistant streaming keeps drafts focus and readable tool details
+  Scenario: Attachments remain visible in chat and obsolete image preparation is discarded
+    Then assistant attachments and new conversation respect asynchronous image cleanup

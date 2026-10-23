@@ -5,7 +5,7 @@
 import { Agent, type AgentTool, type StreamFn } from "@earendil-works/pi-agent-core";
 import { createAssistantMessageEventStream } from "@earendil-works/pi-ai/utils/event-stream";
 import { getCurrentSystemPrompt, getCurrentTools } from "@earendil-works/pi-ai/utils/transcript";
-import type { AssistantMessage, ImageContent, Message, ToolCall } from "@earendil-works/pi-ai";
+import type { AssistantMessage, ImageContent, TextContent, Message, ToolCall } from "@earendil-works/pi-ai";
 import { bonsaiModels, type AssistantSettings } from "./config.ts";
 import { enabledAssistantTools, validateToolObject } from "./tools.ts";
 import { assistantSkills } from "./skills.ts";
@@ -18,7 +18,7 @@ export type LocalEngine = {
     onText: (text: string) => void; onThinking: (text: string) => void }): Promise<NativeResult>;
   reset: () => Promise<void>;
 };
-export type AssistantMessageView = { role: "user" | "assistant" | "tool"; text: string; thinking?: string; tool?: string; failed?: boolean };
+export type AssistantMessageView = { role: "user" | "assistant" | "tool"; text: string; thinking?: string; tool?: string; failed?: boolean; imageCount?: number };
 export type SessionUpdate = { messages: AssistantMessageView[]; error: string };
 export type ToolInvoker = (name: string, args: Record<string, unknown>, signal: AbortSignal) => Promise<unknown>;
 const textOf = (content: Message["content"]) => typeof content === "string" ? content : content.filter(part => part.type === "text").map(part => part.text).join("");
@@ -102,7 +102,8 @@ export function localAssistantStream(engine: LocalEngine, settings: AssistantSet
 }
 
 export function createAssistantSession(engine: LocalEngine, settings: AssistantSettings, invoke: ToolInvoker,
-  image: (part: ImageContent) => Promise<unknown>, publish: (state: SessionUpdate) => void) {
+  image: (part: ImageContent) => Promise<unknown>, publish: (state: SessionUpdate) => void,
+  schedule: (snapshot: () => void) => void = snapshot => snapshot()) {
   const tools: AgentTool[] = enabledAssistantTools(settings).map(tool => ({ ...tool, label: tool.name,
     parameters: tool.parameters as AgentTool["parameters"],
     execute: async (_id, args: unknown, signal) => {
@@ -123,13 +124,21 @@ export function createAssistantSession(engine: LocalEngine, settings: AssistantS
   const messages = (): AssistantMessageView[] => {
     const current = [...agent.state.messages, ...(agent.state.streamingMessage ? [agent.state.streamingMessage] : [])];
     return current.filter(message => message.role !== "system").map(message => {
-      if (message.role === "user") return { role: "user", text: textOf(message.content) };
+      if (message.role === "user") {
+        // This session accepts users only through Agent.prompt, which normalizes
+        // text and images into content blocks (Pi 1.3 normalizePromptInput).
+        const imageCount = (message.content as (TextContent | ImageContent)[]).filter(part => part.type === "image").length;
+        return { role: "user", text: textOf(message.content), ...(imageCount ? { imageCount } : {}) };
+      }
       if (message.role === "toolResult") return { role: "tool", tool: message.toolName, text: textOf(message.content), failed: message.isError };
       const assistant = message as AssistantMessage;
       return { role: "assistant", text: [textOf(assistant.content), ...assistant.content.filter(part => part.type === "toolCall").map(part => `${part.name}(${JSON.stringify(part.arguments)})`)].filter(Boolean).join("\n"),
         thinking: assistant.content.filter(part => part.type === "thinking").map(part => part.thinking).join("") };
     });
   };
+  // Project the transcript only when its owner is ready to publish. Token bursts
+  // otherwise rebuild every completed turn before the worker's update throttle.
+  const notify = () => schedule(() => publish({ messages: messages(), error }));
   agent.beforeToolCall = async ({ toolCall }) => {
     if (++calls > settings.maxToolCalls) return { block: true, terminate: true, reason: "Tool call limit reached." };
     const nativeErrors = (toolCall as ToolCall & { nativeErrors?: string[] }).nativeErrors;
@@ -142,7 +151,7 @@ export function createAssistantSession(engine: LocalEngine, settings: AssistantS
   agent.subscribe(event => {
     if (event.type === "message_end" && event.message.role === "assistant" && ["error", "aborted", "length"].includes(event.message.stopReason))
       error = event.message.errorMessage || "Output stopped: " + event.message.stopReason;
-    publish({ messages: messages(), error });
+    notify();
   });
   return {
     async send(text: string, images: ImageContent[] = []) {
@@ -151,9 +160,9 @@ export function createAssistantSession(engine: LocalEngine, settings: AssistantS
       busy = true; turns = calls = 0; error = "";
       const timer = setTimeout(() => { error = "Request deadline reached."; agent.abort(); }, settings.requestTimeout);
       try { await agent.prompt(text, images); }
-      finally { clearTimeout(timer); busy = false; publish({ messages: messages(), error }); }
+      finally { clearTimeout(timer); busy = false; notify(); }
     },
     stop() { agent.abort(); },
-    async reset() { if (busy) throw new Error("Stop the current request first."); agent.reset(); await engine.reset(); error = ""; publish({ messages: [], error }); },
+    async reset() { if (busy) throw new Error("Stop the current request first."); agent.reset(); await engine.reset(); error = ""; notify(); },
   };
 }

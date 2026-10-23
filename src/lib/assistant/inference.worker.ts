@@ -15,9 +15,10 @@ let session: ReturnType<typeof createAssistantSession> | undefined;
 let busy = false, toolId = 0;
 const pendingTools = new Map<number, { resolve(value: unknown): void; reject(error: Error): void }>();
 const post = (message: unknown) => scope.postMessage(message);
-let update: SessionUpdate | undefined, updateTimer: ReturnType<typeof setTimeout> | undefined;
-const flush = () => { clearTimeout(updateTimer); updateTimer = undefined; if (update) { post({ type: "update", ...update }); update = undefined; } };
-const publish = (state: SessionUpdate) => { update = state; updateTimer ??= setTimeout(flush, 40); };
+let update: (() => void) | undefined, updateTimer: ReturnType<typeof setTimeout> | undefined;
+const flush = () => { clearTimeout(updateTimer); updateTimer = undefined; const snapshot = update; update = undefined; snapshot?.(); };
+const schedule = (snapshot: () => void) => { update = snapshot; updateTimer ??= setTimeout(flush, 40); };
+const publish = (state: SessionUpdate) => post({ type: "update", ...state });
 
 const invoke: ToolInvoker = async (name, args, signal) => {
   signal.throwIfAborted();
@@ -64,7 +65,7 @@ scope.onmessage = event => {
         if (engine) throw new Error("Unload the current model before loading another.");
         settings = validateAssistantSettings(message.settings);
         engine = await loadBonsaiEngine(settings, value => post({ type: "progress", value }), AbortSignal.timeout(settings.loadTimeout));
-        session = createAssistantSession(engine, settings, invoke, image, publish);
+        session = createAssistantSession(engine, settings, invoke, image, publish, schedule);
         post({ type: "ready" });
       } else if (message.type === "send") {
         if (!session) throw new Error("Load a model first.");

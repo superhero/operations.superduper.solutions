@@ -27,14 +27,16 @@ Then('the assistant settings expose only three Bonsai models and remember config
   await panel.getByRole('combobox', { name: 'Local model', exact: true }).click();
   await expect(page.getByRole('option')).toHaveCount(3);
   await page.getByRole('option', { name: 'Bonsai 2 · 4B', exact: true }).click();
-  await panel.locator('summary').filter({ hasText: /^Configuration$/ }).click();
-  await panel.getByLabel('Workspace editing', { exact: true }).uncheck();
+  await panel.locator('summary').filter({ hasText: /^Configuration/ }).click();
+  await panel.getByLabel('Workspace editing', { exact: true }).focus();
+  await page.keyboard.press('Space');
+  await expect(panel.getByLabel('Workspace editing', { exact: true })).not.toBeChecked();
   await panel.getByRole('button', { name: 'Check compatibility', exact: true }).click();
   await expect(panel.getByRole('status')).toHaveText('WebGPU compute verified.');
   expect(await page.evaluate(() => window.assistantFixture.terminated)).toBe(1);
   await page.reload(); panel = await openAssistant(page);
   await expect(panel.getByRole('combobox', { name: 'Local model', exact: true }).locator('.field-select-value')).toHaveText('Bonsai 2 · 4B');
-  await panel.locator('summary').filter({ hasText: /^Configuration$/ }).click();
+  await panel.locator('summary').filter({ hasText: /^Configuration/ }).click();
   await expect(panel.getByLabel('Workspace editing', { exact: true })).not.toBeChecked();
   await panel.getByRole('button', { name: 'Load model', exact: true }).click();
   await expect(panel.getByRole('button', { name: 'Unload model', exact: true })).toBeVisible();
@@ -76,7 +78,7 @@ Then('the assistant can inspect add move and connect through the workspace UI bo
 Then('assistant read only mode and unload prevent further workspace edits', async function() {
   const page = this.page; await installAssistantFixture(page); await graph(page);
   const panel = await openAssistant(page);
-  await panel.locator('summary').filter({ hasText: /^Configuration$/ }).click();
+  await panel.locator('summary').filter({ hasText: /^Configuration/ }).click();
   await panel.getByLabel('Workspace editing', { exact: true }).uncheck();
   await panel.getByRole('button', { name: 'Load model', exact: true }).click();
   await panel.getByRole('textbox', { name: 'Message', exact: true }).fill('Inspect but do not edit');
@@ -116,4 +118,72 @@ Then('the assistant checks its real browser worker without downloading model fil
   await expect(panel.getByRole('status')).toContainText(/WebGPU|HTTPS|localhost/);
   await expect(panel.getByRole('alert')).toHaveCount(0);
   expect(requests).toHaveLength(0);
+});
+
+Then('assistant streaming keeps drafts focus and readable tool details', async function() {
+  const page = this.page; await installAssistantFixture(page);
+  await page.evaluate(() => window.assistantFixture.behavior = 'manual');
+  const panel = await openAssistant(page), input = panel.getByRole('textbox', { name: 'Message', exact: true }), log = panel.getByRole('log');
+  await panel.getByRole('button', { name: 'Load model', exact: true }).click();
+  await input.fill('Start a reply'); await input.press('Enter');
+  await expect(input).toBeFocused(); await expect(input).toBeEnabled();
+  await input.fill('A draft for the next message');
+  const initialComposerY = (await input.boundingBox()).y;
+  await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toBeDisabled();
+  await page.evaluate(() => {
+    window.assistantFixture.history = [{ role: 'user', text: 'Start a reply' }, { role: 'tool', tool: 'read_operation', text: 'Complete tool details remain available.' },
+      { role: 'assistant', text: 'A long streamed answer.\n\n'.repeat(100) }];
+    window.assistantFixture.emit({ type: 'update', messages: window.assistantFixture.history, error: '' });
+  });
+  const details = log.locator('.tool-result'); await expect(details).not.toHaveAttribute('open');
+  await expect(details.locator('pre')).toBeHidden();
+  await expect.poll(() => log.evaluate(element => element.scrollHeight - element.scrollTop - element.clientHeight)).toBeLessThan(2);
+  expect(Math.abs((await input.boundingBox()).y - initialComposerY)).toBeLessThan(2);
+  await log.evaluate(element => element.scrollTop = 0);
+  await page.evaluate(() => window.assistantFixture.emit({ type: 'update', messages: [...window.assistantFixture.history, { role: 'assistant', text: 'Latest chunk' }], error: '' }));
+  await expect.poll(() => log.evaluate(element => element.scrollTop)).toBe(0);
+  await details.locator('summary').click();
+  await expect(details.locator('pre')).toBeVisible();
+  await page.evaluate(() => window.assistantFixture.emit({ type: 'done' }));
+  await expect(input).toHaveValue('A draft for the next message');
+  await expect(panel.getByRole('button', { name: 'Send message', exact: true })).toBeEnabled();
+  await input.press('Enter');
+  await page.evaluate(() => window.assistantFixture.emit({ type: 'update', messages: [...window.assistantFixture.history, { role: 'user', text: 'A draft for the next message' }, { role: 'assistant', text: 'New reply' }], error: '' }));
+  await expect.poll(() => log.evaluate(element => element.scrollHeight - element.scrollTop - element.clientHeight)).toBeLessThan(2);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await panel.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+  for (const button of await panel.locator('.actions button').all()) expect((await button.boundingBox()).height).toBeGreaterThanOrEqual(44);
+});
+
+Then('assistant attachments and new conversation respect asynchronous image cleanup', async function() {
+  const page = this.page; await installAssistantFixture(page);
+  await page.evaluate(() => window.assistantFixture.behavior = 'manual');
+  const panel = await openAssistant(page), upload = panel.getByLabel('Attach assistant image', { exact: true });
+  await panel.getByRole('button', { name: 'Load model', exact: true }).click();
+  const png = await page.evaluate(() => { const canvas = document.createElement('canvas'); canvas.width = canvas.height = 8; return canvas.toDataURL().split(',')[1]; });
+  const file = { name: 'example.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') };
+  await upload.setInputFiles(file);
+  await expect(panel.getByRole('img', { name: 'Attachment ready to send', exact: true })).toBeVisible();
+  await panel.getByRole('button', { name: 'Send message', exact: true }).click();
+  expect(await page.evaluate(() => window.assistantFixture.lastMessage.images.length)).toBe(1);
+  await expect(panel.getByRole('img')).toHaveCount(0);
+  await page.evaluate(() => { window.assistantFixture.emit({ type: 'update', messages: [{ role: 'user', text: '', imageCount: 1 }, { role: 'assistant', text: 'Image received' }], error: '' }); window.assistantFixture.emit({ type: 'done' }); });
+  await expect(panel.getByRole('log')).toContainText('1 image attached');
+  await page.evaluate(() => {
+    const decode = window.createImageBitmap.bind(window);
+    window.createImageBitmap = (...args) => {
+      const prepared = new Promise(resolve => window.assistantFixture.finishImage = resolve).then(() => decode(...args));
+      window.assistantFixture.imagePrepared = prepared.then(() => {});
+      return prepared;
+    };
+  });
+  await upload.setInputFiles(file); await expect(panel.getByText('Preparing image…', { exact: true })).toBeVisible();
+  await panel.getByRole('button', { name: 'New conversation', exact: true }).click();
+  await expect(panel.getByRole('log')).not.toContainText('Image received');
+  await page.evaluate(async () => { window.assistantFixture.finishImage(); await window.assistantFixture.imagePrepared; await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))); });
+  await expect(panel.getByRole('img')).toHaveCount(0);
+  await expect(panel.getByText('Preparing image…', { exact: true })).toHaveCount(0);
+  await upload.setInputFiles({ name: 'invalid.txt', mimeType: 'text/plain', buffer: Buffer.from('invalid') });
+  await expect(panel.getByRole('alert')).toContainText('Choose a PNG');
+  expect(await upload.inputValue()).toBe('');
 });
