@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.62
+
 <!-- changelog-commit:779efe4d9e29f27b72f5bef01656404be6f2fd3b -->
 ### Commit [`779efe4`](https://github.com/superhero/operations.superduper.solutions/commit/779efe4d9e29f27b72f5bef01656404be6f2fd3b)
 
@@ -23,8 +27,6 @@ that includes every worker, chunk and license in validation and reuse hashes.
 ```text
 Merge branch 'develop' into feature/parakeet-dictation
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.60
 
