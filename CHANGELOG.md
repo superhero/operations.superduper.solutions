@@ -2,6 +2,37 @@
 
 ## Latest
 
+<!-- changelog-commit:cc3c46ba926a676fbd6855d44366f53285d788c3 -->
+### Commit [`cc3c46b`](https://github.com/superhero/operations.superduper.solutions/commit/cc3c46ba926a676fbd6855d44366f53285d788c3)
+
+```text
+feat(assistant): add browser-local Bonsai chat and workspace tools
+
+Add a Settings assistant for pinned Bonsai 2B, 4B and 9B models using
+Pi 1.3.0 and WebML in an on-demand inference worker. Keep model files
+remote, verify runtime integrity before import, and preserve the recorded
+GPU, memory, mobile and OCR limitations.
+
+Expose bounded application reads and on-demand skills. Validate tool
+permissions and arguments on both sides of the worker boundary. Reuse
+canonical graph validation, autosave and Undo for adding operations,
+moving nodes and connecting ports, without operation execution or access
+to credentials. Prevent passive image requests from generated Markdown.
+
+Cover the adapter, tool boundary, graph edits, lifecycle, preferences,
+compatibility worker, narrow layouts and distribution notices with focused
+Gherkin checks. Keep full regression validation on the release route.
+
+```
+
+<!-- changelog-commit:d120fbe04eb2cfdb3d7c1f35f2d11a47d8d9ee36 -->
+### Commit [`d120fbe`](https://github.com/superhero/operations.superduper.solutions/commit/d120fbe04eb2cfdb3d7c1f35f2d11a47d8d9ee36)
+
+```text
+build(assistant): include Pi dependency version badges
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.58
