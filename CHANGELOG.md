@@ -2,6 +2,24 @@
 
 ## Latest
 
+<!-- changelog-commit:78c23eaa9cde6ca1f87e2e488aec17f7ca8418a4 -->
+### Commit [`78c23ea`](https://github.com/superhero/operations.superduper.solutions/commit/78c23eaa9cde6ca1f87e2e488aec17f7ca8418a4)
+
+```text
+fix(assistant): keep chat responsive and preserve draft state
+
+Defer transcript projection until the worker publishes and retain completed
+message views across cloned snapshots. Keep the composer in place and usable
+while replies stream, preserve reader scrolling, and expand tool results on
+demand.
+
+Match Settings controls, prioritize the conversation, identify image-only
+messages, and discard image preparation after reset or unload. Add focused
+regressions and record paired rendering measurements plus a real Bonsai 2B
+application-tool round trip. Preserve model pins and execution restrictions.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.59
