@@ -62,7 +62,8 @@
     "src/workflow-graph-guards.test.mjs",
     "src/workflow-layout.test.mjs",
     "src/workflow-response.test.mjs",
-    "src/workflow-defensive.test.mjs"
+    "src/workflow-defensive.test.mjs",
+    "src/browser-assistant.test.mjs"
   ],
   "paths": [
     "src/workflow-processing.feature",
@@ -127,6 +128,7 @@
     "src/workflow-graph-guards.feature",
     "src/workflow-layout.feature",
     "src/workflow-response.feature",
-    "src/workflow-defensive.feature"
+    "src/workflow-defensive.feature",
+    "src/browser-assistant.feature"
   ]
 }

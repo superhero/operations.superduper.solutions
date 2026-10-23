@@ -22,6 +22,7 @@ unrelated behavior to `utils.ts`.
 | `metrics-*`, `storage-metrics`, `page-memory`, `processing-metrics` | Resource measurement, aggregation and display data |
 | `error-diagnostics`, `error-capture`, `error-history*` | Bounded diagnostic snapshots, runtime observation, queued recording and atomic error retention |
 | `app-settings`, locale/date helpers, `storage-*`, `startup-*` | Preferences, storage lifecycle and startup coordination |
+| [`assistant`](../../docs/browser-assistant.md) | Pinned browser-local Bonsai inference, Pi tools and skills, bounded application reads and validated graph edits without execution |
 
 ## Persistence
 

@@ -25,3 +25,7 @@ Feature: Production build
   Scenario: Embedded vault dependency retains its distribution notices
     Given the production build has completed
     Then the production page contains the vault cryptography license notices
+
+  Scenario: Embedded Pi dependencies retain their distribution notices
+    Given the production build has completed
+    Then the production page contains the Pi assistant license notices

@@ -47,7 +47,8 @@
     "src/lib/workflow-file-client.ts",
     "src/lib/workflow-file.worker.ts",
     "src/lib/workflow-processing-client.ts",
-    "src/lib/workflow-processing.worker.ts"
+    "src/lib/workflow-processing.worker.ts",
+    "src/lib/assistant/inference.worker.ts"
   ],
   "statements": 100,
   "branches": 100,

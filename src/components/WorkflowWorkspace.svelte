@@ -62,6 +62,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import WorkflowRun from "./workflows/WorkflowRun.svelte";
   import type { CredentialBinding } from "$lib/secrets/types.ts";
   import Modal from "$lib/components/Modal.svelte";
+  import { editAssistantWorkspace } from "$lib/assistant/workspace.ts";
+  import type { AssistantEdit, AssistantPort } from "$lib/assistant/tools.ts";
 
   let { toolbarButtons = defaultToolbarButtons, keybindings = defaultKeybindings, active, settingsOpen = false, navigationOpen = false, navigationModal = false, documentModal = $bindable(false), saveStatus = $bindable<WorkflowSaveStatus>("loading"), documents = $bindable([]), libraryError = $bindable(""), workflowDefaults, onBrowse }:
     { toolbarButtons?: ToolbarButtons; keybindings?: Keybindings; active: boolean; settingsOpen?: boolean; navigationOpen?: boolean; navigationModal?: boolean; documentModal?: boolean; saveStatus?: WorkflowSaveStatus; documents?: WorkflowDocument[]; libraryError?: string; workflowDefaults: WorkflowDefaults; onBrowse: () => void } = $props();
@@ -820,6 +822,57 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   }
 
   export async function flushPendingChanges(): Promise<boolean> { return flushAutosave(); }
+
+  export function assistantDocument(): WorkflowDocument { return documentValue(); }
+  export function assistantView() {
+    return { selectedNodes: nodes.filter(node => node.selected).map(node => node.id),
+      selectedConnections: edges.filter(edge => edge.selected).map(edge => edge.id), visibleCanvas: toolbar?.placementViewport() };
+  }
+
+  export async function assistantPorts(nodeId: string): Promise<AssistantPort[]> {
+    await tick();
+    const node = nodes.find(node => node.id === nodeId && !node.hidden);
+    if (!node) throw new Error("Read ports on a visible node in the current workflow.");
+    const element = canvas?.querySelector<HTMLElement>(`.svelte-flow__node[data-id="${CSS.escape(nodeId)}"]`);
+    return [...element?.querySelectorAll<HTMLElement>(".svelte-flow__handle") ?? []].map(handle => ({
+      nodeId, handle: handle.getAttribute("data-handleid"), direction: handle.classList.contains("source") ? "output" : "input",
+      label: handle.getAttribute("aria-label") || handle.parentElement?.textContent?.trim() || "Value",
+      available: handle.getAttribute("aria-disabled") !== "true" && handle.classList.contains("connectable") &&
+        (handle.classList.contains("source") || !workflowInputConnected(nodeId, handle.getAttribute("data-handleid"), edges)),
+    }));
+  }
+
+  export async function assistantEdit(edit: AssistantEdit, signal: AbortSignal): Promise<unknown> {
+    const available = () => {
+      signal.throwIfAborted();
+      if (!storageReady || actionBusy || placement || textEditing || resizingComment || nodes.some(node => node.dragging) || documentModal || runOpen)
+        throw new Error("The workspace is busy. Finish the current edit or dialog first.");
+      if (edit.workflowId !== id) throw new Error("The current workflow changed. Read it again before editing.");
+    };
+    available();
+    const before = snapshot;
+    const owner = {};
+    let ownsBusy = false;
+    try {
+      let operation: { value: Operation; schema: Record<string, unknown> } | undefined;
+      if (edit.kind === "add_operation") {
+        pinOperationModels(owner, new Set([edit.operationId]));
+        const value = await hydrateOperation(edit.operationId);
+        operation = { value, schema: getOperationReport(value).schema };
+      }
+      const ports = edit.kind === "connect_nodes" ? [...await assistantPorts(edit.source), ...await assistantPorts(edit.target)] : [];
+      available();
+      if (snapshot !== before) throw new Error("The workspace changed while preparing the edit. Read it again.");
+      const result = editAssistantWorkspace(documentValue(), edit, ports, operation);
+      actionBusy = ownsBusy = true;
+      version = result.document.version;
+      applyGraph(result.document);
+      await schemaLease.update(documentValue());
+      if (!await flushAutosave()) throw new Error("The canvas changed but could not be saved: " + saveError);
+      return { workflowId: id, ...(result.nodeId ? { nodeId: result.nodeId } : {}), saved: true,
+        nodes: nodes.length, connections: edges.length };
+    } finally { if (ownsBusy) actionBusy = false; pinOperationModels(owner); }
+  }
 
   async function flushAutosave(): Promise<boolean> {
     cancelAutosave();

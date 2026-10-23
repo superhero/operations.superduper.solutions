@@ -2,7 +2,10 @@
   import { flushSync, onMount, tick, untrack } from "svelte";
   import { Tooltip } from "bits-ui";
   import type { Operation } from "$lib/catalog.ts";
-  import { getSchemaLibrary } from "$lib/schema-library.ts";
+  import { getSchemaLibrary, hydrateOperation, loadSchemaSource, releaseSchemaSource } from "$lib/schema-library.ts";
+  import { getOperationReport } from "$lib/operation-report.ts";
+  import { applicationExecutionMetrics } from "$lib/application-workers.ts";
+  import type { AssistantHost } from "$lib/assistant/tools.ts";
   import type { WorkspaceMode, WorkflowSaveStatus } from "$lib/workspace.d.ts";
   import type { WorkflowDocument } from "$lib/workflow-document.ts";
   import { loadSettings, saveSetting, type WorkflowDefaults } from "$lib/app-settings.ts";
@@ -164,6 +167,38 @@
   const operations = $derived(getSchemaLibrary().operations);
   const activeCatalogs = $derived(getSchemaLibrary().catalogs);
   const catalogGroups = $derived(activeCatalogs.flatMap(catalog => catalog.groups));
+  const assistantHost: AssistantHost = {
+    application: () => ({
+      summary: { application: "Operations", workflowId: workflowWorkspace.assistantDocument().id, operations: operations.length,
+        catalogs: activeCatalogs.length, savedWorkflows: savedWorkflows.length, saveStatus: workflowSaveStatus,
+        capabilities: ["read application", "add operations", "move nodes", "connect ports"], execution: "unavailable",
+        workers: applicationExecutionMetrics(), workspace: workflowWorkspace.assistantView(), schemaError: getSchemaLibrary().error, workflowError: workflowLibraryError },
+      settings: { dark, palette, workflowDefaults, locale, tooltips, toolbarButtons, keybindings, navigationOpen, navigationPaneWidth,
+        settingsPaneWidth, settingsSection, navigationView, developerToolbar, evaluationDetails },
+      catalogs: activeCatalogs.map(({ id, name, file, groups }) => ({ id, name, file,
+        groups: groups.map(group => ({ id: group.id, name: group.name, children: group.children?.length ?? 0, operations: group.operationIds?.length ?? 0 })) })),
+      workflows: savedWorkflows.map(({ id, name, description, nodes, edges }) => ({ workflowId: id, name, description, nodes: nodes.length, connections: edges.length })),
+    }),
+    operations: () => operations,
+    operation: async id => {
+      const operation = await hydrateOperation(id);
+      const report = getOperationReport(operation);
+      return { operationId: operation.id, catalogId: operation.id.split(":")[0], name: operation.name, method: operation.method, path: operation.path,
+        description: operation.description, bodyMediaType: operation.bodyMediaType, bodyRequired: operation.bodyRequired,
+        fields: operation.fields.map(({ key, label, type, location, required, description }) => ({ key, label, type, location, required, description })),
+        documentation: { summary: report.summary, groups: report.groups, warnings: report.warnings },
+        schemaHint: "Use read_schema with the catalogId and /paths JSON pointer for full request and response schemas." };
+    },
+    schema: async id => { try { return await loadSchemaSource(id); } finally { releaseSchemaSource(id); } },
+    workflow: id => {
+      const current = workflowWorkspace.assistantDocument();
+      const document = !id || id === current.id ? current : savedWorkflows.find(document => document.id === id);
+      if (!document) throw new Error("Workflow not found.");
+      return document;
+    },
+    ports: nodeId => workflowWorkspace.assistantPorts(nodeId),
+    edit: (edit, signal) => workflowWorkspace.assistantEdit(edit, signal),
+  };
   let sideNavigation: SideNavigation;
   let workflowWorkspace: WorkflowWorkspace;
   let settingsWorkspace: SettingsWorkspace;
@@ -495,7 +530,7 @@
       </div>
     {/if}
     <div bind:this={settingsContent} style:min-height={settingsContentHeight === undefined ? undefined : `${settingsContentHeight}px`}>
-      <SettingsWorkspace bind:openSection={settingsSection} active={settingsPresent} bind:this={settingsWorkspace} {dark} onTheme={toggleTheme} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
+      <SettingsWorkspace {assistantHost} bind:openSection={settingsSection} active={settingsPresent} bind:this={settingsWorkspace} {dark} onTheme={toggleTheme} {tooltips} {tooltipsError} onTooltipsChange={selectTooltips} {palette} onPaletteChange={selectPalette} {workflowDefaults} {workflowDefaultsError}
           {toolbarButtons} {toolbarButtonsError} onToolbarButtonsChange={selectToolbarButtons} onRetryToolbarButtons={() => selectToolbarButtons(toolbarButtons)}
           {keybindings} {keybindingsError} onKeybindingsChange={selectKeybindings} onRetryKeybindings={() => selectKeybindings(keybindings)}
           {locale} {localeError} onLocaleChange={selectLocale} onRetryLocale={() => selectLocale(locale)}

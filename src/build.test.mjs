@@ -78,3 +78,10 @@ Then("the production page contains the vault cryptography license notices", func
   assert.match(html, /Permission is hereby granted, free of charge/);
   assert.match(html, /Copyright 2012, Samuel Neves/);
 });
+
+Then("the production page contains the Pi assistant license notices", function ()
+{
+  assert.match(html, /Assistant dependency notices/);
+  assert.match(html, /@earendil-works\/pi-agent-core/);
+  assert.match(html, /Copyright \(c\) 2025 Mario Zechner/);
+});

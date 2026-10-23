@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 export const paneStateKey = "v1/settings/pane-state";
-export const settingsSections = ["toolbar", "keybindings", "secrets", "theme", "locale", "logs", "schemas", "workflow", "storage", "developer"] as const;
+export const settingsSections = ["toolbar", "keybindings", "secrets", "theme", "locale", "logs", "schemas", "workflow", "storage", "developer", "assistant"] as const;
 export type SettingsSection = typeof settingsSections[number] | null;
 export type NavigationPaneState = {
   prompt: string; catalogPath: string[]; workflowsOpen: boolean; matchingOpen: boolean;
