@@ -2,6 +2,10 @@
 
 ## Latest
 
+<!-- changelog-latest-end -->
+
+## 0.0.59
+
 <!-- changelog-commit:cc3c46ba926a676fbd6855d44366f53285d788c3 -->
 ### Commit [`cc3c46b`](https://github.com/superhero/operations.superduper.solutions/commit/cc3c46ba926a676fbd6855d44366f53285d788c3)
 
@@ -32,8 +36,6 @@ Gherkin checks. Keep full regression validation on the release route.
 build(assistant): include Pi dependency version badges
 
 ```
-
-<!-- changelog-latest-end -->
 
 ## 0.0.58
 
