@@ -69,5 +69,8 @@ Feature: Reversible six-color palettes
   Scenario: Rapid theme and palette changes persist the latest independent choices
     Then rapid settings changes retain the final theme and palette after reloading
 
+  Scenario: Rapid appearance changes finish before a later storage read
+    Then later storage readers see every queued appearance change
+
   Scenario: Existing IndexedDB settings stay compatible with older tabs
     Then the version-one preferences store remains readable and writable without an upgrade

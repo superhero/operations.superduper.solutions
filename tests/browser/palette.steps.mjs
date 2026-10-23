@@ -395,6 +395,45 @@ Then('rapid settings changes retain the final theme and palette after reloading'
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
+Then('later storage readers see every queued appearance change', async function () {
+  const page = this.page;
+  await setMode(page, 'settings');
+  await expectPaletteChoices(page, 'Default');
+  const saved = await page.evaluate(async databaseName => {
+    const database = await new Promise((resolve, reject) => {
+      const request = indexedDB.open(databaseName);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      const storeName = database.objectStoreNames.contains('settings') ? 'settings' : 'preferences';
+      // Native contention keeps the first save pending while all choices arrive.
+      // A subsequent reader must wait for the entire burst, not its first write.
+      const blocker = database.transaction(storeName, 'readwrite');
+      blocker.objectStore(storeName).get('theme');
+      const toggle = document.querySelector('[role="switch"][aria-label="Dark theme"]');
+      for (const palette of ['alpine', 'sunset', 'graphite-study', 'default', 'sunset']) {
+        document.querySelector(`input[name="color-palette"][value="${palette}"]`).click();
+        toggle.click();
+        await Promise.resolve();
+      }
+      return await new Promise((resolve, reject) => {
+        const transaction = database.transaction(storeName, 'readonly');
+        const store = transaction.objectStore(storeName);
+        const theme = store.get('theme'), palette = store.get('palette');
+        transaction.oncomplete = () => resolve({ theme: theme.result, palette: palette.result });
+        transaction.onabort = transaction.onerror = () => reject(transaction.error);
+      });
+    } finally { database.close(); }
+  }, settingsDatabaseName);
+  assert.deepEqual(saved, { theme: 'dark', palette: 'sunset' });
+  await page.reload();
+  await page.locator('#startup-status').waitFor({ state: 'detached' });
+  assert.deepEqual(await storedSettings(page), saved);
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.locator('html')).toHaveAttribute('data-palette', 'sunset');
+});
+
 When('I replace only the six ordered palette colors', async function () {
   assertOrdered(replacement);
   await this.page.evaluate(({ names, colors }) => {

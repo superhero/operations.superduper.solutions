@@ -270,20 +270,17 @@ export async function loadSettings(paletteIds: readonly string[]): Promise<Setti
   }
 }
 
-/** Keep rapid changes ordered and update only the setting that changed. */
-export function saveSetting<Key extends keyof SettingValues>(key: Key, value: SettingValues[Key]): Promise<void>
+/** Queue writes immediately; IndexedDB orders transactions on the same store. */
+export async function saveSetting<Key extends keyof SettingValues>(key: Key, value: SettingValues[Key]): Promise<void>
 {
   const snapshot = typeof value === "object" ? { ...value } : value;
-  pending = pending.catch(() => {}).then(async () => {
-    const appearance = await inStore("readwrite", async store => {
-      await store.put(snapshot, key);
-      if (key !== "theme" && key !== "palette") return null;
-      const [theme, palette] = await Promise.all([store.get("theme"), store.get("palette")]);
-      return { theme, palette };
-    });
-    if (appearance) writeAppearanceCache(appearance);
+  const appearance = await inStore("readwrite", async store => {
+    await store.put(snapshot, key);
+    if (key !== "theme" && key !== "palette") return null;
+    const [theme, palette] = await Promise.all([store.get("theme"), store.get("palette")]);
+    return { theme, palette };
   });
-  return pending;
+  if (appearance) writeAppearanceCache(appearance);
 }
 
 /** Independent lazy read: secret access does not make general startup depend on the vault. */
