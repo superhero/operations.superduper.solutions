@@ -162,3 +162,20 @@ Feature: Publish release reports and report dependency versions
     Given a complete Vitest report directory
     When the downloaded report changes during publication
     Then published assets retain the original validated snapshot
+
+  Scenario: Report asset uploads overlap within a fixed limit before publishing entries and pointers
+    Given a complete Vitest report directory
+    When report assets are uploaded with asynchronous requests
+    Then report publication uses three concurrent uploads and waits before moving pointers
+    And report assets retain their MIME types under an immutable prefix
+
+  Scenario: A failed concurrent upload prevents publishing entries and pointers
+    Given a complete Vitest report directory
+    And an asynchronous report asset upload will fail
+    When report assets are uploaded with asynchronous requests
+    Then failed concurrent publication waits for active uploads without exposing a partial report
+
+  Scenario: The real uploader overlaps subprocesses and waits for their completion
+    Given a complete Vitest report directory
+    When the publisher runs real upload subprocesses against a local recorder
+    Then real upload processes overlap within the limit and complete before publication returns

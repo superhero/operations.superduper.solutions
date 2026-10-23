@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { cpSync, readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -36,12 +36,31 @@ export function publicationPlan(directory, prefix, manifest, expectedProvenance)
     .map(path => ({ file: join(directory, path), key: `${prefix}/${path}`,
       type: media[path.split('.').at(-1).toLowerCase()] ?? 'application/octet-stream' }));
 }
-export function publishReport(directory, prefix, { manifest, expectedProvenance, run = spawnSync, guard = () => {} } = {}) {
+function runPublication(command, args, options) {
+  return new Promise((resolveExit, reject) => {
+    const grouped = process.platform !== 'win32';
+    const child = spawn(command, args, { ...options, detached: grouped });
+    const stop = signal => {
+      try { if (grouped) process.kill(-child.pid, signal); else child.kill(signal); }
+      catch (error) { if (error.code !== 'ESRCH') child.kill(signal); }
+    };
+    const interrupt = () => stop('SIGINT'), terminate = () => stop('SIGTERM');
+    process.once('SIGINT', interrupt); process.once('SIGTERM', terminate);
+    const cleanup = () => {
+      process.removeListener('SIGINT', interrupt); process.removeListener('SIGTERM', terminate);
+    };
+    child.once('error', error => { cleanup(); reject(error); });
+    child.once('close', (status, signal) => { cleanup(); resolveExit({ status, signal }); });
+  });
+}
+export async function publishReport(directory, prefix, { manifest, expectedProvenance, run = runPublication,
+  guard = () => {}, note = () => {}, clock = () => performance.now(),
+  pause = ms => new Promise(resolvePause => setTimeout(resolvePause, ms)) } = {}) {
   // Validate the entire file set before creating any external publication request.
   publicationPlan(directory, prefix, manifest, expectedProvenance);
   const temporary = mkdtempSync(join(tmpdir(), 'operations-report-publication-'));
-  const publish = (file, key, type) => {
-    const result = run('bash', ['.github/scripts/publish-status.sh', file, key, type], { stdio: 'inherit' });
+  const publish = async (file, key, type) => {
+    const result = await run('bash', ['.github/scripts/publish-status.sh', file, key, type], { stdio: 'inherit' });
     if (result.error) throw result.error;
     if (result.status !== 0) throw new Error(`Report publication failed at ${key}.`);
   };
@@ -51,14 +70,50 @@ export function publishReport(directory, prefix, { manifest, expectedProvenance,
     const snapshot = join(temporary, 'report');
     cpSync(directory, snapshot, { recursive: true, dereference: false });
     const plan = publicationPlan(snapshot, prefix, manifest, expectedProvenance);
-    for (const item of plan) publish(item.file, item.key, item.type);
+    // Pace starts below the R2 REST limit of 1,200 requests per five minutes.
+    // https://developers.cloudflare.com/r2/platform/limits/#cloudflare-rest-api
+    let starts = Promise.resolve(), lastStarted, failure;
+    const upload = async (file, key, type) => {
+      const turn = starts.then(async () => {
+        if (failure) return {};
+        const delay = lastStarted === undefined ? 0 : Math.max(0, 350 - (clock() - lastStarted));
+        if (delay) await pause(delay);
+        if (failure) return {};
+        lastStarted = clock();
+        return { operation: publish(file, key, type) };
+      });
+      starts = turn.then(() => {}, () => {});
+      const { operation } = await turn;
+      if (!operation) return false;
+      await operation;
+      return true;
+    };
+    const assets = plan.filter(item => item.key !== `${prefix}/index.html`);
+    let next = 0, completed = 0;
+    const worker = async () => {
+      while (!failure && next < assets.length) {
+        const item = assets[next++];
+        try {
+          if (await upload(item.file, item.key, item.type)) {
+            completed++;
+            if (completed % 100 === 0 || completed === assets.length)
+              note(`Report assets uploaded: ${completed}/${assets.length}.`);
+          }
+        }
+        catch (error) { failure ??= error; }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(3, assets.length) }, worker));
+    if (failure) throw failure;
+    const entry = plan.find(item => item.key === `${prefix}/index.html`);
+    await upload(entry.file, entry.key, entry.type);
     for (const badge of ['test-scenarios', 'test-coverage']) {
       for (const format of ['json', 'svg']) {
         const key = `badges/${badge}.${format}`;
         const item = plan.find(item => item.key === `${prefix}/${key}`);
         if (!item) throw new Error(`Missing validated publication badge: ${key}`);
         guard();
-        publish(item.file, key, item.type);
+        await upload(item.file, key, item.type);
       }
     }
     // Publish stable pointers only after every immutable report asset exists.
@@ -68,7 +123,7 @@ export function publishReport(directory, prefix, { manifest, expectedProvenance,
       const url = `/${target}`;
       writeFileSync(file, `<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=${url}"><title>Test report</title><a href="${url}">Open test report</a>\n`);
       guard();
-      publish(file, name, 'text/html; charset=utf-8');
+      await upload(file, name, 'text/html; charset=utf-8');
     }
     return plan;
   } finally { rmSync(temporary, { recursive: true, force: true }); }
@@ -87,6 +142,6 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       if (result.error) throw result.error;
       if (result.status !== 0) throw new Error('A newer release prevents replacing the report pointer.');
     };
-    publishReport(directory, prefix, { manifest, expectedProvenance, guard });
+    await publishReport(directory, prefix, { manifest, expectedProvenance, guard, note: message => console.log(message) });
   } catch (error) { console.error(`::error::${error.message}`); process.exitCode = 1; }
 }
