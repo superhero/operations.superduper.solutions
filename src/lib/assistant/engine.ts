@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { bonsaiRuntime, bonsaiModels, type AssistantSettings } from "./config.ts";
+import type { AssistantCompatibility } from "./compatibility.ts";
 import type { LocalEngine, NativeMessage, NativeResult } from "./pi-session.ts";
 
 export type WebMLModel = {
@@ -28,13 +29,35 @@ export async function fetchBonsaiRuntime(signal: AbortSignal, request: typeof fe
 }
 
 export async function loadBonsaiEngine(settings: AssistantSettings, onProgress: (event: unknown) => void, signal: AbortSignal,
+  compatibility: Pick<AssistantCompatibility, "fp16">,
   runtime: (signal: AbortSignal) => Promise<WebMLModule> = fetchBonsaiRuntime): Promise<LocalEngine & { dispose(): Promise<void> }> {
   const profile = bonsaiModels.find(model => model.id === settings.model)!;
   const module = await runtime(signal);
-  const raw = await module.Qwen3_5ForConditionalGeneration.from_pretrained(profile.model, {
-    file: profile.file, revision: profile.revision, mmproj: profile.projector, max_pixels: settings.imagePixels, maxLength: settings.context,
-    cache: false, prefixSnapshotStore: null, chatTemplateArgs: { enable_thinking: settings.thinking }, signal, onProgress,
-  });
+  let stage = "GPU initialization";
+  const diagnostics: { name: string; message: string }[] = [];
+  let raw: WebMLModel;
+  try {
+    raw = await module.Qwen3_5ForConditionalGeneration.from_pretrained(profile.model, {
+      file: profile.file, revision: profile.revision, mmproj: profile.projector, max_pixels: settings.imagePixels, maxLength: settings.context,
+      cache: false, prefixSnapshotStore: null, chatTemplateArgs: { enable_thinking: settings.thinking }, signal,
+      onProgress: (event: unknown) => {
+        if (event && typeof event === "object" && "message" in event && typeof event.message === "string") stage = event.message;
+        onProgress(event);
+      },
+      // The runtime otherwise enables every advertised feature, including FP16
+      // on adapters where the real FP16 computation probe failed.
+      runtimeOptions: { disabledFeatures: compatibility.fp16 ? [] : ["shader-f16"],
+        diagnosticSink: (event: { message: string }) => {
+          diagnostics.push({ name: "WebGPUDiagnostic", message: event.message });
+          if (diagnostics.length > 4) diagnostics.shift();
+        } },
+    });
+  } catch (cause) {
+    const message = `${profile.label} failed during ${stage}: ${cause instanceof Error ? cause.message : String(cause)}`;
+    // Preserve the native stack/cause and the runtime's actual device-loss or
+    // validation details. Diagnostic strings have no invented stack trace.
+    throw diagnostics.length ? new AggregateError(diagnostics, message, { cause }) : new Error(message, { cause });
+  }
   let session: ReturnType<WebMLModel["create_session"]>;
   try { signal.throwIfAborted(); session = raw.create_session(); }
   catch (error) { await raw.dispose(); throw error; }

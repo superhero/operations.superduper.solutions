@@ -54,7 +54,8 @@ export function nativeToolCalls(calls: NonNullable<NativeResult["message"]["tool
   });
 }
 
-export function localAssistantStream(engine: LocalEngine, settings: AssistantSettings, image: (part: ImageContent) => Promise<unknown>): StreamFn {
+export function localAssistantStream(engine: LocalEngine, settings: AssistantSettings, image: (part: ImageContent) => Promise<unknown>,
+  onError: (error: unknown) => void = () => {}): StreamFn {
   return (model, context, options) => {
     const stream = createAssistantMessageEventStream();
     const output: AssistantMessage = { role: "assistant", content: [], api: model.api, provider: model.provider, model: model.id, timestamp: Date.now(), stopReason: "stop",
@@ -92,6 +93,7 @@ export function localAssistantStream(engine: LocalEngine, settings: AssistantSet
         output.stopReason = calls.length ? "toolUse" : native.finish_reason === "length" ? "length" : "stop";
         stream.push({ type: "done", reason: output.stopReason, message: output });
       } catch (error) {
+        if (!options?.signal?.aborted) onError(error);
         output.stopReason = options?.signal?.aborted ? "aborted" : "error";
         output.errorMessage = error instanceof Error ? error.message : String(error);
         stream.push({ type: "error", reason: output.stopReason, error: output });
@@ -103,7 +105,7 @@ export function localAssistantStream(engine: LocalEngine, settings: AssistantSet
 
 export function createAssistantSession(engine: LocalEngine, settings: AssistantSettings, invoke: ToolInvoker,
   image: (part: ImageContent) => Promise<unknown>, publish: (state: SessionUpdate) => void,
-  schedule: (snapshot: () => void) => void = snapshot => snapshot()) {
+  schedule: (snapshot: () => void) => void = snapshot => snapshot(), onError: (error: unknown) => void = () => {}) {
   const tools: AgentTool[] = enabledAssistantTools(settings).map(tool => ({ ...tool, label: tool.name,
     parameters: tool.parameters as AgentTool["parameters"],
     execute: async (_id, args: unknown, signal) => {
@@ -112,7 +114,7 @@ export function createAssistantSession(engine: LocalEngine, settings: AssistantS
       return { content: [{ type: "text", text: JSON.stringify(result) }], details: undefined };
     } }));
   const skills = settings.tools && settings.skills ? assistantSkills.map(({ name, description, path }) => ({ name, description, path })) : [];
-  const agent = new Agent({ streamFn: localAssistantStream(engine, settings, image), toolExecution: "sequential", initialState: {
+  const agent = new Agent({ streamFn: localAssistantStream(engine, settings, image, onError), toolExecution: "sequential", initialState: {
     model: { id: settings.model, name: bonsaiModels.find(model => model.id === settings.model)!.label, api: "browser-local", provider: "browser-local", baseUrl: "", input: ["text", "image"],
       reasoning: settings.thinking, contextWindow: settings.context, maxTokens: settings.maxTokens, cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 } },
     tools, thinkingLevel: "off", systemPrompt: "You are the Operations browser assistant. Answer concisely. Use tools to inspect the application before editing. Never invent tool results. " +

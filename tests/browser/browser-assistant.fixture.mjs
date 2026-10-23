@@ -18,10 +18,14 @@ export async function installAssistantFixture(page) {
       const worker = new EventTarget();
       const emit = data => { if (!stopped) { const event = new MessageEvent('message', { data }); worker.onmessage?.(event); worker.dispatchEvent(event); } };
       record.emit = emit;
+      const failure = { name: 'OperationError', message: 'Synthetic inference failure', code: 'GPU_LOAD',
+        stack: 'OperationError: Synthetic inference failure\n    at mapGpuBuffer (inference.worker.ts:42:7)',
+        cause: { name: 'DeviceLostError', message: 'Synthetic device reset', code: 'DEVICE_LOST',
+          stack: 'DeviceLostError: Synthetic device reset\n    at gpuReadback (webml.js:10:3)' } };
       const call = (name, args) => new Promise(resolve => { const id = ++next; pending.set(id, resolve); emit({ type: 'tool', id, name, args }); });
       const run = async text => {
         if (record.behavior === 'slow' || record.behavior === 'manual') return;
-        if (record.behavior === 'error') { emit({ type: 'error', message: 'Synthetic inference failure' }); return; }
+        if (record.behavior === 'error') { emit({ type: 'error', operation: 'send', error: failure }); return; }
         const messages = [{ role: 'user', text }];
         const tool = async (name, args) => {
           const response = await call(name, args); record.calls.push({ name, args, ...response });
@@ -44,7 +48,11 @@ export async function installAssistantFixture(page) {
         if (stopped) return;
         if (message.type === 'tool_result') { pending.get(message.id)?.(message); pending.delete(message.id); }
         else if (message.type === 'check') emit({ type: 'compatibility', value: { ready: true, summary: 'WebGPU compute verified.', fp32: true, fp16: true, adapter: 'Scripted test GPU', detail: '' } });
-        else if (message.type === 'load') { record.settings = message.settings; emit({ type: 'ready' }); }
+        else if (message.type === 'load') {
+          record.settings = message.settings;
+          if (record.behavior === 'load-error') emit({ type: 'error', operation: 'load', error: failure });
+          else emit({ type: 'ready' });
+        }
         else if (message.type === 'reset') { emit({ type: 'update', messages: [], error: '' }); emit({ type: 'done' }); }
         else if (message.type === 'send') { record.lastMessage = message; void run(message.text); }
       });

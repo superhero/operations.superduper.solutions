@@ -5,6 +5,7 @@
 import { validateAssistantSettings, type AssistantSettings } from "./config.ts";
 import { probeAssistantCompatibility } from "./compatibility.ts";
 import { loadBonsaiEngine } from "./engine.ts";
+import { encodeError } from "../worker-rpc.ts";
 import { createAssistantSession, type SessionUpdate, type ToolInvoker } from "./pi-session.ts";
 import type { ImageContent } from "@earendil-works/pi-ai";
 
@@ -64,8 +65,9 @@ scope.onmessage = event => {
         if (!compatibility.ready) throw new Error(compatibility.summary + " " + compatibility.detail);
         if (engine) throw new Error("Unload the current model before loading another.");
         settings = validateAssistantSettings(message.settings);
-        engine = await loadBonsaiEngine(settings, value => post({ type: "progress", value }), AbortSignal.timeout(settings.loadTimeout));
-        session = createAssistantSession(engine, settings, invoke, image, publish, schedule);
+        engine = await loadBonsaiEngine(settings, value => post({ type: "progress", value }), AbortSignal.timeout(settings.loadTimeout), compatibility);
+        session = createAssistantSession(engine, settings, invoke, image, publish, schedule,
+          error => post({ type: "diagnostic", operation: "send", error: encodeError(error) }));
         post({ type: "ready" });
       } else if (message.type === "send") {
         if (!session) throw new Error("Load a model first.");
@@ -76,5 +78,5 @@ scope.onmessage = event => {
         await session.reset(); flush(); post({ type: "done" });
       } else throw new Error("Unknown assistant command.");
     } finally { busy = false; }
-  })().catch(error => { flush(); post({ type: "error", message: error instanceof Error ? error.message : String(error) }); });
+  })().catch(error => { flush(); post({ type: "error", operation: message.type, error: encodeError(error) }); });
 };

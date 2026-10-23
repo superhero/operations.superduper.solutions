@@ -10,6 +10,8 @@ Feature: Browser assistant in Settings
     Then assistant read only mode and unload prevent further workspace edits
   Scenario: The assistant fits a narrow settings pane and reports worker failure
     Then assistant messaging remains usable on a narrow viewport and reports failure
+  Scenario: Model loading errors retain their diagnostics in the shared error history
+    Then assistant loading failures reach the shared history and copy their native error chain
   Scenario: Compatibility runs in the actual browser worker without model downloads
     Then the assistant checks its real browser worker without downloading model files
   Scenario: Streamed conversations preserve drafts and the reader's scroll position

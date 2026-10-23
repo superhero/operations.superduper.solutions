@@ -11,6 +11,7 @@ import { editAssistantWorkspace } from './lib/assistant/workspace.ts';
 import { fetchBonsaiRuntime, loadBonsaiEngine } from './lib/assistant/engine.ts';
 import { probeAssistantCompatibility, probeCompute } from './lib/assistant/compatibility.ts';
 import { localAssistantStream, nativeMessages, nativeToolCalls, createAssistantSession } from './lib/assistant/pi-session.ts';
+import { encodeError, decodeError } from './lib/worker-rpc.ts';
 import { readWorkflowFile } from './lib/workflow-file.ts';
 import { renderMarkdown } from './lib/markdown.ts';
 import { normalizeContext } from '@earendil-works/pi-ai/utils/transcript';
@@ -214,7 +215,7 @@ Then('assistant model loading verifies runtime integrity and forwards pinned nat
   const raw = { create_session: () => fakeSession, async dispose() { record.rawDisposed++; } };
   const runtime = async () => ({ Qwen3_5ForConditionalGeneration: { from_pretrained: async (model, options) => { captured.model = model; captured.load = options; options.onProgress('loading'); return raw; } } });
   for (const sampling of [false, true]) {
-    const engine = await loadBonsaiEngine({ ...settings(), sampling, prefixCache: sampling }, event => events.push(event), signal(), runtime);
+    const engine = await loadBonsaiEngine({ ...settings(), sampling, prefixCache: sampling }, event => events.push(event), signal(), { fp16: true }, runtime);
     await engine.reset();
     const result = await engine.generate([], { tools: [], signal: signal(), maxTokens: 13, onText: text => events.push(text), onThinking: text => events.push(text) });
     assert.equal(result.message.content, 'Hello'); assert.equal(captured.generation.temperature, sampling ? 0.7 : 0);
@@ -222,12 +223,75 @@ Then('assistant model loading verifies runtime integrity and forwards pinned nat
     await engine.dispose();
   }
   assert.equal(record.resets, 3); assert.ok(events.includes('Think'));
-  const abort = controller(); abort.abort(); await reject(() => loadBonsaiEngine(settings(), () => {}, abort.signal, runtime));
-  raw.create_session = () => { throw Error('session error'); }; await reject(() => loadBonsaiEngine(settings(), () => {}, signal(), runtime), /session error/);
+  const abort = controller(); abort.abort(); await reject(() => loadBonsaiEngine(settings(), () => {}, abort.signal, { fp16: true }, runtime));
+  raw.create_session = () => { throw Error('session error'); }; await reject(() => loadBonsaiEngine(settings(), () => {}, signal(), { fp16: true }, runtime), /session error/);
   assert.equal(record.rawDisposed, 4);
 });
 
+Then('assistant loading keeps a failed FP16 compute probe disabled in the native runtime', async () => {
+  for (const fp16Works of [false, true]) {
+    let probes = 0, loads = 0;
+    const compatibility = await probeAssistantCompatibility({ isSecureContext: true, navigator: { gpu: {
+      requestAdapter: async () => fakeAdapter(++probes === 2 && !fp16Works ? { failAt: 'pipeline' } : {}).adapter,
+    } } });
+    assert.equal(compatibility.ready, true);
+    assert.equal(compatibility.fp16, fp16Works);
+    const raw = { create_session: () => ({ async reset() {}, async dispose() {} }), async dispose() {} };
+    const runtime = async () => ({ Qwen3_5ForConditionalGeneration: { async from_pretrained(model, options) {
+      loads++;
+      const fp16Enabled = !options.runtimeOptions?.disabledFeatures?.includes('shader-f16');
+      if (fp16Enabled && !fp16Works) throw new Error('FP16 compute failed on an adapter advertising shader-f16.');
+      assert.equal(fp16Enabled, fp16Works);
+      assert.equal(options.maxLength, settings().context);
+      return raw;
+    } } });
+    const engine = await loadBonsaiEngine(settings(), () => {}, signal(), compatibility, runtime);
+    assert.equal(loads, 1);
+    await engine.dispose();
+  }
+});
+
 const model = { id: '2b', api: 'browser-local', provider: 'browser-local' };
+Then('assistant failures retain native stacks causes codes and GPU diagnostics across the worker boundary', async () => {
+  const native = new Error('GPU buffer mapping failed', { cause: new DOMException('Device reset', 'OperationError') });
+  const runtime = async () => ({ Qwen3_5ForConditionalGeneration: { async from_pretrained(_model, options) {
+    for (const event of [null, true, {}, { message: 5 }, { message: 'Compiling kernels (warmup)' }]) options.onProgress(event);
+    for (let index = 0; index < 5; index++) options.runtimeOptions.diagnosticSink({ message: `Driver diagnostic ${index}` });
+    throw native;
+  } } });
+  await assert.rejects(loadBonsaiEngine(settings(), () => {}, signal(), { fp16: true }, runtime), error => {
+    const copy = decodeError(structuredClone(encodeError(error)));
+    assert.match(copy.message, /Compiling kernels \(warmup\).*GPU buffer mapping failed/);
+    assert.equal(copy.cause.stack, native.stack);
+    assert.equal(copy.cause.cause.name, 'OperationError');
+    assert.equal(copy.cause.cause.code, native.cause.code);
+    assert.equal(copy.errors.length, 4);
+    assert.equal(copy.errors[0].message, 'Driver diagnostic 1');
+    assert.equal(copy.errors[0].stack, undefined, 'Do not replace a missing worker stack with a UI stack.');
+    return true;
+  });
+  for (const cause of [native, 'Range request failed: 416']) {
+    const failing = async () => ({ Qwen3_5ForConditionalGeneration: { async from_pretrained() { throw cause; } } });
+    await assert.rejects(loadBonsaiEngine(settings(), () => {}, signal(), { fp16: false }, failing), error => {
+      assert.match(error.message, /GPU initialization/);
+      assert.equal(error.cause, cause);
+      return true;
+    });
+  }
+  const reported = [], updates = [];
+  const session = createAssistantSession({ async reset() {}, async generate() { throw native; } }, settings(), async () => ({}), async () => ({}),
+    state => updates.push(state), undefined, error => reported.push(error));
+  await session.send('Hi');
+  assert.equal(reported.length, 1); assert.equal(reported[0], native);
+  assert.match(updates.at(-1).error, /GPU buffer mapping failed/);
+  const abort = controller(); abort.abort();
+  const stream = localAssistantStream({ async generate() { assert.fail('Cancelled work must not start.'); } }, settings(), async () => ({}), error => reported.push(error))
+    (model, normalizeContext({ messages: [] }), { signal: abort.signal });
+  for await (const _ of stream) { /* Drain the native cancellation result. */ }
+  assert.equal((await stream.result()).stopReason, 'aborted');
+  assert.equal(reported.length, 1, 'Explicit cancellation is not recorded as a failure.');
+});
+
 async function streamResult(engine, messages = [], options, overrides = {}) {
   const stream = localAssistantStream(engine, { ...settings(), ...overrides }, async part => ({ type: 'image', data: part.data }))(model, normalizeContext({ messages }), options);
   const events = []; for await (const event of stream) events.push(event);

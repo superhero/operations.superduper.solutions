@@ -22,7 +22,11 @@ Ornith/Wllama and Bonsai 27B are intentionally outside this integration.
 
 A worker is created only for a compatibility check or explicit model load. It
 verifies a real FP32 shader computation and readback, and probes optional FP16
-with a fresh adapter. The selected WebML runtime is GPU-only; it has no CPU
+with a fresh adapter. Model loading disables `shader-f16` in the native runtime
+unless that FP16 computation passed; advertised support alone does not enable it.
+The probe verifies a small computation, not model-size allocations or kernel
+warmup. A successful check therefore does not guarantee that a model can load.
+The selected WebML runtime is GPU-only; it has no CPU
 fallback or Wllama/JSPI/Memory64 requirement. The UI reports missing capabilities
 and does not guess driver versions, free memory or mobile support. It limits
 context configuration to 512–32768 tokens, defaults to the reference 4096, and
@@ -49,6 +53,22 @@ Attachments retain the reference limits: one PNG/JPEG/WebP up to 10 MiB and
 The source and decoded bitmaps are released after conversion. Generation and
 loading have bounded deadlines; the UI also enforces a hard worker deadline.
 Stop/unload aborts pending tool dispatch and terminates worker-owned GPU work.
+
+## Error diagnostics
+
+Assistant failures use the shared application logger and appear in
+**Settings → Logs → Errors**. The worker preserves native error types, codes,
+stacks and nested causes using the same error transport as other application
+workers. Model-load failures also identify the last loading stage and retain up
+to four native WebML diagnostics, including reported device-loss details.
+Generation failures are recorded before Pi converts them to conversational text;
+explicit cancellation is not recorded as an inference failure.
+
+Expand a saved error and choose **Copy error details** to copy its diagnostic
+tree, origin, occurrence count and first/last-seen times. This uses the existing
+bounded history snapshots. Missing native stacks remain missing rather than
+being replaced by a misleading UI stack. Clipboard failures leave the displayed
+diagnostics available for manual selection.
 
 ## Application capabilities
 

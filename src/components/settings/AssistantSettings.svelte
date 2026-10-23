@@ -19,12 +19,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import SpeechSettings from "./SpeechSettings.svelte";
   import { appendDictation } from "$lib/speech/config.js";
   import type { Dictation } from "$lib/speech/controller.js";
+  import { encodeError, decodeError } from "$lib/worker-rpc.ts";
+  import { logger } from "$lib/logger.ts";
 
   let { host, visible = true }: { host: AssistantHost; visible?: boolean } = $props();
   let preferenceError = $state("");
   function readPreferences() {
     try { return validateAssistantSettings(JSON.parse(localStorage.getItem(assistantSettingsKey) ?? "{}")); }
-    catch { preferenceError = "Saved assistant preferences could not be read. Using defaults for this session."; return { ...defaultAssistantSettings }; }
+    catch (problem) { report(problem, "settings"); preferenceError = "Saved assistant preferences could not be read. Using defaults for this session."; return { ...defaultAssistantSettings }; }
   }
   let preferences = $state<Preferences>(readPreferences());
   let phase = $state<"unloaded" | "checking" | "loading" | "ready" | "generating">("unloaded");
@@ -77,7 +79,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
   function savePreferences() {
     try { localStorage.setItem(assistantSettingsKey, JSON.stringify(validateAssistantSettings(preferences))); preferenceError = ""; }
-    catch (failure) { preferenceError = failure instanceof Error ? failure.message : String(failure); }
+    catch (problem) { preferenceError = report(problem, "settings"); }
   }
   function terminate() {
     clearTimeout(timer); timer = undefined; toolAbort.abort();
@@ -87,9 +89,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     terminate(); clearAttachment(); phase = "unloaded";
     status = "Model unloaded. Load a model to start a new conversation.";
   }
-  function failure(message: string) { terminate(); phase = "unloaded"; error = message; status = "The assistant stopped. Load a model to try again."; }
+  function report(problem: unknown, operation: string) {
+    const native = problem instanceof Error ? problem : decodeError(encodeError(problem));
+    logger.scope("assistant").scope(operation).error(native);
+    return native.message;
+  }
+  function failure(problem: unknown, operation: string = phase) {
+    error = report(problem, operation); terminate(); phase = "unloaded";
+    status = "The assistant stopped. Load a model to try again.";
+  }
   function deadline(ms: number) {
-    clearTimeout(timer); timer = setTimeout(() => failure("Assistant deadline reached; the model was unloaded."), ms);
+    clearTimeout(timer); timer = setTimeout(() => failure(new Error("Assistant deadline reached; the model was unloaded.")), ms);
   }
   function startWorker() {
     if (worker) return worker;
@@ -119,7 +129,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         error = message.error;
         if (atBottom) void tick().then(() => { if (alive && conversation) conversation.scrollTop = conversation.scrollHeight; });
       } else if (message.type === "done") { clearTimeout(timer); phase = "ready"; status = "Ready for your next message."; }
-      else if (message.type === "error") failure(message.message);
+      else if (message.type === "error") failure(decodeError(message.error), message.operation);
+      else if (message.type === "diagnostic") report(decodeError(message.error), message.operation);
       else if (message.type === "tool") {
         const signal = toolAbort.signal;
         void executeAssistantTool(host, loadedSettings, message.name, message.args, signal).then(value => {
@@ -129,15 +140,19 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         });
       }
     };
-    instance.onerror = event => { if (worker === instance) { event.preventDefault(); failure(event.message || "The inference worker stopped unexpectedly."); } };
-    instance.onmessageerror = () => { if (worker === instance) failure("Could not read the assistant worker's response."); };
+    instance.onerror = event => { if (worker === instance) {
+      event.preventDefault();
+      failure(event.error ?? { name: "WorkerError", message: event.message || "The inference worker stopped unexpectedly.",
+        ...(event.filename ? { stack: `at ${event.filename}:${event.lineno}:${event.colno}` } : {}) });
+    } };
+    instance.onmessageerror = () => { if (worker === instance) failure({ name: "WorkerError", message: "Could not read the assistant worker's response." }); };
     return instance;
   }
   function check() {
     if (locked) return;
     error = ""; phase = "checking"; status = "Checking browser GPU computation…";
     try { deadline(20000); startWorker().postMessage({ type: "check" }); }
-    catch (problem) { failure(problem instanceof Error ? problem.message : String(problem)); }
+    catch (problem) { failure(problem, "check"); }
   }
   function load() {
     if (locked) return;
@@ -146,7 +161,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       clearAttachment();
       error = ""; messages = []; phase = "loading"; status = "Checking WebGPU and loading model…";
       deadline(loadedSettings.loadTimeout + 20000); startWorker().postMessage({ type: "load", settings: loadedSettings });
-    } catch (problem) { failure(problem instanceof Error ? problem.message : String(problem)); }
+    } catch (problem) { failure(problem, "load"); }
   }
   function send() {
     if (phase !== "ready" || imagePreparing || speechBusy || (!prompt.trim() && !attachment)) return;
@@ -179,7 +194,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
         if (alive && generation === imageGeneration) attachment = { data: canvas.toDataURL("image/png").split(",")[1]!, mimeType: "image/png" };
       } finally { bitmap.close(); }
-    } catch (problem) { if (alive && generation === imageGeneration) { error = problem instanceof Error ? problem.message : String(problem); imageInput.value = ""; } }
+    } catch (problem) { if (alive && generation === imageGeneration) { error = report(problem, "image"); imageInput.value = ""; } }
     finally { if (alive && generation === imageGeneration) imagePreparing = false; }
   }
   onDestroy(() => { alive = false; imageGeneration++; terminate(); });

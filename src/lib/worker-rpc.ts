@@ -10,7 +10,7 @@ export type WorkerEvent = { type: string; data: unknown };
 type Reply = { kind: "result"; id: number; value: unknown } | { kind: "error"; id: number; error: RemoteError }
   | { kind: "event"; event: WorkerEvent };
 
-function encodeError(value: unknown, depth = 0): RemoteError {
+export function encodeError(value: unknown, depth = 0): RemoteError {
   if (depth > 8) return { name: "Error", message: "Further error causes omitted." };
   const error = value && typeof value === "object" ? value as Record<string, unknown> : {};
   const result: RemoteError = {
@@ -24,11 +24,12 @@ function encodeError(value: unknown, depth = 0): RemoteError {
   return result;
 }
 
-function decodeError(value: RemoteError): Error {
+export function decodeError(value: RemoteError): Error {
   const options = value.cause ? { cause: decodeError(value.cause) } : undefined;
   const error = value.errors ? new AggregateError(value.errors.map(decodeError), value.message, options) : new Error(value.message, options);
   error.name = value.name;
   if (value.stack) error.stack = value.stack;
+  else delete error.stack;
   if (value.code !== undefined) Object.defineProperty(error, "code", { value: value.code, enumerable: true });
   return error;
 }

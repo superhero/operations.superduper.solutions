@@ -19,6 +19,11 @@ async function graph(page) {
     { id: 'assistant-stop', type: 'stop', position: { x: 400, y: 100 }, data: {} },
   ], edges: [], viewport: { x: 0, y: 0, zoom: 1 }, snap: false, curved: false, dashed: false });
 }
+function consumeExpectedError(world, message) {
+  const matching = world.diagnostics.filter(item => item.type === 'console-error' && item.message.includes(message));
+  expect(matching).toHaveLength(1);
+  world.diagnostics = world.diagnostics.filter(item => !matching.includes(item));
+}
 Then('the assistant settings expose only three Bonsai models and remember configuration', async function() {
   const page = this.page; await installAssistantFixture(page);
   expect(await page.evaluate(() => window.assistantFixture.workers)).toBe(0);
@@ -108,6 +113,46 @@ Then('assistant messaging remains usable on a narrow viewport and reports failur
   await panel.getByRole('button', { name: 'Send message', exact: true }).click();
   await expect(panel.getByRole('alert')).toContainText('Synthetic inference failure');
   await expect(panel.getByRole('button', { name: 'Load model', exact: true })).toBeEnabled();
+  consumeExpectedError(this, 'Synthetic inference failure');
+});
+Then('assistant loading failures reach the shared history and copy their native error chain', async function() {
+  const page = this.page; await installAssistantFixture(page);
+  await page.evaluate(() => window.assistantFixture.behavior = 'load-error');
+  const panel = await openAssistant(page);
+  await panel.getByRole('button', { name: 'Load model', exact: true }).click();
+  await expect(panel.getByRole('alert')).toContainText('Synthetic inference failure');
+  consumeExpectedError(this, 'Synthetic inference failure');
+  const browser = page.locator('summary[aria-label="Browser"]');
+  if (await browser.getAttribute('aria-expanded') !== 'true') await browser.click();
+  await expect(browser.locator('..').locator('.storage-dashboard')).toBeVisible();
+  await expect(browser.locator('..').locator('.storage-building')).toHaveCount(0);
+  await browser.locator('..').locator(':scope > .disclosure-panel').evaluate(async element => {
+    await Promise.allSettled(element.getAnimations().map(animation => animation.finished));
+  });
+  await page.locator('summary[aria-label="Logs"]').click();
+  const history = page.getByRole('region', { name: 'Errors', exact: true });
+  const entry = history.locator('details.entry').filter({ hasText: 'assistant' });
+  await expect(entry).toHaveCount(1);
+  await entry.locator('summary').click();
+  await expect(entry).toContainText('1 occurrence');
+  await expect(entry).toContainText('inference.worker.ts:42:7');
+  await expect(entry).toContainText('webml.js:10:3');
+  await expect(entry).toContainText('DEVICE_LOST');
+  await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true,
+    value: { async writeText(value) { window.copiedAssistantError = value; } } }));
+  await entry.getByRole('button', { name: 'Copy error details', exact: true }).click();
+  await expect(entry.getByRole('status')).toHaveText('Error details copied.');
+  const copied = JSON.parse(await page.evaluate(() => window.copiedAssistantError));
+  expect(copied.origin.scope).toBe('operations > assistant > load');
+  expect(copied.error.name).toBe('OperationError');
+  expect(copied.error.stack).toContain('inference.worker.ts:42:7');
+  expect(copied.error.cause.stack).toContain('webml.js:10:3');
+  expect(copied.error.cause.code).toBe('DEVICE_LOST');
+  expect(copied.occurrences).toBe(1);
+  await page.evaluate(() => navigator.clipboard.writeText = async () => { throw new DOMException('Synthetic clipboard denied', 'NotAllowedError'); });
+  await entry.getByRole('button', { name: 'Copy error details', exact: true }).click();
+  await expect(entry.getByRole('status')).toContainText('Could not copy error details');
+  consumeExpectedError(this, 'Synthetic clipboard denied');
 });
 Then('the assistant checks its real browser worker without downloading model files', async function() {
   const page = this.page, requests = [];
@@ -185,5 +230,6 @@ Then('assistant attachments and new conversation respect asynchronous image clea
   await expect(panel.getByText('Preparing image…', { exact: true })).toHaveCount(0);
   await upload.setInputFiles({ name: 'invalid.txt', mimeType: 'text/plain', buffer: Buffer.from('invalid') });
   await expect(panel.getByRole('alert')).toContainText('Choose a PNG');
+  consumeExpectedError(this, 'Choose a PNG');
   expect(await upload.inputValue()).toBe('');
 });
