@@ -7,6 +7,8 @@ import { mkdirSync, readFileSync, symlinkSync, unlinkSync, writeFileSync } from 
 import { join } from "node:path";
 import { Given, Then, When } from "@cucumber/cucumber";
 import { API, get, OTHER_SHA, REPOSITORY, SHA } from "./support.mjs";
+import { BUNDLE_FILES, SPEECH_FILES } from '../scripts/bundle-contract.mjs';
+import { validateArtifactContract, REPORT_FILES } from '../scripts/validation-artifacts.mjs';
 
 const PROJECT = "operations-superduper-solutions";
 const ID = "12345678-1234-1234-1234-123456789abc";
@@ -18,6 +20,7 @@ const FILES = { "index.html": HTML, _headers: HEADERS,
 const hash = value => createHash("sha256").update(value).digest("hex");
 const bundleHash = files => hash(Object.keys(files).sort().map(name => `${hash(files[name])}  ${name}\n`).join(""));
 const HASH = bundleHash(FILES);
+const SPEECH = Object.fromEntries([...SPEECH_FILES, 'speech/chunks/mel-example.js'].map(path => [path, `Speech resource ${path}\n`]));
 const QUERY = "query($owner: String!, $name: String!, $ref: String!) { repository(owner: $owner, name: $name) { ref(qualifiedName: $ref) { target { oid } } } }";
 
 Given("a tested Pages bundle for {string}", function (branch)
@@ -33,6 +36,39 @@ Given("a tested Pages bundle for {string}", function (branch)
 Given("the Pages destination is {string}", function (state)
 {
   this.pages.state = state;
+});
+
+Given('the Pages bundle includes complete optional speech resources', function () {
+  this.pages.speechFiles = SPEECH;
+  for (const [path, bytes] of Object.entries(SPEECH)) {
+    const target = join(this.pages.bundle, path); mkdirSync(join(target, '..'), { recursive: true }); writeFileSync(target, bytes);
+  }
+  this.pages.initialHash = bundleHash({ ...FILES, ...SPEECH });
+});
+
+Given('the Pages speech resource {string} is {string}', function (name, state) {
+  const path = join(this.pages.bundle, name);
+  if (state === 'changed') writeFileSync(path, 'Changed speech resource\n');
+  else if (state === 'empty') writeFileSync(path, '');
+  else if (state === 'oversized') writeFileSync(path, Buffer.alloc(25 * 1024 ** 2 + 1, 1));
+  else if (state === 'extra') writeFileSync(path, 'Unexpected resource');
+  else {
+    unlinkSync(path);
+    if (state === 'a symlink') { const target = join(this.automation.root, 'speech-target'); writeFileSync(target, 'Target'); symlinkSync(target, path); }
+    else assert.equal(state, 'missing');
+  }
+  if (state !== 'changed') this.pages.invalidInput = true;
+});
+
+Then('validation manifests require every optional speech entry point and license', () => {
+  const files = { bundle: Object.fromEntries([...BUNDLE_FILES, ...Object.keys(SPEECH)].map(path => [path, 'a'.repeat(64)])),
+    coverage: { 'coverage-summary.json': 'hash', 'index.html': 'hash' },
+    'test-report': Object.fromEntries([...REPORT_FILES, 'ui/assets/app.js', 'ui/assets/app.css'].map(path => [path, 'hash'])) };
+  validateArtifactContract(files);
+  for (const path of SPEECH_FILES) {
+    const broken = structuredClone(files); delete broken.bundle[path];
+    assert.throws(() => validateArtifactContract(broken), /complete bundle/);
+  }
 });
 
 Given("the Pages branch is {string}", function (state)
@@ -106,7 +142,7 @@ When("the Pages deployment is prepared", function ()
     aliases: [alias],
     environment: branch === "main" ? "production" : "preview",
     latest_stage: { name: "deploy", status: "success" },
-    deployment_trigger: { metadata: { branch, commit_message: `bundle-sha256:${HASH}` } }
+    deployment_trigger: { metadata: { branch, commit_message: `bundle-sha256:${this.pages.initialHash ?? HASH}` } }
   };
   if (state === "changed") deployment.deployment_trigger.metadata.commit_message = `bundle-sha256:${"b".repeat(64)}`;
   if (state === "legacy HTML hash") deployment.deployment_trigger.metadata.commit_message = `bundle-sha256:${hash(HTML)}`;
@@ -188,7 +224,7 @@ Then("the Pages decision is deploy {string} and skipped {string}", function (dep
   const output = Object.fromEntries(readFileSync(this.automation.output, "utf8").trim().split("\n")
     .map(line => [line.slice(0, line.indexOf("=")), line.slice(line.indexOf("=") + 1)]));
   assert.deepEqual(output, {
-    deploy, skipped, bundle_hash: bundleHash(Object.fromEntries(Object.keys(FILES)
+    deploy, skipped, bundle_hash: bundleHash(Object.fromEntries(Object.keys({ ...FILES, ...this.pages.speechFiles })
       .map(filename => [filename, readFileSync(join(this.pages.bundle, filename))]))), alias_url: this.pages.alias,
     deployment_id: deploy === "false" && skipped === "false" ? ID : "",
     deployment_url: deploy === "false" && skipped === "false" ? `https://12345678.${PROJECT}.pages.dev` : ""

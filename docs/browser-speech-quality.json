@@ -1,0 +1,80 @@
+{
+  "reviewedAt": "2026-10-23",
+  "purpose": "Functional integration evidence, not a performance benchmark or universal device qualification",
+  "cpu": {
+    "profile": "CPU INT8",
+    "host": "development desktop",
+    "budget": "1 CPU / 3 GiB / no swap",
+    "browser": "155.0.8059.39",
+    "errors": [],
+    "stages": [
+      {
+        "name": "startup",
+        "elapsedMs": 5365.155259
+      },
+      {
+        "name": "cold pinned CPU initialization",
+        "elapsedMs": 27722.543059
+      },
+      {
+        "name": "real JFK file transcription",
+        "elapsedMs": 9589.113929
+      },
+      {
+        "name": "real microphone streaming and Stop",
+        "elapsedMs": 17334.213852
+      },
+      {
+        "name": "cached restoration without external network",
+        "elapsedMs": 15532.01384
+      }
+    ],
+    "audioFixtureSha256": "aa81c2552465568567e670f3823117e633900d16bd6202346a72f3c8464c74c8",
+    "fileTranscript": "And so, my fellow Americans, ask not what your country can do for you, ask what you can do for your country.",
+    "microphoneTranscript": "And so my fellow Americans. ask not What your country can do for you. Ask what you can do for your country.",
+    "cachedRequests": 0,
+    "status": "passed",
+    "runtime": "parakeet.js 1.4.4 / ORT Web 1.30.0 with matching Asyncify glue/WASM",
+    "capture": "Chrome fake microphone hardware replayed the pinned JFK WAV through the real AudioWorklet, VAD, feature and inference workers",
+    "audioFixtureUrl": "https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/jfk.wav"
+  },
+  "cpuBuildSha256": "261bc5f60266b3cbddb7c7f68d5edd724174de8698de69138ef11cd8aec5bb2b",
+  "gpu": {
+    "profile": "WebGPU FP32 encoder / INT8 CPU decoder",
+    "browser": "155.0.8059.39",
+    "host": "development desktop",
+    "budget": "1 CPU / 4 GiB / no swap",
+    "status": "not qualified under this local memory cap",
+    "evidence": "Streamed OPFS download and integrity verification completed in a regular profile; corrected Asyncify pairing reached encoder creation, which hit the 4 GiB cgroup memory limit. An earlier private context hit its storage quota.",
+    "runtime": "parakeet.js 1.4.4 / ORT Web 1.30.0 / strict WebGPU FP32 encoder and INT8 CPU decoder",
+    "reference": "Supplied AO/BS evidence retains successful desktop GPU runs; those do not establish universal reliability."
+  },
+  "limits": [
+    "No sds-01 workload was used.",
+    "Mobile/tablet inference, thermal behavior and general speech accuracy remain unqualified.",
+    "The fixed public JFK sample is a functional check; short, quiet or cut-off speech may be missed or hallucinated."
+  ],
+  "sourceChecks": {
+    "scenarios": 10,
+    "scope": "src/lib/speech/*.js excluding browser orchestration and worker entry points",
+    "coverage": {
+      "statements": "564/564",
+      "branches": "293/293",
+      "functions": "78/78",
+      "lines": "348/348"
+    }
+  },
+  "finalUiBuildSha256": "10fddb128c7a25092a3253716c72710e18773209317171d9ca213ef6a61668a6",
+  "finalUiDifferencesFromCpuRun": "Typography, GPU memory/quota guidance, Assistant subtitle and license-notice formatting only; speech inference behavior unchanged.",
+  "browserChecks": {
+    "engine": "Chromium 153",
+    "speechScenarios": 7,
+    "existingBonsaiScenarios": 7,
+    "conditions": "Scripted inference/hardware with real UI, feature worker, lifecycle, storage, draft and export. The combined Send scenario was run separately after the existing 13 checks passed."
+  },
+  "automationChecks": {
+    "pagesDeployment": 66,
+    "validationReuse": 85,
+    "scope": "Focused affected feature files; Pages cases used the host pinned Node toolchain because the Playwright image lacks jq."
+  }
+}

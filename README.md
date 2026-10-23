@@ -4,6 +4,7 @@ A browser-based platform for composing OpenAPI operations into reusable workflow
 
 Settings includes a [browser-local Bonsai assistant](docs/browser-assistant.md)
 for inspecting the application and arranging workflows without running them.
+[Parakeet speech input](docs/browser-speech.md) can dictate into its message draft.
 
 > [!NOTE]
 > This project is under active development and is currently in a pre-release state.
@@ -204,6 +205,15 @@ branches, functions, and lines are exercised by tests and where additional
 tests are needed.
 
 ## Dependency packages
+
+<a href="https://www.npmjs.com/package/parakeet.js"><img src=".github/badges/version-dependency-parakeet.js.svg" alt="parakeet.js declared version"></a>
+<a href="https://www.npmjs.com/package/onnxruntime-web"><img src=".github/badges/version-dependency-onnxruntime-web.svg" alt="onnxruntime-web declared version"></a>
+
+Provide [browser-local speech input](docs/browser-speech.md) beside Bonsai in
+Settings. Parakeet transcribes microphone or file audio into the message draft;
+ONNX Runtime runs the pinned CPU INT8 or WebGPU FP32 profile locally.
+
+---
 
 <a href="https://www.npmjs.com/package/@actions/artifact"><img src=".github/badges/version-dependency-actions--artifact.svg" alt="@actions/artifact declared version"></a>
 

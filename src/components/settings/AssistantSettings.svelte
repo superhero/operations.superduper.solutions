@@ -16,8 +16,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import type { AssistantMessageView } from "$lib/assistant/pi-session.ts";
   import InferenceWorker from "$lib/assistant/inference.worker.ts?worker&inline";
   import { trackApplicationWorker } from "$lib/application-workers.ts";
+  import SpeechSettings from "./SpeechSettings.svelte";
+  import { appendDictation } from "$lib/speech/config.js";
+  import type { Dictation } from "$lib/speech/controller.js";
 
-  let { host }: { host: AssistantHost } = $props();
+  let { host, visible = true }: { host: AssistantHost; visible?: boolean } = $props();
   let preferenceError = $state("");
   function readPreferences() {
     try { return validateAssistantSettings(JSON.parse(localStorage.getItem(assistantSettingsKey) ?? "{}")); }
@@ -33,6 +36,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let messages = $state.raw<AssistantMessageView[]>([]);
   const messageFields = ["role", "text", "thinking", "tool", "failed", "imageCount"] as const;
   let prompt = $state("");
+  let speechReady = $state(false), speechBusy = $state(false);
+  let speechSession = "", confirmedSpeech = "";
+  let dictationWarning = $state("");
+  function dictate(value: Dictation) {
+    if (value.sessionId !== speechSession) { speechSession = value.sessionId; confirmedSpeech = ""; dictationWarning = ""; }
+    const result = appendDictation(prompt, confirmedSpeech, value.confirmed);
+    prompt = result.draft; confirmedSpeech = result.confirmed;
+    if (result.truncated) dictationWarning = "The message reached its character limit. The complete transcript is kept in local speech diagnostics.";
+  }
   let attachment = $state<{ data: string; mimeType: string } | null>(null);
   let imagePreparing = $state(false);
   let imageInput: HTMLInputElement;
@@ -137,17 +149,17 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     } catch (problem) { failure(problem instanceof Error ? problem.message : String(problem)); }
   }
   function send() {
-    if (phase !== "ready" || imagePreparing || (!prompt.trim() && !attachment)) return;
+    if (phase !== "ready" || imagePreparing || speechBusy || (!prompt.trim() && !attachment)) return;
     phase = "generating"; error = ""; status = "The assistant is working…";
     followNextUpdate = true;
     toolAbort.abort(); toolAbort = new AbortController();
     deadline(loadedSettings.requestTimeout + 2000);
     worker!.postMessage({ type: "send", text: prompt, images: attachment ? [{ type: "image", ...attachment }] : [] });
-    prompt = ""; clearAttachment();
+    prompt = ""; dictationWarning = ""; clearAttachment();
   }
   function reset() {
-    if (phase !== "ready") return;
-    phase = "generating"; error = ""; prompt = ""; clearAttachment(); deadline(10000); worker!.postMessage({ type: "reset" });
+    if (phase !== "ready" || speechBusy) return;
+    phase = "generating"; error = ""; prompt = ""; dictationWarning = ""; clearAttachment(); deadline(10000); worker!.postMessage({ type: "reset" });
   }
   function clearAttachment() {
     imageGeneration++; imagePreparing = false; attachment = null;
@@ -209,18 +221,20 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   </div>
   <form onsubmit={event => { event.preventDefault(); send(); }}>
     <label for="assistant-message">Message</label>
-    <textarea id="assistant-message" rows="3" maxlength="16000" bind:value={prompt} disabled={phase !== "ready" && phase !== "generating"} placeholder="Ask about your workspace…" aria-describedby="assistant-message-hint"
+    <textarea id="assistant-message" rows="3" maxlength="16000" bind:value={prompt} disabled={phase !== "ready" && phase !== "generating" && !speechReady} placeholder="Ask about your workspace…" aria-describedby="assistant-message-hint"
       onkeydown={event => { if (phase === "ready" && event.key === "Enter" && !event.shiftKey && !event.isComposing) { event.preventDefault(); send(); } }}></textarea>
     {#if attachment}<div class="attachment"><img alt="Attachment ready to send" src={`data:${attachment.mimeType};base64,${attachment.data}`} /><button type="button" class="secondary" disabled={busy} onclick={clearAttachment}>Remove image</button></div>{/if}
     {#if imagePreparing}<p role="status">Preparing image…</p>{/if}
     <div class="actions">
-      <button type="submit" disabled={phase !== "ready" || imagePreparing || (!prompt.trim() && !attachment)}>Send message</button>
-      <button type="button" class="secondary" disabled={phase !== "ready"} onclick={reset}>New conversation</button>
+      <button type="submit" disabled={phase !== "ready" || imagePreparing || speechBusy || (!prompt.trim() && !attachment)}>Send message</button>
+      <button type="button" class="secondary" disabled={phase !== "ready" || speechBusy} onclick={reset}>New conversation</button>
       <button type="button" class="secondary" disabled={phase !== "ready" || imagePreparing} onclick={() => imageInput.click()}>Attach image</button>
       <input hidden aria-label="Attach assistant image" type="file" accept="image/png,image/jpeg,image/webp" disabled={phase !== "ready" || imagePreparing} bind:this={imageInput} onchange={event => void prepareImage(event.currentTarget.files?.[0])} />
     </div>
     <p id="assistant-message-hint" class="composer-hint">Enter to send · Shift+Enter for a new line. {phase === "generating" ? "You can draft your next message while waiting." : ""}</p>
   </form>
+  {#if dictationWarning}<p class="error" role="status">{dictationWarning}</p>{/if}
+  <SpeechSettings {visible} onDictation={dictate} onActivity={value => { speechReady = value.ready; speechBusy = value.busy; }} />
   <details class="assistant-details">
     <summary>Configuration<MaterialIcon name="chevron_forward" size={16} /></summary>
     <p>{locked ? "Unload the model to change configuration. " : ""}Preferences are saved on this browser.</p>

@@ -1,0 +1,2 @@
+# Preserve upstream bytes and license formatting in vendored speech resources.
+src/lib/speech/vendor/** -whitespace

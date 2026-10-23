@@ -17,7 +17,7 @@ recovery procedures.
 | Changelog preservation | `changelog.mjs` manages Latest entries and version sections; `prepare-changelog.*` captures commit messages before integration; `prepare-release-changelog.mjs` preserves release source snapshots; `create-release-changelog-pr.*` opens the separate docs PR that versions the changelog before release |
 | Complete validation reuse | `validation-artifacts.mjs` binds tested inputs and artifact hashes; `find-validation.mjs` verifies original successful runs and complete artifacts; `validation-request.mjs` classifies GitHub responses for bounded retries |
 | Shared release identity checks | `release-pr.sh`, sourced by the validation and merge entrypoints |
-| Pages and report publication | `prepare-pages-deployment.sh`, `record-pages-deployment.sh`, `publish-report.mjs`, `publish-status.sh` |
+| Pages and report publication | `bundle-contract.mjs`, `prepare-pages-deployment.sh`, `record-pages-deployment.sh`, `publish-report.mjs`, `publish-status.sh` |
 | Dependency status | `list-dependency-branches.sh`, `update-dependency-status.sh`, `publish-dependency-badges.sh` |
 | Test evidence and reports | `test-results.mjs` checks discovery, execution proofs and coverage; `generate-test-report.mjs` merges Vitest blobs into the complete HTML directory |
 | Generated badges | `generate-*-badge.sh`, `generate-dependency-badges.sh` |

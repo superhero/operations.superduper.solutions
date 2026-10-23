@@ -2,6 +2,28 @@
 
 ## Latest
 
+<!-- changelog-commit:779efe4d9e29f27b72f5bef01656404be6f2fd3b -->
+### Commit [`779efe4`](https://github.com/superhero/operations.superduper.solutions/commit/779efe4d9e29f27b72f5bef01656404be6f2fd3b)
+
+```text
+feat(assistant): add browser-local Parakeet dictation
+
+Append confirmed speech to the Bonsai draft without automatic sending.
+Preserve pinned profiles, local recordings, cached restoration and bounded
+startup/retry cleanup. Stream large GPU weights into browser storage.
+
+Publish optional speech modules through a shared deployment/artifact contract
+that includes every worker, chunk and license in validation and reuse hashes.
+
+```
+
+<!-- changelog-commit:83b9e97b10469ccb1c9025daecadaeb8d5b4c9c5 -->
+### Commit [`83b9e97`](https://github.com/superhero/operations.superduper.solutions/commit/83b9e97b10469ccb1c9025daecadaeb8d5b4c9c5)
+
+```text
+Merge branch 'develop' into feature/parakeet-dictation
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.60

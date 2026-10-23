@@ -1,0 +1,12 @@
+{
+  "repository": "https://github.com/TEN-framework/ten-vad",
+  "revision": "d68ab71c8d5fbd8f98e97ae7c9986af76b5d72b1",
+  "path": "lib/Web",
+  "license": "Apache-2.0 with additional conditions; see LICENSE and NOTICES",
+  "sha256": {
+    "ten_vad.js": "6ad8404430c1fb33b5910032b971e1a4f1d4ca3c9bf76fe456f0b5dcd9e97c7e",
+    "ten_vad.wasm": "1ec0b9640683987e15a4e54e4ce5642b2447c6e5d82b1be889b5099c75434fc3",
+    "LICENSE": "03d862b922867b8c3406a0c17791e256ed3d76f197d88c1996c4aebfb79f688e",
+    "NOTICES": "83a1d666450e06c846be76efcdd311294c28d07417bed0cb119d6400ba3cdc3b"
+  }
+}

@@ -4,7 +4,7 @@
 import { After, AfterAll, Before, BeforeAll, Status, World, setDefaultTimeout, setWorldConstructor } from '@cucumber/cucumber';
 import { chromium, firefox, webkit } from '@playwright/test';
 import { createServer } from 'node:http';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { getHeapStatistics } from 'node:v8';
 import { resolve } from 'node:path';
@@ -51,6 +51,12 @@ BeforeAll(async function () {
   };
   const icons = new Map(await Promise.all(Object.entries(iconTypes).map(async ([filename, type]) =>
     [`/${filename}`, { type, bytes: await readFile(`dist/${filename}`) }])));
+  const speechAssets = new Map(await Promise.all((await readdir('dist/speech', { recursive: true, withFileTypes: true }))
+    .filter(entry => entry.isFile()).map(async entry => {
+      const path = resolve(entry.parentPath, entry.name);
+      const url = '/speech/' + path.slice(resolve('dist/speech').length + 1);
+      return [url, { bytes: await readFile(path), type: entry.name.endsWith('.js') ? 'text/javascript' : 'application/octet-stream' }];
+    })));
   if (typeof this.parameters.fixtureBundlesFile !== 'string')
     throw new Error('Start browser scenarios with npm run test:browser or node tests/browser/run.mjs.');
   const { repositoryFixture, errorHistoryFixture, vaultFixture, policyFixture, kdfFixture, schemaFixture } =
@@ -90,6 +96,10 @@ BeforeAll(async function () {
     } else if (request.url === '/vault-fixture.html') {
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       response.end('<!doctype html><title>Vault persistence and execution fixture</title>');
+    } else if (speechAssets.has(request.url)) {
+      const asset = speechAssets.get(request.url);
+      response.writeHead(200, { 'content-type': asset.type,
+        'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'credentialless' }); response.end(asset.bytes);
     } else if (icons.has(request.url)) {
       const icon = icons.get(request.url);
       response.writeHead(200, { 'content-type': icon.type });

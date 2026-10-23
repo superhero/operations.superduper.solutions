@@ -1,9 +1,10 @@
 Feature: Production build
 
-  Scenario: Build produces one embedded application and the exact hosting compatibility files
+  Scenario: Build produces an embedded application with optional speech resources
     Given the production build has completed
-    Then the dist directory contains only the application page hosting headers and favicon compatibility files
+    Then the dist directory contains the application hosting files and optional speech resources
     And the hosting headers enable cross-origin isolation
+    And optional speech resources preserve runtime isolation and license notices
 
   Scenario: Production page exposes operations and the workflow editor
     Given the production build has completed
