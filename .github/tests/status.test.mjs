@@ -9,6 +9,7 @@ import { REPOSITORY } from "./support.mjs";
 import { publishReport } from "../scripts/publish-report.mjs";
 import { REPORT_FILES, inventory } from "../scripts/validation-artifacts.mjs";
 import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { toolchainPackages } from "../../tests/gherkin/execution-fingerprint.mjs";
 
 Given("a status file for {string} with content type {string}", function (key, type)
@@ -256,10 +257,15 @@ Given("the report is diagnostic rather than complete validation", function ()
   const value = JSON.parse(readFileSync(path)); value.complete = false; value.diagnostic = true;
   writeFileSync(path, JSON.stringify(value));
 });
-function publishFixture(world, failure) {
+function publicationClock(state) {
+  state.clock = 0;
+  return { clock: () => state.clock, pause: async ms => { state.clock += ms; } };
+}
+async function publishFixture(world, failure) {
   const state = world.reportPublication;
   try {
-    state.plan = publishReport(state.directory, state.prefix, {
+    state.plan = await publishReport(state.directory, state.prefix, {
+      ...publicationClock(state),
       manifest: state.manifest, expectedProvenance: state.expectedProvenance,
       run(command, [script, file, key, type]) {
         assert.equal(command, "bash"); assert.equal(script, ".github/scripts/publish-status.sh");
@@ -272,9 +278,9 @@ function publishFixture(world, failure) {
     });
   } catch (error) { state.error = error; }
 }
-When("the report directory is published successfully", function () { publishFixture(this); });
-When("report publication fails on a CSS asset", function () { publishFixture(this, "asset"); });
-When("a newer release is detected before publishing report pointers", function () { publishFixture(this, "newer"); });
+When("the report directory is published successfully", async function () { await publishFixture(this); });
+When("report publication fails on a CSS asset", async function () { await publishFixture(this, "asset"); });
+When("a newer release is detected before publishing report pointers", async function () { await publishFixture(this, "newer"); });
 Then("report assets retain their MIME types under an immutable prefix", function ()
 {
   const state = this.reportPublication;
@@ -332,7 +338,7 @@ Given("the validated publication input has {string}", function (defect) {
   else if (defect === 'manifest from another commit') state.manifest.testedSha = 'f'.repeat(40);
   else assert.fail(`Unknown publication integrity defect: ${defect}`);
 });
-When("the downloaded report changes during publication", function () { publishFixture(this, 'concurrent'); });
+When("the downloaded report changes during publication", async function () { await publishFixture(this, 'concurrent'); });
 Then("published assets retain the original validated snapshot", function () {
   const state = this.reportPublication;
   assert.ifError(state.error);
@@ -341,4 +347,95 @@ Then("published assets retain the original validated snapshot", function () {
     assert.equal(createHash('sha256').update(call.contents).digest('hex'), state.manifest.files['test-report'][path]);
   }
   assert.equal(readFileSync(join(state.directory, 'ui/assets/index.css'), 'utf8'), 'Changed after snapshot');
+});
+
+When('report assets are uploaded with asynchronous requests', async function () {
+  const state = this.reportPublication;
+  state.active = 0; state.peak = 0; state.finished = []; state.starts = [];
+  try {
+    state.plan = await publishReport(state.directory, state.prefix, {
+      ...publicationClock(state),
+      manifest: state.manifest, expectedProvenance: state.expectedProvenance,
+      async run(command, [script, file, key, type]) {
+        assert.equal(command, 'bash'); assert.equal(script, '.github/scripts/publish-status.sh');
+        state.calls.push({ file, key, type, contents: readFileSync(file) });
+        state.starts.push(state.clock);
+        state.active++; state.peak = Math.max(state.peak, state.active);
+        if (key === `${state.prefix}/index.html`)
+          assert.equal(state.finished.length, Object.keys(state.manifest.files['test-report']).length - 1,
+            'The report entry must wait for every immutable asset to finish');
+        await new Promise(resolve => setImmediate(resolve));
+        state.active--; state.finished.push(key);
+        return { status: state.failParallelAsset && key.endsWith('.css') ? 1 : 0 };
+      },
+      guard() { state.guards++; },
+    });
+  } catch (error) { state.error = error; }
+});
+
+Given('an asynchronous report asset upload will fail', function () {
+  this.reportPublication.failParallelAsset = true;
+});
+
+Then('report publication uses three concurrent uploads and waits before moving pointers', function () {
+  const state = this.reportPublication;
+  assert.ifError(state.error);
+  assert.equal(state.peak, 3);
+  assert.equal(state.active, 0);
+  for (let index = 1; index < state.starts.length; index++)
+    assert.ok(state.starts[index] - state.starts[index - 1] >= 350,
+      'Upload starts must retain the REST API pacing even when requests overlap');
+  assert.equal(state.finished.length, Object.keys(state.manifest.files['test-report']).length + 6);
+  assert.deepEqual(state.finished.slice(-2), ['test-coverage.html', 'test-report.html']);
+});
+
+Then('failed concurrent publication waits for active uploads without exposing a partial report', function () {
+  const state = this.reportPublication;
+  assert.ok(state.error);
+  assert.equal(state.peak, 3);
+  assert.equal(state.active, 0, 'Every started upload must settle before failure is returned');
+  assert.ok(state.calls.every(call => call.key.startsWith(`${state.prefix}/`) && call.key !== `${state.prefix}/index.html`));
+  assert.equal(state.guards, 0);
+});
+
+When('the publisher runs real upload subprocesses against a local recorder', function () {
+  const state = this.reportPublication, root = this.automation.root;
+  const scripts = join(root, '.github/scripts');
+  mkdirSync(scripts, { recursive: true });
+  writeFileSync(join(scripts, 'publish-status.sh'), `#!/usr/bin/env bash
+set -euo pipefail
+node -e 'require("node:fs").appendFileSync("transport-events.jsonl", JSON.stringify({event:process.argv[1],key:process.argv[2]})+"\\n")' start "$2"
+/bin/sleep 1.2
+node -e 'require("node:fs").appendFileSync("transport-events.jsonl", JSON.stringify({event:process.argv[1],key:process.argv[2]})+"\\n")' finish "$2"
+`);
+  const module = new URL('../scripts/publish-report.mjs', import.meta.url).href;
+  const source = `import { publishReport } from ${JSON.stringify(module)};
+await publishReport(${JSON.stringify(state.directory)}, ${JSON.stringify(state.prefix)},
+  ${JSON.stringify({ manifest: state.manifest, expectedProvenance: state.expectedProvenance })});`;
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', source], {
+    cwd: root, env: this.automation.env, encoding: 'utf8', timeout: 30000,
+  });
+  assert.ifError(result.error);
+  assert.equal(result.status, 0, result.stderr);
+  state.transportEvents = readFileSync(join(root, 'transport-events.jsonl'), 'utf8')
+    .trim().split('\n').map(JSON.parse);
+});
+
+Then('real upload processes overlap within the limit and complete before publication returns', function () {
+  const state = this.reportPublication, active = new Set(), finished = new Set();
+  let peak = 0;
+  for (const { event, key } of state.transportEvents) {
+    if (event === 'start') {
+      if (key === `${state.prefix}/index.html`)
+        assert.equal(finished.size, Object.keys(state.manifest.files['test-report']).length - 1);
+      if (!key.startsWith(`${state.prefix}/`))
+        assert.ok(finished.has(`${state.prefix}/index.html`));
+      assert.ok(!active.has(key)); active.add(key); peak = Math.max(peak, active.size);
+    } else {
+      assert.ok(active.delete(key)); finished.add(key);
+    }
+  }
+  assert.equal(peak, 3);
+  assert.equal(active.size, 0);
+  assert.equal(finished.size, Object.keys(state.manifest.files['test-report']).length + 6);
 });
