@@ -1,0 +1,45 @@
+{
+  "publisherModel": "nvidia/parakeet-tdt-0.6b-v3",
+  "publisherRevision": "541d1f99c6b0c3cd0b11a95167540bb8edefd82b",
+  "browserArtifact": "ysdede/parakeet-tdt-0.6b-v3-onnx",
+  "revision": "f88260fa0777fe0868dda6df85d1a98f012a4a7a",
+  "files": [
+    {
+      "file": "decoder_joint-model.int8.onnx",
+      "bytes": 18202004,
+      "sha256": "eea7483ee3d1a30375daedc8ed83e3960c91b098812127a0d99d1c8977667a70",
+      "gitBlob": "86f5a1716b5726e3b80701ef99076d44b3c36b0c"
+    },
+    {
+      "file": "encoder-model.fp16.onnx",
+      "bytes": 1238960452,
+      "sha256": "a2bdeeb99cb7e5548818e823127b33854dd0c26f5d0c8da91effdd895ea0e717",
+      "gitBlob": "433925daa5aaccca72c99269b1218fb4acee2392"
+    },
+    {
+      "file": "encoder-model.int8.onnx",
+      "bytes": 652183999,
+      "sha256": "6139d2fa7e1b086097b277c7149725edbab89cc7c7ae64b23c741be4055aff09",
+      "gitBlob": "f60d30a325223080203157bba7bf86df44a69dc3"
+    },
+    {
+      "file": "vocab.txt",
+      "bytes": 102132,
+      "sha256": null,
+      "gitBlob": "6fc5460dee56572d6b34a19e42a45aeddc245cde"
+    },
+    {
+      "file": "encoder-model.onnx",
+      "bytes": 41770866,
+      "sha256": "98a74b21b4cc0017c1e7030319a4a96f4a9506e50f0708f3a516d02a77c96bb1",
+      "gitBlob": "ddee653804b6de146c6ef9bc3477cbe0c21b9786"
+    },
+    {
+      "file": "encoder-model.onnx.data",
+      "bytes": 2435420160,
+      "sha256": "9a22d372c51455c34f13405da2520baefb7125bd16981397561423ed32d24f36",
+      "gitBlob": "8cf944dd1b9cf1fc21deebe73298153ce9049f5c"
+    }
+  ],
+  "provenance": "Browser ONNX conversion maintained by parakeet.js author; not NVIDIA-native weights. Selected by requested parakeet.js browser integration. No local conversion."
+}

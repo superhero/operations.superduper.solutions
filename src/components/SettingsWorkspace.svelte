@@ -364,10 +364,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {#if assistantHost}
       <Disclosure class="catalog-group settings-section" label="Assistant" tooltipEnabled={false} open={active && openSection === "assistant"} onToggle={next => openSection = next ? "assistant" : null}>
         {#snippet summary()}
-          <div class="section-heading"><h2>Assistant</h2><span class="section-subtitle">Configure and message a browser-local Bonsai model</span></div>
+          <div class="section-heading"><h2>Assistant</h2><span class="section-subtitle">Chat with Bonsai and dictate with Parakeet in this browser</span></div>
           <MaterialIcon name="chevron_forward" size={17} />
         {/snippet}
-        {#if assistantBuilt}<AssistantSettings host={assistantHost} />{/if}
+        {#if assistantBuilt}<AssistantSettings host={assistantHost} visible={active && openSection === "assistant"} />{/if}
       </Disclosure>
     {/if}
     <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} onClosed={() => { storageBuilt = false; storageReady = false; storageDismissing = false; }} animateSize open={active && openSection === "storage"} onToggle={(next) => { if (next) { storageReady = false; storageBuilt = false; storageDismissing = false; } openSection = next ? "storage" : null; }}>

@@ -58,17 +58,13 @@ while [[ "$ancestor" != / && "$ancestor" != . ]]; do
   [[ ! -L "$ancestor" ]] || fail "Bundle directory has a symlink ancestor: $ancestor."
   ancestor="$(dirname -- "$ancestor")"
 done
-shopt -s nullglob dotglob
-files=("$bundle"/*)
-# Keep the complete release contract in bytewise filename order. Every hosted
-# icon participates in reuse detection, including compatibility-only exports.
-bundle_files=(_headers apple-touch-icon.png favicon.bmp favicon.gif favicon.ico favicon.jpg favicon.png favicon.ppm favicon.svg favicon.tiff index.html)
-[[ ${#files[@]} -eq ${#bundle_files[@]} ]] ||
-  fail 'Expected only the eleven nonempty regular application, hosting, and favicon files; additional files, directories, and symlinks are not supported.'
-for filename in "${bundle_files[@]}"; do
-  [[ -f "$bundle/$filename" && ! -L "$bundle/$filename" && -s "$bundle/$filename" ]] ||
-    fail 'Expected only the eleven nonempty regular application, hosting, and favicon files; additional files, directories, and symlinks are not supported.'
-done
+temporary="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/prepare-pages-deployment.XXXXXX")"
+trap 'rm -rf -- "$temporary"' EXIT
+# The same path contract governs deployment and verified artifact reuse. NUL
+# separation preserves filenames; a failed inventory never reaches publication.
+node "$(dirname "${BASH_SOURCE[0]}")/bundle-contract.mjs" "$bundle" > "$temporary/bundle-files" ||
+  fail 'Expected the eleven nonempty regular application, hosting, and favicon files with optional complete speech resources; unsupported files, directories, and symlinks are not allowed.'
+mapfile -d '' -t bundle_files < "$temporary/bundle-files"
 # Include every file's bytes and fixed filename, independent of build directory.
 bundle_hash="$(cd -- "$bundle" && sha256sum -- "${bundle_files[@]}" | sha256sum)" || fail 'Could not hash the application bundle.'
 bundle_hash="${bundle_hash%% *}"
@@ -81,8 +77,6 @@ skipped=false
 deployment_id=''
 deployment_url=''
 
-temporary="$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/prepare-pages-deployment.XXXXXX")"
-trap 'rm -rf -- "$temporary"' EXIT
 cloudflare() {
   local status=0 reason
   curl --fail-with-body --silent --show-error --connect-timeout 10 --max-time 60 --request GET \

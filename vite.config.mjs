@@ -7,6 +7,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
+import { parakeetSerialInitialization } from "./build/parakeet-plugin.mjs";
 
 const isolationHeaders = {
   "Cross-Origin-Opener-Policy": "same-origin",
@@ -61,23 +62,25 @@ export default defineConfig({
   root: "src",
   // File parsing starts in a worker; prepare its CJS dependency before the
   // first upload rather than discovering it during worker module loading.
-  optimizeDeps: { include: ["papaparse"] },
+  optimizeDeps: { include: ["papaparse"], exclude: ["parakeet.js", "onnxruntime-web"] },
   // Visulima handles runtime errors; Vite's own forwarding can report failed
   // transmissions back through console.error and create a transport loop.
   server: { forwardConsole: false, headers: isolationHeaders },
   preview: { headers: isolationHeaders },
   resolve: {
     alias: {
+      "onnxruntime-web": fileURLToPath(new URL("./node_modules/onnxruntime-web/dist/ort.webgpu.min.mjs", import.meta.url)),
       $lib: fileURLToPath(new URL("./src/lib", import.meta.url))
     }
   },
   plugins: [
+    parakeetSerialInitialization(),
     {
       name: "operations-vault-notices",
       transformIndexHtml: {
         order: "post",
         handler(html) {
-          const notice = ["./src/lib/secrets/NOTICES.md", "./src/lib/assistant/NOTICES.md"]
+          const notice = ["./src/lib/secrets/NOTICES.md", "./src/lib/assistant/NOTICES.md", "./src/lib/speech/NOTICES.md"]
             .map(path => readFileSync(new URL(path, import.meta.url), "utf8")).join("\n\n");
           return html.replace("</head>", `<!--\n${notice.replaceAll("--", "—")}\n-->\n</head>`);
         }

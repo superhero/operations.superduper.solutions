@@ -63,7 +63,8 @@
     "src/workflow-layout.test.mjs",
     "src/workflow-response.test.mjs",
     "src/workflow-defensive.test.mjs",
-    "src/browser-assistant.test.mjs"
+    "src/browser-assistant.test.mjs",
+    "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
     "src/workflow-processing.feature",
@@ -129,6 +130,7 @@
     "src/workflow-layout.feature",
     "src/workflow-response.feature",
     "src/workflow-defensive.feature",
-    "src/browser-assistant.feature"
+    "src/browser-assistant.feature",
+    "src/parakeet-streaming.feature"
   ]
 }

@@ -9,14 +9,14 @@ import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { parseChangelog } from "./changelog.mjs";
 import { toolchainPackages } from "../../tests/gherkin/execution-fingerprint.mjs";
+import { validBundlePaths } from './bundle-contract.mjs';
+export { BUNDLE_FILES } from './bundle-contract.mjs';
 
 export const ARTIFACT_NAMES = ["bundle", "coverage", "test-report", "validation-manifest"];
 export const REPORT_FILES = ["index.html", "ui/html.meta.json.gz", "results.json", "provenance.json",
   "coverage/index.html", "coverage/coverage-summary.json", "badges/test-scenarios.json", "badges/test-scenarios.svg",
   "badges/test-coverage.json", "badges/test-coverage.svg"];
 export const MANIFEST_NAME = "validation-manifest.json";
-export const BUNDLE_FILES = ["_headers", "apple-touch-icon.png", "favicon.bmp", "favicon.gif", "favicon.ico",
-  "favicon.jpg", "favicon.png", "favicon.ppm", "favicon.svg", "favicon.tiff", "index.html"];
 export const isSha = value => typeof value === "string" && /^[0-9a-f]{40}$/.test(value);
 export const isPositiveInteger = value => Number.isSafeInteger(value) && value > 0;
 export const isRepository = value => typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9_.-]*\/[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(value);
@@ -109,7 +109,7 @@ export function inventory(directory, { coverage = false } = {})
 
 export function validateArtifactContract(files)
 {
-  if (JSON.stringify(Object.keys(files.bundle).sort()) !== JSON.stringify([...BUNDLE_FILES].sort())
+  if (!validBundlePaths(Object.keys(files.bundle))
     || !files.coverage["coverage-summary.json"] || !files.coverage["index.html"]
     || REPORT_FILES.some(path => !files["test-report"][path])
     || !Object.keys(files["test-report"]).some(path => /^ui\/assets\/.+\.js$/.test(path))

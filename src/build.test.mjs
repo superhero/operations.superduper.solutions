@@ -10,9 +10,20 @@ Given("the production build has completed", async function ()
   html = await readFile("dist/index.html", "utf8");
 });
 
-Then("the dist directory contains only the application page hosting headers and favicon compatibility files", async function ()
+Then("the dist directory contains the application hosting files and optional speech resources", async function ()
 {
-  assert.deepEqual((await readdir("dist")).sort(), ["_headers", "index.html", ...faviconFiles].sort());
+  assert.deepEqual((await readdir("dist")).sort(), ["_headers", "index.html", "speech", ...faviconFiles].sort());
+});
+
+Then("optional speech resources preserve runtime isolation and license notices", async function () {
+  const speech = await readFile('dist/speech/worker.js', 'utf8');
+  assert.match(speech, /encoder_session_start|Creating encoder session/);
+  assert.match(speech, /1\.30\.0/); assert.match(speech, /f88260fa0777fe0868dda6df85d1a98f012a4a7a/);
+  assert.doesNotMatch(html, /ortWasmThreaded|class ContinuousFeatures/);
+  assert.match(await readFile('dist/speech/features.js', 'utf8'), /mel-/);
+  assert.match(await readFile('dist/speech/licenses/TEN-VAD-LICENSE', 'utf8'), /additional conditions/);
+  assert.match(await readFile('dist/speech/licenses/onnxruntime-LICENSE', 'utf8'), /Microsoft/);
+  assert.match(html, /Speech dependency notices/);
 });
 
 Then("the hosting headers enable cross-origin isolation", async function ()
