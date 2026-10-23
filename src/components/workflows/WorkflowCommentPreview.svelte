@@ -6,8 +6,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <script lang="ts">
   import { renderMarkdown } from "$lib/markdown.ts";
-  let { text, scope }: { text: string; scope: string } = $props();
-  const html = $derived(renderMarkdown(text, scope));
+  let { text, scope, allowImages = true }: { text: string; scope: string; allowImages?: boolean } = $props();
+  const html = $derived(renderMarkdown(text, scope, allowImages));
 </script>
 
 <div class="comment-markdown">{@html html}</div>

@@ -48,6 +48,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { defaultKeybindings, type Keybindings } from "$lib/keybindings.ts";
   import LocaleSettings from "./settings/LocaleSettings.svelte";
   import SchemaSettings from "./settings/SchemaSettings.svelte";
+  import AssistantSettings from "./settings/AssistantSettings.svelte";
+  import type { AssistantHost } from "$lib/assistant/tools.ts";
   import { getSchemaLibrary, loadSchemaLibrary, uploadSchema, replaceSchema, renameSchema, setSchemaEnabled, deleteSchema, downloadSchema, loadSchemaSource, releaseSchemaSource,
     loadSchemaHistory, loadSchemaRevisionDiff, loadSchemaRevisionFieldDiff, resolveSchemaConflicts, dismissSchemaIncoming } from "$lib/schema-library.ts";
   import { defaultLocaleSettings, type LocaleSettings as LocalePreferences } from "$lib/locale-settings.ts";
@@ -60,7 +62,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     locale = defaultLocaleSettings, localeError = "", onLocaleChange = () => {}, onRetryLocale = () => {},
     developerToolbar, developerToolbarError = "", onDeveloperToolbarChange,
     evaluationDetails, evaluationDetailsError = "", onEvaluationDetailsChange,
-    settingsUnavailable, settingsRetrying, onRetrySettings }: {
+    settingsUnavailable, settingsRetrying, onRetrySettings, assistantHost }: {
+    assistantHost?: AssistantHost;
     active?: boolean;
     openSection?: SettingsSection;
     dark: boolean;
@@ -100,6 +103,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let storageBuilt = $state(false);
   let storageReady = $state(false);
   let storageDismissing = $state(false);
+  let assistantBuilt = $state(false);
+  $effect(() => { if (active && openSection === "assistant") assistantBuilt = true; });
   $effect(() => {
     if (!active || openSection !== "storage" || storageBuilt) return;
     let cancelled = false;
@@ -356,6 +361,15 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         {/if}
       </fieldset>
     </Disclosure>
+    {#if assistantHost}
+      <Disclosure class="catalog-group settings-section" label="Assistant" tooltipEnabled={false} open={active && openSection === "assistant"} onToggle={next => openSection = next ? "assistant" : null}>
+        {#snippet summary()}
+          <div class="section-heading"><h2>Assistant</h2><span class="section-subtitle">Configure and message a browser-local Bonsai model</span></div>
+          <MaterialIcon name="chevron_forward" size={17} />
+        {/snippet}
+        {#if assistantBuilt}<AssistantSettings host={assistantHost} />{/if}
+      </Disclosure>
+    {/if}
     <Disclosure class="catalog-group settings-section" label="Browser" tooltipEnabled={false} onClosed={() => { storageBuilt = false; storageReady = false; storageDismissing = false; }} animateSize open={active && openSection === "storage"} onToggle={(next) => { if (next) { storageReady = false; storageBuilt = false; storageDismissing = false; } openSection = next ? "storage" : null; }}>
       {#snippet summary()}
         <div class="section-heading"><h2>Browser</h2><span class="section-subtitle">Monitor browser resource usage</span></div>

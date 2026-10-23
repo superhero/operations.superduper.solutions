@@ -2,6 +2,9 @@
 
 A browser-based platform for composing OpenAPI operations into reusable workflows.
 
+Settings includes a [browser-local Bonsai assistant](docs/browser-assistant.md)
+for inspecting the application and arranging workflows without running them.
+
 > [!NOTE]
 > This project is under active development and is currently in a pre-release state.
 

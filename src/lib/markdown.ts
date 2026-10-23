@@ -27,6 +27,10 @@ markdown.renderer.rules.link_open = (tokens, index, options, _env, renderer) => 
   token.attrJoin("class", "nodrag nopan nokey");
   return renderer.renderToken(tokens, index, options);
 };
+const renderImage = markdown.renderer.rules.image!;
+markdown.renderer.rules.image = (tokens, index, options, env, renderer) => env!.images === false
+  ? markdown.utils.escapeHtml(tokens[index]!.content)
+  : renderImage(tokens, index, options, env, renderer);
 // The tasklist plugin uses per-render IDs; namespace both sides of its labels.
 for (const name of ["checkbox_input", "label_open"]) {
   markdown.renderer.rules[name] = (tokens, index, options, env, renderer) => {
@@ -38,8 +42,8 @@ for (const name of ["checkbox_input", "label_open"]) {
     return renderer.renderToken(tokens, index, options);
   };
 }
-export function renderMarkdown(text: string, scope: string): string {
+export function renderMarkdown(text: string, scope: string, images = true): string {
   // Footnote IDs are unique to a rendered surface and cannot inject attributes.
   const docId = Array.from(scope, char => char.codePointAt(0)!.toString(16)).join("-");
-  return markdown.render(text, { docId: `markdown-${docId}` });
+  return markdown.render(text, { docId: `markdown-${docId}`, images });
 }
