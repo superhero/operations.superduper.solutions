@@ -165,6 +165,10 @@ When("I import, export and reimport the near-limit QA workflow", async function 
   const upload = this.page.getByLabel("Import workflow file", { exact: true });
   await upload.setInputFiles({ name: "compact-workflow.json", mimeType: "application/json", buffer: this.qaBoundaryBuffer });
   await expectWorkflowName(this.page, this.qaBoundary.name);
+  // This fixture is almost 2 MB: finish its real Git/IndexedDB save before
+  // starting another import rather than racing two persistence operations.
+  const saved = this.page.locator('.site-header .document-meta').getByText('Saved locally', { exact: true });
+  await expect(saved).toBeVisible({ timeout: 15000 });
   this.qaFirstImport = await readExport(this.page);
   assert.ok(this.qaFirstImport.buffer.length <= maxFileSize, "The exported file must fit the import byte limit.");
   await upload.setInputFiles({ name: "exported-workflow.json", mimeType: "application/json", buffer: this.qaFirstImport.buffer });
@@ -172,7 +176,7 @@ When("I import, export and reimport the near-limit QA workflow", async function 
     const fixture = await import('/workflow-repository-fixture.js');
     // Keep multi-megabyte documents in the browser when only their count matters.
     return (await fixture.callRepository('list', [])).length;
-  })).toBe(2);
+  }), { timeout: 15000 }).toBe(2);
   await expect(replacementDialog(this.page)).toHaveCount(0);
 });
 

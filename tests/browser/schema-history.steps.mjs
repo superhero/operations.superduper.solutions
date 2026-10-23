@@ -259,12 +259,26 @@ Then('schema settings explain deletion restrictions and cancel confirmation when
     return page.getByRole('region', { name: 'OpenAPI documents', exact: true });
   };
   const panel = await open();
+  const hoverDeletion = async (card, remove, message) => {
+    // Revealing a card changes its height. Finish that motion, then scroll and
+    // let its scroll event dismiss any old tooltip before entering the button.
+    await card.evaluate(async element => {
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      await Promise.allSettled(element.getAnimations({ subtree: true })
+        .filter(animation => animation.effect?.getComputedTiming().iterations !== Infinity).map(animation => animation.finished));
+    });
+    await remove.scrollIntoViewIfNeeded();
+    await expect(remove).toBeInViewport();
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.mouse.move(0, 0);
+    await remove.hover();
+    await expect(page.getByRole('tooltip')).toHaveText(message);
+  };
   for (const id of ['demo', 'httpbin']) {
     const card = await expandSchemaCard(panel.locator(`[data-schema-id="${id}"]`));
     const remove = card.getByRole('button', { name: /^Delete / });
     await expect(remove).toBeDisabled();
-    await remove.hover();
-    await expect(page.getByRole('tooltip')).toHaveText('Default schemas cannot be deleted.');
+    await hoverDeletion(card, remove, 'Default schemas cannot be deleted.');
     await card.getByRole('switch').click();
     await expect(card.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
     await expect(remove).toBeDisabled();
@@ -284,8 +298,7 @@ Then('schema settings explain deletion restrictions and cancel confirmation when
   const enabled = uploaded.getByRole('switch');
   const confirmation = uploaded.getByRole('group', { name: `Confirm deletion of ${title}`, exact: true });
   await expect(remove).toBeDisabled();
-  await remove.hover();
-  await expect(page.getByRole('tooltip')).toHaveText('Disable this schema before deleting it.');
+  await hoverDeletion(uploaded, remove, 'Disable this schema before deleting it.');
   await enabled.click();
   await expect(enabled).toHaveAttribute('aria-checked', 'false');
   await expect(remove).toBeEnabled();
