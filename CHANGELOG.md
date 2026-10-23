@@ -4,6 +4,29 @@
 
 <!-- changelog-latest-end -->
 
+## 0.0.58
+
+<!-- changelog-commit:d9ddf5631b658aa490eeacc6991f935d556c6579 -->
+### Commit [`d9ddf56`](https://github.com/superhero/operations.superduper.solutions/commit/d9ddf5631b658aa490eeacc6991f935d556c6579)
+
+```text
+fix(ci): publish report assets within the production job limit
+
+The 1697-file report exhausted the 20-minute production job deadline after
+the application had deployed successfully. Upload independent verified
+assets with three workers, spacing starts by 350ms to leave REST API
+capacity for other operations.
+
+Wait for every started upload before handling failure or removing the
+snapshot. Publish the report entry, badges and stable pointers only after
+all assets succeed. Forward cancellation to owned upload process groups
+and report completed asset counts.
+
+Cover overlap, pacing, failure drainage, provenance and pointer order,
+including the real subprocess transport with a local recording endpoint.
+
+```
+
 ## 0.0.57
 
 <!-- changelog-commit:1380178edebd71807fb603262a2652f0f860cc08 -->
