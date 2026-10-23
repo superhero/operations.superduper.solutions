@@ -17,9 +17,10 @@ export async function installAssistantFixture(page) {
       const pending = new Map(); let next = 0, stopped = false;
       const worker = new EventTarget();
       const emit = data => { if (!stopped) { const event = new MessageEvent('message', { data }); worker.onmessage?.(event); worker.dispatchEvent(event); } };
+      record.emit = emit;
       const call = (name, args) => new Promise(resolve => { const id = ++next; pending.set(id, resolve); emit({ type: 'tool', id, name, args }); });
       const run = async text => {
-        if (record.behavior === 'slow') return;
+        if (record.behavior === 'slow' || record.behavior === 'manual') return;
         if (record.behavior === 'error') { emit({ type: 'error', message: 'Synthetic inference failure' }); return; }
         const messages = [{ role: 'user', text }];
         const tool = async (name, args) => {
@@ -45,7 +46,7 @@ export async function installAssistantFixture(page) {
         else if (message.type === 'check') emit({ type: 'compatibility', value: { ready: true, summary: 'WebGPU compute verified.', fp32: true, fp16: true, adapter: 'Scripted test GPU', detail: '' } });
         else if (message.type === 'load') { record.settings = message.settings; emit({ type: 'ready' }); }
         else if (message.type === 'reset') { emit({ type: 'update', messages: [], error: '' }); emit({ type: 'done' }); }
-        else if (message.type === 'send') void run(message.text);
+        else if (message.type === 'send') { record.lastMessage = message; void run(message.text); }
       });
       worker.terminate = () => { if (!stopped) { stopped = true; record.terminated++; } };
       return worker;

@@ -19,3 +19,5 @@ Feature: Browser-local Bonsai assistant boundaries
     Then the local Pi agent streams answers and uses fresh application tool results
   Scenario: Pi requests remain cancellable and bounded
     Then the local Pi agent reports parser failures cancellation and request limits
+  Scenario: Token bursts defer transcript projection without losing image or final state
+    Then assistant publication coalesces token bursts and retains image message identity

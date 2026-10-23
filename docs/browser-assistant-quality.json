@@ -1,0 +1,507 @@
+{
+  "measuredAt": "2026-10-23",
+  "baselineRevision": "a85deb56792cd94b23778f6821b68a1186ae968f",
+  "sourceSha256": {
+    "src/components/settings/AssistantSettings.svelte": "21770337c477babf6e3252d26e21950c57d1651d49b7070273a190ac053ea0c3",
+    "src/lib/assistant/pi-session.ts": "7b1aa2faab1cce4004a70a2ca8656a13de29a3aabffada0948d48ddbb8a7471d",
+    "src/lib/assistant/inference.worker.ts": "61d2455b3920b47baf78ad7e340121d3126d2e30bc1c65a07d892d75b01e99d2"
+  },
+  "rendering": {
+    "conditions": {
+      "node": "26.7.0",
+      "playwright": "1.63.0",
+      "chromium": "153.0.8010.12",
+      "headless": true,
+      "cpuLimit": 1,
+      "memoryMiB": 2048,
+      "additionalSwapMiB": 0,
+      "processLimit": 256,
+      "viewport": {
+        "width": 1280,
+        "height": 1000,
+        "deviceScaleFactor": 1
+      },
+      "storage": "Fresh synthetic browser context for every sample",
+      "network": "Local production HTML, all assets inline; no routes or network/CPU emulation",
+      "inference": "Scripted updates; not a GPU inference measurement",
+      "dataset": "40 completed user/tool/Markdown messages plus one streamed reply; all tool results expanded for equivalent content. 80 complete snapshots at 40 ms intervals.",
+      "readiness": "Prepare history DOM, open tool details, force initial geometry, scroll to bottom and drain two frames before counters.",
+      "measurement": "Untraced CDP script/layout/style counters, frame gaps, Long Tasks, complete output and scroll assertions. Automation/fixture work included. First-open timing includes actionability/animation.",
+      "pairOrder": [
+        "baseline",
+        "candidate",
+        "candidate",
+        "baseline",
+        "baseline",
+        "candidate"
+      ]
+    },
+    "samples": [
+      {
+        "sampleVariant": "baseline",
+        "buildSha256": "7ad457cb6a8c4db53cfb0e09bc9e418aa0c68096d4ad05b6e75b87f987ac3990",
+        "openingMs": 409.07917499999894,
+        "elapsedMs": 3503.1000003814697,
+        "longestFrameMs": 66.60000000000036,
+        "framesOver50ms": 1,
+        "longTasks": [
+          60
+        ],
+        "bottomGap": 0,
+        "articles": 41,
+        "scriptMs": 723.939,
+        "layoutMs": 115.794,
+        "layouts": 81,
+        "styleMs": 256.721
+      },
+      {
+        "sampleVariant": "candidate",
+        "buildSha256": "3f7746efc5ad44c553304a35d170357310212d7dbafa9d5fb0a850f9bc8edd85",
+        "openingMs": 427.41871099999844,
+        "elapsedMs": 3363.5,
+        "longestFrameMs": 16.80000000000109,
+        "framesOver50ms": 0,
+        "longTasks": [],
+        "bottomGap": 0,
+        "articles": 41,
+        "scriptMs": 468.236,
+        "layoutMs": 140.079,
+        "layouts": 80,
+        "styleMs": 324.52599999999995
+      },
+      {
+        "sampleVariant": "candidate",
+        "buildSha256": "3f7746efc5ad44c553304a35d170357310212d7dbafa9d5fb0a850f9bc8edd85",
+        "openingMs": 438.9329989999969,
+        "elapsedMs": 3393.0999994277954,
+        "longestFrameMs": 16.80000000000109,
+        "framesOver50ms": 0,
+        "longTasks": [],
+        "bottomGap": 0,
+        "articles": 41,
+        "scriptMs": 455.717,
+        "layoutMs": 134.995,
+        "layouts": 80,
+        "styleMs": 336.654
+      },
+      {
+        "sampleVariant": "baseline",
+        "buildSha256": "7ad457cb6a8c4db53cfb0e09bc9e418aa0c68096d4ad05b6e75b87f987ac3990",
+        "openingMs": 431.74984499999846,
+        "elapsedMs": 3491.8999996185303,
+        "longestFrameMs": 66.70000000000073,
+        "framesOver50ms": 1,
+        "longTasks": [
+          72
+        ],
+        "bottomGap": 0,
+        "articles": 41,
+        "scriptMs": 698.879,
+        "layoutMs": 131.357,
+        "layouts": 81,
+        "styleMs": 284.882
+      },
+      {
+        "sampleVariant": "baseline",
+        "buildSha256": "7ad457cb6a8c4db53cfb0e09bc9e418aa0c68096d4ad05b6e75b87f987ac3990",
+        "openingMs": 455.6880999999994,
+        "elapsedMs": 3485.5,
+        "longestFrameMs": 66.70000000000073,
+        "framesOver50ms": 2,
+        "longTasks": [],
+        "bottomGap": 0,
+        "articles": 41,
+        "scriptMs": 605.853,
+        "layoutMs": 120.71900000000001,
+        "layouts": 80,
+        "styleMs": 269.752
+      },
+      {
+        "sampleVariant": "candidate",
+        "buildSha256": "3f7746efc5ad44c553304a35d170357310212d7dbafa9d5fb0a850f9bc8edd85",
+        "openingMs": 439.1144029999996,
+        "elapsedMs": 3379.199999809265,
+        "longestFrameMs": 16.80000000000109,
+        "framesOver50ms": 0,
+        "longTasks": [],
+        "bottomGap": 0,
+        "articles": 41,
+        "scriptMs": 433.201,
+        "layoutMs": 132.986,
+        "layouts": 80,
+        "styleMs": 290.328
+      }
+    ],
+    "summary": {
+      "baseline": {
+        "openingMs": {
+          "median": 431.75,
+          "minimum": 409.079,
+          "maximum": 455.688
+        },
+        "elapsedMs": {
+          "median": 3491.9,
+          "minimum": 3485.5,
+          "maximum": 3503.1
+        },
+        "scriptMs": {
+          "median": 698.879,
+          "minimum": 605.853,
+          "maximum": 723.939
+        },
+        "layoutMs": {
+          "median": 120.719,
+          "minimum": 115.794,
+          "maximum": 131.357
+        },
+        "styleMs": {
+          "median": 269.752,
+          "minimum": 256.721,
+          "maximum": 284.882
+        },
+        "longestFrameMs": {
+          "median": 66.7,
+          "minimum": 66.6,
+          "maximum": 66.7
+        }
+      },
+      "candidate": {
+        "openingMs": {
+          "median": 438.933,
+          "minimum": 427.419,
+          "maximum": 439.114
+        },
+        "elapsedMs": {
+          "median": 3379.2,
+          "minimum": 3363.5,
+          "maximum": 3393.1
+        },
+        "scriptMs": {
+          "median": 455.717,
+          "minimum": 433.201,
+          "maximum": 468.236
+        },
+        "layoutMs": {
+          "median": 134.995,
+          "minimum": 132.986,
+          "maximum": 140.079
+        },
+        "styleMs": {
+          "median": 324.526,
+          "minimum": 290.328,
+          "maximum": 336.654
+        },
+        "longestFrameMs": {
+          "median": 16.8,
+          "minimum": 16.8,
+          "maximum": 16.8
+        }
+      }
+    },
+    "tradeoffs": "Median style and layout CPU rose with the changed interface; their individual cause was not isolated. Lower script CPU and clean candidate frame samples are local evidence, not field INP or a universal device guarantee. Completed transcript and bottom following matched in every sample.",
+    "diagnostic": "Separate bounded 2.4 MB Chrome trace completed without data loss. Its 496.8 ms profiler startup event was instrumentation overhead, excluded from clean comparisons. The 1-CPU cap throttles the whole browser/controller, so tail gaps are not pure rendering cost."
+  },
+  "projection": {
+    "conditions": "Native pinned Node26.7/Pi1.3, 1CPU/2GiB, three alternating pairs per pattern; 20 completed turns plus 2000 deltas; burst with one final flush, and logical publication batches of eight with a event-loop drain (no real-time sleeps). Identical complete final transcript hash. Synthetic projection benchmark, not GPU throughput or browser rendering.",
+    "samples": [
+      {
+        "pattern": "burst",
+        "pair": 0,
+        "name": "baseline",
+        "elapsedMs": 55.93501299999997,
+        "cpuMs": 61.601,
+        "materializations": 2010,
+        "signature": "cc5b8129b1d763c3c8d892d4cebb323dbddcde2aa6a24aada238b610d7b53817"
+      },
+      {
+        "pattern": "burst",
+        "pair": 0,
+        "name": "candidate",
+        "elapsedMs": 3.1069140000000175,
+        "cpuMs": 5.799,
+        "materializations": 1,
+        "signature": "cc5b8129b1d763c3c8d892d4cebb323dbddcde2aa6a24aada238b610d7b53817"
+      },
+      {
+        "pattern": "burst",
+        "pair": 1,
+        "name": "candidate",
+        "elapsedMs": 2.2056069999999863,
+        "cpuMs": 5.657,
+        "materializations": 1,
+        "signature": "cc5b8129b1d763c3c8d892d4cebb323dbddcde2aa6a24aada238b610d7b53817"
+      },
+      {
+        "pattern": "burst",
+        "pair": 1,
+        "name": "baseline",
+        "elapsedMs": 76.01834300000002,
+        "cpuMs": 44.875,
+        "materializations": 2010,
+        "signature": "cc5b8129b1d763c3c8d892d4cebb323dbddcde2aa6a24aada238b610d7b53817"
+      },
+      {
+        "pattern": "burst",
+        "pair": 2,
+        "name": "baseline",
+        "elapsedMs": 22.14422000000002,
+        "cpuMs": 28.927,
+        "materializations": 2010,
+        "signature": "cc5b8129b1d763c3c8d892d4cebb323dbddcde2aa6a24aada238b610d7b53817"
+      },
+      {
+        "pattern": "burst",
+        "pair": 2,
+        "name": "candidate",
+        "elapsedMs": 1.5866949999999633,
+        "cpuMs": 2.02,
+        "materializations": 1,
+        "signature": "cc5b8129b1d763c3c8d892d4cebb323dbddcde2aa6a24aada238b610d7b53817"
+      },
+      {
+        "pattern": "batches-of-eight",
+        "pair": 0,
+        "name": "baseline",
+        "elapsedMs": 74.87647100000004,
+        "cpuMs": 73.587,
+        "materializations": 2010,
+        "signature": "cc5b8129b1d763c3c8d892d4cebb323dbddcde2aa6a24aada238b610d7b53817"
+      },
+      {
+        "pattern": "batches-of-eight",
+        "pair": 0,
+        "name": "candidate",
+        "elapsedMs": 11.379361000000017,
+        "cpuMs": 14.652,
+        "materializations": 251,
+        "signature": "cc5b8129b1d763c3c8d892d4cebb323dbddcde2aa6a24aada238b610d7b53817"
+      },
+      {
+        "pattern": "batches-of-eight",
+        "pair": 1,
+        "name": "candidate",
+        "elapsedMs": 10.16510500000004,
+        "cpuMs": 20.291,
+        "materializations": 251,
+        "signature": "cc5b8129b1d763c3c8d892d4cebb323dbddcde2aa6a24aada238b610d7b53817"
+      },
+      {
+        "pattern": "batches-of-eight",
+        "pair": 1,
+        "name": "baseline",
+        "elapsedMs": 57.68614600000001,
+        "cpuMs": 23.357,
+        "materializations": 2010,
+        "signature": "cc5b8129b1d763c3c8d892d4cebb323dbddcde2aa6a24aada238b610d7b53817"
+      },
+      {
+        "pattern": "batches-of-eight",
+        "pair": 2,
+        "name": "baseline",
+        "elapsedMs": 22.41502700000001,
+        "cpuMs": 23.365,
+        "materializations": 2010,
+        "signature": "cc5b8129b1d763c3c8d892d4cebb323dbddcde2aa6a24aada238b610d7b53817"
+      },
+      {
+        "pattern": "batches-of-eight",
+        "pair": 2,
+        "name": "candidate",
+        "elapsedMs": 8.746962000000053,
+        "cpuMs": 12.751,
+        "materializations": 251,
+        "signature": "cc5b8129b1d763c3c8d892d4cebb323dbddcde2aa6a24aada238b610d7b53817"
+      }
+    ],
+    "summary": {
+      "burst": {
+        "baseline": {
+          "elapsedMs": {
+            "median": 55.935,
+            "minimum": 22.144,
+            "maximum": 76.018
+          },
+          "cpuMs": {
+            "median": 44.875,
+            "minimum": 28.927,
+            "maximum": 61.601
+          },
+          "materializations": {
+            "median": 2010,
+            "minimum": 2010,
+            "maximum": 2010
+          }
+        },
+        "candidate": {
+          "elapsedMs": {
+            "median": 2.206,
+            "minimum": 1.587,
+            "maximum": 3.107
+          },
+          "cpuMs": {
+            "median": 5.657,
+            "minimum": 2.02,
+            "maximum": 5.799
+          },
+          "materializations": {
+            "median": 1,
+            "minimum": 1,
+            "maximum": 1
+          }
+        }
+      },
+      "batches-of-eight": {
+        "baseline": {
+          "elapsedMs": {
+            "median": 57.686,
+            "minimum": 22.415,
+            "maximum": 74.876
+          },
+          "cpuMs": {
+            "median": 23.365,
+            "minimum": 23.357,
+            "maximum": 73.587
+          },
+          "materializations": {
+            "median": 2010,
+            "minimum": 2010,
+            "maximum": 2010
+          }
+        },
+        "candidate": {
+          "elapsedMs": {
+            "median": 10.165,
+            "minimum": 8.747,
+            "maximum": 11.379
+          },
+          "cpuMs": {
+            "median": 14.652,
+            "minimum": 12.751,
+            "maximum": 20.291
+          },
+          "materializations": {
+            "median": 251,
+            "minimum": 251,
+            "maximum": 251
+          }
+        }
+      }
+    },
+    "contextTokens": 32768,
+    "previousTurns": 20,
+    "generatedDeltas": 2000
+  },
+  "liveInference": {
+    "status": "passed",
+    "model": "Bonsai 2 \u00b7 2B",
+    "runtimePinUnchanged": true,
+    "browser": "155.0.8059.39",
+    "gpu": "NVIDIA GeForce RTX 5060 Ti",
+    "cpuLimit": 1,
+    "memoryMiB": 3072,
+    "swapMiB": 0,
+    "processLimit": 256,
+    "headless": true,
+    "flags": [
+      "--no-sandbox",
+      "--enable-unsafe-webgpu",
+      "--enable-features=Vulkan,VulkanFromANGLE",
+      "--use-angle=vulkan",
+      "--disable-vulkan-surface",
+      "--disk-cache-size=1"
+    ],
+    "environment": {
+      "VK_DRIVER_FILES": "/usr/share/vulkan/icd.d/nvidia_icd.json"
+    },
+    "compute": "FP32 verified; optional FP16 unavailable",
+    "configuration": {
+      "model": "2b",
+      "context": 4096,
+      "maxTokens": 256,
+      "sampling": false,
+      "temperature": 0.7,
+      "topK": 20,
+      "topP": 0.8,
+      "minP": 0,
+      "seed": 42,
+      "thinking": false,
+      "prefixCache": true,
+      "imagePixels": 262144,
+      "tools": true,
+      "editing": false,
+      "skills": true,
+      "maxTurns": 3,
+      "maxToolCalls": 8,
+      "responseTimeout": 30000,
+      "requestTimeout": 60000,
+      "loadTimeout": 120000
+    },
+    "stages": [
+      {
+        "name": "startup",
+        "elapsedMs": 5189.995325
+      },
+      {
+        "name": "real GPU compute probe",
+        "elapsedMs": 395.44730100000015
+      },
+      {
+        "name": "load Bonsai 2B",
+        "elapsedMs": 52152.185285
+      },
+      {
+        "name": "real text generation",
+        "elapsedMs": 1929.3678149999978
+      },
+      {
+        "name": "real application read round trip",
+        "elapsedMs": 970.4571550000037
+      }
+    ],
+    "assertions": [
+      "Actual pinned model loads and produces a greeting",
+      "Actual read_application result reaches the model; answer contains exact fresh workflowId",
+      "No page errors",
+      "Unload disables the composer; browser and owned scope close"
+    ],
+    "remoteRequests": 433,
+    "credentialRequests": 0,
+    "nonReadRequests": 0,
+    "buildSha256": "3f7746efc5ad44c553304a35d170357310212d7dbafa9d5fb0a850f9bc8edd85",
+    "limitations": "Test-only Vulkan flags/ICD required on this Linux host. No browser settings changed. No 4B/9B, vision/OCR, mobile/tablet or general throughput qualification."
+  },
+  "verification": {
+    "sourceCases": 9,
+    "changedSessionCoveragePercent": 100,
+    "chromiumAssistantCases": 7,
+    "newStreamingAndAttachmentCasesPerEngine": 2,
+    "engines": [
+      "chromium",
+      "firefox",
+      "webkit"
+    ],
+    "viewportChecks": [
+      {
+        "width": 1280,
+        "height": 1000
+      },
+      {
+        "width": 390,
+        "height": 844
+      }
+    ],
+    "visualThemes": [
+      "light",
+      "dark"
+    ],
+    "motion": [
+      "normal",
+      "reduced"
+    ],
+    "typecheck": "0 errors, one existing unrelated vault pointerenter warning",
+    "productionBuild": "passed",
+    "fullRegression": "Required separately in releaseCI; these are focused development results."
+  },
+  "artifactDirectory": ".agents/tmp/assistant-quality/",
+  "reproduction": "The committed browser-assistant Gherkin features cover the behavioral contracts; raw synthetic comparisons, trace, screenshots, native benchmark, live GPU result and bounded controllers remain in the ignored local artifact directory."
+}

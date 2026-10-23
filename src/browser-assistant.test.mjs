@@ -26,6 +26,22 @@ const reject = (fn, pattern) => assert.rejects(fn, pattern);
 const okResult = text => ({ message: { content: text }, usage: { prompt_tokens: 15, completion_tokens: 2, cached_tokens: 3 } });
 const callResult = (name, args) => ({ message: { tool_calls: [{ id: 'call', function: { name, arguments: args } }] } });
 
+Then('assistant publication coalesces token bursts and retains image message identity', async () => {
+  const updates = []; let pending, scheduled = 0;
+  const session = createAssistantSession({ async reset() {}, async generate(messages, { onText }) {
+    assert.ok(messages.some(message => message.role === 'user' && Array.isArray(message.content) && message.content.some(part => part.type === 'image')));
+    for (let i = 0; i < 100; i++) onText('delta ');
+    return okResult('delta '.repeat(100));
+  } }, { ...settings(), tools: false }, () => assert.fail(), part => ({ type: 'image', mimeType: part.mimeType }), state => updates.push(state), callback => { scheduled++; pending = callback; });
+  await session.send('', [{ type: 'image', mimeType: 'image/png', data: 'image-payload' }]);
+  assert.ok(scheduled > 100); assert.equal(updates.length, 0);
+  pending();
+  assert.equal(updates.length, 1); assert.equal(updates[0].messages[0].imageCount, 1);
+  assert.equal(updates[0].messages[0].text, ''); assert.equal(updates[0].messages[1].text, 'delta '.repeat(100));
+  assert.ok(!JSON.stringify(updates[0]).includes('image-payload'));
+  await session.reset(); pending(); assert.deepEqual(updates.at(-1), { messages: [], error: '' });
+});
+
 Then('the Bonsai assistant preserves its three profiles and rejects invalid settings', () => {
   assert.equal(assistantSettingsKey, 'v1/settings/assistant');
   assert.deepEqual(bonsaiModels.map(m => m.id), ['2b', '4b', '9b']);
