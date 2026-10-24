@@ -269,6 +269,21 @@ feat(cloudflare): keep asset upload tokens private
 
 ```
 
+<!-- changelog-commit:3ecc6c3acfd6c6ec0d6a91140acac85fc89a3aa2 -->
+### Commit [`3ecc6c3`](https://github.com/superhero/operations.superduper.solutions/commit/3ecc6c3acfd6c6ec0d6a91140acac85fc89a3aa2)
+
+```text
+docs(auth): qualify browser and confidential provider profiles
+
+```
+
+<!-- changelog-commit:e04a4ca1e39f24ff659fc7ce06b4e5f02c1cb48f -->
+### Commit [`e04a4ca`](https://github.com/superhero/operations.superduper.solutions/commit/e04a4ca1e39f24ff659fc7ce06b4e5f02c1cb48f)
+
+```text
+Merge branch 'develop' into feature/provider-authentication-profiles
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
