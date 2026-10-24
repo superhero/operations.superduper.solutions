@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { VaultError, type BasicCredentialReference, type CredentialBinding, type CredentialExecutionContext } from "./types.ts";
+import { VaultError, type BasicCredentialReference, type CredentialBinding, type CredentialExecutionContext, type HttpConnectionReference } from "./types.ts";
 import { validateVaultVariableInputs, type VaultVariableInput } from "./variables.ts";
 import type { OperationSecurity } from "../operation-security.ts";
 
@@ -15,6 +15,7 @@ function object(value: unknown): Record<string, unknown> {
     || Object.values(descriptors).some(item => !item.enumerable || !("value" in item))) throw new VaultError("INVALID");
   return Object.fromEntries(Object.entries(descriptors).map(([name, item]) => [name, item.value]));
 }
+export { object as credentialObject };
 
 export function isBasicCredentialReference(value: unknown): value is BasicCredentialReference {
   try {
@@ -43,17 +44,26 @@ export function credentialSelectionForVariables(security: OperationSecurity | un
 }
 
 /** Opaque local references only. The encrypted vault owns all actual authorization. */
+export function validateHttpConnectionReference(value: unknown): HttpConnectionReference {
+  const item = object(value);
+  if (Object.keys(item).length !== 3 || Object.keys(item).some(key => !["id", "revision", "fingerprint"].includes(key))
+    || typeof item.id !== "string" || !uuid.test(item.id) || !Number.isSafeInteger(item.revision) || (item.revision as number) < 1
+    || typeof item.fingerprint !== "string" || !/^[a-f0-9]{64}$/.test(item.fingerprint)) throw new VaultError("INVALID");
+  return { id: item.id, revision: item.revision as number, fingerprint: item.fingerprint };
+}
+
 export function validateCredentialBinding(value: unknown): CredentialBinding {
   const item = object(value);
-  if (Object.keys(item).length !== 3 || Object.keys(item).some(key => !["alternative", "credentials", "fingerprint"].includes(key))
+  if (Object.keys(item).length !== (item.connection === undefined ? 3 : 4) || Object.keys(item).some(key => !["alternative", "credentials", "fingerprint", "connection"].includes(key))
     || !Number.isSafeInteger(item.alternative) || (item.alternative as number) < 0 || (item.alternative as number) > 31
     || typeof item.fingerprint !== "string" || !/^[a-f0-9]{64}$/.test(item.fingerprint)) throw new VaultError("INVALID");
   const entries = Object.entries(object(item.credentials));
-  if (entries.length > 16 || entries.some(([scheme, id]) => !scheme.trim() || scheme.length > 128
+  if (item.connection !== undefined && entries.length || entries.length > 16 || entries.some(([scheme, id]) => !scheme.trim() || scheme.length > 128
     || !(typeof id === "string" ? uuid.test(id) : isBasicCredentialReference(id)))) throw new VaultError("INVALID");
   return { alternative: item.alternative as number, fingerprint: item.fingerprint,
     credentials: Object.fromEntries(entries.map(([name, reference]) => [name, typeof reference === "string" ? reference
-      : { username: (reference as BasicCredentialReference).username, password: (reference as BasicCredentialReference).password }])) };
+      : { username: (reference as BasicCredentialReference).username, password: (reference as BasicCredentialReference).password }])),
+    ...(item.connection === undefined ? {} : { connection: validateHttpConnectionReference(item.connection) }) };
 }
 
 /** Run/node IDs correlate UI invocations; authorization comes from the descriptor and binding. */

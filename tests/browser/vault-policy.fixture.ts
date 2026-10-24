@@ -11,6 +11,8 @@ import { catalogsIndexDatabaseName } from "../../src/lib/storage-names.ts";
 import { seed, synthetic, executionInput } from "./vault-storage.fixture.ts";
 import type { ApprovedOperation } from "../../src/lib/secrets/types.ts";
 import { vaultCall, lockVault } from "../../src/lib/secrets/client.ts";
+import { httpConnectionReference } from "../../src/lib/secrets/http-connections.ts";
+import { createVaultStorage } from "../../src/lib/secrets/storage.ts";
 import type { ResponseProgress } from "../../src/lib/workflow-response-stream.ts";
 
 let record: SchemaDocumentRecord;
@@ -74,6 +76,33 @@ export async function streamedClient(origin: string, run: string) {
     const { binding } = executionInput();
     const value = await vaultCall("execute", [descriptor, {}, binding], undefined, item => progress.push(item));
     return { value, progress };
+  } finally { await lockVault(); }
+}
+export async function connectionRoundtrip(origin: string, run: string) {
+  const configured = await setup(origin, run);
+  const { binding } = executionInput();
+  const saved = await call("putConnection", [{ label: "Worker connection", account: "Network account", format: "schema" }, descriptor, binding]) as import("../../src/lib/secrets/types.ts").HttpConnection;
+  const reference = httpConnectionReference(saved);
+  const selected = await call("connectionBinding", [reference, descriptor]);
+  const first = await call("execute", [descriptor, {}, selected]);
+  worker.terminate();
+  const method = configured.status.methods.find(method => method.kind === "password")!;
+  const proof = { methodId: method.id, secret: synthetic.password };
+  try {
+    await vaultCall("unlock", [proof]);
+    const profiles = await vaultCall("connections", []);
+    const restored = await vaultCall("connectionBinding", [reference, descriptor]);
+    const second = await vaultCall("execute", [descriptor, {}, restored]);
+    const edited = await vaultCall("putConnection", [{ label: saved.label, account: "Changed network account", format: "schema", reference }, descriptor, binding]);
+    let stale = "UNEXPECTED";
+    try { await vaultCall("execute", [descriptor, {}, restored]); } catch (error) { stale = (error as { code: string }).code; }
+    const current = await vaultCall("connectionBinding", [httpConnectionReference(edited), descriptor]);
+    await setSchemaDocumentEnabled(record.id, false);
+    await vaultCall("unlock", [proof]);
+    let disabled = "UNEXPECTED";
+    try { await vaultCall("execute", [descriptor, {}, current]); } catch (error) { disabled = (error as { code: string }).code; }
+    const stored = JSON.stringify(await createVaultStorage().read());
+    return { first, second, selected, restored, profiles, edited, stale, disabled, encryptedMetadata: !stored.includes(saved.label) && !stored.includes(saved.account) };
   } finally { await lockVault(); }
 }
 export async function diagnostic() { await execute(); return lastReply; }

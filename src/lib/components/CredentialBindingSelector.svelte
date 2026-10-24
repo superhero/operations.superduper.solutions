@@ -7,6 +7,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { onMount } from "svelte";
   import FieldSelect from "./FieldSelect.svelte";
   import VaultAuthentication from "./VaultAuthentication.svelte";
+  import HttpConnectionSelector from "./HttpConnectionSelector.svelte";
   import type { Operation } from "../catalog.ts";
   import { supportedSecurityAlternative } from "../operation-security.ts";
   import { workflowExecutionForOperation } from "../workflow-execution.ts";
@@ -23,6 +24,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   let descriptor = $state.raw<ApprovedOperation>();
   let alternative = $state("");
   let choices = $state<Record<string, CredentialReference>>({});
+  let manualBinding = $state.raw<CredentialBinding>();
+  let connectionBinding = $state.raw<CredentialBinding>();
+  let connectionSelected = $state(false);
   let error = $state("");
   let busy = $state(false);
   let authentication = $state.raw<VaultAuthentication>();
@@ -54,16 +58,18 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function changed() {
     error = "";
     const selection = selected;
-    if (!descriptor || !selection || selection.length && !status.unlocked) { onChange(undefined); return; }
+    if (!descriptor || !selection || selection.length && !status.unlocked) { manualBinding = undefined; publish(); return; }
     const entries = selection.map(scheme => [scheme.name, choices[scheme.name] ?? ""] as const);
     if (entries.some(([name, reference]) => {
       const scheme = selection.find(scheme => scheme.name === name)!;
       if (scheme.kind === "basic") return !isBasicCredentialReference(reference)
         || [reference.username, reference.password].some(id => !credentials.some(item => item.id === id && permitted(item, name)));
       return typeof reference !== "string" || !credentials.some(item => item.id === reference && permitted(item, name));
-    })) { onChange(undefined); return; }
-    onChange(validateCredentialBinding({ alternative: Number(alternative), credentials: Object.fromEntries(entries), fingerprint: descriptor.fingerprint }));
+    })) { manualBinding = undefined; publish(); return; }
+    manualBinding = validateCredentialBinding({ alternative: Number(alternative), credentials: Object.fromEntries(entries), fingerprint: descriptor.fingerprint });
+    publish();
   }
+  function publish() { onChange(connectionSelected ? connectionBinding : manualBinding); }
   async function refresh() {
     const request = ++revision;
     busy = true; error = "";
@@ -103,7 +109,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     mounted = true; void refresh();
     const stop = subscribeVaultLock(() => {
       revision++; busy = false; status = { ...status, unlocked: false };
-      authentication?.clear(); onChange(undefined);
+      authentication?.clear(); manualBinding = undefined; connectionBinding = undefined; onChange(undefined);
       const request = revision;
       void readVaultKeys().then(index => { if (mounted && request === revision) credentials = index.entries; }).catch(() => {});
     });
@@ -116,16 +122,26 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <fieldset class="credential-selection" disabled={disabled || busy}>
   <legend>Credentials</legend>
+  {#if descriptor}
+    <HttpConnectionSelector {descriptor} {status} manual={manualBinding}
+      initial={initial?.fingerprint === descriptor.fingerprint ? initial.connection : undefined} disabled={disabled || busy} {portalZIndex}
+      onSelect={(binding, selected) => { connectionSelected = selected; connectionBinding = binding;
+        if (binding) alternative = String(binding.alternative);
+        else if (!selected) { alternative = manualBinding ? String(manualBinding.alternative) : ""; choices = { ...manualBinding?.credentials }; }
+        publish(); }} />
+  {/if}
   {#if operation.oauthScopes}<p class="hint">Use an existing OAuth access token. The API checks its scopes and validity.</p>{/if}
+  {#if !connectionSelected}
   <FieldSelect id={`${fieldId}-alternative`} label="Authentication alternative" value={alternative} options={options}
     disabled={disabled || busy} {portalZIndex}
     onValueChange={value => { alternative = value; choices = {}; changed(); }} />
+  {/if}
   {#each unavailable as reason}<p class="hint">{reason}</p>{/each}
   {#if selected?.length}
     {#if descriptor}<p class="destination"><strong>{operation.method}</strong> {descriptor.origin}{operation.path}</p>{/if}
     {#if !status.exists}<p>Create a vault and add credentials in Settings → Secrets.</p>
     {:else}
-        {#each selected as scheme, index (scheme.name)}
+        {#if !connectionSelected}{#each selected as scheme, index (scheme.name)}
           <div class="credential-choice">
             {#if scheme.kind === "basic"}
               <p class="credential-name">{scheme.name} · {scheme.header}</p>
@@ -146,7 +162,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
               onValueChange={value => { choices = { ...choices, [scheme.name]: value }; changed(); }} />
             {/if}
           </div>
-        {/each}
+        {/each}{/if}
       {#if !status.unlocked}<VaultAuthentication bind:this={authentication} {status} disabled={disabled || busy} {portalZIndex}
         label="Unlock the vault" />{/if}
       {#if !status.unlocked}<button type="button" onclick={unlock}>Unlock</button>{/if}

@@ -188,6 +188,77 @@ Then('the browser vault stops the oversized response with a safe size error', as
 });
 
 const settings = page => page.getByRole('region', { name: 'Secrets vault', exact: true });
+Then('a saved HTTP connection at {int} pixels can be edited re-unlocked and reused without reselecting keys', { timeout: 60_000 }, async function (width) {
+  const page = this.page;
+  await page.setViewportSize({ width, height: 900 });
+  await seed(this, 'ok');
+  const name = 'Saved connection request', path = `/vault-api/${this.vaultRun}/ok`;
+  const document = { openapi: '3.1.0', info: { title: 'Saved HTTP connection fixture', version: '1' }, servers: [{ url: this.baseURL }],
+    components: { securitySchemes: { Bearer: { type: 'http', scheme: 'bearer' } } },
+    paths: { [path]: { get: { operationId: 'saved-connection', summary: name, security: [{ Bearer: [] }],
+      responses: { 200: { description: 'Result', content: { 'application/json': { schema: { type: 'object' } } } } } } } } };
+  await setMode(page, 'settings');
+  const schemas = page.locator('summary[aria-label="Schemas"]');
+  if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({
+    name: 'saved-connection.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
+  await expect(page.getByRole('switch', { name: 'Enable Saved HTTP connection fixture', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await chooseCatalogOperation(page, name);
+  await page.getByRole('combobox', { name: 'Authentication alternative', exact: true }).click();
+  await page.getByRole('option', { name: 'Bearer', exact: true }).click();
+  const unlock = page.getByLabel('Unlock the vault password', { exact: true });
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  const credential = page.getByRole('combobox', { name: 'Credential for Bearer', exact: true });
+  await expect(credential).toBeEnabled(); await credential.click();
+  await page.getByRole('option', { name: canaries[3], exact: true }).click();
+  await page.getByText('Save as connection', { exact: true }).click();
+  await page.getByLabel('Connection name', { exact: true }).fill('Reusable test connection');
+  await page.getByLabel('Account label', { exact: true }).fill('Test account A');
+  await page.getByRole('button', { name: 'Save connection', exact: true }).click();
+  const connections = page.getByRole('combobox', { name: 'Saved HTTP connection', exact: true });
+  await expect(connections).toContainText('Reusable test connection · Test account A');
+  await expect(credential).toHaveCount(0);
+  await page.getByLabel('Account label', { exact: true }).fill('Test account B');
+  await page.getByRole('button', { name: 'Save connection', exact: true }).click();
+  await expect(connections).toContainText('Reusable test connection · Test account B');
+  const savedBinding = async () => (await repository(page, 'list')).flatMap(document => document.nodes)
+    .find(node => node.data?.name === name)?.data.credentialBinding;
+  await expect.poll(async () => (await savedBinding())?.connection?.revision).toBe(2);
+  const saved = await savedBinding(); assert.deepEqual(saved.credentials, {});
+  await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await setMode(page, 'workflow');
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await expect(connections).toContainText('Reusable test connection · Test account B');
+  await expect(connections).toBeEnabled(); await expect(credential).toHaveCount(0);
+  assert.deepEqual(await savedBinding(), saved);
+  assert.ok(await page.locator('.http-connections').evaluate(element => element.scrollWidth <= element.clientWidth+1));
+  await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+  await expect.poll(async () => (await observations(this)).length).toBe(1);
+  assert.equal((await observations(this))[0].headers.authorization, `Bearer ${canaries[1]}`);
+  await expect(page.getByRole('status').filter({ hasText: 'Operation completed.' })).toBeVisible();
+  noCanaries(await page.locator('body').innerText());
+  assert.deepEqual(await invoke(page, 'persistedCanaries', privateCanaries), []);
+  if (width === 1280) {
+    await page.getByRole('button', { name: 'Quit', exact: true }).click();
+    const document = (await repository(page, 'list')).find(document => document.nodes.some(node => node.data?.name === name));
+    const state = await repository(page, 'load', document.id);
+    state.document.nodes.find(node => node.data?.name === name).data.credentialBinding.fingerprint = '0'.repeat(64);
+    await repository(page, 'save', state.document, state.revision, 'Exercise an obsolete operation approval');
+    await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
+    await setMode(page, 'workflow'); await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+    const alternative = page.getByRole('combobox', { name: 'Authentication alternative', exact: true });
+    await expect(alternative).toBeVisible(); await alternative.click();
+    await page.getByRole('option', { name: 'Bearer', exact: true }).click();
+    await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+    await expect(connections).toBeEnabled(); await connections.click();
+    await page.getByRole('option', { name: 'Reusable test connection · Test account B', exact: true }).click();
+    await expect.poll(async () => (await savedBinding())?.fingerprint).not.toBe('0'.repeat(64));
+    assert.equal((await observations(this)).length, 1, 'Reselecting a changed operation must not run it.');
+  }
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await page.screenshot({ path: `${this.artifactDirectory}/saved-connection-${width}.png` });
+});
 async function openSecrets(page) {
   await setMode(page, 'settings');
   const disclosure = page.locator('summary[aria-label="Secrets"]');
@@ -653,6 +724,16 @@ Then('a downloaded vault backup restores with recovery in a fresh application co
 });
 
 const policy = (page, method, ...args) => page.evaluate(async ({ method, args }) => (await import('/vault-policy-fixture.js'))[method](...args), { method, args });
+Then('production connection references survive worker replacement and reject account edits and disabled schemas', async function () {
+  this.vaultRun = randomUUID();
+  const result = await policy(this.page, 'connectionRoundtrip', this.baseURL, this.vaultRun);
+  noCanaries(result);
+  assert.equal(result.first.response.status, 200); assert.equal(result.second.response.status, 200);
+  assert.deepEqual(result.restored, result.selected); assert.deepEqual(result.restored.credentials, {});
+  assert.equal(result.profiles.length, 1); assert.equal(result.edited.revision, 2);
+  assert.equal(result.stale, 'PERMISSION'); assert.equal(result.disabled, 'PERMISSION'); assert.equal(result.encryptedMetadata, true);
+  assert.equal((await observations(this)).length, 2, 'Stale account and disabled schema requests must not dispatch.');
+});
 Then('production vault stream progress contains counts only and its terminal result is scrubbed', async function () {
   this.vaultRun = randomUUID();
   const result = await policy(this.page, 'streamedClient', this.baseURL, this.vaultRun);

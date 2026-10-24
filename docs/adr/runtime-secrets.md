@@ -19,6 +19,10 @@ workflow and schema Git repositories. Workflows retain opaque local selections;
 imports and exports remove those selections, including nested workflows.
 Existing secrets pasted into document text are not removed from earlier history.
 
+The workflow credentials panel also supports [saved HTTP connections](../http-connections.md).
+Profiles keep account, endpoint, authentication placement and credential references
+inside encrypted vault records; workflows retain opaque connection references.
+
 ### Encryption and unlocking
 
 A random AES-256-GCM key encrypts credential values and destination grants.
