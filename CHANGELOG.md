@@ -199,6 +199,24 @@ choices. Bind the reviewed matrix into source and discovery freshness checks.
 
 ```
 
+<!-- changelog-commit:dc885fca3ed12d1ff823d11ca68af0013577b606 -->
+### Commit [`dc885fc`](https://github.com/superhero/operations.superduper.solutions/commit/dc885fca3ed12d1ff823d11ca68af0013577b606)
+
+```text
+feat(http): assemble bounded streaming response results
+
+Read reviewed OpenAI Responses SSE and Ollama NDJSON into one explicit
+terminal JSON value, preserving existing graph identities and ordinary
+response handling. Bound framing, size, events, idle time and total run
+length; never reconnect or automatically repeat a dispatched request.
+
+Keep private frames in the vault worker, publish only numeric progress,
+and scrub the terminal result before routing. Pin the three bundled
+operation adaptations to their original native schemas and exercise the
+parser, failure paths, graph routing and production browser boundary.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62

@@ -4,7 +4,7 @@
 import { adaptGithubAuthentication } from "./github-authentication.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication"; version: 1 };
+export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming"; version: 1 };
 export const googleOauthAlternatives: SchemaPatch = { id: "google-oauth-alternatives", version: 1 };
 export const digitalOceanBearerPermissions: SchemaPatch = { id: "digitalocean-bearer-permissions", version: 1 };
 export const geminiAuthAlternatives: SchemaPatch = { id: "gemini-auth-alternatives", version: 1 };
@@ -12,6 +12,11 @@ export const azureEventGridManagementAuth: SchemaPatch = { id: "azure-eventgrid-
 export const anthropicAuthentication: SchemaPatch = { id: "anthropic-authentication", version: 1 };
 export const elevenLabsAuthentication: SchemaPatch = { id: "elevenlabs-authentication", version: 1 };
 export const githubAuthentication: SchemaPatch = { id: "github-authentication", version: 1 };
+export const httpResponseStreaming: SchemaPatch = { id: "http-response-streaming", version: 1 };
+export const httpResponseStreamingSources: Record<string, string> = {
+  openai: "b7ec5bd5e29c40f0bfa2e53c06ece711a40276653646d9f3db77498d6579ab41",
+  ollama: "16f3b75a4944e1fb0e5b68fedc30b5974406dc2ac125d07cb33dde6981e2f99b",
+};
 export function schemaPatchName(patch: SchemaPatch): string {
   return patch.id === "google-oauth-alternatives" ? "Google OAuth alternatives"
     : patch.id === "digitalocean-bearer-permissions" ? "DigitalOcean bearer permissions"
@@ -19,7 +24,8 @@ export function schemaPatchName(patch: SchemaPatch): string {
     : patch.id === "azure-eventgrid-management-auth" ? "Azure Event Grid management authentication"
     : patch.id === "anthropic-authentication" ? "Anthropic authentication and version headers"
     : patch.id === "elevenlabs-authentication" ? "ElevenLabs authentication and credential results"
-    : patch.id === "github-authentication" ? "GitHub operation authentication" : "Unknown schema correction";
+    : patch.id === "github-authentication" ? "GitHub operation authentication"
+    : patch.id === "http-response-streaming" ? "Bounded HTTP response streaming" : "Unknown schema correction";
 }
 
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -316,13 +322,30 @@ function elevenLabsAuth(document: Record<string, any>): void {
   }
 }
 
+function responseStreaming(document: Record<string, any>): void {
+  const openai = document.info?.version === "2.3.0" && document.servers?.[0]?.url === "https://api.openai.com/v1";
+  const ollama = document.info?.version === "0.1.0" && document.servers?.[0]?.url === "http://localhost:11434";
+  if (document.openapi !== "3.1.0" || !(openai || ollama) || document.servers.length !== 1 || !object(document.paths))
+    throw new Error("HTTP streaming adaptation requires the reviewed OpenAI or Ollama native endpoint.");
+  const selected = openai ? [["/responses", "createResponse", "openai-responses", "text/event-stream"]]
+    : [["/api/chat", "chat", "ollama-chat", "application/x-ndjson"], ["/api/generate", "generate", "ollama-generate", "application/x-ndjson"]];
+  for (const [path, id, profile, media] of selected) {
+    const item = document.paths[path!], operation = item?.post, content = operation?.responses?.["200"]?.content;
+    if (!object(operation) || operation.operationId !== id || operation.servers !== undefined || item.servers !== undefined
+      || !object(content?.[media!]) || !object(content?.["application/json"])
+      || operation["x-operations-response-stream"] !== undefined && operation["x-operations-response-stream"] !== profile)
+      throw new Error("HTTP streaming adaptation cannot replace an unreviewed operation or response contract.");
+    operation["x-operations-response-stream"] = profile;
+  }
+}
+
 /** Preserve the published document. Reapplying a resolved correction is a no-op. */
 export function applySchemaPatches(input: Record<string, unknown>, patches: readonly SchemaPatch[] = []): Record<string, unknown> {
   if (!patches.length) return input;
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
     if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
@@ -331,7 +354,8 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
     else if (patch.id === "azure-eventgrid-management-auth") azureEventGridAuthentication(document);
     else if (patch.id === "anthropic-authentication") anthropicAuth(document);
     else if (patch.id === "elevenlabs-authentication") elevenLabsAuth(document);
-    else adaptGithubAuthentication(document);
+    else if (patch.id === "github-authentication") adaptGithubAuthentication(document);
+    else responseStreaming(document);
   }
   return document;
 }

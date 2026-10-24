@@ -12,6 +12,7 @@ import { validateVaultVariableInputs, vaultVariablePlaceholder, type VaultVariab
 import { resolvePrivateExpression } from "./processing.ts";
 import { validateApprovedOperation, validateCredentialPath } from "./policy.ts";
 import { VaultError, vaultLimits, type ApprovedOperation, type CredentialBinding, type VaultCredential } from "./types.ts";
+import { workflowResponseLifetime, responseAccept, type ResponseProgressCallback } from "../workflow-response-stream.ts";
 
 export type CredentialResponse = WorkflowResponse & { redacted?: boolean };
 export type CredentialExecutionResult = WorkflowExecutionResult & { response: CredentialResponse };
@@ -20,6 +21,7 @@ export type CredentialExecutionOptions = {
   variables?: VaultVariableInput[];
   assertCurrent: () => void | Promise<void>;
   fetchRequest?: typeof fetch;
+  onProgress?: ResponseProgressCallback;
 };
 
 /** This safe envelope has no raw request, native cause or credential-bearing message. */
@@ -66,8 +68,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
 {
   let secrets: string[] = [];
   let phase: "policy" | "request" = "policy";
-  const timeout = AbortSignal.timeout(15_000);
-  const signal = options.signal ? AbortSignal.any([options.signal, timeout]) : timeout;
+  const lifetime = workflowResponseLifetime(options.signal), timeout = lifetime.timeout, signal = lifetime.signal;
+  let streaming = false, streamStatus = 0;
   try
   {
     const credentialSnapshot = structuredClone(credentials);
@@ -172,7 +174,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       for (const entry of Array.isArray(value) ? value : [value]) url.searchParams.append(key, String(entry));
     }
     for (const [name, value] of injectedQueries) url.searchParams.set(name, value);
-    const headers = new Headers({ Accept: approved.operation.responseMediaType ?? "application/json" });
+    const headers = new Headers({ Accept: responseAccept(approved.operation.responseStream, approved.operation.responseMediaType, request.body) });
     const publicHeaders = new Set<string>();
     const authHeaders = new Set((approved.operation.security ?? []).flat().flatMap(scheme => scheme.header === undefined ? [] : [scheme.header.toLowerCase()]));
     for (const [name, value] of Object.entries(request.headers ?? {}))
@@ -194,7 +196,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       method: request.method, body, headers, redirect: "error", credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer", signal,
     });
     if (response.redirected) throw new VaultError("NETWORK");
-    const parsed = await readWorkflowResponseBody(response, approved.operation, request.method, signal, vaultLimits.responseBytes);
+    const parsed = await readWorkflowResponseBody(response, approved.operation, request.method, signal, vaultLimits.responseBytes,
+      { onStart() { streaming = true; streamStatus = response.status; lifetime.beginStream(); }, ...(options.onProgress ? { onProgress: options.onProgress } : {}) });
     const { malformedJson, ...result } = parsed;
     const scrub = redactor(secrets);
     const safeHeaders: [string, string][] = [];
@@ -219,6 +222,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       headers: Object.fromEntries(safeHeaders), body: safeBody };
     if (safeBody === null) delete safe.bodyType;
     if (safe.mediaType) safe.mediaType = scrub.text(safe.mediaType);
+    if (safe.transportMediaType) safe.transportMediaType = scrub.text(safe.transportMediaType);
     if (scrub.changed) safe.redacted = true;
     await options.assertCurrent();
     if (signal.aborted) throw new VaultError("CANCELLED");
@@ -229,15 +233,23 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
   catch (error)
   {
     if (options.signal?.aborted) throw new VaultError("CANCELLED");
-    if (timeout.aborted) throw new VaultError("NETWORK");
+    if (timeout.aborted) {
+      if (streaming) throw new CredentialResponseError("The streamed request timed out. Check the completed request before retrying.",
+        { status: streamStatus, statusText: "", headers: {}, body: null });
+      throw new VaultError("NETWORK");
+    }
     if (error instanceof CredentialResponseError) throw error;
     if (error instanceof InputValidationError)
     {
       const scrub = redactor(secrets);
       throw new InputValidationError(scrub.text(error.fieldKey), scrub.text(error.message).slice(0, vaultLimits.diagnosticBytes));
     }
-    if (error instanceof WorkflowBodyError) throw new VaultError(error.code === "LIMIT" || error.code === "CANCELLED" ? error.code : "NETWORK");
+    if (error instanceof WorkflowBodyError) {
+      if (streaming && !["LIMIT", "CANCELLED", "MEDIA"].includes(error.code)) throw new CredentialResponseError(error.message,
+        { status: streamStatus, statusText: "", headers: {}, body: null });
+      throw new VaultError(error.code === "LIMIT" || error.code === "CANCELLED" ? error.code : "NETWORK");
+    }
     if (error instanceof VaultError) throw new VaultError(error.code);
     throw new VaultError(phase === "policy" ? "PERMISSION" : "NETWORK");
-  }
+  } finally { lifetime.dispose(); }
 }

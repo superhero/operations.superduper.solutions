@@ -10,6 +10,8 @@ import { approvedOperation } from "../../src/lib/secrets/policy.ts";
 import { catalogsIndexDatabaseName } from "../../src/lib/storage-names.ts";
 import { seed, synthetic, executionInput } from "./vault-storage.fixture.ts";
 import type { ApprovedOperation } from "../../src/lib/secrets/types.ts";
+import { vaultCall, lockVault } from "../../src/lib/secrets/client.ts";
+import type { ResponseProgress } from "../../src/lib/workflow-response-stream.ts";
 
 let record: SchemaDocumentRecord;
 let descriptor: ApprovedOperation;
@@ -37,8 +39,10 @@ export async function setup(origin: string, run: string, action = "ok") {
   const document = { openapi: "3.1.0", info: { title: "Vault browser fixture", version: "1.0.0" }, servers: [{ url: origin }],
     components: { securitySchemes: { Bearer: { type: "http", scheme: "bearer" }, Key: { type: "apiKey", in: "header", name: "X-Api-Key" } } },
     paths: { [path]: { get: { operationId: "secured", summary: "Secured fixture", security: [{ Bearer: [], Key: [] }],
+      ...(action === "stream" ? { "x-operations-response-stream": "openai-responses" } : {}),
       ...(action === "field-limit" ? { parameters: [{ in: "query", name: "field-" + "f".repeat(20 * 1024), required: true, schema: { type: "string" } }] } : {}),
-      responses: { "200": { description: "Result", content: { "application/json": { schema: { type: "object" } } } } } } } } };
+      responses: { "200": { description: "Result", content: { "application/json": { schema: { type: "object" } },
+        ...(action === "stream" ? { "text/event-stream": { schema: { type: "object" } } } : {}) } } } } } } };
   record = { id, file: "vault.json", document, enabled: true, createdAt: Date.now(), updatedAt: Date.now() };
   await loadSchemaDocuments(); await putSchemaDocument(record);
   descriptor = await approvedOperation(validateSchemaDocument(document, id).operations[0]!, origin);
@@ -59,6 +63,18 @@ export async function execute() {
   const { binding } = executionInput();
   try { return { value: await call("execute", [descriptor, {}, binding]) }; }
   catch (error) { return { error: (error as { code?: string }).code ?? "UNEXPECTED" }; }
+}
+export async function streamedClient(origin: string, run: string) {
+  const configured = await setup(origin, run, "stream");
+  worker.terminate();
+  const method = configured.status.methods.find(method => method.kind === "password")!;
+  const progress: ResponseProgress[] = [];
+  try {
+    await vaultCall("unlock", [{ methodId: method.id, secret: synthetic.password }]);
+    const { binding } = executionInput();
+    const value = await vaultCall("execute", [descriptor, {}, binding], undefined, item => progress.push(item));
+    return { value, progress };
+  } finally { await lockVault(); }
 }
 export async function diagnostic() { await execute(); return lastReply; }
 export async function mutate(mode: string) {

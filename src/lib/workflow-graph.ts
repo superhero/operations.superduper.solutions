@@ -11,6 +11,7 @@ import { validateWorkflowDocument, type SwitchGate, type WorkflowData, type Work
 import { isInputLink } from "./workflow-input-links.ts";
 import { isResponseLink } from "./workflow-response-links.ts";
 import { responseKind, responseMediaType } from "./workflow-response-body.ts";
+import { streamMediaType } from "./workflow-response-stream.ts";
 import { adaptRoutingGates, gateForType, isFileBinaryConnection, isValueConnection, isWorkflowConnectionTypeCompatible, routingInputTypes, switchGateInput, switchGateLimit,
   switchOperators, switchValueLimit, workflowInputConnected, workflowInterface } from "./workflow-utilities.ts";
 
@@ -244,8 +245,11 @@ export function createOperationGraph(operation: Operation, position: { x: number
     const representations = Object.entries(content);
     if (!representations.length) outputs.push({ id: `response:${status}`, label: `Response · ${status}`,
       schema: responseEnvelope(raw, undefined, schemaDocument) });
-    for (const [media] of representations) outputs.push({ id: `response:${status}:${media}`,
-      label: `Response · ${status}${representations.length > 1 ? ` · ${media}` : ""}`, schema: responseEnvelope(raw, media, schemaDocument) });
+    for (const [media] of representations) {
+      if (operation.responseStream && media === streamMediaType(operation.responseStream)) continue;
+      outputs.push({ id: `response:${status}:${media}`,
+        label: `Response · ${status}${representations.length > 1 ? ` · ${media}` : ""}`, schema: responseEnvelope(raw, media, schemaDocument) });
+    }
   }
   for (const direction of ["inputs", "outputs"] as const)
   {

@@ -8,6 +8,7 @@ import { authenticateManifest, sealSnapshot, validateSnapshot } from "./format.t
 import { approvedOperation } from "./policy.ts";
 import { publicVaultKeys } from "./key-index.ts";
 import { executeCredentialed } from "./execution.ts";
+import type { ResponseProgressCallback } from "../workflow-response-stream.ts";
 import { checkPrivateAssertion } from "./processing.ts";
 import { VaultError, passwordProfile, vaultLimits, recoveryKeyBytes, recoveryKeyCharacters } from "./types.ts";
 import type { ApprovedOperation, CredentialBinding, CredentialSummary, CryptoContext, Enrollment,
@@ -288,8 +289,11 @@ export class VaultSession {
     return result;
   }
 
-  async execute(descriptor: ApprovedOperation, values: InputValues, binding: CredentialBinding, signal?: AbortSignal, variables?: import("./variables.ts").VaultVariableInput[]) {
+  async execute(descriptor: ApprovedOperation, values: InputValues, binding: CredentialBinding, signal?: AbortSignal,
+    variables?: import("./variables.ts").VaultVariableInput[], onProgress?: ResponseProgressCallback) {
+    const generation = this.generation;
     return executeCredentialed(descriptor, values, binding, await this.records(), {
+      ...(onProgress ? { onProgress: progress => { this.guard(generation); onProgress(progress); } } : {}),
       ...(signal ? { signal } : {}), ...(variables ? { variables } : {}), assertCurrent: async () => {
         await this.assertSchema(descriptor);
         await this.assertCurrent();

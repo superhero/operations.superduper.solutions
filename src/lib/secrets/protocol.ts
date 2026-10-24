@@ -4,6 +4,7 @@
 import type { VaultSession } from "./session.ts";
 import type { VaultErrorCode } from "./types.ts";
 import type { WorkflowResponse } from "../workflow-execution.ts";
+import type { ResponseProgress } from "../workflow-response-stream.ts";
 
 export type VaultMethod = "status" | "unlock" | "prepareCreate" | "confirmCreate" | "keys" | "list" | "copyCredential" | "put" | "remove"
   | "grant" | "revoke" | "execute" | "checkAssertion" | "backup" | "restore" | "addMethod" | "removeMethod" | "rotate";
@@ -13,4 +14,4 @@ export type VaultFailure = { kind: "vault"; code: VaultErrorCode }
   | { kind: "field"; field: string; message: string }
   | { kind: "response"; response: WorkflowResponse; message: string };
 export type VaultReply = { id: number; ok: true; value: unknown } | { id: number; ok: false; error: VaultFailure }
-  | { event: "locked" };
+  | { event: "locked" } | { event: "response-progress"; id: number; progress: ResponseProgress };

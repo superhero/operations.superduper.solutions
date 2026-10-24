@@ -18,6 +18,61 @@ const readBody = async page => JSON.parse(await responseBody(page).locator(".jso
   return document.textContent;
 }));
 
+Then('streamed operation progress at {int} pixels stays stable until cancellation or an explicit terminal result', async function (width) {
+  const page = this.page;
+  await page.setViewportSize({ width, height: 900 });
+  const name = 'Bounded response stream';
+  const document = { openapi: '3.1.0', info: { title: 'Streaming browser fixture', version: '1' }, servers: [{ url: 'https://httpbin.org' }],
+    paths: { '/stream-fixture': { post: { operationId: 'stream-fixture', summary: name, 'x-operations-response-stream': 'openai-responses',
+      responses: { 200: { description: 'Final response', content: {
+        'application/json': { schema: { type: 'object', properties: { id: { type: 'string' } } } },
+        'text/event-stream': { schema: { type: 'object' } } } } } } } } };
+  await page.evaluate(() => {
+    const original = window.fetch.bind(window), encoder = new TextEncoder();
+    const state = window.__streamFixture = { calls: 0, cancelled: false };
+    window.fetch = async (input, init) => {
+      if (String(input) !== 'https://httpbin.org/stream-fixture') return original(input, init);
+      const attempt = ++state.calls;
+      let timer;
+      return new Response(new ReadableStream({ start(controller) {
+        const event = value => controller.enqueue(encoder.encode('event: '+value.type+'\ndata: '+JSON.stringify(value)+'\n\n'));
+        if (attempt === 1) {
+          event({ type: 'response.output_text.delta', delta: 'incomplete text must not be a result' });
+          timer = setTimeout(() => event({ type: 'response.output_text.delta', delta: 'still incomplete' }), 700);
+        } else event({ type: 'response.completed', response: { id: 'resp_browser_fixture', object: 'response', status: 'completed', error: null, output: [] } });
+      }, cancel() { clearTimeout(timer); state.cancelled = true; } }), { headers: { 'Content-Type': 'text/event-stream' } });
+    };
+  });
+  await setMode(page, 'settings');
+  const schemas = page.locator('summary[aria-label="Schemas"]');
+  if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({
+    name: 'streaming-browser.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
+  await expect(page.getByRole('switch', { name: 'Enable Streaming browser fixture', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await chooseCatalogOperation(page, name);
+  await execute(page);
+  const progress = page.getByRole('status', { name: 'Response progress', exact: true });
+  await expect(progress).toContainText('Receiving response');
+  const before = await progress.boundingBox();
+  const footerBefore = await page.getByRole('button', { name: 'Cancel request', exact: true }).boundingBox();
+  await expect(progress).toContainText('2 updates');
+  assert.deepEqual(await progress.boundingBox(), before, 'Progress updates must preserve the reserved layout.');
+  assert.deepEqual(await page.getByRole('button', { name: 'Cancel request', exact: true }).boundingBox(), footerBefore);
+  await expect(page.getByRole('button', { name: 'Sending request…', exact: true })).toBeDisabled();
+  await expect(responseBody(page)).toHaveCount(0);
+  assert.equal(await page.evaluate(() => window.__streamFixture.calls), 1);
+  await page.getByRole('button', { name: 'Cancel request', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => window.__streamFixture.cancelled)).toBe(true);
+  await expect(page.getByRole('button', { name: 'Retry operation', exact: true })).toBeEnabled();
+  assert.equal(await page.evaluate(() => window.__streamFixture.calls), 1, 'Cancellation must not replay a write.');
+  await execute(page);
+  await expect(responseBody(page)).toContainText('resp_browser_fixture');
+  assert.equal(await page.evaluate(() => window.__streamFixture.calls), 2, 'Only the explicit retry may dispatch again.');
+  assert.equal((await readBody(page)).id, 'resp_browser_fixture');
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await page.screenshot({ path: `${this.artifactDirectory}/streaming-result-${width}.png` });
+});
+
 async function expectServerMetadata(page, url) {
   await expect(workspace(page).getByText(/^Live request/)).toHaveCount(0);
   await page.getByRole("button", { name: "Review operation details", exact: true }).click();

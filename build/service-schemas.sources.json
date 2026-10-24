@@ -2,7 +2,8 @@
   {
     "id": "openai",
     "name": "OpenAI",
-    "url": "https://raw.githubusercontent.com/openai/openai-openapi/main/openapi.yaml"
+    "url": "https://raw.githubusercontent.com/openai/openai-openapi/main/openapi.yaml",
+    "profile": "http-streaming"
   },
   {
     "id": "codex",
@@ -109,7 +110,8 @@
   {
     "id": "ollama",
     "name": "Ollama",
-    "url": "https://raw.githubusercontent.com/ollama/ollama/main/docs/openapi.yaml"
+    "url": "https://raw.githubusercontent.com/ollama/ollama/main/docs/openapi.yaml",
+    "profile": "http-streaming"
   },
   {
     "id": "docker",
