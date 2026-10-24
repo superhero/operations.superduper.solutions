@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/github-authentication.test.mjs",
     "src/request-body.test.mjs",
     "src/workflow-processing.test.mjs",
     "src/operation-security.test.mjs",
@@ -69,6 +70,7 @@
     "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
+    "src/github-authentication.feature",
     "src/request-body.feature",
     "src/workflow-processing.feature",
     "src/operation-security.feature",
