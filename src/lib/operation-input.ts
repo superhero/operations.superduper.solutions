@@ -152,6 +152,7 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
 {
   if (operation.deferred) throw new Error("Load this operation's schema before preparing a request.");
   if (operation.unavailableReason) throw new Error(operation.unavailableReason);
+  if (operation.credentialResult !== undefined) throw new Error("This operation returns credentials. Private credential acquisition is not supported yet.");
   const request: PreparedRequest = { method: operation.method, path: operation.path, query: {} };
   const body: Record<string, JsonValue> = {};
   const fields = [...operation.fields];

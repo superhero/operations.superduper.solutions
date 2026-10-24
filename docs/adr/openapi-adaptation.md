@@ -351,6 +351,34 @@ requires an explicit API version. This correction adds no credential issuance,
 App Attest, SDK, streaming-result or native-worker lifecycle. Synthetic
 non-streaming requests do not qualify live accounts, permissions or browser CORS.
 
+ElevenLabs' `elevenlabs-authentication` correction declares the account
+`xi-api-key` transport while retaining reviewed public and optional-public route
+overrides. Optional generated header parameters alone do not establish public
+access. The correction checks the direct API endpoint and existing private-key
+parameter contract. Its exact string/null key union becomes equivalent nullable
+Text metadata so existing vault header connections remain usable; original
+parameters and omitted security declarations stay inspectable as provenance.
+An explicitly anonymous choice cannot supply a declared credential header or
+query value through ordinary inputs.
+
+Responses that declare an authentication token, signed URL, new API key or
+webhook secret carry `x-operations-credential-result:true`. Both schema readers
+retain this capability as `credentialResult`; request preparation and canonical
+private approval reject it until private credential acquisition is implemented.
+This applies even when upstream authentication metadata is already fixed.
+Pagination tokens, masked key previews and credential IDs do not trigger the
+marker. These results cannot be treated as ordinary JSON outputs, and ephemeral
+client tokens are not aliases for the account API key. Existing binary, stream,
+form and endpoint limitations remain separate.
+
+See [ElevenLabs authentication](https://elevenlabs.io/docs/api-reference/authentication),
+[public default settings](https://elevenlabs.io/docs/api-reference/voices/settings/get-default),
+[single-use tokens](https://elevenlabs.io/docs/api-reference/tokens/create) and
+[signed conversation URLs](https://elevenlabs.io/docs/api-reference/conversations/get-signed-url).
+No token acquisition, audio playback or binary/streamed result support is added.
+Provider authorization, public-resource visibility, key permissions, quotas and
+browser CORS remain separate from deterministic request validation.
+
 Authentication alternatives retain their original array positions and scheme
 names. A valid unsupported HTTP scheme is retained as an explicit unavailable
 credential with its destination and explanation; it never becomes an empty

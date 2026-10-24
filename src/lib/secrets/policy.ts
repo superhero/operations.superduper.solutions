@@ -74,6 +74,7 @@ export function normalizeCredentialOrigin(origin: string): string
 
 function validateOperation(operation: Operation): void
 {
+  if (operation?.credentialResult !== undefined) throw new VaultError("PERMISSION");
   if (!operation || !methods.has(operation.method) || typeof operation.id !== "string" || !operation.id.trim()
     || !Array.isArray(operation.fields)) throw new VaultError("PERMISSION");
   validateCredentialPath(operation.path, true);

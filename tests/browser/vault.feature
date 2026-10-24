@@ -225,3 +225,13 @@ Feature: Browser vault persistence and controlled credential execution
       | 1280  | connected API key |
       | 390   | bearer            |
       | 1280  | bearer            |
+
+  @vault-browser-ui @chromium-only
+  Scenario Outline: ElevenLabs private header connections survive reload on desktop and mobile
+    When I use a viewport of <width> by 900 pixels
+    Given I create a vault in the Secrets settings and save a synthetic credential
+    Then the ElevenLabs private key connection survives reload without exposing credentials
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |

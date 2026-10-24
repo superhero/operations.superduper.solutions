@@ -756,3 +756,83 @@ Then('pinned Anthropic API key and bearer choices dispatch nonstreaming requests
       independentLimitations: 122, syntheticRequests: calls.length, workloadIdentityIssuance: false, liveProviderVerified: false }, null, 2)+'\n');
   } finally { publishPreparedCatalogs(previous); }
 });
+
+Then('pinned ElevenLabs history and public settings dispatch without enabling credential acquisition', async () => {
+  const { operations, publishPreparedCatalogs, operationSourceIdentity, installOperationModel } = await import('./lib/catalog.ts');
+  const { catalogs } = await import('./lib/catalog-registry.ts');
+  const { scopeOperationSchema } = await import('./lib/operation-report.ts');
+  const { createOperationGraph } = await import('./lib/workflow-graph.ts');
+  const { approvedOperation } = await import('./lib/secrets/policy.ts');
+  const { prepareRequest } = await import('./lib/operation-input.ts');
+  const { executeCredentialed } = await import('./lib/secrets/execution.ts');
+  const { createWorkflowExecution, createWorkflowRequestExecution } = await import('./lib/workflow-execution.ts');
+  const { vaultVariablePlaceholder } = await import('./lib/secrets/variables.ts');
+  const source = serviceSchemaDescriptors.find(item => item.id === 'elevenlabs');
+  assert.deepEqual(source.patches, [{ id: 'elevenlabs-authentication', version: 1 }]);
+  const published = await readServiceSchemaUpstream('elevenlabs'), document = await readServiceSchema('elevenlabs');
+  assert.equal(published.security, undefined); assert.equal(createHash('sha256').update(JSON.stringify(published)).digest('hex'), source.sha256);
+  assert.equal(createHash('sha256').update(JSON.stringify(document)).digest('hex'), source.effectiveSha256);
+  const before = inspectServiceSchema(published, source.id), after = inspectServiceSchema(document, source.id);
+  assert.equal(after.operations.length, 418);
+  const credentialResults = after.operations.filter(operation => operation.credentialResult);
+  assert.equal(credentialResults.length, 9);
+  assert.ok(credentialResults.every(operation => operation.unavailableReason));
+  for (const old of before.operations.filter(operation => operation.unavailableReason))
+    assert.equal(after.operations.find(operation => operation.id === old.id).unavailableReason, old.unavailableReason, 'Independent media/schema/transport limits remain.');
+  const previous = catalogs.map(catalog => ({ catalog, sourceIdentity: operationSourceIdentity(`${catalog.id}:`), operations: operations.filter(operation => operation.id.startsWith(`${catalog.id}:`)) }));
+  const discovery = createSchemaDiscovery(after, source.effectiveSha256), catalog = { id: source.id, file: 'elevenlabs.json', document: discovery.document,
+    name: after.name, groups: discovery.groups, execution: { kind: 'http', origin: after.serverUrl } };
+  const credential = { id: crypto.randomUUID(), label: 'ElevenLabs account key', kind: 'secret', value: 'synthetic-eleven-private-9182', grants: [] };
+  let privateCalls = 0, publicCalls = 0;
+  const privateRequest = async (url, options) => {
+    privateCalls++; assert.ok(String(url).startsWith('https://api.elevenlabs.io/v1/'));
+    assert.equal(options.headers.get('xi-api-key'), credential.value); assert.equal(options.headers.get('Authorization'), null);
+    assert.equal(options.credentials, 'omit'); assert.equal(options.redirect, 'error');
+    return Response.json({ history: [], echoed: credential.value });
+  };
+  const publicRequest = async (url, options) => {
+    publicCalls++; assert.equal(String(url), 'https://api.elevenlabs.io/v1/voices/settings/default');
+    assert.equal(new Headers(options.headers).has('xi-api-key'), false); assert.equal(options.credentials, 'omit');
+    return Response.json({ stability: 0.5 });
+  };
+  try {
+    publishPreparedCatalogs([...previous.filter(entry => entry.catalog.id !== source.id), { catalog, operations: discovery.operations, sourceIdentity: source.effectiveSha256 }]);
+    const install = model => { const scoped = scopeOperationSchema(document, model.path, model.method, true).schema;
+      return installOperationModel({ operation: model, document: scoped, origin: catalog.execution.origin, sourceIdentity: source.effectiveSha256, bytes: Buffer.byteLength(JSON.stringify(scoped)) }); };
+    for (const id of ['elevenlabs:get_speech_history', 'elevenlabs:get_user_info']) {
+      const model = install(after.operations.find(operation => operation.id === id)); assert.equal(model.unavailableReason, undefined);
+      assert.deepEqual(model.security, [[{ name: 'ElevenLabsApiKey', kind: 'apiKey', header: 'xi-api-key' }]]);
+      const graph = createOperationGraph(model, { x: 0, y: 0 }, 'native-elevenlabs', document);
+      assert.ok(graph.nodes.some(node => node.type === 'data' && node.data.direction === 'inputs' && node.data.fields.some(field => field.label.toLowerCase()==='xi-api-key' && field.type==='Text' && field.connectable)), 'The native nullable key header remains connectable.');
+      const descriptor = await approvedOperation(model, 'https://api.elevenlabs.io');
+      const binding = { alternative: 0, credentials: { ElevenLabsApiKey: credential.id }, fingerprint: descriptor.fingerprint };
+      const context = { binding, runId: crypto.randomUUID(), nodeId: 'elevenlabs' };
+      const executor = createWorkflowExecution((approved, values, selected) => executeCredentialed(approved, values, selected.binding, [credential], { assertCurrent() {}, variables: selected.variables, fetchRequest: privateRequest }));
+      const count = privateCalls;
+      await assert.rejects(executor.execute(model, {}), { code: 'PERMISSION' });
+      await assert.rejects(createWorkflowRequestExecution(() => assert.fail('Anonymous private request')).execute(model, {}), { code: 'PERMISSION' });
+      await assert.rejects(executor.execute(model, {}, undefined, { ...context, binding: { ...binding, credentials: {} } }), { code: 'PERMISSION' });
+      const old = await approvedOperation(before.operations.find(operation => operation.id === id), descriptor.origin);
+      await assert.rejects(executor.execute(model, {}, undefined, { ...context, binding: { ...binding, fingerprint: old.fingerprint } }), { code: 'PERMISSION' });
+      assert.equal(privateCalls, count);
+      const result = await executor.execute(model, {}, undefined, context); assert.equal(result.response.redacted, true); assert.ok(!JSON.stringify(result).includes(credential.value));
+      const field = model.fields.find(field => field.name === 'xi-api-key');
+      await executor.execute(model, { [field.key]: vaultVariablePlaceholder }, undefined, { ...context, variables: [{ key: field.key, path: [], credentialId: credential.id }] });
+      await assert.rejects(executor.execute(model, { [field.key]: credential.value }, undefined, context), { code: 'PERMISSION' });
+    }
+    const defaults = install(after.operations.find(operation => operation.id === 'elevenlabs:get_voice_settings_default'));
+    assert.deepEqual(defaults.security, []); assert.equal((await createWorkflowRequestExecution(publicRequest).execute(defaults, {})).response.body.stability, 0.5);
+    for (const blocked of credentialResults) {
+      const model = install(blocked); assert.equal(model.credentialResult, true);
+      await assert.rejects(approvedOperation({ ...model, unavailableReason: undefined }, catalog.execution.origin), { code: 'PERMISSION' });
+      assert.throws(() => prepareRequest({ ...model, unavailableReason: undefined }, {}), /returns credentials/);
+      await assert.rejects(createWorkflowRequestExecution(() => assert.fail('Credential acquisition dispatched')).execute({ ...model, credentialResult: undefined, unavailableReason: undefined }, {}));
+    }
+    assert.equal(privateCalls, 4); assert.equal(publicCalls, 1);
+    const census = { operations: after.operations.length, availableBefore: before.operations.filter(operation => !operation.unavailableReason).length,
+      availableAfter: after.operations.filter(operation => !operation.unavailableReason).length, credentialResults: credentialResults.map(operation => operation.id),
+      publicRoutes: after.operations.filter(operation => operation.security?.length===0).map(operation => operation.id),
+      optionalPublicRoutes: after.operations.filter(operation => operation.security?.some(option => option.length===0) && operation.security.length>0).map(operation => operation.id), privateCalls, publicCalls, liveProviderVerified: false };
+    const { writeFile } = await import('node:fs/promises'); await writeFile('tmp/elevenlabs-provider-census.json', JSON.stringify(census,null,2)+'\n'); console.log(JSON.stringify(census));
+  } finally { publishPreparedCatalogs(previous); }
+});

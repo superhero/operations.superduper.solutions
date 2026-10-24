@@ -56,3 +56,6 @@ Feature: Bundled service schema integrity
 
   Scenario: Colliding upstream operation identifiers and path aliases remain independently addressable
     Then method and path identities preserve aliased operations and recursive models without changing existing contracts
+
+  Scenario: ElevenLabs private public and credential acquisition routes stay distinct
+    Then pinned ElevenLabs history and public settings dispatch without enabling credential acquisition
