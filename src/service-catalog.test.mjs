@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
-import { readServiceSchema, serviceSchemaDescriptors } from './lib/service-schema-packs.ts';
+import { readServiceSchema, readServiceSchemaUpstream, serviceSchemaDescriptors } from './lib/service-schema-packs.ts';
 import { prepareRequest } from './lib/operation-input.ts';
 import { operationServerUrl } from './lib/schema-documents.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
@@ -307,19 +307,22 @@ Then('FRED and ALFRED retain the economic API inventory and prepare authenticate
   assert.equal(result.response.body.has_more, false);
 });
 
-Then('Telegram placeholder defaults remain visible in the source and cannot produce an executable endpoint', async () => {
+Then('Telegram templates remain non-secret and only reviewed private connections can execute them', async () => {
   const document = await readServiceSchema('telegram');
   const before = structuredClone(document);
   const inspected = inspectServiceSchema(document, 'telegram');
   assert.equal(inspected.operations.length, serviceSchemaDescriptors.find(source => source.id === 'telegram').operations);
-  assert.ok(inspected.operations.every(operation => /server variable botToken still contains a placeholder/.test(operation.unavailableReason)));
-  assert.equal(inspected.serverUrl, '');
+  const getMe = inspected.operations.find(operation => operation.path === '/getMe');
+  assert.equal(getMe.privatePath, 'telegram-bot'); assert.equal(getMe.unavailableReason, undefined);
+  assert.equal(operationServerUrl(document, getMe), 'https://api.telegram.org');
   assert.deepEqual(document, before);
   document.servers[0].variables.botToken.default = '123456:sample-token';
   const configured = inspectServiceSchema(document, 'telegram');
-  const getMe = configured.operations.find(operation => operation.path === '/getMe');
-  assert.equal(getMe.unavailableReason, undefined);
-  assert.equal(operationServerUrl(document, getMe), 'https://api.telegram.org/bot123456:sample-token');
+  assert.match(configured.operations.find(operation => operation.path === '/getMe').unavailableReason, /reviewed Telegram HTTPS template/);
+  const original = await readServiceSchemaUpstream('telegram');
+  assert.match(inspectServiceSchema(original, 'telegram').operations[0].unavailableReason, /placeholder/);
+  original.servers[0].variables.botToken.default = '123456:sample-token';
+  assert.match(inspectServiceSchema(original, 'telegram').operations[0].unavailableReason, /private bot token connection/);
 });
 
 Then('the default service index retains every packaged operation and reports execution limits', { timeout: 60_000 }, async () => {

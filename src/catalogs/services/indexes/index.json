@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "86d72faca7ed96795a5884d8415606e54f668898fb2fa746faa044f4abcd0692",
+  "adapterRevision": "7428a5d84810659801fc98172cb02c0b59db1efc3771a2473ccd6f0bbf8c5d5c",
   "indexes": [
     {
       "id": "anthropic",
@@ -3036,16 +3036,16 @@
     },
     {
       "id": "telegram",
-      "sourceRevision": "f5234e87e6880f87fbba5bd594d80d2d235bac2d9388a47b00b109bc5fe0e6cc",
-      "bytes": 71786,
-      "compressedBytes": 4258,
-      "sha256": "34cea72fc71b1e7ccd91c21bc876accf9da1672199aa4c30e57b62fc4b8294a1",
+      "sourceRevision": "87e24e72f3a76ccfef04c486bd8fd11eed40851917d2e4e7b851531c34e1038d",
+      "bytes": 42405,
+      "compressedBytes": 3836,
+      "sha256": "fbe9512181422b4cede7d8d7344db48c185f87111aab1efa6f6a0c4ac8c3407b",
       "summary": {
         "name": "Telegram Bot API",
-        "serverUrl": "",
+        "serverUrl": "https://api.telegram.org",
         "description": "Generated from the official Telegram Bot API documentation using @gramio/schema-parser.",
         "operationCount": 180,
-        "unavailableCount": 180
+        "unavailableCount": 1
       }
     },
     {

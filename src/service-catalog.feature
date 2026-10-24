@@ -29,8 +29,8 @@ Feature: Default service operation catalogs
   Scenario: FRED and ALFRED expose economic series historical vintages and their real authentication transports
     Then FRED and ALFRED retain the economic API inventory and prepare authenticated historical and bulk requests
 
-  Scenario: Unresolved service servers retain the source and block execution until configured
-    Then Telegram placeholder defaults remain visible in the source and cannot produce an executable endpoint
+  Scenario: Telegram server templates retain the source and require private connections
+    Then Telegram templates remain non-secret and only reviewed private connections can execute them
 
   Scenario: Every packaged operation remains represented
     Then the default service index retains every packaged operation and reports execution limits

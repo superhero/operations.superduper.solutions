@@ -14,6 +14,7 @@ import { validateApprovedOperation, validateCredentialPath } from "./policy.ts";
 import { VaultError, vaultLimits, type ApprovedOperation, type CredentialBinding, type VaultCredential } from "./types.ts";
 import { workflowResponseLifetime, responseAccept, type ResponseProgressCallback } from "../workflow-response-stream.ts";
 import { resolveHttpConnection, formatHttpToken } from "./http-connections.ts";
+import { telegramPrivateUrl, privateUrlRedactions } from "./telegram-path.ts";
 
 export type CredentialResponse = WorkflowResponse & { redacted?: boolean };
 export type CredentialExecutionResult = WorkflowExecutionResult & { response: CredentialResponse };
@@ -85,6 +86,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       .flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
       .sort((a, b) => b.length - a.length);
     const approved = await validateApprovedOperation(descriptor);
+    const savedConnection = !!bindingSnapshot.connection;
+    if (approved.operation.privatePath && !savedConnection) throw new VaultError("PERMISSION");
     const connection = await resolveHttpConnection(approved, bindingSnapshot, credentialSnapshot);
     bindingSnapshot = connection.binding;
     const variables = options.variables === undefined ? [] : validateVaultVariableInputs(options.variables);
@@ -95,6 +98,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       throw new VaultError("PERMISSION");
     const injected = new Headers();
     const injectedQueries = new Map<string, string>();
+    let pathToken: string | undefined;
     const credentialValue = (id: string, kind: "bearer" | "basic" | "apiKey", connectedHeader = false): string => {
       const matches = credentialSnapshot.filter(credential => credential.id === id);
       if (matches.length !== 1) throw new VaultError("PERMISSION");
@@ -121,11 +125,16 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         if (typeof reference !== "string") throw new VaultError("PERMISSION");
         const connected = credentialSelectionForVariables([[scheme]], variables);
         const value = credentialValue(reference, scheme.kind, connected?.credentials[scheme.name] === reference);
-        if (scheme.query !== undefined) injectedQueries.set(scheme.query, value);
+        if (scheme.path !== undefined) {
+          if (scheme.path !== approved.operation.privatePath || !savedConnection) throw new VaultError("PERMISSION");
+          pathToken = value;
+          secrets.push(...privateUrlRedactions(value));
+        }
+        else if (scheme.query !== undefined) injectedQueries.set(scheme.query, value);
         else {
           const formatted = scheme.kind === "bearer" ? `Bearer ${value}` : formatHttpToken(connection.format, value);
           if (formatted !== value) secrets.push(formatted);
-          injected.set(scheme.header, formatted);
+          injected.set(scheme.header!, formatted);
         }
       }
     }
@@ -173,7 +182,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     for (const [key, value] of structured) inputSnapshot[key] = JSON.stringify(value);
     const request = prepareRequest(approved.operation, inputSnapshot, fields);
     validateCredentialPath(request.path);
-    const url = new URL(`${approved.origin}${request.path}`);
+    const url = approved.operation.privatePath ? telegramPrivateUrl(approved, request.path, pathToken ?? "") : new URL(`${approved.origin}${request.path}`);
+    if (approved.operation.privatePath) secrets.push(...privateUrlRedactions(url.href));
     const authQueries = new Set((approved.operation.security ?? []).flat().flatMap(scheme => scheme.query === undefined ? [] : [scheme.query]));
     for (const [key, value] of Object.entries(request.query))
     {

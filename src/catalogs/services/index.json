@@ -4628,6 +4628,7 @@
     "id": "telegram",
     "name": "Telegram / Bot API",
     "url": "https://raw.githubusercontent.com/photon-hq/telegram-api/main/specs/telegram-bot-api.openapi.json",
+    "profile": "telegram-private-path",
     "version": "10.1",
     "openapi": "3.0.3",
     "operations": 180,
@@ -4635,7 +4636,15 @@
     "sha256": "f5234e87e6880f87fbba5bd594d80d2d235bac2d9388a47b00b109bc5fe0e6cc",
     "sourceSha256": "a425b36f82f3471a4b803fa6ff7e88691eb5f2f0cc9bdf77bb76f57aa11dd4ea",
     "bytes": 993735,
-    "compressedBytes": 105461
+    "compressedBytes": 105461,
+    "patches": [
+      {
+        "id": "telegram-private-path",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "87e24e72f3a76ccfef04c486bd8fd11eed40851917d2e4e7b851531c34e1038d",
+    "effectiveBytes": 1001475
   },
   {
     "id": "together",

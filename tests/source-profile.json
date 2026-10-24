@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/telegram-private-path.test.mjs",
     "src/http-connections.test.mjs",
     "src/workflow-stream-response.test.mjs",
     "src/github-authentication.test.mjs",
@@ -72,6 +73,7 @@
     "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
+    "src/telegram-private-path.feature",
     "src/http-connections.feature",
     "src/workflow-stream-response.feature",
     "src/github-authentication.feature",

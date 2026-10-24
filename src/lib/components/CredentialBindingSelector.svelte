@@ -69,7 +69,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     manualBinding = validateCredentialBinding({ alternative: Number(alternative), credentials: Object.fromEntries(entries), fingerprint: descriptor.fingerprint });
     publish();
   }
-  function publish() { onChange(connectionSelected ? connectionBinding : manualBinding); }
+  function publish() { onChange(connectionSelected ? connectionBinding : operation.privatePath ? undefined : manualBinding); }
   async function refresh() {
     const request = ++revision;
     busy = true; error = "";
@@ -122,6 +122,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <fieldset class="credential-selection" disabled={disabled || busy}>
   <legend>Credentials</legend>
+  {#if operation.privatePath}<p>Save or select a connection to supply the bot token in Telegram's private URL path.</p>{/if}
   {#if descriptor}
     <HttpConnectionSelector {descriptor} {status} manual={manualBinding}
       initial={initial?.fingerprint === descriptor.fingerprint ? initial.connection : undefined} disabled={disabled || busy} {portalZIndex}
@@ -155,7 +156,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
                 disabled={disabled || busy} {portalZIndex} options={credentials.map(item => ({ value: item.id, label: item.label }))}
                 onValueChange={value => basicChoice(scheme.name, "password", value)} />
             {:else}
-            <label for={`${fieldId}-credential-${index}-value`}>{scheme.name} · {scheme.header ?? scheme.query}</label>
+            <label for={`${fieldId}-credential-${index}-value`}>{scheme.name} · {scheme.path ? "Private token path" : scheme.header ?? scheme.query}</label>
             <FieldSelect id={`${fieldId}-credential-${index}-value`} label={`Credential for ${scheme.name}`} value={choice(scheme.name)}
               disabled={disabled || busy} {portalZIndex}
               options={credentials.filter(item => permitted(item, scheme.name)).map(item => ({ value: item.id, label: item.label }))}
