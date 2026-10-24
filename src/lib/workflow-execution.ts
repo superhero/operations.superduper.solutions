@@ -11,7 +11,7 @@ import { operationServerUrl } from "./schema-documents.ts";
 import { serverUrlHasPlaceholder, telegramBotOrigin } from "./server-url.ts";
 import { VaultError, type ApprovedOperation, type CredentialExecutionContext } from "./secrets/types.ts";
 import { approvedOperation } from "./secrets/policy.ts";
-import { isBasicCredentialReference, validateCredentialContext } from "./secrets/bindings.ts";
+import { isBasicCredentialReference, isOAuth1CredentialReference, validateCredentialContext } from "./secrets/bindings.ts";
 import { executeVaultOperation } from "./secrets/vault-executor.ts";
 import { readWorkflowResponseBody, WorkflowBodyError } from "./workflow-response-body.ts";
 import { workflowResponseLifetime, responseAccept, type ResponseProgress, type ResponseProgressCallback } from "./workflow-response-stream.ts";
@@ -171,6 +171,7 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
       if (Object.keys(invocation.binding.credentials).length !== alternative.length
         || alternative.some(scheme => !Object.hasOwn(invocation.binding.credentials, scheme.name)
           || (scheme.kind === "basic" ? !isBasicCredentialReference(invocation.binding.credentials[scheme.name])
+            : scheme.kind === "oauth1" ? !isOAuth1CredentialReference(invocation.binding.credentials[scheme.name])
             : typeof invocation.binding.credentials[scheme.name] !== "string"))) throw new VaultError("PERMISSION");
       return credentialExecution(descriptor, submitted, invocation, signal, onProgress);
     }

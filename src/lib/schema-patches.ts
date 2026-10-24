@@ -5,7 +5,7 @@ import { adaptGithubAuthentication } from "./github-authentication.ts";
 import { telegramBotTemplate } from "./server-url.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path"; version: 1 };
+export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing"; version: 1 };
 export const googleOauthAlternatives: SchemaPatch = { id: "google-oauth-alternatives", version: 1 };
 export const digitalOceanBearerPermissions: SchemaPatch = { id: "digitalocean-bearer-permissions", version: 1 };
 export const geminiAuthAlternatives: SchemaPatch = { id: "gemini-auth-alternatives", version: 1 };
@@ -14,6 +14,8 @@ export const anthropicAuthentication: SchemaPatch = { id: "anthropic-authenticat
 export const elevenLabsAuthentication: SchemaPatch = { id: "elevenlabs-authentication", version: 1 };
 export const githubAuthentication: SchemaPatch = { id: "github-authentication", version: 1 };
 export const httpResponseStreaming: SchemaPatch = { id: "http-response-streaming", version: 1 };
+export const xOauth1Signing: SchemaPatch = { id: "x-oauth1-signing", version: 1 };
+export const xOauth1SourceSha256 = "e21fbef8a11e6c2a8dfcbbe2390fc10c73dc79671b3b5f51de787d4be106a9c6";
 export const telegramPrivatePath: SchemaPatch = { id: "telegram-private-path", version: 1 };
 export const telegramPrivatePathSourceSha256 = "f5234e87e6880f87fbba5bd594d80d2d235bac2d9388a47b00b109bc5fe0e6cc";
 export const httpResponseStreamingSources: Record<string, string> = {
@@ -29,7 +31,7 @@ export function schemaPatchName(patch: SchemaPatch): string {
     : patch.id === "elevenlabs-authentication" ? "ElevenLabs authentication and credential results"
     : patch.id === "github-authentication" ? "GitHub operation authentication"
     : patch.id === "http-response-streaming" ? "Bounded HTTP response streaming"
-    : patch.id === "telegram-private-path" ? "Telegram private bot token path" : "Unknown schema correction";
+    : patch.id === "telegram-private-path" ? "Telegram private bot token path" : patch.id === "x-oauth1-signing" ? "X OAuth 1.0a signing" : "Unknown schema correction";
 }
 
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -360,12 +362,31 @@ function telegramPath(document: Record<string, any>): void {
   }
 }
 
+function xOauth1(document: Record<string, any>): void {
+  const definition = document.components?.securitySchemes?.UserToken;
+  if (document.openapi !== "3.0.0" || document.info?.version !== "2.159" || document.servers?.length !== 1
+    || document.servers[0]?.url !== "https://api.x.com" || document.security !== undefined
+    || !object(definition) || definition.type !== "http" || definition.scheme !== "OAuth"
+    || Object.keys(definition).some(key => !["type", "scheme", "x-operations-oauth1"].includes(key))
+    || definition["x-operations-oauth1"] !== undefined && definition["x-operations-oauth1"] !== "x-hmac-sha1")
+    throw new Error("X OAuth1 signing requires the reviewed native source and authentication declaration.");
+  for (const [path, item] of Object.entries(document.paths) as [string, Record<string, any>][]) {
+    if (item.servers !== undefined) throw new Error("X OAuth1 signing cannot replace an unreviewed destination.");
+    for (const [method, operation] of Object.entries(item) as [string, Record<string, any>][]) {
+      if (methods.has(method) && operation.security?.some((option: Record<string, unknown>) => Object.hasOwn(option, "UserToken"))
+        && (!path.startsWith("/2/") || operation.servers !== undefined))
+        throw new Error("X OAuth1 signing requires a reviewed API v2 destination.");
+    }
+  }
+  definition["x-operations-oauth1"] = "x-hmac-sha1";
+}
+
 export function applySchemaPatches(input: Record<string, unknown>, patches: readonly SchemaPatch[] = []): Record<string, unknown> {
   if (!patches.length) return input;
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
     if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
@@ -376,7 +397,8 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
     else if (patch.id === "elevenlabs-authentication") elevenLabsAuth(document);
     else if (patch.id === "github-authentication") adaptGithubAuthentication(document);
     else if (patch.id === "http-response-streaming") responseStreaming(document);
-    else telegramPath(document);
+    else if (patch.id === "telegram-private-path") telegramPath(document);
+    else xOauth1(document);
   }
   return document;
 }

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHmac } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
@@ -1107,4 +1107,71 @@ Then('the Anthropic {string} selection preserves private headers and saved refer
 });
 Then('the ElevenLabs private key connection survives reload without exposing credentials', { timeout: 90_000 }, async function () {
   await privateHeaderSelection.call(this, 'connected API key', 'ElevenLabs');
+});
+
+Then('an X OAuth1 connection at {int} pixels signs privately after selecting four stored credentials', { timeout: 60_000 }, async function (width) {
+  const page = this.page, seen = [], parts = ['consumerKey', 'consumerSecret', 'accessToken', 'tokenSecret'];
+  const secrets = Object.fromEntries(parts.map(part => [part, 'browser_X_'+part+'_canary_5729']));
+  const encode = value => encodeURIComponent(value).replace(/[!'()*]/g, c => '%'+c.charCodeAt(0).toString(16).toUpperCase());
+  await page.setViewportSize({ width, height: 900 });
+  await invoke(page, 'seedOAuth1', this.baseURL, randomUUID());
+  await this.context.route('https://api.x.com/**', async route => {
+    const request = route.request(), headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, OPTIONS' };
+    if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
+    const authorization = request.headers().authorization;
+    assert.ok(authorization?.startsWith('OAuth '));
+    const oauth = Object.fromEntries(authorization.slice(6).split(', ').map(part => {
+      const [key, value] = part.split('='); return [key, decodeURIComponent(value.slice(1, -1))];
+    }));
+    assert.equal(oauth.oauth_consumer_key, secrets.consumerKey); assert.equal(oauth.oauth_token, secrets.accessToken);
+    assert.match(oauth.oauth_nonce, /^[a-f0-9]{64}$/); assert.ok(Math.abs(Number(oauth.oauth_timestamp)-Date.now()/1000) < 10);
+    const signature = oauth.oauth_signature; delete oauth.oauth_signature;
+    const url = new URL(request.url());
+    const normalized = [...url.searchParams, ...Object.entries(oauth)].map(([name, value]) => [encode(name), encode(value)])
+      .sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0).map(pair => pair.join('=')).join('&');
+    assert.equal(signature, createHmac('sha1', encode(secrets.consumerSecret)+'&'+encode(secrets.tokenSecret))
+      .update([request.method(), url.origin+url.pathname, normalized].map(encode).join('&')).digest('base64'));
+    seen.push({ url: request.url(), headers: request.headers() });
+    return route.fulfill({ status: 200, headers: { ...headers, 'Content-Type': 'application/json' }, body: '{"accepted":true}' });
+  });
+  const name = 'X OAuth1 fixture';
+  const document = { openapi: '3.0.0', info: { title: name, version: '1' }, servers: [{ url: 'https://api.x.com' }],
+    components: { securitySchemes: { OAuth2: { type: 'http', scheme: 'bearer' }, UserToken: { type: 'http', scheme: 'OAuth', 'x-operations-oauth1': 'x-hmac-sha1' } } },
+    paths: { '/2/users/me': { get: { operationId: 'readXUser', summary: name, security: [{ OAuth2: [] }, { UserToken: [] }],
+      responses: { 200: { description: 'Result', content: { 'application/json': { schema: { type: 'object' } } } } } } } } };
+  await setMode(page, 'settings'); const schemas = page.locator('summary[aria-label="Schemas"]');
+  if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({ name: 'x-oauth1.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
+  await expect(page.getByRole('switch', { name: 'Enable '+name, exact: true })).toHaveAttribute('aria-checked', 'true');
+  await chooseCatalogOperation(page, name);
+  await page.getByRole('combobox', { name: 'Authentication alternative', exact: true }).click();
+  await page.getByRole('option', { name: 'UserToken', exact: true }).click();
+  const unlock = page.getByLabel('Unlock the vault password', { exact: true });
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  const labels = ['Consumer key', 'Consumer secret', 'Access token', 'Access token secret'];
+  for (let i = 0; i < parts.length; i++) {
+    await page.getByRole('combobox', { name: labels[i]+' for UserToken', exact: true }).click();
+    await page.getByRole('option', { name: 'X fixture '+parts[i], exact: true }).click();
+  }
+  await page.getByText('Save as connection', { exact: true }).click();
+  await page.getByLabel('Connection name', { exact: true }).fill('X connection');
+  await page.getByLabel('Account label', { exact: true }).fill('Synthetic X account');
+  await page.getByRole('button', { name: 'Save connection', exact: true }).click();
+  const connection = page.getByRole('combobox', { name: 'Saved HTTP connection', exact: true });
+  await expect(connection).toContainText('X connection · Synthetic X account');
+  const binding = async () => (await repository(page, 'list')).flatMap(document => document.nodes).find(node => node.data?.name === name)?.data.credentialBinding;
+  await expect.poll(async () => (await binding())?.connection?.revision).toBe(1);
+  assert.deepEqual((await binding()).credentials, {}); assert.equal(seen.length, 0);
+  await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await setMode(page, 'workflow'); await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await expect(connection).toContainText('X connection · Synthetic X account'); await expect(connection).toBeEnabled();
+  await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Operation completed.' })).toBeVisible();
+  assert.equal(seen.length, 1); assert.equal(seen[0].url, 'https://api.x.com/2/users/me');
+  assert.equal(seen[0].headers.cookie, undefined); assert.equal(seen[0].headers.referer, undefined);
+  for (const value of [await page.locator('body').innerText(), await repository(page, 'list'), await storage(page, 'read')])
+    for (const secret of Object.values(secrets)) assert.ok(!JSON.stringify(value).includes(secret));
+  assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, ...Object.values(secrets), ...Object.values(secrets).map(encode)]), []);
+  await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/x-oauth1-${width}.png` });
 });

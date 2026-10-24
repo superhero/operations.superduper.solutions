@@ -106,9 +106,10 @@ function validateOperation(operation: Operation): void
       return Object.fromEntries(alternative.map(scheme =>
       {
         if (!scheme || typeof scheme.name !== "string" || names.has(scheme.name)
-          || !["bearer", "basic", "apiKey"].includes(scheme.kind)) throw new VaultError("PERMISSION");
+          || !["bearer", "basic", "apiKey", "oauth1"].includes(scheme.kind)) throw new VaultError("PERMISSION");
         names.add(scheme.name);
-        const definition = scheme.kind === "bearer" || scheme.kind === "basic" ? { type: "http", scheme: scheme.kind }
+        const definition = scheme.kind === "oauth1" ? { type: "http", scheme: "OAuth", "x-operations-oauth1": "x-hmac-sha1" }
+          : scheme.kind === "bearer" || scheme.kind === "basic" ? { type: "http", scheme: scheme.kind }
           : scheme.query !== undefined ? { type: "apiKey", in: "query", name: scheme.query }
           : { type: "apiKey", in: "header", name: scheme.header };
         if (Object.hasOwn(definitions, scheme.name) && canonicalPolicyValue(definitions[scheme.name]) !== canonicalPolicyValue(definition))
@@ -131,6 +132,8 @@ export async function approvedOperation(operation: Operation, origin: string): P
     const sanitized = JSON.parse(canonicalPolicyValue(operation)) as Operation;
     validateOperation(sanitized);
     const normalized = normalizeCredentialOrigin(origin);
+    if (sanitized.security?.some(option => option.some(scheme => scheme.kind === "oauth1"))
+      && (normalized !== "https://api.x.com" || !sanitized.path.startsWith("/2/"))) throw new VaultError("PERMISSION");
     if (sanitized.privatePath && normalized !== telegramBotOrigin) throw new VaultError("PERMISSION");
     if (normalized === telegramBotOrigin && !sanitized.privatePath) throw new VaultError("PERMISSION");
     const bytes = encoder.encode(canonicalPolicyValue({ origin: normalized, operation: sanitized }));

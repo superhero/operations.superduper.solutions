@@ -1,7 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
-import { VaultError, type BasicCredentialReference, type CredentialBinding, type CredentialExecutionContext, type HttpConnectionReference } from "./types.ts";
+import { VaultError, type BasicCredentialReference, type OAuth1CredentialReference, type CredentialReference, type CredentialBinding, type CredentialExecutionContext, type HttpConnectionReference } from "./types.ts";
 import { validateVaultVariableInputs, type VaultVariableInput } from "./variables.ts";
 import type { OperationSecurity } from "../operation-security.ts";
 
@@ -23,6 +23,18 @@ export function isBasicCredentialReference(value: unknown): value is BasicCreden
     return Object.keys(pair).length === 2 && Object.keys(pair).every(key => key === "username" || key === "password")
       && typeof pair.username === "string" && uuid.test(pair.username) && typeof pair.password === "string" && uuid.test(pair.password);
   } catch { return false; }
+}
+
+export const oauth1CredentialParts = ["consumerKey", "consumerSecret", "accessToken", "tokenSecret"] as const;
+export function isOAuth1CredentialReference(value: unknown): value is OAuth1CredentialReference {
+  try {
+    const reference = object(value);
+    return Object.keys(reference).length === 4 && oauth1CredentialParts.every(part => typeof reference[part] === "string" && uuid.test(reference[part]));
+  } catch { return false; }
+}
+export function credentialReferenceIds(reference: CredentialReference): string[] {
+  return typeof reference === "string" ? [reference] : isBasicCredentialReference(reference)
+    ? [reference.username, reference.password] : oauth1CredentialParts.map(part => (reference as OAuth1CredentialReference)[part]);
 }
 
 /** A direct vault-to-header connection already selects a key. Retain that choice
@@ -59,10 +71,10 @@ export function validateCredentialBinding(value: unknown): CredentialBinding {
     || typeof item.fingerprint !== "string" || !/^[a-f0-9]{64}$/.test(item.fingerprint)) throw new VaultError("INVALID");
   const entries = Object.entries(object(item.credentials));
   if (item.connection !== undefined && entries.length || entries.length > 16 || entries.some(([scheme, id]) => !scheme.trim() || scheme.length > 128
-    || !(typeof id === "string" ? uuid.test(id) : isBasicCredentialReference(id)))) throw new VaultError("INVALID");
+    || !(typeof id === "string" ? uuid.test(id) : isBasicCredentialReference(id) || isOAuth1CredentialReference(id)))) throw new VaultError("INVALID");
   return { alternative: item.alternative as number, fingerprint: item.fingerprint,
     credentials: Object.fromEntries(entries.map(([name, reference]) => [name, typeof reference === "string" ? reference
-      : { username: (reference as BasicCredentialReference).username, password: (reference as BasicCredentialReference).password }])),
+      : object(reference) as BasicCredentialReference | OAuth1CredentialReference])),
     ...(item.connection === undefined ? {} : { connection: validateHttpConnectionReference(item.connection) }) };
 }
 

@@ -12,7 +12,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { supportedSecurityAlternative } from "../operation-security.ts";
   import { workflowExecutionForOperation } from "../workflow-execution.ts";
   import { approvedOperation } from "../secrets/policy.ts";
-  import { credentialSelectionForVariables, isBasicCredentialReference, validateCredentialBinding } from "../secrets/bindings.ts";
+  import { credentialSelectionForVariables, isBasicCredentialReference, isOAuth1CredentialReference, oauth1CredentialParts, credentialReferenceIds, validateCredentialBinding } from "../secrets/bindings.ts";
   import type { VaultVariableInput } from "../secrets/variables.ts";
   import { lockVaultLocally, readVaultKeys, readVaultStatus, subscribeVaultLock, vaultCall } from "../secrets/client.ts";
   import { VaultError, type ApprovedOperation, type CredentialBinding, type CredentialReference, type VaultKey, type VaultStatus } from "../secrets/types.ts";
@@ -42,17 +42,24 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const unavailable = $derived([...new Set(operation.security?.flatMap(option => option.flatMap(scheme => scheme.kind === "unsupported" ? [scheme.reason] : [])) ?? [])]);
   function permitted(item: VaultKey, scheme: string): boolean {
     const kind = selected?.find(item => item.name === scheme)?.kind;
-    return kind === "basic" || item.kind === "secret" || item.kind === kind
+    return kind === "basic" || kind === "oauth1" || item.kind === "secret" || item.kind === kind
       || selected?.some(candidate => candidate.name === scheme
         && credentialSelectionForVariables([[candidate]], variables)?.credentials[scheme] === item.id) === true;
   }
-  function choice(name: string, part?: "username" | "password"): string {
+  function choice(name: string, part?: "username" | "password" | typeof oauth1CredentialParts[number]): string {
     const reference = choices[name];
-    return part ? reference && typeof reference === "object" ? reference[part] : "" : typeof reference === "string" ? reference : "";
+    return part ? reference && typeof reference === "object" ? (reference as Record<string, string>)[part] ?? "" : "" : typeof reference === "string" ? reference : "";
   }
   function basicChoice(name: string, part: "username" | "password", id: string) {
     const previous = choices[name];
     choices = { ...choices, [name]: { ...(previous && typeof previous === "object" ? previous : { username: "", password: "" }), [part]: id } };
+    changed();
+  }
+  const oauth1Labels = { consumerKey: "Consumer key", consumerSecret: "Consumer secret", accessToken: "Access token", tokenSecret: "Access token secret" };
+  function oauth1Choice(name: string, part: typeof oauth1CredentialParts[number], id: string) {
+    const previous = choices[name];
+    choices = { ...choices, [name]: { consumerKey: "", consumerSecret: "", accessToken: "", tokenSecret: "",
+      ...(previous && typeof previous === "object" ? previous : {}), [part]: id } };
     changed();
   }
   function changed() {
@@ -64,6 +71,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       const scheme = selection.find(scheme => scheme.name === name)!;
       if (scheme.kind === "basic") return !isBasicCredentialReference(reference)
         || [reference.username, reference.password].some(id => !credentials.some(item => item.id === id && permitted(item, name)));
+      if (scheme.kind === "oauth1") return !isOAuth1CredentialReference(reference)
+        || credentialReferenceIds(reference).some(id => !credentials.some(item => item.id === id && permitted(item, name)));
       return typeof reference !== "string" || !credentials.some(item => item.id === reference && permitted(item, name));
     })) { manualBinding = undefined; publish(); return; }
     manualBinding = validateCredentialBinding({ alternative: Number(alternative), credentials: Object.fromEntries(entries), fingerprint: descriptor.fingerprint });
@@ -131,7 +140,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         else if (!selected) { alternative = manualBinding ? String(manualBinding.alternative) : ""; choices = { ...manualBinding?.credentials }; }
         publish(); }} />
   {/if}
-  {#if operation.oauthScopes}<p class="hint">Use an existing OAuth access token. The API checks its scopes and validity.</p>{/if}
+  {#if operation.oauthScopes && !selected?.some(scheme => scheme.kind === "oauth1")}<p class="hint">Use an existing OAuth access token. The API checks its scopes and validity.</p>{/if}
   {#if !connectionSelected}
   <FieldSelect id={`${fieldId}-alternative`} label="Authentication alternative" value={alternative} options={options}
     disabled={disabled || busy} {portalZIndex}
@@ -144,7 +153,16 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {:else}
         {#if !connectionSelected}{#each selected as scheme, index (scheme.name)}
           <div class="credential-choice">
-            {#if scheme.kind === "basic"}
+            {#if scheme.kind === "oauth1"}
+              <p class="credential-name">{scheme.name} · OAuth 1.0a</p>
+              <p class="hint">Choose your existing X application and user access credentials. Requests are signed privately with HMAC-SHA1.</p>
+              {#each oauth1CredentialParts as part}
+                <label for={`${fieldId}-credential-${index}-${part}`}>{oauth1Labels[part]}</label>
+                <FieldSelect id={`${fieldId}-credential-${index}-${part}`} label={`${oauth1Labels[part]} for ${scheme.name}`} value={choice(scheme.name, part)}
+                  disabled={disabled || busy} {portalZIndex} options={credentials.map(item => ({ value: item.id, label: item.label }))}
+                  onValueChange={value => oauth1Choice(scheme.name, part, value)} />
+              {/each}
+            {:else if scheme.kind === "basic"}
               <p class="credential-name">{scheme.name} · {scheme.header}</p>
               <p class="hint">Choose stored username and password or API token values. Usernames cannot contain a colon.</p>
               <label for={`${fieldId}-credential-${index}-username`}>Username</label>

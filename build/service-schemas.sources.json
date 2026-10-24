@@ -128,7 +128,8 @@
   {
     "id": "x",
     "name": "X / Twitter",
-    "url": "https://raw.githubusercontent.com/xdevplatform/xdk/main/latest-openapi.json"
+    "url": "https://raw.githubusercontent.com/xdevplatform/xdk/main/latest-openapi.json",
+    "profile": "x-oauth1"
   },
   {
     "id": "discord",

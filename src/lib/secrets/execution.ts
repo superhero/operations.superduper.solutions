@@ -5,7 +5,7 @@ import { readWorkflowResponseBody, binaryContainsSecret, WorkflowBodyError } fro
 import { validateWorkflowBinary } from "../workflow-binary.ts";
 import { requestBody } from "../request-body.ts";
 import { supportedSecurityAlternative } from "../operation-security.ts";
-import { credentialSelectionForVariables, isBasicCredentialReference } from "./bindings.ts";
+import { credentialSelectionForVariables, isBasicCredentialReference, isOAuth1CredentialReference, oauth1CredentialParts } from "./bindings.ts";
 import { additionalBodyField, InputValidationError, prepareRequest, type InputValues, type PreparedRequest } from "../operation-input.ts";
 import type { WorkflowExecutionResult, WorkflowResponse } from "../workflow-execution.ts";
 import { validateVaultVariableInputs, vaultVariablePlaceholder, type VaultVariableInput } from "./variables.ts";
@@ -15,6 +15,7 @@ import { VaultError, vaultLimits, type ApprovedOperation, type CredentialBinding
 import { workflowResponseLifetime, responseAccept, type ResponseProgressCallback } from "../workflow-response-stream.ts";
 import { resolveHttpConnection, formatHttpToken } from "./http-connections.ts";
 import { telegramPrivateUrl, privateUrlRedactions } from "./telegram-path.ts";
+import { signOAuth1, type OAuth1Values, type OAuth1Clock } from "./oauth1.ts";
 
 export type CredentialResponse = WorkflowResponse & { redacted?: boolean };
 export type CredentialExecutionResult = WorkflowExecutionResult & { response: CredentialResponse };
@@ -24,6 +25,7 @@ export type CredentialExecutionOptions = {
   assertCurrent: () => void | Promise<void>;
   fetchRequest?: typeof fetch;
   onProgress?: ResponseProgressCallback;
+  oauth1Clock?: OAuth1Clock;
 };
 
 /** This safe envelope has no raw request, native cause or credential-bearing message. */
@@ -99,12 +101,13 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     const injected = new Headers();
     const injectedQueries = new Map<string, string>();
     let pathToken: string | undefined;
-    const credentialValue = (id: string, kind: "bearer" | "basic" | "apiKey", connectedHeader = false): string => {
+    let oauth1: OAuth1Values | undefined;
+    const credentialValue = (id: string, kind: "bearer" | "basic" | "apiKey" | "oauth1", connectedHeader = false): string => {
       const matches = credentialSnapshot.filter(credential => credential.id === id);
       if (matches.length !== 1) throw new VaultError("PERMISSION");
       const credential = matches[0]!;
       if (!["secret", "bearer", "apiKey"].includes(credential.kind)
-        || !connectedHeader && kind !== "basic" && credential.kind !== "secret" && credential.kind !== kind) throw new VaultError("PERMISSION");
+        || !connectedHeader && !["basic", "oauth1"].includes(kind) && credential.kind !== "secret" && credential.kind !== kind) throw new VaultError("PERMISSION");
       if (typeof credential.value !== "string" || !credential.value.length || credential.value !== credential.value.trim()
         || /[^\u0020-\u007e]/.test(credential.value) || new TextEncoder().encode(credential.value).byteLength > vaultLimits.secretBytes)
         throw new VaultError("INVALID");
@@ -113,7 +116,11 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     for (const scheme of alternative)
     {
       const reference = Object.hasOwn(bindingSnapshot.credentials, scheme.name) ? bindingSnapshot.credentials[scheme.name] : undefined;
-      if (scheme.kind === "basic") {
+      if (scheme.kind === "oauth1") {
+        if (!isOAuth1CredentialReference(reference) || scheme.profile !== "x-hmac-sha1" || alternative.length !== 1
+          || approved.origin !== "https://api.x.com" || !approved.operation.path.startsWith("/2/")) throw new VaultError("PERMISSION");
+        oauth1 = Object.fromEntries(oauth1CredentialParts.map(part => [part, credentialValue(reference[part], "oauth1")])) as OAuth1Values;
+      } else if (scheme.kind === "basic") {
         if (!isBasicCredentialReference(reference)) throw new VaultError("PERMISSION");
         const username = credentialValue(reference.username, "basic"), password = credentialValue(reference.password, "basic");
         if (username.includes(":")) throw new VaultError("INVALID");
@@ -204,8 +211,16 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     }
     if (request.body !== undefined && request.contentType !== "multipart/form-data") headers.set("Content-Type", request.contentType ?? "application/json");
     for (const [name, value] of injected) headers.set(name, value);
-    const preview = redactor(secrets).value(request) as PreparedRequest;
     const body = requestBody(request);
+    if (oauth1) {
+      await options.assertCurrent();
+      if (signal.aborted) throw new VaultError("CANCELLED");
+      const signed = await signOAuth1(request.method, url.href, headers.get("Content-Type"), body, oauth1, options.oauth1Clock);
+      headers.set("Authorization", signed.authorization);
+      secrets = [...new Set([...secrets, ...signed.secrets].flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
+        .sort((a, b) => b.length - a.length);
+    }
+    const preview = redactor(secrets).value(request) as PreparedRequest;
     await options.assertCurrent();
     if (connection.expiresAt !== undefined && connection.expiresAt <= Date.now()) throw new VaultError("PERMISSION");
     if (signal.aborted) throw new VaultError("CANCELLED");

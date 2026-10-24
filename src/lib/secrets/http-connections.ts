@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { canonicalPolicyValue, validateApprovedOperation } from "./policy.ts";
-import { credentialObject, validateCredentialBinding, validateHttpConnectionReference } from "./bindings.ts";
+import { credentialObject, credentialReferenceIds, isBasicCredentialReference, isOAuth1CredentialReference, validateCredentialBinding, validateHttpConnectionReference } from "./bindings.ts";
 import { supportedSecurityAlternative } from "../operation-security.ts";
 import { VaultError, type ApprovedOperation, type CredentialBinding, type HttpConnection, type HttpConnectionInput,
   type HttpConnectionReference, type HttpTokenFormat, type VaultCredential } from "./types.ts";
@@ -17,7 +17,7 @@ function ownObject(value: unknown, required: readonly string[], optional: readon
 const schemaId = (descriptor: ApprovedOperation) => descriptor.operation.id.slice(0, descriptor.operation.id.indexOf(":"));
 export const httpConnectionReference = ({ id, revision, fingerprint }: HttpConnection): HttpConnectionReference => ({ id, revision, fingerprint });
 export const connectionCredentialIds = (connection: Pick<HttpConnection, "credentials">): string[] => [...new Set(Object.values(connection.credentials)
-  .flatMap(reference => typeof reference === "string" ? [reference] : [reference.username, reference.password]))].sort();
+  .flatMap(credentialReferenceIds))].sort();
 
 /** These are wire formats, not user-supplied templates or new secret types. */
 export function httpTokenFormats(descriptor: ApprovedOperation, alternative: number): HttpTokenFormat[] {
@@ -47,7 +47,8 @@ export function validateHttpConnection(value: unknown): HttpConnection {
   const binding = validateCredentialBinding({ alternative: item.alternative, credentials: item.credentials, fingerprint: item.fingerprint });
   if (!supportedSecurityAlternative(item.security) || !item.security.length || item.security.length > 16) throw new VaultError("INVALID");
   const security = item.security.map(scheme => {
-    ownObject(scheme, ["name", "kind", scheme.path !== undefined ? "path" : scheme.query === undefined ? "header" : "query"]);
+    ownObject(scheme, ["name", "kind", scheme.path !== undefined ? "path" : scheme.query === undefined ? "header" : "query", ...(scheme.kind === "oauth1" ? ["profile"] : [])]);
+    if (scheme.kind === "oauth1" && (scheme.profile !== "x-hmac-sha1" || scheme.header !== "Authorization")) throw new VaultError("INVALID");
     if (typeof scheme.name !== "string" || typeof (scheme.header ?? scheme.query ?? scheme.path) !== "string"
       || !Object.hasOwn(binding.credentials, scheme.name)) throw new VaultError("INVALID");
     return { ...scheme };
@@ -79,10 +80,11 @@ export function httpConnectionMatches(connection: HttpConnection, descriptor: Ap
 function assertReferences(connection: HttpConnection, records: readonly VaultCredential[]): void {
   for (const scheme of connection.security) {
     const reference = connection.credentials[scheme.name]!;
-    const ids = typeof reference === "string" ? [reference] : [reference.username, reference.password];
-    if ((scheme.kind === "basic") === (typeof reference === "string") || ids.some(id => {
+    const ids = credentialReferenceIds(reference);
+    if ((scheme.kind === "basic" ? !isBasicCredentialReference(reference)
+      : scheme.kind === "oauth1" ? !isOAuth1CredentialReference(reference) : typeof reference !== "string") || ids.some(id => {
       const matches = records.filter(record => record.id === id);
-      return matches.length !== 1 || scheme.kind !== "basic" && !["secret", scheme.kind].includes(matches[0]!.kind);
+      return matches.length !== 1 || !["basic", "oauth1"].includes(scheme.kind) && !["secret", scheme.kind].includes(matches[0]!.kind);
     })) throw new VaultError("PERMISSION");
   }
 }
