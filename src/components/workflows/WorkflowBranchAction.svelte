@@ -22,7 +22,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   function blockPointer(event: MouseEvent | TouchEvent) { event.stopPropagation(); }
 </script>
 
-<HintButton tooltipSide="left" tooltipAnchorSelector=".svelte-flow__node" type="button"
+<HintButton tooltipSide={position} type="button"
   class={`workflow-branch-action ${className} nodrag nopan nokey`} data-side={position}
   style={`top: ${top}`} {label} {disabled}
   onmousedown={blockPointer} ontouchstart={blockPointer} ondblclick={blockPointer}
@@ -31,11 +31,11 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </HintButton>
 
 <style>
-  :global(.workflow-branch-action) { position: absolute; z-index: 2; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-background); color: var(--color-foreground); transform: translate(-50%, -50%); transition: background-color 180ms ease-in, color 180ms ease-in, outline-color 180ms ease-in; }
+  :global(.workflow-branch-action) { position: absolute; z-index: 2; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-badge-background); color: var(--color-primary); transform: translate(-50%, -50%); transition: background-color 180ms ease-in, color 180ms ease-in, outline-color 180ms ease-in; }
   :global(.workflow-branch-action[data-side="left"]) { left: -20px; }
   :global(.workflow-branch-action[data-side="right"]) { right: -20px; transform: translate(50%, -50%); }
   :global(.workflow-branch-action[data-side="top"]), :global(.workflow-branch-action[data-side="bottom"]) { left: 50%; }
-  :global(.workflow-branch-action:hover:not(:disabled)) { background: var(--color-secondary-hover); color: var(--color-secondary-hover-foreground); }
+  :global(.workflow-branch-action:hover:not(:disabled)) { background: var(--color-primary); color: var(--color-badge-background); }
   :global(.workflow-branch-action .material-symbols-rounded) { font-variation-settings: "FILL" 1; }
   :global(.workflow-branch-action[data-side="left"] .material-symbols-rounded) { transform: rotate(-90deg); }
   :global(.workflow-branch-action[data-side="right"] .material-symbols-rounded) { transform: rotate(90deg); }
