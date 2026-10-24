@@ -217,6 +217,24 @@ parser, failure paths, graph routing and production browser boundary.
 
 ```
 
+<!-- changelog-commit:35a04a59cb7c0f999ce186abca70e0227eb63d8d -->
+### Commit [`35a04a5`](https://github.com/superhero/operations.superduper.solutions/commit/35a04a59cb7c0f999ce186abca70e0227eb63d8d)
+
+```text
+feat(connections): reuse private HTTP credential profiles
+
+Save named existing-token connections in encrypted vault records and
+retain only opaque, revision-bound references in local workflows.
+Resolve destination, account, auth placement and credential references
+inside the worker; invalidate stale edits, rotations and known expiry.
+
+Add reviewed Discord Bot and Opsgenie GenieKey formatting, preserving
+legacy bearer, API-key and Basic choices. Reuse a bounded authorization
+lifecycle without starting SDKs or login flows. Keep selection objects
+plain across persistence and worker boundaries, including after reload.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
