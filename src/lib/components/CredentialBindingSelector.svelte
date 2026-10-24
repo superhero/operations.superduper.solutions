@@ -157,6 +157,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 <fieldset class="credential-selection" disabled={disabled || busy}>
   <legend>Credentials</legend>
+  {#if operation.s3Files}<p>S3 objects are limited to 500 kB and require visible checksum headers in the bucket's CORS settings. An interrupted upload may already have stored the object; check it before retrying.</p>{/if}
   {#if operation.privatePath}<p>Save or select a connection to supply the bot token in Telegram's private URL path.</p>{/if}
   {#if descriptor && !uploadSessionConsumer(operation.cloudflareUpload)}
     <HttpConnectionSelector {descriptor} {status} manual={manualBinding}
@@ -183,7 +184,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
               <p class="hint">Connect the session reference from the preceding Cloudflare upload step to Private upload session. The token stays in the vault worker and expires when it is locked.</p>
             {:else if scheme.kind === "aws-sigv4"}
               <p class="credential-name">{scheme.name} · AWS Signature Version 4</p>
-              <p class="hint">Choose stored AWS credentials. The configured HTTPS Lambda endpoint determines the region; the signing service is lambda. Add the session token when using temporary credentials.</p>
+              <p class="hint">Choose stored AWS credentials for the configured HTTPS {scheme.profile === "s3-object" ? "S3" : "Lambda"} region. Add the session token when using temporary credentials.</p>
               {#each awsCredentialParts as part}
                 <label for={`${fieldId}-credential-${index}-${part}`}>{awsLabels[part]}{part === "sessionToken" ? " (optional)" : ""}</label>
                 <FieldSelect id={`${fieldId}-credential-${index}-${part}`} label={`${awsLabels[part]} for ${scheme.name}`} value={choice(scheme.name, part)}

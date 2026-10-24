@@ -129,7 +129,8 @@ export async function readWorkflowResponseBody(response: Response, operation: Op
     return { ...final, mediaType: "application/json", transportMediaType: mediaType };
   }
   // Actual events can never be forced through a declared JSON decoder. Files need an explicit declaration.
-  if (!mediaType || responseKind(mediaType) === "unsupported" || kind === "unsupported" || kind === "binary" && selected !== "binary"
+  const s3File = operation.s3Files === "get-object" && response.status === 200 && selected === "binary";
+  if (!mediaType || !s3File && responseKind(mediaType) === "unsupported" || kind === "unsupported" || kind === "binary" && selected !== "binary"
     || response.ok && definitions && selected === undefined) {
     void response.body?.cancel().catch(() => {});
     throw new WorkflowBodyError("MEDIA");

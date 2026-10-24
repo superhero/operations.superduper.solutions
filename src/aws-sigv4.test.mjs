@@ -102,7 +102,8 @@ Then('native AWS schemas retain source identities while only the selected Lambda
   assert.equal(available[0].fields.length,4);assert.ok(available[0].fields.every(item=>item.location==='query'));assert.deepEqual(available[0].security,[[scheme]]);
   await approvedOperation(available[0],endpoint);
   const s3=inspectServiceSchema(await readServiceSchema('aws-s3'),'aws-s3').operations;
-  assert.equal(s3.length,97);assert.equal(s3.filter(item=>!item.unavailableReason).length,0);
+  assert.equal(s3.length,97);assert.deepEqual(s3.filter(item=>!item.unavailableReason).map(item=>item.id).sort(),['aws-s3:GetObject','aws-s3:PutObject']);
+  assert.ok(s3.filter(item=>!item.unavailableReason).every(item=>item.security[0][0].kind==='aws-sigv4'));
   for(const id of ['aws-sts','aws-dynamodb']) {
     const methods=inspectServiceSchema(await readServiceSchema(id),id).operations;assert.ok(methods.length>0);assert.ok(methods.every(item=>item.unavailableReason));
   }

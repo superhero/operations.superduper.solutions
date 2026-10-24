@@ -21,6 +21,8 @@ import { signOAuth1, type OAuth1Values, type OAuth1Clock } from "./oauth1.ts";
 import { signAwsRequest, type AwsSigningValues } from "./aws-sigv4.ts";
 import { awsCredentialParts, isAwsCredentialReference } from "./bindings.ts";
 import { awsSigningHeaders, lambdaSigningRegion } from "../aws-signing.ts";
+import { s3SigningEndpoint, s3ObjectUrl } from "../s3-files.ts";
+import { s3PayloadChecksum, verifyS3Object } from "./s3-files.ts";
 
 export type CredentialResponse = WorkflowResponse & { redacted?: boolean };
 export type CredentialExecutionResult = WorkflowExecutionResult & { response: CredentialResponse };
@@ -78,6 +80,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
 {
   let secrets: string[] = [];
   let phase: "policy" | "request" = "policy";
+  let s3Upload = false, responseStatus: number | undefined;
   const lifetime = workflowResponseLifetime(options.signal), timeout = lifetime.timeout, signal = lifetime.signal;
   let streaming = false, streamStatus = 0;
   let uploadLease: CloudflareUploadLease | undefined, privateUpload = false, uploadSucceeded = false;
@@ -95,6 +98,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       .flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
       .sort((a, b) => b.length - a.length);
     const approved = await validateApprovedOperation(descriptor);
+    s3Upload = approved.operation.s3Files === "put-object";
     privateUpload = !!approved.operation.cloudflareUpload;
     if (privateUpload && !options.uploadSessions) throw new VaultError("PERMISSION");
     const savedConnection = !!bindingSnapshot.connection;
@@ -133,7 +137,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         if (supplied !== undefined && supplied !== reference) throw new VaultError("PERMISSION");
         delete inputSnapshot[cloudflareSessionField];
       } else if (scheme.kind === "aws-sigv4") {
-        if (!isAwsCredentialReference(reference) || alternative.length !== 1 || !lambdaSigningRegion(approved.origin)) throw new VaultError("PERMISSION");
+        if (!isAwsCredentialReference(reference) || alternative.length !== 1
+          || !(approved.operation.s3Files ? s3SigningEndpoint(approved.origin) : lambdaSigningRegion(approved.origin))) throw new VaultError("PERMISSION");
         aws = Object.fromEntries(awsCredentialParts.flatMap(part => reference[part] ? [[part, credentialValue(reference[part]!, "aws-sigv4")]] : [])) as AwsSigningValues;
       } else if (scheme.kind === "oauth1") {
         if (!isOAuth1CredentialReference(reference) || scheme.profile !== "x-hmac-sha1" || alternative.length !== 1
@@ -206,7 +211,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     }
     secrets = [...new Set(secrets.flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length);
     for (const [key, value] of structured) inputSnapshot[key] = JSON.stringify(value);
-    const publicRequest = prepareRequest(approved.operation, inputSnapshot, fields);
+    let publicRequest = prepareRequest(approved.operation, inputSnapshot, fields);
     let request = publicRequest;
     if (privateUpload) {
       const prepared = options.uploadSessions!.authorize(approved, request, bindingSnapshot, uploadReference);
@@ -215,8 +220,10 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       secrets.push(...prepared.secrets);
       secrets = [...new Set(secrets.flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length);
     }
-    validateCredentialPath(request.path);
-    const url = approved.operation.privatePath ? telegramPrivateUrl(approved, request.path, pathToken ?? "") : new URL(`${approved.origin}${request.path}`);
+    if (!approved.operation.s3Files) validateCredentialPath(request.path);
+    const url = approved.operation.s3Files ? s3ObjectUrl(approved.origin, request.path)
+      : approved.operation.privatePath ? telegramPrivateUrl(approved, request.path, pathToken ?? "") : new URL(`${approved.origin}${request.path}`);
+    if (approved.operation.s3Files) publicRequest = { ...publicRequest, path: url.pathname };
     if (approved.operation.privatePath) secrets.push(...privateUrlRedactions(url.href));
     const authQueries = new Set((approved.operation.security ?? []).flat().flatMap(scheme => scheme.query === undefined ? [] : [scheme.query]));
     for (const [key, value] of Object.entries(request.query))
@@ -241,7 +248,10 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     let body = requestBody(request);
     if (aws) {
       await options.assertCurrent(); if (signal.aborted) throw new VaultError("CANCELLED");
-      const signed = await signAwsRequest(request.method, url.href, headers, body, aws, { service: "lambda", region: lambdaSigningRegion(approved.origin)! });
+      if (s3Upload) headers.set("x-amz-checksum-sha256", await s3PayloadChecksum(body));
+      else if (approved.operation.s3Files) headers.set("x-amz-checksum-mode", "ENABLED");
+      const signed = await signAwsRequest(request.method, url.href, headers, body, aws, approved.operation.s3Files
+        ? { service: "s3", region: s3SigningEndpoint(approved.origin)!.region } : { service: "lambda", region: lambdaSigningRegion(approved.origin)! });
       for (const [name, value] of signed.headers) headers.set(name, value);
       body = signed.body ?? null; awsSignedAt = signed.signedAt;
       secrets = [...new Set([...secrets, ...signed.secrets].flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
@@ -265,10 +275,15 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     const response = await (options.fetchRequest ?? globalThis.fetch)(url.href, {
       method: request.method, body, headers, redirect: "error", credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer", signal,
     });
+    responseStatus = response.status;
     if (response.redirected) throw new VaultError("NETWORK");
     const parsed = await readWorkflowResponseBody(response, approved.operation, request.method, signal, vaultLimits.responseBytes,
       { onStart() { streaming = true; streamStatus = response.status; lifetime.beginStream(); }, ...(options.onProgress ? { onProgress: options.onProgress } : {}) });
     const { malformedJson, ...result } = parsed;
+    if (approved.operation.s3Files && response.ok) {
+      if (response.status !== 200) throw new VaultError("S3_INTEGRITY");
+      await verifyS3Object(response.headers, s3Upload ? request.body : result.body);
+    }
     if (privateUpload) {
       await options.assertCurrent();
       if (signal.aborted) throw new VaultError("CANCELLED");
@@ -315,6 +330,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
   }
   catch (error)
   {
+    if (s3Upload && phase === "request" && (responseStatus === undefined || responseStatus >= 200 && responseStatus < 300)
+      && !(error instanceof CredentialResponseError)) throw new VaultError("WRITE_UNCONFIRMED");
     if (options.signal?.aborted) throw new VaultError("CANCELLED");
     if (timeout.aborted) {
       if (streaming) throw new CredentialResponseError("The streamed request timed out. Check the completed request before retrying.",

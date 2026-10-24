@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
 import { awsRestProfile, awsSigningMarker, lambdaSigningCandidate, configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
+import { configureS3Files, s3FilesProfile, validS3FilesModel } from "./s3-files.ts";
 import type { BodyMediaType, InputField, InputSchema, Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
@@ -139,7 +140,8 @@ function security(document: Value, source: Value, operation: Operation): Operati
     }));
   });
   if (oauth) operation.oauthScopes = declaration.map(raw => Object.fromEntries(Object.entries(raw).map(([name, scopes]) => [name, [...scopes as string[]]])));
-  const result = inspectOperationSecurity({ ...document, components: { ...value(document.components), securitySchemes: normalizedSchemes } }, { security: requirements });
+  const result = inspectOperationSecurity({ ...document, components: { ...value(document.components), securitySchemes: normalizedSchemes } },
+    { security: requirements, ...(source["x-operations-aws-signing"] === undefined ? {} : { "x-operations-aws-signing": source["x-operations-aws-signing"] }) });
   const permissions = extractCredentialPermissions(permissionSource["x-credential-permissions"], result);
   if (permissions) operation.credentialPermissions = permissions;
   return result;
@@ -186,7 +188,9 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         if (new URL(url).hostname === "no-default") throw new Error("Configure this schema’s server URL for your account before running it.");
         if (path.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(path)) throw new Error("This endpoint uses a path or transport that is not supported.");
         const upload = cloudflareUploadProfile(source["x-operations-cloudflare-upload"]);
-        if (upload) configureCloudflareUpload(operation, upload);
+        const s3 = s3FilesProfile(source["x-operations-s3-files"]);
+        if (s3) configureS3Files(operation, s3);
+        else if (upload) configureCloudflareUpload(operation, upload);
         else {
         const fields = new Map<string, InputField>();
         for (const parameters of [item.parameters, source.parameters])
@@ -254,7 +258,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         }
         const authorization = security(document, source, operation);
         if (authorization !== undefined) operation.security = authorization;
-        if (authorization?.flat().some(scheme => scheme.kind === "aws-sigv4")) configureAwsSigning(operation);
+        if (!s3 && authorization?.flat().some(scheme => scheme.kind === "aws-sigv4")) configureAwsSigning(operation);
         const responses = value(source.responses);
         const stream = responseStreamProfile(source["x-operations-response-stream"]);
         if (stream) operation.responseStream = stream;
@@ -266,7 +270,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         if (mediaType) operation.responseMediaType = mediaType;
         const media = value(content[mediaType!]);
         if (media.example !== undefined) operation.responseExample = media.example;
-        if (operation.security?.flat().some(scheme => scheme.kind === "aws-sigv4") && !validAwsSigningModel(operation))
+        if (s3) configureS3Files(operation, s3);
+        if ((s3 || operation.security?.flat().some(scheme => scheme.kind === "aws-sigv4")) && !(s3 ? validS3FilesModel(operation) : validAwsSigningModel(operation)))
           throw new Error("This AWS operation requires a supported REST request and JSON response profile.");
         if (operation.credentialResult) throw new Error("This operation returns credentials. Private credential acquisition is not supported yet.");
       }

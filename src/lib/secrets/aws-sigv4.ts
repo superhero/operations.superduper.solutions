@@ -27,6 +27,10 @@ export async function signAwsRequest(method: string, address: string, initialHea
       if (typeof input === "string") body = encoder.encode(input);
       else if (input instanceof ArrayBuffer) body = new Uint8Array(input.slice(0));
       else if (input instanceof Uint8Array) body = new Uint8Array(input);
+      else if (input instanceof Blob) {
+        if (input.size > 8 * 1024 * 1024) throw new VaultError("LIMIT");
+        body = new Uint8Array(await input.arrayBuffer());
+      }
       else throw new VaultError("PERMISSION");
       if (body.byteLength > 8 * 1024 * 1024) throw new VaultError("LIMIT");
     }

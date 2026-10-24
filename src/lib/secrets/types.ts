@@ -66,8 +66,10 @@ export const defaultVaultPreferences: Readonly<VaultPreferences> = { idleLockEna
 export type VaultStatus = { exists: boolean; unlocked: boolean; revision: number; epoch: number;
   methods: { id: string; kind: UnlockKind; credentialId?: string; prfSalt?: string }[] };
 export type VaultErrorCode = "LOCKED" | "AUTHENTICATION" | "INVALID" | "UNAVAILABLE" | "CONFLICT"
-  | "DUPLICATE_KEY" | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED";
+  | "DUPLICATE_KEY" | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED" | "S3_INTEGRITY" | "WRITE_UNCONFIRMED";
 const messages: Record<VaultErrorCode, string> = {
+  S3_INTEGRITY: "The S3 object could not be verified. Check its checksum and exposed bucket CORS headers.",
+  WRITE_UNCONFIRMED: "The upload may have completed. Check the object and bucket CORS settings before retrying.",
   LOCKED: "Unlock the secrets vault to continue.",
   AUTHENTICATION: "The vault could not be unlocked. Check the unlock method and saved data.",
   INVALID: "The vault data or request is invalid or unsupported.",

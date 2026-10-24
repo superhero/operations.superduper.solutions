@@ -7,6 +7,18 @@ Feature: Browser vault persistence and controlled credential execution
   Test-only fixtures exercise storage failures without adding production hooks.
 
   @chromium-only
+  Scenario Outline: S3 object transfers preserve files at <width>px
+    Then S3 transfers at <width> pixels use private signatures raw bytes and verified binary downloads
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  @vault-browser-network @chromium-only
+  Scenario: S3 browser CORS requires declared methods headers and visible checksums
+    Then native S3 CORS preflight rejects missing permissions and hidden integrity headers cannot confirm a write
+
+  @chromium-only
   Scenario Outline: AWS SigV4 connections survive reload at <width>px
     Then an AWS connection at <width> pixels signs a regional Lambda request after encrypted reload
     Examples:

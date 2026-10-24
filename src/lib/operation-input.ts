@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+import { encodeS3Key, validateS3Bucket, s3MetadataHeaders } from "./s3-files.ts";
 import type { BodyMediaType, InputField, InputSchema, JsonValue, Operation } from "./catalog.ts";
 import { validateWorkflowBinary, binaryRequestMediaType } from "./workflow-binary.ts";
 import { supportsFormField } from "./form-input.ts";
@@ -160,6 +161,10 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
   const request: PreparedRequest = { method: operation.method, path: operation.path, query: {} };
   const body: Record<string, JsonValue> = {};
   const fields = [...operation.fields];
+  if (operation.s3Files) for (const [key, value] of Object.entries(values)) {
+    if (value !== undefined && !fields.some(field => field.key === key))
+      throw new InputValidationError(key, "This input is outside the supported S3 object transfer profile.");
+  }
   for (const candidate of workflowFields)
   {
     if (candidate.location !== "body" || fields.some(field => field.key === candidate.key)) continue;
@@ -182,7 +187,10 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     const value = convert(input, raw!);
     if (input.location === "path") {
       if (value !== null && typeof value === "object") fail(input, "path values must be primitive values.");
-      request.path = request.path.replaceAll(`{${input.name}}`, encodeURIComponent(String(value)));
+      let encoded: string;
+      try { encoded = operation.s3Files ? input.name === "Key" ? encodeS3Key(String(value)) : encodeURIComponent(validateS3Bucket(String(value))) : encodeURIComponent(String(value)); }
+      catch (cause) { fail(input, cause instanceof Error ? cause.message : "Invalid S3 path."); }
+      request.path = request.path.replaceAll(`{${input.name}}`, encoded!);
     }
     else if (input.location === "query")
     {
@@ -198,6 +206,11 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
     }
     else if (input.location === "header")
     {
+      if (operation.s3Files === "put-object" && input.name === "x-amz-meta-") {
+        try { request.headers = { ...request.headers, ...s3MetadataHeaders(value) }; }
+        catch (cause) { fail(input, cause instanceof Error ? cause.message : "Invalid S3 metadata."); }
+        continue;
+      }
       if (value !== null && typeof value === "object") fail(input, "header values must be primitive values.");
       if (/[\r\n]/.test(String(value))) fail(input, "header values cannot contain line breaks.");
       request.headers ??= {};

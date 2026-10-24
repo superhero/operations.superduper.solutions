@@ -4,9 +4,13 @@
 import { cloudflareOrigin, cloudflareUploadContracts } from "./cloudflare-upload.ts";
 import { adaptGithubAuthentication } from "./github-authentication.ts";
 import { telegramBotTemplate } from "./server-url.ts";
+import { configureS3Files, s3SigningProfile } from "./s3-files.ts";
+import type { Operation } from "./catalog.ts";
+export { s3SourceSha256 } from "./s3-files.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload"; version: 1 };
+export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload" | "aws-s3-files"; version: 1 };
+export const awsS3Files: SchemaPatch = { id: "aws-s3-files", version: 1 };
 export const googleOauthAlternatives: SchemaPatch = { id: "google-oauth-alternatives", version: 1 };
 export const digitalOceanBearerPermissions: SchemaPatch = { id: "digitalocean-bearer-permissions", version: 1 };
 export const geminiAuthAlternatives: SchemaPatch = { id: "gemini-auth-alternatives", version: 1 };
@@ -34,7 +38,7 @@ export function schemaPatchName(patch: SchemaPatch): string {
     : patch.id === "elevenlabs-authentication" ? "ElevenLabs authentication and credential results"
     : patch.id === "github-authentication" ? "GitHub operation authentication"
     : patch.id === "http-response-streaming" ? "Bounded HTTP response streaming"
-    : patch.id === "telegram-private-path" ? "Telegram private bot token path" : patch.id === "x-oauth1-signing" ? "X OAuth 1.0a signing" : patch.id === "cloudflare-private-upload" ? "Cloudflare private upload sessions" : "Unknown schema correction";
+    : patch.id === "telegram-private-path" ? "Telegram private bot token path" : patch.id === "x-oauth1-signing" ? "X OAuth 1.0a signing" : patch.id === "cloudflare-private-upload" ? "Cloudflare private upload sessions" : patch.id === "aws-s3-files" ? "S3 signed object files" : "Unknown schema correction";
 }
 
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -414,12 +418,44 @@ function cloudflareUploads(document: Record<string, any>): void {
   }
 }
 
+function s3Files(document: Record<string, any>): void {
+  const definition = document.components?.securitySchemes?.hmac;
+  if (document.openapi !== "3.0.0" || document.info?.version !== "2006-03-01" || definition?.type !== "apiKey"
+    || definition.in !== "header" || definition.name !== "Authorization" || definition["x-amazon-apigateway-authtype"] !== "awsS3"
+    || JSON.stringify(document.security) !== '[{"hmac":[]}]' || !Array.isArray(document.servers) || !document.servers.length
+    || document.servers.some(server => typeof server?.url !== "string" || !/^https?:\/\/s3(?:\{dash-or-dot\}\{region\}|\.\{region\})?\.amazonaws\.com(?:\.cn)?$/.test(server.url)))
+    throw new Error("S3 files require the reviewed native version, signing declaration and regional server templates.");
+  const item = document.paths?.["/{Bucket}/{Key}"];
+  if (!object(item) || item.servers !== undefined) throw new Error("S3 files require the reviewed object path.");
+  for (const [method, profile, identity] of [["get", "get-object", "GetObject"], ["put", "put-object", "PutObject"]] as const) {
+    const source = item[method];
+    if (!object(source) || source.operationId !== identity || source.servers !== undefined || source.security !== undefined
+      || source["x-operations-s3-files"] !== undefined || source["x-upstream-s3-object-contract"] !== undefined
+      || !source.responses?.["200"]?.content?.["text/xml"]
+      || method === "put" && !source.requestBody?.content?.["text/xml"]?.schema?.properties?.Body)
+      throw new Error("S3 files cannot replace an unreviewed object contract or destination.");
+    source["x-upstream-s3-object-contract"] = { parameters: source.parameters ?? [], requestBody: source.requestBody ?? null, responses: source.responses };
+    source["x-operations-s3-files"] = profile; source["x-operations-aws-signing"] = s3SigningProfile;
+    const model: Operation = { id: identity, name: identity, description: "", group: "S3", method: method.toUpperCase(), path: "/{Bucket}/{Key}", fields: [], bodyRequired: false };
+    configureS3Files(model, profile);
+    source.parameters = model.fields.filter(field => field.location !== "body").map(field => ({ name: field.name, in: field.location,
+      required: field.required, schema: field.schema, ...(field.name === "x-amz-meta-" ? { "x-operations-header-prefix": "x-amz-meta-" } : {}),
+      ...(field.name === "Key" ? { "x-operations-s3-key": true } : {}) }));
+    if (method === "put") source.requestBody = { required: true, content: { "application/octet-stream": { schema: { type: "string", format: "binary", maxLength: 500000 } } } };
+    else delete source.requestBody;
+    source.responses = { ...source.responses, "200": { description: method === "get" ? "Exact object bytes" : "Object stored; empty response body",
+      headers: Object.fromEntries(["ETag", "x-amz-checksum-sha256", "x-amz-checksum-type", "x-amz-version-id"].map(name => [name, { schema: { type: "string" } }])),
+      content: method === "get" ? { "application/octet-stream": { schema: { type: "string", format: "binary" } } } : { "text/plain": { schema: { type: "string" }, example: "" } } },
+      default: { description: "S3 XML error", content: { "application/xml": { schema: { type: "string" } } } } };
+  }
+}
+
 export function applySchemaPatches(input: Record<string, unknown>, patches: readonly SchemaPatch[] = []): Record<string, unknown> {
   if (!patches.length) return input;
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload", "aws-s3-files"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
     if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
@@ -432,7 +468,8 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
     else if (patch.id === "http-response-streaming") responseStreaming(document);
     else if (patch.id === "telegram-private-path") telegramPath(document);
     else if (patch.id === "x-oauth1-signing") xOauth1(document);
-    else cloudflareUploads(document);
+    else if (patch.id === "cloudflare-private-upload") cloudflareUploads(document);
+    else s3Files(document);
   }
   return document;
 }

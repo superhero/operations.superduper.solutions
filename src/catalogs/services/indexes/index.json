@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "b40c98d21350b06c0fc7c72a64db09bbc931c2efc84189aa34d8021ef92945d1",
+  "adapterRevision": "5ec4b2a57738ff4e5e9930f285fc967bc8e517a01c9cb4f350149efc704402d4",
   "indexes": [
     {
       "id": "anthropic",
@@ -1165,16 +1165,16 @@
     },
     {
       "id": "aws-s3",
-      "sourceRevision": "2c1283af457c374eea21b36eda33edbebd1d331b8954dff16c332d22881d212d",
-      "bytes": 32012,
-      "compressedBytes": 2440,
-      "sha256": "5ea5b0e08458b3ff7acf14e9345d2c4216146352d90b1fb22e4f6a602aaa5c74",
+      "sourceRevision": "1abeda3df1f4fc0835e5c91144542f89542e3d92e3bceab95e497b1393547586",
+      "bytes": 31754,
+      "compressedBytes": 2446,
+      "sha256": "554da6487fda5aaccc2eeb8a21a2a327a7613e14a139cbdaba1cab9defd89fa4",
       "summary": {
         "name": "Amazon Simple Storage Service",
         "serverUrl": "http://s3.us-east-1.amazonaws.com",
         "description": "<p/>",
         "operationCount": 97,
-        "unavailableCount": 97
+        "unavailableCount": 95
       }
     },
     {

@@ -1485,6 +1485,7 @@
     "url": "https://raw.githubusercontent.com/APIs-guru/openapi-directory/main/APIs/amazonaws.com/s3/2006-03-01/openapi.yaml",
     "provenance": "https://github.com/aws/api-models-aws",
     "sourceKind": "community-conversion",
+    "profile": "aws-s3-files",
     "version": "2006-03-01",
     "openapi": "3.0.0",
     "operations": 97,
@@ -1495,7 +1496,15 @@
     "sha256": "2c1283af457c374eea21b36eda33edbebd1d331b8954dff16c332d22881d212d",
     "sourceSha256": "043afe0dc9212eb5512743fbcf4d56ac72f5f6bb79663d509a370b599cb157c0",
     "bytes": 779174,
-    "compressedBytes": 113486
+    "compressedBytes": 113486,
+    "patches": [
+      {
+        "id": "aws-s3-files",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "1abeda3df1f4fc0835e5c91144542f89542e3d92e3bceab95e497b1393547586",
+    "effectiveBytes": 781954
   },
   {
     "id": "aws-s3control",

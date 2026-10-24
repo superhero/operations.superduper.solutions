@@ -6,6 +6,8 @@ import { createVaultStorage } from "../../src/lib/secrets/storage.ts";
 import { VaultSession } from "../../src/lib/secrets/session.ts";
 import { approvedOperation } from "../../src/lib/secrets/policy.ts";
 import { VaultError, vaultDatabaseName } from "../../src/lib/secrets/types.ts";
+import { verifyS3Object } from "../../src/lib/secrets/s3-files.ts";
+import { encodeWorkflowBinary } from "../../src/lib/workflow-binary.ts";
 import { vaultCall, lockVault } from "../../src/lib/secrets/client.ts";
 import { defaultProcessingData } from "../../src/lib/workflow-processing.ts";
 import type { ApprovedOperation, CredentialBinding, UnlockProof } from "../../src/lib/secrets/types.ts";
@@ -82,6 +84,21 @@ export async function seedAWS(origin: string, run: string, values: Record<string
   await seed(origin, run);
   for (const [part, value] of Object.entries(values))
     await session.put(null, { label: "AWS " + part, kind: "secret", value });
+}
+
+/** Native browser CORS only; production-worker authority has separate UI cases. */
+export async function probeS3Cors(address: string, request: { method: string; headers: Record<string, string>; bytes?: number[] }) {
+  try {
+    const body = Uint8Array.from(request.bytes ?? []);
+    const response = await fetch(address, { method: request.method, headers: request.headers, ...(request.method === "PUT" ? { body } : {}),
+      credentials: "omit", referrerPolicy: "no-referrer", redirect: "error" });
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    let error: string | undefined;
+    try { await verifyS3Object(response.headers, encodeWorkflowBinary("cors.bin", request.method === "PUT" ? body : bytes)); }
+    catch (cause) { error = cause instanceof VaultError ? cause.code : "UNEXPECTED"; }
+    return { status: response.status, verified: error === undefined, error, etag: response.headers.get("ETag"),
+      checksum: response.headers.get("x-amz-checksum-sha256"), bytes: Array.from(bytes) };
+  } catch (cause) { return { error: (cause as Error).name }; }
 }
 
 export async function run(changed = false) {

@@ -1,6 +1,6 @@
 # AWS request signing
 
-The first AWS profile supports the bundled Lambda `ListFunctions` operation,
+The Lambda AWS profile supports the bundled `ListFunctions` operation,
 `GET /2015-03-31/functions/`, using Signature Version 4 and a JSON response.
 Configure an explicit HTTPS regional server such as
 `https://lambda.us-east-1.amazonaws.com` in the schema's server settings. Its
@@ -38,9 +38,9 @@ otherwise AWS determines token expiry and permissions. Credential/signature
 echoes and URI/form encodings are scrubbed from results and failures. Requests
 are not automatically retried.
 
-Both `awsSigv4` and `awsS3` declarations require a signing profile. The six S3
-methods previously classified as static Authorization calls are unavailable
-until the S3 byte/endpoint contract is implemented. Other AWS action/target,
+Both `awsSigv4` and `awsS3` declarations require a signing profile. Reviewed
+[S3 object file profiles](s3-files.md) now support signed raw PutObject/GetObject
+transfers. Other S3 methods and AWS action/target,
 Query/XML and AWS-JSON operations retain their independent limitations. Native
 schemas and operation identities remain unchanged; discovery indexes are updated.
 

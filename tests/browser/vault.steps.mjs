@@ -11,6 +11,8 @@ import { chooseCatalogOperation, setMode } from './workspace.fixture.mjs';
 import { repository } from './workflow-storage.fixture.mjs';
 import { createUtilityNode } from '../../src/lib/workflow-graph.ts';
 import { awsSyntheticValues, verifyAwsSignature } from '../aws-sigv4.fixture.mjs';
+import { s3FixtureChecksums, s3CorsLogicalUrl } from './s3-cors-endpoint.fixture.mjs';
+import { signAwsRequest } from '../../src/lib/secrets/aws-sigv4.ts';
 
 const fixture = '/vault-storage-fixture.js';
 const canaries = ['browser-VAULT-password-9182', 'browser-BEARER-canary-9182', 'browser-APIKEY-canary-9182', 'browser-PRIVATE-label-9182'];
@@ -1108,6 +1110,63 @@ Then('the Anthropic {string} selection preserves private headers and saved refer
 });
 Then('the ElevenLabs private key connection survives reload without exposing credentials', { timeout: 90_000 }, async function () {
   await privateHeaderSelection.call(this, 'connected API key', 'ElevenLabs');
+});
+
+Then('S3 transfers at {int} pixels use private signatures raw bytes and verified binary downloads', { timeout: 90_000 }, async function (width) {
+  const page=this.page,endpoint='https://s3.us-east-1.amazonaws.com',bucket='operations-test-bucket',key='folder//雪 +?%2F/data.bin';
+  const bytes=Buffer.from([0,255,13,10,239,187,191,65]),calls=[];let stored;
+  await page.setViewportSize({width,height:900});await invoke(page,'seedAWS',this.baseURL,randomUUID(),awsSyntheticValues);
+  await this.context.route(endpoint+'/**',async route=>{
+    const request=route.request(),cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*','Access-Control-Allow-Methods':'GET, PUT, OPTIONS','Access-Control-Expose-Headers':'ETag, x-amz-checksum-sha256, x-amz-checksum-type, Content-Disposition'};
+    if(request.method()==='OPTIONS')return route.fulfill({status:204,headers:cors});
+    const body=request.postDataBuffer()??undefined,signature=verifyAwsSignature(request.url(),{method:request.method(),headers:request.headers(),body},awsSyntheticValues,'s3');calls.push(signature);
+    assert.equal(decodeURIComponent(new URL(request.url()).pathname),'/'+bucket+'/'+key);assert.equal(request.headers().cookie,undefined);assert.equal(request.headers().referer,undefined);
+    if(request.method()==='PUT'){assert.deepEqual(body,bytes);assert.equal(request.headers()['content-type'],'application/octet-stream');assert.equal(request.headers()['x-amz-meta-note'],'exact file');stored=body;
+      return route.fulfill({status:200,headers:{...cors,...s3FixtureChecksums(body),'Content-Type':'text/plain'},body:''});}
+    assert.equal(request.method(),'GET');assert.equal(request.headers()['x-amz-checksum-mode'],'ENABLED');assert.ok(stored);
+    return route.fulfill({status:200,headers:{...cors,...s3FixtureChecksums(stored),'Content-Type':'application/octet-stream','Content-Disposition':'attachment; filename="s3-object.bin"'},body:stored});
+  });
+  const names={put:'S3 upload fixture',get:'S3 download fixture'};
+  const document={openapi:'3.0.3',info:{title:'S3 files fixture',version:'1'},servers:[{url:endpoint}],security:[{hmac:[]}],components:{securitySchemes:{hmac:{type:'apiKey',in:'header',name:'Authorization','x-amazon-apigateway-authtype':'awsS3'}}},
+    paths:{'/{Bucket}/{Key}':Object.fromEntries(['put','get'].map(method=>[method,{operationId:method+'Object',summary:names[method],'x-operations-s3-files':method==='put'?'put-object':'get-object','x-operations-aws-signing':'s3-object',
+      ...(method==='put'?{requestBody:{required:true,content:{'application/octet-stream':{schema:{type:'string',format:'binary'}}}}}:{}),responses:{200:{description:'Object result',content:{[method==='put'?'text/plain':'application/octet-stream']:{schema:{type:'string',...(method==='get'?{format:'binary'}:{})}}}}}}]))}};
+  await setMode(page,'settings');const schemas=page.locator('summary[aria-label="Schemas"]');if(await schemas.getAttribute('aria-expanded')!=='true')await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({name:'s3-files.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(document))});
+  await expect(page.getByRole('switch',{name:'Enable S3 files fixture',exact:true})).toHaveAttribute('aria-checked','true');await chooseCatalogOperation(page,names.put);
+  await page.getByRole('combobox',{name:'Authentication alternative',exact:true}).click();await page.getByRole('option',{name:'hmac',exact:true}).click();
+  const unlock=page.getByLabel('Unlock the vault password',{exact:true});await unlock.fill(canaries[0]);await page.getByRole('button',{name:'Unlock',exact:true}).click();
+  for(const [part,label] of [['accessKeyId','Access key ID'],['secretAccessKey','Secret access key'],['sessionToken','Session token']]){
+    await page.getByRole('combobox',{name:label+' for hmac',exact:true}).click();await page.getByRole('option',{name:'AWS '+part,exact:true}).click();}
+  await page.getByText('Save as connection',{exact:true}).click();await page.getByLabel('Connection name',{exact:true}).fill('S3 connection');await page.getByLabel('Account label',{exact:true}).fill('S3 sandbox');await page.getByRole('button',{name:'Save connection',exact:true}).click();
+  const connection=page.getByRole('combobox',{name:'Saved HTTP connection',exact:true});await expect(connection).toContainText('S3 connection · S3 sandbox');
+  await page.getByRole('textbox',{name:'Bucket',exact:true}).fill(bucket);await page.getByRole('textbox',{name:'Key',exact:true}).fill(key);
+  await page.getByRole('checkbox',{name:'Do not send Metadata',exact:true}).uncheck();await page.getByRole('textbox',{name:'Metadata',exact:true}).fill('{"note":"exact file"}');
+  await page.getByLabel('Object data',{exact:true}).setInputFiles({name:'source.bin',mimeType:'application/octet-stream',buffer:bytes});
+  await page.getByRole('button',{name:/^(Start workflow|Run operation|Retry operation)$/}).click();await expect(page.getByRole('status').filter({hasText:'Operation completed.'})).toBeVisible();
+  assert.equal(calls.length,1);await page.reload();await page.locator('#startup-status').waitFor({state:'detached'});await chooseCatalogOperation(page,names.get);
+  await page.getByRole('combobox',{name:'Authentication alternative',exact:true}).click();await page.getByRole('option',{name:'hmac',exact:true}).click();
+  await unlock.fill(canaries[0]);await page.getByRole('button',{name:'Unlock',exact:true}).click();await connection.click();await page.getByRole('option',{name:'S3 connection · S3 sandbox',exact:true}).click();
+  await page.getByRole('textbox',{name:'Bucket',exact:true}).fill(bucket);await page.getByRole('textbox',{name:'Key',exact:true}).fill(key);
+  await page.getByRole('button',{name:/^(Start workflow|Run operation|Retry operation)$/}).click();await expect(page.getByRole('status').filter({hasText:'Operation completed.'})).toBeVisible();
+  const body=page.locator('[aria-label="Response body"]').last();await expect(body).toContainText('s3-object.bin');const downloading=page.waitForEvent('download');await body.getByRole('button',{name:'Download file',exact:true}).click();
+  const chunks=[];for await(const chunk of await (await downloading).createReadStream())chunks.push(chunk);assert.deepEqual(Buffer.concat(chunks),bytes);assert.equal(calls.length,2);
+  const secrets=[...Object.values(awsSyntheticValues),...calls.flatMap(call=>[call.authorization,call.signature])];for(const value of [await page.locator('body').innerText(),await repository(page,'list'),await storage(page,'read')])for(const secret of secrets)assert.ok(!JSON.stringify(value).includes(secret));
+  assert.deepEqual(await invoke(page,'persistedCanaries',[...privateCanaries,...secrets]),[]);await mkdir(this.artifactDirectory,{recursive:true});await page.screenshot({path:`${this.artifactDirectory}/s3-files-${width}.png`});
+});
+
+Then('native S3 CORS preflight rejects missing permissions and hidden integrity headers cannot confirm a write', {timeout:60_000}, async function(){
+  const page=this.page,id=randomUUID(),bytes=Uint8Array.from([0,255,13,10,65]);await this.context.unrouteAll({behavior:'wait'});
+  const cross=this.baseURL.replace('127.0.0.1','localhost')+'/s3-cors/'+id;
+  const put=await signAwsRequest('PUT',s3CorsLogicalUrl,new Headers({'Content-Type':'application/octet-stream','x-amz-meta-note':'CORS fixture','x-amz-checksum-sha256':s3FixtureChecksums(bytes)['x-amz-checksum-sha256']}),bytes,awsSyntheticValues,{service:'s3',region:'us-east-1'});
+  const request={method:'PUT',headers:Object.fromEntries(put.headers),bytes:Array.from(bytes)};
+  const allowed=await invoke(page,'probeS3Cors',cross+'/allow',request);assert.equal(allowed.status,200);assert.equal(allowed.verified,true);assert.ok(allowed.checksum);assert.ok(allowed.etag);
+  const get=await signAwsRequest('GET',s3CorsLogicalUrl,new Headers({'x-amz-checksum-mode':'ENABLED'}),undefined,awsSyntheticValues,{service:'s3',region:'us-east-1'});
+  const result=await invoke(page,'probeS3Cors',cross+'/allow',{method:'GET',headers:Object.fromEntries(get.headers)});assert.equal(result.verified,true);assert.deepEqual(result.bytes,Array.from(bytes));
+  for(const mode of ['deny-header','deny-method']){const refused=await invoke(page,'probeS3Cors',cross+'/'+mode,request);assert.equal(refused.error,'TypeError');}
+  const hidden=await invoke(page,'probeS3Cors',cross+'/hidden',request);assert.equal(hidden.status,200);assert.equal(hidden.verified,false);assert.equal(hidden.error,'S3_INTEGRITY');assert.equal(hidden.etag,null);assert.equal(hidden.checksum,null);
+  const events=await (await this.context.request.get(this.baseURL+'/s3-cors/'+id+'/observations')).json();assert.ok(events.some(event=>event.method==='OPTIONS'&&event.requestedHeaders.includes('authorization')&&event.requestedHeaders.includes('x-amz-security-token')&&!event.sentAuthorization));
+  assert.equal(events.filter(event=>['deny-header','deny-method'].includes(event.mode)&&event.method!=='OPTIONS').length,0);assert.equal(events.filter(event=>event.mode==='hidden'&&event.method==='PUT'&&event.verified).length,1);assert.ok(!events.some(event=>event.failed));
+  this.diagnostics=this.diagnostics.filter(item=>!(item.type==='console-error'&&(/CORS|Failed to load resource|net::ERR_FAILED/.test(item.message))&&(item.message.includes('/s3-cors/'+id)||item.location?.url?.startsWith(cross))));
 });
 
 Then('an AWS connection at {int} pixels signs a regional Lambda request after encrypted reload', { timeout: 60_000 }, async function (width) {

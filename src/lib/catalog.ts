@@ -4,6 +4,7 @@
 
 import { cloudflareUploadProfile, configureCloudflareUpload, type CloudflareUploadProfile } from "./cloudflare-upload.ts";
 import { configureAwsSigning, validAwsSigningModel } from "./aws-signing.ts";
+import { configureS3Files, s3FilesProfile, validS3FilesModel, type S3FilesProfile } from "./s3-files.ts";
 import { catalogs, replaceCatalogs, setOperationCatalog, type Catalog } from "./catalog-registry.ts";
 import { inspectOperationSecurity, type CredentialPermissions, type OperationSecurity } from "./operation-security.ts";
 import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
@@ -42,6 +43,7 @@ export type InputField = Omit<InputSchema, "properties" | "required" | "items"> 
 };
 export type BodyMediaType = `${string}/${string}`;
 export type Operation = {
+  s3Files?: S3FilesProfile;
   /** Navigation-only descriptor. Execution requires a separately hydrated model. */
   deferred?: true;
   id: string;
@@ -253,13 +255,15 @@ export function extractOperations(value: unknown, source: string): Operation[]
       if (identities.has(id)) throw new Error(`${source}: duplicate operation identifier ${id}.`);
       identities.add(id);
       const upload = cloudflareUploadProfile(operation["x-operations-cloudflare-upload"]);
-      if (upload) {
+      const s3 = s3FilesProfile(operation["x-operations-s3-files"]);
+      if (upload || s3) {
         const model: Operation = { id, name: text(operation.summary, text(operation.operationId, `${method.toUpperCase()} ${path}`)),
           description: text(operation.description, ""), group: Array.isArray(operation.tags) ? String(operation.tags[0]) : "Operations",
           method: method.toUpperCase(), path, fields: [], bodyRequired: false };
-        configureCloudflareUpload(model, upload);
+        if (s3) configureS3Files(model, s3); else configureCloudflareUpload(model, upload!);
         const security = inspectOperationSecurity(document, operation);
         if (security !== undefined) model.security = security;
+        if (s3 && !validS3FilesModel(model)) throw new Error("S3 objects require their reviewed private signing and byte profile.");
         result.push(model); continue;
       }
       const inputs = new Map<string, InputField>();

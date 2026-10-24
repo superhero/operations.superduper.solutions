@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { createS3CorsEndpoint } from './s3-cors-endpoint.fixture.mjs';
 import { After, AfterAll, Before, BeforeAll, Status, World, setDefaultTimeout, setWorldConstructor } from '@cucumber/cucumber';
 import { chromium, firefox, webkit } from '@playwright/test';
 import { createServer } from 'node:http';
@@ -62,8 +63,10 @@ BeforeAll(async function () {
   const { repositoryFixture, errorHistoryFixture, vaultFixture, policyFixture, kdfFixture, schemaFixture } =
     JSON.parse(await readFile(this.parameters.fixtureBundlesFile, 'utf8'));
   const vaultEndpoint = createVaultEndpoint();
+  const s3Endpoint = createS3CorsEndpoint(() => baseURL);
   server = createServer((request, response) => {
     if (vaultEndpoint(request, response)) return;
+    if (s3Endpoint(request, response)) return;
     if (request.url === '/') {
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8',
         'Cross-Origin-Opener-Policy': 'same-origin', 'Cross-Origin-Embedder-Policy': 'credentialless' });
