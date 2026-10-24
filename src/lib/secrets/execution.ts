@@ -15,6 +15,8 @@ import { VaultError, vaultLimits, type ApprovedOperation, type CredentialBinding
 import { workflowResponseLifetime, responseAccept, type ResponseProgressCallback } from "../workflow-response-stream.ts";
 import { resolveHttpConnection, formatHttpToken } from "./http-connections.ts";
 import { telegramPrivateUrl, privateUrlRedactions } from "./telegram-path.ts";
+import { CloudflareUploadSessions, type CloudflareUploadLease } from "./cloudflare-upload.ts";
+import { cloudflareSessionField, uploadSessionConsumer } from "../cloudflare-upload.ts";
 import { signOAuth1, type OAuth1Values, type OAuth1Clock } from "./oauth1.ts";
 
 export type CredentialResponse = WorkflowResponse & { redacted?: boolean };
@@ -26,6 +28,7 @@ export type CredentialExecutionOptions = {
   fetchRequest?: typeof fetch;
   onProgress?: ResponseProgressCallback;
   oauth1Clock?: OAuth1Clock;
+  uploadSessions?: CloudflareUploadSessions;
 };
 
 /** This safe envelope has no raw request, native cause or credential-bearing message. */
@@ -74,6 +77,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
   let phase: "policy" | "request" = "policy";
   const lifetime = workflowResponseLifetime(options.signal), timeout = lifetime.timeout, signal = lifetime.signal;
   let streaming = false, streamStatus = 0;
+  let uploadLease: CloudflareUploadLease | undefined, privateUpload = false, uploadSucceeded = false;
   try
   {
     const credentialSnapshot = structuredClone(credentials);
@@ -88,6 +92,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       .flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
       .sort((a, b) => b.length - a.length);
     const approved = await validateApprovedOperation(descriptor);
+    privateUpload = !!approved.operation.cloudflareUpload;
+    if (privateUpload && !options.uploadSessions) throw new VaultError("PERMISSION");
     const savedConnection = !!bindingSnapshot.connection;
     if (approved.operation.privatePath && !savedConnection) throw new VaultError("PERMISSION");
     const connection = await resolveHttpConnection(approved, bindingSnapshot, credentialSnapshot);
@@ -101,7 +107,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     const injected = new Headers();
     const injectedQueries = new Map<string, string>();
     let pathToken: string | undefined;
-    let oauth1: OAuth1Values | undefined;
+    let oauth1: OAuth1Values | undefined, uploadReference: string | undefined;
     const credentialValue = (id: string, kind: "bearer" | "basic" | "apiKey" | "oauth1", connectedHeader = false): string => {
       const matches = credentialSnapshot.filter(credential => credential.id === id);
       if (matches.length !== 1) throw new VaultError("PERMISSION");
@@ -116,7 +122,13 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     for (const scheme of alternative)
     {
       const reference = Object.hasOwn(bindingSnapshot.credentials, scheme.name) ? bindingSnapshot.credentials[scheme.name] : undefined;
-      if (scheme.kind === "oauth1") {
+      if (scheme.kind === "cloudflare-upload") {
+        if (typeof reference !== "string" || !uploadSessionConsumer(approved.operation.cloudflareUpload) || alternative.length !== 1) throw new VaultError("PERMISSION");
+        uploadReference = reference;
+        const supplied = inputSnapshot[cloudflareSessionField];
+        if (supplied !== undefined && supplied !== reference) throw new VaultError("PERMISSION");
+        delete inputSnapshot[cloudflareSessionField];
+      } else if (scheme.kind === "oauth1") {
         if (!isOAuth1CredentialReference(reference) || scheme.profile !== "x-hmac-sha1" || alternative.length !== 1
           || approved.origin !== "https://api.x.com" || !approved.operation.path.startsWith("/2/")) throw new VaultError("PERMISSION");
         oauth1 = Object.fromEntries(oauth1CredentialParts.map(part => [part, credentialValue(reference[part], "oauth1")])) as OAuth1Values;
@@ -187,7 +199,15 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     }
     secrets = [...new Set(secrets.flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length);
     for (const [key, value] of structured) inputSnapshot[key] = JSON.stringify(value);
-    const request = prepareRequest(approved.operation, inputSnapshot, fields);
+    const publicRequest = prepareRequest(approved.operation, inputSnapshot, fields);
+    let request = publicRequest;
+    if (privateUpload) {
+      const prepared = options.uploadSessions!.authorize(approved, request, bindingSnapshot, uploadReference);
+      request = prepared.request; uploadLease = prepared.lease;
+      if (prepared.authorization) injected.set("Authorization", prepared.authorization);
+      secrets.push(...prepared.secrets);
+      secrets = [...new Set(secrets.flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))].sort((a, b) => b.length - a.length);
+    }
     validateCredentialPath(request.path);
     const url = approved.operation.privatePath ? telegramPrivateUrl(approved, request.path, pathToken ?? "") : new URL(`${approved.origin}${request.path}`);
     if (approved.operation.privatePath) secrets.push(...privateUrlRedactions(url.href));
@@ -220,10 +240,11 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       secrets = [...new Set([...secrets, ...signed.secrets].flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
         .sort((a, b) => b.length - a.length);
     }
-    const preview = redactor(secrets).value(request) as PreparedRequest;
+    const preview = redactor(secrets).value(publicRequest) as PreparedRequest;
     await options.assertCurrent();
     if (connection.expiresAt !== undefined && connection.expiresAt <= Date.now()) throw new VaultError("PERMISSION");
     if (signal.aborted) throw new VaultError("CANCELLED");
+    if (privateUpload) options.uploadSessions!.assertCurrent(uploadLease);
     phase = "request";
     const response = await (options.fetchRequest ?? globalThis.fetch)(url.href, {
       method: request.method, body, headers, redirect: "error", credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer", signal,
@@ -232,10 +253,21 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     const parsed = await readWorkflowResponseBody(response, approved.operation, request.method, signal, vaultLimits.responseBytes,
       { onStart() { streaming = true; streamStatus = response.status; lifetime.beginStream(); }, ...(options.onProgress ? { onProgress: options.onProgress } : {}) });
     const { malformedJson, ...result } = parsed;
+    if (privateUpload) {
+      await options.assertCurrent();
+      if (signal.aborted) throw new VaultError("CANCELLED");
+      options.uploadSessions!.assertCurrent(uploadLease);
+      if (malformedJson) throw new VaultError("NETWORK");
+      const completed = options.uploadSessions!.finish(approved, publicRequest, bindingSnapshot, response.status, result.body, uploadLease);
+      result.body = completed.body;
+      secrets = [...new Set([...secrets, ...completed.secrets].flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
+        .sort((a, b) => b.length - a.length);
+    }
     const scrub = redactor(secrets);
     const safeHeaders: [string, string][] = [];
     for (const [name, value] of response.headers)
     {
+      if (privateUpload && name.toLowerCase() !== "content-type") continue;
       if (authHeaders.has(name.toLowerCase()) || /^(?:authorization|proxy-authorization|www-authenticate|proxy-authenticate|set-cookie2?|cookie)$/i.test(name))
         scrub.mark();
       else safeHeaders.push([scrub.text(name), scrub.text(value)]);
@@ -251,7 +283,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       }
       // Never redact inside a base64 file: either retain exact bytes or withhold it entirely.
     } else safeBody = scrub.value(safeBody);
-    const safe: CredentialResponse = { ...result, status: response.status, statusText: scrub.text(response.statusText),
+    const safe: CredentialResponse = { ...result, status: response.status, statusText: privateUpload ? "" : scrub.text(response.statusText),
       headers: Object.fromEntries(safeHeaders), body: safeBody };
     if (safeBody === null) delete safe.bodyType;
     if (safe.mediaType) safe.mediaType = scrub.text(safe.mediaType);
@@ -262,6 +294,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     if (signal.aborted) throw new VaultError("CANCELLED");
     if (malformedJson) throw new CredentialResponseError("The endpoint did not return valid JSON. Check its response before retrying.", safe);
     if (!response.ok) throw new CredentialResponseError(`The endpoint returned HTTP ${response.status}. Check the request before retrying.`, safe);
+    uploadSucceeded = true;
     return { request: preview, response: safe };
   }
   catch (error)
@@ -285,5 +318,5 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     }
     if (error instanceof VaultError) throw new VaultError(error.code);
     throw new VaultError(phase === "policy" ? "PERMISSION" : "NETWORK");
-  } finally { lifetime.dispose(); }
+  } finally { if (privateUpload && !uploadSucceeded) options.uploadSessions?.clear(); lifetime.dispose(); }
 }

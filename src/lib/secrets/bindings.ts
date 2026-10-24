@@ -3,6 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { VaultError, type BasicCredentialReference, type OAuth1CredentialReference, type CredentialReference, type CredentialBinding, type CredentialExecutionContext, type HttpConnectionReference } from "./types.ts";
 import { validateVaultVariableInputs, type VaultVariableInput } from "./variables.ts";
+import { cloudflareSessionField } from "../cloudflare-upload.ts";
 import type { OperationSecurity } from "../operation-security.ts";
 
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
@@ -36,6 +37,15 @@ export function credentialReferenceIds(reference: CredentialReference): string[]
   return typeof reference === "string" ? [reference] : isBasicCredentialReference(reference)
     ? [reference.username, reference.password] : oauth1CredentialParts.map(part => (reference as OAuth1CredentialReference)[part]);
 }
+
+/** An opaque worker-owned reference may be wired to the upload Authorization input. */
+export function uploadSessionSelection(security: OperationSecurity | undefined, value: unknown): Pick<CredentialBinding, "alternative" | "credentials"> | undefined {
+  if (typeof value !== "string" || !uuid.test(value)) return;
+  const alternative = security?.findIndex(option => option.length === 1 && option[0]?.kind === "cloudflare-upload");
+  if (alternative === undefined || alternative < 0) return;
+  return { alternative, credentials: { [security![alternative]![0]!.name]: value } };
+}
+export { cloudflareSessionField };
 
 /** A direct vault-to-header connection already selects a key. Retain that choice
  * when a reviewed schema starts declaring the matching API-key requirement. */

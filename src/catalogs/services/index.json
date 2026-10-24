@@ -1813,8 +1813,11 @@
   },
   {
     "id": "cloudflare",
+    "provider": "cloudflare",
     "name": "Cloudflare / API",
+    "profile": "cloudflare-upload",
     "url": "https://raw.githubusercontent.com/cloudflare/api-schemas/main/openapi.yaml",
+    "provenance": "https://github.com/cloudflare/api-schemas",
     "version": "4.0.0",
     "openapi": "3.0.3",
     "operations": 3761,
@@ -1826,8 +1829,14 @@
     "sourceSha256": "7ed1c75d94c05dc18e8a243ffa86bf6c62e2bf66040bb833304bc8603b9b5064",
     "bytes": 13585723,
     "compressedBytes": 1281653,
-    "provider": "cloudflare",
-    "provenance": "https://github.com/cloudflare/api-schemas"
+    "patches": [
+      {
+        "id": "cloudflare-private-upload",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "ca3f09b346bba9872f2aee6b4f243dbaf19da995f896b9d1de846994250e226a",
+    "effectiveBytes": 13590340
   },
   {
     "id": "cloudflare-realtime-sfu",

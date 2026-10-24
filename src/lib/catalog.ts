@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
+import { cloudflareUploadProfile, configureCloudflareUpload, type CloudflareUploadProfile } from "./cloudflare-upload.ts";
 import { catalogs, replaceCatalogs, setOperationCatalog, type Catalog } from "./catalog-registry.ts";
 import { inspectOperationSecurity, type CredentialPermissions, type OperationSecurity } from "./operation-security.ts";
 import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
@@ -62,6 +63,8 @@ export type Operation = {
   responseStream?: ResponseStreamProfile;
   /** Fixed provider-owned token slot, resolved only through an encrypted connection. */
   privatePath?: PrivatePathProfile;
+  /** Reviewed private upload lifecycle and provider-owned wire format. */
+  cloudflareUpload?: CloudflareUploadProfile;
   security?: OperationSecurity;
   unavailableReason?: string;
   oauthScopes?: Record<string, string[]>[];
@@ -248,6 +251,16 @@ export function extractOperations(value: unknown, source: string): Operation[]
       const id = `${source}:${text(operation.operationId, `${method.toUpperCase()} ${path}`)}`;
       if (identities.has(id)) throw new Error(`${source}: duplicate operation identifier ${id}.`);
       identities.add(id);
+      const upload = cloudflareUploadProfile(operation["x-operations-cloudflare-upload"]);
+      if (upload) {
+        const model: Operation = { id, name: text(operation.summary, text(operation.operationId, `${method.toUpperCase()} ${path}`)),
+          description: text(operation.description, ""), group: Array.isArray(operation.tags) ? String(operation.tags[0]) : "Operations",
+          method: method.toUpperCase(), path, fields: [], bodyRequired: false };
+        configureCloudflareUpload(model, upload);
+        const security = inspectOperationSecurity(document, operation);
+        if (security !== undefined) model.security = security;
+        result.push(model); continue;
+      }
       const inputs = new Map<string, InputField>();
       for (const parameters of [item.parameters, operation.parameters])
       {

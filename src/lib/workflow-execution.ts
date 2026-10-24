@@ -11,7 +11,7 @@ import { operationServerUrl } from "./schema-documents.ts";
 import { serverUrlHasPlaceholder, telegramBotOrigin } from "./server-url.ts";
 import { VaultError, type ApprovedOperation, type CredentialExecutionContext } from "./secrets/types.ts";
 import { approvedOperation } from "./secrets/policy.ts";
-import { isBasicCredentialReference, isOAuth1CredentialReference, validateCredentialContext } from "./secrets/bindings.ts";
+import { isBasicCredentialReference, isOAuth1CredentialReference, uploadSessionSelection, cloudflareSessionField, validateCredentialContext } from "./secrets/bindings.ts";
 import { executeVaultOperation } from "./secrets/vault-executor.ts";
 import { readWorkflowResponseBody, WorkflowBodyError } from "./workflow-response-body.ts";
 import { workflowResponseLifetime, responseAccept, type ResponseProgress, type ResponseProgressCallback } from "./workflow-response-stream.ts";
@@ -82,7 +82,7 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
       if (context?.variables !== undefined || context?.binding.connection) throw new VaultError("PERMISSION");
       const request = prepareRequest(canonical, values, operation.fields);
       const { origin } = workflowExecutionForOperation(canonical);
-      if (canonical.privatePath || new URL(origin).origin === telegramBotOrigin) throw new VaultError("PERMISSION");
+      if (canonical.cloudflareUpload || canonical.privatePath || new URL(origin).origin === telegramBotOrigin) throw new VaultError("PERMISSION");
       if (canonical.security?.length) {
         if (!context) throw new VaultError("PERMISSION");
         const { binding } = validateCredentialContext(context);
@@ -147,9 +147,15 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
       const canonical = operationForId(operation.id);
       if (operation.deferred || !canonical || canonical.method !== operation.method || canonical.path !== operation.path)
         throw new Error("This operation is not available in the registered schemas.");
-      const invocation = context ? validateCredentialContext(context) : undefined;
+      let invocation = context ? validateCredentialContext(context) : undefined;
+      const upload = uploadSessionSelection(canonical.security, values[cloudflareSessionField]);
+      if (!invocation && upload) {
+        const descriptor = await approvedOperation(canonical, workflowExecutionForOperation(canonical).origin);
+        invocation = { binding: { ...upload, fingerprint: descriptor.fingerprint }, runId: crypto.randomUUID(), nodeId: canonical.id };
+      }
       const hasVariables = invocation?.variables !== undefined;
       if (invocation?.binding.connection && !canonical.security?.length) throw new VaultError("PERMISSION");
+      if (canonical.cloudflareUpload && !canonical.security?.length) throw new VaultError("PERMISSION");
       if (!canonical.security?.length && !hasVariables) return anonymous.execute(operation, values, signal, undefined, onProgress);
       if (!invocation) throw new VaultError("PERMISSION");
       const submitted = { ...values };

@@ -12,7 +12,7 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256 } from '../src/lib/schema-patches.ts';
+import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, elevenLabsAuthentication, geminiAuthAlternatives, githubAuthentication, googleOauthAlternatives, httpResponseStreaming, httpResponseStreamingSources, telegramPrivatePath, telegramPrivatePathSourceSha256, xOauth1Signing, xOauth1SourceSha256, cloudflarePrivateUpload, cloudflarePrivateUploadSourceSha256 } from '../src/lib/schema-patches.ts';
 import { githubAuthenticationSourceSha256 } from '../src/lib/github-authentication-data.ts';
 import { annotateCodexSchema } from './codex-schema.mjs';
 import { inspectCodexSchema } from '../src/lib/codex-schema.ts';
@@ -123,6 +123,8 @@ for (const source of sources) {
     throw new Error('Telegram private paths require requalification before updating the pinned native source.');
   if (source.profile === 'x-oauth1' && (source.id !== 'x' || sha(json) !== xOauth1SourceSha256))
     throw new Error('X OAuth1 signing requires requalification before updating the pinned native source.');
+  if (source.profile === 'cloudflare-upload' && (source.id !== 'cloudflare' || sha(json) !== cloudflarePrivateUploadSourceSha256))
+    throw new Error('Cloudflare uploads require requalification before updating the pinned native source.');
   const patches = source.profile === 'google-oauth' ? [googleOauthAlternatives]
     : source.profile === 'digitalocean-permissions' ? [digitalOceanBearerPermissions]
     : source.profile === 'gemini-auth' ? [geminiAuthAlternatives]
@@ -132,7 +134,8 @@ for (const source of sources) {
     : source.profile === 'github-auth' ? [githubAuthentication]
     : source.profile === 'http-streaming' ? [httpResponseStreaming]
     : source.profile === 'telegram-private-path' ? [telegramPrivatePath]
-    : source.profile === 'x-oauth1' ? [xOauth1Signing] : [];
+    : source.profile === 'x-oauth1' ? [xOauth1Signing]
+    : source.profile === 'cloudflare-upload' ? [cloudflarePrivateUpload] : [];
   const effective = patches.length ? JSON.stringify(applySchemaPatches(document, patches)) : json;
   const bytes = gzipSync(json, { level: 9 });
   await writeFile(resolve(output, `${source.id}.json.gz`), bytes);
