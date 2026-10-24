@@ -10,6 +10,14 @@ fix(workflow): offset restore hints and swap button colors
 
 ```
 
+<!-- changelog-commit:9216f6c609c6168b0e5d3d1ad7d1bcd9be930268 -->
+### Commit [`9216f6c`](https://github.com/superhero/operations.superduper.solutions/commit/9216f6c609c6168b0e5d3d1ad7d1bcd9be930268)
+
+```text
+fix(workflow): make restore button backgrounds circular
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
