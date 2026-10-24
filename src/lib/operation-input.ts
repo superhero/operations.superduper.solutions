@@ -23,7 +23,7 @@ export type PreparedRequest = {
   body?: JsonValue;
   headers?: Record<string, string>;
   contentType?: Exclude<BodyMediaType, "application/json">;
-  bodyFormat?: "binary";
+  bodyFormat?: "binary" | "cloudflare-assets" | "cloudflare-module";
 };
 
 export class InputValidationError extends Error
@@ -222,6 +222,10 @@ export function prepareRequest(operation: Operation, values: InputValues, workfl
       request.contentType = binaryRequestMediaType(operation.binaryMediaTypes, request.body!) as BodyMediaType;
       request.bodyFormat = "binary";
     }
+  }
+  if (operation.cloudflareUpload === "workers-upload") { request.bodyFormat = "cloudflare-assets"; request.contentType = "multipart/form-data"; }
+  if (["workers-version", "workers-module", "platform-module"].includes(operation.cloudflareUpload ?? "")) {
+    request.bodyFormat = "cloudflare-module"; request.contentType = "multipart/form-data";
   }
   return request;
 }

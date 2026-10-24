@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import FieldSelect from "./FieldSelect.svelte";
   import VaultAuthentication from "./VaultAuthentication.svelte";
   import HttpConnectionSelector from "./HttpConnectionSelector.svelte";
@@ -12,12 +12,14 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { supportedSecurityAlternative } from "../operation-security.ts";
   import { workflowExecutionForOperation } from "../workflow-execution.ts";
   import { approvedOperation } from "../secrets/policy.ts";
-  import { credentialSelectionForVariables, isBasicCredentialReference, isOAuth1CredentialReference, oauth1CredentialParts, credentialReferenceIds, validateCredentialBinding } from "../secrets/bindings.ts";
+  import { uploadSessionSelection, cloudflareSessionField, credentialSelectionForVariables, isBasicCredentialReference, isOAuth1CredentialReference, oauth1CredentialParts, credentialReferenceIds, validateCredentialBinding } from "../secrets/bindings.ts";
+  import type { InputValues } from "../operation-input.ts";
+  import { uploadSessionConsumer } from "../cloudflare-upload.ts";
   import type { VaultVariableInput } from "../secrets/variables.ts";
   import { lockVaultLocally, readVaultKeys, readVaultStatus, subscribeVaultLock, vaultCall } from "../secrets/client.ts";
   import { VaultError, type ApprovedOperation, type CredentialBinding, type CredentialReference, type VaultKey, type VaultStatus } from "../secrets/types.ts";
 
-  let { operation, initial, variables = [], disabled = false, portalZIndex = 40, onChange }: { operation: Operation; initial?: CredentialBinding | undefined; variables?: VaultVariableInput[] | undefined;
+  let { operation, initial, variables = [], values = {}, disabled = false, portalZIndex = 40, onChange }: { operation: Operation; initial?: CredentialBinding | undefined; variables?: VaultVariableInput[] | undefined; values?: InputValues;
     disabled?: boolean; portalZIndex?: number; onChange: (binding: CredentialBinding | undefined) => void } = $props();
   let status = $state<VaultStatus>({ exists: false, unlocked: false, revision: 0, epoch: 0, methods: [] });
   let credentials = $state<VaultKey[]>([]);
@@ -66,6 +68,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     error = "";
     const selection = selected;
     if (!descriptor || !selection || selection.length && !status.unlocked) { manualBinding = undefined; publish(); return; }
+    const upload = uploadSessionSelection(operation.security, values[cloudflareSessionField]);
+    if (upload && selection.some(scheme => scheme.kind === "cloudflare-upload")) {
+      manualBinding = validateCredentialBinding({ ...upload, fingerprint: descriptor.fingerprint }); publish(); return;
+    }
     const entries = selection.map(scheme => [scheme.name, choices[scheme.name] ?? ""] as const);
     if (entries.some(([name, reference]) => {
       const scheme = selection.find(scheme => scheme.name === name)!;
@@ -91,6 +97,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       descriptor = next; status = latest; credentials = list;
       if (first && initial?.fingerprint === next.fingerprint) {
         alternative = String(initial.alternative); choices = { ...initial.credentials };
+      } else if (first && uploadSessionConsumer(operation.cloudflareUpload)) {
+        alternative = "0";
       } else if (first && !initial) {
         const connected = credentialSelectionForVariables(operation.security, variables);
         if (connected) { alternative = String(connected.alternative); choices = connected.credentials; }
@@ -114,6 +122,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     } catch (cause) { if (mounted && request === revision) error = cause instanceof VaultError ? cause.message : "The vault could not be unlocked."; }
     finally { if (mounted && request === revision) busy = false; }
   }
+  $effect(() => {
+    if (uploadSessionConsumer(operation.cloudflareUpload)) {
+      const reference = values[cloudflareSessionField];
+      if (descriptor) untrack(() => { alternative = "0"; changed(); });
+    }
+  });
   onMount(() => {
     mounted = true; void refresh();
     const stop = subscribeVaultLock(() => {
@@ -132,7 +146,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 <fieldset class="credential-selection" disabled={disabled || busy}>
   <legend>Credentials</legend>
   {#if operation.privatePath}<p>Save or select a connection to supply the bot token in Telegram's private URL path.</p>{/if}
-  {#if descriptor}
+  {#if descriptor && !uploadSessionConsumer(operation.cloudflareUpload)}
     <HttpConnectionSelector {descriptor} {status} manual={manualBinding}
       initial={initial?.fingerprint === descriptor.fingerprint ? initial.connection : undefined} disabled={disabled || busy} {portalZIndex}
       onSelect={(binding, selected) => { connectionSelected = selected; connectionBinding = binding;
@@ -153,7 +167,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {:else}
         {#if !connectionSelected}{#each selected as scheme, index (scheme.name)}
           <div class="credential-choice">
-            {#if scheme.kind === "oauth1"}
+            {#if scheme.kind === "cloudflare-upload"}
+              <p class="hint">Connect the session reference from the preceding Cloudflare upload step to Private upload session. The token stays in the vault worker and expires when it is locked.</p>
+            {:else if scheme.kind === "oauth1"}
               <p class="credential-name">{scheme.name} · OAuth 1.0a</p>
               <p class="hint">Choose your existing X application and user access credentials. Requests are signed privately with HMAC-SHA1.</p>
               {#each oauth1CredentialParts as part}

@@ -1,11 +1,12 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { cloudflareOrigin, cloudflareUploadContracts } from "./cloudflare-upload.ts";
 import { adaptGithubAuthentication } from "./github-authentication.ts";
 import { telegramBotTemplate } from "./server-url.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing"; version: 1 };
+export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path" | "x-oauth1-signing" | "cloudflare-private-upload"; version: 1 };
 export const googleOauthAlternatives: SchemaPatch = { id: "google-oauth-alternatives", version: 1 };
 export const digitalOceanBearerPermissions: SchemaPatch = { id: "digitalocean-bearer-permissions", version: 1 };
 export const geminiAuthAlternatives: SchemaPatch = { id: "gemini-auth-alternatives", version: 1 };
@@ -14,6 +15,8 @@ export const anthropicAuthentication: SchemaPatch = { id: "anthropic-authenticat
 export const elevenLabsAuthentication: SchemaPatch = { id: "elevenlabs-authentication", version: 1 };
 export const githubAuthentication: SchemaPatch = { id: "github-authentication", version: 1 };
 export const httpResponseStreaming: SchemaPatch = { id: "http-response-streaming", version: 1 };
+export const cloudflarePrivateUpload: SchemaPatch = { id: "cloudflare-private-upload", version: 1 };
+export const cloudflarePrivateUploadSourceSha256 = "5999fa69349d2e160e58bac0f9603f110c2937d67dbf6dac3a1bed9f3859c778";
 export const xOauth1Signing: SchemaPatch = { id: "x-oauth1-signing", version: 1 };
 export const xOauth1SourceSha256 = "e21fbef8a11e6c2a8dfcbbe2390fc10c73dc79671b3b5f51de787d4be106a9c6";
 export const telegramPrivatePath: SchemaPatch = { id: "telegram-private-path", version: 1 };
@@ -31,7 +34,7 @@ export function schemaPatchName(patch: SchemaPatch): string {
     : patch.id === "elevenlabs-authentication" ? "ElevenLabs authentication and credential results"
     : patch.id === "github-authentication" ? "GitHub operation authentication"
     : patch.id === "http-response-streaming" ? "Bounded HTTP response streaming"
-    : patch.id === "telegram-private-path" ? "Telegram private bot token path" : patch.id === "x-oauth1-signing" ? "X OAuth 1.0a signing" : "Unknown schema correction";
+    : patch.id === "telegram-private-path" ? "Telegram private bot token path" : patch.id === "x-oauth1-signing" ? "X OAuth 1.0a signing" : patch.id === "cloudflare-private-upload" ? "Cloudflare private upload sessions" : "Unknown schema correction";
 }
 
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -381,12 +384,42 @@ function xOauth1(document: Record<string, any>): void {
   definition["x-operations-oauth1"] = "x-hmac-sha1";
 }
 
+function cloudflareUploads(document: Record<string, any>): void {
+  if (document.openapi !== "3.0.3" || document.info?.version !== "4.0.0" || document.servers?.length !== 1
+    || document.servers[0]?.url !== cloudflareOrigin) throw new Error("Cloudflare uploads require the reviewed native version and endpoint.");
+  const schemes = document.components?.securitySchemes;
+  if (!object(schemes)) throw new Error("Cloudflare uploads require the native security definitions.");
+  for (const [name, kind] of [["assets_jwt", "workers"], ["pages_upload_token", "pages"]]) {
+    const definition = { type: "http", scheme: "bearer", "x-operations-cloudflare-upload-token": kind };
+    if (schemes[name!] !== undefined && JSON.stringify(schemes[name!]) !== JSON.stringify(definition)) throw new Error("Cloudflare upload credentials cannot replace an unreviewed declaration.");
+    schemes[name!] = definition;
+  }
+  for (const [profile, [method, path]] of Object.entries(cloudflareUploadContracts)) {
+    const item = document.paths?.[path], operation = item?.[method.toLowerCase()];
+    if (!object(operation) || item.servers !== undefined || operation.servers !== undefined
+      || operation["x-operations-cloudflare-upload"] !== undefined && operation["x-operations-cloudflare-upload"] !== profile)
+      throw new Error("Cloudflare uploads require the reviewed native method and destination.");
+    operation["x-operations-cloudflare-upload"] = profile;
+    // The public operation describes the projected result, never the token-bearing wire body.
+    for (const [status, response] of Object.entries(operation.responses ?? {}) as [string, any][]) {
+      if (!/^2[0-9][0-9]$/.test(status)) continue;
+      operation.responses[status] = { description: response.description ?? "Private upload result", content: { "application/json": { schema: {
+        type: "object", properties: { success: { type: "boolean" }, result: { type: "object", properties: {
+          session: { type: "string", description: "Opaque private upload reference; connect it to Private upload session or metadata.assets.jwt." },
+          expiresAt: { type: "integer" }, phase: { type: "string" }, buckets: { type: "array", items: { type: "array", items: { type: "string" } } },
+          missing: { type: "array", items: { type: "string" } }, completed: { type: "boolean" }, id: { type: "string" },
+        } } },
+      } } } };
+    }
+  }
+}
+
 export function applySchemaPatches(input: Record<string, unknown>, patches: readonly SchemaPatch[] = []): Record<string, unknown> {
   if (!patches.length) return input;
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path", "x-oauth1-signing", "cloudflare-private-upload"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
     if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
@@ -398,7 +431,8 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
     else if (patch.id === "github-authentication") adaptGithubAuthentication(document);
     else if (patch.id === "http-response-streaming") responseStreaming(document);
     else if (patch.id === "telegram-private-path") telegramPath(document);
-    else xOauth1(document);
+    else if (patch.id === "x-oauth1-signing") xOauth1(document);
+    else cloudflareUploads(document);
   }
   return document;
 }
