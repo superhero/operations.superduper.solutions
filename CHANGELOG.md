@@ -83,6 +83,23 @@ local workloads. The full Swarm job profile is four CPUs and sixteen GiB.
 
 ```
 
+<!-- changelog-commit:50c532ac9a6203a66510ed23df857549c927379c -->
+### Commit [`50c532a`](https://github.com/superhero/operations.superduper.solutions/commit/50c532ac9a6203a66510ed23df857549c927379c)
+
+```text
+feat(auth): support private HTTP Basic credentials
+
+Allow Basic operations to select existing username and password or token
+vault entries using two opaque references. Construct Authorization only
+in private execution and redact source and derived credential forms.
+
+Keep legacy bearer and API-key bindings, canonical approvals and strict
+AND/OR choices. Reject malformed, stale, conflicting and unsupported
+values before dispatch. Refresh bundled discovery without changing the
+published provider contracts or the separate structured-form limits.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
