@@ -261,6 +261,14 @@ feat(x): sign OAuth1 requests with private vault credentials
 
 ```
 
+<!-- changelog-commit:12f9f982e19117c0fe46668c3cf16989f062cf49 -->
+### Commit [`12f9f98`](https://github.com/superhero/operations.superduper.solutions/commit/12f9f982e19117c0fe46668c3cf16989f062cf49)
+
+```text
+feat(cloudflare): keep asset upload tokens private
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62

@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { CloudflareUploadSessions } from "./cloudflare-upload.ts";
 import type { InputValues } from "../operation-input.ts";
 import { decryptJSON, encryptJSON, newVaultKey, passwordKey, recoveryKey, passkeyKey, randomBase64,
   runtimeKey, unwrapVaultKey, wrapVaultKey, validId, canonicalJSON, ownObject } from "./crypto.ts";
@@ -64,13 +65,14 @@ export class VaultSession {
   private state: VaultState | undefined;
   private key: CryptoKey | undefined;
   private generation = 0;
+  private readonly uploadSessions = new CloudflareUploadSessions();
   private pending: Pending | undefined;
 
   constructor(storage: VaultStorage, assertActive: () => void = () => {}, assertSchema: (descriptor: ApprovedOperation) => Promise<void> = async () => {}) {
     this.storage = storage; this.assertActive = assertActive; this.assertSchema = assertSchema;
   }
 
-  lock(): void { this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; }
+  lock(): void { this.uploadSessions.clear(); this.generation++; this.key = undefined; this.state = undefined; this.pending = undefined; }
 
   private guard(generation: number): void {
     this.assertActive();
@@ -282,7 +284,7 @@ export class VaultSession {
     await authenticateManifest(snapshot, key);
     this.guard(generation);
     const state = await this.storage.replace(expected, snapshot, values.map(({ id, label, kind }) => ({ id, label, kind })));
-    this.guard(generation); this.state = state; this.key = key;
+    this.guard(generation); this.uploadSessions.clear(); this.state = state; this.key = key;
   }
 
   async put(proof: UnlockProof | null, input: { id?: string; label: string; kind: VaultCredential["kind"]; value: string }): Promise<CredentialSummary[]> {
@@ -351,6 +353,7 @@ export class VaultSession {
     variables?: import("./variables.ts").VaultVariableInput[], onProgress?: ResponseProgressCallback) {
     const generation = this.generation;
     return executeCredentialed(descriptor, values, binding, await this.records(), {
+      uploadSessions: this.uploadSessions,
       ...(onProgress ? { onProgress: progress => { this.guard(generation); onProgress(progress); } } : {}),
       ...(signal ? { signal } : {}), ...(variables ? { variables } : {}), assertCurrent: async () => {
         await this.assertSchema(descriptor);
@@ -400,7 +403,7 @@ export class VaultSession {
       revision: snapshot.revision + 1, records }, key);
     this.guard(generation);
     const state = await this.storage.replace(expected, next, keys);
-    this.guard(generation); this.state = state; this.key = key;
+    this.guard(generation); this.uploadSessions.clear(); this.state = state; this.key = key;
     return this.status();
   }
 

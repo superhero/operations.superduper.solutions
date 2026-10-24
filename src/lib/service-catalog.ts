@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { cloudflareUploadProfile, configureCloudflareUpload } from "./cloudflare-upload.ts";
 import type { BodyMediaType, InputField, InputSchema, Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
@@ -178,6 +179,9 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         serverUrl ||= url;
         if (new URL(url).hostname === "no-default") throw new Error("Configure this schema’s server URL for your account before running it.");
         if (path.includes("//") || /[\\?#\u0000-\u0020\u007f]/.test(path)) throw new Error("This endpoint uses a path or transport that is not supported.");
+        const upload = cloudflareUploadProfile(source["x-operations-cloudflare-upload"]);
+        if (upload) configureCloudflareUpload(operation, upload);
+        else {
         const fields = new Map<string, InputField>();
         for (const parameters of [item.parameters, source.parameters])
         {
@@ -241,6 +245,7 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         const placeholders = [...path.matchAll(/\{([^{}]+)\}/g)].map(match => match[1]);
         if (placeholders.some(name => !operation.fields.some(field => field.location === "path" && field.name === name)))
           throw new Error("This endpoint uses unsupported URI template expansion.");
+        }
         const authorization = security(document, source, operation);
         if (authorization !== undefined) operation.security = authorization;
         const responses = value(source.responses);

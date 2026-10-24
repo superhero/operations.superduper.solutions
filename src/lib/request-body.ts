@@ -1,6 +1,7 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { cloudflareMultipart } from "./cloudflare-upload.ts";
 import type { JsonValue } from "./catalog.ts";
 import type { PreparedRequest } from "./operation-input.ts";
 import { validateWorkflowBinary, workflowBinaryBlob } from "./workflow-binary.ts";
@@ -13,6 +14,7 @@ function formText(value: JsonValue): string {
 /** Both HTTP executors serialize the same validated request, without JSON-encoding files. */
 export function requestBody(request: PreparedRequest): BodyInit | null {
   if (request.body === undefined) return null;
+  if (request.bodyFormat === "cloudflare-assets" || request.bodyFormat === "cloudflare-module") return cloudflareMultipart(request);
   if (request.bodyFormat === "binary") return workflowBinaryBlob(request.body, request.contentType);
   if (request.contentType === "text/plain") return String(request.body);
   if (request.contentType === "application/x-www-form-urlencoded" || request.contentType === "multipart/form-data") {

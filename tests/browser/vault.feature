@@ -7,6 +7,14 @@ Feature: Browser vault persistence and controlled credential execution
   Test-only fixtures exercise storage failures without adding production hooks.
 
   @chromium-only
+  Scenario Outline: Cloudflare private upload works at <width>px
+    Then a Cloudflare upload at <width> pixels carries opaque session references through private worker calls
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  @chromium-only
   Scenario Outline: X OAuth1 connections survive reload at <width>px
     Then an X OAuth1 connection at <width> pixels signs privately after selecting four stored credentials
     Examples:

@@ -4,6 +4,7 @@
 import { telegramPrivateEndpoint, telegramPathSecurity } from "./server-url.ts";
 
 export type OperationSecurityScheme =
+  | { name: string; kind: "cloudflare-upload"; header: "Authorization"; profile: "workers" | "pages"; query?: never; path?: never }
   | { name: string; kind: "oauth1"; header: "Authorization"; profile: "x-hmac-sha1"; query?: never; path?: never }
   | { name: string; kind: "bearer" | "basic" | "apiKey"; header: string; query?: never; path?: never }
   | { name: string; kind: "apiKey"; query: string; header?: never; path?: never }
@@ -14,7 +15,7 @@ export type OperationSecurityRequirement = OperationSecurityScheme | Unavailable
 /** Alternatives retain source positions. Every member is required (AND), including unavailable members. */
 export type OperationSecurity = OperationSecurityRequirement[][];
 export function supportedSecurityAlternative(value: unknown): value is OperationSecurityScheme[] {
-  return Array.isArray(value) && value.every(scheme => scheme && ["bearer", "basic", "apiKey", "oauth1"].includes(scheme.kind));
+  return Array.isArray(value) && value.every(scheme => scheme && ["bearer", "basic", "apiKey", "oauth1", "cloudflare-upload"].includes(scheme.kind));
 }
 /** Permission metadata is aligned with the security alternatives, not OAuth flows. */
 export type CredentialPermissions = Record<string, string[]>[];
@@ -78,7 +79,9 @@ function scheme(document: ObjectValue, name: string, allowUnsupported: boolean):
     if (typeof definition.scheme !== "string" || !definition.scheme || invalidHeaderName.test(definition.scheme))
       throw new Error(`${context}: only HTTP bearer and Basic authentication are supported.`);
     const kind = definition.scheme.toLowerCase();
-    result = kind === "oauth" && definition["x-operations-oauth1"] === "x-hmac-sha1"
+    result = kind === "bearer" && ["workers", "pages"].includes(String(definition["x-operations-cloudflare-upload-token"]))
+      ? { name, kind: "cloudflare-upload", header: "Authorization", profile: definition["x-operations-cloudflare-upload-token"] as "workers" | "pages" }
+      : kind === "oauth" && definition["x-operations-oauth1"] === "x-hmac-sha1"
       ? { name, kind: "oauth1", header: "Authorization", profile: "x-hmac-sha1" }
       : kind === "bearer" || kind === "basic" ? { name, kind, header: "Authorization" }
       : { name, kind: "unsupported", header: "Authorization", reason: `${context}: only HTTP bearer and Basic authentication are supported.` };

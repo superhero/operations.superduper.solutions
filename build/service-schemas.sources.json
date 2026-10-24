@@ -91,6 +91,7 @@
     "id": "cloudflare",
     "provider": "cloudflare",
     "name": "Cloudflare / API",
+    "profile": "cloudflare-upload",
     "url": "https://raw.githubusercontent.com/cloudflare/api-schemas/main/openapi.yaml",
     "provenance": "https://github.com/cloudflare/api-schemas"
   },

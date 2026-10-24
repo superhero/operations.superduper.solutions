@@ -1175,3 +1175,91 @@ Then('an X OAuth1 connection at {int} pixels signs privately after selecting fou
   assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, ...Object.values(secrets), ...Object.values(secrets).map(encode)]), []);
   await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/x-oauth1-${width}.png` });
 });
+
+Then('a Cloudflare upload at {int} pixels carries opaque session references through private worker calls', { timeout: 90_000 }, async function (width) {
+  const page = this.page, account = 'a'.repeat(32), hash = 'b'.repeat(32), seen = [];
+  const file = { kind: 'workflow-file', version: 1, name: 'index.html', mediaType: 'text/html', size: 4, base64: 'AP8NCg==' };
+  const encode = value => Buffer.from(JSON.stringify(value)).toString('base64url');
+  const token = label => encode({ alg: 'HS256' })+'.'+encode({ exp: Math.floor(Date.now()/1000)+3600, label })+'.c3ludGhldGlj';
+  const uploadToken = token('CF_BROWSER_UPLOAD_PRIVATE'), completionToken = token('CF_BROWSER_COMPLETION_PRIVATE');
+  await page.setViewportSize({ width, height: 900 }); await seed(this, 'ok');
+  await this.context.route('https://api.cloudflare.com/**', async route => {
+    const request = route.request(), headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS' };
+    if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
+    const url = new URL(request.url()), authorization = request.headers().authorization, body = request.postData() ?? '';
+    seen.push({ url: request.url(), headers: request.headers(), body });
+    let result;
+    if (url.pathname.endsWith('/assets-upload-session')) {
+      assert.equal(authorization, 'Bearer '+canaries[1]);
+      assert.deepEqual(JSON.parse(body).manifest, { '/index.html': { hash, size: 4 } }); result = { jwt: uploadToken, buckets: [[hash]] };
+    } else if (url.pathname.endsWith('/assets/upload')) {
+      assert.equal(authorization, 'Bearer '+uploadToken); assert.equal(url.searchParams.get('base64'), 'true');
+      assert.ok(body.includes('name="'+hash+'"')); assert.ok(body.includes('Content-Type: text/html')); assert.ok(body.includes(file.base64));
+      assert.ok(!body.includes(completionToken)); result = { jwt: completionToken };
+    } else {
+      assert.ok(url.pathname.endsWith('/versions')); assert.equal(authorization, 'Bearer '+canaries[1]);
+      assert.ok(body.includes('name="metadata"')); assert.ok(body.includes('application/json')); assert.ok(body.includes(completionToken));
+      assert.ok(body.includes('export default {}')); assert.ok(!body.includes(uploadToken)); result = { id: 'browser-safe-version' };
+    }
+    return route.fulfill({ status: url.pathname.endsWith('/assets/upload') ? 201 : 200,
+      headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ success: true, result }) });
+  });
+  const names = ['CF Start upload', 'CF Upload assets', 'CF Finish upload'];
+  const contracts = [
+    ['workers-session', '/accounts/{account_id}/workers/scripts/{script_name}/assets-upload-session'],
+    ['workers-upload', '/accounts/{account_id}/workers/assets/upload'],
+    ['workers-version', '/accounts/{account_id}/workers/scripts/{script_name}/versions'],
+  ];
+  const paths = Object.fromEntries(contracts.map(([profile, path], index) => [path, { post: { operationId: profile, summary: names[index],
+    'x-operations-cloudflare-upload': profile, security: [index === 1 ? { assets_jwt: [] } : { api_token: [] }],
+    responses: { 200: { description: 'Safe upload result', content: { 'application/json': { schema: { type: 'object' } } } } } } }]));
+  const document = { openapi: '3.0.3', info: { title: 'Cloudflare private upload fixture', version: '1' }, servers: [{ url: 'https://api.cloudflare.com/client/v4' }], paths,
+    components: { securitySchemes: { api_token: { type: 'http', scheme: 'bearer' }, assets_jwt: { type: 'http', scheme: 'bearer', 'x-operations-cloudflare-upload-token': 'workers' } } } };
+  await setMode(page, 'settings'); const schemas = page.locator('summary[aria-label="Schemas"]');
+  if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({ name: 'cf-upload.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
+  await expect(page.getByRole('switch', { name: 'Enable Cloudflare private upload fixture', exact: true })).toHaveAttribute('aria-checked', 'true');
+  const readResult = async () => page.locator('[aria-label="Response body"]').last().evaluate(root => {
+    const result = {};
+    for (const line of root.querySelectorAll('.json-line')) {
+      const key = line.querySelector('.json-key'), value = line.querySelector('.json-value > span');
+      if (key && value) result[JSON.parse(key.textContent)] = JSON.parse(value.textContent);
+    }
+    return { result };
+  });
+  const execute = async () => {
+    await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+    await expect(page.getByRole('status').filter({ hasText: 'Operation completed.' })).toBeVisible();
+    return readResult();
+  };
+  async function accountCredentials() {
+    await page.getByRole('combobox', { name: 'Authentication alternative', exact: true }).click();
+    await page.getByRole('option', { name: 'api_token', exact: true }).click();
+    const unlock = page.getByLabel('Unlock the vault password', { exact: true });
+    if (await unlock.isVisible()) { await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click(); }
+    await page.getByRole('combobox', { name: 'Credential for api_token', exact: true }).click();
+    await page.getByRole('option', { name: canaries[3], exact: true }).click();
+  }
+  await chooseCatalogOperation(page, names[0]); await accountCredentials();
+  await page.getByRole('textbox', { name: 'account_id', exact: true }).fill(account);
+  await page.getByRole('textbox', { name: 'script_name', exact: true }).fill('test-worker');
+  await page.getByRole('textbox', { name: 'manifest', exact: true }).fill(JSON.stringify({ '/index.html': { hash, size: 4 } }));
+  const started = await execute(); assert.equal(started.result.phase, 'upload');
+  await chooseCatalogOperation(page, names[1]);
+  await page.getByRole('textbox', { name: 'account_id', exact: true }).fill(account);
+  await page.getByRole('checkbox', { name: 'Do not send Private upload session', exact: true }).uncheck();
+  await page.getByRole('textbox', { name: 'Private upload session', exact: true }).fill(started.result.session);
+  await page.getByRole('textbox', { name: 'files', exact: true }).fill(JSON.stringify({ [hash]: file }));
+  const uploaded = await execute(); assert.equal(uploaded.result.phase, 'completion'); assert.notEqual(uploaded.result.session, started.result.session);
+  await chooseCatalogOperation(page, names[2]); await accountCredentials();
+  await page.getByRole('textbox', { name: 'account_id', exact: true }).fill(account);
+  await page.getByRole('textbox', { name: 'script_name', exact: true }).fill('test-worker');
+  await page.getByRole('textbox', { name: 'metadata', exact: true }).fill(JSON.stringify({ main_module: 'main.js', assets: { jwt: uploaded.result.session } }));
+  await page.getByRole('textbox', { name: 'files', exact: true }).fill(JSON.stringify({ 'main.js': { kind: 'workflow-file', version: 1, name: 'main.js', mediaType: 'application/javascript', size: 17, base64: Buffer.from('export default {}').toString('base64') } }));
+  const completed = await execute(); assert.equal(completed.result.completed, true); assert.equal(completed.result.id, 'browser-safe-version');
+  assert.equal(seen.length, 3); for (const call of seen) { assert.equal(call.headers.cookie, undefined); assert.equal(call.headers.referer, undefined); }
+  for (const value of [await page.locator('body').innerText(), await repository(page, 'list'), await storage(page, 'read')])
+    for (const token of [uploadToken, completionToken]) assert.ok(!JSON.stringify(value).includes(token));
+  assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, uploadToken, completionToken]), []);
+  await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/cloudflare-upload-${width}.png` });
+});
