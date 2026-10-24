@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "3cbf73b84d210df27772232427b4e3db9722472332bcbf62a0a59c8a614f8d12",
+  "adapterRevision": "1976bff312820217c0b58c428d28403f029591087bb1cd3be3f862b3737da15f",
   "indexes": [
     {
       "id": "anthropic",
@@ -2378,16 +2378,16 @@
     },
     {
       "id": "gemini",
-      "sourceRevision": "c1187de634a269841d465bf550d90be48464ca5b206f7b0987375b208cb0c324",
-      "bytes": 14543,
-      "compressedBytes": 1684,
-      "sha256": "efd2eab4f0782be2671135e77347c859e43b149ea3d7a53cd6d71729bdf6bc6e",
+      "sourceRevision": "b8a847e0973966f84231a373f9afed6c6cdc2dded13f418c1c08a764c9b37d0b",
+      "bytes": 10657,
+      "compressedBytes": 1602,
+      "sha256": "8cc7e68970363060fa7e15edf59f9b9c6042994ca9dc05c8bd2c92f6eb899dd7",
       "summary": {
         "name": "Gemini API",
         "serverUrl": "https://generativelanguage.googleapis.com",
         "description": "The Gemini Interactions API allows developers to build generative AI applications using Gemini models. Gemini is our most capable model, built from the ground up to be multimodal. It can generalize and seamlessly understand, operate across, and combine different types of information including language, images, audio, video, and code. You can use the Gemini API for use cases like reasoning across text and images, content generation, dialogue agents, summarization and classification systems, and more.",
         "operationCount": 37,
-        "unavailableCount": 37
+        "unavailableCount": 0
       }
     },
     {

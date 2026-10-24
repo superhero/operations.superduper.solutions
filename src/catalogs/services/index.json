@@ -3565,6 +3565,7 @@
   {
     "id": "gemini",
     "name": "Google / Gemini / Interactions",
+    "profile": "gemini-auth",
     "url": "https://ai.google.dev/static/api/interactions.openapi.json",
     "version": "v1beta",
     "openapi": "3.0.3",
@@ -3573,7 +3574,15 @@
     "sha256": "c1187de634a269841d465bf550d90be48464ca5b206f7b0987375b208cb0c324",
     "sourceSha256": "901d2a659084705d57ffabf3401762a062fbd1de79c84553902142a8b0582e76",
     "bytes": 349845,
-    "compressedBytes": 53960
+    "compressedBytes": 53960,
+    "patches": [
+      {
+        "id": "gemini-auth-alternatives",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "b8a847e0973966f84231a373f9afed6c6cdc2dded13f418c1c08a764c9b37d0b",
+    "effectiveBytes": 350039
   },
   {
     "id": "google-search-console",

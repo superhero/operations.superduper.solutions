@@ -16,6 +16,16 @@ Feature: Schema commit comparisons and correction review
       | 390   |
       | 1280  |
 
+  @service-defaults @chromium-only
+  Scenario Outline: Gemini credentials retain published and corrected schema revisions
+    When I use a viewport of <width> by 900 pixels
+    Then Gemini revisions compare SDK authentication with separate standard credential choices
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
   Scenario: Commit comparisons and colored field diffs preserve conflict review and mobile scrolling
     Then schema history compares any saved commits with lazy colored diffs and persistent conflict choices
 

@@ -12,7 +12,7 @@ import { bundleSwaggerReferences } from './swagger-references.mjs';
 import { adaptFredSchema } from './fred-schema.mjs';
 import { extractRedocSchema } from './redoc-schema.mjs';
 import { useMethodPathOperationIds } from './service-operation-identities.mjs';
-import { applySchemaPatches, digitalOceanBearerPermissions, googleOauthAlternatives } from '../src/lib/schema-patches.ts';
+import { applySchemaPatches, digitalOceanBearerPermissions, geminiAuthAlternatives, googleOauthAlternatives } from '../src/lib/schema-patches.ts';
 import { annotateCodexSchema } from './codex-schema.mjs';
 import { inspectCodexSchema } from '../src/lib/codex-schema.ts';
 
@@ -115,7 +115,8 @@ for (const source of sources) {
   }
   const json = JSON.stringify(document);
   const patches = source.profile === 'google-oauth' ? [googleOauthAlternatives]
-    : source.profile === 'digitalocean-permissions' ? [digitalOceanBearerPermissions] : [];
+    : source.profile === 'digitalocean-permissions' ? [digitalOceanBearerPermissions]
+    : source.profile === 'gemini-auth' ? [geminiAuthAlternatives] : [];
   const effective = patches.length ? JSON.stringify(applySchemaPatches(document, patches)) : json;
   const bytes = gzipSync(json, { level: 9 });
   await writeFile(resolve(output, `${source.id}.json.gz`), bytes);

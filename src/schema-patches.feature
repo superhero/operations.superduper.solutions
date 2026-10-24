@@ -23,6 +23,44 @@ Feature: Reviewable schema corrections and structured upstream merges
   Scenario: DigitalOcean corrections are limited to the reviewed bearer contract
     Then DigitalOcean corrections reject changed provider contracts and metadata collisions
 
+  Scenario: Gemini authentication alternatives preserve reviewable published data
+    Then Gemini corrections preserve published SDK metadata AND credentials and anonymous overrides
+
+  Scenario Outline: Gemini only exposes applicable reviewed credentials for <kind>
+    Then Gemini credential applicability "<kind>" stays explicit without executing custom schemes
+    Examples:
+      | kind                     |
+      | key only                 |
+      | bearer only              |
+      | headers only             |
+      | unrelated custom scheme  |
+      | unreviewed SDK extension |
+
+  Scenario Outline: Changed Gemini contracts fail closed for <kind>
+    Then Gemini correction rejects the changed contract "<kind>"
+    Examples:
+      | kind                     |
+      | unknown server           |
+      | extra server             |
+      | missing server           |
+      | unsupported version      |
+      | missing definition       |
+      | different custom scheme  |
+      | missing SDK contract     |
+      | executable SDK extension |
+      | wrong SDK shape          |
+      | required credential      |
+      | composed credentials     |
+      | unknown credential       |
+      | malformed API key        |
+      | constrained token        |
+      | nonempty requirement     |
+      | invalid requirement      |
+      | scheme collision         |
+      | credential collision     |
+      | provenance collision     |
+      | permission collision     |
+
   Scenario: Schema field diffs preserve exact lines and distinguish absent sides
     Then schema line diffs preserve additions removals context and JSON pointer values
 
