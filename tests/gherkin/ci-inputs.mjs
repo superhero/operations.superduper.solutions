@@ -10,6 +10,7 @@ import { expectedCases } from '../../.github/scripts/test-results.mjs';
 import { configurationFingerprint, installedToolchain } from './execution-fingerprint.mjs';
 import { browserProjectNameForFeature } from './browser-projects.mjs';
 import { captureForTags } from '../browser/capture-policy.fixture.mjs';
+import { browserResourcePolicy } from '../../.github/scripts/ci-browser-resources.mjs';
 
 export const policyVersion = 'operations-ci-units-v1';
 export const digest = value => createHash('sha256').update(typeof value === 'string' || Buffer.isBuffer(value) ? value : JSON.stringify(value)).digest('hex');
@@ -143,7 +144,7 @@ export function createPlan({ bindings, image, imageReference = `mcr.microsoft.co
   const common = { policy: policyVersion, files: hashFiles(shared, root),
     bundle: hashFiles(filesBelow('dist', root), root), fixtures: hashFiles(['tmp/test/browser/fixture-bundles.json'], root),
     toolchain: installedToolchain(root), configFingerprint: configurationFingerprint(root), image, imageReference,
-    runtime: { nodeHeapMiB: 512, cpu: 2, memoryGiB: 5, pids: 512, timezone: 'UTC', locale: 'en-US', capture } };
+    runtime: { ...browserResourcePolicy, timezone: 'UTC', locale: 'en-US', capture } };
   const sharedDigest = digest(common);
   const globalModules = globalRegistrationModules(root);
   const units = bindings.map(binding => {

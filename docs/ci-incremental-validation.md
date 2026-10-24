@@ -104,11 +104,29 @@ The existing integration queue and merge/publication locks remain in effect.
 
 ## Resources, reports and controls
 
-Each active browser job owns one Docker container capped at two CPUs, 5 GiB
-memory with no extra swap, and 512 processes. Application batches run at most
-two feature processes; the library batch runs one. Node heaps are capped at
+Each browser job uses the public runner's four-CPU, 16-GB job profile. Its
+Docker container uses up to four available CPUs and 14 GiB RAM, reserving 2 GiB
+of physical host memory for the OS, Actions runner and artifact controller.
+Smaller hosts receive a smaller allocation; insufficient capacity stops before
+container startup. Both browser launchers share this policy. The declared policy
+is part of feature cache identity, and batch metrics record the actual allocation.
+Containers allow no extra swap and at most 512 processes. Application batches
+run at most two feature processes; the library batch runs one. Node heaps are capped at
 512 MiB per process. Source is mounted read-only, container networking is
 disabled, and GitHub artifact credentials stay on the host.
+
+Set `OPERATIONS_TEST_RESOURCE_PROFILE=ci` to use the same browser allocation
+outside GitHub, including Swarm evaluations, without pretending to run in
+GitHub Actions. A Swarm job may reserve the full four-CPU/16-GiB job budget on
+its shared host; recheck capacity before launch. The ordinary desktop launcher
+keeps its smaller two-CPU/2-GiB ceiling.
+
+Swarm service swap limits count additional swap bytes: use
+`docker service create --memory-swap=0` and verify `memory.swap.max=0` before
+executing a workload. The `docker run` flag instead counts combined RAM and
+swap, so its no-swap setting remains equal to the RAM limit. See the
+[service resource options](https://docs.docker.com/reference/cli/docker/service/create/)
+and [container memory/swap semantics](https://docs.docker.com/engine/containers/resource_constraints/#--memory-swap-details).
 
 Successful feature artifacts use immutable `ci-unit-v1-*` names. Failed features
 have separate `ci-failure-v1-*` diagnostics. Final reports combine native blobs,

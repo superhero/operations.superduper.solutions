@@ -62,6 +62,27 @@ OAuth1 transport and automatic authentication fallback remain unsupported.
 
 ```
 
+<!-- changelog-commit:b1fab66179444811c9989fcf006a1b0affe61be3 -->
+### Commit [`b1fab66`](https://github.com/superhero/operations.superduper.solutions/commit/b1fab66179444811c9989fcf006a1b0affe61be3)
+
+```text
+fix(ci): use public runner capacity for browser validation
+
+Replace the two-CPU/five-GiB browser restriction with the public runner's
+four-CPU profile. Leave two GiB for the OS, runner and artifact controller,
+allowing up to fourteen GiB for the browser container and less on smaller
+hosts. Reject insufficient capacity before container startup.
+
+Share allocation between the batch and standalone launchers, record actual
+budgets, and include the policy in feature-cache identity. Allow explicit
+CI resource selection for Swarm without setting GITHUB_ACTIONS.
+
+Retain existing process, heap and feature-concurrency controls. Document
+Swarm's additional-swap-byte semantics and verify no-swap cgroups before
+local workloads. The full Swarm job profile is four CPUs and sixteen GiB.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62

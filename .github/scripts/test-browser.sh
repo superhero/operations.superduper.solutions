@@ -25,18 +25,17 @@ version="$(node --input-type=module -e '
 ')" || fail 'Cannot resolve the pinned Node/Playwright toolchain.'
 image="mcr.microsoft.com/playwright:v${version}-noble"
 node_binary="$(readlink -f "$(command -v node)")"
-memory=2g
-processes=256
-if [[ "${GITHUB_ACTIONS:-}" == true ]]; then memory=5g; processes=512; fi
+resource_budget="$(node .github/scripts/ci-browser-resources.mjs)" || fail 'Cannot allocate a safe browser resource budget.'
+read -r cpus memory processes <<< "$resource_budget"
 runner_arguments=()
 if (( $# == 0 )) && [[ "${BROWSER_ENGINE:-chromium}" == chromium && "${OPERATIONS_BROWSER_PROFILE:-browser}" == browser ]]; then runner_arguments+=(--with-components); fi
-echo "Browser tests: image=$image, output=tmp/test, memory=$memory."
+echo "Browser tests: image=$image, output=tmp/test, cpus=$cpus, memoryBytes=$memory."
 # Match the host's pinned Node runtime; the browser image otherwise supplies a
 # different Node version. Source stays read-only and all output is bounded.
 # Node workers, Vite and Chromium share this memory limit. Collect Node heaps
 # before parallel workers can exhaust the container's native/browser headroom.
 docker run --rm --init --network=none --read-only --shm-size=1g \
-  --cpus=2 --memory="$memory" --memory-swap="$memory" --pids-limit="$processes" \
+  --cpus="$cpus" --memory="$memory" --memory-swap="$memory" --pids-limit="$processes" \
   --cap-drop=ALL --security-opt=no-new-privileges \
   --user "$(id -u):$(id -g)" --env HOME=/tmp --env CI=true \
   --env NODE_OPTIONS=--max-old-space-size=512 \
