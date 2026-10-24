@@ -3,6 +3,10 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Bundled service schema integrity
+  @primitive-array-forms
+  Scenario: Five pinned Twilio array forms send repeated fields with private Basic credentials
+    Then the five pinned Twilio array forms preserve repeated fields and separate residual limitations
+
   Scenario: Anthropic private JSON requests require selected credentials and a version without losing legacy header bindings
     Then pinned Anthropic API key and bearer choices dispatch nonstreaming requests with required headers privately
 

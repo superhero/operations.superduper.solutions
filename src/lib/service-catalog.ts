@@ -8,6 +8,7 @@ import { extractCredentialPermissions, extractOperationSecurity, inspectOperatio
 import { operationServerUrl, validateSchemaDocumentId } from "./schema-documents.ts";
 import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
 import { inspectResponseContent } from "./workflow-response-body.ts";
+import { supportsFormField } from "./form-input.ts";
 
 type Value = Record<string, unknown>;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -218,8 +219,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
           else if (mediaType === "application/x-www-form-urlencoded" && containsBinaryInput(parsed)) throw new Error("Binary fields require a raw file body or multipart/form-data.");
           if (mediaType === "text/plain" && parsed.type !== "string") throw new Error("This text body requires an unsupported schema.");
           if (mediaType.endsWith("form-data") || mediaType.endsWith("form-urlencoded"))
-            if (parsed.type !== "object" || value(content[mediaType]).encoding !== undefined
-              || Object.values(parsed.properties!).some(property => !primitives.includes(property.type) || property.nullable))
+            if (parsed.type !== "object" || parsed.nullable || value(content[mediaType]).encoding !== undefined
+              || Object.values(parsed.properties!).some(property => !supportsFormField(property, mediaType === "multipart/form-data")))
               throw new Error("This form uses unsupported structured fields or custom part encodings.");
           if (parsed.type === "object" && !parsed.nullable)
             for (const [name, property] of Object.entries(value(schema.properties)))

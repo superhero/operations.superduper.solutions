@@ -167,6 +167,22 @@ both executors so preferred JSON metadata cannot hide the actual stream.
 
 ```
 
+<!-- changelog-commit:e34b47b08eb56ccb4130072d798545ec02d27df9 -->
+### Commit [`e34b47b`](https://github.com/superhero/operations.superduper.solutions/commit/e34b47b08eb56ccb4130072d798545ec02d27df9)
+
+```text
+feat(http): support repeated primitive form fields
+
+Preserve primitive form arrays as repeated named values in both catalog
+readers, request preparation and the shared HTTP body serializer. Five
+pinned Twilio operations can now dispatch with private Basic credentials.
+
+Retain array item constraints, unsupported structured/custom encodings and
+individual binary file handling. Refresh discovery data and include the
+shared form rule in its adapter identity.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
