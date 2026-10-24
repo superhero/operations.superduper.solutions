@@ -42,6 +42,26 @@ fix(schema): require Azure Event Grid management authentication
 
 ```
 
+<!-- changelog-commit:8d77a198f6f8c0ed5161da3a1bf9a97f2d1e1ca9 -->
+### Commit [`8d77a19`](https://github.com/superhero/operations.superduper.solutions/commit/8d77a198f6f8c0ed5161da3a1bf9a97f2d1e1ca9)
+
+```text
+fix(auth): preserve usable credential alternatives
+
+Keep supported authentication choices usable when another choice requires
+an unavailable HTTP credential or signing method. Retain every source
+alternative index and AND member so saved selections cannot change meaning.
+
+Preserve unavailable requirements in canonical policy, reject them in
+private dispatch and grants, and explain disabled choices in the selector.
+Keep existing all-supported approval fingerprints and malformed-declaration
+rejection. OAuth normalization must also preserve SigV4 requirements.
+
+Regenerate discovery with the same published provider contracts. Basic and
+OAuth1 transport and automatic authentication fallback remain unsupported.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
