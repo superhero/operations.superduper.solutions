@@ -32,18 +32,21 @@ export type CredentialGrant = { id: string; scheme: string; descriptor: Approved
 export type VaultCredential = {
   id: string; label: string; kind: "bearer" | "apiKey" | "secret"; value: string; grants: CredentialGrant[];
   connections?: HttpConnection[];
+  /** Encrypted managed-token payload; never part of key/value reads or summaries. */
+  oauthState?: string;
 };
 export type VaultKey = Pick<VaultCredential, "id" | "label" | "kind">;
-export type CredentialSummary = Omit<VaultCredential, "value">;
+export type CredentialSummary = Omit<VaultCredential, "value" | "oauthState">;
 export type BasicCredentialReference = { username: string; password: string };
 export type OAuth1CredentialReference = { consumerKey: string; consumerSecret: string; accessToken: string; tokenSecret: string };
 export type CredentialReference = string | BasicCredentialReference | OAuth1CredentialReference;
 export type HttpConnectionReference = { id: string; revision: number; fingerprint: string };
-export type HttpTokenFormat = "schema" | "discord-bot" | "opsgenie-key";
+export type GitlabOAuthMetadata = { profile: "gitlab-public-pkce-v1"; clientId: string; redirectUri: string; scope: "read_user"; accountId: string };
+export type HttpTokenFormat = "schema" | "discord-bot" | "opsgenie-key" | "gitlab-oauth";
 export type HttpConnection = HttpConnectionReference & {
   label: string; account: string; provider: string; endpoint: string; runtime: "browser-http";
   alternative: number; security: import("../operation-security.ts").OperationSecurityScheme[];
-  credentials: Record<string, CredentialReference>; format: HttpTokenFormat; expiresAt?: number;
+  credentials: Record<string, CredentialReference>; format: HttpTokenFormat; expiresAt?: number; oauth?: GitlabOAuthMetadata;
 };
 export type HttpConnectionInput = { label: string; account: string; format: HttpTokenFormat;
   reference?: HttpConnectionReference; expiresAt?: number };
@@ -65,9 +68,10 @@ export const defaultVaultPreferences: Readonly<VaultPreferences> = { idleLockEna
 export type VaultStatus = { exists: boolean; unlocked: boolean; revision: number; epoch: number;
   methods: { id: string; kind: UnlockKind; credentialId?: string; prfSalt?: string }[] };
 export type VaultErrorCode = "LOCKED" | "AUTHENTICATION" | "INVALID" | "UNAVAILABLE" | "CONFLICT"
-  | "DUPLICATE_KEY" | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED";
+  | "DUPLICATE_KEY" | "PERMISSION" | "CANCELLED" | "LIMIT" | "NETWORK" | "REDACTED" | "AUTHORIZATION";
 const messages: Record<VaultErrorCode, string> = {
   LOCKED: "Unlock the secrets vault to continue.",
+  AUTHORIZATION: "Connect this account again to continue.",
   AUTHENTICATION: "The vault could not be unlocked. Check the unlock method and saved data.",
   INVALID: "The vault data or request is invalid or unsupported.",
   DUPLICATE_KEY: "A value is already saved with this key. Choose a different key.",

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
-import { randomUUID, createHmac } from 'node:crypto';
+import { randomUUID, createHmac, createHash } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
@@ -1174,6 +1174,94 @@ Then('an X OAuth1 connection at {int} pixels signs privately after selecting fou
     for (const secret of Object.values(secrets)) assert.ok(!JSON.stringify(value).includes(secret));
   assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, ...Object.values(secrets), ...Object.values(secrets).map(encode)]), []);
   await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/x-oauth1-${width}.png` });
+});
+
+Then('GitLab public sign-in at {int} pixels uses a private PKCE exchange and saved resource connection', { timeout: 75_000 }, async function (width) {
+  const page = this.page, clientId = 'a'.repeat(64), code = 'GL_BROWSER_CODE_PRIVATE_5729';
+  const access = 'GL_BROWSER_ACCESS_PRIVATE_5729', refresh = 'GL_BROWSER_REFRESH_PRIVATE_5729';
+  let authorize, verifier, consents = 0, exchanges = 0, reads = 0;
+  const privateValues = [code, access, refresh];
+  await page.setViewportSize({ width, height: 900 }); await seed(this, 'ok');
+  const redirect = new URL(this.baseURL); redirect.searchParams.set('operations_oauth_callback', 'gitlab');
+  await this.context.route('https://gitlab.com/**', async route => {
+    const request = route.request(), url = new URL(request.url());
+    const headers = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*', 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS' };
+    if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
+    if (url.pathname === '/oauth/authorize') {
+      authorize = url; consents++;
+      assert.equal(url.searchParams.get('client_id'), clientId); assert.equal(url.searchParams.get('redirect_uri'), redirect.href);
+      assert.equal(url.searchParams.get('code_challenge_method'), 'S256'); assert.equal(url.searchParams.get('scope'), 'read_user');
+      assert.equal(url.searchParams.has('client_secret'), false);
+      // Matching state from the wrong window must not authorize a private exchange.
+      await page.evaluate(({ state, code }) => window.postMessage({ source: 'operations-gitlab-oauth-callback', state, code }, location.origin),
+        { state: url.searchParams.get('state'), code });
+      const callback = new URL(redirect); callback.searchParams.set('state', url.searchParams.get('state'));
+      callback.searchParams.set(consents === 1 ? 'error' : 'code', consents === 1 ? 'access_denied' : code);
+      // A real provider document can sever the opener under COOP. The callback
+      // must return through the same-origin channel rather than that WindowProxy.
+      return route.fulfill({ status: 200, headers: { 'Content-Type': 'text/html', 'Cross-Origin-Opener-Policy': 'same-origin' },
+        body: '<!doctype html><title>Synthetic GitLab sign-in</title><script>location.replace('+JSON.stringify(callback.href)+')</script>' });
+    }
+    assert.equal(request.headers().cookie, undefined); assert.equal(request.headers().referer, undefined);
+    if (url.pathname === '/oauth/token') {
+      exchanges++; const body = new URLSearchParams(request.postData()); verifier = body.get('code_verifier'); privateValues.push(verifier);
+      assert.equal(body.get('client_id'), clientId); assert.equal(body.get('redirect_uri'), redirect.href);
+      assert.equal(body.get('grant_type'), 'authorization_code'); assert.equal(body.get('code'), code); assert.equal(body.has('client_secret'), false);
+      assert.equal(createHash('sha256').update(verifier).digest('base64url'), authorize.searchParams.get('code_challenge'));
+      return route.fulfill({ status: 200, headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: access, refresh_token: refresh, token_type: 'bearer', expires_in: 3600, scope: 'read_user' }) });
+    }
+    assert.equal(url.pathname, '/api/v4/user'); assert.equal(request.headers().authorization, 'Bearer '+access); reads++;
+    return route.fulfill({ status: 200, headers: { ...headers, 'Content-Type': 'application/json' }, body: '{"id":42,"username":"gitlab_user"}' });
+  });
+  const name = 'GitLab OAuth fixture';
+  const document = { openapi: '3.0.3', info: { title: name, version: '1' }, servers: [{ url: 'https://gitlab.com' }],
+    security: [{ http: [] }, { oauth2: [] }, { apiKey: [] }],
+    components: { securitySchemes: { http: { type: 'http', scheme: 'bearer' },
+      // Match the normalized native alternative; uploaded documents use the canonical HTTP model.
+      oauth2: { type: 'http', scheme: 'bearer' },
+      apiKey: { type: 'apiKey', in: 'header', name: 'PRIVATE-TOKEN' } } },
+    paths: { '/api/v4/user': { get: { operationId: 'currentUser', summary: name,
+      responses: { 200: { description: 'Current user', content: { 'application/json': { schema: { type: 'object' } } } } } } } } };
+  await setMode(page, 'settings'); const schemas = page.locator('summary[aria-label="Schemas"]');
+  if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({ name: 'gitlab-oauth.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
+  await expect(page.getByRole('switch', { name: 'Enable '+name, exact: true })).toHaveAttribute('aria-checked', 'true');
+  await chooseCatalogOperation(page, name);
+  await page.getByRole('combobox', { name: 'Authentication alternative', exact: true }).click();
+  await page.getByRole('option', { name: /oauth2/, exact: false }).click();
+  const unlock = page.getByLabel('Unlock the vault password', { exact: true });
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await page.getByText('Connect GitLab account', { exact: true }).click();
+  await page.getByLabel('GitLab application ID', { exact: true }).fill(clientId);
+  await expect(page.getByLabel('GitLab redirect URL', { exact: true })).toHaveValue(redirect.href);
+  await page.getByLabel('GitLab connection name', { exact: true }).fill('GitLab connection');
+  const deniedWindow = this.context.waitForEvent('page');
+  await page.getByRole('button', { name: 'Connect GitLab', exact: true }).click();
+  const denied = await deniedWindow;
+  await expect(page.getByRole('alert').filter({ hasText: 'Sign-in was not completed.' })).toBeVisible();
+  await expect.poll(() => denied.isClosed()).toBe(true); assert.equal(exchanges, 0);
+  const opened = this.context.waitForEvent('page');
+  await page.getByRole('button', { name: 'Connect GitLab', exact: true }).click();
+  const popup = await opened;
+  await expect.poll(() => exchanges).toBe(1);
+  await expect.poll(() => popup.isClosed()).toBe(true);
+  const connection = page.getByRole('combobox', { name: 'Saved HTTP connection', exact: true });
+  await expect(connection).toContainText('GitLab connection · GitLab @gitlab_user');
+  const binding = async () => (await repository(page, 'list')).flatMap(document => document.nodes).find(node => node.data?.name === name)?.data.credentialBinding;
+  await expect.poll(async () => (await binding())?.connection?.revision).toBe(1); assert.deepEqual((await binding()).credentials, {});
+  assert.equal(reads, 1); assert.ok(verifier);
+  await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await setMode(page, 'workflow'); await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await expect(connection).toContainText('GitLab connection · GitLab @gitlab_user'); await expect(connection).toBeEnabled();
+  await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Operation completed.' })).toBeVisible();
+  assert.equal(exchanges, 1); assert.equal(reads, 2);
+  for (const value of [await page.locator('body').innerText(), await repository(page, 'list'), await storage(page, 'read')])
+    for (const secret of privateValues) assert.ok(!JSON.stringify(value).includes(secret));
+  assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, ...privateValues]), []);
+  await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/gitlab-oauth-${width}.png` });
 });
 
 Then('a Cloudflare upload at {int} pixels carries opaque session references through private worker calls', { timeout: 90_000 }, async function (width) {

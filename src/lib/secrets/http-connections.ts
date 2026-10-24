@@ -1,11 +1,12 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { gitlabOAuthAlternative, validateGitlabMetadata } from "./gitlab-config.ts";
 import { canonicalPolicyValue, validateApprovedOperation } from "./policy.ts";
 import { credentialObject, credentialReferenceIds, isBasicCredentialReference, isOAuth1CredentialReference, validateCredentialBinding, validateHttpConnectionReference } from "./bindings.ts";
 import { supportedSecurityAlternative } from "../operation-security.ts";
 import { VaultError, type ApprovedOperation, type CredentialBinding, type HttpConnection, type HttpConnectionInput,
-  type HttpConnectionReference, type HttpTokenFormat, type VaultCredential } from "./types.ts";
+  type HttpConnectionReference, type HttpTokenFormat, type GitlabOAuthMetadata, type VaultCredential } from "./types.ts";
 
 export const httpConnectionLimit = 128;
 function ownObject(value: unknown, required: readonly string[], optional: readonly string[] = []): Record<string, unknown> {
@@ -34,11 +35,11 @@ export function httpTokenFormats(descriptor: ApprovedOperation, alternative: num
 
 export function validateHttpConnection(value: unknown): HttpConnection {
   const item = ownObject(value, ["id", "revision", "fingerprint", "label", "account", "provider", "endpoint", "runtime",
-    "alternative", "security", "credentials", "format"], ["expiresAt"]);
+    "alternative", "security", "credentials", "format"], ["expiresAt", "oauth"]);
   validateHttpConnectionReference({ id: item.id, revision: item.revision, fingerprint: item.fingerprint });
   if ([item.label, item.account].some(value => typeof value !== "string" || !value.trim() || value.length > 120 || /[\u0000-\u001f\u007f]/.test(value))
     || typeof item.provider !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/.test(item.provider)
-    || typeof item.endpoint !== "string" || item.runtime !== "browser-http" || !["schema", "discord-bot", "opsgenie-key"].includes(String(item.format))
+    || typeof item.endpoint !== "string" || item.runtime !== "browser-http" || !["schema", "discord-bot", "opsgenie-key", "gitlab-oauth"].includes(String(item.format))
     || item.expiresAt !== undefined && (!Number.isSafeInteger(item.expiresAt) || (item.expiresAt as number) <= 0)) throw new VaultError("INVALID");
   let endpoint: URL;
   try { endpoint = new URL(item.endpoint); } catch { throw new VaultError("INVALID"); }
@@ -54,6 +55,10 @@ export function validateHttpConnection(value: unknown): HttpConnection {
     return { ...scheme };
   });
   if (security.length !== Object.keys(binding.credentials).length) throw new VaultError("INVALID");
+  if (item.format === "gitlab-oauth") {
+    if (item.expiresAt !== undefined) throw new VaultError("INVALID");
+    item.oauth = validateGitlabMetadata(item.oauth);
+  } else if (item.oauth !== undefined) throw new VaultError("INVALID");
   return { ...item, security, credentials: binding.credentials } as HttpConnection;
 }
 
@@ -75,7 +80,8 @@ export function httpConnectionMatches(connection: HttpConnection, descriptor: Ap
   return schemaId(descriptor) === connection.provider && descriptor.origin === connection.endpoint
     && supportedSecurityAlternative(security) && security.length > 0
     && canonicalPolicyValue(security) === canonicalPolicyValue(connection.security)
-    && httpTokenFormats(descriptor, connection.alternative).includes(connection.format);
+    && (connection.format === "gitlab-oauth" ? gitlabOAuthAlternative(descriptor) === connection.alternative && !!connection.oauth
+      : httpTokenFormats(descriptor, connection.alternative).includes(connection.format));
 }
 function assertReferences(connection: HttpConnection, records: readonly VaultCredential[]): void {
   for (const scheme of connection.security) {
@@ -90,7 +96,7 @@ function assertReferences(connection: HttpConnection, records: readonly VaultCre
 }
 
 export async function resolveHttpConnection(descriptor: ApprovedOperation, binding: CredentialBinding, records: readonly VaultCredential[]):
-  Promise<{ binding: CredentialBinding; format: HttpTokenFormat; expiresAt?: number }> {
+  Promise<{ binding: CredentialBinding; format: HttpTokenFormat; expiresAt?: number; oauth?: GitlabOAuthMetadata }> {
   if (!binding.connection) return { binding, format: "schema" };
   const selected = validateCredentialBinding(binding), reference = selected.connection!;
   const connection = storedHttpConnections(records).find(item => item.id === reference.id);
@@ -101,7 +107,7 @@ export async function resolveHttpConnection(descriptor: ApprovedOperation, bindi
   if (saved !== await fingerprint(config)) throw new VaultError("PERMISSION");
   assertReferences(connection, records);
   return { binding: { alternative: connection.alternative, fingerprint: descriptor.fingerprint, credentials: structuredClone(connection.credentials) },
-    format: connection.format, ...(connection.expiresAt === undefined ? {} : { expiresAt: connection.expiresAt }) };
+    format: connection.format, ...(connection.oauth ? { oauth: connection.oauth } : {}), ...(connection.expiresAt === undefined ? {} : { expiresAt: connection.expiresAt }) };
 }
 
 /** Profiles live in existing encrypted records; their fields contain metadata and references only. */
@@ -126,8 +132,21 @@ export async function createHttpConnection(input: HttpConnectionInput, descripto
   return connection;
 }
 
+/** Only private provider acquisition calls this; ordinary manual formatting cannot create managed state. */
+export async function createGitlabHttpConnection(descriptor: ApprovedOperation, credentialId: string, label: string,
+  username: string, oauth: GitlabOAuthMetadata, previous?: HttpConnectionReference): Promise<HttpConnection> {
+  const approved = await validateApprovedOperation(descriptor), alternative = gitlabOAuthAlternative(approved);
+  if (alternative === undefined) throw new VaultError("PERMISSION");
+  const config: Omit<HttpConnection, "fingerprint"> = { id: previous?.id ?? crypto.randomUUID(), revision: (previous?.revision ?? 0) + 1, label,
+    account: `GitLab @${username.slice(0, 112)}`, provider: schemaId(approved), endpoint: approved.origin, runtime: "browser-http", alternative,
+    security: structuredClone(approved.operation.security![alternative]!) as HttpConnection["security"], credentials: { oauth2: credentialId },
+    format: "gitlab-oauth", oauth: validateGitlabMetadata(oauth) };
+  return validateHttpConnection({ ...config, fingerprint: await fingerprint(config) });
+}
+
 export function formatHttpToken(format: HttpTokenFormat, value: string): string {
   if (format === "schema") return value;
+  if (format === "gitlab-oauth") throw new VaultError("PERMISSION");
   if (!value || /\s/.test(value)) throw new VaultError("INVALID");
   return `${format === "discord-bot" ? "Bot" : "GenieKey"} ${value}`;
 }

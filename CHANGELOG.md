@@ -284,6 +284,21 @@ docs(auth): qualify browser and confidential provider profiles
 Merge branch 'develop' into feature/provider-authentication-profiles
 ```
 
+<!-- changelog-commit:f7b827cfc720938a0030a7215ffd1ffddfdef440 -->
+### Commit [`f7b827c`](https://github.com/superhero/operations.superduper.solutions/commit/f7b827cfc720938a0030a7215ffd1ffddfdef440)
+
+```text
+feat(auth): connect GitLab accounts with public PKCE OAuth
+
+```
+
+<!-- changelog-commit:14a16a9fe5f054ead4f47cf736ef2976b06913f2 -->
+### Commit [`14a16a9`](https://github.com/superhero/operations.superduper.solutions/commit/14a16a9fe5f054ead4f47cf736ef2976b06913f2)
+
+```text
+Merge branch 'develop' into feature/gitlab-public-oauth
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62

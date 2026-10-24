@@ -154,7 +154,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
         else if (!selected) { alternative = manualBinding ? String(manualBinding.alternative) : ""; choices = { ...manualBinding?.credentials }; }
         publish(); }} />
   {/if}
-  {#if operation.oauthScopes && !selected?.some(scheme => scheme.kind === "oauth1")}<p class="hint">Use an existing OAuth access token. The API checks its scopes and validity.</p>{/if}
+  {#if !connectionSelected && operation.oauthScopes && !selected?.some(scheme => scheme.kind === "oauth1")}<p class="hint">Use an existing OAuth access token. The API checks its scopes and validity.</p>{/if}
   {#if !connectionSelected}
   <FieldSelect id={`${fieldId}-alternative`} label="Authentication alternative" value={alternative} options={options}
     disabled={disabled || busy} {portalZIndex}

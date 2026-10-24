@@ -5,6 +5,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 -->
 <script lang="ts">
   import { onMount, untrack } from "svelte";
+  import GitlabOAuthConnect from "./GitlabOAuthConnect.svelte";
+  import { gitlabOAuthAlternative } from "../secrets/gitlab-config.ts";
   import FieldSelect from "./FieldSelect.svelte";
   import { vaultCall } from "../secrets/client.ts";
   import { validateHttpConnectionReference } from "../secrets/bindings.ts";
@@ -107,6 +109,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </script>
 
 <div class="http-connections">
+  {#if gitlabOAuthAlternative(descriptor) !== undefined}
+    <GitlabOAuthConnect {descriptor} {status} current={selected} disabled={disabled || busy}
+      onConnected={async connection => { entries = [...entries.filter(item => item.id !== connection.id), connection]; await choose(connection.id); }} />
+  {/if}
   <FieldSelect id={`${id}-connection`} label="Saved HTTP connection" value={selectedId} {options} includePlaceholder={false}
     disabled={disabled || busy || !status.unlocked} {portalZIndex} onValueChange={value => { void choose(value); }} />
   {#if !status.unlocked}<p>Unlock the vault to use saved connections.</p>{/if}
@@ -117,7 +123,10 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     {:else if authorizationState.kind === "failed" || status.unlocked && !selected}<p role="status">Connection changed or is unavailable. Select it again to continue.</p>{/if}
     <button type="button" disabled={disabled || busy || !selected || !status.unlocked} onclick={() => void choose(selectedId)}>Use connection</button>
   {/if}
-  {#if status.unlocked && (manual || selected)}
+  {#if status.unlocked && selected?.format === "gitlab-oauth"}
+    <p>GitLab OAuth manages this connection's tokens and refresh. Reconnect to renew access.</p>
+    <button type="button" disabled={disabled || busy} onclick={() => void remove()}>Remove connection</button>
+  {:else if status.unlocked && (manual || selected)}
     <details>
       <summary>{selectedId === "manual" ? "Save as connection" : "Edit connection"}</summary>
       <div class="connection-editor">
