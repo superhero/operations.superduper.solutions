@@ -5,8 +5,9 @@ import './support.mjs';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
+import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync, unlinkSync, symlinkSync, mkdirSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { parse as parseBlob } from 'flatted';
@@ -16,6 +17,7 @@ import { readJSON, writeJSON, verifyReceipt, verifyBrowserAggregate, unitDirecto
 import { validatePlan } from '../../tests/gherkin/ci-inputs.mjs';
 import { restoreUnit } from '../scripts/ci-unit-cache.mjs';
 import { command } from '../scripts/ci-browser.mjs';
+import { browserResources, browserResourcePolicy } from '../scripts/ci-browser-resources.mjs';
 
 Then('the installed artifact SDK verifies a checkpoint with a {string} archive digest', async function (kind) {
   // A stored ZIP containing checkpoint.txt, served through the real SDK's REST
@@ -241,6 +243,7 @@ Then('the browser controller publishes completed evidence and closes its contain
   const { root, plan } = this.ci, calls = [], publications = [];
   const api = async endpoint => endpoint.includes('/artifacts?') ? { artifacts: [] } : cacheAPI(plan)(endpoint);
   const summary = await runBatch({ root, batchId: 'application-1', node: process.execPath, api, note: () => {},
+    capacity: { cpus: 4, memoryBytes: 16 * 1024 ** 3 },
     environment: { GITHUB_RUN_ATTEMPT: '1', CI_WORKFLOW_FILE: '.github/workflows/ci-release.yml' },
     operation: async input => { publications.push(input); return { id: 123, digest: 'a'.repeat(64) }; },
     run: async (program, args) => { calls.push([program, args]); return { code: 0, output: args.includes('inspect') ? plan.shared.image : '' }; },
@@ -248,8 +251,46 @@ Then('the browser controller publishes completed evidence and closes its contain
   assert.equal(summary.fresh, 1); assert.equal(publications.length, 1);
   assert.ok(calls.some(([program, args]) => program === 'docker' && args[0] === 'rm' && args[1] === '-f'));
   const start = calls.find(([, args]) => args[0] === 'run')[1];
-  assert.ok(start.includes('--network=none')); assert.ok(start.includes('--memory=5g'));
+  assert.ok(start.includes('--network=none')); assert.ok(start.includes('--cpus=4'));
+  assert.ok(start.includes('--memory=15032385536')); assert.ok(start.includes('--memory-swap=15032385536'));
+  assert.ok(start.includes('--pids-limit=512'));
+  assert.deepEqual(summary.resourceBudget, { cpus: 4, memoryBytes: 14 * 1024 ** 3, pids: 512 });
+  assert.deepEqual(plan.shared.runtime, { ...browserResourcePolicy, timezone: 'UTC', locale: 'en-US', capture: 'full' });
   assert.ok(!start.some(argument => argument.includes('GH_TOKEN') || argument.includes('ACTIONS_RUNTIME_TOKEN')));
+});
+
+Then('a {string} browser job on {int} CPUs and {int} GiB of RAM uses {int} CPUs and {int} GiB', (profile, cpus, ram, allocatedCpu, allocatedRam) => {
+  assert.ok(['CI', 'desktop'].includes(profile));
+  assert.deepEqual(browserResources({ ci: profile === 'CI', cpus, memoryBytes: ram * 1024 ** 3 }),
+    { cpus: allocatedCpu, memoryBytes: allocatedRam * 1024 ** 3, pids: profile === 'CI' ? 512 : 256 });
+});
+Then('invalid capacity cannot allocate browser resources', () => {
+  for (const capacity of [{ cpus: 0, memoryBytes: 16 * 1024 ** 3 }, { cpus: NaN, memoryBytes: 16 * 1024 ** 3 },
+    { cpus: 4, memoryBytes: 2 * 1024 ** 3 }, { cpus: 4, memoryBytes: NaN }])
+    assert.throws(() => browserResources({ ...capacity, ci: true }), /capacity|host reserve/);
+});
+Then('changed browser resource policy invalidates every feature key', function () {
+  const path = join(this.ci.root, '.github/scripts/ci-browser-resources.mjs');
+  writeFileSync(path, readFileSync(path, 'utf8') + '\n// Reviewed resource policy revision.\n');
+  const next = planFixture(this.ci.root);
+  assert.notEqual(next.sharedDigest, this.ci.plan.sharedDigest);
+  assert.ok(next.units.every(unit => unit.inputDigest !== this.ci.plan.units.find(old => old.id === unit.id).inputDigest));
+});
+Then('the standalone browser launcher preserves the same host-aware resource boundary', async function () {
+  const { root } = this.ci, bin = join(root, 'fake-docker'), output = join(root, 'docker-arguments.txt');
+  mkdirSync(bin, { recursive: true });
+  writeFileSync(join(bin, 'docker'), '#!/bin/sh\nif [ "$1" = run ]; then printf "%s\\n" "$@" > "$DOCKER_ARGUMENTS"; fi\n', { mode: 0o755 });
+  for (const profile of [{ GITHUB_ACTIONS: 'true', OPERATIONS_TEST_RESOURCE_PROFILE: '' },
+    { GITHUB_ACTIONS: '', OPERATIONS_TEST_RESOURCE_PROFILE: 'ci' }]) {
+    const result = spawnSync('bash', ['.github/scripts/test-browser.sh', '--name', 'focused'], { cwd: root, encoding: 'utf8', timeout: 10_000,
+      env: { ...process.env, ...profile, PATH: `${bin}:${dirname(process.execPath)}:${process.env.PATH}`, DOCKER_ARGUMENTS: output } });
+    assert.ifError(result.error);
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    const args = readFileSync(output, 'utf8').trim().split('\n'), resources = browserResources({ ci: true });
+    for (const arg of [`--cpus=${resources.cpus}`, `--memory=${resources.memoryBytes}`, `--memory-swap=${resources.memoryBytes}`, '--pids-limit=512', '--network=none'])
+      assert.ok(args.includes(arg), arg);
+    assert.ok(!args.some(arg => /GH_TOKEN|ACTIONS_RUNTIME_TOKEN|--gpus/.test(arg)));
+  }
 });
 
 Then('adding a source case retains every existing browser input key', function () {

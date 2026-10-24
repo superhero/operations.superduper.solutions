@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { validatePlan, filesBelow, digest, same } from '../../tests/gherkin/ci-inputs.mjs';
 import { readJSON, writeJSON, unitDirectory, verifyReceipt } from '../../tests/gherkin/ci-units.mjs';
 import { artifactOperation, discoverUnitArtifacts, githubRead, publishUnit, restoreUnit, restoreFailureDiagnostic } from './ci-unit-cache.mjs';
+import { browserResources } from './ci-browser-resources.mjs';
 
 export async function command(program, args, { cwd = process.cwd(), quiet = false, timeoutMs = 60_000, env = process.env } = {}) {
   return new Promise((resolveDone, reject) => {
@@ -43,7 +44,7 @@ export function orderedMisses(units, artifacts) {
 }
 
 export async function runBatch({ root = process.cwd(), batchId, node, api = githubRead,
-  run = command, operation = artifactOperation, environment = process.env, signal, note = console.log } = {}) {
+  run = command, operation = artifactOperation, environment = process.env, capacity, signal, note = console.log } = {}) {
   const started = Date.now(), plan = validatePlan(readJSON(resolve(root, 'tmp/test/ci/plan.json')));
   const batch = plan.batches.find(item => item.id === batchId);
   if (!batch || !['library', 'application-1', 'application-2', 'application-3'].includes(batchId)) throw new Error('Unknown browser batch.');
@@ -129,10 +130,13 @@ export async function runBatch({ root = process.cwd(), batchId, node, api = gith
       if (stale || stopping) throw new Error('Browser validation inputs became obsolete or execution was cancelled.');
       const uid = execFileSync('id', ['-u'], { encoding: 'utf8' }).trim(), gid = execFileSync('id', ['-g'], { encoding: 'utf8' }).trim();
       mkdirSync(resolve(root, 'tmp/test'), { recursive: true });
+      const resources = browserResources({ ...capacity, ci: true });
+      summary.resourceBudget = resources;
       launchAttempted = true;
       const result = await run('docker', ['run', '--detach', '--init', '--name', ownName,
         '--label', `operations.ci.run=${plan.runId}`, '--network=none', '--read-only', '--shm-size=1g',
-        '--cpus=2', '--memory=5g', '--memory-swap=5g', '--pids-limit=512', '--cap-drop=ALL', '--security-opt=no-new-privileges',
+        `--cpus=${resources.cpus}`, `--memory=${resources.memoryBytes}`, `--memory-swap=${resources.memoryBytes}`,
+        `--pids-limit=${resources.pids}`, '--cap-drop=ALL', '--security-opt=no-new-privileges',
         '--user', `${uid}:${gid}`, '--env', 'HOME=/tmp', '--env', 'XDG_DATA_HOME=/tmp/data', '--env', 'CI=true',
         '--env', 'GITHUB_ACTIONS=true', '--env', `GITHUB_RUN_ID=${plan.runId}`, '--env', `GITHUB_RUN_ATTEMPT=${environment.GITHUB_RUN_ATTEMPT}`,
         '--env', `CI_WORKFLOW_FILE=${environment.CI_WORKFLOW_FILE}`, '--env', 'NODE_OPTIONS=--max-old-space-size=512',

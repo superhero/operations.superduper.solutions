@@ -88,6 +88,24 @@ Feature: Incremental CI retains only independently verified feature results
   Scenario: A host batch publishes a sealed result and removes its owned container
     Given a hermetic CI feature-unit execution
     Then the browser controller publishes completed evidence and closes its container
+    And the standalone browser launcher preserves the same host-aware resource boundary
+
+  Scenario Outline: Browser containers use runner capacity while preserving host headroom
+    Then a "<profile>" browser job on <cpus> CPUs and <ram> GiB of RAM uses <allocated_cpu> CPUs and <allocated_ram> GiB
+    Examples:
+      | profile | cpus | ram | allocated_cpu | allocated_ram |
+      | CI      | 4    | 16  | 4             | 14            |
+      | CI      | 2    | 8   | 2             | 6             |
+      | CI      | 1    | 4   | 1             | 2             |
+      | CI      | 16   | 64  | 4             | 14            |
+      | desktop | 16   | 32  | 2             | 2             |
+
+  Scenario: Browser container allocation rejects insufficient or invalid capacity
+    Then invalid capacity cannot allocate browser resources
+
+  Scenario: A browser resource policy change invalidates cached feature evidence
+    Given a hermetic CI feature-unit execution
+    Then changed browser resource policy invalidates every feature key
 
   Scenario: Whole-profile inventory changes do not discard browser feature results
     Given a hermetic CI feature-unit execution
