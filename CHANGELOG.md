@@ -183,6 +183,22 @@ shared form rule in its adapter identity.
 
 ```
 
+<!-- changelog-commit:311a64806e5c6a85334cc56a360c1655a5fad015 -->
+### Commit [`311a648`](https://github.com/superhero/operations.superduper.solutions/commit/311a64806e5c6a85334cc56a360c1655a5fad015)
+
+```text
+fix(schema): declare GitHub operation authentication
+
+Replace missing authentication with a pinned operation matrix derived from
+GitHub's first-party endpoint data. Preserve public access and distinguish
+personal, app-user, installation, app-JWT and OAuth-app Basic credentials.
+
+Keep unqualified authentication and credential-sensitive results unavailable.
+Retain original schema bytes, operation identities and explicit upstream
+choices. Bind the reviewed matrix into source and discovery freshness checks.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
