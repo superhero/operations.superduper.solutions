@@ -47,8 +47,8 @@ export function validateHttpConnection(value: unknown): HttpConnection {
   const binding = validateCredentialBinding({ alternative: item.alternative, credentials: item.credentials, fingerprint: item.fingerprint });
   if (!supportedSecurityAlternative(item.security) || !item.security.length || item.security.length > 16) throw new VaultError("INVALID");
   const security = item.security.map(scheme => {
-    ownObject(scheme, ["name", "kind", scheme.query === undefined ? "header" : "query"]);
-    if (typeof scheme.name !== "string" || typeof (scheme.header ?? scheme.query) !== "string"
+    ownObject(scheme, ["name", "kind", scheme.path !== undefined ? "path" : scheme.query === undefined ? "header" : "query"]);
+    if (typeof scheme.name !== "string" || typeof (scheme.header ?? scheme.query ?? scheme.path) !== "string"
       || !Object.hasOwn(binding.credentials, scheme.name)) throw new VaultError("INVALID");
     return { ...scheme };
   });

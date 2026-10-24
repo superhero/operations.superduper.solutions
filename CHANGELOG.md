@@ -235,6 +235,24 @@ plain across persistence and worker boundaries, including after reload.
 
 ```
 
+<!-- changelog-commit:22ff49115bbdd0d3b538bb82ba6192b3b5ea7215 -->
+### Commit [`22ff491`](https://github.com/superhero/operations.superduper.solutions/commit/22ff49115bbdd0d3b538bb82ba6192b3b5ea7215)
+
+```text
+feat(telegram): resolve bot tokens through private connections
+
+Keep the pinned Bot API server template in schema metadata and resolve
+its token slot only inside credentialed execution using a saved vault
+connection. Bind the fixed HTTPS destination and method to canonical
+approval; reject stale references, malformed tokens and literal token
+server URLs before dispatch.
+
+Scrub raw and encoded URL echoes and preserve generic placeholder
+validation. Qualify native getMe, JSON messages and multipart sticker
+uploads while retaining the independent setChatPhoto form limitation.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62

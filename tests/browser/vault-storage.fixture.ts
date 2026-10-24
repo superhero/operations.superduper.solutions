@@ -39,7 +39,7 @@ export async function checkProcessingAssertion() {
 }
 
 export const synthetic = { password: "browser-VAULT-password-9182", bearer: "browser-BEARER-canary-9182",
-  apiKey: "browser-APIKEY-canary-9182", label: "browser-PRIVATE-label-9182" };
+  apiKey: "browser-APIKEY-canary-9182", label: "browser-PRIVATE-label-9182", bot: "123456789:browser_TELEGRAM_canary_9182" };
 let session = new VaultSession(createVaultStorage());
 let proof: UnlockProof;
 let descriptor: ApprovedOperation;
@@ -65,6 +65,11 @@ export async function seed(origin: string, run: string, action = "ok", registere
   return { recovery, status: await session.status(), backup: await session.backup(proof), summaries: await session.list() };
 }
 export function executionInput() { return { descriptor, binding }; }
+export async function seedTelegram(origin: string, run: string) {
+  await seed(origin, run);
+  const entries = await session.put(null, { label: "Telegram bot fixture", kind: "secret", value: synthetic.bot });
+  return entries.find(item => item.label === "Telegram bot fixture")!.id;
+}
 
 export async function run(changed = false) {
   const destination = changed ? await approvedOperation({ ...descriptor.operation, path: "/unapproved" }, descriptor.origin) : descriptor;

@@ -475,6 +475,11 @@ bodies and individual multipart file fields are supported when declared with
 unsupported. OAuth access tokens use bearer transport; login, token refresh and
 scope acquisition are outside this feature.
 
+Telegram uses [private bot token connections](telegram-private-path.md). Its
+server placeholder remains in the source; the worker resolves the selected vault
+reference for the fixed Telegram HTTPS endpoint. Token-filled server URLs are
+not executable. Other unresolved server placeholders remain blocked.
+
 Browser CORS and local-network restrictions still apply. Docker needs an HTTP
 endpoint because browsers cannot use its Unix socket. Ollama must permit the
 application origin. Account-specific server placeholders need configuration.

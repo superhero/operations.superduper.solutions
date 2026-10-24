@@ -188,6 +188,57 @@ Then('the browser vault stops the oversized response with a safe size error', as
 });
 
 const settings = page => page.getByRole('region', { name: 'Secrets vault', exact: true });
+Then('a Telegram connection at {int} pixels supplies its private token only to the worker request', { timeout: 60_000 }, async function (width) {
+  const page = this.page, token = '123456789:browser_TELEGRAM_canary_9182';
+  await page.setViewportSize({ width, height: 900 });
+  await invoke(page, 'seedTelegram', this.baseURL, randomUUID());
+  const seen = [];
+  await this.context.route('https://api.telegram.org/**', async route => {
+    const request = route.request(), headers = { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'POST,OPTIONS', 'access-control-allow-headers': '*' };
+    if (request.method() === 'OPTIONS') { await route.fulfill({ status: 204, headers }); return; }
+    seen.push({ url: request.url(), method: request.method(), headers: request.headers() });
+    await route.fulfill({ status: 200, headers, contentType: 'application/json', body: JSON.stringify({ ok: true, result: { id: 42, is_bot: true, first_name: 'Fixture bot' } }) });
+  });
+  const name = 'Get private bot identity';
+  const document = { openapi: '3.1.0', info: { title: 'Telegram private path fixture', version: '1' },
+    servers: [{ url: 'https://api.telegram.org/bot{botToken}', variables: { botToken: { default: '<bot_token>' } } }],
+    paths: { '/getMe': { post: { operationId: 'getMe', summary: name, 'x-operations-private-path': 'telegram-bot',
+      responses: { 200: { description: 'Result', content: { 'application/json': { schema: { type: 'object' } } } } } } } } };
+  await setMode(page, 'settings'); const schemas = page.locator('summary[aria-label="Schemas"]');
+  if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({ name: 'telegram-private.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
+  await expect(page.getByRole('switch', { name: 'Enable Telegram private path fixture', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await chooseCatalogOperation(page, name);
+  await page.getByRole('combobox', { name: 'Authentication alternative', exact: true }).click();
+  await page.getByRole('option', { name: 'Bot token', exact: true }).click();
+  const unlock = page.getByLabel('Unlock the vault password', { exact: true });
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await page.getByRole('combobox', { name: 'Credential for Bot token', exact: true }).click();
+  await page.getByRole('option', { name: 'Telegram bot fixture', exact: true }).click();
+  await page.getByText('Save as connection', { exact: true }).click();
+  await page.getByLabel('Connection name', { exact: true }).fill('Telegram connection');
+  await page.getByLabel('Account label', { exact: true }).fill('Test bot');
+  await page.getByRole('button', { name: 'Save connection', exact: true }).click();
+  const connection = page.getByRole('combobox', { name: 'Saved HTTP connection', exact: true });
+  await expect(connection).toContainText('Telegram connection · Test bot');
+  const binding = async () => (await repository(page, 'list')).flatMap(document => document.nodes).find(node => node.data?.name === name)?.data.credentialBinding;
+  await expect.poll(async () => (await binding())?.connection?.revision).toBe(1);
+  assert.deepEqual((await binding()).credentials, {}); assert.equal(seen.length, 0);
+  await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await setMode(page, 'workflow'); await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await expect(connection).toContainText('Telegram connection · Test bot'); await expect(connection).toBeEnabled();
+  await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Operation completed.' })).toBeVisible();
+  assert.equal(seen.length, 1); assert.equal(seen[0].method, 'POST'); assert.equal(seen[0].url, 'https://api.telegram.org/bot'+token+'/getMe');
+  assert.equal(seen[0].headers.authorization, undefined); assert.equal(seen[0].headers.cookie, undefined); assert.equal(seen[0].headers.referer, undefined);
+  const errors = await page.evaluate(async () => (await import('/error-history-storage-fixture.js')).readErrors(0, 100));
+  for (const value of [await page.locator('body').innerText(), await repository(page, 'list'), errors, document]) {
+    for (const secret of [token, token.replace(':', '%3A'), token.replace(':', '%3a'), token.replace(':', '%253A')]) assert.ok(!JSON.stringify(value).includes(secret));
+  }
+  assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, token, encodeURIComponent(token)]), []);
+  await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/telegram-private-${width}.png` });
+});
 Then('a saved HTTP connection at {int} pixels can be edited re-unlocked and reused without reselecting keys', { timeout: 60_000 }, async function (width) {
   const page = this.page;
   await page.setViewportSize({ width, height: 900 });

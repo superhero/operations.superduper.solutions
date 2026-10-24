@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import { adaptGithubAuthentication } from "./github-authentication.ts";
+import { telegramBotTemplate } from "./server-url.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming"; version: 1 };
+export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication" | "http-response-streaming" | "telegram-private-path"; version: 1 };
 export const googleOauthAlternatives: SchemaPatch = { id: "google-oauth-alternatives", version: 1 };
 export const digitalOceanBearerPermissions: SchemaPatch = { id: "digitalocean-bearer-permissions", version: 1 };
 export const geminiAuthAlternatives: SchemaPatch = { id: "gemini-auth-alternatives", version: 1 };
@@ -13,6 +14,8 @@ export const anthropicAuthentication: SchemaPatch = { id: "anthropic-authenticat
 export const elevenLabsAuthentication: SchemaPatch = { id: "elevenlabs-authentication", version: 1 };
 export const githubAuthentication: SchemaPatch = { id: "github-authentication", version: 1 };
 export const httpResponseStreaming: SchemaPatch = { id: "http-response-streaming", version: 1 };
+export const telegramPrivatePath: SchemaPatch = { id: "telegram-private-path", version: 1 };
+export const telegramPrivatePathSourceSha256 = "f5234e87e6880f87fbba5bd594d80d2d235bac2d9388a47b00b109bc5fe0e6cc";
 export const httpResponseStreamingSources: Record<string, string> = {
   openai: "b7ec5bd5e29c40f0bfa2e53c06ece711a40276653646d9f3db77498d6579ab41",
   ollama: "16f3b75a4944e1fb0e5b68fedc30b5974406dc2ac125d07cb33dde6981e2f99b",
@@ -25,7 +28,8 @@ export function schemaPatchName(patch: SchemaPatch): string {
     : patch.id === "anthropic-authentication" ? "Anthropic authentication and version headers"
     : patch.id === "elevenlabs-authentication" ? "ElevenLabs authentication and credential results"
     : patch.id === "github-authentication" ? "GitHub operation authentication"
-    : patch.id === "http-response-streaming" ? "Bounded HTTP response streaming" : "Unknown schema correction";
+    : patch.id === "http-response-streaming" ? "Bounded HTTP response streaming"
+    : patch.id === "telegram-private-path" ? "Telegram private bot token path" : "Unknown schema correction";
 }
 
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -340,12 +344,28 @@ function responseStreaming(document: Record<string, any>): void {
 }
 
 /** Preserve the published document. Reapplying a resolved correction is a no-op. */
+function telegramPath(document: Record<string, any>): void {
+  if (document.openapi !== "3.0.3" || document.info?.version !== "10.1" || document.servers?.length !== 1
+    || document.servers[0]?.url !== telegramBotTemplate || document.servers[0]?.variables?.botToken?.default !== "<bot_token>"
+    || document.security !== undefined || !object(document.paths)) throw new Error("Telegram private paths require the reviewed native endpoint and version.");
+  for (const [path, item] of Object.entries(document.paths) as [string, Record<string, any>][]) {
+    if (!/^\/[A-Za-z][A-Za-z0-9]{0,127}$/.test(path) || item.servers !== undefined) throw new Error("Telegram private paths require a reviewed Bot API method.");
+    for (const [method, operation] of Object.entries(item) as [string, Record<string, any>][]) {
+      if (!methods.has(method)) continue;
+      if (method !== "post" || operation.operationId !== path.slice(1) || operation.security !== undefined || operation.servers !== undefined
+        || operation["x-operations-private-path"] !== undefined && operation["x-operations-private-path"] !== "telegram-bot")
+        throw new Error("Telegram private paths cannot replace an unreviewed method or authentication declaration.");
+      operation["x-operations-private-path"] = "telegram-bot";
+    }
+  }
+}
+
 export function applySchemaPatches(input: Record<string, unknown>, patches: readonly SchemaPatch[] = []): Record<string, unknown> {
   if (!patches.length) return input;
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication", "http-response-streaming", "telegram-private-path"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
     if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
@@ -355,7 +375,8 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
     else if (patch.id === "anthropic-authentication") anthropicAuth(document);
     else if (patch.id === "elevenlabs-authentication") elevenLabsAuth(document);
     else if (patch.id === "github-authentication") adaptGithubAuthentication(document);
-    else responseStreaming(document);
+    else if (patch.id === "http-response-streaming") responseStreaming(document);
+    else telegramPath(document);
   }
   return document;
 }

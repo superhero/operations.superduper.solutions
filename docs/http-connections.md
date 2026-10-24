@@ -7,6 +7,10 @@ compatible operations can select it from **Saved HTTP connection** after unlock.
 Basic connections retain separate username and password references. Existing
 direct credential selections continue to work without migration.
 
+[Telegram bot connections](telegram-private-path.md) use the same saved-reference
+mechanism for a fixed private URL token slot. They require a saved connection;
+their token is supplied inside the vault worker rather than in a header.
+
 **Edit connection** updates the name, account label or reviewed token format.
 The endpoint comes from the operation's configured schema server. Changing a
 schema endpoint requires a connection approved for that destination. Account

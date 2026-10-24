@@ -8,7 +8,7 @@ import { operationForId, operationOrigin, type Operation } from "./catalog.ts";
 import { catalogForOperation } from "./catalog-registry.ts";
 import { prepareRequest, type InputValues, type PreparedRequest } from "./operation-input.ts";
 import { operationServerUrl } from "./schema-documents.ts";
-import { serverUrlHasPlaceholder } from "./server-url.ts";
+import { serverUrlHasPlaceholder, telegramBotOrigin } from "./server-url.ts";
 import { VaultError, type ApprovedOperation, type CredentialExecutionContext } from "./secrets/types.ts";
 import { approvedOperation } from "./secrets/policy.ts";
 import { isBasicCredentialReference, validateCredentialContext } from "./secrets/bindings.ts";
@@ -82,6 +82,7 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
       if (context?.variables !== undefined || context?.binding.connection) throw new VaultError("PERMISSION");
       const request = prepareRequest(canonical, values, operation.fields);
       const { origin } = workflowExecutionForOperation(canonical);
+      if (canonical.privatePath || new URL(origin).origin === telegramBotOrigin) throw new VaultError("PERMISSION");
       if (canonical.security?.length) {
         if (!context) throw new VaultError("PERMISSION");
         const { binding } = validateCredentialContext(context);

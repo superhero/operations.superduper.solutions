@@ -5,7 +5,7 @@
 import { parseDocument } from "yaml";
 import { extractOperations, type Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
-import { serverUrlHasPlaceholder } from "./server-url.ts";
+import { serverUrlHasPlaceholder, telegramPrivateEndpoint, telegramBotOrigin } from "./server-url.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
 
 export const schemaDocumentMaxBytes = 10 * 1024 * 1024;
@@ -162,6 +162,7 @@ function serverUrl(servers: unknown, base: () => string | undefined, context: st
   }
   if (!["http:", "https:"].includes(url.protocol) || !url.hostname || url.username || url.password || url.search || url.hash)
     unsupported(`${context}: use an HTTP or HTTPS server URL without credentials, query strings or fragments.`);
+  if (url.origin === telegramBotOrigin) unsupported("Telegram requires a saved private bot token connection and its reviewed endpoint template.");
   return url.href.replace(/\/$/, "");
 }
 
@@ -171,6 +172,12 @@ export function operationServerUrl(document: ObjectValue, operation: Pick<Operat
   const paths = object(document.paths, "paths");
   const item = resolve(paths[operation.path], document, operation.path);
   const value = object(item[operation.method.toLowerCase()], `${operation.method} ${operation.path}`);
+  const privateEndpoint = telegramPrivateEndpoint(document, value, item);
+  if (privateEndpoint) {
+    if (!/^(?:GET|POST)$/.test(operation.method) || !/^\/[A-Za-z][A-Za-z0-9]{0,127}$/.test(operation.path))
+      unsupported("Private Telegram token paths require a single Bot API method name.");
+    return privateEndpoint;
+  }
   // Resolve ancestors only when inherited or needed as the base of a relative URL.
   const top = () => serverUrl(document.servers, () => undefined, "document");
   const path = () => serverUrl(item.servers, top, operation.path);

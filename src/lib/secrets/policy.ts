@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { Operation } from "../catalog.ts";
 import { extractCredentialPermissions, extractOperationSecurity, supportedSecurityAlternative } from "../operation-security.ts";
-import { serverUrlHasPlaceholder } from "../server-url.ts";
+import { serverUrlHasPlaceholder, telegramBotOrigin, telegramPathSecurity } from "../server-url.ts";
 import { VaultError, type ApprovedOperation } from "./types.ts";
 
 const encoder = new TextEncoder();
@@ -58,6 +58,7 @@ export function normalizeCredentialOrigin(origin: string): string
   let url: URL;
   try { url = new URL(origin); }
   catch { throw new VaultError("PERMISSION"); }
+  if (url.origin === telegramBotOrigin && url.pathname !== "/") throw new VaultError("PERMISSION");
   if (url.protocol === "http:")
   {
     // WorkerLocation.origin retains the application's origin for a blob worker.
@@ -78,7 +79,12 @@ function validateOperation(operation: Operation): void
   if (!operation || !methods.has(operation.method) || typeof operation.id !== "string" || !operation.id.trim()
     || !Array.isArray(operation.fields)) throw new VaultError("PERMISSION");
   validateCredentialPath(operation.path, true);
-  if (operation.security !== undefined)
+  if (operation.privatePath !== undefined) {
+    if (operation.privatePath !== "telegram-bot" || !/^(?:GET|POST)$/.test(operation.method)
+      || !/^\/[A-Za-z][A-Za-z0-9]{0,127}$/.test(operation.path)
+      || canonicalPolicyValue(operation.security) !== canonicalPolicyValue(telegramPathSecurity())) throw new VaultError("PERMISSION");
+  } else if (operation.security?.some(option => option.some(scheme => scheme.path !== undefined))) throw new VaultError("PERMISSION");
+  if (operation.security !== undefined && !operation.privatePath)
   {
     if (!Array.isArray(operation.security)) throw new VaultError("PERMISSION");
     if (operation.security.length && !operation.security.some(supportedSecurityAlternative)) throw new VaultError("PERMISSION");
@@ -125,6 +131,8 @@ export async function approvedOperation(operation: Operation, origin: string): P
     const sanitized = JSON.parse(canonicalPolicyValue(operation)) as Operation;
     validateOperation(sanitized);
     const normalized = normalizeCredentialOrigin(origin);
+    if (sanitized.privatePath && normalized !== telegramBotOrigin) throw new VaultError("PERMISSION");
+    if (normalized === telegramBotOrigin && !sanitized.privatePath) throw new VaultError("PERMISSION");
     const bytes = encoder.encode(canonicalPolicyValue({ origin: normalized, operation: sanitized }));
     const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
     const fingerprint = Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("");

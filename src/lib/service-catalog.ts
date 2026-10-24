@@ -10,6 +10,7 @@ import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
 import { inspectResponseContent } from "./workflow-response-body.ts";
 import { supportsFormField } from "./form-input.ts";
 import { responseStreamProfile } from "./workflow-response-stream.ts";
+import { privatePathProfile } from "./server-url.ts";
 
 type Value = Record<string, unknown>;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -167,6 +168,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         description: text(source.description), group, method: method.toUpperCase(), path, fields: [], bodyRequired: false };
       try
       {
+        const privatePath = privatePathProfile(source["x-operations-private-path"]);
+        if (privatePath) operation.privatePath = privatePath;
         if (source["x-operations-credential-result"] !== undefined) {
           if (source["x-operations-credential-result"] !== true) throw new Error("Credential result metadata must be true when present.");
           operation.credentialResult = true;

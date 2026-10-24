@@ -1,12 +1,14 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { telegramPrivateEndpoint, telegramPathSecurity } from "./server-url.ts";
 
 export type OperationSecurityScheme =
-  | { name: string; kind: "bearer" | "basic" | "apiKey"; header: string; query?: never }
-  | { name: string; kind: "apiKey"; query: string; header?: never };
+  | { name: string; kind: "bearer" | "basic" | "apiKey"; header: string; query?: never; path?: never }
+  | { name: string; kind: "apiKey"; query: string; header?: never; path?: never }
+  | { name: string; kind: "apiKey"; path: "telegram-bot"; header?: never; query?: never };
 export type UnavailableSecurityScheme = { name: string; kind: "unsupported"; reason: string } &
-  ({ header: string; query?: never } | { query: string; header?: never });
+  ({ header: string; query?: never; path?: never } | { query: string; header?: never; path?: never });
 export type OperationSecurityRequirement = OperationSecurityScheme | UnavailableSecurityScheme;
 /** Alternatives retain source positions. Every member is required (AND), including unavailable members. */
 export type OperationSecurity = OperationSecurityRequirement[][];
@@ -115,6 +117,7 @@ function scheme(document: ObjectValue, name: string, allowUnsupported: boolean):
 
 function operationSecurity(document: ObjectValue, operation: ObjectValue, allowUnsupported: boolean): OperationSecurity | undefined
 {
+  if (telegramPrivateEndpoint(document, operation)) return telegramPathSecurity();
   const declaration = operation.security === undefined ? document.security : operation.security;
   if (declaration === undefined) return undefined;
   if (!Array.isArray(declaration)) throw new Error("Security requirements must be an array.");
@@ -135,7 +138,7 @@ function operationSecurity(document: ObjectValue, operation: ObjectValue, allowU
       }
       else
       {
-        const header = resolved.header.toLowerCase();
+        const header = resolved.header!.toLowerCase();
         if (headers.has(header)) throw new Error(`Security alternative ${index + 1}: duplicate credential header ${JSON.stringify(resolved.header)}.`);
         headers.add(header);
       }

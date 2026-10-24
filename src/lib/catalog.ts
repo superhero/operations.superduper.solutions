@@ -8,6 +8,7 @@ import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
 import { inspectResponseContent, type ResponseContent } from "./workflow-response-body.ts";
 import { supportsFormField } from "./form-input.ts";
 import { responseStreamProfile, type ResponseStreamProfile } from "./workflow-response-stream.ts";
+import { privatePathProfile, type PrivatePathProfile } from "./server-url.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type InputSchema = {
@@ -59,6 +60,8 @@ export type Operation = {
   responseContent?: ResponseContent;
   /** Reviewed wire framing and terminal JSON assembly, never arbitrary event code. */
   responseStream?: ResponseStreamProfile;
+  /** Fixed provider-owned token slot, resolved only through an encrypted connection. */
+  privatePath?: PrivatePathProfile;
   security?: OperationSecurity;
   unavailableReason?: string;
   oauthScopes?: Record<string, string[]>[];
@@ -346,6 +349,8 @@ export function extractOperations(value: unknown, source: string): Operation[]
       if (stream) extracted.responseStream = stream;
       const responseContent = inspectResponseContent(operation.responses, document, stream);
       if (responseContent) extracted.responseContent = responseContent;
+      const privatePath = privatePathProfile(operation["x-operations-private-path"]);
+      if (privatePath) extracted.privatePath = privatePath;
       const security = inspectOperationSecurity(document, operation);
       if (security !== undefined) extracted.security = security;
       if (operation["x-operations-credential-result"] === true) {
