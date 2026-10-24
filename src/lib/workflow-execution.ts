@@ -13,8 +13,10 @@ import { VaultError, type ApprovedOperation, type CredentialExecutionContext } f
 import { approvedOperation } from "./secrets/policy.ts";
 import { isBasicCredentialReference, validateCredentialContext } from "./secrets/bindings.ts";
 import { executeVaultOperation } from "./secrets/vault-executor.ts";
+import { readWorkflowResponseBody, WorkflowBodyError } from "./workflow-response-body.ts";
 
-export type WorkflowResponse = { status: number; statusText: string; headers: Record<string, string>; body: unknown; redacted?: boolean };
+export type WorkflowResponse = { status: number; statusText: string; headers: Record<string, string>; body: unknown;
+  bodyType?: "binary"; mediaType?: string; redacted?: boolean };
 export type WorkflowExecutionResult = { request: PreparedRequest; response: WorkflowResponse };
 export type WorkflowExecutor = {
   execute(operation: Operation, values: InputValues, signal?: AbortSignal, context?: CredentialExecutionContext): WorkflowExecutionResult | Promise<WorkflowExecutionResult>;
@@ -94,6 +96,7 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
       const url = workflowRequestUrl(request, origin);
       if (request.method === "TRACE") throw new Error("Browsers do not permit TRACE requests.");
       const timeout = AbortSignal.timeout(15_000);
+      const requestSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
       let response: Response;
       const headers: Record<string, string> = { Accept: canonical.responseMediaType ?? "application/json", ...request.headers };
       if (request.body !== undefined && request.contentType !== "multipart/form-data")
@@ -102,7 +105,7 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
       {
         response = await fetchRequest(url, {
           method: request.method, redirect: "error", credentials: "omit", headers, body: requestBody(request),
-          signal: signal ? AbortSignal.any([signal, timeout]) : timeout
+          signal: requestSignal
         });
       }
       catch
@@ -110,34 +113,19 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
         throw requestFailure(signal, timeout, `The request could not reach ${origin}. Check connectivity and whether the endpoint allows browser requests, then retry.`);
       }
       const metadata = { status: response.status, statusText: response.statusText, headers: Object.fromEntries(response.headers) };
-      let body: unknown = null;
-      if (request.method !== "HEAD" && response.status !== 204 && response.status !== 205)
-      {
-        let text: string;
-        try { text = await response.text(); }
-        catch { throw requestFailure(signal, timeout, "The response could not be read. Check connectivity and retry."); }
-        if (text || request.method !== "OPTIONS")
-        {
-          const mediaType = response.ok
-            ? canonical.responseMediaType ?? response.headers.get("Content-Type") ?? "application/json"
-            : response.headers.get("Content-Type") ?? "text/plain";
-          if (/\bjson\b/i.test(mediaType))
-          {
-            try { body = JSON.parse(text); }
-            catch
-            {
-              if (response.ok) throw new WorkflowResponseError("The endpoint did not return valid JSON. Check its response and retry.",
-                { ...metadata, body: text });
-              body = text;
-            }
-          }
-          else body = text;
-        }
+      let parsed: Awaited<ReturnType<typeof readWorkflowResponseBody>>;
+      try { parsed = await readWorkflowResponseBody(response, canonical, request.method, requestSignal); }
+      catch (error) {
+        if (error instanceof WorkflowBodyError && error.code !== "CANCELLED")
+          throw new WorkflowResponseError(error.message, { ...metadata, body: null });
+        throw requestFailure(signal, timeout, "The response could not be read. Check the completed request before retrying.");
       }
+      const { malformedJson, ...result } = parsed;
+      if (malformedJson) throw new WorkflowResponseError("The endpoint did not return valid JSON. Check its response before retrying.", { ...metadata, ...result });
       if (!response.ok) throw new WorkflowResponseError(
         `The endpoint returned ${response.status}${response.statusText ? ` ${response.statusText}` : ""}. Check the request and retry.`,
-        { ...metadata, body });
-      return { request, response: { ...metadata, body } };
+        { ...metadata, ...result });
+      return { request, response: { ...metadata, ...result } };
     }
   };
 }

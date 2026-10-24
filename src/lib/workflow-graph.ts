@@ -10,6 +10,7 @@ import { validateWorkflowDocument, type SwitchGate, type WorkflowData, type Work
   type WorkflowDocumentEdge, type WorkflowDocumentNode, type WorkflowField } from "./workflow-document.ts";
 import { isInputLink } from "./workflow-input-links.ts";
 import { isResponseLink } from "./workflow-response-links.ts";
+import { responseKind, responseMediaType } from "./workflow-response-body.ts";
 import { adaptRoutingGates, gateForType, isFileBinaryConnection, isValueConnection, isWorkflowConnectionTypeCompatible, routingInputTypes, switchGateInput, switchGateLimit,
   switchOperators, switchValueLimit, workflowInputConnected, workflowInterface } from "./workflow-utilities.ts";
 
@@ -56,7 +57,7 @@ function shape(value: unknown, document: Schema, seen: string[], depth: number, 
   const result = resolve(value, document, seen);
   const schema = result.schema;
   const types = Array.isArray(schema.type) ? schema.type.filter(type => type !== "null") : [schema.type];
-  const type = types.length === 1 && typeof types[0] === "string" ? binary && types[0] === "string" && schema.format === "binary" ? "Binary" : labels[types[0]]
+  const type = types.length === 1 && typeof types[0] === "string" ? (binary || schema["x-operations-binary-response"] === true) && types[0] === "string" && schema.format === "binary" ? "Binary" : labels[types[0]]
     : schema.type === undefined && object(schema.properties) ? "Object" : undefined;
   const notice = depth > 12 ? "Deeper schema not expanded" : result.notice ||
     (schema.oneOf || schema.anyOf || schema.allOf ? "Alternative or combined schemas not expanded" : undefined) ||
@@ -176,8 +177,11 @@ function responseEnvelope(raw: unknown, media: string | undefined, document: Sch
   const response = resolve(raw, document);
   const content = object(response.schema.content) ? response.schema.content : {};
   const representation = media === undefined ? undefined : content[media];
-  const body = media === undefined && !response.notice ? { type: "null" }
+  let body = media === undefined && !response.notice ? { type: "null" }
     : object(representation) ? representation.schema : undefined;
+  const normalized = media && responseMediaType(media);
+  if (normalized && responseKind(normalized, resolve(body, document).schema) === "binary")
+    body = { type: "string", format: "binary", "x-operations-binary-response": true };
   const properties: Schema = Object.create(null);
   const required: string[] = [];
   for (const [name, rawHeader] of Object.entries(object(response.schema.headers) ? response.schema.headers : {}))

@@ -327,6 +327,8 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
   {
     const selectedStatus = response && selectedResponseStatus(frame, node.id, response.status);
     const headers = response && node.type !== "workflow" ? responseHeaderReader(node.data.operationId, response.status, response.headers) : undefined;
+    const content = node.type !== "workflow" ? operationForId(node.data.operationId)?.responseContent : undefined;
+    const representations = response && (content?.[String(response.status)] ?? content?.[`${Math.floor(response.status / 100)}XX`] ?? content?.DEFAULT);
     for (const panel of dataNodes(frame, node.id, "outputs")) for (const field of panel.data.fields)
     {
       if (stopped) return;
@@ -339,7 +341,12 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       else if (response && field.connectable)
       {
         const [group, path] = identity(field);
-        if (responseStatus(group) === selectedStatus || linkedResponseGroups(panel.id, node.id, frame.document.edges, frame.document.nodes).some(group => responseStatus(group) === selectedStatus))
+        const matches = (group: string) => {
+          const media = /^(?:response|output):[^:]+:(.+)$/.exec(group)?.[1]?.toLowerCase();
+          return responseStatus(group) === selectedStatus && (!media || !response.mediaType || media === response.mediaType
+            || media === "application/octet-stream" && response.bodyType === "binary" && !representations?.[response.mediaType!]);
+        };
+        if (matches(group) || linkedResponseGroups(panel.id, node.id, frame.document.edges, frame.document.nodes).some(matches))
           value = group.startsWith("response:") ? readResponse(response, path, mappedOutput(frame, panel.id, field.id) ? headers : undefined)
             : read(response.body, path);
       }

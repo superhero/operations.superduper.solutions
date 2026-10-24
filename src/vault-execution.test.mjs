@@ -410,6 +410,7 @@ Then("credentialed response case {string} preserves safe HTTP semantics", async 
     if (["no content", "reset content", "HEAD", "empty OPTIONS"].includes(name)) assert.equal(result.response.body, null);
     else if (name === "plain text success") assert.equal(result.response.body, "hello");
     else if (name === "bodyless text") assert.equal(result.response.body, "");
+    else if (name === "declared JSON success") assert.equal(result.response.body, body, "Actual text cannot be forced through a declared JSON decoder.");
     else assert.deepEqual(result.response.body, { value: 1 });
   }
 });

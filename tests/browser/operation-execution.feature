@@ -23,3 +23,11 @@ Feature: Workflow operation execution
 
   Scenario: Example domain operations display the actual endpoint response
     Then workflow example execution displays server data from an actual request
+
+  @chromium-only
+  Scenario Outline: Download an exact binary result at <width>px
+    Then a binary operation at <width> pixels displays a bounded file and downloads exact bytes
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |

@@ -7,6 +7,7 @@ import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
 import { extractCredentialPermissions, extractOperationSecurity, inspectOperationSecurity } from "./operation-security.ts";
 import { operationServerUrl, validateSchemaDocumentId } from "./schema-documents.ts";
 import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
+import { inspectResponseContent } from "./workflow-response-body.ts";
 
 type Value = Record<string, unknown>;
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -238,6 +239,8 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         const authorization = security(document, source, operation);
         if (authorization !== undefined) operation.security = authorization;
         const responses = value(source.responses);
+        const responseContent = inspectResponseContent(responses, document);
+        if (responseContent) operation.responseContent = responseContent;
         const response = resolve(responses[Object.keys(responses).find(status => /^2\d\d$/.test(status)) ?? "default"], document);
         const content = value(response.content);
         const mediaType = content["application/json"] ? "application/json" : Object.keys(content)[0];

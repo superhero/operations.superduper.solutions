@@ -134,6 +134,24 @@ ordinary fields cannot bypass the selected private transport.
 
 ```
 
+<!-- changelog-commit:d94563d71aaaace89b772b6b51f5e67c477f6448 -->
+### Commit [`d94563d`](https://github.com/superhero/operations.superduper.solutions/commit/d94563d71aaaace89b772b6b51f5e67c477f6448)
+
+```text
+feat(workflow): preserve bounded binary responses
+
+Read declared file responses as exact bytes in both HTTP executors and
+reuse the validated Binary envelope for mappings, storage and downloads.
+Actual response media selects the matching declared output branch rather
+than letting a preferred JSON declaration decode a file or event stream.
+
+Bound file responses at 500,000 bytes and text/JSON at 8 MiB. Withhold
+credential-bearing binary results intact and stop dependent steps after
+completing the request, so redaction cannot corrupt a file or replay a
+completed write. Preserve existing JSON/text-only approval metadata.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62

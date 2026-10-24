@@ -14,6 +14,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import HintButton from "$lib/components/HintButton.svelte";
   import Reveal from "$lib/components/Reveal.svelte";
   import OperationReport from "../reports/OperationReport.svelte";
+  import BinaryResponse from "./BinaryResponse.svelte";
   import "../reports/reports.css";
   import type { InputField } from "$lib/catalog.ts";
   import { catalogForOperation } from "$lib/catalog-registry.ts";
@@ -139,7 +140,8 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   <section class="run-response" aria-label={label}>
     <p class="run-status">HTTP {response.status}{response.statusText ? ` ${response.statusText}` : ""}</p>
     <section class="run-response-body" aria-label="Response body">
-      {#if response.body === null}<p class="hint">No response body.</p>
+      {#if response.body === null}<p class="hint">{response.redacted ? "Sensitive response data was withheld." : "No response body."}</p>
+      {:else if response.bodyType === "binary"}<BinaryResponse value={response.body} />
       {:else if typeof response.body === "string"}<pre>{response.body}</pre>
       {:else}<JsonView value={response.body} label={`${label} JSON`} />{/if}
     </section>
