@@ -96,10 +96,10 @@ Then('{string} binary response handling rejects {string} without exposing a part
     const stream = new ReadableStream({ start(c) {
       if (kind === 'oversized') { c.enqueue(new Uint8Array(500000)); c.enqueue(new Uint8Array(1)); }
       else if (kind === 'broken stream') c.error(new Error('synthetic read failure'));
-      else if (kind !== 'aborted') c.enqueue(payload);
+      else if (kind !== 'aborted') c.enqueue(kind === 'stream json' ? new TextEncoder().encode('{"event":"value"}') : payload);
     }, pull(c) { if (kind === 'empty chunks') c.enqueue(new Uint8Array()); }, cancel() { cancelled = true; } });
-    const media = kind === 'events' ? 'text/event-stream' : kind === 'ndjson' ? 'application/x-ndjson' : kind === 'wrong media' ? 'image/png' : 'application/pdf';
-    const model = kind === 'undeclared binary' ? models[2] : models[0];
+    const media = kind === 'stream json' ? 'application/stream+json' : kind === 'events' ? 'text/event-stream' : kind === 'ndjson' ? 'application/x-ndjson' : kind === 'wrong media' ? 'image/png' : 'application/pdf';
+    const model = ['undeclared binary', 'events', 'ndjson', 'stream json'].includes(kind) ? models[2] : models[0];
     const pending = execute(model, async () => { calls++; if (kind === 'aborted') queueMicrotask(() => controller.abort());
       return new Response(stream, { headers: { 'Content-Type': media, 'Content-Length': '1' } }); }, controller.signal);
     await assert.rejects(pending, error => {

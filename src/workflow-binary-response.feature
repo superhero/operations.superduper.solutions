@@ -24,6 +24,8 @@ Feature: Bounded exact-byte workflow downloads
       | private | events            |
       | public  | ndjson            |
       | private | ndjson            |
+      | public  | stream json       |
+      | private | stream json       |
       | public  | aborted           |
       | private | aborted           |
       | public  | broken stream     |
