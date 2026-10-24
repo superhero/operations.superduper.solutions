@@ -11,11 +11,12 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import { supportedSecurityAlternative } from "../operation-security.ts";
   import { workflowExecutionForOperation } from "../workflow-execution.ts";
   import { approvedOperation } from "../secrets/policy.ts";
-  import { isBasicCredentialReference, validateCredentialBinding } from "../secrets/bindings.ts";
+  import { credentialSelectionForVariables, isBasicCredentialReference, validateCredentialBinding } from "../secrets/bindings.ts";
+  import type { VaultVariableInput } from "../secrets/variables.ts";
   import { lockVaultLocally, readVaultKeys, readVaultStatus, subscribeVaultLock, vaultCall } from "../secrets/client.ts";
   import { VaultError, type ApprovedOperation, type CredentialBinding, type CredentialReference, type VaultKey, type VaultStatus } from "../secrets/types.ts";
 
-  let { operation, initial, disabled = false, portalZIndex = 40, onChange }: { operation: Operation; initial?: CredentialBinding | undefined;
+  let { operation, initial, variables = [], disabled = false, portalZIndex = 40, onChange }: { operation: Operation; initial?: CredentialBinding | undefined; variables?: VaultVariableInput[] | undefined;
     disabled?: boolean; portalZIndex?: number; onChange: (binding: CredentialBinding | undefined) => void } = $props();
   let status = $state<VaultStatus>({ exists: false, unlocked: false, revision: 0, epoch: 0, methods: [] });
   let credentials = $state<VaultKey[]>([]);
@@ -37,7 +38,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   const unavailable = $derived([...new Set(operation.security?.flatMap(option => option.flatMap(scheme => scheme.kind === "unsupported" ? [scheme.reason] : [])) ?? [])]);
   function permitted(item: VaultKey, scheme: string): boolean {
     const kind = selected?.find(item => item.name === scheme)?.kind;
-    return kind === "basic" || item.kind === "secret" || item.kind === kind;
+    return kind === "basic" || item.kind === "secret" || item.kind === kind
+      || selected?.some(candidate => candidate.name === scheme
+        && credentialSelectionForVariables([[candidate]], variables)?.credentials[scheme] === item.id) === true;
   }
   function choice(name: string, part?: "username" | "password"): string {
     const reference = choices[name];
@@ -73,6 +76,9 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       descriptor = next; status = latest; credentials = list;
       if (first && initial?.fingerprint === next.fingerprint) {
         alternative = String(initial.alternative); choices = { ...initial.credentials };
+      } else if (first && !initial) {
+        const connected = credentialSelectionForVariables(operation.security, variables);
+        if (connected) { alternative = String(connected.alternative); choices = connected.credentials; }
       }
       changed();
     } catch (cause) { if (mounted && request === revision) error = cause instanceof VaultError ? cause.message : "Credential choices are unavailable."; }
@@ -136,7 +142,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
             <label for={`${fieldId}-credential-${index}-value`}>{scheme.name} · {scheme.header ?? scheme.query}</label>
             <FieldSelect id={`${fieldId}-credential-${index}-value`} label={`Credential for ${scheme.name}`} value={choice(scheme.name)}
               disabled={disabled || busy} {portalZIndex}
-              options={credentials.filter(item => (item.kind === "secret" || item.kind === scheme.kind)).map(item => ({ value: item.id, label: item.label }))}
+              options={credentials.filter(item => permitted(item, scheme.name)).map(item => ({ value: item.id, label: item.label }))}
               onValueChange={value => { choices = { ...choices, [scheme.name]: value }; changed(); }} />
             {/if}
           </div>

@@ -3,6 +3,9 @@
 # See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 Feature: Bundled service schema integrity
+  Scenario: Anthropic private JSON requests require selected credentials and a version without losing legacy header bindings
+    Then pinned Anthropic API key and bearer choices dispatch nonstreaming requests with required headers privately
+
   Scenario: HTTP Basic enables supported Twilio and Atlassian operations without hiding form limitations
     Then pinned Twilio and Atlassian Basic operations dispatch selected username and token references privately
 

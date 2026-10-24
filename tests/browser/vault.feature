@@ -212,3 +212,16 @@ Feature: Browser vault persistence and controlled credential execution
   Scenario: Factory schema policy is bound to its packaged digest
     Given a browser vault worker has an approved credential request for a saved schema
     Then factory schema policy accepts only the matching packaged digest
+
+  @vault-browser-ui @chromium-only
+  Scenario Outline: Anthropic <kind> credentials and header connections survive reload on desktop and mobile
+    When I use a viewport of <width> by 900 pixels
+    Given I create a vault in the Secrets settings and save a synthetic credential
+    Then the Anthropic "<kind>" selection preserves private headers and saved references across reload
+
+    Examples:
+      | width | kind              |
+      | 390   | connected API key |
+      | 1280  | connected API key |
+      | 390   | bearer            |
+      | 1280  | bearer            |

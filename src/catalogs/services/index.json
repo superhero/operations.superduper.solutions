@@ -5,13 +5,22 @@
     "url": "https://storage.googleapis.com/stainless-sdk-openapi-specs/anthropic/anthropic-893a61e9c1cd6c69a70d1043c626ed02d12d6a492eb6ca6ef7a84c64cfb15393.yml",
     "provenance": "https://github.com/anthropics/anthropic-sdk-typescript/blob/sdk-v0.120.0/.stats.yml",
     "version": "sdk-v0.120.0",
+    "profile": "anthropic-auth",
     "openapi": "3.1.0",
     "operations": 144,
     "license": null,
     "sha256": "c23b4e84fb0d699275f74767c41af4d3c62f1f9457a75bf55e02559abf44e1cd",
     "sourceSha256": "0042750ea1ee2eab1751ab0e8affb44e1d0a5d6bb39bb4ea914e9a90873dfcdc",
     "bytes": 1434635,
-    "compressedBytes": 153767
+    "compressedBytes": 153767,
+    "patches": [
+      {
+        "id": "anthropic-authentication",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "986cca3a187a8388cc1d73418112bb1976799a1ad6691795f6ef9e8299d04b9a",
+    "effectiveBytes": 1662627
   },
   {
     "id": "atlassian-admin-api-access",

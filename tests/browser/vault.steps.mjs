@@ -9,6 +9,7 @@ import { expect } from '@playwright/test';
 import { exampleCatalogState } from './catalog-state.fixture.mjs';
 import { chooseCatalogOperation, setMode } from './workspace.fixture.mjs';
 import { repository } from './workflow-storage.fixture.mjs';
+import { createUtilityNode } from '../../src/lib/workflow-graph.ts';
 
 const fixture = '/vault-storage-fixture.js';
 const canaries = ['browser-VAULT-password-9182', 'browser-BEARER-canary-9182', 'browser-APIKEY-canary-9182', 'browser-PRIVATE-label-9182'];
@@ -874,4 +875,76 @@ Then('a legacy vault publishes only key names after unlocking without changing i
 
 Then('factory schema policy accepts only the matching packaged digest', async function () {
   assert.equal(await policy(this.page, 'factoryPolicy'), 'PERMISSION');
+});
+
+Then('the Anthropic {string} selection preserves private headers and saved references across reload', { timeout: 90_000 }, async function (kind) {
+  const page = this.page;
+  this.vaultRun = randomUUID();
+  const path = `/vault-api/${this.vaultRun}/ok`, name = 'Anthropic private request';
+  const document = { openapi: '3.1.0', info: { title: 'Anthropic auth fixture', version: '1' }, servers: [{ url: this.baseURL }],
+    components: { securitySchemes: { AnthropicApiKey: { type: 'apiKey', in: 'header', name: 'x-api-key' }, AnthropicBearer: { type: 'http', scheme: 'bearer' } } },
+    security: [{ AnthropicApiKey: [] }, { AnthropicBearer: [] }], paths: { [path]: { get: { operationId: 'anthropic-auth', summary: name,
+      parameters: [{ name: 'anthropic-version', in: 'header', required: true, schema: { type: 'string' } },
+        { name: 'x-api-key', in: 'header', required: false, schema: { type: 'string' } }],
+      responses: { 200: { description: 'Synthetic result', content: { 'application/json': { schema: { type: 'object' } } } } },
+    } } } };
+  const schemas = page.locator('summary[aria-label="Schemas"]');
+  if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({
+    name: 'anthropic-auth.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)),
+  });
+  await expect(page.getByRole('switch', { name: 'Enable Anthropic auth fixture', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await setMode(page, 'workflow'); await chooseCatalogOperation(page, name);
+  const selection = kind === 'connected API key' ? 'AnthropicApiKey' : 'AnthropicBearer';
+  let id;
+  if (kind === 'connected API key') {
+    await page.getByRole('dialog', { name: /^Run workflow:/ }).getByRole('button', { name: 'Quit', exact: true }).click();
+    const key = (await storage(page, 'read')).keys.find(key => key.label === canaries[3]); id = key.id;
+    const current = (await repository(page, 'list')).find(document => document.nodes.some(node => node.data?.name === name));
+    const state = await repository(page, 'load', current.id), updated = state.document;
+    updated.version = 3; // Vault nodes use the existing version-3 workflow format.
+    const panel = updated.nodes.find(node => node.type === 'data' && node.data.direction === 'inputs'
+      && node.data.fields.some(field => field.label === 'x-api-key'));
+    const variable = createUtilityNode('vault', { x: 0, y: 0 }, 'legacy-anthropic-vault'); variable.data.credentialId = id;
+    updated.nodes.push(variable); updated.edges.push({ id: 'legacy-anthropic-key-edge', kind: 'mapping', source: variable.id, sourceHandle: 'value',
+      target: panel.id, targetHandle: panel.data.fields.find(field => field.label === 'x-api-key').id });
+    await repository(page, 'save', updated, state.revision, 'Connect existing private header');
+    await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
+    await setMode(page, 'workflow'); await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+    await expect(page.getByRole('combobox', { name: 'Authentication alternative', exact: true })).toContainText(selection);
+  } else {
+    await page.getByRole('combobox', { name: 'Authentication alternative', exact: true }).click();
+    await page.getByRole('option', { name: selection, exact: true }).click();
+  }
+  const credential = page.getByRole('combobox', { name: `Credential for ${selection}`, exact: true });
+  await expect(credential).toBeVisible();
+  const unlock = page.getByLabel('Unlock the vault password', { exact: true });
+  if (await unlock.isVisible()) {
+    await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+    await expect(unlock).toHaveCount(0);
+  }
+  if (kind !== 'connected API key') { await credential.click(); await page.getByRole('option', { name: canaries[3], exact: true }).click(); }
+  await expect(credential).toContainText(canaries[3]);
+  const savedDocument = async () => (await repository(page, 'list')).find(document => document.nodes.some(node => node.data?.name === name));
+  const savedBinding = async () => (await savedDocument()).nodes.find(node => node.data?.name === name).data.credentialBinding;
+  await expect.poll(async () => (await savedBinding())?.credentials[selection] ?? '').not.toBe('');
+  const saved = await savedBinding();
+  assert.match(saved.credentials[selection], /^[a-f0-9-]{36}$/);
+  if (id) assert.equal(saved.credentials[selection], id);
+  await mkdir(this.artifactDirectory, { recursive: true }); await page.screenshot({ path: `${this.artifactDirectory}/anthropic-selection.png` });
+  await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await setMode(page, 'workflow'); await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await expect(credential).toContainText(canaries[3]); assert.deepEqual(await savedBinding(), saved);
+  if (id) assert.ok((await savedDocument()).edges.some(edge => edge.id === 'legacy-anthropic-key-edge'));
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click(); await expect(unlock).toHaveCount(0);
+  await page.getByLabel('anthropic-version', { exact: true }).fill('2023-06-01');
+  await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Operation completed.' })).toBeVisible();
+  const seen = await observations(this); assert.equal(seen.length, 1);
+  assert.equal(seen[0].headers['anthropic-version'], '2023-06-01');
+  assert.equal(seen[0].headers[kind === 'connected API key' ? 'x-api-key' : 'authorization'], kind === 'connected API key' ? canaries[1] : `Bearer ${canaries[1]}`);
+  assert.equal(seen[0].headers[kind === 'connected API key' ? 'authorization' : 'x-api-key'], undefined);
+  assert.equal(seen[0].headers.cookie, undefined); assert.equal(seen[0].headers.referer, undefined);
+  noCanaries(await page.locator('body').innerText());
+  assert.deepEqual(await invoke(page, 'persistedCanaries', privateCanaries), []);
 });

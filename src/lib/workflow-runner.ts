@@ -12,6 +12,7 @@ import { linkedResponseGroups } from "./workflow-response-links.ts";
 import { responseHeaderReader } from "./workflow-response.ts";
 import { isVaultVariableReference, vaultVariablePlaceholder, type VaultVariableInput } from "./secrets/variables.ts";
 import { approvedOperation } from "./secrets/policy.ts";
+import { credentialSelectionForVariables } from "./secrets/bindings.ts";
 import { workflowExecutionForOperation } from "./workflow-execution.ts";
 import { VaultError, type CredentialBinding } from "./secrets/types.ts";
 import { containsPrivateValue, isPrivateProcessingReference, privateExpressionFor, type PrivateProcessingReference } from "./secrets/processing.ts";
@@ -687,10 +688,12 @@ export function createWorkflowRunner(value: WorkflowDocument, startingNodeId?: s
       const selectedBinding = binding === null ? undefined : binding ?? completed.visit.credentialBinding;
       try {
         const variables = completed.visit.vaultVariables;
-        const binding = selectedBinding ?? (variables?.length && !completed.visit.operation.security?.length
-          ? { alternative: 0, credentials: {}, fingerprint: (await approvedOperation(operationForId(completed.visit.operation.id)!, workflowExecutionForOperation(completed.visit.operation).origin)).fingerprint } : undefined);
+        const connected = binding !== null && !selectedBinding ? credentialSelectionForVariables(completed.visit.operation.security, variables) : undefined;
+        const selection = connected ?? (variables?.length && !completed.visit.operation.security?.length ? { alternative: 0, credentials: {} } : undefined);
+        const executionBinding = selectedBinding ?? (selection
+          ? { ...selection, fingerprint: (await approvedOperation(operationForId(completed.visit.operation.id)!, workflowExecutionForOperation(completed.visit.operation).origin)).fingerprint } : undefined);
         result = await execution.execute(completed.visit.operation, values, controller.signal,
-          binding ? { binding, runId, nodeId: completed.visit.id, ...(variables ? { variables } : {}) } : undefined);
+          executionBinding ? { binding: executionBinding, runId, nodeId: completed.visit.id, ...(variables ? { variables } : {}) } : undefined);
       }
       finally { pending = undefined; }
       if (stopped || current !== completed) throw new Error("This run has ended.");

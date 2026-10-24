@@ -185,7 +185,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
       <form id={operationFormId} onsubmit={execute} novalidate>
         {#if view.operation.security?.length}
           {#key view.id}
-            <CredentialBindingSelector operation={view.operation} initial={view.credentialBinding} disabled={busy || executed} portalZIndex={90}
+            <CredentialBindingSelector operation={view.operation} initial={view.credentialBinding} variables={view.vaultVariables} disabled={busy || executed} portalZIndex={90}
               onChange={binding => {
                 credentialBinding = binding;
                 if (binding && view?.kind === "operation") onBindingChange(view.bindingPath, binding);

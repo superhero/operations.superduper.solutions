@@ -11,7 +11,7 @@ import { createWorkflowExecution, createWorkflowRequestExecution } from './lib/w
 import { createWorkflowRunner } from './lib/workflow-runner.ts';
 import { createOperationGraph, createWorkflowGraph } from './lib/workflow-graph.ts';
 import { parseWorkflowDocument, portableWorkflowDocument, validateWorkflowDocument } from './lib/workflow-document.ts';
-import { validateCredentialBinding, validateCredentialContext } from './lib/secrets/bindings.ts';
+import { credentialSelectionForVariables, validateCredentialBinding, validateCredentialContext } from './lib/secrets/bindings.ts';
 import { approvedOperation } from './lib/secrets/policy.ts';
 import { describeWorkflowChange } from './lib/workflow-change-message.ts';
 import { addAdditionalProperty, createUtilityNode, isWorkflowConnection } from './lib/workflow-graph.ts';
@@ -571,4 +571,47 @@ Then('workflow-added text properties resolve vault references against the canoni
     })));
   const visit = runner.next(); assert.equal(visit.values['body:dynamic'], vaultVariablePlaceholder);
   assert.ok(!JSON.stringify(await runner.submit(visit.values)).includes(secret));
+});
+
+Then('existing vault header edges select only an unambiguous API key and survive private execution', async () => {
+  const source = schema(); source.components.securitySchemes.ApiKey = { type: 'apiKey', in: 'header', name: 'x-api-key' };
+  source.paths['/public'].get.security = [{ ApiKey: [] }, { bearer: [] }];
+  source.paths['/public'].get.parameters = [{ name: 'x-api-key', in: 'header', schema: { type: 'string' } }];
+  register(source);
+  const model = operation('public'), id = crypto.randomUUID(), variables = [{ key: 'header:x-api-key', path: [], credentialId: id }];
+  const expected = { alternative: 0, credentials: { ApiKey: id } };
+  assert.deepEqual(credentialSelectionForVariables(model.security, variables), expected);
+  assert.deepEqual(credentialSelectionForVariables(model.security, [{ ...variables[0], key: 'header:X-API-KEY', credentialId: undefined, expression: { kind: 'credential', id } }]), expected);
+  for (const inputs of [[], [{ ...variables[0], path: ['nested'] }], [{ ...variables[0], key: 'body:token' }],
+    [{ ...variables[0], credentialId: 'literal' }], [{ ...variables[0], credentialId: undefined, expression: { kind: 'literal', value: 'not a reference' } }],
+    [variables[0], { ...variables[0] }]]) assert.equal(credentialSelectionForVariables(model.security, inputs), undefined);
+  assert.equal(credentialSelectionForVariables(undefined, variables), undefined);
+  assert.equal(credentialSelectionForVariables([[], [{ name: 'Token', kind: 'bearer', header: 'Authorization' }]], variables), undefined);
+  assert.equal(credentialSelectionForVariables([[{ name: 'Query', kind: 'apiKey', query: 'token' }]], variables), undefined);
+  assert.equal(credentialSelectionForVariables([model.security[0], model.security[0]], variables), undefined, 'Ambiguous OR choices require explicit selection.');
+  assert.equal(credentialSelectionForVariables([[...model.security[0], { name: 'Other', kind: 'apiKey', header: 'X-Other' }]], variables), undefined, 'Every AND key must be connected.');
+  const graph = createOperationGraph(model, { x: 500, y: 0 }, 'legacy-operation', source);
+  const variable = createUtilityNode('vault', { x: 0, y: 0 }, 'legacy-vault'); variable.data.credentialId = id;
+  const panel = graph.nodes.find(node => node.type === 'data' && node.data.direction === 'inputs' && node.data.fields.some(field => field.label === 'x-api-key'));
+  const field = panel.data.fields.find(field => field.label === 'x-api-key');
+  const edge = { id: 'legacy-key-edge', kind: 'mapping', source: variable.id, sourceHandle: 'value', target: panel.id, targetHandle: field.id };
+  const document = validateWorkflowDocument(workflow([variable, ...graph.nodes], [...graph.edges, edge]));
+  let calls = 0, seen;
+  const value = 'legacy-header-private-canary';
+  const executor = createWorkflowExecution((descriptor, input, context) => {
+    seen = context;
+    return executeCredentialed(descriptor, input, context.binding, [{ id, label: 'Legacy', kind: 'bearer', value, grants: [] }], {
+      variables: context.variables, assertCurrent() {}, fetchRequest: async (_url, options) => {
+        calls++; assert.equal(options.headers.get('x-api-key'), value); return Response.json({ result: 'safe' });
+      },
+    });
+  });
+  const runner = createWorkflowRunner(document, undefined, executor), visit = runner.next();
+  assert.deepEqual(visit.vaultVariables, variables); assert.equal(visit.credentialBinding, undefined);
+  await assert.rejects(runner.submit(visit.values, null), code('PERMISSION'));
+  assert.equal(calls, 0, 'An explicit clear cannot use the connected fallback.');
+  await runner.submit(visit.values);
+  assert.equal(calls, 1); assert.deepEqual(seen.binding.credentials, expected.credentials);
+  assert.equal(runner.next().kind, 'complete');
+  assert.deepEqual(document.edges.at(-1), edge); assert.ok(!JSON.stringify([document, seen, visit]).includes(value));
 });

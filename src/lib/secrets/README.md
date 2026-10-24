@@ -58,6 +58,14 @@ history/export boundary. Existing key/value vault entries supply both roles;
 the private executor validates visible ASCII and username delimiters, constructs
 the Basic header, and registers its source and derived forms for redaction.
 
+When reviewed schema metadata adds an API-key requirement to an existing header,
+an unambiguous direct vault connection can supply the same local credential ID.
+Explicitly clearing the selection blocks fallback. The private executor consumes
+a connected auth header only if it equals the selected injected value; conflicting
+private values and public header overrides reject. This preserves existing vault
+entry kinds for that exact direct connection without relaxing ordinary selections,
+canonical current-schema approval or portable-export stripping.
+
 Replacing an existing vault requires its current authentication as well as the
 export's. If local data cannot authenticate, import the export in a fresh browser
 profile and verify access before removing any damaged copy.

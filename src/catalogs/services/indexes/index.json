@@ -1,12 +1,12 @@
 {
-  "adapterRevision": "59ce3d0a30a05b8d27952d0e91a122747fd05b59b1c4feb767f95ed01018b9eb",
+  "adapterRevision": "7eaa1aefdaf5fc607f450ad07643f6e014014d005b6b8bd30756e370e64f72d1",
   "indexes": [
     {
       "id": "anthropic",
-      "sourceRevision": "c23b4e84fb0d699275f74767c41af4d3c62f1f9457a75bf55e02559abf44e1cd",
+      "sourceRevision": "986cca3a187a8388cc1d73418112bb1976799a1ad6691795f6ef9e8299d04b9a",
       "bytes": 49553,
-      "compressedBytes": 3462,
-      "sha256": "8f55b23cbda5d629753c5c07d8bfe7a0598688b985aad0e9ba859c703399e522",
+      "compressedBytes": 3461,
+      "sha256": "83fac8ce3a94a58071921479610a1abe5b553b8ba70fa5a4f8cc08244bb8c0f2",
       "summary": {
         "name": "Anthropic API",
         "serverUrl": "https://api.anthropic.com",

@@ -100,6 +100,24 @@ published provider contracts or the separate structured-form limits.
 
 ```
 
+<!-- changelog-commit:ae9a213dd22199bc5f1a5cbccfe1a0328741c454 -->
+### Commit [`ae9a213`](https://github.com/superhero/operations.superduper.solutions/commit/ae9a213dd22199bc5f1a5cbccfe1a0328741c454)
+
+```text
+fix(schema): declare Anthropic private authentication
+
+Declare API-key and Bearer alternatives for the reviewed pinned Anthropic
+schema, require an explicit API version and expose workspace selection.
+Preserve published bytes and source parameter provenance, and retain
+explicit upstream security overrides.
+
+Keep existing vault header connections through an unambiguous reference
+selection and an exact private-value match. Conflicting or public auth
+headers still fail before dispatch, and canonical schema approval remains
+required. No token issuance or streaming support is added.
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62

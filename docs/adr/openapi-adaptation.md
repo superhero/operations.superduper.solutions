@@ -323,6 +323,34 @@ publishing target a different resource. Azure enforces token validity and RBAC;
 the application does not inspect JWT claims or add consent, acquisition, implicit
 login or refresh flows by preserving the upstream OAuth metadata.
 
+Anthropic's `anthropic-authentication` correction applies to the pinned
+`sdk-v0.120.0` direct API document. Its reviewed routes inherit explicit
+`x-api-key` or HTTP Bearer alternatives. The correction requires the existing
+non-secret `anthropic-version` header and adds an optional
+`anthropic-workspace-id` field for API keys that need workspace selection.
+It does not choose a newer API version automatically. Existing root security
+and explicit operation overrides remain intact; unreviewed revisions, route
+families, destinations and provenance collisions require another review.
+Published bytes remain unchanged. `x-upstream-security:null` and
+`x-upstream-parameters` retain the omitted declaration and original parameters.
+
+Existing vault-to-API-key-header connections retain their field and edge IDs.
+An unambiguous direct vault reference supplies the matching credential choice;
+an explicit clear prevents fallback. The worker may consume a connected private
+header only when its resolved value exactly equals the selected injected
+credential. Conflicting private values and public Authorization/API-key inputs
+still fail before dispatch. Existing vault entry kinds remain usable through
+that exact direct connection; ordinary selector kind restrictions remain.
+Neither inference nor a saved binding grants authority over a destination:
+canonical current-schema approval and private execution checks still apply.
+
+The [Anthropic authentication guide](https://platform.claude.com/docs/en/manage-claude/authentication)
+documents API-key and acquired access-token transports, conditional workspace
+selection and workload identity. The [versioning contract](https://platform.claude.com/docs/en/api/versioning)
+requires an explicit API version. This correction adds no credential issuance,
+App Attest, SDK, streaming-result or native-worker lifecycle. Synthetic
+non-streaming requests do not qualify live accounts, permissions or browser CORS.
+
 Authentication alternatives retain their original array positions and scheme
 names. A valid unsupported HTTP scheme is retained as an explicit unavailable
 credential with its destination and explanation; it never becomes an empty

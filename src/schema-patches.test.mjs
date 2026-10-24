@@ -4,7 +4,7 @@
 import assert from 'node:assert/strict';
 import { Then } from '@cucumber/cucumber';
 import { mergeSchemaDocuments, sameSchemaValue, schemaChanges } from './lib/schema-merge.ts';
-import { applySchemaPatches, azureEventGridManagementAuth, digitalOceanBearerPermissions, geminiAuthAlternatives, googleOauthAlternatives, schemaPatchName } from './lib/schema-patches.ts';
+import { applySchemaPatches, anthropicAuthentication, azureEventGridManagementAuth, digitalOceanBearerPermissions, geminiAuthAlternatives, googleOauthAlternatives, schemaPatchName } from './lib/schema-patches.ts';
 import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { schemaLineDiff, schemaPointerValue } from './lib/schema-diff.ts';
 
@@ -387,4 +387,61 @@ Then('schema line diffs fold context and expose bounded output without inventing
   assert.equal(coarse.rows[1199].before.text, 'old 1199');
   assert.equal(coarse.rows[1199].after.text, 'new 1199');
   assert.throws(() => schemaLineDiff('a', 'b', 5001), /1–5000/);
+});
+
+const anthropicFixture = () => ({ openapi: '3.1.0', info: { title: 'Anthropic API', version: 'sdk-v0.120.0' },
+  servers: [{ url: 'https://api.anthropic.com' }], components: {}, paths: {
+    '/v1/models': { get: { operationId: 'models', parameters: [
+      { name: 'anthropic-version', in: 'header', required: false, schema: { type: 'string' } },
+      { name: 'x-api-key', in: 'header', required: false, schema: { type: 'string' } },
+    ], responses: { 200: { description: 'Models', content: { 'application/json': { schema: { type: 'object' } } } } } } },
+    '/health': { get: { security: [], responses: { 200: { description: 'Explicitly public' } } } },
+  } });
+Then('Anthropic corrections retain source headers require version and preserve explicit security overrides', () => {
+  const source = anthropicFixture(), before = structuredClone(source), corrected = applySchemaPatches(source, [anthropicAuthentication]);
+  assert.deepEqual(source, before); assert.equal(schemaPatchName(anthropicAuthentication), 'Anthropic authentication and version headers');
+  assert.deepEqual(corrected.security, [{ AnthropicApiKey: [] }, { AnthropicBearer: [] }]);
+  assert.equal(corrected['x-upstream-security'], null);
+  assert.deepEqual(corrected.paths['/v1/models'].get['x-upstream-parameters'], source.paths['/v1/models'].get.parameters);
+  assert.equal(corrected.paths['/v1/models'].get.parameters[0].required, true);
+  assert.deepEqual(corrected.paths['/v1/models'].get.parameters[1], source.paths['/v1/models'].get.parameters[1], 'Keep legacy header identity.');
+  assert.equal(corrected.paths['/v1/models'].get.parameters.at(-1).name, 'anthropic-workspace-id');
+  assert.deepEqual(corrected.paths['/health'], source.paths['/health']);
+  const models = inspectServiceSchema(corrected, 'anthropic-fixture').operations;
+  assert.equal(models.find(model => model.id.endsWith(':models')).fields.find(field => field.name === 'anthropic-version').required, true);
+  assert.deepEqual(models.find(model => model.path === '/health').security, []);
+  assert.deepEqual(applySchemaPatches(corrected, [anthropicAuthentication]), corrected);
+  const fixed = { ...source, security: [{ Existing: [] }] };
+  assert.deepEqual(applySchemaPatches(fixed, [anthropicAuthentication]), fixed, 'Keep an explicit upstream authentication fix.');
+  const local = structuredClone(corrected); local.info.description = 'Local edit';
+  const incoming = structuredClone(source); incoming.paths['/v1/models'].get.summary = 'Updated models';
+  const merged = mergeSchemaDocuments(corrected, local, applySchemaPatches(incoming, [anthropicAuthentication]));
+  assert.deepEqual(merged.conflicts, []); assert.equal(merged.document.info.description, 'Local edit');
+  assert.equal(merged.document.paths['/v1/models'].get.summary, 'Updated models');
+});
+Then('Anthropic correction rejects the unreviewed contract {string}', kind => {
+  const source = anthropicFixture(), op = source.paths['/v1/models'].get;
+  const cases = {
+    'provider': () => { source.info.title = 'Other'; },
+    'SDK revision': () => { source.info.version = 'sdk-next'; },
+    'OpenAPI version': () => { source.openapi = '3.0.3'; },
+    'destination': () => { source.servers[0].url = 'https://other.test'; },
+    'empty servers': () => { source.servers = []; },
+    'operation destination': () => { op.servers = [{ url: 'https://other.test' }]; },
+    'path destination': () => { source.paths['/v1/models'].servers = [{ url: 'https://other.test' }]; },
+    'unreviewed route': () => { source.paths['/v1/oauth/token'] = { post: structuredClone(op) }; },
+    'missing components': () => { delete source.components; },
+    'missing paths': () => { delete source.paths; },
+    'malformed path': () => { source.paths['/v1/models'] = null; },
+    'missing version': () => { op.parameters.shift(); },
+    'version type': () => { op.parameters[0].schema.type = 'number'; },
+    'duplicate version': () => { op.parameters.push(structuredClone(op.parameters[0])); },
+    'workspace collision': () => { op.parameters.push({ name: 'anthropic-workspace-id', in: 'header', schema: { type: 'string' } }); },
+    'scheme collision': () => { source.components.securitySchemes = { AnthropicApiKey: { type: 'http', scheme: 'basic' } }; },
+    'security provenance': () => { source['x-upstream-security'] = []; },
+    'parameter provenance': () => { op['x-upstream-parameters'] = []; },
+    'permissions': () => { source['x-credential-permissions'] = []; },
+  };
+  assert.ok(cases[kind]); cases[kind]();
+  assert.throws(() => applySchemaPatches(source, [anthropicAuthentication]), /Anthropic authentication adaptation/);
 });
