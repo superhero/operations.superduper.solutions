@@ -31,7 +31,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
 </HintButton>
 
 <style>
-  :global(.workflow-branch-action) { position: absolute; z-index: 2; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 1px solid var(--color-border); border-radius: 4px; background: var(--color-badge-background); color: var(--color-primary); transform: translate(-50%, -50%); transition: background-color 180ms ease-in, color 180ms ease-in, outline-color 180ms ease-in; }
+  :global(.workflow-branch-action) { position: absolute; z-index: 2; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 1px solid var(--color-border); border-radius: 50%; background: var(--color-badge-background); color: var(--color-primary); transform: translate(-50%, -50%); transition: background-color 180ms ease-in, color 180ms ease-in, outline-color 180ms ease-in; }
   :global(.workflow-branch-action[data-side="left"]) { left: -20px; }
   :global(.workflow-branch-action[data-side="right"]) { right: -20px; transform: translate(50%, -50%); }
   :global(.workflow-branch-action[data-side="top"]), :global(.workflow-branch-action[data-side="bottom"]) { left: 50%; }
