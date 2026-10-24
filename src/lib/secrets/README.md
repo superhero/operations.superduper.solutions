@@ -73,6 +73,12 @@ API keys and webhook secrets therefore remain outside workflow outputs until a
 private handler exists. An anonymous authentication choice also cannot send a
 declared credential header or query parameter through ordinary input fields.
 
+Declared binary responses use the shared bounded reader and the existing
+500,000-byte Binary envelope. Raw UTF-8/UTF-16 credential echoes and sensitive
+filenames withhold the complete file and mark the response redacted; base64 bytes
+are never edited by the text redactor. The runner completes the request, blocks
+dependent outputs and offers no automatic retry of that completed write.
+
 Replacing an existing vault requires its current authentication as well as the
 export's. If local data cannot authenticate, import the export in a fresh browser
 profile and verify access before removing any damaged copy.

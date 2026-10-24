@@ -96,7 +96,7 @@ Then("workflow request failures explain network server and response problems and
     [new Response('{"detail":"Rate limited"}', { status: 429, headers: { "Content-Type": "application/problem+json" } }), /429/, { detail: "Rate limited" }],
     [new Response("broken JSON", { status: 500, headers: { "Content-Type": "application/json" } }), /500/, "broken JSON"],
     [withoutContentType, /500/, "no media type"],
-    [new Response("<!doctype html><title>Example Domain</title>"), /did not return valid JSON/, "<!doctype html><title>Example Domain</title>"]
+    [new Response("<!doctype html><title>Example Domain</title>", { headers: { "Content-Type": "application/json" } }), /did not return valid JSON/, "<!doctype html><title>Example Domain</title>"]
   ]) {
     const execution = createWorkflowRequestExecution(async () => response);
     await assert.rejects(() => execution.execute(operation("getProject"), project), error => {
@@ -109,9 +109,8 @@ Then("workflow request failures explain network server and response problems and
     });
   }
   const streamingFailure = createWorkflowRequestExecution(async () => {
-    const response = Response.json({});
-    response.text = async () => { throw new TypeError("Disconnected while reading"); };
-    return response;
+    return new Response(new ReadableStream({ start(stream) { stream.error(new TypeError("Disconnected while reading")); } }),
+      { headers: { "Content-Type": "application/json" } });
   });
   await assert.rejects(() => streamingFailure.execute(operation("getProject"), project), /response could not be read/);
   await assert.rejects(() => streamingFailure.execute(operation("getProject"), project, AbortSignal.abort()), /cancelled/);
@@ -121,7 +120,7 @@ Then("workflow request failures explain network server and response problems and
   let calls = 0;
   const execution = createWorkflowRequestExecution(async () => {
     calls++;
-    if (calls === 1) return new Response("not-json");
+    if (calls === 1) return new Response("not-json", { headers: { "Content-Type": "application/json" } });
     return Response.json({ id: "project-from-server", name: "Server project", status: "active" });
   });
   const runner = createRequestRunner(document(graph("getProject")), undefined, execution);

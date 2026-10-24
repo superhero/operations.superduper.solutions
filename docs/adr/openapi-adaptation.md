@@ -456,6 +456,14 @@ body. Empty status messages stay empty. Header lookup is case-insensitive;
 documented values are decoded for typed mappings, while undeclared headers stay
 text. Failed requests retain response metadata and remain retryable.
 
+For operations with file representations, normalized per-status response media
+metadata is part of canonical approval. Actual Content-Type selects the matching
+response branch; a preferred JSON declaration cannot override a file or event
+stream. Declared binary bodies expose a Binary port and preserve exact bytes in
+the existing bounded file envelope. See [workflow files](../workflow-files.md)
+for size, download, storage and private-result limits. JSON/text-only operations
+retain their existing approval metadata.
+
 Header serialization follows the workflow runner's supported
 [OpenAPI Header Object](https://spec.openapis.org/oas/v3.1.0.html#header-object) rules.
 

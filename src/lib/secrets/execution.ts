@@ -1,6 +1,8 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { readWorkflowResponseBody, binaryContainsSecret, WorkflowBodyError } from "../workflow-response-body.ts";
+import { validateWorkflowBinary } from "../workflow-binary.ts";
 import { requestBody } from "../request-body.ts";
 import { supportedSecurityAlternative } from "../operation-security.ts";
 import { credentialSelectionForVariables, isBasicCredentialReference } from "./bindings.ts";
@@ -56,36 +58,6 @@ function redactor(secrets: string[])
     return input;
   };
   return { text, value, get changed() { return changed; }, mark() { changed = true; } };
-}
-
-async function readBounded(response: Response, signal: AbortSignal): Promise<string>
-{
-  if (!response.body) return "";
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let size = 0;
-  let result = "";
-  let abort!: () => void;
-  const aborted = new Promise<never>((_resolve, reject) => { abort = () => reject(new VaultError("CANCELLED")); });
-  signal.addEventListener("abort", abort, { once: true });
-  try
-  {
-    if (signal.aborted) abort();
-    while (true)
-    {
-      const { value, done } = await Promise.race([reader.read(), aborted]);
-      if (done) return result + decoder.decode();
-      size += value.byteLength;
-      if (size > vaultLimits.responseBytes) throw new VaultError("LIMIT");
-      result += decoder.decode(value, { stream: true });
-    }
-  }
-  finally
-  {
-    signal.removeEventListener("abort", abort);
-    void reader.cancel().catch(() => {});
-    reader.releaseLock();
-  }
 }
 
 /** Secrets are selected and injected only here; callers receive a separate scrubbed preview. */
@@ -222,24 +194,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       method: request.method, body, headers, redirect: "error", credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer", signal,
     });
     if (response.redirected) throw new VaultError("NETWORK");
-    let text = "";
-    let responseBody: unknown = null;
-    let malformedJson = false;
-    if (request.method !== "HEAD" && response.status !== 204 && response.status !== 205)
-    {
-      text = await readBounded(response, signal);
-      if (text || request.method !== "OPTIONS")
-      {
-        const media = response.ok ? approved.operation.responseMediaType ?? response.headers.get("Content-Type") ?? "application/json"
-          : response.headers.get("Content-Type") ?? "text/plain";
-        if (/\bjson\b/i.test(media))
-        {
-          try { responseBody = JSON.parse(text); }
-          catch { responseBody = text; malformedJson = response.ok; }
-        }
-        else responseBody = text;
-      }
-    }
+    const parsed = await readWorkflowResponseBody(response, approved.operation, request.method, signal, vaultLimits.responseBytes);
+    const { malformedJson, ...result } = parsed;
     const scrub = redactor(secrets);
     const safeHeaders: [string, string][] = [];
     for (const [name, value] of response.headers)
@@ -248,8 +204,21 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         scrub.mark();
       else safeHeaders.push([scrub.text(name), scrub.text(value)]);
     }
-    const safe: CredentialResponse = { status: response.status, statusText: scrub.text(response.statusText),
-      headers: Object.fromEntries(safeHeaders), body: scrub.value(responseBody) };
+    let safeBody = result.body;
+    if (result.bodyType === "binary") {
+      const file = validateWorkflowBinary(result.body);
+      const bytes = Uint8Array.from(atob(file.base64), character => character.charCodeAt(0));
+      if (binaryContainsSecret(bytes, secrets) || secrets.some(secret => file.base64.includes(secret))
+        || scrub.text(file.name) !== file.name || scrub.text(file.mediaType) !== file.mediaType) {
+        safeBody = null;
+        scrub.mark();
+      }
+      // Never redact inside a base64 file: either retain exact bytes or withhold it entirely.
+    } else safeBody = scrub.value(safeBody);
+    const safe: CredentialResponse = { ...result, status: response.status, statusText: scrub.text(response.statusText),
+      headers: Object.fromEntries(safeHeaders), body: safeBody };
+    if (safeBody === null) delete safe.bodyType;
+    if (safe.mediaType) safe.mediaType = scrub.text(safe.mediaType);
     if (scrub.changed) safe.redacted = true;
     await options.assertCurrent();
     if (signal.aborted) throw new VaultError("CANCELLED");
@@ -267,6 +236,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       const scrub = redactor(secrets);
       throw new InputValidationError(scrub.text(error.fieldKey), scrub.text(error.message).slice(0, vaultLimits.diagnosticBytes));
     }
+    if (error instanceof WorkflowBodyError) throw new VaultError(error.code === "LIMIT" || error.code === "CANCELLED" ? error.code : "NETWORK");
     if (error instanceof VaultError) throw new VaultError(error.code);
     throw new VaultError(phase === "policy" ? "PERMISSION" : "NETWORK");
   }

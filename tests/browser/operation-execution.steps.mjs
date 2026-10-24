@@ -4,7 +4,8 @@
 import assert from "node:assert/strict";
 import { Then } from "@cucumber/cucumber";
 import { expect } from "@playwright/test";
-import { chooseCatalogOperation, fillField, workspace } from "./workspace.fixture.mjs";
+import { chooseCatalogOperation, fillField, workspace, setMode } from "./workspace.fixture.mjs";
+import { mkdir } from "node:fs/promises";
 
 const responsePanel = workspace;
 const responseBody = page => page.getByRole("region", { name: "Response body", exact: true });
@@ -175,4 +176,40 @@ Then("workflow example execution displays server data from an actual request", a
   await expect(responseBody(page)).not.toContainText("Website");
   await expectServerMetadata(page, "https://example.com");
   assert.deepEqual(requests, [{ method: "GET", url: "https://example.com/projects/project-2" }]);
+});
+
+Then('a binary operation at {int} pixels displays a bounded file and downloads exact bytes', async function (width) {
+  const page = this.page;
+  await page.setViewportSize({ width, height: 900 });
+  const bytes = Buffer.from(Array.from({ length: 256 }, (_, index) => index));
+  const name = 'Exact binary download';
+  const document = { openapi: '3.1.0', info: { title: 'Binary download fixture', version: '1' }, servers: [{ url: 'https://httpbin.org' }],
+    paths: { '/exact-download': { get: { operationId: 'download-exact', summary: name, responses: { 200: { description: 'JSON or binary', content: {
+      'application/json': { schema: { type: 'object' } }, 'application/pdf': { schema: { type: 'string', format: 'binary' } } } } } } } } };
+  let calls = 0;
+  await page.route('https://httpbin.org/exact-download', async route => {
+    calls++;
+    await route.fulfill({ status: 200, headers: { 'access-control-allow-origin': '*', 'access-control-expose-headers': 'Content-Disposition',
+      'content-type': 'application/pdf', 'content-disposition': 'attachment; filename="exact.pdf"' }, body: bytes });
+  });
+  await setMode(page, 'settings');
+  const schemas = page.locator('summary[aria-label="Schemas"]');
+  if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({ name: 'binary-download.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)) });
+  await expect(page.getByRole('switch', { name: 'Enable Binary download fixture', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await chooseCatalogOperation(page, name);
+  await execute(page);
+  await expect(responseBody(page)).toContainText('exact.pdf');
+  await expect(responseBody(page)).toContainText('application/pdf');
+  await expect(responseBody(page)).toContainText('256 bytes');
+  await expect(responseBody(page).locator('.json-tree')).toHaveCount(0);
+  const downloading = page.waitForEvent('download');
+  await responseBody(page).getByRole('button', { name: 'Download file', exact: true }).click();
+  const download = await downloading;
+  assert.equal(download.suggestedFilename(), 'exact.pdf');
+  const chunks = [];
+  for await (const chunk of await download.createReadStream()) chunks.push(chunk);
+  assert.deepEqual(Buffer.concat(chunks), bytes); assert.equal(calls, 1);
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await page.screenshot({ path: `${this.artifactDirectory}/binary-download-${width}.png` });
 });

@@ -5,6 +5,7 @@
 import { catalogs, replaceCatalogs, setOperationCatalog, type Catalog } from "./catalog-registry.ts";
 import { inspectOperationSecurity, type CredentialPermissions, type OperationSecurity } from "./operation-security.ts";
 import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
+import { inspectResponseContent, type ResponseContent } from "./workflow-response-body.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
 export type InputSchema = {
@@ -52,6 +53,8 @@ export type Operation = {
   bodySchema?: InputSchema;
   responseExample?: unknown;
   responseMediaType?: string;
+  /** Per-status media contracts for operations with a binary representation. */
+  responseContent?: ResponseContent;
   security?: OperationSecurity;
   unavailableReason?: string;
   oauthScopes?: Record<string, string[]>[];
@@ -335,6 +338,8 @@ export function extractOperations(value: unknown, source: string): Operation[]
       if (binaryMediaTypes) extracted.binaryMediaTypes = binaryMediaTypes;
       if (bodyValue) extracted.bodyValue = true;
       if (bodySchema) extracted.bodySchema = bodySchema;
+      const responseContent = inspectResponseContent(operation.responses, document);
+      if (responseContent) extracted.responseContent = responseContent;
       const security = inspectOperationSecurity(document, operation);
       if (security !== undefined) extracted.security = security;
       if (operation["x-operations-credential-result"] === true) {

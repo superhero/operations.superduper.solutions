@@ -15,7 +15,7 @@ const output = resolve(directory, 'indexes');
 const check = process.argv.includes('--check');
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const adapter = createHash('sha256');
-for (const file of ['catalog.ts', 'service-catalog.ts', 'codex-schema.ts', 'operation-security.ts', 'schema-documents.ts', 'schema-index.ts', 'server-url.ts', 'workflow-binary.ts', 'schema-patches.ts'])
+for (const file of ['catalog.ts', 'service-catalog.ts', 'codex-schema.ts', 'operation-security.ts', 'schema-documents.ts', 'schema-index.ts', 'server-url.ts', 'workflow-binary.ts', 'workflow-response-body.ts', 'schema-patches.ts'])
   adapter.update(file).update(await readFile(resolve(root, 'src/lib', file)));
 const adapterRevision = adapter.digest('hex');
 if (!check) await mkdir(output, { recursive: true });
