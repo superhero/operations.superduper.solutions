@@ -26,6 +26,14 @@ fix(workflow): add spacing around restore buttons
 
 ```
 
+<!-- changelog-commit:886494addbadd24aa0390f3c1670a6bf1d7e8ca3 -->
+### Commit [`886494a`](https://github.com/superhero/operations.superduper.solutions/commit/886494addbadd24aa0390f3c1670a6bf1d7e8ca3)
+
+```text
+fix(schema): normalize Gemini authentication alternatives
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
