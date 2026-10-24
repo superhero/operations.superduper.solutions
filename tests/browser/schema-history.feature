@@ -26,6 +26,16 @@ Feature: Schema commit comparisons and correction review
       | 390   |
       | 1280  |
 
+  @service-defaults @chromium-only
+  Scenario Outline: Event Grid management authentication appears as a reviewable schema correction
+    When I use a viewport of <width> by 900 pixels
+    Then Event Grid revisions show its missing Azure authentication requirement without rewriting the source
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
   Scenario: Commit comparisons and colored field diffs preserve conflict review and mobile scrolling
     Then schema history compares any saved commits with lazy colored diffs and persistent conflict choices
 

@@ -1577,6 +1577,7 @@
     "id": "azure-eventgrid",
     "provider": "azure",
     "name": "Microsoft / Azure / Event Grid",
+    "profile": "azure-eventgrid-auth",
     "url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/eventgrid/resource-manager/Microsoft.EventGrid/EventGrid/stable/2025-02-15/EventGrid.json",
     "provenance": "https://github.com/Azure/azure-rest-api-specs/blob/main/specification/eventgrid/resource-manager/Microsoft.EventGrid/EventGrid/stable/2025-02-15/EventGrid.json",
     "conversion": "swagger2"

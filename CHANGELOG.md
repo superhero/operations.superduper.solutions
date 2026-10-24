@@ -34,6 +34,14 @@ fix(schema): normalize Gemini authentication alternatives
 
 ```
 
+<!-- changelog-commit:a486a3e70663b89fa563aa3b77a1d767379ce99a -->
+### Commit [`a486a3e`](https://github.com/superhero/operations.superduper.solutions/commit/a486a3e70663b89fa563aa3b77a1d767379ce99a)
+
+```text
+fix(schema): require Azure Event Grid management authentication
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62

@@ -26,6 +26,33 @@ Feature: Reviewable schema corrections and structured upstream merges
   Scenario: Gemini authentication alternatives preserve reviewable published data
     Then Gemini corrections preserve published SDK metadata AND credentials and anonymous overrides
 
+  Scenario: Event Grid management inherits Azure authentication while public overrides stay public
+    Then Event Grid corrections attach existing Azure permissions while preserving public and protected overrides
+
+  Scenario Outline: Event Grid authentication is limited to the reviewed management contract for <kind>
+    Then Event Grid correction rejects the unreviewed contract "<kind>"
+    Examples:
+      | kind                   |
+      | wrong provider         |
+      | wrong version          |
+      | missing paths          |
+      | wrong audience         |
+      | empty servers          |
+      | malformed server       |
+      | missing OAuth          |
+      | wrong OAuth type       |
+      | additional flow        |
+      | different flow         |
+      | wrong issuer           |
+      | missing permissions    |
+      | different permission   |
+      | blank permission       |
+      | public inherited route |
+      | operation destination  |
+      | path destination       |
+      | provenance collision   |
+      | permission collision   |
+
   Scenario Outline: Gemini only exposes applicable reviewed credentials for <kind>
     Then Gemini credential applicability "<kind>" stays explicit without executing custom schemes
     Examples:

@@ -1,5 +1,5 @@
 {
-  "adapterRevision": "1976bff312820217c0b58c428d28403f029591087bb1cd3be3f862b3737da15f",
+  "adapterRevision": "2ada7527f53913cb365fad8b61acbd8060ab69f23293afa1016d86f4fd78119e",
   "indexes": [
     {
       "id": "anthropic",
@@ -2783,10 +2783,10 @@
     },
     {
       "id": "azure-eventgrid",
-      "sourceRevision": "08622bcbdec69b39057e298e06bf8a51c7ca1e339c9becbae2cc129b1fb8aad1",
+      "sourceRevision": "bc47a8220775ef84854ff991cf9e7bdf5926ab9583963ed75f0957c40c1f848b",
       "bytes": 72267,
-      "compressedBytes": 4193,
-      "sha256": "fc909563c71453798fdcc49da4853ffa4755a11917dcf62f68ae23b942829e48",
+      "compressedBytes": 4195,
+      "sha256": "4b55df27776210940e0a0c91e0296d25668aae33187c7364d176fa75fc894a03",
       "summary": {
         "name": "EventGridManagementClient",
         "serverUrl": "https://management.azure.com",

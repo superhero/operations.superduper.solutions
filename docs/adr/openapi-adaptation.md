@@ -190,6 +190,7 @@ the earlier correction. Generic parsing retains strict auth AND semantics.
 For the DigitalOcean correction, select `--profile=digitalocean-permissions`
 instead; published packs remain unchanged in either case.
 For Gemini's reviewed SDK authentication, use `--profile=gemini-auth`.
+For the missing Event Grid management requirement, use `--profile=azure-eventgrid-auth`.
 
 ### Available operations
 
@@ -307,6 +308,20 @@ no schema extension executes code. The [provider schema](https://ai.google.dev/s
 and [authentication guide](https://ai.google.dev/gemini-api/docs/oauth) describe
 these credential transports. This adds no login or refresh flow, and does not
 qualify real accounts, quotas or browser CORS.
+Event Grid's `azure-eventgrid-management-auth` correction attaches its existing
+`azure_auth` declaration and `user_impersonation` scope when root security is
+absent. It only accepts the reviewed management document, issuer, scope and
+inherited Event Grid routes on `management.azure.com`; explicit operation
+requirements and anonymous overrides remain unchanged. `x-upstream-security:null`
+records the absent original declaration; an existing root declaration is left
+intact. Published paths and OAuth definitions remain byte-equivalent data in
+their separate history. Canonical approvals retain the management destination
+and scope, so earlier anonymous approvals cannot authorize the corrected request.
+Use an existing [Azure Resource Manager bearer token](https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/manage-resources-rest),
+with the corresponding Azure RBAC authorization. Tokens for Event Grid event
+publishing target a different resource. Azure enforces token validity and RBAC;
+the application does not inspect JWT claims or add consent, acquisition, implicit
+login or refresh flows by preserving the upstream OAuth metadata.
 AWS Signature Version 4 signing is unsupported. Browser CORS, local-network access
 and the API's own authorization rules still apply.
 
