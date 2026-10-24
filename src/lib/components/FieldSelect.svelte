@@ -11,7 +11,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
   import FieldSelectOptions from "./FieldSelectOptions.svelte";
 
   let { id, label, value, options, includePlaceholder = true, required = false, disabled = false, invalid = false, active = true, describedBy, portalZIndex = 40, renderLabel, onValueChange }:
-    { id: string; label: string; value: string; options: Array<string | number | boolean | null | { value: string; label: string }>; includePlaceholder?: boolean; required?: boolean;
+    { id: string; label: string; value: string; options: Array<string | number | boolean | null | { value: string; label: string; disabled?: boolean }>; includePlaceholder?: boolean; required?: boolean;
       disabled?: boolean; invalid?: boolean; active?: boolean; describedBy?: string | undefined; portalZIndex?: number;
       renderLabel?: Snippet<[{ value: string; label: string }]>; onValueChange: (value: string) => void } = $props();
   let open = $state(false);

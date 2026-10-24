@@ -3,7 +3,7 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 
 import { catalogs, replaceCatalogs, setOperationCatalog, type Catalog } from "./catalog-registry.ts";
-import { extractOperationSecurity, type CredentialPermissions, type OperationSecurity } from "./operation-security.ts";
+import { inspectOperationSecurity, type CredentialPermissions, type OperationSecurity } from "./operation-security.ts";
 import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
 
 export type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };
@@ -331,7 +331,7 @@ export function extractOperations(value: unknown, source: string): Operation[]
       if (binaryMediaTypes) extracted.binaryMediaTypes = binaryMediaTypes;
       if (bodyValue) extracted.bodyValue = true;
       if (bodySchema) extracted.bodySchema = bodySchema;
-      const security = extractOperationSecurity(document, operation);
+      const security = inspectOperationSecurity(document, operation);
       if (security !== undefined) extracted.security = security;
       result.push(extracted);
     }

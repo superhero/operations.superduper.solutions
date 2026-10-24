@@ -93,6 +93,17 @@ Feature: Browser vault persistence and controlled credential execution
     Given I create a vault in the Secrets settings and save a synthetic credential
     Then an approved operation shows and copies only scrubbed diagnostics and persists no registered canaries
 
+  @vault-browser-ui @chromium-only
+  Scenario Outline: Supported authentication choices preserve their original identity on desktop and mobile
+    When I use a viewport of <width> by 900 pixels
+    Given I create a vault in the Secrets settings and save a synthetic credential
+    Then an unsupported first authentication choice stays disabled while a later saved token choice survives reload and executes privately
+
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
   @vault-browser-ui
   Scenario: Manual locking clears temporary inputs and requires authentication
     Given I create a vault in the Secrets settings and save a synthetic credential

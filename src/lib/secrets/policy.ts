@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import type { Operation } from "../catalog.ts";
-import { extractCredentialPermissions, extractOperationSecurity } from "../operation-security.ts";
+import { extractCredentialPermissions, extractOperationSecurity, supportedSecurityAlternative } from "../operation-security.ts";
 import { serverUrlHasPlaceholder } from "../server-url.ts";
 import { VaultError, type ApprovedOperation } from "./types.ts";
 
@@ -80,10 +80,21 @@ function validateOperation(operation: Operation): void
   if (operation.security !== undefined)
   {
     if (!Array.isArray(operation.security)) throw new VaultError("PERMISSION");
-    const definitions: Record<string, unknown> = Object.create(null);
-    const requirements = operation.security.map(alternative =>
-    {
+    if (operation.security.length && !operation.security.some(supportedSecurityAlternative)) throw new VaultError("PERMISSION");
+    const validatedSecurity = operation.security.map(alternative => {
       if (!Array.isArray(alternative)) throw new VaultError("PERMISSION");
+      return alternative.map(scheme => {
+        if (scheme?.kind !== "unsupported") return scheme;
+        if (typeof scheme.reason !== "string" || !scheme.reason.trim() || scheme.reason.length > 4096
+          || Object.keys(scheme).length !== 4 || Object.keys(scheme).some(key => !["name", "kind", "reason", "header", "query"].includes(key)))
+          throw new VaultError("PERMISSION");
+        return scheme.query !== undefined ? { name: scheme.name, kind: "apiKey" as const, query: scheme.query }
+          : { name: scheme.name, kind: "apiKey" as const, header: scheme.header };
+      });
+    });
+    const definitions: Record<string, unknown> = Object.create(null);
+    const requirements = validatedSecurity.map(alternative =>
+    {
       const names = new Set<string>();
       return Object.fromEntries(alternative.map(scheme =>
       {
@@ -100,7 +111,7 @@ function validateOperation(operation: Operation): void
       }));
     });
     const normalized = extractOperationSecurity({ components: { securitySchemes: definitions }, security: requirements }, {});
-    if (canonicalPolicyValue(normalized) !== canonicalPolicyValue(operation.security)) throw new VaultError("PERMISSION");
+    if (canonicalPolicyValue(normalized) !== canonicalPolicyValue(validatedSecurity)) throw new VaultError("PERMISSION");
   }
   extractCredentialPermissions(operation.credentialPermissions, operation.security);
 }

@@ -4,7 +4,7 @@
 import type { BodyMediaType, InputField, InputSchema, Operation } from "./catalog.ts";
 import type { CatalogGroup } from "./catalog-registry.ts";
 import { inspectCodexSchema, isCodexSchema } from "./codex-schema.ts";
-import { extractCredentialPermissions, extractOperationSecurity } from "./operation-security.ts";
+import { extractCredentialPermissions, extractOperationSecurity, inspectOperationSecurity } from "./operation-security.ts";
 import { operationServerUrl, validateSchemaDocumentId } from "./schema-documents.ts";
 import { isBinaryMediaType, containsBinaryInput } from "./workflow-binary.ts";
 
@@ -122,12 +122,13 @@ function security(document: Value, source: Value, operation: Operation): Operati
       if (definition.type !== "oauth2") return [name, scopes];
       if (!Array.isArray(scopes) || scopes.some(scope => typeof scope !== "string")) throw new Error("OAuth scopes must be strings.");
       oauth = true;
-      Object.defineProperty(normalizedSchemes, name, { value: { type: "http", scheme: "bearer" }, enumerable: true, configurable: true });
+      Object.defineProperty(normalizedSchemes, name, { value: { type: "http", scheme: "bearer",
+        ...(definition["x-amazon-apigateway-authtype"] === "awsSigv4" ? { "x-amazon-apigateway-authtype": "awsSigv4" } : {}) }, enumerable: true, configurable: true });
       return [name, []];
     }));
   });
   if (oauth) operation.oauthScopes = declaration.map(raw => Object.fromEntries(Object.entries(raw).map(([name, scopes]) => [name, [...scopes as string[]]])));
-  const result = extractOperationSecurity({ ...document, components: { ...value(document.components), securitySchemes: normalizedSchemes } }, { security: requirements });
+  const result = inspectOperationSecurity({ ...document, components: { ...value(document.components), securitySchemes: normalizedSchemes } }, { security: requirements });
   const permissions = extractCredentialPermissions(permissionSource["x-credential-permissions"], result);
   if (permissions) operation.credentialPermissions = permissions;
   return result;
@@ -230,11 +231,6 @@ export function inspectServiceSchema(document: Value, id: string, selected?: Rea
         const placeholders = [...path.matchAll(/\{([^{}]+)\}/g)].map(match => match[1]);
         if (placeholders.some(name => !operation.fields.some(field => field.location === "path" && field.name === name)))
           throw new Error("This endpoint uses unsupported URI template expansion.");
-        const requirements = source.security ?? document.security;
-        if (Array.isArray(requirements)) for (const requirement of requirements) for (const name of Object.keys(value(requirement))) {
-          const scheme = resolve(value(value(document.components).securitySchemes)[name], document);
-          if (scheme["x-amazon-apigateway-authtype"] === "awsSigv4") throw new Error("This API requires AWS Signature Version 4 request signing, which is not supported here.");
-        }
         const authorization = security(document, source, operation);
         if (authorization !== undefined) operation.security = authorization;
         const responses = value(source.responses);

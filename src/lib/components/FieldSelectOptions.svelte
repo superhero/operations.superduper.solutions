@@ -47,7 +47,7 @@ See LICENSE and LICENSE-ADDITIONAL-TERMS.
     <Select.Viewport class="select-options-viewport field-select-viewport" bind:ref={viewport}
       onpointermovecapture={keepClippedHoverStill} onpointerleave={resetHover} onscroll={resetHover}>
       {#each items as item (item.value)}
-        <Select.Item value={item.value} label={item.label} disabled={item.disabled ?? false}
+        <Select.Item value={item.value} label={item.label} disabled={item.disabled ?? false} aria-disabled={item.disabled || undefined}
           class={variant === "node" ? "select-option workflow-node-select-option" : "select-option field-select-option"}>
           {#snippet children({ selected })}
             <span class="option-label field-select-option-label" class:bold={item.bold}

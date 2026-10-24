@@ -12,7 +12,49 @@ import { inspectServiceSchema } from './lib/service-catalog.ts';
 import { validateSchemaDocument, operationServerUrl } from './lib/schema-documents.ts';
 import { createSchemaDiscovery, validateSchemaDiscovery } from './lib/schema-index.ts';
 import { codexExecutionLimitation } from './lib/codex-schema.ts';
-import { extractOperationSecurity, securityRequiresCredentials } from './lib/operation-security.ts';
+import { extractOperationSecurity, supportedSecurityAlternative, securityRequiresCredentials } from './lib/operation-security.ts';
+
+Then('pinned Atlassian and X authentication alternatives retain independently usable choices and original identities', async () => {
+  const census = { atlassian: { mixed: 0, available: 0, otherLimitations: 0 }, x: { mixed: 0, available: 0, otherLimitations: 0 }, samples: [] };
+  for (const source of serviceSchemaDescriptors.filter(source => source.provider === 'atlassian' || source.id.startsWith('bitbucket') || source.id === 'x')) {
+    const document = await readServiceSchema(source.id), inspection = inspectServiceSchema(document, source.id);
+    const models = new Map(inspection.operations.map(model => [model.id, model]));
+    const cache = new Map(), family = source.id === 'x' ? census.x : census.atlassian;
+    for (const [path, item] of Object.entries(document.paths)) for (const [method, operation] of Object.entries(item)) {
+      if (!['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'trace'].includes(method)) continue;
+      const declaration = operation.security ?? document.security, key = JSON.stringify(declaration);
+      if (!cache.has(key)) {
+        const probe = { ...document, servers: [{ url: 'https://auth-probe.example.test' }], paths: { '/auth-probe': { get: {
+          operationId: 'auth-probe', security: declaration, responses: { 200: { description: 'Auth probe' } },
+        } } } };
+        const checked = inspectServiceSchema(probe, source.id).operations[0];
+        cache.set(key, checked.security?.some(option => !supportedSecurityAlternative(option))
+          && checked.security.some(supportedSecurityAlternative));
+      }
+      if (!cache.get(key)) continue;
+      family.mixed++;
+      const id = `${source.id}:${operation.operationId ?? `${method.toUpperCase()} ${path}`}`;
+      const model = models.get(id);
+      assert.ok(model, `Missing original operation: ${id}`);
+      if (model.unavailableReason) {
+        assert.doesNotMatch(model.unavailableReason, /only HTTP bearer|unsupported security|OAuth scopes|Security scheme|Security requirements/);
+        family.otherLimitations++;
+      } else {
+        family.available++;
+        assert.equal(model.security.length, declaration.length, 'Source alternatives are never filtered or renumbered.');
+        for (const [index, option] of model.security.entries())
+          assert.deepEqual(option.map(scheme => scheme.name), Object.keys(declaration[index]));
+        if (census.samples.length < 4 || id === 'x:validateAccountActivitySubscription')
+          census.samples.push({ id, choices: model.security.map(option => ({ names: option.map(scheme => scheme.name), usable: supportedSecurityAlternative(option) })) });
+      }
+    }
+  }
+  assert.equal(census.atlassian.mixed, 1678);
+  assert.equal(census.x.mixed, 101);
+  const { writeFile } = await import('node:fs/promises');
+  await writeFile('tmp/provider-census.json', JSON.stringify(census, null, 2)+'\n');
+  console.log(JSON.stringify(census));
+});
 
 Then('Event Grid management retains its published source and requires a private Azure bearer token', async () => {
   const { executeCredentialed } = await import('./lib/secrets/execution.ts');

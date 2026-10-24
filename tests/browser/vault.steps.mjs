@@ -3,10 +3,12 @@
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { mkdir } from 'node:fs/promises';
 import { Given, Then } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { exampleCatalogState } from './catalog-state.fixture.mjs';
 import { chooseCatalogOperation, setMode } from './workspace.fixture.mjs';
+import { repository } from './workflow-storage.fixture.mjs';
 
 const fixture = '/vault-storage-fixture.js';
 const canaries = ['browser-VAULT-password-9182', 'browser-BEARER-canary-9182', 'browser-APIKEY-canary-9182', 'browser-PRIVATE-label-9182'];
@@ -397,6 +399,66 @@ Then('an approved operation shows and copies only scrubbed diagnostics and persi
   assert.deepEqual(await invoke(page, 'persistedCanaries', [...privateCanaries, this.uiRecovery]), []);
   this.diagnostics = this.diagnostics.filter(item => !(item.type === 'http-error' && item.url === `${this.baseURL}${path}` && item.status === 422)
     && !(item.type === 'console-error' && /Failed to load resource.*422/.test(item.message) && item.location?.url === `${this.baseURL}${path}`));
+});
+
+Then('an unsupported first authentication choice stays disabled while a later saved token choice survives reload and executes privately', { timeout: 90_000 }, async function () {
+  const page = this.page;
+  this.vaultRun = randomUUID();
+  const path = `/vault-api/${this.vaultRun}/ok`;
+  const document = { openapi: '3.1.0', info: { title: 'Partial authentication fixture', version: '1' },
+    servers: [{ url: this.baseURL }], components: { securitySchemes: {
+      Basic: { type: 'http', scheme: 'basic' }, Bearer: { type: 'http', scheme: 'bearer' },
+    } }, paths: { [path]: { get: { operationId: 'partial-auth', summary: 'Partial auth request',
+      security: [{ Basic: [] }, { Bearer: [] }], responses: { 200: { description: 'Synthetic result',
+        content: { 'application/json': { schema: { type: 'object' } } } } },
+    } } } };
+  const schemas = page.locator('summary[aria-label="Schemas"]');
+  if (await schemas.getAttribute('aria-expanded') !== 'true') await schemas.click();
+  await page.locator('input[type="file"][aria-label="Upload OpenAPI document"]').setInputFiles({
+    name: 'partial-auth.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(document)),
+  });
+  await expect(page.getByRole('switch', { name: 'Enable Partial authentication fixture', exact: true })).toHaveAttribute('aria-checked', 'true');
+  await setMode(page, 'workflow');
+  await chooseCatalogOperation(page, 'Partial auth request');
+  const alternatives = page.getByRole('combobox', { name: 'Authentication alternative', exact: true });
+  await alternatives.click();
+  await expect(page.getByRole('option', { name: 'Basic', exact: true })).toBeDisabled();
+  await expect(page.getByRole('option', { name: 'Bearer', exact: true })).toBeEnabled();
+  await mkdir(this.artifactDirectory, { recursive: true });
+  await page.screenshot({ path: `${this.artifactDirectory}/auth-alternatives.png` });
+  await page.getByRole('option', { name: 'Bearer', exact: true }).click();
+  const unlock = page.getByLabel('Unlock the vault password', { exact: true });
+  if (await unlock.isVisible()) {
+    await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  }
+  const credential = page.getByRole('combobox', { name: 'Credential for Bearer', exact: true });
+  await credential.click(); await page.getByRole('option', { name: canaries[3], exact: true }).click();
+  const savedBinding = async () => {
+    const documents = await repository(page, 'list');
+    return documents.flatMap(document => document.nodes).find(node => node.data?.name === 'Partial auth request')?.data.credentialBinding;
+  };
+  await expect.poll(async () => (await savedBinding())?.alternative).toBe(1);
+  const saved = await savedBinding();
+  assert.match(saved.credentials.Bearer, /^[a-f0-9-]{36}$/);
+  assert.ok(!JSON.stringify(saved).includes(canaries[1]));
+  await page.reload(); await page.locator('#startup-status').waitFor({ state: 'detached' });
+  await setMode(page, 'workflow');
+  await page.getByRole('button', { name: 'Run workflow', exact: true }).click();
+  await expect(alternatives).toContainText('Bearer');
+  await expect(credential).toContainText(canaries[3]);
+  assert.deepEqual(await savedBinding(), saved, 'Reload keeps the original alternative and vault reference.');
+  await unlock.fill(canaries[0]); await page.getByRole('button', { name: 'Unlock', exact: true }).click();
+  await expect(unlock).toHaveCount(0);
+  await expect(credential).toBeEnabled();
+  await page.getByRole('button', { name: /^(Start workflow|Run operation|Retry operation)$/ }).click();
+  await expect.poll(async () => (await observations(this)).length).toBe(1);
+  const seen = (await observations(this))[0];
+  assert.equal(seen.headers.authorization, `Bearer ${canaries[1]}`);
+  assert.equal(seen.headers.cookie, undefined);
+  await expect(page.getByRole('status').filter({ hasText: 'Operation completed.' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Step 1 response', exact: true })).toContainText('HTTP 200');
+  noCanaries(await page.locator('body').innerText());
+  assert.deepEqual(await invoke(page, 'persistedCanaries', privateCanaries), []);
 });
 
 Then('manually locking the vault clears inputs and password unlocking restores the credential list', async function () {
