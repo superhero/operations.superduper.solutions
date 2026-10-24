@@ -2,6 +2,14 @@
 
 ## Latest
 
+<!-- changelog-commit:dbc419598fcd301393d3a5769b4958882c6bf8a1 -->
+### Commit [`dbc4195`](https://github.com/superhero/operations.superduper.solutions/commit/dbc419598fcd301393d3a5769b4958882c6bf8a1)
+
+```text
+fix(workflow): offset restore hints and swap button colors
+
+```
+
 <!-- changelog-latest-end -->
 
 ## 0.0.62
