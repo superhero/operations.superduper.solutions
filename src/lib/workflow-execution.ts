@@ -79,7 +79,7 @@ export function createWorkflowRequestExecution(fetchRequest: typeof fetch = glob
       const canonical = operationForId(operation.id);
       if (operation.deferred || !canonical || canonical.method !== operation.method || canonical.path !== operation.path)
         throw new Error("This operation is not available in the registered schemas.");
-      if (context?.variables !== undefined) throw new VaultError("PERMISSION");
+      if (context?.variables !== undefined || context?.binding.connection) throw new VaultError("PERMISSION");
       const request = prepareRequest(canonical, values, operation.fields);
       const { origin } = workflowExecutionForOperation(canonical);
       if (canonical.security?.length) {
@@ -148,6 +148,7 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
         throw new Error("This operation is not available in the registered schemas.");
       const invocation = context ? validateCredentialContext(context) : undefined;
       const hasVariables = invocation?.variables !== undefined;
+      if (invocation?.binding.connection && !canonical.security?.length) throw new VaultError("PERMISSION");
       if (!canonical.security?.length && !hasVariables) return anonymous.execute(operation, values, signal, undefined, onProgress);
       if (!invocation) throw new VaultError("PERMISSION");
       const submitted = { ...values };
@@ -161,6 +162,10 @@ export function createWorkflowExecution(credentialExecution: CredentialWorkflowE
       }
       const alternative = canonical.security[invocation.binding.alternative];
       if (!supportedSecurityAlternative(alternative)) throw new VaultError("PERMISSION");
+      if (invocation.binding.connection) {
+        if (!alternative.length) throw new VaultError("PERMISSION");
+        return credentialExecution(descriptor, submitted, invocation, signal, onProgress);
+      }
       if (!alternative.length) return hasVariables ? credentialExecution(descriptor, submitted, invocation, signal, onProgress) : anonymous.execute(operation, submitted, signal, invocation, onProgress);
       if (Object.keys(invocation.binding.credentials).length !== alternative.length
         || alternative.some(scheme => !Object.hasOwn(invocation.binding.credentials, scheme.name)

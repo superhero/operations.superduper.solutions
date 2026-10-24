@@ -6,6 +6,18 @@ Feature: Browser vault persistence and controlled credential execution
   Native IndexedDB, Web Locks and Fetch enforce the vault contracts in a browser.
   Test-only fixtures exercise storage failures without adding production hooks.
 
+  @chromium-only
+  Scenario Outline: Saved HTTP connections survive reload at <width>px
+    Then a saved HTTP connection at <width> pixels can be edited re-unlocked and reused without reselecting keys
+    Examples:
+      | width |
+      | 390   |
+      | 1280  |
+
+  @vault-browser-network @chromium-only
+  Scenario: Production connection profiles keep account and schema authority in the worker
+    Then production connection references survive worker replacement and reject account edits and disabled schemas
+
   @vault-browser-storage
   Scenario: Persisted vault data and exports contain only encrypted private fields
     Given an isolated browser vault with synthetic credentials

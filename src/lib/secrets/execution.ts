@@ -13,6 +13,7 @@ import { resolvePrivateExpression } from "./processing.ts";
 import { validateApprovedOperation, validateCredentialPath } from "./policy.ts";
 import { VaultError, vaultLimits, type ApprovedOperation, type CredentialBinding, type VaultCredential } from "./types.ts";
 import { workflowResponseLifetime, responseAccept, type ResponseProgressCallback } from "../workflow-response-stream.ts";
+import { resolveHttpConnection, formatHttpToken } from "./http-connections.ts";
 
 export type CredentialResponse = WorkflowResponse & { redacted?: boolean };
 export type CredentialExecutionResult = WorkflowExecutionResult & { response: CredentialResponse };
@@ -73,7 +74,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
   try
   {
     const credentialSnapshot = structuredClone(credentials);
-    const bindingSnapshot = structuredClone(binding);
+    let bindingSnapshot = structuredClone(binding);
     const inputSnapshot = structuredClone(values);
     if (!inputSnapshot || typeof inputSnapshot !== "object" || Array.isArray(inputSnapshot)
       || ![Object.prototype, null].includes(Object.getPrototypeOf(inputSnapshot))
@@ -84,6 +85,8 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
       .flatMap(value => [value, encodeURIComponent(value), new URLSearchParams({ v: value }).toString().slice(2)]))]
       .sort((a, b) => b.length - a.length);
     const approved = await validateApprovedOperation(descriptor);
+    const connection = await resolveHttpConnection(approved, bindingSnapshot, credentialSnapshot);
+    bindingSnapshot = connection.binding;
     const variables = options.variables === undefined ? [] : validateVaultVariableInputs(options.variables);
     const alternative = approved.operation.security?.length ? approved.operation.security[bindingSnapshot.alternative]
       : variables.length && bindingSnapshot.alternative === 0 ? [] : undefined;
@@ -119,7 +122,11 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
         const connected = credentialSelectionForVariables([[scheme]], variables);
         const value = credentialValue(reference, scheme.kind, connected?.credentials[scheme.name] === reference);
         if (scheme.query !== undefined) injectedQueries.set(scheme.query, value);
-        else injected.set(scheme.header, scheme.kind === "bearer" ? `Bearer ${value}` : value);
+        else {
+          const formatted = scheme.kind === "bearer" ? `Bearer ${value}` : formatHttpToken(connection.format, value);
+          if (formatted !== value) secrets.push(formatted);
+          injected.set(scheme.header, formatted);
+        }
       }
     }
     // Replace only explicit, validated reference slots. Never interpolate secrets into
@@ -190,6 +197,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     const preview = redactor(secrets).value(request) as PreparedRequest;
     const body = requestBody(request);
     await options.assertCurrent();
+    if (connection.expiresAt !== undefined && connection.expiresAt <= Date.now()) throw new VaultError("PERMISSION");
     if (signal.aborted) throw new VaultError("CANCELLED");
     phase = "request";
     const response = await (options.fetchRequest ?? globalThis.fetch)(url.href, {
@@ -225,6 +233,7 @@ export async function executeCredentialed(descriptor: ApprovedOperation, values:
     if (safe.transportMediaType) safe.transportMediaType = scrub.text(safe.transportMediaType);
     if (scrub.changed) safe.redacted = true;
     await options.assertCurrent();
+    if (connection.expiresAt !== undefined && connection.expiresAt <= Date.now()) throw new VaultError("PERMISSION");
     if (signal.aborted) throw new VaultError("CANCELLED");
     if (malformedJson) throw new CredentialResponseError("The endpoint did not return valid JSON. Check its response before retrying.", safe);
     if (!response.ok) throw new CredentialResponseError(`The endpoint returned HTTP ${response.status}. Check the request before retrying.`, safe);

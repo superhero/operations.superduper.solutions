@@ -1,5 +1,6 @@
 {
   "import": [
+    "src/http-connections.test.mjs",
     "src/workflow-stream-response.test.mjs",
     "src/github-authentication.test.mjs",
     "src/request-body.test.mjs",
@@ -71,6 +72,7 @@
     "src/parakeet-streaming.test.mjs"
   ],
   "paths": [
+    "src/http-connections.feature",
     "src/workflow-stream-response.feature",
     "src/github-authentication.feature",
     "src/request-body.feature",

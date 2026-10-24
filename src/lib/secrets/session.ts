@@ -8,6 +8,10 @@ import { authenticateManifest, sealSnapshot, validateSnapshot } from "./format.t
 import { approvedOperation } from "./policy.ts";
 import { publicVaultKeys } from "./key-index.ts";
 import { executeCredentialed } from "./execution.ts";
+import { connectionCredentialIds, createHttpConnection, httpConnectionReference, resolveHttpConnection,
+  storedHttpConnections, validateHttpConnection, invalidateHttpConnections } from "./http-connections.ts";
+import type { HttpConnectionInput, HttpConnectionReference } from "./types.ts";
+import { validateHttpConnectionReference } from "./bindings.ts";
 import type { ResponseProgressCallback } from "../workflow-response-stream.ts";
 import { checkPrivateAssertion } from "./processing.ts";
 import { VaultError, passwordProfile, vaultLimits, recoveryKeyBytes, recoveryKeyCharacters } from "./types.ts";
@@ -20,12 +24,16 @@ const context = (snapshot: Pick<VaultSnapshot, "id" | "epoch">, item: { id: stri
   ({ vaultId: snapshot.id, epoch: snapshot.epoch, kind: item.kind, id: item.id, revision: item.revision });
 
 function credential(value: VaultCredential): VaultCredential {
-  ownObject(value, ["id", "label", "kind", "value", "grants"]);
+  ownObject(value, ["id", "label", "kind", "value", "grants"], ["connections"]);
   if (!validId(value.id) || typeof value.label !== "string" || !value.label.trim() || value.label.length > 120
     || !["bearer", "apiKey", "secret"].includes(value.kind) || typeof value.value !== "string" || !value.value
     || /[^\x21-\x7e]/.test(value.value) || value.value.length > vaultLimits.secretBytes
     || !Array.isArray(value.grants) || value.grants.length > 256) throw new VaultError("INVALID");
   canonicalJSON(value, vaultLimits.recordBytes);
+  if (value.connections !== undefined) {
+    if (!Array.isArray(value.connections) || value.connections.length > 32) throw new VaultError("LIMIT");
+    value.connections.forEach(validateHttpConnection);
+  }
   const grantIds = new Set<string>();
   for (const grant of value.grants) {
     ownObject(grant, ["id", "scheme", "descriptor"]);
@@ -195,6 +203,7 @@ export class VaultSession {
       if (value.id !== record.id) throw new VaultError("AUTHENTICATION");
       return value;
     }));
+    storedHttpConnections(result);
     this.guard(generation); return result;
   }
 
@@ -205,6 +214,47 @@ export class VaultSession {
 
   async list(): Promise<CredentialSummary[]> {
     return (await this.records()).map(({ value: _value, ...summary }) => summary);
+  }
+
+  async connections() { return storedHttpConnections(await this.records()); }
+
+  async connectionBinding(reference: HttpConnectionReference, descriptor: ApprovedOperation): Promise<CredentialBinding> {
+    const approved = await approvedOperation(descriptor.operation, descriptor.origin);
+    if (approved.fingerprint !== descriptor.fingerprint) throw new VaultError("PERMISSION");
+    await this.assertSchema(approved);
+    const records = await this.records(), selected = validateHttpConnectionReference(reference);
+    const connection = storedHttpConnections(records).find(item => item.id === selected.id);
+    if (!connection) throw new VaultError("PERMISSION");
+    const binding = { alternative: connection.alternative, credentials: {}, fingerprint: approved.fingerprint, connection: selected };
+    await resolveHttpConnection(approved, binding, records);
+    await this.assertCurrent();
+    return binding;
+  }
+
+  async putConnection(input: HttpConnectionInput, descriptor: ApprovedOperation, binding: CredentialBinding) {
+    const records = await this.records();
+    const connection = await createHttpConnection(input, descriptor, binding, records);
+    await this.assertSchema(descriptor);
+    for (const record of records) if (record.connections) {
+      record.connections = record.connections.filter(item => item.id !== connection.id);
+      if (!record.connections.length) delete record.connections;
+    }
+    const owner = records.find(record => record.id === connectionCredentialIds(connection)[0]);
+    if (!owner) throw new VaultError("PERMISSION");
+    owner.connections = [...owner.connections ?? [], connection];
+    await this.save(records);
+    return connection;
+  }
+
+  async removeConnection(reference: HttpConnectionReference) {
+    const selected = validateHttpConnectionReference(reference), records = await this.records();
+    const connection = storedHttpConnections(records).find(item => item.id === selected.id);
+    if (!connection || connection.revision !== selected.revision || connection.fingerprint !== selected.fingerprint) throw new VaultError("CONFLICT");
+    for (const record of records) if (record.connections) {
+      record.connections = record.connections.filter(item => item.id !== selected.id);
+      if (!record.connections.length) delete record.connections;
+    }
+    await this.save(records);
   }
 
   async copyCredential(id: string): Promise<string> {
@@ -241,11 +291,14 @@ export class VaultSession {
     const previous = input.id ? records.find(item => item.id === input.id) : undefined;
     if (input.id && !previous) throw new VaultError("INVALID");
     const value = credential({ id: previous?.id ?? crypto.randomUUID(), label: input.label, kind: input.kind,
-      value: input.value, grants: previous?.kind === input.kind ? previous.grants : [] });
+      value: input.value, grants: previous?.kind === input.kind ? previous.grants : [],
+      ...(previous?.connections ? { connections: previous.connections } : {}) });
     const key = value.label.trim().normalize("NFC").toLowerCase();
     if (records.some(item => item.id !== value.id && item.label.trim().normalize("NFC").toLowerCase() === key))
       throw new VaultError("DUPLICATE_KEY");
-    await this.save([...records.filter(item => item.id !== value.id), value]);
+    const next = [...records.filter(item => item.id !== value.id), value];
+    if (previous && (previous.value !== value.value || previous.kind !== value.kind)) await invalidateHttpConnections(next, value.id);
+    await this.save(next);
     return this.list();
   }
 
@@ -253,7 +306,12 @@ export class VaultSession {
     if (proof) await this.fresh(proof); else await this.assertCurrent();
     const values = await this.records();
     if (!values.some(item => item.id === id)) throw new VaultError("INVALID");
-    await this.save(values.filter(item => item.id !== id));
+    const next = values.filter(item => item.id !== id);
+    for (const record of next) if (record.connections) {
+      record.connections = record.connections.filter(item => !connectionCredentialIds(item).includes(id));
+      if (!record.connections.length) delete record.connections;
+    }
+    await this.save(next);
     return this.list();
   }
 

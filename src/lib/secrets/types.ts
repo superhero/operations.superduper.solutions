@@ -31,13 +31,24 @@ export type ApprovedOperation = { fingerprint: string; origin: string; operation
 export type CredentialGrant = { id: string; scheme: string; descriptor: ApprovedOperation };
 export type VaultCredential = {
   id: string; label: string; kind: "bearer" | "apiKey" | "secret"; value: string; grants: CredentialGrant[];
+  connections?: HttpConnection[];
 };
 export type VaultKey = Pick<VaultCredential, "id" | "label" | "kind">;
 export type CredentialSummary = Omit<VaultCredential, "value">;
 export type BasicCredentialReference = { username: string; password: string };
 export type CredentialReference = string | BasicCredentialReference;
+export type HttpConnectionReference = { id: string; revision: number; fingerprint: string };
+export type HttpTokenFormat = "schema" | "discord-bot" | "opsgenie-key";
+export type HttpConnection = HttpConnectionReference & {
+  label: string; account: string; provider: string; endpoint: string; runtime: "browser-http";
+  alternative: number; security: import("../operation-security.ts").OperationSecurityScheme[];
+  credentials: Record<string, CredentialReference>; format: HttpTokenFormat; expiresAt?: number;
+};
+export type HttpConnectionInput = { label: string; account: string; format: HttpTokenFormat;
+  reference?: HttpConnectionReference; expiresAt?: number };
 export type CredentialBinding = {
   alternative: number; credentials: Record<string, CredentialReference>; fingerprint: string;
+  connection?: HttpConnectionReference;
 };
 export type CredentialExecutionContext = {
   binding: CredentialBinding; runId: string; nodeId: string;
