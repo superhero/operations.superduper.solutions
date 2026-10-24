@@ -2039,6 +2039,7 @@
     "id": "github",
     "name": "GitHub",
     "url": "https://raw.githubusercontent.com/github/rest-api-description/main/descriptions-next/api.github.com/api.github.com.yaml",
+    "profile": "github-auth",
     "version": "1.1.4",
     "openapi": "3.1.0",
     "operations": 1242,
@@ -2049,7 +2050,15 @@
     "sha256": "f9293195f0097a6ae134f8652fca11d15dc26638ee312dd3ce35d5723d56925a",
     "sourceSha256": "656e3dacf9f6d601dbd8df76ab474febef7ec5cd490813d49e812ff467d7314c",
     "bytes": 7095097,
-    "compressedBytes": 662463
+    "compressedBytes": 662463,
+    "patches": [
+      {
+        "id": "github-authentication",
+        "version": 1
+      }
+    ],
+    "effectiveSha256": "17dc4046c2b656f04631e85339828391862174a189ea5ddc26aae549abe1b242",
+    "effectiveBytes": 7454207
   },
   {
     "id": "gitlab",

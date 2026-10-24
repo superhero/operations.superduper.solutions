@@ -1,22 +1,25 @@
 // Copyright (C) 2026 Erik Landvall
 // SPDX-License-Identifier: AGPL-3.0-only
 // See LICENSE and LICENSE-ADDITIONAL-TERMS.
+import { adaptGithubAuthentication } from "./github-authentication.ts";
 
 /** Reviewed, versioned data corrections. These never execute code from a schema. */
-export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication"; version: 1 };
+export type SchemaPatch = { id: "google-oauth-alternatives" | "digitalocean-bearer-permissions" | "gemini-auth-alternatives" | "azure-eventgrid-management-auth" | "anthropic-authentication" | "elevenlabs-authentication" | "github-authentication"; version: 1 };
 export const googleOauthAlternatives: SchemaPatch = { id: "google-oauth-alternatives", version: 1 };
 export const digitalOceanBearerPermissions: SchemaPatch = { id: "digitalocean-bearer-permissions", version: 1 };
 export const geminiAuthAlternatives: SchemaPatch = { id: "gemini-auth-alternatives", version: 1 };
 export const azureEventGridManagementAuth: SchemaPatch = { id: "azure-eventgrid-management-auth", version: 1 };
 export const anthropicAuthentication: SchemaPatch = { id: "anthropic-authentication", version: 1 };
 export const elevenLabsAuthentication: SchemaPatch = { id: "elevenlabs-authentication", version: 1 };
+export const githubAuthentication: SchemaPatch = { id: "github-authentication", version: 1 };
 export function schemaPatchName(patch: SchemaPatch): string {
   return patch.id === "google-oauth-alternatives" ? "Google OAuth alternatives"
     : patch.id === "digitalocean-bearer-permissions" ? "DigitalOcean bearer permissions"
     : patch.id === "gemini-auth-alternatives" ? "Gemini authentication alternatives"
     : patch.id === "azure-eventgrid-management-auth" ? "Azure Event Grid management authentication"
     : patch.id === "anthropic-authentication" ? "Anthropic authentication and version headers"
-    : patch.id === "elevenlabs-authentication" ? "ElevenLabs authentication and credential results" : "Unknown schema correction";
+    : patch.id === "elevenlabs-authentication" ? "ElevenLabs authentication and credential results"
+    : patch.id === "github-authentication" ? "GitHub operation authentication" : "Unknown schema correction";
 }
 
 const methods = new Set(["get", "post", "put", "patch", "delete", "head", "options", "trace"]);
@@ -319,7 +322,7 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
   const document = structuredClone(input);
   const seen = new Set<string>();
   for (const patch of patches) {
-    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
+    if (!["google-oauth-alternatives", "digitalocean-bearer-permissions", "gemini-auth-alternatives", "azure-eventgrid-management-auth", "anthropic-authentication", "elevenlabs-authentication", "github-authentication"].includes(patch?.id) || patch.version !== 1 || seen.has(patch.id))
       throw new Error("The reviewed schema correction is unknown or duplicated.");
     seen.add(patch.id);
     if (patch.id === "google-oauth-alternatives") googleAlternatives(document);
@@ -327,7 +330,8 @@ export function applySchemaPatches(input: Record<string, unknown>, patches: read
     else if (patch.id === "gemini-auth-alternatives") geminiAlternatives(document);
     else if (patch.id === "azure-eventgrid-management-auth") azureEventGridAuthentication(document);
     else if (patch.id === "anthropic-authentication") anthropicAuth(document);
-    else elevenLabsAuth(document);
+    else if (patch.id === "elevenlabs-authentication") elevenLabsAuth(document);
+    else adaptGithubAuthentication(document);
   }
   return document;
 }
